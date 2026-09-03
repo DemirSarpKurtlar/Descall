@@ -41,7 +41,7 @@
   background-color: #000000 !important;
 }
 .user-settings.is-desktop .us-main {
-  background: #111214;
+  background: #000000;
 }
 .user-settings.is-desktop .us-sidebar {
   background: #0b0c0e;
@@ -101,7 +101,7 @@
 }
 
 .user-settings.is-desktop .us-main {
-  background: #111214;
+  background: #000000;
 }
 
 .user-settings.is-mobile .us-sidebar {
@@ -399,6 +399,9 @@
   scrollbar-color: var(--surface-3) transparent;
 }
 
+.us-main-scroll {
+  background: #000000;
+}
 .user-settings.is-mobile .us-main-scroll {
   padding: 16px 16px 28px;
 }
@@ -534,16 +537,16 @@
   box-shadow: 0 0 0 3px var(--success-soft);
 }
 
-/* Hero */
+/* Hero — avatar overlaps banner; name + @handle stay together BELOW the banner seam */
 .us-hero {
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid var(--border-2);
-  background: var(--surface-0);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;
 }
 
 .us-hero-banner {
-  height: 88px;
+  height: 96px;
   background: linear-gradient(135deg, var(--primary), var(--primary-2) 55%, #7b5cff);
   background-size: cover;
   background-position: center;
@@ -551,10 +554,11 @@
 
 .us-hero-body {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 14px;
   padding: 0 16px 16px;
-  margin-top: -28px;
+  margin-top: -36px;
+  background: #000000;
 }
 
 .us-hero-avatar {
@@ -565,7 +569,7 @@
   flex-shrink: 0;
   overflow: visible;
   line-height: 0;
-  box-shadow: 0 0 0 3px var(--surface-0);
+  box-shadow: 0 0 0 4px #000000;
 }
 
 .us-hero-avatar .status-badge {
@@ -582,27 +586,31 @@
 .us-hero-meta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  padding-top: 44px;
   padding-bottom: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .us-hero-meta h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-0);
+  color: #f2f3f5;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   line-height: 1.25;
 }
 .us-hero-meta .us-muted {
   min-width: 0;
   max-width: 100%;
+  color: rgba(242, 243, 245, 0.72);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
