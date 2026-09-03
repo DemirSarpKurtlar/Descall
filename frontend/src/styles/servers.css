@@ -1,10 +1,9 @@
 /* ─── Servers view (Steps 2–3) ─── */
 
-/* 4-column layout: nav rail + server icon rail + channel sidebar + flexible chat.
-   A 3-column override forced the main chat onto an implicit track/row, so channels
-   piled left and the composer floated mid-panel with empty space on the right. */
+/* 3-column layout: nav rail + channel/server sidebar + flexible chat.
+   The old 72px "icon rail" track was never filled — it left a large empty gap. */
 .app-root[data-view="servers"] {
-  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
+  grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
 }
 
 .servers-sidebar .server-shell-header {

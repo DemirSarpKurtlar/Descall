@@ -4275,12 +4275,11 @@ export default function App() {
                 Boolean(activeServer?.myPermissions?.flags?.ADMINISTRATOR))
             }
             loading={Boolean(
-              messagesLoading &&
-                ((activeDmUser && dmByUserId[activeDmUser.id] === undefined) ||
-                  (activeGroup && groupMessagesById[activeGroup.id] === undefined) ||
-                  (activeView === "servers" &&
-                    activeChannel?.type === "text" &&
-                    channelMessagesById[activeChannel.id] === undefined))
+              (activeDmUser && dmByUserId[activeDmUser.id] === undefined) ||
+                (activeGroup && groupMessagesById[activeGroup.id] === undefined) ||
+                (activeView === "servers" &&
+                  activeChannel?.type === "text" &&
+                  channelMessagesById[activeChannel.id] === undefined)
             )}
             unreadCount={
               unreadMarker &&

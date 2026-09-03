@@ -2329,8 +2329,9 @@
   max-width: calc(100vw - 16px);
   max-height: calc(100vh - 16px);
   border-radius: 14px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* Aura/glow must not spawn a gutter scrollbar on hover. */
+  overflow: hidden;
+  scrollbar-width: none;
   background: var(--surface-1);
   border: 1px solid var(--border-2);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
@@ -2338,6 +2339,11 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+}
+.user-hover-card::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 .uhc-banner {
   height: 72px;

@@ -108,7 +108,7 @@ export default function UserHoverCard({ user, anchor }) {
         width: CARD_WIDTH,
         maxWidth: `calc(100vw - ${PAD * 2}px)`,
         maxHeight: `calc(100vh - ${PAD * 2}px)`,
-        overflow: "auto",
+        overflow: "hidden",
       }}
       initial={{ opacity: 0, scale: 0.96, y: 4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}

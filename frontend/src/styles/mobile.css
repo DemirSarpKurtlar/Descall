@@ -439,7 +439,7 @@
   }
 
   .app-root[data-view="servers"] {
-    grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
+    grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
   }
 
   .nav-rail {
