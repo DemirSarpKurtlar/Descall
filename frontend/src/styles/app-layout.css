@@ -169,9 +169,21 @@
 /* Fixed overlays must never take a grid track if they render in-flow. */
 .app-root > .mobile-drawer-backdrop,
 .app-root > .user-settings-shell,
-.app-root > .mobile-tab-bar {
+.app-root > .mobile-tab-bar,
+.app-root > .feedback-overlay {
   grid-column: 1 / -1;
   grid-row: 1;
+}
+
+/* Empty-state belongs only to the main chat column — never the rail. */
+.app-main-slot .empty-state,
+.main-panel > .messages-container > .empty-state {
+  position: relative;
+  max-width: 100%;
+  width: 100%;
+  margin-inline: 0;
+  left: auto;
+  right: auto;
 }
 
 /* 4-column layout for servers view */

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MessageSquare, X, Send, Image, AlertTriangle, 
@@ -129,22 +130,24 @@ export default function FeedbackModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
+  if (typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
+      {isOpen ? (
       <motion.div
+        key="feedback-modal"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="feedback-overlay"
         onClick={handleClose}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-[#1a1d24] border border-[#2a2e38] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+          className="feedback-modal"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -367,6 +370,8 @@ export default function FeedbackModal({ isOpen, onClose }) {
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+      ) : null}
+    </AnimatePresence>,
+    document.body
   );
 }
