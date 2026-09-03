@@ -41,7 +41,11 @@
   background-color: #000000 !important;
 }
 .user-settings.is-desktop .us-main {
-  background: #000000;
+  background: #000000 !important;
+}
+.user-settings.is-desktop .us-main-scroll,
+.user-settings.is-desktop .us-tab {
+  background: #000000 !important;
 }
 .user-settings.is-desktop .us-sidebar {
   background: #0b0c0e;
@@ -323,7 +327,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: var(--surface-0, #111214);
+  background: #000000;
   min-height: 0;
 }
 
