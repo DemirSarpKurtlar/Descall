@@ -1,6 +1,8 @@
 /* ─── Servers view (Steps 2–3) ─── */
 
-/* Align with app-layout 4-column servers grid; 3-col override squeezed channels left. */
+/* 4-column layout: nav rail + server icon rail + channel sidebar + flexible chat.
+   A 3-column override forced the main chat onto an implicit track/row, so channels
+   piled left and the composer floated mid-panel with empty space on the right. */
 .app-root[data-view="servers"] {
   grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
 }

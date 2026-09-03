@@ -435,11 +435,11 @@
   }
 
   .app-root {
-    grid-template-columns: var(--nav-rail-width) var(--sidebar-width) 1fr;
+    grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
   }
 
   .app-root[data-view="servers"] {
-    grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) 1fr;
+    grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
   }
 
   .nav-rail {
