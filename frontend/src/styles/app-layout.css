@@ -1713,8 +1713,13 @@ button.header-avatar {
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   overflow-x: auto;
+  overflow-y: hidden;
   flex-wrap: nowrap;
   flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
