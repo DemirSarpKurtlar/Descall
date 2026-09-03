@@ -100,17 +100,31 @@
 /* ── Tabs ── */
 .admin-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 4px;
-  padding: 10px 14px;
+  padding: 10px 14px 12px;
   overflow-x: auto;
+  overflow-y: hidden;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(0, 0, 0, 0.22);
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .admin-tabs::-webkit-scrollbar {
-  display: none;
+  height: 6px;
+  display: block;
+}
+.admin-tabs::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+.admin-tabs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
 }
 
 .admin-tabs button,

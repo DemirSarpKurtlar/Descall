@@ -37,6 +37,14 @@
 .user-settings-shell.is-desktop {
   padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 64px);
   background: #000000;
+  /* Keep the letterbox under the card pure black (Electron + web). */
+  background-color: #000000 !important;
+}
+.user-settings.is-desktop .us-main {
+  background: #111214;
+}
+.user-settings.is-desktop .us-sidebar {
+  background: #0b0c0e;
 }
 
 .user-settings {
@@ -93,7 +101,7 @@
 }
 
 .user-settings.is-desktop .us-main {
-  background: #2b2d31;
+  background: #111214;
 }
 
 .user-settings.is-mobile .us-sidebar {
@@ -166,14 +174,22 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-0);
-  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.25;
+  gap: 4px;
 }
 
 .us-mini-meta span {
   font-size: 12px;
   color: var(--text-muted);
+  min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -275,6 +291,7 @@
   padding: 12px 14px 16px;
   border-top: 1px solid var(--border-2);
   flex-shrink: 0;
+  background: #111214;
 }
 
 .us-logout {
@@ -575,6 +592,20 @@
   font-size: 18px;
   font-weight: 700;
   color: var(--text-0);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.25;
+}
+.us-hero-meta .us-muted {
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .us-status-pill {

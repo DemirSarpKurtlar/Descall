@@ -124,6 +124,17 @@ export function Avatar({
     [syncLoadedFromEl]
   );
 
+  // When the user/avatar URL changes (e.g. switching DMs), drop the previous
+  // sticky frame so we never keep showing the last person's photo.
+  const identityKey = String(user?.id || user?.userId || "") + "|" + String(resolvedUrl || imageUrl || "");
+  useEffect(() => {
+    setStickySrc(null);
+    setStaticFrame(null);
+    setUseBareUrl(false);
+    setFailed(false);
+    setLoaded(false);
+  }, [identityKey]);
+
   // Critical: cached images often skip onLoad after React updates.
   // Re-read img.complete whenever src changes so we never stick on the letter.
   useEffect(() => {

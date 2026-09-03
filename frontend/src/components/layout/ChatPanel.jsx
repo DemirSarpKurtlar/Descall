@@ -373,10 +373,12 @@ export default function ChatPanel({
               aria-label={t("View profile")}
               title={t("View profile")}
             >
-              <Avatar 
-                name={resolveDisplayName(activeDmUser)} 
+              <Avatar
+                key={activeDmUser.id || activeDmUser.username}
+                name={resolveDisplayName(activeDmUser)}
                 size={40}
                 user={activeDmUser}
+                loading="eager"
               />
               <StatusBadge status={getPresenceStatus(onlineUsers, activeDmUser.id)} />
             </button>
