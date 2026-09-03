@@ -527,12 +527,12 @@ function createMainWindow() {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-          "connect-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com; " +
-          "img-src 'self' https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com data: blob:; " +
+          "connect-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com; " +
+          "img-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data: blob:; " +
           "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
-          "media-src 'self' blob: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in;"
+          "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;"
         ]
       }
     });
