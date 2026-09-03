@@ -2,7 +2,7 @@
 
 **Friends. Voice. Video. Chat.**
 
-[descall.com](https://descall.com) · [Download Windows Setup](https://github.com/DemirSarpKurtlar/Descall/releases/latest/download/Descall-Setup-2.9.17.exe) · [Releases](https://github.com/DemirSarpKurtlar/Descall/releases)
+[descall.com](https://descall.com) · [Download Windows Setup](https://github.com/DemirSarpKurtlar/Descall/releases/latest/download/Descall-Setup-2.9.18.exe) · [Releases](https://github.com/DemirSarpKurtlar/Descall/releases)
 
 Descall is a Discord-like desktop and web app: DMs, servers, voice, video, and LFG. Founded and owned by **Demir Sarp Kurtlar** (Türkiye).
 
