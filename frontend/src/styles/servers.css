@@ -1,8 +1,8 @@
 /* ─── Servers view (Steps 2–3) ─── */
 
-/* Keep 3-column layout (nav + list + main). Icon rail comes later if needed. */
+/* Align with app-layout 4-column servers grid; 3-col override squeezed channels left. */
 .app-root[data-view="servers"] {
-  grid-template-columns: var(--nav-rail-width) var(--sidebar-width) 1fr;
+  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
 }
 
 .servers-sidebar .server-shell-header {

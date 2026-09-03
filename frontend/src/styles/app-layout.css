@@ -121,7 +121,7 @@
 
 /* 4-column layout for servers view */
 .app-root[data-view="servers"] {
-  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) 1fr;
+  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
 }
 
 /* Play / LFG + DimaAI: rail + full workspace (no list sidebar column).
