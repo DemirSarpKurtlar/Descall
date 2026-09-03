@@ -161,6 +161,8 @@ export default function ServersSidebar({
 
   const canCreate = ownedCount < maxOwned;
   const permissionsReady = serverPermissionsLoaded(activeServer) || Boolean(activeServer?.isOwner);
+  // Channel list waits for myPermissions so VIEW_CHANNEL filtering can land before paint.
+  const channelListReady = serverPermissionsLoaded(activeServer);
   const canManageGuild = permissionsReady && serverHasPermission(activeServer, "MANAGE_GUILD");
   const notifLevel = ["all", "mentions", "muted"].includes(activeServer?.notificationLevel)
     ? activeServer.notificationLevel
@@ -973,10 +975,10 @@ export default function ServersSidebar({
           </AnimatePresence>
 
           <div className="sidebar-content server-channels-scroll">
-            {activeServer && !permissionsReady ? (
+            {activeServer && !channelListReady ? (
               <ChannelListSkeleton count={8} label={t("Loading channels…")} />
             ) : null}
-            {permissionsReady ? channelTree.map((node) => {
+            {channelListReady ? channelTree.map((node) => {
               if (node.type === "category") {
                 const closed = Boolean(collapsedCats[node.id]);
                 return (
@@ -1187,7 +1189,7 @@ export default function ServersSidebar({
                 />
               );
             }) : null}
-            {permissionsReady && ghostVoiceChannel ? (
+            {channelListReady && ghostVoiceChannel ? (
               <div className="server-channel-ghost-wrap" key={`ghost-${ghostVoiceChannel.id}`}>
                 <p className="server-channel-ghost-label">{t("Connected (private channel)")}</p>
                 <ChannelRow
@@ -1225,10 +1227,10 @@ export default function ServersSidebar({
                 />
               </div>
             ) : null}
-            {permissionsReady && channelTree.length === 0 && !ghostVoiceChannel && (
+            {channelListReady && channelTree.length === 0 && !ghostVoiceChannel && (
               <p className="server-empty-hint">{t("No channels yet.")}</p>
             )}
-            {permissionsReady ? (
+            {channelListReady ? (
               <p className="server-step-hint">
                 {t("Open a text channel to chat, or join a voice channel to hang out.")}
               </p>

@@ -13,6 +13,7 @@ import {
 } from "../../api/servers";
 import { permissionsToFlagMap, isAssignableServerRole, canEditServerRole, canGrantServerPermission, serverHighestPosition, serverIsOwner } from "../../lib/serverPermissions";
 import ServerMemberRoleAssign from "./ServerMemberRoleAssign";
+import { BlockListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
 
 const PRESET_COLORS = [
   0x5865f2, 0x57f287, 0xfee75c, 0xed4245, 0xeb459e, 0xf47b67, 0x3ba55d, 0x3498db, 0x9b59b6, 0x95a5a6,
@@ -85,6 +86,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
   const [draft, setDraft] = useState(null);
   const [dragRoleId, setDragRoleId] = useState(null);
   const [dragOverRoleId, setDragOverRoleId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const { customRoles, everyoneRole } = useMemo(() => {
     const sorted = [...roles].sort((a, b) => (b.position || 0) - (a.position || 0));
@@ -99,9 +101,10 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
     [roles, selectedId]
   );
 
-  const load = async () => {
+  const load = async ({ silent = false } = {}) => {
     if (!server?.id) return;
     setError("");
+    if (!silent) setLoading(true);
     try {
       const [rolesRes, membersRes] = await Promise.all([
         getServerRoles(server.id),
@@ -118,6 +121,8 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
       }
     } catch (err) {
       setError(err?.message || t("Something went wrong."));
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -351,7 +356,16 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
 
         {error && <p className="server-modal-error">{error}</p>}
 
-        {tab === "roles" ? (
+        {loading ? (
+          <div className="server-roles-layout" aria-busy="true">
+            <div className="server-roles-list">
+              <BlockListSkeleton count={6} label={t("Loading…")} />
+            </div>
+            <div className="server-roles-editor">
+              <DetailPaneSkeleton label={t("Loading…")} />
+            </div>
+          </div>
+        ) : tab === "roles" ? (
           <div className="server-roles-layout">
             <div className="server-roles-list">
               <button type="button" className="server-primary-btn server-roles-create" onClick={startCreate}>

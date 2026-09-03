@@ -8,6 +8,7 @@ import {
 } from "../../api/riot";
 import ValorantBadge from "../social/ValorantBadge";
 import { useT } from "../../context/LocaleContext";
+import { SkeletonLine } from "../ui/Skeleton";
 
 const REGION_IDS = [
   { id: "auto", labelKey: "Auto (detect)" },
@@ -98,7 +99,13 @@ export default function RiotLinkCard() {
       <h4 className="us-section-label">{t("Valorant")}</h4>
       <div className="us-card riot-link-card">
         {loading ? (
-          <div className="riot-link-pad us-muted">{t("Loading…")}</div>
+          <div className="riot-link-pad" aria-busy="true" aria-label={t("Loading…")}>
+            <SkeletonLine width="42%" height={14} />
+            <div style={{ height: 10 }} />
+            <SkeletonLine width="68%" height={12} />
+            <div style={{ height: 8 }} />
+            <SkeletonLine width="54%" height={12} />
+          </div>
         ) : valorant?.linked ? (
           <div className="riot-link-pad">
             <ValorantBadge valorant={valorant} />

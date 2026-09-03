@@ -11,6 +11,7 @@ import {
   getServerRoles,
   getServerMembers,
 } from "../../api/servers";
+import { BlockListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
 
 const PERM_LABELS = {
   VIEW_CHANNEL: "View channel",
@@ -58,10 +59,12 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = async ({ silent = false } = {}) => {
     if (!server?.id || !channel?.id) return;
     setError("");
+    if (!silent) setLoading(true);
     try {
       const [ov, rolesRes, membersRes] = await Promise.all([
         getChannelOverrides(server.id, channel.id),
@@ -78,6 +81,8 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
       }
     } catch (err) {
       setError(err.message || t("Failed to load"));
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -187,7 +192,7 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
         targetId: selected.id,
         permissions,
       });
-      await load();
+      await load({ silent: true });
     } catch (err) {
       setError(err.message || t("Failed to save"));
     } finally {
@@ -202,7 +207,7 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
     try {
       await deleteChannelOverride(server.id, channel.id, selected.kind, selected.id);
       setSelectedKey(null);
-      await load();
+      await load({ silent: true });
     } catch (err) {
       setError(err.message || t("Failed to save"));
     } finally {
@@ -239,6 +244,17 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
 
         {error ? <p className="server-modal-error">{error}</p> : null}
 
+        {loading ? (
+          <div className="server-channel-perms-layout" aria-busy="true">
+            <aside className="server-channel-perms-targets">
+              <BlockListSkeleton count={5} label={t("Loading…")} />
+            </aside>
+            <div className="server-channel-perms-editor">
+              <DetailPaneSkeleton label={t("Loading…")} />
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="server-channel-perms-layout">
           <aside className="server-channel-perms-targets">
             <div className="server-channel-perms-targets-head">
@@ -375,6 +391,8 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
             </button>
           </footer>
         ) : null}
+          </>
+        )}
       </motion.div>
     </div>,
     document.body
