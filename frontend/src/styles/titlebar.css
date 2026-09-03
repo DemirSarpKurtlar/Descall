@@ -120,11 +120,12 @@ body.electron-app .app-container,
 body.electron-app .app-root,
 body.electron-app .nav-rail,
 body.electron-app .sidebar-secondary,
-body.electron-app .server-icon-bar,
-body.electron-app .app-sidebar-shell {
+body.electron-app .server-icon-bar {
   height: 100% !important;
   max-height: 100% !important;
 }
+/* Do NOT set height on .app-sidebar-shell — desktop uses display:contents so
+   nav+sidebar participate in the app-root grid. Height here re-boxes the shell. */
 
 /* Fullscreen overlays stay under the titlebar so window controls remain usable */
 body.electron-app .call-overlay-root,

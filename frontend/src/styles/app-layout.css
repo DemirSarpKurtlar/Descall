@@ -120,10 +120,58 @@
   }
 }
 
-/* Every in-flow shell column stays on the single stretched row. */
-.app-root > *:not(.app-notif-banner):not(.app-feedback-banner) {
+/* Desktop: sidebar shell must NOT become a grid item — its children
+   (.nav-rail + .sidebar-secondary) need to occupy columns 1 and 2.
+   Never set grid-* on .app-sidebar-shell or display:contents is defeated
+   and the DM empty-state/"Sohbet başlat" panel piles over the nav rail
+   while the real main column stays empty on the right. */
+.app-sidebar-shell {
+  display: contents;
+}
+
+.app-root > .nav-rail,
+.app-root .app-sidebar-shell > .nav-rail {
+  grid-column: 1;
   grid-row: 1;
   min-height: 0;
+}
+
+.app-root > .sidebar-secondary,
+.app-root > .activity-sidebar,
+.app-root .app-sidebar-shell > .sidebar-secondary,
+.app-root .app-sidebar-shell > .activity-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Servers: optional 72px icon track sits between rail and channel list.
+   Channel sidebar still lands on the sidebar-width track (column 3). */
+.app-root[data-view="servers"] > .sidebar-secondary,
+.app-root[data-view="servers"] .app-sidebar-shell > .sidebar-secondary {
+  grid-column: 3;
+}
+
+.app-root > .app-main-slot {
+  grid-column: -2 / -1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Play / DimaAI: only rail + main (sidebar unmounted). */
+.app-root[data-view="play"] > .app-main-slot,
+.app-root[data-view="dimaai"] > .app-main-slot {
+  grid-column: 2 / -1;
+}
+
+/* Fixed overlays must never take a grid track if they render in-flow. */
+.app-root > .mobile-drawer-backdrop,
+.app-root > .user-settings-shell,
+.app-root > .mobile-tab-bar {
+  grid-column: 1 / -1;
+  grid-row: 1;
 }
 
 /* 4-column layout for servers view */
@@ -1365,10 +1413,14 @@ button.header-avatar {
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
+  max-width: 100%;
   height: auto;
+  align-self: stretch;
   gap: 16px;
   color: var(--text-muted);
   text-align: center;
+  box-sizing: border-box;
+  overflow: auto;
 }
 
 .empty-icon {
