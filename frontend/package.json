@@ -1,0 +1,187 @@
+{
+  "name": "descall",
+  "version": "2.9.10",
+  "description": "Modern messaging and video conferencing app",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "homepage": "./",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/check-marketing-locale.mjs && vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs",
+    "build:prod": "node scripts/check-marketing-locale.mjs && npx vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/seo-validate.mjs --dist && node scripts/perf-budget.mjs",
+    "locale:check": "node scripts/check-marketing-locale.mjs && node scripts/check-ownership-entity.mjs",
+    "prerender:seo": "node scripts/prerender-seo.mjs",
+    "seo:files": "node scripts/generate-seo-files.mjs",
+    "seo:validate": "node scripts/seo-validate.mjs",
+    "seo:validate:dist": "node scripts/seo-validate.mjs --dist",
+    "perf:budget": "node scripts/perf-budget.mjs",
+    "seo:prod-check": "node scripts/seo-prod-check.mjs",
+    "seo:link-audit": "node scripts/seo-link-audit.mjs",
+    "seo:index": "node scripts/request-indexing.mjs",
+    "seo:index:dry": "node scripts/request-indexing.mjs --dry-run",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:start": "electron .",
+    "electron:build": "ELECTRON_BUILD=1 npm run build:prod && electron-builder",
+    "electron:build:win": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --win",
+    "electron:build:win:portable": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --win --portable",
+    "electron:build:mac": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --mac",
+    "electron:build:linux": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --linux",
+    "electron:pack": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --dir",
+    "electron:publish": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --publish=always",
+    "android:sync": "npm run build:prod && cap sync android",
+    "android:open": "cap open android",
+    "android:apk:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:apk:release": "npm run android:sync && cd android && ./gradlew assembleRelease",
+    "android:aab:release": "npm run android:sync && cd android && ./gradlew bundleRelease"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/outfit": "^5.3.0",
+    "@sapphi-red/web-noise-suppressor": "^0.4.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "@vercel/analytics": "^2.0.1",
+    "auto-launch": "^5.0.6",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "electron-log": "^5.0.1",
+    "electron-updater": "^6.3.0",
+    "express": "^4.18.3",
+    "firebase-admin": "^14.2.0",
+    "framer-motion": "^11.11.17",
+    "jsonwebtoken": "^9.0.2",
+    "livekit-client": "^2.21.0",
+    "lucide-react": "^0.454.0",
+    "multer": "^1.4.5-lts.1",
+    "posthog-js": "^1.415.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-easy-crop": "^6.2.3",
+    "react-router-dom": "^6.22.0",
+    "socket.io": "^4.7.4",
+    "socket.io-client": "^4.8.1",
+    "vite": "^5.4.10",
+    "web-vitals": "^4.2.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^8.2.2",
+    "electron": "^41.2.1",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.4.10",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.descall.app",
+    "productName": "Descall",
+    "copyright": "Copyright \u00a9 2025 Descall",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "public/sounds",
+        "to": "sounds"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "DemirSarpKurtlar",
+      "repo": "Descall",
+      "releaseType": "release",
+      "private": false,
+      "channel": "latest"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.social-networking",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Network",
+      "maintainer": "Descall Team",
+      "vendor": "Descall",
+      "artifactName": "${productName}-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "uninstallDisplayName": "Descall",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Descall",
+      "include": "electron/installer.nsh",
+      "artifactName": "Descall-Setup-${version}.exe",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "Descall-Portable-${version}.exe"
+    },
+    "asar": true,
+    "asarUnpack": [],
+    "compression": "maximum",
+    "removePackageScripts": true
+  }
+}

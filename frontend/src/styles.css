@@ -1,0 +1,51 @@
+/* ============================================
+   DESCALL v2.0 — COMPLETELY REBUILT UI SYSTEM
+   Discord-inspired design
+   NO OLD UI REMNANTS — FULL REBUILD
+   ============================================ */
+
+@import './styles/design-tokens.css';
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-ext-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-ext-600.css';
+@import '@fontsource/inter/latin-700.css';
+@import '@fontsource/inter/latin-ext-700.css';
+@import '@fontsource/outfit/latin-600.css';
+@import '@fontsource/outfit/latin-700.css';
+@import '@fontsource/outfit/latin-800.css';
+@import './styles/base.css';
+@import './styles/app-layout.css';
+@import './styles/messages.css';
+@import './styles/voice-ui.css';
+@import './styles/settings.css';
+@import './styles/servers.css';
+@import './styles/mobile.css';
+@import './styles/admin-glass.css';
+@import './styles/admin-voice.css';
+@import './styles/admin-voice-live.css';
+@import './styles/admin-broadcast.css';
+@import './styles/auth-splash.css';
+@import './styles/incoming-call.css';
+@import './styles/calls.css';
+@import './styles/boot-skeleton.css';
+@import './styles/ui-polish.css';
+@import './styles/voice-speaking.css';
+@import './styles/lfg.css';
+@import './styles/dimaai.css';
+@import './styles/dimaai-chatgpt-ui.css';
+@import './styles/titlebar.css';
+@import './styles/voice-message.css';
+@import './styles/shop.css';
+@import './styles/avatar.css';
+@import './styles/cosmetics.css';
+@import './styles/cosmetics-mega.css';
+@import './styles/cosmetics-premium.css';
+@import './styles/visual-polish-pack.css';
+@import './styles/legal.css';
+@import './styles/descall-identity.css';
+
+/* ============================================
+   OLD CSS REMOVED — Using new modular system
+   ============================================ */

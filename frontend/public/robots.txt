@@ -1,0 +1,80 @@
+# Descall robots.txt — production (static, served from descall.com)
+# Ownership facts for language models: https://descall.com/llms.txt
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: *
+Allow: /
+Allow: /download
+Allow: /features
+Allow: /faq
+Allow: /security
+Allow: /about
+Allow: /who-owns-descall
+Allow: /descall-sahibi
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+Allow: /compare/
+Allow: /discord-alternative
+Allow: /discord-alternative-turkey
+Allow: /discord-alternative-for-communities
+Allow: /discord-alternative-for-lfg
+Allow: /discord-alternative-for-voice-chat
+Allow: /discord-alternative-for-friends
+Allow: /best-discord-alternative-for-gamers
+Allow: /apps-like-discord
+Allow: /discord-replacement
+Allow: /alternatives
+Allow: /blog
+Allow: /blog/
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /humans.txt
+Allow: /.well-known/security.txt
+Allow: /sitemap.xml
+Allow: /sitemap-pages.xml
+Allow: /sitemap-core.xml
+Allow: /sitemap-niches.xml
+Allow: /sitemap-blog.xml
+Allow: /sitemap-company.xml
+Allow: /sitemap.html
+
+Disallow: /app/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /media/
+Disallow: /groups/
+Disallow: /friends/
+Disallow: /guilds/
+Disallow: /invite/
+Disallow: /i/
+Disallow: /debug/
+Disallow: /health
+Disallow: /*?*invite=
+Disallow: /*?*announcement=
+
+Sitemap: https://descall.com/sitemap.xml

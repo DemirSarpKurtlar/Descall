@@ -1,0 +1,148 @@
+.app-boot-skeleton {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 64px 280px 1fr;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(88, 101, 242, 0.18), transparent 55%),
+    #0b0c10;
+  color: #f2f3f5;
+  font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+.app-boot-skeleton__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.app-boot-skeleton__rail-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  animation: app-boot-shimmer 1.4s ease-in-out infinite;
+}
+
+.app-boot-skeleton__rail-dot:nth-child(2) { animation-delay: 0.08s; }
+.app-boot-skeleton__rail-dot:nth-child(3) { animation-delay: 0.16s; }
+.app-boot-skeleton__rail-dot:nth-child(4) { animation-delay: 0.24s; }
+.app-boot-skeleton__rail-dot:nth-child(5) { animation-delay: 0.32s; }
+
+.app-boot-skeleton__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(15, 16, 20, 0.92);
+  min-width: 0;
+}
+
+.app-boot-skeleton__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: rgba(11, 12, 16, 0.96);
+}
+
+.app-boot-skeleton__main-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 22px;
+}
+
+.app-boot-skeleton__block {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  animation: app-boot-shimmer 1.4s ease-in-out infinite;
+}
+
+.app-boot-skeleton__block--title {
+  height: 22px;
+  width: 42%;
+  margin-bottom: 4px;
+}
+
+.app-boot-skeleton__block--search {
+  height: 36px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.app-boot-skeleton__block--header {
+  height: 56px;
+  width: 100%;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.app-boot-skeleton__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.app-boot-skeleton__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.07);
+  animation: app-boot-shimmer 1.4s ease-in-out infinite;
+}
+
+.app-boot-skeleton__lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.app-boot-skeleton__lines i {
+  display: block;
+  height: 11px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  animation: app-boot-shimmer 1.4s ease-in-out infinite;
+}
+
+.app-boot-skeleton__label {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: rgba(242, 243, 245, 0.85);
+  animation: boot-status-fade 1.8s ease-in-out infinite;
+}
+
+@keyframes app-boot-shimmer {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@media (max-width: 860px) {
+  .app-boot-skeleton {
+    grid-template-columns: 1fr;
+  }
+  .app-boot-skeleton__rail,
+  .app-boot-skeleton__sidebar {
+    display: none;
+  }
+}

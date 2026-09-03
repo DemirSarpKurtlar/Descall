@@ -1,0 +1,820 @@
+/* ============================================
+   DESCALL — Responsive mobile (desktop UI adapted)
+   Same components, drawer layout on small screens
+   ============================================ */
+
+/* ─── Mobile: single-column chat + slide-in sidebar shell ─── */
+@media (max-width: 768px) {
+  .app-root {
+    grid-template-columns: 1fr !important;
+    height: var(--vv-height, 100dvh);
+    max-height: var(--vv-height, 100dvh);
+  }
+
+  .app-root[data-view="servers"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Sidebar shell = nav rail + list panel (desktop components) */
+  .app-sidebar-shell {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(100vw, 340px);
+    max-width: 100%;
+    z-index: 300;
+    display: flex;
+    flex-direction: row;
+    transform: translateX(-100%);
+    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .app-sidebar-shell.open {
+    transform: translateX(0);
+  }
+
+  .mobile-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  /* Left vertical glass rail stays in the drawer (same place as before) */
+  .app-sidebar-shell .nav-rail {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    width: 60px;
+    height: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .app-sidebar-shell .nav-rail-main,
+  .app-sidebar-shell .nav-rail-brand,
+  .app-sidebar-shell .nav-rail-bottom {
+    align-items: center;
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .app-sidebar-shell .brand-wordmark {
+    display: none;
+  }
+
+  .app-sidebar-shell .rail-btn {
+    width: 40px;
+    height: 40px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .app-sidebar-shell .rail-user-panel {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  /* List sidebar fills remaining drawer width */
+  .app-sidebar-shell .sidebar-secondary {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 100%;
+    max-height: 100%;
+    transform: none !important;
+    z-index: auto;
+  }
+
+  .app-sidebar-shell .sidebar-inner {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .app-sidebar-shell .activity-sidebar {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  /*
+   * Activity (mobile): full-width page = nav rail + Activity sidebar.
+   *
+   * iOS Safari does not reliably resolve height:100% / flex-stretch when the
+   * chat panel is display:none — the glass rail shrinks to its content and
+   * leaves a purple void under the avatar. Pin shell + rail with fixed/absolute
+   * edges (same idea as the mobile drawer on Friends/Chat).
+   */
+  .app-root.is-mobile[data-view="activity"] {
+    position: relative;
+    display: block !important;
+    grid-template-columns: none !important;
+    background: var(--surface-1);
+  }
+
+  .app-root.is-mobile[data-view="activity"] .app-sidebar-shell {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+    min-height: 0;
+    transform: none !important;
+    box-shadow: none;
+    z-index: 40;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: 0;
+    display: block;
+    background: var(--surface-1);
+    overflow: hidden;
+  }
+
+  .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .nav-rail {
+    /* Edge-pin — do not rely on % height (broken on iOS when chat is hidden). */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 60px !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    z-index: 2;
+    background:
+      linear-gradient(180deg, var(--nav-glass-highlight), transparent 28%),
+      var(--nav-glass-bg);
+  }
+
+  .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-secondary,
+  .app-root.is-mobile[data-view="activity"].mobile-drawer-open .app-sidebar-shell .sidebar-secondary {
+    position: absolute !important;
+    top: 0 !important;
+    left: 60px !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    display: flex;
+    width: auto !important;
+    min-width: 0;
+    min-height: 0;
+    height: auto !important;
+    max-height: none !important;
+    /* List clears the fixed tab bar; rail intentionally paints behind it. */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    background: var(--surface-1);
+  }
+
+  .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-inner,
+  .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .activity-sidebar {
+    width: 100%;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-root.is-mobile[data-view="activity"] .chat-panel-shell,
+  .app-root.is-mobile[data-view="activity"] .app-main-slot {
+    display: none;
+  }
+
+  .app-root.is-mobile[data-view="activity"] .mobile-drawer-backdrop {
+    display: none !important;
+  }
+
+  /*
+   * Play / LFG (mobile): full-bleed workspace. Keep the nav drawer fully off-screen
+   * so a rail-only shell cannot cover or squeeze the LFG list after view switches.
+   */
+  .app-root.is-mobile[data-view="play"],
+  .app-root.is-mobile[data-view="dimaai"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-root.is-mobile[data-view="play"] .app-sidebar-shell,
+  .app-root.is-mobile[data-view="play"].mobile-drawer-open .app-sidebar-shell,
+  .app-root.is-mobile[data-view="dimaai"] .app-sidebar-shell,
+  .app-root.is-mobile[data-view="dimaai"].mobile-drawer-open .app-sidebar-shell {
+    transform: translateX(-100%);
+    pointer-events: none;
+    box-shadow: none;
+  }
+
+  .app-root.is-mobile[data-view="play"] .mobile-drawer-backdrop,
+  .app-root.is-mobile[data-view="dimaai"] .mobile-drawer-backdrop {
+    display: none !important;
+  }
+
+  .app-root.is-mobile[data-view="play"] .lfg-workspace,
+  .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    max-height: var(--vv-height, 100dvh);
+    /* Clear fixed mobile tab bar without leaving a giant empty void in the list */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  .app-root.is-mobile[data-view="play"] .lfg-sidebar {
+    min-height: 0;
+  }
+
+  .app-root.is-mobile[data-view="play"] .lfg-lobby-list {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .app-root.is-mobile[data-view="play"] .lfg-empty {
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 20px;
+    padding-bottom: 8px;
+  }
+
+  /* Keep overflow hidden so expand/collapse height animation clips cleanly.
+     The parent .sidebar-content remains the scroll container. */
+  .app-sidebar-shell .section-content {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .app-sidebar-shell .sidebar-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-sidebar-shell .sidebar-section {
+    flex-shrink: 0;
+  }
+
+  /* Main chat panel full width — prefer visual viewport height when set */
+  .main-panel {
+    min-width: 0;
+    width: 100%;
+    height: var(--vv-height, 100dvh);
+    max-height: var(--vv-height, 100dvh);
+  }
+
+  .panel-header {
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 10px;
+    gap: 8px;
+  }
+
+  .mobile-nav-btn {
+    flex-shrink: 0;
+    margin-right: 2px;
+  }
+
+  .header-title {
+    font-size: 16px;
+  }
+
+  .header-left {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .header-title-block {
+    min-width: 0;
+  }
+
+  .header-right {
+    flex-shrink: 0;
+    margin-left: auto;
+    gap: 2px;
+  }
+
+  .header-right .icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .messages-container {
+    padding: 10px 12px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .composer-container {
+    padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  }
+
+  /* Members panel: right sheet + backdrop */
+  .members-panel-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 399;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .members-panel {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(85vw, 300px) !important;
+    max-width: 100%;
+    z-index: 400;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
+    border-left: 1px solid var(--border-2);
+  }
+
+  .members-panel-header {
+    padding-top: 12px;
+  }
+
+  .member-row {
+    padding: 8px 10px;
+    min-height: 44px;
+  }
+
+  /* User / settings panels — above drawer + notif banner */
+  .user-panel-backdrop {
+    z-index: 100000 !important;
+  }
+
+  .user-settings-shell,
+  .user-settings {
+    z-index: 100001 !important;
+  }
+
+  .app-root.mobile-settings-open .app-sidebar-shell {
+    pointer-events: none;
+  }
+
+  /* Keep notification prompt from covering settings chrome (back/close) */
+  .app-root.mobile-settings-open .app-notif-banner {
+    display: none !important;
+  }
+
+  /* Admin */
+  .admin-shell {
+    padding: 0;
+  }
+
+  .admin-container {
+    width: 100%;
+    height: 100dvh;
+    border-radius: 0;
+  }
+
+  /* Touch targets */
+  .dm-item,
+  .group-item,
+  .friend-item {
+    padding: 12px 10px;
+    min-height: 48px;
+  }
+
+  .icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Voice call */
+  .voice-call-container {
+    border-radius: 0;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .voice-call-controls {
+    padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  }
+
+  .control-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .end-call-btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  /* Notification banner */
+  .app-notif-banner {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  }
+}
+
+/* ─── Tablet ─── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --nav-rail-width: 68px;
+    --sidebar-width: 240px;
+  }
+
+  .app-root {
+    grid-template-columns: var(--nav-rail-width) var(--sidebar-width) 1fr;
+  }
+
+  .app-root[data-view="servers"] {
+    grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) 1fr;
+  }
+
+  .nav-rail {
+    align-items: center;
+    padding-top: 12px;
+  }
+
+  .nav-rail-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+
+  .nav-rail-logo .descall-brand {
+    width: 28px;
+    height: 28px;
+  }
+
+  .nav-rail-logo .descall-brand-mark,
+  .nav-rail-logo .descall-brand img,
+  .nav-rail-logo .descall-brand svg {
+    width: 28px;
+    height: 28px;
+    transform: none;
+  }
+
+  .rail-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .sidebar-secondary {
+    width: var(--sidebar-width);
+  }
+
+  .sidebar-inner {
+    width: var(--sidebar-width);
+  }
+
+  .dm-item,
+  .group-item,
+  .friend-item {
+    padding: 8px 10px;
+  }
+}
+
+/* ─── Desktop: sidebar shell uses grid (display contents) ─── */
+@media (min-width: 769px) {
+  .app-sidebar-shell {
+    display: contents;
+  }
+
+  .mobile-drawer-backdrop {
+    display: none !important;
+  }
+}
+
+/* ─── Touch devices ─── */
+@media (hover: none) and (pointer: coarse) {
+  .dm-item:hover,
+  .group-item:hover,
+  .friend-item:hover {
+    background: transparent;
+  }
+
+  .dm-item:active,
+  .group-item:active,
+  .friend-item:active {
+    background: var(--surface-2);
+  }
+}
+
+/* ─── Landscape phone ─── */
+@media (max-width: 768px) and (orientation: landscape) {
+  .app-sidebar-shell {
+    width: min(70vw, 420px);
+  }
+
+  .voice-call-content {
+    flex-direction: row;
+  }
+
+  .video-area {
+    flex: 1;
+  }
+
+  .participants-panel {
+    width: 200px;
+  }
+}
+
+/* ─── Small phones ─── */
+@media (max-width: 480px) {
+  .app-sidebar-shell {
+    width: 100vw;
+  }
+
+  .panel-header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .header-title {
+    font-size: 15px;
+  }
+
+  .messages-container {
+    padding: 8px 10px;
+  }
+
+  .composer-container {
+    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+}
+
+/* ─── Shared notification banner ─── */
+.app-notif-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.app-notif-banner-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.app-notif-banner-dismiss {
+  margin-left: 4px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Feedback nudge banner (mirrors notif banner, auto-hides ~10s) ── */
+.app-feedback-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px 12px;
+  background: linear-gradient(90deg, #4752c4 0%, #5865f2 55%, #6a5cff 100%);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+.app-feedback-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: min(520px, 58vw);
+}
+.app-feedback-banner-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.app-feedback-banner-text span {
+  font-size: 12px;
+  opacity: 0.92;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-feedback-banner-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.app-feedback-banner-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.app-feedback-banner-dismiss {
+  margin-left: 4px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.app-feedback-banner-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.35);
+  transform-origin: left center;
+  animation: feedback-nudge-progress 10s linear forwards;
+}
+@keyframes feedback-nudge-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (max-width: 640px) {
+  .app-feedback-banner {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px 12px;
+  }
+  .app-feedback-banner-text {
+    max-width: none;
+    flex: 1;
+  }
+  .app-feedback-banner-text span {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+/* Mobile bottom tab bar — original edge-to-edge place, glass finish */
+@media (max-width: 768px) {
+  .app-root.is-mobile {
+    height: var(--vv-height, 100dvh);
+    max-height: var(--vv-height, 100dvh);
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    transition: padding-bottom 0.12s ease;
+    overflow: hidden;
+  }
+
+  /* Keyboard dismiss: ease shell height so the composer slides down with the KB */
+  html.kb-closing .app-root.is-mobile {
+    transition:
+      height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      padding-bottom 0.2s ease;
+  }
+
+  .app-root.is-mobile .main-panel {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .mobile-tab-bar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 280;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+      var(--nav-glass-bg-strong);
+    border-top: 1px solid var(--nav-glass-border);
+    backdrop-filter: blur(var(--nav-glass-blur)) saturate(var(--nav-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--nav-glass-blur)) saturate(var(--nav-glass-saturate));
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+    gap: 2px;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-tab.active {
+    color: #eef1ff;
+    background: var(--nav-active-bg);
+    border-color: var(--nav-active-border);
+    box-shadow: var(--nav-active-shadow);
+  }
+
+  .app-root.is-mobile .composer-container {
+    padding-bottom: 4px;
+  }
+
+  /* Conversation open: hide tab bar + drop its reserved gap so composer sits at bottom */
+  .app-root.is-mobile.in-conversation {
+    padding-bottom: 0;
+  }
+
+  .app-root.is-mobile.in-conversation .mobile-tab-bar {
+    display: none !important;
+  }
+
+  .app-root.is-mobile.in-conversation .composer-container {
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-root.is-mobile.in-conversation .main-panel {
+    height: var(--vv-height, 100dvh);
+    max-height: var(--vv-height, 100dvh);
+  }
+
+  html.kb-closing .app-root.is-mobile.in-conversation .main-panel {
+    transition:
+      height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Keyboard open: drop tab-bar reserve, size to visual viewport, hide tabs */
+  html.kb-open .app-root.is-mobile {
+    padding-bottom: 0;
+    height: var(--vv-height, 100dvh);
+    max-height: var(--vv-height, 100dvh);
+  }
+
+  html.kb-open .app-root.is-mobile[data-view="activity"] .app-sidebar-shell {
+    bottom: 0 !important;
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+  }
+
+  html.kb-open .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-secondary {
+    padding-bottom: 0;
+  }
+
+  html.kb-open .mobile-tab-bar {
+    transform: translateY(110%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  html.kb-open .app-root.is-mobile .composer-container {
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  }
+}

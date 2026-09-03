@@ -1,0 +1,1031 @@
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor } = require('electron');
+const { showNotificationWindow } = require('./notificationWindow.cjs');
+const { registerProcessScannerIPC } = require('./processScanner.cjs');
+const { registerOverlayIPC, destroyOverlayWindow } = require('./overlayWindow.cjs');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
+const path = require('path');
+const fs = require('fs');
+
+// Logging
+log.transports.file.level = 'info';
+log.info('App starting...');
+
+// Auto-updater — NSIS Setup installs always track the newest GitHub release.
+// Portable .exe cannot self-update; users must install Setup once.
+//
+// Feed uses generic "latest/download" URLs (not GitHub Releases API) so
+// Render/desktop clients are not blocked by API rate limits.
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.allowPrerelease = false;
+autoUpdater.allowDowngrade = false;
+// Full Setup download is more reliable than delta/blockmap across jumps
+autoUpdater.disableDifferentialDownload = true;
+// App is not code-signed — signature checks would block every update
+if (process.platform === 'win32') {
+  try {
+    autoUpdater.verifyUpdateCodeSignature = false;
+  } catch (_) { /* older electron-updater */ }
+}
+
+const UPDATE_FEED_URL =
+  'https://github.com/DemirSarpKurtlar/Descall/releases/latest/download/';
+
+try {
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: UPDATE_FEED_URL,
+    channel: 'latest',
+  });
+  log.info('[updater] feed =', UPDATE_FEED_URL);
+} catch (err) {
+  log.warn('[updater] setFeedURL(generic) failed, falling back to github provider:', err?.message);
+  try {
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'demirsarpk',
+      repo: 'Descall',
+    });
+  } catch (err2) {
+    log.warn('[updater] setFeedURL(github) also failed:', err2?.message);
+  }
+}
+
+
+function resolveAppIcon() {
+  const candidates = [
+    path.join(__dirname, 'icon.ico'),
+    path.join(__dirname, 'icon.png'),
+    path.join(__dirname, '../public/icon.png'),
+    path.join(process.resourcesPath || '', 'dist', 'icon.png'),
+    path.join(process.resourcesPath || '', 'app.asar.unpacked', 'electron', 'icon.ico'),
+  ];
+  for (const p of candidates) {
+    try { if (p && fs.existsSync(p)) return p; } catch (_) {}
+  }
+  return undefined;
+}
+
+let updateReady = false;
+let updateVersion = null;
+let updateCheckTimer = null;
+let updateRetryTimer = null;
+let installTimer = null;
+let updateCheckInFlight = false;
+let powerHooksBound = false;
+/** Discord-style gate: splash stays up until check finishes / update installs. */
+let prelaunchActive = false;
+let prelaunchResolvers = null;
+let mainLaunchStarted = false;
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes while running (incl. background/tray)
+const UPDATE_INSTALL_DELAY_MS = 12 * 1000;       // after in-session download → silent install
+const PRELAUNCH_CHECK_TIMEOUT_MS = 25 * 1000;
+const PRELAUNCH_DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+
+function applyDownloadedUpdate(reason = 'auto') {
+  if (!updateReady || !app.isPackaged) return;
+  log.info(`[updater] quitAndInstall (${reason}) → v${updateVersion || '?'}`);
+  isQuitting = true;
+  try {
+    // isSilent=true → NSIS /S replaces old install; isForceRunAfter=true relaunches
+    autoUpdater.quitAndInstall(true, true);
+  } catch (err) {
+    log.error('[updater] quitAndInstall failed:', err?.message || err);
+    isQuitting = false;
+  }
+}
+
+function isAppInBackground() {
+  try {
+    if (!mainWindow || mainWindow.isDestroyed()) return true; // tray / no window
+    if (!mainWindow.isVisible() || mainWindow.isMinimized()) return true;
+    if (!mainWindow.isFocused()) return true;
+    return false;
+  } catch (_) {
+    return true;
+  }
+}
+
+function scheduleSilentInstall() {
+  if (installTimer) clearTimeout(installTimer);
+  if (!updateReady) return;
+  // Splash/prelaunch: install before the main window exists (no focus steal).
+  if (prelaunchActive) {
+    applyDownloadedUpdate('prelaunch');
+    return;
+  }
+  // App already open: download stays in the background. NSIS applies on quit
+  // (autoInstallOnAppQuit) or on next launch splash — never quitAndInstall
+  // here, which would relaunch and yank the window to the front.
+  log.info('[updater] update staged; will apply on quit or next launch (no focus steal)');
+}
+
+function checkForAppUpdates(reason = 'manual') {
+  if (!app.isPackaged) {
+    log.info(`[updater] skip check (${reason}) — not packaged`);
+    return Promise.resolve(null);
+  }
+  if (updateReady) {
+    log.info(`[updater] skip check (${reason}) — update already downloaded, waiting for quit/next launch`);
+    return Promise.resolve(null);
+  }
+  if (updateCheckInFlight) {
+    log.info(`[updater] skip check (${reason}) — already in flight`);
+    return Promise.resolve(null);
+  }
+  updateCheckInFlight = true;
+  log.info(`[updater] checking for updates (${reason})… current=${app.getVersion()} feed=${UPDATE_FEED_URL}`);
+  return autoUpdater.checkForUpdates()
+    .then((result) => {
+      if (updateRetryTimer) {
+        clearTimeout(updateRetryTimer);
+        updateRetryTimer = null;
+      }
+      const next = result?.updateInfo?.version;
+      if (next) log.info(`[updater] check result: latest=${next}`);
+      return result;
+    })
+    .catch((err) => {
+      log.error(`[updater] check failed (${reason}):`, err?.message || err);
+      if (!updateRetryTimer && !prelaunchActive) {
+        updateRetryTimer = setTimeout(() => {
+          updateRetryTimer = null;
+          checkForAppUpdates('retry');
+        }, 2 * 60 * 1000);
+      }
+      return null;
+    })
+    .finally(() => {
+      updateCheckInFlight = false;
+    });
+}
+
+function scheduleBackgroundUpdateChecks() {
+  if (!app.isPackaged) return;
+  if (updateCheckTimer) clearInterval(updateCheckTimer);
+
+  // Keep polling while running — including minimized, unfocused, and tray.
+  updateCheckTimer = setInterval(() => checkForAppUpdates('interval-5m'), UPDATE_CHECK_INTERVAL_MS);
+  setTimeout(() => checkForAppUpdates('post-open'), 45 * 1000);
+
+  if (!powerHooksBound) {
+    powerHooksBound = true;
+    try {
+      powerMonitor.on('resume', () => {
+        setTimeout(() => checkForAppUpdates('resume'), 5 * 1000);
+      });
+      powerMonitor.on('unlock-screen', () => {
+        setTimeout(() => checkForAppUpdates('unlock'), 5 * 1000);
+      });
+    } catch (err) {
+      log.warn('[updater] powerMonitor hooks unavailable:', err?.message);
+    }
+  }
+}
+
+function updateSplash(payload) {
+  if (!splashWindow || splashWindow.isDestroyed()) return;
+  try {
+    const js = `window.__splashUpdate && window.__splashUpdate(${JSON.stringify(payload)});`;
+    splashWindow.webContents.executeJavaScript(js, true).catch(() => {});
+  } catch (_) { /* ignore */ }
+}
+
+function resolvePrelaunch(outcome) {
+  if (!prelaunchResolvers) return;
+  const { resolve } = prelaunchResolvers;
+  prelaunchResolvers = null;
+  resolve(outcome);
+}
+
+// Paths
+const isDev = process.env.NODE_ENV === 'development';
+const isPackaged = app.isPackaged;
+
+let mainWindow = null;
+let splashWindow = null;
+let tray = null;
+let isQuitting = false;
+
+// Persist "running in background" so an updater relaunch stays in the tray
+// instead of stealing focus after quitAndInstall / NSIS /S restart.
+const BG_FLAG = () => path.join(app.getPath('userData'), 'start-in-background');
+function setStartInBackground(on) {
+  try {
+    if (on) fs.writeFileSync(BG_FLAG(), '1');
+    else if (fs.existsSync(BG_FLAG())) fs.unlinkSync(BG_FLAG());
+  } catch {}
+}
+function shouldStartInBackground() {
+  try { return fs.existsSync(BG_FLAG()); } catch { return false; }
+}
+
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  setStartInBackground(false);
+  try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+
+// Discord-like update / boot splash (blocks main window until ready)
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    icon: resolveAppIcon(),
+    width: 340,
+    height: 280,
+    frame: false,
+    alwaysOnTop: true,
+    transparent: true,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    fullscreenable: false,
+    skipTaskbar: false,
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  const splashPath = path.join(__dirname, 'splash.html');
+  const ready = splashWindow.loadFile(splashPath).catch((err) => {
+    log.warn('[splash] loadFile failed, using inline fallback:', err?.message);
+    return splashWindow.loadURL(`data:text/html,${encodeURIComponent(
+      `<!doctype html><html><body style="margin:0;background:#1e1f22;color:#fff;font-family:Segoe UI,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Checking for updates…</body></html>`
+    )}`);
+  });
+
+  splashWindow.once('ready-to-show', () => {
+    try {
+      splashWindow.webContents.executeJavaScript(
+        `window.__splashSetVersion && window.__splashSetVersion(${JSON.stringify(app.getVersion())});`,
+        true
+      ).catch(() => {});
+    } catch (_) { /* ignore */ }
+    if (shouldStartInBackground()) {
+      // Updater relaunch after close-to-tray: keep splash hidden.
+      log.info('[boot] start-in-background — splash stays hidden');
+      return;
+    }
+    splashWindow.show();
+    splashWindow.center();
+  });
+
+  return ready;
+}
+
+function openMainApp() {
+  if (mainLaunchStarted) return;
+  mainLaunchStarted = true;
+  prelaunchActive = false;
+  updateSplash({ status: 'Starting Descall…', detail: '', busy: true, showProgress: false });
+  createMainWindow();
+  createTray();
+}
+
+/**
+ * Discord-style gate: check GitHub latest before opening chat UI.
+ * If an update exists → download on splash → quitAndInstall (never open main).
+ * If already latest / offline / timeout → open main.
+ */
+async function runPrelaunchUpdateGate() {
+  if (!app.isPackaged) {
+    openMainApp();
+    return;
+  }
+
+  prelaunchActive = true;
+  updateSplash({
+    status: 'Checking for updates…',
+    detail: '',
+    busy: true,
+    showProgress: false,
+  });
+
+  const outcomePromise = new Promise((resolve) => {
+    prelaunchResolvers = { resolve };
+  });
+
+  const checkTimeout = setTimeout(() => {
+    log.warn('[updater] prelaunch check timed out — opening app');
+    resolvePrelaunch({ type: 'timeout' });
+  }, PRELAUNCH_CHECK_TIMEOUT_MS);
+
+  try {
+    const result = await checkForAppUpdates('prelaunch');
+    // If updater returned without emitting available/not-available yet, wait on events.
+    // If the promise failed/null and no event arrived shortly, fall through via timeout.
+    if (!result && prelaunchResolvers) {
+      setTimeout(() => {
+        if (prelaunchResolvers) {
+          log.warn('[updater] prelaunch check returned empty — opening app');
+          resolvePrelaunch({ type: 'error' });
+        }
+      }, 1500);
+    }
+  } catch (err) {
+    log.error('[updater] prelaunch check threw:', err?.message || err);
+    clearTimeout(checkTimeout);
+    resolvePrelaunch({ type: 'error', error: err });
+  }
+
+  const outcome = await outcomePromise;
+  clearTimeout(checkTimeout);
+
+  if (outcome?.type === 'update-downloaded') {
+    updateSplash({
+      status: 'Installing update…',
+      detail: outcome.version ? `v${outcome.version}` : '',
+      busy: true,
+      showProgress: true,
+      percent: 100,
+    });
+    applyDownloadedUpdate('prelaunch-downloaded');
+    return;
+  }
+
+  if (outcome?.type === 'update-available' || outcome?.type === 'downloading') {
+    // Stay on splash until download finishes — never open main mid-update.
+    let downloadTimer = null;
+    const downloadOutcome = await new Promise((resolve) => {
+      prelaunchResolvers = { resolve };
+      downloadTimer = setTimeout(() => {
+        log.warn('[updater] prelaunch download timed out — opening app');
+        resolve({ type: 'download-timeout' });
+      }, PRELAUNCH_DOWNLOAD_TIMEOUT_MS);
+    });
+    if (downloadTimer) clearTimeout(downloadTimer);
+    prelaunchResolvers = null;
+
+    if (downloadOutcome?.type === 'update-downloaded') {
+      updateSplash({
+        status: 'Installing update…',
+        detail: downloadOutcome.version ? `v${downloadOutcome.version}` : '',
+        busy: true,
+        showProgress: true,
+        percent: 100,
+      });
+      applyDownloadedUpdate('prelaunch-downloaded');
+      return; // process relaunches after install
+    }
+  }
+
+  // up-to-date / error / timeout → continue into the app
+  openMainApp();
+}
+
+// Create main window
+function createMainWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1200,
+    minHeight: 700,
+    show: false,
+    skipTaskbar: false,
+    // Frameless — React TitleBar provides window controls (avoids double title bars)
+    frame: false,
+    titleBarStyle: 'hidden',
+    fullscreenable: false,
+    icon: resolveAppIcon(),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      preload: path.join(__dirname, 'preload.cjs'),
+      webSecurity: false,
+      allowRunningInsecureContent: true
+    }
+  });
+
+  mainWindow.setMenu(null);
+  Menu.setApplicationMenu(null);
+
+  // Close → minimize to tray instead of quitting.
+  // NEVER quitAndInstall here: close-to-tray is how Demir backgrounds the app;
+  // quitAndInstall(true,true) relaunches and steals focus.
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      // Close-to-background: hide to tray, not minimize (no taskbar stub).
+      try { mainWindow.setSkipTaskbar(true); } catch (_) {}
+      mainWindow.hide();
+      setStartInBackground(true);
+      showNotificationWindow({
+        title: 'Descall',
+        body: 'Descall arka planda çalışmaya devam ediyor.',
+        type: 'default',
+        duration: 5000,
+      });
+    }
+  });
+
+  // IPC handlers for window controls
+  ipcMain.on('window:minimize', () => {
+    mainWindow?.minimize();
+  });
+
+  ipcMain.on('window:maximize', () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow?.unmaximize();
+    } else {
+      mainWindow?.maximize();
+    }
+  });
+
+  ipcMain.on('window:close', () => {
+    mainWindow?.close();
+  });
+
+  // Handle maximize state change
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents?.send('window:maximized', true);
+  });
+
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents?.send('window:maximized', false);
+  });
+  mainWindow.on('enter-full-screen', () => {
+    try { mainWindow.setFullScreen(false); } catch (_) {}
+    if (!mainWindow.isMaximized()) mainWindow.maximize();
+  });
+
+  // Notification permission probe (actual show goes through module-level IPC below)
+  ipcMain.handle('notification:request-permission', async () => true);
+
+  // Allow screen capture permissions
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowed = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture'];
+    callback(allowed.includes(permission));
+  });
+
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
+    const allowed = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture'];
+    return allowed.includes(permission);
+  });
+
+  // Make navigator.mediaDevices.getDisplayMedia work in Electron (DM/group/server).
+  // Without this handler Chromium reports screen share as unsupported.
+  try {
+    mainWindow.webContents.session.setDisplayMediaRequestHandler(
+      async (request, callback) => {
+        try {
+          const sources = await desktopCapturer.getSources({
+            types: ['screen', 'window'],
+            thumbnailSize: { width: 1, height: 1 },
+          });
+          if (!sources.length) {
+            callback({});
+            return;
+          }
+          const screen =
+            sources.find((s) => String(s.id || '').startsWith('screen:')) || sources[0];
+          callback({
+            video: screen,
+            // Windows loopback carries system audio with the share when requested.
+            ...(request.enableLocalEcho !== false ? { audio: 'loopback' } : {}),
+          });
+        } catch (err) {
+          log.error('setDisplayMediaRequestHandler error:', err);
+          callback({});
+        }
+      },
+      // Prefer the OS picker when the platform supports it (macOS/Windows).
+      { useSystemPicker: true }
+    );
+  } catch (err) {
+    log.warn('setDisplayMediaRequestHandler unavailable:', err?.message || err);
+  }
+
+  // Right-click context menu for DevTools
+  mainWindow.webContents.on('context-menu', () => {
+    const menu = new Menu();
+    menu.append(new MenuItem({
+      label: 'Toggle Developer Tools',
+      click: () => mainWindow?.webContents.toggleDevTools(),
+    }));
+    menu.append(new MenuItem({ type: 'separator' }));
+    menu.append(new MenuItem({
+      label: 'Reload',
+      click: () => mainWindow?.webContents.reload(),
+    }));
+    menu.popup();
+  });
+
+  // Set CSP headers to allow Supabase and API connections
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "connect-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com; " +
+          "img-src 'self' https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com data: blob:; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com; " +
+          "media-src 'self' blob: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in;"
+        ]
+      }
+    });
+  });
+
+  // Load app
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
+  } else {
+    // extraResources puts files in resources/dist/
+    const indexPath = path.join(process.resourcesPath, 'dist', 'index.html');
+    console.log('Loading from:', indexPath);
+    
+    if (require('fs').existsSync(indexPath)) {
+      mainWindow.loadFile(indexPath).catch(err => {
+        console.error('Failed to load:', err);
+        dialog.showErrorBox('Loading Error', `Failed to load app: ${err.message}`);
+      });
+    } else {
+      // Fallback paths
+      const altPaths = [
+        path.join(app.getAppPath(), 'dist', 'index.html'),
+        path.join(__dirname, 'dist', 'index.html'),
+        path.join(__dirname, '..', 'dist', 'index.html')
+      ];
+      
+      let found = false;
+      for (const altPath of altPaths) {
+        console.log('Trying:', altPath);
+        if (require('fs').existsSync(altPath)) {
+          console.log('Found at:', altPath);
+          mainWindow.loadFile(altPath);
+          found = true;
+          break;
+        }
+      }
+      
+      if (!found) {
+        dialog.showErrorBox('Loading Error', `index.html not found at: ${indexPath}\nTried:\n${altPaths.join('\n')}`);
+      }
+    }
+  }
+
+  // Show window when ready (unless we were in the tray and the updater relaunched)
+  mainWindow.once('ready-to-show', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      try { splashWindow.close(); } catch (_) { /* ignore */ }
+      splashWindow = null;
+    }
+    if (shouldStartInBackground()) {
+      log.info('[boot] start-in-background — showInactive then minimize');
+      try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
+      mainWindow.showInactive();
+      mainWindow.minimize();
+    } else {
+      showMainWindow();
+    }
+
+    // Background polling only after the Discord-style prelaunch gate
+    scheduleBackgroundUpdateChecks();
+  });
+
+  // Window events
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  const tryBackgroundCheck = (reason) => {
+    checkForAppUpdates(reason);
+  };
+  mainWindow.on('minimize', () => {
+    setStartInBackground(true);
+    tryBackgroundCheck('minimize');
+  });
+  mainWindow.on('hide', () => {
+    setStartInBackground(true);
+    tryBackgroundCheck('hide');
+  });
+  mainWindow.on('show', () => setStartInBackground(false));
+  mainWindow.on('focus', () => setStartInBackground(false));
+  mainWindow.on('restore', () => setStartInBackground(false));
+  mainWindow.on('blur', () => {
+    if (isAppInBackground()) tryBackgroundCheck('blur');
+  });
+
+  // Handle external links
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  // Security: Prevent navigation to external sites
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url.includes('localhost') && !url.startsWith('file://')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+}
+
+function createTray() {
+  const iconPath = resolveAppIcon();
+  const icon = iconPath
+    ? nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    : nativeImage.createEmpty();
+
+  tray = new Tray(icon);
+  tray.setToolTip('Descall');
+
+  const buildMenu = () => Menu.buildFromTemplate([
+    {
+      label: 'Descall\'i Aç',
+      click: () => {
+        showMainWindow();
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Windows ile Başlat',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (item) => {
+        app.setLoginItemSettings({ openAtLogin: item.checked });
+        tray.setContextMenu(buildMenu());
+      },
+    },
+    { type: 'separator' },
+    {
+      label: updateReady ? `Güncelle ve Çık (v${updateVersion || ''})` : 'Çıkış',
+      click: () => {
+        isQuitting = true;
+        if (updateReady) {
+          try {
+            autoUpdater.quitAndInstall(true, true);
+            return;
+          } catch (err) {
+            log.error('[updater] tray quitAndInstall failed:', err?.message);
+          }
+        }
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(buildMenu());
+  tray.on('click', () => {
+    showMainWindow();
+  });
+  tray.on('double-click', () => {
+    showMainWindow();
+  });
+}
+
+// App events
+app.whenReady().then(async () => {
+  // Enable startup on first run (packaged only)
+  if (isPackaged && !app.getLoginItemSettings().openAtLogin) {
+    app.setLoginItemSettings({ openAtLogin: true });
+  }
+
+  registerProcessScannerIPC();
+  registerOverlayIPC(() => mainWindow);
+
+  globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
+  globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
+  globalShortcut.register('F11', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    try { if (mainWindow.isFullScreen()) mainWindow.setFullScreen(false); } catch (_) {}
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+    else mainWindow.maximize();
+  });
+
+  app.on('activate', () => {
+    if (mainWindow) {
+      showMainWindow();
+    } else if (!mainLaunchStarted && !prelaunchActive) {
+      openMainApp();
+    }
+  });
+
+  // Discord-like flow: splash first → check/update → only then open main UI
+  await createSplashWindow();
+  await runPrelaunchUpdateGate();
+  scheduleBackgroundUpdateChecks();
+});
+
+app.on('window-all-closed', () => {
+  // Don't quit — stay in tray
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
+  // autoInstallOnAppQuit=true applies a downloaded update during this quit
+  destroyOverlayWindow();
+});
+
+// Auto-updater events
+autoUpdater.on('checking-for-update', () => {
+  log.info('[updater] Checking for update...');
+  if (prelaunchActive) {
+    updateSplash({
+      status: 'Checking for updates…',
+      detail: '',
+      busy: true,
+      showProgress: false,
+    });
+  }
+});
+
+autoUpdater.on('update-available', (info) => {
+  log.info('[updater] Update available, downloading:', info.version);
+  updateVersion = info.version || updateVersion;
+  if (prelaunchActive) {
+    updateSplash({
+      status: 'Downloading update…',
+      detail: info.version ? `v${info.version}` : '',
+      busy: true,
+      showProgress: true,
+      percent: 0,
+    });
+    resolvePrelaunch({ type: 'update-available', version: info.version });
+  } else {
+    mainWindow?.webContents?.send('update:downloading', { version: info.version });
+  }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  log.info('[updater] Already up-to-date:', info.version);
+  if (prelaunchActive) {
+    updateSplash({
+      status: 'Up to date',
+      detail: info.version ? `v${info.version}` : '',
+      busy: true,
+      showProgress: false,
+    });
+    resolvePrelaunch({ type: 'up-to-date', version: info.version });
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  log.error('[updater] Error:', err?.message ?? err);
+  if (prelaunchActive) {
+    updateSplash({
+      status: 'Couldn’t check for updates',
+      detail: 'Starting Descall…',
+      busy: true,
+      showProgress: false,
+    });
+    resolvePrelaunch({ type: 'error', error: err });
+  } else {
+    mainWindow?.webContents?.send('update:error', { message: err?.message || String(err) });
+  }
+});
+
+autoUpdater.on('download-progress', ({ percent, bytesPerSecond, transferred, total }) => {
+  log.info(`[updater] Downloading: ${percent.toFixed(1)}% (${bytesPerSecond} B/s)`);
+  if (prelaunchActive) {
+    const mb = total > 0 ? `${(transferred / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB` : '';
+    updateSplash({
+      status: 'Downloading update…',
+      detail: mb,
+      busy: true,
+      showProgress: true,
+      percent,
+    });
+  } else {
+    mainWindow?.webContents?.send('update:progress', { percent, bytesPerSecond, transferred, total });
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  log.info('[updater] Update downloaded:', info.version);
+  updateReady = true;
+  updateVersion = info.version;
+
+  if (prelaunchActive) {
+    updateSplash({
+      status: 'Installing update…',
+      detail: info.version ? `v${info.version}` : '',
+      busy: true,
+      showProgress: true,
+      percent: 100,
+    });
+    resolvePrelaunch({ type: 'update-downloaded', version: info.version });
+    // Install immediately from splash — do not open main first
+    scheduleSilentInstall();
+    return;
+  }
+
+  mainWindow?.webContents?.send('update:ready', { version: info.version });
+  // Staged only — do not send update:installing (that used to imply an immediate restart).
+
+  showNotificationWindow({
+    title: 'Descall',
+    body: `v${info.version} indirildi. Çıkışta uygulanacak.`,
+    type: 'default',
+    duration: 8000,
+    // Do not show()/focus() — notification must not steal the window.
+  });
+
+  scheduleSilentInstall();
+});
+
+// ─── Notification IPC ────────────────────────────────────────────────────────
+// tag → BrowserWindow — prevents duplicate notifications for the same event
+const activeNotifByTag = new Map();
+
+function showAppNotification({ title, options = {} } = {}) {
+  const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
+
+  // Deduplicate: close any existing window with the same tag
+  if (activeNotifByTag.has(tag)) {
+    const existing = activeNotifByTag.get(tag);
+    try { if (!existing.isDestroyed()) existing.close(); } catch (_) {}
+    activeNotifByTag.delete(tag);
+  }
+
+  const isCall    = data?.type === 'call' || data?.type === 'group-call';
+  const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
+  const duration  = isCall || requireInteraction ? 0 : 5000;
+
+  const win = showNotificationWindow({
+    title: title || 'Descall',
+    body: body || '',
+    type: notifType,
+    avatarUrl: avatarUrl || null,
+    duration,
+    onClick: () => {
+      if (mainWindow) {
+        mainWindow.show();
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+      // Always send a consistent envelope so the renderer can route by data.type
+      mainWindow?.webContents?.send('notification:click', {
+        title,
+        body,
+        tag,
+        data: data || {},
+      });
+    },
+    onAccept: isCall ? () => {
+      mainWindow?.show();
+      mainWindow?.focus();
+      mainWindow?.webContents?.send('notification:call-accept', data || {});
+    } : undefined,
+    onDecline: isCall ? () => {
+      mainWindow?.webContents?.send('notification:call-decline', data || {});
+    } : undefined,
+  });
+
+  if (win) {
+    activeNotifByTag.set(tag, win);
+    win.once('closed', () => {
+      if (activeNotifByTag.get(tag) === win) activeNotifByTag.delete(tag);
+    });
+  }
+  return win;
+}
+
+ipcMain.on('notification:show', (_event, payload = {}) => {
+  showAppNotification(payload);
+});
+
+ipcMain.handle('show-notification', (_event, payload = {}) => {
+  const title = payload?.title;
+  const options = payload?.options
+    ? payload.options
+    : {
+        body: payload?.body,
+        tag: payload?.tag,
+        data: payload?.data,
+        requireInteraction: payload?.requireInteraction,
+        silent: payload?.silent,
+        avatarUrl: payload?.avatarUrl,
+      };
+  showAppNotification({ title, options });
+  return true;
+});
+
+// IPC handlers
+ipcMain.handle('app-version', () => {
+  return app.getVersion();
+});
+
+ipcMain.handle('check-for-updates', async () => {
+  if (!isPackaged) return { success: true, skipped: true };
+  try {
+    const result = await checkForAppUpdates('ipc');
+    return { success: true, updateInfo: result?.updateInfo || null, updateReady, updateVersion };
+  } catch (err) {
+    log.error('[updater] Manual check failed:', err?.message);
+    return { success: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('restart-app', () => {
+  if (updateReady) {
+    isQuitting = true;
+    autoUpdater.quitAndInstall(true, true); // silent, force run after
+  } else {
+    app.relaunch();
+    app.quit();
+  }
+});
+
+ipcMain.handle('get-update-status', () => {
+  return { updateReady, updateVersion };
+});
+
+ipcMain.handle('minimize-window', () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.handle('maximize-window', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('close-window', () => {
+  if (mainWindow) mainWindow.close();
+});
+
+ipcMain.handle('is-window-focused', () => mainWindow ? mainWindow.isFocused() : false);
+
+ipcMain.handle('focus-window', () => {
+  showMainWindow();
+});
+
+// Desktop capturer — screen share sources
+ipcMain.handle('get-screen-sources', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen', 'window'],
+      thumbnailSize: { width: 320, height: 240 },
+      fetchWindowIcons: true,
+    });
+    return sources.map(s => ({
+      id: s.id,
+      name: s.name,
+      thumbnailDataURL: s.thumbnail.toDataURL(),
+    }));
+  } catch (err) {
+    log.error('get-screen-sources error:', err);
+    return [];
+  }
+});
+
+// Security: Handle downloads
+ipcMain.on('download-file', async (event, { url, filename }) => {
+  try {
+    const { default: fetch } = await import('node-fetch');
+    const response = await fetch(url);
+    const buffer = await response.buffer();
+    
+    const downloadsPath = app.getPath('downloads');
+    const filePath = path.join(downloadsPath, filename);
+    
+    fs.writeFileSync(filePath, buffer);
+    
+    shell.showItemInFolder(filePath);
+    return { success: true, path: filePath };
+  } catch (error) {
+    log.error('Download error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Register custom protocol for sounds
+app.on('ready', () => {
+  protocol.registerFileProtocol('app', (request, callback) => {
+    const url = request.url.substr(6); // Remove 'app://'
+    const filePath = path.join(__dirname, '..', url);
+    callback({ path: filePath });
+  });
+});
+
+// Single instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // User clicked the shortcut on purpose — restore + focus, leave background.
+    showMainWindow();
+  });
+}
+
+log.info('Electron main process initialized');

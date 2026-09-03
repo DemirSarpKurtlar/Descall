@@ -1,0 +1,168 @@
+{
+  "name": "descall-electron",
+  "version": "2.9.10",
+  "description": "Descall - Discord-like chat application",
+  "main": "main.cjs",
+  "author": "Descall Team",
+  "license": "MIT",
+  "homepage": "https://descall.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DemirSarpKurtlar/Descall.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "prebuild": "node -e \"const fs=require('fs'),path=require('path'); const caches=[path.join(process.env.APPDATA||process.env.HOME,'electron-builder'),path.join(process.env.TEMP||'/tmp','electron-builder')]; caches.forEach(c=>{try{fs.rmSync(c,{recursive:true,force:true});console.log('Cleaned:',c);}catch(e){}}); console.log('Cache cleaned');\"",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps",
+    "release": "node release.cjs",
+    "release:minor": "node release.cjs --minor",
+    "release:major": "node release.cjs --major"
+  },
+  "devDependencies": {
+    "electron": "28.3.3",
+    "electron-builder": "24.13.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "electron-log": "^5.2.0"
+  },
+  "build": {
+    "appId": "com.descall.app",
+    "productName": "Descall",
+    "directories": {
+      "output": "dist",
+      "buildResources": "../public"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "splash.html",
+      "notificationWindow.cjs",
+      "notifPreload.cjs",
+      "processScanner.cjs",
+      "overlayWindow.cjs",
+      "overlayPreload.cjs",
+      "node_modules/**/*"
+    ],
+    "asar": true,
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "dist",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "icon": "icon.ico",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Descall",
+      "artifactName": "Descall-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false,
+      "include": "installer.nsh",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico"
+    },
+    "portable": {
+      "artifactName": "Descall-Portable-${version}.exe"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.social-networking",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "DemirSarpKurtlar",
+        "repo": "Descall",
+        "releaseType": "release"
+      }
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Network",
+      "maintainer": "Descall Team",
+      "vendor": "Descall",
+      "synopsis": "Discord-like chat application",
+      "description": "Descall is a modern chat application with voice messaging, video calls, and group chats."
+    }
+  }
+}
