@@ -335,8 +335,8 @@ export default function MessageList({
 
   if (loading) {
     return (
-      <div className="message-list" ref={listRef}>
-        <MessageSkeleton count={7} />
+      <div className="message-list is-loading-skeleton" ref={listRef} aria-busy="true">
+        <MessageSkeleton count={8} />
       </div>
     );
   }

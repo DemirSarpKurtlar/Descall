@@ -744,7 +744,12 @@ export default function App() {
         if (typeof res?.hasMore === "boolean") setDmHasMore(res.hasMore);
         else setDmHasMore((normalized?.length ?? 0) >= 50);
       })
-      .catch((err) => console.error("[App] fetch DM messages error:", err))
+      .catch((err) => {
+        console.error("[App] fetch DM messages error:", err);
+        setDmByUserId((prev) => (
+          prev[peerId] === undefined ? { ...prev, [peerId]: [] } : prev
+        ));
+      })
       .finally(() => setMessagesLoading(false));
   }, [t]);
 
@@ -2555,7 +2560,12 @@ export default function App() {
           setGroupLastActivity((prev) => ({ ...prev, [activeGroup.id]: last.timestamp }));
         }
       })
-      .catch((err) => console.error("[App] fetch group messages error:", err))
+      .catch((err) => {
+        console.error("[App] fetch group messages error:", err);
+        setGroupMessagesById((prev) => (
+          prev[activeGroup.id] === undefined ? { ...prev, [activeGroup.id]: [] } : prev
+        ));
+      })
       .finally(() => setMessagesLoading(false));
   }, [activeGroup?.id, t]);
 
@@ -2615,7 +2625,12 @@ export default function App() {
           [activeChannel.id]: sortMessagesChronologically(normalized),
         }));
       })
-      .catch((err) => console.error("[App] fetch channel messages error:", err))
+      .catch((err) => {
+        console.error("[App] fetch channel messages error:", err);
+        setChannelMessagesById((prev) => (
+          prev[activeChannel.id] === undefined ? { ...prev, [activeChannel.id]: [] } : prev
+        ));
+      })
       .finally(() => setMessagesLoading(false));
   }, [activeView, activeServer?.id, activeChannel?.id, activeChannel?.type]);
 
@@ -4275,12 +4290,12 @@ export default function App() {
                 Boolean(activeServer?.myPermissions?.flags?.ADMINISTRATOR))
             }
             loading={Boolean(
-              messagesLoading &&
-                ((activeDmUser && dmByUserId[activeDmUser.id] === undefined) ||
-                  (activeGroup && groupMessagesById[activeGroup.id] === undefined) ||
-                  (activeView === "servers" &&
-                    activeChannel?.type === "text" &&
-                    channelMessagesById[activeChannel.id] === undefined))
+              activeView === "servers"
+                ? activeChannel?.type === "text" &&
+                  channelMessagesById[activeChannel.id] === undefined
+                : activeGroup
+                  ? groupMessagesById[activeGroup.id] === undefined
+                  : Boolean(activeDmUser) && dmByUserId[activeDmUser.id] === undefined
             )}
             unreadCount={
               unreadMarker &&

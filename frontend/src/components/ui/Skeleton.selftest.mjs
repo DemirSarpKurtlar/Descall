@@ -41,4 +41,16 @@ assert(
   "conversation reload must not retrigger when i18n t() identity changes",
 );
 
+const app = readFileSync(join(root, "../../App.jsx"), "utf8");
+const messageList = readFileSync(join(root, "../chat/MessageList.jsx"), "utf8");
+assert(messageList.includes("<MessageSkeleton"), "channel/DM message pane must render MessageSkeleton while loading");
+assert(
+  /channelMessagesById\[activeChannel\.id\] === undefined/.test(app),
+  "server channel switch must skeleton from cache-undefined, not messagesLoading race",
+);
+assert(
+  /dmByUserId\[activeDmUser\.id\] === undefined/.test(app) &&
+    /groupMessagesById\[activeGroup\.id\] === undefined/.test(app),
+  "DM and group open must skeleton when their message caches are empty",
+);
 console.log("Skeleton.selftest.mjs: ok");

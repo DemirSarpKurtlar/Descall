@@ -300,6 +300,10 @@ select {
   flex-direction: column;
   gap: 18px;
   padding: 20px 16px 28px;
+  flex: 1 1 auto;
+  min-height: 240px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skeleton-row {

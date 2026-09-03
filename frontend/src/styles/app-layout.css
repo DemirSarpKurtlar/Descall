@@ -146,12 +146,6 @@
   min-height: 0;
 }
 
-/* Servers: optional 72px icon track sits between rail and channel list.
-   Channel sidebar still lands on the sidebar-width track (column 3). */
-.app-root[data-view="servers"] > .sidebar-secondary,
-.app-root[data-view="servers"] .app-sidebar-shell > .sidebar-secondary {
-  grid-column: 3;
-}
 
 .app-root > .app-main-slot {
   grid-column: -2 / -1;
@@ -186,9 +180,9 @@
   right: auto;
 }
 
-/* 4-column layout for servers view */
+/* Servers: same 3-col as chat (rail | sidebar | main). There is no icon-rail. */
 .app-root[data-view="servers"] {
-  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
+  grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
 }
 
 /* Play / LFG + DimaAI: rail + full workspace (no list sidebar column).
