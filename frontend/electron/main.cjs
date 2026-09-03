@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor } = require('electron');
 const { showNotificationWindow } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
-const { registerOverlayIPC, destroyOverlayWindow } = require('./overlayWindow.cjs');
+const { registerOverlayIPC, destroyOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const path = require('path');
@@ -74,6 +74,7 @@ let updateVersion = null;
 let updateCheckTimer = null;
 let updateRetryTimer = null;
 let installTimer = null;
+let installWaitTimer = null;
 let updateCheckInFlight = false;
 let powerHooksBound = false;
 /** Discord-style gate: splash stays up until check finishes / update installs. */
@@ -82,6 +83,7 @@ let prelaunchResolvers = null;
 let mainLaunchStarted = false;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes while running (incl. background/tray)
 const UPDATE_INSTALL_DELAY_MS = 12 * 1000;       // after in-session download → silent install
+const INSTALL_RETRY_INTERVAL_MS = 60 * 1000;     // re-check "is it safe to install yet?"
 const PRELAUNCH_CHECK_TIMEOUT_MS = 25 * 1000;
 const PRELAUNCH_DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -109,18 +111,74 @@ function isAppInBackground() {
   }
 }
 
+/**
+ * A live voice/video session keeps the always-on-top overlay visible. Never
+ * restart under an active call, even silently.
+ */
+function isBusyWithLiveSession() {
+  try {
+    return isOverlayWindowVisible();
+  } catch (_) {
+    return false;
+  }
+}
+
+function installQuietly(reason) {
+  // Come back exactly as backgrounded: minimized stays minimized (taskbar
+  // button, unfocused), tray-hidden stays hidden. Either way nothing is
+  // raised and nothing takes focus.
+  let mode = 'hidden';
+  try {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) mode = 'minimized';
+  } catch (_) { /* ignore */ }
+  setStartInBackground(true, mode);
+  applyDownloadedUpdate(reason);
+}
+
+/** Re-check every minute until the app is safe to restart quietly. */
+function queueSilentInstallRetry() {
+  if (installWaitTimer) return;
+  installWaitTimer = setInterval(() => {
+    if (!updateReady) {
+      clearInterval(installWaitTimer);
+      installWaitTimer = null;
+      return;
+    }
+    if (isBusyWithLiveSession() || !isAppInBackground()) return;
+    clearInterval(installWaitTimer);
+    installWaitTimer = null;
+    log.info('[updater] window went to background — applying staged update quietly');
+    installQuietly('background-silent-retry');
+  }, INSTALL_RETRY_INTERVAL_MS);
+}
+
 function scheduleSilentInstall() {
-  if (installTimer) clearTimeout(installTimer);
+  if (installTimer) {
+    clearTimeout(installTimer);
+    installTimer = null;
+  }
   if (!updateReady) return;
   // Splash/prelaunch: install before the main window exists (no focus steal).
   if (prelaunchActive) {
     applyDownloadedUpdate('prelaunch');
     return;
   }
-  // App already open: download stays in the background. NSIS applies on quit
-  // (autoInstallOnAppQuit) or on next launch splash — never quitAndInstall
-  // here, which would relaunch and yank the window to the front.
-  log.info('[updater] update staged; will apply on quit or next launch (no focus steal)');
+  if (!app.isPackaged) return;
+
+  installTimer = setTimeout(() => {
+    installTimer = null;
+    if (!updateReady) return;
+    // Quiet means quiet: only restart while the window is in the tray /
+    // minimized / unfocused and no call is live. Otherwise wait —
+    // autoInstallOnAppQuit still applies it if the user quits first.
+    if (isBusyWithLiveSession() || !isAppInBackground()) {
+      log.info('[updater] update staged; foreground or live call — will install once the app is idle in the background');
+      queueSilentInstallRetry();
+      return;
+    }
+    log.info('[updater] applying staged update quietly (app is in the background)');
+    installQuietly('background-silent');
+  }, UPDATE_INSTALL_DELAY_MS);
 }
 
 function checkForAppUpdates(reason = 'manual') {
@@ -208,29 +266,51 @@ const isPackaged = app.isPackaged;
 let mainWindow = null;
 let splashWindow = null;
 let tray = null;
+let rebuildTrayMenu = null;
 let isQuitting = false;
 
 // Persist "running in background" so an updater relaunch stays in the tray
 // instead of stealing focus after quitAndInstall / NSIS /S restart.
 const BG_FLAG = () => path.join(app.getPath('userData'), 'start-in-background');
-function setStartInBackground(on) {
+function setStartInBackground(on, mode = 'hidden') {
   try {
-    if (on) fs.writeFileSync(BG_FLAG(), '1');
+    if (on) fs.writeFileSync(BG_FLAG(), mode === 'minimized' ? 'minimized' : 'hidden');
     else if (fs.existsSync(BG_FLAG())) fs.unlinkSync(BG_FLAG());
   } catch {}
 }
+/** null | 'hidden' (closed to tray) | 'minimized' */
+function startInBackgroundMode() {
+  try {
+    if (!fs.existsSync(BG_FLAG())) return null;
+    const raw = String(fs.readFileSync(BG_FLAG(), 'utf8') || '').trim();
+    return raw === 'minimized' ? 'minimized' : 'hidden';
+  } catch {
+    return null;
+  }
+}
 function shouldStartInBackground() {
-  try { return fs.existsSync(BG_FLAG()); } catch { return false; }
+  return Boolean(startInBackgroundMode());
 }
 
 
+/**
+ * The single "bring Descall back" path: tray click, tray menu, taskbar/shortcut
+ * relaunch (second-instance), notification click and the focus-window IPC all
+ * funnel here, so a hidden-to-tray window can never stay off the taskbar.
+ */
 function showMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   setStartInBackground(false);
   try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
+  try { if (mainWindow.isMinimized()) mainWindow.restore(); } catch (_) { /* ignore */ }
+  try { mainWindow.show(); } catch (_) { /* ignore */ }
+  // Windows refuses focus() from a background process; a short always-on-top
+  // pulse + moveTop is what actually raises the window from the tray.
+  try { mainWindow.setAlwaysOnTop(true); } catch (_) { /* ignore */ }
+  try { mainWindow.moveTop(); } catch (_) { /* ignore */ }
+  try { mainWindow.setAlwaysOnTop(false); } catch (_) { /* ignore */ }
+  try { mainWindow.focus(); } catch (_) { /* ignore */ }
+  try { app.focus({ steal: true }); } catch (_) { /* ignore */ }
 }
 
 
@@ -402,7 +482,10 @@ function createMainWindow() {
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.cjs'),
       webSecurity: false,
-      allowRunningInsecureContent: true
+      allowRunningInsecureContent: true,
+      // Hidden-to-tray must not throttle sockets/timers — notifications and
+      // the update poller keep running in the background.
+      backgroundThrottling: false
     }
   });
 
@@ -413,19 +496,26 @@ function createMainWindow() {
   // NEVER quitAndInstall here: close-to-tray is how Demir backgrounds the app;
   // quitAndInstall(true,true) relaunches and steals focus.
   mainWindow.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault();
-      // Close-to-background: hide to tray, not minimize (no taskbar stub).
-      try { mainWindow.setSkipTaskbar(true); } catch (_) {}
-      mainWindow.hide();
-      setStartInBackground(true);
-      showNotificationWindow({
-        title: 'Descall',
-        body: 'Descall arka planda çalışmaya devam ediyor.',
-        type: 'default',
-        duration: 5000,
-      });
+    if (isQuitting) return; // real quit (tray → Çıkış / updater install)
+    e.preventDefault();
+    // Safety net: with no tray icon the window would become unreachable, so
+    // fall back to a plain minimize instead of hiding.
+    if (!tray || (typeof tray.isDestroyed === 'function' && tray.isDestroyed())) {
+      log.warn('[window] close requested but no tray icon — minimizing instead of hiding');
+      try { mainWindow.setSkipTaskbar(false); } catch (_) {}
+      mainWindow.minimize();
+      return;
     }
+    // Close-to-background: hide to tray, not minimize (no taskbar stub).
+    try { mainWindow.setSkipTaskbar(true); } catch (_) {}
+    mainWindow.hide();
+    setStartInBackground(true, 'hidden');
+    showNotificationWindow({
+      title: 'Descall',
+      body: 'Descall arka planda çalışmaya devam ediyor. Simge durumundan geri açabilirsin.',
+      type: 'default',
+      duration: 5000,
+    });
   });
 
   // IPC handlers for window controls
@@ -505,18 +595,40 @@ function createMainWindow() {
     log.warn('setDisplayMediaRequestHandler unavailable:', err?.message || err);
   }
 
-  // Right-click context menu for DevTools
-  mainWindow.webContents.on('context-menu', () => {
+  // Native right-click behaviour. The in-app lists (DMs, groups, servers,
+  // channels) render their own context menus, so the OS menu must only step in
+  // for text fields / selections — never pop a DevTools menu on top of them.
+  mainWindow.webContents.on('context-menu', (_event, params = {}) => {
     const menu = new Menu();
-    menu.append(new MenuItem({
-      label: 'Toggle Developer Tools',
-      click: () => mainWindow?.webContents.toggleDevTools(),
-    }));
-    menu.append(new MenuItem({ type: 'separator' }));
-    menu.append(new MenuItem({
-      label: 'Reload',
-      click: () => mainWindow?.webContents.reload(),
-    }));
+
+    if (params.isEditable) {
+      menu.append(new MenuItem({ role: 'undo' }));
+      menu.append(new MenuItem({ role: 'redo' }));
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({ role: 'cut' }));
+      menu.append(new MenuItem({ role: 'copy' }));
+      menu.append(new MenuItem({ role: 'paste' }));
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({ role: 'selectAll' }));
+    } else if (String(params.selectionText || '').trim()) {
+      menu.append(new MenuItem({ role: 'copy' }));
+    }
+
+    // Debug entries only in dev builds; F12 / Ctrl+Shift+I stay bound always.
+    if (!app.isPackaged) {
+      if (menu.items.length) menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({
+        label: 'Toggle Developer Tools',
+        click: () => mainWindow?.webContents.toggleDevTools(),
+      }));
+      menu.append(new MenuItem({
+        label: 'Reload',
+        click: () => mainWindow?.webContents.reload(),
+      }));
+    }
+
+    // Nothing OS-level to offer → leave the click to the app's own menu.
+    if (!menu.items.length) return;
     menu.popup();
   });
 
@@ -583,8 +695,14 @@ function createMainWindow() {
       try { splashWindow.close(); } catch (_) { /* ignore */ }
       splashWindow = null;
     }
-    if (shouldStartInBackground()) {
-      log.info('[boot] start-in-background — showInactive then minimize');
+    const bgMode = startInBackgroundMode();
+    if (bgMode === 'hidden') {
+      // Was closed to the tray (incl. a quiet update relaunch): stay hidden,
+      // no window flash and no focus steal.
+      log.info('[boot] start-in-background (tray) — window stays hidden');
+      try { mainWindow.setSkipTaskbar(true); } catch (_) { /* ignore */ }
+    } else if (bgMode === 'minimized') {
+      log.info('[boot] start-in-background (minimized) — showInactive then minimize');
       try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
       mainWindow.showInactive();
       mainWindow.minimize();
@@ -605,11 +723,13 @@ function createMainWindow() {
     checkForAppUpdates(reason);
   };
   mainWindow.on('minimize', () => {
-    setStartInBackground(true);
+    // Minimize keeps the taskbar button — clicking it restores natively.
+    try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
+    setStartInBackground(true, 'minimized');
     tryBackgroundCheck('minimize');
   });
   mainWindow.on('hide', () => {
-    setStartInBackground(true);
+    setStartInBackground(true, 'hidden');
     tryBackgroundCheck('hide');
   });
   mainWindow.on('show', () => setStartInBackground(false));
@@ -635,12 +755,21 @@ function createMainWindow() {
 }
 
 function createTray() {
-  const iconPath = resolveAppIcon();
-  const icon = iconPath
-    ? nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
-    : nativeImage.createEmpty();
+  if (tray && !(typeof tray.isDestroyed === 'function' && tray.isDestroyed())) return tray;
 
-  tray = new Tray(icon);
+  try {
+    const iconPath = resolveAppIcon();
+    const icon = iconPath
+      ? nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+      : nativeImage.createEmpty();
+    tray = new Tray(icon);
+  } catch (err) {
+    // Without a tray the close button falls back to minimize (see 'close').
+    log.error('[tray] could not create tray icon:', err?.message || err);
+    tray = null;
+    return null;
+  }
+
   tray.setToolTip('Descall');
 
   const buildMenu = () => Menu.buildFromTemplate([
@@ -678,13 +807,23 @@ function createTray() {
     },
   ]);
 
+  rebuildTrayMenu = () => {
+    if (!tray || (typeof tray.isDestroyed === 'function' && tray.isDestroyed())) return;
+    try { tray.setContextMenu(buildMenu()); } catch (_) { /* ignore */ }
+  };
+
   tray.setContextMenu(buildMenu());
+  // Left click / double click always restores + focuses the window.
   tray.on('click', () => {
     showMainWindow();
   });
   tray.on('double-click', () => {
     showMainWindow();
   });
+  tray.on('right-click', () => {
+    try { tray.popUpContextMenu(buildMenu()); } catch (_) { /* ignore */ }
+  });
+  return tray;
 }
 
 // App events
@@ -825,10 +964,11 @@ autoUpdater.on('update-downloaded', (info) => {
 
   mainWindow?.webContents?.send('update:ready', { version: info.version });
   // Staged only — do not send update:installing (that used to imply an immediate restart).
+  rebuildTrayMenu?.();
 
   showNotificationWindow({
     title: 'Descall',
-    body: `v${info.version} indirildi. Çıkışta uygulanacak.`,
+    body: `v${info.version} indirildi. Arka planda sessizce kurulacak.`,
     type: 'default',
     duration: 8000,
     // Do not show()/focus() — notification must not steal the window.
@@ -862,11 +1002,7 @@ function showAppNotification({ title, options = {} } = {}) {
     avatarUrl: avatarUrl || null,
     duration,
     onClick: () => {
-      if (mainWindow) {
-        mainWindow.show();
-        if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.focus();
-      }
+      showMainWindow();
       // Always send a consistent envelope so the renderer can route by data.type
       mainWindow?.webContents?.send('notification:click', {
         title,
@@ -876,8 +1012,7 @@ function showAppNotification({ title, options = {} } = {}) {
       });
     },
     onAccept: isCall ? () => {
-      mainWindow?.show();
-      mainWindow?.focus();
+      showMainWindow();
       mainWindow?.webContents?.send('notification:call-accept', data || {});
     } : undefined,
     onDecline: isCall ? () => {

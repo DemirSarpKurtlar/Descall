@@ -150,7 +150,10 @@ export default function ServersSidebar({
   const [mutedChannelTick, setMutedChannelTick] = useState(0);
   const [serverListReorderMode, setServerListReorderMode] = useState(false);
   const [channelReorderMode, setChannelReorderMode] = useState(false);
-  const [serverMenuId, setServerMenuId] = useState(null);
+  // Pointer-anchored right-click menus (native-feeling context menus).
+  const [serverMenu, setServerMenu] = useState(null); // { server, x, y }
+  const [catMenu, setCatMenu] = useState(null);       // { node, x, y }
+  const [folderMenu, setFolderMenu] = useState(null); // { folder, x, y }
   const [serverIconCropSrc, setServerIconCropSrc] = useState("");
   const [serverIconBusy, setServerIconBusy] = useState(false);
   const [rulesPrompt, setRulesPrompt] = useState(false);
@@ -383,6 +386,9 @@ export default function ServersSidebar({
     setChannelMenuId(null);
     setCollapsedCats({});
     setRulesPrompt(false);
+    setServerMenu(null);
+    setCatMenu(null);
+    setFolderMenu(null);
   }, [activeServer?.id]);
 
   useEffect(() => {
@@ -425,7 +431,7 @@ export default function ServersSidebar({
 
   const handleMoveServerToFolder = async (server, folderId) => {
     if (!server?.id) return;
-    setServerMenuId(null);
+    setServerMenu(null);
     try {
       if (onMoveServerToFolder) {
         await onMoveServerToFolder(server.id, folderId);
@@ -440,6 +446,7 @@ export default function ServersSidebar({
 
   const handleDeleteFolder = async (folder) => {
     if (!folder?.id) return;
+    setFolderMenu(null);
     if (!window.confirm(t("Delete folder \"{name}\"? Servers will stay unfiled.", { name: folder.name }))) {
       return;
     }
@@ -483,7 +490,9 @@ export default function ServersSidebar({
       }}
       onContextMenu={(e) => {
         e.preventDefault();
-        setServerMenuId(server.id);
+        e.stopPropagation();
+        setFolderMenu(null);
+        setServerMenu({ server, x: e.clientX, y: e.clientY });
       }}
     >
       <button
@@ -506,29 +515,225 @@ export default function ServersSidebar({
           <ServerUnreadBadge count={serverUnreadById[server.id] || 0} />
         </span>
       </button>
-      {serverMenuId === server.id ? (
-        <div className="server-folder-move-menu" role="menu">
-          <div className="server-folder-move-title">{t("Move to folder")}</div>
-          <button type="button" className="server-dropdown-item" onClick={() => handleMoveServerToFolder(server, null)}>
+    </li>
+  );
+
+  /**
+   * Right-click on a server row — same actions the row/header offer
+   * (open, folder placement, leave/delete), at the pointer.
+   */
+  const renderServerRowMenu = () => {
+    if (!serverMenu?.server) return null;
+    const server = serverMenu.server;
+    const currentFolderId = server.folderId ? String(server.folderId) : null;
+    return (
+      <CursorContextMenu
+        x={serverMenu.x}
+        y={serverMenu.y}
+        title={server.name}
+        onClose={() => setServerMenu(null)}
+      >
+        <button
+          type="button"
+          className="server-dropdown-item"
+          onClick={() => {
+            setServerMenu(null);
+            onSelectServer?.(server);
+          }}
+        >
+          <Server size={14} />
+          {t("Open server")}
+        </button>
+        <div className="server-dropdown-section">
+          <span className="server-dropdown-section-label">{t("Move to folder")}</span>
+          <button
+            type="button"
+            className={`server-dropdown-item${currentFolderId ? "" : " is-active"}`}
+            onClick={() => handleMoveServerToFolder(server, null)}
+          >
             {t("Unfiled")}
+            {currentFolderId ? null : <Check size={14} className="server-dropdown-check" />}
           </button>
-          {(serverFolders || []).map((folder) => (
+          {(serverFolders || []).map((folder) => {
+            const isIn = currentFolderId === String(folder.id);
+            return (
+              <button
+                key={folder.id}
+                type="button"
+                className={`server-dropdown-item${isIn ? " is-active" : ""}`}
+                onClick={() => handleMoveServerToFolder(server, isIn ? null : folder.id)}
+              >
+                <Folder size={14} />
+                {folder.name}
+                {isIn ? <Check size={14} className="server-dropdown-check" /> : null}
+              </button>
+            );
+          })}
+        </div>
+        {server.isOwner ? (
+          <button
+            type="button"
+            className="server-dropdown-item danger"
+            onClick={() => {
+              setServerMenu(null);
+              setConfirm({ mode: "delete", server });
+            }}
+          >
+            <Trash2 size={14} />
+            {t("Delete server")}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="server-dropdown-item danger"
+            onClick={() => {
+              setServerMenu(null);
+              setConfirm({ mode: "leave", server });
+            }}
+          >
+            <LogOut size={14} />
+            {t("Leave server")}
+          </button>
+        )}
+      </CursorContextMenu>
+    );
+  };
+
+  /** Right-click on a folder header — mirrors its hover-only buttons. */
+  const renderFolderMenu = () => {
+    if (!folderMenu?.folder) return null;
+    const folder = folderMenu.folder;
+    const closed = Boolean(collapsedFolders[folder.id]);
+    return (
+      <CursorContextMenu
+        x={folderMenu.x}
+        y={folderMenu.y}
+        title={folder.name}
+        onClose={() => setFolderMenu(null)}
+      >
+        <button
+          type="button"
+          className="server-dropdown-item"
+          onClick={() => {
+            setFolderMenu(null);
+            setCollapsedFolders((prev) => ({ ...prev, [folder.id]: !prev[folder.id] }));
+          }}
+        >
+          {closed ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {closed ? t("Expand") : t("Collapse")}
+        </button>
+        <button
+          type="button"
+          className="server-dropdown-item danger"
+          onClick={() => handleDeleteFolder(folder)}
+        >
+          <Trash2 size={14} />
+          {t("Delete folder")}
+        </button>
+      </CursorContextMenu>
+    );
+  };
+
+  /** Right-click on a category row — mirrors its hover-only action buttons. */
+  const renderCategoryMenu = () => {
+    if (!catMenu?.node) return null;
+    const node = catMenu.node;
+    if (!canManageChannels && !canManageRoles) return null;
+    return (
+      <CursorContextMenu
+        x={catMenu.x}
+        y={catMenu.y}
+        title={node.name}
+        onClose={() => setCatMenu(null)}
+      >
+        {canManageChannels ? (
+          <button
+            type="button"
+            className="server-dropdown-item"
+            onClick={() => {
+              setCatMenu(null);
+              setChannelModal({ mode: "create", defaultType: "text", parentId: node.id });
+            }}
+          >
+            <Hash size={14} />
+            {t("Create channel")}
+          </button>
+        ) : null}
+        {canManageRoles ? (
+          <button
+            type="button"
+            className="server-dropdown-item"
+            onClick={() => {
+              setCatMenu(null);
+              setChannelAccess(node);
+            }}
+          >
+            <Lock size={14} />
+            {t("Channel access")}
+          </button>
+        ) : null}
+        {canManageChannels ? (
+          <>
             <button
-              key={folder.id}
               type="button"
               className="server-dropdown-item"
-              onClick={() => handleMoveServerToFolder(server, folder.id)}
+              onClick={() => {
+                setCatMenu(null);
+                setChannelModal({ mode: "edit", channel: node });
+              }}
             >
-              <Folder size={14} />
-              {folder.name}
+              <Settings2 size={14} />
+              {t("Edit category")}
             </button>
-          ))}
-          <button type="button" className="server-dropdown-item" onClick={() => setServerMenuId(null)}>
-            {t("Close")}
-          </button>
-        </div>
-      ) : null}
-    </li>
+            <button
+              type="button"
+              className="server-dropdown-item danger"
+              onClick={() => {
+                setCatMenu(null);
+                setChannelModal({ mode: "delete", channel: node });
+              }}
+            >
+              <Trash2 size={14} />
+              {t("Delete category")}
+            </button>
+          </>
+        ) : null}
+      </CursorContextMenu>
+    );
+  };
+
+  /**
+   * Leave/delete confirmation — reachable from the in-server header menu and
+   * from a right-click on a server row in the list view.
+   */
+  const renderLeaveDeleteConfirm = () => (
+    <AnimatePresence>
+      {confirm && (
+        confirm.mode === "delete" || confirm.server.isOwner ? (
+          <ConfirmNameDialog
+            mode={confirm.mode === "delete" || confirm.server.isOwner ? "delete" : "leave"}
+            serverName={confirm.server.name}
+            onCancel={() => setConfirm(null)}
+            onConfirm={async (confirmName) => {
+              const server = confirm.server;
+              const mode = confirm.mode;
+              setConfirm(null);
+              await runLeaveOrDelete(mode, server, confirmName);
+            }}
+          />
+        ) : (
+          <ConfirmLeaveDialog
+            serverName={confirm.server.name}
+            onCancel={() => setConfirm(null)}
+            onConfirm={async () => {
+              const server = confirm.server;
+              setConfirm(null);
+              await onLeaveServer?.(server.id);
+            }}
+          />
+        )
+      )}
+    </AnimatePresence>
   );
 
   const runLeaveOrDelete = async (mode, server, confirmName) => {
@@ -776,7 +981,16 @@ export default function ServersSidebar({
                 const closed = Boolean(collapsedCats[node.id]);
                 return (
                   <div key={node.id} className="server-channel-cat">
-                    <div className="server-channel-cat-row">
+                    <div
+                      className="server-channel-cat-row"
+                      onContextMenu={(e) => {
+                        if (!canManageChannels && !canManageRoles) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setChannelMenuId(null);
+                        setCatMenu({ node, x: e.clientX, y: e.clientY });
+                      }}
+                    >
                       <button
                         type="button"
                         className="server-channel-cat-btn"
@@ -873,6 +1087,10 @@ export default function ServersSidebar({
                             setChannelAccess(ch);
                           }}
                           onOpenMenu={() => setChannelMenuId((id) => (id === ch.id ? null : ch.id))}
+                          onOpenMenuAt={() => {
+                            setCatMenu(null);
+                            setChannelMenuId(ch.id);
+                          }}
                           onCloseMenu={() => setChannelMenuId(null)}
                           onSelect={() => {
                             onSelectChannel?.(ch);
@@ -939,6 +1157,10 @@ export default function ServersSidebar({
                     setChannelAccess(node);
                   }}
                   onOpenMenu={() => setChannelMenuId((id) => (id === node.id ? null : node.id))}
+                  onOpenMenuAt={() => {
+                    setCatMenu(null);
+                    setChannelMenuId(node.id);
+                  }}
                   onCloseMenu={() => setChannelMenuId(null)}
                   onSelect={() => {
                     onSelectChannel?.(node);
@@ -1014,33 +1236,8 @@ export default function ServersSidebar({
           </div>
         </div>
 
-        <AnimatePresence>
-          {confirm && (
-            confirm.mode === "delete" || confirm.server.isOwner ? (
-              <ConfirmNameDialog
-                mode={confirm.mode === "delete" || confirm.server.isOwner ? "delete" : "leave"}
-                serverName={confirm.server.name}
-                onCancel={() => setConfirm(null)}
-                onConfirm={async (confirmName) => {
-                  const server = confirm.server;
-                  const mode = confirm.mode;
-                  setConfirm(null);
-                  await runLeaveOrDelete(mode, server, confirmName);
-                }}
-              />
-            ) : (
-              <ConfirmLeaveDialog
-                serverName={confirm.server.name}
-                onCancel={() => setConfirm(null)}
-                onConfirm={async () => {
-                  const server = confirm.server;
-                  setConfirm(null);
-                  await onLeaveServer?.(server.id);
-                }}
-              />
-            )
-          )}
-        </AnimatePresence>
+        {renderLeaveDeleteConfirm()}
+        {renderCategoryMenu()}
 
         <AnimatePresence>
           {channelModal?.mode === "create" && (
@@ -1278,6 +1475,12 @@ export default function ServersSidebar({
                   <section key={folder.id} className="server-folder-section">
                     <div
                       className={`server-folder-head${dragOverServerId === `folder:${folder.id}` ? " is-drag-over" : ""}`}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setServerMenu(null);
+                        setFolderMenu({ folder, x: e.clientX, y: e.clientY });
+                      }}
                       onDragOver={(e) => {
                         if (!serverListDraggable) return;
                         e.preventDefault();
@@ -1337,6 +1540,10 @@ export default function ServersSidebar({
           )}
         </div>
       </div>
+
+      {renderServerRowMenu()}
+      {renderFolderMenu()}
+      {renderLeaveDeleteConfirm()}
 
       <AnimatePresence>
         {showCreate && (
@@ -1651,6 +1858,7 @@ function ChannelRow({
   onToggleMute,
   onOpenAccess,
   onOpenMenu,
+  onOpenMenuAt,
   onCloseMenu,
   onSelect,
   onEdit,
@@ -1660,7 +1868,9 @@ function ChannelRow({
   const t = useT();
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, ready: false });
+  // Set when the menu was opened by right-clicking the row itself.
+  const [cursorPoint, setCursorPoint] = useState(null);
   const isVoiceLike = channel.type === "voice" || channel.type === "stage";
   const Icon =
     channel.type === "stage"
@@ -1685,15 +1895,47 @@ function ChannelRow({
     onDragStartChannel?.();
   };
 
-  useLayoutEffect(() => {
-    if (!menuOpen || !menuBtnRef.current) return;
-    const rect = menuBtnRef.current.getBoundingClientRect();
-    const width = 180;
-    setMenuPos({
-      top: Math.min(rect.bottom + 4, window.innerHeight - 12),
-      left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
-    });
+  useEffect(() => {
+    if (!menuOpen) {
+      setCursorPoint(null);
+      setMenuPos((prev) => (prev.ready ? { ...prev, ready: false } : prev));
+    }
   }, [menuOpen]);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const pad = 8;
+    const el = menuRef.current;
+    const width = el?.offsetWidth || 180;
+    const height = el?.offsetHeight || 160;
+
+    // Right-click: open at the pointer like a native context menu, flipping
+    // when it would run past the viewport edge.
+    if (cursorPoint) {
+      let left = cursorPoint.x;
+      let top = cursorPoint.y;
+      if (left + width > window.innerWidth - pad) left = cursorPoint.x - width;
+      if (top + height > window.innerHeight - pad) top = cursorPoint.y - height;
+      setMenuPos({
+        top: Math.max(pad, top),
+        left: Math.max(pad, left),
+        ready: true,
+      });
+      return;
+    }
+
+    // Kebab button: hang under the button.
+    const btn = menuBtnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    let top = rect.bottom + 4;
+    if (top + height > window.innerHeight - pad) top = rect.top - height - 4;
+    setMenuPos({
+      top: Math.max(pad, top),
+      left: Math.max(pad, Math.min(rect.right - width, window.innerWidth - width - pad)),
+      ready: true,
+    });
+  }, [menuOpen, cursorPoint]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -1718,7 +1960,11 @@ function ChannelRow({
         if (!showMenu) return;
         e.preventDefault();
         e.stopPropagation();
-        onOpenMenu?.();
+        setCursorPoint({ x: e.clientX, y: e.clientY });
+        // Force-open (never toggle): a right-click on an already open row
+        // should reposition the menu, not dismiss it.
+        if (onOpenMenuAt) onOpenMenuAt();
+        else if (!menuOpen) onOpenMenu?.();
       }}
       onDragStart={(e) => {
         if (!rowDraggable) return;
@@ -1788,6 +2034,7 @@ function ChannelRow({
             title={t("Channel settings")}
             onClick={(e) => {
               e.stopPropagation();
+              setCursorPoint(null);
               onOpenMenu?.();
             }}
           >
@@ -1798,8 +2045,13 @@ function ChannelRow({
                 <div
                   ref={menuRef}
                   className="server-channel-menu is-ported"
-                  style={{ top: menuPos.top, left: menuPos.left }}
+                  style={{
+                    top: menuPos.top,
+                    left: menuPos.left,
+                    visibility: menuPos.ready ? "visible" : "hidden",
+                  }}
                   role="menu"
+                  onContextMenu={(e) => e.preventDefault()}
                 >
                   {canMute && (
                     <button type="button" className="server-dropdown-item" onClick={onToggleMute}>
@@ -1856,6 +2108,77 @@ function ChannelRow({
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Native-feeling right-click menu: appears at the pointer, clamps/flips inside
+ * the viewport, and closes on outside click, Escape, scroll, resize or blur.
+ * Reuses the ported kebab-menu styling so both entry points look identical.
+ */
+function CursorContextMenu({ x, y, title = "", onClose, children }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState({ top: y, left: x, ready: false });
+
+  useLayoutEffect(() => {
+    const pad = 8;
+    const el = ref.current;
+    const width = el?.offsetWidth || 190;
+    const height = el?.offsetHeight || 180;
+    let left = x;
+    let top = y;
+    if (left + width > window.innerWidth - pad) left = x - width;
+    if (top + height > window.innerHeight - pad) top = y - height;
+    setPos({
+      top: Math.max(pad, top),
+      left: Math.max(pad, left),
+      ready: true,
+    });
+  }, [x, y]);
+
+  useEffect(() => {
+    const onDown = (e) => {
+      if (ref.current?.contains(e.target)) return;
+      onClose?.();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    const close = () => onClose?.();
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("blur", close);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("blur", close);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={ref}
+      className="server-channel-menu is-ported"
+      role="menu"
+      style={{
+        top: pos.top,
+        left: pos.left,
+        visibility: pos.ready ? "visible" : "hidden",
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {title ? <div className="server-voice-member-menu-title">{title}</div> : null}
+      {children}
+    </div>,
+    document.body
   );
 }
 

@@ -918,6 +918,8 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
   const { locale } = useLocale();
   const safeDms = Array.isArray(dms) ? dms : [];
   const [openMenuId, setOpenMenuId] = useState(null);
+  // { id, x, y } while the menu was opened by right-clicking the row.
+  const [menuPoint, setMenuPoint] = useState(null);
   const [confirmClose, setConfirmClose] = useState(null);
   const [actionError, setActionError] = useState("");
   const [swipeOpenId, setSwipeOpenId] = useState(null);
@@ -935,9 +937,14 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [openMenuId]);
 
+  const closeMenu = () => {
+    setOpenMenuId(null);
+    setMenuPoint(null);
+  };
+
   const runAction = async (dm, action) => {
     setSwipeOpenId(null);
-    setOpenMenuId(null);
+    closeMenu();
     if (action === "close") {
       setConfirmClose(dm);
       return;
@@ -1022,6 +1029,8 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                       if (isMobile) return;
                       e.preventDefault();
                       e.stopPropagation();
+                      // Native feel: the menu opens right under the cursor.
+                      setMenuPoint({ id: dm.id, x: e.clientX, y: e.clientY });
                       setOpenMenuId(dm.id);
                     }}
                   >
@@ -1038,7 +1047,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                         onAction={(action) => runAction(dm, action)}
                         onSwipeOpenChange={(open) => {
                           setSwipeOpenId(open ? dm.id : null);
-                          if (open) setOpenMenuId(null);
+                          if (open) closeMenu();
                         }}
                         onCloseOthers={() => {
                           if (swipeOpenId && swipeOpenId !== dm.id) setSwipeOpenId(null);
@@ -1061,16 +1070,20 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                           buttonRef={(el) => { dotBtnRefs.current[dm.id] = el; }}
                           open={openMenuId === dm.id}
                           label={t("More")}
-                          onToggle={() => setOpenMenuId(openMenuId === dm.id ? null : dm.id)}
+                          onToggle={() => {
+                            setMenuPoint(null);
+                            setOpenMenuId(openMenuId === dm.id ? null : dm.id);
+                          }}
                         />
                         <AnimatePresence>
                           {openMenuId === dm.id && (
                             <DmContextMenu
                               dm={dm}
                               unread={unread}
-                              onClose={() => setOpenMenuId(null)}
+                              onClose={closeMenu}
                               onAction={(action) => runAction(dm, action)}
                               anchorRef={{ current: dotBtnRefs.current[dm.id] }}
+                              anchorPoint={menuPoint?.id === dm.id ? menuPoint : null}
                             />
                           )}
                         </AnimatePresence>
@@ -1243,23 +1256,40 @@ function DmRowFront({
   );
 }
 
-function DmContextMenu({ dm, unread, onClose, onAction, anchorRef }) {
+function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint = null }) {
   const t = useT();
   const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0, visibility: "hidden" });
 
   useLayoutEffect(() => {
-    const anchor = anchorRef?.current;
     const menu = menuRef.current;
-    if (!anchor || !menu) return;
-    const rect = anchor.getBoundingClientRect();
+    if (!menu) return;
     const menuRect = menu.getBoundingClientRect();
+    const pad = 8;
+
+    // Right-click → open at the pointer, flipping at the viewport edges.
+    if (anchorPoint) {
+      let left = anchorPoint.x;
+      let top = anchorPoint.y;
+      if (left + menuRect.width > window.innerWidth - pad) left = anchorPoint.x - menuRect.width;
+      if (top + menuRect.height > window.innerHeight - pad) top = anchorPoint.y - menuRect.height;
+      setPosition({
+        top: Math.max(pad, top),
+        left: Math.max(pad, left),
+        visibility: "visible",
+      });
+      return;
+    }
+
+    const anchor = anchorRef?.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
     let top = rect.bottom + 6;
     let left = rect.right - menuRect.width;
-    if (left < 8) left = 8;
-    if (top + menuRect.height > window.innerHeight - 8) top = rect.top - menuRect.height - 6;
+    if (left < pad) left = pad;
+    if (top + menuRect.height > window.innerHeight - pad) top = rect.top - menuRect.height - 6;
     setPosition({ top, left, visibility: "visible" });
-  }, [anchorRef]);
+  }, [anchorRef, anchorPoint]);
 
   useEffect(() => {
     const handleOutside = (e) => {
@@ -1524,7 +1554,7 @@ function AddMemberDialog({ group, friends, onClose, onMemberAdded }) {
   );
 }
 
-function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef }) {
+function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null }) {
   const t = useT();
   const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0, visibility: "hidden" });
@@ -1532,7 +1562,25 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
   useLayoutEffect(() => {
     const anchor = anchorRef?.current;
     const menu = menuRef.current;
-    if (!anchor || !menu) return;
+    if (!menu) return;
+
+    // Right-click → pointer-anchored, like a native context menu.
+    if (anchorPoint) {
+      const pad = 8;
+      const menuRect = menu.getBoundingClientRect();
+      let left = anchorPoint.x;
+      let top = anchorPoint.y;
+      if (left + menuRect.width > window.innerWidth - pad) left = anchorPoint.x - menuRect.width;
+      if (top + menuRect.height > window.innerHeight - pad) top = anchorPoint.y - menuRect.height;
+      setPosition({
+        top: Math.max(pad, top),
+        left: Math.max(pad, left),
+        visibility: "visible",
+      });
+      return undefined;
+    }
+
+    if (!anchor) return undefined;
 
     const updatePosition = () => {
       const anchorRect = anchor.getBoundingClientRect();
@@ -1559,7 +1607,7 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [anchorRef]);
+  }, [anchorRef, anchorPoint]);
 
   useEffect(() => {
     const handleOutside = (e) => {
@@ -1786,6 +1834,8 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const { locale } = useLocale();
   const safeGroups = Array.isArray(groups) ? groups : [];
   const [openMenuId, setOpenMenuId] = useState(null);
+  // { id, x, y } while the menu was opened by right-clicking the row.
+  const [menuPoint, setMenuPoint] = useState(null);
   const [confirmLeave, setConfirmLeave] = useState(null);   // group object
   const [confirmRename, setConfirmRename] = useState(null); // group object
   const [addMemberGroup, setAddMemberGroup] = useState(null); // group object
@@ -1841,9 +1891,14 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
     }
   };
 
+  const closeMenu = () => {
+    setOpenMenuId(null);
+    setMenuPoint(null);
+  };
+
   const openAction = (group, action) => {
     setSwipeOpenId(null);
-    setOpenMenuId(null);
+    closeMenu();
     if (action === "invite") setInviteGroup(group);
     else if (action === "add") setAddMemberGroup(group);
     else if (action === "rename") setConfirmRename(group);
@@ -1909,6 +1964,8 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                         if (isMobile) return;
                         e.preventDefault();
                         e.stopPropagation();
+                        // Native feel: the menu opens right under the cursor.
+                        setMenuPoint({ id: group.id, x: e.clientX, y: e.clientY });
                         setOpenMenuId(group.id);
                       }}
                     >
@@ -1924,7 +1981,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                           onAction={(action) => openAction(group, action)}
                           onSwipeOpenChange={(open) => {
                             setSwipeOpenId(open ? group.id : null);
-                            if (open) setOpenMenuId(null);
+                            if (open) closeMenu();
                           }}
                           onCloseOthers={() => {
                             if (swipeOpenId && swipeOpenId !== group.id) setSwipeOpenId(null);
@@ -1948,18 +2005,22 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                             buttonRef={(el) => { dotBtnRefs.current[group.id] = el; }}
                             open={openMenuId === group.id}
                             label={t("More")}
-                            onToggle={() => setOpenMenuId(openMenuId === group.id ? null : group.id)}
+                            onToggle={() => {
+                              setMenuPoint(null);
+                              setOpenMenuId(openMenuId === group.id ? null : group.id);
+                            }}
                           />
                           <AnimatePresence>
                             {openMenuId === group.id && (
                               <GroupContextMenu
                                 group={group}
-                                onClose={() => setOpenMenuId(null)}
+                                onClose={closeMenu}
                                 onLeave={() => setConfirmLeave(group)}
                                 onRename={() => setConfirmRename(group)}
                                 onAddMember={() => setAddMemberGroup(group)}
                                 onInvite={() => setInviteGroup(group)}
                                 anchorRef={{ current: dotBtnRefs.current[group.id] }}
+                                anchorPoint={menuPoint?.id === group.id ? menuPoint : null}
                               />
                             )}
                           </AnimatePresence>

@@ -16,7 +16,7 @@ function personNode() {
     name: OWNER_NAME,
     givenName: "Demir Sarp",
     familyName: "Kurtlar",
-    alternateName: ["Demir Sarp Kurtlar", "DemirSarpK"],
+    alternateName: ["Demir Sarp Kurtlar", "DemirSarpKurtlar"],
     jobTitle: SITE_OPERATOR.founderTitle,
     description: `${OWNER_NAME} is the founder, owner, and CEO of Descall.`,
     url: absoluteUrl(SITE_OPERATOR.personPath),
