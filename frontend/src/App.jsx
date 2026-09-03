@@ -3485,6 +3485,9 @@ export default function App() {
 
   // Public marketing site for logged-out users (real SEO routes)
   if (!me) {
+    const isElectronDesktop =
+      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+    const nativeOrDesktop = Capacitor.isNativePlatform() || isElectronDesktop;
     // Token still present on an app deep-link (e.g. /dimaai): never dump to
     // marketing — keep the boot skeleton. Hard refresh used to Navigate → "/"
     // while descall_token remained, which looked like a session drop.
@@ -3496,16 +3499,10 @@ export default function App() {
         </>
       );
     }
-    if (isAuthenticatedAppPath(location.pathname) && !isPublicDimaLandingPath(location.pathname)) {
-      return <Navigate to="/" replace />;
-    }
-    // Native Android/iOS and Electron are product entry points, not SEO
-    // landing pages. Take people straight to sign-in/sign-up so an installed
-    // app feels like an app from its first frame (and Electron never white-
-    // screens after logout by hydrating marketing on file://).
-    const isElectronDesktop =
-      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
-    if (Capacitor.isNativePlatform() || isElectronDesktop) {
+    // Electron/native: paint AuthView immediately even if the URL is still
+    // /direct or /settings. A <Navigate to="/"> first frame is blank white
+    // in HashRouter + file:// (the logout white-screen).
+    if (nativeOrDesktop) {
       return (
         <>
           <TitleBar />
@@ -3519,6 +3516,9 @@ export default function App() {
           />
         </>
       );
+    }
+    if (isAuthenticatedAppPath(location.pathname) && !isPublicDimaLandingPath(location.pathname)) {
+      return <Navigate to="/" replace />;
     }
     return (
       <>

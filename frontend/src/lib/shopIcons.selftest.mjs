@@ -13,7 +13,7 @@ function assert(c, m) {
   if (!c) throw new Error(m);
 }
 
-const requiredKeys = ["crown", "diamond", "star", "flame", "skull", "rocket", "trophy", "ghost", "butterfly", "comet", "shield", "gamepad"];
+const requiredKeys = ["crown", "diamond", "star", "flame", "skull", "rocket", "trophy", "ghost", "butterfly", "comet", "shield", "gamepad", "elite", "phoenix", "certified"];
 for (const k of requiredKeys) {
   assert(new RegExp(`${k}:\\s*\\w+`).test(src), `missing shop icon key ${k}`);
 }

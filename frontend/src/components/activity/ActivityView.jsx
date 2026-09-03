@@ -62,7 +62,9 @@ function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectr
     <div className="activity-current-card" style={{ borderColor: accentColor }}>
       <div className="activity-current-header">
         <div className="activity-current-icon-wrap" style={{ background: `${accentColor}22` }}>
-          <span style={{ fontSize: 28 }}>{activity?.icon || '💤'}</span>
+          <span style={{ color: accentColor, display: "inline-flex" }}>
+            <ActivityTypeIcon type={activity?.appType} size={28} />
+          </span>
         </div>
         <div className="activity-current-info">
           <div className="activity-current-label">

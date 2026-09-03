@@ -158,6 +158,61 @@ export const SHOP_ICON_BY_KEY = {
   guardian: Shield,
   speedrunner: Crosshair,
   "star-collector": Star,
+  elite: Flame,
+  legend: Zap,
+  royalty: Crown,
+  "night-owl": Moon,
+  "diamond-hands": Diamond,
+  "rocket-rider": Rocket,
+  sharpshooter: Target,
+  "lone-wolf": PawPrint,
+  "social-butterfly": Flower2,
+  "comet-chaser": Orbit,
+  "apex-predator": Droplets,
+  "night-architect": Building2,
+  "signal-hunter": Radio,
+  voidwalker: CircleDashed,
+  stormcaller: CloudLightning,
+  codebreaker: Puzzle,
+  highroller: Dices,
+  "pulse-pilot": Satellite,
+  emberlord: Flame,
+  frostbane: Snowflake,
+  shadowdancer: Glasses,
+  goldenspire: Landmark,
+  "neon-ronin": Swords,
+  "pixel-monarch": Bug,
+  "orbit-king": Orbit,
+  "deep-diver": Waves,
+  skyline: Building2,
+  ironwill: Blocks,
+  silvertongue: Mic2,
+  quietstorm: CloudRain,
+  rapidfire: Zap,
+  coldblood: Snowflake,
+  daybreaker: Sun,
+  nightshift: Moon,
+  overclocked: Monitor,
+  lowlatency: Radio,
+  fullsend: Rocket,
+  clutchgod: Target,
+  maincharacter: Clapperboard,
+  sidequest: Map,
+  lorekeeper: PenLine,
+  raidleader: Shield,
+  soloqueue: User,
+  partyup: Handshake,
+  voicechamp: Mic,
+  screensage: Monitor,
+  giflord: Image,
+  memearchitect: Candy,
+  descoinmogul: Coins,
+  firstblood: Droplets,
+  laststand: Shield,
+  echochamber: Volume2,
+  quiettype: User,
+  hotmic: Mic,
+  certified: Award,
 };
 
 /** Legacy emoji strings stored in shop_items.badge_icon → Lucide. */
@@ -218,6 +273,8 @@ export const SHOP_ICON_BY_EMOJI = {
   "🐺": PawPrint,
   "🦊": PawPrint,
   "🦉": Bird,
+  "🤫": User,
+  "✅": Award,
 };
 
 /** Leading emoji on profile titles → Lucide (text keeps the label). */
@@ -375,6 +432,6 @@ export const ACTIVITY_TYPE_ICON = {
 };
 
 export function ActivityTypeIcon({ type, size = 16, className }) {
-  const Icon = ACTIVITY_TYPE_ICON[type] || Smartphone;
+  const Icon = type ? (ACTIVITY_TYPE_ICON[type] || Smartphone) : Moon;
   return <Icon size={size} className={className} strokeWidth={2} />;
 }

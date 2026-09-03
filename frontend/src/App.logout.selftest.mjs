@@ -29,4 +29,12 @@ assert(/SHOP_ICON_BY_EMOJI/.test(shopIcons) && /resolveShopBadgeIcon/.test(shopI
 assert(/ShopBadgeIcon/.test(cosmetics), "Cosmetics BadgeIcon must use Lucide ShopBadgeIcon");
 assert(/ShopTitleTag/.test(cosmetics), "Cosmetics TitleTag must use Lucide ShopTitleTag");
 
+const meBlock = app.split("if (!me) {").pop() || "";
+const electronAuthIdx = meBlock.search(/nativeOrDesktop|Capacitor\.isNativePlatform\(\) \|\| isElectronDesktop/);
+const navigateIdx = meBlock.indexOf('<Navigate to="/" replace />');
+assert(
+  electronAuthIdx !== -1 && (navigateIdx === -1 || electronAuthIdx < navigateIdx),
+  "Electron AuthView must render before Navigate-to-/ to avoid a blank white frame",
+);
+
 console.log("App.logout.selftest.mjs: ok");

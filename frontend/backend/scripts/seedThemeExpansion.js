@@ -129,7 +129,7 @@ const EXTRA_ITEMS = [
   { sku: "background-coral-reef", name: "Coral Reef", category: "profile_background", rarity: "rare", price_descoin: 300, description: "Vivid coral pinks and reef teals for a vibrant profile.", asset_url: background("coralreef", [{ o: "0%", c: "#012a2e" }, { o: "50%", c: "#0f6f66" }, { o: "100%", c: "#ff6f61" }], false) },
   { sku: "background-molten-canyon", name: "Molten Canyon", category: "profile_background", rarity: "epic", price_descoin: 380, description: "Deep canyon shadows glowing with molten light.", asset_url: background("moltencanyon", [{ o: "0%", c: "#120604" }, { o: "50%", c: "#4a1208" }, { o: "100%", c: "#f33520" }], false) },
 
-  // ── A few more profile badges (emoji, no CSS needed) ──
+  // ── A few more profile badges (lucide keys; renderer maps to SVG) ──
   { sku: "badge-phoenix", name: "Phoenix", category: "profile_badge", rarity: "legendary", price_descoin: 480, badge_icon: "phoenix", description: "A rare badge for those who always rise again." },
   { sku: "badge-wizard", name: "Wizard", category: "profile_badge", rarity: "epic", price_descoin: 360, badge_icon: "wizard", description: "For the certified masters of the arcane." },
   { sku: "badge-shield", name: "Guardian Shield", category: "profile_badge", rarity: "rare", price_descoin: 260, badge_icon: "shield", description: "A badge of protection and loyalty." },
