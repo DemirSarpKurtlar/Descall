@@ -1,0 +1,36 @@
+/* DM / group voice: keep avatar-only tiles chrome-less, pulse the round avatar.
+   ui-polish zeros speakingPulse on .participant-tile--avatar-only.is-speaking;
+   restore a circular green pulse on the avatar shell instead of a square tile glow. */
+
+.participant-tile--avatar-only.is-speaking {
+  animation: none;
+  box-shadow: none;
+  border-color: transparent !important;
+}
+
+.participant-tile--avatar-only.is-speaking .participant-tile-avatar-shell,
+.participant-tile--avatar-only.is-speaking .participant-tile-avatar-core {
+  animation: speakingPulse 1.6s ease-in-out infinite;
+  border-radius: 50%;
+}
+
+.participant-tile--avatar-only.is-speaking .speaking-ring {
+  opacity: 1;
+}
+
+.participant-tile--avatar-only.is-speaking .speaking-ring.ring-a {
+  border-color: rgba(35, 165, 90, 0.55);
+  box-shadow: 0 0 18px rgba(35, 165, 90, 0.35);
+}
+
+.participant-tile--avatar-only.is-speaking .speaking-ring.ring-b {
+  border-color: rgba(35, 165, 90, 0.28);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .participant-tile--avatar-only.is-speaking .participant-tile-avatar-shell,
+  .participant-tile--avatar-only.is-speaking .participant-tile-avatar-core {
+    animation: none;
+  }
+}

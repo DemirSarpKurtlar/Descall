@@ -1,0 +1,355 @@
+/* Avatar stack — keep photo, effect ring, and frame perfectly concentric */
+
+.ui-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  isolation: isolate;
+  overflow: visible;
+  line-height: 0;
+}
+
+.ui-avatar-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-avatar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 700;
+  font-size: 0.42em;
+  line-height: 1;
+  color: #fff;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.ui-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+/* Frame sits in a square larger than the avatar (~132%).
+   IMPORTANT: <img> is a replaced element — inset + width/height:auto uses the
+   SVG's intrinsic size (often 256px), which blows the ring up over the whole
+   profile card. Always set an explicit width/height relative to .ui-avatar. */
+.ui-avatar-frame-overlay {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 132%;
+  height: 132%;
+  max-width: none;
+  max-height: none;
+  /* Transform on the <img> itself is safe; Framer Motion only owns the parent. */
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
+}
+
+/* Profile modal / hover / settings avatar shells */
+.profile-avatar-shell,
+.uhc-avatar-wrap,
+.us-hero-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  line-height: 0;
+}
+
+.profile-avatar-shell {
+  /* No padding box — padding made the cutout ring feel off-center vs effects.
+     Use an even outline ring instead so avatar/effect/frame share one center. */
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 3px var(--surface-1, #1e1f22);
+}
+
+.profile-avatar-shell .status-badge,
+.us-hero-avatar .status-badge,
+.us-hero-status .status-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+}
+
+/* Profile modal card chrome */
+.user-profile-card {
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.user-profile-card-top {
+  position: relative;
+  overflow: visible;
+}
+
+.user-profile-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.user-profile-close:hover {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.user-profile-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.user-profile-name-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-0);
+  line-height: 1.2;
+}
+
+.user-profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.user-profile-badges .cosmetic-title-tag,
+.user-profile-badges .dsc-admin-badge--chip {
+  margin-top: 0;
+}
+
+.user-profile-status-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.user-profile-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-profile-report-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-3);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.user-profile-report-btn:hover {
+  background: var(--danger-soft, rgba(242, 63, 67, 0.12));
+  color: var(--danger, #f23f43);
+  border-color: transparent;
+}
+
+.report-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  padding: 16px;
+}
+
+.report-modal {
+  width: min(420px, 100%);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border-3, rgba(255, 255, 255, 0.1));
+  background: var(--surface-1, #16161d);
+  color: var(--text-1, #f4f6fb);
+  padding: 18px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.report-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.report-modal-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.report-modal-head p {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.report-modal-close {
+  border: none;
+  background: var(--surface-3);
+  color: var(--text-1);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.report-modal-snippet {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.report-reason-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.report-reason-chip {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-1);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.report-reason-chip.active {
+  background: rgba(242, 63, 67, 0.18);
+  border-color: rgba(242, 63, 67, 0.45);
+}
+
+.report-modal-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.report-modal-note textarea {
+  resize: vertical;
+  min-height: 72px;
+  border-radius: 10px;
+  border: 1px solid var(--border-3);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-1);
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.report-modal-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--danger, #f23f43);
+  font-size: 12.5px;
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.report-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.report-btn.ghost {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.report-btn.danger {
+  background: #f23f43;
+  color: #fff;
+}
+
+.report-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.report-modal-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 8px;
+  color: #30d158;
+}
+

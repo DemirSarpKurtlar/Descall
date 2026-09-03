@@ -1,0 +1,33 @@
+-- Add user settings columns to users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_status TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS accent_color TEXT DEFAULT '#7e81ff';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS font_size TEXT DEFAULT 'medium';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_density TEXT DEFAULT 'comfortable';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bubble_style TEXT DEFAULT 'modern';
+
+-- Notification settings
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sound_enabled BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sound_volume FLOAT DEFAULT 0.8;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS desktop_notifications BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS call_notifications BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mention_notifications BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT true;
+
+-- Privacy settings
+ALTER TABLE users ADD COLUMN IF NOT EXISTS online_status_visible BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_visible BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS typing_indicator_visible BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_visible_to TEXT DEFAULT 'everyone';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_friend_requests BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_group_invites BOOLEAN DEFAULT true;
+
+-- Regional settings
+ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'UTC';
+
+-- Other settings
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_users TEXT[] DEFAULT ARRAY[]::TEXT[];
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sessions JSONB DEFAULT '[]'::JSONB;

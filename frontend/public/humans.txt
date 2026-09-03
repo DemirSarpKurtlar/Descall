@@ -1,0 +1,10 @@
+/* TEAM */
+Founder, owner, and CEO: Demir Sarp Kurtlar
+Location: Türkiye
+Contact: contact@descall.com
+GitHub: https://github.com/demirsarpk
+
+/* SITE */
+Product: Descall
+Standards: HTML5, JSON-LD (schema.org Person + Organization)
+Last update: 2026-08-25

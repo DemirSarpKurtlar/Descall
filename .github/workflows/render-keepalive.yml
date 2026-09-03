@@ -1,0 +1,69 @@
+# Ping Render free-tier so cold hibernate does not 503 Vercel→API new chats.
+# Prefer direct https://des-call.onrender.com/health (wake path). Optional
+# descall.com/api/status is best-effort (may hit CF 429 from Actions IPs).
+name: Render keepalive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # Do not red the Actions board on transient CF 429 / wake flakiness
+    continue-on-error: true
+    steps:
+      - name: Wake Render /health
+        run: |
+          set +e
+          URL="https://des-call.onrender.com/health"
+          UA="Mozilla/5.0 (compatible; Descall-Keepalive/1.0; +https://github.com/DemirSarpKurtlar/Descall)"
+          MAX_ATTEMPTS=4
+          SLEEP_SECS=15
+          attempt=1
+          final_code=1
+          while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
+            echo "=== Attempt $attempt/$MAX_ATTEMPTS → $URL ==="
+            http_code=$(curl -sS -o /tmp/keepalive-body.txt -w "%{http_code}" \
+              -A "$UA" \
+              --connect-timeout 30 \
+              --max-time 90 \
+              "$URL")
+            curl_exit=$?
+            echo "curl_exit=$curl_exit http_code=$http_code"
+            if [ -f /tmp/keepalive-body.txt ]; then
+              head -c 400 /tmp/keepalive-body.txt || true
+              echo
+            fi
+            if [ "$curl_exit" -eq 0 ] && [ "$http_code" = "200" ]; then
+              echo "OK: Render /health responded 200"
+              final_code=0
+              break
+            fi
+            # Tolerate first failures (hibernate-wake / transient 503) then retry
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              echo "Non-success (wake/transient). Sleeping ${SLEEP_SECS}s before retry..."
+              sleep "$SLEEP_SECS"
+            fi
+            attempt=$((attempt + 1))
+          done
+
+          # Optional secondary probe via public domain (may 429 from Actions IPs)
+          STATUS_URL="https://descall.com/api/status"
+          echo "=== Optional probe → $STATUS_URL ==="
+          status_code=$(curl -sS -o /tmp/keepalive-status.txt -w "%{http_code}" \
+            -A "$UA" \
+            --connect-timeout 20 \
+            --max-time 60 \
+            "$STATUS_URL" || true)
+          echo "optional /api/status http_code=$status_code"
+          if [ -f /tmp/keepalive-status.txt ]; then
+            head -c 200 /tmp/keepalive-status.txt || true
+            echo
+          fi
+
+          echo "=== Final Render /health status: exit=$final_code ==="
+          # Always exit 0 so CF 429 / wake noise does not fail the board
+          # (job also has continue-on-error: true)
+          exit 0

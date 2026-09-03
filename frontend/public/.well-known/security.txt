@@ -1,0 +1,7 @@
+Contact: mailto:contact@descall.com
+Expires: 2027-08-25T00:00:00.000Z
+Preferred-Languages: en, tr
+Canonical: https://descall.com/.well-known/security.txt
+Policy: https://descall.com/security
+Hiring: https://descall.com/about
+Acknowledgments: https://github.com/DemirSarpKurtlar/Descall

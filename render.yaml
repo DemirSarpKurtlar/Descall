@@ -1,0 +1,149 @@
+# Descall — Render Blueprint
+#
+# Production: https://des-call.onrender.com          (branch: main)
+# Staging:    https://des-call-staging.onrender.com  (branch: staging)
+#
+# Akış:
+#   1) Değişiklikleri `staging` branch'ine push et → staging site güncellenir
+#   2) Test et (https://des-call-staging.onrender.com)
+#   3) Sorun yoksa `staging` → `main` merge → production güncellenir
+#
+# İlk Blueprint kurulumunda Render sorar (sync: false):
+#   - SUPABASE_URL
+#   - SUPABASE_SERVICE_ROLE_KEY
+#   - GOOGLE_CLIENT_ID / VITE_GOOGLE_CLIENT_ID (opsiyonel)
+#   - RESEND_API_KEY, FEEDBACK_EMAIL_FROM, FEEDBACK_EMAIL_TO (in-app feedback → email)
+#   - WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT, VITE_WEB_PUSH_PUBLIC_KEY (web push)
+#   - GITHUB_RELEASE_TOKEN (optional but recommended: a fine-grained PAT with
+#     public-repo read access, so /api/app/latest-release isn't starved by
+#     GitHub's 60 req/hr unauthenticated limit shared across Render's IPs)
+#
+# Not: Mağaza artık gerçek para değil, uygulama içi DesCoin ile çalışıyor
+# (bkz. backend/lib/descoin.js) — Stripe entegrasyonu kaldırıldı.
+# JWT_SECRET otomatik üretilir (generateValue).
+
+previews:
+  generation: off
+
+services:
+  # ── Production (ana site) ───────────────────────────────────────
+  - type: web
+    name: des-call
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    aptPackages:
+      - ffmpeg
+    buildCommand: cd frontend && npm install --include=dev && npm run build:prod && cd backend && npm install
+    startCommand: cd frontend/backend && NODE_ENV=production node server.js
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "3000"
+      - key: ALLOW_ALL_ORIGINS
+        value: "true"
+      - key: APP_ENV
+        value: production
+      - key: PUBLIC_APP_URL
+        value: https://descall.com
+      - key: SITE_URL
+        value: https://descall.com
+      - key: VITE_API_BASE_URL
+        value: https://des-call.onrender.com
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FEEDBACK_EMAIL_FROM
+        sync: false
+      - key: FEEDBACK_EMAIL_TO
+        sync: false
+      - key: WEB_PUSH_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_PRIVATE_KEY
+        sync: false
+      - key: WEB_PUSH_SUBJECT
+        sync: false
+      - key: VITE_WEB_PUSH_PUBLIC_KEY
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: GITHUB_RELEASE_TOKEN
+        sync: false
+
+  # ── Staging (test site) ─────────────────────────────────────────
+  - type: web
+    name: des-call-staging
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: staging
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    aptPackages:
+      - ffmpeg
+    buildCommand: cd frontend && npm install --include=dev && npm run build:prod && cd backend && npm install
+    startCommand: cd frontend/backend && NODE_ENV=production node server.js
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "3000"
+      - key: ALLOW_ALL_ORIGINS
+        value: "true"
+      - key: APP_ENV
+        value: staging
+      - key: VITE_API_BASE_URL
+        value: https://des-call-staging.onrender.com
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FEEDBACK_EMAIL_FROM
+        sync: false
+      - key: FEEDBACK_EMAIL_TO
+        sync: false
+      - key: WEB_PUSH_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_PRIVATE_KEY
+        sync: false
+      - key: WEB_PUSH_SUBJECT
+        sync: false
+      - key: VITE_WEB_PUSH_PUBLIC_KEY
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: GITHUB_RELEASE_TOKEN
+        sync: false

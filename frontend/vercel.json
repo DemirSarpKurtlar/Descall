@@ -1,0 +1,296 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install --include=dev",
+  "buildCommand": "npm run build:prod",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.descall.com"
+        }
+      ],
+      "destination": "https://descall.com/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "descall.com"
+        },
+        {
+          "type": "header",
+          "key": "x-forwarded-proto",
+          "value": "http"
+        }
+      ],
+      "destination": "https://descall.com/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.descall.com"
+        },
+        {
+          "type": "header",
+          "key": "x-forwarded-proto",
+          "value": "http"
+        }
+      ],
+      "destination": "https://descall.com/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/discord-alternative",
+      "destination": "/discord-alternative-turkey",
+      "statusCode": 301
+    },
+    {
+      "source": "/founder",
+      "destination": "/who-owns-descall",
+      "statusCode": 301
+    },
+    {
+      "source": "/owner",
+      "destination": "/who-owns-descall",
+      "statusCode": 301
+    },
+    {
+      "source": "/kurucu",
+      "destination": "/descall-sahibi",
+      "statusCode": 301
+    },
+    {
+      "source": "/sahip",
+      "destination": "/descall-sahibi",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/who-owns-descall",
+      "destination": "/descall-sahibi",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "statusCode": 301
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/groups",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/groups/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/servers",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/servers/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/friends",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/friends/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calls",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calls/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!assets/|robots\\.txt|sitemap\\.xml|sitemap-pages\\.xml|sitemap-core\\.xml|sitemap-niches\\.xml|sitemap-blog\\.xml|sitemap-company\\.xml|sitemap\\.html|sitemap\\.xsl|llms\\.txt|llms-full\\.txt|humans\\.txt|\\.well-known/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(js|css|woff2|wasm)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(png|jpg|jpeg|webp|avif|svg|ico|gif)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(llms.txt|llms-full.txt|humans.txt)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, stale-while-revalidate=600"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/security.txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/(sitemap.xml|sitemap-pages.xml|sitemap-core.xml|sitemap-niches.xml|sitemap-blog.xml|sitemap-company.xml|robots.txt)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, stale-while-revalidate=600"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/:key([a-f0-9]{32}).txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, stale-while-revalidate=600"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xsl",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/xslt+xml; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/(features|faq|download|discord-alternative|alternatives|compare|about|who-owns-descall|descall-sahibi|security|status|privacy|terms|contact|blog|tr)(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=120, s-maxage=600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "X-Descall-Shell",
+          "value": "marketing"
+        }
+      ]
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(self), display-capture=(self), autoplay=(self)"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
+      ]
+    }
+  ],
+  "fluid": true
+}

@@ -1,0 +1,1149 @@
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from "react";
+import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
+import { FileText, Download, Smile, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "lucide-react";
+import { Avatar } from "../ui/Avatar";
+import StatusBadge from "../ui/StatusBadge";
+import CallSummaryBubble from "./CallSummaryBubble";
+import VoiceMessagePlayer from "./VoiceMessagePlayer";
+import ActiveCallBanner from "../ActiveCallBanner";
+import UserProfileModal from "../social/UserProfileModal";
+import ReportUserModal from "../social/ReportUserModal";
+import GameMessageBubble from "./GameMessageBubble";
+import MessageReactions from "./MessageReactions";
+import MessageContent from "./MessageContent";
+import { InviteLinkEmbedList } from "./InviteLinkEmbed";
+import SlashCommandEmbed from "./SlashCommandEmbed";
+import MessageMediaLightbox from "./MessageMediaLightbox";
+import { MessageSkeleton } from "../ui/Skeleton";
+import { getPresenceStatus } from "../../lib/presence";
+import UserHoverCard from "../social/UserHoverCard";
+import AdminBadge from "../social/AdminBadge";
+import { BadgeIcon, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
+import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
+import { useT } from "../../context/LocaleContext";
+import { formatMessageClock, formatMessageDate, parseAppDate } from "../../lib/datetime";
+
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
+const PICKER_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "👏", "🤔", "👎"];
+
+function dmConversationId(a, b) {
+  if (!a || !b) return null;
+  return [a, b].sort().join("::");
+}
+
+/** Fill / preserve avatar fields from friends / presence / me so letters don't stick. */
+function enrichAvatarUser(user, { me, friends, onlineUsers, currentUser } = {}) {
+  if (!user) return user;
+  const id = user.id;
+  const fromMe =
+    id && (me?.id === id || currentUser?.id === id)
+      ? me || currentUser
+      : null;
+  const fromFriend = id && Array.isArray(friends) ? friends.find((f) => f.id === id) : null;
+  const fromOnline = id && Array.isArray(onlineUsers) ? onlineUsers.find((u) => u.id === id) : null;
+  return mergeUserProfiles(user, fromOnline, fromFriend, fromMe) || user;
+}
+
+function hoverAnchorFromRect(rect) {
+  if (!rect) return null;
+  return {
+    x: rect.right + 8,
+    y: Math.max(8, rect.top - 8),
+    // If the card would overflow right, flip to the left of the avatar.
+    flipX: rect.left - 8,
+  };
+}
+
+function dayKeyOf(iso) {
+  const d = parseAppDate(iso);
+  if (!d) return "";
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function formatDayLabel(iso, t) {
+  const date = parseAppDate(iso);
+  if (!date) return "";
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const that = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((today - that) / 86400000);
+    if (diffDays === 0) return t("Today");
+    if (diffDays === 1) return t("Yesterday");
+    return formatMessageDate(date, undefined, { weekday: "short", month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+
+const STICK_TO_BOTTOM_PX = 100;
+
+function getMessagesScroller(fromEl) {
+  if (!fromEl) return null;
+  return fromEl.closest?.(".messages-container") || fromEl.parentElement;
+}
+
+function isNearBottom(el, threshold = STICK_TO_BOTTOM_PX) {
+  if (!el) return true;
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+}
+
+function scrollScrollerToBottom(el) {
+  if (!el) return;
+  el.scrollTop = el.scrollHeight;
+}
+
+/**
+ * Discord-style message list with day / unread separators.
+ */
+export default function MessageList({
+  messages,
+  currentUser,
+  onJoinActiveCall,
+  onDismissActiveBanner,
+  me,
+  friends,
+  onlineUsers,
+  onStartDm,
+  socket,
+  activeGroup,
+  activeDmUser = null,
+  activeChannel = null,
+  activeServer = null,
+  canManageMessages = false,
+  loading = false,
+  unreadCount = 0,
+  onReply,
+  searchQuery = "",
+}) {
+  const t = useT();
+  const messagesEndRef = useRef(null);
+  const listRef = useRef(null);
+  const stickToBottomRef = useRef(true);
+  const prevLastIdRef = useRef(null);
+  const [profileTarget, setProfileTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [hoverUser, setHoverUser] = useState(null);
+  const [hoverPos, setHoverPos] = useState(null);
+
+  const conversationType = activeChannel?.id
+    ? "server"
+    : activeGroup
+      ? "group"
+      : "dm";
+  const conversationId = activeChannel?.id
+    || activeGroup?.id
+    || dmConversationId(currentUser?.id || me?.id, activeDmUser?.id);
+  const serverId = activeServer?.id || activeChannel?.serverId || null;
+
+  const trimmedSearch = searchQuery.trim();
+  const isSearching = trimmedSearch.length > 0;
+  const [serverSearchResults, setServerSearchResults] = useState(null);
+
+  useEffect(() => {
+    if (conversationType !== "server" || !socket || !activeChannel?.id) {
+      setServerSearchResults(null);
+      return undefined;
+    }
+    if (trimmedSearch.length < 2) {
+      setServerSearchResults(null);
+      return undefined;
+    }
+
+    const onResults = ({ channelId, messages: results } = {}) => {
+      if (channelId === activeChannel.id) {
+        setServerSearchResults(Array.isArray(results) ? results : []);
+      }
+    };
+
+    socket.on("server:channel:message:search", onResults);
+    const timer = setTimeout(() => {
+      socket.emit("server:channel:message:search", {
+        channelId: activeChannel.id,
+        q: trimmedSearch,
+        limit: 50,
+      });
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      socket.off("server:channel:message:search", onResults);
+    };
+  }, [conversationType, socket, activeChannel?.id, trimmedSearch]);
+
+  const myId = currentUser?.id || me?.id;
+
+  const resolveScroller = useCallback(() => {
+    return getMessagesScroller(listRef.current) || getMessagesScroller(messagesEndRef.current);
+  }, []);
+
+  useEffect(() => {
+    stickToBottomRef.current = true;
+    prevLastIdRef.current = null;
+  }, [conversationId]);
+
+  useEffect(() => {
+    const scroller = resolveScroller();
+    if (!scroller) return undefined;
+    const onScroll = () => {
+      stickToBottomRef.current = isNearBottom(scroller);
+    };
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, [conversationId, resolveScroller]);
+
+  useEffect(() => {
+    const scroller = resolveScroller();
+    const list = listRef.current;
+    if (!scroller || !list || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => {
+      if (stickToBottomRef.current && !isSearching && !loading) {
+        scrollScrollerToBottom(scroller);
+      }
+    });
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, [conversationId, isSearching, loading, resolveScroller]);
+
+  useLayoutEffect(() => {
+    if (loading || isSearching) return;
+    const scroller = resolveScroller();
+    if (!scroller) return;
+
+    const msgs = Array.isArray(messages) ? messages : [];
+    const last = msgs[msgs.length - 1];
+    const lastId = last?.id ?? null;
+    const prevLastId = prevLastIdRef.current;
+    prevLastIdRef.current = lastId;
+
+    const lastIsOwn = Boolean(last) && (
+      last.from?.id === myId
+      || last.sender_id === myId
+      || last.userId === myId
+      || String(last.id || "").startsWith("temp-")
+    );
+
+    if (!(stickToBottomRef.current || lastIsOwn || prevLastId == null)) return;
+    if (lastIsOwn) stickToBottomRef.current = true;
+    scrollScrollerToBottom(scroller);
+  }, [messages, loading, isSearching, myId, resolveScroller]);
+
+  const searchedMessages = useMemo(() => {
+    const msgs = Array.isArray(messages) ? messages : [];
+    if (!isSearching) return msgs;
+
+    if (conversationType === "server" && trimmedSearch.length >= 2 && serverSearchResults?.length) {
+      return serverSearchResults;
+    }
+
+    const needle = trimmedSearch.toLowerCase();
+    return msgs.filter((m) => typeof m?.text === "string" && m.text.toLowerCase().includes(needle));
+  }, [messages, isSearching, trimmedSearch, conversationType, serverSearchResults]);
+
+  const groupedMessages = useMemo(() => {
+    const msgs = searchedMessages;
+    if (!msgs.length) return [];
+
+    const grouped = [];
+    let currentGroup = null;
+    const unreadStartIndex =
+      !isSearching && unreadCount > 0 ? Math.max(0, msgs.length - unreadCount) : -1;
+
+    const flush = () => {
+      if (currentGroup) {
+        grouped.push(currentGroup);
+        currentGroup = null;
+      }
+    };
+
+    msgs.forEach((msg, index) => {
+      const dayKey = dayKeyOf(msg?.timestamp);
+      const prevDay = index > 0 ? dayKeyOf(msgs[index - 1]?.timestamp) : null;
+      if (dayKey && dayKey !== prevDay) {
+        flush();
+        grouped.push({
+          isDaySep: true,
+          label: formatDayLabel(msg.timestamp, t),
+          id: `day-${dayKey}-${index}`,
+        });
+      }
+
+      if (index === unreadStartIndex) {
+        flush();
+        grouped.push({ isUnreadSep: true, id: `unread-${index}` });
+      }
+
+      // Call summary and active call bubbles break grouping — render standalone
+      // Also recover legacy rows that were stored/rendered as raw JSON text.
+      let summaryMsg = msg;
+      if (msg?.type !== "call_summary" && typeof msg?.text === "string" && msg.text.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(msg.text);
+          if (parsed && (parsed.type === "call_summary" || parsed.callType || parsed.durationSeconds !== undefined)) {
+            summaryMsg = {
+              ...parsed,
+              id: parsed.id || msg.id,
+              timestamp: msg.timestamp || parsed.endedAt,
+              type: "call_summary",
+            };
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      if (summaryMsg.type === "call_summary") {
+        flush();
+        grouped.push({ isSummary: true, summary: summaryMsg, id: summaryMsg.id });
+        return;
+      }
+      if (msg.type === "active_call") {
+        flush();
+        grouped.push({ isActiveBanner: true, banner: msg, id: msg.id });
+        return;
+      }
+      // Game messages render standalone (no grouping)
+      if (msg.isGameMessage || msg.type?.startsWith("game_")) {
+        flush();
+        grouped.push({ isGame: true, gameMsg: msg, id: msg.id });
+        return;
+      }
+
+      const prevMsg = msgs[index - 1];
+      const crossedDay = Boolean(dayKey && prevDay && dayKey !== prevDay);
+      const crossedUnread = index === unreadStartIndex;
+      const isSameSender = prevMsg?.from?.id === msg.from?.id && prevMsg?.type !== "call_summary";
+      const timeDiff = prevMsg
+        ? (parseAppDate(msg.timestamp)?.getTime() || 0) - (parseAppDate(prevMsg.timestamp)?.getTime() || 0)
+        : Infinity;
+      const isCompact =
+        isSameSender && timeDiff < 5 * 60 * 1000 && !crossedDay && !crossedUnread;
+
+      if (isCompact && currentGroup) {
+        currentGroup.messages.push(msg);
+      } else {
+        flush();
+        currentGroup = { user: msg.from, messages: [msg], isCompact: false };
+      }
+    });
+
+    flush();
+    return grouped;
+  }, [searchedMessages, unreadCount, isSearching, t]);
+
+  if (loading) {
+    return (
+      <div className="message-list" ref={listRef}>
+        <MessageSkeleton count={7} />
+      </div>
+    );
+  }
+
+  if (isSearching && groupedMessages.length === 0) {
+    return (
+      <div className="message-list" ref={listRef}>
+        <div className="message-search-empty">
+          <span>{t('No messages match "{query}"', { query: trimmedSearch })}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="message-list" ref={listRef}>
+      {isSearching && (
+        <div className="message-search-result-count">
+          {t("{count} matching messages", { count: groupedMessages.reduce((n, g) => n + (g.messages?.length || (g.isSummary || g.isGame || g.isActiveBanner ? 1 : 0)), 0) })}
+        </div>
+      )}
+      {groupedMessages.map((group, groupIndex) => {
+        if (group.isDaySep) {
+          return (
+            <div key={group.id || `day-${groupIndex}`} className="message-day-sep">
+              <span>{group.label}</span>
+            </div>
+          );
+        }
+        if (group.isUnreadSep) {
+          return (
+            <div key={group.id || `unread-${groupIndex}`} className="message-unread-sep">
+              <span>{t("New messages")}</span>
+            </div>
+          );
+        }
+        if (group.isSummary) {
+          return <CallSummaryBubble key={group.id || `summary-${groupIndex}`} summary={group.summary} />;
+        }
+        if (group.isActiveBanner) {
+          return (
+            <ActiveCallBanner
+              key={group.id || `active-call-${groupIndex}`}
+              banner={group.banner}
+              onJoin={onJoinActiveCall}
+              onDismiss={onDismissActiveBanner}
+            />
+          );
+        }
+        if (group.isGame) {
+          return (
+            <GameMessageBubble
+              key={group.id || `game-${groupIndex}`}
+              message={group.gameMsg}
+              isOwn={group.gameMsg.from?.id === currentUser?.id}
+              currentUserId={currentUser?.id}
+              socket={socket}
+              onGameAction={() => {}}
+            />
+          );
+        }
+
+        const isOwn = group.user?.id === currentUser?.id;
+        const avatarUser = enrichAvatarUser(group.user, { me, friends, onlineUsers, currentUser });
+        const openProfile = () => {
+          if (avatarUser?.id) setProfileTarget(avatarUser);
+        };
+        const showHoverCard = (el) => {
+          if (!avatarUser?.id || !el) return;
+          const rect = el.getBoundingClientRect();
+          const friend = (friends || []).find((f) => f.id === avatarUser.id);
+          const online = (onlineUsers || []).find((u) => u.id === avatarUser.id);
+          setHoverUser(
+            mergeUserProfiles(avatarUser, friend, online, {
+              status: getPresenceStatus(onlineUsers, avatarUser.id),
+            })
+          );
+          setHoverPos(hoverAnchorFromRect(rect));
+        };
+        const hideHoverCard = () => {
+          setHoverUser(null);
+          setHoverPos(null);
+        };
+
+        return (
+          <div
+            key={group.messages?.[0]?.id || group.id || `msg-group-${groupIndex}`}
+            className={`message-group ${isOwn ? "own" : ""}`}
+          >
+            {!group.isCompact && (
+              <div className="message-header">
+                <div
+                  className="message-avatar"
+                  onClick={openProfile}
+                  style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
+                  onMouseEnter={(e) => showHoverCard(e.currentTarget)}
+                  onMouseLeave={hideHoverCard}
+                >
+                  <Avatar
+                    name={resolveDisplayName(avatarUser)}
+                    size={40}
+                    user={avatarUser}
+                    imageUrl={pickAvatarUrl(avatarUser)}
+                    animate="hover"
+                  />
+                  <StatusBadge
+                    status={getPresenceStatus(onlineUsers, avatarUser?.id)}
+                    user={avatarUser}
+                  />
+                </div>
+                <div className="message-meta">
+                  <span
+                    className="message-author"
+                    onClick={openProfile}
+                    style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
+                    onMouseEnter={(e) => {
+                      if (!avatarUser?.id) return;
+                      e.currentTarget.style.textDecoration = "underline";
+                      showHoverCard(e.currentTarget);
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.textDecoration = "";
+                      hideHoverCard();
+                    }}
+                  >
+                    <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
+                    {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
+                      <span className="msg-bot-badge" title="App">APP</span>
+                    ) : null}
+                    <BadgeIcon user={avatarUser} />
+                    <AdminBadge user={avatarUser} variant="inline" />
+                  </span>
+                  <span className="message-timestamp">
+                    {formatTimestamp(group.messages[0]?.timestamp)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="message-content-wrapper">
+              {group.messages.map((msg) => {
+                const ts = parseAppDate(msg.timestamp || msg.created_at)?.getTime?.() || 0;
+                const isFresh =
+                  String(msg.id || "").startsWith("temp-") ||
+                  (ts > 0 && Date.now() - ts < 2800);
+                return (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isOwn={isOwn}
+                  isCompact={group.isCompact}
+                  isFresh={isFresh}
+                  currentUserId={currentUser?.id || me?.id}
+                  socket={socket}
+                  conversationType={conversationType}
+                  conversationId={conversationId}
+                  serverId={serverId}
+                  canManageMessages={canManageMessages}
+                  onReply={onReply}
+                  onReport={setReportTarget}
+                  highlight={trimmedSearch}
+                  chatBubbleKey={
+                    isOwn
+                      ? me?.equippedChatBubble?.effect_key || avatarUser?.equippedChatBubble?.effect_key || null
+                      : avatarUser?.equippedChatBubble?.effect_key || null
+                  }
+                  reactionBurstKey={
+                    isOwn
+                      ? me?.equippedReactionBurst?.effect_key || avatarUser?.equippedReactionBurst?.effect_key || null
+                      : avatarUser?.equippedReactionBurst?.effect_key || null
+                  }
+                />
+              );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      <div ref={messagesEndRef} />
+
+      {hoverUser && hoverPos && (
+        <UserHoverCard user={hoverUser} anchor={hoverPos} />
+      )}
+
+      <UserProfileModal
+        open={!!profileTarget}
+        onClose={() => setProfileTarget(null)}
+        userId={profileTarget?.id}
+        username={profileTarget?.username}
+        avatarUrl={pickAvatarUrl(profileTarget)}
+        me={me}
+        friends={friends}
+        onlineUsers={onlineUsers}
+        onStartDm={onStartDm}
+      />
+      <ReportUserModal
+        open={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        targetId={reportTarget?.id}
+        targetUsername={reportTarget?.username}
+        snippet={reportTarget?.snippet}
+        contextType={reportTarget?.contextType || conversationType}
+        contextId={reportTarget?.contextId}
+        occurredAt={reportTarget?.occurredAt}
+      />
+    </div>
+  );
+}
+
+function MessageBubble({
+  message,
+  isOwn,
+  isCompact,
+  isFresh = false,
+  currentUserId,
+  socket,
+  conversationType,
+  conversationId,
+  serverId = null,
+  canManageMessages = false,
+  onReply,
+  onReport,
+  highlight = "",
+  chatBubbleKey = null,
+  reactionBurstKey = null,
+}) {
+  const t = useT();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [swiping, setSwiping] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(message.text || "");
+  const hideTimer = useRef(null);
+  const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
+  const mediaUrl = message.mediaUrl || message.media_url || "";
+  const looksLikeVisualUrl = /\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(mediaUrl)
+    || /giphy\.com|tenor\.com/i.test(mediaUrl);
+  const isVisualMedia =
+    !!mediaUrl &&
+    (mediaTypeNorm === "gif" ||
+      mediaTypeNorm === "image" ||
+      mediaTypeNorm === "photo" ||
+      (!mediaTypeNorm && looksLikeVisualUrl));
+  const isGif =
+    mediaTypeNorm === "gif" || /\.gif(\?|#|$)/i.test(mediaUrl) || /giphy\.com/i.test(mediaUrl);
+  const mediaOnly = isVisualMedia && !String(message.text || "").trim();
+  const hasSlashEmbed = Boolean(message.embed && typeof message.embed === "object");
+  const x = useMotionValue(0);
+  const replyHintOpacity = useTransform(
+    x,
+    isOwn ? [-56, -20, 0] : [0, 20, 56],
+    isOwn ? [1, 0.4, 0] : [0, 0.4, 1]
+  );
+  const reactions = Array.isArray(message.reactions) ? message.reactions : [];
+  const reply = message.replyTo || message.reply_to || null;
+  const isPinned = Boolean(message.pinnedAt);
+
+  const togglePin = useCallback(() => {
+    if (!message?.id || String(message.id).startsWith("temp-")) return;
+    if (conversationType === "server") {
+      if (!canManageMessages) return;
+      socket?.emit(isPinned ? "server:channel:message:unpin" : "server:channel:message:pin", {
+        serverId,
+        channelId: conversationId,
+        messageId: message.id,
+      });
+    } else if (conversationType === "group") {
+      socket?.emit(isPinned ? "group:message:unpin" : "group:message:pin", {
+        messageId: message.id,
+        groupId: conversationId,
+      });
+    } else if (conversationId) {
+      const [a, b] = String(conversationId).split("::");
+      const toUserId = a === currentUserId ? b : a;
+      socket?.emit(isPinned ? "dm:message:unpin" : "dm:message:pin", { messageId: message.id, toUserId });
+    }
+  }, [
+    message?.id,
+    isPinned,
+    conversationType,
+    conversationId,
+    currentUserId,
+    socket,
+    serverId,
+    canManageMessages,
+  ]);
+
+  const saveEdit = useCallback(() => {
+    const next = editDraft.trim();
+    if (!next || !message?.id || String(message.id).startsWith("temp-")) {
+      setEditing(false);
+      return;
+    }
+    if (next === (message.text || "")) {
+      setEditing(false);
+      return;
+    }
+    if (conversationType === "server") {
+      socket?.emit("server:channel:message:edit", {
+        serverId,
+        channelId: conversationId,
+        messageId: message.id,
+        newText: next,
+      });
+    } else if (conversationType === "group") {
+      socket?.emit("group:message:edit", {
+        messageId: message.id,
+        newText: next,
+        groupId: conversationId,
+      });
+    } else if (conversationId) {
+      const [a, b] = String(conversationId).split("::");
+      const toUserId = a === currentUserId ? b : a;
+      socket?.emit("dm:message:edit", { messageId: message.id, newText: next, toUserId });
+    }
+    setEditing(false);
+  }, [
+    editDraft,
+    message?.id,
+    message?.text,
+    conversationType,
+    conversationId,
+    currentUserId,
+    socket,
+    serverId,
+  ]);
+
+  const deleteMessage = useCallback(() => {
+    if (!message?.id || String(message.id).startsWith("temp-")) return;
+    if (conversationType === "server") {
+      socket?.emit("server:channel:message:delete", {
+        serverId,
+        channelId: conversationId,
+        messageId: message.id,
+      });
+    } else if (conversationType === "group") {
+      socket?.emit("group:message:delete", {
+        messageId: message.id,
+        groupId: conversationId,
+      });
+    } else if (conversationId) {
+      const [a, b] = String(conversationId).split("::");
+      const toUserId = a === currentUserId ? b : a;
+      socket?.emit("dm:message:delete", { messageId: message.id, toUserId });
+    }
+    setMenuOpen(false);
+  }, [message?.id, conversationType, conversationId, currentUserId, socket, serverId]);
+
+  const canDelete = isOwn || (conversationType === "server" && canManageMessages);
+  const canEdit = isOwn && Boolean(String(message.text || "").trim());
+  const canPin =
+    conversationType === "server" ? canManageMessages : Boolean(conversationId);
+
+  const resetSwipe = useCallback(() => {
+    setSwiping(false);
+    x.stop();
+    x.set(0);
+  }, [x]);
+
+  const clearHide = () => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  };
+
+  const openMenu = () => {
+    clearHide();
+    setMenuOpen(true);
+  };
+
+  const scheduleClose = () => {
+    clearHide();
+    hideTimer.current = setTimeout(() => {
+      setMenuOpen(false);
+      setPickerOpen(false);
+    }, 180);
+  };
+
+  useEffect(() => () => clearHide(), []);
+
+  const triggerReply = useCallback(() => {
+    onReply?.({
+      id: message.id,
+      text: message.text || "",
+      mediaType: message.mediaType,
+      from: message.from || {
+        id: message.sender_id || message.from?.id,
+        username: message.from?.username || message.username,
+      },
+    });
+    setMenuOpen(false);
+    setPickerOpen(false);
+    resetSwipe();
+  }, [message, onReply, resetSwipe]);
+
+  const emitReact = useCallback((emoji) => {
+    if (!message?.id || !conversationType || !conversationId || !emoji) return;
+    if (String(message.id).startsWith("temp-")) return;
+
+    const mine = reactions.some((r) => r.emoji === emoji && r.userId === currentUserId);
+    if (mine) {
+      socket?.emit("reaction:remove", {
+        messageId: message.id,
+        conversationType,
+        conversationId,
+        emoji,
+      });
+    } else {
+      socket?.emit("reaction:add", {
+        messageId: message.id,
+        conversationType,
+        conversationId,
+        emoji,
+      });
+    }
+    setPickerOpen(false);
+  }, [message?.id, conversationType, conversationId, reactions, currentUserId, socket]);
+
+  return (
+    <div className={`message-swipe-wrap ${isOwn ? "own" : ""}${swiping ? " is-swiping" : ""}`}>
+      {swiping && (
+        <motion.div
+          className="message-swipe-hint"
+          style={{ opacity: replyHintOpacity }}
+          aria-hidden="true"
+        >
+          <Reply size={16} />
+        </motion.div>
+      )}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: isOwn && isFresh ? 14 : 8,
+          scale: isOwn && isFresh ? 0.96 : 0.99,
+        }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{
+          duration: isOwn && isFresh ? 0.28 : 0.2,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        style={{ x }}
+        drag={mediaOnly ? false : "x"}
+        dragDirectionLock
+        dragSnapToOrigin
+        dragConstraints={isOwn ? { left: -72, right: 0 } : { left: 0, right: 72 }}
+        dragElastic={0.18}
+        onDragStart={() => setSwiping(true)}
+        onDragEnd={(_, info) => {
+          const dx = info.offset.x;
+          const shouldReply = (isOwn && dx <= -48) || (!isOwn && dx >= 48);
+          // Always snap hint away — cancel / incomplete swipe must not leave the icon stuck
+          resetSwipe();
+          if (shouldReply) triggerReply();
+        }}
+        className={`message-bubble ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        onMouseEnter={openMenu}
+        onMouseLeave={scheduleClose}
+        onClick={(e) => {
+          // Touch / click toggle for devices without hover
+          if (e.target.closest("a, button, video, img, .message-media, .message-hover-bar, .message-reactions, .slash-embed")) return;
+          if (window.matchMedia("(hover: none)").matches) {
+            setMenuOpen((v) => !v);
+            setPickerOpen(false);
+          }
+        }}
+      >
+        {reply && (
+          <button
+            type="button"
+            className="message-reply-quote"
+            onClick={(e) => {
+              e.stopPropagation();
+              onReply?.(reply.id ? { ...reply, id: reply.id } : reply);
+            }}
+            title={t("Replying to")}
+          >
+            <span className="message-reply-author">
+              {reply.from?.username || reply.username || t("Message")}
+            </span>
+            <span className="message-reply-text">
+              {reply.text
+                ? String(reply.text).slice(0, 120)
+                : reply.mediaType
+                ? `📎 ${reply.mediaType}`
+                : t("Original message")}
+            </span>
+          </button>
+        )}
+
+        {isPinned && (
+          <div className="message-pinned-badge" title={t("Pinned")}>
+            <Pin size={11} strokeWidth={2.5} />
+            <span>{t("Pinned")}</span>
+          </div>
+        )}
+
+        {editing ? (
+          <div className="msg-edit-box" onClick={(e) => e.stopPropagation()}>
+            <input
+              className="msg-edit-input"
+              value={editDraft}
+              onChange={(e) => setEditDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveEdit();
+                if (e.key === "Escape") {
+                  setEditDraft(message.text || "");
+                  setEditing(false);
+                }
+              }}
+              autoFocus
+            />
+            <div className="msg-edit-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={saveEdit}>
+                {t("Save")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setEditDraft(message.text || "");
+                  setEditing(false);
+                }}
+              >
+                {t("Cancel")}
+              </button>
+            </div>
+          </div>
+        ) : message.embed ? (
+          <SlashCommandEmbed embed={message.embed} type={message.appType || message.type} />
+        ) : (
+          message.text && (
+            <>
+              <MessageContent text={message.text} highlight={highlight} />
+              {message.editedAt ? (
+                <span className="msg-edited" style={{ fontSize: 11, opacity: 0.65, marginLeft: 4 }}>
+                  ({t("edited")})
+                </span>
+              ) : null}
+              <InviteLinkEmbedList text={message.text} />
+            </>
+          )
+        )}
+
+        {mediaUrl && (
+          <div className={`message-media${isVisualMedia ? " is-visual" : ""}`}>
+            {isVisualMedia ? (
+              <button
+                type="button"
+                className="message-media-trigger"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setLightboxOpen(true);
+                }}
+                aria-label={isGif ? t("Open GIF") : t("Open image")}
+              >
+                <img
+                  src={mediaUrl}
+                  alt={
+                    isGif
+                      ? "GIF"
+                      : message.originalName || t("Image")
+                  }
+                  className="message-image"
+                  loading="lazy"
+                  draggable={false}
+                />
+                {isGif && (
+                  <span className="message-media-badge" aria-hidden="true">GIF</span>
+                )}
+              </button>
+            ) : mediaTypeNorm === "video" ? (
+              <video
+                src={mediaUrl}
+                controls
+                className="message-video"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : mediaTypeNorm === "audio" || mediaTypeNorm === "voice" ? (
+              <VoiceMessagePlayer
+                audioUrl={mediaUrl}
+                duration={message.duration || message.durationSeconds || 0}
+                isOwn={isOwn}
+              />
+            ) : (mediaTypeNorm === "document" || mediaTypeNorm === "file") ? (
+              <a
+                href={mediaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={message.originalName || true}
+                className="message-file-chip"
+              >
+                <div className="message-file-ico">
+                  <FileText size={18} />
+                </div>
+                <div className="message-file-meta">
+                  <div className="message-file-name">{message.originalName || t("File")}</div>
+                  {message.size && (
+                    <div className="message-file-size">
+                      {message.size < 1024 * 1024
+                        ? `${Math.round(message.size / 1024)} KB`
+                        : `${(message.size / (1024 * 1024)).toFixed(1)} MB`}
+                    </div>
+                  )}
+                </div>
+                <Download size={16} />
+              </a>
+            ) : null}
+          </div>
+        )}
+
+        {isVisualMedia && (
+          <MessageMediaLightbox
+            open={lightboxOpen}
+            src={mediaUrl}
+            alt={isGif ? "GIF" : message.originalName || t("Image")}
+            onClose={() => setLightboxOpen(false)}
+          />
+        )}
+
+        {reactions.length > 0 && (
+          <MessageReactions
+            messageId={message.id}
+            conversationType={conversationType}
+            conversationId={conversationId}
+            reactions={reactions}
+            currentUserId={currentUserId}
+            socket={socket}
+            burstKey={isOwn ? reactionBurstKey : null}
+          />
+        )}
+
+        {!isCompact && isOwn && (
+          <div className="message-footer">
+            <span
+              className="message-status"
+              title={message.sending ? t("Sending…") : message.deliveredAt ? t("Delivered") : t("Sent")}
+              style={{ opacity: message.sending ? 0.4 : 1 }}
+            >
+              {message.deliveredAt ? "✓✓" : "✓"}
+            </span>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {menuOpen && !editing && (
+            <motion.div
+              className={`message-hover-bar ${isOwn ? "own" : "other"}`}
+              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.96 }}
+              transition={{ duration: 0.14 }}
+              onMouseEnter={openMenu}
+              onMouseLeave={scheduleClose}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div className="msg-quick-react">
+                {QUICK_EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    className="emoji-chip"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      emitReact(e);
+                    }}
+                    title={`${t("React")} ${e}`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={`hover-bar-btn ${pickerOpen ? "active" : ""}`}
+                title={t("More reactions")}
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  setPickerOpen((v) => !v);
+                }}
+              >
+                <Smile size={14} />
+              </button>
+              <button
+                type="button"
+                className="hover-bar-btn"
+                title={t("Reply")}
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  triggerReply();
+                }}
+              >
+                <Reply size={14} />
+              </button>
+              {canPin && (
+                <button
+                  type="button"
+                  className={`hover-bar-btn ${isPinned ? "active" : ""}`}
+                  title={isPinned ? t("Unpin") : t("Pin")}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    togglePin();
+                  }}
+                >
+                  {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  type="button"
+                  className="hover-bar-btn"
+                  title={t("Edit")}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    setEditDraft(message.text || "");
+                    setEditing(true);
+                    setMenuOpen(false);
+                    setPickerOpen(false);
+                  }}
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  type="button"
+                  className="hover-bar-btn danger"
+                  title={t("Delete")}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    deleteMessage();
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+              {!isOwn && (
+                <button
+                  type="button"
+                  className="hover-bar-btn"
+                  title={t("report.action")}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    const author = message.from || {};
+                    const id = author.id || message.sender_id || message.userId || message.user_id;
+                    if (!id || id === currentUserId) return;
+                    onReport?.({
+                      id,
+                      username: author.username || message.username,
+                      snippet: String(message.text || "").slice(0, 400),
+                      contextType: conversationType,
+                      contextId: message.id,
+                      occurredAt: message.timestamp || message.created_at || message.createdAt,
+                    });
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Flag size={14} />
+                </button>
+              )}
+
+              <AnimatePresence>
+                {pickerOpen && (
+                  <motion.div
+                    className="message-inline-picker"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="message-inline-picker-head">
+                      <span>{t("React")}</span>
+                      <button type="button" onClick={() => setPickerOpen(false)} aria-label={t("Close")}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                    <div className="message-inline-picker-grid">
+                      {PICKER_EMOJIS.map((e) => (
+                        <button key={e} type="button" onClick={() => emitReact(e)}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
+
+function formatTimestamp(iso) {
+  const date = parseAppDate(iso);
+  if (!date) return "";
+  try {
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) return formatMessageClock(date);
+    return formatMessageDate(date, undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
