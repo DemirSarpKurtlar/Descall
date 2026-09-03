@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Coins, Flame, Phone, Play, ShoppingBag, Sparkles, Volume2, Zap } from "lucide-react";
+import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 import RippleButton from "../ui/RippleButton";
 import {
   getShopCatalog,
@@ -58,10 +59,10 @@ function ShopItemPreview({ category, item, t }) {
     return <div className={`shop-theme-swatch theme-${item.theme_key || "default"}`} />;
   }
   if (category === "profile_badge") {
-    return <span className="shop-badge-preview">{item.badge_icon}</span>;
+    return <ShopBadgeIcon item={item} size={44} className="shop-badge-preview" />;
   }
   if (category === "profile_title") {
-    return <span className="cosmetic-title-tag shop-title-preview">{item.title_text}</span>;
+    return <ShopTitleTag item={item} size={14} className="cosmetic-title-tag shop-title-preview" />;
   }
   if (category === "name_effect") {
     return (
@@ -135,7 +136,7 @@ function ShopItemPreview({ category, item, t }) {
   if (category === "reaction_burst") {
     return (
       <div className={`shop-reaction-burst-preview cosmetic-reaction-burst burst-${item.effect_key}`}>
-        <span>🔥</span>
+        <Flame size={18} />
         <Zap size={14} />
       </div>
     );

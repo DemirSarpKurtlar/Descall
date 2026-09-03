@@ -2327,9 +2327,13 @@ export default function App() {
       .catch(() => {});
     clearToken();
     clearUser();
+    const isElectronDesktop =
+      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
     // Web/PWA: hard-navigate so iOS Safari never lazy-loads marketing chunks
     // inside the authenticated App (that throws "Importing a module script failed").
-    if (!Capacitor.isNativePlatform()) {
+    // Electron must NOT hard-navigate: file:// + location.replace("/") leaves
+    // index.html and paints a blank white screen. Soft-clear like native.
+    if (!Capacitor.isNativePlatform() && !isElectronDesktop) {
       const home = resolveInitialLocale() === "tr" ? "/tr" : "/";
       try {
         window.location.replace(home);
@@ -3495,10 +3499,13 @@ export default function App() {
     if (isAuthenticatedAppPath(location.pathname) && !isPublicDimaLandingPath(location.pathname)) {
       return <Navigate to="/" replace />;
     }
-    // Native Android/iOS launches are product entry points, not SEO landing
-    // pages. Take people straight to sign-in/sign-up so an installed app
-    // feels like an app from its first frame.
-    if (Capacitor.isNativePlatform()) {
+    // Native Android/iOS and Electron are product entry points, not SEO
+    // landing pages. Take people straight to sign-in/sign-up so an installed
+    // app feels like an app from its first frame (and Electron never white-
+    // screens after logout by hydrating marketing on file://).
+    const isElectronDesktop =
+      typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+    if (Capacitor.isNativePlatform() || isElectronDesktop) {
       return (
         <>
           <TitleBar />

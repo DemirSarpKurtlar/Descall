@@ -10,6 +10,7 @@ import {
   X,
   Users,
 } from "lucide-react";
+import { ActivityTypeIcon } from "../../lib/shopIcons";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getPresenceStatus, isVisiblyOnline } from "../../lib/presence";
@@ -56,7 +57,7 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
         <span className="activity-presence-name">{friend.username}</span>
         {presence ? (
           <span className="activity-presence-status" style={{ color: accentColor }}>
-            <span className="activity-presence-icon">{presence.icon || "🎮"}</span>
+            <span className="activity-presence-icon"><ActivityTypeIcon type={presence.appType} size={14} /></span>
             {presence.displayName}
           </span>
         ) : (

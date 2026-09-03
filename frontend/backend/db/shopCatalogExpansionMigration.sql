@@ -11,7 +11,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_avatar_effect_id UUID REFERE
 ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_chat_bubble_id UUID REFERENCES shop_items(id) ON DELETE SET NULL;
 
 -- ── New item metadata columns ───────────────────────────────────────────
--- badge_icon: emoji shown next to the display name (profile_badge items)
+-- badge_icon: lucide key or legacy emoji; client maps to SVG (profile_badge items)
 -- title_text: flair text shown under the display name (profile_title items)
 -- effect_key: CSS animation/skin class key, reused across name_effect,
 --             avatar_effect, and chat_bubble items (one item = one category,

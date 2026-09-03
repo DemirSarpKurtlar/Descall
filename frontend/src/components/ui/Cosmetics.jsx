@@ -4,6 +4,7 @@
  * object already used for avatars — degrades to plain text/nothing when a
  * slot isn't equipped, so callers can use these unconditionally.
  */
+import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 
 /** Wraps a display name in its equipped name-effect gradient/glow, if any. */
 export function NameEffectText({ user, children }) {
@@ -12,22 +13,25 @@ export function NameEffectText({ user, children }) {
   return <span className={`cosmetic-name-effect effect-${effectKey}`}>{children}</span>;
 }
 
-/** Small emoji badge shown right after a display name. */
+/** Small Lucide badge shown right after a display name. */
 export function BadgeIcon({ user }) {
-  const icon = user?.equippedBadge?.badge_icon;
-  if (!icon) return null;
+  const badge = user?.equippedBadge;
+  if (!badge?.badge_icon && !badge?.sku) return null;
   return (
-    <span className="cosmetic-badge-icon" title={user.equippedBadge?.name} aria-hidden={false}>
-      {icon}
-    </span>
+    <ShopBadgeIcon
+      item={badge}
+      size={15}
+      className="cosmetic-badge-icon"
+      title={badge?.name}
+    />
   );
 }
 
-/** Flair pill shown under a display name (e.g. "🔥 Elite"). */
+/** Flair pill under a display name (Lucide + label, no leading pictograph). */
 export function TitleTag({ user }) {
-  const text = user?.equippedTitle?.title_text;
-  if (!text) return null;
-  return <span className="cosmetic-title-tag">{text}</span>;
+  const title = user?.equippedTitle;
+  if (!title?.title_text && !title?.sku) return null;
+  return <ShopTitleTag item={title} size={12} className="cosmetic-title-tag" />;
 }
 
 /** CSS class for the animated ring/aura behind an avatar, or "" if unequipped. */

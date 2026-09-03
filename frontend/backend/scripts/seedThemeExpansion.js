@@ -130,14 +130,14 @@ const EXTRA_ITEMS = [
   { sku: "background-molten-canyon", name: "Molten Canyon", category: "profile_background", rarity: "epic", price_descoin: 380, description: "Deep canyon shadows glowing with molten light.", asset_url: background("moltencanyon", [{ o: "0%", c: "#120604" }, { o: "50%", c: "#4a1208" }, { o: "100%", c: "#f33520" }], false) },
 
   // ── A few more profile badges (emoji, no CSS needed) ──
-  { sku: "badge-phoenix", name: "Phoenix", category: "profile_badge", rarity: "legendary", price_descoin: 480, badge_icon: "🔥🕊️", description: "A rare badge for those who always rise again." },
-  { sku: "badge-wizard", name: "Wizard", category: "profile_badge", rarity: "epic", price_descoin: 360, badge_icon: "🧙", description: "For the certified masters of the arcane." },
-  { sku: "badge-shield", name: "Guardian Shield", category: "profile_badge", rarity: "rare", price_descoin: 260, badge_icon: "🛡️", description: "A badge of protection and loyalty." },
+  { sku: "badge-phoenix", name: "Phoenix", category: "profile_badge", rarity: "legendary", price_descoin: 480, badge_icon: "phoenix", description: "A rare badge for those who always rise again." },
+  { sku: "badge-wizard", name: "Wizard", category: "profile_badge", rarity: "epic", price_descoin: 360, badge_icon: "wizard", description: "For the certified masters of the arcane." },
+  { sku: "badge-shield", name: "Guardian Shield", category: "profile_badge", rarity: "rare", price_descoin: 260, badge_icon: "shield", description: "A badge of protection and loyalty." },
 
   // ── A few more profile titles ──
-  { sku: "title-speedrunner", name: "Speedrunner", category: "profile_title", rarity: "epic", price_descoin: 340, title_text: "⏱️ Speedrunner", description: "Always first, always fast." },
-  { sku: "title-guardian", name: "Guardian", category: "profile_title", rarity: "rare", price_descoin: 270, title_text: "🛡️ Guardian", description: "Watches over friends and community alike." },
-  { sku: "title-star-collector", name: "Star Collector", category: "profile_title", rarity: "legendary", price_descoin: 470, title_text: "🌟 Star Collector", description: "Collects moments worth remembering." },
+  { sku: "title-speedrunner", name: "Speedrunner", category: "profile_title", rarity: "epic", price_descoin: 340, title_text: "Speedrunner", description: "Always first, always fast." },
+  { sku: "title-guardian", name: "Guardian", category: "profile_title", rarity: "rare", price_descoin: 270, title_text: "Guardian", description: "Watches over friends and community alike." },
+  { sku: "title-star-collector", name: "Star Collector", category: "profile_title", rarity: "legendary", price_descoin: 470, title_text: "Star Collector", description: "Collects moments worth remembering." },
 ];
 
 async function upsert(item, sortOrder) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Gift, Plus, RefreshCw, ShoppingBag, Search, CheckCircle2, XCircle, Coins, Sparkles } from "lucide-react";
+import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 import { adminFetch } from "../../api/adminHttp";
 import { grantDesCoin } from "../../api/shop";
 import RippleButton from "../ui/RippleButton";
@@ -633,7 +634,7 @@ export default function AdminShop() {
             {draft.category === "profile_badge" && (
               <input
                 className="admin-input"
-                placeholder={t("Badge emoji (e.g. 👑)")}
+                placeholder={t("Badge icon key (e.g. crown, flame, trophy)")}
                 value={draft.badgeIcon}
                 onChange={(e) => setDraft((d) => ({ ...d, badgeIcon: e.target.value }))}
                 required
@@ -642,7 +643,7 @@ export default function AdminShop() {
             {draft.category === "profile_title" && (
               <input
                 className="admin-input"
-                placeholder={t("Title text (e.g. 🔥 Elite)")}
+                placeholder={t("Title text (e.g. Elite)")}
                 value={draft.titleText}
                 onChange={(e) => setDraft((d) => ({ ...d, titleText: e.target.value }))}
                 required
@@ -704,9 +705,9 @@ export default function AdminShop() {
                     {item.category === "theme" ? (
                       <div className={`shop-theme-swatch theme-${item.theme_key || "default"}`} style={{ width: 40, height: 28, borderRadius: 6 }} />
                     ) : item.category === "profile_badge" ? (
-                      <span style={{ fontSize: 22 }}>{item.badge_icon}</span>
+                      <ShopBadgeIcon item={item} size={22} className="admin-shop-badge-icon" />
                     ) : item.category === "profile_title" ? (
-                      <span className="admin-badge online" style={{ fontSize: 11 }}>{item.title_text}</span>
+                      <ShopTitleTag item={item} size={11} className="admin-badge online" />
                     ) : item.category === "name_effect" ? (
                       <span className={`cosmetic-name-effect effect-${item.effect_key}`} style={{ fontSize: 13, fontWeight: 700 }}>Abc</span>
                     ) : item.category === "avatar_effect" ? (
@@ -728,7 +729,7 @@ export default function AdminShop() {
                         <span className="typing-dot" style={{ width: 5, height: 5, borderRadius: "50%", display: "inline-block" }} />
                       </div>
                     ) : item.category === "reaction_burst" ? (
-                      <div className={`cosmetic-reaction-burst burst-${item.effect_key}`} style={{ fontSize: 16 }}>✨</div>
+                      <div className={`cosmetic-reaction-burst burst-${item.effect_key}`} style={{ fontSize: 16, display: "inline-flex" }}><Sparkles size={16} /></div>
                     ) : item.category === "call_overlay" ? (
                       <div className={`cosmetic-call-overlay overlay-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 6 }} />
                     ) : (

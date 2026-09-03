@@ -4,6 +4,7 @@ import {
   Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
   Search, RefreshCw, Megaphone, MessageSquarePlus, Plus, Menu,
 } from 'lucide-react';
+import { ActivityTypeIcon } from '../../lib/shopIcons';
 import { useT } from '../../context/LocaleContext';
 import { openFeedbackModal } from '../../lib/feedbackNudge';
 import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
@@ -176,7 +177,7 @@ function HistoryRow({ entry }) {
   return (
     <div className="activity-history-row">
       <div className="activity-history-icon" style={{ color: accentColor }}>
-        {entry.app_type === 'game' ? '🎮' : entry.app_type === 'music' ? '🎵' : entry.app_type === 'dev' ? '💻' : entry.app_type === 'creative' ? '🎨' : '📱'}
+        <ActivityTypeIcon type={entry.app_type} size={18} />
       </div>
       <div className="activity-history-info">
         <span className="activity-history-name">{entry.display_name}</span>

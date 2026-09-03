@@ -1,4 +1,5 @@
 import React from "react";
+import { Home, RefreshCw } from "lucide-react";
 import { t } from "../i18n/runtime";
 import { isModuleLoadError, recoverFromModuleLoadError } from "../lib/moduleLoadError";
 
@@ -493,11 +494,21 @@ export default class ErrorBoundary extends React.Component {
                 fontWeight: "bold"
               }}
             >
-              🔄 {t("Reset & Reload")}
+              <RefreshCw size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />{t("Reset & Reload")}
             </button>
             <button 
               type="button"
-              onClick={() => window.location.href = '/'}
+              onClick={() => {
+                // Electron file:// must not navigate to "/" (blank white screen).
+                if (typeof window !== "undefined" && window.electronAPI?.isElectron) {
+                  if (window.location.protocol === "file:") {
+                    window.location.hash = "#/";
+                    window.location.reload();
+                    return;
+                  }
+                }
+                window.location.href = "/";
+              }}
               style={{ 
                 flex: 1,
                 padding: "12px 20px",
@@ -509,7 +520,7 @@ export default class ErrorBoundary extends React.Component {
                 fontSize: "14px"
               }}
             >
-              🏠 {t("Go Home")}
+              <Home size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />{t("Go Home")}
             </button>
           </div>
           
