@@ -104,10 +104,19 @@
 .app-root {
   display: grid;
   grid-template-columns: var(--nav-rail-width) var(--sidebar-width) 1fr;
+  /* ONE full-height row: banners/modals are position:fixed, so nothing else may
+     open an extra implicit row and steal vertical space from the chat column. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
   background: var(--surface-0);
+}
+
+/* Every in-flow shell column stays on the single stretched row. */
+.app-root > *:not(.app-notif-banner):not(.app-feedback-banner) {
+  grid-row: 1;
+  min-height: 0;
 }
 
 /* 4-column layout for servers view */
