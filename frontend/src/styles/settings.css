@@ -59,6 +59,7 @@
   width: min(1080px, calc(100vw - 64px));
   height: min(780px, calc(100vh - 64px));
   max-height: calc(100vh - 64px);
+  background: #000000;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
@@ -176,13 +177,12 @@
   color: var(--text-0);
   min-width: 0;
   max-width: 100%;
-  white-space: normal;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-height: 1.25;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
+  line-height: 1.25;
 }
 
 .us-mini-meta span {
@@ -291,7 +291,7 @@
   padding: 12px 14px 16px;
   border-top: 1px solid var(--border-2);
   flex-shrink: 0;
-  background: #111214;
+  background: #000000;
 }
 
 .us-logout {
@@ -323,7 +323,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: var(--surface-1);
+  background: var(--surface-0, #111214);
   min-height: 0;
 }
 
@@ -343,6 +343,7 @@
 
 .user-settings.is-desktop .us-main-header {
   justify-content: flex-end;
+  background: #000000;
 }
 
 .us-main-heading {
@@ -392,6 +393,7 @@
 
 .us-main-scroll {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px 22px 28px;
@@ -1069,6 +1071,17 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.us-profile-preview strong,
+.us-profile-preview span {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .us-profile-preview strong {

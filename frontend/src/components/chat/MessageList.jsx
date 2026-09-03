@@ -436,6 +436,7 @@ export default function MessageList({
                   onMouseLeave={hideHoverCard}
                 >
                   <Avatar
+                    key={avatarUser?.id || avatarUser?.username || "msg-avatar"}
                     name={resolveDisplayName(avatarUser)}
                     size={40}
                     user={avatarUser}

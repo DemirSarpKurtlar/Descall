@@ -368,6 +368,7 @@ export default function ChatPanel({
           {activeDmUser && (
             <button
               type="button"
+              key={activeDmUser.id || activeDmUser.username}
               className="header-avatar"
               onClick={() => setProfileTarget(activeDmUser)}
               aria-label={t("View profile")}
@@ -393,6 +394,7 @@ export default function ChatPanel({
             </div>
           )}
           <div
+            key={activeDmUser?.id || activeGroup?.id || activeChannel?.id || "title"}
             className="header-title-block"
             role={activeDmUser ? "button" : undefined}
             tabIndex={activeDmUser ? 0 : undefined}
@@ -598,7 +600,11 @@ export default function ChatPanel({
         </div>
         )
       ) : (
-      <div className="messages-container" ref={messagesRef}>
+      <div
+        className="messages-container"
+        ref={messagesRef}
+        key={activeDmUser?.id || activeGroup?.id || "messages"}
+      >
         {(activeDmUser || activeGroup) ? (
           isValidElement(children)
             ? cloneElement(children, { searchQuery: showSearch ? searchQuery : "" })

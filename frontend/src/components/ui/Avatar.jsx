@@ -72,14 +72,30 @@ export function Avatar({
     return hovered || Boolean(isSpeaking);
   }, [animated, animate, hovered, isSpeaking]);
 
+  const identityKey = String(user?.id || user?.userId || "") + "|" + String(resolvedUrl || imageUrl || "");
+  const identityRef = useRef(identityKey);
+  // Reset sticky bitmap synchronously on identity change so the previous DM
+  // photo cannot paint for a frame (useEffect would be one paint too late).
+  const identityChanged = identityRef.current !== identityKey;
+  if (identityChanged) {
+    identityRef.current = identityKey;
+    if (stickySrc !== null) setStickySrc(null);
+    if (staticFrame !== null) setStaticFrame(null);
+    if (useBareUrl) setUseBareUrl(false);
+    if (failed) setFailed(false);
+    if (loaded) setLoaded(false);
+  }
+
   // Always keep a concrete src when avatar URL is known — never letter-only "loading gap".
+  // Never reuse another user's stickySrc.
   const displaySrc = useMemo(() => {
-    if (!activeUrl) return stickySrc;
+    const stickyOk = identityChanged ? null : stickySrc;
+    if (!activeUrl) return stickyOk;
     if (!animated) return activeUrl;
     if (shouldAnimate) return activeUrl;
     if (staticFrame) return staticFrame;
     return activeUrl;
-  }, [activeUrl, animated, shouldAnimate, staticFrame, stickySrc]);
+  }, [identityChanged, activeUrl, animated, shouldAnimate, staticFrame, stickySrc]);
 
   useEffect(() => {
     setFailed(false);
@@ -101,8 +117,12 @@ export function Avatar({
 
   const noteGoodSrc = useCallback((src) => {
     if (!src || src.startsWith("data:")) return;
+    const origin = (resolvedUrl || activeUrl || "").split("?")[0];
+    if (origin && !(src === resolvedUrl || src === activeUrl || src.split("?")[0] === origin)) {
+      return;
+    }
     setStickySrc(src);
-  }, []);
+  }, [resolvedUrl, activeUrl]);
 
   const syncLoadedFromEl = useCallback(
     (el) => {
@@ -124,9 +144,6 @@ export function Avatar({
     [syncLoadedFromEl]
   );
 
-  // When the user/avatar URL changes (e.g. switching DMs), drop the previous
-  // sticky frame so we never keep showing the last person's photo.
-  const identityKey = String(user?.id || user?.userId || "") + "|" + String(resolvedUrl || imageUrl || "");
   useEffect(() => {
     setStickySrc(null);
     setStaticFrame(null);
@@ -205,6 +222,7 @@ export function Avatar({
           <>
             {!loaded && <span className="skeleton-line ui-avatar-skeleton" aria-hidden />}
             <img
+              key={identityKey}
               ref={setImgNode}
               src={displaySrc}
               alt=""
