@@ -47,9 +47,15 @@
       "processScanner.cjs",
       "overlayWindow.cjs",
       "overlayPreload.cjs",
+      "icon.ico",
+      "icon.png",
       "node_modules/**/*"
     ],
     "asar": true,
+    "asarUnpack": [
+      "icon.ico",
+      "icon.png"
+    ],
     "extraResources": [
       {
         "from": "../dist",
