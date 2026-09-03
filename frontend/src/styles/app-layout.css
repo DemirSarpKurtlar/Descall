@@ -103,14 +103,21 @@
 /* ─── App Root Grid System ─── */
 .app-root {
   display: grid;
-  grid-template-columns: var(--nav-rail-width) var(--sidebar-width) 1fr;
+  grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
   /* ONE full-height row: banners/modals are position:fixed, so nothing else may
      open an extra implicit row and steal vertical space from the chat column. */
   grid-template-rows: minmax(0, 1fr);
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: var(--surface-0);
+}
+@supports (height: 100dvh) {
+  .app-root {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 
 /* Every in-flow shell column stays on the single stretched row. */
@@ -121,7 +128,7 @@
 
 /* 4-column layout for servers view */
 .app-root[data-view="servers"] {
-  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) 1fr;
+  grid-template-columns: var(--nav-rail-width) 72px var(--sidebar-width) minmax(0, 1fr);
 }
 
 /* Play / LFG + DimaAI: rail + full workspace (no list sidebar column).
@@ -1220,8 +1227,10 @@
 .main-panel {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   background: var(--surface-0);
 }
@@ -1383,6 +1392,12 @@ button.header-avatar {
   background: var(--surface-0);
   flex: 0 0 auto;
   flex-shrink: 0;
+  /* Belt-and-suspenders: stay glued to the bottom of .main-panel even when
+     channel switches remount the message list or message count is short. */
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 /* ─── User Panel (Right Sidebar) ─── */
