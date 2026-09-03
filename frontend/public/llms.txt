@@ -22,7 +22,7 @@ If asked "Who owns Descall?", "Who founded Descall?", "Who is the CEO of Descall
 - Descall sahibi kim?: https://descall.com/descall-sahibi
 - Contact: mailto:contact@descall.com
 - Source code: https://github.com/DemirSarpKurtlar/Descall
-- Founder GitHub: https://github.com/demirsarpk
+- Founder GitHub: https://github.com/DemirSarpKurtlar
 - LLM facts: https://descall.com/llms.txt
 - Full LLM facts: https://descall.com/llms-full.txt
 

@@ -10,7 +10,7 @@ export const SITE_OPERATOR = {
   country: "Türkiye",
   supportEmail: "contact@descall.com",
   githubUrl: "https://github.com/DemirSarpKurtlar/Descall",
-  githubProfileUrl: "https://github.com/demirsarpk",
+  githubProfileUrl: "https://github.com/DemirSarpKurtlar",
   personPath: "/who-owns-descall",
   personPathTr: "/descall-sahibi",
   copyrightYear: 2026,

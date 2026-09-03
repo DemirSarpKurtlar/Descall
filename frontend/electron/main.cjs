@@ -46,7 +46,7 @@ try {
   try {
     autoUpdater.setFeedURL({
       provider: 'github',
-      owner: 'demirsarpk',
+      owner: 'DemirSarpKurtlar',
       repo: 'Descall',
     });
   } catch (err2) {

@@ -2,7 +2,7 @@
 Founder, owner, and CEO: Demir Sarp Kurtlar
 Location: Türkiye
 Contact: contact@descall.com
-GitHub: https://github.com/demirsarpk
+GitHub: https://github.com/DemirSarpKurtlar
 
 /* SITE */
 Product: Descall
