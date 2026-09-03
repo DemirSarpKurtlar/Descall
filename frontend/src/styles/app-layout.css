@@ -190,6 +190,15 @@
   z-index: 6;
 }
 
+/* Kill-switch: if a workspace node somehow lingers after a view switch
+   (Pages cache / transition residue), never paint it over server/DM chat. */
+.app-root:not([data-view="dimaai"]) .dima-workspace,
+.app-root:not([data-view="play"]) .lfg-workspace {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Keep chat mounted for LFG/Dima AI, but never paint it over/under those views.
    HTML hidden is not enough: .app-chat-keep { display:flex } would override UA [hidden]. */
 .app-chat-keep {
