@@ -78,4 +78,18 @@ assert(
   "must not force single-column suggestions under 720px",
 );
 
+
+assert(
+  !/\.app-main-view\s*>\s*\.lfg-workspace,\s*\n\.app-main-view\s*>\s*\.dima-workspace\s*\{\s*\n\s*position:\s*absolute/.test(appLayout),
+  "LFG/DimaAI must not always be position:absolute under .app-main-view (residue over servers)",
+);
+assert(
+  /\[data-view="play"\]\s*\.lfg-workspace,[\s\S]{0,80}\[data-view="dimaai"\]\s*\.dima-workspace[\s\S]{0,120}position:\s*absolute/.test(appLayout),
+  "absolute overlay for LFG/DimaAI must be scoped to matching data-view",
+);
+assert(
+  /:not\(\[data-view="play"\]\)\s*\.lfg-workspace,[\s\S]{0,80}:not\(\[data-view="dimaai"\]\)\s*\.dima-workspace[\s\S]{0,80}display:\s*none\s*!important/.test(appLayout),
+  "inactive LFG/DimaAI workspaces must be display:none when data-view does not match",
+);
+
 console.log("dimaai.layout.selftest.mjs: ok");

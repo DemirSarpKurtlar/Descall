@@ -68,5 +68,25 @@ assert(
   "Save/Cancel edit actions must be spaced as separate buttons",
 );
 
+
+assert(
+  /activeView === "play" \? \([\s\S]{0,40}<LfgWorkspace/.test(layout),
+  "LfgWorkspace must mount only when activeView is play",
+);
+assert(
+  /activeView === "dimaai" \? \([\s\S]{0,40}<DimaAiWorkspace/.test(layout),
+  "DimaAiWorkspace must mount only when activeView is dimaai",
+);
+assert(
+  !/\.app-main-view\s*>\s*\.lfg-workspace,[\s\S]{0,60}\.app-main-view\s*>\s*\.dima-workspace\s*\{[\s\S]{0,80}position:\s*absolute/.test(css),
+  "must not unconditionally absolute-position LFG/Dima under .app-main-view",
+);
+assert(
+  /:not\(\[data-view="play"\]\)\s*\.lfg-workspace/.test(css)
+    && /:not\(\[data-view="dimaai"\]\)\s*\.dima-workspace/.test(css)
+    && /display:\s*none\s*!important/.test(css),
+  "inactive play/dimaai workspaces must hard-hide via data-view",
+);
+
 console.log("AppLayout.view-transition.selftest.mjs: ok");
 

@@ -183,17 +183,10 @@
   width: 100%;
   height: 100%;
 }
-.app-main-view > .lfg-workspace,
-.app-main-view > .dima-workspace {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-}
-
-/* Kill-switch: if a workspace node somehow lingers after a view switch
-   (Pages cache / transition residue), never paint it over server/DM chat. */
-.app-root:not([data-view="dimaai"]) .dima-workspace,
-.app-root:not([data-view="play"]) .lfg-workspace {
+/* Absolute overlay only under matching data-view (rules above). Never paint
+   LFG/DimaAI over servers/chat if a node lingers after a view switch. */
+.app-root:not([data-view="play"]) .lfg-workspace,
+.app-root:not([data-view="dimaai"]) .dima-workspace {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
