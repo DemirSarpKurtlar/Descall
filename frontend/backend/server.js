@@ -29,6 +29,7 @@ const errorRoutes = require("./routes/errors");
 const callsRoutes = require("./routes/calls");
 const lfgRoutes = require("./routes/lfg");
 const riotRoutes = require("./routes/riot");
+const valorantRoutes = require("./routes/valorant");
 const webPushRoutes = require("./routes/webPush");
 const shopRoutes = require("./routes/shop");
 const dimaaiRoutes = require("./routes/dimaai");
@@ -121,7 +122,7 @@ if (isVercel) {
     "/servers",
     "/calls",
     "/lfg",
-    "/riot",
+    "/riot", "/valorant",
     "/dm",
     "/reports",
     "/voice-recordings",
@@ -333,6 +334,8 @@ app.use("/api/app", appReleaseRoutes);
 app.use("/api/calls", callsRoutes);
 app.use("/api/lfg", lfgRoutes);
 app.use("/api/riot", riotRoutes);
+app.use("/valorant", valorantRoutes);
+app.use("/api/valorant", valorantRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
 app.use("/dm", dmPrefsRoutes);
@@ -996,7 +999,7 @@ app.get(["/invite/:code", "/i/:code"], (req, res) => {
 // those routers are mounted.
 const API_PREFIXES = [
   "/api", "/auth", "/admin", "/media", "/groups",
-  "/friends", "/servers", "/reactions", "/health", "/debug", "/lfg", "/calls", "/riot",
+  "/friends", "/servers", "/reactions", "/health", "/debug", "/lfg", "/calls", "/riot", "/valorant",
   "/sitemap.xml", "/sitemap-pages.xml", "/sitemap-invites.xml",
   "/sitemap-announcements.xml", "/sitemap.html", "/sitemap.xsl", "/robots.txt",
 ];

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor } = require('electron');
 const { showNotificationWindow } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
+const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
 const { registerOverlayIPC, destroyOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
@@ -834,6 +835,7 @@ app.whenReady().then(async () => {
   }
 
   registerProcessScannerIPC();
+  registerRiotLocalAuthIPC(app);
   registerOverlayIPC(() => mainWindow);
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());

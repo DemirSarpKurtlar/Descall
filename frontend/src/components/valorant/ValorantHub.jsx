@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { ArrowLeft, Crosshair, Sparkles } from "lucide-react";
 import LfgWorkspace from "../lfg/LfgWorkspace";
+import CompanionAuthPanel from "./CompanionAuthPanel";
 import { useT } from "../../context/LocaleContext";
 
 /**
  * Valorant hub — Play rail slot shell.
- * Tabs: Companion (Adım 1 placeholder) + LFG (existing LfgWorkspace 1:1).
+ * Tabs: Companion (Adım 2 Riot auth) + LFG (existing LfgWorkspace 1:1).
  * Keep LFG mounted while switching tabs so lobby state survives.
  */
 export default function ValorantHub({
@@ -79,7 +80,7 @@ export default function ValorantHub({
           hidden={tab !== "companion"}
           aria-hidden={tab !== "companion"}
         >
-          <CompanionPlaceholder />
+          <CompanionAuthPanel />
         </div>
 
         <div
@@ -107,18 +108,3 @@ export default function ValorantHub({
   );
 }
 
-function CompanionPlaceholder() {
-  const t = useT();
-  return (
-    <div className="valorant-companion-placeholder">
-      <div className="valorant-companion-card">
-        <div className="valorant-companion-icon" aria-hidden>
-          <Sparkles size={28} />
-        </div>
-        <h3>{t("valorantHub.companionSoon")}</h3>
-        <p>{t("valorantHub.companionHint")}</p>
-        <p className="valorant-companion-note">{t("valorantHub.companionNote")}</p>
-      </div>
-    </div>
-  );
-}

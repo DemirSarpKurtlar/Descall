@@ -100,6 +100,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Activity / process scanning
   scanProcesses: () => ipcRenderer.invoke('scan-processes'),
 
+
+  // Valorant Companion — local Riot Client lockfile session (desktop only)
+  valorantLocalStatus: () => ipcRenderer.invoke('valorant:local-status'),
+  valorantLocalConnect: () => ipcRenderer.invoke('valorant:local-connect'),
+  valorantLocalGetTokens: () => ipcRenderer.invoke('valorant:local-get-tokens'),
+  valorantLocalSaveSession: (patch) => ipcRenderer.invoke('valorant:local-save-session', patch || {}),
+  valorantLocalDisconnect: () => ipcRenderer.invoke('valorant:local-disconnect'),
+
   // Always-on voice mini overlay (Discord-style always-on-top HUD)
   overlayShow: (payload) => ipcRenderer.send('descall:overlay:show', payload || {}),
   overlayHide: () => ipcRenderer.send('descall:overlay:hide'),
