@@ -73,3 +73,8 @@ Redirect URI in the Riot developer portal must **exactly** match `RIOT_REDIRECT_
 ## LFG
 
 LFG (`LfgWorkspace`) is unchanged and stays mounted while switching Companion ↔ LFG tabs.
+
+## Adım 3 — Party + queue
+
+See `docs/VALORANT_COMPANION_PARTY.md`. Live party/queue uses the same Riot session tokens (Electron lockfile headers preferred). LFG tab remains mounted and unchanged.
+

@@ -246,4 +246,210 @@ router.delete("/session", requireAuth, async (req, res) => {
   }
 });
 
+
+/* ─── Adım 3: Party + queue (GLZ thin proxy) ─── */
+
+const partyApi = require("../lib/valorantParty");
+
+async function resolveLiveSession(req) {
+  readTokenHeaders(req); // password guard
+  let { accessToken, entitlementToken } = readTokenHeaders(req);
+  const link = await getLink(req.user.id);
+  const region =
+    (typeof req.query.region === "string" && req.query.region) ||
+    (typeof req.body?.region === "string" && req.body.region) ||
+    link?.region ||
+    "eu";
+
+  if (!accessToken && link?.access_token) {
+    accessToken = link.access_token;
+  }
+
+  if (accessToken && !entitlementToken) {
+    entitlementToken = await partyApi.fetchEntitlement(accessToken);
+  }
+
+  let puuid =
+    (typeof req.query.puuid === "string" && req.query.puuid) ||
+    (typeof req.body?.puuid === "string" && req.body.puuid) ||
+    link?.puuid ||
+    null;
+
+  if (!puuid && accessToken) {
+    try {
+      const { resolveMeFromAccessToken } = require("../lib/valorantSession");
+      const me = await resolveMeFromAccessToken(accessToken);
+      puuid = me?.puuid || null;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return {
+    accessToken,
+    entitlementToken,
+    region,
+    puuid,
+    link,
+    hasLiveTokens: Boolean(accessToken && entitlementToken),
+  };
+}
+
+async function reloadParty(session) {
+  const result = await partyApi.getCurrentParty({
+    accessToken: session.accessToken,
+    entitlementToken: session.entitlementToken,
+    region: session.region,
+    puuid: session.puuid,
+  });
+  return result;
+}
+
+function partyCtx(session, partyId) {
+  return {
+    accessToken: session.accessToken,
+    entitlementToken: session.entitlementToken,
+    region: session.region,
+    partyId,
+  };
+}
+
+// GET /api/valorant/party
+router.get("/party", requireAuth, async (req, res) => {
+  try {
+    const session = await resolveLiveSession(req);
+    if (!session.hasLiveTokens) {
+      return res.status(401).json({
+        error:
+          "Party needs a live Riot Client session (access + entitlement). Connect via desktop Riot Client, or send X-Riot-Access-Token + X-Riot-Entitlement headers.",
+        code: "TOKENS_REQUIRED",
+        party: null,
+        hint: "Electron: Companion → Optional Riot Client on this PC while Valorant is open.",
+      });
+    }
+    if (!session.puuid) {
+      return res.status(400).json({
+        error: "Missing Riot puuid — reconnect Riot session",
+        code: "PUUID_REQUIRED",
+        party: null,
+      });
+    }
+    const result = await reloadParty(session);
+    return res.json({
+      ok: true,
+      party: result.party,
+      message: result.message || null,
+    });
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Failed to load party",
+      code: err.code || null,
+      party: null,
+    });
+  }
+});
+
+async function withPartyMutation(req, res, mutator) {
+  try {
+    const session = await resolveLiveSession(req);
+    if (!session.hasLiveTokens || !session.puuid) {
+      return res.status(401).json({
+        error: "Live Riot tokens required for party actions",
+        code: "TOKENS_REQUIRED",
+      });
+    }
+    const current = await reloadParty(session);
+    const partyId = current.rawPartyId || current.party?.partyId;
+    if (!partyId) {
+      return res.status(404).json({
+        error: current.message || "No active party",
+        party: null,
+      });
+    }
+    await mutator(partyCtx(session, partyId), session, current);
+    const refreshed = await reloadParty(session);
+    return res.json({ ok: true, party: refreshed.party });
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Party action failed",
+      code: err.code || null,
+    });
+  }
+}
+
+// POST /api/valorant/party/queue/start
+router.post("/party/queue/start", requireAuth, async (req, res) => {
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.startQueue(ctx);
+  });
+});
+
+// POST /api/valorant/party/queue/stop
+router.post("/party/queue/stop", requireAuth, async (req, res) => {
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.stopQueue(ctx);
+  });
+});
+
+// POST /api/valorant/party/queue — body: { queueId }
+router.post("/party/queue", requireAuth, async (req, res) => {
+  const queueId = String(req.body?.queueId || "").trim();
+  if (!queueId) {
+    return res.status(400).json({ error: "queueId required" });
+  }
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.setQueueId(ctx, queueId);
+  });
+});
+
+// POST /api/valorant/party/invite — body: { riotId } or { gameName, tagLine }
+router.post("/party/invite", requireAuth, async (req, res) => {
+  let gameName = String(req.body?.gameName || "").trim();
+  let tagLine = String(req.body?.tagLine || "").trim();
+  if (!gameName || !tagLine) {
+    const parsed = parseRiotId(req.body?.riotId);
+    if (!parsed) {
+      return res.status(400).json({ error: "riotId (Name#TAG) or gameName+tagLine required" });
+    }
+    gameName = parsed.gameName;
+    tagLine = parsed.tagLine;
+  }
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.inviteByRiotId(ctx, gameName, tagLine);
+  });
+});
+
+// POST /api/valorant/party/transfer — body: { puuid }
+router.post("/party/transfer", requireAuth, async (req, res) => {
+  const target = String(req.body?.puuid || "").trim();
+  if (!target) {
+    return res.status(400).json({ error: "puuid required" });
+  }
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.transferOwnership(ctx, target);
+  });
+});
+
+// POST /api/valorant/party/ready — body: { ready: boolean }
+router.post("/party/ready", requireAuth, async (req, res) => {
+  const ready = req.body?.ready !== false;
+  return withPartyMutation(req, res, async (ctx, session) => {
+    await partyApi.setMemberReady(ctx, session.puuid, ready);
+  });
+});
+
+// POST /api/valorant/party/code — generate / refresh invite code
+router.post("/party/code", requireAuth, async (req, res) => {
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.generatePartyCode(ctx);
+  });
+});
+
+// POST /api/valorant/party/accessibility — body: { accessibility: OPEN|CLOSED }
+router.post("/party/accessibility", requireAuth, async (req, res) => {
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.setAccessibility(ctx, req.body?.accessibility);
+  });
+});
+
 module.exports = router;

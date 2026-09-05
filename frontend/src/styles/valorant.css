@@ -463,3 +463,221 @@
     filter: brightness(1.08);
   }
 }
+
+/* ── Companion party + queue (Adım 3) ── */
+.valorant-companion {
+  gap: 14px;
+}
+
+.valorant-party {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  padding: 16px 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-1, #2b2d31);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.valorant-party-locked {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted, #949ba4);
+  font-size: 13px;
+}
+
+.valorant-party-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.valorant-party-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.valorant-party-sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted, #949ba4);
+  line-height: 1.4;
+}
+
+.valorant-party-hint {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 70, 85, 0.08);
+  border: 1px solid rgba(255, 70, 85, 0.22);
+  color: var(--text-1, #dbdee1);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.valorant-party-hint p {
+  margin: 0;
+}
+
+.valorant-party-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.valorant-party-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.valorant-party-code-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #949ba4);
+}
+
+.valorant-party-code {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ff4655;
+}
+
+.valorant-party-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.valorant-party-members li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+}
+
+.valorant-party-members li.is-self {
+  border-color: rgba(255, 70, 85, 0.35);
+  background: rgba(255, 70, 85, 0.06);
+}
+
+.valorant-party-member-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.valorant-party-member-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted, #949ba4);
+}
+
+.valorant-party-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.valorant-party-queue-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1, #dbdee1);
+}
+
+.valorant-party-select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-0, #f2f3f5);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.valorant-party-queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.valorant-party-invite label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.valorant-party-invite-row {
+  display: flex;
+  gap: 8px;
+}
+
+.valorant-party-invite-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-0, #f2f3f5);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.valorant-party-invite-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-muted, #949ba4);
+  line-height: 1.4;
+}
+
+.valorant-auth-btn.tiny {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.valorant-auth-btn .spin,
+.spin {
+  animation: valorant-spin 0.9s linear infinite;
+}
+
+@keyframes valorant-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .valorant-party {
+    width: 100%;
+    padding: 14px 12px;
+  }
+  .valorant-party-invite-row {
+    flex-direction: column;
+  }
+}
+

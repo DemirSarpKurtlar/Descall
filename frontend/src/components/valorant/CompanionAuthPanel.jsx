@@ -21,6 +21,7 @@ import {
 } from "../../lib/valorantSecureStore";
 import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
+import CompanionPartyPanel from "./CompanionPartyPanel";
 
 /**
  * Adım 2 — Riot auth for Companion tab.
@@ -346,6 +347,17 @@ export default function CompanionAuthPanel() {
 
         <p className="valorant-companion-note">{t("valorantHub.tosNote")}</p>
       </div>
+
+      <CompanionPartyPanel
+        linked={connected}
+        identity={{
+          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
+          puuid: display?.puuid || local?.session?.puuid || null,
+          riotId: display?.riotId || (display?.gameName && display?.tagLine
+            ? `${display.gameName}#${display.tagLine}`
+            : null),
+        }}
+      />
     </div>
   );
 }
