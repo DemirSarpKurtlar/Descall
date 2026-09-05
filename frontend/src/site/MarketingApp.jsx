@@ -10,9 +10,8 @@ import { Funnel, trackPageView } from "./analytics";
 import { signalMarketingEngage } from "./analyticsGate";
 import MarketingLayout from "./MarketingLayout";
 import SeoHead from "./SeoHead";
-import AuthView from "../components/AuthView";
-
 const MarketingAuthModal = lazy(() => import("./MarketingAuthModal"));
+const AuthView = lazy(() => import("../components/AuthView"));
 
 const DownloadPage = lazy(() => import("./pages/MarketingDownloadPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -136,14 +135,16 @@ export default function MarketingApp(props) {
   // (Rules of Hooks). Logged-out desktop must show Giriş/Kayıt, not SEO.
   if (typeof window !== "undefined" && window.electronAPI?.isElectron) {
     return (
-      <AuthView
-        onLogin={props.onLogin}
-        onRegister={props.onRegister}
-        onGoogleLogin={props.onGoogleLogin}
-        onVerify2fa={props.onVerify2fa}
-        loading={props.authLoading}
-        error={props.authError}
-      />
+      <Suspense fallback={null}>
+        <AuthView
+          onLogin={props.onLogin}
+          onRegister={props.onRegister}
+          onGoogleLogin={props.onGoogleLogin}
+          onVerify2fa={props.onVerify2fa}
+          loading={props.authLoading}
+          error={props.authError}
+        />
+      </Suspense>
     );
   }
   return <MarketingAppSite {...props} />;
