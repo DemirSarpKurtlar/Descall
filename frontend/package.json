@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.9.33",
+  "version": "2.9.34",
   "description": "Modern messaging and video conferencing app",
   "private": true,
   "type": "module",
@@ -91,6 +91,10 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "backend/lib/valorantFriends.js",
+      "backend/lib/valorantParty.js",
+      "backend/lib/riotLink.js",
+      "backend/lib/lfgConstants.js",
       "package.json"
     ],
     "extraResources": [

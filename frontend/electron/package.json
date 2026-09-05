@@ -1,6 +1,6 @@
 {
   "name": "descall-electron",
-  "version": "2.9.33",
+  "version": "2.9.34",
   "description": "Descall - Discord-like chat application",
   "main": "main.cjs",
   "author": "Descall Team",
@@ -65,6 +65,16 @@
         "to": "dist",
         "filter": [
           "**/*"
+        ]
+      },
+      {
+        "from": "../backend/lib",
+        "to": "backend/lib",
+        "filter": [
+          "valorantFriends.js",
+          "valorantParty.js",
+          "riotLink.js",
+          "lfgConstants.js"
         ]
       }
     ],
