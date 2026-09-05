@@ -84,12 +84,16 @@ assert(
   "LFG/DimaAI must not always be position:absolute under .app-main-view (residue over servers)",
 );
 assert(
-  /\[data-view="play"\]\s*\.lfg-workspace,[\s\S]{0,80}\[data-view="dimaai"\]\s*\.dima-workspace[\s\S]{0,120}position:\s*absolute/.test(appLayout),
-  "absolute overlay for LFG/DimaAI must be scoped to matching data-view",
+  /\[data-view="play"\]\s*\.valorant-hub,[\s\S]{0,80}\[data-view="dimaai"\]\s*\.dima-workspace[\s\S]{0,120}position:\s*absolute/.test(appLayout),
+  "absolute overlay for ValorantHub/DimaAI must be scoped to matching data-view",
 );
 assert(
-  /:not\(\[data-view="play"\]\)\s*\.lfg-workspace,[\s\S]{0,80}:not\(\[data-view="dimaai"\]\)\s*\.dima-workspace[\s\S]{0,80}display:\s*none\s*!important/.test(appLayout),
-  "inactive LFG/DimaAI workspaces must be display:none when data-view does not match",
+  /:not\(\[data-view="play"\]\)\s*\.valorant-hub,[\s\S]{0,120}:not\(\[data-view="dimaai"\]\)\s*\.dima-workspace[\s\S]{0,80}display:\s*none\s*!important/.test(appLayout),
+  "inactive ValorantHub/DimaAI workspaces must be display:none when data-view does not match",
+);
+assert(
+  /:not\(\[data-view="play"\]\)\s*\.lfg-workspace/.test(appLayout),
+  "nested LFG must still hard-hide when leaving play view",
 );
 
 console.log("dimaai.layout.selftest.mjs: ok");

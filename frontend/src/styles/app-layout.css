@@ -194,7 +194,7 @@
 .app-root[data-view="dimaai"] {
   grid-template-columns: var(--nav-rail-width) 1fr;
 }
-.app-root[data-view="play"] .lfg-workspace,
+.app-root[data-view="play"] .valorant-hub,
 .app-root[data-view="dimaai"] .dima-workspace {
   position: absolute;
   inset: 0;
@@ -227,6 +227,7 @@
   flex-direction: column;
 }
 
+.app-main-view > .valorant-hub,
 .app-main-view > .lfg-workspace,
 .app-main-view > .dima-workspace,
 .app-main-view > .app-chat-keep,
@@ -240,6 +241,7 @@
 }
 /* Absolute overlay only under matching data-view (rules above). Never paint
    LFG/DimaAI over servers/chat if a node lingers after a view switch. */
+.app-root:not([data-view="play"]) .valorant-hub,
 .app-root:not([data-view="play"]) .lfg-workspace,
 .app-root:not([data-view="dimaai"]) .dima-workspace {
   display: none !important;
