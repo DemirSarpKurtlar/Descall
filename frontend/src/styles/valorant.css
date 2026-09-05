@@ -681,3 +681,123 @@
   }
 }
 
+
+
+/* ── Companion friends + presence (Adım 4) ── */
+.valorant-friends {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  padding: 16px 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-1, #2b2d31);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.valorant-friends-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.valorant-friends-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.valorant-friends-filter {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-muted, #949ba4);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.valorant-friends-filter.is-active {
+  color: #fff;
+  border-color: rgba(255, 70, 85, 0.45);
+  background: rgba(255, 70, 85, 0.16);
+}
+
+.valorant-friends-list li.is-online {
+  border-color: rgba(59, 165, 93, 0.35);
+}
+
+.valorant-friends-list li.is-ingame {
+  border-color: rgba(255, 70, 85, 0.4);
+  background: rgba(255, 70, 85, 0.06);
+}
+
+.valorant-friends-empty {
+  justify-content: center !important;
+  padding: 14px 10px !important;
+}
+
+.valorant-friends-row-actions {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.valorant-friends-requests h5 {
+  margin: 10px 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #949ba4);
+}
+
+.valorant-friends-requests h5:first-child {
+  margin-top: 0;
+}
+
+.valorant-presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #747f8d;
+  flex: 0 0 auto;
+}
+
+.valorant-presence-dot.status-online,
+.valorant-presence-dot.status-menus {
+  background: #3ba55d;
+}
+
+.valorant-presence-dot.status-away {
+  background: #faa61a;
+}
+
+.valorant-presence-dot.status-dnd {
+  background: #ed4245;
+}
+
+.valorant-presence-dot.status-queue,
+.valorant-presence-dot.status-pregame,
+.valorant-presence-dot.status-ingame {
+  background: #ff4655;
+  box-shadow: 0 0 0 3px rgba(255, 70, 85, 0.2);
+}
+
+.valorant-presence-dot.status-offline {
+  background: #747f8d;
+}
+
+@media (max-width: 768px) {
+  .valorant-friends {
+    width: 100%;
+    padding: 14px 12px;
+  }
+  .valorant-friends-row-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

@@ -2,8 +2,8 @@
 
 ## Ownership
 
-- **API / Electron / hooks:** this ship (wire layer)
-- **Companion friends/presence UI panel:** **Dima** — do not duplicate a second heavy panel in `CompanionAuthPanel`
+- **API / Electron / hooks:** Dimaru (`feat/valorant-companion-adim4-friends-api`)
+- **Companion friends/presence UI panel:** `CompanionFriendsPanel` mounted in `CompanionAuthPanel` (this ship)
 
 ## Data path
 
@@ -44,7 +44,7 @@ const {
 } = useValorantFriends({ enabled: linked, region, puuid });
 ```
 
-Mount Dima's panel next to `CompanionPartyPanel` inside Companion (or ValorantHub). Keep LFG tab untouched.
+Mount: `CompanionFriendsPanel` next to `CompanionPartyPanel` inside `CompanionAuthPanel`. Keep LFG tab untouched.
 
 ## Electron IPC
 
@@ -59,4 +59,4 @@ Shared `valorantHub.friends*` / `valorantHub.presence*` / `valorantHub.store*` k
 
 ## Ship note
 
-Do **not** cut Setup until Dima's friends UI SHA is merged — then bump **2.9.33** and publish together.
+UI SHA lands on `feat/valorant-adim4-friends-ui`. Dimaru merges API+UI → bump **2.9.33** Setup together.

@@ -98,10 +98,20 @@ assert(electronAuth.includes("valorant:local-friends"), "electron friends IPC");
 assert(electronAuth.includes("/chat/v4/friends"), "local chat friends path");
 assert(electronAuth.includes("/chat/v4/presences"), "local chat presence path");
 
-assert(auth.includes("useValorantFriends") || auth.includes("Dima"), "auth panel defers friends UI to Dima");
-assert(!auth.includes("CompanionFriendsPanel"), "no duplicated friends panel in AuthPanel");
+assert(auth.includes("CompanionFriendsPanel"), "auth panel mounts CompanionFriendsPanel (Adım 4 UI)");
 
-assert(en.includes("friendsTitle"), "EN friends strings for Dima panel");
-assert(tr.includes("friendsTitle"), "TR friends strings for Dima panel");
+const friendsPanel = readFileSync(join(root, "CompanionFriendsPanel.jsx"), "utf8");
+assert(friendsPanel.includes("useValorantFriends"), "friends panel uses Dimaru hook");
+assert(friendsPanel.includes("inviteToParty"), "friends panel invites via hook");
+assert(!friendsPanel.includes("inviteValorantParty("), "invite must use friends/party-invite path via hook, not parallel party invite");
+assert(friendsPanel.includes("sendRequest"), "friends panel can send requests");
+assert(friendsPanel.includes("acceptRequest"), "friends panel can accept requests");
+assert(css.includes(".valorant-friends"), "friends panel styles exist");
+assert(css.includes(".valorant-presence-dot"), "presence dot styles exist");
+
+assert(en.includes("friendsTitle"), "EN friends strings");
+assert(tr.includes("friendsTitle"), "TR friends strings");
+assert(en.includes("presenceIngame"), "EN presence strings");
+assert(tr.includes("presenceIngame"), "TR presence strings");
 
 console.log("ValorantHub.selftest.mjs: ok");
