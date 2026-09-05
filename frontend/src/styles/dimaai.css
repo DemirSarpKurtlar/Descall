@@ -620,8 +620,12 @@
 .dima-muted { color: var(--text-muted); font-size: 12px; padding: 8px; }
 
 .app-root.is-mobile .dima-workspace {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface-0, #111214);
 }
 
 .app-root.is-mobile .dima-history {

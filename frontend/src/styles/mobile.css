@@ -210,16 +210,47 @@
    * Play / LFG (mobile): full-bleed workspace. Keep the nav drawer fully off-screen
    * so a rail-only shell cannot cover or squeeze the LFG list after view switches.
    */
+  /*
+   * Play / DimaAI mobile: ONE column. Desktop sets main-slot to grid-column 2,
+   * which creates an implicit empty column on phones (solid black until zoom-out).
+   * Put main in column 1 and take nav/sidebar out of the grid flow.
+   */
   .app-root.is-mobile[data-view="play"],
   .app-root.is-mobile[data-view="dimaai"] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+
+  .app-root.is-mobile[data-view="play"] > .app-main-slot,
+  .app-root.is-mobile[data-view="dimaai"] > .app-main-slot {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden;
+    position: relative;
+    background: var(--surface-0, #111214);
+  }
+
+  .app-root.is-mobile[data-view="play"] .nav-rail,
+  .app-root.is-mobile[data-view="dimaai"] .nav-rail,
+  .app-root.is-mobile[data-view="play"] .app-sidebar-shell > .nav-rail,
+  .app-root.is-mobile[data-view="dimaai"] .app-sidebar-shell > .nav-rail,
+  .app-root.is-mobile[data-view="play"] .sidebar-secondary,
+  .app-root.is-mobile[data-view="dimaai"] .sidebar-secondary,
+  .app-root.is-mobile[data-view="play"] .activity-sidebar,
+  .app-root.is-mobile[data-view="dimaai"] .activity-sidebar {
+    display: none !important;
   }
 
   .app-root.is-mobile[data-view="play"] .app-sidebar-shell,
   .app-root.is-mobile[data-view="play"].mobile-drawer-open .app-sidebar-shell,
   .app-root.is-mobile[data-view="dimaai"] .app-sidebar-shell,
   .app-root.is-mobile[data-view="dimaai"].mobile-drawer-open .app-sidebar-shell {
-    transform: translateX(-100%);
+    transform: none;
     pointer-events: none;
     box-shadow: none;
   }
@@ -232,13 +263,18 @@
   .app-root.is-mobile[data-view="play"] .valorant-hub,
   .app-root.is-mobile[data-view="play"] .lfg-workspace,
   .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
-    width: 100%;
-    min-width: 0;
-    height: 100%;
-    max-height: var(--vv-height, 100dvh);
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
     /* Clear fixed mobile tab bar without leaving a giant empty void in the list */
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
+    background: var(--surface-0, #111214) !important;
+    overflow: hidden;
   }
 
   /* Hub already pads for safe-area; nested LFG should not double-pad under hub */
