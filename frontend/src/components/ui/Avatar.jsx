@@ -218,46 +218,55 @@ export function Avatar({
       <div
         className="ui-avatar-inner"
         style={{
-          background: showImage ? "var(--surface-2)" : bg,
+          // Always paint the letter palette — never a blank surface-2 hole while
+          // a broken/pending URL sits at opacity 0 (looks like a black circle).
+          background: bg,
         }}
       >
+        {!(showImage && loaded) ? (
+          <span className="ui-avatar-letter">{letter}</span>
+        ) : null}
         {showImage ? (
-          <>
-            {!loaded && <span className="skeleton-line ui-avatar-skeleton" aria-hidden />}
-            <img
-              key={identityKey}
-              ref={setImgNode}
-              src={displaySrc}
-              alt=""
-              className="ui-avatar-img"
-              loading={eager ? "eager" : "lazy"}
-              decoding="async"
-              referrerPolicy="no-referrer"
-              draggable={false}
-              onLoad={(e) => {
-                noteGoodSrc(e.currentTarget.currentSrc || e.currentTarget.src || displaySrc);
-                setLoaded(true);
-                setFailed(false);
-              }}
-              onError={() => {
-                if (!useBareUrl && bareUrl && displaySrc !== bareUrl) {
-                  setUseBareUrl(true);
-                  setFailed(false);
-                  return;
-                }
+          <img
+            key={identityKey}
+            ref={setImgNode}
+            src={displaySrc}
+            alt=""
+            className="ui-avatar-img"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            referrerPolicy="no-referrer"
+            draggable={false}
+            onLoad={(e) => {
+              const el = e.currentTarget;
+              if (!imgIsReady(el)) {
+                setStickySrc(null);
                 setFailed(true);
                 setLoaded(false);
-              }}
-              style={{
-                // If the browser already decoded the bitmap, never hide it behind the letter.
-                opacity: loaded || (imgRef.current && imgIsReady(imgRef.current)) ? 1 : 0,
-                transition: "opacity 0.12s ease",
-              }}
-            />
-          </>
-        ) : (
-          <span className="ui-avatar-letter">{letter}</span>
-        )}
+                return;
+              }
+              noteGoodSrc(el.currentSrc || el.src || displaySrc);
+              setLoaded(true);
+              setFailed(false);
+            }}
+            onError={() => {
+              if (!useBareUrl && bareUrl && displaySrc !== bareUrl) {
+                setUseBareUrl(true);
+                setFailed(false);
+                return;
+              }
+              setStickySrc(null);
+              setFailed(true);
+              setLoaded(false);
+            }}
+            style={{
+              position: loaded ? "relative" : "absolute",
+              inset: loaded ? undefined : 0,
+              opacity: loaded || (imgRef.current && imgIsReady(imgRef.current)) ? 1 : 0,
+              transition: "opacity 0.12s ease",
+            }}
+          />
+        ) : null}
       </div>
       {frameUrl && (
         <img

@@ -1020,7 +1020,8 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                 return (
                   <motion.div
                     key={dm.id}
-                    layout={!isMobile}
+                    /* layout animations projected DM avatars across the chat header */
+                    layout={false}
                     ref={openMenuId === dm.id ? menuRef : null}
                     className={`conv-group-wrap${isMobile ? " is-swipeable" : " is-desktop"}${swipeOpen ? " swipe-open" : ""}${openMenuId === dm.id ? " menu-open" : ""}${isActive ? " is-active-row" : ""}`}
                     transition={LIST_LAYOUT_TRANSITION}
@@ -1228,7 +1229,7 @@ function DmRowFront({
 }) {
   return (
     <motion.button
-      layout={!isMobile}
+      layout={false}
       type="button"
       className={`dm-item conv-row group-row-front ${isActive ? "active" : ""} ${unread > 0 ? "has-unread" : ""}`}
       onClick={() => {
@@ -1955,7 +1956,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                   return (
                     <motion.div
                       key={group.id}
-                      layout={!isMobile}
+                      layout={false}
                       ref={openMenuId === group.id ? menuRef : null}
                       className={`conv-group-wrap${isMobile ? " is-swipeable" : " is-desktop"}${swipeOpen ? " swipe-open" : ""}${openMenuId === group.id ? " menu-open" : ""}${isActive ? " is-active-row" : ""}`}
                       transition={LIST_LAYOUT_TRANSITION}
@@ -2176,7 +2177,7 @@ function GroupRowFront({
 }) {
   return (
     <motion.button
-      layout={!isMobile}
+      layout={false}
       type="button"
       className={`group-item conv-row group-row-front ${isActive ? "active" : ""} ${unread > 0 ? "has-unread" : ""}`}
       onClick={() => {
