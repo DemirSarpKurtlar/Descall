@@ -1635,3 +1635,26 @@
   justify-content: flex-start;
   padding: 14px 16px;
 }
+
+/* Mobile settings — thumb-friendly nav */
+.user-settings.is-mobile .us-nav-item {
+  min-height: 48px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.user-settings.is-mobile .us-main-header {
+  min-height: 56px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+
+.user-settings.is-mobile .us-main-scroll {
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
+}
+
+.user-settings.is-mobile .us-sidebar-foot {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}

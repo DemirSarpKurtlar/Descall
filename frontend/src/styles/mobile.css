@@ -75,10 +75,13 @@
   }
 
   .app-sidebar-shell .rail-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     margin-left: auto;
     margin-right: auto;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .app-sidebar-shell .rail-user-panel {
@@ -226,6 +229,7 @@
     display: none !important;
   }
 
+  .app-root.is-mobile[data-view="play"] .valorant-hub,
   .app-root.is-mobile[data-view="play"] .lfg-workspace,
   .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
     width: 100%;
@@ -235,6 +239,19 @@
     /* Clear fixed mobile tab bar without leaving a giant empty void in the list */
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
+  }
+
+  /* Hub already pads for safe-area; nested LFG should not double-pad under hub */
+  .app-root.is-mobile[data-view="play"] .valorant-hub .lfg-workspace {
+    padding-bottom: 0;
+    max-height: none;
+    height: 100%;
+  }
+
+  .app-root.is-mobile[data-view="play"] .valorant-hub-body,
+  .app-root.is-mobile[data-view="play"] .valorant-hub-panel {
+    min-height: 0;
+    flex: 1 1 0;
   }
 
   .app-root.is-mobile[data-view="play"] .lfg-sidebar {
@@ -396,8 +413,28 @@
   }
 
   .icon-btn {
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 44px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .header-avatar,
+  .header-avatar .ui-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .composer-container {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .us-nav-item {
+    min-height: 48px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .us-logout {
+    min-height: 48px;
   }
 
   /* Voice call */

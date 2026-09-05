@@ -10,6 +10,7 @@ const hub = readFileSync(join(root, "ValorantHub.jsx"), "utf8");
 const layout = readFileSync(join(root, "../layout/AppLayout.jsx"), "utf8");
 const css = readFileSync(join(root, "../../styles/valorant.css"), "utf8");
 const appCss = readFileSync(join(root, "../../styles/app-layout.css"), "utf8");
+const mobileCss = readFileSync(join(root, "../../styles/mobile.css"), "utf8");
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -27,5 +28,7 @@ assert(css.includes(".valorant-hub"), "valorant hub styles exist");
 assert(css.includes(".valorant-hub-tab"), "tab styles exist");
 assert(/\[data-view="play"\]\s*\.valorant-hub/.test(appCss), "play overlay targets valorant-hub");
 assert(/:not\(\[data-view="play"\]\)\s*\.valorant-hub/.test(appCss), "leftover hide for valorant-hub");
+assert(/@media \(max-width: 768px\)/.test(css) && css.includes(".valorant-hub-tabs"), "valorant hub has mobile tab layout");
+assert(mobileCss.includes('[data-view="play"] .valorant-hub'), "mobile play view sizes valorant-hub");
 
 console.log("ValorantHub.selftest.mjs: ok");

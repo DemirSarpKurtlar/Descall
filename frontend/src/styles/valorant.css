@@ -199,3 +199,101 @@
   font-size: 12px !important;
   color: var(--text-muted, #949ba4) !important;
 }
+
+/* ── Mobile / narrow: hub + companion + nested LFG ── */
+@media (max-width: 768px) {
+  .valorant-hub {
+    height: 100%;
+    max-height: var(--vv-height, 100dvh);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .valorant-hub-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      12px
+      10px;
+  }
+
+  .valorant-hub-header-left {
+    width: 100%;
+  }
+
+  .valorant-hub-back {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 12px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .valorant-hub-title h2 {
+    font-size: 16px;
+  }
+
+  .valorant-hub-tabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .valorant-hub-tab {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 13px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .valorant-companion-placeholder {
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .valorant-companion-card {
+    padding: 22px 16px;
+    border-radius: 14px;
+  }
+
+  /* Nested LFG must fill hub body on phones (not desktop absolute overlay) */
+  .valorant-hub-panel-lfg > .lfg-workspace {
+    max-height: none;
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .valorant-hub-kicker {
+    font-size: 10px;
+  }
+
+  .valorant-hub-tab span {
+    font-size: 12px;
+  }
+
+  .valorant-companion-card h3 {
+    font-size: 16px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .valorant-hub-tab:hover {
+    background: transparent;
+    color: var(--text-muted, #949ba4);
+  }
+  .valorant-hub-tab.is-active:hover {
+    background: var(--surface-2, #313338);
+    color: var(--text-0, #f2f3f5);
+  }
+  .valorant-hub-back:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .valorant-hub-tab:active,
+  .valorant-hub-back:active {
+    filter: brightness(1.08);
+  }
+}
