@@ -176,6 +176,7 @@ export function Avatar({
   return (
     <motion.div
       className={`ui-avatar ${frameUrl ? "has-frame" : ""} ${isSpeaking ? "is-speaking" : ""} ${className}`.trim()}
+      layout={false}
       style={{
         width: size,
         height: size,
@@ -195,7 +196,6 @@ export function Avatar({
           ? { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
           : { type: "spring", stiffness: 420, damping: 28 }
       }
-      whileHover={onClick && !isSpeaking ? { scale: 1.06 } : undefined}
       role={onClick ? "button" : undefined}
     >
       {effectClass && (

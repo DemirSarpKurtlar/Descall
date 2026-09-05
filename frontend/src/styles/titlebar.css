@@ -201,7 +201,7 @@ body.electron-app #root {
 html.electron-app,
 body.electron-app {
   overflow: hidden !important;
-  background: var(--surface-0, #1a1b1e) !important;
+  background: var(--surface-0, #111214) !important;
 }
 
 body.electron-app .app-chat-keep,

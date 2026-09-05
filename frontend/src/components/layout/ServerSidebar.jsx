@@ -1240,7 +1240,7 @@ function DmRowFront({
         }
         onOpen?.();
       }}
-      whileHover={isMobile ? undefined : { scale: 1.01 }}
+      whileHover={undefined}
       transition={LIST_LAYOUT_TRANSITION}
       style={{
         width: "100%",
@@ -2188,7 +2188,7 @@ function GroupRowFront({
         }
         onOpen?.();
       }}
-      whileHover={isMobile ? undefined : { scale: 1.01 }}
+      whileHover={undefined}
       transition={LIST_LAYOUT_TRANSITION}
       style={{
         width: "100%",
@@ -2326,7 +2326,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     key={friend.id}
                     className="friend-item"
                     onClick={() => onFriendSelect?.(friend)}
-                    whileHover={{ scale: 1.02, backgroundColor: "var(--surface-2)" }}
+                    whileHover={undefined}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
                     <div className="friend-avatar">
@@ -2363,7 +2363,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     key={friend.id}
                     className="friend-item offline"
                     onClick={() => onFriendSelect?.(friend)}
-                    whileHover={{ scale: 1.02, backgroundColor: "var(--surface-2)" }}
+                    whileHover={undefined}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
                     <div className="friend-avatar">

@@ -43,7 +43,7 @@ export default function MessageBubble({
   return (
     <motion.article
       className={`msg-row ${isOwn ? "msg-own" : ""} ${compact ? "msg-compact" : ""}`}
-      layout
+      layout={false}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 420, damping: 32 }}
