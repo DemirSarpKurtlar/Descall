@@ -147,3 +147,46 @@ export function setValorantPartyAccessibility(accessibility, tokens = {}) {
     ...tokens,
   });
 }
+
+/** Adım 6 stub — daily store / bundle / loadout (not wired yet). */
+export async function getValorantStoreStatus() {
+  const res = await fetch(`${BASE}/store/status`, { headers: getHeaders() });
+  return parse(res);
+}
+
+/* ─── Adım 4 — friends / presence (API + Electron hooks for Dima's panel) ─── */
+
+export async function getValorantFriendsStatus() {
+  const res = await fetch(`${BASE}/friends/status`, { headers: getHeaders() });
+  return parse(res);
+}
+
+/** Shape raw lockfile friends/presences via Render (optional; Electron already shapes locally). */
+export async function shapeValorantFriends(body) {
+  const res = await fetch(`${BASE}/friends/shape`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(body || {}),
+  });
+  return parse(res);
+}
+
+/**
+ * Invite a Riot friend into the current party (GLZ).
+ * Same tokens as Adım 3 party invite.
+ */
+export function inviteValorantFriendToParty(riotIdOrParts, tokens = {}) {
+  const body =
+    typeof riotIdOrParts === "string"
+      ? { riotId: riotIdOrParts }
+      : {
+          gameName: riotIdOrParts?.gameName,
+          tagLine: riotIdOrParts?.tagLine,
+          riotId: riotIdOrParts?.riotId,
+        };
+  return partyFetch("/friends/party-invite", {
+    method: "POST",
+    body: { ...body, region: tokens.region, puuid: tokens.puuid },
+    ...tokens,
+  });
+}

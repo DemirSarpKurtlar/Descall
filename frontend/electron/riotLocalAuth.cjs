@@ -6,6 +6,7 @@
  * local-client lockfile secret that Riot Client writes while running.
  *
  * Tokens stay on-device via Electron safeStorage (see IPC handlers).
+ * Adım 4: local /chat/v4 friends + presences + friendrequests (lockfile).
  */
 
 const fs = require('fs');
@@ -62,9 +63,11 @@ function readLockfile() {
   return null;
 }
 
-function localRequest(lock, method, urlPath) {
+function localRequest(lock, method, urlPath, bodyObj) {
   const auth = Buffer.from(`riot:${lock.password}`).toString('base64');
   const proto = lock.protocol === 'http' ? require('http') : https;
+  const payload =
+    bodyObj === undefined || bodyObj === null ? null : JSON.stringify(bodyObj);
   const opts = {
     hostname: '127.0.0.1',
     port: lock.port,
@@ -73,6 +76,9 @@ function localRequest(lock, method, urlPath) {
     headers: {
       Authorization: `Basic ${auth}`,
       Accept: 'application/json',
+      ...(payload
+        ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+        : {}),
     },
     timeout: 8000,
   };
@@ -98,6 +104,7 @@ function localRequest(lock, method, urlPath) {
       req.destroy();
       reject(new Error('Riot Client local API timed out'));
     });
+    if (payload) req.write(payload);
     req.end();
   });
 }
@@ -298,6 +305,98 @@ async function connectFromLockfile() {
   return { session, lockPath: lock.path, port: lock.port };
 }
 
+const friendsShape = require('../backend/lib/valorantFriends');
+
+function requireLock() {
+  const lock = readLockfile();
+  if (!lock) {
+    const err = new Error(
+      'Riot Client lockfile not found. Start Riot Client (and Valorant) on this PC, then try again.'
+    );
+    err.code = 'NO_LOCKFILE';
+    throw err;
+  }
+  return lock;
+}
+
+function localHttpError(status, body, fallback) {
+  const err = new Error(
+    (body && (body.errorCode || body.message || body.error)) ||
+      fallback ||
+      `Riot local chat request failed (${status})`
+  );
+  err.code = status === 401 || status === 403 ? 'LOCAL_UNAUTHORIZED' : 'LOCAL_CHAT_FAILED';
+  err.status = status;
+  return err;
+}
+
+async function fetchLocalFriendsBundle() {
+  const lock = requireLock();
+  const [friendsRes, presenceRes, requestsRes] = await Promise.all([
+    localRequest(lock, 'GET', '/chat/v4/friends'),
+    localRequest(lock, 'GET', '/chat/v4/presences'),
+    localRequest(lock, 'GET', '/chat/v4/friendrequests'),
+  ]);
+
+  if (friendsRes.status < 200 || friendsRes.status >= 300) {
+    throw localHttpError(friendsRes.status, friendsRes.body, 'Failed to load Riot friends');
+  }
+  if (presenceRes.status < 200 || presenceRes.status >= 300) {
+    throw localHttpError(presenceRes.status, presenceRes.body, 'Failed to load Riot presence');
+  }
+
+  const friendsRaw = Array.isArray(friendsRes.body?.friends) ? friendsRes.body.friends : [];
+  const presencesRaw = Array.isArray(presenceRes.body?.presences)
+    ? presenceRes.body.presences
+    : [];
+  const requestsRaw =
+    requestsRes.status >= 200 && requestsRes.status < 300 && Array.isArray(requestsRes.body?.requests)
+      ? requestsRes.body.requests
+      : [];
+
+  return {
+    friendsRaw,
+    presencesRaw,
+    requestsRaw,
+    lockPort: lock.port,
+  };
+}
+
+async function sendLocalFriendRequest(gameName, tagLine) {
+  const lock = requireLock();
+  const { status, body } = await localRequest(lock, 'POST', '/chat/v4/friendrequests', {
+    game_name: String(gameName || '').trim(),
+    game_tag: String(tagLine || '').trim(),
+  });
+  if (status < 200 || status >= 300) {
+    throw localHttpError(status, body, 'Failed to send friend request');
+  }
+  return body;
+}
+
+async function removeLocalFriendRequest(puuid) {
+  const lock = requireLock();
+  const { status, body } = await localRequest(lock, 'DELETE', '/chat/v4/friendrequests', {
+    puuid: String(puuid || '').trim(),
+  });
+  if (status < 200 || status >= 300) {
+    throw localHttpError(status, body, 'Failed to remove friend request');
+  }
+  return body;
+}
+
+/** Best-effort accept — Riot may still require in-client confirm on some builds. */
+async function acceptLocalFriendRequest(puuid) {
+  const lock = requireLock();
+  const { status, body } = await localRequest(lock, 'PUT', '/chat/v4/friendrequests', {
+    puuid: String(puuid || '').trim(),
+  });
+  if (status < 200 || status >= 300) {
+    throw localHttpError(status, body, 'Failed to accept friend request (try in Riot Client)');
+  }
+  return body;
+}
+
 function registerRiotLocalAuthIPC(app) {
   ipcMain.handle('valorant:local-status', async () => {
     const lock = readLockfile();
@@ -366,6 +465,95 @@ function registerRiotLocalAuthIPC(app) {
     clearSessionDisk(app);
     return { ok: true };
   });
+
+  // ── Adım 4: friends + presence + friend requests (local chat API) ──
+  ipcMain.handle('valorant:local-friends', async () => {
+    try {
+      const session = loadSessionFromDisk(app);
+      const bundle = await fetchLocalFriendsBundle();
+      const merged = friendsShape.mergeFriendsAndPresences({
+        friends: bundle.friendsRaw,
+        presences: bundle.presencesRaw,
+        selfPuuid: session?.puuid || null,
+      });
+      const requests = friendsShape.shapeFriendRequests(bundle.requestsRaw);
+      return {
+        ok: true,
+        source: 'local_chat',
+        ...merged,
+        requests: requests.requests,
+        inbound: requests.inbound,
+        outbound: requests.outbound,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        code: err.code || 'FRIENDS_FAILED',
+        error: err.message || 'Failed to load friends',
+        friends: [],
+        counts: { total: 0, online: 0, inGame: 0, offline: 0 },
+        requests: [],
+        inbound: [],
+        outbound: [],
+      };
+    }
+  });
+
+  ipcMain.handle('valorant:local-friend-request-send', async (_evt, payload = {}) => {
+    try {
+      if (payload.password || payload.riotPassword) {
+        return { ok: false, error: 'Passwords are not accepted' };
+      }
+      let gameName = String(payload.gameName || '').trim();
+      let tagLine = String(payload.tagLine || '').trim();
+      if ((!gameName || !tagLine) && payload.riotId) {
+        const parts = String(payload.riotId).split('#');
+        gameName = (parts[0] || '').trim();
+        tagLine = (parts[1] || '').trim();
+      }
+      if (!gameName || !tagLine) {
+        return { ok: false, error: 'gameName and tagLine (or riotId Name#TAG) required' };
+      }
+      await sendLocalFriendRequest(gameName, tagLine);
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        code: err.code || 'FRIEND_REQUEST_FAILED',
+        error: err.message || 'Failed to send friend request',
+      };
+    }
+  });
+
+  ipcMain.handle('valorant:local-friend-request-remove', async (_evt, payload = {}) => {
+    try {
+      const puuid = String(payload.puuid || '').trim();
+      if (!puuid) return { ok: false, error: 'puuid required' };
+      await removeLocalFriendRequest(puuid);
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        code: err.code || 'FRIEND_REQUEST_FAILED',
+        error: err.message || 'Failed to remove friend request',
+      };
+    }
+  });
+
+  ipcMain.handle('valorant:local-friend-request-accept', async (_evt, payload = {}) => {
+    try {
+      const puuid = String(payload.puuid || '').trim();
+      if (!puuid) return { ok: false, error: 'puuid required' };
+      await acceptLocalFriendRequest(puuid);
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        code: err.code || 'FRIEND_REQUEST_FAILED',
+        error: err.message || 'Failed to accept friend request',
+      };
+    }
+  });
 }
 
 module.exports = {
@@ -373,4 +561,8 @@ module.exports = {
   readLockfile,
   connectFromLockfile,
   publicSessionView,
+  fetchLocalFriendsBundle,
+  sendLocalFriendRequest,
+  removeLocalFriendRequest,
+  acceptLocalFriendRequest,
 };

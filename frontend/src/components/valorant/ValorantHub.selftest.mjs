@@ -75,4 +75,33 @@ assert(en.includes("partyTitle"), "EN party strings");
 const tr = readFileSync(join(root, "../../i18n/locales/tr.js"), "utf8");
 assert(tr.includes("partyTitle"), "TR party strings");
 
+
+const friendsLib = readFileSync(join(root, "../../../backend/lib/valorantFriends.js"), "utf8");
+assert(friendsLib.includes("mergeFriendsAndPresences"), "friends merge helper");
+assert(friendsLib.includes("decodePrivatePresence"), "presence decode");
+
+const friendsHook = readFileSync(join(root, "../../hooks/useValorantFriends.js"), "utf8");
+assert(friendsHook.includes("inviteToParty"), "useValorantFriends exposes inviteToParty");
+assert(friendsHook.includes("localFriends"), "hook loads local friends");
+
+const friendsApi = readFileSync(join(root, "../../api/valorantFriends.js"), "utf8");
+assert(friendsApi.includes("inviteValorantFriendToParty"), "friends API barrel");
+
+assert(routes.includes("/friends/status"), "GET friends/status");
+assert(routes.includes("/friends/party-invite"), "POST friends/party-invite");
+assert(routes.includes("/friends/shape"), "POST friends/shape");
+assert(routes.includes("/store/status"), "GET store/status stub");
+
+assert(api.includes("inviteValorantFriendToParty") || friendsApi.includes("inviteValorantFriendToParty"), "friend party invite client");
+
+assert(electronAuth.includes("valorant:local-friends"), "electron friends IPC");
+assert(electronAuth.includes("/chat/v4/friends"), "local chat friends path");
+assert(electronAuth.includes("/chat/v4/presences"), "local chat presence path");
+
+assert(auth.includes("useValorantFriends") || auth.includes("Dima"), "auth panel defers friends UI to Dima");
+assert(!auth.includes("CompanionFriendsPanel"), "no duplicated friends panel in AuthPanel");
+
+assert(en.includes("friendsTitle"), "EN friends strings for Dima panel");
+assert(tr.includes("friendsTitle"), "TR friends strings for Dima panel");
+
 console.log("ValorantHub.selftest.mjs: ok");

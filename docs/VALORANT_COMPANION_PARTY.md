@@ -53,7 +53,7 @@ Passwords are never accepted. Tokens are request-scoped headers (or short-lived 
 - No official public “full companion” API; uses VALPAW-class `glz.*` session endpoints.
 - Client version header is refreshed from valorant-api.com (fallback if fetch fails).
 - Region/shard mismatch → 401/404 from Riot; reconnect with correct region.
-- Full Riot friends / presence list is **Adım 4** (invite-by-Riot-ID works now).
+- Full Riot friends / presence list is **Adım 4** (see `VALORANT_COMPANION_FRIENDS.md`; UI by Dima, API/hooks shipped for his panel).
 - Web-only RSO without entitlements cannot drive queue.
 
 ## LFG regression

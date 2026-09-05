@@ -34,6 +34,7 @@ const QUEUE_OPTIONS = [
 
 /**
  * Adım 3 — live party + queue controls.
+ * Adım 4 friends panel invites also call inviteValorantParty.
  * Requires live Riot Client entitlement tokens (Electron lockfile) for GLZ.
  */
 export default function CompanionPartyPanel({ identity = null, linked = false }) {

@@ -22,6 +22,7 @@ import {
 import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
 import CompanionPartyPanel from "./CompanionPartyPanel";
+// Adım 4 friends/presence UI owned by Dima — use hooks/useValorantFriends + api/valorant friends helpers.
 
 /**
  * Adım 2 — Riot auth for Companion tab.
@@ -358,6 +359,7 @@ export default function CompanionAuthPanel() {
             : null),
         }}
       />
+      {/* Adım 4 friends panel: Dima mounts via useValorantFriends — do not duplicate UI here. */}
     </div>
   );
 }

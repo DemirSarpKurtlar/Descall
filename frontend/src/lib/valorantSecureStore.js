@@ -74,3 +74,46 @@ export async function localDisconnect() {
   if (!hasLocalLockfileApi()) return { ok: true };
   return window.electronAPI.valorantLocalDisconnect();
 }
+
+/** Adım 4 — local Riot friends + presence (Electron lockfile chat API). */
+export function hasLocalFriendsApi() {
+  return Boolean(window.electronAPI?.valorantLocalFriends);
+}
+
+export async function localFriends() {
+  if (!hasLocalFriendsApi()) {
+    return {
+      ok: false,
+      code: "NOT_ELECTRON",
+      error:
+        "Riot friends / presence need the Descall desktop app with Riot Client running on this PC.",
+      friends: [],
+      counts: { total: 0, online: 0, inGame: 0, offline: 0 },
+      requests: [],
+      inbound: [],
+      outbound: [],
+    };
+  }
+  return window.electronAPI.valorantLocalFriends();
+}
+
+export async function localFriendRequestSend(payload) {
+  if (!window.electronAPI?.valorantLocalFriendRequestSend) {
+    return { ok: false, code: "NOT_ELECTRON", error: "Desktop app required" };
+  }
+  return window.electronAPI.valorantLocalFriendRequestSend(payload);
+}
+
+export async function localFriendRequestRemove(payload) {
+  if (!window.electronAPI?.valorantLocalFriendRequestRemove) {
+    return { ok: false, code: "NOT_ELECTRON", error: "Desktop app required" };
+  }
+  return window.electronAPI.valorantLocalFriendRequestRemove(payload);
+}
+
+export async function localFriendRequestAccept(payload) {
+  if (!window.electronAPI?.valorantLocalFriendRequestAccept) {
+    return { ok: false, code: "NOT_ELECTRON", error: "Desktop app required" };
+  }
+  return window.electronAPI.valorantLocalFriendRequestAccept(payload);
+}

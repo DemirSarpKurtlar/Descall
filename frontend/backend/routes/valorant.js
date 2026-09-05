@@ -1,5 +1,5 @@
 /**
- * Valorant Companion API (Adım 2+).
+ * Valorant Companion API (Adım 2–4; Adım 6 store stub).
  * Mounted at /valorant and /api/valorant.
  *
  * Security:
@@ -450,6 +450,94 @@ router.post("/party/accessibility", requireAuth, async (req, res) => {
   return withPartyMutation(req, res, async (ctx) => {
     await partyApi.setAccessibility(ctx, req.body?.accessibility);
   });
+});
+
+
+/* ─── Adım 4 note + Adım 6 store stub ───
+ * Friends / presence / friend-requests are served from Electron local chat
+ * (lockfile → /chat/v4/*). Render cannot reach 127.0.0.1 on the user's PC.
+ * Party invite from a friend still uses POST /party/invite (Adım 3 GLZ).
+ */
+
+const { storeCapabilities } = require("../lib/valorantStore");
+
+// GET /api/valorant/store/status — Adım 6 capability probe (not implemented)
+router.get("/store/status", requireAuth, async (_req, res) => {
+  return res.json(storeCapabilities());
+});
+
+// GET /api/valorant/friends/status — capabilities for Dima's Companion friends panel
+router.get("/friends/status", requireAuth, async (_req, res) => {
+  return res.json({
+    implemented: true,
+    adim: 4,
+    source: "electron_local_chat",
+    uiOwner: "dima",
+    clientHook: "useValorantFriends",
+    endpoints: {
+      status: "GET /api/valorant/friends/status",
+      partyInvite: "POST /api/valorant/friends/party-invite",
+      partyInviteAlias: "POST /api/valorant/party/invite",
+      list: "IPC valorant:local-friends (desktop)",
+      sendRequest: "IPC valorant:local-friend-request-send",
+      removeRequest: "IPC valorant:local-friend-request-remove",
+      acceptRequest: "IPC valorant:local-friend-request-accept",
+      storeStatus: "GET /api/valorant/store/status (Adım 6 stub)",
+    },
+    note: "Friends + presence require Descall desktop + Riot Client on the same PC. Web RSO alone cannot list Riot friends. Party invite uses live GLZ tokens (Adım 3).",
+  });
+});
+
+/**
+ * POST /api/valorant/friends/party-invite
+ * Convenience alias for Dima's friends panel → same GLZ invite as /party/invite.
+ * Body: { riotId } or { gameName, tagLine }
+ * Headers: X-Riot-Access-Token + X-Riot-Entitlement when available.
+ */
+router.post("/friends/party-invite", requireAuth, async (req, res) => {
+  let gameName = String(req.body?.gameName || "").trim();
+  let tagLine = String(req.body?.tagLine || "").trim();
+  if (!gameName || !tagLine) {
+    const parsed = parseRiotId(req.body?.riotId);
+    if (!parsed) {
+      return res.status(400).json({ error: "riotId (Name#TAG) or gameName+tagLine required" });
+    }
+    gameName = parsed.gameName;
+    tagLine = parsed.tagLine;
+  }
+  return withPartyMutation(req, res, async (ctx) => {
+    await partyApi.inviteByRiotId(ctx, gameName, tagLine);
+  });
+});
+
+/**
+ * POST /api/valorant/friends/shape
+ * Optional helper for the desktop panel: shape raw lockfile friends + presences
+ * (never accepts passwords/tokens in body for storage — tokens ignored if present).
+ * Body: { friends, presences, selfPuuid? }
+ */
+router.post("/friends/shape", requireAuth, async (req, res) => {
+  try {
+    if (req.body?.password || req.body?.riotPassword) {
+      return res.status(400).json({ error: "Riot passwords are not accepted by Descall" });
+    }
+    const { mergeFriendsAndPresences, shapeFriendRequests } = require("../lib/valorantFriends");
+    const friends = Array.isArray(req.body?.friends) ? req.body.friends : [];
+    const presences = Array.isArray(req.body?.presences) ? req.body.presences : [];
+    const requests = Array.isArray(req.body?.requests) ? req.body.requests : [];
+    const selfPuuid = req.body?.selfPuuid ? String(req.body.selfPuuid) : null;
+    const merged = mergeFriendsAndPresences({ friends, presences, selfPuuid });
+    const shapedRequests = shapeFriendRequests(requests);
+    return res.json({
+      ok: true,
+      ...merged,
+      requests: shapedRequests.requests,
+      inbound: shapedRequests.inbound,
+      outbound: shapedRequests.outbound,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Failed to shape friends" });
+  }
 });
 
 module.exports = router;
