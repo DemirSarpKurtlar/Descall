@@ -83,7 +83,7 @@
   "build": {
     "appId": "com.descall.app",
     "productName": "Descall",
-    "copyright": "Copyright © 2025 Descall",
+    "copyright": "Copyright \u00a9 2025 Descall",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -91,10 +91,6 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "backend/lib/valorantFriends.js",
-      "backend/lib/valorantParty.js",
-      "backend/lib/riotLink.js",
-      "backend/lib/lfgConstants.js",
       "package.json"
     ],
     "extraResources": [

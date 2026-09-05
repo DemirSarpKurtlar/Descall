@@ -305,7 +305,7 @@ async function connectFromLockfile() {
   return { session, lockPath: lock.path, port: lock.port };
 }
 
-const friendsShape = require('../backend/lib/valorantFriends');
+const friendsShape = require('./valorantFriendsShape');
 
 function requireLock() {
   const lock = readLockfile();

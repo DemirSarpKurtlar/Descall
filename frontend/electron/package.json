@@ -47,6 +47,7 @@
       "notifPreload.cjs",
       "processScanner.cjs",
       "riotLocalAuth.cjs",
+      "valorantFriendsShape.cjs",
       "riotRsoAuth.cjs",
       "overlayWindow.cjs",
       "overlayPreload.cjs",
@@ -65,16 +66,6 @@
         "to": "dist",
         "filter": [
           "**/*"
-        ]
-      },
-      {
-        "from": "../backend/lib",
-        "to": "backend/lib",
-        "filter": [
-          "valorantFriends.js",
-          "valorantParty.js",
-          "riotLink.js",
-          "lfgConstants.js"
         ]
       }
     ],
