@@ -333,6 +333,14 @@ app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);
 app.use("/api/calls", callsRoutes);
 app.use("/api/lfg", lfgRoutes);
+// Riot Developer Portal domain verification (exact product URL path).
+app.get(["/api/riot/oauth/callback/riot.txt", "/riot/oauth/callback/riot.txt"], (_req, res) => {
+  const code = String(process.env.RIOT_DOMAIN_VERIFY_CODE || "fba426c7-ed17-4d99-9ceb-5f879fc307bc").trim();
+  res.set("Cache-Control", "no-store");
+  res.type("text/plain; charset=utf-8");
+  return res.status(200).send(code + "\n");
+});
+
 app.use("/api/riot", riotRoutes);
 app.use("/valorant", valorantRoutes);
 app.use("/api/valorant", valorantRoutes);
