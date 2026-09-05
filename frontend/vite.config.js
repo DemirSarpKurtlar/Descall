@@ -89,8 +89,31 @@ function descallHtmlSeoPlugin() {
   };
 }
 
+
+/**
+ * Electron IIFE builds still get <script type="module"> from Vite's HTML
+ * transform. Module scripts never set document.currentScript, so Vite's
+ * relative-asset polyfill (new URL(file, currentScript||baseURI)) resolves
+ * hashed files against dist/index.html instead of dist/assets/ — brand JPEG,
+ * fonts imported from JS, and WASM 404. Force a classic defer script when
+ * building for Electron so currentScript.src points at the IIFE bundle.
+ */
+function electronClassicScriptPlugin() {
+  if (!electronBase) return null;
+  return {
+    name: "descall-electron-classic-script",
+    enforce: "post",
+    transformIndexHtml(html) {
+      return html.replace(
+        /<script type="module" crossorigin src="(\.\/assets\/[^"]+\.js)"><\/script>/g,
+        '<script defer src="$1"></script>'
+      );
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), descallHtmlSeoPlugin()],
+  plugins: [react(), descallHtmlSeoPlugin(), electronClassicScriptPlugin()].filter(Boolean),
   // Serve prerendered dist/<route>/index.html shells in preview (not SPA fallback to /).
   appType: "mpa",
   base: electronBase ? "./" : "/",

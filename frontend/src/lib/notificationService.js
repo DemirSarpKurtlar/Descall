@@ -1,5 +1,6 @@
 import { t } from '../i18n/runtime';
 import { isChannelMuted } from './serverChannelMutes';
+import { brandIconUrl } from "../components/brand/brandIconUrl";
 
 const COOLDOWN_MS = 800;
 const CALL_TAG = 'descall-incoming-call';
@@ -151,8 +152,8 @@ class NotificationService {
         tag,
         requireInteraction,
         silent,
-        icon: '/icon.png',
-        badge: '/icon.png',
+        icon: brandIconUrl(),
+        badge: brandIconUrl(),
         data,
       });
       n.onclick = () => {

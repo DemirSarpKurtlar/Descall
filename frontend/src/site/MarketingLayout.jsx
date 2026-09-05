@@ -140,7 +140,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
 
       <header className="mkt-header">
         <Link to={L("/")} className="mkt-brand">
-          <img src="/icon-192.png" alt="" width={32} height={32} decoding="async" />
+          <img src={`${import.meta.env.BASE_URL}brand/descall-icon.jpeg`} alt="" width={32} height={32} decoding="async" />
           <span>Descall</span>
           <span className="mkt-header-beta" title={t(SITE_OPERATOR.statusNote)}>
             {t("Beta")}
@@ -179,7 +179,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
 
       <footer className="mkt-footer">
         <div className="mkt-footer-brand">
-          <img src="/icon-192.png" alt="" width={24} height={24} decoding="async" loading="lazy" />
+          <img src={`${import.meta.env.BASE_URL}brand/descall-icon.jpeg`} alt="" width={24} height={24} decoding="async" loading="lazy" />
           <div>
             <strong>Descall</strong>
             <span className="mkt-footer-beta">{t("Beta")}</span>

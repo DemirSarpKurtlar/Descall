@@ -1,16 +1,15 @@
-import descallIcon from "../../assets/descall-icon.jpeg";
+import { brandIconUrl } from "./brandIconUrl";
 
 /**
  * Canonical in-app Descall mark (login, titlebar, nav rail).
- * JPEG is bundled via Vite import so Electron file:// / asar still paints it
- * (absolute /brand/*.png 404'd on desktop — #147). Public copy lives at
- * frontend/public/brand/descall-icon.jpeg for non-module consumers.
+ * Points at public `brand/descall-icon.jpeg` (= repo-root Descall Icon.jpeg)
+ * via BASE_URL so Electron file:// and web both paint it. See brandIconUrl.js.
  */
 function DescallMark() {
   return (
     <img
       className="descall-brand-mark"
-      src={descallIcon}
+      src={brandIconUrl()}
       width={64}
       height={64}
       alt=""
