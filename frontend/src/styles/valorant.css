@@ -1,0 +1,201 @@
+/* ── Valorant Hub (Play rail slot) ── */
+.valorant-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  background: var(--surface-0, #1e1f22);
+  color: var(--text-0, #f2f3f5);
+  overflow: hidden;
+}
+
+.valorant-hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-1, #2b2d31);
+  z-index: 2;
+}
+
+.valorant-hub-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.valorant-hub-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-1, #dbdee1);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.valorant-hub-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.valorant-hub-back-label {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .valorant-hub-back-label {
+    display: inline;
+  }
+}
+
+.valorant-hub-title {
+  min-width: 0;
+}
+
+.valorant-hub-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ff4655;
+}
+
+.valorant-hub-title h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.valorant-hub-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--surface-0, #1e1f22);
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+}
+
+.valorant-hub-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #949ba4);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.valorant-hub-tab:hover {
+  color: var(--text-1, #dbdee1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.valorant-hub-tab.is-active {
+  background: var(--surface-2, #313338);
+  color: var(--text-0, #f2f3f5);
+  box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));
+}
+
+.valorant-hub-body {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.valorant-hub-panel {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.valorant-hub-panel.is-hidden,
+.valorant-hub-panel[hidden] {
+  display: none !important;
+}
+
+/* Nested LFG fills the hub body — not an absolute overlay of its own. */
+.valorant-hub-panel-lfg > .lfg-workspace {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  inset: auto;
+}
+
+.valorant-companion-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--surface-0, #1e1f22);
+}
+
+.valorant-companion-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 28px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-1, #2b2d31);
+  text-align: center;
+}
+
+.valorant-companion-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff4655;
+  background: rgba(255, 70, 85, 0.12);
+  border: 1px solid rgba(255, 70, 85, 0.25);
+}
+
+.valorant-companion-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.valorant-companion-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-1, #dbdee1);
+}
+
+.valorant-companion-note {
+  margin-top: 12px !important;
+  font-size: 12px !important;
+  color: var(--text-muted, #949ba4) !important;
+}

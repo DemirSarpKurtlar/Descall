@@ -9,7 +9,7 @@ import UserPanel from "./UserPanel";
 import ActivitySidebar from "../activity/ActivitySidebar";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
 import FeedbackModal from "../feedback/FeedbackModal";
-import LfgWorkspace from "../lfg/LfgWorkspace";
+import ValorantHub from "../valorant/ValorantHub";
 import DimaAiWorkspace from "../dimaai/DimaAiWorkspace";
 import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
@@ -528,7 +528,7 @@ export default function AppLayout({
             transition={animateMainViews ? { duration: 0.38, ease: VIEW_EASE } : { duration: 0 }}
           >
             {activeView === "play" ? (
-              <LfgWorkspace
+              <ValorantHub
                 me={me}
                 socket={socket}
                 onClose={() => handleViewChange("chat")}

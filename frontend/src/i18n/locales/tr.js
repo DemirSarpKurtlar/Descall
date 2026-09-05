@@ -38,6 +38,14 @@ export const nested = {
     "admin": "Yönetici",
     "download": "İndir"
   },
+  "valorantHub": {
+    "title": "Valorant",
+    "companion": "Companion",
+    "lfg": "LFG",
+    "companionSoon": "Companion yakında",
+    "companionHint": "Parti, görevler, loadout ve maç geçmişi burada olacak. Şimdilik LFG sekmesini kullan — lobi oluştur/katıl, parti kodu ve Riot ID rank eskisi gibi çalışır.",
+    "companionNote": "Sadece Adım 1 kabuğu. Riot oturumu ve companion aksiyonları sonraki adımlarda gelecek."
+  },
   "dimaai": {
     "title": "DimaAI",
     "assistant": "Dima 1.1",

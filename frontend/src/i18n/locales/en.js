@@ -35,6 +35,14 @@ export const nested = {
     "admin": "Admin",
     "download": "Download"
   },
+  "valorantHub": {
+    "title": "Valorant",
+    "companion": "Companion",
+    "lfg": "LFG",
+    "companionSoon": "Companion coming soon",
+    "companionHint": "Party, missions, loadout, and match history will live here. For now, use the LFG tab — create/join lobbies, party codes, and Riot ID rank work exactly as before.",
+    "companionNote": "Adım 1 shell only. Riot session & companion actions arrive in later steps."
+  },
   "dimaai": {
     "title": "DimaAI",
     "assistant": "Dima 1.1",

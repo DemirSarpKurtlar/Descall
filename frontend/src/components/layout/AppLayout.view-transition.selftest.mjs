@@ -70,8 +70,16 @@ assert(
 
 
 assert(
-  /activeView === "play" \? \([\s\S]{0,40}<LfgWorkspace/.test(layout),
-  "LfgWorkspace must mount only when activeView is play",
+  /activeView === "play" \? \([\s\S]{0,40}<ValorantHub/.test(layout),
+  "ValorantHub must mount only when activeView is play",
+);
+assert(
+  layout.includes('import ValorantHub from "../valorant/ValorantHub"'),
+  "AppLayout must import ValorantHub for the Play slot",
+);
+assert(
+  !/activeView === "play" \? \([\s\S]{0,40}<LfgWorkspace/.test(layout),
+  "LfgWorkspace must not mount directly from AppLayout (wrap via ValorantHub)",
 );
 assert(
   /activeView === "dimaai" \? \([\s\S]{0,40}<DimaAiWorkspace/.test(layout),
@@ -82,10 +90,15 @@ assert(
   "must not unconditionally absolute-position LFG/Dima under .app-main-view",
 );
 assert(
-  /:not\(\[data-view="play"\]\)\s*\.lfg-workspace/.test(css)
+  /:not\(\[data-view="play"\]\)\s*\.valorant-hub/.test(css)
+    && /:not\(\[data-view="play"\]\)\s*\.lfg-workspace/.test(css)
     && /:not\(\[data-view="dimaai"\]\)\s*\.dima-workspace/.test(css)
     && /display:\s*none\s*!important/.test(css),
   "inactive play/dimaai workspaces must hard-hide via data-view",
+);
+assert(
+  /\[data-view="play"\]\s*\.valorant-hub/.test(css),
+  "play view must absolute-position ValorantHub (not bare LFG)",
 );
 
 console.log("AppLayout.view-transition.selftest.mjs: ok");
