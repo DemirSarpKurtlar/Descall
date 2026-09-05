@@ -1314,13 +1314,33 @@
 .header-avatar {
   position: relative;
   flex-shrink: 0;
+  flex-grow: 0;
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1 / 1;
 }
 
 button.header-avatar {
   padding: 0;
   border: 0;
   background: transparent;
+  background-image: none;
+  background-repeat: no-repeat;
   cursor: pointer;
+}
+
+.header-avatar .ui-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+}
+
+.panel-header,
+.header-left {
+  background-repeat: no-repeat;
 }
 
 .header-icon {

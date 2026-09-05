@@ -41,14 +41,14 @@
   background-color: #000000 !important;
 }
 .user-settings.is-desktop .us-main {
-  background: #000000 !important;
+  background: var(--surface-0) !important;
 }
 .user-settings.is-desktop .us-main-scroll,
 .user-settings.is-desktop .us-tab {
-  background: #000000 !important;
+  background: var(--surface-0) !important;
 }
 .user-settings.is-desktop .us-sidebar {
-  background: #0b0c0e;
+  background: var(--surface-1);
 }
 
 .user-settings {
@@ -63,7 +63,7 @@
   width: min(1080px, calc(100vw - 64px));
   height: min(780px, calc(100vh - 64px));
   max-height: calc(100vh - 64px);
-  background: #000000;
+  background: var(--surface-0);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
@@ -106,7 +106,7 @@
 }
 
 .user-settings.is-desktop .us-main {
-  background: #000000;
+  background: var(--surface-0);
 }
 
 .user-settings.is-mobile .us-sidebar {
@@ -295,7 +295,7 @@
   padding: 12px 14px 16px;
   border-top: 1px solid var(--border-2);
   flex-shrink: 0;
-  background: #000000;
+  background: var(--surface-0);
 }
 
 .us-logout {
@@ -327,7 +327,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: #000000;
+  background: var(--surface-0);
   min-height: 0;
 }
 
@@ -347,7 +347,7 @@
 
 .user-settings.is-desktop .us-main-header {
   justify-content: flex-end;
-  background: #000000;
+  background: var(--surface-0);
 }
 
 .us-main-heading {
@@ -406,7 +406,7 @@
 }
 
 .us-main-scroll {
-  background: #000000;
+  background: var(--surface-0);
 }
 .user-settings.is-mobile .us-main-scroll {
   padding: 16px 16px 28px;
@@ -548,7 +548,7 @@
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #000000;
+  background: var(--surface-0);
 }
 
 .us-hero-banner {
@@ -564,7 +564,7 @@
   gap: 14px;
   padding: 0 16px 16px;
   margin-top: -36px;
-  background: #000000;
+  background: var(--surface-0);
 }
 
 .us-hero-avatar {
@@ -573,9 +573,16 @@
   background: transparent;
   border-radius: 50%;
   flex-shrink: 0;
+  flex-grow: 0;
+  aspect-ratio: 1 / 1;
   overflow: visible;
   line-height: 0;
-  box-shadow: 0 0 0 4px #000000;
+  box-shadow: 0 0 0 4px var(--surface-0);
+}
+
+.us-hero-avatar .ui-avatar {
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
 }
 
 .us-hero-avatar .status-badge {
@@ -1071,12 +1078,19 @@
   z-index: 1;
 }
 
-.us-profile-preview div {
+/* Only the text column — NEVER match .ui-avatar (motion.div) or it flex-grows into an oval */
+.us-profile-preview-meta {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
+}
+
+.us-profile-preview .ui-avatar {
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
+  align-self: flex-end;
 }
 
 .us-profile-preview strong,

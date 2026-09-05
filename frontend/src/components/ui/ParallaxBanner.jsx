@@ -45,6 +45,9 @@ export default function ParallaxBanner({
           className="profile-banner-parallax-layer"
           style={{
             backgroundImage: imageUrl,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
             transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(1.08)`,
           }}
         />

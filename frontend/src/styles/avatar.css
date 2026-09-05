@@ -6,6 +6,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  flex-grow: 0;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
   isolation: isolate;
   overflow: visible;
   line-height: 0;
@@ -74,6 +77,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  flex-grow: 0;
+  aspect-ratio: 1 / 1;
   overflow: visible;
   line-height: 0;
 }

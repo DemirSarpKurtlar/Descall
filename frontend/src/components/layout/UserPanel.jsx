@@ -1056,7 +1056,7 @@ const UserPanel = forwardRef(function UserPanel({
                 user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
                 animate="always"
               />
-              <div>
+              <div className="us-profile-preview-meta">
                 <strong>{displayName || me?.username || "User"}</strong>
                 <span>@{me?.username?.toLowerCase() || "user"}</span>
               </div>

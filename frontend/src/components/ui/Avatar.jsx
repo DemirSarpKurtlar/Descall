@@ -188,6 +188,9 @@ export function Avatar({
         height: size,
         minWidth: size,
         minHeight: size,
+        maxWidth: size,
+        maxHeight: size,
+        aspectRatio: "1 / 1",
         fontSize: size,
       }}
       onClick={onClick}
