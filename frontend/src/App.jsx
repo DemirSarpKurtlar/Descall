@@ -541,10 +541,22 @@ export default function App() {
       const riotLink = params.get("riot_link");
       if (!riotLink) return;
       const reason = params.get("reason") || "";
+      const openPlay = params.get("play") === "valorant" || params.get("tab") === "companion";
       params.delete("riot_link");
       params.delete("reason");
+      params.delete("play");
+      params.delete("tab");
       const qs = params.toString();
       window.history.replaceState({}, "", qs ? `/?${qs}` : "/");
+      if (openPlay) {
+        try {
+          sessionStorage.setItem("descall.valorant.tab", "companion");
+          sessionStorage.setItem("descall.valorant.openPlay", "1");
+        } catch {
+          /* ignore */
+        }
+        window.dispatchEvent(new CustomEvent("descall:open-valorant-companion"));
+      }
       if (riotLink === "success") {
         toast(t("Valorant account linked"), "success");
       } else {
@@ -557,6 +569,29 @@ export default function App() {
       /* ignore */
     }
   }, [toast, t]);
+
+  // Open Valorant Companion after RSO redirect / custom event
+  useEffect(() => {
+    const openCompanion = () => {
+      try {
+        if (sessionStorage.getItem("descall.valorant.openPlay") === "1") {
+          sessionStorage.removeItem("descall.valorant.openPlay");
+        }
+      } catch {
+        /* ignore */
+      }
+      setActiveView("play");
+    };
+    window.addEventListener("descall:open-valorant-companion", openCompanion);
+    try {
+      if (sessionStorage.getItem("descall.valorant.openPlay") === "1") {
+        openCompanion();
+      }
+    } catch {
+      /* ignore */
+    }
+    return () => window.removeEventListener("descall:open-valorant-companion", openCompanion);
+  }, []);
 
   // Soft feedback nudge after voice/video calls end (≥45s)
   useEffect(() => {

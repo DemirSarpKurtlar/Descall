@@ -101,7 +101,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanProcesses: () => ipcRenderer.invoke('scan-processes'),
 
 
-  // Valorant Companion — local Riot Client lockfile session (desktop only)
+  // Valorant Companion — RSO (primary) + local Riot Client lockfile (optional)
+  valorantRsoOpen: (payload) => ipcRenderer.invoke('valorant:rso-open', payload || {}),
+  valorantRsoCancel: () => ipcRenderer.invoke('valorant:rso-cancel'),
+  onValorantRsoResult: (callback) => {
+    const handler = (_evt, result) => callback(result);
+    ipcRenderer.on('valorant:rso-result', handler);
+    return () => ipcRenderer.off('valorant:rso-result', handler);
+  },
   valorantLocalStatus: () => ipcRenderer.invoke('valorant:local-status'),
   valorantLocalConnect: () => ipcRenderer.invoke('valorant:local-connect'),
   valorantLocalGetTokens: () => ipcRenderer.invoke('valorant:local-get-tokens'),

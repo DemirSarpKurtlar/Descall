@@ -317,6 +317,10 @@
   color: var(--text-muted, #949ba4) !important;
   line-height: 1.45 !important;
 }
+.valorant-auth-footnote.muted {
+  opacity: 0.85;
+  font-size: 11px !important;
+}
 .valorant-auth-web-limit,
 .valorant-auth-env-hint {
   display: flex;

@@ -201,8 +201,9 @@ router.get("/oauth/start", requireAuth, (req, res) => {
   if (!rsoEnabled()) {
     return res.status(503).json({
       error:
-        "Riot Sign-On is not configured yet. Link with Name#TAG for now, or set RIOT_CLIENT_ID / RIOT_CLIENT_SECRET after Riot production approval.",
+        "Riot Sign-On is not configured yet. Set RIOT_CLIENT_ID, RIOT_CLIENT_SECRET, and RIOT_REDIRECT_URI on Render (developer.riotgames.com).",
       rsoEnabled: false,
+      envNeeded: ["RIOT_CLIENT_ID", "RIOT_CLIENT_SECRET", "RIOT_REDIRECT_URI"],
     });
   }
   const state = createOAuthState(req.user.id);
@@ -219,11 +220,11 @@ router.get("/oauth/callback", async (req, res) => {
   try {
     const { code, state, error, error_description: errDesc } = req.query;
     if (error) {
-      return res.redirect(`${origin}/?riot_link=error&reason=${encodeURIComponent(errDesc || error)}`);
+      return res.redirect(`${origin}/?riot_link=error&reason=${encodeURIComponent(errDesc || error)}&play=valorant&tab=companion`);
     }
     const parsed = verifyOAuthState(state);
     if (!parsed?.userId || !code) {
-      return res.redirect(`${origin}/?riot_link=error&reason=invalid_state`);
+      return res.redirect(`${origin}/?riot_link=error&reason=invalid_state&play=valorant&tab=companion`);
     }
 
     const tokens = await exchangeRsoCode(String(code));
@@ -267,11 +268,11 @@ router.get("/oauth/callback", async (req, res) => {
       cardPublic: true,
     });
 
-    return res.redirect(`${origin}/?riot_link=success`);
+    return res.redirect(`${origin}/?riot_link=success&play=valorant&tab=companion`);
   } catch (err) {
     console.error("[Riot] OAuth callback:", err);
     return res.redirect(
-      `${origin}/?riot_link=error&reason=${encodeURIComponent(err.message || "oauth_failed")}`
+      `${origin}/?riot_link=error&reason=${encodeURIComponent(err.message || "oauth_failed")}&play=valorant&tab=companion`
     );
   }
 });

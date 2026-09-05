@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link2, LogOut, MonitorSmartphone, RefreshCw, ShieldAlert, Sparkles, Unplug } from "lucide-react";
+import { Link2, LogOut, MonitorSmartphone, RefreshCw, Unplug } from "lucide-react";
 import {
   disconnectValorantSession,
   getValorantMe,
@@ -9,19 +9,23 @@ import {
 import { startRiotOAuth } from "../../api/riot";
 import {
   hasLocalLockfileApi,
+  hasRsoWindowApi,
   isElectronValorant,
   localConnect,
   localDisconnect,
   localGetTokens,
+  localSavePublic,
   localStatus,
+  onRsoResult,
+  openRsoLogin,
 } from "../../lib/valorantSecureStore";
 import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
 
 /**
  * Adım 2 — Riot auth for Companion tab.
- * Desktop: local Riot Client lockfile → tokens in Electron safeStorage.
- * Web: RSO when RIOT_CLIENT_* configured; otherwise clear limitation + Name#TAG public link note.
+ * Primary: Riot Sign-On (auth.riotgames.com) in browser / Electron BrowserWindow.
+ * Secondary (Electron only): local Riot Client lockfile shortcut.
  */
 export default function CompanionAuthPanel() {
   const t = useT();
@@ -72,6 +76,56 @@ export default function CompanionAuthPanel() {
     refresh();
   }, [refresh]);
 
+  // Electron RSO BrowserWindow callback
+  useEffect(() => {
+    const off = onRsoResult(async (result) => {
+      if (result?.ok || result?.status === "success") {
+        setBusy(false);
+        setError("");
+        // Mirror public RSO identity into on-device safeStorage marker (no password).
+        try {
+          const st = await getValorantStatus();
+          const card = st?.valorant;
+          if (card?.gameName && card?.tagLine && hasLocalLockfileApi()) {
+            await localSavePublic({
+              gameName: card.gameName,
+              tagLine: card.tagLine,
+              region: card.region || "eu",
+              puuid: card.puuid || null,
+              linkMethod: "rso",
+              // Tokens stay server-side for RSO; lockfile tokens untouched.
+            });
+          }
+        } catch {
+          /* ignore */
+        }
+        await refresh();
+        return;
+      }
+      setBusy(false);
+      setError(result?.error || t("valorantHub.rsoUnavailable"));
+    });
+    return () => {
+      try {
+        off?.();
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [refresh, t]);
+
+  // Web OAuth return (?riot_link=) — App.jsx toasts; we refresh if query present.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      if (params.get("riot_link") === "success") {
+        refresh();
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [refresh]);
+
   const connected =
     Boolean(me?.linked || me?.riotId || (me?.gameName && me?.tagLine)) ||
     Boolean(local?.session?.riotId);
@@ -79,6 +133,37 @@ export default function CompanionAuthPanel() {
   const display = me?.linked || me?.riotId
     ? me
     : local?.session || status?.valorant || null;
+
+  const handleRso = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await startRiotOAuth();
+      if (!res?.url) {
+        setError(res?.error || t("valorantHub.rsoUnavailable"));
+        setBusy(false);
+        return;
+      }
+      const opened = await openRsoLogin(res.url);
+      if (!opened?.ok) {
+        setError(opened?.error || t("valorantHub.rsoUnavailable"));
+        setBusy(false);
+        return;
+      }
+      // BrowserWindow: wait for valorant:rso-result. External/redirect: page navigates away.
+      if (opened.mode === "external" || opened.mode === "redirect") {
+        // Keep busy briefly; external users finish on web callback.
+        if (opened.mode === "external") {
+          setBusy(false);
+        }
+      }
+      // mode === browserWindow → stay busy until onRsoResult
+    } catch (err) {
+      setError(err.message || t("valorantHub.rsoUnavailable"));
+      setBusy(false);
+    }
+  };
 
   const handleLocalConnect = async () => {
     if (busy) return;
@@ -91,7 +176,6 @@ export default function CompanionAuthPanel() {
         return;
       }
       const session = res.session;
-      // Enrich Name#Tag via /me (tokens header-only), then persist public card.
       let enriched = session;
       try {
         const meRes = await getValorantMe({
@@ -112,7 +196,6 @@ export default function CompanionAuthPanel() {
           puuid: enriched.puuid || null,
           linkMethod: "local_client",
         });
-        // Update local public fields (tokens already stored by localConnect)
         if (hasLocalLockfileApi()) {
           await window.electronAPI.valorantLocalSaveSession({
             gameName: enriched.gameName,
@@ -127,24 +210,6 @@ export default function CompanionAuthPanel() {
       await refresh();
     } catch (err) {
       setError(err.message || t("valorantHub.localConnectFailed"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleRso = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const res = await startRiotOAuth();
-      if (res?.url) {
-        window.location.href = res.url;
-        return;
-      }
-      setError(res?.error || t("valorantHub.rsoUnavailable"));
-    } catch (err) {
-      setError(err.message || t("valorantHub.rsoUnavailable"));
     } finally {
       setBusy(false);
     }
@@ -169,12 +234,13 @@ export default function CompanionAuthPanel() {
 
   const envNeeded = status?.envNeededIfRsoMissing || [];
   const electron = isElectronValorant();
+  const rsoReady = Boolean(status?.rsoEnabled);
 
   return (
     <div className="valorant-companion">
       <div className="valorant-companion-card valorant-auth-card">
         <div className="valorant-companion-icon" aria-hidden>
-          <Sparkles size={28} />
+          <Link2 size={28} />
         </div>
         <h3>{t("valorantHub.companion")}</h3>
         <p className="valorant-auth-lead">{t("valorantHub.authLead")}</p>
@@ -200,8 +266,10 @@ export default function CompanionAuthPanel() {
                 {display.linkMethod ? (
                   <span className="valorant-auth-pill muted">{display.linkMethod}</span>
                 ) : null}
-                {display.rankTier ? (
-                  <span className="valorant-auth-pill rank">{display.rankTier}</span>
+                {display.rankTier || display.rank ? (
+                  <span className="valorant-auth-pill rank">
+                    {display.rankTier || display.rank}
+                  </span>
                 ) : null}
               </div>
             </div>
@@ -226,39 +294,23 @@ export default function CompanionAuthPanel() {
           </div>
         ) : (
           <div className="valorant-auth-connect">
-            {electron ? (
+            {rsoReady ? (
               <button
                 type="button"
                 className="valorant-auth-btn primary"
-                onClick={handleLocalConnect}
-                disabled={busy}
-              >
-                <MonitorSmartphone size={16} />
-                {busy ? t("valorantHub.connecting") : t("valorantHub.connectLocal")}
-              </button>
-            ) : (
-              <div className="valorant-auth-web-limit" role="note">
-                <ShieldAlert size={16} aria-hidden />
-                <div>
-                  <strong>{t("valorantHub.webLimitTitle")}</strong>
-                  <p>{t("valorantHub.webLimitBody")}</p>
-                </div>
-              </div>
-            )}
-
-            {status?.rsoEnabled ? (
-              <button
-                type="button"
-                className="valorant-auth-btn ghost"
                 onClick={handleRso}
                 disabled={busy}
               >
-                <Link2 size={14} /> {t("valorantHub.connectRso")}
+                <Link2 size={16} />
+                {busy ? t("valorantHub.connecting") : t("valorantHub.connectRso")}
               </button>
             ) : (
-              <div className="valorant-auth-env-hint">
+              <div className="valorant-auth-env-hint" role="note">
                 <Unplug size={14} aria-hidden />
                 <div>
+                  <p>
+                    <strong>{t("valorantHub.rsoConfigTitle")}</strong>
+                  </p>
                   <p>{t("valorantHub.rsoNotConfigured")}</p>
                   {envNeeded.length > 0 ? (
                     <code className="valorant-auth-env-list">{envNeeded.join(", ")}</code>
@@ -267,7 +319,26 @@ export default function CompanionAuthPanel() {
               </div>
             )}
 
+            {electron && hasLocalLockfileApi() ? (
+              <button
+                type="button"
+                className="valorant-auth-btn ghost"
+                onClick={handleLocalConnect}
+                disabled={busy}
+              >
+                <MonitorSmartphone size={16} />
+                {busy ? t("valorantHub.connecting") : t("valorantHub.connectLocalSecondary")}
+              </button>
+            ) : null}
+
+            {!electron && !rsoReady ? (
+              <p className="valorant-auth-footnote">{t("valorantHub.webRsoRequired")}</p>
+            ) : null}
+
             <p className="valorant-auth-footnote">{t("valorantHub.authFootnote")}</p>
+            {hasRsoWindowApi() ? (
+              <p className="valorant-auth-footnote muted">{t("valorantHub.rsoElectronHint")}</p>
+            ) : null}
           </div>
         )}
 

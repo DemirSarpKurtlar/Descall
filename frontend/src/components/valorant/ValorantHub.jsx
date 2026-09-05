@@ -19,7 +19,19 @@ export default function ValorantHub({
 }) {
   const t = useT();
   // Default LFG so existing Play → stack flow stays unbroken for Adım 1 smoke.
-  const [tab, setTab] = useState("lfg");
+  // RSO callback may request Companion via sessionStorage.
+  const [tab, setTab] = useState(() => {
+    try {
+      const wanted = sessionStorage.getItem("descall.valorant.tab");
+      if (wanted === "companion" || wanted === "lfg") {
+        sessionStorage.removeItem("descall.valorant.tab");
+        return wanted;
+      }
+    } catch {
+      /* ignore */
+    }
+    return "lfg";
+  });
 
   return (
     <div className="valorant-hub" data-tab={tab}>

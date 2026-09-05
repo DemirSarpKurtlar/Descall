@@ -1,7 +1,8 @@
 /**
  * Client-side Valorant session helpers.
- * Electron: tokens live in safeStorage via IPC (riotLocalAuth.cjs).
- * Web: no lockfile; tokens are not kept (RSO secrets required for full auth).
+ * Primary: Riot Sign-On (auth.riotgames.com) — Electron BrowserWindow or web redirect.
+ * Secondary (Electron only): local Riot Client lockfile → safeStorage.
+ * Never accepts or stores Riot passwords.
  */
 
 export function isElectronValorant() {
@@ -10,6 +11,24 @@ export function isElectronValorant() {
 
 export function hasLocalLockfileApi() {
   return Boolean(window.electronAPI?.valorantLocalConnect);
+}
+
+export function hasRsoWindowApi() {
+  return Boolean(window.electronAPI?.valorantRsoOpen);
+}
+
+export async function openRsoLogin(authorizeUrl) {
+  if (hasRsoWindowApi()) {
+    return window.electronAPI.valorantRsoOpen({ url: authorizeUrl });
+  }
+  // Web / fallback: full-page navigate to Riot authorize URL
+  window.location.href = authorizeUrl;
+  return { ok: true, mode: "redirect" };
+}
+
+export function onRsoResult(callback) {
+  if (!window.electronAPI?.onValorantRsoResult) return () => {};
+  return window.electronAPI.onValorantRsoResult(callback);
 }
 
 export async function localStatus() {
@@ -43,15 +62,12 @@ export async function localGetTokens() {
 
 export async function localSavePublic(patch) {
   if (!hasLocalLockfileApi()) return { ok: false };
-  // Strip any accidental token/password fields before IPC
   const safe = { ...patch };
   delete safe.accessToken;
   delete safe.entitlementToken;
   delete safe.password;
   delete safe.riotPassword;
-  // Actually we DO want to update gameName etc. on the stored session —
-  // tokens stay as previously saved by localConnect.
-  return window.electronAPI.valorantLocalSaveSession(patch);
+  return window.electronAPI.valorantLocalSaveSession(safe);
 }
 
 export async function localDisconnect() {
