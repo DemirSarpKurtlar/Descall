@@ -3,12 +3,12 @@
  * Update this whenever cutting a new Electron release tag.
  */
 export const DESKTOP_RELEASE_FALLBACK = {
-  tagName: "v2.9.26",
-  version: "2.9.26",
-  name: "2.9.26",
-  htmlUrl: "https://github.com/DemirSarpKurtlar/Descall/releases/tag/v2.9.26",
+  tagName: "v2.9.27",
+  version: "2.9.27",
+  name: "2.9.27",
+  htmlUrl: "https://github.com/DemirSarpKurtlar/Descall/releases/tag/v2.9.27",
   windowsDownloadUrl:
-    "https://github.com/DemirSarpKurtlar/Descall/releases/download/v2.9.26/Descall-Setup-2.9.26.exe",
+    "https://github.com/DemirSarpKurtlar/Descall/releases/download/v2.9.27/Descall-Setup-2.9.27.exe",
   repo: "DemirSarpKurtlar/Descall",
   fallback: true,
 };
