@@ -137,7 +137,14 @@ body.electron-app [data-call-overlay="true"] {
 }
 
 body.electron-app .user-settings-shell.is-desktop {
-  max-height: calc(100vh - var(--electron-titlebar-h) - 32px);
+  top: var(--electron-titlebar-h, 36px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  inset: auto;
+  width: auto;
+  height: auto;
+  max-height: none !important;
 }
 
 body.electron-app .download-page {

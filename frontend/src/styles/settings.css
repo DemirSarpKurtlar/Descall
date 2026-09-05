@@ -9,7 +9,7 @@
   display: none !important;
 }
 
-/* Full-screen black layer behind the centered desktop settings card */
+/* Full-screen dim + blur behind the centered desktop settings card */
 .user-panel-backdrop {
   position: fixed;
   inset: 0;
@@ -17,7 +17,9 @@
   border: none;
   padding: 0;
   margin: 0;
-  background: #000000;
+  background: rgba(10, 11, 13, 0.42);
+  backdrop-filter: blur(22px) saturate(1.15);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
   pointer-events: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -33,12 +35,18 @@
   cursor: default;
 }
 
-/* Desktop: Discord-style centered rectangle over solid black */
+/* Desktop: centered card over blurred app (not solid black letterbox) */
 .user-settings-shell.is-desktop {
   padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 64px);
-  background: #000000;
-  /* Keep the letterbox under the card pure black (Electron + web). */
-  background-color: #000000 !important;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  box-sizing: border-box;
+  background: rgba(10, 11, 13, 0.45) !important;
+  background-color: rgba(10, 11, 13, 0.45) !important;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .user-settings.is-desktop .us-main {
   background: var(--surface-0) !important;
@@ -1450,10 +1458,13 @@
   to { transform: rotate(360deg); }
 }
 
-/* Desktop settings always sit on solid black, even in light theme */
+/* Light theme: same blur scrim (never solid black letterbox) */
 [data-theme="light"] .user-panel-backdrop,
 [data-theme="light"] .user-settings-shell.is-desktop {
-  background: #000000;
+  background: rgba(20, 22, 26, 0.4) !important;
+  background-color: rgba(20, 22, 26, 0.4) !important;
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
 }
 
 [data-theme="light"] .us-theme-swatch.light {
