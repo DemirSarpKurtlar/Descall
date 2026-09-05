@@ -579,7 +579,8 @@ export default function ServerSidebar({
           )}
         </div>
 
-        {/* Add Friend / Create Group Modal - Moved to main component scope */}
+        {/* Add Friend / Create Group Modal — portal to body (sidebar contain traps fixed) */}
+        {createPortal(
         <AnimatePresence>
           {showAddModal && (
             <motion.div
@@ -745,9 +746,12 @@ export default function ServerSidebar({
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+        )}
 
-        {/* Announcements Modal */}
+        {/* Announcements Modal — portal to body */}
+        {createPortal(
         <AnimatePresence>
           {showAnnouncements && (
             <motion.div
@@ -791,7 +795,9 @@ export default function ServerSidebar({
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+        )}
       </div>
     </aside>
   );
@@ -1415,16 +1421,12 @@ function AddMemberDialog({ group, friends, onClose, onMemberAdded }) {
     }
   };
 
-  return (
+  return createPortal(
     <motion.div
+      className="add-modal-backdrop"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{
-        position: "fixed", inset: 0, zIndex: 9999,
-        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}
       onClick={onClose}
     >
       <motion.div
@@ -1553,7 +1555,7 @@ function AddMemberDialog({ group, friends, onClose, onMemberAdded }) {
         )}
       </motion.div>
     </motion.div>
-  );
+  , document.body);
 }
 
 function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null }) {

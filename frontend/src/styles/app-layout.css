@@ -2423,12 +2423,15 @@ button.header-avatar {
 .add-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
-  z-index: 2000;
+  background: rgba(10, 11, 13, 0.5);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  z-index: 100050;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .add-modal {
@@ -3161,12 +3164,15 @@ button.header-avatar {
 .feedback-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9990;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
+  z-index: 100050;
+  background: rgba(10, 11, 13, 0.5);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .feedback-modal {
@@ -4189,12 +4195,15 @@ button.header-avatar {
 .activity-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(4px);
+  z-index: 100050;
+  background: rgba(10, 11, 13, 0.5);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .activity-modal {
@@ -4381,4 +4390,18 @@ body.electron-app,
 body.electron-app #root,
 .app-root {
   background: var(--surface-0, #111214) !important;
+}
+
+
+/* Electron: full-window popups under titlebar, never trapped in sidebar */
+body.electron-app .add-modal-backdrop,
+body.electron-app .feedback-overlay,
+body.electron-app .activity-modal-backdrop {
+  top: var(--electron-titlebar-h, 36px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  inset: auto;
+  width: auto;
+  height: auto;
 }
