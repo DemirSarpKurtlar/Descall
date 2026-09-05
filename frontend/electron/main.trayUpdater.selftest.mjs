@@ -83,3 +83,13 @@ assert(ctx.includes("if (!menu.items.length) return;"), "with nothing to offer, 
 assert(ctx.includes("!app.isPackaged"), "DevTools entries must not ship in the packaged right-click menu");
 
 console.log("main.trayUpdater.selftest.mjs: ok");
+
+// ── Downloads Setup cleanup (Electron-only) ────────────────────────────────
+assert(main.includes("setupDownloadsCleanup"), "main must load setupDownloadsCleanup");
+assert(main.includes("pruneOldSetupDownloads"), "old Setup prune helper must exist");
+assert(main.includes("pruneOldSetupDownloads('update-downloaded'"), "update-downloaded must prune older Downloads Setups");
+assert(main.includes("pruneOldSetupDownloads('app-ready'"), "app ready must prune older Downloads Setups after update applied");
+assert(main.includes("isDescallSetupDownloadUrl"), "in-app Setup URLs must be detected for Electron download + cleanup");
+assert(main.includes("bindSessionSetupDownloadCleanup"), "session will-download must hook Setup cleanup");
+assert(!/pruneOldSetupDownloads[\s\S]{0,80}dialog\./.test(main), "Setup cleanup must not show dialogs");
+

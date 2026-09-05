@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session } = require('electron');
 const { showNotificationWindow } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
@@ -8,6 +8,13 @@ const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const path = require('path');
 const fs = require('fs');
+const {
+  cleanOldDescallSetups,
+  isDescallSetupDownloadUrl,
+  downloadDescallSetupViaElectron,
+  bindSessionSetupDownloadCleanup,
+  versionFromSetupFilename,
+} = require('./setupDownloadsCleanup.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -88,6 +95,22 @@ const UPDATE_INSTALL_DELAY_MS = 12 * 1000;       // after in-session download â†
 const INSTALL_RETRY_INTERVAL_MS = 60 * 1000;     // re-check "is it safe to install yet?"
 const PRELAUNCH_CHECK_TIMEOUT_MS = 25 * 1000;
 const PRELAUNCH_DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+
+
+/** Quietly prune older Descall-Setup-*.exe from the user's Downloads (Electron-only). */
+function pruneOldSetupDownloads(reason, keepVersion) {
+  try {
+    const keep = keepVersion || updateVersion || (app.isPackaged ? app.getVersion() : null);
+    const result = cleanOldDescallSetups({ app, keepVersion: keep, log });
+    if (result?.deleted?.length) {
+      log.info(`[setup-cleanup] ${reason}: removed ${result.deleted.length} old installer(s), kept=${result.kept || '(none)'}`);
+    } else {
+      log.info(`[setup-cleanup] ${reason}: no old installers to remove (kept=${result?.kept || '(none)'})`);
+    }
+  } catch (err) {
+    log.warn(`[setup-cleanup] ${reason} failed:`, err?.message || err);
+  }
+}
 
 function applyDownloadedUpdate(reason = 'auto') {
   if (!updateReady || !app.isPackaged) return;
@@ -741,8 +764,17 @@ function createMainWindow() {
     if (isAppInBackground()) tryBackgroundCheck('blur');
   });
 
-  // Handle external links
+  // Handle external links â€” Descall Setup assets download in-app so we can prune older installers
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isDescallSetupDownloadUrl(url)) {
+      downloadDescallSetupViaElectron({
+        webContents: mainWindow.webContents,
+        app,
+        url,
+        log,
+      });
+      return { action: 'deny' };
+    }
     shell.openExternal(url);
     return { action: 'deny' };
   });
@@ -751,6 +783,15 @@ function createMainWindow() {
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!url.includes('localhost') && !url.startsWith('file://')) {
       event.preventDefault();
+      if (isDescallSetupDownloadUrl(url)) {
+        downloadDescallSetupViaElectron({
+          webContents: mainWindow.webContents,
+          app,
+          url,
+          log,
+        });
+        return;
+      }
       shell.openExternal(url);
     }
   });
@@ -834,6 +875,14 @@ app.whenReady().then(async () => {
   if (isPackaged && !app.getLoginItemSettings().openAtLogin) {
     app.setLoginItemSettings({ openAtLogin: true });
   }
+
+  try {
+    bindSessionSetupDownloadCleanup({ session: session.defaultSession, app, log });
+  } catch (err) {
+    log.warn('[setup-cleanup] session bind failed:', err?.message || err);
+  }
+  // After an update is applied (or on every launch), drop older Setup installers from Downloads
+  pruneOldSetupDownloads('app-ready', app.isPackaged ? app.getVersion() : null);
 
   registerProcessScannerIPC();
   registerRiotLocalAuthIPC(app);
@@ -951,6 +1000,7 @@ autoUpdater.on('update-downloaded', (info) => {
   log.info('[updater] Update downloaded:', info.version);
   updateReady = true;
   updateVersion = info.version;
+  pruneOldSetupDownloads('update-downloaded', info.version);
 
   if (prelaunchActive) {
     updateSplash({
@@ -1137,6 +1187,11 @@ ipcMain.on('download-file', async (event, { url, filename }) => {
     const filePath = path.join(downloadsPath, filename);
     
     fs.writeFileSync(filePath, buffer);
+
+    const setupVer = versionFromSetupFilename(filename);
+    if (setupVer || isDescallSetupDownloadUrl(url)) {
+      pruneOldSetupDownloads('download-file', setupVer);
+    }
     
     shell.showItemInFolder(filePath);
     return { success: true, path: filePath };

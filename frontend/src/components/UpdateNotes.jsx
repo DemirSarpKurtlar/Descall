@@ -11,6 +11,10 @@ const NOTES = [
     version: "2.9.6",
     body: "Your session is remembered so you stay signed in.",
   },
+  {
+    version: "2.9.30",
+    body: "Old Descall Setup installers are cleaned from Downloads after a new one arrives (desktop app only).",
+  },
 ];
 
 function cmpVer(a, b) {

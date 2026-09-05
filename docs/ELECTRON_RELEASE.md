@@ -58,3 +58,18 @@ Pushing a tag `v*` on `main` runs `.github/workflows/release.yml`, which syncs `
 **Every shipped app/code change also cuts a new Electron Windows Setup.** Bump semver, tag `vX.Y.Z`, and publish `Descall-Setup-*.exe` + blockmap + `latest.yml`. Do not leave the desktop installer on an old tag after a web/API fix.
 
 The packaged app checks GitHub `latest` on launch (splash), every 5 minutes while running (including tray / unfocused), and on minimize/blur. It **downloads in the background** and applies on quit or next launch so the window is never yanked to the front. Splash still `quitAndInstall` before the main window opens.
+
+## Downloads cleanup (Electron-only)
+
+When the desktop app downloads a new Setup (electron-updater `update-downloaded`),
+on launch after an update is applied, or when an in-app GitHub `Descall-Setup-*.exe`
+download finishes inside Electron, Descall quietly deletes **older**
+`Descall-Setup-*.exe` (and matching `.exe.blockmap`) files from the user's
+**Downloads** folder. It keeps the installer matching the current/new app version
+when present, otherwise the newest Setup. Unrelated Downloads files are never
+touched; cleanup is logged only (no focus-stealing dialogs).
+
+**Web browser downloads cannot delete files from Downloads** — this cleanup runs
+in the Electron main process only (`frontend/electron/setupDownloadsCleanup.cjs`).
+Users who download the installer from Chrome/Edge/Firefox keep older Setup copies
+until they remove them manually or open/update via the desktop app.
