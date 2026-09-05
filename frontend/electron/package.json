@@ -47,6 +47,7 @@
       "notifPreload.cjs",
       "processScanner.cjs",
       "riotLocalAuth.cjs",
+      "valorantFriendsShape.cjs",
       "riotRsoAuth.cjs",
       "overlayWindow.cjs",
       "overlayPreload.cjs",
