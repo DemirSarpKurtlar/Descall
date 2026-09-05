@@ -125,6 +125,8 @@
 }
 
 .valorant-hub-panel {
+  width: 100%;
+  min-width: 0;
   flex: 1 1 0;
   min-height: 0;
   min-width: 0;
@@ -152,27 +154,42 @@
 .valorant-companion-placeholder,
 .valorant-companion {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  background: var(--surface-0, #1e1f22);
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-content: start;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 16px 18px 20px;
+  overflow: auto;
+  background: var(--surface-0, #111214);
+  box-sizing: border-box;
+}
+
+.valorant-companion > .valorant-companion-card,
+.valorant-companion > .valorant-auth-card {
+  grid-column: 1 / -1;
+  max-width: none;
+  width: 100%;
+  margin: 0;
 }
 
 .valorant-companion-card {
-  max-width: 420px;
+  max-width: none;
   width: 100%;
-  padding: 28px 24px;
+  padding: 20px 18px;
   border-radius: 16px;
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  background: var(--surface-1, #2b2d31);
-  text-align: center;
+  background: var(--surface-1, #1e1f22);
+  text-align: left;
 }
 
 .valorant-companion-icon {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 14px;
+  width: 48px;
+  height: 48px;
+  margin: 0 0 12px;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -204,8 +221,8 @@
 
 /* ── Companion Adım 2 auth card ── */
 .valorant-auth-card {
-  text-align: center;
-  max-width: 440px;
+  text-align: left;
+  max-width: none;
 }
 .valorant-auth-lead {
   margin-bottom: 16px !important;
@@ -465,20 +482,21 @@
 }
 
 /* ── Companion party + queue (Adım 3) ── */
-.valorant-companion {
-  gap: 14px;
-}
+/* gap already set on .valorant-companion grid above */
 
 .valorant-party {
-  width: min(520px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-width: 0;
   padding: 16px 16px 18px;
   border-radius: 14px;
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  background: var(--surface-1, #2b2d31);
+  background: var(--surface-1, #1e1f22);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
 }
 
 .valorant-party-locked {
@@ -683,17 +701,40 @@
 
 
 
+
+@media (max-width: 900px) {
+  .valorant-companion-placeholder,
+  .valorant-companion {
+    grid-template-columns: 1fr;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface-0, #111214);
+  }
+  .valorant-companion > .valorant-companion-card,
+  .valorant-companion > .valorant-auth-card {
+    grid-column: 1;
+  }
+  .valorant-companion-card,
+  .valorant-auth-card,
+  .valorant-party,
+  .valorant-friends {
+    background: var(--surface-1, #1e1f22);
+  }
+}
+
 /* ── Companion friends + presence (Adım 4) ── */
 .valorant-friends {
-  width: min(520px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-width: 0;
   padding: 16px 16px 18px;
   border-radius: 14px;
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  background: var(--surface-1, #2b2d31);
+  background: var(--surface-1, #1e1f22);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
 }
 
 .valorant-friends-counts {

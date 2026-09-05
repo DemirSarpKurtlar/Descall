@@ -18,8 +18,7 @@ export default function ValorantHub({
   onJoinVoice,
 }) {
   const t = useT();
-  // Default LFG so existing Play → stack flow stays unbroken for Adım 1 smoke.
-  // RSO callback may request Companion via sessionStorage.
+  // Default Companion (Demir 2026-09-06). sessionStorage can still force LFG/Companion after RSO.
   const [tab, setTab] = useState(() => {
     try {
       const wanted = sessionStorage.getItem("descall.valorant.tab");
@@ -30,7 +29,7 @@ export default function ValorantHub({
     } catch {
       /* ignore */
     }
-    return "lfg";
+    return "companion";
   });
 
   return (
