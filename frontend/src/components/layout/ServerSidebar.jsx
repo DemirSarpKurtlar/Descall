@@ -1122,6 +1122,7 @@ function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
     <>
       <div className="dm-avatar">
         <Avatar
+          key={dm.id || dm.username}
           name={resolveDisplayName(dm)}
           size={40}
           user={dm}

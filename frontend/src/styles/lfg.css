@@ -394,6 +394,7 @@
 .lfg-modal-overlay {
   position: fixed;
   inset: 0;
+  left: var(--nav-rail-width, 72px);
   z-index: 12050;
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(6px);
@@ -407,6 +408,9 @@
     max(12px, env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   overscroll-behavior: contain;
+}
+.app-root.is-mobile .lfg-modal-overlay {
+  left: 0;
 }
 .lfg-modal {
   width: min(520px, 100%);

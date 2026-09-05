@@ -276,24 +276,15 @@ export default function AppLayout({
   }, [onStartGroupCallFromCalls]);
 
   const handleViewChange = useCallback((view) => {
+    // Parent onActiveViewChange owns the URL. Do NOT call onDmSelect(null) /
+    // onGroupSelect(null) / onServerBack here — those navigate to /direct,
+    // /groups, or /servers and race the destination path (first click looks
+    // like a no-op; second click finally sticks).
     setActiveView(view);
-    // Keep the open conversation mounted when switching to LFG / Dima AI.
-    if (view === "calls" || view === "activity" || view === "friends") {
-      if (activeDmUser) onDmSelect?.(null);
-      if (activeGroup) onGroupSelect?.(null);
-      if (activeServer) onServerBack?.();
-    }
-    if (view === "chat" || view === "groups") {
-      if (activeServer) onServerBack?.();
-    }
-    if (view === "servers") {
-      if (activeDmUser) onDmSelect?.(null);
-      if (activeGroup) onGroupSelect?.(null);
-    }
     if (isMobile) {
       setMobileDrawerOpen(view !== "play" && view !== "activity" && view !== "dimaai");
     }
-  }, [isMobile, activeDmUser, activeGroup, activeServer, onDmSelect, onGroupSelect, onServerBack, setActiveView]);
+  }, [isMobile, setActiveView]);
 
   const handleMobileBack = useCallback(() => {
     // Servers: channel → channel list → server list

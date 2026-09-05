@@ -161,6 +161,8 @@ export default function ChatPanel({
   useEffect(() => {
     setPinnedMessages([]);
     setShowPinned(false);
+    setShowMembers(false);
+    setProfileTarget(null);
   }, [activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
 
   const togglePinnedPanel = () => {

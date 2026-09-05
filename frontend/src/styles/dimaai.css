@@ -1034,11 +1034,16 @@ html.kb-open .app-root.is-mobile[data-view="dimaai"] .dima-composer-hint {
 .dima-artifact-overlay {
   position: fixed;
   inset: 0;
+  /* Desktop rail stays clickable — first nav click must switch, not just dismiss. */
+  left: var(--nav-rail-width, 72px);
   z-index: 120000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 18px;
+}
+.app-root.is-mobile .dima-artifact-overlay {
+  left: 0;
 }
 .dima-artifact-backdrop {
   position: absolute;
@@ -1507,12 +1512,17 @@ html.kb-open .app-root.is-mobile[data-view="dimaai"] .dima-composer-hint {
 .dima-settings-overlay {
   position: fixed;
   inset: 0;
+  /* Do not cover the primary nav rail — leftover/open panels ate the first click. */
+  left: var(--nav-rail-width, 72px);
   z-index: 100050;
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(10px);
   display: flex;
   justify-content: flex-end;
   isolation: isolate;
+}
+.app-root.is-mobile .dima-settings-overlay {
+  left: 0;
 }
 .dima-settings-panel {
   width: min(420px, 100%);

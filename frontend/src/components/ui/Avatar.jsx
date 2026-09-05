@@ -73,29 +73,20 @@ export function Avatar({
   }, [animated, animate, hovered, isSpeaking]);
 
   const identityKey = String(user?.id || user?.userId || "") + "|" + String(resolvedUrl || imageUrl || "");
-  const identityRef = useRef(identityKey);
-  // Reset sticky bitmap synchronously on identity change so the previous DM
-  // photo cannot paint for a frame (useEffect would be one paint too late).
-  const identityChanged = identityRef.current !== identityKey;
-  if (identityChanged) {
-    identityRef.current = identityKey;
-    if (stickySrc !== null) setStickySrc(null);
-    if (staticFrame !== null) setStaticFrame(null);
-    if (useBareUrl) setUseBareUrl(false);
-    if (failed) setFailed(false);
-    if (loaded) setLoaded(false);
-  }
+  // stickySrc is only valid for the identity that produced it — never paint
+  // peer A's bitmap while React is committing peer B (DM switch).
+  const stickyIdentityRef = useRef(null);
 
   // Always keep a concrete src when avatar URL is known — never letter-only "loading gap".
   // Never reuse another user's stickySrc.
   const displaySrc = useMemo(() => {
-    const stickyOk = identityChanged ? null : stickySrc;
+    const stickyOk = stickyIdentityRef.current === identityKey ? stickySrc : null;
     if (!activeUrl) return stickyOk;
     if (!animated) return activeUrl;
     if (shouldAnimate) return activeUrl;
     if (staticFrame) return staticFrame;
     return activeUrl;
-  }, [identityChanged, activeUrl, animated, shouldAnimate, staticFrame, stickySrc]);
+  }, [identityKey, activeUrl, animated, shouldAnimate, staticFrame, stickySrc]);
 
   useEffect(() => {
     setFailed(false);
@@ -121,8 +112,9 @@ export function Avatar({
     if (origin && !(src === resolvedUrl || src === activeUrl || src.split("?")[0] === origin)) {
       return;
     }
+    stickyIdentityRef.current = identityKey;
     setStickySrc(src);
-  }, [resolvedUrl, activeUrl]);
+  }, [resolvedUrl, activeUrl, identityKey]);
 
   const syncLoadedFromEl = useCallback(
     (el) => {
@@ -145,6 +137,7 @@ export function Avatar({
   );
 
   useEffect(() => {
+    stickyIdentityRef.current = null;
     setStickySrc(null);
     setStaticFrame(null);
     setUseBareUrl(false);

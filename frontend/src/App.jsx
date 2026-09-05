@@ -741,11 +741,15 @@ export default function App() {
           msgs,
           t,
         );
+        // Stale responses from a previous DM must not flip the open chat's chrome.
+        if (activeDmRef.current?.id !== withUserId) return;
         if (typeof res?.hasMore === "boolean") setDmHasMore(res.hasMore);
         else setDmHasMore((normalized?.length ?? 0) >= 50);
       })
       .catch((err) => console.error("[App] fetch DM messages error:", err))
-      .finally(() => setMessagesLoading(false));
+      .finally(() => {
+        if (activeDmRef.current?.id === peerId) setMessagesLoading(false);
+      });
   }, [t]);
 
   /** Discord-like per-server notification level: all | mentions | muted */
@@ -1507,6 +1511,8 @@ export default function App() {
         messages,
         t,
       );
+      // Switching DMs races in-flight history — only the active peer owns chrome.
+      if (activeDmRef.current?.id !== withUserId) return;
       setMessagesLoading(false);
       setDmHasMore((normalized?.length ?? 0) >= 50);
     });
@@ -2706,6 +2712,12 @@ export default function App() {
     setActiveView(requestedRoute.view);
     setUserPanelOpen(Boolean(requestedRoute.settingsTab));
 
+    // Play / DimaAI keep the open conversation mounted under app-chat-keep.
+    // Do not tear it down on route sync (nav return to Chat restores the DM).
+    if (requestedRoute.view === "play" || requestedRoute.view === "dimaai") {
+      return;
+    }
+
     if (requestedRoute.view === "chat") {
       setActiveGroup(null);
       setActiveServer(null);
@@ -3843,18 +3855,60 @@ export default function App() {
           activeView={activeView}
           onActiveViewChange={(view) => {
             setActiveView(view);
-            if (view !== "servers") {
-              setActiveServer(null);
-              setActiveChannel(null);
+
+            // Single navigate owner — clear conversation state here without
+            // calling onDmSelect(null)/onGroupSelect(null)/onServerBack, which
+            // would navigate to /direct|/groups|/servers and race this path.
+            if (view === "play" || view === "dimaai") {
               const nextPath = appPathForView(view);
               if (location.pathname !== nextPath) navigate(nextPath);
               return;
             }
+
+            if (view === "chat") {
+              setActiveServer(null);
+              setActiveChannel(null);
+              // Restore kept DM under play/dimaai instead of dumping to /direct.
+              const dm = activeDmRef.current;
+              const nextPath = dm?.username ? directPath(dm) : appPathForView("chat");
+              if (location.pathname !== nextPath) navigate(nextPath);
+              return;
+            }
+
+            if (view === "groups") {
+              setActiveDmUser(null);
+              setActiveServer(null);
+              setActiveChannel(null);
+              setUnreadMarker(null);
+              setMessagesLoading(false);
+              socketRef.current?.emit("dm:set_active", { withUserId: null });
+              const nextPath = appPathForView("groups");
+              if (location.pathname !== nextPath) navigate(nextPath);
+              return;
+            }
+
+            if (view === "servers") {
+              setActiveDmUser(null);
+              setActiveGroup(null);
+              setUnreadMarker(null);
+              setMessagesLoading(false);
+              socketRef.current?.emit("dm:set_active", { withUserId: null });
+              const nextPath = activeServer?.id
+                ? serverPath(activeServer, activeChannel)
+                : "/servers";
+              if (location.pathname !== nextPath) navigate(nextPath);
+              return;
+            }
+
+            // friends / calls / activity
             setActiveDmUser(null);
             setActiveGroup(null);
-            const nextPath = activeServer?.id
-              ? serverPath(activeServer, activeChannel)
-              : "/servers";
+            setActiveServer(null);
+            setActiveChannel(null);
+            setUnreadMarker(null);
+            setMessagesLoading(false);
+            socketRef.current?.emit("dm:set_active", { withUserId: null });
+            const nextPath = appPathForView(view);
             if (location.pathname !== nextPath) navigate(nextPath);
           }}
           userPanelOpen={userPanelOpen}
