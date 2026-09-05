@@ -137,13 +137,10 @@ body.electron-app [data-call-overlay="true"] {
 }
 
 body.electron-app .user-settings-shell.is-desktop {
-  top: var(--electron-titlebar-h, 36px);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  inset: auto;
-  width: auto;
-  height: auto;
+  /* inset shorthand: top right bottom left — never set inset:auto after edges */
+  inset: var(--electron-titlebar-h, 36px) 0 0 0 !important;
+  width: auto !important;
+  height: auto !important;
   max-height: none !important;
 }
 

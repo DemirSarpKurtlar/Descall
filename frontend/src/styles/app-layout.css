@@ -4392,16 +4392,14 @@ body.electron-app #root,
   background: var(--surface-0, #111214) !important;
 }
 
-
-/* Electron: full-window popups under titlebar, never trapped in sidebar */
+/* Electron: keep popups viewport-fixed (portaled). Do not reset inset. */
 body.electron-app .add-modal-backdrop,
 body.electron-app .feedback-overlay,
 body.electron-app .activity-modal-backdrop {
-  top: var(--electron-titlebar-h, 36px);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  inset: auto;
-  width: auto;
-  height: auto;
+  position: fixed !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  z-index: 100050 !important;
 }
+
