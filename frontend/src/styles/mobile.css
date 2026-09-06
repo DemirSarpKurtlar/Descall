@@ -219,6 +219,11 @@
   .app-root.is-mobile[data-view="dimaai"] {
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: minmax(0, 1fr) !important;
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+    min-height: 0 !important;
+    padding-bottom: 0 !important;
+    background: var(--surface-0, #111214) !important;
   }
 
   .app-root.is-mobile[data-view="play"] > .app-main-slot,
@@ -230,9 +235,10 @@
     min-width: 0 !important;
     min-height: 0 !important;
     height: 100% !important;
+    max-height: 100% !important;
     overflow: hidden;
     position: relative;
-    background: var(--surface-0, #111214);
+    background: var(--surface-0, #111214) !important;
   }
 
   .app-root.is-mobile[data-view="play"] .nav-rail,
@@ -260,6 +266,8 @@
     display: none !important;
   }
 
+  /* Fill viewport edge-to-edge. Tab-bar clearance belongs on SCROLL areas only
+     — outer padding-bottom left a dead black band under LFG/Companion/DimaAI. */
   .app-root.is-mobile[data-view="play"] .valorant-hub,
   .app-root.is-mobile[data-view="play"] .lfg-workspace,
   .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
@@ -268,42 +276,65 @@
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    /* Clear fixed mobile tab bar without leaving a giant empty void in the list */
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    height: auto !important;
+    max-height: none !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
     box-sizing: border-box;
     background: var(--surface-0, #111214) !important;
     overflow: hidden;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
-  /* Hub already pads for safe-area; nested LFG should not double-pad under hub */
   .app-root.is-mobile[data-view="play"] .valorant-hub .lfg-workspace {
-    padding-bottom: 0;
-    max-height: none;
-    height: 100%;
+    position: relative !important;
+    inset: auto !important;
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto !important;
+    padding-bottom: 0 !important;
+  }
+
+  .app-root.is-mobile[data-view="play"] .valorant-hub-header {
+    flex-shrink: 0;
   }
 
   .app-root.is-mobile[data-view="play"] .valorant-hub-body,
-  .app-root.is-mobile[data-view="play"] .valorant-hub-panel {
+  .app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+  .app-root.is-mobile[data-view="play"] .lfg-sidebar,
+  .app-root.is-mobile[data-view="dimaai"] .dima-history,
+  .app-root.is-mobile[data-view="dimaai"] .dima-main {
     min-height: 0;
     flex: 1 1 0;
   }
 
-  .app-root.is-mobile[data-view="play"] .lfg-sidebar {
-    min-height: 0;
+  .app-root.is-mobile[data-view="play"] .valorant-hub-body,
+  .app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+  .app-root.is-mobile[data-view="play"] .valorant-companion,
+  .app-root.is-mobile[data-view="play"] .lfg-lobby-list,
+  .app-root.is-mobile[data-view="play"] .lfg-main,
+  .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
+  .app-root.is-mobile[data-view="dimaai"] .dima-thread,
+  .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
   }
 
   .app-root.is-mobile[data-view="play"] .lfg-lobby-list {
     flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .app-root.is-mobile[data-view="play"] .lfg-empty {
     justify-content: flex-start;
     align-items: center;
     padding-top: 20px;
-    padding-bottom: 8px;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    min-height: 100%;
+    box-sizing: border-box;
   }
 
   /* Keep overflow hidden so expand/collapse height animation clips cleanly.

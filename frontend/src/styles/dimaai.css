@@ -624,7 +624,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 0;
   background: var(--surface-0, #111214);
 }
 
