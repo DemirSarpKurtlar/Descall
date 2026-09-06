@@ -23,6 +23,7 @@ import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
 import CompanionPartyPanel from "./CompanionPartyPanel";
 import CompanionFriendsPanel from "./CompanionFriendsPanel";
+import CompanionMissionsPanel from "./CompanionMissionsPanel";
 
 /**
  * Adım 2 — Riot auth for Companion tab.
@@ -360,6 +361,16 @@ export default function CompanionAuthPanel() {
         }}
       />
       <CompanionFriendsPanel
+        linked={connected}
+        identity={{
+          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
+          puuid: display?.puuid || local?.session?.puuid || null,
+          riotId: display?.riotId || (display?.gameName && display?.tagLine
+            ? `${display.gameName}#${display.tagLine}`
+            : null),
+        }}
+      />
+      <CompanionMissionsPanel
         linked={connected}
         identity={{
           region: display?.region || status?.valorant?.region || local?.session?.region || "eu",

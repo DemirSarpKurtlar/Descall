@@ -116,4 +116,28 @@ assert(tr.includes("friendsTitle"), "TR friends strings");
 assert(en.includes("presenceIngame"), "EN presence strings");
 assert(tr.includes("presenceIngame"), "TR presence strings");
 
+
+const missionsLib = readFileSync(join(root, "../../../backend/lib/valorantMissions.js"), "utf8");
+assert(missionsLib.includes("notConfiguredPayload"), "missions missing-key payload");
+assert(missionsLib.includes("RIOT_API_KEY"), "missions gates on RIOT_API_KEY");
+assert(missionsLib.includes("/contracts/v1/contracts/"), "PD contracts path");
+assert(/never logs tokens/i.test(missionsLib), "missions lib documents no token logging");
+
+assert(routes.includes("/missions/status"), "GET missions/status");
+assert(routes.includes('router.get("/missions"'), "GET /missions");
+assert(routes.includes("/contracts/activate"), "POST contracts/activate");
+assert(routes.includes("/battlepass"), "GET battlepass");
+
+assert(api.includes("getValorantMissions"), "client exports getValorantMissions");
+assert(api.includes("activateValorantContract"), "client exports activateValorantContract");
+
+const missionsHook = readFileSync(join(root, "../../hooks/useValorantMissions.js"), "utf8");
+assert(missionsHook.includes("getValorantMissions"), "useValorantMissions loads missions");
+assert(missionsHook.includes("activate"), "hook exposes activate");
+
+assert(auth.includes("CompanionMissionsPanel"), "auth panel mounts CompanionMissionsPanel (Adım 5 stub)");
+assert(en.includes("missionsTitle"), "EN missions strings");
+assert(tr.includes("missionsTitle"), "TR missions strings");
+assert(css.includes(".valorant-missions"), "missions panel styles exist");
+
 console.log("ValorantHub.selftest.mjs: ok");

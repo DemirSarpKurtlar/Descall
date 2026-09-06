@@ -842,3 +842,17 @@
     justify-content: flex-end;
   }
 }
+
+
+/* Adım 5 — missions / contracts / BP stub */
+.valorant-missions {
+  grid-column: 1 / -1;
+}
+.valorant-missions-summary p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-secondary, #b6b9c0);
+}
+.valorant-missions-summary .muted {
+  opacity: 0.75;
+}

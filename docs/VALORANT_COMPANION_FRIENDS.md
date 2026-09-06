@@ -12,6 +12,7 @@
 | Friend list + presence + requests | Electron IPC → Riot Client local ` /chat/v4/*` (lockfile) |
 | Shape / merge helpers | `frontend/backend/lib/valorantFriends.js` |
 | Online invite to party | `POST /api/valorant/friends/party-invite` (GLZ, same tokens as Adım 3) |
+| Missions / contracts / BP | Adım 5: see `VALORANT_COMPANION_MISSIONS.md` |
 | Store / loadout / daily market | Adım 6 stub: `GET /api/valorant/store/status` |
 
 Render **cannot** read the user's `127.0.0.1` lockfile. Web RSO alone cannot list Riot friends.
