@@ -90,7 +90,7 @@ assert(friendsApi.includes("inviteValorantFriendToParty"), "friends API barrel")
 assert(routes.includes("/friends/status"), "GET friends/status");
 assert(routes.includes("/friends/party-invite"), "POST friends/party-invite");
 assert(routes.includes("/friends/shape"), "POST friends/shape");
-assert(routes.includes("/store/status"), "GET store/status stub");
+assert(routes.includes("/store/status"), "GET store/status");
 
 assert(api.includes("inviteValorantFriendToParty") || friendsApi.includes("inviteValorantFriendToParty"), "friend party invite client");
 
@@ -144,5 +144,44 @@ const missionsUi = readFileSync(join(root, "CompanionMissionsPanel.jsx"), "utf8"
 assert(missionsUi.includes("useValorantMissions"), "missions panel keeps hook");
 assert(missionsUi.includes("activate("), "missions panel can activate contracts");
 assert(!missionsUi.includes("missionsStubNote"), "stub note removed");
+
+const storeLib = readFileSync(join(root, "../../../backend/lib/valorantStore.js"), "utf8");
+assert(storeLib.includes("notConfiguredPayload"), "store missing-key payload");
+assert(storeLib.includes("RIOT_API_KEY"), "store gates on RIOT_API_KEY");
+assert(storeLib.includes("/store/v1/wallet/"), "PD wallet path");
+assert(storeLib.includes("/personalization/v2/players/"), "PD loadout path");
+assert(storeLib.includes("/store/v2/storefront/"), "PD storefront path");
+assert(/never logs tokens/i.test(storeLib), "store lib documents no token logging");
+
+assert(routes.includes('router.get("/wallet"'), "GET /wallet");
+assert(routes.includes("/inventory/skins"), "GET inventory/skins");
+assert(routes.includes('router.get("/loadout"'), "GET /loadout");
+assert(routes.includes('router.put("/loadout"'), "PUT /loadout");
+assert(routes.includes("/store/offers"), "GET store/offers");
+
+assert(api.includes("getValorantWallet"), "client exports getValorantWallet");
+assert(api.includes("putValorantLoadout"), "client exports putValorantLoadout");
+assert(api.includes("getValorantStoreOffers"), "client exports getValorantStoreOffers");
+
+const storeHook = readFileSync(join(root, "../../hooks/useValorantStore.js"), "utf8");
+assert(storeHook.includes("getValorantWallet"), "useValorantStore loads wallet");
+assert(storeHook.includes("getValorantStoreOffers"), "useValorantStore loads offers");
+const loadoutHook = readFileSync(join(root, "../../hooks/useValorantLoadout.js"), "utf8");
+assert(loadoutHook.includes("putValorantLoadout"), "useValorantLoadout can equip");
+assert(loadoutHook.includes("equip"), "hook exposes equip");
+
+assert(auth.includes("CompanionStorePanel"), "auth panel mounts CompanionStorePanel (Adım 6)");
+assert(auth.includes("CompanionLoadoutPanel"), "auth panel mounts CompanionLoadoutPanel (Adım 6)");
+assert(en.includes("storeWallet"), "EN store wallet strings");
+assert(tr.includes("storeWallet"), "TR store wallet strings");
+assert(en.includes("loadoutTitle"), "EN loadout strings");
+assert(tr.includes("loadoutTitle"), "TR loadout strings");
+assert(css.includes(".valorant-store"), "store panel styles exist");
+assert(css.includes(".valorant-loadout"), "loadout panel styles exist");
+const storeUi = readFileSync(join(root, "CompanionStorePanel.jsx"), "utf8");
+assert(storeUi.includes("useValorantStore"), "store panel keeps hook");
+const loadoutUi = readFileSync(join(root, "CompanionLoadoutPanel.jsx"), "utf8");
+assert(loadoutUi.includes("useValorantLoadout"), "loadout panel keeps hook");
+assert(loadoutUi.includes("equip"), "loadout panel surfaces equip contract");
 
 console.log("ValorantHub.selftest.mjs: ok");

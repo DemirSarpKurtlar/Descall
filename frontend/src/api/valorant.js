@@ -148,10 +148,64 @@ export function setValorantPartyAccessibility(accessibility, tokens = {}) {
   });
 }
 
-/** Adım 6 stub — daily store / bundle / loadout (not wired yet). */
+/* ─── Adım 6 — wallet / inventory / loadout / daily store ─── */
+
 export async function getValorantStoreStatus() {
   const res = await fetch(`${BASE}/store/status`, { headers: getHeaders() });
   return parse(res);
+}
+
+/** GET /api/valorant/wallet — VP / Radianite / Kingdom */
+export function getValorantWallet(tokens = {}) {
+  return partyFetch("/wallet", { method: "GET", ...tokens });
+}
+
+/** GET /api/valorant/inventory/skins */
+export function getValorantOwnedSkins(tokens = {}) {
+  return partyFetch("/inventory/skins", { method: "GET", ...tokens });
+}
+
+/** GET /api/valorant/loadout */
+export function getValorantLoadout(tokens = {}) {
+  return partyFetch("/loadout", { method: "GET", ...tokens });
+}
+
+/**
+ * PUT /api/valorant/loadout — equip guns/sprays/identity (reflects in-game).
+ * @param {object} patch { guns?, sprays?, identity?, incognito?, raw? }
+ */
+export function putValorantLoadout(patch, tokens = {}) {
+  return partyFetch("/loadout", {
+    method: "PUT",
+    body: {
+      ...(patch || {}),
+      region: tokens.region,
+      puuid: tokens.puuid,
+    },
+    ...tokens,
+  });
+}
+
+/** PATCH alias for equip */
+export function patchValorantLoadout(patch, tokens = {}) {
+  return partyFetch("/loadout", {
+    method: "PATCH",
+    body: {
+      ...(patch || {}),
+      region: tokens.region,
+      puuid: tokens.puuid,
+    },
+    ...tokens,
+  });
+}
+
+/** GET /api/valorant/store/offers — daily skins + featured bundles */
+export function getValorantStoreOffers(tokens = {}) {
+  return partyFetch("/store/offers", { method: "GET", ...tokens });
+}
+
+export function getValorantStorefront(tokens = {}) {
+  return partyFetch("/store/storefront", { method: "GET", ...tokens });
 }
 
 /* ─── Adım 4 — friends / presence (API + Electron hooks for Dima's panel) ─── */

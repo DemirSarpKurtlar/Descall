@@ -1,5 +1,5 @@
 /**
- * Valorant Companion API (Adım 2–5; Adım 6 store stub).
+ * Valorant Companion API (Adım 2–6; wallet / loadout / store).
  * Mounted at /valorant and /api/valorant.
  *
  * Security:
@@ -453,18 +453,13 @@ router.post("/party/accessibility", requireAuth, async (req, res) => {
 });
 
 
-/* ─── Adım 4 note + Adım 6 store stub ───
+/* ─── Adım 4 note ───
  * Friends / presence / friend-requests are served from Electron local chat
  * (lockfile → /chat/v4/*). Render cannot reach 127.0.0.1 on the user's PC.
  * Party invite from a friend still uses POST /party/invite (Adım 3 GLZ).
+ * Adım 6 wallet/loadout/store routes are registered after missions below.
  */
 
-const { storeCapabilities } = require("../lib/valorantStore");
-
-// GET /api/valorant/store/status — Adım 6 capability probe (not implemented)
-router.get("/store/status", requireAuth, async (_req, res) => {
-  return res.json(storeCapabilities());
-});
 
 // GET /api/valorant/friends/status — capabilities for Dima's Companion friends panel
 router.get("/friends/status", requireAuth, async (_req, res) => {
@@ -484,7 +479,9 @@ router.get("/friends/status", requireAuth, async (_req, res) => {
       acceptRequest: "IPC valorant:local-friend-request-accept",
       missionsStatus: "GET /api/valorant/missions/status (Adım 5)",
       missions: "GET /api/valorant/missions (Adım 5)",
-      storeStatus: "GET /api/valorant/store/status (Adım 6 stub)",
+      storeStatus: "GET /api/valorant/store/status (Adım 6)",
+      wallet: "GET /api/valorant/wallet (Adım 6)",
+      loadout: "GET|PUT /api/valorant/loadout (Adım 6)",
     },
     note: "Friends + presence require Descall desktop + Riot Client on the same PC. Web RSO alone cannot list Riot friends. Party invite uses live GLZ tokens (Adım 3).",
   });
@@ -678,6 +675,191 @@ router.post("/contracts/activate", requireAuth, async (req, res) => {
       code: err.code || null,
     });
   }
+});
+
+
+/* ─── Adım 6: Wallet / inventory / loadout / daily store (PD thin proxy) ─── */
+
+const storeApi = require("../lib/valorantStore");
+
+// GET /api/valorant/store/status — capabilities (+ RIOT_API_KEY gate)
+router.get("/store/status", requireAuth, async (_req, res) => {
+  return res.json(storeApi.storeCapabilities());
+});
+
+async function withStoreSession(req, res, emptyShape, handler) {
+  try {
+    if (!storeApi.riotApiKeyConfigured()) {
+      return res.json(storeApi.notConfiguredPayload(emptyShape));
+    }
+    const session = await resolveLiveSession(req);
+    if (!session.hasLiveTokens) {
+      return res.status(401).json({
+        error:
+          "Store/loadout need a live Riot Client session (access + entitlement). Connect via desktop Riot Client, or send X-Riot-Access-Token + X-Riot-Entitlement headers.",
+        code: "TOKENS_REQUIRED",
+        configured: true,
+        envNeeded: [],
+        ...emptyShape,
+        hint: "Electron: Companion → Optional Riot Client on this PC while Valorant is open.",
+      });
+    }
+    if (!session.puuid) {
+      return res.status(400).json({
+        error: "Missing Riot puuid — reconnect Riot session",
+        code: "PUUID_REQUIRED",
+        configured: true,
+        ...emptyShape,
+      });
+    }
+    const payload = await handler(session);
+    return res.json(payload);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Store request failed",
+      code: err.code || null,
+      configured: storeApi.riotApiKeyConfigured(),
+      ...emptyShape,
+    });
+  }
+}
+
+// GET /api/valorant/wallet — VP / Radianite / Kingdom
+router.get("/wallet", requireAuth, async (req, res) => {
+  return withStoreSession(req, res, { wallet: null }, async (session) => {
+    return storeApi.getWallet({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+  });
+});
+
+// Alias used by some Companion drafts
+router.get("/store/wallet", requireAuth, async (req, res) => {
+  return withStoreSession(req, res, { wallet: null }, async (session) => {
+    return storeApi.getWallet({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+  });
+});
+
+// GET /api/valorant/inventory/skins — owned skin entitlements
+router.get("/inventory/skins", requireAuth, async (req, res) => {
+  return withStoreSession(req, res, { skins: [], count: 0 }, async (session) => {
+    return storeApi.getOwnedSkins({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+  });
+});
+
+// GET /api/valorant/loadout
+router.get("/loadout", requireAuth, async (req, res) => {
+  return withStoreSession(req, res, { loadout: null }, async (session) => {
+    return storeApi.getLoadout({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+  });
+});
+
+/**
+ * PUT /api/valorant/loadout — equip skin/buddy/card/title/spray (reflects in-game)
+ * Body: { guns?, sprays?, identity?, incognito?, raw? }
+ * Also accepts PATCH via same handler.
+ */
+async function equipLoadoutHandler(req, res) {
+  try {
+    if (!storeApi.riotApiKeyConfigured()) {
+      return res.json(storeApi.notConfiguredPayload({ loadout: null }));
+    }
+    const session = await resolveLiveSession(req);
+    if (!session.hasLiveTokens || !session.puuid) {
+      return res.status(401).json({
+        error: "Live Riot tokens required to change loadout",
+        code: "TOKENS_REQUIRED",
+      });
+    }
+    const patch = {
+      guns: req.body?.guns,
+      sprays: req.body?.sprays,
+      identity: req.body?.identity,
+      incognito: req.body?.incognito,
+      raw: req.body?.raw,
+    };
+    const hasPatch =
+      (Array.isArray(patch.guns) && patch.guns.length) ||
+      (Array.isArray(patch.sprays) && patch.sprays.length) ||
+      (patch.identity && typeof patch.identity === "object") ||
+      typeof patch.incognito === "boolean" ||
+      (patch.raw && typeof patch.raw === "object");
+    if (!hasPatch) {
+      return res.status(400).json({
+        error: "Provide guns[], sprays[], identity{}, incognito, and/or raw loadout body",
+        code: "LOADOUT_PATCH_REQUIRED",
+      });
+    }
+    const payload = await storeApi.putLoadout({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+      patch,
+    });
+    return res.json(payload);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Equip loadout failed",
+      code: err.code || null,
+      loadout: null,
+    });
+  }
+}
+
+router.put("/loadout", requireAuth, equipLoadoutHandler);
+router.patch("/loadout", requireAuth, equipLoadoutHandler);
+
+// GET /api/valorant/store/offers — daily market + featured bundles
+router.get("/store/offers", requireAuth, async (req, res) => {
+  return withStoreSession(
+    req,
+    res,
+    { offers: [], bundles: [], accessoryOffers: [] },
+    async (session) => {
+      return storeApi.getStorefront({
+        accessToken: session.accessToken,
+        entitlementToken: session.entitlementToken,
+        region: session.region,
+        puuid: session.puuid,
+      });
+    }
+  );
+});
+
+// Alias for full storefront payload
+router.get("/store/storefront", requireAuth, async (req, res) => {
+  return withStoreSession(
+    req,
+    res,
+    { offers: [], bundles: [], accessoryOffers: [] },
+    async (session) => {
+      return storeApi.getStorefront({
+        accessToken: session.accessToken,
+        entitlementToken: session.entitlementToken,
+        region: session.region,
+        puuid: session.puuid,
+      });
+    }
+  );
 });
 
 module.exports = router;
