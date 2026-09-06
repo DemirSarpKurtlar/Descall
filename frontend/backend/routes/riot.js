@@ -217,7 +217,7 @@ router.get("/oauth/start", requireAuth, (req, res) => {
 // Riot Developer Portal product URL verification (domain ownership).
 // Public: GET /api/riot/oauth/callback/riot.txt
 router.get("/oauth/callback/riot.txt", (_req, res) => {
-  const code = String(process.env.RIOT_DOMAIN_VERIFY_CODE || "fba426c7-ed17-4d99-9ceb-5f879fc307bc").trim();
+  const code = String(process.env.RIOT_DOMAIN_VERIFY_CODE || "223b4bc7-691f-4474-b7e2-38b62382532d").trim();
   res.set("Cache-Control", "no-store");
   res.type("text/plain; charset=utf-8");
   return res.status(200).send(`${code}\n`);
