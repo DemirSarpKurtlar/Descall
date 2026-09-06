@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { motion } from "framer-motion";
@@ -64,7 +65,9 @@ export default function ImageCropModal({
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="img-crop-overlay"
       initial={{ opacity: 0 }}
@@ -132,6 +135,7 @@ export default function ImageCropModal({
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

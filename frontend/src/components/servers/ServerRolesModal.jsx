@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Plus, Shield, Trash2, X, Users } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -308,7 +309,9 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -564,6 +567,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
           />
         )}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

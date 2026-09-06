@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ScrollText } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -29,7 +30,9 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay server-rules-overlay"
       initial={{ opacity: 0 }}
@@ -86,6 +89,7 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

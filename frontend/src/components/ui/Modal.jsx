@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useT } from "../../context/LocaleContext";
 
@@ -13,7 +14,9 @@ export default function Modal({ open, onClose, title, children, wide, className 
 
   const cardClass = ["modal-card", wide ? "modal-wide" : "", className].filter(Boolean).join(" ");
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence mode="wait">
       {open && (
         <motion.div
@@ -46,6 +49,7 @@ export default function Modal({ open, onClose, title, children, wide, className 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
