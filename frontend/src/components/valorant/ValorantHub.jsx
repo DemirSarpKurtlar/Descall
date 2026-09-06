@@ -7,7 +7,7 @@ import { useT } from "../../context/LocaleContext";
 /**
  * Valorant hub — Play rail slot shell.
  * Tabs: Companion (Adım 2 Riot auth) + LFG (existing LfgWorkspace 1:1).
- * Keep LFG mounted while switching tabs so lobby state survives.
+ * Companion mounts only when active. LFG stays mounted (lobby) but hard-hides off-tab.
  */
 export default function ValorantHub({
   me,
@@ -83,17 +83,22 @@ export default function ValorantHub({
       </header>
 
       <div className="valorant-hub-body">
-        <div
-          id="valorant-panel-companion"
-          role="tabpanel"
-          aria-labelledby="valorant-tab-companion"
-          className={`valorant-hub-panel${tab === "companion" ? "" : " is-hidden"}`}
-          hidden={tab !== "companion"}
-          aria-hidden={tab !== "companion"}
-        >
-          <CompanionAuthPanel />
-        </div>
+        {/* Active-only Companion mount — never leave accordion/card under LFG. */}
+        {tab === "companion" ? (
+          <div
+            id="valorant-panel-companion"
+            role="tabpanel"
+            aria-labelledby="valorant-tab-companion"
+            className="valorant-hub-panel"
+          >
+            <CompanionAuthPanel />
+          </div>
+        ) : null}
 
+        {/*
+          Keep LFG mounted (lobby state) but hard-hide when Companion is active.
+          mobile.css must not force display:flex on [hidden] panels.
+        */}
         <div
           id="valorant-panel-lfg"
           role="tabpanel"

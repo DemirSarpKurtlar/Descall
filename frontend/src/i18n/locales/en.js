@@ -203,7 +203,8 @@ export const nested = {
     "v2943": { "title": "Missions UI", "body": "Missions and Battle Pass show up clearly in Companion." },
     "v2944": { "title": "Companion tabs & Loadout", "body": "Companion now has Party, Friends, Missions, and Loadout tabs. Wallet and store live under Loadout. DimaAI keeps your chat visible after you send. Update notices are clearer." },
     "v2945": { "title": "Mobile Companion accordion", "body": "On phones, Companion uses vertical section cards (Party, Friends, Contracts, Loadout, Store) instead of cramped horizontal tabs. Play and DimaAI fill to the bottom — no black band under content." },
-    "v2946": { "title": "Mobile What's New + bottom fill", "body": "What's New works on phones with safe-area padding and a pinned Got it button. Companion and LFG fill to the floating tab bar — no black void under the list." }
+    "v2946": { "title": "Mobile What's New + bottom fill", "body": "What's New works on phones with safe-area padding and a pinned Got it button. Companion and LFG fill to the floating tab bar — no black void under the list." },
+    "v2947": { "title": "LFG tab swap + bottom gap", "body": "Switching to LFG fully hides Companion. Play content meets the mobile tab bar — no leftover dark band under Companion or LFG." }
   },
   "updateToast": {
     "kicker": "Desktop update",
