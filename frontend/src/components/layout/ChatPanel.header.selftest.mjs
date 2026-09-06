@@ -46,12 +46,29 @@ assert(
   "header must use exclusive headerGroup / headerDm (no stacked DM+group chrome)",
 );
 assert(
+  /className="chat-top-chrome"/.test(chatPanel) && /key=\{headerConversationKey\}/.test(chatPanel),
+  "header + Ses Odası must remount under one keyed chat-top-chrome",
+);
+assert(
   /className="header-identity"/.test(chatPanel),
-  "header identity must remount as a single keyed block",
+  "header identity block must remain a single exclusive avatar/icon host",
+);
+assert(
+  (chatPanel.match(/<VoiceRoomBar\b/g) || []).length === 1,
+  "Ses Odası / VoiceRoomBar must appear exactly once in ChatPanel source",
+);
+assert(
+  /className="chat-top-chrome"[\s\S]*?<VoiceRoomBar[\s\S]*?<\/div>/.test(chatPanel) ||
+    /key=\{headerConversationKey\}[\s\S]*?<VoiceRoomBar[\s\S]*?<\/div>/.test(chatPanel),
+  "VoiceRoomBar must live inside the keyed chat-top-chrome remount (not a sibling leftover host)",
 );
 assert(
   /headerGroup\?\.id \? \([\s\S]*?<VoiceRoomBar/.test(chatPanel),
   "Ses Odası / VoiceRoomBar must render only for the exclusive group header",
+);
+assert(
+  !/key=\{headerGroup\.id\}/.test(chatPanel.split("<VoiceRoomBar")[1]?.split("/>")[0] || ""),
+  "VoiceRoomBar must not use a separate groupId key (parent chat-top-chrome owns remount)",
 );
 assert(
   /header-identity/.test(css),
@@ -60,6 +77,11 @@ assert(
 assert(
   /\.header-identity > \.header-avatar ~ \.header-icon/.test(css),
   "CSS must hide stacked DM avatar + group icon",
+);
+assert(
+  /\.chat-top-chrome\s*~\s*\.chat-top-chrome/.test(css) &&
+    /\.voice-room-bar\s*~\s*\.voice-room-bar/.test(css),
+  "CSS must hide stacked Ses Odası / chat-top-chrome leftovers after DM→group",
 );
 
 const avatar = readFileSync(join(root, "../ui/Avatar.jsx"), "utf8");
