@@ -235,8 +235,9 @@ export default function ChatPanel({
     }
   }, [activeDmUser, activeGroup, activeView, activeServer]);
 
-  // One conversation identity at a time — never stack DM + group chrome
-  // (Electron DM→group switches previously left both avatars / Ses Odası stuck).
+  // One conversation identity at a time — never stack DM + group chrome.
+  // Header + Ses Odası remount together under chat-top-chrome (keyed) so
+  // Electron DM→group never leaves a stuck/duplicated VoiceRoomBar node.
   const headerGroup = activeGroup || null;
   const headerDm = headerGroup ? null : activeDmUser || null;
   const headerConversationKey = headerGroup
@@ -368,8 +369,13 @@ export default function ChatPanel({
             </div>
           </div>
         )}
-        {/* Header — hidden on activity view since ActivityView has its own header */}
-        <header className="panel-header" style={activeView === "activity" ? { display: 'none' } : {}}>
+        {/* Header + Ses Odası share one keyed remount — Electron DM→group must not stack rows */}
+        <div
+          className="chat-top-chrome"
+          key={headerConversationKey}
+          style={activeView === "activity" ? { display: "none" } : undefined}
+        >
+        <header className="panel-header">
         <div className="header-left">
           {isMobile && (
             <button
@@ -381,7 +387,7 @@ export default function ChatPanel({
               {showMobileBack ? <ChevronLeft size={22} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="header-identity" key={headerConversationKey}>
+          <div className="header-identity">
             {headerDm ? (
               <button
                 type="button"
@@ -450,7 +456,7 @@ export default function ChatPanel({
           >
             <Users size={20} />
           </button>
-          {(activeDmUser || activeGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
+          {(headerDm || headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
             <button
               className={`icon-btn ${showPinned ? "active" : ""}`}
               title={t("Pinned messages")}
@@ -463,13 +469,13 @@ export default function ChatPanel({
               )}
             </button>
           )}
-          {(activeDmUser || activeGroup) && (
+          {(headerDm || headerGroup) && (
             <>
               <button 
                 className="icon-btn" 
                 title={t("Voice Call")}
                 aria-label={t("Voice Call")}
-                onClick={() => activeGroup ? onGroupVoiceCall?.() : onVoiceCall?.()}
+                onClick={() => headerGroup ? onGroupVoiceCall?.() : onVoiceCall?.()}
               >
                 <Phone size={20} />
               </button>
@@ -477,7 +483,7 @@ export default function ChatPanel({
                 className="icon-btn" 
                 title={t("Video Call")}
                 aria-label={t("Video Call")}
-                onClick={() => activeGroup ? onGroupVideoCall?.() : onVideoCall?.()}
+                onClick={() => headerGroup ? onGroupVideoCall?.() : onVideoCall?.()}
               >
                 <Video size={20} />
               </button>
@@ -485,6 +491,17 @@ export default function ChatPanel({
           )}
         </div>
       </header>
+
+      {headerGroup?.id ? (
+        <VoiceRoomBar
+          groupId={headerGroup.id}
+          banner={activeCallBanner}
+          isInThisRoom={isInGroupVoiceRoom}
+          onJoin={() => onGroupVoiceCall?.()}
+          onLeave={() => onLeaveVoiceRoom?.()}
+        />
+      ) : null}
+        </div>
 
       {showSearch && activeView !== "activity" && (
         <div className="chat-search-bar">
@@ -507,17 +524,6 @@ export default function ChatPanel({
           </button>
         </div>
       )}
-
-      {headerGroup?.id ? (
-        <VoiceRoomBar
-          key={headerGroup.id}
-          groupId={headerGroup.id}
-          banner={activeCallBanner}
-          isInThisRoom={isInGroupVoiceRoom}
-          onJoin={() => onGroupVoiceCall?.()}
-          onLeave={() => onLeaveVoiceRoom?.()}
-        />
-      ) : null}
 
       {/* Friend Notice Banner */}
       <AnimatePresence>

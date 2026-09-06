@@ -4405,6 +4405,20 @@ button.header-avatar {
   display: none !important;
 }
 
+/* Header + Ses Odası remount as one unit (DM→group must not leave stacked rows) */
+.chat-top-chrome {
+  flex-shrink: 0;
+  isolation: isolate;
+  contain: layout paint;
+}
+
+/* Electron keyed-remount leftovers: hide any stacked Ses Odası / chrome clones */
+.main-panel > .chat-top-chrome ~ .chat-top-chrome,
+.main-panel > .voice-room-bar ~ .voice-room-bar,
+.chat-top-chrome .voice-room-bar ~ .voice-room-bar {
+  display: none !important;
+}
+
 body.electron-app,
 body.electron-app #root,
 .app-root {
