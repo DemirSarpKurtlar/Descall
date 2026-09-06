@@ -106,6 +106,13 @@ function conversationIdFromPath(pathname) {
   return parts[1] || null;
 }
 
+function isTransientDimaMessage(m) {
+  if (!m) return false;
+  if (m.streaming || m._tmp || m._keep) return true;
+  const id = String(m.id || "");
+  return id.startsWith("tmp-");
+}
+
 function mapConversationMessages(data, prev = []) {
   const localByActionId = new Map();
   for (const msg of prev) {
@@ -113,7 +120,7 @@ function mapConversationMessages(data, prev = []) {
       if (action?.id) localByActionId.set(action.id, action);
     }
   }
-  return (data.messages || [])
+  const mapped = (data.messages || [])
     .filter(
       (m) =>
         m.role !== "assistant" ||
@@ -140,6 +147,37 @@ function mapConversationMessages(data, prev = []) {
         meta: { ...(m.meta || {}), pendingActions },
       };
     });
+
+  // Keep optimistic/streaming local bubbles the server has not echoed yet.
+  // Prevents empty/broken thread after send when GET races the stream.
+  if (!prev?.length) return mapped;
+  const serverContents = new Set(
+    mapped
+      .filter((m) => m.role === "user")
+      .map((m) => String(m.content || "").trim())
+      .filter(Boolean),
+  );
+  const extras = prev.filter((m) => {
+    if (!isTransientDimaMessage(m)) return false;
+    if (m.role === "assistant" && (m.streaming || m.stopped)) return true;
+    if (m.role === "user") {
+      const body = String(m.content || "").trim();
+      return body && !serverContents.has(body);
+    }
+    return Boolean(String(m.content || "").trim() || String(m.thought || "").trim());
+  });
+  if (!extras.length) return mapped;
+  if (!mapped.length) return [...prev];
+  return [...mapped, ...extras.filter((e) => !mapped.some((s) => s.id === e.id))];
+}
+
+/** Prefer local thread when a reload would shrink/blank an in-flight send. */
+function preferLiveThread(prev, next) {
+  if (!prev?.length) return next || [];
+  if (!next?.length) return prev;
+  const prevLive = prev.some(isTransientDimaMessage);
+  if (prevLive && next.length < prev.length) return prev;
+  return next;
 }
 
 export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdminProp }) {
@@ -231,6 +269,8 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
   const recogRef = useRef(null);
   const busyRef = useRef(false);
   busyRef.current = busy;
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   const labels = useMemo(
     () => ({
@@ -331,7 +371,7 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
     }
   }, [beginAccountFetch, t]);
 
-  const loadConversation = useCallback(async (id) => {
+  const loadConversation = useCallback(async (id, opts = {}) => {
     const fetchCtx = beginAccountFetch();
     const userId = accountIdRef.current;
     threadAbortRef.current?.abort();
@@ -345,9 +385,13 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
       return;
     }
     // After Stop, keep the local Durduruldu bubble for THIS chat — never block opening another one.
+    const force = Boolean(opts?.force);
     const holdThisChat =
+      !force &&
       lastLoadedConvRef.current === id &&
-      (stopLockRef.current || Date.now() < suppressReloadUntilRef.current);
+      (stopLockRef.current ||
+        busyRef.current ||
+        Date.now() < suppressReloadUntilRef.current);
     if (holdThisChat) {
       setThreadLoading(false);
       return;
@@ -370,19 +414,37 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
     try {
       const data = await getDimaConversation(id, { signal: threadAc.signal });
       if (!fetchCtx.isCurrent() || activeIdRef.current !== id || threadAc.signal.aborted) return;
-      const mapped = mapConversationMessages(data, cached?.messages || []);
+      // Merge against live UI + cache so a GET during/after send cannot blank the thread.
+      const livePrev =
+        activeIdRef.current === id && Array.isArray(messagesRef?.current)
+          ? messagesRef.current
+          : cached?.messages || [];
+      const mapped = mapConversationMessages(data, livePrev);
       const local = localStoppedRef.current;
-      const nextMessages =
+      let nextMessages =
         local &&
         local.conversationId === id &&
         local.message &&
         !mapped.some((m) => m.stopped || m.id === local.message.id)
           ? [...mapped, local.message]
           : mapped;
+      nextMessages = preferLiveThread(livePrev, nextMessages);
+      // Never blank a populated thread with an empty server snapshot for the same chat.
+      if (!nextMessages.length && livePrev.length) {
+        nextMessages = livePrev;
+      }
       setMessages(nextMessages);
-      setTitle(data.conversation?.title || "");
-      setActiveMeta(data.conversation || null);
-      writeThreadCache(userId, id, { messages: nextMessages, conversation: data.conversation });
+      const nextTitle =
+        data.conversation?.title ||
+        cached?.conversation?.title ||
+        historyRef.current.find((c) => c.id === id)?.title ||
+        "";
+      if (nextTitle) setTitle(nextTitle);
+      setActiveMeta(data.conversation || cached?.conversation || null);
+      writeThreadCache(userId, id, {
+        messages: nextMessages,
+        conversation: data.conversation || cached?.conversation || null,
+      });
       const incomingTier = data.conversation?.model_tier
         ? mapLegacyTier(data.conversation.model_tier)
         : null;
@@ -757,11 +819,19 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
           modelTier: selectedTier,
         });
         conversationId = created.conversation.id;
-        navigate(`/dimaai/${conversationId}`, { replace: true });
         setHistory((prev) => [created.conversation, ...prev.filter((c) => c.id !== conversationId)]);
         setTitle(created.conversation.title);
         setActiveMeta(created.conversation);
         lastLoadedConvRef.current = conversationId;
+        // Seed cache + suppress reload BEFORE navigate so activeId effect cannot wipe the send UI.
+        suppressReloadUntilRef.current = Date.now() + 15000;
+        if (accountIdRef.current) {
+          writeThreadCache(accountIdRef.current, conversationId, {
+            messages: messagesRef.current || [],
+            conversation: created.conversation,
+          });
+        }
+        navigate(`/dimaai/${conversationId}`, { replace: true });
         updateDimaSettings({ modelTier: selectedTier }).catch(() => {});
       } else if (conversationId) {
         patchDimaConversation(conversationId, { modelTier: selectedTier }).catch(() => {});
@@ -798,7 +868,16 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
           created_at: new Date().toISOString(),
           meta: { attachments: displayFiles },
         };
-        setMessages((prev) => [...prev, userMsg]);
+        setMessages((prev) => {
+          const next = [...prev, userMsg];
+          if (accountIdRef.current && conversationId) {
+            writeThreadCache(accountIdRef.current, conversationId, {
+              messages: next,
+              conversation: activeMeta || { id: conversationId },
+            });
+          }
+          return next;
+        });
         setDraft("");
         setPendingFiles([]);
       } else {
@@ -1090,10 +1169,14 @@ export default function DimaAiWorkspace({ me, isMobile, onClose, isAdmin: isAdmi
       // Don't reload conversation immediately — it replaces typed text and kills the stream feel.
       // On Stop: skip reload entirely (server may not yet have thought-only partials); local state wins.
       if (!wasStopped) {
+        suppressReloadUntilRef.current = Math.max(
+          suppressReloadUntilRef.current,
+          Date.now() + 2500,
+        );
         window.setTimeout(() => {
-          if (conversationId) loadConversation(conversationId);
+          if (conversationId) loadConversation(conversationId, { force: true });
           if (settingsOpen) refreshMemories();
-        }, 600);
+        }, 900);
       } else if (settingsOpen) {
         window.setTimeout(() => refreshMemories(), 200);
       }

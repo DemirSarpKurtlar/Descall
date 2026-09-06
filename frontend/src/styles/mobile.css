@@ -922,3 +922,63 @@
     padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ── v2.9.44: harden Play/DimaAI viewport fill (no black void under content) ── */
+@supports (height: 100dvh) {
+  .app-root.is-mobile[data-view="play"],
+  .app-root.is-mobile[data-view="dimaai"] {
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+    min-height: var(--vv-height, 100dvh) !important;
+  }
+}
+
+.app-root.is-mobile[data-view="play"],
+.app-root.is-mobile[data-view="dimaai"],
+.app-root.is-mobile[data-view="play"] > .app-main-slot,
+.app-root.is-mobile[data-view="dimaai"] > .app-main-slot,
+.app-root.is-mobile[data-view="play"] .valorant-hub,
+.app-root.is-mobile[data-view="play"] .lfg-workspace,
+.app-root.is-mobile[data-view="dimaai"] .dima-workspace {
+  background-color: var(--surface-0, #111214) !important;
+  background-image: none !important;
+}
+
+/* Outer shells never pad for the tab bar — only scrollable inners do. */
+.app-root.is-mobile[data-view="play"] .valorant-hub,
+.app-root.is-mobile[data-view="play"] .lfg-workspace,
+.app-root.is-mobile[data-view="dimaai"] .dima-workspace,
+.app-root.is-mobile[data-view="play"] > .app-main-slot,
+.app-root.is-mobile[data-view="dimaai"] > .app-main-slot {
+  padding-bottom: 0 !important;
+}
+
+/* Scrollable companion / LFG / DimaAI inners keep tab-bar clearance. */
+.app-root.is-mobile[data-view="play"] .valorant-companion,
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+.app-root.is-mobile[data-view="play"] .lfg-lobby-list,
+.app-root.is-mobile[data-view="play"] .lfg-main,
+.app-root.is-mobile[data-view="dimaai"] .dima-history-list,
+.app-root.is-mobile[data-view="dimaai"] .dima-thread,
+.app-root.is-mobile[data-view="dimaai"] .dima-scroll {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  box-sizing: border-box;
+}
+
+/* Seal any residual letterboxing under the fixed mobile tab bar. */
+.app-root.is-mobile[data-view="play"]::after,
+.app-root.is-mobile[data-view="dimaai"]::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface-0, #111214);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.app-root.is-mobile .mobile-tab-bar {
+  z-index: 40;
+}

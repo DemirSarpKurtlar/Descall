@@ -177,7 +177,34 @@ export const nested = {
     "loadoutEmpty": "No loadout in this session yet.",
     "loadoutSprays": "Sprays",
     "loadoutSpraysEmpty": "No sprays equipped.",
+    "loadoutTab": "Loadout",
+    "subtabMissions": "Missions",
+    "missionsNeedLink": "Connect Riot first to see missions and battle pass.",
+    "storeNeedLink": "Connect Riot first to see wallet, store, and inventory.",
+    "loadoutNeedLink": "Connect Riot first to see your loadout.",
     "loadoutEquipHint": "Use equip() from useValorantLoadout to change skin/buddy/card/title/spray (PUT /api/valorant/loadout)."
+  },
+
+  "updateNotes": {
+    "stackedTitle": "What's new ({count} updates) — now on {version}",
+    "lead": "Here is everything you missed since your last visit.",
+    "gotIt": "Got it",
+    "v2936": { "title": "Companion layout", "body": "Play opens Companion first, with a clearer full-width layout." },
+    "v2937": { "title": "Settings polish", "body": "Settings backdrop blur and bottom inset feel cleaner on desktop." },
+    "v2938": { "title": "Centered popups", "body": "Add Friend, announcements, and member popups open centered." },
+    "v2939": { "title": "Electron modal fix", "body": "Desktop modals no longer jump after opening." },
+    "v2940": { "title": "Mobile Play fix", "body": "Play and DimaAI no longer show a black empty column on phones." },
+    "v2941": { "title": "Mobile bottom fill", "body": "Play, LFG, and DimaAI fill the screen edge-to-edge on mobile." },
+    "v2942": { "title": "Missions API", "body": "Companion can load missions, contracts, and battle pass progress." },
+    "v2943": { "title": "Missions UI", "body": "Missions and Battle Pass show up clearly in Companion." },
+    "v2944": { "title": "Companion tabs & Loadout", "body": "Companion now has Party, Friends, Missions, and Loadout tabs. Wallet and store live under Loadout. DimaAI keeps your chat visible after you send. Update notices are clearer." }
+  },
+  "updateToast": {
+    "kicker": "Desktop update",
+    "downloading": "Downloading Descall {version} in the background…",
+    "installing": "Installing Descall {version}…",
+    "ready": "Descall {version} is ready and will install quietly.",
+    "percent": "{percent}%"
   },
   "dimaai": {
     "title": "DimaAI",

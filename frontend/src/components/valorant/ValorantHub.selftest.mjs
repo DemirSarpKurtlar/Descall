@@ -184,4 +184,13 @@ const loadoutUi = readFileSync(join(root, "CompanionLoadoutPanel.jsx"), "utf8");
 assert(loadoutUi.includes("useValorantLoadout"), "loadout panel keeps hook");
 assert(loadoutUi.includes("equip"), "loadout panel surfaces equip contract");
 
+
+assert(auth.includes("valorant-companion-subtabs"), "Companion sticky subtabs exist");
+assert(auth.includes('setSubtab("party")') || auth.includes('useState("party")'), "default Companion subtab is Party");
+assert(auth.includes("companion-subtab-loadout"), "Loadout subtab present");
+assert(auth.includes("CompanionStorePanel") && auth.includes("CompanionLoadoutPanel"), "Loadout tab mounts store+loadout");
+assert(css.includes(".valorant-companion-subtab"), "subtab styles exist");
+assert(en.includes("loadoutTab"), "EN loadout tab string");
+assert(tr.includes("loadoutTab"), "TR loadout tab string");
+
 console.log("ValorantHub.selftest.mjs: ok");
