@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.9.50",
+  "version": "2.9.51",
   "description": "Modern messaging and video conferencing app",
   "private": true,
   "type": "module",
@@ -83,7 +83,7 @@
   "build": {
     "appId": "com.descall.app",
     "productName": "Descall",
-    "copyright": "Copyright © 2025 Descall",
+    "copyright": "Copyright \u00a9 2025 Descall",
     "directories": {
       "output": "release",
       "buildResources": "build"
