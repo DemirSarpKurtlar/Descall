@@ -1,5 +1,5 @@
 /**
- * Valorant Companion API (Adım 2–4; Adım 6 store stub).
+ * Valorant Companion API (Adım 2–5; Adım 6 store stub).
  * Mounted at /valorant and /api/valorant.
  *
  * Security:
@@ -482,6 +482,8 @@ router.get("/friends/status", requireAuth, async (_req, res) => {
       sendRequest: "IPC valorant:local-friend-request-send",
       removeRequest: "IPC valorant:local-friend-request-remove",
       acceptRequest: "IPC valorant:local-friend-request-accept",
+      missionsStatus: "GET /api/valorant/missions/status (Adım 5)",
+      missions: "GET /api/valorant/missions (Adım 5)",
       storeStatus: "GET /api/valorant/store/status (Adım 6 stub)",
     },
     note: "Friends + presence require Descall desktop + Riot Client on the same PC. Web RSO alone cannot list Riot friends. Party invite uses live GLZ tokens (Adım 3).",
@@ -540,4 +542,143 @@ router.post("/friends/shape", requireAuth, async (req, res) => {
   }
 });
 
+
+/* ─── Adım 5: Missions / contracts / battle pass (PD thin proxy) ─── */
+
+const missionsApi = require("../lib/valorantMissions");
+
+// GET /api/valorant/missions/status — capabilities (+ RIOT_API_KEY gate)
+router.get("/missions/status", requireAuth, async (_req, res) => {
+  return res.json(missionsApi.missionsCapabilities());
+});
+
+async function withMissionsSession(req, res, handler) {
+  try {
+    if (!missionsApi.riotApiKeyConfigured()) {
+      return res.json(missionsApi.notConfiguredPayload());
+    }
+    const session = await resolveLiveSession(req);
+    if (!session.hasLiveTokens) {
+      return res.status(401).json({
+        error:
+          "Missions need a live Riot Client session (access + entitlement). Connect via desktop Riot Client, or send X-Riot-Access-Token + X-Riot-Entitlement headers.",
+        code: "TOKENS_REQUIRED",
+        configured: true,
+        envNeeded: [],
+        missions: [],
+        contracts: [],
+        battlePass: null,
+        hint: "Electron: Companion → Optional Riot Client on this PC while Valorant is open.",
+      });
+    }
+    if (!session.puuid) {
+      return res.status(400).json({
+        error: "Missing Riot puuid — reconnect Riot session",
+        code: "PUUID_REQUIRED",
+        configured: true,
+        missions: [],
+        contracts: [],
+        battlePass: null,
+      });
+    }
+    const payload = await handler(session);
+    return res.json(payload);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Missions request failed",
+      code: err.code || null,
+      configured: missionsApi.riotApiKeyConfigured(),
+      missions: [],
+      contracts: [],
+      battlePass: null,
+    });
+  }
+}
+
+// GET /api/valorant/missions — weekly missions + BP + contracts bundle
+router.get("/missions", requireAuth, async (req, res) => {
+  return withMissionsSession(req, res, async (session) => {
+    return missionsApi.getMissionsBundle({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+  });
+});
+
+// GET /api/valorant/contracts — same bundle (contracts-first alias for Dima)
+router.get("/contracts", requireAuth, async (req, res) => {
+  return withMissionsSession(req, res, async (session) => {
+    const bundle = await missionsApi.getMissionsBundle({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+    return bundle;
+  });
+});
+
+// GET /api/valorant/battlepass — BP slice of the contracts response
+router.get("/battlepass", requireAuth, async (req, res) => {
+  return withMissionsSession(req, res, async (session) => {
+    const bundle = await missionsApi.getMissionsBundle({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+    });
+    if (bundle.configured === false) return bundle;
+    return {
+      ok: bundle.ok,
+      configured: true,
+      envNeeded: [],
+      adim: 5,
+      battlePass: bundle.battlePass,
+      activeSpecialContract: bundle.activeSpecialContract,
+      region: bundle.region,
+      shard: bundle.shard,
+    };
+  });
+});
+
+/**
+ * POST /api/valorant/contracts/activate
+ * Body: { contractId }
+ * Headers: X-Riot-Access-Token + X-Riot-Entitlement
+ */
+router.post("/contracts/activate", requireAuth, async (req, res) => {
+  try {
+    if (!missionsApi.riotApiKeyConfigured()) {
+      return res.json(missionsApi.notConfiguredPayload());
+    }
+    const contractId = String(req.body?.contractId || req.body?.contractDefinitionId || "").trim();
+    if (!contractId) {
+      return res.status(400).json({ error: "contractId required", code: "CONTRACT_ID_REQUIRED" });
+    }
+    const session = await resolveLiveSession(req);
+    if (!session.hasLiveTokens || !session.puuid) {
+      return res.status(401).json({
+        error: "Live Riot tokens required to activate a contract",
+        code: "TOKENS_REQUIRED",
+      });
+    }
+    const bundle = await missionsApi.activateContract({
+      accessToken: session.accessToken,
+      entitlementToken: session.entitlementToken,
+      region: session.region,
+      puuid: session.puuid,
+      contractId,
+    });
+    return res.json(bundle);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Activate contract failed",
+      code: err.code || null,
+    });
+  }
+});
+
 module.exports = router;
+

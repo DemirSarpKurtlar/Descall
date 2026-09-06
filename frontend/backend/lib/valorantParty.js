@@ -463,4 +463,6 @@ module.exports = {
   queueLabel,
   shardForRegion,
   glzBase,
+  pdBase,
+  riotHeaders,
 };

@@ -190,3 +190,39 @@ export function inviteValorantFriendToParty(riotIdOrParts, tokens = {}) {
     ...tokens,
   });
 }
+
+/* ─── Adım 5 — missions / contracts / battle pass ─── */
+
+export async function getValorantMissionsStatus() {
+  const res = await fetch(`${BASE}/missions/status`, { headers: getHeaders() });
+  return parse(res);
+}
+
+/**
+ * GET /api/valorant/missions
+ * Needs live Riot tokens in headers when RIOT_API_KEY is configured on Render.
+ */
+export function getValorantMissions(tokens = {}) {
+  return partyFetch("/missions", { method: "GET", ...tokens });
+}
+
+export function getValorantContracts(tokens = {}) {
+  return partyFetch("/contracts", { method: "GET", ...tokens });
+}
+
+export function getValorantBattlePass(tokens = {}) {
+  return partyFetch("/battlepass", { method: "GET", ...tokens });
+}
+
+/** POST /api/valorant/contracts/activate — body: { contractId } */
+export function activateValorantContract(contractId, tokens = {}) {
+  return partyFetch("/contracts/activate", {
+    method: "POST",
+    body: {
+      contractId,
+      region: tokens.region,
+      puuid: tokens.puuid,
+    },
+    ...tokens,
+  });
+}
