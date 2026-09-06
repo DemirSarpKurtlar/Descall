@@ -4378,13 +4378,30 @@ button.header-avatar {
   contain: layout paint;
 }
 
-.header-avatar {
+.header-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+}
+
+.header-avatar,
+.header-icon {
   isolation: isolate;
   contain: layout paint;
   overflow: hidden;
 }
 
-.header-left > .header-avatar ~ .header-avatar {
+/* Never stack DM avatar + group icon (or duplicate avatars) in the header */
+.header-left > .header-avatar ~ .header-avatar,
+.header-left > .header-avatar ~ .header-icon,
+.header-left > .header-icon ~ .header-avatar,
+.header-identity > .header-avatar ~ .header-icon,
+.header-identity > .header-icon ~ .header-avatar {
   display: none !important;
 }
 

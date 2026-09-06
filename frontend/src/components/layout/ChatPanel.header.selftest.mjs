@@ -40,4 +40,46 @@ assert(
   "chat title must ellipsize instead of overlapping icons",
 );
 
+
+assert(
+  /const headerGroup = activeGroup/.test(chatPanel) && /const headerDm = headerGroup \? null/.test(chatPanel),
+  "header must use exclusive headerGroup / headerDm (no stacked DM+group chrome)",
+);
+assert(
+  /className="header-identity"/.test(chatPanel),
+  "header identity must remount as a single keyed block",
+);
+assert(
+  /headerGroup\?\.id \? \([\s\S]*?<VoiceRoomBar/.test(chatPanel),
+  "Ses Odası / VoiceRoomBar must render only for the exclusive group header",
+);
+assert(
+  /header-identity/.test(css),
+  "header-identity containment styles must exist",
+);
+assert(
+  /\.header-identity > \.header-avatar ~ \.header-icon/.test(css),
+  "CSS must hide stacked DM avatar + group icon",
+);
+
+const avatar = readFileSync(join(root, "../ui/Avatar.jsx"), "utf8");
+assert(
+  /const Root = isSpeaking \? motion\.div : "div"/.test(avatar),
+  "idle Avatar must be a plain div (no Framer transform bleed on Electron)",
+);
+
+const serversCss = readFileSync(join(stylesRoot, "servers.css"), "utf8");
+assert(
+  /\.server-type-toggle \{[\s\S]{0,160}flex-wrap:\s*wrap/.test(serversCss),
+  "create-channel type chips must wrap inside the modal",
+);
+assert(
+  /\.server-roles-tabs \{[\s\S]{0,120}flex-wrap:\s*wrap/.test(serversCss),
+  "roles modal tabs must wrap",
+);
+assert(
+  /\.server-modal \{[\s\S]{0,400}overflow-x:\s*hidden/.test(serversCss),
+  "server modal must clip horizontal overflow",
+);
+
 console.log("ChatPanel.header.selftest.mjs: ok");

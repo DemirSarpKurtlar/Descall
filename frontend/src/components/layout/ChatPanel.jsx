@@ -235,9 +235,23 @@ export default function ChatPanel({
     }
   }, [activeDmUser, activeGroup, activeView, activeServer]);
 
+  // One conversation identity at a time — never stack DM + group chrome
+  // (Electron DM→group switches previously left both avatars / Ses Odası stuck).
+  const headerGroup = activeGroup || null;
+  const headerDm = headerGroup ? null : activeDmUser || null;
+  const headerConversationKey = headerGroup
+    ? `group:${headerGroup.id}`
+    : headerDm
+      ? `dm:${headerDm.id || headerDm.username || "user"}`
+      : activeChannel
+        ? `channel:${activeChannel.id}`
+        : activeServer
+          ? `server:${activeServer.id}`
+          : `view:${activeView || "none"}`;
+
   const getTitle = () => {
-    if (activeDmUser) return resolveDisplayName(activeDmUser);
-    if (activeGroup) return activeGroup.name;
+    if (headerDm) return resolveDisplayName(headerDm);
+    if (headerGroup) return headerGroup.name;
     if (activeView === "servers" && activeChannel) {
       return activeChannel.type === "voice" || activeChannel.type === "stage" ? activeChannel.name : `#${activeChannel.name}`;
     }
@@ -252,13 +266,13 @@ export default function ChatPanel({
   };
 
   const getSubtitle = () => {
-    if (activeDmUser) {
-      const status = getPresenceStatus(onlineUsers, activeDmUser.id);
+    if (headerDm) {
+      const status = getPresenceStatus(onlineUsers, headerDm.id);
       const label = STATUS_META[status]?.label || "Offline";
       return t(label);
     }
-    if (activeGroup) {
-      return t("{count} members", { count: activeGroup.memberCount || 0 });
+    if (headerGroup) {
+      return t("{count} members", { count: headerGroup.memberCount || 0 });
     }
     if (activeView === "servers" && activeChannel) {
       if (activeChannel.topic) return activeChannel.topic;
@@ -367,56 +381,55 @@ export default function ChatPanel({
               {showMobileBack ? <ChevronLeft size={22} /> : <Menu size={20} />}
             </button>
           )}
-          {activeDmUser && (
-            <button
-              type="button"
-              key={activeDmUser.id || activeDmUser.username}
-              className="header-avatar"
-              onClick={() => setProfileTarget(activeDmUser)}
-              aria-label={t("View profile")}
-              title={t("View profile")}
+          <div className="header-identity" key={headerConversationKey}>
+            {headerDm ? (
+              <button
+                type="button"
+                className="header-avatar"
+                onClick={() => setProfileTarget(headerDm)}
+                aria-label={t("View profile")}
+                title={t("View profile")}
+              >
+                <Avatar
+                  key={headerDm.id || headerDm.username}
+                  name={resolveDisplayName(headerDm)}
+                  size={40}
+                  user={headerDm}
+                  loading="eager"
+                />
+                <StatusBadge status={getPresenceStatus(onlineUsers, headerDm.id)} />
+              </button>
+            ) : headerGroup ? (
+              <div className="header-icon" aria-hidden={!headerGroup.icon}>
+                {headerGroup.icon ? (
+                  <img src={headerGroup.icon} alt="" />
+                ) : (
+                  <span>{headerGroup.name?.charAt(0)?.toUpperCase()}</span>
+                )}
+              </div>
+            ) : null}
+            <div
+              className="header-title-block"
+              role={headerDm ? "button" : undefined}
+              tabIndex={headerDm ? 0 : undefined}
+              onClick={headerDm ? () => setProfileTarget(headerDm) : undefined}
+              onKeyDown={headerDm ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setProfileTarget(headerDm);
+                }
+              } : undefined}
+              title={headerDm ? t("View profile") : undefined}
+              style={{ cursor: headerDm ? "pointer" : "default" }}
             >
-              <Avatar
-                key={activeDmUser.id || activeDmUser.username}
-                name={resolveDisplayName(activeDmUser)}
-                size={40}
-                user={activeDmUser}
-                loading="eager"
-              />
-              <StatusBadge status={getPresenceStatus(onlineUsers, activeDmUser.id)} />
-            </button>
-          )}
-          {activeGroup && (
-            <div className="header-icon">
-              {activeGroup.icon ? (
-                <img src={activeGroup.icon} alt={activeGroup.name} />
-              ) : (
-                <span>{activeGroup.name?.charAt(0)?.toUpperCase()}</span>
+              <h1 className="header-title">
+                <span className="header-title-text">{getTitle()}</span>
+                {headerDm && <AdminBadge user={headerDm} variant="inline" />}
+              </h1>
+              {getSubtitle() && (
+                <span className="header-subtitle">{getSubtitle()}</span>
               )}
             </div>
-          )}
-          <div
-            key={activeDmUser?.id || activeGroup?.id || activeChannel?.id || "title"}
-            className="header-title-block"
-            role={activeDmUser ? "button" : undefined}
-            tabIndex={activeDmUser ? 0 : undefined}
-            onClick={activeDmUser ? () => setProfileTarget(activeDmUser) : undefined}
-            onKeyDown={activeDmUser ? (event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setProfileTarget(activeDmUser);
-              }
-            } : undefined}
-            title={activeDmUser ? t("View profile") : undefined}
-            style={{ cursor: activeDmUser ? "pointer" : "default" }}
-          >
-            <h1 className="header-title">
-              <span className="header-title-text">{getTitle()}</span>
-              {activeDmUser && <AdminBadge user={activeDmUser} variant="inline" />}
-            </h1>
-            {getSubtitle() && (
-              <span className="header-subtitle">{getSubtitle()}</span>
-            )}
           </div>
         </div>
 
@@ -495,15 +508,16 @@ export default function ChatPanel({
         </div>
       )}
 
-      {activeGroup && (
+      {headerGroup?.id ? (
         <VoiceRoomBar
-          groupId={activeGroup.id}
+          key={headerGroup.id}
+          groupId={headerGroup.id}
           banner={activeCallBanner}
           isInThisRoom={isInGroupVoiceRoom}
           onJoin={() => onGroupVoiceCall?.()}
           onLeave={() => onLeaveVoiceRoom?.()}
         />
-      )}
+      ) : null}
 
       {/* Friend Notice Banner */}
       <AnimatePresence>

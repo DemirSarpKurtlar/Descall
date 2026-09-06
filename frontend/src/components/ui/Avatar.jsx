@@ -173,30 +173,41 @@ export function Avatar({
   const frameUrl = user?.equippedAvatarFrame?.asset_url || null;
   const effectClass = avatarEffectClass(user);
 
-  return (
-    <motion.div
-      className={`ui-avatar ${frameUrl ? "has-frame" : ""} ${isSpeaking ? "is-speaking" : ""} ${className}`.trim()}
-      layout={false}
-      style={{
-        width: size,
-        height: size,
-        minWidth: size,
-        minHeight: size,
-        maxWidth: size,
-        maxHeight: size,
-        aspectRatio: "1 / 1",
-        fontSize: size,
-      }}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      animate={isSpeaking ? { scale: [1, 1.1, 1.03, 1.1, 1] } : { scale: 1 }}
-      transition={
-        isSpeaking
-          ? { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
-          : { type: "spring", stiffness: 420, damping: 28 }
+  const avatarClass = `ui-avatar ${frameUrl ? "has-frame" : ""} ${isSpeaking ? "is-speaking" : ""} ${className}`.trim();
+  const avatarStyle = {
+    width: size,
+    height: size,
+    minWidth: size,
+    minHeight: size,
+    maxWidth: size,
+    maxHeight: size,
+    aspectRatio: "1 / 1",
+    fontSize: size,
+  };
+  const avatarHandlers = {
+    onClick,
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+    role: onClick ? "button" : undefined,
+  };
+
+  // Only use Framer while speaking. Idle avatars stay as plain divs so Electron
+  // DM→group switches cannot leave projected letter ghosts in the chat header.
+  const Root = isSpeaking ? motion.div : "div";
+  const motionProps = isSpeaking
+    ? {
+        layout: false,
+        animate: { scale: [1, 1.1, 1.03, 1.1, 1] },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" },
       }
-      role={onClick ? "button" : undefined}
+    : {};
+
+  return (
+    <Root
+      className={avatarClass}
+      style={avatarStyle}
+      {...avatarHandlers}
+      {...motionProps}
     >
       {effectClass && (
         <div
@@ -275,7 +286,7 @@ export function Avatar({
           }}
         />
       )}
-    </motion.div>
+    </Root>
   );
 }
 
