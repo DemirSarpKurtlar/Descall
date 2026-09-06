@@ -372,7 +372,8 @@ export default function ServerSidebar({
           </div>
         </div>
 
-        {/* Feedback Modal */}
+        {/* Feedback Modal — portal to body (sidebar contain traps fixed) */}
+        {createPortal(
         <AnimatePresence>
           {showFeedback && (
             <motion.div
@@ -477,7 +478,9 @@ export default function ServerSidebar({
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+        )}
 
         {/* Search */}
         <div className="sidebar-search">

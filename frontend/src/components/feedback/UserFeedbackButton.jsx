@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { getToken } from "../../lib/storage";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -159,11 +160,12 @@ export default function UserFeedbackButton({ socket, user }) {
         <span>{t("Feedback")}</span>
       </motion.button>
 
-      {/* Feedback Modal */}
+      {/* Feedback Modal — portal to body (sidebar contain traps fixed) */}
+      {typeof document !== "undefined" && createPortal(
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="feedback-modal-overlay"
+            className="feedback-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -372,7 +374,9 @@ export default function UserFeedbackButton({ socket, user }) {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </>
   );
 }
