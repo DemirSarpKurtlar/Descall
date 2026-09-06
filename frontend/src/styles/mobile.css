@@ -323,7 +323,7 @@
   .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
   .app-root.is-mobile[data-view="dimaai"] .dima-thread,
   .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
   }
 
@@ -338,7 +338,7 @@
     justify-content: flex-start;
     align-items: center;
     padding-top: 20px;
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     min-height: 100%;
     box-sizing: border-box;
   }
@@ -929,13 +929,14 @@
   }
 }
 
-/* ── v2.9.44: harden Play/DimaAI viewport fill (no black void under content) ── */
+/* ── v2.9.46: kill Play/Companion/LFG bottom black void (visual-viewport fill) ── */
 @supports (height: 100dvh) {
   .app-root.is-mobile[data-view="play"],
   .app-root.is-mobile[data-view="dimaai"] {
     height: var(--vv-height, 100dvh) !important;
     max-height: var(--vv-height, 100dvh) !important;
-    min-height: var(--vv-height, 100dvh) !important;
+    /* Never min-height:100dvh — that exceeds visualViewport and leaves a black band. */
+    min-height: 0 !important;
   }
 }
 
@@ -959,28 +960,64 @@
   padding-bottom: 0 !important;
 }
 
-/* Scrollable companion / LFG / DimaAI inners keep tab-bar clearance.
-   Do NOT pad .valorant-hub-panel here — that nested with companion and left a void. */
+/* Flex-fill chain: hub → body → panel → companion/LFG. No height:100% + padding fights. */
+.app-root.is-mobile[data-view="play"] .valorant-hub-body,
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel-lfg,
+.app-root.is-mobile[data-view="play"] .lfg-workspace,
+.app-root.is-mobile[data-view="play"] .lfg-sidebar {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--surface-0, #111214) !important;
+  box-sizing: border-box;
+}
+
 .app-root.is-mobile[data-view="play"] .valorant-hub-panel {
   padding-bottom: 0 !important;
 }
 
 .app-root.is-mobile[data-view="play"] .valorant-companion,
+.app-root.is-mobile[data-view="play"] .valorant-companion.is-mobile-accordion {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  align-self: stretch;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface-0, #111214) !important;
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+  box-sizing: border-box !important;
+}
+
+.app-root.is-mobile[data-view="play"] .valorant-companion-accordion {
+  flex: 0 0 auto;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  background: transparent !important;
+}
+
 .app-root.is-mobile[data-view="play"] .lfg-lobby-list,
 .app-root.is-mobile[data-view="play"] .lfg-main,
 .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
 .app-root.is-mobile[data-view="dimaai"] .dima-thread,
 .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
   box-sizing: border-box;
+  background: var(--surface-0, #111214) !important;
 }
 
-/* Companion accordion must paint charcoal to the bottom of the scroll area. */
-.app-root.is-mobile[data-view="play"] .valorant-companion.is-mobile-accordion,
-.app-root.is-mobile[data-view="play"] .valorant-companion-accordion {
-  flex: 1 1 auto;
-  min-height: 100%;
-  background: var(--surface-0, #111214) !important;
+.app-root.is-mobile[data-view="play"] .lfg-lobby-list {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app-root.is-mobile[data-view="play"] .valorant-hub-panel,
@@ -988,7 +1025,7 @@
   background: var(--surface-0, #111214) !important;
 }
 
-/* Seal any residual letterboxing under the fixed mobile tab bar. */
+/* Seal residual letterboxing under the fixed mobile tab bar (match tab height 60px). */
 .app-root.is-mobile[data-view="play"]::after,
 .app-root.is-mobile[data-view="dimaai"]::after {
   content: "";
@@ -996,7 +1033,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
   background: var(--surface-0, #111214);
   z-index: 30;
   pointer-events: none;

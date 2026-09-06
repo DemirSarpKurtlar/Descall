@@ -59,6 +59,11 @@ export const UPDATE_NOTES = [
     titleKey: "updateNotes.v2945.title",
     bodyKey: "updateNotes.v2945.body",
   },
+  {
+    version: "2.9.46",
+    titleKey: "updateNotes.v2946.title",
+    bodyKey: "updateNotes.v2946.body",
+  },
 ];
 
 const LAST_SEEN_KEY = "descall:last-seen-version";
@@ -172,7 +177,7 @@ export default function UpdateNotes() {
   if (!missed.length) return null;
 
   return (
-    <Modal open={open} onClose={dismiss} title={title} wide>
+    <Modal open={open} onClose={dismiss} title={title} wide className="update-notes-dialog">
       <div className="update-notes-modal">
         <p className="update-notes-lead">{t("updateNotes.lead")}</p>
         <ol className="update-notes-list">

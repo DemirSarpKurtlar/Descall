@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useT } from "../../context/LocaleContext";
 
-export default function Modal({ open, onClose, title, children, wide }) {
+export default function Modal({ open, onClose, title, children, wide, className = "" }) {
   const t = useT();
   useEffect(() => {
     if (!open) return;
@@ -10,6 +10,8 @@ export default function Modal({ open, onClose, title, children, wide }) {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [open, onClose]);
+
+  const cardClass = ["modal-card", wide ? "modal-wide" : "", className].filter(Boolean).join(" ");
 
   return (
     <AnimatePresence mode="wait">
@@ -23,7 +25,9 @@ export default function Modal({ open, onClose, title, children, wide }) {
           onClick={() => onClose?.()}
         >
           <motion.div
-            className={`modal-card ${wide ? "modal-wide" : ""}`}
+            className={cardClass}
+            role="dialog"
+            aria-modal="true"
             initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
