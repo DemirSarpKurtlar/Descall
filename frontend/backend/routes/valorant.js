@@ -760,6 +760,21 @@ router.get("/inventory/skins", requireAuth, async (req, res) => {
   });
 });
 
+// GET /api/valorant/skins/:uuid — catalog skin media (levels/chromas + real streamedVideo).
+// Catalog-only: works when valorant-api catalog loads even if RIOT_API_KEY is missing.
+router.get("/skins/:uuid", requireAuth, async (req, res) => {
+  try {
+    const payload = await storeApi.getSkinDetail(req.params.uuid);
+    return res.json(payload);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Skin detail failed",
+      code: err.code || null,
+      skin: null,
+    });
+  }
+});
+
 // GET /api/valorant/loadout
 router.get("/loadout", requireAuth, async (req, res) => {
   return withStoreSession(req, res, { loadout: null }, async (session) => {

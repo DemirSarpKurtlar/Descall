@@ -5,6 +5,7 @@ export {
   getValorantStoreStatus,
   getValorantWallet,
   getValorantOwnedSkins,
+  getValorantSkinDetail,
   getValorantLoadout,
   putValorantLoadout,
   patchValorantLoadout,

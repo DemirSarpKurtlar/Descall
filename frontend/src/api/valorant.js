@@ -165,6 +165,14 @@ export function getValorantOwnedSkins(tokens = {}) {
   return partyFetch("/inventory/skins", { method: "GET", ...tokens });
 }
 
+/** GET /api/valorant/skins/:uuid — catalog media (levels/chromas + streamedVideo); no Riot tokens required */
+export async function getValorantSkinDetail(uuid) {
+  const res = await fetch(`${BASE}/skins/${encodeURIComponent(uuid)}`, {
+    headers: getHeaders(),
+  });
+  return parse(res);
+}
+
 /** GET /api/valorant/loadout */
 export function getValorantLoadout(tokens = {}) {
   return partyFetch("/loadout", { method: "GET", ...tokens });
