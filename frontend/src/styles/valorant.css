@@ -1178,10 +1178,117 @@
   display: none !important;
 }
 
+/* ── Mobile Valpaw-like accordion (charcoal — not green) ── */
+.valorant-companion-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.valorant-companion-section {
+  width: 100%;
+  min-width: 0;
+  border-radius: 14px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-1, #1e1f22);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.valorant-companion-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-0, #f2f3f5);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.valorant-companion-section-header:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.valorant-companion-section.is-open .valorant-companion-section-header {
+  border-bottom: 1px solid var(--border-2, rgba(255, 255, 255, 0.06));
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.valorant-companion-section-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.valorant-companion-section-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted, #949ba4);
+  transition: transform 0.18s ease;
+}
+
+.valorant-companion-section-chevron.is-open {
+  transform: rotate(180deg);
+  color: var(--text-1, #dbdee1);
+}
+
+.valorant-companion-section-body {
+  padding: 10px 10px 12px;
+  min-width: 0;
+}
+
+.valorant-companion-section-body.is-hidden,
+.valorant-companion-section-body[hidden] {
+  display: none !important;
+}
+
+/* Nested panel cards already have their own chrome — tighten when inside accordion */
+.valorant-companion-section-body > .valorant-party,
+.valorant-companion-section-body > .valorant-friends,
+.valorant-companion-section-body > .valorant-missions,
+.valorant-companion-section-body > .valorant-store,
+.valorant-companion-section-body > .valorant-loadout {
+  border: none;
+  background: transparent;
+  padding: 4px 2px 2px;
+  box-shadow: none;
+}
+
 @media (max-width: 768px) {
-  .valorant-companion-subtab {
-    min-height: 40px;
-    font-size: 11px;
-    padding: 8px 6px;
+  /* Never show cramped horizontal companion pills on narrow phones */
+  .valorant-companion.is-mobile-accordion .valorant-companion-subtabs,
+  .app-root.is-mobile .valorant-companion-subtabs {
+    display: none !important;
+  }
+
+  .valorant-companion.is-mobile-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1 1 0;
+    min-height: 100%;
+    height: 100%;
+    align-content: stretch;
+    background: var(--surface-0, #111214);
+  }
+
+  .valorant-companion-section-header {
+    min-height: 52px;
+    padding: 14px 16px;
+    font-size: 15px;
   }
 }

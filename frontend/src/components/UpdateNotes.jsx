@@ -54,6 +54,11 @@ export const UPDATE_NOTES = [
     titleKey: "updateNotes.v2944.title",
     bodyKey: "updateNotes.v2944.body",
   },
+  {
+    version: "2.9.45",
+    titleKey: "updateNotes.v2945.title",
+    bodyKey: "updateNotes.v2945.body",
+  },
 ];
 
 const LAST_SEEN_KEY = "descall:last-seen-version";
