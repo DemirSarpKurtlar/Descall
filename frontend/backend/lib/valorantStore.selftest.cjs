@@ -15,6 +15,12 @@ const {
   getLoadout,
   getStorefront,
   putLoadout,
+  getSkinDetail,
+  shapeSkinLevel,
+  shapeSkinChroma,
+  findSkinDef,
+  findLevelInSkin,
+  findChromaInSkin,
   CURRENCY,
   ITEM_TYPE,
 } = require('./valorantStore');
@@ -39,6 +45,7 @@ assert.strictEqual(caps.features.loadoutEquip, true);
 assert.strictEqual(caps.features.dailyStore, true);
 assert.ok(caps.endpoints.wallet.includes('/wallet'));
 assert.ok(caps.endpoints.loadout.includes('/loadout'));
+assert.ok(caps.endpoints.skinDetail.includes('/skins/:uuid'));
 assert.ok(caps.clientHooks.includes('useValorantStore'));
 assert.ok(caps.clientHooks.includes('useValorantLoadout'));
 
@@ -50,6 +57,53 @@ const wallet = shapeWallet({
 assert.strictEqual(wallet.vp, 1200);
 assert.strictEqual(wallet.radianite, 45);
 assert.strictEqual(wallet.kingdom, 10);
+
+const levelRow = shapeSkinLevel({
+  uuid: 'lvl-1',
+  displayName: 'Level 1',
+  displayIcon: 'https://media.example/level.png',
+  streamedVideo: 'https://valorant.dyn.riotcdn.net/x/videos/example_level.mp4',
+});
+assert.strictEqual(levelRow.streamedVideo, 'https://valorant.dyn.riotcdn.net/x/videos/example_level.mp4');
+assert.strictEqual(shapeSkinLevel({ displayName: 'no-uuid' }), null);
+assert.strictEqual(
+  shapeSkinChroma({
+    uuid: 'chroma-1',
+    displayName: 'Chroma',
+    displayIcon: 'https://media.example/chroma.png',
+    swatch: 'https://media.example/swatch.png',
+    streamedVideo: null,
+  }).streamedVideo,
+  null
+);
+
+const skinCatalog = {
+  'skin-1': {
+    uuid: 'skin-1',
+    displayName: 'Reaver Vandal',
+    displayIcon: 'https://x',
+    levels: [
+      {
+        uuid: 'lvl-1',
+        displayName: 'Reaver Vandal',
+        displayIcon: 'https://lvl',
+        streamedVideo: 'https://valorant.dyn.riotcdn.net/x/videos/reaver_lvl.mp4',
+      },
+    ],
+    chromas: [
+      {
+        uuid: 'chroma-1',
+        displayName: 'Reaver Vandal Black',
+        displayIcon: 'https://chroma',
+        swatch: 'https://swatch',
+        streamedVideo: 'https://valorant.dyn.riotcdn.net/x/videos/reaver_chroma.mp4',
+      },
+    ],
+  },
+};
+assert.strictEqual(findSkinDef('lvl-1', skinCatalog).uuid, 'skin-1');
+assert.strictEqual(findLevelInSkin(skinCatalog['skin-1'], 'lvl-1').uuid, 'lvl-1');
+assert.strictEqual(findChromaInSkin(skinCatalog['skin-1'], 'chroma-1').uuid, 'chroma-1');
 
 const loadout = shapeLoadout(
   {
@@ -76,7 +130,7 @@ const loadout = shapeLoadout(
     },
   },
   {
-    skins: { 'skin-1': { displayName: 'Reaver Vandal', displayIcon: 'https://x' } },
+    skins: skinCatalog,
     weapons: { 'weapon-1': { displayName: 'Vandal' } },
     cards: { 'card-1': { displayName: 'Card', displayIcon: null } },
     titles: { 'title-1': { displayName: 'Title' } },
@@ -85,6 +139,18 @@ const loadout = shapeLoadout(
   }
 );
 assert.strictEqual(loadout.guns[0].skinName, 'Reaver Vandal');
+assert.strictEqual(
+  loadout.guns[0].levelVideo,
+  'https://valorant.dyn.riotcdn.net/x/videos/reaver_lvl.mp4'
+);
+assert.strictEqual(
+  loadout.guns[0].chromaVideo,
+  'https://valorant.dyn.riotcdn.net/x/videos/reaver_chroma.mp4'
+);
+assert.strictEqual(loadout.guns[0].level.uuid, 'lvl-1');
+assert.strictEqual(loadout.guns[0].chroma.uuid, 'chroma-1');
+assert.strictEqual(loadout.guns[0].levels.length, 1);
+assert.strictEqual(loadout.guns[0].chromas.length, 1);
 assert.strictEqual(loadout.identity.cardName, 'Card');
 assert.strictEqual(loadout.identity.titleName, 'Title');
 assert.strictEqual(loadout.sprays[0].sprayName, 'Spray');
@@ -132,6 +198,33 @@ assert.ok(ITEM_TYPE.skins);
   }
   const putOut = await putLoadout({ ...tokens, patch: { identity: { cardId: 'x' } } });
   assert.strictEqual(putOut.configured, false);
+
+  // Catalog-only detail must work without RIOT_API_KEY (live network to valorant-api).
+  let detailErr = null;
+  try {
+    await getSkinDetail('');
+  } catch (err) {
+    detailErr = err;
+  }
+  assert.ok(detailErr);
+  assert.strictEqual(detailErr.code, 'SKIN_UUID_REQUIRED');
+
+  const detail = await getSkinDetail('a67c2daa-4f4d-1af0-0ff4-6fafde471776');
+  assert.strictEqual(detail.ok, true);
+  assert.strictEqual(detail.catalogOnly, true);
+  assert.ok(detail.skin);
+  assert.ok(Array.isArray(detail.skin.levels));
+  assert.ok(Array.isArray(detail.skin.chromas));
+  assert.ok(detail.skin.levels.length > 0);
+  const anyLevelVideo = detail.skin.levels.some((l) => l.streamedVideo);
+  assert.ok(anyLevelVideo, 'expected real streamedVideo from valorant-api levels');
+  for (const l of detail.skin.levels) {
+    assert.ok(l.streamedVideo === null || String(l.streamedVideo).startsWith('http'));
+  }
+  for (const c of detail.skin.chromas) {
+    assert.ok(c.streamedVideo === null || String(c.streamedVideo).startsWith('http'));
+    assert.ok('swatch' in c);
+  }
 
   process.env.RIOT_API_KEY = 'test-key-not-real';
   assert.strictEqual(riotApiKeyConfigured(), true);

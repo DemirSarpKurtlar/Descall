@@ -77,6 +77,7 @@ function storeCapabilities() {
       status: "GET /api/valorant/store/status",
       wallet: "GET /api/valorant/wallet",
       skins: "GET /api/valorant/inventory/skins",
+      skinDetail: "GET /api/valorant/skins/:uuid",
       loadout: "GET /api/valorant/loadout",
       equip: "PUT /api/valorant/loadout",
       offers: "GET /api/valorant/store/offers",
@@ -118,6 +119,37 @@ async function fetchValorantApiMap(url, cache, shape) {
   }
 }
 
+function shapeSkinLevel(level) {
+  if (!level?.uuid) return null;
+  return {
+    uuid: level.uuid,
+    displayName: level.displayName || null,
+    displayIcon: level.displayIcon || null,
+    streamedVideo: level.streamedVideo || null,
+  };
+}
+
+function shapeSkinChroma(chroma) {
+  if (!chroma?.uuid) return null;
+  return {
+    uuid: chroma.uuid,
+    displayName: chroma.displayName || null,
+    displayIcon: chroma.displayIcon || null,
+    swatch: chroma.swatch || null,
+    streamedVideo: chroma.streamedVideo || null,
+  };
+}
+
+function shapeSkinLevels(levels) {
+  if (!Array.isArray(levels)) return [];
+  return levels.map(shapeSkinLevel).filter(Boolean);
+}
+
+function shapeSkinChromas(chromas) {
+  if (!Array.isArray(chromas)) return [];
+  return chromas.map(shapeSkinChroma).filter(Boolean);
+}
+
 async function loadSkinDefs() {
   return fetchValorantApiMap(
     "https://valorant-api.com/v1/weapons/skins",
@@ -129,8 +161,70 @@ async function loadSkinDefs() {
       themeUuid: row.themeUuid || null,
       contentTierUuid: row.contentTierUuid || null,
       weaponUuid: null,
+      levels: shapeSkinLevels(row.levels),
+      chromas: shapeSkinChromas(row.chromas),
     })
   );
+}
+
+/** Resolve catalog skin by skin uuid, or by nested level/chroma uuid. */
+function findSkinDef(itemId, skinDefs) {
+  if (!itemId || !skinDefs) return null;
+  if (skinDefs[itemId]) return skinDefs[itemId];
+  for (const skin of Object.values(skinDefs)) {
+    if (Array.isArray(skin.levels) && skin.levels.some((l) => l.uuid === itemId)) {
+      return skin;
+    }
+    if (Array.isArray(skin.chromas) && skin.chromas.some((c) => c.uuid === itemId)) {
+      return skin;
+    }
+  }
+  return null;
+}
+
+function findLevelInSkin(skin, levelId) {
+  if (!skin || !levelId || !Array.isArray(skin.levels)) return null;
+  return skin.levels.find((l) => l.uuid === levelId) || null;
+}
+
+function findChromaInSkin(skin, chromaId) {
+  if (!skin || !chromaId || !Array.isArray(skin.chromas)) return null;
+  return skin.chromas.find((c) => c.uuid === chromaId) || null;
+}
+
+/** Catalog-only skin media detail — available even when RIOT_API_KEY is missing. */
+async function getSkinDetail(uuid) {
+  const id = String(uuid || "").trim();
+  if (!id) {
+    const err = new Error("skin uuid required");
+    err.status = 400;
+    err.code = "SKIN_UUID_REQUIRED";
+    throw err;
+  }
+  const skinDefs = await loadSkinDefs();
+  const skin = findSkinDef(id, skinDefs);
+  if (!skin) {
+    const err = new Error("Skin not found in catalog");
+    err.status = 404;
+    err.code = "SKIN_NOT_FOUND";
+    throw err;
+  }
+  return {
+    ok: true,
+    catalogOnly: true,
+    configured: true,
+    envNeeded: [],
+    adim: 6,
+    skin: {
+      uuid: skin.uuid,
+      displayName: skin.displayName || null,
+      displayIcon: skin.displayIcon || null,
+      themeUuid: skin.themeUuid || null,
+      contentTierUuid: skin.contentTierUuid || null,
+      levels: Array.isArray(skin.levels) ? skin.levels : [],
+      chromas: Array.isArray(skin.chromas) ? skin.chromas : [],
+    },
+  };
 }
 
 async function loadWeaponDefs() {
@@ -339,7 +433,7 @@ async function getOwnedSkins({ accessToken, entitlementToken, region, puuid }) {
     .map((row) => {
       const itemId = row.ItemID || row.ItemId || null;
       if (!itemId) return null;
-      const def = skinDefs[itemId] || null;
+      const def = findSkinDef(itemId, skinDefs);
       return {
         itemId,
         instanceId: row.InstanceID || row.InstanceId || null,
@@ -347,7 +441,9 @@ async function getOwnedSkins({ accessToken, entitlementToken, region, puuid }) {
         displayName: def?.displayName || null,
         displayIcon: def?.displayIcon || null,
         contentTierUuid: def?.contentTierUuid || null,
-        weaponUuid: weaponForSkin(itemId, weapons),
+        weaponUuid: weaponForSkin(def?.uuid || itemId, weapons),
+        levels: Array.isArray(def?.levels) ? def.levels : [],
+        chromas: Array.isArray(def?.chromas) ? def.chromas : [],
       };
     })
     .filter(Boolean);
@@ -378,18 +474,28 @@ function shapeLoadout(raw, catalogs = {}) {
 
   const guns = (Array.isArray(raw.Guns) ? raw.Guns : []).map((g) => {
     const skinId = g.SkinID || null;
-    const skin = skinId ? skins[skinId] : null;
+    const skin = skinId ? findSkinDef(skinId, skins) || skins[skinId] || null : null;
     const weaponId = g.ID || null;
     const weapon = weaponId ? weapons[weaponId] : null;
     const buddyId = g.CharmID || null;
+    const skinLevelId = g.SkinLevelID || null;
+    const chromaId = g.ChromaID || null;
+    const level = findLevelInSkin(skin, skinLevelId);
+    const chroma = findChromaInSkin(skin, chromaId);
     return {
       weaponId,
       weaponName: weapon?.displayName || null,
       skinId,
       skinName: skin?.displayName || null,
       skinIcon: skin?.displayIcon || null,
-      skinLevelId: g.SkinLevelID || null,
-      chromaId: g.ChromaID || null,
+      skinLevelId,
+      chromaId,
+      levelVideo: level?.streamedVideo || null,
+      chromaVideo: chroma?.streamedVideo || null,
+      level: level || null,
+      chroma: chroma || null,
+      levels: Array.isArray(skin?.levels) ? skin.levels : [],
+      chromas: Array.isArray(skin?.chromas) ? skin.chromas : [],
       buddyId,
       buddyName: buddyId ? buddies[buddyId]?.displayName || null : null,
       buddyLevelId: g.CharmLevelID || null,
@@ -618,7 +724,7 @@ async function getStorefront({ accessToken, entitlementToken, region, puuid }) {
   const offers = singleOffers.map((offer) => {
     const reward = Array.isArray(offer.Rewards) ? offer.Rewards[0] : null;
     const itemId = reward?.ItemID || offer.OfferID || null;
-    const skin = itemId ? skinDefs[itemId] : null;
+    const skin = itemId ? findSkinDef(itemId, skinDefs) : null;
     const priced = costFromMap(offer.Cost);
     return {
       offerId: offer.OfferID || null,
@@ -626,6 +732,8 @@ async function getStorefront({ accessToken, entitlementToken, region, puuid }) {
       itemTypeId: reward?.ItemTypeID || ITEM_TYPE.skins,
       displayName: skin?.displayName || null,
       displayIcon: skin?.displayIcon || null,
+      levels: Array.isArray(skin?.levels) ? skin.levels : [],
+      chromas: Array.isArray(skin?.chromas) ? skin.chromas : [],
       cost: priced.amount,
       currency: priced.currency,
       isDirectPurchase: Boolean(offer.IsDirectPurchase),
@@ -645,7 +753,7 @@ async function getStorefront({ accessToken, entitlementToken, region, puuid }) {
     const items = Array.isArray(b.Items)
       ? b.Items.map((it) => {
           const itemId = it.Item?.ItemID || it.ItemID || null;
-          const skin = itemId ? skinDefs[itemId] : null;
+          const skin = itemId ? findSkinDef(itemId, skinDefs) : null;
           const priced = costFromMap(
             it.DiscountedPrice || it.BasePrice
               ? { [it.CurrencyID || CURRENCY.vp]: it.DiscountedPrice ?? it.BasePrice }
@@ -677,6 +785,8 @@ async function getStorefront({ accessToken, entitlementToken, region, puuid }) {
             itemTypeId: it.Item?.ItemTypeID || it.ItemTypeID || null,
             displayName: skin?.displayName || null,
             displayIcon: skin?.displayIcon || null,
+            levels: Array.isArray(skin?.levels) ? skin.levels : [],
+            chromas: Array.isArray(skin?.chromas) ? skin.chromas : [],
             basePrice: typeof it.BasePrice === "number" ? it.BasePrice : amount,
             cost: amount,
             currency,
@@ -736,12 +846,19 @@ module.exports = {
   storeCapabilities,
   getWallet,
   getOwnedSkins,
+  getSkinDetail,
   getLoadout,
   putLoadout,
   getStorefront,
   shapeWallet,
   shapeLoadout,
   applyLoadoutPatch,
+  shapeSkinLevel,
+  shapeSkinChroma,
+  findSkinDef,
+  findLevelInSkin,
+  findChromaInSkin,
+  loadSkinDefs,
   CURRENCY,
   ITEM_TYPE,
 };
