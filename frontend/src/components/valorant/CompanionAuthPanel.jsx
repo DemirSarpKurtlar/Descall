@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link2, LogOut, MonitorSmartphone, RefreshCw, Unplug } from "lucide-react";
+import { ChevronDown, Link2, LogOut, MonitorSmartphone, RefreshCw, Unplug } from "lucide-react";
+import { useMobile } from "../../hooks/useMobile";
 import {
   disconnectValorantSession,
   getValorantMe,
@@ -41,13 +42,27 @@ export default function CompanionAuthPanel() {
   const [local, setLocal] = useState(null);
   const [me, setMe] = useState(null);
   const [subtab, setSubtab] = useState("party");
+  const { isMobile } = useMobile();
 
+  /* Desktop horizontal pills (4). Mobile Valpaw-like accordion (5: Store split). */
   const SUBTABS = [
     { id: "party", labelKey: "valorantHub.partyTitle" },
     { id: "friends", labelKey: "valorantHub.friendsTitle" },
     { id: "missions", labelKey: "valorantHub.subtabMissions" },
     { id: "loadout", labelKey: "valorantHub.loadoutTab" },
   ];
+
+  const ACCORDION_SECTIONS = [
+    { id: "party", labelKey: "valorantHub.partyTitle" },
+    { id: "friends", labelKey: "valorantHub.friendsTitle" },
+    { id: "missions", labelKey: "valorantHub.contractsTab" },
+    { id: "loadout", labelKey: "valorantHub.loadoutTab" },
+    { id: "store", labelKey: "valorantHub.storeTab" },
+  ];
+
+  const toggleSection = (id) => {
+    setSubtab((prev) => (prev === id ? "" : id));
+  };
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -258,7 +273,7 @@ export default function CompanionAuthPanel() {
   };
 
   return (
-    <div className="valorant-companion" data-subtab={subtab}>
+    <div className={`valorant-companion${isMobile ? " is-mobile-accordion" : ""}`} data-subtab={subtab || "none"} data-ia={isMobile ? "accordion" : "subtabs"}>
       <div className="valorant-companion-card valorant-auth-card">
         <div className="valorant-companion-icon" aria-hidden>
           <Link2 size={28} />
@@ -368,71 +383,135 @@ export default function CompanionAuthPanel() {
         <p className="valorant-companion-note">{t("valorantHub.tosNote")}</p>
       </div>
 
-      <div
-        className="valorant-companion-subtabs"
-        role="tablist"
-        aria-label={t("valorantHub.companion")}
-      >
-        {SUBTABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`companion-subtab-${tab.id}`}
-            aria-selected={subtab === tab.id}
-            aria-controls={`companion-subpanel-${tab.id}`}
-            className={`valorant-companion-subtab${subtab === tab.id ? " is-active" : ""}`}
-            onClick={() => setSubtab(tab.id)}
+      {isMobile ? (
+        <div
+          className="valorant-companion-accordion"
+          data-mobile-accordion="true"
+          role="region"
+          aria-label={t("valorantHub.companion")}
+        >
+          {ACCORDION_SECTIONS.map((section) => {
+            const open = subtab === section.id;
+            return (
+              <section
+                key={section.id}
+                className={`valorant-companion-section${open ? " is-open" : ""}`}
+                data-section={section.id}
+              >
+                <button
+                  type="button"
+                  id={`companion-section-${section.id}`}
+                  className="valorant-companion-section-header"
+                  aria-expanded={open}
+                  aria-controls={`companion-subpanel-${section.id}`}
+                  onClick={() => toggleSection(section.id)}
+                >
+                  <span className="valorant-companion-section-title">
+                    {t(section.labelKey)}
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className={`valorant-companion-section-chevron${open ? " is-open" : ""}`}
+                    aria-hidden
+                  />
+                </button>
+                <div
+                  id={`companion-subpanel-${section.id}`}
+                  role="region"
+                  aria-labelledby={`companion-section-${section.id}`}
+                  className={`valorant-companion-section-body${open ? "" : " is-hidden"}`}
+                  hidden={!open}
+                  aria-hidden={!open}
+                >
+                  {section.id === "party" ? (
+                    <CompanionPartyPanel linked={connected} identity={identity} />
+                  ) : null}
+                  {section.id === "friends" ? (
+                    <CompanionFriendsPanel linked={connected} identity={identity} />
+                  ) : null}
+                  {section.id === "missions" ? (
+                    <CompanionMissionsPanel linked={connected} identity={identity} />
+                  ) : null}
+                  {section.id === "loadout" ? (
+                    <CompanionLoadoutPanel linked={connected} identity={identity} />
+                  ) : null}
+                  {section.id === "store" ? (
+                    <CompanionStorePanel linked={connected} identity={identity} />
+                  ) : null}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          <div
+            className="valorant-companion-subtabs"
+            role="tablist"
+            aria-label={t("valorantHub.companion")}
           >
-            {t(tab.labelKey)}
-          </button>
-        ))}
-      </div>
+            {SUBTABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`companion-subtab-${tab.id}`}
+                aria-selected={subtab === tab.id}
+                aria-controls={`companion-subpanel-${tab.id}`}
+                className={`valorant-companion-subtab${subtab === tab.id ? " is-active" : ""}`}
+                onClick={() => setSubtab(tab.id)}
+              >
+                {t(tab.labelKey)}
+              </button>
+            ))}
+          </div>
 
-      <div className="valorant-companion-subpanels">
-        <div
-          id="companion-subpanel-party"
-          role="tabpanel"
-          aria-labelledby="companion-subtab-party"
-          className={`valorant-companion-subpanel${subtab === "party" ? "" : " is-hidden"}`}
-          hidden={subtab !== "party"}
-          aria-hidden={subtab !== "party"}
-        >
-          <CompanionPartyPanel linked={connected} identity={identity} />
-        </div>
-        <div
-          id="companion-subpanel-friends"
-          role="tabpanel"
-          aria-labelledby="companion-subtab-friends"
-          className={`valorant-companion-subpanel${subtab === "friends" ? "" : " is-hidden"}`}
-          hidden={subtab !== "friends"}
-          aria-hidden={subtab !== "friends"}
-        >
-          <CompanionFriendsPanel linked={connected} identity={identity} />
-        </div>
-        <div
-          id="companion-subpanel-missions"
-          role="tabpanel"
-          aria-labelledby="companion-subtab-missions"
-          className={`valorant-companion-subpanel${subtab === "missions" ? "" : " is-hidden"}`}
-          hidden={subtab !== "missions"}
-          aria-hidden={subtab !== "missions"}
-        >
-          <CompanionMissionsPanel linked={connected} identity={identity} />
-        </div>
-        <div
-          id="companion-subpanel-loadout"
-          role="tabpanel"
-          aria-labelledby="companion-subtab-loadout"
-          className={`valorant-companion-subpanel${subtab === "loadout" ? "" : " is-hidden"}`}
-          hidden={subtab !== "loadout"}
-          aria-hidden={subtab !== "loadout"}
-        >
-          {/* Adım 6 — Dimaru wallet/store + loadout live under Loadout */}
-          <CompanionStorePanel linked={connected} identity={identity} />
-          <CompanionLoadoutPanel linked={connected} identity={identity} />
-        </div>
-      </div>
+          <div className="valorant-companion-subpanels">
+            <div
+              id="companion-subpanel-party"
+              role="tabpanel"
+              aria-labelledby="companion-subtab-party"
+              className={`valorant-companion-subpanel${subtab === "party" ? "" : " is-hidden"}`}
+              hidden={subtab !== "party"}
+              aria-hidden={subtab !== "party"}
+            >
+              <CompanionPartyPanel linked={connected} identity={identity} />
+            </div>
+            <div
+              id="companion-subpanel-friends"
+              role="tabpanel"
+              aria-labelledby="companion-subtab-friends"
+              className={`valorant-companion-subpanel${subtab === "friends" ? "" : " is-hidden"}`}
+              hidden={subtab !== "friends"}
+              aria-hidden={subtab !== "friends"}
+            >
+              <CompanionFriendsPanel linked={connected} identity={identity} />
+            </div>
+            <div
+              id="companion-subpanel-missions"
+              role="tabpanel"
+              aria-labelledby="companion-subtab-missions"
+              className={`valorant-companion-subpanel${subtab === "missions" ? "" : " is-hidden"}`}
+              hidden={subtab !== "missions"}
+              aria-hidden={subtab !== "missions"}
+            >
+              <CompanionMissionsPanel linked={connected} identity={identity} />
+            </div>
+            <div
+              id="companion-subpanel-loadout"
+              role="tabpanel"
+              aria-labelledby="companion-subtab-loadout"
+              className={`valorant-companion-subpanel${subtab === "loadout" ? "" : " is-hidden"}`}
+              hidden={subtab !== "loadout"}
+              aria-hidden={subtab !== "loadout"}
+            >
+              {/* Adım 6 — Dimaru wallet/store + loadout live under Loadout (desktop) */}
+              <CompanionStorePanel linked={connected} identity={identity} />
+              <CompanionLoadoutPanel linked={connected} identity={identity} />
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );

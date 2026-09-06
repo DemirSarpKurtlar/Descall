@@ -309,8 +309,14 @@
     flex: 1 1 0;
   }
 
+  /* Tab-bar clearance ONLY on scroll containers — never on hub-panel wrappers
+     (double padding left a black void under Companion/LFG/DimaAI). */
   .app-root.is-mobile[data-view="play"] .valorant-hub-body,
-  .app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+  .app-root.is-mobile[data-view="play"] .valorant-hub-panel {
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+
   .app-root.is-mobile[data-view="play"] .valorant-companion,
   .app-root.is-mobile[data-view="play"] .lfg-lobby-list,
   .app-root.is-mobile[data-view="play"] .lfg-main,
@@ -953,9 +959,13 @@
   padding-bottom: 0 !important;
 }
 
-/* Scrollable companion / LFG / DimaAI inners keep tab-bar clearance. */
+/* Scrollable companion / LFG / DimaAI inners keep tab-bar clearance.
+   Do NOT pad .valorant-hub-panel here — that nested with companion and left a void. */
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel {
+  padding-bottom: 0 !important;
+}
+
 .app-root.is-mobile[data-view="play"] .valorant-companion,
-.app-root.is-mobile[data-view="play"] .valorant-hub-panel,
 .app-root.is-mobile[data-view="play"] .lfg-lobby-list,
 .app-root.is-mobile[data-view="play"] .lfg-main,
 .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
@@ -963,6 +973,19 @@
 .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
   padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
   box-sizing: border-box;
+}
+
+/* Companion accordion must paint charcoal to the bottom of the scroll area. */
+.app-root.is-mobile[data-view="play"] .valorant-companion.is-mobile-accordion,
+.app-root.is-mobile[data-view="play"] .valorant-companion-accordion {
+  flex: 1 1 auto;
+  min-height: 100%;
+  background: var(--surface-0, #111214) !important;
+}
+
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+.app-root.is-mobile[data-view="play"] .valorant-hub-body {
+  background: var(--surface-0, #111214) !important;
 }
 
 /* Seal any residual letterboxing under the fixed mobile tab bar. */

@@ -180,8 +180,12 @@ export const nested = {
     "loadoutEmpty": "Bu oturumda henüz loadout yok.",
     "loadoutSprays": "Spray'ler",
     "loadoutSpraysEmpty": "Kuşanılmış spray yok.",
-    "loadoutTab": "Loadout",
+    "loadoutTab": "Yükleme",
+    "storeTab": "Dükkan",
+    "contractsTab": "Sözleşmeler",
     "subtabMissions": "Görevler",
+    "sectionExpand": "Bölümü aç",
+    "sectionCollapse": "Bölümü kapat",
     "missionsNeedLink": "Görevler ve battle pass için önce Riot hesabını bağla.",
     "storeNeedLink": "Cüzdan, store ve envanter için önce Riot hesabını bağla.",
     "loadoutNeedLink": "Loadout için önce Riot hesabını bağla.",
@@ -200,7 +204,8 @@ export const nested = {
     "v2941": { "title": "Mobil alt dolgu", "body": "Play, LFG ve DimaAI mobilde ekranı kenardan kenara doldurur." },
     "v2942": { "title": "Görev API", "body": "Companion görevleri, kontratları ve battle pass ilerlemesini yükleyebilir." },
     "v2943": { "title": "Görev arayüzü", "body": "Görevler ve Battle Pass Companion’da net görünür." },
-    "v2944": { "title": "Companion sekmeleri ve Loadout", "body": "Companion’da Parti, Arkadaşlar, Görevler ve Loadout sekmeleri var. Cüzdan ve store Loadout altında. DimaAI mesaj gönderince sohbeti korur. Güncelleme bildirimleri daha net." }
+    "v2944": { "title": "Companion sekmeleri ve Loadout", "body": "Companion’da Parti, Arkadaşlar, Görevler ve Loadout sekmeleri var. Cüzdan ve store Loadout altında. DimaAI mesaj gönderince sohbeti korur. Güncelleme bildirimleri daha net." },
+    "v2945": { "title": "Mobil Companion akordeon", "body": "Telefonda Companion dikey bölüm kartları kullanır (Parti, Arkadaşlar, Sözleşmeler, Yükleme, Dükkan) — yatay sekmeler taşmaz. Play ve DimaAI alta kadar dolar; siyah boş bant yok." }
   },
   "updateToast": {
     "kicker": "Masaüstü güncelleme",

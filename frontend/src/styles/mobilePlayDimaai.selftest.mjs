@@ -15,4 +15,6 @@ assert(layout.includes('data-view="play"] > .app-main-slot'), "desktop still pla
 const playHub = mobile.split('[data-view="play"] .valorant-hub')[1] || "";
 assert(!/padding-bottom:\s*calc\(56px/.test(playHub.slice(0, 500)), "hub outer must not pad for tab bar (causes black void)");
 assert(mobile.includes("height: var(--vv-height, 100dvh) !important"), "play/dimaai root uses visual viewport height");
+assert(mobile.includes("padding-bottom: 0 !important"), "outer/hub-panel padding zero for void");
+assert(!/Scrollable companion[\s\S]{0,160}\.valorant-hub-panel,[\s\S]{0,120}\.valorant-companion/.test(mobile), "hub-panel must not share scroll padding with companion");
 console.log("mobilePlayDimaai.selftest.mjs: ok");

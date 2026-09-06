@@ -178,7 +178,11 @@ export const nested = {
     "loadoutSprays": "Sprays",
     "loadoutSpraysEmpty": "No sprays equipped.",
     "loadoutTab": "Loadout",
+    "storeTab": "Store",
+    "contractsTab": "Contracts",
     "subtabMissions": "Missions",
+    "sectionExpand": "Expand section",
+    "sectionCollapse": "Collapse section",
     "missionsNeedLink": "Connect Riot first to see missions and battle pass.",
     "storeNeedLink": "Connect Riot first to see wallet, store, and inventory.",
     "loadoutNeedLink": "Connect Riot first to see your loadout.",
@@ -197,7 +201,8 @@ export const nested = {
     "v2941": { "title": "Mobile bottom fill", "body": "Play, LFG, and DimaAI fill the screen edge-to-edge on mobile." },
     "v2942": { "title": "Missions API", "body": "Companion can load missions, contracts, and battle pass progress." },
     "v2943": { "title": "Missions UI", "body": "Missions and Battle Pass show up clearly in Companion." },
-    "v2944": { "title": "Companion tabs & Loadout", "body": "Companion now has Party, Friends, Missions, and Loadout tabs. Wallet and store live under Loadout. DimaAI keeps your chat visible after you send. Update notices are clearer." }
+    "v2944": { "title": "Companion tabs & Loadout", "body": "Companion now has Party, Friends, Missions, and Loadout tabs. Wallet and store live under Loadout. DimaAI keeps your chat visible after you send. Update notices are clearer." },
+    "v2945": { "title": "Mobile Companion accordion", "body": "On phones, Companion uses vertical section cards (Party, Friends, Contracts, Loadout, Store) instead of cramped horizontal tabs. Play and DimaAI fill to the bottom — no black band under content." }
   },
   "updateToast": {
     "kicker": "Desktop update",

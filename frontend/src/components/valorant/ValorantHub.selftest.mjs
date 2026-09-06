@@ -193,4 +193,29 @@ assert(css.includes(".valorant-companion-subtab"), "subtab styles exist");
 assert(en.includes("loadoutTab"), "EN loadout tab string");
 assert(tr.includes("loadoutTab"), "TR loadout tab string");
 
+/* ── v2.9.45 mobile Valpaw-like accordion IA ── */
+assert(auth.includes("valorant-companion-accordion") || auth.includes("is-mobile-accordion"), "mobile accordion markup");
+assert(auth.includes("valorant-companion-section"), "accordion sections present");
+assert(auth.includes("contractsTab") || auth.includes("storeTab"), "Store/Contracts section labels");
+assert(auth.includes("useMobile"), "CompanionAuthPanel uses useMobile for accordion vs subtabs");
+assert(css.includes(".valorant-companion-accordion"), "accordion styles exist");
+assert(css.includes(".valorant-companion-section-header"), "accordion section header styles");
+assert(css.includes(".valorant-companion-section-chevron"), "accordion chevron styles");
+assert(
+  css.includes(".app-root.is-mobile .valorant-companion-subtabs") ||
+    css.includes(".valorant-companion.is-mobile-accordion .valorant-companion-subtabs"),
+  "mobile hides horizontal companion subtabs (no Arkadaşlar overflow)"
+);
+assert(en.includes("storeTab"), "EN storeTab");
+assert(tr.includes("storeTab") && tr.includes("Dükkan"), "TR storeTab Dükkan");
+assert(en.includes("contractsTab"), "EN contractsTab");
+assert(tr.includes("contractsTab") && tr.includes("Sözleşmeler"), "TR contractsTab Sözleşmeler");
+assert(tr.includes("Yükleme"), "TR loadoutTab Yükleme");
+assert(mobileCss.includes("padding-bottom: 0 !important"), "hub-panel / outer padding zeroed for void fix");
+assert(
+  mobileCss.includes("valorant-companion.is-mobile-accordion") ||
+    mobileCss.includes("valorant-companion-accordion"),
+  "mobile fill targets accordion"
+);
+
 console.log("ValorantHub.selftest.mjs: ok");
