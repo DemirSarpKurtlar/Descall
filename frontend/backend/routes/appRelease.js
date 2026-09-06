@@ -9,12 +9,12 @@ const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`
 
 /** Keep in sync with frontend/src/lib/desktopRelease.js when cutting releases. */
 const FALLBACK_RELEASE = {
-  tagName: "v2.9.40",
-  version: "2.9.40",
-  name: "2.9.40",
+  tagName: "v2.9.41",
+  version: "2.9.41",
+  name: "2.9.41",
   publishedAt: new Date().toISOString(),
-  htmlUrl: `https://github.com/${GITHUB_REPO}/releases/tag/v2.9.40`,
-  windowsDownloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v2.9.40/Descall-Setup-2.9.40.exe`,
+  htmlUrl: `https://github.com/${GITHUB_REPO}/releases/tag/v2.9.41`,
+  windowsDownloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v2.9.41/Descall-Setup-2.9.41.exe`,
   // The Android APK filename is version-suffixed per release
   // (Descall-APK-vX.Y.Z.apk), so it cannot be guessed without a live asset
   // list. Send people to the releases page instead of a dead direct link.
