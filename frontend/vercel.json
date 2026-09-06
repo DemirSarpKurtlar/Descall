@@ -86,6 +86,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://des-call.onrender.com/api/:path*"
+    },
+    {
       "source": "/groups",
       "destination": "/index.html"
     },

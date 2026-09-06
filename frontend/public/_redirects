@@ -1,3 +1,6 @@
+# Proxy API to Render (Cloudflare Pages / Netlify-style)
+/api/*  https://des-call.onrender.com/api/:splat  200
+
 # Netlify-style redirects (unused on Vercel; vercel.json is source of truth).
 # Keep in sync: www → apex, and force HTTPS apex.
 http://www.descall.com/* https://descall.com/:splat 301!
