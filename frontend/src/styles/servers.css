@@ -639,12 +639,17 @@
 
 .server-type-toggle {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 14px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .server-type-btn {
-  flex: 1;
+  flex: 1 1 calc(33.333% - 6px);
+  min-width: min(100%, 6.5rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -653,10 +658,14 @@
   background: var(--surface-1);
   color: var(--text-2);
   border-radius: 10px;
-  padding: 9px 8px;
+  padding: 9px 10px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 .server-type-btn.active {
@@ -752,11 +761,14 @@
 
 .server-modal {
   width: min(420px, 100%);
+  max-width: 100%;
   background: var(--surface-2);
   border: 1px solid var(--border-3);
   border-radius: 14px;
   padding: 22px 24px;
   box-shadow: var(--shadow-xl, 0 18px 50px rgba(0, 0, 0, 0.4));
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .server-modal.server-create-wizard.is-wide {
@@ -1515,8 +1527,11 @@
 
 .server-roles-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .server-roles-tab {
@@ -1531,6 +1546,9 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .server-roles-tab.active {
@@ -1904,6 +1922,8 @@
 
 .sra-view-toggle {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   padding: 3px;
   border-radius: 10px;
   background: var(--surface-1);
