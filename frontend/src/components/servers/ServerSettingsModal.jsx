@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings2, Camera, ImagePlus, Trash2, X } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -165,7 +166,9 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <>
       <motion.div
         className="server-modal-overlay"
@@ -429,6 +432,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
           />
         ) : null}
       </AnimatePresence>
-    </>
+    </>,
+    document.body
   );
 }

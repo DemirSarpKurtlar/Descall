@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
@@ -698,8 +699,9 @@ export default function ServerMembersPanel({
           )}
         </div>
       )}
-      {nickTarget && (
-        <div className="server-modal-overlay" onClick={() => setNickTarget(null)}>
+      {nickTarget && typeof document !== "undefined"
+        ? createPortal(
+            <div className="server-modal-overlay" onClick={() => setNickTarget(null)}>
           <form className="server-modal server-nickname-modal" onSubmit={saveNickname} onClick={(e) => e.stopPropagation()}>
             <h3>{t("Change nickname")}</h3>
             <p className="server-modal-lead">
@@ -726,8 +728,10 @@ export default function ServerMembersPanel({
               </button>
             </div>
           </form>
-        </div>
-      )}
+        </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }

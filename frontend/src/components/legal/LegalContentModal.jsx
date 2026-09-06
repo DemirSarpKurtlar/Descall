@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, FileText, ShieldCheck } from "lucide-react";
 import { useLocale } from "../../context/LocaleContext";
@@ -36,7 +37,9 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
   if (!data) return null;
   const Icon = type === "privacy" ? ShieldCheck : FileText;
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -96,6 +99,7 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

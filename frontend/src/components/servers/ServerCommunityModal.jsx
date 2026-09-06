@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -74,7 +75,9 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -180,6 +183,7 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
           </div>
         </form>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

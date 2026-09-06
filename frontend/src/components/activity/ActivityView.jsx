@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
@@ -105,7 +106,9 @@ function ManualStatusModal({ onSet, onClose }) {
     `🍕 ${t('Taking a break')}`, `🎬 ${t('Watching something')}`, `💻 ${t('Coding')}`,
   ];
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <motion.div
       className="activity-modal-backdrop"
       initial={{ opacity: 0 }}
@@ -169,7 +172,8 @@ function ManualStatusModal({ onSet, onClose }) {
           {t('Set Status')}
         </button>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 

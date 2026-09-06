@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Link2, Copy, Check, Trash2, RefreshCw, Globe } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -134,7 +135,9 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -267,6 +270,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

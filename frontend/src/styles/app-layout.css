@@ -4397,7 +4397,12 @@ body.electron-app #root,
 /* Electron: keep popups viewport-fixed (portaled). Do not reset inset. */
 body.electron-app .add-modal-backdrop,
 body.electron-app .feedback-overlay,
-body.electron-app .activity-modal-backdrop {
+body.electron-app .activity-modal-backdrop,
+body.electron-app .server-modal-overlay,
+body.electron-app .server-rules-overlay,
+body.electron-app .img-crop-overlay,
+body.electron-app .legal-modal-backdrop,
+body.electron-app .modal-backdrop {
   position: fixed !important;
   inset: 0 !important;
   width: auto !important;

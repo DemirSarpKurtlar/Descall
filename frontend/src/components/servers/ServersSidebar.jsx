@@ -2266,7 +2266,9 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
       ? t("Create category")
       : t("Create channel");
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -2431,7 +2433,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
           </button>
         </div>
       </motion.form>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -2440,7 +2443,9 @@ function ConfirmDeleteChannelDialog({ channel, onConfirm, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isCategory = channel.type === "category";
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -2485,7 +2490,8 @@ function ConfirmDeleteChannelDialog({ channel, onConfirm, onCancel }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -2592,7 +2598,9 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
     setBusy(false);
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -2836,7 +2844,8 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
           />
         ) : null}
       </AnimatePresence>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -2844,7 +2853,9 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -2887,7 +2898,8 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -2908,7 +2920,9 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
           name: serverName,
         });
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -2958,6 +2972,7 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

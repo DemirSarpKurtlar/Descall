@@ -3,10 +3,10 @@
 .legal-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 12000;
-  background: rgba(6, 8, 14, 0.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  z-index: 100050;
+  background: rgba(10, 11, 13, 0.5);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
   display: flex;
   align-items: center;
   justify-content: center;

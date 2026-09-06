@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Compass, LogIn, Server } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -123,7 +124,9 @@ export default function JoinServerModal({ onClose, onJoined }) {
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       className="server-modal-overlay"
       initial={{ opacity: 0 }}
@@ -294,6 +297,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
           </>
         )}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
