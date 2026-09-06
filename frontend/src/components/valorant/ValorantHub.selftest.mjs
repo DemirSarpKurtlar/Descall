@@ -218,4 +218,10 @@ assert(
   "mobile fill targets accordion"
 );
 
+
+/* v2.9.46 — Companion + LFG bottom fill (no height:100% / double pad void) */
+assert(css.includes("is-mobile-accordion"), "mobile accordion styles present");
+assert(!/is-mobile-accordion \{[\s\S]{0,140}height:\s*100%/.test(css), "accordion must not force height 100% (void)");
+assert(mobileCss.includes("lfg-sidebar") && mobileCss.includes("valorant-companion.is-mobile-accordion"), "mobile.css fills companion + LFG");
+assert(mobileCss.includes("Never min-height:100dvh") || mobileCss.includes("min-height: 0 !important"), "play root avoids min-height 100dvh void");
 console.log("ValorantHub.selftest.mjs: ok");

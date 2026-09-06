@@ -522,14 +522,23 @@
 @media (max-width: 860px) {
   .lfg-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: minmax(0, 1fr);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    background: var(--surface-0, #111214);
   }
   .lfg-sidebar {
     border-right: none;
     border-bottom: none;
     min-height: 0;
-    height: 100%;
+    height: auto;
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-0, #111214);
   }
   .lfg-back-label {
     display: inline;
