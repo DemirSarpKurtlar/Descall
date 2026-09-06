@@ -224,4 +224,25 @@ assert(css.includes("is-mobile-accordion"), "mobile accordion styles present");
 assert(!/is-mobile-accordion \{[\s\S]{0,140}height:\s*100%/.test(css), "accordion must not force height 100% (void)");
 assert(mobileCss.includes("lfg-sidebar") && mobileCss.includes("valorant-companion.is-mobile-accordion"), "mobile.css fills companion + LFG");
 assert(mobileCss.includes("Never min-height:100dvh") || mobileCss.includes("min-height: 0 !important"), "play root avoids min-height 100dvh void");
+
+/* v2.9.47 — LFG hides Companion; gap/pad matches measured tab bar */
+assert(hub.includes('tab === "companion"'), "Companion panel mounts only when active");
+assert(hub.includes("<CompanionAuthPanel"), "Companion still mounts on companion tab");
+assert(hub.includes("<LfgWorkspace"), "LFG stays mounted for lobby state");
+assert(hub.includes("hidden={tab !== \"lfg\"}") || hub.includes("hidden={tab !== 'lfg'}"), "LFG uses hidden when inactive");
+assert(mobileCss.includes(":not([hidden]):not(.is-hidden)"), "mobile flex-fill excludes hidden hub panels");
+assert(
+  mobileCss.includes('.valorant-hub-panel.is-hidden') &&
+    mobileCss.includes('.valorant-hub-panel[hidden]') &&
+    mobileCss.includes("display: none !important"),
+  "mobile play forces hidden hub panels to display:none (wins over flex !important)"
+);
+assert(mobileCss.includes("--mobile-tab-bar-h"), "tab bar height token defined");
+assert(
+  mobileCss.includes("var(--mobile-tab-bar-h, 60px)") &&
+    mobileCss.includes("padding-bottom: calc(var(--mobile-tab-bar-h, 60px)"),
+  "companion/LFG pad uses measured tab-bar token (no 67px drift)"
+);
+assert(mobileCss.includes(".lfg-empty") && mobileCss.includes("min-height: 0 !important"), "lfg-empty drops min-height 100% leftover band");
+assert(!/\.valorant-hub-panel,\s*\n\.app-root\.is-mobile\[data-view="play"\] \.valorant-hub-panel-lfg,/.test(mobileCss), "do not flex-force all hub panels including hidden");
 console.log("ValorantHub.selftest.mjs: ok");

@@ -323,7 +323,7 @@
   .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
   .app-root.is-mobile[data-view="dimaai"] .dima-thread,
   .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
   }
 
@@ -338,8 +338,8 @@
     justify-content: flex-start;
     align-items: center;
     padding-top: 20px;
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-    min-height: 100%;
+    padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
+    min-height: 0;
     box-sizing: border-box;
   }
 
@@ -809,9 +809,10 @@
 /* Mobile bottom tab bar — original edge-to-edge place, glass finish */
 @media (max-width: 768px) {
   .app-root.is-mobile {
+    --mobile-tab-bar-h: 60px;
     height: var(--vv-height, 100dvh);
     max-height: var(--vv-height, 100dvh);
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
     transition: padding-bottom 0.12s ease;
     overflow: hidden;
   }
@@ -836,8 +837,9 @@
     right: 0;
     bottom: 0;
     z-index: 280;
-    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    height: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
       var(--nav-glass-bg-strong);
@@ -929,7 +931,7 @@
   }
 }
 
-/* ── v2.9.46: kill Play/Companion/LFG bottom black void (visual-viewport fill) ── */
+/* ── v2.9.47: LFG/Companion swap + kill residual ~67px bottom band ── */
 @supports (height: 100dvh) {
   .app-root.is-mobile[data-view="play"],
   .app-root.is-mobile[data-view="dimaai"] {
@@ -960,10 +962,14 @@
   padding-bottom: 0 !important;
 }
 
-/* Flex-fill chain: hub → body → panel → companion/LFG. No height:100% + padding fights. */
+/*
+ * Flex-fill chain: hub → body → ACTIVE panel → companion/LFG.
+ * CRITICAL: never force display:flex on [hidden]/is-hidden — that overrode
+ * valorant.css hide and left Companion accordion under LFG (~half-height + dark band).
+ */
 .app-root.is-mobile[data-view="play"] .valorant-hub-body,
-.app-root.is-mobile[data-view="play"] .valorant-hub-panel,
-.app-root.is-mobile[data-view="play"] .valorant-hub-panel-lfg,
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel:not([hidden]):not(.is-hidden),
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel-lfg:not([hidden]):not(.is-hidden),
 .app-root.is-mobile[data-view="play"] .lfg-workspace,
 .app-root.is-mobile[data-view="play"] .lfg-sidebar {
   flex: 1 1 0 !important;
@@ -976,7 +982,24 @@
   box-sizing: border-box;
 }
 
-.app-root.is-mobile[data-view="play"] .valorant-hub-panel {
+/* Win over any display:flex !important — inactive hub panel must fully unmount from layout. */
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel.is-hidden,
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel[hidden] {
+  display: none !important;
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel:not([hidden]):not(.is-hidden) {
   padding-bottom: 0 !important;
 }
 
@@ -991,7 +1014,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--surface-0, #111214) !important;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+  /* Tab-bar clearance only — matches measured .mobile-tab-bar height (border-box 60px). */
+  padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px)) !important;
   box-sizing: border-box !important;
 }
 
@@ -1008,7 +1032,7 @@
 .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
 .app-root.is-mobile[data-view="dimaai"] .dima-thread,
 .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px)) !important;
   box-sizing: border-box;
   background: var(--surface-0, #111214) !important;
 }
@@ -1020,12 +1044,21 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.app-root.is-mobile[data-view="play"] .valorant-hub-panel,
+/* Kill min-height:100% + pad leftover that stretched a dark band past the chrome. */
+.app-root.is-mobile[data-view="play"] .lfg-empty {
+  min-height: 0 !important;
+  flex: 1 1 auto;
+  padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px)) !important;
+  box-sizing: border-box !important;
+  background: var(--surface-0, #111214) !important;
+}
+
+.app-root.is-mobile[data-view="play"] .valorant-hub-panel:not([hidden]):not(.is-hidden),
 .app-root.is-mobile[data-view="play"] .valorant-hub-body {
   background: var(--surface-0, #111214) !important;
 }
 
-/* Seal residual letterboxing under the fixed mobile tab bar (match tab height 60px). */
+/* Seal under fixed tab bar — same token as measured tab height (no 56/67 drift). */
 .app-root.is-mobile[data-view="play"]::after,
 .app-root.is-mobile[data-view="dimaai"]::after {
   content: "";
@@ -1033,12 +1066,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(60px + env(safe-area-inset-bottom, 0px));
+  height: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
   background: var(--surface-0, #111214);
   z-index: 30;
   pointer-events: none;
 }
 
 .app-root.is-mobile .mobile-tab-bar {
-  z-index: 40;
+  z-index: 280;
 }

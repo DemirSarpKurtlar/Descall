@@ -206,7 +206,8 @@ export const nested = {
     "v2943": { "title": "Görev arayüzü", "body": "Görevler ve Battle Pass Companion’da net görünür." },
     "v2944": { "title": "Companion sekmeleri ve Loadout", "body": "Companion’da Parti, Arkadaşlar, Görevler ve Loadout sekmeleri var. Cüzdan ve store Loadout altında. DimaAI mesaj gönderince sohbeti korur. Güncelleme bildirimleri daha net." },
     "v2945": { "title": "Mobil Companion akordeon", "body": "Telefonda Companion dikey bölüm kartları kullanır (Parti, Arkadaşlar, Sözleşmeler, Yükleme, Dükkan) — yatay sekmeler taşmaz. Play ve DimaAI alta kadar dolar; siyah boş bant yok." },
-    "v2946": { "title": "Mobil Neler yeni + alt dolgu", "body": "Neler yeni telefonda güvenli alan ve sabit Tamam ile çalışır. Companion ve LFG yüzen sekme çubuğuna kadar dolar — listenin altında siyah boşluk yok." }
+    "v2946": { "title": "Mobil Neler yeni + alt dolgu", "body": "Neler yeni telefonda güvenli alan ve sabit Tamam ile çalışır. Companion ve LFG yüzen sekme çubuğuna kadar dolar — listenin altında siyah boşluk yok." },
+    "v2947": { "title": "LFG sekme değişimi + alt boşluk", "body": "LFG’ye geçince Companion tamamen gizlenir. Play içeriği mobil sekme çubuğuna kadar gelir — Companion/LFG altında koyu bant kalmaz." }
   },
   "updateToast": {
     "kicker": "Masaüstü güncelleme",

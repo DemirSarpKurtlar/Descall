@@ -17,7 +17,7 @@ function assert(c, m) { if (!c) throw new Error(m); }
 assert(notes.includes('import Modal from "./ui/Modal"'), "UpdateNotes uses shared Modal");
 assert(notes.includes('className="update-notes-dialog"'), "UpdateNotes marks dialog for mobile layout");
 assert(notes.includes("update-notes-list") && notes.includes("update-notes-done"), "list + dismiss button present");
-assert(notes.includes('version: "2.9.46"'), "notes include 2.9.46 entry");
+assert(notes.includes('version: "2.9.47"'), "notes include 2.9.46 entry");
 assert(modal.includes("className"), "Modal accepts className");
 assert(modal.includes("modal-backdrop") && modal.includes("modal-card"), "Modal class hooks");
 
@@ -30,7 +30,7 @@ assert(css.includes(".update-notes-actions") && css.includes("flex-shrink: 0"), 
 assert(css.includes(".update-notes-done") && css.includes("width: 100%"), "mobile Tamam full-width");
 assert(/@media \(max-width: 768px\)/.test(css) && css.includes("align-items: flex-end"), "mobile modal anchors with safe area");
 
-assert(en.includes("v2946") && tr.includes("v2946"), "EN+TR copy for 2.9.46");
+assert(en.includes("v2947") && tr.includes("v2947"), "EN+TR copy for 2.9.47");
 assert(tr.includes('"gotIt": "Tamam"'), "TR dismiss is Tamam");
 
 console.log("UpdateNotes.selftest.mjs: ok");
