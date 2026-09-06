@@ -1,16 +1,19 @@
+import { useState } from "react";
 import { Loader2, RefreshCw, Shirt, Sparkles } from "lucide-react";
 import useValorantLoadout from "../../hooks/useValorantLoadout";
 import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
+import CompanionSkinDetail from "./CompanionSkinDetail";
 
 /**
- * Adım 6 stub — equipped loadout visible + equip() for Dima to polish.
+ * Adım 6 — equipped loadout + real Riot skin media on gun click.
  * Keep useValorantLoadout as the data source (Dimaru API contract).
  */
 export default function CompanionLoadoutPanel({ linked, identity }) {
   const t = useT();
   const region = identity?.region || "eu";
   const puuid = identity?.puuid || null;
+  const [selected, setSelected] = useState(null);
   const {
     loading,
     busy,
@@ -103,24 +106,40 @@ export default function CompanionLoadoutPanel({ linked, identity }) {
             <h5>{t("valorantHub.loadoutGuns")}</h5>
             {guns.length ? (
               <ul className="valorant-loadout-guns">
-                {guns.slice(0, 10).map((g) => (
-                  <li key={g.weaponId || g.skinId}>
-                    {g.skinIcon ? (
-                      <img src={g.skinIcon} alt="" className="valorant-store-thumb" />
-                    ) : (
-                      <span className="valorant-store-thumb placeholder" />
-                    )}
-                    <div>
-                      <div className="valorant-store-item-title">
-                        {g.skinName || g.skinId || t("valorantHub.loadoutSkin")}
-                      </div>
-                      <div className="valorant-store-item-meta">
-                        {g.weaponName || g.weaponId || "—"}
-                        {g.buddyName ? ` · ${g.buddyName}` : ""}
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                {guns.slice(0, 10).map((g) => {
+                  const uuid = g.skinId || g.skinLevelId;
+                  return (
+                    <li key={g.weaponId || g.skinId}>
+                      <button
+                        type="button"
+                        className="valorant-store-item-btn"
+                        onClick={() =>
+                          setSelected({
+                            uuid,
+                            name: g.skinName,
+                            icon: g.skinIcon,
+                          })
+                        }
+                        disabled={!uuid}
+                      >
+                        {g.skinIcon ? (
+                          <img src={g.skinIcon} alt="" className="valorant-store-thumb" />
+                        ) : (
+                          <span className="valorant-store-thumb placeholder" />
+                        )}
+                        <div>
+                          <div className="valorant-store-item-title">
+                            {g.skinName || g.skinId || t("valorantHub.loadoutSkin")}
+                          </div>
+                          <div className="valorant-store-item-meta">
+                            {g.weaponName || g.weaponId || "—"}
+                            {g.buddyName ? ` · ${g.buddyName}` : ""}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="valorant-party-sub muted">{t("valorantHub.loadoutEmpty")}</p>
@@ -149,7 +168,15 @@ export default function CompanionLoadoutPanel({ linked, identity }) {
             )}
           </div>
 
-          {/* Expose equip for Dima — stub keeps a no-op affordance note */}
+          {selected ? (
+            <CompanionSkinDetail
+              skinUuid={selected.uuid}
+              fallbackName={selected.name}
+              fallbackIcon={selected.icon}
+              onClose={() => setSelected(null)}
+            />
+          ) : null}
+
           <p className="valorant-auth-footnote muted">
             {t("valorantHub.loadoutEquipHint")}
             <span className="valorant-loadout-equip-api" hidden>

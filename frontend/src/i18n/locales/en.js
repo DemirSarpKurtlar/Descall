@@ -186,6 +186,16 @@ export const nested = {
     "missionsNeedLink": "Connect Riot first to see missions and battle pass.",
     "storeNeedLink": "Connect Riot first to see wallet, store, and inventory.",
     "loadoutNeedLink": "Connect Riot first to see your loadout.",
+    "skinDetailLead": "Photo plus real Riot level/chroma videos when available.",
+    "skinDetailClose": "Close skin detail",
+    "skinDetailLoading": "Loading skin media…",
+    "skinDetailError": "Could not load skin media.",
+    "skinDetailLevels": "Levels",
+    "skinDetailChromas": "Chromas",
+    "skinDetailLevel": "Level",
+    "skinDetailChroma": "Chroma",
+    "skinDetailHasVideo": "Riot video",
+    "skinDetailPhotoOnly": "Photo only",
     "loadoutEquipHint": "Use equip() from useValorantLoadout to change skin/buddy/card/title/spray (PUT /api/valorant/loadout)."
   },
 

@@ -1,16 +1,19 @@
+import { useState } from "react";
 import { Loader2, Package, RefreshCw, ShoppingBag, Wallet } from "lucide-react";
 import useValorantStore from "../../hooks/useValorantStore";
 import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
+import CompanionSkinDetail from "./CompanionSkinDetail";
 
 /**
- * Adım 6 stub — wallet + daily offers + owned skins for Dima to polish.
- * Keep useValorantStore as the data source (Dimaru API contract).
+ * Adım 6 — wallet + daily offers + owned skins.
+ * Opens real Riot skin media (displayIcon / levels / chromas streamedVideo) on item click.
  */
 export default function CompanionStorePanel({ linked, identity }) {
   const t = useT();
   const region = identity?.region || "eu";
   const puuid = identity?.puuid || null;
+  const [selected, setSelected] = useState(null);
   const {
     loading,
     error,
@@ -41,6 +44,11 @@ export default function CompanionStorePanel({ linked, identity }) {
     typeof offersRemainingSeconds === "number"
       ? Math.max(0, Math.round(offersRemainingSeconds / 3600))
       : null;
+
+  const openSkin = (uuid, name, icon) => {
+    if (!uuid) return;
+    setSelected({ uuid, name, icon });
+  };
 
   return (
     <div className="valorant-store" data-adim="6">
@@ -122,28 +130,37 @@ export default function CompanionStorePanel({ linked, identity }) {
             </div>
             {offers?.length ? (
               <ul className="valorant-store-offers">
-                {offers.slice(0, 4).map((o) => (
-                  <li key={o.offerId || o.itemId}>
-                    {o.displayIcon ? (
-                      <img src={o.displayIcon} alt="" className="valorant-store-thumb" />
-                    ) : (
-                      <span className="valorant-store-thumb placeholder" />
-                    )}
-                    <div>
-                      <div className="valorant-store-item-title">
-                        {o.displayName || o.itemId || t("valorantHub.storeOffer")}
-                      </div>
-                      <div className="valorant-store-item-meta">
-                        {o.cost != null
-                          ? t("valorantHub.storePrice", {
-                              amount: o.cost,
-                              currency: (o.currency || "vp").toUpperCase(),
-                            })
-                          : "—"}
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                {offers.slice(0, 4).map((o) => {
+                  const uuid = o.itemId || o.offerId;
+                  return (
+                    <li key={o.offerId || o.itemId}>
+                      <button
+                        type="button"
+                        className="valorant-store-item-btn"
+                        onClick={() => openSkin(uuid, o.displayName, o.displayIcon)}
+                      >
+                        {o.displayIcon ? (
+                          <img src={o.displayIcon} alt="" className="valorant-store-thumb" />
+                        ) : (
+                          <span className="valorant-store-thumb placeholder" />
+                        )}
+                        <div>
+                          <div className="valorant-store-item-title">
+                            {o.displayName || o.itemId || t("valorantHub.storeOffer")}
+                          </div>
+                          <div className="valorant-store-item-meta">
+                            {o.cost != null
+                              ? t("valorantHub.storePrice", {
+                                  amount: o.cost,
+                                  currency: (o.currency || "vp").toUpperCase(),
+                                })
+                              : "—"}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="valorant-party-sub muted">{t("valorantHub.storeOffersEmpty")}</p>
@@ -171,6 +188,25 @@ export default function CompanionStorePanel({ linked, identity }) {
                       <div className="valorant-store-item-meta">
                         {t("valorantHub.storeBundleItems", { count: b.items?.length || 0 })}
                       </div>
+                      {b.items?.length ? (
+                        <div className="valorant-store-bundle-items">
+                          {b.items.slice(0, 4).map((it) => (
+                            <button
+                              key={it.itemId || it.displayName}
+                              type="button"
+                              className="valorant-store-bundle-chip"
+                              onClick={() => openSkin(it.itemId, it.displayName, it.displayIcon)}
+                              disabled={!it.itemId}
+                            >
+                              {it.displayIcon ? (
+                                <img src={it.displayIcon} alt="" />
+                              ) : (
+                                <span className="valorant-store-thumb placeholder tiny" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   </li>
                 ))}
@@ -184,20 +220,38 @@ export default function CompanionStorePanel({ linked, identity }) {
             <h5>{t("valorantHub.storeOwnedSkins", { count: skinCount || skins?.length || 0 })}</h5>
             {skins?.length ? (
               <ul className="valorant-store-skins">
-                {skins.slice(0, 8).map((s) => (
-                  <li key={s.itemId || s.instanceId} title={s.displayName || s.itemId}>
-                    {s.displayIcon ? (
-                      <img src={s.displayIcon} alt={s.displayName || ""} />
-                    ) : (
-                      <span className="valorant-store-thumb placeholder tiny" />
-                    )}
-                  </li>
-                ))}
+                {skins.slice(0, 12).map((s) => {
+                  const uuid = s.itemId || s.instanceId;
+                  return (
+                    <li key={uuid || s.displayName} title={s.displayName || s.itemId}>
+                      <button
+                        type="button"
+                        className="valorant-store-skin-btn"
+                        onClick={() => openSkin(uuid, s.displayName, s.displayIcon)}
+                      >
+                        {s.displayIcon ? (
+                          <img src={s.displayIcon} alt={s.displayName || ""} />
+                        ) : (
+                          <span className="valorant-store-thumb placeholder tiny" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="valorant-party-sub muted">{t("valorantHub.storeSkinsEmpty")}</p>
             )}
           </div>
+
+          {selected ? (
+            <CompanionSkinDetail
+              skinUuid={selected.uuid}
+              fallbackName={selected.name}
+              fallbackIcon={selected.icon}
+              onClose={() => setSelected(null)}
+            />
+          ) : null}
 
           <p className="valorant-auth-footnote muted">{t("valorantHub.storeFootnote")}</p>
         </>
