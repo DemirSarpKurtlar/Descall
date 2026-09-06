@@ -135,9 +135,14 @@ const missionsHook = readFileSync(join(root, "../../hooks/useValorantMissions.js
 assert(missionsHook.includes("getValorantMissions"), "useValorantMissions loads missions");
 assert(missionsHook.includes("activate"), "hook exposes activate");
 
-assert(auth.includes("CompanionMissionsPanel"), "auth panel mounts CompanionMissionsPanel (Adım 5 stub)");
+assert(auth.includes("CompanionMissionsPanel"), "auth panel mounts CompanionMissionsPanel (Adım 5)");
 assert(en.includes("missionsTitle"), "EN missions strings");
 assert(tr.includes("missionsTitle"), "TR missions strings");
 assert(css.includes(".valorant-missions"), "missions panel styles exist");
+assert(css.includes(".valorant-missions-bp"), "missions BP card styles");
+const missionsUi = readFileSync(join(root, "CompanionMissionsPanel.jsx"), "utf8");
+assert(missionsUi.includes("useValorantMissions"), "missions panel keeps hook");
+assert(missionsUi.includes("activate("), "missions panel can activate contracts");
+assert(!missionsUi.includes("missionsStubNote"), "stub note removed");
 
 console.log("ValorantHub.selftest.mjs: ok");
