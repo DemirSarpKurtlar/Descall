@@ -189,6 +189,16 @@ export const nested = {
     "missionsNeedLink": "Görevler ve battle pass için önce Riot hesabını bağla.",
     "storeNeedLink": "Cüzdan, store ve envanter için önce Riot hesabını bağla.",
     "loadoutNeedLink": "Loadout için önce Riot hesabını bağla.",
+    "skinDetailLead": "Fotoğraf ve varsa gerçek Riot seviye/chroma videoları.",
+    "skinDetailClose": "Skin detayını kapat",
+    "skinDetailLoading": "Skin medyası yükleniyor…",
+    "skinDetailError": "Skin medyası yüklenemedi.",
+    "skinDetailLevels": "Seviyeler",
+    "skinDetailChromas": "Chromalar",
+    "skinDetailLevel": "Seviye",
+    "skinDetailChroma": "Chroma",
+    "skinDetailHasVideo": "Riot videosu",
+    "skinDetailPhotoOnly": "Sadece fotoğraf",
     "loadoutEquipHint": "Skin/buddy/kart/unvan/spray değiştirmek için useValorantLoadout → equip() (PUT /api/valorant/loadout)."
   },
 

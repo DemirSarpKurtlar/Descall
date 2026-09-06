@@ -1297,3 +1297,159 @@
     font-size: 15px;
   }
 }
+
+/* ─── Adım 6: skin detail (real Riot streamedVideo) ─── */
+.valorant-skin-detail {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 70, 85, 0.22);
+}
+.valorant-skin-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.valorant-skin-detail-head h5 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--text-1, #dbdee1);
+}
+.valorant-skin-detail-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted, #949ba4);
+  margin-bottom: 8px;
+}
+.valorant-skin-detail-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+.valorant-skin-detail-photo {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+.valorant-skin-detail-video {
+  width: 100%;
+  max-height: 220px;
+  background: #000;
+  border-radius: 8px;
+}
+.valorant-store-thumb.placeholder.large {
+  width: 96px;
+  height: 64px;
+}
+.valorant-skin-detail-section {
+  margin-top: 10px;
+}
+.valorant-skin-detail-section h6 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted, #949ba4);
+}
+.valorant-skin-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.valorant-skin-media-chip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.valorant-skin-media-chip:hover,
+.valorant-skin-media-chip.is-active {
+  border-color: rgba(255, 70, 85, 0.45);
+  background: rgba(255, 70, 85, 0.1);
+}
+.valorant-skin-media-chip img {
+  width: 40px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.valorant-skin-media-chip img.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.valorant-skin-media-chip span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.valorant-skin-media-chip strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1, #dbdee1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.valorant-skin-media-chip em {
+  font-style: normal;
+  font-size: 11px;
+}
+.valorant-store-item-btn,
+.valorant-store-skin-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.valorant-store-skin-btn {
+  width: auto;
+  padding: 0;
+}
+.valorant-store-bundle-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.valorant-store-bundle-chip {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.valorant-store-bundle-chip img {
+  width: 36px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
+}
