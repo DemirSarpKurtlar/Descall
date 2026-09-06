@@ -30,7 +30,13 @@ export default function CompanionMissionsPanel({ linked, identity }) {
     puuid,
   });
 
-  if (!linked) return null;
+  if (!linked) {
+    return (
+      <div className="valorant-missions valorant-party-locked" data-adim="5">
+        <p>{t("valorantHub.missionsNeedLink")}</p>
+      </div>
+    );
+  }
 
   const openMissions = (missions || []).filter((m) => !m.complete);
   const doneMissions = (missions || []).filter((m) => m.complete);

@@ -2270,3 +2270,39 @@ html.kb-open .app-root.is-mobile[data-view="dimaai"] .dima-composer-hint {
     min-height: 128px;
   }
 }
+
+/* v2.9.44 — fill visual viewport; no pure-black void under DimaAI */
+.app-root.is-mobile[data-view="dimaai"],
+.app-root.is-mobile[data-view="dimaai"] .dima-workspace,
+.app-root.is-mobile[data-view="dimaai"] .dima-main {
+  background: var(--surface-0, #111214) !important;
+  min-height: 0;
+}
+
+.app-root.is-mobile[data-view="dimaai"] .dima-workspace {
+  height: var(--vv-height, 100dvh);
+  max-height: var(--vv-height, 100dvh);
+}
+
+
+/* Keep message list visible after send — scroll area must retain flex height */
+.app-root.is-mobile[data-view="dimaai"] .dima-main,
+.app-root[data-view="dimaai"] .dima-main {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  flex: 1 1 0 !important;
+}
+.app-root.is-mobile[data-view="dimaai"] .dima-scroll,
+.app-root[data-view="dimaai"] .dima-scroll {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+.app-root.is-mobile[data-view="dimaai"] .dima-thread,
+.app-root[data-view="dimaai"] .dima-thread {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-height: min-content;
+}

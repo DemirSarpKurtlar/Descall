@@ -71,6 +71,7 @@ import DesCoinGiftPopup from "./components/shop/DesCoinGiftPopup";
 import AdminBroadcastPopup from "./components/admin/AdminBroadcastPopup";
 import TitleBar from "./components/TitleBar";
 import UpdateNotes from "./components/UpdateNotes";
+import ElectronUpdateToast from "./components/ElectronUpdateToast";
 import MessageList from "./components/chat/MessageList";
 import MessageComposer from "./components/chat/MessageComposer";
 import CallOverlay from "./components/CallOverlay";
@@ -429,9 +430,7 @@ export default function App() {
   const [channelMessagesById, setChannelMessagesById] = useState({});
   const [ownedServerCount, setOwnedServerCount] = useState(0);
   const [maxOwnedServers, setMaxOwnedServers] = useState(10);
-  // Electron silent auto-update state: null | 'downloading' | 'installing'
-  const [updateState, setUpdateState] = useState(null);
-  const [updateVersion, setUpdateVersion] = useState(null);
+  // Electron update toast lives in <ElectronUpdateToast /> (charcoal, no focus steal).
   /** Sticky first-run flag for activation checklist (survives friends redirect). */
   const [justRegisteredBoot, setJustRegisteredBoot] = useState(false);
 
@@ -1063,22 +1062,6 @@ export default function App() {
       })
       .catch((error) => console.warn("[NativePush] Permission request failed:", error?.message || error));
     return () => { audioManager.destroy(); };
-  }, []);
-
-  // Electron silent auto-update banner
-  useEffect(() => {
-    if (!window.electronAPI?.onUpdateDownloading) return;
-    const unsubDownloading = window.electronAPI.onUpdateDownloading(({ version }) => {
-      setUpdateVersion(version);
-      setUpdateState('downloading');
-    });
-    const unsubInstalling = window.electronAPI.onUpdateInstalling
-      ? window.electronAPI.onUpdateInstalling(({ version }) => {
-          setUpdateVersion(version);
-          setUpdateState('installing');
-        })
-      : () => {};
-    return () => { unsubDownloading?.(); unsubInstalling?.(); };
   }, []);
 
   const handleRequestNotifPermission = async () => {
@@ -3832,22 +3815,7 @@ export default function App() {
     <TitleBar />
     <UpdateNotes />
     <div className="app-container">
-        {updateState && (
-          <div
-            className="electron-update-banner"
-            style={{
-            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
-            background: updateState === 'installing' ? '#23a55a' : '#5865f2',
-            color: '#fff', fontSize: '13px', fontWeight: 600,
-            textAlign: 'center', padding: '6px 16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          }}>
-            {updateState === 'installing'
-              ? `⚡ Descall ${updateVersion} yükleniyor, yeniden başlatılıyor…`
-              : `⬇️ Descall ${updateVersion} güncelleniyor, arka planda indiriliyor…`}
-          </div>
-        )}
+        <ElectronUpdateToast />
         {(me?.is_admin || me?.username === "admin") && adminOpen && (
           <AdminPanel socket={socketApi} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
         )}

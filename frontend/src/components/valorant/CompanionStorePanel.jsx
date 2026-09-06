@@ -29,7 +29,13 @@ export default function CompanionStorePanel({ linked, identity }) {
     puuid,
   });
 
-  if (!linked) return null;
+  if (!linked) {
+    return (
+      <div className="valorant-store valorant-party-locked" data-adim="6">
+        <p>{t("valorantHub.storeNeedLink")}</p>
+      </div>
+    );
+  }
 
   const hoursLeft =
     typeof offersRemainingSeconds === "number"

@@ -40,6 +40,14 @@ export default function CompanionAuthPanel() {
   const [status, setStatus] = useState(null);
   const [local, setLocal] = useState(null);
   const [me, setMe] = useState(null);
+  const [subtab, setSubtab] = useState("party");
+
+  const SUBTABS = [
+    { id: "party", labelKey: "valorantHub.partyTitle" },
+    { id: "friends", labelKey: "valorantHub.friendsTitle" },
+    { id: "missions", labelKey: "valorantHub.subtabMissions" },
+    { id: "loadout", labelKey: "valorantHub.loadoutTab" },
+  ];
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -241,8 +249,16 @@ export default function CompanionAuthPanel() {
   const electron = isElectronValorant();
   const rsoReady = Boolean(status?.rsoEnabled);
 
+  const identity = {
+    region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
+    puuid: display?.puuid || local?.session?.puuid || null,
+    riotId: display?.riotId || (display?.gameName && display?.tagLine
+      ? `${display.gameName}#${display.tagLine}`
+      : null),
+  };
+
   return (
-    <div className="valorant-companion">
+    <div className="valorant-companion" data-subtab={subtab}>
       <div className="valorant-companion-card valorant-auth-card">
         <div className="valorant-companion-icon" aria-hidden>
           <Link2 size={28} />
@@ -352,56 +368,71 @@ export default function CompanionAuthPanel() {
         <p className="valorant-companion-note">{t("valorantHub.tosNote")}</p>
       </div>
 
-      <CompanionPartyPanel
-        linked={connected}
-        identity={{
-          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
-          puuid: display?.puuid || local?.session?.puuid || null,
-          riotId: display?.riotId || (display?.gameName && display?.tagLine
-            ? `${display.gameName}#${display.tagLine}`
-            : null),
-        }}
-      />
-      <CompanionFriendsPanel
-        linked={connected}
-        identity={{
-          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
-          puuid: display?.puuid || local?.session?.puuid || null,
-          riotId: display?.riotId || (display?.gameName && display?.tagLine
-            ? `${display.gameName}#${display.tagLine}`
-            : null),
-        }}
-      />
-      <CompanionMissionsPanel
-        linked={connected}
-        identity={{
-          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
-          puuid: display?.puuid || local?.session?.puuid || null,
-          riotId: display?.riotId || (display?.gameName && display?.tagLine
-            ? `${display.gameName}#${display.tagLine}`
-            : null),
-        }}
-      />
-      <CompanionStorePanel
-        linked={connected}
-        identity={{
-          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
-          puuid: display?.puuid || local?.session?.puuid || null,
-          riotId: display?.riotId || (display?.gameName && display?.tagLine
-            ? `${display.gameName}#${display.tagLine}`
-            : null),
-        }}
-      />
-      <CompanionLoadoutPanel
-        linked={connected}
-        identity={{
-          region: display?.region || status?.valorant?.region || local?.session?.region || "eu",
-          puuid: display?.puuid || local?.session?.puuid || null,
-          riotId: display?.riotId || (display?.gameName && display?.tagLine
-            ? `${display.gameName}#${display.tagLine}`
-            : null),
-        }}
-      />
+      <div
+        className="valorant-companion-subtabs"
+        role="tablist"
+        aria-label={t("valorantHub.companion")}
+      >
+        {SUBTABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`companion-subtab-${tab.id}`}
+            aria-selected={subtab === tab.id}
+            aria-controls={`companion-subpanel-${tab.id}`}
+            className={`valorant-companion-subtab${subtab === tab.id ? " is-active" : ""}`}
+            onClick={() => setSubtab(tab.id)}
+          >
+            {t(tab.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      <div className="valorant-companion-subpanels">
+        <div
+          id="companion-subpanel-party"
+          role="tabpanel"
+          aria-labelledby="companion-subtab-party"
+          className={`valorant-companion-subpanel${subtab === "party" ? "" : " is-hidden"}`}
+          hidden={subtab !== "party"}
+          aria-hidden={subtab !== "party"}
+        >
+          <CompanionPartyPanel linked={connected} identity={identity} />
+        </div>
+        <div
+          id="companion-subpanel-friends"
+          role="tabpanel"
+          aria-labelledby="companion-subtab-friends"
+          className={`valorant-companion-subpanel${subtab === "friends" ? "" : " is-hidden"}`}
+          hidden={subtab !== "friends"}
+          aria-hidden={subtab !== "friends"}
+        >
+          <CompanionFriendsPanel linked={connected} identity={identity} />
+        </div>
+        <div
+          id="companion-subpanel-missions"
+          role="tabpanel"
+          aria-labelledby="companion-subtab-missions"
+          className={`valorant-companion-subpanel${subtab === "missions" ? "" : " is-hidden"}`}
+          hidden={subtab !== "missions"}
+          aria-hidden={subtab !== "missions"}
+        >
+          <CompanionMissionsPanel linked={connected} identity={identity} />
+        </div>
+        <div
+          id="companion-subpanel-loadout"
+          role="tabpanel"
+          aria-labelledby="companion-subtab-loadout"
+          className={`valorant-companion-subpanel${subtab === "loadout" ? "" : " is-hidden"}`}
+          hidden={subtab !== "loadout"}
+          aria-hidden={subtab !== "loadout"}
+        >
+          {/* Adım 6 — Dimaru wallet/store + loadout live under Loadout */}
+          <CompanionStorePanel linked={connected} identity={identity} />
+          <CompanionLoadoutPanel linked={connected} identity={identity} />
+        </div>
+      </div>
 
     </div>
   );

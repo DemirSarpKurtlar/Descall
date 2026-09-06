@@ -180,7 +180,34 @@ export const nested = {
     "loadoutEmpty": "Bu oturumda henüz loadout yok.",
     "loadoutSprays": "Spray'ler",
     "loadoutSpraysEmpty": "Kuşanılmış spray yok.",
+    "loadoutTab": "Loadout",
+    "subtabMissions": "Görevler",
+    "missionsNeedLink": "Görevler ve battle pass için önce Riot hesabını bağla.",
+    "storeNeedLink": "Cüzdan, store ve envanter için önce Riot hesabını bağla.",
+    "loadoutNeedLink": "Loadout için önce Riot hesabını bağla.",
     "loadoutEquipHint": "Skin/buddy/kart/unvan/spray değiştirmek için useValorantLoadout → equip() (PUT /api/valorant/loadout)."
+  },
+
+  "updateNotes": {
+    "stackedTitle": "Yenilikler ({count} güncelleme) — şimdi {version}",
+    "lead": "Son ziyaretinden beri kaçırdığın her şey burada.",
+    "gotIt": "Tamam",
+    "v2936": { "title": "Companion düzeni", "body": "Play önce Companion’ı açar; daha net tam genişlik düzen." },
+    "v2937": { "title": "Ayarlar cilası", "body": "Ayarlar arka plan bulanıklığı ve alt boşluk masaüstünde daha temiz." },
+    "v2938": { "title": "Ortalanmış pencereler", "body": "Arkadaş ekle, duyurular ve üye pencereleri ortada açılır." },
+    "v2939": { "title": "Electron modal düzeltmesi", "body": "Masaüstü modalları açıldıktan sonra zıplamaz." },
+    "v2940": { "title": "Mobil Play düzeltmesi", "body": "Telefonda Play ve DimaAI artık siyah boş sütun göstermez." },
+    "v2941": { "title": "Mobil alt dolgu", "body": "Play, LFG ve DimaAI mobilde ekranı kenardan kenara doldurur." },
+    "v2942": { "title": "Görev API", "body": "Companion görevleri, kontratları ve battle pass ilerlemesini yükleyebilir." },
+    "v2943": { "title": "Görev arayüzü", "body": "Görevler ve Battle Pass Companion’da net görünür." },
+    "v2944": { "title": "Companion sekmeleri ve Loadout", "body": "Companion’da Parti, Arkadaşlar, Görevler ve Loadout sekmeleri var. Cüzdan ve store Loadout altında. DimaAI mesaj gönderince sohbeti korur. Güncelleme bildirimleri daha net." }
+  },
+  "updateToast": {
+    "kicker": "Masaüstü güncelleme",
+    "downloading": "Descall {version} arka planda indiriliyor…",
+    "installing": "Descall {version} kuruluyor…",
+    "ready": "Descall {version} hazır; sessizce kurulacak.",
+    "percent": "%{percent}"
   },
   "dimaai": {
     "title": "DimaAI",

@@ -26,7 +26,13 @@ export default function CompanionLoadoutPanel({ linked, identity }) {
     puuid,
   });
 
-  if (!linked) return null;
+  if (!linked) {
+    return (
+      <div className="valorant-loadout valorant-party-locked" data-adim="6">
+        <p>{t("valorantHub.loadoutNeedLink")}</p>
+      </div>
+    );
+  }
 
   const guns = loadout?.guns || [];
   const identityRow = loadout?.identity || null;

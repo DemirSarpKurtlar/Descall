@@ -1115,3 +1115,73 @@
     grid-column: 1;
   }
 }
+
+
+/* ── Companion sticky subtabs (Party | Friends | Missions | Loadout) ── */
+.valorant-companion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.valorant-companion-subtabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--surface-1, #1e1f22);
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.valorant-companion-subtab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted, #949ba4);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.valorant-companion-subtab:hover {
+  color: var(--text-1, #dbdee1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.valorant-companion-subtab.is-active {
+  color: var(--text-0, #f2f3f5);
+  background: rgba(255, 70, 85, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 70, 85, 0.35);
+}
+
+.valorant-companion-subpanels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.valorant-companion-subpanel.is-hidden,
+.valorant-companion-subpanel[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .valorant-companion-subtab {
+    min-height: 40px;
+    font-size: 11px;
+    padding: 8px 6px;
+  }
+}
