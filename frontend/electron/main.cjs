@@ -1151,7 +1151,15 @@ ipcMain.handle('close-window', () => {
   if (mainWindow) mainWindow.close();
 });
 
-ipcMain.handle('is-window-focused', () => mainWindow ? mainWindow.isFocused() : false);
+ipcMain.handle('is-window-focused', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  // Frameless pencerelerde hide()/minimize() sonrası isFocused() güvenilmez şekilde
+  // true dönebiliyor (bilinen Electron davranışı). Görünürlük/minimize durumunu da
+  // kontrol etmeden bu sonuca güvenmek, arka planda veya minimize iken bildirimlerin
+  // "pencere zaten görünüyor" sanılıp atlanmasına yol açıyordu.
+  if (!mainWindow.isVisible() || mainWindow.isMinimized()) return false;
+  return mainWindow.isFocused();
+});
 
 ipcMain.handle('focus-window', () => {
   showMainWindow();
