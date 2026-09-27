@@ -7,6 +7,8 @@
  *  - Media Session "playing" (Chrome background exemption)
  *  - Silent AudioContext keepalive (keeps media pipeline warm)
  *  - Native Android CallKeepAlive foreground service (Capacitor APK)
+ *  - Native iOS CallKeepAlive AVAudioSession (keeps WebRTC alive in background;
+ *    not CallKit — incoming rings still use the existing push notification path)
  *
  * The native FGS is what actually keeps DM WebRTC alive when the Android
  * shell is backgrounded; the web mechanisms help browser/PWA and soften
@@ -172,9 +174,14 @@ export function pulseCallWakeLock() {
   }
 }
 
+function nativeCallPlatform() {
+  if (!Capacitor.isNativePlatform()) return "";
+  const platform = Capacitor.getPlatform();
+  return platform === "android" || platform === "ios" ? platform : "";
+}
+
 async function startNativeCallKeepAlive({ title, artist } = {}) {
-  if (!Capacitor.isNativePlatform()) return;
-  if (Capacitor.getPlatform() !== "android") return;
+  if (!nativeCallPlatform()) return;
   try {
     await CallKeepAlive.start({
       title: title || "Descall",
@@ -190,7 +197,7 @@ async function startNativeCallKeepAlive({ title, artist } = {}) {
 async function stopNativeCallKeepAlive() {
   if (!nativeKeepAliveActive && !Capacitor.isNativePlatform()) return;
   try {
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
+    if (nativeCallPlatform()) {
       await CallKeepAlive.stop();
     }
   } catch (err) {
