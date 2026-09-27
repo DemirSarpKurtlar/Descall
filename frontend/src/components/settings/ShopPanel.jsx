@@ -367,8 +367,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     return null;
   };
 
-  const catalog = (
-    <>
+  const lead = (
+    <div className="shop-lead">
       <div className="shop-panel-header-row">
         <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
           <Coins size={16} />
@@ -424,7 +424,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       </div>
 
       {notice && <p className="us-inline-notice" style={{ margin: "-6px 0 4px" }}>{notice}</p>}
+    </div>
+  );
 
+  const catalog = (
+    <>
       {catalogError && items.length > 0 && (
         <div className="shop-load-error is-inline">
           <p>{catalogError}</p>
@@ -528,6 +532,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   return (
     <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
       <div className="shop-workspace">
+        {lead}
         {!loading && availableTabs.length > 0 && (
           <nav className="shop-category-tabs" aria-label={t("Shop categories")}>
             {availableTabs.map((tab) => {
