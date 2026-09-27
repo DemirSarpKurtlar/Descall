@@ -1922,8 +1922,9 @@ router.get("/credits/history", async (req, res) => {
 router.post("/credits/update", async (req, res) => {
   try {
     const { userId, amount, operation, reason } = req.body;
+    const numericAmount = typeof amount === "number" ? amount : Number(amount);
 
-    if (!userId || typeof amount !== "number" || amount <= 0) {
+    if (!userId || !Number.isFinite(numericAmount) || numericAmount <= 0) {
       return res.status(400).json({ error: "Invalid userId or amount." });
     }
 
@@ -1931,30 +1932,33 @@ router.post("/credits/update", async (req, res) => {
       return res.status(400).json({ error: "Operation must be 'add' or 'remove'." });
     }
 
+    const delta = Math.floor(numericAmount);
+
     // Get current credits
     const { data: current, error: fetchError } = await supabase
       .from("user_credits")
       .select("credits, total_won, total_lost")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
-    if (fetchError && fetchError.code !== "PGRST116") {
-      throw fetchError;
-    }
+    if (fetchError) throw fetchError;
 
     const currentCredits = current?.credits || 0;
-    const newCredits = operation === "add" 
-      ? currentCredits + amount 
-      : Math.max(0, currentCredits - amount);
+    const newCredits = operation === "add"
+      ? currentCredits + delta
+      : Math.max(0, currentCredits - delta);
 
-    // Update credits
-    const { error: updateError } = await supabase
+    // user_id is UNIQUE, not the primary key. Upsert must target that
+    // constraint or an existing wallet is inserted again and rejected.
+    const { data: updated, error: updateError } = await supabase
       .from("user_credits")
       .upsert({
         user_id: userId,
         credits: newCredits,
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: "user_id" })
+      .select("user_id, credits")
+      .single();
 
     if (updateError) throw updateError;
 
@@ -1971,13 +1975,13 @@ router.post("/credits/update", async (req, res) => {
       success: true, 
       userId, 
       previousBalance: currentCredits, 
-      newBalance: newCredits,
+      newBalance: updated?.credits ?? newCredits,
       operation,
-      amount
+      amount: delta
     });
   } catch (error) {
     console.error("[Admin] Error updating credits:", error);
-    res.status(500).json({ error: "Failed to update credits." });
+    res.status(500).json({ error: error?.message || "Failed to update credits." });
   }
 });
 

@@ -523,12 +523,10 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
 
   // Credit management functions
   const updateUserCredits = async (userId, amount, operation, reason) => {
+    setErrorMessage("");
+    const numericAmount = parseInt(amount, 10);
+    if (isNaN(numericAmount) || numericAmount <= 0) return;
     try {
-      // Ensure amount is a number
-      const numericAmount = parseInt(amount, 10);
-      if (isNaN(numericAmount) || numericAmount <= 0) {
-        throw new Error("Invalid amount");
-      }
       const res = await adminFetch("/credits/update", {
         method: "POST",
         body: JSON.stringify({ userId, amount: numericAmount, operation, reason })
@@ -538,12 +536,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
           ? t("Credits added to user successfully")
           : t("Credits removed from user successfully")
       );
-      await loadCasinoData(); // Refresh data
+      await loadCasinoData();
       return res;
     } catch (e) {
       console.error("[Admin] Credit update error:", e);
       setErrorMessage(t("Failed to update credits: {message}", { message: e.message }));
-      throw e;
     }
   };
 

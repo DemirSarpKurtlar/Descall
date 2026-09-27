@@ -2079,7 +2079,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}

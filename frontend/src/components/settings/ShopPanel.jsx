@@ -1,6 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Coins, Flame, Phone, Play, ShoppingBag, Sparkles, Volume2, Zap } from "lucide-react";
+import {
+  Award,
+  CheckCircle2,
+  CircleDot,
+  Coins,
+  Ellipsis,
+  Flame,
+  Image,
+  MessageSquare,
+  Palette,
+  Phone,
+  Play,
+  Sparkles,
+  Sun,
+  Tag,
+  Type,
+  Volume2,
+  Wallpaper,
+  Zap,
+} from "lucide-react";
 import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 import RippleButton from "../ui/RippleButton";
 import {
@@ -16,24 +35,25 @@ import { preloadSoundPack } from "../../lib/soundPackSynth";
 import { useT } from "../../context/LocaleContext";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
+import ShopProfilePreview from "./ShopProfilePreview";
 
 /** Short tab labels — same pattern as admin top nav. */
 const CATEGORY_TABS = [
-  { id: "banner", label: "Banners" },
-  { id: "avatar_frame", label: "Frames" },
-  { id: "profile_background", label: "Backgrounds" },
-  { id: "theme", label: "Themes" },
-  { id: "profile_badge", label: "Badges" },
-  { id: "profile_title", label: "Titles" },
-  { id: "name_effect", label: "Name Effects" },
-  { id: "avatar_effect", label: "Avatar Effects" },
-  { id: "chat_bubble", label: "Bubbles" },
-  { id: "presence_flare", label: "Presence" },
-  { id: "profile_aura", label: "Auras" },
-  { id: "sound_pack", label: "Sounds" },
-  { id: "typing_flare", label: "Typing" },
-  { id: "reaction_burst", label: "Reactions" },
-  { id: "call_overlay", label: "Call Overlays" },
+  { id: "banner", label: "Banners", icon: Image },
+  { id: "avatar_frame", label: "Frames", icon: CircleDot },
+  { id: "profile_background", label: "Backgrounds", icon: Wallpaper },
+  { id: "theme", label: "Themes", icon: Palette },
+  { id: "profile_badge", label: "Badges", icon: Award },
+  { id: "profile_title", label: "Titles", icon: Tag },
+  { id: "name_effect", label: "Name Effects", icon: Type },
+  { id: "avatar_effect", label: "Avatar Effects", icon: Sparkles },
+  { id: "chat_bubble", label: "Bubbles", icon: MessageSquare },
+  { id: "presence_flare", label: "Presence", icon: CircleDot },
+  { id: "profile_aura", label: "Auras", icon: Sun },
+  { id: "sound_pack", label: "Sounds", icon: Volume2 },
+  { id: "typing_flare", label: "Typing", icon: Ellipsis },
+  { id: "reaction_burst", label: "Reactions", icon: Flame },
+  { id: "call_overlay", label: "Call Overlays", icon: Phone },
 ];
 
 const CATEGORY_HEADING = {
@@ -163,6 +183,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyItemId, setBusyItemId] = useState(null);
+  const [busyAction, setBusyAction] = useState(null);
   const [celebrateItemId, setCelebrateItemId] = useState(null);
   const [notice, setNotice] = useState("");
   const [activeCategory, setActiveCategory] = useState(null);
@@ -261,11 +282,12 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   const handleBuy = async (item) => {
     setBusyItemId(item.id);
+    setBusyAction("buy");
     setNotice("");
     try {
       await preserveShopScroll(async () => {
-        await purchaseShopItem(item.id);
-        // Optimistic own so the card flips to Equip without a loading flash.
+        const result = await purchaseShopItem(item.id);
+        if (result?.balance != null) onBalanceChange?.(result.balance);
         setInventory((prev) =>
           prev.some((row) => row.itemId === item.id)
             ? prev
@@ -276,17 +298,18 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           setCelebrateItemId((id) => (id === item.id ? null : id));
         }, 1200);
         await load({ silent: true });
-        await onEquippedChange?.(null, null);
       });
     } catch (err) {
       setNotice(err.message || t("Purchase failed. Please try again."));
     } finally {
       setBusyItemId(null);
+      setBusyAction(null);
     }
   };
 
   const handleEquip = async (item, isEquipped) => {
     setBusyItemId(item.id);
+    setBusyAction("equip");
     try {
       await preserveShopScroll(async () => {
         await equipShopItem(item.category, isEquipped ? null : item.id);
@@ -296,6 +319,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       setNotice(err.message || t("Could not update equipped item."));
     } finally {
       setBusyItemId(null);
+      setBusyAction(null);
     }
   };
 
@@ -318,13 +342,9 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     return null;
   };
 
-  return (
-    <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
+  const catalog = (
+    <>
       <div className="shop-panel-header-row">
-        <h3>
-          <ShoppingBag size={18} style={{ verticalAlign: "-3px", marginRight: 6 }} />
-          {t("Shop")}
-        </h3>
         <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
           <Coins size={16} />
           <span>{balance.toLocaleString()}</span>
@@ -385,90 +405,105 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       ) : items.length === 0 ? (
         <p className="shop-empty-state">{t("No items available yet — check back soon!")}</p>
       ) : (
-        <>
-          <nav className="shop-category-tabs" aria-label={t("Shop categories")}>
-            {availableTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`shop-category-tab ${activeCategory === tab.id ? "active" : ""}`}
-                onClick={() => setActiveCategory(tab.id)}
-              >
-                {t(tab.label)}
-                <span className="shop-category-tab-count">{countsByCategory.get(tab.id) || 0}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="shop-category-block">
-            <h4>{t(CATEGORY_HEADING[activeCategory] || activeCategory)}</h4>
-            <div className="shop-grid">
-              {visibleItems.map((item) => {
-                const category = item.category;
-                const owned = ownedItemIds.has(item.id);
-                const isEquipped = equippedIdFor(category) === item.id;
-                const busy = busyItemId === item.id;
-                const affordable = balance >= (item.price_descoin || 0);
-                return (
+        <div className="shop-category-block">
+          <h4>{t(CATEGORY_HEADING[activeCategory] || activeCategory)}</h4>
+          <div className="shop-grid">
+            {visibleItems.map((item) => {
+              const category = item.category;
+              const owned = ownedItemIds.has(item.id);
+              const isEquipped = equippedIdFor(category) === item.id;
+              const buying = busyItemId === item.id && busyAction === "buy";
+              const equipping = busyItemId === item.id && busyAction === "equip";
+              const affordable = balance >= (item.price_descoin || 0);
+              return (
+                <div
+                  className={`shop-item-card${celebrateItemId === item.id ? " is-celebrating" : ""}`}
+                  data-category={category}
+                  key={item.id}
+                >
+                  {celebrateItemId === item.id && (
+                    <div className="shop-celebrate-banner">{t("Purchased — equip it anytime")}</div>
+                  )}
                   <div
-                    className={`shop-item-card${celebrateItemId === item.id ? " is-celebrating" : ""}`}
-                    data-category={category}
-                    key={item.id}
+                    className="shop-item-preview"
+                    data-theme-preview={category === "theme" ? item.theme_key : undefined}
                   >
-                    {celebrateItemId === item.id && (
-                      <div className="shop-celebrate-banner">{t("Purchased — equip it anytime")}</div>
-                    )}
-                    <div
-                      className="shop-item-preview"
-                      data-theme-preview={category === "theme" ? item.theme_key : undefined}
-                    >
-                      <ShopItemPreview category={category} item={item} t={t} />
+                    <ShopItemPreview category={category} item={item} t={t} />
+                  </div>
+                  <div className="shop-item-body">
+                    <div className="shop-item-name-row">
+                      <span className="shop-item-name">{item.name}</span>
+                      {item.rarity && (
+                        <span className={`shop-rarity-badge shop-rarity-${item.rarity}`}>{item.rarity}</span>
+                      )}
                     </div>
-                    <div className="shop-item-body">
-                      <div className="shop-item-name-row">
-                        <span className="shop-item-name">{item.name}</span>
-                        {item.rarity && (
-                          <span className={`shop-rarity-badge shop-rarity-${item.rarity}`}>{item.rarity}</span>
-                        )}
-                      </div>
-                      {item.description && <p className="shop-item-desc">{item.description}</p>}
-                      <div className="shop-item-footer">
-                        {owned ? (
-                          <span className="shop-item-owned-pill">
-                            <CheckCircle2 size={13} /> {t("Owned")}
-                          </span>
-                        ) : (
-                          <span className="shop-item-price">
-                            <Coins size={13} /> {(item.price_descoin || 0).toLocaleString()}
-                          </span>
-                        )}
-                        {owned ? (
-                          <RippleButton
-                            className={isEquipped ? "btn-secondary sm" : "btn-primary sm"}
-                            onClick={() => handleEquip(item, isEquipped)}
-                            disabled={busy}
-                          >
-                            {busy ? t("Applying…") : isEquipped ? t("Unequip") : t("Equip")}
-                          </RippleButton>
-                        ) : (
-                          <RippleButton
-                            className="btn-primary sm"
-                            onClick={() => handleBuy(item)}
-                            disabled={busy || !affordable}
-                            title={!affordable ? t("Not enough DesCoin yet") : undefined}
-                          >
-                            {busy ? t("Buying…") : affordable ? t("Buy") : t("Not enough DesCoin")}
-                          </RippleButton>
-                        )}
-                      </div>
+                    {item.description && <p className="shop-item-desc">{item.description}</p>}
+                    <div className="shop-item-footer">
+                      {owned && !buying ? (
+                        <span className="shop-item-owned-pill">
+                          <CheckCircle2 size={13} /> {t("Owned")}
+                        </span>
+                      ) : (
+                        <span className="shop-item-price">
+                          <Coins size={13} /> {(item.price_descoin || 0).toLocaleString()}
+                        </span>
+                      )}
+                      {owned && !buying ? (
+                        <RippleButton
+                          className={isEquipped ? "btn-secondary sm" : "btn-primary sm"}
+                          onClick={() => handleEquip(item, isEquipped)}
+                          disabled={equipping}
+                        >
+                          {equipping ? t("Applying…") : isEquipped ? t("Unequip") : t("Apply")}
+                        </RippleButton>
+                      ) : (
+                        <RippleButton
+                          className="btn-primary sm"
+                          onClick={() => handleBuy(item)}
+                          disabled={buying || !affordable}
+                          title={!affordable ? t("Not enough DesCoin yet") : undefined}
+                        >
+                          {buying ? t("Buying…") : affordable ? t("Buy") : t("Not enough DesCoin")}
+                        </RippleButton>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        </>
+        </div>
       )}
+    </>
+  );
+
+  return (
+    <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
+      <div className="shop-workspace">
+        {!loading && availableTabs.length > 0 && (
+          <nav className="shop-category-tabs" aria-label={t("Shop categories")}>
+            {availableTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`shop-category-tab ${activeCategory === tab.id ? "active" : ""}`}
+                  onClick={() => setActiveCategory(tab.id)}
+                >
+                  <span className="shop-category-tab-label">
+                    {Icon ? <Icon size={14} /> : null}
+                    {t(tab.label)}
+                  </span>
+                  <span className="shop-category-tab-count">{countsByCategory.get(tab.id) || 0}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
+        <div className="shop-catalog">{catalog}</div>
+        <ShopProfilePreview me={me} t={t} />
+      </div>
     </motion.div>
   );
 }
