@@ -294,11 +294,6 @@ export default function ServerSidebar({
             {activeView === "calls" && t("Calls")}
           </h2>
           <div className="sidebar-actions">
-            {onMobileClose && (
-              <button type="button" className="icon-btn mobile-sidebar-close" onClick={onMobileClose} title={t("Close")}>
-                <X size={18} />
-              </button>
-            )}
             <button
               className="icon-btn"
               title={t("Refresh")}
