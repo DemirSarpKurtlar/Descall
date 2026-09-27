@@ -136,6 +136,15 @@ async function run() {
     assert(r.body.items.length === 2, "only active items listed: " + JSON.stringify(r.body.items));
     assert(r.body.items.some((i) => i.sku === "banner-aurora"), "active banner listed");
     assert(r.body.items.some((i) => i.sku === "theme-midnight"), "active theme listed");
+    const listedBanner = r.body.items.find((i) => i.sku === "banner-aurora");
+    assert(listedBanner.asset_url == null && listedBanner.preview_url == null, "catalog list omits image payloads");
+
+    r = await req(base, "GET", "/api/shop/catalog?category=banner&assets=1", { token: bobToken });
+    assert(r.status === 200 && r.body.items.length === 1, "banner asset query: " + JSON.stringify(r.body));
+    assert(
+      r.body.items[0].asset_url === "https://cdn.example.com/aurora.png",
+      "banner category includes its image: " + JSON.stringify(r.body.items[0])
+    );
 
     // Bob's inventory starts empty
     r = await req(base, "GET", "/api/shop/inventory", { token: bobToken });

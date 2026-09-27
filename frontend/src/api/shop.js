@@ -1,6 +1,12 @@
 import { authedRequest } from "./authedHttp";
 
-export const getShopCatalog = () => authedRequest("/api/shop/catalog");
+export const getShopCatalog = ({ category, assets } = {}) => {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (assets) params.set("assets", "1");
+  const query = params.toString();
+  return authedRequest(`/api/shop/catalog${query ? `?${query}` : ""}`);
+};
 export const getShopInventory = () => authedRequest("/api/shop/inventory");
 export const getDesCoinWallet = () => authedRequest("/api/shop/wallet");
 export const getDesCoinLedger = (limit = 50) => authedRequest(`/api/shop/ledger?limit=${limit}`);

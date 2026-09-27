@@ -106,56 +106,56 @@ export default function ShopProfilePreview({ me, t }) {
             </div>
           ) : null}
           {me?.valorant?.linked ? <ValorantBadge valorant={me.valorant} compact /> : null}
-          {(bubble || typing) && (
-            <div className="shop-live-chat">
+          {(bubble || typing || reaction || callOverlay || sound) && (
+            <div className="shop-live-extras">
               {bubble ? (
                 <div className={`cosmetic-chat-bubble bubble-${bubble.effect_key} shop-live-bubble`}>
                   {t("Hey there!")}
                 </div>
               ) : null}
-              {typing ? (
-                <div className={`shop-typing-flare-preview cosmetic-typing-flare typing-${typing.effect_key}`}>
-                  <span className="typing-dot" />
-                  <span className="typing-dot" />
-                  <span className="typing-dot" />
+              {(typing || reaction || callOverlay || sound) && (
+                <div className="shop-live-chips">
+                  {typing ? (
+                    <div className={`shop-typing-flare-preview cosmetic-typing-flare typing-${typing.effect_key}`}>
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                    </div>
+                  ) : null}
+                  {reaction ? (
+                    <div className={`shop-reaction-burst-preview cosmetic-reaction-burst burst-${reaction.effect_key}`}>
+                      <Flame size={14} />
+                      <Zap size={12} />
+                    </div>
+                  ) : null}
+                  {callOverlay ? (
+                    <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${callOverlay.effect_key}`}>
+                      <Phone size={14} />
+                    </div>
+                  ) : null}
+                  {sound ? (
+                    <button
+                      type="button"
+                      className="shop-sound-pack-preview shop-live-sound"
+                      title={t("Preview sound")}
+                      onMouseEnter={() => {
+                        if (sound.effect_key) preloadSoundPack(sound.effect_key);
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        previewSoundPack(sound.effect_key);
+                      }}
+                    >
+                      <Volume2 size={14} />
+                      <span>{sound.name}</span>
+                      <span className="shop-sound-pack-play">
+                        <Play size={10} fill="currentColor" />
+                        {t("Preview")}
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          )}
-          {(reaction || callOverlay || sound) && (
-            <div className="shop-live-effects">
-              {reaction ? (
-                <div className={`shop-reaction-burst-preview cosmetic-reaction-burst burst-${reaction.effect_key}`}>
-                  <Flame size={16} />
-                  <Zap size={12} />
-                </div>
-              ) : null}
-              {callOverlay ? (
-                <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${callOverlay.effect_key}`}>
-                  <Phone size={16} />
-                </div>
-              ) : null}
-              {sound ? (
-                <button
-                  type="button"
-                  className="shop-sound-pack-preview shop-live-sound"
-                  title={t("Preview sound")}
-                  onMouseEnter={() => {
-                    if (sound.effect_key) preloadSoundPack(sound.effect_key);
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    previewSoundPack(sound.effect_key);
-                  }}
-                >
-                  <Volume2 size={16} />
-                  <span>{sound.name}</span>
-                  <span className="shop-sound-pack-play">
-                    <Play size={11} fill="currentColor" />
-                    {t("Preview")}
-                  </span>
-                </button>
-              ) : null}
+              )}
             </div>
           )}
         </div>
