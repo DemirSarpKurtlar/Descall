@@ -57,6 +57,7 @@ export function useServerVoice(socket) {
   const remoteAudioRefs = useRef(new Map());
   const remoteStreamMapRef = useRef(new Map()); // userId -> MediaStream
   const activeChannelIdRef = useRef(null);
+  const voiceJoinEpochRef = useRef(0);
   const activeServerIdRef = useRef(null);
   const lastVoiceChannelIdRef = useRef(null);
   const socketRef = useRef(socket);
@@ -343,8 +344,8 @@ export function useServerVoice(socket) {
     if (!channelId || !sock) return;
     try {
       sock.emit("server:voice:leave", { channelId });
-    } catch {
-      /* hangup must never block */
+    } catch (err) {
+      console.warn("[ServerVoice] leave emit failed:", err?.message || err);
     }
   }, []);
 
@@ -580,6 +581,7 @@ export function useServerVoice(socket) {
   );
 
   const leave = useCallback(() => {
+    voiceJoinEpochRef.current += 1;
     if (isScreenSharing) {
       stopScreenShareRef.current?.();
     }
@@ -591,6 +593,8 @@ export function useServerVoice(socket) {
       if (!socket?.connected || !channel?.id || !serverId) return;
       if (activeChannelIdRef.current === channel.id) return;
       if (activeChannelIdRef.current) leave();
+      const epoch = ++voiceJoinEpochRef.current;
+      const stillJoining = () => voiceJoinEpochRef.current === epoch;
 
       setConnecting(true);
       setError("");
@@ -600,6 +604,10 @@ export function useServerVoice(socket) {
         const stream = isStage
           ? new MediaStream()
           : await acquireVoiceMicStream({ video: false });
+        if (!stillJoining()) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
         localStreamRef.current = stream;
         setLocalStream(stream);
         stream.getAudioTracks().forEach((t) => {
@@ -628,6 +636,7 @@ export function useServerVoice(socket) {
         // Prefer LiveKit SFU whenever media-config reports it. Retry once on
         // transient token/connect failures before optionally falling back to mesh.
         const mediaConfig = await getMediaConfig();
+        if (!stillJoining()) return;
         if (mediaConfig?.sfu || mediaConfig?.preferSfu) {
           let sfuConnected = false;
           let lastSfuErr = null;
@@ -636,8 +645,10 @@ export function useServerVoice(socket) {
               if (attempt > 0) {
                 liveKitConfigRef.current = null;
                 await new Promise((r) => setTimeout(r, 350));
+                if (!stillJoining()) return;
               }
               const tokenData = await getLiveKitToken(channel.id);
+              if (!stillJoining()) return;
               if (!tokenData?.enabled) {
                 lastSfuErr = new Error(tokenData?.error || "LiveKit token unavailable");
                 continue;
@@ -658,6 +669,7 @@ export function useServerVoice(socket) {
               }
               setCanRequestToSpeak(Boolean(tokenData.canRequestToSpeak));
               await connectLiveKitRoom(channel.id, tokenData, stream);
+              if (!stillJoining()) return;
               sfuConnected = true;
             } catch (sfuErr) {
               lastSfuErr = sfuErr;
@@ -672,6 +684,7 @@ export function useServerVoice(socket) {
           }
         }
       } catch (err) {
+        if (!stillJoining()) return;
         cleanupAll();
         const msg = isVoiceMicError(err)
           ? voiceMicErrorCopy(err)
@@ -679,7 +692,7 @@ export function useServerVoice(socket) {
         setError(msg);
         if (isVoiceMicError(err)) toast(tRuntime(msg), "error");
       } finally {
-        setConnecting(false);
+        if (stillJoining()) setConnecting(false);
       }
     },
     [cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, socket, toast]

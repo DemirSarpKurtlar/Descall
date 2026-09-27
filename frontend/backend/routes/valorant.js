@@ -14,8 +14,10 @@ const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { publicRiotCard, rsoEnabled, henrikConfigured, parseRiotId } = require("../lib/riotLink");
 const { buildMePayload } = require("../lib/valorantSession");
+const { requirePublicFeature } = require("../middleware/requirePublicFeature");
 
 const router = express.Router();
+router.use(requirePublicFeature("valorantCompanion"));
 
 const VALID_REGIONS = new Set(["eu", "na", "ap", "kr", "latam", "br"]);
 

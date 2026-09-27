@@ -1617,6 +1617,72 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
           <section className="admin-section">
             {system && (
               <div className="admin-form">
+                <div className="security-card">
+                  <h3>{t("admin.system")}</h3>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={system.config?.featureFlags?.valorantLfg !== false}
+                      onChange={(e) =>
+                        act(async () => {
+                          await adminFetch("/system", {
+                            method: "PATCH",
+                            body: JSON.stringify({
+                              featureFlags: {
+                                ...(system.config?.featureFlags || {}),
+                                valorantLfg: e.target.checked,
+                              },
+                            }),
+                          });
+                          await loadSystem();
+                        })
+                      }
+                    />
+                    {t("Valorant")} {t("valorantHub.lfg")}
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={system.config?.featureFlags?.valorantCompanion !== false}
+                      onChange={(e) =>
+                        act(async () => {
+                          await adminFetch("/system", {
+                            method: "PATCH",
+                            body: JSON.stringify({
+                              featureFlags: {
+                                ...(system.config?.featureFlags || {}),
+                                valorantCompanion: e.target.checked,
+                              },
+                            }),
+                          });
+                          await loadSystem();
+                        })
+                      }
+                    />
+                    {t("Valorant")} {t("valorantHub.companion")}
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={system.config?.featureFlags?.dimaai !== false}
+                      onChange={(e) =>
+                        act(async () => {
+                          await adminFetch("/system", {
+                            method: "PATCH",
+                            body: JSON.stringify({
+                              featureFlags: {
+                                ...(system.config?.featureFlags || {}),
+                                dimaai: e.target.checked,
+                              },
+                            }),
+                          });
+                          await loadSystem();
+                        })
+                      }
+                    />
+                    {t("nav.dimaai")}
+                  </label>
+                </div>
                 <label>
                   {t("Max message length")}
                   <input

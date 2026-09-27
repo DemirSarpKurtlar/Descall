@@ -11,8 +11,10 @@ const {
   isValidRank,
   publicLobby,
 } = require("../lib/lfgConstants");
+const { requirePublicFeature } = require("../middleware/requirePublicFeature");
 
 const router = express.Router();
+router.use(requirePublicFeature("valorantLfg"));
 const LOBBY_TTL_MINUTES = 45;
 const MAX_PARTY = 5;
 

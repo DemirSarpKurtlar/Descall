@@ -6,13 +6,27 @@ const config: CapacitorConfig = {
   webDir: "dist",
   bundledWebRuntime: false,
   server: {
-    // WebRTC media APIs require a secure context. Capacitor maps this to its
-    // trusted local origin instead of exposing a clear-text web view.
+    // WebRTC media APIs require a secure context.
+    // Android uses https. iOS cannot register http/https as iosScheme
+    // (WKWebView already handles those); capacitor://localhost is the
+    // secure context getUserMedia uses there.
     androidScheme: "https",
+    hostname: "localhost",
   },
   android: {
     allowMixedContent: false,
     captureInput: true,
+  },
+  ios: {
+    // Existing CSS already pads with env(safe-area-inset-*).
+    contentInset: "never",
+    backgroundColor: "#0b0c10",
+    scheme: "Descall",
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert", "banner", "list"],
+    },
   },
 };
 

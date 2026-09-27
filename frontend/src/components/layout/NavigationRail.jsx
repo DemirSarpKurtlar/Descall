@@ -15,6 +15,7 @@ import {
   NAV_ICON_SIZE,
   NAV_ICON_STROKE,
 } from "./navConfig";
+import { filterMainNavItems, usePublicFeatures } from "../../lib/publicFeatures";
 
 const STATUS_OPTIONS = ["online", "idle", "dnd", "invisible"];
 const STATUS_EMOJIS = ["💬", "😀", "🎮", "🎵", "💼", "📚", "☕", "🌙"];
@@ -150,6 +151,7 @@ export default function NavigationRail({
   onProfileUpdated,
 }) {
   const t = useT();
+  const publicFeatures = usePublicFeatures();
   const [statusOpen, setStatusOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [statusEmoji, setStatusEmoji] = useState("💬");
@@ -159,7 +161,10 @@ export default function NavigationRail({
   const avatarBtnRef = useRef(null);
   const menuRef = useRef(null);
 
-  const mainItems = useMemo(() => buildMainNavItems(t), [t]);
+  const mainItems = useMemo(
+    () => filterMainNavItems(buildMainNavItems(t), publicFeatures),
+    [t, publicFeatures]
+  );
   const toolItems = useMemo(() => buildToolNavItems(t, { isAdmin }), [t, isAdmin]);
 
   const statusKey = STATUS_META[myStatus] ? myStatus : "online";

@@ -38,6 +38,7 @@ const {
   appendErrorLog,
 } = require("../runtime/sharedState");
 const { setupAdminSocket, notifyAdminRoom } = require("./adminHandlers");
+const { publicFeatureFlags } = require("../lib/systemSettings");
 const dmPrefs = require("../lib/dmConversationPrefs");
 const {
   convKey,
@@ -444,6 +445,8 @@ function registerSocketHandlers(io) {
       socket.disconnect(true);
       return;
     }
+
+    socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags));
 
     if (!userRoles.has(myId)) {
       userRoles.set(myId, me.username === "admin" || me.is_admin ? "admin" : "user");

@@ -32,6 +32,8 @@
     "electron:publish": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --publish=always",
     "android:sync": "npm run build:prod && cap sync android",
     "android:open": "cap open android",
+    "ios:sync": "npm run build && npx cap sync ios",
+    "ios:open": "npx cap open ios",
     "android:apk:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:apk:release": "npm run android:sync && cd android && ./gradlew assembleRelease",
     "android:aab:release": "npm run android:sync && cd android && ./gradlew bundleRelease"
@@ -42,6 +44,7 @@
   "dependencies": {
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@capacitor/push-notifications": "^8.1.2",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/outfit": "^5.3.0",
@@ -83,7 +86,7 @@
   "build": {
     "appId": "com.descall.app",
     "productName": "Descall",
-    "copyright": "Copyright \u00a9 2025 Descall",
+    "copyright": "Copyright © 2025 Descall",
     "directories": {
       "output": "release",
       "buildResources": "build"

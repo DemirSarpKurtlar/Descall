@@ -303,12 +303,20 @@ function registerServerChannelHandlers(io, socket) {
     socket.leave(`server:${serverId}`);
   });
 
+  const bumpChannelRooms = () => {
+    socket.data.channelRoomEpoch = (socket.data.channelRoomEpoch || 0) + 1;
+    return socket.data.channelRoomEpoch;
+  };
+
   socket.on("server:channel:join", async (channelId) => {
     if (!channelId) return;
+    const epoch = socket.data.channelRoomEpoch || 0;
     try {
       await assertTextChannelAccess(myId, channelId, Permissions.VIEW_CHANNEL);
+      if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
       socket.join(`server-channel:${channelId}`);
     } catch (err) {
+      if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
       socket.emit("server:channel:error", {
         channelId,
         message: err.message || "Failed to join channel.",
@@ -319,21 +327,23 @@ function registerServerChannelHandlers(io, socket) {
 
   socket.on("server:channels:rejoin", async (channelIds) => {
     if (!Array.isArray(channelIds)) return;
+    const epoch = bumpChannelRooms();
     const allowed = new Set();
     for (const channelId of channelIds) {
+      if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
       if (!channelId) continue;
       try {
         await assertTextChannelAccess(myId, channelId, Permissions.VIEW_CHANNEL);
+        if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
         allowed.add(String(channelId));
         socket.join(`server-channel:${channelId}`);
-      } catch {
-        try {
-          socket.leave(`server-channel:${channelId}`);
-        } catch {
-          /* ignore */
-        }
+      } catch (err) {
+        if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
+        console.warn("[ServerChannel] rejoin denied:", channelId, err?.message || err);
+        socket.leave(`server-channel:${channelId}`);
       }
     }
+    if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
     for (const room of [...socket.rooms]) {
       if (!String(room).startsWith("server-channel:")) continue;
       const id = String(room).slice("server-channel:".length);
@@ -345,6 +355,7 @@ function registerServerChannelHandlers(io, socket) {
 
   socket.on("server:channel:leave", (channelId) => {
     if (!channelId) return;
+    bumpChannelRooms();
     socket.leave(`server-channel:${channelId}`);
   });
 
