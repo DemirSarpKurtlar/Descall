@@ -100,24 +100,28 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
           {t("Enable community features, public discovery, and a rules screen for new members.")}
         </p>
         <form onSubmit={save}>
-          <label className="server-check-row">
-            <input
-              type="checkbox"
-              checked={communityEnabled}
-              disabled={!canManage || busy}
-              onChange={(e) => setCommunityEnabled(e.target.checked)}
-            />
-            <span>{t("Enable Community")}</span>
-          </label>
-          <label className="server-check-row">
-            <input
-              type="checkbox"
-              checked={isPublic}
-              disabled={!canManage || busy}
-              onChange={(e) => setIsPublic(e.target.checked)}
-            />
-            <span>{t("List in public discovery")}</span>
-          </label>
+          <div className="server-community-options">
+            <label className="server-community-option">
+              <input
+                type="checkbox"
+                checked={communityEnabled}
+                disabled={!canManage || busy}
+                onChange={(e) => setCommunityEnabled(e.target.checked)}
+              />
+              <span className="server-community-option-mark" aria-hidden="true" />
+              <span className="server-community-option-label">{t("Enable Community")}</span>
+            </label>
+            <label className="server-community-option">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                disabled={!canManage || busy}
+                onChange={(e) => setIsPublic(e.target.checked)}
+              />
+              <span className="server-community-option-mark" aria-hidden="true" />
+              <span className="server-community-option-label">{t("List in public discovery")}</span>
+            </label>
+          </div>
           <label className="server-field">
             <span>{t("Verification level")}</span>
             <select
