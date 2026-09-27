@@ -33,8 +33,11 @@ const agentActions = require("../lib/ai/agentActions");
 const { stripAgentDraftChrome } = require("../lib/ai/stripAgentDraft");
 const { runPythonSandbox, MAX_CODE } = require("../lib/ai/pythonSandbox.cjs");
 
+const { requirePublicFeature } = require("../middleware/requirePublicFeature");
+
 const router = express.Router();
 router.use(requireAuth);
+router.use(requirePublicFeature("dimaai"));
 router.use((_req, res, next) => {
   // Private per-account payloads — never let a CDN/browser reuse account A's GET for B.
   res.set("Cache-Control", "private, no-store, no-cache, must-revalidate");

@@ -16,6 +16,7 @@ import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
 import { useT } from "../../context/LocaleContext";
 import { ACTIVATION_EVENTS } from "../../lib/activationProgress";
+import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
@@ -121,6 +122,9 @@ export default function AppLayout({
   serverVoice = null,
 }) {
   const t = useT();
+  const publicFeatures = usePublicFeatures();
+  const showPlay = valorantPlayVisible(publicFeatures);
+  const showDimaai = publicFeatures.dimaai !== false;
   const { isMobile } = useMobile();
   const reduceMotion = useReducedMotion();
   const animateMainViews = isMobile && !reduceMotion;
@@ -518,7 +522,7 @@ export default function AppLayout({
             }
             transition={animateMainViews ? { duration: 0.38, ease: VIEW_EASE } : { duration: 0 }}
           >
-            {activeView === "play" ? (
+            {activeView === "play" && showPlay ? (
               <ValorantHub
                 me={me}
                 socket={socket}
@@ -536,7 +540,7 @@ export default function AppLayout({
                 }}
               />
             ) : null}
-            {activeView === "dimaai" ? (
+            {activeView === "dimaai" && showDimaai ? (
               <DimaAiWorkspace
                 key={me?.id || "anon"}
                 me={me}
@@ -626,62 +630,31 @@ export default function AppLayout({
 
       {isMobile && !userPanelOpen && !inConversation && (
         <nav className="mobile-tab-bar" aria-label={t("Primary")}>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "chat" ? "active" : ""}`}
-            onClick={() => handleViewChange("chat")}
-          >
-            <MessageSquare size={20} />
-            <span>{t("Chat")}</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "servers" ? "active" : ""}`}
-            onClick={() => handleViewChange("servers")}
-          >
-            <Server size={20} />
-            <span>{t("Servers")}</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "friends" ? "active" : ""}`}
-            onClick={() => handleViewChange("friends")}
-          >
-            <Users size={20} />
-            <span>{t("Friends")}</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "play" ? "active" : ""}`}
-            onClick={() => handleViewChange("play")}
-          >
-            <Crosshair size={20} />
-            <span>{t("Play")}</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "dimaai" ? "active" : ""}`}
-            onClick={() => handleViewChange("dimaai")}
-          >
-            <Sparkles size={20} />
-            <span>DimaAI</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "calls" ? "active" : ""}`}
-            onClick={() => handleViewChange("calls")}
-          >
-            <Phone size={20} />
-            <span>{t("Calls")}</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-tab ${activeView === "activity" ? "active" : ""}`}
-            onClick={() => handleViewChange("activity")}
-          >
-            <Activity size={20} />
-            <span>{t("Activity")}</span>
-          </button>
+          {filterMainNavItems(
+            [
+              { id: "chat", icon: MessageSquare, label: t("Chat") },
+              { id: "servers", icon: Server, label: t("Servers") },
+              { id: "friends", icon: Users, label: t("Friends") },
+              { id: "play", icon: Crosshair, label: t("Play") },
+              { id: "dimaai", icon: Sparkles, label: "DimaAI" },
+              { id: "calls", icon: Phone, label: t("Calls") },
+              { id: "activity", icon: Activity, label: t("Activity") },
+            ],
+            publicFeatures
+          ).map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`mobile-tab ${activeView === item.id ? "active" : ""}`}
+                onClick={() => handleViewChange(item.id)}
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
           <button
             type="button"
             className="mobile-tab"

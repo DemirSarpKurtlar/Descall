@@ -19,7 +19,8 @@ function assert(condition, message) {
 assert(hub.includes('import LfgWorkspace from "../lfg/LfgWorkspace"'), "hub must mount existing LFG");
 assert(hub.includes("<LfgWorkspace"), "hub must render LfgWorkspace");
 assert(!hub.includes("onClose={onClose}"), "hub must own Back — do not pass onClose into LFG");
-assert(hub.includes('return "companion"'), "default tab must be Companion");
+assert(hub.includes("resolveValorantTab"), "tab resolves against feature flags");
+assert(hub.includes('|| "companion"'), "default tab must be Companion");
 assert(hub.includes('role="tablist"'), "hub tabs must be accessible");
 assert(hub.includes("CompanionAuthPanel"), "companion auth panel required (Adım 2)");
 assert(!hub.includes("CompanionPlaceholder"), "placeholder must be replaced");
@@ -108,7 +109,7 @@ assert(friendsPanel.includes("sendRequest"), "friends panel can send requests");
 assert(friendsPanel.includes("acceptRequest"), "friends panel can accept requests");
 assert(css.includes(".valorant-friends"), "friends panel styles exist");
 assert(css.includes("grid-template-columns"), "companion uses full-width grid layout");
-assert(hub.includes('return "companion"'), "selftest companion default reinforced");
+assert(hub.includes('|| "companion"'), "selftest companion default reinforced");
 assert(css.includes(".valorant-presence-dot"), "presence dot styles exist");
 
 assert(en.includes("friendsTitle"), "EN friends strings");

@@ -41,7 +41,7 @@ const {
   mapModerationActionToAudit,
   isRecentlySeen,
 } = require("../lib/adminOverview");
-const { loadSystemSettings, persistSystemConfig, applySystemConfigToState } = require("../lib/systemSettings");
+const { loadSystemSettings, persistSystemConfig, applySystemConfigToState, publicFeatureFlags } = require("../lib/systemSettings");
 const insights = require("../lib/adminInsightsStore");
 
 const router = express.Router();
@@ -1041,7 +1041,11 @@ router.patch("/system", async (req, res) => {
   const saved = await persistSystemConfig(supabase, state.systemConfig);
   applySystemConfigToState(state, saved.config);
   audit(req.user, "system_config", "config", req.body || {});
-  notifyAdminRoom(getIo(req), { type: "system_config" });
+  const io = getIo(req);
+  notifyAdminRoom(io, { type: "system_config" });
+  if (io) {
+    io.emit("features:updated", publicFeatureFlags(state.systemConfig.featureFlags));
+  }
   res.json({ config: state.systemConfig });
 });
 
