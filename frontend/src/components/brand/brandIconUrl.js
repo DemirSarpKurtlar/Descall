@@ -1,6 +1,6 @@
 /**
- * Canonical Descall mark — repo-root `Descall Icon.jpeg`, shipped as
- * `frontend/public/brand/descall-icon.jpeg` (copied into dist/brand/).
+ * Canonical Descall mark — repo-root `Descall Icon.png`, shipped as
+ * `frontend/public/brand/descall-icon.png` (copied into dist/brand/).
  *
  * Do NOT Vite-import the JPEG as a hashed `/assets/*.jpeg` module. Electron
  * builds use `base: "./"` + IIFE, and Vite rewrites those imports to
@@ -14,7 +14,7 @@
  * `typeof` checks breaks Vite's IIFE rewrite.
  */
 export function brandIconUrl() {
-  return `${import.meta.env.BASE_URL}brand/descall-icon.jpeg`;
+  return `${import.meta.env.BASE_URL}brand/descall-icon.png`;
 }
 
 export default brandIconUrl;
