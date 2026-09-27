@@ -7,7 +7,6 @@ import {
   Crosshair,
   Settings,
   Plus,
-  Shield,
   Server,
   Sparkles,
 } from "lucide-react";
@@ -41,19 +40,9 @@ export function buildMainNavItems(t) {
   ];
 }
 
-export function buildToolNavItems(t, { isAdmin = false } = {}) {
-  const items = [
+export function buildToolNavItems(t) {
+  return [
     { id: "add", icon: Plus, label: t("Add New"), group: "tools", action: "add" },
     { id: "settings", icon: Settings, label: t("settings.title"), group: "account", action: "settings" },
   ];
-  if (isAdmin) {
-    items.push({
-      id: "admin",
-      icon: Shield,
-      label: t("admin.title"),
-      group: "account",
-      action: "admin",
-    });
-  }
-  return items;
 }
