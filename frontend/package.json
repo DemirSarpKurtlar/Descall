@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.9.66",
+  "version": "2.9.67",
   "description": "Modern messaging and video conferencing app",
   "private": true,
   "type": "module",
@@ -94,6 +94,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "!electron/dist/**",
+      "!electron/node_modules/**",
       "package.json"
     ],
     "extraResources": [

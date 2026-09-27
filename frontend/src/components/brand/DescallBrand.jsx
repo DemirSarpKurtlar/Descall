@@ -2,7 +2,7 @@ import { brandIconUrl } from "./brandIconUrl";
 
 /**
  * Canonical in-app Descall mark (login, titlebar, nav rail).
- * Points at public `brand/descall-icon.jpeg` (= repo-root Descall Icon.jpeg)
+ * Points at public `brand/descall-icon.png` (= repo-root Descall Icon.png)
  * via BASE_URL so Electron file:// and web both paint it. See brandIconUrl.js.
  */
 function DescallMark() {
