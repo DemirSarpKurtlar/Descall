@@ -45,14 +45,52 @@ function normalizeItem(item) {
   };
 }
 
-async function listActiveItems() {
-  const { data, error } = await supabase
-    .from("shop_items")
-    .select(ITEM_COLUMNS)
-    .eq("active", true)
-    .order("sort_order", { ascending: true });
+/** Banner / frame / background cards are the only ones that paint an image URL. */
+const IMAGE_ASSET_CATEGORIES = new Set(["banner", "avatar_frame", "profile_background"]);
+
+function isUsableAsset(url) {
+  return typeof url === "string" && url.length > 0 && url !== "data:,";
+}
+
+/**
+ * Catalog list payload. CSS cosmetics (bubbles, flares, themes, …) do not
+ * need the stored SVG data URI. Image categories omit it until the client
+ * asks for that category — a full catalog of inline SVGs is large enough
+ * for mobile WebViews to abort the fetch with "Load failed".
+ */
+function toCatalogItem(item, { includeAssets = false } = {}) {
+  const normalized = normalizeItem(item);
+  if (!normalized) return normalized;
+  const keep = includeAssets && IMAGE_ASSET_CATEGORIES.has(normalized.category);
+  const asset = keep && isUsableAsset(normalized.asset_url) ? normalized.asset_url : null;
+  const preview =
+    keep && isUsableAsset(normalized.preview_url) && normalized.preview_url !== asset
+      ? normalized.preview_url
+      : null;
+  return {
+    id: normalized.id,
+    sku: normalized.sku,
+    name: normalized.name,
+    description: normalized.description,
+    category: normalized.category,
+    asset_url: asset,
+    preview_url: preview,
+    price_descoin: normalized.price_descoin,
+    theme_key: normalized.theme_key,
+    badge_icon: normalized.badge_icon,
+    title_text: normalized.title_text,
+    effect_key: normalized.effect_key,
+    rarity: normalized.rarity,
+    sort_order: normalized.sort_order,
+  };
+}
+
+async function listActiveItems({ category = null, includeAssets = false } = {}) {
+  let query = supabase.from("shop_items").select(ITEM_COLUMNS).eq("active", true);
+  if (category) query = query.eq("category", category);
+  const { data, error } = await query.order("sort_order", { ascending: true });
   if (error) throw error;
-  return (data || []).map(normalizeItem);
+  return (data || []).map((item) => toCatalogItem(item, { includeAssets }));
 }
 
 async function listAllItems() {
@@ -331,6 +369,7 @@ async function getEquippedForUsers(userIds) {
 
 module.exports = {
   EQUIP_COLUMN_BY_CATEGORY,
+  IMAGE_ASSET_CATEGORIES,
   listActiveItems,
   listAllItems,
   getItemById,

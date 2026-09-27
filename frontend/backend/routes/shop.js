@@ -14,9 +14,15 @@ const descoin = require("../lib/descoin");
 
 const router = express.Router();
 
-router.get("/catalog", requireAuth, async (_req, res) => {
+router.get("/catalog", requireAuth, async (req, res) => {
   try {
-    const items = await shop.listActiveItems();
+    const rawCategory = typeof req.query.category === "string" ? req.query.category : "";
+    const category = shop.IMAGE_ASSET_CATEGORIES.has(rawCategory) ? rawCategory : null;
+    const includeAssets = category != null && (req.query.assets === "1" || req.query.assets === "true");
+    const items = await shop.listActiveItems({
+      category: includeAssets ? category : null,
+      includeAssets,
+    });
     res.json({ items });
   } catch (err) {
     console.error("[shop] catalog error:", err.message);
