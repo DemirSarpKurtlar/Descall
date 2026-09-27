@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Headphones,
+  HeadphoneOff,
   LogIn,
   LogOut,
   Mic,
   MicOff,
   Monitor,
   MonitorOff,
+  MoreHorizontal,
   Radio,
   Users,
   Video,
@@ -19,6 +20,7 @@ import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useSpeaking from "../../hooks/useSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
+import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 
 function streamHasLiveVideo(stream) {
   return Boolean(
@@ -32,47 +34,165 @@ function streamHasLiveAudio(stream) {
   );
 }
 
-function VoiceMemberRow({
-  member,
-  label,
-  stream = null,
-  muted = false,
-  micIcon = true,
-  sharing = false,
-  cameraOn = false,
+function gridBand(count) {
+  if (count <= 1) return "is-1";
+  if (count === 2) return "is-2";
+  if (count <= 4) return "is-4";
+  if (count <= 6) return "is-6";
+  if (count <= 9) return "is-9";
+  return "is-many";
+}
+
+function avatarSizeFor(count, compact) {
+  if (compact) return 52;
+  if (count <= 1) return 112;
+  if (count === 2) return 88;
+  if (count <= 4) return 72;
+  return 56;
+}
+
+function sameTile(prev, next) {
+  if (
+    prev.compact !== next.compact ||
+    prev.count !== next.count ||
+    prev.canModerate !== next.canModerate ||
+    prev.youLabel !== next.youLabel ||
+    prev.onOpenMenu !== next.onOpenMenu
+  ) {
+    return false;
+  }
+  const a = prev.tile;
+  const b = next.tile;
+  if (a === b) return true;
+  return (
+    a?.id === b?.id &&
+    a?.label === b?.label &&
+    a?.muted === b?.muted &&
+    a?.deafened === b?.deafened &&
+    a?.sharing === b?.sharing &&
+    a?.cameraOn === b?.cameraOn &&
+    a?.cameraStream === b?.cameraStream &&
+    a?.audioStream === b?.audioStream &&
+    a?.isLocal === b?.isLocal &&
+    a?.member === b?.member &&
+    a?.member?.stageRole === b?.member?.stageRole &&
+    a?.member?.requestedToSpeak === b?.member?.requestedToSpeak
+  );
+}
+
+const VoiceTile = memo(function VoiceTile({
+  tile,
+  compact = false,
+  count = 1,
+  youLabel = "",
+  canModerate = false,
+  onOpenMenu,
 }) {
-  const speaking = useSpeaking(stream, {
-    muted: Boolean(muted),
+  const t = useT();
+  const videoRef = useRef(null);
+  const cameraStream = tile.cameraStream || null;
+  const speaking = useSpeaking(tile.audioStream, {
+    muted: Boolean(tile.muted),
     threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
   });
-  const name = label || resolveDisplayName(member) || member?.username || "User";
+  const name = tile.label || "User";
+  const showVideo = streamHasLiveVideo(cameraStream);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (el.srcObject !== cameraStream) el.srcObject = cameraStream || null;
+    if (cameraStream) el.play?.().catch(() => {});
+  }, [cameraStream, showVideo]);
+
+  const openMenu = (event) => {
+    if (!canModerate || tile.isLocal) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenMenu?.({
+      user: tile.member,
+      channelId: tile.channelId,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  };
+
   return (
-    <div
-      className={`server-voice-member${muted ? " is-muted" : ""}${speaking ? " is-speaking" : ""}`}
+    <article
+      className={`server-voice-tile${showVideo ? " has-video" : ""}${speaking ? " is-speaking" : ""}${tile.muted ? " is-muted" : ""}${compact ? " is-compact" : ""}`}
+      onContextMenu={openMenu}
     >
-      <div className="server-voice-member-avatar-shell" aria-hidden>
-        <div className={`server-voice-speak-ring ring-a${speaking ? " is-active" : ""}`} />
-        <div className={`server-voice-speak-ring ring-b${speaking ? " is-active" : ""}`} />
-        <Avatar
-          name={name}
-          size={32}
-          user={member}
-          animate="speaking"
-          isSpeaking={speaking}
-          className="server-voice-member-avatar"
+      {showVideo ? (
+        <video
+          ref={videoRef}
+          className="server-voice-tile-video"
+          autoPlay
+          playsInline
+          muted
         />
+      ) : (
+        <div className="server-voice-tile-avatar">
+          <Avatar
+            name={name}
+            size={avatarSizeFor(count, compact)}
+            user={tile.member}
+            animate="speaking"
+            isSpeaking={speaking}
+          />
+        </div>
+      )}
+      <div className="server-voice-tile-meta">
+        <span className="server-voice-tile-name">{name}</span>
+        {tile.isLocal ? <span className="server-voice-you">{youLabel}</span> : null}
+        {tile.member?.stageRole === "speaker" ? (
+          <span className="server-stage-speaker-badge">{t("Speaker")}</span>
+        ) : null}
+        {tile.member?.requestedToSpeak ? (
+          <span className="server-stage-request-badge">{t("Requested")}</span>
+        ) : null}
+        <span className="server-voice-tile-flags">
+          {speaking ? (
+            <span className="server-voice-flag is-speak" title={t("Speaking")} aria-label={t("Speaking")}>
+              <Mic size={13} aria-hidden />
+            </span>
+          ) : null}
+          {tile.muted ? (
+            <span className="server-voice-flag is-muted" title={t("Muted")} aria-label={t("Muted")}>
+              <MicOff size={13} aria-hidden />
+            </span>
+          ) : null}
+          {tile.deafened ? (
+            <span className="server-voice-flag is-deaf" title={t("Server deafen")} aria-label={t("Server deafen")}>
+              <HeadphoneOff size={13} aria-hidden />
+            </span>
+          ) : null}
+          {tile.sharing ? (
+            <span className="server-voice-flag is-share" title={t("Share Screen")} aria-label={t("Share Screen")}>
+              <Monitor size={13} aria-hidden />
+            </span>
+          ) : null}
+          {tile.cameraOn && !showVideo ? (
+            <span className="server-voice-flag is-cam" title={t("Camera")} aria-label={t("Camera")}>
+              <Video size={13} aria-hidden />
+            </span>
+          ) : null}
+        </span>
+        {canModerate && !tile.isLocal ? (
+          <button
+            type="button"
+            className="server-voice-tile-more"
+            aria-label={t("More")}
+            onClick={openMenu}
+          >
+            <MoreHorizontal size={14} />
+          </button>
+        ) : null}
       </div>
-      <span className="server-voice-member-name">{name}</span>
-      {member?.stageRole === "speaker" ? <span className="server-stage-speaker-badge">Speaker</span> : null}
-      {member?.requestedToSpeak ? <span className="server-stage-request-badge">Requested</span> : null}
-      {cameraOn ? <Video size={12} className="server-voice-member-camera" /> : null}
-      {sharing ? <Monitor size={12} className="server-voice-member-screen" /> : null}
-      {micIcon ? muted ? <MicOff size={12} /> : <Mic size={12} /> : null}
-    </div>
+    </article>
   );
-}
+}, sameTile);
 
 /** Dedicated audio element for remote screen/tab audio (video stays muted). */
 function RemoteScreenAudioSink({ stream, volume = 100, enabled = true }) {
@@ -334,35 +454,9 @@ function ServerScreenShareStage({ sharers }) {
   );
 }
 
-function CameraTile({ stream, label, muted = false }) {
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (el.srcObject !== stream) el.srcObject = stream || null;
-    if (stream) el.play?.().catch(() => {});
-  }, [stream]);
-
-  if (!stream) return null;
-
-  return (
-    <div className="server-voice-camera-tile">
-      <video
-        ref={videoRef}
-        className="server-voice-camera-video"
-        autoPlay
-        playsInline
-        muted={muted}
-      />
-      <span className="server-voice-camera-label">{label}</span>
-    </div>
-  );
-}
-
 /**
- * Discord-like voice channel hangout panel.
- * Screen share matches group/DM voicechat: multi-sharer switch, volume, fullscreen.
+ * Server voice channel room.
+ * Screen share keeps the group/DM controls: multi-sharer switch, volume, fullscreen.
  */
 export default function ServerVoicePanel({
   channel,
@@ -430,23 +524,95 @@ export default function ServerVoicePanel({
     t,
   ]);
 
-  const cameraTiles = useMemo(() => {
-    if (!inThis) return [];
-    const tiles = [];
-    if (serverVoice?.isCameraOn && serverVoice?.cameraStream) {
-      tiles.push({ id: "local", stream: serverVoice.cameraStream, label: t("You"), muted: true });
-    }
-    for (const member of serverVoice?.participants || []) {
-      if (!member?.cameraStream) continue;
-      tiles.push({
-        id: member.id,
-        stream: member.cameraStream,
-        label: resolveDisplayName(member) || member.username || "Member",
-        muted: false,
+  const [memberMenu, setMemberMenu] = useState(null);
+  const voiceChannels = useMemo(
+    () => (server?.channels || []).filter((c) => c?.type === "voice" || c?.type === "stage"),
+    [server?.channels]
+  );
+  const canMoveMembers = voicePermissionsReady && serverHasPermission(server, "MOVE_MEMBERS");
+  const canMuteMembers = voicePermissionsReady && serverHasPermission(server, "MUTE_MEMBERS");
+  const canDeafenMembers = voicePermissionsReady && serverHasPermission(server, "DEAFEN_MEMBERS");
+  const canModerate = canMoveMembers || canMuteMembers;
+
+  const tiles = useMemo(() => {
+    const list = [];
+    const meId = me?.id != null ? String(me.id) : "";
+    if (inThis && me) {
+      list.push({
+        id: meId || "local",
+        channelId: channel?.id,
+        member: me,
+        label: resolveDisplayName(me) || me.username || t("You"),
+        isLocal: true,
+        audioStream: serverVoice?.localStream || null,
+        cameraStream: serverVoice?.isCameraOn ? serverVoice.cameraStream : null,
+        cameraOn: Boolean(serverVoice?.isCameraOn),
+        muted: Boolean(serverVoice?.muted || serverVoice?.serverMuted),
+        deafened: Boolean(serverVoice?.serverDeafened),
+        sharing: Boolean(serverVoice?.isScreenSharing),
       });
     }
-    return tiles;
-  }, [inThis, serverVoice?.cameraStream, serverVoice?.isCameraOn, serverVoice?.participants, t]);
+    for (const member of remoteMembers) {
+      if (!member?.id) continue;
+      if (inThis && meId && String(member.id) === meId) continue;
+      const audioStream = inThis
+        ? member.stream || serverVoice?.remoteStreams?.get?.(member.id) || null
+        : null;
+      list.push({
+        id: String(member.id),
+        channelId: channel?.id,
+        member,
+        label: resolveDisplayName(member) || member.username || "Member",
+        isLocal: false,
+        audioStream,
+        cameraStream: inThis ? member.cameraStream || null : null,
+        cameraOn: Boolean(member.cameraOn || member.cameraStream),
+        muted: Boolean(member.muted || member.serverMuted),
+        deafened: Boolean(member.serverDeafened),
+        sharing: Boolean(member.isScreenSharing || member.screenStream),
+      });
+    }
+    return list;
+  }, [
+    channel?.id,
+    inThis,
+    me,
+    remoteMembers,
+    serverVoice?.cameraStream,
+    serverVoice?.isCameraOn,
+    serverVoice?.isScreenSharing,
+    serverVoice?.localStream,
+    serverVoice?.muted,
+    serverVoice?.remoteStreams,
+    serverVoice?.serverDeafened,
+    serverVoice?.serverMuted,
+    t,
+  ]);
+
+  const sharing = screenSharers.length > 0;
+  const link = serverVoice?.liveKitLink;
+  let statusLabel = "";
+  let statusTone = "idle";
+  if (serverVoice?.error) {
+    statusLabel = t(serverVoice.error);
+    statusTone = "bad";
+  } else if (serverVoice?.connecting || (inThis && link === "connecting")) {
+    statusLabel = t("Connecting…");
+    statusTone = "wait";
+  } else if (inThis && link === "reconnecting") {
+    statusLabel = t("Reconnecting…");
+    statusTone = "wait";
+  } else if (inThis && link === "disconnected") {
+    statusLabel = t("Disconnected");
+    statusTone = "bad";
+  } else if (inThis) {
+    statusLabel = t("Connected");
+    statusTone = "ok";
+  }
+
+  const countLabel = isStage
+    ? t("{count} in stage", { count })
+    : t("{count} in voice", { count });
 
   const onToggleScreen = async () => {
     if (!canVideo) return;
@@ -462,161 +628,178 @@ export default function ServerVoicePanel({
     await serverVoice?.toggleCamera?.();
   };
 
+  const openMemberMenu = useCallback((next) => setMemberMenu(next), []);
+
   return (
-    <div className="server-voice-panel">
-      <div className="server-voice-hero">
-        <span className="server-voice-hero-icon" aria-hidden>
-          {isStage ? <Radio size={36} strokeWidth={1.5} /> : <Headphones size={36} strokeWidth={1.5} />}
+    <div className="server-voice-panel server-voice-room">
+      <header className="server-voice-room-head">
+        <span className="server-voice-room-mark" aria-hidden>
+          {isStage ? <Radio size={18} /> : <Volume2 size={18} />}
         </span>
-        <h2>
-          {channel?.name || t("Voice channel")}
-          {isStage ? <span className="server-stage-pill">{t("Stage")}</span> : null}
-        </h2>
-        <p>
-          {count > 0
-            ? isStage
-              ? t("{count} in stage", { count })
-              : t("{count} in voice", { count })
-            : isStage
-              ? t("Join as audience, then request to speak.")
-              : t("Join to talk — no ringing, drop in anytime.")}
-        </p>
-        {serverVoice?.mediaMode === "sfu" ? (
-          <p className="server-media-mode">{t("SFU voice enabled")}</p>
-        ) : null}
-        {channel?.topic ? <p className="server-channel-topic">{channel.topic}</p> : null}
-        {serverVoice?.error ? <p className="server-modal-error">{t(serverVoice.error)}</p> : null}
+        <div className="server-voice-room-title">
+          <h2>
+            {channel?.name || t("Voice channel")}
+            {isStage ? <span className="server-stage-pill">{t("Stage")}</span> : null}
+          </h2>
+          <p>
+            {isStage ? t("Stage channel") : t("Voice channel")}
+            {channel?.topic ? ` · ${channel.topic}` : ""}
+          </p>
+        </div>
+        <div className="server-voice-room-meta">
+          {statusLabel ? (
+            <span className={`server-voice-status is-${statusTone}`} role="status">
+              <i aria-hidden />
+              {statusLabel}
+            </span>
+          ) : null}
+          <span className="server-voice-count-pill">
+            <Users size={13} aria-hidden />
+            {countLabel}
+          </span>
+          {serverVoice?.mediaMode === "sfu" ? (
+            <span className="server-media-mode">{t("SFU voice enabled")}</span>
+          ) : null}
+        </div>
+      </header>
+
+      {serverVoice?.error ? <p className="server-modal-error server-voice-room-error">{t(serverVoice.error)}</p> : null}
+
+      <div className={`server-voice-room-stage${sharing ? " is-sharing" : ""}`}>
+        {sharing ? <ServerScreenShareStage sharers={screenSharers} /> : null}
+        {tiles.length > 0 ? (
+          <div
+            className={`server-voice-grid ${gridBand(tiles.length)}${sharing ? " is-rail" : ""}`}
+            aria-label={t("In this channel")}
+          >
+            <div className="server-voice-grid-flow">
+              {tiles.map((tile) => (
+                <VoiceTile
+                  key={tile.id}
+                  tile={tile}
+                  compact={sharing}
+                  count={tiles.length}
+                  youLabel={t("You")}
+                  canModerate={canModerate}
+                  onOpenMenu={openMemberMenu}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="server-voice-empty">
+            <p>{t("Nobody here yet")}</p>
+            <p>
+              {isStage
+                ? t("Join as audience, then request to speak.")
+                : t("Join to talk — no ringing, drop in anytime.")}
+            </p>
+          </div>
+        )}
       </div>
 
-      {screenSharers.length > 0 ? <ServerScreenShareStage sharers={screenSharers} /> : null}
-
-      {cameraTiles.length > 0 ? (
-        <div className="server-voice-camera-grid">
-          {cameraTiles.map((tile) => (
-            <CameraTile key={tile.id} stream={tile.stream} label={tile.label} muted={tile.muted} />
-          ))}
-        </div>
-      ) : null}
-
-      <div className="server-voice-controls">
+      <footer className="server-voice-dock">
         {inThis ? (
           <>
-            <button
-              type="button"
-              className={`server-voice-btn ${serverVoice.muted ? "is-off" : ""}`}
-              onClick={() => serverVoice.toggleMute?.()}
-              disabled={!serverVoice.canSpeak}
-              title={!serverVoice.canSpeak ? t("You need to be invited to speak first.") : undefined}
-            >
-              {serverVoice.muted ? <MicOff size={16} /> : <Mic size={16} />}
-              {serverVoice.muted ? t("Unmute") : t("Mute")}
-            </button>
-            {isNoiseSuppressionEnabled() ? (
-              <span className="server-voice-ns-badge" title={t("AI noise suppression")}>
-                NS
-              </span>
-            ) : null}
-            {isStage && serverVoice.stageRole !== "speaker" ? (
+            <div className="server-voice-dock-group" role="group" aria-label={t("Voice channel")}>
               <button
                 type="button"
-                className={`server-voice-btn ${serverVoice.requestedToSpeak ? "is-screen-on" : ""}`}
-                onClick={() => serverVoice.requestToSpeak?.()}
-                disabled={!serverVoice.canRequestToSpeak || serverVoice.requestedToSpeak}
-                title={!serverVoice.canRequestToSpeak ? t("Permission denied") : undefined}
+                className={`server-voice-dock-btn${serverVoice.muted ? " is-off" : ""}`}
+                onClick={() => serverVoice.toggleMute?.()}
+                disabled={!serverVoice.canSpeak}
+                aria-pressed={Boolean(serverVoice.muted)}
+                aria-label={serverVoice.muted ? t("Unmute") : t("Mute")}
+                title={
+                  !serverVoice.canSpeak
+                    ? t("You need to be invited to speak first.")
+                    : serverVoice.muted
+                      ? t("Unmute")
+                      : t("Mute")
+                }
               >
-                <Radio size={16} />
-                {serverVoice.requestedToSpeak ? t("Requested") : t("Request to Speak")}
+                {serverVoice.muted ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
-            ) : null}
+              {isNoiseSuppressionEnabled() ? (
+                <span className="server-voice-ns-badge" title={t("AI noise suppression")}>
+                  NS
+                </span>
+              ) : null}
+              {isStage && serverVoice.stageRole !== "speaker" ? (
+                <button
+                  type="button"
+                  className={`server-voice-dock-btn${serverVoice.requestedToSpeak ? " is-live" : ""}`}
+                  onClick={() => serverVoice.requestToSpeak?.()}
+                  disabled={!serverVoice.canRequestToSpeak || serverVoice.requestedToSpeak}
+                  aria-label={serverVoice.requestedToSpeak ? t("Requested") : t("Request to Speak")}
+                  title={!serverVoice.canRequestToSpeak ? t("Permission denied") : t("Request to Speak")}
+                >
+                  <Radio size={18} />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={`server-voice-dock-btn${serverVoice.isCameraOn ? " is-live" : ""}`}
+                onClick={onToggleCamera}
+                disabled={!canVideo}
+                aria-pressed={Boolean(serverVoice.isCameraOn)}
+                aria-label={serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
+                title={!canVideo ? t("Permission denied") : serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
+              >
+                {serverVoice.isCameraOn ? <VideoOff size={18} /> : <Video size={18} />}
+              </button>
+              <button
+                type="button"
+                className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}`}
+                onClick={onToggleScreen}
+                disabled={!canVideo}
+                aria-pressed={Boolean(serverVoice.isScreenSharing)}
+                aria-label={serverVoice.isScreenSharing ? t("Stop Screen Share") : t("Share Screen")}
+                title={
+                  !canVideo
+                    ? t("Permission denied")
+                    : serverVoice.isScreenSharing
+                      ? t("Stop Screen Share")
+                      : t("Share Screen")
+                }
+              >
+                {serverVoice.isScreenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
+              </button>
+            </div>
             <button
               type="button"
-              className={`server-voice-btn ${serverVoice.isCameraOn ? "is-screen-on" : ""}`}
-              onClick={onToggleCamera}
-              disabled={!canVideo}
-              title={!canVideo ? t("Permission denied") : serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
-            >
-              {serverVoice.isCameraOn ? <VideoOff size={16} /> : <Video size={16} />}
-              {serverVoice.isCameraOn ? t("Camera Off") : t("Camera")}
-            </button>
-            <button
-              type="button"
-              className={`server-voice-btn ${serverVoice.isScreenSharing ? "is-screen-on" : ""}`}
-              onClick={onToggleScreen}
-              disabled={!canVideo}
-              title={
-                !canVideo
-                  ? t("Permission denied")
-                  : serverVoice.isScreenSharing
-                    ? t("Stop Screen Share")
-                    : t("Share Screen")
-              }
-            >
-              {serverVoice.isScreenSharing ? <MonitorOff size={16} /> : <Monitor size={16} />}
-              {serverVoice.isScreenSharing ? t("Stop Screen Share") : t("Share Screen")}
-            </button>
-            <button
-              type="button"
-              className="server-voice-btn leave"
+              className="server-voice-dock-btn leave"
               onClick={() => serverVoice.leave?.()}
+              aria-label={t("Leave")}
+              title={t("Leave")}
             >
-              <LogOut size={16} />
+              <LogOut size={18} />
               {t("Leave")}
             </button>
           </>
         ) : (
           <button
             type="button"
-            className="server-voice-btn join"
+            className="server-voice-dock-btn join"
             disabled={!canConnect || serverVoice?.connecting}
             onClick={() => serverVoice.join?.(server.id, channel)}
+            aria-label={t("Join Voice")}
           >
-            <LogIn size={16} />
-            {serverVoice?.connecting
-              ? t("Please wait...")
-              : count > 0
-                ? t("Join Voice")
-                : t("Join Voice")}
+            <LogIn size={18} />
+            {serverVoice?.connecting ? t("Please wait...") : t("Join Voice")}
           </button>
         )}
-      </div>
+      </footer>
 
-      <div className="server-voice-members">
-        <div className="server-voice-members-head">
-          <Users size={14} />
-          <span>{t("In this channel")}</span>
-        </div>
-        <div className="server-voice-members-list">
-          {inThis && me && (
-            <VoiceMemberRow
-              member={me}
-              label={`${resolveDisplayName(me)} (${t("You")})`}
-              stream={serverVoice.localStream}
-              muted={serverVoice.muted}
-              sharing={Boolean(serverVoice.isScreenSharing)}
-              cameraOn={Boolean(serverVoice.isCameraOn)}
-            />
-          )}
-          {remoteMembers.map((m) => {
-            const stream =
-              inThis
-                ? m.stream || serverVoice.remoteStreams?.get?.(m.id) || null
-                : null;
-            return (
-              <VoiceMemberRow
-                key={m.id}
-                member={m}
-                stream={stream}
-                muted={m.muted}
-                sharing={Boolean(m.isScreenSharing)}
-                cameraOn={Boolean(m.cameraOn)}
-              />
-            );
-          })}
-          {!inThis && remoteMembers.length === 0 && (
-            <p className="server-empty-hint">{t("Nobody here yet")}</p>
-          )}
-        </div>
-      </div>
+      <VoiceMemberContextMenu
+        menu={memberMenu}
+        canMove={canMoveMembers}
+        canMute={canMuteMembers}
+        canDeafen={canDeafenMembers}
+        voiceChannels={voiceChannels}
+        serverId={server?.id}
+        serverVoice={serverVoice}
+        onClose={() => setMemberMenu(null)}
+      />
     </div>
   );
 }

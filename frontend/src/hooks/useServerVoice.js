@@ -48,6 +48,7 @@ export function useServerVoice(socket) {
   const [participants, setParticipants] = useState([]);
   const [muted, setMuted] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [liveKitLink, setLiveKitLink] = useState("idle");
   const [error, setError] = useState("");
   /** serverId -> { channelId -> { members, memberCount } } */
   const [voiceStatesByServer, setVoiceStatesByServer] = useState({});
@@ -229,6 +230,8 @@ export function useServerVoice(socket) {
 
   const disconnectLiveKit = useCallback(() => {
     const room = liveKitRoomRef.current;
+    liveKitRoomRef.current = null;
+    setLiveKitLink("idle");
     if (room) {
       try {
         room.disconnect();
@@ -236,7 +239,6 @@ export function useServerVoice(socket) {
         /* ignore */
       }
     }
-    liveKitRoomRef.current = null;
     sfuModeRef.current = false;
     setMediaMode("mesh");
   }, []);
@@ -296,8 +298,21 @@ export function useServerVoice(socket) {
           updateRemoteParticipant(userId, { cameraStream: null, cameraOn: false });
         }
       });
+      room.on(RoomEvent.Reconnecting, () => {
+        if (liveKitRoomRef.current !== room) return;
+        setLiveKitLink("reconnecting");
+      });
+      room.on(RoomEvent.Reconnected, () => {
+        if (liveKitRoomRef.current !== room) return;
+        setLiveKitLink("connected");
+      });
+      room.on(RoomEvent.Disconnected, () => {
+        if (liveKitRoomRef.current !== room) return;
+        setLiveKitLink("disconnected");
+      });
       await room.connect(tokenData.livekitUrl, tokenData.token);
       liveKitRoomRef.current = room;
+      setLiveKitLink("connected");
       sfuModeRef.current = true;
       setMediaMode("sfu");
       const audioTrack = stream?.getAudioTracks?.()[0] || null;
@@ -1613,6 +1628,7 @@ export function useServerVoice(socket) {
     serverMuted,
     serverDeafened,
     connecting,
+    liveKitLink,
     error,
     voiceStatesByServer,
     localStream,
