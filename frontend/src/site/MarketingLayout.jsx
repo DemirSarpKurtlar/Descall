@@ -4,6 +4,7 @@ import { useLocale, useT } from "../context/localeContextInstance";
 import { Funnel } from "./analytics";
 import { signalMarketingEngage } from "./analyticsGate";
 import { SITE_OPERATOR } from "./siteIdentity";
+import { brandIconUrl } from "../components/brand/brandIconUrl";
 import { isTrPath, withTrPrefix, stripLocalePrefix, TR_MIRROR_PATHS, enPathForHreflang, isTurkishMarketingPath, trDestinationForPath } from "./localePaths";
 import EmailCapture from "./components/EmailCapture";
 import "./site.css";
@@ -140,7 +141,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
 
       <header className="mkt-header">
         <Link to={L("/")} className="mkt-brand">
-          <img src={`${import.meta.env.BASE_URL}brand/descall-icon.jpeg`} alt="" width={32} height={32} decoding="async" />
+          <img src={brandIconUrl()} alt="" width={32} height={32} decoding="async" />
           <span>Descall</span>
           <span className="mkt-header-beta" title={t(SITE_OPERATOR.statusNote)}>
             {t("Beta")}
@@ -179,7 +180,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
 
       <footer className="mkt-footer">
         <div className="mkt-footer-brand">
-          <img src={`${import.meta.env.BASE_URL}brand/descall-icon.jpeg`} alt="" width={24} height={24} decoding="async" loading="lazy" />
+          <img src={brandIconUrl()} alt="" width={24} height={24} decoding="async" loading="lazy" />
           <div>
             <strong>Descall</strong>
             <span className="mkt-footer-beta">{t("Beta")}</span>
