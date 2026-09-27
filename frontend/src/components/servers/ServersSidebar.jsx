@@ -768,11 +768,6 @@ export default function ServersSidebar({
               </span>
             </div>
             <div className="sidebar-actions">
-              {onMobileClose && (
-                <button type="button" className="icon-btn mobile-sidebar-close" onClick={onMobileClose} title={t("Close")}>
-                  <X size={18} />
-                </button>
-              )}
               {canManageChannels && (
                 <button
                   type="button"
@@ -1390,11 +1385,6 @@ export default function ServersSidebar({
         <div className="sidebar-header">
           <h2 className="sidebar-title">{t("Servers")}</h2>
           <div className="sidebar-actions">
-            {onMobileClose && (
-              <button type="button" className="icon-btn mobile-sidebar-close" onClick={onMobileClose} title={t("Close")}>
-                <X size={18} />
-              </button>
-            )}
             <button
               type="button"
               className="icon-btn"
