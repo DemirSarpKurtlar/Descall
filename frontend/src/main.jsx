@@ -251,6 +251,16 @@ async function boot() {
 
 boot().catch((err) => {
   console.error("[boot] failed", err);
+  try {
+    window.__descallBootFailed?.();
+  } catch {
+    /* ignore */
+  }
+  import("./lib/moduleLoadError")
+    .then((mod) => {
+      if (mod.isModuleLoadError(err)) mod.recoverFromModuleLoadError();
+    })
+    .catch(() => {});
 });
 
 // Absolute failsafe — splash must never exceed ~2s even if React boot stalls.
