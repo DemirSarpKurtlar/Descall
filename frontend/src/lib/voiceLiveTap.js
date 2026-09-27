@@ -1,5 +1,4 @@
-const RATE = 16000;
-const FRAME_MS = 100;
+import { createPcmFramer, downsampleFloatToInt16 } from "./voiceLivePcm";
 
 export function roomIdFromMeta(meta = {}) {
   const kind = String(meta.kind || "").toLowerCase();
@@ -41,14 +40,15 @@ export function startVoiceLiveTap({ socket, getLocalStream, getMeta }) {
   let ctx = null;
   let src = null;
   let analyser = null;
-  let timer = null;
   let stopped = false;
   let attachedId = "";
-  let data = new Uint8Array(512);
   let lastRoomId = "";
   let joinedRoomId = "";
   let lastJoinAt = 0;
-  const JOIN_HEARTBEAT_MS = 8000;
+  let processor = null;
+  let sink = null;
+  const framer = createPcmFramer();
+  const JOIN_HEARTBEAT_MS = 2000;
 
   function readMeta() {
     try {
@@ -95,46 +95,48 @@ export function startVoiceLiveTap({ socket, getLocalStream, getMeta }) {
     emitJoin();
   }
 
-  function emitFrame() {
-    if (stopped || !socket?.connected || !analyser) return;
+  function emitPcm(float32) {
+    if (stopped || !socket?.connected || !ctx || !float32?.length) return;
     const meta = readMeta();
     const roomId = currentRoomId(meta);
     if (!roomId) return;
-    if (joinedRoomId !== roomId) emitJoin();
-    try {
-      analyser.getByteTimeDomainData(data);
-    } catch {
-      return;
+    if (joinedRoomId !== roomId) {
+      framer.reset();
+      emitJoin();
     }
-    let sum = 0;
-    for (let i = 0; i < data.length; i += 1) {
-      const v = (data[i] - 128) / 128;
-      sum += v * v;
-    }
-    const rms = Math.sqrt(sum / data.length);
+    const { pcm, rms } = downsampleFloatToInt16(float32, ctx.sampleRate || 48000);
     const speaking = rms > 0.012;
-    socket.emit("voice-live:speaking", { roomId, level: Math.min(1, rms * 5), speaking });
-    if (!speaking) return;
-    const n = Math.max(80, Math.round((RATE * FRAME_MS) / 1000));
-    const pcm = new Int16Array(n);
-    for (let i = 0; i < n; i += 1) {
-      const idx = Math.min(data.length - 1, Math.floor((i / n) * data.length));
-      pcm[i] = Math.max(-32768, Math.min(32767, Math.round(((data[idx] - 128) / 128) * 32767)));
+    try {
+      socket.emit("voice-live:speaking", { roomId, level: Math.min(1, rms * 4), speaking });
+    } catch {
+      /* ignore */
     }
-    socket.emit("voice-live:chunk", { roomId, pcm: Array.from(pcm) });
+    if (!speaking) return;
+    for (const frame of framer.push(pcm)) {
+      try {
+        socket.emit("voice-live:chunk", { roomId, pcm: Array.from(frame) });
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function resumeCtx() {
+    if (stopped || !ctx || ctx.state !== "suspended") return;
+    ctx.resume().catch(() => {});
   }
 
   function detach() {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
     try {
+      processor?.disconnect();
+      sink?.disconnect();
       src?.disconnect();
       ctx?.close();
     } catch {
       /* ignore */
     }
+    processor = null;
+    sink = null;
     ctx = null;
     src = null;
     analyser = null;
@@ -155,15 +157,22 @@ export function startVoiceLiveTap({ socket, getLocalStream, getMeta }) {
     if (attachedId && attachedId === track.id && analyser) return;
     detach();
     try {
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      resumeCtx();
       src = ctx.createMediaStreamSource(new MediaStream([track]));
-      analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      data = new Uint8Array(analyser.fftSize);
-      src.connect(analyser);
+      processor = ctx.createScriptProcessor(4096, 1, 1);
+      sink = ctx.createGain();
+      sink.gain.value = 0;
+      processor.onaudioprocess = (event) => {
+        const channel = event.inputBuffer?.getChannelData?.(0);
+        if (channel) emitPcm(channel);
+      };
+      src.connect(processor);
+      processor.connect(sink);
+      sink.connect(ctx.destination);
+      analyser = processor;
       attachedId = track.id;
-      timer = setInterval(emitFrame, FRAME_MS);
     } catch {
       detach();
     }
@@ -172,12 +181,19 @@ export function startVoiceLiveTap({ socket, getLocalStream, getMeta }) {
   emitJoin();
   if (socket?.on) socket.on("connect", onConnect);
 
+  const onGesture = () => resumeCtx();
+  if (typeof window !== "undefined") {
+    window.addEventListener("pointerdown", onGesture, true);
+    window.addEventListener("keydown", onGesture, true);
+  }
+
   attach();
   const wait = setInterval(() => {
     if (stopped) {
       clearInterval(wait);
       return;
     }
+    resumeCtx();
     emitJoin();
     attach();
   }, 400);
@@ -186,6 +202,10 @@ export function startVoiceLiveTap({ socket, getLocalStream, getMeta }) {
     stop() {
       stopped = true;
       clearInterval(wait);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("pointerdown", onGesture, true);
+        window.removeEventListener("keydown", onGesture, true);
+      }
       detach();
       if (socket?.off) {
         try {

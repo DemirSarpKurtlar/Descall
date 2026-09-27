@@ -333,13 +333,17 @@ export default function LfgWorkspace({
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
-            <label className="lfg-mic-filter">
+            <label className="lfg-mic-toggle">
               <input
                 type="checkbox"
                 checked={filters.mic === "1"}
                 onChange={(e) => setFilters((f) => ({ ...f, mic: e.target.checked ? "1" : "" }))}
               />
-              {t("Mic required")}
+              <span className="lfg-mic-toggle-icon" aria-hidden="true">
+                <Mic size={15} />
+              </span>
+              <span className="lfg-mic-toggle-label">{t("Mic required")}</span>
+              <span className="lfg-mic-toggle-mark" aria-hidden="true" />
             </label>
           </div>
         </div>
@@ -668,13 +672,17 @@ function CreateLobbyModal({ meta, ranks, busy, defaultHostRank, defaultRegion, o
                 onChange={(e) => setForm({ ...form, partySizeMax: Number(e.target.value) || 5 })}
               />
             </label>
-            <label className="lfg-check">
+            <label className="lfg-mic-toggle">
               <input
                 type="checkbox"
                 checked={form.micRequired}
                 onChange={(e) => setForm({ ...form, micRequired: e.target.checked })}
               />
-              {t("Mic required")}
+              <span className="lfg-mic-toggle-icon" aria-hidden="true">
+                <Mic size={15} />
+              </span>
+              <span className="lfg-mic-toggle-label">{t("Mic required")}</span>
+              <span className="lfg-mic-toggle-mark" aria-hidden="true" />
             </label>
           </div>
 

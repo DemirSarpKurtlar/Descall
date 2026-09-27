@@ -21,7 +21,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(100vw, 340px);
+    width: min(100%, 340px);
     max-width: 100%;
     z-index: 300;
     display: flex;
@@ -231,7 +231,7 @@
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
     width: 100% !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
     min-width: 0 !important;
     min-height: 0 !important;
     height: 100% !important;
@@ -640,7 +640,7 @@
 /* ─── Small phones ─── */
 @media (max-width: 480px) {
   .app-sidebar-shell {
-    width: 100vw;
+    width: 100%;
   }
 
   .panel-header {
