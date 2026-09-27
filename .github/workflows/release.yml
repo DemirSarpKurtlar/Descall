@@ -64,6 +64,16 @@ jobs:
           npm ci
           npm run build:prod
           npx electron-builder --win --publish=never
+      - name: Copy stable latest setup name
+        shell: pwsh
+        working-directory: frontend/release
+        run: |
+          $exe = Get-ChildItem -File -Filter "Descall-Setup-*.exe" |
+            Where-Object { $_.Name -ne "Descall-Setup.exe" } |
+            Select-Object -First 1
+          if (-not $exe) { throw "No Descall-Setup-*.exe was produced" }
+          Copy-Item -LiteralPath $exe.FullName -Destination (Join-Path $exe.DirectoryName "Descall-Setup.exe") -Force
+          Write-Host "Copied $($exe.Name) -> Descall-Setup.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-setup

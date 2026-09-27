@@ -7,14 +7,19 @@ const router = express.Router();
 const GITHUB_REPO = process.env.GITHUB_RELEASE_REPO || "DemirSarpKurtlar/Descall";
 const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
-/** Keep in sync with frontend/src/lib/desktopRelease.js when cutting releases. */
+/** Keep in sync with frontend/src/lib/desktopRelease.js when cutting releases.
+ * Stable asset name uploaded beside the versioned Setup so this URL always
+ * follows GitHub releases/latest. */
+const LATEST_WINDOWS_SETUP_URL =
+  `https://github.com/${GITHUB_REPO}/releases/latest/download/Descall-Setup.exe`;
+
 const FALLBACK_RELEASE = {
-  tagName: "v2.9.48",
-  version: "2.9.48",
-  name: "2.9.48",
+  tagName: "",
+  version: "",
+  name: "",
   publishedAt: new Date().toISOString(),
-  htmlUrl: `https://github.com/${GITHUB_REPO}/releases/tag/v2.9.48`,
-  windowsDownloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v2.9.48/Descall-Setup-2.9.48.exe`,
+  htmlUrl: `https://github.com/${GITHUB_REPO}/releases/latest`,
+  windowsDownloadUrl: LATEST_WINDOWS_SETUP_URL,
   // The Android APK filename is version-suffixed per release
   // (Descall-APK-vX.Y.Z.apk), so it cannot be guessed without a live asset
   // list. Send people to the releases page instead of a dead direct link.
@@ -34,11 +39,13 @@ function pickWindowsExeUrl(release) {
     return n.endsWith(".exe") && !n.includes("portable") && !n.includes("blockmap");
   });
 
-  // Prefer NSIS installer (Descall-Setup-*.exe) — never Portable
-  const setupExact = exes.find((a) => {
-    const n = (a.name || "").toLowerCase();
-    return n.includes("setup");
-  });
+  // Prefer the versioned NSIS installer (Descall-Setup-X.Y.Z.exe).
+  // Descall-Setup.exe is the same bytes under a stable latest/download name.
+  const setupExact = exes.find((a) => /descall-setup-\d+\.\d+\.\d+/i.test(a.name || ""))
+    || exes.find((a) => {
+      const n = (a.name || "").toLowerCase();
+      return n.includes("setup");
+    });
   if (setupExact?.browser_download_url) return setupExact.browser_download_url;
 
   const setupLoose = exes.find((a) => {
