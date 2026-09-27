@@ -17,8 +17,8 @@ android {
         // .github/workflows/release.yml) so every APK sideload is a strictly
         // increasing versionCode — otherwise Android's package manager treats
         // a same-versionCode APK as a downgrade/no-op install over itself.
-        versionCode 20967
-        versionName "2.9.67"
+        versionCode 20968
+        versionName "2.9.68"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
