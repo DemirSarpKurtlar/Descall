@@ -134,6 +134,7 @@ export default function DmRemoteParticipantSlot({
   isSpeaking = false,
   isMuted = false,
   cameraOn = true,
+  onContextMenu,
 }) {
   const t = useT();
   const user = displayPeer;
@@ -185,6 +186,10 @@ export default function DmRemoteParticipantSlot({
             hasVideo && videoRef ? "" : " participant-tile--avatar-only"
           }`}
           style={{ willChange: "transform, opacity" }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            onContextMenu?.(event);
+          }}
         >
           {hasVideo && videoRef ? (
             <video

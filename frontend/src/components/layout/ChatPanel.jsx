@@ -86,6 +86,14 @@ export default function ChatPanel({
   const [showPinned, setShowPinned] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [profileTarget, setProfileTarget] = useState(null);
+  useEffect(() => {
+    const openProfile = (event) => {
+      const user = event.detail?.user;
+      if (user?.id) setProfileTarget(user);
+    };
+    window.addEventListener("descall:open-profile", openProfile);
+    return () => window.removeEventListener("descall:open-profile", openProfile);
+  }, []);
 
   const conversationKey = activeGroup?.id
     ? { kind: "group", groupId: activeGroup.id }

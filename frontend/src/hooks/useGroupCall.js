@@ -78,8 +78,13 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   // Audio device selection states
   const [audioInputDevices, setAudioInputDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
+  const [videoInputDevices, setVideoInputDevices] = useState([]);
   const [selectedAudioInput, setSelectedAudioInput] = useState("");
   const [selectedAudioOutput, setSelectedAudioOutput] = useState("");
+  const [selectedVideoInput, setSelectedVideoInput] = useState("");
+  const videoInputIdRef = useRef("");
+  const participantVolumeRef = useRef(new Map());
+  const lastParticipantVolumeRef = useRef(new Map());
   
   // Screen sharing quality settings
   const [screenQuality, setScreenQuality] = useState(GROUP_SCREEN_DEFAULT_QUALITY);
@@ -377,8 +382,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         const devices = await navigator.mediaDevices.enumerateDevices();
         const inputs = devices.filter(d => d.kind === 'audioinput');
         const outputs = devices.filter(d => d.kind === 'audiooutput');
+        const cameras = devices.filter(d => d.kind === 'videoinput');
         setAudioInputDevices(inputs);
         setAudioOutputDevices(outputs);
+        setVideoInputDevices(cameras);
         if (!selectedAudioInput && inputs.length > 0) {
           setSelectedAudioInput(inputs[0].deviceId);
         }
@@ -541,6 +548,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           remoteAudioRefs.current.set(userId, audioEl);
         }
         audioEl.srcObject = incomingStream;
+        const storedVolume = participantVolumeRef.current.get(String(userId));
+        audioEl.volume = storedVolume == null ? 1 : storedVolume;
         audioEl.play().catch(() => {});
         chainTrackUnmute(track, () => {
           audioEl.srcObject = incomingStream;
@@ -1098,8 +1107,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         if (videoTrack) {
           videoTrack.enabled = true;
         } else {
+          const videoDeviceId = videoInputIdRef.current;
           const videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720, facingMode: "user" },
+            video: videoDeviceId
+              ? { deviceId: { exact: videoDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+              : { width: 1280, height: 720, facingMode: "user" },
           });
           videoTrack = videoStream.getVideoTracks()[0];
 
@@ -2270,6 +2282,63 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     });
   }, []);
 
+  const setVideoInput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    videoInputIdRef.current = id;
+    setSelectedVideoInput(id);
+    if (!isCameraOn || !localStreamRef.current) return;
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: id
+          ? { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { width: 1280, height: 720, facingMode: "user" },
+      });
+      const newTrack = videoStream.getVideoTracks()[0];
+      if (!newTrack) return;
+      const local = localStreamRef.current;
+      local.getVideoTracks().forEach((track) => {
+        local.removeTrack(track);
+        track.stop();
+      });
+      local.addTrack(newTrack);
+      const replacements = [];
+      pcMapRef.current.forEach((peerData) => {
+        const sender = peerData.pc?.getSenders?.().find(
+          (item) => item !== peerData.screenSender && item.track?.kind === "video"
+        );
+        if (sender) replacements.push(sender.replaceTrack(newTrack));
+      });
+      await Promise.all(replacements);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = local;
+        localVideoRef.current.play().catch(() => {});
+      }
+      setLocalStream(local);
+    } catch (err) {
+      console.warn("[GroupCall] setVideoInput failed:", err);
+    }
+  }, [isCameraOn]);
+
+  const setParticipantVolume = useCallback((userId, volume) => {
+    if (userId == null) return;
+    const key = String(userId);
+    const next = Math.max(0, Math.min(1, Number(volume)));
+    const safe = Number.isFinite(next) ? next : 1;
+    if (safe > 0) lastParticipantVolumeRef.current.set(key, safe);
+    participantVolumeRef.current.set(key, safe);
+    const el = remoteAudioRefs.current.get(userId) || remoteAudioRefs.current.get(key);
+    if (el) el.volume = safe;
+  }, []);
+
+  const toggleParticipantMute = useCallback((userId) => {
+    const key = String(userId);
+    const current = participantVolumeRef.current.get(key);
+    const level = current == null ? 1 : current;
+    if (level > 0.001) setParticipantVolume(userId, 0);
+    else setParticipantVolume(userId, lastParticipantVolumeRef.current.get(key) || 1);
+  }, [setParticipantVolume]);
+
   const dismissActiveBanner = useCallback(() => setActiveCallBanner(null), []);
 
   const joinActiveCall = useCallback(async (banner) => {
@@ -2398,9 +2467,14 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     // Audio device selection
     audioInputDevices,
     audioOutputDevices,
+    videoInputDevices,
     selectedAudioInput,
     selectedAudioOutput,
+    selectedVideoInput,
     setAudioInput,
     setAudioOutput,
+    setVideoInput,
+    setParticipantVolume,
+    toggleParticipantMute,
   };
 }

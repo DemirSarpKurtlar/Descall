@@ -89,8 +89,13 @@ export function useCall(socket, callOccupancyRef = null) {
   const [screenStream, setScreenStream] = useState(null);
   const [audioInputDevices, setAudioInputDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
+  const [videoInputDevices, setVideoInputDevices] = useState([]);
   const [selectedAudioInput, setSelectedAudioInput] = useState("");
   const [selectedAudioOutput, setSelectedAudioOutput] = useState("");
+  const [selectedVideoInput, setSelectedVideoInput] = useState("");
+  const videoInputIdRef = useRef("");
+  const remoteVolumeRef = useRef(1);
+  const lastRemoteVolumeRef = useRef(1);
   const [screenQuality, setScreenQuality] = useState(DM_SCREEN_DEFAULT_QUALITY);
   const screenQualityRef = useRef(screenQuality);
 
@@ -168,8 +173,10 @@ export function useCall(socket, callOccupancyRef = null) {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const inputs = devices.filter(d => d.kind === "audioinput");
         const outputs = devices.filter(d => d.kind === "audiooutput");
+        const cameras = devices.filter(d => d.kind === "videoinput");
         setAudioInputDevices(inputs);
         setAudioOutputDevices(outputs);
+        setVideoInputDevices(cameras);
         if (!selectedAudioInput && inputs.length > 0) setSelectedAudioInput(inputs[0].deviceId);
         if (!selectedAudioOutput && outputs.length > 0) setSelectedAudioOutput(outputs[0].deviceId);
       } catch (_) {}
@@ -471,6 +478,7 @@ export function useCall(socket, callOccupancyRef = null) {
         if (track.kind === "audio" && remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = rs;
           remoteAudioRef.current.muted = false;
+          remoteAudioRef.current.volume = remoteVolumeRef.current;
           remoteAudioRef.current.play().catch(() => {});
         }
         if (track.kind === "video" && remoteVideoRef.current) {
@@ -480,6 +488,7 @@ export function useCall(socket, callOccupancyRef = null) {
         if (remoteAudioRef.current && !remoteAudioRef.current.srcObject) {
           remoteAudioRef.current.srcObject = rs;
           remoteAudioRef.current.muted = false;
+          remoteAudioRef.current.volume = remoteVolumeRef.current;
           remoteAudioRef.current.play().catch(() => {});
         }
         if (remoteVideoRef.current && !remoteVideoRef.current.srcObject && track.kind === "video") {
@@ -1058,8 +1067,11 @@ export function useCall(socket, callOccupancyRef = null) {
           // Re-enable existing track — frames resume without SDP
           videoTrack.enabled = true;
         } else {
+          const videoDeviceId = videoInputIdRef.current;
           const videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720, facingMode: "user" },
+            video: videoDeviceId
+              ? { deviceId: { exact: videoDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+              : { width: 1280, height: 720, facingMode: "user" },
           });
           videoTrack = videoStream.getVideoTracks()[0];
           if (localStreamRef.current) {
@@ -1334,6 +1346,54 @@ export function useCall(socket, callOccupancyRef = null) {
     }
   }, []);
 
+  const setVideoInput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    videoInputIdRef.current = id;
+    setSelectedVideoInput(id);
+    if (!cameraOn || !localStreamRef.current) return;
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: id
+          ? { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { width: 1280, height: 720, facingMode: "user" },
+      });
+      const newTrack = videoStream.getVideoTracks()[0];
+      if (!newTrack) return;
+      const local = localStreamRef.current;
+      const old = local.getVideoTracks()[0];
+      if (old) {
+        local.removeTrack(old);
+        old.stop();
+      }
+      local.addTrack(newTrack);
+      const sender = pcRef.current?.getSenders().find(
+        (item) => item !== screenSenderRef.current && item.track?.kind === "video"
+      );
+      if (sender) await sender.replaceTrack(newTrack);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = local;
+        localVideoRef.current.play().catch(() => {});
+      }
+      setLocalStream(local);
+    } catch (err) {
+      console.warn("[Call] setVideoInput failed:", err);
+    }
+  }, [cameraOn]);
+
+  const setParticipantVolume = useCallback((_userId, volume) => {
+    const next = Math.max(0, Math.min(1, Number(volume)));
+    const safe = Number.isFinite(next) ? next : 1;
+    if (safe > 0) lastRemoteVolumeRef.current = safe;
+    remoteVolumeRef.current = safe;
+    if (remoteAudioRef.current) remoteAudioRef.current.volume = safe;
+  }, []);
+
+  const toggleParticipantMute = useCallback((userId) => {
+    if (remoteVolumeRef.current > 0.001) setParticipantVolume(userId, 0);
+    else setParticipantVolume(userId, lastRemoteVolumeRef.current || 1);
+  }, [setParticipantVolume]);
+
   const formatDuration = (s) => {
     const m = Math.floor(s / 60).toString().padStart(2, "0");
     const sec = (s % 60).toString().padStart(2, "0");
@@ -1388,9 +1448,14 @@ export function useCall(socket, callOccupancyRef = null) {
     cleanup,
     audioInputDevices,
     audioOutputDevices,
+    videoInputDevices,
     selectedAudioInput,
     selectedAudioOutput,
+    selectedVideoInput,
     setAudioInput,
     setAudioOutput,
+    setVideoInput,
+    setParticipantVolume,
+    toggleParticipantMute,
   };
 }

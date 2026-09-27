@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
+import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useSpeaking from "../../hooks/useSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
+import { DockDeviceSlot } from "../call/DevicePicker";
 
 function streamHasLiveVideo(stream) {
   return Boolean(
@@ -55,7 +57,6 @@ function sameTile(prev, next) {
   if (
     prev.compact !== next.compact ||
     prev.count !== next.count ||
-    prev.canModerate !== next.canModerate ||
     prev.youLabel !== next.youLabel ||
     prev.onOpenMenu !== next.onOpenMenu
   ) {
@@ -85,7 +86,6 @@ const VoiceTile = memo(function VoiceTile({
   compact = false,
   count = 1,
   youLabel = "",
-  canModerate = false,
   onOpenMenu,
 }) {
   const t = useT();
@@ -108,12 +108,13 @@ const VoiceTile = memo(function VoiceTile({
   }, [cameraStream, showVideo]);
 
   const openMenu = (event) => {
-    if (!canModerate || tile.isLocal) return;
+    if (tile.isLocal) return;
     event.preventDefault();
     event.stopPropagation();
     onOpenMenu?.({
       user: tile.member,
       channelId: tile.channelId,
+      sharing: Boolean(tile.sharing),
       x: event.clientX,
       y: event.clientY,
     });
@@ -179,7 +180,7 @@ const VoiceTile = memo(function VoiceTile({
             </span>
           ) : null}
         </span>
-        {canModerate && !tile.isLocal ? (
+        {!tile.isLocal ? (
           <button
             type="button"
             className="server-voice-tile-more"
@@ -195,7 +196,7 @@ const VoiceTile = memo(function VoiceTile({
 }, sameTile);
 
 /** Dedicated audio element for remote screen/tab audio (video stays muted). */
-function RemoteScreenAudioSink({ stream, volume = 100, enabled = true }) {
+function RemoteScreenAudioSink({ stream, volume = 100, enabled = true, sinkId = "" }) {
   const audioRef = useRef(null);
   const trackCount =
     stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
@@ -205,6 +206,9 @@ function RemoteScreenAudioSink({ stream, volume = 100, enabled = true }) {
     if (!audioEl) return;
     const vol = enabled ? Math.max(0, Math.min(1, Number(volume) / 100)) : 0;
     audioEl.volume = vol;
+    if (sinkId && typeof audioEl.setSinkId === "function") {
+      audioEl.setSinkId(sinkId).catch(() => {});
+    }
     if (!enabled || !stream || trackCount === 0) {
       audioEl.muted = true;
       if (audioEl.srcObject) audioEl.srcObject = null;
@@ -226,7 +230,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, enabled = true }) {
         play();
       };
     });
-  }, [stream, trackCount, volume, enabled]);
+  }, [stream, trackCount, volume, enabled, sinkId]);
 
   return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
@@ -235,11 +239,51 @@ function RemoteScreenAudioSink({ stream, volume = 100, enabled = true }) {
  * Multi-sharer screen stage — same UX as group/DM CallOverlay:
  * switch screens, volume, click-to-fullscreen.
  */
-function ServerScreenShareStage({ sharers }) {
+function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
+  const t = useT();
+  const videoRef = useRef(null);
+  const stream = sharer?.stream || null;
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = true;
+    if (el.srcObject !== stream) el.srcObject = stream || null;
+    if (stream) el.play?.().catch(() => {});
+  }, [stream]);
+
+  return (
+    <div className="server-voice-screen server-voice-screen-card">
+      <video ref={videoRef} className="server-voice-screen-video" autoPlay playsInline muted />
+      {!streamHasLiveVideo(stream) && (
+        <div className="server-voice-screen-waiting">{t("Waiting for screen…")}</div>
+      )}
+      <button type="button" className="server-voice-screen-badge is-button" onClick={onOpen}>
+        <Monitor size={12} />
+        <span>{label}</span>
+      </button>
+      {!sharer.isLocal && (
+        <label className="server-voice-screen-volume" onClick={(event) => event.stopPropagation()}>
+          <Volume2 size={14} aria-hidden="true" />
+          <input
+            aria-label={t("Screen share volume")}
+            type="range"
+            min="0"
+            max="100"
+            value={volume}
+            onChange={(event) => onVolumeChange?.(Number(event.target.value))}
+          />
+          <span>{volume}%</span>
+        </label>
+      )}
+    </div>
+  );
+}
+
+function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId = "" }) {
   const t = useT();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [volume, setVolume] = useState(100);
   const [aspectKey, setAspectKey] = useState("0x0");
   const prevCountRef = useRef(0);
   const normalVideoRef = useRef(null);
@@ -321,23 +365,55 @@ function ServerScreenShareStage({ sharers }) {
 
   if (!sharers.length || !active) return null;
 
-  const label = active.isLocal
-    ? t("Your Screen")
-    : t("{name}'s Screen", { name: active.username || "Member" });
+  const labelFor = (sharer) =>
+    sharer?.isLocal
+      ? t("Your Screen")
+      : t("{name}'s Screen", { name: sharer?.username || "Member" });
+  const volumeFor = (sharer) => {
+    const stored = volumes?.[String(sharer?.id)];
+    return stored == null ? 100 : stored;
+  };
+  const label = labelFor(active);
+
+  const audioSinks = sharers
+    .filter((s) => !s.isLocal && s.stream)
+    .map((s) => (
+      <RemoteScreenAudioSink
+        key={`screen-audio-${s.id}`}
+        stream={s.stream}
+        volume={volumeFor(s)}
+        enabled
+        sinkId={sinkId}
+      />
+    ));
+
+  if (sharers.length > 1 && !expanded) {
+    return (
+      <div className="server-voice-screen-stage is-multi">
+        {audioSinks}
+        <div className="server-voice-screen-grid">
+          {sharers.map((sharer) => (
+            <ScreenShareCard
+              key={sharer.id}
+              sharer={sharer}
+              label={labelFor(sharer)}
+              volume={volumeFor(sharer)}
+              onVolumeChange={(value) => onVolumeChange?.(sharer.id, value)}
+              onOpen={() => {
+                const index = sharers.findIndex((item) => String(item.id) === String(sharer.id));
+                setSelectedIndex(index < 0 ? 0 : index);
+                setExpanded(true);
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="server-voice-screen-stage">
-      {/* Durable remote screen audio — only active sharer is audible */}
-      {sharers
-        .filter((s) => !s.isLocal && s.stream)
-        .map((s) => (
-          <RemoteScreenAudioSink
-            key={`screen-audio-${s.id}`}
-            stream={s.stream}
-            volume={volume}
-            enabled={String(s.id) === String(active.id)}
-          />
-        ))}
+      {audioSinks}
 
       <div
         className="server-voice-screen"
@@ -377,10 +453,10 @@ function ServerScreenShareStage({ sharers }) {
               type="range"
               min="0"
               max="100"
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
+              value={volumeFor(active)}
+              onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
             />
-            <span>{volume}%</span>
+            <span>{volumeFor(active)}%</span>
           </label>
         )}
 
@@ -419,10 +495,10 @@ function ServerScreenShareStage({ sharers }) {
                   type="range"
                   min="0"
                   max="100"
-                  value={volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
+                  value={volumeFor(active)}
+                  onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
                 />
-                <span>{volume}%</span>
+                <span>{volumeFor(active)}%</span>
               </label>
             )}
             <div className="server-voice-screen-hint is-expanded">
@@ -465,6 +541,7 @@ export default function ServerVoicePanel({
   serverVoice,
 }) {
   const t = useT();
+  const { toast } = useToast();
   const inThis =
     serverVoice?.isInVoice &&
     serverVoice.activeChannelId === channel?.id;
@@ -532,7 +609,6 @@ export default function ServerVoicePanel({
   const canMoveMembers = voicePermissionsReady && serverHasPermission(server, "MOVE_MEMBERS");
   const canMuteMembers = voicePermissionsReady && serverHasPermission(server, "MUTE_MEMBERS");
   const canDeafenMembers = voicePermissionsReady && serverHasPermission(server, "DEAFEN_MEMBERS");
-  const canModerate = canMoveMembers || canMuteMembers;
 
   const tiles = useMemo(() => {
     const list = [];
@@ -666,7 +742,14 @@ export default function ServerVoicePanel({
       {serverVoice?.error ? <p className="server-modal-error server-voice-room-error">{t(serverVoice.error)}</p> : null}
 
       <div className={`server-voice-room-stage${sharing ? " is-sharing" : ""}`}>
-        {sharing ? <ServerScreenShareStage sharers={screenSharers} /> : null}
+        {sharing ? (
+          <ServerScreenShareStage
+            sharers={screenSharers}
+            volumes={serverVoice?.screenVolumes || {}}
+            onVolumeChange={(id, value) => serverVoice?.setScreenShareVolume?.(id, value)}
+            sinkId={serverVoice?.selectedAudioOutput || ""}
+          />
+        ) : null}
         {tiles.length > 0 ? (
           <div
             className={`server-voice-grid ${gridBand(tiles.length)}${sharing ? " is-rail" : ""}`}
@@ -680,7 +763,6 @@ export default function ServerVoicePanel({
                   compact={sharing}
                   count={tiles.length}
                   youLabel={t("You")}
-                  canModerate={canModerate}
                   onOpenMenu={openMemberMenu}
                 />
               ))}
@@ -702,23 +784,44 @@ export default function ServerVoicePanel({
         {inThis ? (
           <>
             <div className="server-voice-dock-group" role="group" aria-label={t("Voice channel")}>
-              <button
-                type="button"
-                className={`server-voice-dock-btn${serverVoice.muted ? " is-off" : ""}`}
-                onClick={() => serverVoice.toggleMute?.()}
-                disabled={!serverVoice.canSpeak}
-                aria-pressed={Boolean(serverVoice.muted)}
-                aria-label={serverVoice.muted ? t("Unmute") : t("Mute")}
-                title={
-                  !serverVoice.canSpeak
-                    ? t("You need to be invited to speak first.")
-                    : serverVoice.muted
-                      ? t("Unmute")
-                      : t("Mute")
-                }
+              <DockDeviceSlot
+                onOpen={() => serverVoice.refreshMediaDevices?.()}
+                menuLabel={t("Audio devices")}
+                sections={[
+                  {
+                    id: "mic",
+                    label: t("Microphone"),
+                    devices: serverVoice.audioInputDevices || [],
+                    selectedId: serverVoice.selectedAudioInput || "",
+                    onSelect: (deviceId) => serverVoice.setAudioInput?.(deviceId),
+                  },
+                  {
+                    id: "out",
+                    label: t("Headphones"),
+                    devices: serverVoice.audioOutputDevices || [],
+                    selectedId: serverVoice.selectedAudioOutput || "",
+                    onSelect: (deviceId) => serverVoice.setAudioOutput?.(deviceId),
+                  },
+                ]}
               >
-                {serverVoice.muted ? <MicOff size={18} /> : <Mic size={18} />}
-              </button>
+                <button
+                  type="button"
+                  className={`server-voice-dock-btn${serverVoice.muted ? " is-off" : ""}`}
+                  onClick={() => serverVoice.toggleMute?.()}
+                  disabled={!serverVoice.canSpeak}
+                  aria-pressed={Boolean(serverVoice.muted)}
+                  aria-label={serverVoice.muted ? t("Unmute") : t("Mute")}
+                  title={
+                    !serverVoice.canSpeak
+                      ? t("You need to be invited to speak first.")
+                      : serverVoice.muted
+                        ? t("Unmute")
+                        : t("Mute")
+                  }
+                >
+                  {serverVoice.muted ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
+              </DockDeviceSlot>
               {isNoiseSuppressionEnabled() ? (
                 <span className="server-voice-ns-badge" title={t("AI noise suppression")}>
                   NS
@@ -736,17 +839,31 @@ export default function ServerVoicePanel({
                   <Radio size={18} />
                 </button>
               ) : null}
-              <button
-                type="button"
-                className={`server-voice-dock-btn${serverVoice.isCameraOn ? " is-live" : ""}`}
-                onClick={onToggleCamera}
-                disabled={!canVideo}
-                aria-pressed={Boolean(serverVoice.isCameraOn)}
-                aria-label={serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
-                title={!canVideo ? t("Permission denied") : serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
+              <DockDeviceSlot
+                onOpen={() => serverVoice.refreshMediaDevices?.()}
+                menuLabel={t("Camera")}
+                sections={[
+                  {
+                    id: "cam",
+                    label: t("Camera"),
+                    devices: serverVoice.videoInputDevices || [],
+                    selectedId: serverVoice.selectedVideoInput || "",
+                    onSelect: (deviceId) => serverVoice.setVideoInput?.(deviceId),
+                  },
+                ]}
               >
-                {serverVoice.isCameraOn ? <VideoOff size={18} /> : <Video size={18} />}
-              </button>
+                <button
+                  type="button"
+                  className={`server-voice-dock-btn${serverVoice.isCameraOn ? " is-live" : ""}`}
+                  onClick={onToggleCamera}
+                  disabled={!canVideo}
+                  aria-pressed={Boolean(serverVoice.isCameraOn)}
+                  aria-label={serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
+                  title={!canVideo ? t("Permission denied") : serverVoice.isCameraOn ? t("Turn Camera Off") : t("Turn Camera On")}
+                >
+                  {serverVoice.isCameraOn ? <VideoOff size={18} /> : <Video size={18} />}
+                </button>
+              </DockDeviceSlot>
               <button
                 type="button"
                 className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}`}
@@ -798,6 +915,24 @@ export default function ServerVoicePanel({
         voiceChannels={voiceChannels}
         serverId={server?.id}
         serverVoice={serverVoice}
+        voiceVolume={Math.round(((serverVoice?.participantVolumes?.[String(memberMenu?.user?.id)] ?? 1) * 100))}
+        onVoiceVolume={(value) => serverVoice?.setParticipantVolume?.(memberMenu?.user?.id, value / 100)}
+        onToggleVoiceMute={() => serverVoice?.toggleParticipantMute?.(memberMenu?.user?.id)}
+        showScreenVolume={Boolean(memberMenu?.sharing || memberMenu?.user?.isScreenSharing || memberMenu?.user?.screenStream)}
+        screenVolume={serverVoice?.screenVolumes?.[String(memberMenu?.user?.id)] ?? 100}
+        onScreenVolume={(value) => serverVoice?.setScreenShareVolume?.(memberMenu?.user?.id, value)}
+        onViewProfile={() => {
+          const user = memberMenu?.user;
+          if (!user?.id) return;
+          window.dispatchEvent(new CustomEvent("descall:open-profile", { detail: { user } }));
+          setMemberMenu(null);
+        }}
+        onCopyId={() => {
+          const id = memberMenu?.user?.id;
+          if (id == null) return;
+          navigator.clipboard?.writeText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+          setMemberMenu(null);
+        }}
         onClose={() => setMemberMenu(null)}
       />
     </div>

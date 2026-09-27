@@ -19,6 +19,10 @@ import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
 import useSpeaking from "../hooks/useSpeaking";
 import useAudioLevel from "../hooks/useAudioLevel";
 import { useT } from "../context/LocaleContext";
+import { useToast } from "../context/ToastContext";
+import { DockDeviceSlot } from "./call/DevicePicker";
+import VoiceMemberContextMenu from "./servers/VoiceMemberContextMenu";
+import UserProfileModal from "./social/UserProfileModal";
 
 /*
  * Google Meet-style call overlay
@@ -40,7 +44,7 @@ function streamHasLiveVideo(stream) {
  * Always-mounted sink for remote screen/tab audio.
  * Lives outside ScreenShareLayout so minimize / layout swaps don't mute yayin sesi.
  */
-function RemoteScreenAudioSink({ stream, volume = 100 }) {
+function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   const audioRef = useRef(null);
   const trackCount =
     stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
@@ -50,6 +54,9 @@ function RemoteScreenAudioSink({ stream, volume = 100 }) {
     if (!audioEl) return;
     const vol = Math.max(0, Math.min(1, Number(volume) / 100));
     audioEl.volume = vol;
+    if (sinkId && typeof audioEl.setSinkId === "function") {
+      audioEl.setSinkId(sinkId).catch(() => {});
+    }
     if (!stream || trackCount === 0) {
       audioEl.muted = true;
       if (audioEl.srcObject) audioEl.srcObject = null;
@@ -72,13 +79,14 @@ function RemoteScreenAudioSink({ stream, volume = 100 }) {
         play();
       };
     });
-  }, [stream, trackCount, volume]);
+  }, [stream, trackCount, volume, sinkId]);
 
   return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
 export default function CallOverlay({ call, groupCall, me }) {
   const t = useT();
+  const { toast } = useToast();
   const callOverlayKey = me?.equippedCallOverlay?.effect_key || null;
   const callOverlayClass = callOverlayKey ? `cosmetic-call-overlay overlay-${callOverlayKey}` : "";
   const [minimized, setMinimized] = useState(false);
@@ -90,6 +98,22 @@ export default function CallOverlay({ call, groupCall, me }) {
   const [showAudioPanel, setShowAudioPanel] = useState(false);
   const [showScreenQuality, setShowScreenQuality] = useState(false);
   const [screenShareVolume, setScreenShareVolume] = useState(100);
+  const [screenVolumes, setScreenVolumes] = useState({});
+  const [userVolumes, setUserVolumes] = useState({});
+  const [userMenu, setUserMenu] = useState(null);
+  const lastUserVolumeRef = useRef({});
+  const [profileUser, setProfileUser] = useState(null);
+  const openUserMenu = (event, user, sharing = false) => {
+    if (!user?.id) return;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    setUserMenu({
+      user,
+      sharing: Boolean(sharing || user.isScreenSharing || user.screenStream || user.isScreenSharing),
+      x: event?.clientX || 0,
+      y: event?.clientY || 0,
+    });
+  };
   const [copiedInfo, setCopiedInfo] = useState(false);
   const narrowViewport = useIsNarrowViewport(720);
   const moreMenuRef = useRef(null);
@@ -226,7 +250,12 @@ export default function CallOverlay({ call, groupCall, me }) {
         .map((p) => ({ id: p.id, stream: p.screenStream }));
 
   const durableScreenAudio = durableScreenAudioSources.map(({ id, stream }) => (
-    <RemoteScreenAudioSink key={`screen-audio-${id}`} stream={stream} volume={screenShareVolume} />
+    <RemoteScreenAudioSink
+      key={`screen-audio-${id}`}
+      stream={stream}
+      volume={screenVolumes[String(id)] ?? screenShareVolume}
+      sinkId={(isDm ? call?.selectedAudioOutput : groupCall?.selectedAudioOutput) || ""}
+    />
   ));
 
   /* ---------- Incoming DM: FaceTime-style avatar rings ---------- */
@@ -371,6 +400,8 @@ export default function CallOverlay({ call, groupCall, me }) {
             hasVideo: call.remoteCameraOn !== false && streamHasLiveVideo(call.remoteStream),
             isMuted: Boolean(call.remoteMuted),
             isCameraOn: call.remoteCameraOn,
+            isScreenSharing: Boolean(call.remoteScreenSharing),
+            screenStream: call.remoteScreenStream,
           }]
         : [])
     : (groupCall?.participants ?? []).filter((p) => p.id !== localId);
@@ -503,7 +534,13 @@ export default function CallOverlay({ call, groupCall, me }) {
             localUser={me}
             narrow={narrowViewport}
             screenShareVolume={screenShareVolume}
+            screenVolumes={screenVolumes}
             onScreenShareVolumeChange={setScreenShareVolume}
+            onScreenVolumeForSharer={(id, value) => {
+              setScreenVolumes((prev) => ({ ...prev, [String(id)]: value }));
+              setScreenShareVolume(value);
+            }}
+            onOpenUserMenu={openUserMenu}
           />
         ) : (
           <ParticipantGrid
@@ -522,6 +559,7 @@ export default function CallOverlay({ call, groupCall, me }) {
             localUsername={localUsername}
             localAvatarUrl={resolveAvatarUrl(me)}
             localUser={me}
+            onOpenUserMenu={openUserMenu}
           />
         )}
       </div>
@@ -560,23 +598,56 @@ export default function CallOverlay({ call, groupCall, me }) {
           </>
         ) : (
           <>
-            <CircleBtn
-              size={narrowViewport ? 46 : 52}
-              color={muted ? "#ed4245" : "#3c4043"}
-              onClick={isDm ? call.toggleMute : groupCall.toggleMute}
-              title={muted ? t("Unmute") : t("Mute")}
+            <DockDeviceSlot
+              menuLabel={t("Audio devices")}
+              sections={[
+                {
+                  id: "mic",
+                  label: t("Microphone"),
+                  devices: (isDm ? call : groupCall)?.audioInputDevices || [],
+                  selectedId: (isDm ? call : groupCall)?.selectedAudioInput || "",
+                  onSelect: (deviceId) => (isDm ? call : groupCall)?.setAudioInput?.(deviceId),
+                },
+                {
+                  id: "out",
+                  label: t("Headphones"),
+                  devices: (isDm ? call : groupCall)?.audioOutputDevices || [],
+                  selectedId: (isDm ? call : groupCall)?.selectedAudioOutput || "",
+                  onSelect: (deviceId) => (isDm ? call : groupCall)?.setAudioOutput?.(deviceId),
+                },
+              ]}
             >
-              {muted ? <MicOff size={narrowViewport ? 19 : 22} /> : <Mic size={narrowViewport ? 19 : 22} />}
-            </CircleBtn>
+              <CircleBtn
+                size={narrowViewport ? 46 : 52}
+                color={muted ? "#ed4245" : "#3c4043"}
+                onClick={isDm ? call.toggleMute : groupCall.toggleMute}
+                title={muted ? t("Unmute") : t("Mute")}
+              >
+                {muted ? <MicOff size={narrowViewport ? 19 : 22} /> : <Mic size={narrowViewport ? 19 : 22} />}
+              </CircleBtn>
+            </DockDeviceSlot>
 
-            <CircleBtn
-              size={narrowViewport ? 46 : 52}
-              color={cameraOn ? "#3c4043" : "#ed4245"}
-              onClick={isDm ? call.toggleCamera : groupCall.toggleCamera}
-              title={cameraOn ? t("Turn off camera") : t("Turn on camera")}
+            <DockDeviceSlot
+              menuLabel={t("Camera")}
+              sections={[
+                {
+                  id: "cam",
+                  label: t("Camera"),
+                  devices: (isDm ? call : groupCall)?.videoInputDevices || [],
+                  selectedId: (isDm ? call : groupCall)?.selectedVideoInput || "",
+                  onSelect: (deviceId) => (isDm ? call : groupCall)?.setVideoInput?.(deviceId),
+                },
+              ]}
             >
-              {cameraOn ? <Video size={narrowViewport ? 19 : 22} /> : <VideoOff size={narrowViewport ? 19 : 22} />}
-            </CircleBtn>
+              <CircleBtn
+                size={narrowViewport ? 46 : 52}
+                color={cameraOn ? "#3c4043" : "#ed4245"}
+                onClick={isDm ? call.toggleCamera : groupCall.toggleCamera}
+                title={cameraOn ? t("Turn off camera") : t("Turn on camera")}
+              >
+                {cameraOn ? <Video size={narrowViewport ? 19 : 22} /> : <VideoOff size={narrowViewport ? 19 : 22} />}
+              </CircleBtn>
+            </DockDeviceSlot>
 
             <div
               ref={screenQualityAnchorRef}
@@ -921,6 +992,56 @@ export default function CallOverlay({ call, groupCall, me }) {
         )}
       </AnimatePresence>
     </motion.div>
+    <VoiceMemberContextMenu
+      menu={userMenu}
+      canMove={false}
+      canMute={false}
+      voiceChannels={[]}
+      voiceVolume={userVolumes[String(userMenu?.user?.id)] ?? 100}
+      onVoiceVolume={(value) => {
+        const id = userMenu?.user?.id;
+        if (id == null) return;
+        if (value > 0) lastUserVolumeRef.current[String(id)] = value;
+        setUserVolumes((prev) => ({ ...prev, [String(id)]: value }));
+        (isDm ? call : groupCall)?.setParticipantVolume?.(id, value / 100);
+      }}
+      onToggleVoiceMute={() => {
+        const id = userMenu?.user?.id;
+        if (id == null) return;
+        const key = String(id);
+        const current = userVolumes[key] ?? 100;
+        const next = current > 0 ? 0 : (lastUserVolumeRef.current[key] || 100);
+        if (current > 0) lastUserVolumeRef.current[key] = current;
+        setUserVolumes((prev) => ({ ...prev, [key]: next }));
+        (isDm ? call : groupCall)?.setParticipantVolume?.(id, next / 100);
+      }}
+      showScreenVolume={Boolean(userMenu?.sharing)}
+      screenVolume={screenVolumes[String(userMenu?.user?.id)] ?? screenShareVolume}
+      onScreenVolume={(value) => {
+        const id = userMenu?.user?.id;
+        if (id == null) return;
+        setScreenVolumes((prev) => ({ ...prev, [String(id)]: value }));
+      }}
+      onViewProfile={() => {
+        if (userMenu?.user?.id) setProfileUser(userMenu.user);
+        setUserMenu(null);
+      }}
+      onCopyId={() => {
+        const id = userMenu?.user?.id;
+        if (id == null) return;
+        navigator.clipboard?.writeText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+        setUserMenu(null);
+      }}
+      onClose={() => setUserMenu(null)}
+    />
+    <UserProfileModal
+      open={Boolean(profileUser)}
+      onClose={() => setProfileUser(null)}
+      userId={profileUser?.id}
+      username={profileUser?.username}
+      avatarUrl={profileUser?.avatarUrl || profileUser?.avatar_url}
+      me={me}
+    />
     </>
   );
 }
@@ -1036,6 +1157,7 @@ function ParticipantTile({
   cameraOn = true,
   connectionQuality = null,
   handRaised = false,
+  onContextMenu,
 }) {
   const t = useT();
   const elRef = useRef(null);
@@ -1079,6 +1201,14 @@ function ParticipantTile({
       className={`participant-tile${small ? " small" : ""}${isSpeaking ? " is-speaking" : ""}${
         showVideo ? "" : " participant-tile--avatar-only"
       }`}
+      onContextMenu={
+        isLocal
+          ? undefined
+          : (event) => {
+              event.preventDefault();
+              onContextMenu?.(event);
+            }
+      }
     >
       {handRaised && (
         <span className="participant-tile-hand-badge" title={t("Hand raised")} aria-label={t("Hand raised")}>
@@ -1215,7 +1345,7 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
   );
 }
 
-function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null }) {
+function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
   const t = useT();
   const dmRemote = useDmRemoteParticipant({
     peer: isDm ? call?.peer : null,
@@ -1292,6 +1422,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             remoteStream={call?.remoteStream}
             isMuted={Boolean(call?.remoteMuted)}
             cameraOn={call?.remoteCameraOn}
+            onContextMenu={(event) => onOpenUserMenu?.(event, call?.peer, Boolean(call?.remoteScreenSharing))}
           />
         </motion.div>
       )}
@@ -1310,6 +1441,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             cameraOn={tile.cameraOn}
             connectionQuality={tile.connectionQuality}
             handRaised={tile.handRaised}
+            onContextMenu={(event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))}
           />
         </motion.div>
       ))}
@@ -1320,7 +1452,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
 /* ─────────────────────────────────────────────────────────────────
    ScreenShareLayout — selected screen large on top, strip below
    ───────────────────────────────────────────────────────────────── */
-function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded, isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, localUsername, localAvatarUrl, localUser = null, narrow = false, screenShareVolume = 100, onScreenShareVolumeChange }) {
+function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded, isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, localUsername, localAvatarUrl, localUser = null, narrow = false, screenShareVolume = 100, onScreenShareVolumeChange, screenVolumes = {}, onScreenVolumeForSharer, onOpenUserMenu }) {
   const t = useT();
   const [selectedSharerIndex, setSelectedSharerIndex] = useState(0);
   const [viewerCount] = useState(0);
@@ -1552,11 +1684,15 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
               type="range"
               min="0"
               max="100"
-              value={screenShareVolume}
-              onChange={(event) => onScreenShareVolumeChange?.(Number(event.target.value))}
+              value={screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                if (activeSharer?.id != null) onScreenVolumeForSharer?.(activeSharer.id, value);
+                onScreenShareVolumeChange?.(value);
+              }}
               style={{ width: narrow ? 78 : 112, accentColor: "#6678ff" }}
             />
-            <span style={{ fontSize: 11, minWidth: 30 }}>{screenShareVolume}%</span>
+            <span style={{ fontSize: 11, minWidth: 30 }}>{screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}%</span>
           </label>
         )}
 
@@ -1680,6 +1816,11 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                 muted={tile.muted}
                 cameraOn={tile.cameraOn}
                 small
+                onContextMenu={
+                  tile.isLocal
+                    ? undefined
+                    : (event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))
+                }
               />
             </div>
           );
