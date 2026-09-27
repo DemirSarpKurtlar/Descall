@@ -1096,6 +1096,12 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] key revive scheduler failed:", e.message);
   }
+  try {
+    const { retireSoundPacks } = require("./lib/shop");
+    await retireSoundPacks();
+  } catch (e) {
+    console.warn("[boot] sound pack retire failed:", e.message);
+  }
 }
 
 if (isVercel) {

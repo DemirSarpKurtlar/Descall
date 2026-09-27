@@ -3101,6 +3101,11 @@ button.member-row.server-member-row {
   background: #090a0c;
 }
 
+/* Local camera only. The published track stays unmirrored for everyone else. */
+.server-voice-tile-video.is-local-mirror {
+  transform: scaleX(-1);
+}
+
 .server-voice-tile-meta {
   position: absolute;
   left: 8px;

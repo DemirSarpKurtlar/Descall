@@ -89,7 +89,9 @@ router.post("/purchase", requireAuth, async (req, res) => {
     if (!itemId) return res.status(400).json({ error: "itemId is required." });
 
     const item = await shop.getItemById(itemId);
-    if (!item || !item.active) return res.status(404).json({ error: "Item not found." });
+    if (!item || !item.active || shop.RETIRED_SHOP_CATEGORIES.has(item.category)) {
+      return res.status(404).json({ error: "Item not found." });
+    }
 
     if (await shop.userOwnsItem(req.user.id, itemId)) {
       return res.status(409).json({ error: "You already own this item." });

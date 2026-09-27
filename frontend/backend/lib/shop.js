@@ -9,6 +9,9 @@
 
 const supabase = require("../db/supabase");
 
+/** Shop sound packs are retired. Equipped packs fall back to the default tones. */
+const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack"]);
+
 const EQUIP_COLUMN_BY_CATEGORY = {
   banner: "equipped_banner_id",
   avatar_frame: "equipped_avatar_frame_id",
@@ -86,11 +89,33 @@ function toCatalogItem(item, { includeAssets = false } = {}) {
 }
 
 async function listActiveItems({ category = null, includeAssets = false } = {}) {
+  if (category && RETIRED_SHOP_CATEGORIES.has(category)) return [];
   let query = supabase.from("shop_items").select(ITEM_COLUMNS).eq("active", true);
   if (category) query = query.eq("category", category);
   const { data, error } = await query.order("sort_order", { ascending: true });
   if (error) throw error;
-  return (data || []).map((item) => toCatalogItem(item, { includeAssets }));
+  return (data || [])
+    .filter((item) => !RETIRED_SHOP_CATEGORIES.has(item.category))
+    .map((item) => toCatalogItem(item, { includeAssets }));
+}
+
+/**
+ * Turn off shop sound packs and clear anyone who still has one equipped.
+ * Idempotent. Default audio is an empty equipped_sound_pack_id.
+ */
+async function retireSoundPacks() {
+  const { error: itemError } = await supabase
+    .from("shop_items")
+    .update({ active: false })
+    .eq("category", "sound_pack")
+    .eq("active", true);
+  if (itemError) throw itemError;
+
+  const { error: userError } = await supabase
+    .from("users")
+    .update({ equipped_sound_pack_id: null })
+    .not("equipped_sound_pack_id", "is", null);
+  if (userError) throw userError;
 }
 
 async function listAllItems() {
@@ -257,9 +282,10 @@ async function markGiftsNotified(inventoryIds) {
 async function equipItem(userId, category, itemId) {
   const column = EQUIP_COLUMN_BY_CATEGORY[category];
   if (!column) throw new Error(`Invalid shop category: ${category}`);
+  const nextId = RETIRED_SHOP_CATEGORIES.has(category) ? null : itemId || null;
   const { error } = await supabase
     .from("users")
-    .update({ [column]: itemId || null })
+    .update({ [column]: nextId })
     .eq("id", userId);
   if (error) throw error;
 }
@@ -330,7 +356,7 @@ async function getEquippedCosmeticsForUser(userId) {
     chatBubble: byId.get(user.equipped_chat_bubble_id) || null,
     presenceFlare: byId.get(user.equipped_presence_flare_id) || null,
     profileAura: byId.get(user.equipped_profile_aura_id) || null,
-    soundPack: byId.get(user.equipped_sound_pack_id) || null,
+    soundPack: null,
     typingFlare: byId.get(user.equipped_typing_flare_id) || null,
     reactionBurst: byId.get(user.equipped_reaction_burst_id) || null,
     callOverlay: byId.get(user.equipped_call_overlay_id) || null,
@@ -358,7 +384,7 @@ async function getEquippedForUsers(userIds) {
       chatBubbleId: u.equipped_chat_bubble_id,
       presenceFlareId: u.equipped_presence_flare_id,
       profileAuraId: u.equipped_profile_aura_id,
-      soundPackId: u.equipped_sound_pack_id,
+      soundPackId: null,
       typingFlareId: u.equipped_typing_flare_id,
       reactionBurstId: u.equipped_reaction_burst_id,
       callOverlayId: u.equipped_call_overlay_id,
@@ -369,8 +395,10 @@ async function getEquippedForUsers(userIds) {
 
 module.exports = {
   EQUIP_COLUMN_BY_CATEGORY,
+  RETIRED_SHOP_CATEGORIES,
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
+  retireSoundPacks,
   listAllItems,
   getItemById,
   createItem,

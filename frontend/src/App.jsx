@@ -895,16 +895,14 @@ export default function App() {
     }
   }, [me, me?.equippedTheme?.theme_key]);
 
-  // Equip catalog sound pack into the audio layer (unique Web Audio voices per key).
+  // Shop sound packs are retired. Always play the default message and call tones.
   useEffect(() => {
-    const key = me?.equippedSoundPack?.effect_key || "";
     try {
-      if (key) document.documentElement.dataset.soundPack = key;
-      else delete document.documentElement.dataset.soundPack;
+      delete document.documentElement.dataset.soundPack;
     } catch {
       /* ignore */
     }
-    setEquippedSoundPack(key || null);
+    setEquippedSoundPack(null);
   }, [me?.equippedSoundPack?.effect_key]);
 
   const applyProfileUpdate = useCallback((user) => {

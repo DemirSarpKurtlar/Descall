@@ -11,12 +11,10 @@ import {
   MessageSquare,
   Palette,
   Phone,
-  Play,
   Sparkles,
   Sun,
   Tag,
   Type,
-  Volume2,
   Wallpaper,
   Zap,
 } from "lucide-react";
@@ -30,8 +28,6 @@ import {
   getDesCoinDaily,
   claimDesCoinDaily,
 } from "../../api/shop";
-import { previewSoundPack } from "../../lib/audioManager";
-import { preloadSoundPack } from "../../lib/soundPackSynth";
 import { useT } from "../../context/LocaleContext";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
@@ -50,7 +46,6 @@ const CATEGORY_TABS = [
   { id: "chat_bubble", label: "Bubbles", icon: MessageSquare },
   { id: "presence_flare", label: "Presence", icon: CircleDot },
   { id: "profile_aura", label: "Auras", icon: Sun },
-  { id: "sound_pack", label: "Sounds", icon: Volume2 },
   { id: "typing_flare", label: "Typing", icon: Ellipsis },
   { id: "reaction_burst", label: "Reactions", icon: Flame },
   { id: "call_overlay", label: "Call Overlays", icon: Phone },
@@ -83,7 +78,6 @@ const CATEGORY_HEADING = {
   chat_bubble: "Chat Bubble Skins",
   presence_flare: "Presence Flares",
   profile_aura: "Profile Auras",
-  sound_pack: "Sound Packs",
   typing_flare: "Typing Flares",
   reaction_burst: "Reaction Bursts",
   call_overlay: "Call Overlays",
@@ -133,30 +127,6 @@ function ShopItemPreview({ category, item, t }) {
       <div className={`shop-profile-aura-preview cosmetic-profile-aura aura-${item.effect_key}`}>
         <Sparkles size={18} />
       </div>
-    );
-  }
-  if (category === "sound_pack") {
-    return (
-      <button
-        type="button"
-        className="shop-sound-pack-preview"
-        title={t("Preview sound")}
-        onMouseEnter={() => {
-          if (item.effect_key) preloadSoundPack(item.effect_key);
-        }}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          previewSoundPack(item.effect_key);
-        }}
-      >
-        <Volume2 size={22} />
-        <span>{item.effect_key}</span>
-        <span className="shop-sound-pack-play">
-          <Play size={12} fill="currentColor" />
-          {t("Preview")}
-        </span>
-      </button>
     );
   }
   if (category === "typing_flare") {
@@ -391,7 +361,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     if (category === "chat_bubble") return equipped?.chatBubbleId;
     if (category === "presence_flare") return equipped?.presenceFlareId;
     if (category === "profile_aura") return equipped?.profileAuraId;
-    if (category === "sound_pack") return equipped?.soundPackId;
     if (category === "typing_flare") return equipped?.typingFlareId;
     if (category === "reaction_burst") return equipped?.reactionBurstId;
     if (category === "call_overlay") return equipped?.callOverlayId;
@@ -408,7 +377,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         </div>
       </div>
       <p className="shop-panel-intro">
-        {t("Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, sound packs, and more.")}
+        {t("Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.")}
       </p>
 
       <div className="descoin-retention-row">

@@ -1,4 +1,4 @@
-import { Flame, Phone, Play, Sparkles, Volume2, Zap } from "lucide-react";
+import { Flame, Phone, Sparkles, Zap } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import ParallaxBanner from "../ui/ParallaxBanner";
@@ -6,8 +6,6 @@ import AdminBadge from "../social/AdminBadge";
 import ValorantBadge from "../social/ValorantBadge";
 import { BadgeIcon, NameEffectText, TitleTag, profileAuraClass } from "../ui/Cosmetics";
 import { cssUrl } from "../../lib/cssUrl";
-import { previewSoundPack } from "../../lib/audioManager";
-import { preloadSoundPack } from "../../lib/soundPackSynth";
 
 const EQUIPPED_SLOTS = [
   { id: "banner", label: "Banners", pick: (user) => user?.equippedBanner },
@@ -21,7 +19,6 @@ const EQUIPPED_SLOTS = [
   { id: "chat_bubble", label: "Bubbles", pick: (user) => user?.equippedChatBubble },
   { id: "presence_flare", label: "Presence", pick: (user) => user?.equippedPresenceFlare },
   { id: "profile_aura", label: "Auras", pick: (user) => user?.equippedProfileAura },
-  { id: "sound_pack", label: "Sounds", pick: (user) => user?.equippedSoundPack },
   { id: "typing_flare", label: "Typing", pick: (user) => user?.equippedTypingFlare },
   { id: "reaction_burst", label: "Reactions", pick: (user) => user?.equippedReactionBurst },
   { id: "call_overlay", label: "Call Overlays", pick: (user) => user?.equippedCallOverlay },
@@ -45,7 +42,6 @@ export default function ShopProfilePreview({ me, t }) {
   const typing = me?.equippedTypingFlare;
   const reaction = me?.equippedReactionBurst;
   const callOverlay = me?.equippedCallOverlay;
-  const sound = me?.equippedSoundPack;
   const statusLabel = {
     online: t("Online"),
     idle: t("Idle"),
@@ -106,14 +102,14 @@ export default function ShopProfilePreview({ me, t }) {
             </div>
           ) : null}
           {me?.valorant?.linked ? <ValorantBadge valorant={me.valorant} compact /> : null}
-          {(bubble || typing || reaction || callOverlay || sound) && (
+          {(bubble || typing || reaction || callOverlay) && (
             <div className="shop-live-extras">
               {bubble ? (
                 <div className={`cosmetic-chat-bubble bubble-${bubble.effect_key} shop-live-bubble`}>
                   {t("Hey there!")}
                 </div>
               ) : null}
-              {(typing || reaction || callOverlay || sound) && (
+              {(typing || reaction || callOverlay) && (
                 <div className="shop-live-chips">
                   {typing ? (
                     <div className={`shop-typing-flare-preview cosmetic-typing-flare typing-${typing.effect_key}`}>
@@ -132,27 +128,6 @@ export default function ShopProfilePreview({ me, t }) {
                     <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${callOverlay.effect_key}`}>
                       <Phone size={14} />
                     </div>
-                  ) : null}
-                  {sound ? (
-                    <button
-                      type="button"
-                      className="shop-sound-pack-preview shop-live-sound"
-                      title={t("Preview sound")}
-                      onMouseEnter={() => {
-                        if (sound.effect_key) preloadSoundPack(sound.effect_key);
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        previewSoundPack(sound.effect_key);
-                      }}
-                    >
-                      <Volume2 size={14} />
-                      <span>{sound.name}</span>
-                      <span className="shop-sound-pack-play">
-                        <Play size={10} fill="currentColor" />
-                        {t("Preview")}
-                      </span>
-                    </button>
                   ) : null}
                 </div>
               )}

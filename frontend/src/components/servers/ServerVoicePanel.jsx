@@ -128,7 +128,7 @@ const VoiceTile = memo(function VoiceTile({
       {showVideo ? (
         <video
           ref={videoRef}
-          className="server-voice-tile-video"
+          className={`server-voice-tile-video${tile.isLocal ? " is-local-mirror" : ""}`}
           autoPlay
           playsInline
           muted
