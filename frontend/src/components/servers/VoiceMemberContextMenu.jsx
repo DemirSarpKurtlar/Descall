@@ -41,6 +41,15 @@ export default function VoiceMemberContextMenu({
 
   useEffect(() => {
     if (!menu?.user) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menu?.user, onClose]);
+
+  useEffect(() => {
+    if (!menu?.user) return undefined;
     const onModError = (event) => {
       const message = event?.detail?.message;
       if (message) toast(message, "error");

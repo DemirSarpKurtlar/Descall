@@ -3749,7 +3749,7 @@ button.member-row.server-member-row {
 .server-voice-user .server-priority-speaker-badge {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 4.6rem;
+  max-width: 4.1rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3903,12 +3903,13 @@ button.member-row.server-member-row {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* 22px avatar + 132% cosmetic frame and speaking rings stay inside the row. */
-  width: 36px;
-  height: 36px;
+  width: 22px;
+  height: 22px;
   overflow: visible;
-  min-width: 36px;
+  min-width: 22px;
   max-width: none;
+  /* Cosmetic frames draw at 132% and must not cover the name. */
+  margin: 0 8px 0 4px;
 }
 
 .server-voice-member-avatar-shell {
@@ -3980,7 +3981,7 @@ button.member-row.server-member-row {
 
 .server-voice-user-name {
   flex: 1 1 auto;
-  min-width: 3.25rem;
+  min-width: 6.25rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
