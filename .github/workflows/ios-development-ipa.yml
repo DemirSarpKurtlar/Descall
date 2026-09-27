@@ -1,0 +1,310 @@
+# Development/test IPA for the existing Capacitor iOS app (com.descall.app).
+#
+# Run manually from the Actions tab after the signing secrets below exist.
+# The job stops before archive/export when any secret is missing or the
+# certificate and profile are not a matching iOS App Development pair.
+# No certificate, profile, or password is stored in the repository.
+#
+# Required GitHub Actions secrets (Settings → Secrets and variables → Actions):
+#
+#   APPLE_TEAM_ID
+#     10-character Apple Developer Team ID (Membership details).
+#
+#   IOS_CERTIFICATE_P12_BASE64
+#     Base64 of an Apple Development certificate exported as a .p12
+#     (Keychain Access → My Certificates → Apple Development → Export).
+#     Include the private key in the export. Do not use an Apple Distribution
+#     or "iPhone Distribution" certificate; this workflow exports a
+#     development IPA, not an App Store IPA.
+#     macOS: base64 -i Certificates.p12 | pbcopy
+#
+#   IOS_CERTIFICATE_PASSWORD
+#     Password set when the .p12 was exported.
+#
+#   IOS_PROVISIONING_PROFILE_BASE64
+#     Base64 of an iOS App Development .mobileprovision for bundle id
+#     com.descall.app. The profile must:
+#       - be a Development profile (get-task-allow = true), not Ad Hoc or App Store
+#       - use the same team as APPLE_TEAM_ID
+#       - be signed by the Apple Development certificate above
+#       - include Push Notifications, because the app entitlements set
+#         aps-environment to development for this development export
+#       - include each device that will install the IPA
+#     macOS: base64 -i Descall_Development.mobileprovision | pbcopy
+
+name: iOS development IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ipa:
+    name: Archive and export development IPA
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      BUNDLE_ID: com.descall.app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require Apple signing secrets
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in APPLE_TEAM_ID IOS_CERTIFICATE_P12_BASE64 IOS_CERTIFICATE_PASSWORD IOS_PROVISIONING_PROFILE_BASE64; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret ${name}. A development IPA cannot be signed. See the comments at the top of .github/workflows/ios-development-ipa.yml."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Refusing to continue. No IPA will be archived, exported, or uploaded."
+            exit 1
+          fi
+
+      - name: Install Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build web assets
+        working-directory: frontend
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        working-directory: frontend
+        run: npx cap sync ios
+
+      - name: Install CocoaPods dependencies if required
+        working-directory: frontend/ios/App
+        run: |
+          set -euo pipefail
+          if [ -f Podfile ]; then
+            if ! command -v pod >/dev/null 2>&1; then
+              sudo gem install cocoapods --no-document
+            fi
+            pod install
+          else
+            echo "No Podfile after cap sync. This Capacitor iOS project uses Swift Package Manager, so CocoaPods is not required."
+          fi
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          if [ -d /Applications/Xcode.app ]; then
+            sudo xcode-select -s /Applications/Xcode.app
+          fi
+          if ! command -v xcodebuild >/dev/null 2>&1; then
+            echo "::error::xcodebuild is not available on this macOS runner."
+            exit 1
+          fi
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Install development certificate and provisioning profile
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/signing.p12"
+          PROFILE_PATH="$RUNNER_TEMP/development.mobileprovision"
+          PROFILE_PLIST="$RUNNER_TEMP/development-profile.plist"
+          KEYCHAIN_PATH="$RUNNER_TEMP/descall-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+
+          if ! printf '%s' "$IOS_CERTIFICATE_P12_BASE64" | tr -d '[:space:]' | base64 --decode > "$CERT_PATH"; then
+            echo "::error::IOS_CERTIFICATE_P12_BASE64 is not valid base64. No IPA will be created."
+            exit 1
+          fi
+          if ! printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | tr -d '[:space:]' | base64 --decode > "$PROFILE_PATH"; then
+            echo "::error::IOS_PROVISIONING_PROFILE_BASE64 is not valid base64. No IPA will be created."
+            exit 1
+          fi
+          if [ ! -s "$CERT_PATH" ] || [ ! -s "$PROFILE_PATH" ]; then
+            echo "::error::Decoded signing certificate or provisioning profile is empty. No IPA will be created."
+            exit 1
+          fi
+
+          if ! security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"; then
+            echo "::error::IOS_PROVISIONING_PROFILE_BASE64 is not a provisioning profile. No IPA will be created."
+            exit 1
+          fi
+
+          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print Name' "$PROFILE_PLIST")"
+          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print UUID' "$PROFILE_PLIST")"
+          PROFILE_TEAM="$(/usr/libexec/PlistBuddy -c 'Print TeamIdentifier:0' "$PROFILE_PLIST")"
+          APP_ID="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:application-identifier' "$PROFILE_PLIST")"
+          GET_TASK="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:get-task-allow' "$PROFILE_PLIST" || true)"
+
+          if [ "$PROFILE_TEAM" != "$APPLE_TEAM_ID" ]; then
+            echo "::error::APPLE_TEAM_ID does not match the provisioning profile team (${PROFILE_TEAM}). No IPA will be created."
+            exit 1
+          fi
+          case "$APP_ID" in
+            *"com.descall.app") ;;
+            *)
+              echo "::error::Provisioning profile application identifier is ${APP_ID}, expected com.descall.app. No IPA will be created."
+              exit 1
+              ;;
+          esac
+          if [ "$GET_TASK" != "true" ]; then
+            echo "::error::Provisioning profile is not an iOS App Development profile (get-task-allow is not true). Use a development profile, not Ad Hoc or App Store. No IPA will be created."
+            exit 1
+          fi
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | awk -F '"' '/Apple Development|iPhone Developer/ { print $2; exit }')"
+          if [ -z "$IDENTITY" ]; then
+            echo "::error::The imported certificate has no Apple Development identity. Export the Apple Development certificate (.p12), including its private key. No IPA will be created."
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
+            exit 1
+          fi
+
+          echo "Using development profile ${PROFILE_NAME} (${PROFILE_UUID}) and signing identity ${IDENTITY}."
+          {
+            echo "KEYCHAIN_PATH=$KEYCHAIN_PATH"
+            echo "PROFILE_NAME=$PROFILE_NAME"
+            echo "PROFILE_UUID=$PROFILE_UUID"
+            echo "CODE_SIGN_IDENTITY=$IDENTITY"
+            echo "KEYCHAIN_PASSWORD<<EOF"
+            echo "$KEYCHAIN_PASSWORD"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+          rm -f "$CERT_PATH"
+
+      - name: Archive iOS app
+        working-directory: frontend/ios/App
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROFILE_NAME:-}" ] || [ -z "${PROFILE_UUID:-}" ] || [ -z "${CODE_SIGN_IDENTITY:-}" ] || [ -z "${APPLE_TEAM_ID:-}" ] || [ -z "${KEYCHAIN_PATH:-}" ]; then
+            echo "::error::Signing material was not installed. Refusing to archive."
+            exit 1
+          fi
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+
+          ARCHIVE_PATH="$RUNNER_TEMP/Descall.xcarchive"
+          if [ -d App.xcworkspace ]; then
+            PROJECT_ARGS=(-workspace App.xcworkspace)
+          else
+            PROJECT_ARGS=(-project App.xcodeproj)
+          fi
+
+          xcodebuild \
+            "${PROJECT_ARGS[@]}" \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+            PROVISIONING_PROFILE="$PROFILE_UUID" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            CODE_SIGN_ENTITLEMENTS=App/App.debug.entitlements \
+            archive
+
+          if [ ! -d "$ARCHIVE_PATH" ]; then
+            echo "::error::xcodebuild archive did not produce Descall.xcarchive."
+            exit 1
+          fi
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
+
+      - name: Export development IPA
+        working-directory: frontend/ios/App
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ARCHIVE_PATH:-}" ] || [ ! -d "$ARCHIVE_PATH" ]; then
+            echo "::error::No archive is available to export. No IPA will be uploaded."
+            exit 1
+          fi
+          if [ -z "${PROFILE_NAME:-}" ] || [ -z "${CODE_SIGN_IDENTITY:-}" ] || [ -z "${KEYCHAIN_PATH:-}" ]; then
+            echo "::error::Signing identity or provisioning profile name is missing. No IPA will be uploaded."
+            exit 1
+          fi
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+
+          EXPORT_PLIST="$RUNNER_TEMP/ExportOptions.plist"
+          EXPORT_PATH="$RUNNER_TEMP/ipa"
+          rm -rf "$EXPORT_PATH"
+          mkdir -p "$EXPORT_PATH"
+          rm -f "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :method string development" "$EXPORT_PLIST" >/dev/null
+          /usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string manual" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :signingCertificate string $CODE_SIGN_IDENTITY" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:${BUNDLE_ID} string $PROFILE_NAME" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :compileBitcode bool false" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :stripSwiftSymbols bool true" "$EXPORT_PLIST"
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist "$EXPORT_PLIST"
+
+          IPA="$(find "$EXPORT_PATH" -type f -name '*.ipa' | head -n 1 || true)"
+          if [ -z "$IPA" ] || [ ! -s "$IPA" ]; then
+            echo "::error::Export did not produce a non-empty IPA. No artifact will be uploaded."
+            exit 1
+          fi
+          if ! unzip -l "$IPA" | grep -q 'Payload/.*\.app/'; then
+            echo "::error::Export produced a file that is not an iOS IPA. No artifact will be uploaded."
+            exit 1
+          fi
+          cp "$IPA" "$RUNNER_TEMP/Descall-development.ipa"
+          ls -lh "$RUNNER_TEMP/Descall-development.ipa"
+
+      - name: Upload development IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: descall-ios-development-ipa
+          path: ${{ runner.temp }}/Descall-development.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove temporary signing keychain
+        if: always()
+        run: |
+          if [ -n "${KEYCHAIN_PATH:-}" ] && [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || echo "Could not delete temporary keychain."
+          fi
+          rm -f "$RUNNER_TEMP/signing.p12" "$RUNNER_TEMP/development.mobileprovision" "$RUNNER_TEMP/development-profile.plist" "$RUNNER_TEMP/ExportOptions.plist"
