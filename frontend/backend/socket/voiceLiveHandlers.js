@@ -58,7 +58,13 @@ function registerVoiceLiveHandlers(io, socket) {
 
   socket.on("voice-live:chunk", ({ roomId, pcm } = {}) => {
     const id = String(roomId || "");
-    if (!id || !voiceLive.userInRoom(myId, id)) return;
+    const parsed = voiceLive.parseRoomId(id);
+    if (!id || !parsed) return;
+    if (!voiceLive.userInRoom(myId, id)) {
+      if (parsed.kind === "server" && !voiceLive.occupancyHas(myId, id)) return;
+      if (!voiceLive.joinLive(id, myId)) return;
+    }
+    if (!voiceLive.userInRoom(myId, id)) return;
     const samples = toInt16(pcm);
     if (samples) voiceLive.pushPcm(id, myId, samples);
   });

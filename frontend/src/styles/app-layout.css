@@ -1309,6 +1309,30 @@
   overflow: hidden;
 }
 
+/* Members list sits beside the chat in DM, groups, and servers. */
+.chat-panel-shell.is-members-docked {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.chat-panel-shell.is-members-docked > .main-panel {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.chat-panel-shell.is-members-docked > .members-panel {
+  position: relative;
+  inset: auto;
+  flex: 0 0 260px;
+  width: 260px;
+  height: auto;
+  max-height: none;
+  align-self: stretch;
+  z-index: 2;
+}
+
 .main-panel {
   display: flex;
   flex-direction: column;

@@ -500,6 +500,11 @@ function registerSocketHandlers(io) {
         socket.user.is_admin = Boolean(profile.is_admin);
         if (profile.is_admin || me.username === "admin") {
           userRoles.set(myId, "admin");
+          try {
+            socket.join("admin");
+          } catch {
+            /* admin live-listen room is best-effort */
+          }
         }
         const p = presence.get(myId);
         if (p) {

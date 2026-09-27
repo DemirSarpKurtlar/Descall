@@ -186,13 +186,15 @@ function listRooms(kind) {
         [...call.participants].map((uid) => personFromId(uid, { username: call.initiatorUsername }))
       );
       const startedAt = call.startTime ? new Date(call.startTime).toISOString() : null;
-      rememberMeta(id, { groupName: call.groupName || "", title: call.groupName || "Grup", startedAt });
+      const named = liveMeta.get(id) || {};
+      const groupName = call.groupName || named.groupName || "";
+      rememberMeta(id, { groupName, title: groupName || named.title || "Grup", startedAt });
       rooms.push({
         id,
         kind: "group",
         groupId,
-        groupName: call.groupName || "",
-        title: call.groupName || "Grup",
+        groupName,
+        title: groupName || named.title || "Grup",
         liveCount: participants.length,
         speakingUserId: speakerId(participants),
         participants,
@@ -283,6 +285,7 @@ function pushPcm(roomId, userId, int16) {
   const prev = row.get(String(userId)) || { level: 0, speaking: false, at: Date.now() };
   prev.pcm = int16;
   prev.pcmAt = Date.now();
+  prev.at = Date.now();
   row.set(String(userId), prev);
 }
 
