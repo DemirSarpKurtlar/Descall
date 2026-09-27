@@ -46,6 +46,33 @@ function presenceStatusLabel(status, t) {
   return t("Online Now");
 }
 
+function SystemSwitch({ icon: Icon, tone, label, status, checked, disabled, onChange }) {
+  return (
+    <div className={`admin-system-switch${checked ? " is-on" : " is-off"}`}>
+      <div className="admin-system-switch-copy">
+        <span className={`admin-system-switch-mark is-${tone}`} aria-hidden="true">
+          <Icon size={16} />
+        </span>
+        <div className="admin-system-switch-text">
+          <strong>{label}</strong>
+          <span>{status}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        className={`admin-system-toggle${checked ? " is-on" : ""}`}
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+      >
+        <span />
+      </button>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "admin.overview", icon: LayoutDashboard },
   { id: "analytics", label: "admin.analytics", icon: Activity },
@@ -585,6 +612,23 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
       setBusy(false);
     }
   };
+
+  const patchSystem = (body) =>
+    act(async () => {
+      await adminFetch("/system", {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await loadSystem();
+    });
+
+  const setFeatureFlag = (key, enabled) =>
+    patchSystem({
+      featureFlags: {
+        ...(system?.config?.featureFlags || {}),
+        [key]: enabled,
+      },
+    });
 
   const filteredUsers = useMemo(() => {
     const q = userQ.trim().toLowerCase();
@@ -1614,192 +1658,177 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
         )}
 
         {tab === "system" && (
-          <section className="admin-section">
+          <section className="admin-section admin-system">
+            <div className="admin-section-header">
+              <h2>{t("admin.system")}</h2>
+            </div>
+            {!system && <p className="muted">{t("common.loading")}</p>}
             {system && (
-              <div className="admin-form">
-                <div className="security-card">
-                  <h3>{t("admin.system")}</h3>
-                  <label>
-                    <input
-                      type="checkbox"
+              <div className="admin-system-layout">
+                <article className="admin-system-card admin-system-card-features">
+                  <div className="admin-system-switches">
+                    <SystemSwitch
+                      icon={Play}
+                      tone="lfg"
+                      label={`${t("Valorant")} ${t("valorantHub.lfg")}`}
+                      status={system.config?.featureFlags?.valorantLfg !== false ? t("On") : t("Off")}
                       checked={system.config?.featureFlags?.valorantLfg !== false}
-                      onChange={(e) =>
-                        act(async () => {
-                          await adminFetch("/system", {
-                            method: "PATCH",
-                            body: JSON.stringify({
-                              featureFlags: {
-                                ...(system.config?.featureFlags || {}),
-                                valorantLfg: e.target.checked,
-                              },
-                            }),
-                          });
-                          await loadSystem();
-                        })
-                      }
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("valorantLfg", enabled)}
                     />
-                    {t("Valorant")} {t("valorantHub.lfg")}
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
+                    <SystemSwitch
+                      icon={Zap}
+                      tone="companion"
+                      label={`${t("Valorant")} ${t("valorantHub.companion")}`}
+                      status={system.config?.featureFlags?.valorantCompanion !== false ? t("On") : t("Off")}
                       checked={system.config?.featureFlags?.valorantCompanion !== false}
-                      onChange={(e) =>
-                        act(async () => {
-                          await adminFetch("/system", {
-                            method: "PATCH",
-                            body: JSON.stringify({
-                              featureFlags: {
-                                ...(system.config?.featureFlags || {}),
-                                valorantCompanion: e.target.checked,
-                              },
-                            }),
-                          });
-                          await loadSystem();
-                        })
-                      }
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("valorantCompanion", enabled)}
                     />
-                    {t("Valorant")} {t("valorantHub.companion")}
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
+                    <SystemSwitch
+                      icon={Sparkles}
+                      tone="dima"
+                      label={t("nav.dimaai")}
+                      status={system.config?.featureFlags?.dimaai !== false ? t("On") : t("Off")}
                       checked={system.config?.featureFlags?.dimaai !== false}
-                      onChange={(e) =>
-                        act(async () => {
-                          await adminFetch("/system", {
-                            method: "PATCH",
-                            body: JSON.stringify({
-                              featureFlags: {
-                                ...(system.config?.featureFlags || {}),
-                                dimaai: e.target.checked,
-                              },
-                            }),
-                          });
-                          await loadSystem();
-                        })
-                      }
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("dimaai", enabled)}
                     />
-                    {t("nav.dimaai")}
-                  </label>
+                  </div>
+                </article>
+
+                <div className="admin-system-grid">
+                  <article className="admin-system-card">
+                    <h3>{t("Config")}</h3>
+                    <label className="admin-system-field">
+                      <span>{t("Max message length")}</span>
+                      <input
+                        className="admin-input"
+                        type="number"
+                        defaultValue={system.config?.maxMessageLength}
+                        onBlur={(e) =>
+                          patchSystem({ maxMessageLength: Number(e.target.value) })
+                        }
+                      />
+                    </label>
+                    <label className="admin-system-field">
+                      <span>{t("Rate limit (ms)")}</span>
+                      <input
+                        className="admin-input"
+                        type="number"
+                        defaultValue={system.config?.rateLimitGlobalMs}
+                        onBlur={(e) =>
+                          patchSystem({ rateLimitGlobalMs: Number(e.target.value) })
+                        }
+                      />
+                    </label>
+                    <label className="admin-system-field">
+                      <span>{t("Slow mode (seconds)")}</span>
+                      <input
+                        className="admin-input"
+                        type="number"
+                        defaultValue={system.config?.slowModeSeconds}
+                        onBlur={(e) =>
+                          act(async () => {
+                            await adminFetch("/chat/slowmode", {
+                              method: "POST",
+                              body: JSON.stringify({ seconds: Number(e.target.value) }),
+                            });
+                            await loadSystem();
+                          })
+                        }
+                      />
+                    </label>
+                  </article>
+
+                  <article className="admin-system-card">
+                    <h3>{t("admin.maintenance")}</h3>
+                    <div className="admin-system-switches">
+                      <SystemSwitch
+                        icon={MessageSquare}
+                        tone="chat"
+                        label={t("Freeze Chat")}
+                        status={system.config?.chatFrozen ? t("On") : t("Off")}
+                        checked={Boolean(system.config?.chatFrozen)}
+                        disabled={busy}
+                        onChange={(frozen) =>
+                          act(async () => {
+                            await adminFetch("/chat/freeze", {
+                              method: "POST",
+                              body: JSON.stringify({ frozen }),
+                            });
+                            await loadSystem();
+                          })
+                        }
+                      />
+                      <SystemSwitch
+                        icon={Server}
+                        tone="maint"
+                        label={t("admin.maintenance")}
+                        status={system.config?.maintenanceMode ? t("On") : t("Off")}
+                        checked={Boolean(system.config?.maintenanceMode)}
+                        disabled={busy}
+                        onChange={(enabled) =>
+                          act(async () => {
+                            await adminFetch("/maintenance", {
+                              method: "POST",
+                              body: JSON.stringify({ enabled }),
+                            });
+                            await loadSystem();
+                          })
+                        }
+                      />
+                    </div>
+                  </article>
+
+                  <article className="admin-system-card">
+                    <h3>{t("Broadcast")}</h3>
+                    <label className="admin-system-field">
+                      <span>{t("Announcement text")}</span>
+                      <textarea
+                        className="admin-textarea"
+                        placeholder={t("Announcement text")}
+                        id="bc-text"
+                      />
+                    </label>
+                    <RippleButton
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById("bc-text");
+                        const text = el?.value?.trim();
+                        if (!text) return;
+                        act(async () => {
+                          await adminFetch("/broadcast", { method: "POST", body: JSON.stringify({ text }) });
+                        });
+                      }}
+                    >
+                      {t("Send broadcast")}
+                    </RippleButton>
+                  </article>
+
+                  <article className="admin-system-card">
+                    <h3>{t("Profanity")}</h3>
+                    <label className="admin-system-field">
+                      <span>{t("Profanity word")}</span>
+                      <input className="admin-input" id="prof" />
+                    </label>
+                    <RippleButton
+                      type="button"
+                      onClick={() => {
+                        const w = document.getElementById("prof")?.value?.trim();
+                        if (!w) return;
+                        act(async () => {
+                          await adminFetch("/profanity", { method: "POST", body: JSON.stringify({ word: w }) });
+                          await loadSystem();
+                        });
+                      }}
+                    >
+                      {t("Add filter")}
+                    </RippleButton>
+                  </article>
                 </div>
-                <label>
-                  {t("Max message length")}
-                  <input
-                    type="number"
-                    defaultValue={system.config?.maxMessageLength}
-                    onBlur={(e) =>
-                      act(async () => {
-                        await adminFetch("/system", {
-                          method: "PATCH",
-                          body: JSON.stringify({ maxMessageLength: Number(e.target.value) }),
-                        });
-                        await loadSystem();
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  {t("Rate limit (ms)")}
-                  <input
-                    type="number"
-                    defaultValue={system.config?.rateLimitGlobalMs}
-                    onBlur={(e) =>
-                      act(async () => {
-                        await adminFetch("/system", {
-                          method: "PATCH",
-                          body: JSON.stringify({ rateLimitGlobalMs: Number(e.target.value) }),
-                        });
-                        await loadSystem();
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  {t("Slow mode (seconds)")}
-                  <input
-                    type="number"
-                    defaultValue={system.config?.slowModeSeconds}
-                    onBlur={(e) =>
-                      act(async () => {
-                        await adminFetch("/chat/slowmode", {
-                          method: "POST",
-                          body: JSON.stringify({ seconds: Number(e.target.value) }),
-                        });
-                        await loadSystem();
-                      })
-                    }
-                  />
-                </label>
-                <div className="admin-row">
-                  <RippleButton
-                    type="button"
-                    onClick={() =>
-                      act(async () => {
-                        await adminFetch("/chat/freeze", {
-                          method: "POST",
-                          body: JSON.stringify({ frozen: !system.config?.chatFrozen }),
-                        });
-                        await loadSystem();
-                      })
-                    }
-                  >
-                    {t("Toggle chat freeze")}
-                  </RippleButton>
-                  <RippleButton
-                    type="button"
-                    onClick={() =>
-                      act(async () => {
-                        await adminFetch("/maintenance", {
-                          method: "POST",
-                          body: JSON.stringify({ enabled: !system.config?.maintenanceMode }),
-                        });
-                        await loadSystem();
-                      })
-                    }
-                  >
-                    {t("Toggle maintenance")}
-                  </RippleButton>
-                </div>
-                <label>
-                  {t("Broadcast")}
-                  <textarea
-                    className="admin-textarea"
-                    placeholder={t("Announcement text")}
-                    id="bc-text"
-                  />
-                  <RippleButton
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById("bc-text");
-                      const text = el?.value?.trim();
-                      if (!text) return;
-                      act(async () => {
-                        await adminFetch("/broadcast", { method: "POST", body: JSON.stringify({ text }) });
-                      });
-                    }}
-                  >
-                    {t("Send broadcast")}
-                  </RippleButton>
-                </label>
-                <label>
-                  {t("Profanity word")}
-                  <input className="admin-input" id="prof" />
-                  <RippleButton
-                    type="button"
-                    onClick={() => {
-                      const w = document.getElementById("prof")?.value?.trim();
-                      if (!w) return;
-                      act(async () => {
-                        await adminFetch("/profanity", { method: "POST", body: JSON.stringify({ word: w }) });
-                        await loadSystem();
-                      });
-                    }}
-                  >
-                    {t("Add filter")}
-                  </RippleButton>
-                </label>
-                <div className="admin-row">
+
+                <div className="admin-system-actions">
                   <RippleButton
                     type="button"
                     onClick={() =>
