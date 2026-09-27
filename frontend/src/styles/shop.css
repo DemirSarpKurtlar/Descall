@@ -15,6 +15,7 @@
 .shop-workspace {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 320px;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
   min-height: 0;
@@ -22,7 +23,18 @@
   height: 100%;
 }
 
+.shop-lead {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .shop-catalog {
+  grid-column: 2;
+  grid-row: 2;
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -233,6 +245,8 @@
 
 /* Vertical category list — every tab stays visible, no tab scroller. */
 .shop-category-tabs {
+  grid-column: 1;
+  grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -338,6 +352,7 @@
   height: auto;
 }
 
+.user-settings.is-mobile .shop-lead,
 .user-settings.is-mobile .shop-catalog,
 .user-settings.is-mobile .shop-profile-stage {
   overflow: visible;
@@ -350,7 +365,6 @@
   margin: 0;
   padding: 6px;
   border-radius: 12px;
-  order: -1;
 }
 
 .user-settings.is-mobile .shop-category-tab {
@@ -1115,6 +1129,8 @@ html[data-bubble="minimal"] .shop-live-bubble {
 
 /* Live profile column shown while the shop is open */
 .shop-profile-stage {
+  grid-column: 3;
+  grid-row: 1 / -1;
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -1296,11 +1312,16 @@ html[data-bubble="minimal"] .shop-live-bubble {
 @media (max-width: 1100px) {
   .user-settings.is-desktop.is-shop-open .shop-workspace {
     grid-template-columns: 168px minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .user-settings.is-desktop.is-shop-open .shop-category-tabs {
+    grid-row: 1 / 3;
   }
 
   .user-settings.is-desktop.is-shop-open .shop-profile-stage {
     grid-column: 1 / -1;
+    grid-row: 3;
     max-height: 320px;
   }
 }
