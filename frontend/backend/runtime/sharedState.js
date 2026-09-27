@@ -25,7 +25,15 @@ const MAX_AUDIT = 5000;
 const systemConfig = {
   dmRateLimitMs: 200,
   loggingLevel: "info",
-  featureFlags: { voice: true, dm: true, video: true, screen: true },
+  featureFlags: {
+    voice: true,
+    dm: true,
+    video: true,
+    screen: true,
+    valorantLfg: true,
+    valorantCompanion: true,
+    dimaai: true,
+  },
   themeForce: null,
   maintenanceMode: false,
   chatFrozen: false,

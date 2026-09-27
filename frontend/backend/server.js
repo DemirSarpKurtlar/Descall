@@ -33,6 +33,7 @@ const valorantRoutes = require("./routes/valorant");
 const webPushRoutes = require("./routes/webPush");
 const shopRoutes = require("./routes/shop");
 const dimaaiRoutes = require("./routes/dimaai");
+const publicFeatureRoutes = require("./routes/publicFeatures");
 const analyticsRoutes = require("./routes/analytics");
 const dmPrefsRoutes = require("./routes/dmPrefs");
 const reportsRoutes = require("./routes/reports");
@@ -205,6 +206,8 @@ app.get("/api/status", (_req, res) => {
     version: "3.0.0"
   });
 });
+
+app.use("/api/features", publicFeatureRoutes);
 
 // Health check
 function sendHealth(_req, res) {

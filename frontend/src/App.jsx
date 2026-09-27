@@ -64,6 +64,13 @@ import { useLocale } from "./context/LocaleContext";
 import { t as tRuntime } from "./i18n/runtime";
 import { resolveInitialLocale } from "./i18n";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, isPublicDimaLandingPath, parseAppRoute } from "./lib/appRoutes";
+import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
+import {
+  applyPublicFeatures,
+  getPublicFeatures,
+  usePublicFeatures,
+  valorantPlayVisible,
+} from "./lib/publicFeatures";
 import { parseAppDate } from "./lib/datetime";
 import AdminPanel from "./components/admin/AdminPanel";
 import ShopGiftPopup from "./components/shop/ShopGiftPopup";
@@ -362,6 +369,9 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const requestedRoute = useMemo(() => parseAppRoute(location.pathname), [location.pathname]);
+  const requestedRouteRef = useRef(requestedRoute);
+  requestedRouteRef.current = requestedRoute;
+  const publicFeatures = usePublicFeatures();
   const [authLoading, setAuthLoading] = useState(false);
   const { toast } = useToast();
   const { t, setLocale } = useLocale();
@@ -440,6 +450,8 @@ export default function App() {
   const activeGroupRef = useRef(null);
   const activeChannelRef = useRef(null);
   const activeServerRef = useRef(null);
+  const serverDetailEpochRef = useRef(0);
+  const channelHistoryEpochRef = useRef(0);
   const activeViewRef = useRef("chat");
   const myIdRef = useRef(null);
   const dmPrefsRef = useRef({});
@@ -548,13 +560,24 @@ export default function App() {
       const qs = params.toString();
       window.history.replaceState({}, "", qs ? `/?${qs}` : "/");
       if (openPlay) {
+        const features = getPublicFeatures();
         try {
-          sessionStorage.setItem("descall.valorant.tab", "companion");
-          sessionStorage.setItem("descall.valorant.openPlay", "1");
+          if (!valorantPlayVisible(features)) {
+            sessionStorage.removeItem("descall.valorant.tab");
+            sessionStorage.removeItem("descall.valorant.openPlay");
+          } else if (features.valorantCompanion === false) {
+            sessionStorage.setItem("descall.valorant.tab", "lfg");
+            sessionStorage.setItem("descall.valorant.openPlay", "1");
+          } else {
+            sessionStorage.setItem("descall.valorant.tab", "companion");
+            sessionStorage.setItem("descall.valorant.openPlay", "1");
+          }
         } catch {
           /* ignore */
         }
-        window.dispatchEvent(new CustomEvent("descall:open-valorant-companion"));
+        if (valorantPlayVisible(features)) {
+          window.dispatchEvent(new CustomEvent("descall:open-valorant-companion"));
+        }
       }
       if (riotLink === "success") {
         toast(t("Valorant account linked"), "success");
@@ -572,14 +595,33 @@ export default function App() {
   // Open Valorant Companion after RSO redirect / custom event
   useEffect(() => {
     const openCompanion = () => {
+      const features = getPublicFeatures();
       try {
-        if (sessionStorage.getItem("descall.valorant.openPlay") === "1") {
-          sessionStorage.removeItem("descall.valorant.openPlay");
-        }
+        sessionStorage.removeItem("descall.valorant.openPlay");
       } catch {
         /* ignore */
       }
+      if (!valorantPlayVisible(features)) {
+        try {
+          sessionStorage.removeItem("descall.valorant.tab");
+        } catch {
+          /* ignore */
+        }
+        if (requestedRouteRef.current?.view === "play") {
+          navigate(appPathForView("chat"), { replace: true });
+        }
+        return;
+      }
+      const tab = features.valorantCompanion === false ? "lfg" : "companion";
+      try {
+        sessionStorage.setItem("descall.valorant.tab", tab);
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new CustomEvent("descall:valorant-tab", { detail: { tab } }));
       setActiveView("play");
+      const nextPath = appPathForView("play");
+      if (location.pathname !== nextPath) navigate(nextPath);
     };
     window.addEventListener("descall:open-valorant-companion", openCompanion);
     try {
@@ -590,7 +632,7 @@ export default function App() {
       /* ignore */
     }
     return () => window.removeEventListener("descall:open-valorant-companion", openCompanion);
-  }, []);
+  }, [location.pathname, navigate]);
 
   // Soft feedback nudge after voice/video calls end (≥45s)
   useEffect(() => {
@@ -1100,6 +1142,19 @@ export default function App() {
     });
     return listenForPushSubscriptionChange();
   }, [me?.id, notifPermission]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/api/features`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) applyPublicFeatures(data);
+      })
+      .catch((err) => console.warn("[features] load failed:", err?.message || err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const token = getToken();
@@ -2033,6 +2088,10 @@ export default function App() {
       playUiSound("notification");
     });
 
+    socket.on("features:updated", (payload) => {
+      applyPublicFeatures(payload);
+    });
+
     socket.on("admin:popup", (payload = {}) => {
       if (!payload?.id || !payload?.body) return;
       setAdminPopupQueue((prev) => {
@@ -2622,29 +2681,52 @@ export default function App() {
       .join(","),
   ]);
 
-  // Fetch messages for the active text channel (room join handled above)
+  // Fetch messages for the active text channel (room join handled above).
+  // Older responses must not clear loading or fill a channel the user left.
   useEffect(() => {
-    if (activeView !== "servers" || !activeServer?.id || !activeChannel?.id) return;
+    if (activeView !== "servers" || !activeServer?.id || !activeChannel?.id) return undefined;
     if (activeChannel.type !== "text") {
       setMessagesLoading(false);
-      return;
+      return undefined;
     }
-    if (channelMessagesById[activeChannel.id]) {
+    const channelId = activeChannel.id;
+    const serverId = activeServer.id;
+    if (channelMessagesById[channelId]) {
       setMessagesLoading(false);
-      return;
+      return undefined;
     }
+    const token = ++channelHistoryEpochRef.current;
+    let cancelled = false;
+    const still = () =>
+      !cancelled &&
+      canCommitChannelPayload({
+        token,
+        epoch: channelHistoryEpochRef.current,
+        requestedChannelId: channelId,
+        activeChannelId: activeChannelRef.current?.id,
+      });
     setMessagesLoading(true);
-    getChannelMessages(activeServer.id, activeChannel.id)
+    getChannelMessages(serverId, channelId)
       .then((res) => {
+        if (!still()) return;
         const msgs = Array.isArray(res?.messages) ? res.messages : [];
         const normalized = msgs.map(normalizeGroupMessage).filter(Boolean);
         setChannelMessagesById((prev) => ({
           ...prev,
-          [activeChannel.id]: sortMessagesChronologically(normalized),
+          [channelId]: sortMessagesChronologically(normalized),
         }));
       })
-      .catch((err) => console.error("[App] fetch channel messages error:", err))
-      .finally(() => setMessagesLoading(false));
+      .catch((err) => {
+        if (!still()) return;
+        console.error("[App] fetch channel messages error:", err);
+      })
+      .finally(() => {
+        if (!still()) return;
+        setMessagesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeView, activeServer?.id, activeChannel?.id, activeChannel?.type]);
 
   // Clear unread when opening a channel + persist read state
@@ -2732,7 +2814,18 @@ export default function App() {
 
     // Play / DimaAI keep the open conversation mounted under app-chat-keep.
     // Do not tear it down on route sync (nav return to Chat restores the DM).
-    if (requestedRoute.view === "play" || requestedRoute.view === "dimaai") {
+    if (requestedRoute.view === "play") {
+      if (!valorantPlayVisible(publicFeatures)) {
+        navigate(appPathForView("chat"), { replace: true });
+        return;
+      }
+      return;
+    }
+    if (requestedRoute.view === "dimaai") {
+      if (publicFeatures.dimaai === false) {
+        navigate(appPathForView("chat"), { replace: true });
+        return;
+      }
       return;
     }
 
@@ -2798,9 +2891,28 @@ export default function App() {
       }
       // Always re-fetch so VIEW_CHANNEL filtering is current. Do not open a
       // channel from the thin list payload — that can briefly show a private channel.
+      // Only the latest selection may commit; a slower response for A must not
+      // replace the channel the user already moved to.
+      const token = ++serverDetailEpochRef.current;
+      const routeServerId = requestedRoute.serverId;
+      const routeChannelId = requestedRoute.channelId || null;
+      let cancelled = false;
+      const still = () =>
+        !cancelled &&
+        canCommitServerDetail({
+          token,
+          epoch: serverDetailEpochRef.current,
+          expected: { serverId: routeServerId, channelId: routeChannelId },
+          live: {
+            view: requestedRouteRef.current?.view,
+            serverId: requestedRouteRef.current?.serverId,
+            channelId: requestedRouteRef.current?.channelId || null,
+          },
+        });
       getServer(server.id)
         .then((data) => {
-          if (!data?.server) return;
+          if (!still()) return;
+          if (!data?.server || String(data.server.id) !== String(routeServerId)) return;
           const fresh = data.server;
           setActiveServer((prev) =>
             !prev || String(prev.id) !== String(fresh.id)
@@ -2812,9 +2924,9 @@ export default function App() {
               String(s.id) === String(fresh.id) ? { ...s, ...fresh } : s
             )
           );
-          if (requestedRoute.channelId) {
+          if (routeChannelId) {
             const channel = (fresh.channels || []).find(
-              (c) => c.id === requestedRoute.channelId && c.type !== "category"
+              (c) => c.id === routeChannelId && c.type !== "category"
             );
             if (!channel) {
               setActiveChannel(null);
@@ -2826,11 +2938,16 @@ export default function App() {
             setActiveChannel(null);
           }
         })
-        .catch(() => {});
-      if (!requestedRoute.channelId && activeChannel) {
-        setActiveChannel(null);
+        .catch((err) => {
+          if (!still()) return;
+          console.error("[App] fetch server error:", err);
+        });
+      if (!routeChannelId) {
+        setActiveChannel((prev) => (prev ? null : prev));
       }
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     setActiveDmUser(null);
@@ -2849,6 +2966,7 @@ export default function App() {
     myGroups,
     myServers,
     navigate,
+    publicFeatures,
     requestedRoute,
     serversLoaded,
     sessionChecked,
@@ -3014,19 +3132,29 @@ export default function App() {
           setActiveChannel(null);
           navigate(serverPath(server));
         }
+        const token = ++serverDetailEpochRef.current;
         getServer(serverId)
           .then((res) => {
+            if (token !== serverDetailEpochRef.current) return;
+            if (String(requestedRouteRef.current?.serverId || "") !== String(serverId)) return;
             if (!res?.server) return;
             setActiveServer(res.server);
             setMyServers((prev) =>
               prev.map((s) => (s.id === res.server.id ? { ...s, ...res.server } : s))
             );
-            if (channelId) {
+            if (channelId && String(requestedRouteRef.current?.channelId || "") === String(channelId)) {
               const ch = (res.server.channels || []).find((c) => c.id === channelId);
               if (ch) setActiveChannel(ch);
+              else {
+                setActiveChannel(null);
+                navigate(serverPath(res.server), { replace: true });
+              }
             }
           })
-          .catch(() => {});
+          .catch((err) => {
+            if (token !== serverDetailEpochRef.current) return;
+            console.error("[App] open mentioned channel error:", err);
+          });
         return;
       }
 
@@ -3644,8 +3772,12 @@ export default function App() {
     setActiveView("servers");
     const nextPath = serverPath(server);
     if (location.pathname !== nextPath) navigate(nextPath);
-    getServer(server.id)
+    const token = ++serverDetailEpochRef.current;
+    const serverId = server.id;
+    getServer(serverId)
       .then((data) => {
+        if (token !== serverDetailEpochRef.current) return;
+        if (String(activeServerRef.current?.id || "") !== String(serverId)) return;
         if (data?.server) {
           setActiveServer(data.server);
           setMyServers((prev) =>
@@ -3653,7 +3785,10 @@ export default function App() {
           );
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (token !== serverDetailEpochRef.current) return;
+        console.error("[App] load joined server error:", err);
+      });
   };
 
   const handleServerUpdated = (server) => {
@@ -3694,20 +3829,32 @@ export default function App() {
     setActiveView("servers");
     const nextPath = serverPath(server);
     if (location.pathname !== nextPath) navigate(nextPath);
-    getServer(server.id)
+    const token = ++serverDetailEpochRef.current;
+    const serverId = server.id;
+    getServer(serverId)
       .then((data) => {
+        if (token !== serverDetailEpochRef.current) return;
+        if (String(activeServerRef.current?.id || "") !== String(serverId)) return;
+        if (String(requestedRouteRef.current?.serverId || "") !== String(serverId)) return;
         if (data?.server) {
-          setActiveServer(data.server);
+          setActiveServer((prev) =>
+            prev && String(prev.id) === String(serverId) ? { ...prev, ...data.server } : prev
+          );
           setMyServers((prev) =>
             prev.map((s) => (s.id === data.server.id ? { ...s, ...data.server } : s))
           );
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (token !== serverDetailEpochRef.current) return;
+        console.error("[App] load selected server error:", err);
+      });
   };
 
   const handleChannelSelect = (channel) => {
     if (!activeServer?.id || !channel?.id || channel.type === "category") return;
+    serverDetailEpochRef.current += 1;
+    channelHistoryEpochRef.current += 1;
     setActiveChannel(channel);
     const nextPath = serverPath(activeServer, channel);
     if (location.pathname !== nextPath) navigate(nextPath);
@@ -3715,6 +3862,8 @@ export default function App() {
 
   const handleChannelBack = () => {
     if (!activeServer?.id) return;
+    serverDetailEpochRef.current += 1;
+    channelHistoryEpochRef.current += 1;
     setActiveChannel(null);
     const nextPath = serverPath(activeServer);
     if (location.pathname !== nextPath) navigate(nextPath);
@@ -3789,16 +3938,28 @@ export default function App() {
     setMyServers((prev) =>
       prev.map((s) => (s.id === activeServer.id ? { ...s, roles: roles || [] } : s))
     );
+    const token = ++serverDetailEpochRef.current;
+    const serverId = activeServer.id;
     try {
-      const data = await getServer(activeServer.id);
+      const data = await getServer(serverId);
+      if (token !== serverDetailEpochRef.current) return;
+      if (String(activeServerRef.current?.id || "") !== String(serverId)) return;
       if (data?.server) {
         setActiveServer(data.server);
         setMyServers((prev) =>
           prev.map((s) => (s.id === data.server.id ? { ...s, ...data.server } : s))
         );
+        if (activeChannelRef.current?.id) {
+          const stillThere = (data.server.channels || []).find(
+            (c) => c.id === activeChannelRef.current.id && c.type !== "category"
+          );
+          setActiveChannel(stillThere || null);
+          if (!stillThere) navigate(serverPath(data.server), { replace: true });
+        }
       }
-    } catch {
-      /* best-effort refresh of myPermissions */
+    } catch (err) {
+      if (token !== serverDetailEpochRef.current) return;
+      console.error("[App] refresh server permissions error:", err);
     }
   };
 
@@ -3857,6 +4018,16 @@ export default function App() {
           activeGroup={activeGroup}
           activeView={activeView}
           onActiveViewChange={(view) => {
+            const featuresNow = getPublicFeatures();
+            if (
+              (view === "play" && !valorantPlayVisible(featuresNow)) ||
+              (view === "dimaai" && featuresNow.dimaai === false)
+            ) {
+              setActiveView("chat");
+              const nextPath = appPathForView("chat");
+              if (location.pathname !== nextPath) navigate(nextPath, { replace: true });
+              return;
+            }
             setActiveView(view);
 
             // Single navigate owner — clear conversation state here without

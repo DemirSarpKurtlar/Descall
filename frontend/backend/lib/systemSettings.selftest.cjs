@@ -3,6 +3,8 @@
 const {
   DEFAULT_SYSTEM_CONFIG,
   pickConfig,
+  pickFeatureFlags,
+  publicFeatureFlags,
   mergeSystemConfig,
   applySystemConfigToState,
   loadSystemSettings,
@@ -20,6 +22,23 @@ assert(defaults.slowModeSeconds === 0, "default slowmode 0");
 assert(defaults.registrationEnabled === true, "default registration on");
 assert(defaults.maxMessageLength === 2000, "default max length fills empty UI");
 assert(defaults.featureFlags.voice === true, "default voice on");
+assert(defaults.featureFlags.valorantLfg === true, "default lfg on");
+assert(defaults.featureFlags.valorantCompanion === true, "default companion on");
+assert(defaults.featureFlags.dimaai === true, "default dimaai on");
+
+const legacy = mergeSystemConfig({
+  featureFlags: { voice: true, dm: true, video: true, screen: false },
+});
+assert(legacy.featureFlags.screen === false, "stored screen off survives");
+assert(legacy.featureFlags.valorantLfg === true, "missing lfg defaults on");
+assert(legacy.featureFlags.valorantCompanion === true, "missing companion defaults on");
+assert(legacy.featureFlags.dimaai === true, "missing dimaai defaults on");
+const pub = publicFeatureFlags(legacy.featureFlags);
+assert(pub.valorantLfg === true && pub.dimaai === true, "public flags");
+assert(pub.voice === undefined && pub.maintenanceMode === undefined, "public payload is availability only");
+assert(Object.keys(pub).sort().join(",") === "dimaai,valorantCompanion,valorantLfg", "public keys only");
+const partial = pickFeatureFlags({ valorantLfg: false });
+assert(partial.valorantLfg === false && partial.voice === true && partial.dimaai === true, "partial flag patch");
 
 const picked = pickConfig({
   chatFrozen: true,
@@ -114,6 +133,22 @@ function mockSettingsClient({ row, insertError, updateError, selectError } = {})
   );
   assert(saved.persisted === true && saved.config.maintenanceMode === true && saved.config.chatFrozen === true, "patch persists");
   assert(saved.startedAt === "2026-08-01T00:00:00.000Z", "persist does not clobber started_at");
+
+  const flagged = await persistSystemConfig(
+    mockSettingsClient({
+      row: {
+        id: "default",
+        config: { featureFlags: { voice: true, dm: true, video: true, screen: false } },
+        started_at: "2026-08-01T00:00:00.000Z",
+      },
+    }),
+    { featureFlags: { valorantLfg: false } },
+    { timeoutMs: 200 }
+  );
+  assert(flagged.config.featureFlags.valorantLfg === false, "lfg patch persists");
+  assert(flagged.config.featureFlags.screen === false, "partial flag patch keeps older flags");
+  assert(flagged.config.featureFlags.dimaai === true, "omitted new flag stays on");
+  assert(flagged.config.featureFlags.valorantCompanion === true, "omitted companion stays on");
 
   console.log("systemSettings.selftest.cjs ok");
 })().catch((err) => {

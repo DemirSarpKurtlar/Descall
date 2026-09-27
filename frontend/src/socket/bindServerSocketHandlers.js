@@ -1,4 +1,5 @@
 import { getServer } from "../api/servers";
+import { serverPath } from "../lib/appRoutes";
 import { getUser } from "../lib/storage";
 import { normalizeUser } from "../lib/userProfile";
 import { isChannelMuted } from "../lib/serverChannelMutes";
@@ -154,6 +155,8 @@ export function bindServerSocketHandlers(socket, ctx) {
       if (!prev || String(prev.id) !== String(serverId)) return prev;
       return { ...prev, channels: drop(prev.channels || []) };
     });
+    const viewingDeleted =
+      activeChannelRef.current && String(activeChannelRef.current.id) === String(channelId);
     setActiveChannel((prev) =>
       prev && String(prev.id) === String(channelId) ? null : prev
     );
@@ -165,8 +168,14 @@ export function bindServerSocketHandlers(socket, ctx) {
     });
     try {
       socket.emit("server:channel:leave", channelId);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.warn("[servers] channel leave failed:", err?.message || err);
+    }
+    if (viewingDeleted && navigate) {
+      const server = activeServerRef.current;
+      if (server && String(server.id) === String(serverId)) {
+        navigate(serverPath(server), { replace: true });
+      }
     }
     const voice = serverVoiceRef.current;
     if (voice?.activeChannelId && String(voice.activeChannelId) === String(channelId)) {
@@ -174,10 +183,15 @@ export function bindServerSocketHandlers(socket, ctx) {
     }
   };
 
+  const serverBundleEpoch = new Map();
+
   const refreshServerBundle = (serverId) => {
     if (!serverId) return;
+    const token = (serverBundleEpoch.get(serverId) || 0) + 1;
+    serverBundleEpoch.set(serverId, token);
     getServer(serverId)
       .then((data) => {
+        if (serverBundleEpoch.get(serverId) !== token) return;
         if (!data?.server) return;
         const nextIds = new Set((data.server.channels || []).map((c) => String(c.id)));
         const prevChannels =
@@ -188,8 +202,8 @@ export function bindServerSocketHandlers(socket, ctx) {
           if (ch?.id && !nextIds.has(String(ch.id))) {
             try {
               socket.emit("server:channel:leave", ch.id);
-            } catch {
-              /* ignore */
+            } catch (err) {
+              console.warn("[servers] channel leave failed:", err?.message || err);
             }
             const voice = serverVoiceRef.current;
             if (voice?.activeChannelId && String(voice.activeChannelId) === String(ch.id)) {
@@ -205,6 +219,15 @@ export function bindServerSocketHandlers(socket, ctx) {
             String(s.id) === String(serverId) ? { ...s, ...data.server } : s
           )
         );
+        const selectedId = activeChannelRef.current?.id;
+        if (
+          selectedId &&
+          !nextIds.has(String(selectedId)) &&
+          navigate &&
+          String(activeServerRef.current?.id || "") === String(serverId)
+        ) {
+          navigate(serverPath({ id: serverId }), { replace: true });
+        }
         setActiveChannel((prev) => {
           if (!prev) return prev;
           const stillThere = (data.server.channels || []).some(
@@ -224,7 +247,10 @@ export function bindServerSocketHandlers(socket, ctx) {
           return changed ? next : prev;
         });
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (serverBundleEpoch.get(serverId) !== token) return;
+        console.error("[servers] refresh bundle failed:", err);
+      });
   };
 
   const handleChannelMessageAck = ({ channelId, tempId, suppress } = {}) => {
@@ -238,6 +264,7 @@ export function bindServerSocketHandlers(socket, ctx) {
   const handleChannelMessage = ({ serverId, channelId, message, tempId } = {}) => {
     if (!channelId || !message) return;
     const open = activeServerRef.current;
+    if (serverId && open && String(open.id) !== String(serverId)) return;
     if (serverId && open && String(open.id) === String(serverId)) {
       const visible = (open.channels || []).some((c) => String(c.id) === String(channelId));
       if (!visible) return;
@@ -326,6 +353,9 @@ export function bindServerSocketHandlers(socket, ctx) {
         };
       });
     }
+    const showOnActiveChannel =
+      !channelId || String(activeChannelRef.current?.id || "") === String(channelId);
+    if (!showOnActiveChannel) return;
     if (code === "SLOWMODE") {
       const wait = Math.max(1, Math.ceil(Number(retryAfterSeconds) || 1));
       toast(`Slowmode is on. Try again in ${wait}s.`, "warning");
@@ -475,6 +505,8 @@ export function bindServerSocketHandlers(socket, ctx) {
       if (!prev || String(prev.id) !== String(serverId)) return prev;
       return { ...prev, channels: drop(prev.channels || []) };
     });
+    const viewingDeleted =
+      activeChannelRef.current && String(activeChannelRef.current.id) === String(channelId);
     setActiveChannel((prev) =>
       prev && String(prev.id) === String(channelId) ? null : prev
     );
@@ -485,6 +517,12 @@ export function bindServerSocketHandlers(socket, ctx) {
       return next;
     });
     socket.emit("server:channel:leave", channelId);
+    if (viewingDeleted && navigate) {
+      const server = activeServerRef.current;
+      if (server && String(server.id) === String(serverId)) {
+        navigate(serverPath(server), { replace: true });
+      }
+    }
   };
 
   const handleChannelsResync = ({ serverId } = {}) => {

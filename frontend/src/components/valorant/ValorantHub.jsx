@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Crosshair, Sparkles } from "lucide-react";
 import LfgWorkspace from "../lfg/LfgWorkspace";
 import CompanionAuthPanel from "./CompanionAuthPanel";
 import { useT } from "../../context/LocaleContext";
+import {
+  getPublicFeatures,
+  readStoredValorantTab,
+  resolveValorantTab,
+  usePublicFeatures,
+} from "../../lib/publicFeatures";
 
 /**
  * Valorant hub — Play rail slot shell.
@@ -18,19 +24,31 @@ export default function ValorantHub({
   onJoinVoice,
 }) {
   const t = useT();
-  // Default Companion (Demir 2026-09-06). sessionStorage can still force LFG/Companion after RSO.
-  const [tab, setTab] = useState(() => {
-    try {
-      const wanted = sessionStorage.getItem("descall.valorant.tab");
-      if (wanted === "companion" || wanted === "lfg") {
-        sessionStorage.removeItem("descall.valorant.tab");
-        return wanted;
-      }
-    } catch {
-      /* ignore */
+  const features = usePublicFeatures();
+  const showCompanion = features.valorantCompanion !== false;
+  const showLfg = features.valorantLfg !== false;
+  const showTabs = showCompanion && showLfg;
+  // Default Companion when both tabs are enabled. sessionStorage can still
+  // force LFG/Companion after RSO, but only if that tab is enabled.
+  const [tab, setTab] = useState(() => resolveValorantTab(readStoredValorantTab(), getPublicFeatures()) || "companion");
+
+  useEffect(() => {
+    const next = resolveValorantTab(tab, features);
+    if (!next) {
+      onClose?.();
+      return;
     }
-    return "companion";
-  });
+    if (next !== tab) setTab(next);
+  }, [features, tab, onClose]);
+
+  useEffect(() => {
+    const onTab = (event) => {
+      const next = resolveValorantTab(event?.detail?.tab, getPublicFeatures());
+      if (next) setTab(next);
+    };
+    window.addEventListener("descall:valorant-tab", onTab);
+    return () => window.removeEventListener("descall:valorant-tab", onTab);
+  }, []);
 
   return (
     <div className="valorant-hub" data-tab={tab}>
@@ -54,6 +72,7 @@ export default function ValorantHub({
           </div>
         </div>
 
+        {showTabs ? (
         <div className="valorant-hub-tabs" role="tablist" aria-label={t("valorantHub.title")}>
           <button
             type="button"
@@ -80,11 +99,12 @@ export default function ValorantHub({
             <span>{t("valorantHub.lfg")}</span>
           </button>
         </div>
+        ) : null}
       </header>
 
       <div className="valorant-hub-body">
         {/* Active-only Companion mount — never leave accordion/card under LFG. */}
-        {tab === "companion" ? (
+        {showCompanion && tab === "companion" ? (
           <div
             id="valorant-panel-companion"
             role="tabpanel"
@@ -98,7 +118,9 @@ export default function ValorantHub({
         {/*
           Keep LFG mounted (lobby state) but hard-hide when Companion is active.
           mobile.css must not force display:flex on [hidden] panels.
+          When LFG is disabled the panel is not rendered.
         */}
+        {showLfg ? (
         <div
           id="valorant-panel-lfg"
           role="tabpanel"
@@ -119,6 +141,7 @@ export default function ValorantHub({
             onJoinVoice={onJoinVoice}
           />
         </div>
+        ) : null}
       </div>
     </div>
   );

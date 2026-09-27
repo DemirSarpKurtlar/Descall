@@ -8,7 +8,15 @@ const LOAD_MS = 5000;
 const DEFAULT_SYSTEM_CONFIG = {
   dmRateLimitMs: 200,
   loggingLevel: "info",
-  featureFlags: { voice: true, dm: true, video: true, screen: true },
+  featureFlags: {
+    voice: true,
+    dm: true,
+    video: true,
+    screen: true,
+    valorantLfg: true,
+    valorantCompanion: true,
+    dimaai: true,
+  },
   themeForce: null,
   maintenanceMode: false,
   chatFrozen: false,
@@ -31,13 +39,25 @@ function clampInt(value, fallback, min, max) {
   return i;
 }
 
+const FEATURE_FLAG_KEYS = Object.keys(DEFAULT_SYSTEM_CONFIG.featureFlags);
+
 function pickFeatureFlags(input) {
-  if (!input || typeof input !== "object") return { ...DEFAULT_SYSTEM_CONFIG.featureFlags };
+  const src = input && typeof input === "object" ? input : {};
+  const out = {};
+  for (const key of FEATURE_FLAG_KEYS) {
+    // Missing keys stay enabled so older system_settings rows keep working.
+    out[key] = src[key] !== false;
+  }
+  return out;
+}
+
+/** Public clients may see only these availability bits. */
+function publicFeatureFlags(input) {
+  const flags = pickFeatureFlags(input);
   return {
-    voice: input.voice !== false,
-    dm: input.dm !== false,
-    video: input.video !== false,
-    screen: input.screen !== false,
+    valorantLfg: flags.valorantLfg,
+    valorantCompanion: flags.valorantCompanion,
+    dimaai: flags.dimaai,
   };
 }
 
@@ -164,7 +184,15 @@ async function persistSystemConfig(client, patch, opts) {
   const options = opts || {};
   const timeoutMs = options.timeoutMs || LOAD_MS;
   const loaded = await loadSystemSettings(client, options);
-  const config = mergeSystemConfig({ ...loaded.config, ...pickConfig(patch) });
+  const pickedPatch = pickConfig(patch);
+  const combined = { ...loaded.config, ...pickedPatch };
+  if (patch && Object.prototype.hasOwnProperty.call(patch, "featureFlags")) {
+    combined.featureFlags = {
+      ...(loaded.config?.featureFlags || {}),
+      ...(patch.featureFlags && typeof patch.featureFlags === "object" ? patch.featureFlags : {}),
+    };
+  }
+  const config = mergeSystemConfig(combined);
   if (!client || loaded.missingTable) return { ...loaded, config, persisted: false };
 
   const stored = pickConfig(config);
@@ -195,6 +223,8 @@ module.exports = {
   SETTINGS_ID,
   DEFAULT_SYSTEM_CONFIG,
   pickConfig,
+  pickFeatureFlags,
+  publicFeatureFlags,
   mergeSystemConfig,
   applySystemConfigToState,
   loadSystemSettings,

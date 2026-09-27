@@ -338,8 +338,14 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
+  const bumpVoiceJoin = () => {
+    socket.data.voiceJoinEpoch = (socket.data.voiceJoinEpoch || 0) + 1;
+    return socket.data.voiceJoinEpoch;
+  };
+
   socket.on("server:voice:join", async ({ serverId, channelId } = {}) => {
     if (!channelId) return;
+    const epoch = bumpVoiceJoin();
     try {
       // Already seated by MOVE_MEMBERS (or AFK move): allow media rejoin without
       // VIEW/CONNECT so private/staff voice channels work like Discord.
@@ -347,6 +353,7 @@ function registerServerVoiceHandlers(io, socket) {
       const { channel, resolved } = await assertVoiceAccess(myId, channelId, {
         bypassConnectView: alreadySeated,
       });
+      if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
       if (serverId && serverId !== channel.server_id) {
         socket.emit("server:voice:error", {
           channelId,
@@ -361,6 +368,7 @@ function registerServerVoiceHandlers(io, socket) {
           isOwner: resolved?.isOwner,
         })
       ) {
+        if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
         socket.emit("server:voice:error", {
           channelId,
           message: "You must accept the server rules before joining voice.",
@@ -368,6 +376,7 @@ function registerServerVoiceHandlers(io, socket) {
         });
         return;
       }
+      if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
 
       const myUid = String(myId);
       for (const [otherId, call] of activeServerVoiceCalls.entries()) {
@@ -429,6 +438,7 @@ function registerServerVoiceHandlers(io, socket) {
 
       emitChannelState(io, channel.server_id, channelId);
     } catch (err) {
+      if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
       console.error("[ServerVoice] join error:", err.message || err);
       socket.emit("server:voice:error", {
         channelId,
@@ -439,6 +449,7 @@ function registerServerVoiceHandlers(io, socket) {
   });
 
   socket.on("server:voice:leave", ({ channelId } = {}) => {
+    bumpVoiceJoin();
     if (channelId && findUserInChannel(channelId, myId)) {
       removeFromVoice(io, channelId, myId);
       socket.leave(`server-voice:${channelId}`);
@@ -449,8 +460,8 @@ function registerServerVoiceHandlers(io, socket) {
       if (channelId) {
         try {
           socket.leave(`server-voice:${channelId}`);
-        } catch {
-          /* ignore */
+        } catch (err) {
+          console.warn("[ServerVoice] leave room failed:", err?.message || err);
         }
       }
     }
