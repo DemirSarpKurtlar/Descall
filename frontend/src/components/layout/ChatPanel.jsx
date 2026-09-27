@@ -351,7 +351,7 @@ export default function ChatPanel({
   })();
 
   return (
-    <div className="chat-panel-shell">
+    <div className={`chat-panel-shell${showMembers && !isMobile ? " is-members-docked" : ""}`}>
       <main className="main-panel">
         {activeTimeout?.timedOut && (
           <div className="timeout-banner" role="status">
@@ -711,16 +711,18 @@ export default function ChatPanel({
     <AnimatePresence>
       {showMembers && (
         <>
-          <motion.div
-            key="members-backdrop"
-            className="members-panel-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setShowMembers(false)}
-            aria-hidden="true"
-          />
+          {isMobile ? (
+            <motion.div
+              key="members-backdrop"
+              className="members-panel-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => setShowMembers(false)}
+              aria-hidden="true"
+            />
+          ) : null}
           <motion.aside
             key="members-panel"
             className={`members-panel${activeView === "servers" && activeServer ? " server-members-panel" : ""}`}
