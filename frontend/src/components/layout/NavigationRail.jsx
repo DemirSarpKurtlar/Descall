@@ -165,7 +165,7 @@ export default function NavigationRail({
     () => filterMainNavItems(buildMainNavItems(t), publicFeatures),
     [t, publicFeatures]
   );
-  const toolItems = useMemo(() => buildToolNavItems(t, { isAdmin }), [t, isAdmin]);
+  const toolItems = useMemo(() => buildToolNavItems(t), [t]);
 
   const statusKey = STATUS_META[myStatus] ? myStatus : "online";
 
@@ -283,7 +283,6 @@ export default function NavigationRail({
   const handleToolAction = (action) => {
     if (action === "add") onAddClick?.();
     else if (action === "settings") onUserClick?.();
-    else if (action === "admin") onAdminClick?.();
   };
 
   const statusMenu = (
@@ -413,9 +412,20 @@ export default function NavigationRail({
   return (
     <nav className="nav-rail" aria-label={t("Primary navigation")}>
       <div className="nav-rail-brand">
-        <div className="nav-rail-logo" aria-hidden="true">
-          <DescallBrand compact />
-        </div>
+        {isAdmin ? (
+          <button
+            type="button"
+            className="nav-rail-logo"
+            onClick={() => onAdminClick?.()}
+            aria-label={t("admin.title")}
+          >
+            <DescallBrand compact />
+          </button>
+        ) : (
+          <div className="nav-rail-logo" aria-hidden="true">
+            <DescallBrand compact />
+          </div>
+        )}
       </div>
 
       <div className="nav-rail-main">
@@ -445,7 +455,6 @@ export default function NavigationRail({
             return (
               <RailButton
                 key={item.id}
-                className={item.action === "admin" ? "admin-btn" : ""}
                 dismissToken={activeView}
                 label={item.label}
                 onClick={() => handleToolAction(item.action)}
