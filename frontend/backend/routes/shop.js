@@ -14,9 +14,15 @@ const descoin = require("../lib/descoin");
 
 const router = express.Router();
 
-router.get("/catalog", requireAuth, async (_req, res) => {
+router.get("/catalog", requireAuth, async (req, res) => {
   try {
-    const items = await shop.listActiveItems();
+    const rawCategory = typeof req.query.category === "string" ? req.query.category : "";
+    const category = shop.IMAGE_ASSET_CATEGORIES.has(rawCategory) ? rawCategory : null;
+    const includeAssets = category != null && (req.query.assets === "1" || req.query.assets === "true");
+    const items = await shop.listActiveItems({
+      category: includeAssets ? category : null,
+      includeAssets,
+    });
     res.json({ items });
   } catch (err) {
     console.error("[shop] catalog error:", err.message);
@@ -83,7 +89,9 @@ router.post("/purchase", requireAuth, async (req, res) => {
     if (!itemId) return res.status(400).json({ error: "itemId is required." });
 
     const item = await shop.getItemById(itemId);
-    if (!item || !item.active) return res.status(404).json({ error: "Item not found." });
+    if (!item || !item.active || shop.RETIRED_SHOP_CATEGORIES.has(item.category)) {
+      return res.status(404).json({ error: "Item not found." });
+    }
 
     if (await shop.userOwnsItem(req.user.id, itemId)) {
       return res.status(409).json({ error: "You already own this item." });

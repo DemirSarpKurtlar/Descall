@@ -3183,8 +3183,8 @@ export const phrases = {
   "This account has no email on file. Contact support@descall.com to recover access.": "Bu hesapta kayıtlı e-posta yok. Erişimi kurtarmak için support@descall.com adresine yazın.",
   "Shop": "Mağaza",
   "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.": "Diğerlerinin seni nasıl gördüğünü kişiselleştirmek için banner, avatar çerçevesi ve profil arkaplanı satın al.",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, sound packs, and more.":
-    "Aramalarda konuşarak, mesajlaşarak ve ekran paylaşarak DesCoin kazan — sonra banner, çerçeve, aura, flare, ses paketi ve daha fazlasına harca.",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.":
+    "Aramalarda konuşarak, mesajlaşarak ve ekran paylaşarak DesCoin kazan — sonra banner, çerçeve, aura, flare ve daha fazlasına harca.",
   "No items available yet — check back soon!": "Henüz ürün yok — yakında tekrar kontrol et!",
   "Shop categories": "Mağaza kategorileri",
   "Banners": "Bannerlar",

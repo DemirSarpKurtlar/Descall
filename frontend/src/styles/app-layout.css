@@ -701,22 +701,31 @@
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-2);
   background: var(--surface-1);
 }
 
 .sidebar-title {
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-0);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-actions {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+  margin-left: 2px;
 }
 
 .sidebar-content {
@@ -1307,6 +1316,30 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Members list sits beside the chat in DM, groups, and servers. */
+.chat-panel-shell.is-members-docked {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.chat-panel-shell.is-members-docked > .main-panel {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.chat-panel-shell.is-members-docked > .members-panel {
+  position: relative;
+  inset: auto;
+  flex: 0 0 260px;
+  width: 260px;
+  height: auto;
+  max-height: none;
+  align-self: stretch;
+  z-index: 2;
 }
 
 .main-panel {
@@ -3846,9 +3879,11 @@ button.header-avatar {
 }
 
 .activity-view-mobile .sidebar-actions {
+  flex: 1 1 auto;
+  min-width: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
-  max-width: min(58vw, 220px);
+  max-width: none;
   scrollbar-width: none;
 }
 

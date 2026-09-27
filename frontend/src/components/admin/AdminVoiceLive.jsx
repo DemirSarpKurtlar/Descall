@@ -171,6 +171,11 @@ export default function AdminVoiceLive({ socket }) {
   const abortRef = useRef(null);
   const emptyAtRef = useRef(0);
   const backoffUntilRef = useRef(0);
+  const armedRoomRef = useRef("");
+  const volumeRef = useRef(volume);
+  const mutedRef = useRef(muted);
+  volumeRef.current = volume;
+  mutedRef.current = muted;
 
   const applyRooms = useCallback((list) => {
     if (list.length) {
@@ -178,7 +183,7 @@ export default function AdminVoiceLive({ socket }) {
       setRooms(list);
       setSelectedId((prev) => {
         if (prev && list.some((row, i) => String(roomId(row, i)) === String(prev))) return prev;
-        return prev || String(roomId(list[0], 0));
+        return String(roomId(list[0], 0));
       });
       return;
     }
@@ -193,10 +198,46 @@ export default function AdminVoiceLive({ socket }) {
     abortRef.current?.abort();
     abortRef.current = null;
     const audio = audioRef.current;
-    if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); }
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      delete audio.dataset.room;
+      audio.load();
+    }
     if (objUrlRef.current) { URL.revokeObjectURL(objUrlRef.current); objUrlRef.current = ""; }
+    armedRoomRef.current = "";
     setListen("idle");
   }, []);
+
+  const listenUrl = useCallback((id) => {
+    const token = getToken();
+    const origin = String(SOCKET_URL || API_BASE_URL || "").replace(/\/$/, "");
+    return `${origin}/admin/voice-live/${encodeURIComponent(id)}/audio?token=${encodeURIComponent(token || "")}`;
+  }, []);
+
+  const armListen = useCallback((id) => {
+    const audio = audioRef.current;
+    if (!audio || id == null || id === "") return;
+    const room = String(id);
+    const url = listenUrl(room);
+    armedRoomRef.current = room;
+    setListen("connecting");
+    if (audio.dataset.room !== room) {
+      try { audio.pause(); } catch { /* ignore */ }
+      audio.src = url;
+      audio.dataset.room = room;
+    }
+    audio.volume = volumeRef.current;
+    audio.muted = mutedRef.current;
+    const started = audio.play();
+    if (started?.then) {
+      started.then(() => {
+        if (audio.dataset.room === room && !audio.paused) setListen("live");
+      }).catch(() => {
+        if (audio.dataset.room === room && audio.paused) setListen("connecting");
+      });
+    }
+  }, [listenUrl]);
 
   const loadList = useCallback(async (nextKind = kind, { quiet } = {}) => {
     if (Date.now() < backoffUntilRef.current) return;
@@ -261,31 +302,39 @@ export default function AdminVoiceLive({ socket }) {
   }, [socket, kind, selectedId]);
 
   useEffect(() => {
-    stopAudio();
-    if (!selectedId) return undefined;
+    if (!selectedId) {
+      stopAudio();
+      return undefined;
+    }
     const audio = audioRef.current;
     if (!audio) return undefined;
-    setListen("connecting");
-    const token = getToken();
-    const origin = String(SOCKET_URL || API_BASE_URL || "").replace(/\/$/, "");
-    const url = `${origin}/admin/voice-live/${encodeURIComponent(selectedId)}/audio?token=${encodeURIComponent(token || "")}`;
-    audio.volume = volume;
-    audio.muted = muted;
-    audio.src = url;
-    const onLive = () => setListen("live");
-    const onWaiting = () => setListen((s) => (s === "live" ? "live" : "connecting"));
+    const room = String(selectedId);
+    const alreadyArmed = armedRoomRef.current === room && audio.dataset.room === room && Boolean(audio.src);
+    if (!alreadyArmed) {
+      setListen("connecting");
+      audio.src = listenUrl(room);
+      audio.dataset.room = room;
+      audio.volume = volumeRef.current;
+      audio.muted = mutedRef.current;
+      audio.play().then(() => {
+        if (audio.dataset.room === room && !audio.paused) setListen("live");
+      }).catch(() => {});
+    }
+    const onLive = () => {
+      if (!audio.paused) setListen("live");
+    };
+    const onWaiting = () => setListen((s) => (audio.paused || s !== "live" ? "connecting" : "live"));
     audio.addEventListener("playing", onLive);
     audio.addEventListener("canplay", onLive);
     audio.addEventListener("waiting", onWaiting);
     audio.addEventListener("error", onWaiting);
-    audio.play().catch(() => { if (!audio.src) return; setListen("connecting"); });
     return () => {
       audio.removeEventListener("playing", onLive);
       audio.removeEventListener("canplay", onLive);
       audio.removeEventListener("waiting", onWaiting);
       audio.removeEventListener("error", onWaiting);
     };
-  }, [selectedId, stopAudio]);
+  }, [selectedId, listenUrl, stopAudio]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -352,7 +401,7 @@ export default function AdminVoiceLive({ socket }) {
               const roster = peopleOf(room);
               const now = roster.find((p) => isSpeaking(p, room));
               return (
-                <button key={id} type="button" className={`avl-room ${id === String(selectedId) ? "is-active" : ""}`} onClick={() => { setSelectedId(id); const a = audioRef.current; if (a && String(id) === String(selectedId)) a.play().catch(() => {}); }}>
+                <button key={id} type="button" className={`avl-room ${id === String(selectedId) ? "is-active" : ""}`} onClick={() => { setSelectedId(id); armListen(id); }}>
                   <div className="avl-room-top">
                     <strong>{placeName(room, locale)}</strong>
                     <span className="avl-count">{liveCount(room, roster)}</span>
@@ -424,10 +473,10 @@ export default function AdminVoiceLive({ socket }) {
           {muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
           {muted ? txt(locale, "unmute") : txt(locale, "mute")}
         </RippleButton>
-        <span className={`avl-badge is-${badgeKind}`}>
+        <button type="button" className={`avl-badge is-${badgeKind}`} onClick={() => selectedId && armListen(selectedId)} disabled={!selectedId}>
           {listen === "live" && !muted ? <Wifi size={13} /> : <WifiOff size={13} />}
           {listen === "connecting" && selectedId && !muted ? txt(locale, "connecting") : badge}
-        </span>
+        </button>
         <audio ref={audioRef} preload="none" />
       </footer>
     </div>

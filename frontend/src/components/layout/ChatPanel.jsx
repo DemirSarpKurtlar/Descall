@@ -86,6 +86,14 @@ export default function ChatPanel({
   const [showPinned, setShowPinned] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [profileTarget, setProfileTarget] = useState(null);
+  useEffect(() => {
+    const openProfile = (event) => {
+      const user = event.detail?.user;
+      if (user?.id) setProfileTarget(user);
+    };
+    window.addEventListener("descall:open-profile", openProfile);
+    return () => window.removeEventListener("descall:open-profile", openProfile);
+  }, []);
 
   const conversationKey = activeGroup?.id
     ? { kind: "group", groupId: activeGroup.id }
@@ -343,7 +351,7 @@ export default function ChatPanel({
   })();
 
   return (
-    <div className="chat-panel-shell">
+    <div className={`chat-panel-shell${showMembers && !isMobile ? " is-members-docked" : ""}`}>
       <main className="main-panel">
         {activeTimeout?.timedOut && (
           <div className="timeout-banner" role="status">
@@ -381,6 +389,7 @@ export default function ChatPanel({
             <button
               type="button"
               className="icon-btn mobile-nav-btn"
+              data-mobile-back={showMobileBack ? "1" : undefined}
               onClick={showMobileBack ? onMobileBack : onMenuClick}
               aria-label={showMobileBack ? t("Back to list") : t("Open menu")}
             >
@@ -703,16 +712,18 @@ export default function ChatPanel({
     <AnimatePresence>
       {showMembers && (
         <>
-          <motion.div
-            key="members-backdrop"
-            className="members-panel-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setShowMembers(false)}
-            aria-hidden="true"
-          />
+          {isMobile ? (
+            <motion.div
+              key="members-backdrop"
+              className="members-panel-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => setShowMembers(false)}
+              aria-hidden="true"
+            />
+          ) : null}
           <motion.aside
             key="members-panel"
             className={`members-panel${activeView === "servers" && activeServer ? " server-members-panel" : ""}`}

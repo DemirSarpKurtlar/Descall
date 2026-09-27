@@ -17,8 +17,8 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 const supabasePath = require.resolve("../db/supabase");
 const fakeSupabase = createFakeSupabase({
   users: [
-    { id: "u-alice", username: "alice", is_admin: true, descoin_balance: 0 },
-    { id: "u-bob", username: "bob", is_admin: false, descoin_balance: 500 },
+    { id: "u-alice", username: "alice", is_admin: true, descoin_balance: 0, equipped_sound_pack_id: null },
+    { id: "u-bob", username: "bob", is_admin: false, descoin_balance: 500, equipped_sound_pack_id: "item-sound-1" },
   ],
   shop_items: [
     {
@@ -62,6 +62,21 @@ const fakeSupabase = createFakeSupabase({
       active: true,
       rarity: "epic",
       sort_order: 2,
+    },
+    {
+      id: "item-sound-1",
+      sku: "sound-deep-thud",
+      name: "Deep Thud",
+      description: "A retired shop sound pack.",
+      category: "sound_pack",
+      asset_url: null,
+      preview_url: null,
+      price_descoin: 40,
+      theme_key: null,
+      effect_key: "deep-thud",
+      active: true,
+      rarity: "common",
+      sort_order: 3,
     },
   ],
   user_inventory: [],
@@ -136,6 +151,27 @@ async function run() {
     assert(r.body.items.length === 2, "only active items listed: " + JSON.stringify(r.body.items));
     assert(r.body.items.some((i) => i.sku === "banner-aurora"), "active banner listed");
     assert(r.body.items.some((i) => i.sku === "theme-midnight"), "active theme listed");
+    assert(!r.body.items.some((i) => i.category === "sound_pack"), "retired sound packs stay out of the catalog");
+    const listedBanner = r.body.items.find((i) => i.sku === "banner-aurora");
+    assert(listedBanner.asset_url == null && listedBanner.preview_url == null, "catalog list omits image payloads");
+
+    r = await req(base, "GET", "/api/shop/catalog?category=banner&assets=1", { token: bobToken });
+    assert(r.status === 200 && r.body.items.length === 1, "banner asset query: " + JSON.stringify(r.body));
+    assert(
+      r.body.items[0].asset_url === "https://cdn.example.com/aurora.png",
+      "banner category includes its image: " + JSON.stringify(r.body.items[0])
+    );
+
+    const shopLib = require("../lib/shop");
+    await shopLib.retireSoundPacks();
+    const soundBob = fakeSupabase._tables.users.rows.find((u) => u.id === "u-bob");
+    const soundRow = fakeSupabase._tables.shop_items.rows.find((i) => i.id === "item-sound-1");
+    assert(soundBob.equipped_sound_pack_id == null, "equipped sound pack resets to default");
+    assert(soundRow.active === false, "sound pack items are deactivated");
+    r = await req(base, "POST", "/api/shop/purchase", { token: bobToken, body: { itemId: "item-sound-1" } });
+    assert(r.status === 404, "retired sound pack cannot be purchased: " + JSON.stringify(r.body));
+    const equipped = await shopLib.getEquippedCosmeticsForUser("u-alice");
+    assert(equipped.soundPack == null, "profile sound pack is always the default");
 
     // Bob's inventory starts empty
     r = await req(base, "GET", "/api/shop/inventory", { token: bobToken });

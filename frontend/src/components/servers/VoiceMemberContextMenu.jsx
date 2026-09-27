@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowRightLeft,
+  Copy,
   Headphones,
   HeadphoneOff,
+  Mic,
   MicOff,
+  Monitor,
   PhoneOff,
   Radio,
+  User,
   Volume2,
 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
@@ -21,10 +26,27 @@ export default function VoiceMemberContextMenu({
   serverId,
   serverVoice,
   onClose,
+  voiceVolume = 100,
+  onVoiceVolume,
+  onToggleVoiceMute,
+  showScreenVolume = false,
+  screenVolume = 100,
+  onScreenVolume,
+  onViewProfile,
+  onCopyId,
 }) {
   const t = useT();
   const { toast } = useToast();
   const [moveOpen, setMoveOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menu?.user) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menu?.user, onClose]);
 
   useEffect(() => {
     if (!menu?.user) return undefined;
@@ -41,10 +63,13 @@ export default function VoiceMemberContextMenu({
   const channelId = menu.channelId;
   const currentChannel = voiceChannels.find((c) => c.id === channelId);
   const isStage = currentChannel?.type === "stage";
-  const left = Math.min(menu.x || 12, (typeof window !== "undefined" ? window.innerWidth : 400) - 220);
-  const top = Math.min(menu.y || 12, (typeof window !== "undefined" ? window.innerHeight : 400) - 280);
+  const left = Math.min(menu.x || 12, (typeof window !== "undefined" ? window.innerWidth : 400) - 260);
+  const top = Math.min(menu.y || 12, (typeof window !== "undefined" ? window.innerHeight : 400) - 420);
+  const voiceLevel = Math.max(0, Math.min(100, Number(voiceVolume) || 0));
+  const screenLevel = Math.max(0, Math.min(100, Number(screenVolume) || 0));
+  const hasUserActions = Boolean(onVoiceVolume || onToggleVoiceMute || onViewProfile || onCopyId || showScreenVolume);
 
-  return (
+  const menuNode = (
     <>
       <button
         type="button"
@@ -63,6 +88,60 @@ export default function VoiceMemberContextMenu({
         <div className="server-voice-member-menu-title">
           {resolveDisplayName(user) || user.username}
         </div>
+        {typeof onVoiceVolume === "function" && (
+          <label className="server-voice-menu-slider">
+            <span>
+              {t("Volume")}
+              <b>{voiceLevel}%</b>
+            </span>
+            <input
+              aria-label={t("Volume")}
+              type="range"
+              min="0"
+              max="100"
+              value={voiceLevel}
+              onChange={(event) => onVoiceVolume(Number(event.target.value))}
+            />
+          </label>
+        )}
+        {typeof onToggleVoiceMute === "function" && (
+          <button type="button" className="server-dropdown-item" onClick={onToggleVoiceMute}>
+            {voiceLevel <= 0 ? <Mic size={14} /> : <MicOff size={14} />}
+            {voiceLevel <= 0 ? t("Unmute") : t("Mute")}
+          </button>
+        )}
+        {showScreenVolume && typeof onScreenVolume === "function" && (
+          <label className="server-voice-menu-slider">
+            <span>
+              <Monitor size={13} aria-hidden />
+              {t("Screen share volume")}
+              <b>{screenLevel}%</b>
+            </span>
+            <input
+              aria-label={t("Screen share volume")}
+              type="range"
+              min="0"
+              max="100"
+              value={screenLevel}
+              onChange={(event) => onScreenVolume(Number(event.target.value))}
+            />
+          </label>
+        )}
+        {typeof onViewProfile === "function" && (
+          <button type="button" className="server-dropdown-item" onClick={onViewProfile}>
+            <User size={14} />
+            {t("View profile")}
+          </button>
+        )}
+        {typeof onCopyId === "function" && (
+          <button type="button" className="server-dropdown-item" onClick={onCopyId}>
+            <Copy size={14} />
+            {t("Copy ID")}
+          </button>
+        )}
+        {hasUserActions && (canMute || canDeafen || canMove) ? (
+          <div className="server-voice-menu-sep" />
+        ) : null}
         {canMute && (
           <button
             type="button"
@@ -152,4 +231,7 @@ export default function VoiceMemberContextMenu({
       </div>
     </>
   );
+
+  if (typeof document === "undefined") return menuNode;
+  return createPortal(menuNode, document.body);
 }

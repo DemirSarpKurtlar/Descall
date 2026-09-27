@@ -768,11 +768,6 @@ export default function ServersSidebar({
               </span>
             </div>
             <div className="sidebar-actions">
-              {onMobileClose && (
-                <button type="button" className="icon-btn mobile-sidebar-close" onClick={onMobileClose} title={t("Close")}>
-                  <X size={18} />
-                </button>
-              )}
               {canManageChannels && (
                 <button
                   type="button"
@@ -1065,8 +1060,6 @@ export default function ServersSidebar({
                           unread={ch.type === "text" || ch.type === "announcement" ? channelUnread[ch.id] || 0 : 0}
                           muteTick={mutedChannelTick}
                           canManageRoles={canManageRoles}
-                          canMoveMembers={canMoveMembers}
-                          canMuteMembers={canMuteMembers}
                           voiceChannels={(activeServer?.channels || []).filter((c) => c.type === "voice" || c.type === "stage")}
                           serverVoice={serverVoice}
                           draggable={channelListDraggable}
@@ -1147,8 +1140,6 @@ export default function ServersSidebar({
                   unread={node.type === "text" || node.type === "announcement" ? channelUnread[node.id] || 0 : 0}
                   muteTick={mutedChannelTick}
                   canManageRoles={canManageRoles}
-                  canMoveMembers={canMoveMembers}
-                  canMuteMembers={canMuteMembers}
                   voiceChannels={(activeServer?.channels || []).filter((c) => c.type === "voice" || c.type === "stage")}
                   serverVoice={serverVoice}
                   onToggleMute={() => handleToggleChannelMute(node.id)}
@@ -1204,8 +1195,6 @@ export default function ServersSidebar({
                   unread={0}
                   muteTick={mutedChannelTick}
                   canManageRoles={false}
-                  canMoveMembers={canMoveMembers}
-                  canMuteMembers={canMuteMembers}
                   voiceChannels={(activeServer?.channels || []).filter(
                     (c) => c.type === "voice" || c.type === "stage"
                   )}
@@ -1328,7 +1317,7 @@ export default function ServersSidebar({
           )}
         </AnimatePresence>
 
-        {voiceMenu && (canMoveMembers || canMuteMembers || canDeafenMembers) && (
+        {voiceMenu && (
           <VoiceMemberContextMenu
             menu={voiceMenu}
             canMove={canMoveMembers}
@@ -1337,6 +1326,24 @@ export default function ServersSidebar({
             voiceChannels={(activeServer?.channels || []).filter((c) => c.type === "voice" || c.type === "stage")}
             serverId={activeServer?.id}
             serverVoice={serverVoice}
+            voiceVolume={Math.round(((serverVoice?.participantVolumes?.[String(voiceMenu.user?.id)] ?? 1) * 100))}
+            onVoiceVolume={(value) => serverVoice?.setParticipantVolume?.(voiceMenu.user?.id, value / 100)}
+            onToggleVoiceMute={() => serverVoice?.toggleParticipantMute?.(voiceMenu.user?.id)}
+            showScreenVolume={Boolean(voiceMenu.user?.isScreenSharing || voiceMenu.user?.screenStream)}
+            screenVolume={serverVoice?.screenVolumes?.[String(voiceMenu.user?.id)] ?? 100}
+            onScreenVolume={(value) => serverVoice?.setScreenShareVolume?.(voiceMenu.user?.id, value)}
+            onViewProfile={() => {
+              const user = voiceMenu.user;
+              if (!user?.id) return;
+              window.dispatchEvent(new CustomEvent("descall:open-profile", { detail: { user } }));
+              setVoiceMenu(null);
+            }}
+            onCopyId={() => {
+              const id = voiceMenu.user?.id;
+              if (id == null) return;
+              navigator.clipboard?.writeText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+              setVoiceMenu(null);
+            }}
             onClose={() => setVoiceMenu(null)}
           />
         )}
@@ -1378,11 +1385,6 @@ export default function ServersSidebar({
         <div className="sidebar-header">
           <h2 className="sidebar-title">{t("Servers")}</h2>
           <div className="sidebar-actions">
-            {onMobileClose && (
-              <button type="button" className="icon-btn mobile-sidebar-close" onClick={onMobileClose} title={t("Close")}>
-                <X size={18} />
-              </button>
-            )}
             <button
               type="button"
               className="icon-btn"
@@ -1702,8 +1704,6 @@ function ChannelRow({
   unread = 0,
   muteTick = 0,
   canManageRoles = false,
-  canMoveMembers = false,
-  canMuteMembers = false,
   draggable = false,
   dragHandleOnly = false,
   dragReorderTitle = "",
@@ -1744,7 +1744,6 @@ function ChannelRow({
   const showMenu = canManage || canAccess || canMute;
   void muteTick;
   const unreadCount = Number(unread) || 0;
-  const canModVoice = canMoveMembers || canMuteMembers;
   const rowDraggable = Boolean(draggable) && !dragHandleOnly;
   const startChannelDrag = (e) => {
     if (!draggable) return;
@@ -1956,9 +1955,9 @@ function ChannelRow({
                 member={m}
                 stream={stream}
                 onContextMenu={
-                  canModVoice
-                    ? (e) => onVoiceUserMenu?.(m, channel.id, e)
-                    : undefined
+                  myUserId != null && String(m.id) === String(myUserId)
+                    ? undefined
+                    : (e) => onVoiceUserMenu?.(m, channel.id, e)
                 }
               />
             );

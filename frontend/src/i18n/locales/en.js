@@ -2889,8 +2889,8 @@ export const phrases = {
   "This account has no email on file. Contact support@descall.com to recover access.": "This account has no email on file. Contact support@descall.com to recover access.",
   "Shop": "Shop",
   "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.": "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, sound packs, and more.":
-    "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, sound packs, and more.",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.":
+    "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.",
   "No items available yet — check back soon!": "No items available yet — check back soon!",
   "Shop categories": "Shop categories",
   "Banners": "Banners",

@@ -24,6 +24,11 @@ import {
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { isVoiceMicError, voiceMicErrorCopy } from "../lib/voiceMicError";
+import {
+  classifyLiveKitTrack,
+  nextScreenStream,
+  screenShareStillLive,
+} from "../lib/screenShareTracks";
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
 
@@ -57,6 +62,13 @@ export function useServerVoice(socket) {
   const pcMapRef = useRef(new Map()); // userId -> { pc, pendingIce }
   const remoteAudioRefs = useRef(new Map());
   const remoteStreamMapRef = useRef(new Map()); // userId -> MediaStream
+  const remoteScreenStreamsRef = useRef(new Map());
+  const participantVolumeRef = useRef(new Map());
+  const lastParticipantVolumeRef = useRef(new Map());
+  const screenVolumeRef = useRef(new Map());
+  const audioInputIdRef = useRef("");
+  const audioOutputIdRef = useRef("");
+  const videoInputIdRef = useRef("");
   const activeChannelIdRef = useRef(null);
   const voiceJoinEpochRef = useRef(0);
   const activeServerIdRef = useRef(null);
@@ -67,6 +79,14 @@ export function useServerVoice(socket) {
   const mutedRef = useRef(false);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreamsVersion, setRemoteStreamsVersion] = useState(0);
+  const [audioInputDevices, setAudioInputDevices] = useState([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState([]);
+  const [videoInputDevices, setVideoInputDevices] = useState([]);
+  const [selectedAudioInput, setSelectedAudioInput] = useState("");
+  const [selectedAudioOutput, setSelectedAudioOutput] = useState("");
+  const [selectedVideoInput, setSelectedVideoInput] = useState("");
+  const [participantVolumes, setParticipantVolumes] = useState({});
+  const [screenVolumes, setScreenVolumes] = useState({});
   const [serverMuted, setServerMuted] = useState(false);
   const serverMutedRef = useRef(false);
   const [serverDeafened, setServerDeafened] = useState(false);
@@ -150,6 +170,38 @@ export function useServerVoice(socket) {
 
   const canPublishVideo = useCallback(() => canPublishVoice() && canStreamRef.current, [canPublishVoice]);
 
+  const voiceVolumeFor = useCallback((userId) => {
+    const stored = participantVolumeRef.current.get(String(userId));
+    return stored == null ? 1 : stored;
+  }, []);
+
+  const applyVoiceElement = useCallback((userId, el) => {
+    if (!el) return;
+    el.muted = Boolean(serverDeafenedRef.current);
+    el.volume = serverDeafenedRef.current ? 0 : voiceVolumeFor(userId);
+    const sinkId = audioOutputIdRef.current;
+    if (sinkId && typeof el.setSinkId === "function") {
+      el.setSinkId(sinkId).catch(() => {});
+    }
+  }, [voiceVolumeFor]);
+
+  const publishLevelState = useCallback(() => {
+    setParticipantVolumes(Object.fromEntries(participantVolumeRef.current));
+    setScreenVolumes(Object.fromEntries(screenVolumeRef.current));
+  }, []);
+
+  const micConstraints = useCallback(() => {
+    const id = audioInputIdRef.current;
+    return id ? { audio: { deviceId: { exact: id } }, video: false } : { video: false };
+  }, []);
+
+  const cameraConstraints = useCallback(() => {
+    const video = { ...CAMERA_CONSTRAINTS.video };
+    const id = videoInputIdRef.current;
+    if (id) video.deviceId = { exact: id };
+    return { audio: false, video };
+  }, []);
+
   const attachRemoteAudio = useCallback((userId, stream) => {
     let el = remoteAudioRefs.current.get(userId);
     if (!el) {
@@ -161,8 +213,7 @@ export function useServerVoice(socket) {
       remoteAudioRefs.current.set(userId, el);
     }
     el.srcObject = stream;
-    el.muted = Boolean(serverDeafenedRef.current);
-    el.volume = serverDeafenedRef.current ? 0 : 1;
+    applyVoiceElement(userId, el);
     el.play().catch(() => {});
     remoteStreamMapRef.current.set(userId, stream);
     setRemoteStreamsVersion((v) => v + 1);
@@ -171,21 +222,20 @@ export function useServerVoice(socket) {
       if (exists) return prev.map((p) => (p.id === userId ? { ...p, stream, hasAudio: true } : p));
       return [...prev, { id: userId, username: "Member", stream, hasAudio: true }];
     });
-  }, []);
+  }, [applyVoiceElement]);
 
   const applyRemoteDeafen = useCallback((deafened) => {
     serverDeafenedRef.current = Boolean(deafened);
     setServerDeafened(Boolean(deafened));
-    for (const el of remoteAudioRefs.current.values()) {
-      el.muted = Boolean(deafened);
-      el.volume = deafened ? 0 : 1;
+    for (const [userId, el] of remoteAudioRefs.current.entries()) {
+      applyVoiceElement(userId, el);
     }
     if (deafened) {
       const track = localStreamRef.current?.getAudioTracks()?.[0];
       if (track) track.enabled = false;
       setMuted(true);
     }
-  }, []);
+  }, [applyVoiceElement]);
 
   const updateRemoteParticipant = useCallback((userId, patch) => {
     if (!userId) return;
@@ -262,6 +312,7 @@ export function useServerVoice(socket) {
       }
       remoteAudioRefs.current.delete(userId);
     }
+    remoteScreenStreamsRef.current.delete(userId);
   }, []);
 
   const connectLiveKitRoom = useCallback(
@@ -277,26 +328,50 @@ export function useServerVoice(socket) {
         const mediaTrack = track.mediaStreamTrack;
         if (!userId || !mediaTrack) return;
         const source = publication?.source || track?.source;
-        const remote = new MediaStream([mediaTrack]);
-        if (track.kind === "audio") {
-          attachRemoteAudio(userId, remote);
-        } else if (source === Track.Source.ScreenShare || source === Track.Source.ScreenShareAudio) {
-          updateRemoteParticipant(userId, { screenStream: remote, isScreenSharing: true });
-        } else {
-          updateRemoteParticipant(userId, { cameraStream: remote, cameraOn: true });
+        const role = classifyLiveKitTrack({ kind: track.kind, source });
+        if (role === "screen") {
+          const merged = nextScreenStream(remoteScreenStreamsRef.current.get(userId) || null, mediaTrack);
+          remoteScreenStreamsRef.current.set(userId, merged);
+          updateRemoteParticipant(userId, { screenStream: merged, isScreenSharing: true });
+          return;
         }
+        if (role === "mic") {
+          attachRemoteAudio(userId, new MediaStream([mediaTrack]));
+          return;
+        }
+        updateRemoteParticipant(userId, {
+          cameraStream: new MediaStream([mediaTrack]),
+          cameraOn: true,
+        });
       });
       room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
         const userId = participant.identity;
         if (!userId) return;
         const source = publication?.source || track?.source;
-        if (track.kind === "audio") {
-          cleanupPeer(userId);
-        } else if (source === Track.Source.ScreenShare || source === Track.Source.ScreenShareAudio) {
-          updateRemoteParticipant(userId, { screenStream: null, isScreenSharing: false });
-        } else {
-          updateRemoteParticipant(userId, { cameraStream: null, cameraOn: false });
+        const mediaTrack = track?.mediaStreamTrack;
+        const role = classifyLiveKitTrack({ kind: track.kind, source });
+        if (role === "screen") {
+          const stream = remoteScreenStreamsRef.current.get(userId) || null;
+          if (stream && mediaTrack) {
+            try {
+              stream.removeTrack(mediaTrack);
+            } catch {
+              /* ignore */
+            }
+          }
+          if (!screenShareStillLive(stream)) {
+            remoteScreenStreamsRef.current.delete(userId);
+            updateRemoteParticipant(userId, { screenStream: null, isScreenSharing: false });
+          } else {
+            updateRemoteParticipant(userId, { screenStream: stream, isScreenSharing: true });
+          }
+          return;
         }
+        if (role === "mic") {
+          cleanupPeer(userId);
+          return;
+        }
+        updateRemoteParticipant(userId, { cameraStream: null, cameraOn: false });
       });
       room.on(RoomEvent.Reconnecting, () => {
         if (liveKitRoomRef.current !== room) return;
@@ -618,7 +693,7 @@ export function useServerVoice(socket) {
         const isStage = nextChannelType === "stage";
         const stream = isStage
           ? new MediaStream()
-          : await acquireVoiceMicStream({ video: false });
+          : await acquireVoiceMicStream(micConstraints());
         if (!stillJoining()) {
           stream.getTracks().forEach((track) => track.stop());
           return;
@@ -710,7 +785,7 @@ export function useServerVoice(socket) {
         if (stillJoining()) setConnecting(false);
       }
     },
-    [cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, socket, toast]
+    [cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, micConstraints, socket, toast]
   );
 
   const toggleMute = useCallback(async () => {
@@ -725,7 +800,7 @@ export function useServerVoice(socket) {
     }
     let track = localStreamRef.current?.getAudioTracks()?.[0];
     if (!track) {
-      const stream = await acquireVoiceMicStream({ video: false });
+      const stream = await acquireVoiceMicStream(micConstraints());
       track = stream.getAudioTracks()[0];
       localStreamRef.current = stream;
       setLocalStream(stream);
@@ -757,7 +832,7 @@ export function useServerVoice(socket) {
         cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
       });
     }
-  }, [canPublishVoice, renegotiateWithPeer, socket]);
+  }, [canPublishVoice, micConstraints, renegotiateWithPeer, socket]);
 
   const applyLocalMute = useCallback((nextMuted, { forced = false } = {}) => {
     const track = localStreamRef.current?.getAudioTracks()?.[0];
@@ -999,7 +1074,7 @@ export function useServerVoice(socket) {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
+      const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints());
       const cameraTrack = stream.getVideoTracks()[0];
       if (!cameraTrack || cameraTrack.readyState !== "live") {
         stream.getTracks().forEach((t) => t.stop());
@@ -1035,7 +1110,7 @@ export function useServerVoice(socket) {
         setError(err?.message || "Could not start camera.");
       }
     }
-  }, [canPublishVideo, isCameraOn, renegotiateWithPeer, socket]);
+  }, [cameraConstraints, canPublishVideo, isCameraOn, renegotiateWithPeer, socket]);
 
   useEffect(() => {
     stopCameraRef.current = stopCamera;
@@ -1045,6 +1120,140 @@ export function useServerVoice(socket) {
     if (isCameraOn) await stopCamera();
     else await startCamera();
   }, [isCameraOn, startCamera, stopCamera]);
+
+  const setParticipantVolume = useCallback((userId, volume) => {
+    if (userId == null) return;
+    const key = String(userId);
+    const next = Math.max(0, Math.min(1, Number(volume)));
+    const safe = Number.isFinite(next) ? next : 1;
+    if (safe > 0) lastParticipantVolumeRef.current.set(key, safe);
+    participantVolumeRef.current.set(key, safe);
+    applyVoiceElement(key, remoteAudioRefs.current.get(userId) || remoteAudioRefs.current.get(key));
+    publishLevelState();
+  }, [applyVoiceElement, publishLevelState]);
+
+  const toggleParticipantMute = useCallback((userId) => {
+    const current = voiceVolumeFor(userId);
+    if (current > 0.001) setParticipantVolume(userId, 0);
+    else setParticipantVolume(userId, lastParticipantVolumeRef.current.get(String(userId)) || 1);
+  }, [setParticipantVolume, voiceVolumeFor]);
+
+  const setScreenShareVolume = useCallback((userId, volume) => {
+    if (userId == null) return;
+    const next = Math.max(0, Math.min(100, Number(volume)));
+    screenVolumeRef.current.set(String(userId), Number.isFinite(next) ? next : 100);
+    publishLevelState();
+  }, [publishLevelState]);
+
+  const setAudioInput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    audioInputIdRef.current = id;
+    setSelectedAudioInput(id);
+    const current = localStreamRef.current;
+    if (!current?.getAudioTracks?.().length) return;
+    try {
+      disposeNoiseSuppressionSession({ stopRaw: true });
+      const fresh = await acquireVoiceMicStream(micConstraints());
+      const newTrack = fresh.getAudioTracks()[0];
+      if (!newTrack) return;
+      current.getAudioTracks().forEach((track) => {
+        try { track.stop(); } catch { /* ignore */ }
+        current.removeTrack(track);
+      });
+      current.addTrack(newTrack);
+      setNoiseSuppressedTrackEnabled(!mutedRef.current && !serverMutedRef.current);
+      newTrack.enabled = !mutedRef.current && !serverMutedRef.current;
+      if (sfuModeRef.current && liveKitRoomRef.current) {
+        const pubs = liveKitRoomRef.current.localParticipant.audioTrackPublications;
+        for (const pub of pubs.values()) {
+          if (pub.source === Track.Source.Microphone && pub.track?.replaceTrack) {
+            await pub.track.replaceTrack(newTrack);
+          }
+        }
+      }
+      for (const peerData of pcMapRef.current.values()) {
+        const sender = peerData.pc?.getSenders?.().find(
+          (item) => item?.track?.kind === "audio" && item !== peerData.screenAudioSender
+        );
+        if (sender) await sender.replaceTrack(newTrack);
+      }
+      setLocalStream(current);
+    } catch (err) {
+      console.warn("[ServerVoice] setAudioInput failed:", err);
+    }
+  }, [micConstraints]);
+
+  const setAudioOutput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    audioOutputIdRef.current = id;
+    setSelectedAudioOutput(id);
+    const tasks = [];
+    for (const [userId, el] of remoteAudioRefs.current.entries()) {
+      applyVoiceElement(userId, el);
+      tasks.push(Promise.resolve());
+    }
+    await Promise.all(tasks);
+  }, [applyVoiceElement]);
+
+  const setVideoInput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    videoInputIdRef.current = id;
+    setSelectedVideoInput(id);
+    if (!cameraStreamRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints());
+      const newTrack = stream.getVideoTracks()[0];
+      if (!newTrack || newTrack.readyState !== "live") {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      cameraStreamRef.current.getTracks().forEach((track) => {
+        try { track.stop(); } catch { /* ignore */ }
+      });
+      cameraStreamRef.current = stream;
+      setCameraStream(stream);
+      if (sfuModeRef.current && liveKitRoomRef.current) {
+        const pubs = liveKitRoomRef.current.localParticipant.videoTrackPublications;
+        let replaced = false;
+        for (const pub of pubs.values()) {
+          if (pub.source === Track.Source.Camera && pub.track?.replaceTrack) {
+            await pub.track.replaceTrack(newTrack);
+            replaced = true;
+          }
+        }
+        if (!replaced) {
+          await liveKitRoomRef.current.localParticipant.publishTrack(newTrack, {
+            source: Track.Source.Camera,
+          });
+        }
+      }
+      for (const peerData of pcMapRef.current.values()) {
+        if (peerData.cameraSender) await peerData.cameraSender.replaceTrack(newTrack);
+      }
+      newTrack.onended = () => {
+        stopCameraRef.current?.();
+      };
+    } catch (err) {
+      console.warn("[ServerVoice] setVideoInput failed:", err);
+    }
+  }, [cameraConstraints]);
+
+  const refreshMediaDevices = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      setAudioInputDevices(devices.filter((device) => device.kind === "audioinput"));
+      setAudioOutputDevices(devices.filter((device) => device.kind === "audiooutput"));
+      setVideoInputDevices(devices.filter((device) => device.kind === "videoinput"));
+    } catch {
+      /* permissions or unsupported enumerateDevices */
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshMediaDevices();
+    navigator.mediaDevices?.addEventListener?.("devicechange", refreshMediaDevices);
+    return () => navigator.mediaDevices?.removeEventListener?.("devicechange", refreshMediaDevices);
+  }, [refreshMediaDevices]);
 
   const subscribedServerIdRef = useRef(null);
 
@@ -1653,6 +1862,21 @@ export function useServerVoice(socket) {
     stopCamera,
     startScreenShare,
     stopScreenShare,
+    audioInputDevices,
+    audioOutputDevices,
+    videoInputDevices,
+    selectedAudioInput,
+    selectedAudioOutput,
+    selectedVideoInput,
+    setAudioInput,
+    setAudioOutput,
+    setVideoInput,
+    participantVolumes,
+    screenVolumes,
+    setParticipantVolume,
+    toggleParticipantMute,
+    setScreenShareVolume,
+    refreshMediaDevices,
     requestToSpeak,
     subscribeServer,
     checkChannel,

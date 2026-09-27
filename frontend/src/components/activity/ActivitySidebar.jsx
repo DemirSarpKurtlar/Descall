@@ -7,7 +7,6 @@ import {
   Megaphone,
   MessageSquarePlus,
   Plus,
-  X,
   Users,
 } from "lucide-react";
 import { ActivityTypeIcon } from "../../lib/shopIcons";
@@ -96,7 +95,6 @@ export default function ActivitySidebar({
   friendPresence,
   onlineUsers,
   onRefresh,
-  onMobileClose,
   onAddFriend,
   onFriendSelect,
 }) {
@@ -126,16 +124,6 @@ export default function ActivitySidebar({
         <div className="sidebar-header">
           <h2 className="sidebar-title">{t("Activity")}</h2>
           <div className="sidebar-actions">
-            {onMobileClose && (
-              <button
-                type="button"
-                className="icon-btn mobile-sidebar-close"
-                onClick={onMobileClose}
-                title={t("Close")}
-              >
-                <X size={18} />
-              </button>
-            )}
             <button
               type="button"
               className="icon-btn"

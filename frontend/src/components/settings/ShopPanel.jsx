@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Award,
@@ -11,12 +11,10 @@ import {
   MessageSquare,
   Palette,
   Phone,
-  Play,
   Sparkles,
   Sun,
   Tag,
   Type,
-  Volume2,
   Wallpaper,
   Zap,
 } from "lucide-react";
@@ -30,8 +28,6 @@ import {
   getDesCoinDaily,
   claimDesCoinDaily,
 } from "../../api/shop";
-import { previewSoundPack } from "../../lib/audioManager";
-import { preloadSoundPack } from "../../lib/soundPackSynth";
 import { useT } from "../../context/LocaleContext";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
@@ -50,11 +46,25 @@ const CATEGORY_TABS = [
   { id: "chat_bubble", label: "Bubbles", icon: MessageSquare },
   { id: "presence_flare", label: "Presence", icon: CircleDot },
   { id: "profile_aura", label: "Auras", icon: Sun },
-  { id: "sound_pack", label: "Sounds", icon: Volume2 },
   { id: "typing_flare", label: "Typing", icon: Ellipsis },
   { id: "reaction_burst", label: "Reactions", icon: Flame },
   { id: "call_overlay", label: "Call Overlays", icon: Phone },
 ];
+
+const IMAGE_ASSET_CATEGORIES = new Set(["banner", "avatar_frame", "profile_background"]);
+
+function shopLoadNotice(err, t) {
+  const msg = String(err?.message || "").trim();
+  const generic =
+    !msg ||
+    msg === "Load failed" ||
+    msg === "Failed to fetch" ||
+    msg === "NetworkError when attempting to fetch resource." ||
+    msg === "Failed to load shop catalog." ||
+    msg === "Failed to load your inventory." ||
+    /^Request failed \(\d+\)$/.test(msg);
+  return generic ? t("Failed to load") : msg;
+}
 
 const CATEGORY_HEADING = {
   banner: "Profile Banners",
@@ -68,7 +78,6 @@ const CATEGORY_HEADING = {
   chat_bubble: "Chat Bubble Skins",
   presence_flare: "Presence Flares",
   profile_aura: "Profile Auras",
-  sound_pack: "Sound Packs",
   typing_flare: "Typing Flares",
   reaction_burst: "Reaction Bursts",
   call_overlay: "Call Overlays",
@@ -120,30 +129,6 @@ function ShopItemPreview({ category, item, t }) {
       </div>
     );
   }
-  if (category === "sound_pack") {
-    return (
-      <button
-        type="button"
-        className="shop-sound-pack-preview"
-        title={t("Preview sound")}
-        onMouseEnter={() => {
-          if (item.effect_key) preloadSoundPack(item.effect_key);
-        }}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          previewSoundPack(item.effect_key);
-        }}
-      >
-        <Volume2 size={22} />
-        <span>{item.effect_key}</span>
-        <span className="shop-sound-pack-play">
-          <Play size={12} fill="currentColor" />
-          {t("Preview")}
-        </span>
-      </button>
-    );
-  }
   if (category === "typing_flare") {
     return (
       <div className={`shop-typing-flare-preview cosmetic-typing-flare typing-${item.effect_key}`}>
@@ -168,11 +153,13 @@ function ShopItemPreview({ category, item, t }) {
       </div>
     );
   }
+  const src = item.preview_url || item.asset_url;
   return (
     <SkeletonImage
-      src={item.preview_url || item.asset_url}
+      src={src}
       alt={item.name}
       className="shop-item-preview-img"
+      fallback={<span className="shop-asset-pending" aria-hidden />}
     />
   );
 }
@@ -189,25 +176,38 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [activeCategory, setActiveCategory] = useState(null);
   const [daily, setDaily] = useState(null);
   const [claiming, setClaiming] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogGeneration, setCatalogGeneration] = useState(0);
+  const loadedAssetCategories = useRef(new Set());
 
   const load = useCallback(async ({ silent = false } = {}) => {
     // Full loading flash unmounts the grid and resets .us-main-scroll to top.
     // Only show it on the first open — refresh after buy/equip stays silent.
     if (!silent) setLoading(true);
-    try {
-      const [{ items: catalog }, { inventory: inv }, dailyStatus] = await Promise.all([
-        getShopCatalog(),
-        getShopInventory(),
-        getDesCoinDaily().catch(() => null),
-      ]);
-      setItems(catalog || []);
-      setInventory(inv || []);
-      if (dailyStatus) setDaily(dailyStatus);
-    } catch (err) {
-      setNotice(err.message || t("Failed to load"));
-    } finally {
-      if (!silent) setLoading(false);
+    if (!silent) setCatalogError("");
+    const [catalogRes, inventoryRes, dailyRes] = await Promise.allSettled([
+      getShopCatalog(),
+      getShopInventory(),
+      getDesCoinDaily(),
+    ]);
+    if (catalogRes.status === "fulfilled") {
+      loadedAssetCategories.current = new Set();
+      setItems(catalogRes.value?.items || []);
+      setCatalogError("");
+      setCatalogGeneration((n) => n + 1);
+    } else if (!silent) {
+      setItems([]);
+      setCatalogError(shopLoadNotice(catalogRes.reason, t));
+    } else {
+      setCatalogError(shopLoadNotice(catalogRes.reason, t));
     }
+    if (inventoryRes.status === "fulfilled") {
+      setInventory(inventoryRes.value?.inventory || []);
+    }
+    if (dailyRes.status === "fulfilled" && dailyRes.value) {
+      setDaily(dailyRes.value);
+    }
+    if (!silent) setLoading(false);
   }, [t]);
 
   const handleDailyClaim = async () => {
@@ -233,6 +233,32 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!activeCategory || !IMAGE_ASSET_CATEGORIES.has(activeCategory)) return;
+    if (loadedAssetCategories.current.has(activeCategory)) return;
+    let cancel = false;
+    getShopCatalog({ category: activeCategory, assets: true })
+      .then(({ items: withAssets }) => {
+        if (cancel) return;
+        loadedAssetCategories.current.add(activeCategory);
+        const byId = new Map((withAssets || []).map((item) => [item.id, item]));
+        setItems((prev) =>
+          prev.map((item) => {
+            const next = byId.get(item.id);
+            if (!next) return item;
+            return { ...item, asset_url: next.asset_url, preview_url: next.preview_url };
+          })
+        );
+      })
+      .catch((err) => {
+        if (cancel) return;
+        setCatalogError(shopLoadNotice(err, t));
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [activeCategory, catalogGeneration, t]);
 
   const preserveShopScroll = useCallback(async (action) => {
     const scrollEl = document.querySelector(".us-main-scroll");
@@ -335,7 +361,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     if (category === "chat_bubble") return equipped?.chatBubbleId;
     if (category === "presence_flare") return equipped?.presenceFlareId;
     if (category === "profile_aura") return equipped?.profileAuraId;
-    if (category === "sound_pack") return equipped?.soundPackId;
     if (category === "typing_flare") return equipped?.typingFlareId;
     if (category === "reaction_burst") return equipped?.reactionBurstId;
     if (category === "call_overlay") return equipped?.callOverlayId;
@@ -352,7 +377,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         </div>
       </div>
       <p className="shop-panel-intro">
-        {t("Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, sound packs, and more.")}
+        {t("Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.")}
       </p>
 
       <div className="descoin-retention-row">
@@ -400,8 +425,31 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
       {notice && <p className="us-inline-notice" style={{ margin: "-6px 0 4px" }}>{notice}</p>}
 
+      {catalogError && items.length > 0 && (
+        <div className="shop-load-error is-inline">
+          <p>{catalogError}</p>
+          <RippleButton
+            className="btn-secondary sm"
+            onClick={() => {
+              if (activeCategory) loadedAssetCategories.current.delete(activeCategory);
+              setCatalogError("");
+              setCatalogGeneration((n) => n + 1);
+            }}
+          >
+            {t("Retry")}
+          </RippleButton>
+        </div>
+      )}
+
       {loading ? (
         <ShopGridSkeleton count={6} />
+      ) : catalogError && items.length === 0 ? (
+        <div className="shop-load-error">
+          <p>{catalogError}</p>
+          <RippleButton className="btn-secondary sm" onClick={() => load()}>
+            {t("Retry")}
+          </RippleButton>
+        </div>
       ) : items.length === 0 ? (
         <p className="shop-empty-state">{t("No items available yet — check back soon!")}</p>
       ) : (
