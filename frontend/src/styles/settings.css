@@ -83,6 +83,27 @@
   backface-visibility: hidden;
 }
 
+.user-settings.is-desktop.is-shop-open {
+  width: min(1480px, calc(100vw - 28px));
+  height: min(960px, calc(100vh - 20px));
+  max-height: calc(100vh - 20px);
+}
+
+.user-settings.is-desktop.is-shop-open .us-main-scroll {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-settings.is-desktop.is-shop-open .us-tab {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent !important;
+}
+
 .user-settings.is-mobile {
   width: 100%;
   height: var(--vv-height, 100dvh);
@@ -1481,6 +1502,17 @@
     width: min(100vw - 32px, 1080px);
     height: min(100vh - 32px, 780px);
     max-height: calc(100vh - 32px);
+  }
+
+  .user-settings.is-desktop.is-shop-open {
+    width: min(100vw - 16px, 1480px);
+    height: min(100vh - 16px, 960px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .user-settings.is-desktop.is-shop-open .shop-workspace {
+    grid-template-columns: 156px minmax(0, 1fr) 260px;
+    gap: 10px;
   }
 
   .us-sidebar {
