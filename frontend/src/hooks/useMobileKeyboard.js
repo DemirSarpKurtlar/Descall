@@ -58,7 +58,11 @@ export function useMobileKeyboard(enabled = true) {
         }, KB_CLOSE_ANIM_MS);
       }
 
-      root.style.setProperty("--vv-height", `${Math.round(vvH)}px`);
+      // A 0px visual viewport (iOS, during the fixed splash) collapses the shell
+      // to nothing. Leave the 100dvh fallback in place until the height is real.
+      const roundedH = Math.round(vvH);
+      if (roundedH >= 160) root.style.setProperty("--vv-height", `${roundedH}px`);
+      else if (!open) root.style.removeProperty("--vv-height");
       root.style.setProperty("--vv-width", `${Math.round(vvW)}px`);
       root.style.setProperty("--vv-offset-top", `${Math.round(offsetTop)}px`);
       root.style.setProperty("--vv-offset-left", `${Math.round(offsetLeft)}px`);
