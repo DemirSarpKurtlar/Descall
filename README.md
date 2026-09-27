@@ -7,7 +7,7 @@
 Descall is a Discord-like desktop and web app: DMs, servers, voice, video, and LFG. Founded and owned by **Demir Sarp Kurtlar** (Türkiye).
 
 <p align="center">
-  <img src="Descall%20Icon.png" alt="Descall" width="128" height="128">
+  <img src="Descall%20Icon.png" alt="Descall" width="256" height="256">
 </p>
 
 ## Desktop
