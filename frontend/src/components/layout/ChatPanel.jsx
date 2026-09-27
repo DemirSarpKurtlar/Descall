@@ -389,6 +389,7 @@ export default function ChatPanel({
             <button
               type="button"
               className="icon-btn mobile-nav-btn"
+              data-mobile-back={showMobileBack ? "1" : undefined}
               onClick={showMobileBack ? onMobileBack : onMenuClick}
               aria-label={showMobileBack ? t("Back to list") : t("Open menu")}
             >
