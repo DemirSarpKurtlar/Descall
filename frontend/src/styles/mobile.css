@@ -558,22 +558,17 @@
   }
 
   .nav-rail-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 13px;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
   }
 
-  .nav-rail-logo .descall-brand {
-    width: 28px;
-    height: 28px;
-  }
-
+  .nav-rail-logo .descall-brand,
   .nav-rail-logo .descall-brand-mark,
   .nav-rail-logo .descall-brand img,
   .nav-rail-logo .descall-brand svg {
-    width: 28px;
-    height: 28px;
-    transform: none;
+    width: 100%;
+    height: 100%;
   }
 
   .rail-btn {

@@ -305,14 +305,16 @@
 }
 
 .nav-rail-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 3px;
+  box-sizing: border-box;
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.04);
@@ -326,8 +328,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 100%;
+  height: 100%;
   line-height: 0;
   margin: 0;
   padding: 0;
@@ -337,9 +339,10 @@
 .nav-rail-logo .descall-brand img,
 .nav-rail-logo .descall-brand svg {
   display: block;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  border-radius: 13px;
+  object-fit: cover;
   transform: none;
 }
 
@@ -401,8 +404,9 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 14px 10px 10px;
+  padding: 12px 0 10px;
   flex-shrink: 0;
+  overflow: visible;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.12));
 }
@@ -566,11 +570,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  align-self: center;
+  width: 48px;
+  height: 48px;
+  margin-inline: auto;
   padding: 0;
+  flex-shrink: 0;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
+  border-radius: 16px;
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.03);
@@ -598,7 +606,23 @@
 
 .rail-user-avatar-wrap {
   position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-inline: auto;
   flex-shrink: 0;
+  overflow: visible;
+}
+
+.rail-user-avatar-wrap .ui-avatar {
+  margin: 0;
+}
+
+.rail-user-avatar-wrap .ui-avatar-frame-overlay {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .rail-user-status-dot {
@@ -1290,6 +1314,8 @@
   flex-direction: column;
   flex: 1 1 0;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
   height: 100%;
   max-height: 100%;
   overflow: hidden;

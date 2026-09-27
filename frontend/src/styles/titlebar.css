@@ -173,9 +173,9 @@ body.electron-app .electron-update-banner {
 }
 
 .titlebar .descall-brand-mark {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
 }
 
 .titlebar .descall-brand strong {
