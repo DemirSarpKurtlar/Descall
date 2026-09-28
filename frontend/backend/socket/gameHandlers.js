@@ -819,7 +819,7 @@ async function handleHelp(io, socket, userId, groupId, unknownCommand = null) {
     `\`/bj <amount>\` — deal a hand\n` +
     `\`/hit\` · \`/stand\` · \`/double\`\n` +
     `\`/slot <amount>\` — 5 reels, 10 lines\n` +
-    `\`/cf <amount>\` or \`/coinflip <amount> [yazı|tura]\`\n` +
+    `\`/cf <amount> [yazı|tura|heads|tails|h|t]\` or \`/coinflip\`\n` +
     `\`/pay @user <amount>\` — send credits (\`/gonder\`, \`/send\`, \`/tip\`)\n\n` +
     `**Info**\n` +
     `\`/credits\` · \`/top\` · \`/daily\` · \`/help\`\n\n` +
@@ -828,7 +828,7 @@ async function handleHelp(io, socket, userId, groupId, unknownCommand = null) {
     `• Dealer hits soft 17\n` +
     `• Blackjack pays 3:2\n` +
     `• Slot: wild substitutes · scatter pays anywhere and opens free spins\n` +
-    `• Coin is even money — call yazı or tura\n` +
+    `• Coin is even money — call yazı, tura, heads, h, tails, or t\n` +
     `• Others can watch a live board; only you can act on it\n` +
     `• Daily bonus: **${DAILY_BONUS.toLocaleString()}** credits once per day\n` +
     `• Starting bankroll: ${STARTING_CREDITS.toLocaleString()} credits`;
@@ -1127,7 +1127,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        "**Coin flip**\n\nUsage: `/cf 100` then call yazı or tura\nOr `/cf 100 tura` · `/coinflip 100 heads`",
+        "**Coin flip**\n\nUsage: `/cf 100` then call yazı or tura\nOr `/cf 100 heads` · `/cf 100 h` · `/cf 100 tails` · `/cf 100 t`",
         { game: "coinflip", status: "lobby", userId },
         "game_lobby",
         userId
@@ -1189,7 +1189,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        "**Coin flip**\n\nUsage: `/cf 100` or `/coinflip 250 tura`",
+        "**Coin flip**\n\nUsage: `/cf 100 heads` · `/cf 100 h` · `/cf 100 tails` · `/cf 100 t`",
         { game: "coinflip", status: "lobby", userId },
         "game_lobby",
         userId

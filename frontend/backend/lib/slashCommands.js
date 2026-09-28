@@ -69,13 +69,13 @@ const slashCommands = [
   }),
   defineCommand({
     name: "coinflip",
-    description: "Flip a coin. Optional call: yazi or tura.",
+    description: "Flip a coin. Optional call at the end: yazi, tura, heads, h, tails, or t.",
     options: [option("amount", "Credits to wager.", { required: true })],
     casino: true,
   }),
   defineCommand({
     name: "cf",
-    description: "Flip a coin. Same as /coinflip.",
+    description: "Flip a coin. Same as /coinflip. Example: /cf 100 h or /cf 100 tails.",
     casino: true,
   }),
   defineCommand({

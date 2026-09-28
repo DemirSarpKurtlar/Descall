@@ -229,7 +229,7 @@ function LobbyTable({ credits, onBet, onHelp }) {
               <li><code>/bj 100</code> {t("deal")}</li>
               <li><code>/hit</code> · <code>/stand</code> · <code>/double</code></li>
               <li><code>/slot 100</code> {t("spin the reels")}</li>
-              <li><code>/cf 100</code> {t("call the coin")}</li>
+              <li><code>/cf 100 heads</code> · <code>h</code> · <code>tails</code> · <code>t</code> {t("call the coin")}</li>
               <li><code>/pay @user 500</code> {t("send credits")}</li>
             </ul>
           </div>
@@ -349,7 +349,7 @@ function HelpPanel({ credits }) {
             <li><code>/bj 100</code> {t("deal")}</li>
             <li><code>/hit</code> · <code>/stand</code> · <code>/double</code></li>
             <li><code>/slot 100</code> {t("spin the reels")}</li>
-            <li><code>/cf 100</code> {t("call the coin")}</li>
+            <li><code>/cf 100 heads</code> · <code>h</code> · <code>tails</code> · <code>t</code> {t("call the coin")}</li>
             <li><code>/pay @user 500</code> {t("send credits")}</li>
           </ul>
         </div>
