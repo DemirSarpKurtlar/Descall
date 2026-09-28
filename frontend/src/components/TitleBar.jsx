@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Minus, Square, X } from "lucide-react";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
+import { electronContentBox } from "../lib/electronViewport";
 
 /**
  * Frameless Electron title bar — always mounted while the desktop app runs.
@@ -19,22 +20,29 @@ export default function TitleBar() {
     document.body.classList.add("electron-app");
     document.documentElement.classList.add("electron-app");
 
+    const syncViewport = () => {
+      const screen = window.screen;
+      const { contentH, bottomInset } = electronContentBox({
+        innerHeight: window.innerHeight,
+        availHeight: screen?.availHeight,
+        availTop: screen?.availTop,
+      });
+      const rootStyle = document.documentElement.style;
+      rootStyle.setProperty("--electron-content-h", `${contentH}px`);
+      rootStyle.setProperty("--electron-bottom-inset", `${bottomInset}px`);
+    };
+
     if (window.electronAPI?.onMaximizedChange) {
       window.electronAPI.onMaximizedChange((maximized) => {
         setIsMaximized(Boolean(maximized));
+        // Maximize can land under the taskbar before a resize event.
+        requestAnimationFrame(syncViewport);
       });
     }
 
-    const TITLEBAR_H = 40;
-    const syncViewport = () => {
-      const h = window.innerHeight;
-      document.documentElement.style.setProperty(
-        "--electron-content-h",
-        `${Math.max(0, h - TITLEBAR_H)}px`
-      );
-    };
     syncViewport();
     window.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("resize", syncViewport);
     const onFs = () => {
       if (document.fullscreenElement) {
         try { document.exitFullscreen(); } catch (_) { /* ignore */ }
@@ -43,7 +51,11 @@ export default function TitleBar() {
     };
     document.addEventListener("fullscreenchange", onFs);
 
-    return undefined;
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      document.removeEventListener("fullscreenchange", onFs);
+    };
   }, [isElectron]);
 
   if (!isElectron) return null;
