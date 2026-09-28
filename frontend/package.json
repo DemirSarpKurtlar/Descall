@@ -2,6 +2,10 @@
   "name": "descall",
   "version": "2.9.86",
   "description": "Modern messaging and video conferencing app",
+  "author": {
+    "name": "Descall",
+    "email": "contact@descall.com"
+  },
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -86,7 +90,7 @@
   "build": {
     "appId": "com.descall.app",
     "productName": "Descall",
-    "copyright": "Copyright © 2025 Descall",
+    "copyright": "Copyright © 2026 Demir Sarp Kurtlar",
     "directories": {
       "output": "release",
       "buildResources": "build"

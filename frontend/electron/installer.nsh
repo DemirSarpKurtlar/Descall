@@ -27,7 +27,9 @@
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall" \
     "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall" \
-    "Publisher" "Descall Team"
+    "Publisher" "Descall"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall" \
+    "DisplayVersion" "${VERSION}"
 !macroend
 
 !macro customUnInstall

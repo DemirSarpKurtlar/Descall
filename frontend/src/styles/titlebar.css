@@ -101,18 +101,33 @@ body.electron-app {
   background: #f1707a;
 }
 
-/* Push app content below the fixed title bar */
+/* The app shell's critical CSS sets min-height:100dvh on html, body, and #root.
+   Electron also pads the body for the 40px title bar (and any taskbar overlap).
+   min-height:100dvh wins over a shorter height, so the shell is exactly one
+   title bar too tall and overflow:hidden clips the composer and the DM list
+   in every window size. Web has no title-bar pad, so 100dvh still fits there.
+   Size the Electron shell to the layout viewport (100%), not dvh. */
+html.electron-app,
+html.electron-app body,
+body.electron-app {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
 body.electron-app {
   padding-top: var(--electron-titlebar-h) !important;
-  box-sizing: border-box;
+  padding-bottom: var(--electron-bottom-inset, 0px) !important;
+  box-sizing: border-box !important;
+  background: var(--surface-0, #111214) !important;
 }
 
 body.electron-app #root {
-  height: calc(100vh - var(--electron-titlebar-h)) !important;
-  height: calc(100dvh - var(--electron-titlebar-h)) !important;
-  max-height: calc(100vh - var(--electron-titlebar-h)) !important;
-  max-height: calc(100dvh - var(--electron-titlebar-h)) !important;
-  overflow: hidden;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
 }
 
 /* Layout shells should fill #root, not the full viewport */
@@ -147,8 +162,8 @@ body.electron-app .user-settings-shell.is-desktop {
 }
 
 body.electron-app .download-page {
-  min-height: calc(100vh - var(--electron-titlebar-h));
-  min-height: calc(100dvh - var(--electron-titlebar-h));
+  min-height: 0;
+  height: 100%;
 }
 
 /* Update banner sits under titlebar */
@@ -199,14 +214,7 @@ body.electron-app .incoming-call-card {
   top: calc(var(--electron-titlebar-h, 40px) + 12px) !important;
 }
 
-body.electron-app #root {
-  height: var(--electron-content-h, calc(100dvh - var(--electron-titlebar-h) - var(--electron-bottom-inset, 0px))) !important;
-  max-height: var(--electron-content-h, calc(100dvh - var(--electron-titlebar-h) - var(--electron-bottom-inset, 0px))) !important;
-}
-
-html.electron-app,
-body.electron-app {
-  overflow: hidden !important;
+html.electron-app {
   background: var(--surface-0, #111214) !important;
 }
 

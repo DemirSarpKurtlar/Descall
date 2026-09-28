@@ -58,11 +58,26 @@ jobs:
         with: { node-version: 20, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - name: Build Windows setup
         working-directory: frontend
+        shell: pwsh
         env:
           ELECTRON_BUILD: "1"
+          # Optional Authenticode cert (PFX, base64 or path). Empty secrets must
+          # not be forwarded: electron-builder treats a blank CSC_LINK as a
+          # signing failure. The certificate subject (CN) must be Descall so it
+          # matches the CompanyName written into the exe. SmartScreen's
+          # "Unknown publisher" line is the signature, not the version resource.
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
           npm ci
           npm run build:prod
+          if ($env:WIN_CSC_LINK) {
+            $env:CSC_LINK = $env:WIN_CSC_LINK
+            $env:CSC_KEY_PASSWORD = $env:WIN_CSC_KEY_PASSWORD
+            Write-Host "Code signing certificate present. Signing the setup."
+          } else {
+            Write-Host "No WIN_CSC_LINK secret. Building unsigned. File properties still name Descall; SmartScreen stays Unknown publisher until a trusted cert is configured."
+          }
           npx electron-builder --win --publish=never
       - name: Copy stable latest setup name
         shell: pwsh

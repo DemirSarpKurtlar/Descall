@@ -1,5 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session } = require('electron');
-const { measureWindowOcclusion } = require('./windowOcclusion.cjs');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen } = require('electron');
+const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
@@ -509,18 +509,73 @@ function toggleMaximize(win) {
   } catch (_) {}
 }
 
+let containingRestoredWindow = false;
+
+/**
+ * Pull a restored window back into the work area. A 1400×900 default on a
+ * 125% laptop (logical height ~800) hangs off the bottom and clips the
+ * composer. Maximized windows are left alone: setContentBounds clears the
+ * maximized state and Electron then paints across the taskbar.
+ */
+function containRestoredWindow(win) {
+  if (containingRestoredWindow) return;
+  if (!win || win.isDestroyed?.()) return;
+  try {
+    if (win.isMaximized() || win.isFullScreen()) return;
+  } catch (_) {
+    return;
+  }
+  let bounds;
+  let area;
+  try {
+    bounds = win.getContentBounds();
+    area = screen.getDisplayMatching(bounds)?.workArea;
+  } catch (_) {
+    return;
+  }
+  if (!bounds || !area) return;
+  const overflows =
+    bounds.x < area.x - 1
+    || bounds.y < area.y - 1
+    || bounds.x + bounds.width > area.x + area.width + 1
+    || bounds.y + bounds.height > area.y + area.height + 1;
+  if (!overflows) return;
+  const fitted = fitBoundsToWorkArea(bounds, area, { minWidth: 1200, minHeight: 700 });
+  containingRestoredWindow = true;
+  try {
+    win.setMinimumSize(fitted.minWidth, fitted.minHeight);
+    win.setContentBounds({ x: fitted.x, y: fitted.y, width: fitted.width, height: fitted.height });
+  } catch (_) { /* display gone */ }
+  containingRestoredWindow = false;
+}
+
+function initialWindowBounds() {
+  let area = null;
+  try { area = screen.getPrimaryDisplay()?.workArea || null; } catch (_) { area = null; }
+  return fitBoundsToWorkArea(
+    { width: 1400, height: 900 },
+    area,
+    { minWidth: 1200, minHeight: 700 },
+  );
+}
+
 // Create main window
 function createMainWindow() {
+  const initial = initialWindowBounds();
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1200,
-    minHeight: 700,
+    x: initial.x,
+    y: initial.y,
+    width: initial.width,
+    height: initial.height,
+    minWidth: initial.minWidth,
+    minHeight: initial.minHeight,
     show: false,
     skipTaskbar: false,
-    // Frameless — React TitleBar provides window controls (avoids double title bars)
+    // Frameless — React TitleBar provides window controls (avoids double title bars).
+    // titleBarStyle:'hidden' is a macOS caption. On Windows it reserves a native
+    // caption inset and the page then paints ~40px past the visible client.
     frame: false,
-    titleBarStyle: 'hidden',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' } : {}),
     // Do not set thickFrame:false. Electron 41 indents a maximized frameless
     // client out of the taskbar only while the window stays maximized AND
     // keeps WS_THICKFRAME (GetClientAreaInsets, GetDwmFrameInsetsInPixels,
@@ -588,7 +643,10 @@ function createMainWindow() {
   const publishBox = () => publishContentBox(mainWindow);
   mainWindow.on('resize', publishBox);
   mainWindow.on('move', publishBox);
-  mainWindow.on('restore', publishBox);
+  mainWindow.on('restore', () => {
+    containRestoredWindow(mainWindow);
+    publishBox();
+  });
   mainWindow.on('show', publishBox);
   mainWindow.on('maximize', () => {
     sendMaximized(mainWindow, true);
@@ -596,6 +654,7 @@ function createMainWindow() {
   });
   mainWindow.on('unmaximize', () => {
     sendMaximized(mainWindow, false);
+    containRestoredWindow(mainWindow);
     publishBox();
   });
   mainWindow.on('enter-full-screen', () => {
@@ -746,6 +805,7 @@ function createMainWindow() {
 
   // Show window when ready (unless we were in the tray and the updater relaunched)
   mainWindow.once('ready-to-show', () => {
+    containRestoredWindow(mainWindow);
     if (splashWindow && !splashWindow.isDestroyed()) {
       try { splashWindow.close(); } catch (_) { /* ignore */ }
       splashWindow = null;
