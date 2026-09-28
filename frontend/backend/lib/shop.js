@@ -103,6 +103,43 @@ async function listActiveItems({ category = null, includeAssets = false } = {}) 
  * Turn off shop sound packs and clear anyone who still has one equipped.
  * Idempotent. Default audio is an empty equipped_sound_pack_id.
  */
+/**
+ * Insert any atelier chat-bubble SKUs that are not in shop_items yet.
+ * Idempotent. Safe to call on every boot.
+ */
+async function ensureChatBubbleCatalog() {
+  const { CHAT_BUBBLE_CATALOG } = require("./chatBubbleCatalog");
+  const skus = CHAT_BUBBLE_CATALOG.map((item) => item.sku);
+  const { data, error } = await supabase.from("shop_items").select("sku").in("sku", skus);
+  if (error) throw error;
+  const have = new Set((data || []).map((row) => row.sku));
+  let created = 0;
+  for (const item of CHAT_BUBBLE_CATALOG) {
+    if (have.has(item.sku)) continue;
+    const { error: insertError } = await supabase.from("shop_items").insert({
+      sku: item.sku,
+      name: item.name,
+      description: item.description,
+      category: "chat_bubble",
+      asset_url: "data:,",
+      preview_url: null,
+      price_cents: 0,
+      price_descoin: item.price_descoin,
+      theme_key: null,
+      badge_icon: null,
+      title_text: null,
+      effect_key: item.effect_key,
+      rarity: item.rarity,
+      sort_order: item.sort_order,
+      active: true,
+    });
+    if (insertError) throw insertError;
+    created += 1;
+  }
+  if (created) console.log(`[shop] chat bubble catalog inserted ${created}`);
+  return created;
+}
+
 async function retireSoundPacks() {
   const { error: itemError } = await supabase
     .from("shop_items")
@@ -398,6 +435,7 @@ module.exports = {
   RETIRED_SHOP_CATEGORIES,
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
+  ensureChatBubbleCatalog,
   retireSoundPacks,
   listAllItems,
   getItemById,

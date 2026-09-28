@@ -1102,6 +1102,12 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] sound pack retire failed:", e.message);
   }
+  try {
+    const { ensureChatBubbleCatalog } = require("./lib/shop");
+    await ensureChatBubbleCatalog();
+  } catch (e) {
+    console.warn("[boot] chat bubble catalog failed:", e.message);
+  }
 }
 
 if (isVercel) {
