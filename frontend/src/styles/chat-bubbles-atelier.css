@@ -1,0 +1,627 @@
+/* Atelier chat bubbles — one rule per effect_key.
+   Backgrounds stay inside the bubble. Motion uses custom properties,
+   background-position, or box-shadow so the bubble box itself never
+   translates (Framer Motion owns transform on .message-bubble). */
+
+@property --atelier-a {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 18%;
+}
+@property --atelier-b {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 62%;
+}
+@property --atelier-c {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.45;
+}
+@property --atelier-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 18deg;
+}
+
+.message-bubble.cosmetic-chat-bubble[class*="bubble-atelier-"],
+.cosmetic-chat-bubble[class*="bubble-atelier-"] {
+  position: relative;
+  color: #f6f3ec;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.28);
+}
+
+.message-bubble.cosmetic-chat-bubble[class*="bubble-atelier-"] .message-text {
+  color: inherit;
+}
+
+.message-bubble.cosmetic-chat-bubble[class*="bubble-atelier-"] .msg-link {
+  color: #fde68a;
+}
+
+.cosmetic-chat-bubble[class*="bubble-atelier-"]::before,
+.cosmetic-chat-bubble[class*="bubble-atelier-"]::after {
+  content: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ── Static ──────────────────────────────────────────────────────────── */
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-obsidian,
+.cosmetic-chat-bubble.bubble-atelier-obsidian {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(253, 224, 71, 0.22), transparent 42%),
+    repeating-linear-gradient(118deg, transparent 0 14px, rgba(250, 204, 21, 0.55) 14px 15px, transparent 15px 28px),
+    linear-gradient(160deg, #16130e 0%, #07080c 46%, #1c1408 100%);
+  border: 1px solid rgba(250, 204, 21, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 80, 10, 0.65),
+    inset 0 1px 0 rgba(255, 236, 180, 0.35),
+    inset 0 -12px 18px rgba(0, 0, 0, 0.55);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-marble,
+.cosmetic-chat-bubble.bubble-atelier-marble {
+  color: #241c16;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  background:
+    repeating-linear-gradient(-18deg, transparent 0 11px, rgba(87, 83, 78, 0.28) 11px 12px, transparent 12px 22px),
+    repeating-linear-gradient(72deg, transparent 0 18px, rgba(68, 64, 60, 0.18) 18px 19px),
+    radial-gradient(90% 70% at 20% 0%, #fffdf8, transparent 55%),
+    linear-gradient(145deg, #f4efe6, #d6d0c6 58%, #efe8dc);
+  border: 1px solid rgba(87, 75, 58, 0.45);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset 0 -8px 12px rgba(90, 70, 50, 0.12);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-marble .msg-link { color: #9a3412; }
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-damascus,
+.cosmetic-chat-bubble.bubble-atelier-damascus {
+  background:
+    radial-gradient(70% 45% at 50% 0%, rgba(255, 255, 255, 0.34), transparent 42%),
+    repeating-linear-gradient(86deg, transparent 0 5px, rgba(255, 255, 255, 0.16) 5px 6px, transparent 6px 11px),
+    repeating-linear-gradient(97deg, transparent 0 7px, rgba(0, 0, 0, 0.45) 7px 8px, transparent 8px 13px),
+    repeating-linear-gradient(180deg, #c5ced6 0 2px, #2b3138 2px 3px, #8b949e 3px 5px, #14181c 5px 8px, #e8edf2 8px 9px, #3a424c 9px 13px);
+  border: 1px solid rgba(226, 232, 240, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -14px 16px rgba(0, 0, 0, 0.45),
+    inset 8px 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-abyss,
+.cosmetic-chat-bubble.bubble-atelier-abyss {
+  background:
+    radial-gradient(40% 46% at 72% 28%, rgba(224, 242, 254, 0.85), rgba(125, 211, 252, 0.15) 42%, transparent 62%),
+    radial-gradient(120% 90% at 50% 120%, #0e7490, transparent 50%),
+    linear-gradient(180deg, #020617 0%, #042f3a 70%, #083344 100%);
+  border: 1px solid rgba(103, 232, 249, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(8, 47, 73, 0.8),
+    inset 0 10px 18px rgba(0, 0, 0, 0.35),
+    inset 0 -8px 12px rgba(34, 211, 238, 0.12);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-filigree,
+.cosmetic-chat-bubble.bubble-atelier-filigree {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(250, 204, 21, 0.85) 0 2px, transparent 3px),
+    radial-gradient(circle at 100% 0%, rgba(250, 204, 21, 0.85) 0 2px, transparent 3px),
+    radial-gradient(circle at 0% 100%, rgba(250, 204, 21, 0.7) 0 2px, transparent 3px),
+    radial-gradient(circle at 100% 100%, rgba(250, 204, 21, 0.7) 0 2px, transparent 3px),
+    radial-gradient(80% 70% at 50% 0%, rgba(251, 113, 133, 0.35), transparent 60%),
+    linear-gradient(165deg, #4c0519, #2a0612 55%, #1a050c);
+  border: 1px solid rgba(251, 191, 36, 0.7);
+  box-shadow:
+    inset 0 0 0 3px rgba(76, 5, 25, 0.9),
+    inset 0 0 0 4px rgba(251, 191, 36, 0.45),
+    inset 0 -12px 16px rgba(0, 0, 0, 0.4);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-canopy,
+.cosmetic-chat-bubble.bubble-atelier-canopy {
+  background:
+    radial-gradient(18% 40% at 22% 0%, rgba(254, 249, 195, 0.55), transparent 70%),
+    radial-gradient(14% 36% at 58% 0%, rgba(187, 247, 208, 0.4), transparent 72%),
+    radial-gradient(16% 34% at 84% 8%, rgba(254, 240, 138, 0.35), transparent 70%),
+    linear-gradient(180deg, #14532d 0%, #052e16 48%, #022c22 100%);
+  border: 1px solid rgba(134, 239, 172, 0.4);
+  box-shadow:
+    inset 0 8px 14px rgba(0, 0, 0, 0.28),
+    inset 0 -10px 14px rgba(0, 0, 0, 0.35);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-moonstone,
+.cosmetic-chat-bubble.bubble-atelier-moonstone {
+  color: #1e1b4b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    repeating-linear-gradient(115deg, transparent 0 7px, rgba(125, 211, 252, 0.35) 7px 8px, transparent 8px 14px, rgba(244, 114, 182, 0.28) 14px 15px),
+    radial-gradient(46% 70% at 50% 48%, #ffffff 0%, #e0e7ff 36%, transparent 62%),
+    conic-gradient(from 200deg at 50% 50%, #312e81, #0891b2, #db2777, #4c1d95, #312e81);
+  border: 1px solid rgba(244, 114, 182, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 211, 252, 0.7),
+    inset 0 1px 0 #fff,
+    0 0 0 1px rgba(34, 211, 238, 0.35);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-moonstone .msg-link { color: #6d28d9; }
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-patina,
+.cosmetic-chat-bubble.bubble-atelier-patina {
+  background:
+    radial-gradient(circle at 18% 70%, rgba(180, 83, 9, 0.9) 0 3px, transparent 4px),
+    radial-gradient(circle at 74% 30%, rgba(22, 101, 52, 0.8) 0 4px, transparent 5px),
+    repeating-linear-gradient(90deg, #7c2d12 0 10px, #155e4a 10px 18px, #9a3412 18px 22px, #134e4a 22px 34px),
+    linear-gradient(#1c1917, #1c1917);
+  border: 1px solid rgba(253, 186, 116, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 237, 213, 0.35), inset 0 -10px 14px rgba(0, 0, 0, 0.35);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-inkwash,
+.cosmetic-chat-bubble.bubble-atelier-inkwash {
+  background:
+    radial-gradient(60% 80% at 12% 80%, rgba(15, 15, 15, 0.2), transparent 60%),
+    radial-gradient(90% 110% at 78% 20%, #f5f0e6 0%, #d6d3d1 28%, #44403c 62%, #1c1917 100%);
+  border: 1px solid rgba(214, 211, 209, 0.28);
+  box-shadow: inset 8px -12px 20px rgba(0, 0, 0, 0.35), inset -6px 8px 16px rgba(255, 250, 240, 0.08);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-porcelain,
+.cosmetic-chat-bubble.bubble-atelier-porcelain {
+  color: #3f2a1d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    repeating-linear-gradient(32deg, transparent 0 8px, rgba(120, 70, 40, 0.38) 8px 9px),
+    repeating-linear-gradient(-58deg, transparent 0 12px, rgba(90, 50, 30, 0.28) 12px 13px),
+    radial-gradient(80% 60% at 30% 0%, #fffaf3, transparent 50%),
+    linear-gradient(#f7f1e8, #efe2d2);
+  border: 2px solid rgba(180, 130, 40, 0.75);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -6px 10px rgba(120, 70, 40, 0.08);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-porcelain .msg-link { color: #9a3412; }
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-stormglass,
+.cosmetic-chat-bubble.bubble-atelier-stormglass {
+  background:
+    linear-gradient(108deg, transparent 18%, rgba(224, 242, 254, 0.9) 19%, transparent 21%),
+    linear-gradient(74deg, transparent 46%, rgba(125, 211, 252, 0.75) 47%, transparent 49%),
+    linear-gradient(96deg, transparent 70%, rgba(255, 255, 255, 0.8) 70.6%, transparent 72%),
+    linear-gradient(165deg, #0f172a, #1e293b 50%, #020617);
+  border: 1px solid rgba(186, 230, 253, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -12px 16px rgba(0, 0, 0, 0.4);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-velvet,
+.cosmetic-chat-bubble.bubble-atelier-velvet {
+  background:
+    repeating-linear-gradient(128deg, rgba(255, 228, 230, 0.09) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(52deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 4px),
+    radial-gradient(90% 42% at 50% 0%, rgba(255, 214, 220, 0.42), transparent 58%),
+    radial-gradient(36% 28% at 72% 82%, rgba(0, 0, 0, 0.55), transparent 70%),
+    linear-gradient(180deg, #6b1230 0%, #3b0718 42%, #14060d 100%);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  box-shadow:
+    inset 0 8px 14px rgba(255, 180, 190, 0.12),
+    inset 0 -16px 18px rgba(0, 0, 0, 0.45);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-glacier,
+.cosmetic-chat-bubble.bubble-atelier-glacier {
+  color: #082f49;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  background:
+    linear-gradient(#ffffff, #ffffff) 0 0 / 100% 2px no-repeat,
+    linear-gradient(180deg, #e0f2fe 0 18%, #7dd3fc 18% 19%, #f0f9ff 19% 46%, #38bdf8 46% 48%, #bae6fd 48% 78%, #0284c7 78% 80%, #e0f2fe 80% 100%);
+  border: 1px solid rgba(3, 105, 161, 0.45);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -8px 10px rgba(3, 105, 161, 0.15);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-glacier .msg-link { color: #0369a1; }
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-coal,
+.cosmetic-chat-bubble.bubble-atelier-coal {
+  background:
+    radial-gradient(circle at 16% 62%, #fde047 0 2px, #f97316 3px, transparent 7px),
+    radial-gradient(circle at 78% 28%, #fdba74 0 1.5px, #ea580c 3px, transparent 8px),
+    radial-gradient(circle at 48% 78%, #facc15 0 1px, transparent 5px),
+    radial-gradient(circle at 62% 48%, rgba(249, 115, 22, 0.45) 0 2px, transparent 6px),
+    linear-gradient(160deg, #1c1917, #0c0a09 60%, #292524);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: inset 0 -12px 16px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-sapphire,
+.cosmetic-chat-bubble.bubble-atelier-sapphire {
+  background:
+    conic-gradient(from 210deg at 50% 45%, #082f49 0 12%, #38bdf8 12% 18%, #e0f2fe 18% 24%, #0369a1 24% 40%, #0c4a6e 40% 55%, #7dd3fc 55% 62%, #020617 62% 80%, #1d4ed8 80% 100%);
+  border: 1px solid rgba(186, 230, 253, 0.65);
+  box-shadow:
+    inset 0 0 0 2px rgba(2, 6, 23, 0.45),
+    inset 0 8px 12px rgba(255, 255, 255, 0.2),
+    inset 0 -10px 14px rgba(0, 0, 0, 0.35);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-sandstone,
+.cosmetic-chat-bubble.bubble-atelier-sandstone {
+  color: #431407;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  background:
+    linear-gradient(180deg, #fef3c7 0 14%, #d97706 14% 16%, #ffedd5 16% 34%, #ea580c 34% 36%, #fde68a 36% 58%, #d97706 58% 60%, #fff7ed 60% 82%, #c2410c 82% 84%, #fed7aa 84% 100%);
+  border: 1px solid rgba(124, 45, 18, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -6px 8px rgba(67, 20, 7, 0.15);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-sandstone .msg-link { color: #9a3412; }
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-lacquer,
+.cosmetic-chat-bubble.bubble-atelier-lacquer {
+  background:
+    radial-gradient(70% 46% at 50% -10%, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.08) 42%, transparent 60%),
+    linear-gradient(#fbbf24, #fbbf24) 0 100% / 100% 2px no-repeat,
+    linear-gradient(#f59e0b, #f59e0b) 8px 8px / calc(100% - 16px) calc(100% - 16px) no-repeat,
+    linear-gradient(#050505, #050505) 9px 9px / calc(100% - 18px) calc(100% - 18px) no-repeat,
+    linear-gradient(#0a0a0a, #171717);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -14px 18px rgba(0, 0, 0, 0.65);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-nebula,
+.cosmetic-chat-bubble.bubble-atelier-nebula {
+  background:
+    radial-gradient(circle at 12% 30%, #fff 0 1px, transparent 1.6px),
+    radial-gradient(circle at 28% 72%, #fff 0 0.8px, transparent 1.4px),
+    radial-gradient(circle at 64% 22%, #fff 0 1px, transparent 1.6px),
+    radial-gradient(circle at 80% 64%, #e0e7ff 0 1px, transparent 1.5px),
+    radial-gradient(circle at 46% 48%, #fff 0 0.7px, transparent 1.2px),
+    radial-gradient(42% 60% at 22% 70%, rgba(219, 39, 119, 0.7), transparent 70%),
+    radial-gradient(50% 70% at 78% 24%, rgba(59, 130, 246, 0.65), transparent 68%),
+    linear-gradient(160deg, #020617, #1e1b4b 70%, #0f172a);
+  border: 1px solid rgba(196, 181, 253, 0.35);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.35);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-rosewood,
+.cosmetic-chat-bubble.bubble-atelier-rosewood {
+  color: #f5e6d3;
+  background:
+    repeating-linear-gradient(180deg, #6b2a1a 0 3px, #4a1d12 3px 5px, #8a3b24 5px 7px, #3f1d16 7px 11px, #a24b2e 11px 12px, #5c2416 12px 16px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.25), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.3));
+  border: 1px solid rgba(253, 186, 116, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.25), inset 6px 0 10px rgba(0, 0, 0, 0.25);
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-chrome,
+.cosmetic-chat-bubble.bubble-atelier-chrome {
+  color: #18181b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  background:
+    linear-gradient(100deg, #3f3f46 0%, #d4d4d8 18%, #fafafa 32%, #a1a1aa 40%, #27272a 52%, #e4e4e7 68%, #71717a 100%);
+  border: 1px solid rgba(24, 24, 27, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 -8px 10px rgba(0, 0, 0, 0.25);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-chrome .msg-link { color: #1d4ed8; }
+
+/* ── Animated ────────────────────────────────────────────────────────── */
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-aurora,
+.cosmetic-chat-bubble.bubble-atelier-aurora {
+  background:
+    radial-gradient(50% 80% at 50% 120%, rgba(16, 185, 129, 0.35), transparent 60%),
+    linear-gradient(128deg, #022c22 0%, #6d28d9 var(--atelier-a), #22d3ee 72%, #052e16 100%);
+  border-color: rgba(167, 243, 208, 0.45);
+  animation: atelier-aurora 7.5s ease-in-out infinite alternate;
+}
+@keyframes atelier-aurora {
+  from { --atelier-a: 8%; }
+  to { --atelier-a: 78%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-mercury,
+.cosmetic-chat-bubble.bubble-atelier-mercury {
+  color: #0a0a0a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  background:
+    linear-gradient(rgba(244, 244, 245, 0.42), rgba(244, 244, 245, 0.42)),
+    linear-gradient(105deg, #18181b 0%, #e4e4e7 var(--atelier-a), #52525b 48%, #fafafa var(--atelier-b), #27272a 100%);
+  border-color: rgba(228, 228, 231, 0.7);
+  animation: atelier-mercury 5.5s ease-in-out infinite alternate;
+}
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-mercury .msg-link { color: #1e3a8a; }
+@keyframes atelier-mercury {
+  from { --atelier-a: 12%; --atelier-b: 70%; }
+  to { --atelier-a: 46%; --atelier-b: 28%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-breath,
+.cosmetic-chat-bubble.bubble-atelier-breath {
+  background:
+    radial-gradient(circle at 20% 70%, rgba(249, 115, 22, 0.55), transparent 18%),
+    radial-gradient(circle at 74% 36%, rgba(250, 204, 21, 0.4), transparent 16%),
+    linear-gradient(160deg, #1c1917, #0c0a09);
+  border-color: rgba(249, 115, 22, calc(0.25 + var(--atelier-c)));
+  box-shadow:
+    inset 0 0 18px rgba(249, 115, 22, var(--atelier-c)),
+    inset 0 -12px 16px rgba(0, 0, 0, 0.5);
+  animation: atelier-breath 2.6s ease-in-out infinite;
+}
+@keyframes atelier-breath {
+  0%, 100% { --atelier-c: 0.15; }
+  50% { --atelier-c: 0.85; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-circuit,
+.cosmetic-chat-bubble.bubble-atelier-circuit {
+  background-color: #020617;
+  background-image:
+    radial-gradient(circle at 30% 40%, rgba(34, 211, 238, 0.9) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 70% 62%, rgba(244, 114, 182, 0.9) 0 1.5px, transparent 2px),
+    repeating-linear-gradient(90deg, transparent 0 12px, rgba(34, 211, 238, 0.55) 12px 13px),
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(244, 114, 182, 0.4) 10px 11px);
+  background-size: 100% 100%, 100% 100%, 26px 26px, 22px 22px;
+  border-color: rgba(34, 211, 238, 0.55);
+  animation: atelier-circuit 4.8s linear infinite;
+}
+@keyframes atelier-circuit {
+  to { background-position: 0 0, 0 0, 26px 0, 0 22px; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-sheen,
+.cosmetic-chat-bubble.bubble-atelier-sheen {
+  background-image:
+    linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.62) 46%, transparent 58%),
+    conic-gradient(from 220deg at 40% 40%, #1e1b4b, #6d28d9, #22d3ee, #4c1d95, #0f172a);
+  background-size: 42% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  border-color: rgba(196, 181, 253, 0.5);
+  animation: atelier-sheen 2.8s ease-in-out infinite;
+}
+@keyframes atelier-sheen {
+  from { background-position: -40% 0, 0 0; }
+  to { background-position: 150% 0, 0 0; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-tide,
+.cosmetic-chat-bubble.bubble-atelier-tide {
+  background:
+    linear-gradient(#0c4a6e, #0c4a6e) 0 var(--atelier-a) / 100% 3px no-repeat,
+    linear-gradient(180deg, #082f49 0%, #0369a1 var(--atelier-b), #22d3ee 78%, #042f2e 100%);
+  border-color: rgba(103, 232, 249, 0.45);
+  animation: atelier-tide 6.4s ease-in-out infinite alternate;
+}
+@keyframes atelier-tide {
+  from { --atelier-a: 22%; --atelier-b: 30%; }
+  to { --atelier-a: 74%; --atelier-b: 68%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-plasma,
+.cosmetic-chat-bubble.bubble-atelier-plasma {
+  background:
+    radial-gradient(circle at var(--atelier-a) var(--atelier-b), #f0abfc 0%, #7c3aed 18%, transparent 46%),
+    radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.35), transparent 40%),
+    linear-gradient(#1e1033, #020617);
+  border-color: rgba(232, 121, 249, 0.5);
+  animation: atelier-plasma 5.2s ease-in-out infinite alternate;
+}
+@keyframes atelier-plasma {
+  from { --atelier-a: 18%; --atelier-b: 70%; }
+  to { --atelier-a: 78%; --atelier-b: 24%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-scanline,
+.cosmetic-chat-bubble.bubble-atelier-scanline {
+  background-color: #061018;
+  background-image:
+    linear-gradient(180deg, transparent, rgba(165, 243, 252, 0.7), transparent),
+    repeating-linear-gradient(90deg, transparent 0 8px, rgba(34, 211, 238, 0.28) 8px 9px),
+    repeating-linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0 2px, transparent 2px 4px),
+    linear-gradient(180deg, rgba(34, 211, 238, 0.28), rgba(8, 15, 28, 0.94));
+  background-size: 100% 28%, 100% 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat, repeat, repeat, no-repeat;
+  border-color: rgba(34, 211, 238, 0.55);
+  animation: atelier-scanline 2.4s linear infinite;
+}
+@keyframes atelier-scanline {
+  from { background-position: 0 -30%, 0 0, 0 0, 0 0; }
+  to { background-position: 0 130%, 0 0, 0 0, 0 0; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-firefly,
+.cosmetic-chat-bubble.bubble-atelier-firefly {
+  background:
+    radial-gradient(circle at var(--atelier-a) 32%, #fef9c3 0 2px, rgba(250, 204, 21, 0.35) 4px, transparent 12px),
+    radial-gradient(circle at var(--atelier-b) 68%, #bbf7d0 0 2px, rgba(74, 222, 128, 0.3) 5px, transparent 14px),
+    linear-gradient(165deg, #052e16, #022c22 60%, #0a0a0a);
+  border-color: rgba(134, 239, 172, 0.35);
+  animation: atelier-firefly 8.5s ease-in-out infinite alternate;
+}
+@keyframes atelier-firefly {
+  from { --atelier-a: 12%; --atelier-b: 80%; }
+  to { --atelier-a: 84%; --atelier-b: 18%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-magma,
+.cosmetic-chat-bubble.bubble-atelier-magma {
+  background:
+    linear-gradient(115deg, #1c0a09 0%, #7f1d1d var(--atelier-a), #f97316 var(--atelier-b), #fde047 78%, #0c0a09 100%);
+  border-color: rgba(251, 146, 60, 0.6);
+  box-shadow: inset 0 0 16px rgba(234, 88, 12, 0.35), inset 0 -10px 14px rgba(0, 0, 0, 0.45);
+  animation: atelier-magma 4.2s ease-in-out infinite alternate;
+}
+@keyframes atelier-magma {
+  from { --atelier-a: 10%; --atelier-b: 55%; }
+  to { --atelier-a: 48%; --atelier-b: 22%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-starfall,
+.cosmetic-chat-bubble.bubble-atelier-starfall {
+  background-color: #020617;
+  background-image:
+    radial-gradient(1px 1px at 10px 16px, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 42px 8px, #e0e7ff, transparent),
+    radial-gradient(1px 1px at 70px 28px, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 24px 46px, #fef9c3, transparent),
+    linear-gradient(180deg, #020617, #1e1b4b);
+  background-size: 90px 64px, 90px 64px, 90px 64px, 90px 64px, 100% 100%;
+  background-repeat: repeat, repeat, repeat, repeat, no-repeat;
+  border-color: rgba(199, 210, 254, 0.35);
+  animation: atelier-starfall 3.6s linear infinite;
+}
+@keyframes atelier-starfall {
+  to { background-position: 0 64px, 12px 64px, -8px 64px, 4px 64px, 0 0; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-oilslick,
+.cosmetic-chat-bubble.bubble-atelier-oilslick {
+  background:
+    linear-gradient(rgba(2, 6, 23, 0.42), rgba(2, 6, 23, 0.42)),
+    conic-gradient(from var(--atelier-angle) at 50% 50%, #042f2e, #7c3aed, #f472b6, #facc15, #22d3ee, #042f2e);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 6px rgba(2, 6, 23, 0.28), inset 0 -12px 16px rgba(0, 0, 0, 0.35);
+  animation: atelier-oilslick 9s linear infinite;
+}
+@keyframes atelier-oilslick {
+  to { --atelier-angle: 360deg; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-heartbeat,
+.cosmetic-chat-bubble.bubble-atelier-heartbeat {
+  background:
+    linear-gradient(#fb7185, #fb7185) 12% 50% / 8% 2px no-repeat,
+    linear-gradient(#fb7185, #fb7185) 20% 38% / 2px 24% no-repeat,
+    linear-gradient(#fb7185, #fb7185) 20% 38% / 14% 2px no-repeat,
+    linear-gradient(#fff, #fff) 34% 62% / 10% 2px no-repeat,
+    linear-gradient(#fb7185, #fb7185) 44% 40% / 2px 22% no-repeat,
+    linear-gradient(#fb7185, #fb7185) 44% 60% / 18% 2px no-repeat,
+    radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.35), transparent 62%),
+    linear-gradient(160deg, #3b0a16, #1a070c);
+  border-color: rgba(251, 113, 133, calc(0.2 + var(--atelier-c)));
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 113, 133, var(--atelier-c)),
+    0 0 12px rgba(244, 63, 94, var(--atelier-c));
+  animation: atelier-heartbeat 1.6s ease-out infinite;
+}
+@keyframes atelier-heartbeat {
+  0%, 100% { --atelier-c: 0.2; }
+  18% { --atelier-c: 0.95; }
+  36% { --atelier-c: 0.25; }
+  52% { --atelier-c: 0.7; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-glitch,
+.cosmetic-chat-bubble.bubble-atelier-glitch {
+  background:
+    linear-gradient(90deg, rgba(244, 63, 94, 0.85), rgba(244, 63, 94, 0.85)) 0 18% / 100% 2px no-repeat,
+    linear-gradient(90deg, rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.8)) 0 62% / 100% 2px no-repeat,
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px),
+    linear-gradient(90deg, #111827, #1f2937);
+  border-color: rgba(255, 255, 255, 0.2);
+  animation: atelier-glitch 2.2s steps(2, end) infinite;
+}
+@keyframes atelier-glitch {
+  0%, 70%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), inset 0 -10px 14px rgba(0, 0, 0, 0.35); }
+  78% { box-shadow: -3px 0 0 rgba(244, 63, 94, 0.8), 3px 0 0 rgba(34, 211, 238, 0.8), inset 0 -10px 14px rgba(0, 0, 0, 0.35); }
+  86% { box-shadow: 2px 0 0 rgba(250, 204, 21, 0.7), -2px 0 0 rgba(168, 85, 247, 0.75), inset 0 -10px 14px rgba(0, 0, 0, 0.35); }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-comet,
+.cosmetic-chat-bubble.bubble-atelier-comet {
+  background:
+    radial-gradient(circle at var(--atelier-a) 42%, #fff 0 2px, rgba(125, 211, 252, 0.7) 6px, transparent 22%),
+    linear-gradient(100deg, transparent calc(var(--atelier-a) - 28%), rgba(56, 189, 248, 0.35) var(--atelier-a), transparent calc(var(--atelier-a) + 8%)),
+    linear-gradient(165deg, #020617, #0f172a);
+  border-color: rgba(125, 211, 252, 0.4);
+  animation: atelier-comet 3.4s ease-in infinite;
+}
+@keyframes atelier-comet {
+  from { --atelier-a: -8%; }
+  to { --atelier-a: 112%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-ribbon,
+.cosmetic-chat-bubble.bubble-atelier-ribbon {
+  background:
+    linear-gradient(var(--atelier-angle), #042f2e 0%, #34d399 28%, #818cf8 52%, #f472b6 74%, #022c22 100%);
+  border-color: rgba(167, 243, 208, 0.4);
+  animation: atelier-ribbon 8s ease-in-out infinite alternate;
+}
+@keyframes atelier-ribbon {
+  from { --atelier-angle: 8deg; }
+  to { --atelier-angle: 96deg; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-arc,
+.cosmetic-chat-bubble.bubble-atelier-arc {
+  background:
+    linear-gradient(118deg, transparent 36%, rgba(255, 255, 255, 0.9) 48%, #67e8f9 52%, transparent 64%),
+    repeating-linear-gradient(90deg, rgba(125, 211, 252, 0.16) 0 2px, transparent 2px 7px),
+    linear-gradient(#0b1220, #111827);
+  animation: atelier-arc 1.8s linear infinite;
+}
+@keyframes atelier-arc {
+  0%, 100% { border-color: rgba(125, 211, 252, 0.25); box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.15); }
+  20% { border-color: #fff; box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.45), 0 0 8px rgba(125, 211, 252, 0.45); }
+  40% { border-color: #22d3ee; box-shadow: inset 0 0 10px rgba(34, 211, 238, 0.4); }
+  60% { border-color: #60a5fa; box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.3); }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-biolume,
+.cosmetic-chat-bubble.bubble-atelier-biolume {
+  background:
+    radial-gradient(circle at var(--atelier-a) 40%, rgba(45, 212, 191, 0.85), transparent 28%),
+    radial-gradient(circle at var(--atelier-b) 70%, rgba(163, 230, 53, 0.7), transparent 26%),
+    linear-gradient(180deg, #022c22, #042f2e 70%, #020617);
+  border-color: rgba(94, 234, 212, 0.4);
+  animation: atelier-biolume 9.5s ease-in-out infinite alternate;
+}
+@keyframes atelier-biolume {
+  from { --atelier-a: 16%; --atelier-b: 78%; }
+  to { --atelier-a: 74%; --atelier-b: 22%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-solar,
+.cosmetic-chat-bubble.bubble-atelier-solar {
+  background:
+    linear-gradient(rgba(28, 10, 0, 0.28), rgba(28, 10, 0, 0.28)),
+    radial-gradient(circle at 50% 42%, #fff7ed 0%, #fde047 8%, #f97316 var(--atelier-a), #1c0a00 72%);
+  border-color: rgba(253, 224, 71, 0.55);
+  box-shadow: inset 0 0 18px rgba(250, 204, 21, 0.25);
+  animation: atelier-solar 2.9s ease-in-out infinite alternate;
+}
+@keyframes atelier-solar {
+  from { --atelier-a: 16%; }
+  to { --atelier-a: 38%; }
+}
+
+.message-bubble.cosmetic-chat-bubble.bubble-atelier-rift,
+.cosmetic-chat-bubble.bubble-atelier-rift {
+  background:
+    linear-gradient(90deg,
+      #070312 0%,
+      #070312 var(--atelier-a),
+      #e9d5ff calc(var(--atelier-a) + 1.2%),
+      #7c3aed calc(var(--atelier-a) + 2.4%),
+      #070312 calc(var(--atelier-a) + 4%),
+      #1e1b4b 100%);
+  border-color: rgba(196, 181, 253, 0.45);
+  animation: atelier-rift 4.4s ease-in-out infinite alternate;
+}
+@keyframes atelier-rift {
+  from { --atelier-a: 6%; }
+  to { --atelier-a: 88%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmetic-chat-bubble[class*="bubble-atelier-"],
+  .cosmetic-chat-bubble[class*="bubble-atelier-"]::before,
+  .cosmetic-chat-bubble[class*="bubble-atelier-"]::after {
+    animation: none;
+  }
+}
