@@ -827,6 +827,35 @@
 
 /* Mobile bottom tab bar — original edge-to-edge place, glass finish */
 @media (max-width: 768px) {
+  /* iOS pans the page to chase a focused composer and leaves that pan in
+     place after the keyboard closes (black band, chat stuck low). Lock the
+     shell to the visual viewport and drop the pan when typing ends. */
+  html.mobile-keyboard-lock,
+  html.mobile-keyboard-lock body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+  html.mobile-keyboard-lock #root,
+  html.mobile-keyboard-lock .app-root.is-mobile {
+    position: fixed;
+    top: var(--vv-offset-top, 0px);
+    left: var(--vv-offset-left, 0px);
+    right: 0;
+    width: 100%;
+    min-height: 0 !important;
+    height: var(--vv-height, 100dvh) !important;
+    max-height: var(--vv-height, 100dvh) !important;
+    overflow: hidden;
+  }
+  html.mobile-keyboard-lock .app-sidebar-shell {
+    top: var(--vv-offset-top, 0px);
+    bottom: auto;
+    height: var(--vv-height, 100dvh);
+  }
+
   .app-root.is-mobile {
     --mobile-tab-bar-h: 60px;
     height: var(--vv-height, 100dvh);

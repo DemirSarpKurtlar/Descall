@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-
-const KB_OPEN_THRESHOLD = 80;
+import { isTextEditing, mobileViewportBox } from "../lib/mobileViewport";
 
 function resetScroll() {
   try {
@@ -43,10 +42,14 @@ export function useMobileKeyboard(enabled = true) {
       const layoutW = window.innerWidth || root.clientWidth || 0;
       const vvH = vv?.height ?? layoutH;
       const vvW = vv?.width ?? layoutW;
-      const offsetTop = vv?.offsetTop ?? 0;
-      const offsetLeft = vv?.offsetLeft ?? 0;
-      const kb = Math.max(0, Math.round(layoutH - vvH - offsetTop));
-      const open = kb >= KB_OPEN_THRESHOLD;
+      const box = mobileViewportBox({
+        innerHeight: layoutH,
+        vvHeight: vvH,
+        offsetTop: vv?.offsetTop ?? 0,
+        offsetLeft: vv?.offsetLeft ?? 0,
+        editing: isTextEditing(document.activeElement),
+      });
+      const open = box.open;
 
       // Closing: enable height transition before the VV jump so the composer
       // eases down instead of snapping. Opening stays instant to track the KB.
@@ -60,19 +63,21 @@ export function useMobileKeyboard(enabled = true) {
 
       // A 0px visual viewport (iOS, during the fixed splash) collapses the shell
       // to nothing. Leave the 100dvh fallback in place until the height is real.
-      const roundedH = Math.round(vvH);
-      if (roundedH >= 160) root.style.setProperty("--vv-height", `${roundedH}px`);
+      // Closed keyboards always restore the full layout height, even if iOS
+      // reports a leftover short visual viewport.
+      if (box.height >= 160) root.style.setProperty("--vv-height", `${box.height}px`);
       else if (!open) root.style.removeProperty("--vv-height");
       root.style.setProperty("--vv-width", `${Math.round(vvW)}px`);
-      root.style.setProperty("--vv-offset-top", `${Math.round(offsetTop)}px`);
-      root.style.setProperty("--vv-offset-left", `${Math.round(offsetLeft)}px`);
-      root.style.setProperty("--kb-inset", `${kb}px`);
+      root.style.setProperty("--vv-offset-top", `${box.top}px`);
+      root.style.setProperty("--vv-offset-left", `${open ? box.left : 0}px`);
+      root.style.setProperty("--kb-inset", `${box.kb}px`);
       root.classList.toggle("kb-open", open);
 
       if (open !== lastOpen) {
         lastOpen = open;
         if (!open) {
           // Keyboard closed — clear any iOS focus-scroll residue after the slide.
+          resetScroll();
           window.setTimeout(resetScroll, 40);
           window.setTimeout(resetScroll, KB_CLOSE_ANIM_MS);
         } else {
@@ -81,6 +86,15 @@ export function useMobileKeyboard(enabled = true) {
           resetScroll();
         }
       } else if (
+        !open &&
+        (window.scrollY ||
+          window.scrollX ||
+          document.documentElement.scrollTop ||
+          document.body.scrollTop ||
+          (vv?.offsetTop || 0) > 1)
+      ) {
+        resetScroll();
+      } else if (
         window.scrollY ||
         window.scrollX ||
         document.documentElement.scrollTop ||
@@ -88,10 +102,8 @@ export function useMobileKeyboard(enabled = true) {
         document.body.scrollTop ||
         document.body.scrollLeft
       ) {
-        // iOS pans the document to chase the focused field. Keep the shell at 0
-        // and pin it to the visual viewport rectangle instead.
-        resetScroll();
-      } else if (!open && (offsetTop > 1 || offsetLeft > 1)) {
+        // iOS pans the document to chase the focused field. The shell is pinned
+        // to the visual viewport, so the document itself stays at 0.
         resetScroll();
       }
     };
@@ -117,7 +129,9 @@ export function useMobileKeyboard(enabled = true) {
       }, KB_CLOSE_ANIM_MS);
     };
 
+    root.classList.add("mobile-keyboard-lock");
     apply();
+    const onFocusIn = () => schedule();
     if (vv) {
       vv.addEventListener("resize", schedule);
       vv.addEventListener("scroll", schedule);
@@ -125,6 +139,7 @@ export function useMobileKeyboard(enabled = true) {
     window.addEventListener("resize", schedule);
     window.addEventListener("orientationchange", schedule);
     window.addEventListener("focusout", onFocusOut);
+    window.addEventListener("focusin", onFocusIn);
     document.addEventListener("visibilitychange", schedule);
 
     return () => {
@@ -137,7 +152,9 @@ export function useMobileKeyboard(enabled = true) {
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
       window.removeEventListener("focusout", onFocusOut);
+      window.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("visibilitychange", schedule);
+      root.classList.remove("mobile-keyboard-lock");
       root.classList.remove("kb-open");
       root.classList.remove("kb-closing");
       root.style.removeProperty("--vv-height");
