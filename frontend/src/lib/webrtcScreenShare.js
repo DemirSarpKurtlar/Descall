@@ -660,8 +660,10 @@ export function isRemoteScreenVideoTrack(
   if (!track || track.kind !== "video") return false;
 
   const label = (track.label || "").toLowerCase();
+  const surface = track.getSettings?.().displaySurface;
   if (
     peerExpectsScreen ||
+    surface ||
     label.includes("screen") ||
     label.includes("display") ||
     label.includes("window") ||
@@ -674,10 +676,8 @@ export function isRemoteScreenVideoTrack(
     return true;
   }
 
-  if (rawStream && mainRemoteStream && rawStream.id !== mainRemoteStream.id) {
-    return true;
-  }
-
+  // A camera added mid-call arrives on its own MediaStream. A different id
+  // is not a screen share — that guess hid DM cameras behind the screen stage.
   if (
     participantHasCameraVideo &&
     rawStream &&

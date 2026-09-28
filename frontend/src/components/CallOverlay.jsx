@@ -1194,6 +1194,7 @@ function ParticipantTile({
     if (typeof videoRef === "function") videoRef(el);
     else if (videoRef) videoRef.current = el;
     if (el && stream && el.srcObject !== stream) {
+      el.muted = true;
       el.srcObject = stream;
       el.play().catch(() => {});
     }
@@ -1202,6 +1203,7 @@ function ParticipantTile({
   useEffect(() => {
     const el = elRef.current;
     if (!el || !hasVideo || !stream) return;
+    el.muted = true;
     if (el.srcObject !== stream) el.srcObject = stream;
     el.play().catch(() => {});
   }, [stream, hasVideo]);
@@ -1230,7 +1232,7 @@ function ParticipantTile({
           ref={setVideoEl}
           autoPlay
           playsInline
-          muted={isLocal}
+          muted
           style={{
             width: "100%",
             height: "100%",
