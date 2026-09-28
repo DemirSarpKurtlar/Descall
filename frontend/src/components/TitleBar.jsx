@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Minus, Square, X } from "lucide-react";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
-import { electronContentBox } from "../lib/electronViewport";
+import { ELECTRON_TITLEBAR_H, electronContentBox } from "../lib/electronViewport";
 
 /**
  * Frameless Electron title bar — always mounted while the desktop app runs.
