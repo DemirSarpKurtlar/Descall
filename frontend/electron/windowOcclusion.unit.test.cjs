@@ -1,77 +1,66 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { occlusionInsets, fillsWorkArea, unionRect } = require("./windowOcclusion.cjs");
+const { occlusionInsets, fillsWorkArea, clientBounds } = require("./windowOcclusion.cjs");
 
-const display = { x: 0, y: 0, width: 1920, height: 1080 };
 const work = { x: 0, y: 0, width: 1920, height: 1040 };
 
-test("a window that stops at the work area has no inset", () => {
+test("a client that stops at the work area has no inset", () => {
   const insets = occlusionInsets({
     bounds: { x: 0, y: 0, width: 1920, height: 1040 },
     workArea: work,
-    displayBounds: display,
-    maximized: false,
   });
   assert.equal(insets.bottomInset, 0);
-});
-
-test("maximized frameless bounds that cover the taskbar report the taskbar height", () => {
-  const insets = occlusionInsets({
-    bounds: { x: 0, y: 0, width: 1920, height: 1080 },
-    workArea: work,
-    displayBounds: display,
-    maximized: true,
-  });
-  assert.equal(insets.bottomInset, 40);
-});
-
-test("a work-area window marked maximized is not padded unless Windows is covering the taskbar", () => {
-  const insets = occlusionInsets({
-    bounds: work,
-    workArea: work,
-    displayBounds: display,
-    maximized: true,
-  });
-  assert.equal(insets.bottomInset, 0);
-});
-
-test("Windows maximized frameless bounds that only report the work area still cover the taskbar", () => {
-  const insets = occlusionInsets({
-    bounds: work,
-    workArea: work,
-    displayBounds: display,
-    maximized: true,
-    treatMaximizedAsCovering: true,
-  });
-  assert.equal(insets.bottomInset, 40);
   assert.equal(insets.topInset, 0);
 });
 
-test("a top taskbar does not add a bottom inset", () => {
-  const topWork = { x: 0, y: 48, width: 1920, height: 1032 };
+test("a maximized window whose client already fills the work area is not padded", () => {
   const insets = occlusionInsets({
-    bounds: topWork,
-    workArea: topWork,
-    displayBounds: display,
-    maximized: true,
-    treatMaximizedAsCovering: true,
+    bounds: work,
+    workArea: work,
   });
   assert.equal(insets.bottomInset, 0);
-  assert.equal(insets.topInset, 48);
 });
 
-test("content bounds taller than the window bounds still count as overlap", () => {
-  const merged = unionRect(
-    { x: 0, y: 0, width: 1920, height: 1040 },
-    { x: 0, y: 0, width: 1920, height: 1080 }
-  );
+test("a client that reaches the monitor bottom reports the taskbar height", () => {
   const insets = occlusionInsets({
-    bounds: merged,
+    bounds: { x: 0, y: 0, width: 1920, height: 1080 },
     workArea: work,
-    displayBounds: display,
-    maximized: false,
   });
   assert.equal(insets.bottomInset, 40);
+});
+
+test("a top taskbar is a top inset only when the client crosses it", () => {
+  const topWork = { x: 0, y: 48, width: 1920, height: 1032 };
+  const inside = occlusionInsets({ bounds: topWork, workArea: topWork });
+  assert.equal(inside.bottomInset, 0);
+  assert.equal(inside.topInset, 0);
+
+  const covering = occlusionInsets({
+    bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+    workArea: topWork,
+  });
+  assert.equal(covering.topInset, 48);
+  assert.equal(covering.bottomInset, 0);
+});
+
+test("the client rect is measured, not the HWND frame hanging past it", () => {
+  const frame = { x: -8, y: -8, width: 1936, height: 1056 };
+  const client = { x: 0, y: 0, width: 1920, height: 1040 };
+  assert.deepEqual(clientBounds(frame, client), client);
+  const insets = occlusionInsets({ bounds: clientBounds(frame, client), workArea: work });
+  assert.equal(insets.bottomInset, 0);
+  assert.equal(insets.topInset, 0);
+});
+
+test("dpi slop of 2px is not an inset", () => {
+  const insets = occlusionInsets({
+    bounds: { x: -1, y: -1, width: 1922, height: 1042 },
+    workArea: work,
+  });
+  assert.equal(insets.bottomInset, 0);
+  assert.equal(insets.topInset, 0);
+  assert.equal(insets.leftInset, 0);
+  assert.equal(insets.rightInset, 0);
 });
 
 test("fillsWorkArea allows a 2px DPI slop", () => {
