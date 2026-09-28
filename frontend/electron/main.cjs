@@ -1,5 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen } = require('electron');
-const { measureWindowOcclusion, fillsWorkArea } = require('./windowOcclusion.cjs');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session } = require('electron');
+const { measureWindowOcclusion } = require('./windowOcclusion.cjs');
 const { showNotificationWindow } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
@@ -290,11 +290,6 @@ const isDev = process.env.NODE_ENV === 'development';
 const isPackaged = app.isPackaged;
 
 let mainWindow = null;
-let workAreaSnapped = false;
-let workAreaRestore = null;
-let workAreaSnapping = false;
-let workAreaSnapAttempts = 0;
-let displayMetricsHooked = false;
 let splashWindow = null;
 let tray = null;
 let rebuildTrayMenu = null;
@@ -501,145 +496,17 @@ function publishContentBox(win) {
   } catch (_) { /* window closing */ }
 }
 
-function displayWorkArea(win) {
-  try {
-    const display = screen.getDisplayMatching(win.getBounds());
-    return display?.workArea || null;
-  } catch (_) {
-    return null;
-  }
-}
-
 function sendMaximized(win, value) {
   try { win?.webContents?.send('window:maximized', !!value); } catch (_) {}
 }
 
-function releaseMaxSize(win) {
-  // A 0×0 maximum can lock the window; a large cap just removes the work-area clamp.
-  try { win.setMaximumSize(16000, 16000); } catch (_) {}
-}
-
-function rememberRestoreBounds(win) {
-  if (workAreaRestore) return;
-  try {
-    workAreaRestore = (typeof win.getNormalBounds === 'function' && win.getNormalBounds()) || win.getBounds();
-  } catch (_) { /* keep the previous restore rect */ }
-}
-
-/** Windows frameless maximize paints across the taskbar. Snap to the work area instead. */
-function snapToWorkArea(win) {
-  if (!win || win.isDestroyed?.() || workAreaSnapping) return;
-  if (process.platform !== 'win32') {
-    try { if (!win.isMaximized()) win.maximize(); } catch (_) {}
-    return;
-  }
-  const area = displayWorkArea(win);
-  if (!area) return;
-  if (workAreaSnapAttempts >= 3) {
-    workAreaSnapped = true;
-    sendMaximized(win, true);
-    publishContentBox(win);
-    return;
-  }
-  workAreaSnapAttempts += 1;
-  workAreaSnapping = true;
-  workAreaSnapped = true;
-
-  const finish = () => {
-    if (!win || win.isDestroyed?.()) {
-      workAreaSnapping = false;
-      return;
-    }
-    try { win.setMaximumSize(area.width, area.height); } catch (_) {}
-    try {
-      win.setBounds({ x: area.x, y: area.y, width: area.width, height: area.height });
-    } catch (_) {}
-    setTimeout(() => {
-      workAreaSnapping = false;
-      if (!win.isDestroyed?.() && win.isMaximized()) {
-        snapToWorkArea(win);
-        return;
-      }
-      sendMaximized(win, true);
-      publishContentBox(win);
-    }, 80);
-  };
-
-  if (win.isMaximized()) {
-    let finished = false;
-    const done = () => {
-      if (finished) return;
-      finished = true;
-      finish();
-    };
-    const timer = setTimeout(done, 250);
-    win.once('unmaximize', () => {
-      clearTimeout(timer);
-      setTimeout(done, 0);
-    });
-    try { win.unmaximize(); } catch (_) {
-      clearTimeout(timer);
-      done();
-    }
-    return;
-  }
-  finish();
-}
-
-function restoreWorkAreaSnap(win) {
-  if (!win || win.isDestroyed?.()) return;
-  if (process.platform !== 'win32') {
-    try { if (win.isMaximized()) win.unmaximize(); } catch (_) {}
-    return;
-  }
-  const restore = workAreaRestore;
-  workAreaSnapped = false;
-  workAreaRestore = null;
-  workAreaSnapAttempts = 0;
-  workAreaSnapping = true;
-  releaseMaxSize(win);
-  try { if (win.isMaximized()) win.unmaximize(); } catch (_) {}
-  if (restore) {
-    try { win.setBounds(restore); } catch (_) {}
-  }
-  setTimeout(() => {
-    workAreaSnapping = false;
-    sendMaximized(win, false);
-    publishContentBox(win);
-  }, 80);
-}
-
-function toggleWorkAreaMaximize(win) {
+function toggleMaximize(win) {
   if (!win || win.isDestroyed?.()) return;
   try { if (win.isFullScreen()) win.setFullScreen(false); } catch (_) {}
-  if (process.platform !== 'win32') {
-    try {
-      if (win.isMaximized()) win.unmaximize();
-      else win.maximize();
-    } catch (_) {}
-    return;
-  }
-  const area = displayWorkArea(win);
-  let bounds = null;
-  try { bounds = win.getBounds(); } catch (_) {}
-  const expanded = workAreaSnapped || !!win.isMaximized?.() || fillsWorkArea(bounds, area);
-  if (expanded) {
-    restoreWorkAreaSnap(win);
-    return;
-  }
-  workAreaSnapAttempts = 0;
-  rememberRestoreBounds(win);
-  snapToWorkArea(win);
-}
-
-function hookDisplayMetrics() {
-  if (displayMetricsHooked) return;
-  displayMetricsHooked = true;
-  screen.on('display-metrics-changed', () => {
-    if (!workAreaSnapped || !mainWindow || mainWindow.isDestroyed?.() || workAreaSnapping) return;
-    workAreaSnapAttempts = 0;
-    snapToWorkArea(mainWindow);
-  });
+  try {
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+  } catch (_) {}
 }
 
 // Create main window
@@ -654,8 +521,13 @@ function createMainWindow() {
     // Frameless — React TitleBar provides window controls (avoids double title bars)
     frame: false,
     titleBarStyle: 'hidden',
-    // WS_THICKFRAME on a frameless window is what lets maximize paint over the taskbar.
-    ...(process.platform === 'win32' ? { thickFrame: false } : {}),
+    // Do not set thickFrame:false. Electron 41 indents a maximized frameless
+    // client out of the taskbar only while the window stays maximized AND
+    // keeps WS_THICKFRAME (GetClientAreaInsets, GetDwmFrameInsetsInPixels,
+    // WidgetSizeIsClientSize in electron_desktop_window_tree_host_win.cc).
+    // thickFrame:false strips that style, and unmaximize+setBounds(workArea)
+    // clears the maximized state, so neither inset runs and the client is
+    // painted across the taskbar on every screen.
     fullscreenable: false,
     icon: resolveAppIcon(),
     webPreferences: {
@@ -706,62 +578,29 @@ function createMainWindow() {
   });
 
   ipcMain.on('window:maximize', () => {
-    toggleWorkAreaMaximize(mainWindow);
+    toggleMaximize(mainWindow);
   });
 
   ipcMain.on('window:close', () => {
     mainWindow?.close();
   });
 
-  // Handle maximize state change. On Windows, native maximize covers the taskbar
-  // and clips the rail avatar and the message composer together.
-  hookDisplayMetrics();
   const publishBox = () => publishContentBox(mainWindow);
-  mainWindow.on('resize', () => {
-    if (!workAreaSnapping && workAreaSnapped && mainWindow && !mainWindow.isMaximized()) {
-      const area = displayWorkArea(mainWindow);
-      let bounds = null;
-      try { bounds = mainWindow.getBounds(); } catch (_) {}
-      if (bounds && area && !fillsWorkArea(bounds, area)) {
-        workAreaSnapped = false;
-        workAreaRestore = null;
-        releaseMaxSize(mainWindow);
-        sendMaximized(mainWindow, false);
-      }
-    }
-    publishBox();
-  });
+  mainWindow.on('resize', publishBox);
   mainWindow.on('move', publishBox);
   mainWindow.on('restore', publishBox);
   mainWindow.on('show', publishBox);
-
   mainWindow.on('maximize', () => {
-    if (workAreaSnapping) return;
-    if (process.platform !== 'win32') {
-      sendMaximized(mainWindow, true);
-      publishBox();
-      return;
-    }
-    rememberRestoreBounds(mainWindow);
-    workAreaSnapAttempts = 0;
-    snapToWorkArea(mainWindow);
+    sendMaximized(mainWindow, true);
+    publishBox();
   });
-
   mainWindow.on('unmaximize', () => {
-    if (workAreaSnapping || workAreaSnapped) return;
     sendMaximized(mainWindow, false);
     publishBox();
   });
   mainWindow.on('enter-full-screen', () => {
     try { mainWindow.setFullScreen(false); } catch (_) {}
-    if (workAreaSnapping) return;
-    if (process.platform !== 'win32') {
-      try { if (!mainWindow.isMaximized()) mainWindow.maximize(); } catch (_) {}
-      return;
-    }
-    rememberRestoreBounds(mainWindow);
-    workAreaSnapAttempts = 0;
-    snapToWorkArea(mainWindow);
+    try { if (!mainWindow.isMaximized()) mainWindow.maximize(); } catch (_) {}
   });
 
   // Notification permission probe (actual show goes through module-level IPC below)
@@ -1084,7 +923,7 @@ app.whenReady().then(async () => {
   globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
   globalShortcut.register('F11', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
-    toggleWorkAreaMaximize(mainWindow);
+    toggleMaximize(mainWindow);
   });
 
   app.on('activate', () => {
@@ -1327,7 +1166,7 @@ ipcMain.handle('minimize-window', () => {
 });
 
 ipcMain.handle('maximize-window', () => {
-  toggleWorkAreaMaximize(mainWindow);
+  toggleMaximize(mainWindow);
 });
 
 ipcMain.handle('close-window', () => {

@@ -4,11 +4,9 @@ export const ELECTRON_TITLEBAR_H = 40;
 /**
  * Height of the app column under the custom title bar.
  *
- * On Windows a frameless window often maximizes to the full monitor, so
- * innerHeight includes the strip hidden behind the taskbar (~40px). That
- * strip cuts the nav-rail user icon in half. Shrink the content box so it
- * ends at the visible work area. A top taskbar is not a bottom inset.
- * Overlaps of 1–2px are DPI rounding and are ignored.
+ * Only a real overflow counts: innerHeight taller than the screen work area,
+ * which is the client still painting across a bottom taskbar. A top taskbar
+ * is not a bottom inset. 1–2px is DPI rounding.
  */
 export function electronContentBox(metrics) {
   const innerH = Number(metrics?.innerHeight) || 0;

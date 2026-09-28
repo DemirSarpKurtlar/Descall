@@ -1,7 +1,12 @@
 /**
- * How many DIP a frameless window extends past the display work area.
- * A maximized frameless window on Windows is painted across the taskbar
- * even when getBounds() is clamped to the work area. 1–2px is DPI rounding.
+ * How many DIP the page's client rectangle extends past the display work area.
+ * 1–2px is DPI rounding and is ignored.
+ *
+ * Measure the client (getContentBounds), not the HWND. On Windows a maximized
+ * frameless window keeps WS_THICKFRAME, and that frame is supposed to hang
+ * past the work area while Electron indents the client back out of the
+ * taskbar. Counting the frame as overlap shrinks a page that is already
+ * inside the work area.
  */
 
 function keepInset(value) {
@@ -27,40 +32,19 @@ function fillsWorkArea(bounds, workArea, slack = 2) {
 }
 
 /**
- * @param {{
- *   bounds: object,
- *   workArea: object,
- *   displayBounds?: object,
- *   maximized?: boolean,
- *   treatMaximizedAsCovering?: boolean,
- * }} input
- * treatMaximizedAsCovering: Windows frameless maximize often reports work-area
- * bounds while the window still paints across the taskbar.
+ * @param {{ bounds: object, workArea: object }} input
+ * Insets are only the client rectangle that actually crosses the work area.
+ * A maximized window whose client already equals the work area is not given
+ * an invented taskbar pad.
  */
-function occlusionInsets({ bounds, workArea, displayBounds, maximized, treatMaximizedAsCovering }) {
+function occlusionInsets({ bounds, workArea }) {
   const empty = { bottomInset: 0, topInset: 0, leftInset: 0, rightInset: 0 };
   if (!bounds || !workArea) return empty;
 
-  let bottom = Math.round(bounds.y + bounds.height - (workArea.y + workArea.height));
-  let top = Math.round(workArea.y - bounds.y);
-  let left = Math.round(workArea.x - bounds.x);
-  let right = Math.round(bounds.x + bounds.width - (workArea.x + workArea.width));
-
-  if (maximized && displayBounds) {
-    const displayBottom = displayBounds.y + displayBounds.height;
-    const displayRight = displayBounds.x + displayBounds.width;
-    const boundsBottom = bounds.y + bounds.height;
-    const boundsRight = bounds.x + bounds.width;
-    const taskbarBottom = Math.round(displayBottom - (workArea.y + workArea.height));
-    const taskbarTop = Math.round(workArea.y - displayBounds.y);
-    const taskbarLeft = Math.round(workArea.x - displayBounds.x);
-    const taskbarRight = Math.round(displayRight - (workArea.x + workArea.width));
-    const fills = Boolean(treatMaximizedAsCovering) && fillsWorkArea(bounds, workArea);
-    if ((fills || boundsBottom >= displayBottom - 2) && taskbarBottom > 2) bottom = Math.max(bottom, taskbarBottom);
-    if ((fills || bounds.y <= displayBounds.y + 2) && taskbarTop > 2) top = Math.max(top, taskbarTop);
-    if ((fills || bounds.x <= displayBounds.x + 2) && taskbarLeft > 2) left = Math.max(left, taskbarLeft);
-    if ((fills || boundsRight >= displayRight - 2) && taskbarRight > 2) right = Math.max(right, taskbarRight);
-  }
+  const bottom = Math.round(bounds.y + bounds.height - (workArea.y + workArea.height));
+  const top = Math.round(workArea.y - bounds.y);
+  const left = Math.round(workArea.x - bounds.x);
+  const right = Math.round(bounds.x + bounds.width - (workArea.x + workArea.width));
 
   return {
     bottomInset: keepInset(bottom),
@@ -70,6 +54,11 @@ function occlusionInsets({ bounds, workArea, displayBounds, maximized, treatMaxi
   };
 }
 
+function clientBounds(windowBounds, contentBounds) {
+  if (contentBounds && contentBounds.width > 0 && contentBounds.height > 0) return contentBounds;
+  return windowBounds || null;
+}
+
 function measureWindowOcclusion(win) {
   const empty = { bottomInset: 0, topInset: 0, leftInset: 0, rightInset: 0 };
   if (!win || (typeof win.isDestroyed === "function" && win.isDestroyed())) return empty;
@@ -77,16 +66,12 @@ function measureWindowOcclusion(win) {
     const { screen } = require("electron");
     const windowBounds = win.getBounds();
     const contentBounds = typeof win.getContentBounds === "function" ? win.getContentBounds() : null;
-    const bounds = unionRect(windowBounds, contentBounds);
+    const bounds = clientBounds(windowBounds, contentBounds);
     const display = screen.getDisplayMatching(bounds || windowBounds);
     if (!bounds || !display?.workArea) return empty;
-    const maximized = typeof win.isMaximized === "function" && win.isMaximized();
     return occlusionInsets({
       bounds,
       workArea: display.workArea,
-      displayBounds: display.bounds,
-      maximized,
-      treatMaximizedAsCovering: maximized && process.platform === "win32",
     });
   } catch (_) {
     return empty;
@@ -98,4 +83,5 @@ module.exports = {
   occlusionInsets,
   fillsWorkArea,
   unionRect,
+  clientBounds,
 };
