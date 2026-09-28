@@ -64,7 +64,7 @@ export default function ShopProfilePreview({ me, t }) {
         }
       >
         <ParallaxBanner
-          height={92}
+          height={104}
           imageUrl={bannerUrl ? cssUrl(bannerUrl) : null}
           fallbackStyle={{ background: bannerFallback(username) }}
           strength={10}

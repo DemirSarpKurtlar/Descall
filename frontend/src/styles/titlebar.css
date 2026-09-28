@@ -200,8 +200,8 @@ body.electron-app .incoming-call-card {
 }
 
 body.electron-app #root {
-  height: var(--electron-content-h, calc(100vh - var(--electron-titlebar-h))) !important;
-  max-height: var(--electron-content-h, calc(100vh - var(--electron-titlebar-h))) !important;
+  height: var(--electron-content-h, calc(100dvh - var(--electron-titlebar-h) - var(--electron-bottom-inset, 0px))) !important;
+  max-height: var(--electron-content-h, calc(100dvh - var(--electron-titlebar-h) - var(--electron-bottom-inset, 0px))) !important;
 }
 
 html.electron-app,
@@ -223,11 +223,17 @@ body.electron-app .app-chat-keep[hidden],
   display: none !important;
 }
 
-/* App shell must fit inside #root (content height), never 100vh under the bar */
-body.electron-app .app-root {
+/* Shells fill #root. #root is already the visible box under the title bar
+   and above any taskbar overlap, so 100vh here would stick out the bottom
+   and clip the rail user icon. Do not switch these to height:auto — a grid
+   row with an indefinite height collapses and lifts the icon off the bottom. */
+body.electron-app .app-root,
+body.electron-app .nav-rail,
+body.electron-app .sidebar-secondary,
+body.electron-app .sidebar-inner {
   height: 100% !important;
   max-height: 100% !important;
-  min-height: 0;
+  min-height: 0 !important;
 }
 
 /* Top banners (notification permission + feedback nudge) sit BELOW the title bar

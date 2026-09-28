@@ -585,6 +585,30 @@
     width: var(--sidebar-width);
   }
 
+  /* 240px column: keep the title on the icon row without clipping it. */
+  .sidebar-header,
+  .servers-sidebar .server-shell-header {
+    padding: 8px 2px 8px 8px;
+    gap: 2px;
+  }
+
+  .sidebar-header .icon-btn,
+  .servers-sidebar .server-shell-header .icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sidebar-title,
+  .server-shell-title {
+    height: 28px;
+    line-height: 28px;
+  }
+
+  .sidebar-actions {
+    height: 28px;
+    gap: 0;
+  }
+
   .dm-item,
   .group-item,
   .friend-item {

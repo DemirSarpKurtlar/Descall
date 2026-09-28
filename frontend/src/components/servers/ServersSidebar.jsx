@@ -116,7 +116,6 @@ export default function ServersSidebar({
   onUpdateChannel,
   onDeleteChannel,
   onRolesChanged,
-  onRefresh,
   onJoinServer,
   onServerUpdated,
   onReorderServers,
@@ -142,7 +141,6 @@ export default function ServersSidebar({
   const [channelModal, setChannelModal] = useState(null); // { mode, channel?, defaultType?, parentId? }
   const [showRoles, setShowRoles] = useState(false);
   const [channelMenuId, setChannelMenuId] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [collapsedCats, setCollapsedCats] = useState({});
   const [collapsedFolders, setCollapsedFolders] = useState({});
   const [mutedChannelTick, setMutedChannelTick] = useState(0);
@@ -1385,18 +1383,6 @@ export default function ServersSidebar({
         <div className="sidebar-header">
           <h2 className="sidebar-title">{t("Servers")}</h2>
           <div className="sidebar-actions">
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Refresh")}
-              onClick={async () => {
-                setRefreshing(true);
-                await onRefresh?.();
-                setTimeout(() => setRefreshing(false), 600);
-              }}
-            >
-              <RefreshCw size={18} className={refreshing ? "spin-refresh" : ""} />
-            </button>
             <button
               type="button"
               className="icon-btn"

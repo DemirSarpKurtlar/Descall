@@ -9,16 +9,18 @@
 .servers-sidebar .server-shell-header {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  row-gap: 4px;
-  padding: 12px 12px 8px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 56px;
+  padding: 8px 4px 8px 12px;
   border-bottom: 1px solid var(--border-2);
   position: relative;
+  box-sizing: border-box;
 }
 
 .server-shell-title-wrap {
-  flex: 1 0 max-content;
+  flex: 1 1 auto;
+  align-self: center;
   max-width: 100%;
   min-width: 0;
 }
@@ -28,11 +30,11 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--text-0);
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  overflow-wrap: anywhere;
-  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  line-height: 32px;
+  height: 32px;
 }
 
 .server-shell-meta {

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
-  Search, RefreshCw, Megaphone, MessageSquarePlus, Plus, Menu,
+  Search, Megaphone, MessageSquarePlus, Plus, Menu,
 } from 'lucide-react';
 import { ActivityTypeIcon } from '../../lib/shopIcons';
 import { useT } from '../../context/LocaleContext';
@@ -210,7 +210,6 @@ export default function ActivityView({
   onUpdatePrivacy,
   onlineUsers,
   isMobile = false,
-  onRefresh,
   onAddFriend,
   onFriendSelect,
   onMenuClick,
@@ -221,7 +220,6 @@ export default function ActivityView({
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('history');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const PRIVACY_OPTIONS = getPrivacyOptions(t);
   const currentPrivacy = PRIVACY_OPTIONS.find(p => p.value === settings.privacy) || PRIVACY_OPTIONS[0];
@@ -253,15 +251,6 @@ export default function ActivityView({
     return new Date(b.started_at || 0) - new Date(a.started_at || 0);
   });
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await onRefresh?.();
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 800);
-    }
-  };
-
   return (
     <div className={`activity-view${isMobile ? ' activity-view-mobile' : ''}`}>
       {/* Mobile: Friends-style bar + search + online friends (desktop uses ActivitySidebar) */}
@@ -283,9 +272,6 @@ export default function ActivityView({
               <h2 className="sidebar-title">{t('Activity')}</h2>
             </div>
             <div className="sidebar-actions">
-              <button type="button" className="icon-btn" title={t('Refresh')} onClick={handleRefresh}>
-                <RefreshCw size={18} className={isRefreshing ? 'spin-refresh' : ''} />
-              </button>
               <button
                 type="button"
                 className="icon-btn"

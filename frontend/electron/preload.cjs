@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
   closeWindow: () => ipcRenderer.send('window:close'),
   onMaximizedChange: (callback) => ipcRenderer.on('window:maximized', (_, isMaximized) => callback(isMaximized)),
+  getContentBox: () => ipcRenderer.invoke('window:content-box'),
+  onContentBox: (callback) => {
+    const handler = (_, data) => callback(data);
+    ipcRenderer.on('window:content-box', handler);
+    return () => ipcRenderer.off('window:content-box', handler);
+  },
   
   // Platform
   platform: process.platform,

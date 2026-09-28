@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session } = require('electron');
+const { measureWindowOcclusion } = require('./windowOcclusion.cjs');
 const { showNotificationWindow } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
@@ -487,6 +488,14 @@ async function runPrelaunchUpdateGate() {
   openMainApp();
 }
 
+function publishContentBox(win) {
+  const target = win || mainWindow;
+  if (!target || target.isDestroyed?.()) return;
+  try {
+    target.webContents.send('window:content-box', measureWindowOcclusion(target));
+  } catch (_) { /* window closing */ }
+}
+
 // Create main window
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -561,12 +570,20 @@ function createMainWindow() {
   });
 
   // Handle maximize state change
+  const publishBox = () => publishContentBox(mainWindow);
+  mainWindow.on('resize', publishBox);
+  mainWindow.on('move', publishBox);
+  mainWindow.on('restore', publishBox);
+  mainWindow.on('show', publishBox);
+
   mainWindow.on('maximize', () => {
     mainWindow?.webContents?.send('window:maximized', true);
+    publishBox();
   });
 
   mainWindow.on('unmaximize', () => {
     mainWindow?.webContents?.send('window:maximized', false);
+    publishBox();
   });
   mainWindow.on('enter-full-screen', () => {
     try { mainWindow.setFullScreen(false); } catch (_) {}
@@ -1150,6 +1167,8 @@ ipcMain.handle('maximize-window', () => {
 ipcMain.handle('close-window', () => {
   if (mainWindow) mainWindow.close();
 });
+
+ipcMain.handle('window:content-box', () => measureWindowOcclusion(mainWindow));
 
 ipcMain.handle('is-window-focused', () => {
   if (!mainWindow || mainWindow.isDestroyed()) return false;
