@@ -140,6 +140,43 @@ async function ensureChatBubbleCatalog() {
   return created;
 }
 
+/**
+ * Insert any sigil name-effect SKUs that are not in shop_items yet.
+ * Idempotent. Safe to call on every boot.
+ */
+async function ensureNameEffectCatalog() {
+  const { NAME_EFFECT_CATALOG } = require("./nameEffectCatalog");
+  const skus = NAME_EFFECT_CATALOG.map((item) => item.sku);
+  const { data, error } = await supabase.from("shop_items").select("sku").in("sku", skus);
+  if (error) throw error;
+  const have = new Set((data || []).map((row) => row.sku));
+  let created = 0;
+  for (const item of NAME_EFFECT_CATALOG) {
+    if (have.has(item.sku)) continue;
+    const { error: insertError } = await supabase.from("shop_items").insert({
+      sku: item.sku,
+      name: item.name,
+      description: item.description,
+      category: "name_effect",
+      asset_url: "data:,",
+      preview_url: null,
+      price_cents: 0,
+      price_descoin: item.price_descoin,
+      theme_key: null,
+      badge_icon: null,
+      title_text: null,
+      effect_key: item.effect_key,
+      rarity: item.rarity,
+      sort_order: item.sort_order,
+      active: true,
+    });
+    if (insertError) throw insertError;
+    created += 1;
+  }
+  if (created) console.log(`[shop] name effect catalog inserted ${created}`);
+  return created;
+}
+
 async function retireSoundPacks() {
   const { error: itemError } = await supabase
     .from("shop_items")
@@ -436,6 +473,7 @@ module.exports = {
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
   ensureChatBubbleCatalog,
+  ensureNameEffectCatalog,
   retireSoundPacks,
   listAllItems,
   getItemById,

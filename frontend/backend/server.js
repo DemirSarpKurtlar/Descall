@@ -1108,6 +1108,12 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] chat bubble catalog failed:", e.message);
   }
+  try {
+    const { ensureNameEffectCatalog } = require("./lib/shop");
+    await ensureNameEffectCatalog();
+  } catch (e) {
+    console.warn("[boot] name effect catalog failed:", e.message);
+  }
 }
 
 if (isVercel) {
