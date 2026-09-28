@@ -31,6 +31,7 @@ function convKey(a, b) {
 function formatDmPreview(msg) {
   if (!msg) return null;
   const raw = String(msg.text || "").trim();
+  if (msg.type === "call_summary" || callSummaryType(raw)) return "📞 Call";
   if (raw && !raw.startsWith("__voice__:")) return raw;
   if (msg.mediaType === "image") return "📷 Photo";
   if (msg.mediaType === "voice" || msg.mediaType === "audio" || raw.startsWith("__voice__:")) {
@@ -88,14 +89,28 @@ function messageSender(userId, fallbackUsername, fallbackAvatar) {
   };
 }
 
+function callSummaryType(text) {
+  const raw = String(text || "").trim();
+  if (!raw.startsWith("{") || !raw.includes('"call_summary"')) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.type === "call_summary" ? "call_summary" : null;
+  } catch {
+    return null;
+  }
+}
+
 function mapDmRow(row, usersById) {
   const profile = usersById.get(row.from_user_id);
   if (profile) cacheUserProfile(profile);
+  const text = row.content || "";
+  const type = callSummaryType(text);
   return {
     id: row.id,
     from: messageSender(row.from_user_id, profile?.username || usernameById.get(row.from_user_id)),
     to: { id: row.to_user_id },
-    text: row.content || "",
+    text,
+    ...(type ? { type } : {}),
     mediaUrl: row.media_url || null,
     mediaType: row.media_type || null,
     mimeType: row.mime_type || null,

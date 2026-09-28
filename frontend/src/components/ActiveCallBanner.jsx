@@ -56,12 +56,18 @@ export default function ActiveCallBanner({ banner, onJoin, onDismiss }) {
             </div>
             <div className="call-banner-meta">
               <span className="call-banner-live">{durationLabel}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Users size={11} />
-                <span>
-                  {t("{count} participants joined", { count: participantCount })}
-                </span>
-              </div>
+              {banner.unreachable ? (
+                <span>{t("User may be offline — waiting…")}</span>
+              ) : banner.ringing ? (
+                <span>{banner.incoming ? t("Incoming call...") : t("Calling...")}</span>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Users size={11} />
+                  <span>
+                    {t("{count} participants joined", { count: participantCount })}
+                  </span>
+                </div>
+              )}
             </div>
             {banner.initiatorUsername && (
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
@@ -70,16 +76,18 @@ export default function ActiveCallBanner({ banner, onJoin, onDismiss }) {
             )}
           </div>
 
-          <motion.button
-            type="button"
-            className="call-banner-join"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={onJoin}
-          >
-            <LogIn size={14} />
-            {t("Join")}
-          </motion.button>
+          {!banner.hideJoin && (
+            <motion.button
+              type="button"
+              className="call-banner-join"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={onJoin}
+            >
+              <LogIn size={14} />
+              {t("Join")}
+            </motion.button>
+          )}
 
           {onDismiss && (
             <button type="button" className="call-banner-dismiss" onClick={onDismiss} aria-label={t("Dismiss")}>

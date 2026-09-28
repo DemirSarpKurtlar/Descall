@@ -88,6 +88,81 @@ async function notifyCallHistory(io, record) {
   emitToUser(io, record.calleeId, "calls:updated", payload);
 }
 
+/**
+ * Drop a WhatsApp-style ended-call row into the DM thread for both people.
+ * Presence does not matter: an offline callee still sees it on the next open.
+ */
+async function publishDmCallSummary(io, record) {
+  if (!record?.callerId || !record?.calleeId) return;
+  const durationSeconds = Number(record.durationSeconds) || 0;
+  const callerName =
+    usernameById.get(record.callerId) ||
+    getCachedPublicUser(record.callerId)?.username ||
+    "User";
+  const summary = {
+    type: "call_summary",
+    callType: record.callType === "video" ? "video" : "voice",
+    status: record.status || "missed",
+    initiatorId: record.callerId,
+    initiatorUsername: callerName,
+    participantCount: record.status === "completed" ? 2 : 1,
+    durationSeconds,
+    durationMinutes: Math.floor(durationSeconds / 60),
+    endedAt: record.endedAt || new Date().toISOString(),
+  };
+  const content = JSON.stringify(summary);
+  const { data: row, error } = await supabase
+    .from("dm_messages")
+    .insert({
+      from_user_id: record.callerId,
+      to_user_id: record.calleeId,
+      content,
+    })
+    .select("id, created_at")
+    .single();
+  if (error || !row) {
+    console.warn("[Call] DM summary insert failed:", error?.message || error);
+    return;
+  }
+
+  const sender = messageSender(record.callerId, callerName);
+  const timestamp = toUtcIso(row.created_at) || row.created_at;
+  const messagePayload = {
+    id: row.id,
+    from: sender,
+    text: content,
+    type: "call_summary",
+    mediaUrl: null,
+    mediaType: null,
+    timestamp,
+  };
+  cacheDmMessages(convKey(record.callerId, record.calleeId), [
+    { ...messagePayload, to: { id: record.calleeId } },
+  ]);
+
+  const calleeSocket = getSocketForUser(io, record.calleeId);
+  const calleeViewing = calleeSocket?.data?.activeDmPeer === record.callerId;
+  if (!calleeViewing) {
+    const unreadMap = ensureDmUnreadMap(record.calleeId);
+    const unreadCount = (unreadMap.get(record.callerId) || 0) + 1;
+    unreadMap.set(record.callerId, unreadCount);
+    emitToUser(io, record.calleeId, "dm:unread:sync", {
+      peerId: record.callerId,
+      count: unreadCount,
+    });
+  }
+
+  emitToUser(io, record.calleeId, "dm:message", { ...messagePayload, convWith: record.callerId });
+  emitToUser(io, record.callerId, "dm:message", { ...messagePayload, convWith: record.calleeId });
+}
+
+async function finishDmCall(io, userA, userB, status) {
+  const record = await finalizeCall(userA, userB, status);
+  await notifyCallHistory(io, record);
+  await publishDmCallSummary(io, record);
+  return record;
+}
+
 function ensureSet(map, key) {
   if (!map.has(key)) map.set(key, new Set());
   return map.get(key);
@@ -1221,8 +1296,7 @@ function registerSocketHandlers(io) {
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:ended", { fromUserId: myId });
       try {
-        const record = await finalizeCall(myId, toUserId, "completed");
-        await notifyCallHistory(io, record);
+        await finishDmCall(io, myId, toUserId, "completed");
         try {
           voiceLive.dropRoom(voiceLive.roomIdDm(myId, toUserId));
         } catch {
@@ -1238,8 +1312,7 @@ function registerSocketHandlers(io) {
       emitToUser(io, toUserId, "call:cancelled", { fromUserId: myId });
       try {
         // Unanswered cancel = missed for the callee history
-        const record = await finalizeCall(myId, toUserId, "missed");
-        await notifyCallHistory(io, record);
+        await finishDmCall(io, myId, toUserId, "missed");
         try {
           voiceLive.dropRoom(voiceLive.roomIdDm(myId, toUserId));
         } catch {
@@ -1254,8 +1327,7 @@ function registerSocketHandlers(io) {
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:declined", { fromUserId: myId });
       try {
-        const record = await finalizeCall(myId, toUserId, "declined");
-        await notifyCallHistory(io, record);
+        await finishDmCall(io, myId, toUserId, "declined");
         try {
           voiceLive.dropRoom(voiceLive.roomIdDm(myId, toUserId));
         } catch {

@@ -49,6 +49,7 @@ import { voiceMicErrorCopy } from "../lib/voiceMicError";
 export function useCall(socket, callOccupancyRef = null) {
   const { toast } = useToast();
   const [mode, setMode] = useState(null); // null | "incoming" | "outgoing" | "active"
+  const [callAnchorAt, setCallAnchorAt] = useState(null);
   const [callType, setCallType] = useState(null); // null | "voice" | "video"
   const [peer, setPeer] = useState(null);
   const [muted, setMuted] = useState(false);
@@ -248,6 +249,7 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     negotiateRef.current = null;
     setMode(null);
+    setCallAnchorAt(null);
     setCallType(null);
     setPeer(null);
     setMuted(false);
@@ -874,6 +876,7 @@ export function useCall(socket, callOccupancyRef = null) {
         avatarUrl: fromUser?.avatarUrl || fromUser?.avatar_url || null,
       });
       setCallType(incomingType || "voice");
+      setCallAnchorAt(Date.now());
       setMode("incoming");
       notificationService.incomingCall({ from: fromUser.username, type: incomingType || "voice" });
     };
@@ -1004,6 +1007,7 @@ export function useCall(socket, callOccupancyRef = null) {
       peerRef.current = peerObj;
       setPeer(peerObj);
       setCallType(type);
+      setCallAnchorAt(Date.now());
       setMode("outgoing");
       modeRef.current = "outgoing";
       setCameraOn(type === "video");
@@ -1580,6 +1584,7 @@ export function useCall(socket, callOccupancyRef = null) {
     localVideoRef,
     screenVideoRef,
     mode,
+    callAnchorAt,
     callType,
     peer,
     muted,

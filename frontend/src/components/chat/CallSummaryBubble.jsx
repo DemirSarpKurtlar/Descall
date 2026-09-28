@@ -19,6 +19,15 @@ export default function CallSummaryBubble({ summary }) {
       ? `${secs}s`
       : t("< 1s");
 
+  const statusLabel =
+    summary.status === "missed"
+      ? t("Missed")
+      : summary.status === "declined"
+        ? t("Declined")
+        : summary.status === "cancelled"
+          ? t("Cancelled")
+          : null;
+
   const timeLabel = summary.endedAt
     ? new Date(summary.endedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
     : "";
@@ -35,10 +44,14 @@ export default function CallSummaryBubble({ summary }) {
             {isVideo ? t("Video call") : t("Voice call")}
           </div>
           <div className="call-summary-meta">
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <Clock size={11} />
-              <span>{durationLabel}</span>
-            </div>
+            {statusLabel ? (
+              <span>{statusLabel}</span>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <Clock size={11} />
+                <span>{durationLabel}</span>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Users size={11} />
               <span>

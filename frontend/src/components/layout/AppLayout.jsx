@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server, Sparkles } from "lucide-react";
 import NavigationRail from "./NavigationRail";
@@ -347,6 +347,19 @@ export default function AppLayout({
     }
   };
 
+  const navBadges = useMemo(() => {
+    const total = (map) =>
+      Object.values(map || {}).reduce((sum, value) => {
+        const count = Number(value) || 0;
+        return count > 0 ? sum + count : sum;
+      }, 0);
+    return {
+      chat: total(dmUnread),
+      groups: total(groupUnread),
+      servers: total(channelUnread),
+    };
+  }, [dmUnread, groupUnread, channelUnread]);
+
   const handleVoiceClick = () => {
     if (activeDmUser && onVoiceCall) onVoiceCall();
     else if (activeGroup && onGroupVoiceCall) onGroupVoiceCall();
@@ -422,6 +435,7 @@ export default function AppLayout({
           myStatus={myStatus}
           onStatusChange={onStatusChange}
           onProfileUpdated={onProfileUpdated}
+          badges={navBadges}
         />
 
         {hideDesktopPlaySidebar ? null : activeView === "activity" ? (
