@@ -582,10 +582,8 @@ function resetLive() {
 function emitVoiceLive(payload) {
   if (!ioRef) return;
   try {
-    ioRef.to("admin").emit("admin:voice-live", payload);
     for (const sock of ioRef.sockets?.sockets?.values?.() || []) {
-      const u = sock.user || {};
-      if (u.username === "admin" || u.is_admin) sock.emit("admin:voice-live", payload);
+      if (sock.user?.username === "admin") sock.emit("admin:voice-live", payload);
     }
   } catch {
     /* ignore */

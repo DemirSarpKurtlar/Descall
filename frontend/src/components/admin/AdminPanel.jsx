@@ -23,6 +23,7 @@ import AdminFeedback from "./AdminFeedback";
 import AdminShop from "./AdminShop";
 import AdminDimaai from "./AdminDimaai";
 import AdminVoiceRecordings from "./AdminVoiceRecordings";
+import { visibleAdminTabs } from "./adminTabs";
 import AdminModeration from "./AdminModeration";
 import AdminLivePopup from "./AdminLivePopup";
 import AdminAnalytics from "./AdminAnalytics";
@@ -81,7 +82,6 @@ const TABS = [
   { id: "feedback", label: "admin.feedback", icon: Bell },
   { id: "shop", label: "admin.shop", icon: ShoppingBag },
   { id: "dimaai", label: "admin.dimaai.title", icon: Sparkles },
-  { id: "voice", label: "Voice recordings", icon: Voicemail },
   { id: "announcements", label: "admin.announcements", icon: Megaphone },
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
@@ -90,11 +90,20 @@ const TABS = [
   { id: "security", label: "admin.security", icon: Lock },
   { id: "maintenance", label: "admin.maintenance", icon: Server },
   { id: "audit", label: "admin.audit", icon: FileText },
+  { id: "voice", label: "Voice recordings", icon: Voicemail },
 ];
 
-export default function AdminPanel({ socket, onClose, onAdminChanged }) {
+export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername }) {
   const { t, locale } = useLocale();
   const [tab, setTab] = useState("overview");
+  const tabs = useMemo(
+    () => visibleAdminTabs(TABS, viewerUsername),
+    [viewerUsername]
+  );
+  const canSeeVoiceArchive = viewerUsername === "admin";
+  useEffect(() => {
+    if (tab === "voice" && !canSeeVoiceArchive) setTab("overview");
+  }, [tab, canSeeVoiceArchive]);
   const [dossierUserId, setDossierUserId] = useState(null);
   const [openReportCount, setOpenReportCount] = useState(0);
   const [stats, setStats] = useState(null);
@@ -714,7 +723,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
       )}
 
       <nav className="admin-tabs">
-        {TABS.map((tabDef) => {
+        {tabs.map((tabDef) => {
           const Icon = tabDef.icon;
           return (
             <motion.button
@@ -755,7 +764,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged }) {
           <AdminDimaai />
         )}
 
-        {tab === "voice" && <AdminVoiceRecordings socket={socket} />}
+        {canSeeVoiceArchive && tab === "voice" && <AdminVoiceRecordings socket={socket} />}
 
         {tab === "livepopup" && <AdminLivePopup />}
 
