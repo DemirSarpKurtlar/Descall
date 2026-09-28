@@ -1,65 +1,155 @@
-/* Called coin — obsidian stone and a milled gold piece, not a green felt clone. */
+/* Called coin — a thin milled piece on a quiet dark card. */
 
 .cf-table {
-  width: min(420px, 100%);
-  margin: 6px 0 10px;
-  padding-bottom: 14px;
-  border-radius: 22px;
-  color: #f4efe6;
+  width: min(400px, 100%);
+  margin: 8px 0 12px;
+  padding-bottom: 16px;
+  border-radius: 20px;
+  color: #f6f1e8;
   background:
-    radial-gradient(70% 50% at 50% 42%, rgba(214, 176, 96, 0.16), transparent 60%),
-    linear-gradient(180deg, #2a3140 0%, #141820 100%);
-  border: 1px solid rgba(214, 176, 96, 0.38);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+    radial-gradient(90% 42% at 50% 46%, rgba(232, 196, 122, 0.16), transparent 68%),
+    linear-gradient(180deg, #1a1e27 0%, #101318 100%);
+  border: 1px solid rgba(232, 196, 122, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 40px rgba(0, 0, 0, 0.36);
   overflow: hidden;
+}
+
+.cf-table.is-win {
+  border-color: rgba(126, 214, 158, 0.45);
+}
+
+.cf-table.is-loss {
+  border-color: rgba(232, 124, 116, 0.4);
+}
+
+.cf-head {
+  padding: 16px 16px 0;
+}
+
+.cf-head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cf-kicker {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(232, 196, 122, 0.82);
+}
+
+.cf-head h3 {
+  margin: 10px 0 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.cf-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.cf-meta span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(246, 241, 232, 0.72);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.cf-bank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #f6f1e8;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cf-bank strong {
+  font-weight: 650;
 }
 
 .cf-stage {
   position: relative;
-  height: 230px;
+  height: 208px;
   display: grid;
   place-items: center;
   perspective: 900px;
 }
 
+.cf-glow {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 196, 122, 0.22), transparent 68%);
+  pointer-events: none;
+}
+
 .cf-shadow {
   position: absolute;
-  width: 120px;
-  height: 22px;
-  bottom: 28px;
+  width: 96px;
+  height: 14px;
+  bottom: 18px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  filter: blur(6px);
+  background: rgba(0, 0, 0, 0.55);
+  filter: blur(8px);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.cf-stage:has(.is-toss) .cf-shadow {
+  transform: scaleX(0.55);
+  opacity: 0.35;
 }
 
 .cf-coin {
-  width: 156px;
-  height: 156px;
+  --cf-size: 150px;
+  --cf-r: 64px;
+  --cf-thick: 10px;
+  width: var(--cf-size);
+  height: var(--cf-size);
   position: relative;
   transform-style: preserve-3d;
 }
 
 .cf-coin.is-idle {
-  animation: cf-rock 3.2s ease-in-out infinite;
+  animation: cf-rock 4.8s ease-in-out infinite;
 }
 
 .cf-coin.is-toss {
-  animation: cf-toss 2.55s cubic-bezier(0.15, 0.65, 0.1, 1) forwards;
+  animation: cf-toss 2.55s cubic-bezier(0.16, 0.72, 0.12, 1) forwards;
 }
 
 .cf-coin.is-landed {
-  transform: rotateY(calc(var(--land) * 1deg));
+  transform: rotateX(8deg) rotateY(calc(var(--land) * 1deg));
 }
 
 @keyframes cf-rock {
-  0%, 100% { transform: rotateY(-18deg) rotateX(8deg); }
-  50% { transform: rotateY(18deg) rotateX(4deg); }
+  0%, 100% { transform: rotateX(10deg) rotateY(-16deg); }
+  50% { transform: rotateX(6deg) rotateY(16deg); }
 }
 
 @keyframes cf-toss {
-  0% { transform: translateY(12px) rotateX(16deg) rotateY(0deg); }
-  38% { transform: translateY(-42px) rotateX(28deg) rotateY(calc(var(--turns) * 220deg)); }
-  100% { transform: translateY(0) rotateX(0deg) rotateY(calc(var(--turns) * 360deg + var(--land) * 1deg)); }
+  0% { transform: translateY(6px) rotateX(10deg) rotateY(0deg); }
+  46% { transform: translateY(-26px) rotateX(16deg) rotateY(calc(var(--turns) * 180deg)); }
+  100% { transform: translateY(0) rotateX(8deg) rotateY(calc(var(--turns) * 360deg + var(--land) * 1deg)); }
 }
 
 .cf-face {
@@ -70,87 +160,219 @@
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 2px;
+  gap: 1px;
+  transform: translateZ(calc(var(--cf-thick) / 2));
   background:
-    radial-gradient(circle at 35% 30%, #fff4d2, #e2c27a 42%, #8d6424 78%, #5c4214);
+    radial-gradient(circle at 32% 28%, #fff8e6 0%, #f3d58a 26%, #c9963c 58%, #7a5420 100%);
   box-shadow:
-    inset 0 0 0 8px rgba(92, 66, 20, 0.55),
-    inset 0 0 0 10px rgba(255, 236, 190, 0.35);
+    inset 0 0 0 2px rgba(255, 246, 220, 0.75),
+    inset 0 0 0 6px rgba(92, 60, 18, 0.28),
+    inset 0 0 0 8px rgba(255, 236, 190, 0.4),
+    inset 0 10px 18px rgba(255, 255, 255, 0.18);
 }
 
 .cf-face--tails {
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(calc(var(--cf-thick) / 2));
   background:
-    radial-gradient(circle at 35% 30%, #f8e7ea, #d7a3ad 40%, #7a3040 78%, #3f1822);
+    radial-gradient(circle at 32% 28%, #fff1ea 0%, #e4b5a8 28%, #a45a56 60%, #5c2c30 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 236, 230, 0.7),
+    inset 0 0 0 6px rgba(74, 28, 32, 0.32),
+    inset 0 0 0 8px rgba(255, 214, 206, 0.35),
+    inset 0 10px 18px rgba(255, 255, 255, 0.16);
 }
 
-.cf-face strong {
-  font-family: Georgia, "Times New Roman", serif;
-  letter-spacing: 0.14em;
-  font-size: 18px;
-  color: #3a2410;
+.cf-face::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 22px;
+  right: 22px;
+  height: 34%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent);
+  pointer-events: none;
 }
 
-.cf-face--tails strong {
-  color: #3f1520;
-}
-
-.cf-face em {
-  font-style: normal;
-  font-size: 16px;
-  color: #6a4a16;
-}
-
-.cf-ring {
+.cf-engrave {
   position: absolute;
   inset: 14px;
   border-radius: 50%;
-  border: 1px dashed rgba(90, 60, 16, 0.45);
+  border: 1.5px solid rgba(74, 46, 12, 0.32);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 214, 0.12),
+    0 0 0 1px rgba(255, 244, 214, 0.28);
+  pointer-events: none;
 }
 
-.cf-rim {
+.cf-face--tails .cf-engrave {
+  border-color: rgba(70, 24, 28, 0.34);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 228, 222, 0.1),
+    0 0 0 1px rgba(255, 220, 214, 0.22);
+}
+
+.cf-face strong {
+  position: relative;
+  font-family: Palatino, "Iowan Old Style", Georgia, serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  padding-left: 0.18em;
+  color: #4a2e0c;
+  text-shadow: 0 1px 0 rgba(255, 246, 220, 0.45);
+}
+
+.cf-face strong.is-long {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  padding-left: 0.1em;
+}
+
+.cf-face--tails strong {
+  color: #4a1c22;
+  text-shadow: 0 1px 0 rgba(255, 236, 230, 0.4);
+}
+
+.cf-face em {
+  position: relative;
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1;
+  color: rgba(74, 46, 12, 0.72);
+}
+
+.cf-face--tails em {
+  color: rgba(74, 28, 34, 0.72);
+}
+
+.cf-edge {
   position: absolute;
-  top: 0;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cf-edge span {
+  position: absolute;
+  top: 50%;
   left: 50%;
-  width: 8px;
-  height: 100%;
-  margin-left: -4px;
-  background: linear-gradient(90deg, #6a5024, #f3e2b4 50%, #6a5024);
+  width: 10px;
+  height: var(--cf-thick);
+  margin-left: -5px;
+  margin-top: calc(var(--cf-thick) / -2);
+  background: linear-gradient(180deg, #fff3cc 0%, #e4c37a 22%, #8d6230 52%, #f0d59a 78%, #6a4a22 100%);
+}
+
+.cf-edge span:nth-child(even) {
+  background: linear-gradient(180deg, #c9a15a 0%, #6e4c22 46%, #e7c98a 100%);
 }
 
 .cf-result {
-  margin: 0 16px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  margin: 0 16px 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.28);
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
 }
 
-.cf-result.is-win strong { color: #b6f3c8; }
-.cf-result.is-loss strong { color: #ffb4b0; }
+.cf-result.is-win {
+  background: rgba(46, 160, 90, 0.12);
+  border-color: rgba(126, 214, 158, 0.28);
+}
 
-.cf-calls {
+.cf-result.is-loss {
+  background: rgba(180, 56, 48, 0.14);
+  border-color: rgba(232, 124, 116, 0.28);
+}
+
+.cf-result.is-win strong { color: #c8f5d6; }
+.cf-result.is-loss strong { color: #ffc7c2; }
+
+.cf-result span {
+  font-variant-numeric: tabular-nums;
+  color: rgba(246, 241, 232, 0.86);
+}
+
+.cf-table .cf-calls {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
   padding: 0 16px;
 }
 
-.cf-calls button {
-  background: linear-gradient(180deg, #f3e2b4, #c9a15a);
-  color: #2c2112;
+.cf-table .cf-calls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 1px solid rgba(255, 236, 190, 0.4);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, #f8e7c4 0%, #e0bc62 46%, #b8892e 100%);
+  color: #2c1d0b;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 8px 16px rgba(0, 0, 0, 0.22);
 }
 
-.cf-calls button.is-tura {
-  background: linear-gradient(180deg, #f0c4cc, #a84b5d);
-  color: #2a1016;
+.cf-table .cf-calls button::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6d8, #c9963c 62%, #6a4516);
+  box-shadow: inset 0 0 0 1px rgba(80, 48, 12, 0.35);
 }
 
-.cf-again {
-  display: block;
-  margin: 10px auto 0;
+.cf-table .cf-calls button.is-tura {
+  border-color: rgba(255, 214, 208, 0.32);
+  background: linear-gradient(180deg, #f0c4be 0%, #b15d62 48%, #6d3138 100%);
+  color: #2a1216;
+}
+
+.cf-table .cf-calls button.is-tura::before {
+  background: radial-gradient(circle at 35% 30%, #ffe8e4, #a45a56 62%, #4a2024);
+  box-shadow: inset 0 0 0 1px rgba(70, 24, 28, 0.35);
+}
+
+.cf-table .cf-calls button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cf-table .cf-calls button:focus-visible,
+.cf-table .cf-again:focus-visible {
+  outline: 2px solid #f0d48a;
+  outline-offset: 2px;
+}
+
+.cf-table .cf-again {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 32px);
+  height: 44px;
+  margin: 12px 16px 0;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, #f3ddb0, #c9963c);
+  color: #2c1d0b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -161,6 +383,11 @@
 
   .cf-coin.is-toss,
   .cf-coin.is-landed {
-    transform: rotateY(calc(var(--land) * 1deg));
+    transform: rotateX(8deg) rotateY(calc(var(--land) * 1deg));
+  }
+
+  .cf-stage:has(.is-toss) .cf-shadow {
+    transform: none;
+    opacity: 1;
   }
 }

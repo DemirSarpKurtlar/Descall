@@ -1260,7 +1260,7 @@ export const phrases = {
   "King": "King",
   "Queen": "Queen",
   "Even money": "Even money",
-  "Call it": "Call it",
+  "Call it": "Pick a side",
   "Heads": "Heads",
   "Tails": "Tails",
   "Called": "Called",
