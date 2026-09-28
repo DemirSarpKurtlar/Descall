@@ -3979,7 +3979,7 @@ export default function App() {
     <div className="app-container">
         <ElectronUpdateToast />
         {(me?.is_admin || me?.username === "admin") && adminOpen && (
-          <AdminPanel socket={socketApi} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
+          <AdminPanel socket={socketApi} viewerUsername={me?.username} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
         )}
 
         {shopGift && (
