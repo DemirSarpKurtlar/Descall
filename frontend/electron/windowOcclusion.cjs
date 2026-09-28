@@ -59,6 +59,51 @@ function clientBounds(windowBounds, contentBounds) {
   return windowBounds || null;
 }
 
+/**
+ * Place a restored window's client inside the display work area.
+ * Never expand a window, and never invent a maximized snap — callers must
+ * skip this while the window is maximized so WS_THICKFRAME can keep the
+ * client out of the taskbar.
+ */
+function fitBoundsToWorkArea(bounds, workArea, limits = {}) {
+  const minWidthFloor = Number(limits.minWidth) > 0 ? Number(limits.minWidth) : 960;
+  const minHeightFloor = Number(limits.minHeight) > 0 ? Number(limits.minHeight) : 640;
+  const requestedW = Math.round(Number(bounds?.width) > 0 ? Number(bounds.width) : 1400);
+  const requestedH = Math.round(Number(bounds?.height) > 0 ? Number(bounds.height) : 900);
+  if (!workArea || !(workArea.width > 0) || !(workArea.height > 0)) {
+    return {
+      x: Number.isFinite(Number(bounds?.x)) ? Math.round(Number(bounds.x)) : undefined,
+      y: Number.isFinite(Number(bounds?.y)) ? Math.round(Number(bounds.y)) : undefined,
+      width: requestedW,
+      height: requestedH,
+      minWidth: minWidthFloor,
+      minHeight: minHeightFloor,
+    };
+  }
+  const width = Math.max(320, Math.min(requestedW, Math.round(workArea.width)));
+  const height = Math.max(240, Math.min(requestedH, Math.round(workArea.height)));
+  let x = Number.isFinite(Number(bounds?.x))
+    ? Number(bounds.x)
+    : workArea.x + (workArea.width - width) / 2;
+  let y = Number.isFinite(Number(bounds?.y))
+    ? Number(bounds.y)
+    : workArea.y + (workArea.height - height) / 2;
+  const right = workArea.x + workArea.width;
+  const bottom = workArea.y + workArea.height;
+  if (x < workArea.x) x = workArea.x;
+  if (y < workArea.y) y = workArea.y;
+  if (x + width > right) x = right - width;
+  if (y + height > bottom) y = bottom - height;
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    width,
+    height,
+    minWidth: Math.min(minWidthFloor, width),
+    minHeight: Math.min(minHeightFloor, height),
+  };
+}
+
 function measureWindowOcclusion(win) {
   const empty = { bottomInset: 0, topInset: 0, leftInset: 0, rightInset: 0 };
   if (!win || (typeof win.isDestroyed === "function" && win.isDestroyed())) return empty;
@@ -84,4 +129,5 @@ module.exports = {
   fillsWorkArea,
   unionRect,
   clientBounds,
+  fitBoundsToWorkArea,
 };

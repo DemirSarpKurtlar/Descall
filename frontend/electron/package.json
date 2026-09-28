@@ -1,9 +1,12 @@
 {
   "name": "descall-electron",
-  "version": "2.9.86",
+  "version": "2.9.87",
   "description": "Descall - Discord-like chat application",
   "main": "main.cjs",
-  "author": "Descall Team",
+  "author": {
+    "name": "Descall",
+    "email": "contact@descall.com"
+  },
   "license": "MIT",
   "homepage": "https://descall.com",
   "repository": {
@@ -34,6 +37,7 @@
   "build": {
     "appId": "com.descall.app",
     "productName": "Descall",
+    "copyright": "Copyright © 2026 Demir Sarp Kurtlar",
     "directories": {
       "output": "dist",
       "buildResources": "../public"

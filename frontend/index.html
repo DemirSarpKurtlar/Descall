@@ -146,6 +146,20 @@
         min-height: 100dvh;
         overflow: hidden;
       }
+      /* Electron: 100dvh plus the title-bar pad clips the bottom of every window.
+         Web keeps the dvh rule above. */
+      html.electron-app[data-app-shell="1"],
+      html.electron-app[data-app-shell="1"] body,
+      html.electron-app[data-app-shell="1"] #root {
+        height: 100%;
+        min-height: 0;
+        max-height: 100%;
+      }
+      html.electron-app[data-app-shell="1"] body {
+        box-sizing: border-box;
+        padding-top: 40px;
+        overflow: hidden;
+      }
       #boot-splash {
         position: fixed;
         inset: 0;
@@ -608,6 +622,14 @@
     </style>
   </head>
   <body>
+    <script>
+      try {
+        if (window.electronAPI && window.electronAPI.isElectron) {
+          document.documentElement.classList.add("electron-app");
+          document.body.classList.add("electron-app");
+        }
+      } catch (e) {}
+    </script>
     <noscript>
       <nav aria-label="Descall" style="display:flex;flex-wrap:wrap;gap:8px;padding:16px;font-family:system-ui,sans-serif">
         <a href="/">Descall</a>
