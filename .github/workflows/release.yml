@@ -71,11 +71,18 @@ jobs:
         run: |
           npm ci
           npm run build:prod
-          if ($env:WIN_CSC_LINK) {
+          if (-not [string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
             $env:CSC_LINK = $env:WIN_CSC_LINK
             $env:CSC_KEY_PASSWORD = $env:WIN_CSC_KEY_PASSWORD
             Write-Host "Code signing certificate present. Signing the setup."
           } else {
+            # electron-builder reads WIN_CSC_LINK itself. An empty GitHub secret
+            # is still set, and a blank value resolves to the working directory
+            # and fails the build ("not a file").
+            Remove-Item Env:WIN_CSC_LINK -ErrorAction SilentlyContinue
+            Remove-Item Env:WIN_CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
+            Remove-Item Env:CSC_LINK -ErrorAction SilentlyContinue
+            Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
             Write-Host "No WIN_CSC_LINK secret. Building unsigned. File properties still name Descall; SmartScreen stays Unknown publisher until a trusted cert is configured."
           }
           npx electron-builder --win --publish=never
