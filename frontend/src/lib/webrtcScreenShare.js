@@ -676,10 +676,8 @@ export function isRemoteScreenVideoTrack(
     return true;
   }
 
-  if (rawStream && mainRemoteStream && rawStream.id !== mainRemoteStream.id) {
-    return true;
-  }
-
+  // A camera added mid-call arrives on its own MediaStream. A different id
+  // is not a screen share — that guess hid DM cameras behind the screen stage.
   if (
     participantHasCameraVideo &&
     rawStream &&
