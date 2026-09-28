@@ -31,6 +31,7 @@ import {
 } from "../lib/screenShareTracks";
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
+import audioManager from "../lib/audioManager";
 
 const CAMERA_CONSTRAINTS = {
   audio: false,
@@ -91,6 +92,9 @@ export function useServerVoice(socket) {
   const serverMutedRef = useRef(false);
   const [serverDeafened, setServerDeafened] = useState(false);
   const serverDeafenedRef = useRef(false);
+  const [deafened, setDeafened] = useState(false);
+  const deafenedRef = useRef(false);
+  const mutedByDeafenRef = useRef(false);
   const joinRef = useRef(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenStream, setScreenStream] = useState(null);
@@ -177,8 +181,9 @@ export function useServerVoice(socket) {
 
   const applyVoiceElement = useCallback((userId, el) => {
     if (!el) return;
-    el.muted = Boolean(serverDeafenedRef.current);
-    el.volume = serverDeafenedRef.current ? 0 : voiceVolumeFor(userId);
+    const earsOff = Boolean(serverDeafenedRef.current || deafenedRef.current);
+    el.muted = earsOff;
+    el.volume = earsOff ? 0 : voiceVolumeFor(userId);
     const sinkId = audioOutputIdRef.current;
     if (sinkId && typeof el.setSinkId === "function") {
       el.setSinkId(sinkId).catch(() => {});
@@ -486,6 +491,9 @@ export function useServerVoice(socket) {
     serverMutedRef.current = false;
     setServerDeafened(false);
     serverDeafenedRef.current = false;
+    setDeafened(false);
+    deafenedRef.current = false;
+    mutedByDeafenRef.current = false;
     setChannelType("voice");
     setStageRole("speaker");
     setRequestedToSpeak(false);
@@ -671,11 +679,13 @@ export function useServerVoice(socket) {
   );
 
   const leave = useCallback(() => {
+    const wasIn = Boolean(activeChannelIdRef.current);
     voiceJoinEpochRef.current += 1;
     if (isScreenSharing) {
-      stopScreenShareRef.current?.();
+      stopScreenShareRef.current?.({ quiet: true });
     }
     cleanupAll();
+    if (wasIn) audioManager.play("channelLeave");
   }, [cleanupAll, isScreenSharing]);
 
   const join = useCallback(
@@ -824,6 +834,8 @@ export function useServerVoice(socket) {
     const nextMuted = !track.enabled;
     setNoiseSuppressedTrackEnabled(!nextMuted);
     setMuted(nextMuted);
+    if (!nextMuted) mutedByDeafenRef.current = false;
+    audioManager.play(nextMuted ? "mute" : "unmute");
     const channelId = activeChannelIdRef.current;
     if (channelId && socket?.connected) {
       socket.emit("server:voice:media-state", {
@@ -833,6 +845,47 @@ export function useServerVoice(socket) {
       });
     }
   }, [canPublishVoice, micConstraints, renegotiateWithPeer, socket]);
+
+  const toggleDeafen = useCallback(() => {
+    const next = !deafenedRef.current;
+    deafenedRef.current = next;
+    setDeafened(next);
+    for (const [userId, el] of remoteAudioRefs.current.entries()) {
+      applyVoiceElement(userId, el);
+    }
+    const track = localStreamRef.current?.getAudioTracks()?.[0];
+    if (next) {
+      if (track?.enabled) {
+        track.enabled = false;
+        setMuted(true);
+        mutedByDeafenRef.current = true;
+        const channelId = activeChannelIdRef.current;
+        if (channelId && socket?.connected) {
+          socket.emit("server:voice:media-state", {
+            channelId,
+            muted: true,
+            cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
+          });
+        }
+      }
+      audioManager.play("deafen");
+    } else {
+      if (mutedByDeafenRef.current && track && !serverMutedRef.current) {
+        track.enabled = true;
+        setMuted(false);
+        mutedByDeafenRef.current = false;
+        const channelId = activeChannelIdRef.current;
+        if (channelId && socket?.connected) {
+          socket.emit("server:voice:media-state", {
+            channelId,
+            muted: false,
+            cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
+          });
+        }
+      }
+      audioManager.play("undeafen");
+    }
+  }, [applyVoiceElement, socket]);
 
   const applyLocalMute = useCallback((nextMuted, { forced = false } = {}) => {
     const track = localStreamRef.current?.getAudioTracks()?.[0];
@@ -908,7 +961,7 @@ export function useServerVoice(socket) {
     [socket]
   );
 
-  const stopScreenShare = useCallback(async () => {
+  const stopScreenShare = useCallback(async (opts = {}) => {
     if (!isScreenSharing && !screenStreamRef.current) return;
     if (sfuModeRef.current && liveKitRoomRef.current && screenStreamRef.current) {
       for (const track of screenStreamRef.current.getTracks()) {
@@ -944,6 +997,7 @@ export function useServerVoice(socket) {
     if (channelId && socket?.connected) {
       socket.emit("server:voice:screen:stop", { channelId });
     }
+    if (!opts?.quiet) audioManager.play("screenShareStop");
   }, [isScreenSharing, renegotiateWithPeer, socket]);
 
   const startScreenShare = useCallback(async () => {
@@ -997,6 +1051,7 @@ export function useServerVoice(socket) {
           stopScreenShareRef.current?.();
         };
         setIsScreenSharing(true);
+        audioManager.play("screenShareStart");
         return;
       }
 
@@ -1020,6 +1075,7 @@ export function useServerVoice(socket) {
         stopScreenShareRef.current?.();
       };
       setIsScreenSharing(true);
+      audioManager.play("screenShareStart");
     } catch (err) {
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
       console.error("[ServerVoice] screen share failed:", err);
@@ -1334,6 +1390,7 @@ export function useServerVoice(socket) {
       if (canRequest !== undefined) setCanRequestToSpeak(Boolean(canRequest));
       setRequestedToSpeak(Boolean(requested));
       setParticipants(Array.isArray(others) ? others.map((u) => ({ ...u, hasAudio: true })) : []);
+      audioManager.play("channelJoin");
       if (forcedMute || canSpeakNow === false) {
         applyLocalMute(true, { forced: Boolean(forcedMute) });
         const ch = activeChannelIdRef.current;
@@ -1346,6 +1403,7 @@ export function useServerVoice(socket) {
     const onMemberJoined = ({ channelId, user } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !user?.id) return;
       if (user.id === myIdRef.current) return;
+      audioManager.play("userJoin");
       // We are already in the room — offer to the new joiner
       offerToPeer(user, channelId);
     };
@@ -1357,6 +1415,7 @@ export function useServerVoice(socket) {
       removeUserFromVoiceStates(channelId, uid, serverId || null);
       // If we're in that channel, tear down the peer + in-call roster
       if (channelId === activeChannelIdRef.current) {
+        if (uid !== String(myIdRef.current)) audioManager.play("userLeave");
         cleanupPeer(uid);
         setParticipants((prev) => prev.filter((p) => String(p.id) !== uid));
       }
@@ -1458,6 +1517,7 @@ export function useServerVoice(socket) {
       const meId = myIdRef.current;
       if (ch && meId) removeUserFromVoiceStates(ch, meId, serverId || activeServerIdRef.current);
       if (ch && ch === activeChannelIdRef.current) {
+        audioManager.play("disconnect");
         cleanupAll();
       } else if (ch) {
         // Already cleaned locally but still clear any leftover roster
@@ -1583,6 +1643,7 @@ export function useServerVoice(socket) {
     const onScreenStarted = ({ channelId, fromUserId, fromUser } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
       if (fromUserId === myIdRef.current) return;
+      audioManager.play("screenShareStart");
       const peer = pcMapRef.current.get(fromUserId);
       if (peer) peer.expectScreenShare = true;
       setParticipants((prev) => {
@@ -1597,6 +1658,7 @@ export function useServerVoice(socket) {
 
     const onScreenStopped = ({ channelId, fromUserId } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
+      if (String(fromUserId) !== String(myIdRef.current)) audioManager.play("screenShareStop");
       const peer = pcMapRef.current.get(fromUserId);
       if (peer) peer.expectScreenShare = false;
       setParticipants((prev) =>
@@ -1834,6 +1896,7 @@ export function useServerVoice(socket) {
     channelName,
     participants,
     muted,
+    deafened,
     serverMuted,
     serverDeafened,
     connecting,
@@ -1857,6 +1920,7 @@ export function useServerVoice(socket) {
     join,
     leave,
     toggleMute,
+    toggleDeafen,
     toggleCamera,
     startCamera,
     stopCamera,
