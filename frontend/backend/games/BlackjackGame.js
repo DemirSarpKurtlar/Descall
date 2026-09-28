@@ -297,6 +297,7 @@ class BlackjackGame {
     const hideHole = this.status === "playing";
     const dealerJson = this.dealerHand.toJSON();
     return {
+      game: "blackjack",
       id: this.id,
       userId: this.userId,
       username: this.username,

@@ -345,11 +345,17 @@
 .bj-action--stand { background: linear-gradient(180deg, #fbbf24, #d97706); color: #1a1205; }
 .bj-action--double { background: linear-gradient(180deg, #fde68a, #d4a84b); }
 
-.bj-spectator {
+.bj-spectator,
+.bj-also {
   text-align: center;
   font-size: 12px;
   color: var(--bj-muted);
   padding: 0 12px 14px;
+}
+
+.bj-also {
+  margin: 0;
+  font-size: 11px;
 }
 
 /* Result */

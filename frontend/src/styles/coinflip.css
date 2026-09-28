@@ -1,0 +1,166 @@
+/* Called coin — obsidian stone and a milled gold piece, not a green felt clone. */
+
+.cf-table {
+  width: min(420px, 100%);
+  margin: 6px 0 10px;
+  padding-bottom: 14px;
+  border-radius: 22px;
+  color: #f4efe6;
+  background:
+    radial-gradient(70% 50% at 50% 42%, rgba(214, 176, 96, 0.16), transparent 60%),
+    linear-gradient(180deg, #2a3140 0%, #141820 100%);
+  border: 1px solid rgba(214, 176, 96, 0.38);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.cf-stage {
+  position: relative;
+  height: 230px;
+  display: grid;
+  place-items: center;
+  perspective: 900px;
+}
+
+.cf-shadow {
+  position: absolute;
+  width: 120px;
+  height: 22px;
+  bottom: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  filter: blur(6px);
+}
+
+.cf-coin {
+  width: 156px;
+  height: 156px;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.cf-coin.is-idle {
+  animation: cf-rock 3.2s ease-in-out infinite;
+}
+
+.cf-coin.is-toss {
+  animation: cf-toss 2.55s cubic-bezier(0.15, 0.65, 0.1, 1) forwards;
+}
+
+.cf-coin.is-landed {
+  transform: rotateY(calc(var(--land) * 1deg));
+}
+
+@keyframes cf-rock {
+  0%, 100% { transform: rotateY(-18deg) rotateX(8deg); }
+  50% { transform: rotateY(18deg) rotateX(4deg); }
+}
+
+@keyframes cf-toss {
+  0% { transform: translateY(12px) rotateX(16deg) rotateY(0deg); }
+  38% { transform: translateY(-42px) rotateX(28deg) rotateY(calc(var(--turns) * 220deg)); }
+  100% { transform: translateY(0) rotateX(0deg) rotateY(calc(var(--turns) * 360deg + var(--land) * 1deg)); }
+}
+
+.cf-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  background:
+    radial-gradient(circle at 35% 30%, #fff4d2, #e2c27a 42%, #8d6424 78%, #5c4214);
+  box-shadow:
+    inset 0 0 0 8px rgba(92, 66, 20, 0.55),
+    inset 0 0 0 10px rgba(255, 236, 190, 0.35);
+}
+
+.cf-face--tails {
+  transform: rotateY(180deg);
+  background:
+    radial-gradient(circle at 35% 30%, #f8e7ea, #d7a3ad 40%, #7a3040 78%, #3f1822);
+}
+
+.cf-face strong {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.14em;
+  font-size: 18px;
+  color: #3a2410;
+}
+
+.cf-face--tails strong {
+  color: #3f1520;
+}
+
+.cf-face em {
+  font-style: normal;
+  font-size: 16px;
+  color: #6a4a16;
+}
+
+.cf-ring {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 1px dashed rgba(90, 60, 16, 0.45);
+}
+
+.cf-rim {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 8px;
+  height: 100%;
+  margin-left: -4px;
+  background: linear-gradient(90deg, #6a5024, #f3e2b4 50%, #6a5024);
+}
+
+.cf-result {
+  margin: 0 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.cf-result.is-win strong { color: #b6f3c8; }
+.cf-result.is-loss strong { color: #ffb4b0; }
+
+.cf-calls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.cf-calls button {
+  background: linear-gradient(180deg, #f3e2b4, #c9a15a);
+  color: #2c2112;
+}
+
+.cf-calls button.is-tura {
+  background: linear-gradient(180deg, #f0c4cc, #a84b5d);
+  color: #2a1016;
+}
+
+.cf-again {
+  display: block;
+  margin: 10px auto 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-coin.is-idle,
+  .cf-coin.is-toss {
+    animation: none;
+  }
+
+  .cf-coin.is-toss,
+  .cf-coin.is-landed {
+    transform: rotateY(calc(var(--land) * 1deg));
+  }
+}

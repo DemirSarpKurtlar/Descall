@@ -57,6 +57,7 @@ import {
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
+import { isCasinoSlash } from "./lib/casinoCommands";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
 import { requestNativePushPermission, syncNativePushToken, isNativePushPlatform } from "./lib/nativePush";
@@ -1697,12 +1698,7 @@ export default function App() {
       if (!groupId || !message) return;
 
       const trimmedContent = (message.content || "").trim();
-      const isGameCommand =
-        Boolean(message.isGameCommand) ||
-        (trimmedContent.startsWith("/") &&
-          ["/bj", "/blackjack", "/hit", "/stand", "/stay", "/double", "/credits", "/bakiye", "/balance", "/top", "/lider", "/help", "/yardım", "/commands", "/jb", "/daily"].some(
-            (cmd) => trimmedContent.toLowerCase().startsWith(cmd)
-          ));
+      const isGameCommand = Boolean(message.isGameCommand) || isCasinoSlash(trimmedContent);
 
       // Never insert /bj etc. as chat rows — casino UI uses game:* events
       if (isGameCommand) {
@@ -1849,10 +1845,16 @@ export default function App() {
     });
 
     // Casino: one bubble per player (session id). Board never downgrades to lobby on stray clicks.
-    const isCasinoBoard = (msg) => {
-      const s = msg?.gameData?.status;
-      return s === "playing" || s === "dealer" || s === "dealing" || s === "finished";
-    };
+    const casinoLive = new Set([
+      "playing",
+      "dealer",
+      "dealing",
+      "finished",
+      "calling",
+      "flipping",
+      "spinning",
+    ]);
+    const isCasinoBoard = (msg) => casinoLive.has(msg?.gameData?.status);
     const isCasinoBoardIncoming = (message) =>
       isCasinoBoard(message) ||
       ["game_start", "game_update", "game_end"].includes(message?.type);
@@ -1903,9 +1905,7 @@ export default function App() {
         });
         if (idx >= 0) {
           const prevMsg = cur[idx];
-          const prevLive = ["playing", "dealer", "dealing", "finished"].includes(
-            prevMsg?.gameData?.status
-          );
+          const prevLive = casinoLive.has(prevMsg?.gameData?.status);
           if (prevLive && !isCasinoBoardIncoming(message)) {
             return prev;
           }
@@ -4268,11 +4268,7 @@ export default function App() {
             } else if (activeGroup) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
-              const isCasinoCmd =
-                textStr.trim().startsWith("/") &&
-                ["/bj", "/blackjack", "/hit", "/stand", "/stay", "/double", "/credits", "/bakiye", "/balance", "/top", "/lider", "/help", "/yardım", "/commands", "/jb", "/daily"].some(
-                  (cmd) => textStr.trim().toLowerCase().startsWith(cmd)
-                );
+              const isCasinoCmd = isCasinoSlash(textStr);
               const optimistic = {
                 id: tempId,
                 from: normalizeUser({
@@ -4337,28 +4333,7 @@ export default function App() {
             } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
-              const casinoCmds = [
-                "/bj",
-                "/blackjack",
-                "/hit",
-                "/stand",
-                "/stay",
-                "/double",
-                "/credits",
-                "/bakiye",
-                "/balance",
-                "/top",
-                "/lider",
-                "/help",
-                "/yardım",
-                "/commands",
-                "/jb",
-                "/daily",
-              ];
-              const isCasinoCmd =
-                !isMediaObject &&
-                textStr.startsWith("/") &&
-                casinoCmds.some((cmd) => textStr.toLowerCase().startsWith(cmd));
+              const isCasinoCmd = !isMediaObject && isCasinoSlash(textStr);
               if (!isCasinoCmd) {
                 const optimistic = {
                   id: tempId,
