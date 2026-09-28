@@ -56,6 +56,7 @@ import {
 } from "./lib/userProfile";
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
+import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
 import { requestNativePushPermission, syncNativePushToken, isNativePushPlatform } from "./lib/nativePush";
@@ -462,6 +463,8 @@ export default function App() {
   const myStatusRef = useRef(myStatus);
   const transportFallbackStepRef = useRef(0);
   const prevOnlineUsersRef = useRef([]);
+  /** First roster after connect is people already online — never toast that. */
+  const onlineRosterReadyRef = useRef(false);
   const typingDmTimeoutRef = useRef(null);
   const typingGroupTimeoutsRef = useRef(new Map());
   const typingChannelTimeoutsRef = useRef(new Map());
@@ -1239,6 +1242,8 @@ export default function App() {
   }, []);
 
   const connectSocket = (token, options = {}) => {
+    onlineRosterReadyRef.current = false;
+    prevOnlineUsersRef.current = [];
     if (socketRef.current) {
       serverSocketUnbindRef.current?.();
       serverSocketUnbindRef.current = null;
@@ -1484,28 +1489,25 @@ export default function App() {
 
     socket.on("users:update", (users) => {
       const newUsers = (users ?? []).map((u) => normalizeUser(u));
-      const prevIds = new Set(prevOnlineUsersRef.current.map((u) => u.id));
-      const friendsSet = new Set((friendsRef.current || []).map((f) => f.id));
-
-      // Check if any friends just came online (invisible never counts as online)
-      const newOnlineFriends = (newUsers || []).filter((u) => {
-        if (!u?.id || prevIds.has(u.id) || !friendsSet.has(u.id) || u.id === myIdRef.current) return false;
-        const st = u.status || "online";
-        return st === "online" || st === "idle" || st === "dnd";
+      const { newcomers, hasBaseline } = friendsWhoJustCameOnline({
+        previous: prevOnlineUsersRef.current,
+        next: newUsers,
+        friendIds: (friendsRef.current || []).map((f) => f.id),
+        myId: myIdRef.current,
+        hasBaseline: onlineRosterReadyRef.current,
       });
+      onlineRosterReadyRef.current = hasBaseline;
 
-      if (newOnlineFriends.length > 0) {
+      const first = newcomers[0];
+      if (first) {
         playUiSound("notification");
-        const first = newOnlineFriends[0];
-        if (first) {
-          const name = resolveDisplayName(first);
-          notificationService.friendOnline({ username: name });
-          toast(name, "presence", {
-            user: first,
-            name,
-            subtitle: t("is now online"),
-          });
-        }
+        const name = resolveDisplayName(first);
+        notificationService.friendOnline({ username: name });
+        toast(name, "presence", {
+          user: first,
+          name,
+          subtitle: t("is now online"),
+        });
       }
 
       prevOnlineUsersRef.current = newUsers;
