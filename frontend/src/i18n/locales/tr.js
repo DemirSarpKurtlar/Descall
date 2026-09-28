@@ -1264,7 +1264,7 @@ export const phrases = {
   "King": "Papaz",
   "Queen": "Kız",
   "Even money": "Eşit ödeme",
-  "Call it": "Seç",
+  "Call it": "Bir taraf seç",
   "Heads": "Yazı",
   "Tails": "Tura",
   "Called": "Seçim",
