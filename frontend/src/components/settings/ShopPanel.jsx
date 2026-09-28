@@ -118,7 +118,9 @@ function ShopItemPreview({ category, item, t }) {
   if (category === "presence_flare") {
     return (
       <div className="shop-presence-flare-preview">
-        <span className={`status-badge status-online cosmetic-presence-flare flare-${item.effect_key}`} />
+        <span className="shop-presence-flare-avatar" aria-hidden="true">
+          <span className={`status-badge status-online cosmetic-presence-flare flare-${item.effect_key}`} />
+        </span>
       </div>
     );
   }
