@@ -18,6 +18,13 @@ const videoCam = { kind: "video", label: "Integrated Camera" };
 assert(isRemoteScreenVideoTrack(videoScreen, {}), "screen label");
 assert(!isRemoteScreenVideoTrack(videoCam, {}), "camera not screen by default");
 assert(
+  isRemoteScreenVideoTrack(
+    { kind: "video", label: "Visual Studio Code", getSettings: () => ({ displaySurface: "window" }) },
+    {}
+  ),
+  "displaySurface marks a window capture"
+);
+assert(
   isRemoteScreenVideoTrack(videoCam, { peerExpectsScreen: true }),
   "expectScreenShare"
 );
