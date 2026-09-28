@@ -6,6 +6,8 @@ import {
   Shield, Dice5, Info, HandMetal, X,
 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
+import SlotCabinet from "../games/SlotCabinet";
+import CoinFlipTable from "../games/CoinFlipTable";
 
 /* ── Playing card ─────────────────────────────────────────────── */
 
@@ -226,6 +228,9 @@ function LobbyTable({ credits, onBet, onHelp }) {
             <ul>
               <li><code>/bj 100</code> {t("deal")}</li>
               <li><code>/hit</code> · <code>/stand</code> · <code>/double</code></li>
+              <li><code>/slot 100</code> {t("spin the reels")}</li>
+              <li><code>/cf 100 heads</code> · <code>h</code> · <code>tails</code> · <code>t</code> {t("call the coin")}</li>
+              <li><code>/pay @user 500</code> {t("send credits")}</li>
             </ul>
           </div>
           <div>
@@ -245,6 +250,7 @@ function LobbyTable({ credits, onBet, onHelp }) {
         <button type="button" className="bj-deal-btn" onClick={() => setShowHelp(false)}>
           {t("Back to bet")}
         </button>
+        <p className="bj-also">{t("Also try /slot, /cf, and /pay")}</p>
       </div>
     );
   }
@@ -342,6 +348,9 @@ function HelpPanel({ credits }) {
           <ul>
             <li><code>/bj 100</code> {t("deal")}</li>
             <li><code>/hit</code> · <code>/stand</code> · <code>/double</code></li>
+            <li><code>/slot 100</code> {t("spin the reels")}</li>
+            <li><code>/cf 100 heads</code> · <code>h</code> · <code>tails</code> · <code>t</code> {t("call the coin")}</li>
+            <li><code>/pay @user 500</code> {t("send credits")}</li>
           </ul>
         </div>
         <div>
@@ -357,6 +366,8 @@ function HelpPanel({ credits }) {
         <li><Shield size={14} /> {t("Beat the dealer without going over 21")}</li>
         <li><Dice5 size={14} /> {t("Blackjack pays")} <strong>3:2</strong></li>
         <li><Zap size={14} /> {t("Dealer hits soft 17 · 6-deck shoe")}</li>
+        <li><Zap size={14} /> {t("Wild substitutes · scatter opens free spins")}</li>
+        <li><Dice5 size={14} /> {t("Coin pays even money. Watchers cannot act.")}</li>
       </ul>
     </div>
   );
@@ -461,6 +472,30 @@ export default function GameMessageBubble({
   if (type === "game_help") {
     return <HelpPanel credits={gameData?.credits ?? credits} />;
   }
+  if (type === "game_transfer") {
+    const amount = Number(gameData?.amount || 0);
+    const to = gameData?.toUsername;
+    return (
+      <div className="pay-slip">
+        <h3>{t("Sent")}</h3>
+        <p>
+          {to ? (
+            <>
+              <strong>@{gameData.fromUsername}</strong> · {amount.toLocaleString()} {t("credits to")}{" "}
+              <strong>@{to}</strong>
+            </>
+          ) : (
+            content
+          )}
+        </p>
+        {gameData?.balance != null && (
+          <p>
+            {t("Balance")} <strong>{Number(gameData.balance).toLocaleString()}</strong>
+          </p>
+        )}
+      </div>
+    );
+  }
   if (type === "game_credits") {
     return <CreditsPanel content={content} gameData={gameData} />;
   }
@@ -469,6 +504,31 @@ export default function GameMessageBubble({
   }
 
   const boardTypes = new Set(["game_start", "game_update", "game_end", "game_action"]);
+  const ownsRound = gameData?.userId === currentUserId;
+
+  if (gameData?.game === "slot" && boardTypes.has(type)) {
+    return (
+      <SlotCabinet
+        gameData={gameData}
+        isMine={ownsRound}
+        busy={busy}
+        onAgain={() => emitCommand("slot", String(gameData.bet || 100))}
+      />
+    );
+  }
+
+  if (gameData?.game === "coinflip" && (boardTypes.has(type) || gameData.status === "calling")) {
+    return (
+      <CoinFlipTable
+        gameData={gameData}
+        isMine={ownsRound}
+        busy={busy}
+        onCall={(side) => emitAction(side === "heads" ? "call:heads" : "call:tails")}
+        onAgain={() => emitCommand("cf", String(gameData.bet || 100))}
+      />
+    );
+  }
+
   const isBoard =
     gameData &&
     boardTypes.has(type) &&
