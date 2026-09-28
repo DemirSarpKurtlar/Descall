@@ -3563,6 +3563,26 @@ button.member-row.server-member-row {
   cursor: pointer;
 }
 
+.server-voice-screen-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.server-voice-tile.is-share-target {
+  cursor: pointer;
+}
+
+.server-voice-tile.is-screen-share .server-voice-tile-video {
+  object-fit: contain;
+  background: #090a0c;
+}
+
 .server-voice-screen {
   position: relative;
   width: 100%;
@@ -3666,14 +3686,24 @@ button.member-row.server-member-row {
 .server-voice-screen-expanded {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 2147483002;
   background: #000;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .server-voice-screen-expanded .server-voice-screen-video {
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #000;
 }
 
 .server-voice-screen-expanded .server-voice-screen-badge {
@@ -3689,7 +3719,7 @@ button.member-row.server-member-row {
 }
 
 .server-voice-screen-hint.is-expanded {
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   padding: 5px 14px;
 }
 

@@ -57,6 +57,7 @@ import {
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
+import { isCasinoSlash } from "./lib/casinoCommands";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
 import { requestNativePushPermission, syncNativePushToken, isNativePushPlatform } from "./lib/nativePush";
@@ -270,6 +271,9 @@ function normalizeGroupMessage(m) {
 
 function previewMediaBody(msg, t = (k) => k) {
   const text = String(msg?.text || "").trim();
+  if (msg?.type === "call_summary" || (text.startsWith("{") && text.includes('"call_summary"'))) {
+    return t("📞 Call");
+  }
   if (text) return text;
   if (msg?.mediaType === "image") return t("📷 Photo");
   if (msg?.mediaType === "voice" || msg?.mediaType === "audio") return t("🎤 Voice message");
@@ -1020,7 +1024,32 @@ export default function App() {
       const merged = activeBannerItem.length > 0 ? [...msgs, ...activeBannerItem] : [...msgs];
       return merged.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
-    if (activeDmUser) return dmByUserId[activeDmUser.id] ?? [];
+    if (activeDmUser) {
+      const msgs = dmByUserId[activeDmUser.id] ?? [];
+      const dmLive =
+        call?.peer?.id === activeDmUser.id &&
+        (call.mode === "outgoing" || call.mode === "active" || call.mode === "incoming");
+      const activeBannerItem = dmLive
+        ? [{
+            id: `active-call-dm-${activeDmUser.id}`,
+            type: "active_call",
+            timestamp: new Date(call.callAnchorAt || Date.now()).toISOString(),
+            startTime: call.callAnchorAt || Date.now(),
+            callType: call.callType || "voice",
+            initiatorUsername:
+              call.mode === "incoming"
+                ? (call.peer?.username || call.peer?.displayName || "User")
+                : (me?.username || "You"),
+            participantCount: call.mode === "active" ? 2 : 1,
+            ringing: call.mode === "outgoing" || call.mode === "incoming",
+            incoming: call.mode === "incoming",
+            unreachable: call.mode === "outgoing" && call.connectionQuality === "failed",
+            hideJoin: call.mode !== "incoming",
+            dm: true,
+          }]
+        : [];
+      return activeBannerItem.length ? [...msgs, ...activeBannerItem] : msgs;
+    }
     return [];
   }, [
     activeView,
@@ -1031,6 +1060,12 @@ export default function App() {
     dmByUserId,
     groupMessagesById,
     groupCall?.activeCallBanner,
+    call?.mode,
+    call?.peer?.id,
+    call?.callType,
+    call?.callAnchorAt,
+    call?.connectionQuality,
+    me?.username,
   ]);
 
   useEffect(() => {
@@ -1665,7 +1700,7 @@ export default function App() {
           }));
         }
         if (activeDmRef.current?.id !== convWith) {
-          if (!pref?.muted) {
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || 'Birisi',
@@ -1697,12 +1732,7 @@ export default function App() {
       if (!groupId || !message) return;
 
       const trimmedContent = (message.content || "").trim();
-      const isGameCommand =
-        Boolean(message.isGameCommand) ||
-        (trimmedContent.startsWith("/") &&
-          ["/bj", "/blackjack", "/hit", "/stand", "/stay", "/double", "/credits", "/bakiye", "/balance", "/top", "/lider", "/help", "/yardım", "/commands", "/jb", "/daily"].some(
-            (cmd) => trimmedContent.toLowerCase().startsWith(cmd)
-          ));
+      const isGameCommand = Boolean(message.isGameCommand) || isCasinoSlash(trimmedContent);
 
       // Never insert /bj etc. as chat rows — casino UI uses game:* events
       if (isGameCommand) {
@@ -1849,10 +1879,16 @@ export default function App() {
     });
 
     // Casino: one bubble per player (session id). Board never downgrades to lobby on stray clicks.
-    const isCasinoBoard = (msg) => {
-      const s = msg?.gameData?.status;
-      return s === "playing" || s === "dealer" || s === "dealing" || s === "finished";
-    };
+    const casinoLive = new Set([
+      "playing",
+      "dealer",
+      "dealing",
+      "finished",
+      "calling",
+      "flipping",
+      "spinning",
+    ]);
+    const isCasinoBoard = (msg) => casinoLive.has(msg?.gameData?.status);
     const isCasinoBoardIncoming = (message) =>
       isCasinoBoard(message) ||
       ["game_start", "game_update", "game_end"].includes(message?.type);
@@ -1903,9 +1939,7 @@ export default function App() {
         });
         if (idx >= 0) {
           const prevMsg = cur[idx];
-          const prevLive = ["playing", "dealer", "dealing", "finished"].includes(
-            prevMsg?.gameData?.status
-          );
+          const prevLive = casinoLive.has(prevMsg?.gameData?.status);
           if (prevLive && !isCasinoBoardIncoming(message)) {
             return prev;
           }
@@ -4268,11 +4302,7 @@ export default function App() {
             } else if (activeGroup) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
-              const isCasinoCmd =
-                textStr.trim().startsWith("/") &&
-                ["/bj", "/blackjack", "/hit", "/stand", "/stay", "/double", "/credits", "/bakiye", "/balance", "/top", "/lider", "/help", "/yardım", "/commands", "/jb", "/daily"].some(
-                  (cmd) => textStr.trim().toLowerCase().startsWith(cmd)
-                );
+              const isCasinoCmd = isCasinoSlash(textStr);
               const optimistic = {
                 id: tempId,
                 from: normalizeUser({
@@ -4337,28 +4367,7 @@ export default function App() {
             } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
-              const casinoCmds = [
-                "/bj",
-                "/blackjack",
-                "/hit",
-                "/stand",
-                "/stay",
-                "/double",
-                "/credits",
-                "/bakiye",
-                "/balance",
-                "/top",
-                "/lider",
-                "/help",
-                "/yardım",
-                "/commands",
-                "/jb",
-                "/daily",
-              ];
-              const isCasinoCmd =
-                !isMediaObject &&
-                textStr.startsWith("/") &&
-                casinoCmds.some((cmd) => textStr.toLowerCase().startsWith(cmd));
+              const isCasinoCmd = !isMediaObject && isCasinoSlash(textStr);
               if (!isCasinoCmd) {
                 const optimistic = {
                   id: tempId,
@@ -4450,8 +4459,13 @@ export default function App() {
           onGroupVoiceCall={() => {
             if (!activeGroup || !groupCall) return;
             if (groupCall.isInCall && groupCall.activeGroupId === activeGroup.id) return;
+            const banner = groupCall.activeCallBanner;
+            if (banner?.groupId === activeGroup.id) {
+              groupCall.joinActiveCall(banner);
+              return;
+            }
             const memberIds = activeGroup.memberIds || activeGroup.members?.map((m) => m.id) || [];
-            groupCall.joinOrStartVoiceRoom?.(activeGroup.id, memberIds, groupCall.activeCallBanner);
+            groupCall.startGroupCall(activeGroup.id, "voice", memberIds);
           }}
           onGroupVideoCall={() => {
             if (!activeGroup || !groupCall) return;
@@ -4470,6 +4484,10 @@ export default function App() {
           )}
           onLeaveVoiceRoom={() => groupCall?.leaveCall?.()}
           onJoinActiveCall={() => {
+            if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
+              call.acceptIncoming?.();
+              return;
+            }
             if (!activeGroup || !groupCall?.activeCallBanner) return;
             groupCall.joinActiveCall(groupCall.activeCallBanner);
           }}
@@ -4495,6 +4513,10 @@ export default function App() {
             onStartDm={(user) => setActiveDmUser(user)}
             onReply={setReplyTo}
             onJoinActiveCall={() => {
+              if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
+                call.acceptIncoming?.();
+                return;
+              }
               if (!activeGroup || !groupCall?.activeCallBanner) return;
               groupCall.joinActiveCall(groupCall.activeCallBanner);
             }}

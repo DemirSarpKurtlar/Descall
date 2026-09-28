@@ -18,6 +18,13 @@ const videoCam = { kind: "video", label: "Integrated Camera" };
 assert(isRemoteScreenVideoTrack(videoScreen, {}), "screen label");
 assert(!isRemoteScreenVideoTrack(videoCam, {}), "camera not screen by default");
 assert(
+  isRemoteScreenVideoTrack(
+    { kind: "video", label: "Visual Studio Code", getSettings: () => ({ displaySurface: "window" }) },
+    {}
+  ),
+  "displaySurface marks a window capture"
+);
+assert(
   isRemoteScreenVideoTrack(videoCam, { peerExpectsScreen: true }),
   "expectScreenShare"
 );
@@ -31,17 +38,41 @@ const main = {
   getVideoTracks: () => [videoCam],
   getAudioTracks: () => [{ kind: "audio" }],
 };
+const micOnly = {
+  id: "mic",
+  getVideoTracks: () => [],
+  getAudioTracks: () => [{ kind: "audio" }],
+};
+const cameraMs = {
+  id: "cam",
+  getVideoTracks: () => [videoCam],
+  getAudioTracks: () => [],
+};
 const screenMs = {
   id: "screen",
   getVideoTracks: () => [videoScreen],
   getAudioTracks: () => [],
 };
 assert(
+  !isRemoteScreenVideoTrack(videoCam, {
+    rawStream: cameraMs,
+    mainRemoteStream: micOnly,
+  }),
+  "camera on its own stream is not a screen"
+);
+assert(
   isRemoteScreenVideoTrack(videoScreen, {
     rawStream: screenMs,
     mainRemoteStream: main,
   }),
-  "distinct stream id"
+  "screen label still wins on a distinct stream"
+);
+assert(
+  isRemoteScreenVideoTrack(
+    { kind: "video", label: "FaceTime", getSettings: () => ({ displaySurface: "monitor" }) },
+    { rawStream: cameraMs, mainRemoteStream: micOnly }
+  ),
+  "displaySurface marks a capture"
 );
 
 assert(isPolitePeer("a", "b") === true, "polite lower id");

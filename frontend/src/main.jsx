@@ -59,6 +59,8 @@ if (!preferMarketingShell) {
     .then((m) => m.preloadNoiseSuppression?.())
     .catch(() => {});
   import("./styles/blackjack.css").catch(() => {});
+  import("./styles/slot-cabinet.css").catch(() => {});
+  import("./styles/coinflip.css").catch(() => {});
 }
 
 const Router =

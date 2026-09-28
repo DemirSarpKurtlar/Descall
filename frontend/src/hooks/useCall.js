@@ -49,6 +49,7 @@ import { voiceMicErrorCopy } from "../lib/voiceMicError";
 export function useCall(socket, callOccupancyRef = null) {
   const { toast } = useToast();
   const [mode, setMode] = useState(null); // null | "incoming" | "outgoing" | "active"
+  const [callAnchorAt, setCallAnchorAt] = useState(null);
   const [callType, setCallType] = useState(null); // null | "voice" | "video"
   const [peer, setPeer] = useState(null);
   const [muted, setMuted] = useState(false);
@@ -134,6 +135,9 @@ export function useCall(socket, callOccupancyRef = null) {
   const remoteStreamRef = useRef(null);
   const remoteScreenStreamRef = useRef(null);
   const remoteScreenSharingRef = useRef(false);
+  // Set only by screen:share-start/stop. The UI flag is also flipped when a
+  // track is attached, and using that to classify the next track hid cameras.
+  const remoteScreenExpectedRef = useRef(false);
   const remoteAudioRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -221,6 +225,7 @@ export function useCall(socket, callOccupancyRef = null) {
     remoteScreenStreamRef.current = null;
     setRemoteScreenSharing(false);
     remoteScreenSharingRef.current = false;
+    remoteScreenExpectedRef.current = false;
     setScreenStream(null);
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
@@ -244,6 +249,7 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     negotiateRef.current = null;
     setMode(null);
+    setCallAnchorAt(null);
     setCallType(null);
     setPeer(null);
     setMuted(false);
@@ -395,11 +401,46 @@ export function useCall(socket, callOccupancyRef = null) {
         if (!next) {
           remoteScreenSharingRef.current = false;
           setRemoteScreenSharing(false);
+          remoteScreenExpectedRef.current = false;
         }
         return next;
       });
     };
   }, [])
+
+  // A mid-call camera often lands on the screen stream because its MediaStream
+  // id differs from the microphone. Pull it back when the peer says the camera
+  // is on and they have not announced a screen share.
+  const reclaimMisfiledCamera = useCallback(() => {
+    if (remoteScreenExpectedRef.current) return;
+    const screen = remoteScreenStreamRef.current;
+    if (!screen?.getVideoTracks) return;
+    const cameras = screen.getVideoTracks().filter(
+      (track) => track && track.readyState !== "ended" && !isRemoteScreenVideoTrack(track, {})
+    );
+    if (!cameras.length) return;
+    setRemoteStream((prev) => {
+      const tracks = prev ? prev.getTracks().filter((track) => track.readyState !== "ended") : [];
+      for (const track of cameras) {
+        if (!tracks.includes(track)) tracks.push(track);
+      }
+      const next = new MediaStream(tracks);
+      remoteStreamRef.current = next;
+      return next;
+    });
+    const remaining = screen.getTracks().filter(
+      (track) => !cameras.includes(track) && track.readyState !== "ended"
+    );
+    const nextScreen = remaining.length ? new MediaStream(remaining) : null;
+    remoteScreenStreamRef.current = nextScreen;
+    setRemoteScreenStream(nextScreen);
+    if (!nextScreen) {
+      remoteScreenSharingRef.current = false;
+      setRemoteScreenSharing(false);
+    }
+    setCallType("video");
+    callTypeRef.current = "video";
+  }, []);
 
   const setupPeerConnection = useCallback((pc, stream, isInitiator) => {
     setPeerConnectionState("connecting");
@@ -420,7 +461,7 @@ export function useCall(socket, callOccupancyRef = null) {
       }
       const isScreenTrack = isRemoteScreenVideoTrack(track, {
         rawStream: raw,
-        peerExpectsScreen: remoteScreenSharingRef.current,
+        peerExpectsScreen: remoteScreenExpectedRef.current,
         mainRemoteStream: remoteStreamRef.current,
         participantHasCameraVideo: Boolean(remoteStreamRef.current?.getVideoTracks().length),
       });
@@ -450,7 +491,7 @@ export function useCall(socket, callOccupancyRef = null) {
         (
           sharesScreenVideo ||
           (remoteScreenStreamRef.current && raw.id === remoteScreenStreamRef.current.id) ||
-          (remoteScreenSharingRef.current &&
+          (remoteScreenExpectedRef.current &&
             (!remoteStreamRef.current || raw.id !== remoteStreamRef.current.id))
         );
       if (isScreenAudioTrack) {
@@ -493,6 +534,7 @@ export function useCall(socket, callOccupancyRef = null) {
           remoteAudioRef.current.play().catch(() => {});
         }
         if (track.kind === "video" && remoteVideoRef.current) {
+          remoteVideoRef.current.muted = true;
           remoteVideoRef.current.srcObject = rs;
           remoteVideoRef.current.play().catch(() => {});
         }
@@ -503,6 +545,7 @@ export function useCall(socket, callOccupancyRef = null) {
           remoteAudioRef.current.play().catch(() => {});
         }
         if (remoteVideoRef.current && !remoteVideoRef.current.srcObject && track.kind === "video") {
+          remoteVideoRef.current.muted = true;
           remoteVideoRef.current.srcObject = rs;
           remoteVideoRef.current.play().catch(() => {});
         }
@@ -618,27 +661,49 @@ export function useCall(socket, callOccupancyRef = null) {
     // A single serialized offer path for camera/screen changes. This mirrors
     // group-call peer behavior and avoids a second, delayed screen offer
     // racing the browser's negotiationneeded event.
+    let negotiateFailures = 0;
     const negotiate = async (opts = {}) => {
       const sock = socketRef.current;
+      // Early returns must not touch makingOfferRef. A nested call used to
+      // clear that lock from `finally` and send a second camera offer that
+      // collided, so the remote peer never attached the video.
+      if (modeRef.current !== "active" || !peerRef.current?.id || !sock?.connected) {
+        negotiationQueuedRef.current = true;
+        return;
+      }
+      if (makingOfferRef.current || pc.signalingState !== "stable") {
+        negotiationQueuedRef.current = true;
+        return;
+      }
+      negotiationQueuedRef.current = false;
+      makingOfferRef.current = true;
       try {
-        if (modeRef.current !== "active") return;
-        if (!peerRef.current?.id || !sock?.connected) return;
-        if (makingOfferRef.current) return;
-        if (pc.signalingState !== "stable") return;
-        negotiationQueuedRef.current = false;
-        makingOfferRef.current = true;
         const offer = await pc.createOffer(opts.iceRestart ? { iceRestart: true } : undefined);
+        if (pc.signalingState !== "stable") {
+          negotiationQueuedRef.current = true;
+          return;
+        }
         await pc.setLocalDescription(offer);
+        negotiateFailures = 0;
         sock.emit("call:offer", {
           toUserId: peerRef.current.id,
           offer: pc.localDescription,
           callType: callTypeRef.current || "voice",
         });
-      } catch { /* ignore */ }
-      finally {
+      } catch (err) {
+        negotiateFailures += 1;
+        negotiationQueuedRef.current = negotiateFailures < 3;
+        console.warn("[WebRTC] negotiate failed:", err);
+      } finally {
         makingOfferRef.current = false;
-        if (negotiationQueuedRef.current && pc.signalingState === "stable") {
-          void negotiate();
+        if (
+          negotiationQueuedRef.current &&
+          pc.signalingState === "stable" &&
+          modeRef.current === "active"
+        ) {
+          queueMicrotask(() => {
+            void negotiate();
+          });
         }
       }
     };
@@ -752,11 +817,16 @@ export function useCall(socket, callOccupancyRef = null) {
         try {
           const myId = getUser()?.id || null;
           const polite = isPolitePeer(myId, fromUser.id);
-          const { accepted } = await applyRemoteOffer(pc, offer, {
+          const { accepted, rolledBack } = await applyRemoteOffer(pc, offer, {
             polite,
             makingOffer: Boolean(makingOfferRef.current),
           });
-          if (!accepted) return;
+          if (!accepted) {
+            // Impolite peer keeps its in-flight offer. Queue a follow-up so a
+            // camera add that lost the glare is offered again after the answer.
+            negotiationQueuedRef.current = true;
+            return;
+          }
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           socketRef.current?.emit("call:answer", { toUserId: fromUser.id, answer: pc.localDescription });
@@ -764,7 +834,18 @@ export function useCall(socket, callOccupancyRef = null) {
           // Peer upgraded voice → video (camera on): update UI mode
           if (incomingType === "video") {
             setCallType("video");
+            callTypeRef.current = "video";
             setRemoteCameraOn(true);
+          }
+          if (rolledBack) {
+            const cameraTrack = localStreamRef.current?.getVideoTracks?.()[0];
+            const screenTrack = screenStreamRef.current?.getVideoTracks?.()[0];
+            const cameraLive = cameraTrack && cameraTrack.readyState === "live" && cameraTrack.enabled;
+            const screenLive = screenTrack && screenTrack.readyState === "live";
+            if (cameraLive || screenLive) {
+              negotiationQueuedRef.current = true;
+              void negotiateRef.current?.();
+            }
           }
         } catch (err) { console.error("[WebRTC] Renegotiation failed:", err); }
         return;
@@ -795,6 +876,7 @@ export function useCall(socket, callOccupancyRef = null) {
         avatarUrl: fromUser?.avatarUrl || fromUser?.avatar_url || null,
       });
       setCallType(incomingType || "voice");
+      setCallAnchorAt(Date.now());
       setMode("incoming");
       notificationService.incomingCall({ from: fromUser.username, type: incomingType || "voice" });
     };
@@ -803,10 +885,12 @@ export function useCall(socket, callOccupancyRef = null) {
       if (!fromUserId || !answer || !pcRef.current) return;
       if (peerRef.current?.id && fromUserId !== peerRef.current.id) return;
       try {
+        if (pcRef.current.signalingState !== "have-local-offer") return;
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         await flushIce(pcRef.current);
         setMode("active");
         modeRef.current = "active";
+        if (negotiationQueuedRef.current) void negotiateRef.current?.();
       } catch { /* ignore */ }
     };
 
@@ -836,6 +920,7 @@ export function useCall(socket, callOccupancyRef = null) {
       if (!fromUserId || fromUserId !== peerRef.current?.id) return;
       setRemoteMuted(Boolean(peerMuted));
       setRemoteCameraOn(Boolean(peerCameraOn));
+      if (peerCameraOn) reclaimMisfiledCamera();
     };
 
     const onCancelled = ({ fromUserId } = {}) => {
@@ -922,6 +1007,7 @@ export function useCall(socket, callOccupancyRef = null) {
       peerRef.current = peerObj;
       setPeer(peerObj);
       setCallType(type);
+      setCallAnchorAt(Date.now());
       setMode("outgoing");
       modeRef.current = "outgoing";
       setCameraOn(type === "video");
@@ -1126,12 +1212,8 @@ export function useCall(socket, callOccupancyRef = null) {
     } else {
       try {
         let videoTrack = localStreamRef.current?.getVideoTracks()[0];
-        let addedNewTrack = false;
 
-        if (videoTrack) {
-          // Re-enable existing track — frames resume without SDP
-          videoTrack.enabled = true;
-        } else {
+        if (!videoTrack) {
           const videoDeviceId = videoInputIdRef.current;
           const videoStream = await navigator.mediaDevices.getUserMedia({
             video: videoDeviceId
@@ -1142,8 +1224,26 @@ export function useCall(socket, callOccupancyRef = null) {
           if (localStreamRef.current) {
             localStreamRef.current.addTrack(videoTrack);
           }
+        }
+        videoTrack.enabled = true;
+
+        const cameraSender = pc.getSenders().find(
+          (item) => item !== screenSenderRef.current && (item.track?.kind === "video" || item.track === videoTrack)
+        );
+        const recvOnly = pc.getTransceivers().find((item) => {
+          if (item.sender === screenSenderRef.current || item.sender === cameraSender) return false;
+          const kind = item.receiver?.track?.kind;
+          return kind === "video" && !item.sender?.track;
+        });
+        if (cameraSender && cameraSender.track !== videoTrack) {
+          await cameraSender.replaceTrack(videoTrack);
+        } else if (!cameraSender && recvOnly) {
+          await recvOnly.sender.replaceTrack(videoTrack);
+          if (recvOnly.direction === "recvonly" || recvOnly.direction === "inactive") {
+            recvOnly.direction = "sendrecv";
+          }
+        } else if (!cameraSender) {
           pc.addTrack(videoTrack, localStreamRef.current);
-          addedNewTrack = true;
         }
 
         if (localVideoRef.current) {
@@ -1152,6 +1252,7 @@ export function useCall(socket, callOccupancyRef = null) {
           localVideoRef.current.play().catch(() => {});
         }
         setCameraOn(true);
+        callTypeRef.current = "video";
         setCallType("video");
         if (peerRef.current?.id && socketRef.current?.connected) {
           socketRef.current.emit("call:media-state", {
@@ -1161,9 +1262,10 @@ export function useCall(socket, callOccupancyRef = null) {
           });
         }
 
-        // addTrack schedules the single serialized offer through
-        // onnegotiationneeded. A second manual offer can collide and crash
-        // the remote voice-to-video upgrade.
+        // One serialized offer. Re-enabling an existing track still renegotiates
+        // so a previous offer that lost glare is sent again.
+        negotiationQueuedRef.current = true;
+        void negotiateRef.current?.();
       } catch (err) {
         console.error("[WebRTC] toggleCamera failed:", err);
       }
@@ -1332,6 +1434,7 @@ export function useCall(socket, callOccupancyRef = null) {
 
   const handleRemoteScreenShareStart = useCallback((fromUserId) => {
     if (!fromUserId || fromUserId !== peerRef.current?.id) return;
+    remoteScreenExpectedRef.current = true;
     remoteScreenSharingRef.current = true;
     setRemoteScreenSharing(true);
     audioManager.play("screenShareStart");
@@ -1357,6 +1460,7 @@ export function useCall(socket, callOccupancyRef = null) {
 
   const handleRemoteScreenShareStop = useCallback((fromUserId) => {
     if (!fromUserId || fromUserId !== peerRef.current?.id) return;
+    remoteScreenExpectedRef.current = false;
     remoteScreenSharingRef.current = false;
     setRemoteScreenSharing(false);
     audioManager.play("screenShareStop");
@@ -1480,6 +1584,7 @@ export function useCall(socket, callOccupancyRef = null) {
     localVideoRef,
     screenVideoRef,
     mode,
+    callAnchorAt,
     callType,
     peer,
     muted,

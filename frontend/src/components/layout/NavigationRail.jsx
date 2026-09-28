@@ -42,6 +42,7 @@ function RailButton({
   active = false,
   className = "",
   label,
+  badge = 0,
   onClick,
   dismissToken,
   children,
@@ -112,11 +113,16 @@ function RailButton({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.96 }}
         transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-        aria-label={label}
+        aria-label={badge > 0 ? `${label} ${badge > 99 ? "99+" : badge}` : label}
         aria-current={active ? "page" : undefined}
         data-tooltip={label}
       >
         <span className="rail-btn-inner">{children}</span>
+        {badge > 0 ? (
+          <span className="rail-unread-pip" aria-hidden="true">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : null}
       </motion.button>
       {typeof document !== "undefined" &&
         tip &&
@@ -149,6 +155,7 @@ export default function NavigationRail({
   myStatus = "online",
   onStatusChange,
   onProfileUpdated,
+  badges = {},
 }) {
   const t = useT();
   const publicFeatures = usePublicFeatures();
@@ -439,6 +446,7 @@ export default function NavigationRail({
                 active={isActive}
                 dismissToken={activeView}
                 label={item.label}
+                badge={Number(badges[item.id]) || 0}
                 onClick={() => onViewChange(item.id)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />

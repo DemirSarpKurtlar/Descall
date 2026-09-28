@@ -54,21 +54,12 @@ assert(
   "header identity block must remain a single exclusive avatar/icon host",
 );
 assert(
-  (chatPanel.match(/<VoiceRoomBar\b/g) || []).length === 1,
-  "Ses Odası / VoiceRoomBar must appear exactly once in ChatPanel source",
+  !/<VoiceRoomBar\b/.test(chatPanel),
+  "Group chat must not render a persistent voice room bar",
 );
 assert(
-  /className="chat-top-chrome"[\s\S]*?<VoiceRoomBar[\s\S]*?<\/div>/.test(chatPanel) ||
-    /key=\{headerConversationKey\}[\s\S]*?<VoiceRoomBar[\s\S]*?<\/div>/.test(chatPanel),
-  "VoiceRoomBar must live inside the keyed chat-top-chrome remount (not a sibling leftover host)",
-);
-assert(
-  /headerGroup\?\.id \? \([\s\S]*?<VoiceRoomBar/.test(chatPanel),
-  "Ses Odası / VoiceRoomBar must render only for the exclusive group header",
-);
-assert(
-  !/key=\{headerGroup\.id\}/.test(chatPanel.split("<VoiceRoomBar")[1]?.split("/>")[0] || ""),
-  "VoiceRoomBar must not use a separate groupId key (parent chat-top-chrome owns remount)",
+  !/from \"..\/voice\/VoiceRoomBar\"/.test(chatPanel),
+  "ChatPanel must not import the voice room bar",
 );
 assert(
   /header-identity/.test(css),

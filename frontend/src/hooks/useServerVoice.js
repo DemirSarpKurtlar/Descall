@@ -25,6 +25,7 @@ import {
 } from "../lib/noiseSuppression";
 import { isVoiceMicError, voiceMicErrorCopy } from "../lib/voiceMicError";
 import {
+  adoptLateScreenShare,
   classifyLiveKitTrack,
   nextScreenStream,
   screenShareStillLive,
@@ -64,6 +65,7 @@ export function useServerVoice(socket) {
   const remoteAudioRefs = useRef(new Map());
   const remoteStreamMapRef = useRef(new Map()); // userId -> MediaStream
   const remoteScreenStreamsRef = useRef(new Map());
+  const screenExpectedRef = useRef(new Set());
   const participantVolumeRef = useRef(new Map());
   const lastParticipantVolumeRef = useRef(new Map());
   const screenVolumeRef = useRef(new Map());
@@ -333,7 +335,11 @@ export function useServerVoice(socket) {
         const mediaTrack = track.mediaStreamTrack;
         if (!userId || !mediaTrack) return;
         const source = publication?.source || track?.source;
-        const role = classifyLiveKitTrack({ kind: track.kind, source });
+        const role = classifyLiveKitTrack({
+          kind: track.kind,
+          source,
+          screenExpected: screenExpectedRef.current.has(String(userId)),
+        });
         if (role === "screen") {
           const merged = nextScreenStream(remoteScreenStreamsRef.current.get(userId) || null, mediaTrack);
           remoteScreenStreamsRef.current.set(userId, merged);
@@ -354,7 +360,11 @@ export function useServerVoice(socket) {
         if (!userId) return;
         const source = publication?.source || track?.source;
         const mediaTrack = track?.mediaStreamTrack;
-        const role = classifyLiveKitTrack({ kind: track.kind, source });
+        const role = classifyLiveKitTrack({
+          kind: track.kind,
+          source,
+          screenExpected: screenExpectedRef.current.has(String(userId)),
+        });
         if (role === "screen") {
           const stream = remoteScreenStreamsRef.current.get(userId) || null;
           if (stream && mediaTrack) {
@@ -589,6 +599,26 @@ export function useServerVoice(socket) {
         if (track.kind === "video") {
           setParticipants((prev) => {
             const exists = prev.find((p) => p.id === userId);
+            const asScreen =
+              Boolean(exists?.isScreenSharing) && !screenShareStillLive(exists?.screenStream);
+            if (asScreen) {
+              const existingScreen = exists?.screenStream || null;
+              let screenStream = remote;
+              if (existingScreen) {
+                const kept = existingScreen
+                  .getTracks()
+                  .filter((t) => t.readyState !== "ended" && t.kind !== track.kind);
+                const incoming = remote.getTracks().filter((t) => t.readyState !== "ended");
+                const merged = new MediaStream([...kept, ...incoming]);
+                if (!merged.getTracks().includes(track) && track.readyState !== "ended") {
+                  merged.addTrack(track);
+                }
+                screenStream = merged;
+              }
+              return prev.map((p) =>
+                p.id === userId ? { ...p, screenStream, isScreenSharing: true } : p
+              );
+            }
             if (exists) {
               return prev.map((p) =>
                 p.id === userId ? { ...p, cameraStream: remote, cameraOn: true } : p
@@ -1436,10 +1466,22 @@ export function useServerVoice(socket) {
       }
       setParticipants((prev) => {
         const base = fromUser || { id: fromUserId };
-        if (prev.find((p) => p.id === fromUserId)) {
-          return prev.map((p) => (p.id === fromUserId ? { ...p, ...base } : p));
+        const merge = (p) => {
+          const next = {
+            ...p,
+            ...base,
+            id: p.id,
+            cameraStream: p.cameraStream,
+            screenStream: p.screenStream,
+            cameraAnnounced: p.cameraAnnounced,
+          };
+          return next.isScreenSharing ? adoptLateScreenShare(next) : next;
+        };
+        if (prev.find((p) => String(p.id) === String(fromUserId))) {
+          return prev.map((p) => (String(p.id) === String(fromUserId) ? merge(p) : p));
         }
-        return [...prev, { ...base, hasAudio: true }];
+        const created = { ...base, hasAudio: true };
+        return [...prev, created.isScreenSharing ? adoptLateScreenShare(created) : created];
       });
       try {
         await peer.pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -1646,13 +1688,24 @@ export function useServerVoice(socket) {
       audioManager.play("screenShareStart");
       const peer = pcMapRef.current.get(fromUserId);
       if (peer) peer.expectScreenShare = true;
+      screenExpectedRef.current.add(String(fromUserId));
       setParticipants((prev) => {
-        if (prev.find((p) => p.id === fromUserId)) {
+        const uid = String(fromUserId);
+        if (prev.some((p) => String(p.id) === uid)) {
           return prev.map((p) =>
-            p.id === fromUserId ? { ...p, ...fromUser, isScreenSharing: true } : p
+            String(p.id) === uid
+              ? adoptLateScreenShare({
+                  ...p,
+                  ...fromUser,
+                  id: p.id,
+                  cameraStream: p.cameraStream,
+                  screenStream: p.screenStream,
+                  cameraAnnounced: p.cameraAnnounced,
+                })
+              : p
           );
         }
-        return [...prev, { ...(fromUser || { id: fromUserId }), isScreenSharing: true }];
+        return [...prev, adoptLateScreenShare({ ...(fromUser || { id: fromUserId }) })];
       });
     };
 
@@ -1661,6 +1714,7 @@ export function useServerVoice(socket) {
       if (String(fromUserId) !== String(myIdRef.current)) audioManager.play("screenShareStop");
       const peer = pcMapRef.current.get(fromUserId);
       if (peer) peer.expectScreenShare = false;
+      screenExpectedRef.current.delete(String(fromUserId));
       setParticipants((prev) =>
         prev.map((p) =>
           p.id === fromUserId ? { ...p, isScreenSharing: false, screenStream: null } : p
@@ -1674,17 +1728,21 @@ export function useServerVoice(socket) {
       setParticipants((prev) => {
         if (prev.find((p) => p.id === fromUserId)) {
           return prev.map((p) =>
-            p.id === fromUserId ? { ...p, ...fromUser, cameraOn: true } : p
+            p.id === fromUserId ? { ...p, ...fromUser, cameraOn: true, cameraAnnounced: true } : p
           );
         }
-        return [...prev, { ...(fromUser || { id: fromUserId }), cameraOn: true }];
+        return [...prev, { ...(fromUser || { id: fromUserId }), cameraOn: true, cameraAnnounced: true }];
       });
     };
 
     const onCameraStopped = ({ channelId, fromUserId } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
       setParticipants((prev) =>
-        prev.map((p) => (p.id === fromUserId ? { ...p, cameraOn: false, cameraStream: null } : p))
+        prev.map((p) =>
+          p.id === fromUserId
+            ? { ...p, cameraOn: false, cameraAnnounced: false, cameraStream: null }
+            : p
+        )
       );
     };
 

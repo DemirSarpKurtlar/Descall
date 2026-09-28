@@ -145,6 +145,7 @@ export default function DmRemoteParticipantSlot({
       if (!videoRef) return;
       videoRef.current = el;
       if (el && remoteStream) {
+        el.muted = true;
         if (el.srcObject !== remoteStream) el.srcObject = remoteStream;
         el.play().catch(() => {});
       }
@@ -155,10 +156,9 @@ export default function DmRemoteParticipantSlot({
   useEffect(() => {
     const el = videoRef?.current;
     if (!el || !remoteStream || !hasVideo) return;
-    if (el.srcObject !== remoteStream) {
-      el.srcObject = remoteStream;
-      el.play().catch(() => {});
-    }
+    el.muted = true;
+    if (el.srcObject !== remoteStream) el.srcObject = remoteStream;
+    el.play().catch(() => {});
   }, [remoteStream, hasVideo, videoRef]);
 
   const showConnecting = phase === "connecting" || (phase === "visible" && !isMediaReady);
@@ -196,6 +196,7 @@ export default function DmRemoteParticipantSlot({
               ref={remoteVideoCallbackRef}
               autoPlay
               playsInline
+              muted
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
           ) : (

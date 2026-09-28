@@ -1,0 +1,291 @@
+/* Descall Royale — burgundy lacquer cabinet, separate from the blackjack felt. */
+
+.slot-cabinet {
+  --cell: 68px;
+  width: min(440px, 100%);
+  margin: 6px 0 10px;
+  padding: 0 0 12px;
+  border-radius: 22px;
+  color: #f6ead7;
+  background:
+    radial-gradient(80% 40% at 50% 0%, rgba(255, 196, 120, 0.18), transparent 60%),
+    linear-gradient(180deg, #6a2430 0%, #3c1219 42%, #24090d 100%);
+  border: 1px solid rgba(232, 186, 104, 0.45);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 220, 170, 0.25);
+  overflow: hidden;
+}
+
+.slot-bulbs {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px 0;
+}
+
+.slot-bulbs i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4a2a22;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+  animation: slot-bulb 1.5s linear infinite;
+  animation-delay: calc(var(--i) * -0.09s);
+}
+
+.slot-cabinet.is-win .slot-bulbs i {
+  animation-duration: 0.55s;
+}
+
+@keyframes slot-bulb {
+  0%, 62% { background: #4a2a22; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45); }
+  72%, 100% { background: #ffe1a3; box-shadow: 0 0 8px #ffb347; }
+}
+
+.slot-marquee,
+.cf-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px 8px;
+}
+
+.slot-kicker,
+.cf-kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e7c27a;
+}
+
+.slot-marquee h3,
+.cf-head h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.slot-marquee p,
+.cf-head p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: rgba(246, 234, 215, 0.72);
+}
+
+.slot-bank,
+.cf-bank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(232, 186, 104, 0.4);
+  color: #f0d48a;
+  font-size: 12px;
+}
+
+.slot-window {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin: 4px 12px 0;
+  padding: 8px;
+  height: calc(var(--cell) * 3 + 16px);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 236, 200, 0.08), transparent 30%),
+    #140c0a;
+  box-shadow:
+    inset 0 0 0 2px rgba(232, 186, 104, 0.45),
+    inset 0 16px 24px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.slot-reel {
+  overflow: hidden;
+  height: calc(var(--cell) * 3);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2a211c, #12100e 40%, #2a211c);
+}
+
+.slot-strip.is-spinning {
+  animation: slot-drop var(--dur, 2s) cubic-bezier(0.12, 0.7, 0.08, 1) forwards;
+}
+
+.slot-strip.is-held {
+  transform: translateY(var(--drop));
+}
+
+@keyframes slot-drop {
+  0% { transform: translateY(0); }
+  78% { transform: translateY(calc(var(--drop) - 10px)); }
+  100% { transform: translateY(var(--drop)); }
+}
+
+.slot-cell {
+  height: var(--cell);
+  display: grid;
+  place-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.slot-cell.is-win {
+  background: radial-gradient(circle, rgba(255, 214, 120, 0.35), transparent 70%);
+}
+
+.slot-glyph {
+  width: 46px;
+  height: 46px;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35));
+}
+
+.slot-lines {
+  position: absolute;
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(var(--cell) * 3);
+  pointer-events: none;
+}
+
+.slot-lines polyline {
+  fill: none;
+  stroke: #ffe08a;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 2px #ffb703);
+}
+
+.slot-readout,
+.slot-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px 0;
+  font-size: 12px;
+}
+
+.slot-hits {
+  list-style: none;
+  margin: 8px 14px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.slot-hits li,
+.slot-paytable li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(246, 234, 215, 0.86);
+}
+
+.slot-hits strong {
+  margin-left: auto;
+  color: #ffe08a;
+}
+
+.slot-paytable {
+  list-style: none;
+  margin: 8px 12px 0;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  max-height: 180px;
+  overflow: auto;
+}
+
+.slot-paytable .slot-glyph {
+  width: 22px;
+  height: 22px;
+}
+
+.slot-paytable em {
+  margin-left: auto;
+  font-style: normal;
+  color: #e7c27a;
+  font-size: 10px;
+}
+
+.slot-ghost,
+.slot-again,
+.cf-calls button,
+.cf-again {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.slot-ghost {
+  background: transparent;
+  color: #f0d48a;
+  border: 1px solid rgba(232, 186, 104, 0.4);
+}
+
+.slot-again,
+.cf-again {
+  background: linear-gradient(180deg, #f0d48a, #c4891a);
+  color: #3a2208;
+}
+
+.slot-again:disabled,
+.cf-again:disabled,
+.cf-calls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.slot-watch,
+.cf-watch {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(246, 234, 215, 0.7);
+}
+
+.pay-slip {
+  width: min(420px, 100%);
+  margin: 6px 0 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: #f4efe4;
+  background:
+    linear-gradient(160deg, rgba(232, 196, 122, 0.16), transparent 40%),
+    #1c2430;
+  border: 1px solid rgba(232, 196, 122, 0.35);
+}
+
+.pay-slip h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.pay-slip p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pay-slip strong {
+  color: #f0d48a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-bulbs i,
+  .slot-strip.is-spinning {
+    animation: none;
+  }
+
+  .slot-strip.is-spinning,
+  .slot-strip.is-held {
+    transform: translateY(var(--drop));
+  }
+}
