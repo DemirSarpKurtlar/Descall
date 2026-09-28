@@ -10,7 +10,6 @@ import StatusBadge from "../ui/StatusBadge";
 import MessageList from "../chat/MessageList";
 import MessageComposer from "../chat/MessageComposer";
 import ActiveCallBanner from "../ActiveCallBanner";
-import VoiceRoomBar from "../voice/VoiceRoomBar";
 import ActivityView from "../activity/ActivityView";
 import TypingIndicator from "../chat/TypingIndicator";
 import EmptyState from "../ui/EmptyState";
@@ -43,11 +42,6 @@ export default function ChatPanel({
   onVideoCall,
   onGroupVoiceCall,
   onGroupVideoCall,
-  activeCallBanner,
-  onJoinActiveCall,
-  onLeaveVoiceRoom,
-  isInGroupVoiceRoom = false,
-  onDismissActiveBanner,
   activity,
   friends,
   typingDmUser,
@@ -244,8 +238,8 @@ export default function ChatPanel({
   }, [activeDmUser, activeGroup, activeView, activeServer]);
 
   // One conversation identity at a time — never stack DM + group chrome.
-  // Header + Ses Odası remount together under chat-top-chrome (keyed) so
-  // Electron DM→group never leaves a stuck/duplicated VoiceRoomBar node.
+  // The header remounts under chat-top-chrome (keyed) so Electron DM→group
+  // never leaves a stuck header node. Group voice rings members; it is not a room.
   const headerGroup = activeGroup || null;
   const headerDm = headerGroup ? null : activeDmUser || null;
   const headerConversationKey = headerGroup
@@ -377,7 +371,7 @@ export default function ChatPanel({
             </div>
           </div>
         )}
-        {/* Header + Ses Odası share one keyed remount — Electron DM→group must not stack rows */}
+        {/* Header shares one keyed remount — Electron DM→group must not stack rows */}
         <div
           className="chat-top-chrome"
           key={headerConversationKey}
@@ -501,15 +495,6 @@ export default function ChatPanel({
         </div>
       </header>
 
-      {headerGroup?.id ? (
-        <VoiceRoomBar
-          groupId={headerGroup.id}
-          banner={activeCallBanner}
-          isInThisRoom={isInGroupVoiceRoom}
-          onJoin={() => onGroupVoiceCall?.()}
-          onLeave={() => onLeaveVoiceRoom?.()}
-        />
-      ) : null}
         </div>
 
       {showSearch && activeView !== "activity" && (

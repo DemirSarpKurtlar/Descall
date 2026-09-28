@@ -270,6 +270,9 @@ function normalizeGroupMessage(m) {
 
 function previewMediaBody(msg, t = (k) => k) {
   const text = String(msg?.text || "").trim();
+  if (msg?.type === "call_summary" || (text.startsWith("{") && text.includes('"call_summary"'))) {
+    return t("📞 Call");
+  }
   if (text) return text;
   if (msg?.mediaType === "image") return t("📷 Photo");
   if (msg?.mediaType === "voice" || msg?.mediaType === "audio") return t("🎤 Voice message");
@@ -1020,7 +1023,32 @@ export default function App() {
       const merged = activeBannerItem.length > 0 ? [...msgs, ...activeBannerItem] : [...msgs];
       return merged.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
-    if (activeDmUser) return dmByUserId[activeDmUser.id] ?? [];
+    if (activeDmUser) {
+      const msgs = dmByUserId[activeDmUser.id] ?? [];
+      const dmLive =
+        call?.peer?.id === activeDmUser.id &&
+        (call.mode === "outgoing" || call.mode === "active" || call.mode === "incoming");
+      const activeBannerItem = dmLive
+        ? [{
+            id: `active-call-dm-${activeDmUser.id}`,
+            type: "active_call",
+            timestamp: new Date(call.callAnchorAt || Date.now()).toISOString(),
+            startTime: call.callAnchorAt || Date.now(),
+            callType: call.callType || "voice",
+            initiatorUsername:
+              call.mode === "incoming"
+                ? (call.peer?.username || call.peer?.displayName || "User")
+                : (me?.username || "You"),
+            participantCount: call.mode === "active" ? 2 : 1,
+            ringing: call.mode === "outgoing" || call.mode === "incoming",
+            incoming: call.mode === "incoming",
+            unreachable: call.mode === "outgoing" && call.connectionQuality === "failed",
+            hideJoin: call.mode !== "incoming",
+            dm: true,
+          }]
+        : [];
+      return activeBannerItem.length ? [...msgs, ...activeBannerItem] : msgs;
+    }
     return [];
   }, [
     activeView,
@@ -1031,6 +1059,12 @@ export default function App() {
     dmByUserId,
     groupMessagesById,
     groupCall?.activeCallBanner,
+    call?.mode,
+    call?.peer?.id,
+    call?.callType,
+    call?.callAnchorAt,
+    call?.connectionQuality,
+    me?.username,
   ]);
 
   useEffect(() => {
@@ -1665,7 +1699,7 @@ export default function App() {
           }));
         }
         if (activeDmRef.current?.id !== convWith) {
-          if (!pref?.muted) {
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || 'Birisi',
@@ -4450,8 +4484,13 @@ export default function App() {
           onGroupVoiceCall={() => {
             if (!activeGroup || !groupCall) return;
             if (groupCall.isInCall && groupCall.activeGroupId === activeGroup.id) return;
+            const banner = groupCall.activeCallBanner;
+            if (banner?.groupId === activeGroup.id) {
+              groupCall.joinActiveCall(banner);
+              return;
+            }
             const memberIds = activeGroup.memberIds || activeGroup.members?.map((m) => m.id) || [];
-            groupCall.joinOrStartVoiceRoom?.(activeGroup.id, memberIds, groupCall.activeCallBanner);
+            groupCall.startGroupCall(activeGroup.id, "voice", memberIds);
           }}
           onGroupVideoCall={() => {
             if (!activeGroup || !groupCall) return;
@@ -4470,6 +4509,10 @@ export default function App() {
           )}
           onLeaveVoiceRoom={() => groupCall?.leaveCall?.()}
           onJoinActiveCall={() => {
+            if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
+              call.acceptIncoming?.();
+              return;
+            }
             if (!activeGroup || !groupCall?.activeCallBanner) return;
             groupCall.joinActiveCall(groupCall.activeCallBanner);
           }}
@@ -4495,6 +4538,10 @@ export default function App() {
             onStartDm={(user) => setActiveDmUser(user)}
             onReply={setReplyTo}
             onJoinActiveCall={() => {
+              if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
+                call.acceptIncoming?.();
+                return;
+              }
               if (!activeGroup || !groupCall?.activeCallBanner) return;
               groupCall.joinActiveCall(groupCall.activeCallBanner);
             }}

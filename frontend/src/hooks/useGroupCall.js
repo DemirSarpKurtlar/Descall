@@ -2500,7 +2500,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     }
   }, [cleanup, setupPeerConnection, toast]);
 
-  /** Join active voice room, or open a silent hangout if none exists. */
+  /** Join a live group call, or ring every member the way a DM call does. */
   const joinOrStartVoiceRoom = useCallback(async (groupId, memberIds = [], bannerOverride = null) => {
     if (!groupId || isInCallRef.current) return;
     const banner = bannerOverride || activeCallBanner;
@@ -2508,7 +2508,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       await joinActiveCall(banner);
       return;
     }
-    await startGroupCall(groupId, "voice", memberIds, { hangout: true });
+    await startGroupCall(groupId, "voice", memberIds);
   }, [activeCallBanner, joinActiveCall, startGroupCall]);
 
   return {
