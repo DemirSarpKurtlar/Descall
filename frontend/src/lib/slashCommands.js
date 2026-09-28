@@ -1,5 +1,12 @@
 export const SLASH_COMMANDS = [
   { name: "bj", description: "Start a blackjack hand.", insert: "/bj 100", label: "Blackjack", chatOnly: true, casino: true },
+  { name: "slot", description: "Spin the five-reel slot.", insert: "/slot 100", label: "Slot", chatOnly: true, casino: true },
+  { name: "coinflip", description: "Flip a coin. Add heads, h, tails, or t.", insert: "/coinflip 100", label: "Coin flip", chatOnly: true, casino: true },
+  { name: "cf", description: "Flip a coin. Same as /coinflip.", insert: "/cf 100", label: "Coin flip", chatOnly: true, casino: true },
+  { name: "pay", description: "Send casino credits to someone.", insert: "/pay @user 500", label: "Send credits", chatOnly: true, casino: true },
+  { name: "send", description: "Send casino credits. Same as /pay.", insert: "/send @user 500", label: "Send credits", chatOnly: true, casino: true },
+  { name: "gonder", description: "Send casino credits. Same as /pay.", insert: "/gonder @user 500", label: "Send credits", chatOnly: true, casino: true },
+  { name: "tip", description: "Send casino credits. Same as /pay.", insert: "/tip @user 500", label: "Send credits", chatOnly: true, casino: true },
   { name: "daily", description: "Claim your daily casino bonus.", insert: "/daily", label: "Daily bonus", chatOnly: true, casino: true },
   { name: "credits", description: "Check your casino credits.", insert: "/credits", label: "Credits", chatOnly: true, casino: true },
   { name: "top", description: "Show the casino leaderboard.", insert: "/top", label: "Leaderboard", chatOnly: true, casino: true },
@@ -38,4 +45,15 @@ export function getSlashCommandsForSurface({ activeChannel, activeGroup, permiss
     command: `/${cmd.name}`,
     hint: cmd.description,
   }));
+}
+
+/** Same rules as the composer picker: only a leading slash token, before arguments. */
+export function filterSlashCommandMatches(commands, message) {
+  if (!commands?.length) return [];
+  const raw = String(message || "");
+  if (!raw.startsWith("/")) return [];
+  const firstToken = raw.split(/\s/)[0] || "";
+  if (raw.includes(" ") && firstToken.length > 1) return [];
+  const q = firstToken.toLowerCase();
+  return commands.filter((cmd) => cmd.command.startsWith(q) || q === "/");
 }

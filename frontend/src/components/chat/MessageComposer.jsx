@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Mic, Smile,
   Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply, Dice5, HelpCircle, Wallet, Trophy, CalendarDays,
-  Info, UserRound, ImageIcon, Pencil, BarChart3, Timer
+  Info, UserRound, ImageIcon, Pencil, BarChart3, Timer, Cherry, Coins, HandCoins
 } from "lucide-react";
 import GiphyPicker from "./GiphyPicker";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../lib/voiceMessage";
 import { useT } from "../../context/LocaleContext";
-import { getSlashCommandsForSurface } from "../../lib/slashCommands";
+import { filterSlashCommandMatches, getSlashCommandsForSurface } from "../../lib/slashCommands";
 import { serverHasPermission } from "../../lib/serverPermissions";
 
 const EMOJI_CATEGORIES = [
@@ -21,6 +21,13 @@ const EMOJI_CATEGORIES = [
 
 const SLASH_ICONS = {
   bj: Dice5,
+  slot: Cherry,
+  coinflip: Coins,
+  cf: Coins,
+  pay: HandCoins,
+  send: HandCoins,
+  gonder: HandCoins,
+  tip: HandCoins,
   daily: CalendarDays,
   help: HelpCircle,
   credits: Wallet,
@@ -64,6 +71,7 @@ export default function MessageComposer({
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showGiphy, setShowGiphy] = useState(false);
   const [slashIndex, setSlashIndex] = useState(0);
+  const slashMenuRef = useRef(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [waveBars, setWaveBars] = useState(() => Array(24).fill(0.15));
   const [uploading, setUploading] = useState(false);
@@ -192,25 +200,19 @@ export default function MessageComposer({
     [activeChannel, activeGroup, activeServer?.isOwner, activeServer?.myPermissions?.flags]
   );
 
-  const slashMatches = useMemo(() => {
-    if (!slashCommands.length) return [];
-    const raw = message;
-    // Only while composing a leading slash token (no spaces yet, or "/bj " still editing command)
-    if (!raw.startsWith("/")) return [];
-    const firstToken = raw.split(/\s/)[0] || "";
-    if (raw.includes(" ") && firstToken.length > 1) {
-      // Already chose a command with args — hide picker
-      return [];
-    }
-    const q = firstToken.toLowerCase();
-    return slashCommands.filter((cmd) => {
-      return cmd.command.startsWith(q) || q === "/";
-    });
-  }, [message, slashCommands]);
+  const slashMatches = useMemo(
+    () => filterSlashCommandMatches(slashCommands, message),
+    [message, slashCommands]
+  );
 
   useEffect(() => {
     setSlashIndex(0);
   }, [slashMatches.length, message]);
+
+  useEffect(() => {
+    const item = slashMenuRef.current?.querySelector(".slash-command-item.active");
+    item?.scrollIntoView({ block: "nearest" });
+  }, [slashIndex, slashMatches.length]);
 
   const applySlashCommand = useCallback((cmd) => {
     if (!cmd) return;
@@ -660,6 +662,7 @@ export default function MessageComposer({
         {slashMatches.length > 0 && (
           <motion.div
             className="slash-command-menu"
+            ref={slashMenuRef}
             role="listbox"
             aria-label={t("Slash commands")}
             initial={{ opacity: 0, y: 8 }}
