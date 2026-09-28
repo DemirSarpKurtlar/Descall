@@ -263,13 +263,17 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   }, [activeCategory, catalogGeneration, t]);
 
   const preserveShopScroll = useCallback(async (action) => {
-    const scrollEl = document.querySelector(".us-main-scroll");
-    const scrollTop = scrollEl?.scrollTop ?? 0;
+    const scrollers = [".shop-catalog", ".us-main-scroll"]
+      .map((sel) => document.querySelector(sel))
+      .filter(Boolean);
+    const tops = scrollers.map((el) => el.scrollTop);
     try {
       return await action();
     } finally {
       const restore = () => {
-        if (scrollEl) scrollEl.scrollTop = scrollTop;
+        scrollers.forEach((el, i) => {
+          el.scrollTop = tops[i];
+        });
       };
       restore();
       requestAnimationFrame(restore);
@@ -369,15 +373,18 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     return null;
   };
 
+  const wallet = (
+    <div className="shop-wallet-bar">
+      <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
+        <Coins size={16} />
+        <span>{balance.toLocaleString()}</span>
+        <span className="shop-wallet-label">DesCoin</span>
+      </div>
+    </div>
+  );
+
   const lead = (
     <div className="shop-lead">
-      <div className="shop-panel-header-row">
-        <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
-          <Coins size={16} />
-          <span>{balance.toLocaleString()}</span>
-          <span className="shop-wallet-label">DesCoin</span>
-        </div>
-      </div>
       <p className="shop-panel-intro">
         {t("Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.")}
       </p>
@@ -534,7 +541,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   return (
     <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
       <div className="shop-workspace">
-        {lead}
+        <div className="shop-main">
+          {wallet}
+          <div className="shop-catalog">
+            {lead}
+            {catalog}
+          </div>
+        </div>
         {!loading && availableTabs.length > 0 && (
           <nav className="shop-category-tabs" aria-label={t("Shop categories")}>
             {availableTabs.map((tab) => {
@@ -556,7 +569,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             })}
           </nav>
         )}
-        <div className="shop-catalog">{catalog}</div>
         <ShopProfilePreview me={me} t={t} />
       </div>
     </motion.div>
