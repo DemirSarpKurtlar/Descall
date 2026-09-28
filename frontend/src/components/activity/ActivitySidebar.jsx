@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
   Search,
-  RefreshCw,
   Megaphone,
   MessageSquarePlus,
   Plus,
@@ -94,14 +93,12 @@ export default function ActivitySidebar({
   friends,
   friendPresence,
   onlineUsers,
-  onRefresh,
   onAddFriend,
   onFriendSelect,
 }) {
   const t = useT();
   const searchRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { active, idle, onlineCount } = useOnlinePresenceLists(
     friends,
     friendPresence,
@@ -109,29 +106,12 @@ export default function ActivitySidebar({
     searchQuery
   );
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await onRefresh?.();
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 800);
-    }
-  };
-
   return (
     <aside className="sidebar-secondary activity-sidebar">
       <div className="sidebar-inner">
         <div className="sidebar-header">
           <h2 className="sidebar-title">{t("Activity")}</h2>
           <div className="sidebar-actions">
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Refresh")}
-              onClick={handleRefresh}
-            >
-              <RefreshCw size={18} className={isRefreshing ? "spin-refresh" : ""} />
-            </button>
             <button
               type="button"
               className="icon-btn"

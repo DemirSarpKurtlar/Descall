@@ -1175,32 +1175,47 @@ html[data-bubble="minimal"] .shop-live-bubble {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
   max-width: 100%;
-  /* Inset the banner so its corners sit inside the card instead of under the rim. */
-  padding: 8px 8px 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
 }
 
 .shop-live-profile .profile-banner-parallax {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
+}
+
+/* The parallax layer is scaled and inset, which bows a short shop banner.
+   Paint it edge to edge, centered, with no extra zoom. */
+.shop-live-profile .profile-banner-parallax-layer {
+  inset: 0 !important;
+  transform: none !important;
+  background-size: cover !important;
+  background-position: center center !important;
 }
 
 .shop-live-profile-body {
   position: relative;
-  padding: 0 14px 14px;
+  padding: 0 16px 16px;
 }
 
-.shop-live-avatar {
+/* avatar.css sets .profile-avatar-shell { position: relative } later in the
+   cascade. The shop shell shares that class, so this has to win or the
+   avatar keeps a 72px hole and the card looks bent. */
+.shop-live-profile .shop-live-avatar {
   position: absolute;
-  top: -40px;
-  left: 18px;
+  /* Center the 72px avatar on the banner seam; the 132% frame stays inside the card. */
+  top: -36px;
+  left: 16px;
   width: 72px;
   height: 72px;
   z-index: 2;
 }
 
 .shop-live-profile-body .user-profile-identity {
-  padding-top: 40px;
+  /* 36px of the avatar hangs into the body, plus ~12px of frame, plus a small gap. */
+  padding-top: 52px;
   margin-bottom: 8px;
 }
 

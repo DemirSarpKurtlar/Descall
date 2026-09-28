@@ -20,16 +20,28 @@ export default function TitleBar() {
     document.body.classList.add("electron-app");
     document.documentElement.classList.add("electron-app");
 
+    const applyInset = (bottomInset) => {
+      const inset = Math.max(0, Math.round(Number(bottomInset) || 0));
+      const innerH = Number(window.innerHeight) || 0;
+      const contentH = Math.max(0, innerH - ELECTRON_TITLEBAR_H - inset);
+      const rootStyle = document.documentElement.style;
+      rootStyle.setProperty("--electron-content-h", `${contentH}px`);
+      rootStyle.setProperty("--electron-bottom-inset", `${inset}px`);
+    };
+
     const syncViewport = () => {
       const screen = window.screen;
-      const { contentH, bottomInset } = electronContentBox({
+      const fallback = electronContentBox({
         innerHeight: window.innerHeight,
         availHeight: screen?.availHeight,
         availTop: screen?.availTop,
       });
-      const rootStyle = document.documentElement.style;
-      rootStyle.setProperty("--electron-content-h", `${contentH}px`);
-      rootStyle.setProperty("--electron-bottom-inset", `${bottomInset}px`);
+      applyInset(fallback.bottomInset);
+      window.electronAPI?.getContentBox?.()
+        .then((box) => {
+          if (box && Number.isFinite(Number(box.bottomInset))) applyInset(box.bottomInset);
+        })
+        .catch(() => {});
     };
 
     if (window.electronAPI?.onMaximizedChange) {
@@ -41,6 +53,9 @@ export default function TitleBar() {
     }
 
     syncViewport();
+    const offContentBox = window.electronAPI?.onContentBox?.((box) => {
+      if (box && Number.isFinite(Number(box.bottomInset))) applyInset(box.bottomInset);
+    });
     window.addEventListener("resize", syncViewport);
     window.visualViewport?.addEventListener("resize", syncViewport);
     const onFs = () => {
@@ -55,6 +70,7 @@ export default function TitleBar() {
       window.removeEventListener("resize", syncViewport);
       window.visualViewport?.removeEventListener("resize", syncViewport);
       document.removeEventListener("fullscreenchange", onFs);
+      offContentBox?.();
     };
   }, [isElectron]);
 

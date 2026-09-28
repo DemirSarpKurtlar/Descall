@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Crosshair, Plus, RefreshCw, Users, Mic, Filter, X, Gamepad2,
+  Crosshair, Plus, Users, Mic, Filter, X, Gamepad2,
   LogOut, Phone, MessageSquare, Shield, ChevronLeft, ArrowLeft,
 } from "lucide-react";
 import {
@@ -286,9 +286,6 @@ export default function LfgWorkspace({
             </div>
           </div>
           <div className="lfg-sidebar-actions">
-            <button type="button" className="icon-btn" title={t("Refresh")} onClick={refreshList}>
-              <RefreshCw size={16} className={loading ? "spin" : undefined} />
-            </button>
             <button type="button" className="lfg-btn primary" onClick={() => setShowCreate(true)}>
               <Plus size={15} /> {t("Create")}
             </button>

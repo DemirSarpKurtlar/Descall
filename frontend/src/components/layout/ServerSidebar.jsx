@@ -60,7 +60,6 @@ export default function ServerSidebar({
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
-  onRefresh,
   friendRequests,
   onAcceptFriend,
   onDeclineFriend,
@@ -103,7 +102,6 @@ export default function ServerSidebar({
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState("");
   const [sentUsernames, setSentUsernames] = useState(() => new Set());
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState('suggestion');
   const [feedbackText, setFeedbackText] = useState('');
@@ -294,18 +292,6 @@ export default function ServerSidebar({
             {activeView === "calls" && t("Calls")}
           </h2>
           <div className="sidebar-actions">
-            <button
-              className="icon-btn"
-              title={t("Refresh")}
-              onClick={async () => {
-                setIsRefreshing(true);
-                await onRefresh?.();
-                setTimeout(() => setIsRefreshing(false), 800);
-              }}
-              style={{ position: 'relative' }}
-            >
-              <RefreshCw size={18} className={isRefreshing ? 'spin-refresh' : ''} />
-            </button>
             <button
               className="icon-btn"
               title={t("Search")}
