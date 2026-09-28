@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HeadphoneOff,
   Headphones,
@@ -22,8 +23,21 @@ import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useSpeaking from "../../hooks/useSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
+import { visibleScreenStream } from "../../lib/screenShareTracks";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
+
+function TileFullscreenVideo({ stream }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.muted = true;
+    if (el.srcObject !== stream) el.srcObject = stream || null;
+    el.play?.().catch(() => {});
+  }, [stream]);
+  return <video ref={ref} className="server-voice-screen-video" autoPlay playsInline muted />;
+}
 
 function streamHasLiveVideo(stream) {
   return Boolean(
@@ -35,6 +49,27 @@ function streamHasLiveAudio(stream) {
   return Boolean(
     stream?.getAudioTracks?.()?.some((t) => t && t.readyState !== "ended")
   );
+}
+
+/** Must run inside the click. Fullscreen requests outside the gesture are rejected. */
+function presentScreenFullscreen(root, onFallback) {
+  const video =
+    root?.querySelector?.(".server-voice-screen-video") ||
+    root?.querySelector?.(".server-voice-tile-video");
+  const isiOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  if (isiOS && typeof video?.webkitEnterFullscreen === "function") {
+    try {
+      video.webkitEnterFullscreen();
+      return "video";
+    } catch {
+      /* page overlay below */
+    }
+  }
+  const target = document.documentElement;
+  if (typeof target?.requestFullscreen === "function" && !document.fullscreenElement && !document.webkitFullscreenElement) {
+    target.requestFullscreen().catch(() => {});
+  }
+  onFallback?.();
 }
 
 function gridBand(count) {
@@ -59,7 +94,8 @@ function sameTile(prev, next) {
     prev.compact !== next.compact ||
     prev.count !== next.count ||
     prev.youLabel !== next.youLabel ||
-    prev.onOpenMenu !== next.onOpenMenu
+    prev.onOpenMenu !== next.onOpenMenu ||
+    prev.onExpandShare !== next.onExpandShare
   ) {
     return false;
   }
@@ -88,6 +124,7 @@ const VoiceTile = memo(function VoiceTile({
   count = 1,
   youLabel = "",
   onOpenMenu,
+  onExpandShare,
 }) {
   const t = useT();
   const videoRef = useRef(null);
@@ -121,10 +158,18 @@ const VoiceTile = memo(function VoiceTile({
     });
   };
 
+  const canExpandShare = Boolean(!tile.isLocal && onExpandShare && (tile.sharing || showVideo));
+  const expandShare = (event) => {
+    if (!canExpandShare) return;
+    if (event.target.closest("button, a, input, label")) return;
+    onExpandShare(tile.id, event.currentTarget);
+  };
+
   return (
     <article
-      className={`server-voice-tile${showVideo ? " has-video" : ""}${speaking ? " is-speaking" : ""}${tile.muted ? " is-muted" : ""}${compact ? " is-compact" : ""}`}
+      className={`server-voice-tile${showVideo ? " has-video" : ""}${speaking ? " is-speaking" : ""}${tile.muted ? " is-muted" : ""}${compact ? " is-compact" : ""}${canExpandShare ? " is-share-target" : ""}${tile.sharing ? " is-screen-share" : ""}`}
       onContextMenu={openMenu}
+      onClick={expandShare}
     >
       {showVideo ? (
         <video
@@ -254,12 +299,28 @@ function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
   }, [stream]);
 
   return (
-    <div className="server-voice-screen server-voice-screen-card">
+    <div className="server-voice-screen server-voice-screen-card" data-sharer-id={sharer.id}>
       <video ref={videoRef} className="server-voice-screen-video" autoPlay playsInline muted />
       {!streamHasLiveVideo(stream) && (
         <div className="server-voice-screen-waiting">{t("Waiting for screen…")}</div>
       )}
-      <button type="button" className="server-voice-screen-badge is-button" onClick={onOpen}>
+      <button
+        type="button"
+        className="server-voice-screen-hit"
+        aria-label={label}
+        onClick={(event) => {
+          const root = event.currentTarget.closest(".server-voice-screen");
+          if (presentScreenFullscreen(root) !== "video") onOpen?.();
+        }}
+      />
+      <button
+        type="button"
+        className="server-voice-screen-badge is-button"
+        onClick={(event) => {
+          const root = event.currentTarget.closest(".server-voice-screen");
+          if (presentScreenFullscreen(root) !== "video") onOpen?.();
+        }}
+      >
         <Monitor size={12} />
         <span>{label}</span>
       </button>
@@ -281,7 +342,14 @@ function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
   );
 }
 
-function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId = "" }) {
+function ServerScreenShareStage({
+  sharers,
+  volumes = {},
+  onVolumeChange,
+  sinkId = "",
+  expandToken = 0,
+  expandSharerId = null,
+}) {
   const t = useT();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -289,6 +357,8 @@ function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId 
   const prevCountRef = useRef(0);
   const normalVideoRef = useRef(null);
   const expandedVideoRef = useRef(null);
+  const sharersRef = useRef(sharers);
+  sharersRef.current = sharers;
 
   useEffect(() => {
     const n = sharers.length;
@@ -356,13 +426,38 @@ function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId 
   );
 
   useEffect(() => {
+    if (!expandToken || expandSharerId == null) return;
+    const list = sharersRef.current || [];
+    const index = list.findIndex((item) => String(item.id) === String(expandSharerId));
+    if (index < 0) return;
+    setSelectedIndex(index);
+    setExpanded(true);
+  }, [expandToken, expandSharerId]);
+
+  useEffect(() => {
     if (!expanded) return undefined;
     const onKey = (e) => {
-      if (e.key === "Escape") setExpanded(false);
+      if (e.key !== "Escape") return;
+      setExpanded(false);
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [expanded]);
+
+  const closeExpanded = () => {
+    setExpanded(false);
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
+
+  const openExpanded = (event) => {
+    const root = event.currentTarget.closest(".server-voice-screen");
+    presentScreenFullscreen(root, () => setExpanded(true));
+  };
 
   if (!sharers.length || !active) return null;
 
@@ -412,22 +507,55 @@ function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId 
     );
   }
 
+  const fullscreen = expanded
+    ? createPortal(
+        <div
+          className="server-voice-screen-expanded"
+          onClick={closeExpanded}
+        >
+          <video
+            key={`exp-${active.id}-${aspectKey}`}
+            ref={expandedVideoCallbackRef}
+            className="server-voice-screen-video"
+            autoPlay
+            playsInline
+            muted
+          />
+          <div className="server-voice-screen-badge">
+            <Monitor size={14} />
+            <span>{label}</span>
+          </div>
+          {!active.isLocal && (
+            <label
+              className="server-voice-screen-volume is-expanded"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Volume2 size={14} aria-hidden="true" />
+              <input
+                aria-label={t("Screen share volume")}
+                type="range"
+                min="0"
+                max="100"
+                value={volumeFor(active)}
+                onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
+              />
+              <span>{volumeFor(active)}%</span>
+            </label>
+          )}
+          <div className="server-voice-screen-hint is-expanded">
+            {t("Click anywhere to exit fullscreen")}
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
+
   return (
+    <>
     <div className="server-voice-screen-stage">
       {audioSinks}
 
-      <div
-        className="server-voice-screen"
-        role="button"
-        tabIndex={0}
-        onClick={() => setExpanded((v) => !v)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setExpanded((v) => !v);
-          }
-        }}
-      >
+      <div className="server-voice-screen" data-sharer-id={active.id}>
         <video
           key={`${active.id}-${aspectKey}`}
           ref={normalVideoCallbackRef}
@@ -441,7 +569,14 @@ function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId 
           <div className="server-voice-screen-waiting">{t("Waiting for screen…")}</div>
         )}
 
-        <div className="server-voice-screen-badge" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="server-voice-screen-hit"
+          aria-label={t("Click to expand")}
+          onClick={openExpanded}
+        />
+
+        <div className="server-voice-screen-badge">
           <Monitor size={12} />
           <span>{label}</span>
         </div>
@@ -461,52 +596,7 @@ function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId 
           </label>
         )}
 
-        <div className="server-voice-screen-hint">
-          {expanded ? t("Click to shrink") : t("Click to expand")}
-        </div>
-
-        {expanded && (
-          <div
-            className="server-voice-screen-expanded"
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded(false);
-            }}
-          >
-            <video
-              key={`exp-${active.id}-${aspectKey}`}
-              ref={expandedVideoCallbackRef}
-              className="server-voice-screen-video"
-              autoPlay
-              playsInline
-              muted
-            />
-            <div className="server-voice-screen-badge">
-              <Monitor size={14} />
-              <span>{label}</span>
-            </div>
-            {!active.isLocal && (
-              <label
-                className="server-voice-screen-volume is-expanded"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Volume2 size={14} aria-hidden="true" />
-                <input
-                  aria-label={t("Screen share volume")}
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volumeFor(active)}
-                  onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
-                />
-                <span>{volumeFor(active)}%</span>
-              </label>
-            )}
-            <div className="server-voice-screen-hint is-expanded">
-              {t("Click anywhere to exit fullscreen")}
-            </div>
-          </div>
-        )}
+        <div className="server-voice-screen-hint">{t("Click to expand")}</div>
       </div>
 
       {sharers.length > 1 && (
@@ -528,6 +618,8 @@ function ServerScreenShareStage({ sharers, volumes = {}, onVolumeChange, sinkId 
         </div>
       )}
     </div>
+    {fullscreen}
+    </>
   );
 }
 
@@ -579,16 +671,17 @@ export default function ServerVoicePanel({
       });
     }
     for (const p of serverVoice?.participants || []) {
-      if (!p?.screenStream) continue;
+      const stream = visibleScreenStream(p);
+      if (!stream) continue;
       const live =
         p.isScreenSharing ||
-        streamHasLiveVideo(p.screenStream) ||
-        streamHasLiveAudio(p.screenStream);
+        streamHasLiveVideo(stream) ||
+        streamHasLiveAudio(stream);
       if (!live) continue;
       list.push({
         id: p.id,
         username: resolveDisplayName(p) || p.username || "Member",
-        stream: p.screenStream,
+        stream,
         isLocal: false,
       });
     }
@@ -603,6 +696,36 @@ export default function ServerVoicePanel({
   ]);
 
   const [memberMenu, setMemberMenu] = useState(null);
+  const [screenExpand, setScreenExpand] = useState({ token: 0, id: null });
+  const [tileFullscreen, setTileFullscreen] = useState(null);
+  const tilesRef = useRef([]);
+  const closeTileFullscreen = useCallback(() => {
+    setTileFullscreen(null);
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, []);
+  const expandShare = useCallback((id, tileEl) => {
+    const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(String(id)) : String(id);
+    const stageRoot = document.querySelector(`.server-voice-screen[data-sharer-id="${escaped}"]`);
+    const root = stageRoot || tileEl || null;
+    if (presentScreenFullscreen(root) === "video") return;
+    if (stageRoot) {
+      setTileFullscreen(null);
+      setScreenExpand((prev) => ({ token: prev.token + 1, id }));
+      return;
+    }
+    const tile = tilesRef.current.find((item) => String(item.id) === String(id));
+    const stream = tile?.cameraStream || null;
+    if (!streamHasLiveVideo(stream)) return;
+    setTileFullscreen({
+      id,
+      stream,
+      label: tile?.sharing
+        ? t("{name}'s Screen", { name: tile.label || "Member" })
+        : tile?.label || "",
+    });
+  }, [t]);
   const voiceChannels = useMemo(
     () => (server?.channels || []).filter((c) => c?.type === "voice" || c?.type === "stage"),
     [server?.channels]
@@ -635,6 +758,8 @@ export default function ServerVoicePanel({
       const audioStream = inThis
         ? member.stream || serverVoice?.remoteStreams?.get?.(member.id) || null
         : null;
+      const promoted = inThis ? visibleScreenStream(member) : null;
+      const cameraIsScreen = Boolean(promoted && promoted === member.cameraStream);
       list.push({
         id: String(member.id),
         channelId: channel?.id,
@@ -642,11 +767,11 @@ export default function ServerVoicePanel({
         label: resolveDisplayName(member) || member.username || "Member",
         isLocal: false,
         audioStream,
-        cameraStream: inThis ? member.cameraStream || null : null,
-        cameraOn: Boolean(member.cameraOn || member.cameraStream),
+        cameraStream: inThis && !cameraIsScreen ? member.cameraStream || null : null,
+        cameraOn: Boolean(member.cameraOn || (member.cameraStream && !cameraIsScreen)),
         muted: Boolean(member.muted || member.serverMuted),
         deafened: Boolean(member.serverDeafened),
-        sharing: Boolean(member.isScreenSharing || member.screenStream),
+        sharing: Boolean(member.isScreenSharing || member.screenStream || cameraIsScreen),
       });
     }
     return list;
@@ -665,6 +790,16 @@ export default function ServerVoicePanel({
     serverVoice?.serverMuted,
     t,
   ]);
+  tilesRef.current = tiles;
+
+  useEffect(() => {
+    if (!tileFullscreen) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape") closeTileFullscreen();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tileFullscreen, closeTileFullscreen]);
 
   const sharing = screenSharers.length > 0;
   const link = serverVoice?.liveKitLink;
@@ -709,6 +844,21 @@ export default function ServerVoicePanel({
 
   return (
     <div className="server-voice-panel server-voice-room">
+      {tileFullscreen
+        ? createPortal(
+            <div className="server-voice-screen-expanded" onClick={closeTileFullscreen}>
+              <TileFullscreenVideo stream={tileFullscreen.stream} />
+              <div className="server-voice-screen-badge">
+                <Monitor size={14} />
+                <span>{tileFullscreen.label}</span>
+              </div>
+              <div className="server-voice-screen-hint is-expanded">
+                {t("Click anywhere to exit fullscreen")}
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
       <header className="server-voice-room-head">
         <span className="server-voice-room-mark" aria-hidden>
           {isStage ? <Radio size={18} /> : <Volume2 size={18} />}
@@ -749,6 +899,8 @@ export default function ServerVoicePanel({
             volumes={serverVoice?.screenVolumes || {}}
             onVolumeChange={(id, value) => serverVoice?.setScreenShareVolume?.(id, value)}
             sinkId={serverVoice?.selectedAudioOutput || ""}
+            expandToken={screenExpand.token}
+            expandSharerId={screenExpand.id}
           />
         ) : null}
         {tiles.length > 0 ? (
@@ -765,6 +917,7 @@ export default function ServerVoicePanel({
                   count={tiles.length}
                   youLabel={t("You")}
                   onOpenMenu={openMemberMenu}
+                  onExpandShare={expandShare}
                 />
               ))}
             </div>

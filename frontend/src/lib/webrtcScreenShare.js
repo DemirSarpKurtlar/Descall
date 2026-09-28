@@ -660,8 +660,10 @@ export function isRemoteScreenVideoTrack(
   if (!track || track.kind !== "video") return false;
 
   const label = (track.label || "").toLowerCase();
+  const surface = track.getSettings?.().displaySurface;
   if (
     peerExpectsScreen ||
+    surface ||
     label.includes("screen") ||
     label.includes("display") ||
     label.includes("window") ||
