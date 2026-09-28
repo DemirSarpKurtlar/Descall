@@ -60,6 +60,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const [localStream, setLocalStream] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [deafened, setDeafened] = useState(false);
+  const deafenedRef = useRef(false);
+  const mutedByDeafenRef = useRef(false);
+  const acceptCueAtRef = useRef(0);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -469,6 +473,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     setLocalStream(null);
     setScreenStream(null);
     setIsMuted(false);
+    setDeafened(false);
+    deafenedRef.current = false;
+    mutedByDeafenRef.current = false;
     setIsCameraOn(false);
     setIsHandRaised(false);
     setIsScreenSharing(false);
@@ -541,7 +548,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         if (!audioEl) {
           audioEl = document.createElement("audio");
           audioEl.autoplay = true;
-          audioEl.muted = false;
+          audioEl.muted = deafenedRef.current;
           audioEl.playsInline = true;
           audioEl.style.display = "none";
           document.body.appendChild(audioEl);
@@ -549,7 +556,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         }
         audioEl.srcObject = incomingStream;
         const storedVolume = participantVolumeRef.current.get(String(userId));
-        audioEl.volume = storedVolume == null ? 1 : storedVolume;
+        audioEl.muted = deafenedRef.current;
+        audioEl.volume = deafenedRef.current ? 0 : (storedVolume == null ? 1 : storedVolume);
         audioEl.play().catch(() => {});
         chainTrackUnmute(track, () => {
           audioEl.srcObject = incomingStream;
@@ -812,6 +820,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         // Handled by oniceconnectionstatechange, which fires for the same
         // underlying condition and already schedules a bounded cleanup.
       } else if (pc.connectionState === "failed") {
+        audioManager.play("disconnect");
         schedulePeerCleanup(12000);
       } else if (pc.connectionState === "closed") {
         clearPeerCleanupTimer();
@@ -906,6 +915,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
       // Immediately set the banner for the initiator — the server only pushes
       // group:call:active-banner to users who join later via group:join
+      if (hangout) audioManager.play("channelJoin");
+      else audioManager.play("outgoingCall", { loop: true });
+
       setActiveCallBanner({
         groupId,
         initiatorId: myIdRef.current,
@@ -929,6 +941,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     
     try {
       audioManager.stop("incomingCall");
+      acceptCueAtRef.current = Date.now();
+      audioManager.play("callAccept");
 
       const stream = await acquireVoiceMicStream(
         type === "video"
@@ -997,6 +1011,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       socketRef.current.emit("group:call:decline", { groupId, toUserId: fromUserId });
     }
     audioManager.stop("incomingCall");
+    audioManager.play("callReject");
     setIncomingCall(null);
     // Keep the ongoing call banner visible so the user can join later
     setActiveCallBanner((prev) => prev ?? {
@@ -1013,6 +1028,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   // Leave only removes THIS user from the room — never force-ends for others.
   // Use ref so a stale closed-over activeGroupId cannot skip the leave emit.
   const leaveCall = useCallback(() => {
+    if (isInCallRef.current) audioManager.play("channelLeave");
     const gid = activeGroupIdRef.current;
     if (gid && socketRef.current?.connected) {
       socketRef.current.emit("group:call:leave", { groupId: gid });
@@ -1060,7 +1076,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (track) {
       track.enabled = !track.enabled;
-      setIsMuted(!track.enabled);
+      const nextMuted = !track.enabled;
+      setIsMuted(nextMuted);
+      if (!nextMuted) mutedByDeafenRef.current = false;
+      audioManager.play(nextMuted ? "mute" : "unmute");
       const groupId = activeGroupIdRef.current;
       if (groupId && socketRef.current?.connected) {
         socketRef.current.emit("group:call:media-state", {
@@ -1069,6 +1088,44 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           cameraOn: Boolean(isCameraOn),
         });
       }
+    }
+  }, [isCameraOn]);
+
+  const toggleDeafen = useCallback(() => {
+    const next = !deafenedRef.current;
+    deafenedRef.current = next;
+    setDeafened(next);
+    for (const [userId, el] of remoteAudioRefs.current.entries()) {
+      el.muted = next;
+      if (next) el.volume = 0;
+      else {
+        const stored = participantVolumeRef.current.get(String(userId));
+        el.volume = stored == null ? 1 : stored;
+      }
+    }
+    const track = localStreamRef.current?.getAudioTracks()?.[0];
+    if (next) {
+      if (track?.enabled) {
+        track.enabled = false;
+        setIsMuted(true);
+        mutedByDeafenRef.current = true;
+        const groupId = activeGroupIdRef.current;
+        if (groupId && socketRef.current?.connected) {
+          socketRef.current.emit("group:call:media-state", { groupId, muted: true, cameraOn: Boolean(isCameraOn) });
+        }
+      }
+      audioManager.play("deafen");
+    } else {
+      if (mutedByDeafenRef.current && track) {
+        track.enabled = true;
+        setIsMuted(false);
+        mutedByDeafenRef.current = false;
+        const groupId = activeGroupIdRef.current;
+        if (groupId && socketRef.current?.connected) {
+          socketRef.current.emit("group:call:media-state", { groupId, muted: false, cameraOn: Boolean(isCameraOn) });
+        }
+      }
+      audioManager.play("undeafen");
     }
   }, [isCameraOn]);
 
@@ -1158,7 +1215,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     }
   }, [isCameraOn, isMuted, renegotiateWithPeer]);
 
-  const startScreenShare = useCallback(async (quality) => {
+  const startScreenShare = useCallback(async (quality, opts = {}) => {
     console.log('[GroupScreenShare] startScreenShare called, quality:', quality);
     try {
       // Use provided quality or fall back to current state
@@ -1268,6 +1325,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       };
 
       setIsScreenSharing(true);
+      if (!opts?.quiet) audioManager.play("screenShareStart");
     } catch (err) {
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
       console.error("[GroupScreenShare] failed:", err);
@@ -1278,7 +1336,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     }
   }, [isScreenSharing, activeGroupId, screenQuality, renegotiateWithPeer, toast]);
 
-  const stopScreenShare = useCallback(async () => {
+  const stopScreenShare = useCallback(async (opts = {}) => {
     if (!isScreenSharing) return;
     intentionalScreenStopRef.current = true;
     
@@ -1325,6 +1383,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     if (socketRef.current?.connected) {
       socketRef.current.emit("group:screen:stop", { groupId: activeGroupId });
     }
+    if (!opts?.quiet) audioManager.play("screenShareStop");
   }, [activeGroupId, isScreenSharing, renegotiateWithPeer]);
 
   useEffect(() => {
@@ -1338,11 +1397,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         screenQualityRef.current = nextQuality;
         return;
       }
-      await stopScreenShare();
+      await stopScreenShare({ quiet: true });
       await new Promise((r) => setTimeout(r, 150));
       setScreenQuality(nextQuality);
       screenQualityRef.current = nextQuality;
-      await startScreenShare(nextQuality);
+      await startScreenShare(nextQuality, { quiet: true });
     },
     [isScreenSharing, startScreenShare, stopScreenShare]
   );
@@ -1416,6 +1475,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     const onAccept = async ({ groupId, fromUserId, fromUser }) => {
       if (!fromUserId) return;
+      const now = Date.now();
+      if (now - acceptCueAtRef.current >= 1200) {
+        acceptCueAtRef.current = now;
+        audioManager.stop("outgoingCall");
+        audioManager.play("callAccept");
+      }
       
       const stream = localStreamRef.current;
       if (!stream) return;
@@ -1509,10 +1574,25 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     // IMPORTANT: startGroupCall pre-creates PCs for all members — we must still
     // send an offer (same as onAccept). Early-returning when PC exists left
     // chat/banner joiners with silent dead peer connections.
+    const playAcceptOnce = () => {
+      const now = Date.now();
+      if (now - acceptCueAtRef.current < 1200) return;
+      acceptCueAtRef.current = now;
+      audioManager.stop("outgoingCall");
+      audioManager.play("callAccept");
+    };
+
     const onParticipantJoined = async ({ groupId, fromUserId, fromUser }) => {
       if (!fromUserId || fromUserId === myIdRef.current) return;
       if (!isInCallRef.current) return;
       if (groupId && activeGroupIdRef.current && groupId !== activeGroupIdRef.current) return;
+      if (Date.now() - acceptCueAtRef.current < 1200) {
+        /* connect cue already played for this pickup */
+      } else if (audioManager.activeLoops.has("outgoingCall")) {
+        playAcceptOnce();
+      } else {
+        audioManager.play("userJoin");
+      }
 
       // Update username if we already have this participant with 'Member' placeholder
       setParticipants((prev) => {
@@ -1791,6 +1871,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       // Remaining user(s) stay in-call so others can rejoin.
       if (!userId || userId === myIdRef.current) return;
       if (groupId && activeGroupIdRef.current && groupId !== activeGroupIdRef.current) return;
+      audioManager.play("userLeave");
 
       const peerData = pcMapRef.current.get(userId);
       safeClosePeer(peerData?.pc);
@@ -1819,6 +1900,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       // Only tear down if WE are still in this group call. A stale ended event
       // for another group must not kill the active session.
       if (groupId && groupId === activeGroupIdRef.current && isInCallRef.current) {
+        audioManager.play("channelLeave");
         cleanup();
       }
     };
@@ -1869,6 +1951,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     };
 
     const onDeclined = ({ groupId, fromUserId, fromUser }) => {
+      if (fromUserId) audioManager.play("callReject");
       const peerData = pcMapRef.current.get(fromUserId);
       safeClosePeer(peerData?.pc);
       pcMapRef.current.delete(fromUserId);
@@ -1895,6 +1978,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     const onScreenStarted = ({ groupId, fromUserId }) => {
       if (!fromUserId || fromUserId === myIdRef.current) return;
+      audioManager.play("screenShareStart");
       const peerData = pcMapRef.current.get(fromUserId);
       if (peerData) peerData.expectScreenShare = true;
 
@@ -1978,6 +2062,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     };
 
     const onScreenStopped = ({ groupId, fromUserId }) => {
+      if (fromUserId && fromUserId !== myIdRef.current) audioManager.play("screenShareStop");
       const peerData = pcMapRef.current.get(fromUserId);
       if (peerData) peerData.expectScreenShare = false;
       setParticipants((prev) => prev.map((p) =>
@@ -2063,6 +2148,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         setNoiseSuppressedTrackEnabled(true);
         
         setIsInCall(true);
+        audioManager.play("channelJoin");
         setIsInitiator(false); // We're joining, not initiating
         setCallType(existingCallType);
         setActiveGroupId(groupId);
@@ -2363,6 +2449,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       stream.getAudioTracks().forEach((t) => { t.enabled = true; });
       setNoiseSuppressedTrackEnabled(true);
       setIsInCall(true);
+      audioManager.stop("incomingCall");
+      audioManager.play("channelJoin");
       setIsInitiator(false);
       setCallType(type);
       setActiveGroupId(groupId);
@@ -2431,6 +2519,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     localStream,
     screenStream,
     isMuted,
+    deafened,
     isCameraOn,
     isHandRaised,
     isScreenSharing,
@@ -2456,6 +2545,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     declineCall,
     leaveCall,
     toggleMute,
+    toggleDeafen,
     toggleCamera,
     toggleHandRaise,
     startScreenShare,

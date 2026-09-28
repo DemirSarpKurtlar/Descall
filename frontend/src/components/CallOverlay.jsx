@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor,
+  Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
   Minus, Maximize2, Users, MessageSquare, Hand, MoreVertical, Check, X as XIcon,
   Volume2, ChevronUp, Mic2, SlidersHorizontal,
 } from "lucide-react";
@@ -194,6 +194,7 @@ export default function CallOverlay({ call, groupCall, me }) {
   const peer = isDm ? call.peer : null;
   const callType = isDm ? call.callType : groupCall.callType;
   const muted = isDm ? call.muted : groupCall.isMuted;
+  const deafened = isDm ? call.deafened : groupCall.deafened;
   const cameraOn = isDm ? call.cameraOn : groupCall.isCameraOn;
   const screenSharing = isDm ? call.screenSharing : groupCall.isScreenSharing;
   const duration = isDm ? call.duration : groupCall.duration;
@@ -626,6 +627,15 @@ export default function CallOverlay({ call, groupCall, me }) {
                 {muted ? <MicOff size={narrowViewport ? 19 : 22} /> : <Mic size={narrowViewport ? 19 : 22} />}
               </CircleBtn>
             </DockDeviceSlot>
+
+            <CircleBtn
+              size={narrowViewport ? 46 : 52}
+              color={deafened ? "#ed4245" : "#3c4043"}
+              onClick={isDm ? call.toggleDeafen : groupCall.toggleDeafen}
+              title={deafened ? t("Undeafen") : t("Deafen")}
+            >
+              {deafened ? <HeadphoneOff size={narrowViewport ? 19 : 22} /> : <Headphones size={narrowViewport ? 19 : 22} />}
+            </CircleBtn>
 
             <DockDeviceSlot
               menuLabel={t("Camera")}

@@ -1287,6 +1287,7 @@ export default function App() {
     socket.on("disconnect", (reason) => {
       setIsConnected(false);
       setReconnectState(reason === "io client disconnect" ? "idle" : "disconnected");
+      if (reason !== "io client disconnect") audioManager.play("disconnect");
     });
 
     socket.io.on("reconnect_attempt", (attempt) => {

@@ -141,6 +141,11 @@ export function useCall(socket, callOccupancyRef = null) {
   const pendingIceRef = useRef([]);
   const incomingOfferRef = useRef(null);
   const incomingCallTypeRef = useRef(null);
+  const prevCallModeRef = useRef(null);
+  const suppressRemoteEndCueRef = useRef(false);
+  const deafenedRef = useRef(false);
+  const mutedByDeafenRef = useRef(false);
+  const [deafened, setDeafened] = useState(false);
   const peerRef = useRef(null);
   const timerRef = useRef(null);
   const screenSenderRef = useRef(null);
@@ -242,6 +247,9 @@ export function useCall(socket, callOccupancyRef = null) {
     setCallType(null);
     setPeer(null);
     setMuted(false);
+    setDeafened(false);
+    deafenedRef.current = false;
+    mutedByDeafenRef.current = false;
     setCameraOn(false);
     setRemoteMuted(false);
     setRemoteCameraOn(null);
@@ -321,14 +329,17 @@ export function useCall(socket, callOccupancyRef = null) {
 
   // Handle call sounds based on mode
   useEffect(() => {
+    const prev = prevCallModeRef.current;
+    prevCallModeRef.current = mode;
     if (mode === "incoming") {
-      // Play looping ringtone for incoming call
       audioManager.play("incomingCall", { loop: true });
     } else if (mode === "outgoing") {
-      // Play outgoing call sound (looping until answered/cancelled)
       audioManager.play("outgoingCall", { loop: true });
-    } else if (mode === "active" || mode === null) {
-      // Stop all call sounds when call is active or ended
+    } else if (mode === "active") {
+      audioManager.stop("incomingCall");
+      audioManager.stop("outgoingCall");
+      if (prev === "incoming" || prev === "outgoing") audioManager.play("callAccept");
+    } else if (mode === null) {
       audioManager.stop("incomingCall");
       audioManager.stop("outgoingCall");
     }
@@ -477,8 +488,8 @@ export function useCall(socket, callOccupancyRef = null) {
       const attachMedia = () => {
         if (track.kind === "audio" && remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = rs;
-          remoteAudioRef.current.muted = false;
-          remoteAudioRef.current.volume = remoteVolumeRef.current;
+          remoteAudioRef.current.muted = deafenedRef.current;
+          remoteAudioRef.current.volume = deafenedRef.current ? 0 : remoteVolumeRef.current;
           remoteAudioRef.current.play().catch(() => {});
         }
         if (track.kind === "video" && remoteVideoRef.current) {
@@ -487,8 +498,8 @@ export function useCall(socket, callOccupancyRef = null) {
         }
         if (remoteAudioRef.current && !remoteAudioRef.current.srcObject) {
           remoteAudioRef.current.srcObject = rs;
-          remoteAudioRef.current.muted = false;
-          remoteAudioRef.current.volume = remoteVolumeRef.current;
+          remoteAudioRef.current.muted = deafenedRef.current;
+          remoteAudioRef.current.volume = deafenedRef.current ? 0 : remoteVolumeRef.current;
           remoteAudioRef.current.play().catch(() => {});
         }
         if (remoteVideoRef.current && !remoteVideoRef.current.srcObject && track.kind === "video") {
@@ -547,6 +558,7 @@ export function useCall(socket, callOccupancyRef = null) {
       } else if (state === "failed") {
         setPeerConnectionState("disconnected");
         setConnectionQuality("failed");
+        audioManager.play("disconnect");
       } else if (state === "closed") {
         setPeerConnectionState("disconnected");
       }
@@ -810,7 +822,14 @@ export function useCall(socket, callOccupancyRef = null) {
     };
 
     const onEnded = ({ fromUserId } = {}) => {
-      if (!fromUserId || peerRef.current?.id === fromUserId) gracefulEnd();
+      if (!fromUserId || peerRef.current?.id === fromUserId) {
+        if (!suppressRemoteEndCueRef.current) {
+          if (modeRef.current === "incoming" || modeRef.current === "outgoing") audioManager.play("callReject");
+          else if (modeRef.current === "active") audioManager.play("userLeave");
+        }
+        suppressRemoteEndCueRef.current = false;
+        gracefulEnd();
+      }
     };
 
     const onMediaState = ({ fromUserId, muted: peerMuted, cameraOn: peerCameraOn } = {}) => {
@@ -822,6 +841,7 @@ export function useCall(socket, callOccupancyRef = null) {
     const onCancelled = ({ fromUserId } = {}) => {
       if (!fromUserId || peerRef.current?.id === fromUserId) {
         audioManager.stop('incomingCall');
+        audioManager.play("callReject");
         gracefulEnd();
       }
     };
@@ -982,6 +1002,9 @@ export function useCall(socket, callOccupancyRef = null) {
   const endCall = useCallback((toUserId) => {
     const targetId = toUserId ?? peerRef.current?.id;
     const sock = socketRef.current;
+    suppressRemoteEndCueRef.current = true;
+    if (modeRef.current === "outgoing") audioManager.play("callReject");
+    else if (modeRef.current === "active") audioManager.play("channelLeave");
     if (targetId && sock?.connected) {
       const currentMode = modeRef.current;
       if (currentMode === 'outgoing') {
@@ -994,6 +1017,7 @@ export function useCall(socket, callOccupancyRef = null) {
   }, [gracefulEnd]);
 
   const declineIncoming = useCallback(() => {
+    audioManager.play("callReject");
     const targetId = peerRef.current?.id ?? peer?.id;
     if (targetId && socketRef.current?.connected) {
       socketRef.current.emit('call:decline', { toUserId: targetId });
@@ -1028,7 +1052,10 @@ export function useCall(socket, callOccupancyRef = null) {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (track) {
       track.enabled = !track.enabled;
-      setMuted(!track.enabled);
+      const nextMuted = !track.enabled;
+      setMuted(nextMuted);
+      if (!nextMuted) mutedByDeafenRef.current = false;
+      audioManager.play(nextMuted ? "mute" : "unmute");
       if (peerRef.current?.id && socketRef.current?.connected) {
         socketRef.current.emit("call:media-state", {
           toUserId: peerRef.current.id,
@@ -1038,6 +1065,44 @@ export function useCall(socket, callOccupancyRef = null) {
       }
     }
   }, []);
+
+  const toggleDeafen = useCallback(() => {
+    const next = !deafenedRef.current;
+    deafenedRef.current = next;
+    setDeafened(next);
+    const audio = remoteAudioRef.current;
+    if (audio) {
+      audio.muted = next;
+      audio.volume = next ? 0 : remoteVolumeRef.current;
+    }
+    const track = localStreamRef.current?.getAudioTracks()?.[0];
+    const emitMute = (mutedNow) => {
+      if (peerRef.current?.id && socketRef.current?.connected) {
+        socketRef.current.emit("call:media-state", {
+          toUserId: peerRef.current.id,
+          muted: mutedNow,
+          cameraOn: Boolean(cameraOn),
+        });
+      }
+    };
+    if (next) {
+      if (track?.enabled) {
+        track.enabled = false;
+        setMuted(true);
+        mutedByDeafenRef.current = true;
+        emitMute(true);
+      }
+      audioManager.play("deafen");
+    } else {
+      if (mutedByDeafenRef.current && track) {
+        track.enabled = true;
+        setMuted(false);
+        mutedByDeafenRef.current = false;
+        emitMute(false);
+      }
+      audioManager.play("undeafen");
+    }
+  }, [cameraOn]);
 
   const toggleCamera = useCallback(async () => {
     const pc = pcRef.current;
@@ -1110,7 +1175,7 @@ export function useCall(socket, callOccupancyRef = null) {
     stopScreenShareRef.current = stopScreenShare;
   });
 
-  const startScreenShare = useCallback(async (qualityOverride) => {
+  const startScreenShare = useCallback(async (qualityOverride, opts = {}) => {
     console.log('[ScreenShare] startScreenShare called');
     const pc = pcRef.current;
     if (!pc || screenSharingRef.current) {
@@ -1211,6 +1276,7 @@ export function useCall(socket, callOccupancyRef = null) {
       };
 
       setScreenSharing(true);
+      if (!opts?.quiet) audioManager.play("screenShareStart");
     } catch (err) {
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
       console.error("[ScreenShare] failed:", err);
@@ -1218,7 +1284,7 @@ export function useCall(socket, callOccupancyRef = null) {
     }
   }, [toast]);
 
-  const stopScreenShare = useCallback(() => {
+  const stopScreenShare = useCallback((opts = {}) => {
     const pc = pcRef.current;
     if (!pc || !screenSharingRef.current) return;
     intentionalScreenStopRef.current = true;
@@ -1246,6 +1312,7 @@ export function useCall(socket, callOccupancyRef = null) {
     if (peerRef.current?.id && socketRef.current?.connected) {
       socketRef.current.emit("screen:share-stop", { toUserId: peerRef.current.id });
     }
+    if (!opts?.quiet) audioManager.play("screenShareStop");
   }, []);
 
   const restartScreenShareWithQuality = useCallback(
@@ -1254,11 +1321,11 @@ export function useCall(socket, callOccupancyRef = null) {
         setScreenQuality(nextQuality);
         return;
       }
-      stopScreenShare();
+      stopScreenShare({ quiet: true });
       await new Promise((r) => setTimeout(r, 120));
       setScreenQuality(nextQuality);
       screenQualityRef.current = nextQuality;
-      await startScreenShare(nextQuality);
+      await startScreenShare(nextQuality, { quiet: true });
     },
     [startScreenShare, stopScreenShare]
   );
@@ -1267,6 +1334,7 @@ export function useCall(socket, callOccupancyRef = null) {
     if (!fromUserId || fromUserId !== peerRef.current?.id) return;
     remoteScreenSharingRef.current = true;
     setRemoteScreenSharing(true);
+    audioManager.play("screenShareStart");
 
     // Screen signaling can arrive after a fast ontrack callback. Display
     // streams carry no audio; select the most recently received such track
@@ -1291,6 +1359,7 @@ export function useCall(socket, callOccupancyRef = null) {
     if (!fromUserId || fromUserId !== peerRef.current?.id) return;
     remoteScreenSharingRef.current = false;
     setRemoteScreenSharing(false);
+    audioManager.play("screenShareStop");
     setRemoteScreenStream(null);
     remoteScreenStreamRef.current = null;
   }, []);
@@ -1414,6 +1483,7 @@ export function useCall(socket, callOccupancyRef = null) {
     callType,
     peer,
     muted,
+    deafened,
     cameraOn,
     remoteMuted,
     remoteCameraOn,
@@ -1437,6 +1507,7 @@ export function useCall(socket, callOccupancyRef = null) {
     acceptIncoming,
     declineIncoming,
     toggleMute,
+    toggleDeafen,
     toggleCamera,
     startScreenShare,
     stopScreenShare,

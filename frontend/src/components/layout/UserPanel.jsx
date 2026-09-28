@@ -706,6 +706,8 @@ const UserPanel = forwardRef(function UserPanel({
       setSoundEnabled("incomingCall", v);
       setSoundEnabled("outgoingCall", v);
       setSoundEnabled("callStart", v);
+      setSoundEnabled("callAccept", v);
+      setSoundEnabled("callReject", v);
     } catch { /* audio not ready */ }
   };
 

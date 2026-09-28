@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HeadphoneOff,
+  Headphones,
   LogIn,
   LogOut,
   Mic,
@@ -822,6 +823,16 @@ export default function ServerVoicePanel({
                   {serverVoice.muted ? <MicOff size={18} /> : <Mic size={18} />}
                 </button>
               </DockDeviceSlot>
+              <button
+                type="button"
+                className={`server-voice-dock-btn${serverVoice.deafened ? " is-off" : ""}`}
+                onClick={() => serverVoice.toggleDeafen?.()}
+                aria-pressed={Boolean(serverVoice.deafened)}
+                aria-label={serverVoice.deafened ? t("Undeafen") : t("Deafen")}
+                title={serverVoice.deafened ? t("Undeafen") : t("Deafen")}
+              >
+                {serverVoice.deafened ? <HeadphoneOff size={18} /> : <Headphones size={18} />}
+              </button>
               {isNoiseSuppressionEnabled() ? (
                 <span className="server-voice-ns-badge" title={t("AI noise suppression")}>
                   NS

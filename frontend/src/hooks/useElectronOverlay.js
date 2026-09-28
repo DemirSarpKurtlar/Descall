@@ -54,7 +54,16 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
     ? Boolean(serverVoice?.muted)
     : false;
 
+  const deafened = dmActive
+    ? Boolean(call?.deafened)
+    : groupActive
+    ? Boolean(groupCall?.deafened)
+    : serverActive
+    ? Boolean(serverVoice?.deafened)
+    : false;
+
   const toggleMute = dmActive ? call?.toggleMute : groupActive ? groupCall?.toggleMute : serverActive ? serverVoice?.toggleMute : null;
+  const toggleDeafen = dmActive ? call?.toggleDeafen : groupActive ? groupCall?.toggleDeafen : serverActive ? serverVoice?.toggleDeafen : null;
 
   const leave = useCallback(() => {
     if (dmActive) call?.endCall?.(call?.peer?.id);
@@ -65,8 +74,8 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
 
   // Keep the latest handlers reachable from the stable IPC listener below.
   useEffect(() => {
-    ctxRef.current = { active, muted, toggleMute, leave };
-  }, [active, muted, toggleMute, leave]);
+    ctxRef.current = { active, muted, toggleMute, toggleDeafen, leave };
+  }, [active, muted, toggleMute, toggleDeafen, leave]);
 
   const applyDeafen = useCallback((next) => {
     deafenedRef.current = next;
@@ -103,6 +112,10 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
       } else if (action === "leave") {
         ctx.leave?.();
       } else if (action === "deafen") {
+        if (ctx.toggleDeafen) {
+          ctx.toggleDeafen();
+          return;
+        }
         const next = !deafenedRef.current;
         if (next && !ctx.muted) {
           autoMutedByDeafenRef.current = true;
@@ -143,10 +156,10 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
     window.electronAPI?.overlayShow?.({
       title,
       muted,
-      deafened: deafenedRef.current,
+      deafened: deafened || deafenedRef.current,
       connected: true,
     });
-  }, [active, title, muted, applyDeafen]);
+  }, [active, title, muted, deafened, applyDeafen]);
 }
 
 export default useElectronOverlay;

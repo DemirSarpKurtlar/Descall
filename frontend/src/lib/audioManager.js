@@ -40,15 +40,33 @@ function getSoundPath(filename) {
 const DEFAULT_SOUNDS = {
   incomingCall: getSoundPath("incoming-call.mp3"),
   outgoingCall: getSoundPath("outgoing-call.mp3"),
-  callStart: getSoundPath("outgoing-call.mp3"), // Same as outgoing
+  callStart: getSoundPath("call-accept.mp3"),
+  callAccept: getSoundPath("call-accept.mp3"),
+  callReject: getSoundPath("call-reject.mp3"),
   message: getSoundPath("message.mp3"),
-  notification: getSoundPath("notification.mp3")
+  notification: getSoundPath("notification.mp3"),
+  mute: getSoundPath("mute.mp3"),
+  unmute: getSoundPath("unmute.mp3"),
+  deafen: getSoundPath("deafen.mp3"),
+  undeafen: getSoundPath("undeafen.mp3"),
+  channelJoin: getSoundPath("channel-join.mp3"),
+  channelLeave: getSoundPath("channel-leave.mp3"),
+  userJoin: getSoundPath("user-join.mp3"),
+  userLeave: getSoundPath("user-leave.mp3"),
+  screenShareStart: getSoundPath("screenshare-start.mp3"),
+  screenShareStop: getSoundPath("screenshare-stop.mp3"),
+  disconnect: getSoundPath("disconnect.mp3"),
 };
 
 // Cooldown configuration (ms)
 const COOLDOWNS = {
   message: 350,
   notification: 500,
+  userJoin: 220,
+  userLeave: 220,
+  channelJoin: 600,
+  channelLeave: 600,
+  disconnect: 1500,
 };
 
 class AudioManager {
@@ -60,8 +78,21 @@ class AudioManager {
       incomingCall: true,
       outgoingCall: true,
       callStart: true,
+      callAccept: true,
+      callReject: true,
       message: true,
       notification: true,
+      mute: true,
+      unmute: true,
+      deafen: true,
+      undeafen: true,
+      channelJoin: true,
+      channelLeave: true,
+      userJoin: true,
+      userLeave: true,
+      screenShareStart: true,
+      screenShareStop: true,
+      disconnect: true,
       volume: 1.0,
       backgroundVolume: 0.5,
     };
@@ -288,8 +319,7 @@ class AudioManager {
 
     const { loop = false, volume } = options;
 
-    // Check if we can play
-    if (!loop && !this.canPlay(type)) return false;
+    if (!this.canPlay(type)) return false;
 
     // Catalog sound packs: unique Web Audio voices per effect_key
     if (this.soundPackKey && SYNTH_TYPES.has(type)) {
