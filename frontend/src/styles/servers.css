@@ -9,14 +9,17 @@
 .servers-sidebar .server-shell-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  row-gap: 4px;
   padding: 12px 12px 8px;
   border-bottom: 1px solid var(--border-2);
   position: relative;
 }
 
 .server-shell-title-wrap {
-  flex: 1;
+  flex: 1 0 max-content;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -25,9 +28,11 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--text-0);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .server-shell-meta {
@@ -302,9 +307,11 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-0);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .server-list-sub {
@@ -699,10 +706,14 @@
   cursor: default;
 }
 
-.server-channel-row span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.server-channel-row > span:first-of-type {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .server-dropdown {

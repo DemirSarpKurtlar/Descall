@@ -700,22 +700,27 @@ button.nav-rail-logo:active {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
+  row-gap: 4px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-2);
   background: var(--surface-1);
 }
 
 .sidebar-title {
-  flex: 0 1 auto;
+  flex: 1 0 max-content;
+  max-width: 100%;
   min-width: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-0);
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .sidebar-actions {
@@ -723,7 +728,7 @@ button.nav-rail-logo:active {
   align-items: center;
   flex: 0 0 auto;
   gap: 2px;
-  margin-left: 2px;
+  margin-left: auto;
 }
 
 .sidebar-content {
