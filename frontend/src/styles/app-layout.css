@@ -989,6 +989,20 @@ button.nav-rail-logo:active {
   white-space: nowrap;
 }
 
+/* DM list: show the full name — wrap onto a second line instead of "…" */
+.conv-row-top .dm-name {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.25;
+}
+
+.dm-item .conv-row-top {
+  align-items: flex-start;
+}
+
 .conv-row-bottom .dm-preview,
 .conv-row-bottom .group-members {
   flex: 1;
