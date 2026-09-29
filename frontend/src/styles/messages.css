@@ -277,15 +277,25 @@
 
 .message-media-badge {
   position: absolute;
+  z-index: 2;
   left: 8px;
   bottom: 8px;
-  padding: 2px 7px;
+  /* Explicit box: the media wrapper sets line-height 0, which squashed the
+     dark pill thinner than the "GIF" text. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 20px;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1;
   font-weight: 800;
   letter-spacing: 0.06em;
+  white-space: nowrap;
   color: #fff;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   pointer-events: none;
 }
 
