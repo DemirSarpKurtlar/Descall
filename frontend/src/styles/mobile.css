@@ -497,6 +497,21 @@
     height: 40px;
   }
 
+  /* DM header: more room for the name (smaller gaps and action buttons) */
+  .header-identity {
+    gap: 8px;
+  }
+
+  .panel-header .header-right .icon-btn {
+    min-width: 38px;
+    width: 38px;
+    padding: 0;
+  }
+
+  .header-title-block.is-dm .header-title {
+    font-size: 15px;
+  }
+
   .composer-container {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
   }
