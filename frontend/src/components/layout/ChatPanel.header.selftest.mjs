@@ -24,7 +24,12 @@ assert(!/<Settings\b/.test(headerRight), "chat header must not render a Settings
 assert(!/\bonSettings\b/.test(chatPanel), "ChatPanel must not take an onSettings prop");
 assert(!/onSettings=\{openUserPanel\}/.test(appLayout), "AppLayout must not pass settings into ChatPanel");
 assert(/<Search\b/.test(headerRight), "chat header must keep Search");
-assert(/<Users\b/.test(headerRight), "chat header must keep Members");
+assert(/<Users\b/.test(headerRight), "chat header must keep Members for groups/servers");
+assert(
+  /\{!headerDm && \(\s*<button[\s\S]{0,200}title=\{t\("Members"\)\}/.test(headerRight),
+  "DM header must not show the Members (user list) button",
+);
+assert(/showMembers && !headerDm && \(/.test(chatPanel), "members panel must never open in a DM");
 assert(/<Pin\b/.test(headerRight), "chat header must keep Pinned messages");
 assert(/<Phone\b/.test(headerRight), "chat header must keep Voice Call");
 assert(/aria-label=\{t\("Search"\)\}/.test(headerRight), "Search needs an accessible name");
@@ -38,6 +43,15 @@ assert(
 assert(
   /\.header-title-text \{[\s\S]{0,120}text-overflow:\s*ellipsis/.test(css),
   "chat title must ellipsize instead of overlapping icons",
+);
+assert(
+  /\.header-title-block\.is-dm \.header-title-text \{[\s\S]{0,120}white-space:\s*normal/.test(css),
+  "DM names must wrap instead of ending in an ellipsis",
+);
+assert(
+  /\.header-avatar\.has-cosmetics \.ui-avatar \{[\s\S]{0,80}width:\s*28px/.test(css) &&
+    /headerDmHasCosmetics \? 28 : 40/.test(chatPanel),
+  "framed DM header avatar must shrink so the shop frame fits the 40px slot",
 );
 
 

@@ -1517,6 +1517,48 @@ button.header-avatar {
   white-space: nowrap;
 }
 
+/* DM header: show the whole name — wrap onto a second line instead of "…" */
+.header-title-block.is-dm {
+  flex: 1 1 auto;
+  gap: 1px;
+}
+
+.header-title-block.is-dm .header-title {
+  align-items: flex-start;
+  overflow: visible;
+  line-height: 1.2;
+}
+
+.header-title-block.is-dm .header-title-text {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.header-title-block.is-dm .header-subtitle {
+  text-overflow: clip;
+}
+
+/* DM header avatar with a shop frame/effect: shrink the photo so the frame
+   fits fully inside the 40px slot instead of being cut into a square. */
+.header-avatar.has-cosmetics {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-avatar.has-cosmetics .ui-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
+  overflow: visible;
+}
+
 .header-right {
   display: flex;
   align-items: center;

@@ -242,6 +242,12 @@ export default function ChatPanel({
   // never leaves a stuck header node. Group voice rings members; it is not a room.
   const headerGroup = activeGroup || null;
   const headerDm = headerGroup ? null : activeDmUser || null;
+  // Shop frames/effects paint outside the avatar circle. In the 40px header slot
+  // shrink the photo so the whole frame fits instead of being clipped square.
+  const headerDmHasCosmetics = Boolean(
+    headerDm?.equippedAvatarFrame?.asset_url || headerDm?.equippedAvatarEffect?.effect_key,
+  );
+  const headerDmAvatarSize = headerDmHasCosmetics ? 28 : 40;
   const headerConversationKey = headerGroup
     ? `group:${headerGroup.id}`
     : headerDm
@@ -345,7 +351,7 @@ export default function ChatPanel({
   })();
 
   return (
-    <div className={`chat-panel-shell${showMembers && !isMobile ? " is-members-docked" : ""}`}>
+    <div className={`chat-panel-shell${showMembers && !headerDm && !isMobile ? " is-members-docked" : ""}`}>
       <main className="main-panel">
         {activeTimeout?.timedOut && (
           <div className="timeout-banner" role="status">
@@ -394,7 +400,7 @@ export default function ChatPanel({
             {headerDm ? (
               <button
                 type="button"
-                className="header-avatar"
+                className={`header-avatar${headerDmHasCosmetics ? " has-cosmetics" : ""}`}
                 onClick={() => setProfileTarget(headerDm)}
                 aria-label={t("View profile")}
                 title={t("View profile")}
@@ -402,7 +408,7 @@ export default function ChatPanel({
                 <Avatar
                   key={headerDm.id || headerDm.username}
                   name={resolveDisplayName(headerDm)}
-                  size={40}
+                  size={headerDmAvatarSize}
                   user={headerDm}
                   loading="eager"
                 />
@@ -418,7 +424,7 @@ export default function ChatPanel({
               </div>
             ) : null}
             <div
-              className="header-title-block"
+              className={`header-title-block${headerDm ? " is-dm" : ""}`}
               role={headerDm ? "button" : undefined}
               tabIndex={headerDm ? 0 : undefined}
               onClick={headerDm ? () => setProfileTarget(headerDm) : undefined}
@@ -451,14 +457,16 @@ export default function ChatPanel({
           >
             <Search size={20} />
           </button>
-          <button
-            className={`icon-btn ${showMembers ? "active" : ""}`}
-            title={t("Members")}
-            aria-label={t("Members")}
-            onClick={() => { setShowMembers(!showMembers); setShowSearch(false); }}
-          >
-            <Users size={20} />
-          </button>
+          {!headerDm && (
+            <button
+              className={`icon-btn ${showMembers ? "active" : ""}`}
+              title={t("Members")}
+              aria-label={t("Members")}
+              onClick={() => { setShowMembers(!showMembers); setShowSearch(false); }}
+            >
+              <Users size={20} />
+            </button>
+          )}
           {(headerDm || headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
             <button
               className={`icon-btn ${showPinned ? "active" : ""}`}
@@ -695,7 +703,7 @@ export default function ChatPanel({
 
     {/* Members Panel */}
     <AnimatePresence>
-      {showMembers && (
+      {showMembers && !headerDm && (
         <>
           {isMobile ? (
             <motion.div
