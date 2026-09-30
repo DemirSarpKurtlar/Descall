@@ -156,11 +156,11 @@ function scheduleMarketingHydration(run) {
     return;
   }
   if (!isPublicMarketingPath(path)) return;
-  // Home (/ and /tr) must hydrate quickly — the prerender shell is for bots/LCP,
-  // not the permanent human UI (users reported it as a "broken menu").
-  // Other marketing routes hydrate shortly after first paint.
-  const isHome = path === "/" || path === "/tr" || path === "/tr/";
-  window.setTimeout(start, isHome ? 120 : 900);
+  // Hydrate right away on every public marketing route. The prerender shell is
+  // for crawlers only: index.html keeps it invisible (html.seo-hold) until the
+  // real page commits, so any delay here would just be a longer blank screen.
+  // (It used to be visible and flashed as a plain "old" landing before the real one.)
+  start();
 }
 
 async function bootApp() {
@@ -248,7 +248,15 @@ async function boot() {
           m.hydrateMarketing();
           window.setTimeout(() => clearModuleLoadRecovery(), 4000);
         })
-        .catch((err) => console.error("[boot] marketing hydrate failed", err));
+        .catch((err) => {
+          console.error("[boot] marketing hydrate failed", err);
+          // Show the crawlable shell instead of a blank page if the chunk failed.
+          try {
+            window.__descallReleaseSeoHold?.();
+          } catch {
+            /* ignore */
+          }
+        });
     });
     return;
   }

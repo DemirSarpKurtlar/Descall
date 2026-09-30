@@ -474,6 +474,14 @@
       /* Hide prerendered SEO shell only after the lazy marketing page commits
          (data-marketing-ready). data-react-ready alone used to blank H1 during Suspense. */
       html[data-marketing-ready="1"] #seo-static { display: none !important; }
+      /* Visitors with JavaScript never see the crawler shell. It stays in the HTML
+         for search engines, but humans wait on the dark background until the real
+         React landing commits, so the plain "old" page no longer flashes for ~0.5s
+         before the real one. A timeout in <head> reveals it if hydrate stalls. */
+      html.seo-hold:not([data-marketing-ready="1"]) #seo-static,
+      html.seo-hold:not([data-marketing-ready="1"]) #mkt-consent-static {
+        visibility: hidden !important;
+      }
       html[data-react-ready="1"] #mkt-consent-static { display: none !important; }
       #boot-splash * {
         font-family: inherit !important;
@@ -620,6 +628,23 @@
         }
       }
     </style>
+    <script>
+      /* Hold the prerendered SEO shell (see html.seo-hold CSS). Fallback: if the
+         React marketing page has not committed within 5s (very slow network or a
+         failed chunk), show the crawler shell so nobody is stuck on a blank page. */
+      (function () {
+        try {
+          var html = document.documentElement;
+          html.classList.add("seo-hold");
+          window.__descallReleaseSeoHold = function () {
+            html.classList.remove("seo-hold");
+          };
+          window.setTimeout(function () {
+            if (html.getAttribute("data-marketing-ready") !== "1") html.classList.remove("seo-hold");
+          }, 5000);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <script>
