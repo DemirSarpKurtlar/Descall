@@ -217,22 +217,6 @@ export default function HomePage({ onSignIn, onSignUp }) {
       </section>
 
       <SeoRelatedLinks title="Keep exploring" links={SEO_DEFAULT_RELATED} />
-
-      <section style={{ textAlign: "center", margin: "40px 0" }}>
-        <a
-          href="https://buysellstartups.com/listings/descall-mtriyxhs"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            src="https://buysellstartups.com/api/badge/descall-mtriyxhs"
-            alt="For Sale on Buy Sell Startups"
-            width="280"
-            height="68"
-          />
-        </a>
-      </section>
-
     </>
   );
 }
