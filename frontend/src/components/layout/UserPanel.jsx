@@ -971,17 +971,47 @@ const UserPanel = forwardRef(function UserPanel({
               }
             />
               <div className="us-hero-body">
-                <div className="us-hero-avatar">
+                {/* Same avatar picker as the Profile tab: tap the photo → file picker →
+                    crop/zoom (GIFs keep animation) → saved immediately. */}
+                <button
+                  type="button"
+                  className="us-hero-avatar us-hero-avatar-btn"
+                  onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  aria-label={t("Change avatar")}
+                  title={t("Change avatar")}
+                >
                   <Avatar
                     name={me?.username || "User"}
-                    size={72}
+                    size={84}
                     user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
                     animate="always"
                   />
+                  <span className="us-avatar-overlay" aria-hidden="true">
+                    {avatarUploading ? <RefreshCw size={20} className="us-spin" /> : <Camera size={20} />}
+                  </span>
+                  <span className="us-hero-camera" aria-hidden="true">
+                    {avatarUploading ? <RefreshCw size={13} className="us-spin" /> : <Camera size={13} />}
+                  </span>
                   <StatusBadge
                     status={myStatus === "invisible" ? "offline" : myStatus}
                   />
-                </div>
+                </button>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  ref={fileInputRef}
+                  className="us-hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <button
+                  type="button"
+                  className="us-btn us-hero-edit"
+                  onClick={() => openTab("profile")}
+                >
+                  <Type size={14} />
+                  {t("Edit profile")}
+                </button>
                 <div className="us-hero-meta">
                   <h3 style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "4px 6px" }}>
                     <NameEffectText user={me}>{displayName || me?.username || "User"}</NameEffectText>
@@ -999,6 +1029,13 @@ const UserPanel = forwardRef(function UserPanel({
                 </div>
               </div>
             </div>
+
+            {profileError && (
+              <div className="us-alert danger">
+                <AlertTriangle size={15} />
+                <span>{profileError}</span>
+              </div>
+            )}
 
             <RiotLinkCard />
 

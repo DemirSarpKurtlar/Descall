@@ -572,41 +572,65 @@
   box-shadow: 0 0 0 3px var(--success-soft);
 }
 
-/* Hero — avatar overlaps banner; name + @handle stay together BELOW the banner seam */
+/* Hero — balanced profile card: banner, 84px avatar overlapping the seam with an
+   even ring, edit button top-right, name + @handle directly under the avatar.
+   Tapping the avatar opens the same picker/crop flow as the Profile tab. */
 .us-hero {
-  border-radius: 14px;
+  position: relative;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: var(--surface-0);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
 }
 
 .us-hero-banner {
-  height: 96px;
+  height: 104px;
   background: linear-gradient(135deg, var(--primary), var(--primary-2) 55%, #7b5cff);
   background-size: cover;
   background-position: center;
 }
 
 .us-hero-body {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
-  padding: 0 16px 16px;
-  margin-top: -36px;
+  gap: 12px;
+  padding: 0 18px 18px;
   background: var(--surface-0);
 }
 
 .us-hero-avatar {
   position: relative;
+  margin-top: -46px;
   padding: 0;
-  background: transparent;
+  border: 0;
+  background: var(--surface-0);
   border-radius: 50%;
   flex-shrink: 0;
   flex-grow: 0;
-  aspect-ratio: 1 / 1;
+  width: 92px;
+  height: 92px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   overflow: visible;
   line-height: 0;
-  box-shadow: 0 0 0 4px var(--surface-0);
+  /* Even 4px ring: 92px shell around an 84px avatar, same center for frames/effects. */
+  box-shadow: none;
+}
+
+.us-hero-avatar-btn {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.us-hero-avatar-btn:disabled {
+  cursor: progress;
+}
+.us-hero-avatar-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }
 
 .us-hero-avatar .ui-avatar {
@@ -614,9 +638,58 @@
   aspect-ratio: 1 / 1;
 }
 
-.us-hero-avatar .status-badge {
-  right: 0;
-  bottom: 0;
+.us-hero-avatar .us-avatar-overlay {
+  inset: 4px;
+  z-index: 2;
+}
+.us-hero-avatar-btn:hover .us-avatar-overlay,
+.us-hero-avatar-btn:disabled .us-avatar-overlay {
+  opacity: 1;
+}
+
+/* Always-visible camera chip so mobile users (no hover) know the photo is tappable. */
+.us-hero-camera {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px var(--surface-0), 0 4px 10px rgba(0, 0, 0, 0.35);
+  line-height: 0;
+}
+
+.us-hero-avatar.us-hero-avatar-btn .status-badge {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 3;
+}
+
+.us-hero-edit {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f2f3f5;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+.us-hero-edit:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .us-hero-status {
@@ -629,10 +702,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-top: 44px;
-  padding-bottom: 2px;
+  padding: 0;
   min-width: 0;
-  flex: 1;
+  width: 100%;
 }
 
 .us-hero-meta h3 {
@@ -1530,9 +1602,18 @@
     grid-template-columns: 1fr;
   }
 
+  .us-hero-banner {
+    height: 92px;
+  }
+
   .us-hero-body {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 0 16px 16px;
+    gap: 10px;
+  }
+
+  .us-hero-edit {
+    top: 10px;
+    right: 12px;
   }
 }
 
