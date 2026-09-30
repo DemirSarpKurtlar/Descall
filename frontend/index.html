@@ -479,7 +479,10 @@
          React landing commits, so the plain "old" page no longer flashes for ~0.5s
          before the real one. A timeout in <head> reveals it if hydrate stalls. */
       html.seo-hold:not([data-marketing-ready="1"]) #seo-static,
-      html.seo-hold:not([data-marketing-ready="1"]) #mkt-consent-static {
+      html.seo-hold:not([data-marketing-ready="1"]) #mkt-consent-static,
+      html.seo-hold:not([data-marketing-ready="1"]) .mkt-consent {
+        /* .mkt-consent is the React cookie bar: it mounts a moment before the
+           page chunk commits, so without this it sat alone on the dark screen. */
         visibility: hidden !important;
       }
       html[data-react-ready="1"] #mkt-consent-static { display: none !important; }
