@@ -217,16 +217,13 @@
         letter-spacing: -0.02em;
       }
       #seo-static .seo-brand-mark {
+        /* Same Descall Icon.png logo as the real header (was a purple "D" box). */
         width: 28px;
         height: 28px;
         border-radius: 8px;
-        background: var(--seo-accent);
-        color: #fff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.85rem;
-        font-weight: 700;
+        display: block;
+        flex-shrink: 0;
+        object-fit: cover;
       }
       #seo-static .seo-brand-beta {
         font-size: 0.65rem;

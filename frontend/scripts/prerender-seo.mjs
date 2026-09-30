@@ -55,7 +55,7 @@ function escapeHtml(s) {
 }
 
 function seoBrand() {
-  return `<a class="seo-brand" href="/" aria-label="Descall home"><span class="seo-brand-mark" aria-hidden="true">D</span><span>Descall</span><span class="seo-brand-beta">Beta</span></a>`;
+  return `<a class="seo-brand" href="/" aria-label="Descall home"><img class="seo-brand-mark" src="/brand/descall-icon.png" alt="" width="28" height="28" decoding="async" /><span>Descall</span><span class="seo-brand-beta">Beta</span></a>`;
 }
 
 function routeIsTr(route) {
