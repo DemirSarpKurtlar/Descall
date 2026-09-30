@@ -45,4 +45,4 @@ assert(!/\{t\("Save"\)\}\s*\{t\("Cancel"\)\}/.test(rail), "Save and Cancel must 
 assert(/\.status-picker-actions \{[\s\S]{0,80}display:\s*flex/.test(polish), "status picker actions need display:flex");
 assert(/\.status-picker-actions \{[\s\S]{0,120}gap:\s*8px/.test(polish), "status picker actions need gap");
 assert(/\.us-status-edit-row \{[\s\S]{0,80}display:\s*flex/.test(settings), "profile custom status row must be flex");
-assert(/\.us-sticky-actions \{[\s\S]{0,160}display:\s*flex/.test(settings), "profile Save/Cancel row must be flex");
+assert(/\.us-pe-savebar \{[\s\S]{0,160}display:\s*flex/.test(settings), "profile Save/Cancel row must be flex");

@@ -6,6 +6,7 @@ import {
   Type, Upload, Check, MonitorSpeaker, AlertTriangle,
   Copy, Image as ImageIcon, RefreshCw, Globe, Shield,
   ShoppingBag, Mail, Monitor, CheckCircle2, UserX, Sparkles, KeyRound, Smile,
+  Trash2,
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
@@ -16,7 +17,7 @@ import { API_BASE_URL } from "../../config/api";
 import { normalizeUser } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import { readFileAsDataUrl } from "../../lib/cropImage";
-import { uploadAvatar } from "../../api/media";
+import { uploadAvatar, uploadFile } from "../../api/media";
 import { getMe } from "../../api/auth";
 import {
   setEmail as apiSetEmail,
@@ -261,8 +262,13 @@ const UserPanel = forwardRef(function UserPanel({
   const [profileError, setProfileError] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarCropSrc, setAvatarCropSrc] = useState("");
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [bannerCropSrc, setBannerCropSrc] = useState("");
   const [copiedId, setCopiedId] = useState(false);
   const fileInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
+  // Photo/banner saves update `me`; keep unsaved text drafts instead of resetting them.
+  const keepDraftsRef = useRef(null);
 
   /* ── Security: email verification, 2FA, sessions, blocked users ── */
   const [emailDraft, setEmailDraft] = useState(me?.email || "");
@@ -791,9 +797,11 @@ const UserPanel = forwardRef(function UserPanel({
 
   useEffect(() => {
     if (!me) return;
-    setDisplayName(me.displayName || me.display_name || me.username || "");
-    setBio(me.bio || "");
-    setCustomStatus(me.customStatus || me.custom_status || "");
+    const keep = keepDraftsRef.current;
+    keepDraftsRef.current = null;
+    setDisplayName(keep ? keep.displayName : me.displayName || me.display_name || me.username || "");
+    setBio(keep ? keep.bio : me.bio || "");
+    setCustomStatus(keep ? keep.customStatus : me.customStatus || me.custom_status || "");
     setAvatarUrl(me.avatarUrl || me.avatar_url || "");
     setBannerUrl(me.bannerUrl || me.banner_url || "");
   }, [me?.id, me?.avatarUrl, me?.avatar_url, me?.displayName, me?.display_name, me?.updated_at]);
@@ -808,6 +816,116 @@ const UserPanel = forwardRef(function UserPanel({
     setUser(normalized);
     onProfileUpdated?.(normalized);
     return normalized;
+  };
+
+  const keepTextDrafts = () => {
+    keepDraftsRef.current = { displayName, bio, customStatus };
+  };
+
+  /** Save only photo/banner changes on top of the SAVED profile (never unsaved text drafts). */
+  const persistProfilePatch = async (patch) => {
+    const token = getToken();
+    const body = {
+      displayName: me?.displayName || me?.display_name || null,
+      bio: me?.bio || "",
+      customStatus: me?.customStatus || me?.custom_status || "",
+      avatarUrl: me?.avatarUrl || me?.avatar_url || "",
+      bannerUrl: me?.bannerUrl || me?.banner_url || "",
+      ...patch,
+    };
+    const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || t("Failed to save profile"));
+    keepTextDrafts();
+    applyProfileLocally(
+      data.user || {
+        ...me,
+        avatarUrl: body.avatarUrl,
+        avatar_url: body.avatarUrl,
+        bannerUrl: body.bannerUrl,
+        banner_url: body.bannerUrl,
+        updated_at: new Date().toISOString(),
+      }
+    );
+  };
+
+  const flashProfileError = (msg) => {
+    setProfileError(msg);
+    setTimeout(() => setProfileError(""), 3500);
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (avatarUploading) return;
+    setAvatarUploading(true);
+    setProfileError("");
+    try {
+      await persistProfilePatch({ avatarUrl: "" });
+      setAvatarUrl("");
+    } catch (err) {
+      flashProfileError(err?.message || t("Failed to save profile"));
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const persistBannerFile = async (file) => {
+    setBannerUploading(true);
+    setProfileError("");
+    try {
+      const uploaded = await uploadFile(file);
+      const url = uploaded?.url || uploaded?.mediaUrl || null;
+      if (!url) throw new Error(t("Upload failed"));
+      await persistProfilePatch({ bannerUrl: url });
+      setBannerUrl(url);
+    } catch (err) {
+      flashProfileError(err?.message || t("Network error during upload"));
+    } finally {
+      setBannerUploading(false);
+      setBannerCropSrc("");
+    }
+  };
+
+  const handleBannerPick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      flashProfileError(t("Please choose a JPG, PNG, WebP, or GIF image."));
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      flashProfileError(t("Image must be 8 MB or smaller."));
+      return;
+    }
+    setProfileError("");
+    if (file.type === "image/gif") {
+      await persistBannerFile(file);
+      return;
+    }
+    try {
+      setBannerCropSrc(await readFileAsDataUrl(file));
+    } catch {
+      flashProfileError(t("Failed to read image."));
+    }
+  };
+
+  const handleRemoveBanner = async () => {
+    if (bannerUploading) return;
+    setBannerUploading(true);
+    setProfileError("");
+    try {
+      await persistProfilePatch({ bannerUrl: "" });
+      setBannerUrl("");
+    } catch (err) {
+      flashProfileError(err?.message || t("Failed to save profile"));
+    } finally {
+      setBannerUploading(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -878,6 +996,7 @@ const UserPanel = forwardRef(function UserPanel({
       const data = await uploadAvatar(file);
       if (data.avatarUrl) {
         setAvatarUrl(data.avatarUrl);
+        keepTextDrafts();
         if (data.user) applyProfileLocally(data.user);
         else {
           applyProfileLocally({
@@ -1075,31 +1194,154 @@ const UserPanel = forwardRef(function UserPanel({
           </div>
         );
 
-      case "profile":
+      case "profile": {
+        const savedDisplayName = me?.displayName || me?.display_name || me?.username || "";
+        const profileDirty =
+          (displayName || "") !== savedDisplayName ||
+          (bio || "") !== (me?.bio || "") ||
+          (customStatus || "") !== (me?.customStatus || me?.custom_status || "");
+        const shopBanner = Boolean(me?.equippedBanner?.asset_url);
+        const hasOwnAvatar = Boolean(avatarUrl || me?.avatarUrl || me?.avatar_url);
         return (
-          <div className="us-tab">
+          <div className="us-tab us-profile-tab">
             <p className="us-lead">{t("Update how others see you across Descall.")}</p>
 
-            <div
-              className="us-profile-preview"
-              style={
-                effectiveBannerUrl
-                  ? { backgroundImage: cssUrl(effectiveBannerUrl) }
-                  : undefined
-              }
-            >
-              <div className="us-profile-preview-fade" />
-              <Avatar
-                name={me?.username || "User"}
-                size={56}
-                user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-                animate="always"
-              />
-              <div className="us-profile-preview-meta">
-                <strong>{displayName || me?.username || "User"}</strong>
-                <span>@{me?.username?.toLowerCase() || "user"}</span>
+            {/* Live profile card — tap the banner or the photo to change them.
+                Photo & banner save immediately (same crop flow as Hesabım). */}
+            <div className="us-pe-card">
+              <div
+                className={`us-pe-banner${effectiveBannerUrl ? " has-image" : ""}`}
+                style={effectiveBannerUrl ? { backgroundImage: cssUrl(effectiveBannerUrl) } : undefined}
+              >
+                <button
+                  type="button"
+                  className="us-pe-banner-hit"
+                  onClick={() => !bannerUploading && !shopBanner && bannerInputRef.current?.click()}
+                  disabled={bannerUploading || shopBanner}
+                  aria-label={effectiveBannerUrl ? t("Change banner") : t("Add banner")}
+                >
+                  {!effectiveBannerUrl && (
+                    <span className="us-pe-banner-empty">
+                      {bannerUploading ? <RefreshCw size={15} className="us-spin" /> : <ImageIcon size={16} />}
+                      {t("Add banner")}
+                    </span>
+                  )}
+                </button>
+                {!shopBanner && effectiveBannerUrl && (
+                  <div className="us-pe-banner-actions">
+                    {bannerUrl && (
+                      <button
+                        type="button"
+                        className="us-pe-chip icon"
+                        onClick={handleRemoveBanner}
+                        disabled={bannerUploading}
+                        aria-label={t("Remove banner")}
+                        title={t("Remove banner")}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="us-pe-chip"
+                      onClick={() => !bannerUploading && bannerInputRef.current?.click()}
+                      disabled={bannerUploading}
+                    >
+                      {bannerUploading ? <RefreshCw size={13} className="us-spin" /> : <Camera size={13} />}
+                      <span>{t("Change banner")}</span>
+                    </button>
+                  </div>
+                )}
               </div>
+
+              <div className="us-pe-body">
+                <button
+                  type="button"
+                  className="us-pe-avatar"
+                  onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  aria-label={t("Change avatar")}
+                  title={t("Change avatar")}
+                >
+                  <Avatar
+                    name={me?.username || "User"}
+                    size={88}
+                    user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
+                    animate="always"
+                  />
+                  <span className="us-avatar-overlay" aria-hidden="true">
+                    {avatarUploading ? <RefreshCw size={20} className="us-spin" /> : <Camera size={20} />}
+                  </span>
+                  <span className="us-pe-avatar-cam" aria-hidden="true">
+                    {avatarUploading ? <RefreshCw size={13} className="us-spin" /> : <Camera size={13} />}
+                  </span>
+                </button>
+
+                <div className="us-pe-meta">
+                  <h3>
+                    <NameEffectText user={me}>{(displayName || "").trim() || me?.username || "User"}</NameEffectText>
+                    <BadgeIcon user={me} />
+                  </h3>
+                  <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
+                  {customStatus.trim() && <span className="us-status-pill">{customStatus}</span>}
+                </div>
+
+                {bio.trim() && (
+                  <div className="us-pe-about">
+                    <span>{t("About me")}</span>
+                    <p>{bio}</p>
+                  </div>
+                )}
+
+                <div className="us-pe-photo-row">
+                  <button
+                    type="button"
+                    className="us-btn primary"
+                    onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                    disabled={avatarUploading}
+                  >
+                    <Upload size={14} />
+                    {avatarUploading ? t("Uploading…") : hasOwnAvatar ? t("Change photo") : t("Upload photo")}
+                  </button>
+                  {hasOwnAvatar && (
+                    <button
+                      type="button"
+                      className="us-btn ghost"
+                      onClick={handleRemoveAvatar}
+                      disabled={avatarUploading}
+                    >
+                      <Trash2 size={14} /> {t("Remove photo")}
+                    </button>
+                  )}
+                </div>
+                <span className="us-hint">
+                  {shopBanner
+                    ? t("Your shop banner is equipped. Unequip it in the Shop to use your own.")
+                    : t("JPG, PNG, WebP or GIF, up to 8 MB. GIFs stay animated.")}
+                </span>
+              </div>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                ref={fileInputRef}
+                className="us-hidden"
+                onChange={handleAvatarUpload}
+              />
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                ref={bannerInputRef}
+                className="us-hidden"
+                onChange={handleBannerPick}
+              />
             </div>
+
+            {profileError && (
+              <div className="us-alert danger">
+                <AlertTriangle size={15} />
+                <span>{profileError}</span>
+              </div>
+            )}
 
             <section className="us-section">
               <h4 className="us-section-label">{t("Identity")}</h4>
@@ -1179,100 +1421,39 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Photos")}</h4>
-              <div className="us-card us-form">
-                <div className="us-avatar-block">
+            <div className={`us-pe-savebar${profileDirty ? " dirty" : ""}`}>
+              <span className="us-pe-savebar-text">
+                {profileSaved
+                  ? t("Saved")
+                  : profileDirty
+                    ? t("You have unsaved changes")
+                    : t("All changes saved")}
+              </span>
+              <div className="us-btn-row">
+                {profileDirty && (
                   <button
                     type="button"
-                    className="us-avatar-preview"
-                    onClick={() => !avatarUploading && fileInputRef.current?.click()}
-                    disabled={avatarUploading}
+                    className="us-btn ghost"
+                    onClick={handleCancelProfile}
+                    disabled={savingProfile}
                   >
-                    <Avatar
-                      name={me?.username || "User"}
-                      size={72}
-                      user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-                      animate="always"
-                    />
-                    <span className="us-avatar-overlay">
-                      {avatarUploading ? <RefreshCw size={18} className="us-spin" /> : <Camera size={18} />}
-                    </span>
+                    {t("Cancel")}
                   </button>
-                  <div className="us-avatar-actions">
-                    <input
-                      value={avatarUrl}
-                      onChange={(e) => setAvatarUrl(e.target.value)}
-                      placeholder={t("Paste image or GIF URL…")}
-                    />
-                    <div className="us-btn-row">
-                      <button
-                        type="button"
-                        className="us-btn primary"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={avatarUploading}
-                      >
-                        <Upload size={14} />
-                        {avatarUploading ? t("Uploading…") : t("Upload")}
-                      </button>
-                      {avatarUrl && (
-                        <button type="button" className="us-btn ghost-danger" onClick={() => setAvatarUrl("")}>
-                          <X size={14} /> {t("Remove")}
-                        </button>
-                      )}
-                    </div>
-                    <span className="us-hint">
-                      {t("JPG, PNG, WebP or GIF · Max 8 MB · Crop & zoom after picking a photo · GIFs skip crop to keep animation")}
-                    </span>
-                  </div>
-                </div>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  ref={fileInputRef}
-                  className="us-hidden"
-                  onChange={handleAvatarUpload}
-                />
-
-                <label className="us-field">
-                  <span><ImageIcon size={13} /> {t("Banner URL")}</span>
-                  <input
-                    value={bannerUrl}
-                    onChange={(e) => setBannerUrl(e.target.value)}
-                    placeholder="https://…"
-                  />
-                </label>
+                )}
+                <button
+                  type="button"
+                  className={`us-btn primary ${profileSaved ? "success" : ""}`}
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile || (!profileDirty && !profileSaved)}
+                >
+                  <Check size={16} />
+                  {profileSaved ? t("Saved") : savingProfile ? t("Saving…") : t("Save")}
+                </button>
               </div>
-            </section>
-
-            {profileError && (
-              <div className="us-alert danger">
-                <AlertTriangle size={15} />
-                <span>{profileError}</span>
-              </div>
-            )}
-
-            <div className="us-sticky-actions us-btn-row">
-              <button
-                type="button"
-                className={`us-btn primary ${profileSaved ? "success" : ""}`}
-                onClick={handleSaveProfile}
-                disabled={savingProfile}
-              >
-                <Check size={16} />
-                {profileSaved ? t("Saved") : savingProfile ? t("Saving…") : t("Save")}
-              </button>
-              <button
-                type="button"
-                className="us-btn ghost"
-                onClick={handleCancelProfile}
-                disabled={savingProfile}
-              >
-                {t("Cancel")}
-              </button>
             </div>
           </div>
         );
+      }
 
       case "security":
         return (
@@ -2245,6 +2426,21 @@ const UserPanel = forwardRef(function UserPanel({
           maxOutputSize={1024}
           onCancel={() => setAvatarCropSrc("")}
           onConfirm={persistAvatarFile}
+        />
+      ) : null}
+      {bannerCropSrc ? (
+        <ImageCropModal
+          key="banner-crop"
+          imageSrc={bannerCropSrc}
+          aspect={3}
+          cropShape="rect"
+          title={t("Adjust banner")}
+          confirmLabel={t("Save banner")}
+          outputMimeType="image/jpeg"
+          outputFileName="banner.jpg"
+          maxOutputSize={1500}
+          onCancel={() => setBannerCropSrc("")}
+          onConfirm={persistBannerFile}
         />
       ) : null}
     </AnimatePresence>
