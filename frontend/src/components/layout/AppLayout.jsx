@@ -15,7 +15,6 @@ import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
 import { useT } from "../../context/LocaleContext";
-import { ACTIVATION_EVENTS } from "../../lib/activationProgress";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
@@ -159,29 +158,6 @@ export default function AppLayout({
     window.addEventListener("descall:open-feedback", onOpenFeedback);
     return () => window.removeEventListener("descall:open-feedback", onOpenFeedback);
   }, []);
-
-  // Activation checklist → open Quick Add / Calls without digging through the UI.
-  useEffect(() => {
-    const openAddFriend = (event) => {
-      const tab = event?.detail?.tab;
-      const nextTab =
-        tab === "friend" || tab === "group" || tab === "quickadd" ? tab : "quickadd";
-      setAddTab(nextTab);
-      setShowAddModal(true);
-      setActiveView("friends");
-      if (isMobile) setMobileDrawerOpen(true);
-    };
-    const openCalls = () => {
-      setActiveView("calls");
-      if (isMobile) setMobileDrawerOpen(true);
-    };
-    window.addEventListener(ACTIVATION_EVENTS.OPEN_ADD_FRIEND, openAddFriend);
-    window.addEventListener(ACTIVATION_EVENTS.START_VOICE, openCalls);
-    return () => {
-      window.removeEventListener(ACTIVATION_EVENTS.OPEN_ADD_FRIEND, openAddFriend);
-      window.removeEventListener(ACTIVATION_EVENTS.START_VOICE, openCalls);
-    };
-  }, [isMobile, setActiveView]);
 
   const openUserPanel = useCallback(() => {
     setUserPanelOpen(true);
