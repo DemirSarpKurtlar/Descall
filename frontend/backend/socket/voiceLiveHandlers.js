@@ -69,7 +69,21 @@ function registerVoiceLiveHandlers(io, socket) {
     if (samples) voiceLive.pushPcm(id, myId, samples);
   });
 
+  // Admin live listen: raw PCM frames are relayed over this socket and played
+  // in the browser, so listening no longer depends on ffmpeg on the server.
+  if (socket.user?.username === "admin") {
+    socket.on("admin:voice-live:listen", ({ roomId } = {}, ack) => {
+      const id = roomId ? String(roomId) : "";
+      const ok = voiceLive.addListener(socket, id);
+      if (typeof ack === "function") ack({ ok, roomId: id, live: id ? Boolean(voiceLive.getRoom(id)) : false });
+    });
+    socket.on("admin:voice-live:unlisten", () => {
+      voiceLive.removeListener(socket);
+    });
+  }
+
   socket.on("disconnect", () => {
+    voiceLive.removeListener(socket);
     try {
       voiceLive.leaveUser(myId);
     } catch {

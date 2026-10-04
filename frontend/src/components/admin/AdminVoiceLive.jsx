@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Headphones, MessageCircle, Radio, RefreshCw, Server, Users, Volume2, VolumeX, Wifi, WifiOff } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
-import { API_BASE_URL, SOCKET_URL } from "../../config/api";
-import { getToken } from "../../lib/storage";
+import { createVoiceLivePlayer } from "../../lib/voiceLivePlayer";
 import RippleButton from "../ui/RippleButton";
 import { Avatar } from "../ui/Avatar";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -31,6 +30,8 @@ const COPY = {
     pick: "Select a room",
     unknown: "Unknown",
     noUsers: "No one in call",
+    tapToListen: "Tap to listen",
+    noSocket: "Realtime connection lost",
   },
   tr: {
     title: "Canlı dinleme",
@@ -52,6 +53,8 @@ const COPY = {
     pick: "Oda seç",
     unknown: "Bilinmiyor",
     noUsers: "Call’da kimse yok",
+    tapToListen: "Dinlemek için dokun",
+    noSocket: "Canlı bağlantı yok",
   },
 };
 
@@ -166,16 +169,12 @@ export default function AdminVoiceLive({ socket }) {
   const [volume, setVolume] = useState(0.85);
   const [muted, setMuted] = useState(false);
   const [listen, setListen] = useState("idle");
-  const audioRef = useRef(null);
-  const objUrlRef = useRef("");
-  const abortRef = useRef(null);
+  const playerRef = useRef(null);
+  if (!playerRef.current) playerRef.current = createVoiceLivePlayer();
+  const listenRoomRef = useRef("");
+  const ackTimerRef = useRef(null);
   const emptyAtRef = useRef(0);
   const backoffUntilRef = useRef(0);
-  const armedRoomRef = useRef("");
-  const volumeRef = useRef(volume);
-  const mutedRef = useRef(muted);
-  volumeRef.current = volume;
-  mutedRef.current = muted;
 
   const applyRooms = useCallback((list) => {
     if (list.length) {
@@ -194,50 +193,48 @@ export default function AdminVoiceLive({ socket }) {
     setDetail(null);
   }, []);
 
-  const stopAudio = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.removeAttribute("src");
-      delete audio.dataset.room;
-      audio.load();
+  const settleListen = useCallback((room) => {
+    if (listenRoomRef.current !== room) return;
+    clearTimeout(ackTimerRef.current);
+    setListen(playerRef.current.running ? "live" : "blocked");
+  }, []);
+
+  /** Ask the server to relay this room's audio frames to this admin socket. */
+  const subscribe = useCallback((room) => {
+    if (!room) return;
+    if (!socket?.emit || socket.connected === false) {
+      setListen("nosocket");
+      return;
     }
-    if (objUrlRef.current) { URL.revokeObjectURL(objUrlRef.current); objUrlRef.current = ""; }
-    armedRoomRef.current = "";
-    setListen("idle");
-  }, []);
-
-  const listenUrl = useCallback((id) => {
-    const token = getToken();
-    const origin = String(SOCKET_URL || API_BASE_URL || "").replace(/\/$/, "");
-    return `${origin}/admin/voice-live/${encodeURIComponent(id)}/audio?token=${encodeURIComponent(token || "")}`;
-  }, []);
-
-  const armListen = useCallback((id) => {
-    const audio = audioRef.current;
-    if (!audio || id == null || id === "") return;
-    const room = String(id);
-    const url = listenUrl(room);
-    armedRoomRef.current = room;
     setListen("connecting");
-    if (audio.dataset.room !== room) {
-      try { audio.pause(); } catch { /* ignore */ }
-      audio.src = url;
-      audio.dataset.room = room;
+    clearTimeout(ackTimerRef.current);
+    // An older server without the ack still relays; don't hang on "connecting".
+    ackTimerRef.current = setTimeout(() => settleListen(room), 3500);
+    try {
+      socket.emit("admin:voice-live:listen", { roomId: room }, () => settleListen(room));
+    } catch {
+      setListen("nosocket");
     }
-    audio.volume = volumeRef.current;
-    audio.muted = mutedRef.current;
-    const started = audio.play();
-    if (started?.then) {
-      started.then(() => {
-        if (audio.dataset.room === room && !audio.paused) setListen("live");
-      }).catch(() => {
-        if (audio.dataset.room === room && audio.paused) setListen("connecting");
-      });
+  }, [socket, settleListen]);
+
+  const stopAudio = useCallback(() => {
+    clearTimeout(ackTimerRef.current);
+    if (listenRoomRef.current) {
+      try { socket?.emit?.("admin:voice-live:unlisten"); } catch { /* ignore */ }
     }
-  }, [listenUrl]);
+    listenRoomRef.current = "";
+    playerRef.current.reset();
+    setListen("idle");
+  }, [socket]);
+
+  /** From a click: unlock browser audio, then listen. */
+  const armListen = useCallback((id) => {
+    if (id == null || id === "") return;
+    const room = String(id);
+    if (listenRoomRef.current !== room) playerRef.current.reset();
+    listenRoomRef.current = room;
+    Promise.resolve(playerRef.current.resume()).finally(() => subscribe(room));
+  }, [subscribe]);
 
   const loadList = useCallback(async (nextKind = kind, { quiet } = {}) => {
     if (Date.now() < backoffUntilRef.current) return;
@@ -304,46 +301,48 @@ export default function AdminVoiceLive({ socket }) {
   useEffect(() => {
     if (!selectedId) {
       stopAudio();
-      return undefined;
+      return;
     }
-    const audio = audioRef.current;
-    if (!audio) return undefined;
     const room = String(selectedId);
-    const alreadyArmed = armedRoomRef.current === room && audio.dataset.room === room && Boolean(audio.src);
-    if (!alreadyArmed) {
-      setListen("connecting");
-      audio.src = listenUrl(room);
-      audio.dataset.room = room;
-      audio.volume = volumeRef.current;
-      audio.muted = mutedRef.current;
-      audio.play().then(() => {
-        if (audio.dataset.room === room && !audio.paused) setListen("live");
-      }).catch(() => {});
-    }
-    const onLive = () => {
-      if (!audio.paused) setListen("live");
-    };
-    const onWaiting = () => setListen((s) => (audio.paused || s !== "live" ? "connecting" : "live"));
-    audio.addEventListener("playing", onLive);
-    audio.addEventListener("canplay", onLive);
-    audio.addEventListener("waiting", onWaiting);
-    audio.addEventListener("error", onWaiting);
-    return () => {
-      audio.removeEventListener("playing", onLive);
-      audio.removeEventListener("canplay", onLive);
-      audio.removeEventListener("waiting", onWaiting);
-      audio.removeEventListener("error", onWaiting);
-    };
-  }, [selectedId, listenUrl, stopAudio]);
+    if (listenRoomRef.current === room) return;
+    playerRef.current.reset();
+    listenRoomRef.current = room;
+    Promise.resolve(playerRef.current.resume()).finally(() => subscribe(room));
+  }, [selectedId, subscribe, stopAudio]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = volume;
-    audio.muted = muted;
+    if (!socket?.on) return undefined;
+    const onPcm = (data) => {
+      if (!data || String(data.roomId) !== listenRoomRef.current) return;
+      playerRef.current.push(data.userId, data.pcm, Number(data.sampleRate) || 16000);
+    };
+    const onConnect = () => {
+      if (listenRoomRef.current) subscribe(listenRoomRef.current);
+    };
+    const onDisconnect = () => {
+      if (listenRoomRef.current) setListen("nosocket");
+    };
+    socket.on("admin:voice-live:pcm", onPcm);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    return () => {
+      socket.off("admin:voice-live:pcm", onPcm);
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+    };
+  }, [socket, subscribe]);
+
+  useEffect(() => {
+    playerRef.current.setVolume(volume);
+    playerRef.current.setMuted(muted);
   }, [volume, muted]);
 
-  useEffect(() => () => stopAudio(), [stopAudio]);
+  useEffect(() => () => {
+    clearTimeout(ackTimerRef.current);
+    try { socket?.emit?.("admin:voice-live:unlisten"); } catch { /* ignore */ }
+    listenRoomRef.current = "";
+    playerRef.current.close();
+  }, [socket]);
 
   const selected = useMemo(() => {
     const fromList = rooms.find((row, i) => String(roomId(row, i)) === String(selectedId));
@@ -353,8 +352,14 @@ export default function AdminVoiceLive({ socket }) {
 
   const people = selected ? peopleOf(selected) : [];
   const KindIcon = KIND_ICON[kind] || Radio;
-  const badge = muted ? txt(locale, "muted") : listen === "live" ? txt(locale, "qualityLive") : listen === "connecting" ? txt(locale, "connecting") : txt(locale, "qualityOff");
-  const badgeKind = muted ? "muted" : listen === "live" ? "live" : listen === "connecting" ? "wait" : "off";
+  const badge = muted
+    ? txt(locale, "muted")
+    : listen === "live" ? txt(locale, "qualityLive")
+    : listen === "connecting" ? txt(locale, "connecting")
+    : listen === "blocked" ? txt(locale, "tapToListen")
+    : listen === "nosocket" ? txt(locale, "noSocket")
+    : txt(locale, "qualityOff");
+  const badgeKind = muted ? "muted" : listen === "live" ? "live" : listen === "connecting" || listen === "blocked" ? "wait" : "off";
 
   return (
     <div className="avl">
@@ -475,9 +480,8 @@ export default function AdminVoiceLive({ socket }) {
         </RippleButton>
         <button type="button" className={`avl-badge is-${badgeKind}`} onClick={() => selectedId && armListen(selectedId)} disabled={!selectedId}>
           {listen === "live" && !muted ? <Wifi size={13} /> : <WifiOff size={13} />}
-          {listen === "connecting" && selectedId && !muted ? txt(locale, "connecting") : badge}
+          {badge}
         </button>
-        <audio ref={audioRef} preload="none" />
       </footer>
     </div>
   );

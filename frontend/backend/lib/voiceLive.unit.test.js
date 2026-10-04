@@ -43,6 +43,8 @@ test("joinLive for server without occupancy is ignored", () => {
 test("one-person group still lists", () => {
   resetLive();
   assert.equal(joinLive("group:g1", "solo", { groupName: "Smoke" }), true);
+  assert.equal(listRooms("group").length, 0, "join alone (no mic audio) is not live");
+  setSpeaking("group:g1", "solo", { speaking: false, level: 0 });
   const rooms = listRooms("group");
   assert.equal(rooms.length, 1);
   assert.equal(rooms[0].participants.length, 1);
@@ -53,6 +55,9 @@ test("dm join only if emitter is a peer", () => {
   resetLive();
   assert.equal(joinLive("dm:a:b", "z"), false);
   assert.equal(joinLive("dm:a:b", "a"), true);
+  setSpeaking("dm:a:b", "a", { speaking: true, level: 0.5 });
+  assert.equal(listRooms("dm").length, 0, "one side's audio is not a live DM");
+  setSpeaking("dm:a:b", "b", { speaking: false, level: 0 });
   assert.equal(listRooms("dm").length, 1);
   leaveLive("dm:a:b", "a");
 });
@@ -60,6 +65,7 @@ test("dm join only if emitter is a peer", () => {
 test("listRooms includes a live-Map-only room", () => {
   resetLive();
   setSpeaking("dm:p1:p2", "p1", { speaking: true, level: 0.6 });
+  setSpeaking("dm:p1:p2", "p2", { speaking: false, level: 0 });
   const rooms = listRooms("dm");
   const hit = rooms.find((r) => r.id === "dm:p1:p2");
   assert.ok(hit, "live-map-only DM must appear without occupancy");
@@ -76,6 +82,8 @@ test("1-person server occupancy still lists", () => {
     startTime: Date.now(),
   });
   try {
+    assert.equal(listRooms("server").some((r) => r.id === "server:c-solo"), false, "occupancy without mic audio is stale");
+    setSpeaking("server:c-solo", "u1", { speaking: false, level: 0 });
     const rooms = listRooms("server");
     const hit = rooms.find((r) => r.id === "server:c-solo");
     assert.ok(hit, "solo user in a server channel must still list");
@@ -103,6 +111,7 @@ test("dropRoom clears occupancy-backed live row", () => {
   });
   try {
     assert.equal(joinLive("server:c-stale", "u1", { channelName: "General" }), true);
+    setSpeaking("server:c-stale", "u1", { speaking: false, level: 0 });
     assert.equal(listRooms("server").some((r) => r.id === "server:c-stale"), true);
   } finally {
     activeServerVoiceCalls.delete("c-stale");
@@ -120,9 +129,9 @@ test("named live leftover after occupancy hangup is not listed", () => {
     startTime: Date.now(),
   });
   try {
+    setSpeaking("server:c-name", "u1", { speaking: true, level: 0.2 });
     const named = listRooms("server").find((r) => r.id === "server:c-name");
     assert.equal(named.title, "General");
-    setSpeaking("server:c-name", "u1", { speaking: true, level: 0.2 });
   } finally {
     activeServerVoiceCalls.delete("c-name");
   }
@@ -182,6 +191,7 @@ test("joinLive drops the user from other live rooms", () => {
   try {
     assert.equal(joinLive("server:old", "u1", { channelName: "Old" }), true);
     assert.equal(joinLive("server:new", "u1", { channelName: "General" }), true);
+    setSpeaking("server:new", "u1", { speaking: false, level: 0 });
     activeServerVoiceCalls.delete("old");
     const rooms = listRooms("server");
     assert.equal(rooms.some((r) => r.id === "server:old"), false);
@@ -192,4 +202,49 @@ test("joinLive drops the user from other live rooms", () => {
     activeServerVoiceCalls.delete("new");
     resetLive();
   }
+});
+
+test("offline participants without mic audio are dropped from a real room", () => {
+  resetLive();
+  const { setIo } = require("./voiceLive");
+  const sockets = new Map([["s1", { connected: true, user: { id: "u1" } }]]);
+  setIo({ sockets: { sockets } });
+  activeServerVoiceCalls.set("c-mixed", {
+    serverId: "s1",
+    channelName: "General",
+    participants: new Map([
+      ["u1", { id: "u1", username: "alice" }],
+      ["ghost", { id: "ghost", username: "gone" }],
+    ]),
+    startTime: Date.now(),
+  });
+  try {
+    setSpeaking("server:c-mixed", "u1", { speaking: true, level: 0.5 });
+    const hit = listRooms("server").find((r) => r.id === "server:c-mixed");
+    assert.ok(hit);
+    assert.deepEqual(hit.participants.map((p) => p.id), ["u1"]);
+    assert.equal(hit.participants[0].micLive, true);
+  } finally {
+    activeServerVoiceCalls.delete("c-mixed");
+    setIo(null);
+    resetLive();
+  }
+});
+
+test("admin listener receives relayed PCM for its room only", () => {
+  resetLive();
+  const { addListener, removeListener, pushPcm } = require("./voiceLive");
+  const got = [];
+  const sock = { id: "adm", connected: true, emit: (ev, data) => got.push([ev, data]) };
+  assert.equal(addListener(sock, "group:g9"), true);
+  pushPcm("group:g9", "u1", new Int16Array([1, -2, 3]));
+  pushPcm("group:other", "u1", new Int16Array([4]));
+  assert.equal(got.length, 1);
+  assert.equal(got[0][0], "admin:voice-live:pcm");
+  assert.equal(got[0][1].userId, "u1");
+  assert.equal(got[0][1].pcm.length, 6);
+  removeListener(sock);
+  pushPcm("group:g9", "u1", new Int16Array([5]));
+  assert.equal(got.length, 1);
+  resetLive();
 });

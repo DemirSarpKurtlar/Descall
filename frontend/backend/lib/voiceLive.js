@@ -6,7 +6,7 @@ const {
   activeServerVoiceCalls,
   usernameById,
 } = require("../runtime/sharedState");
-const { listActiveDmCalls, ensureActiveDmCall } = require("./dmCallLog");
+const { listActiveDmCalls } = require("./dmCallLog");
 const { getCachedPublicUser } = require("./userProfile");
 
 const SAMPLE_RATE = 16000;
@@ -15,6 +15,11 @@ const FRAME_SAMPLES = (SAMPLE_RATE * FRAME_MS) / 1000;
 const SPEAK_HOLD_MS = 700;
 const PCM_TTL_MS = 800;
 const LIVE_TTL_MS = 15000;
+/** A participant counts as "really in the call right now" only while their mic tap keeps sending audio frames. */
+const AUDIO_FRESH_MS = 10000;
+
+/** socketId -> { socket, roomId } for admins listening live. */
+const listeners = new Map();
 
 /** roomId -> Map userId -> { level, speaking, at, pcm: Int16Array, pcmAt, refs } */
 const live = new Map();
@@ -153,7 +158,7 @@ function pruneLive() {
   }
 }
 
-function listRooms(kind) {
+function listCandidateRooms(kind) {
   pruneLive();
   const rooms = [];
   const seen = new Set();
@@ -252,6 +257,64 @@ function listRooms(kind) {
   return rooms;
 }
 
+function onlineUserIds() {
+  if (!ioRef?.sockets?.sockets) return null;
+  const ids = new Set();
+  try {
+    for (const sock of ioRef.sockets.sockets.values()) {
+      if (sock?.connected && sock.user?.id != null) ids.add(String(sock.user.id));
+    }
+  } catch {
+    return null;
+  }
+  return ids;
+}
+
+function audioFresh(roomId, userId, now = Date.now()) {
+  const st = live.get(roomId)?.get(String(userId));
+  return Boolean(st && st.audioAt && now - st.audioAt <= AUDIO_FRESH_MS);
+}
+
+/**
+ * Keep only what is really happening now. Call bookkeeping (occupancy maps,
+ * DM call log) can outlive a call when a client crashes or closes without
+ * hanging up, which made Admin Canlı show rooms nobody was in. A room is real
+ * only while at least one participant's mic is streaming audio frames right
+ * now; a DM needs both sides. Participants who are offline and silent are dropped.
+ */
+function realRoom(room, online, now) {
+  const parsed = parseRoomId(room.id);
+  if (!parsed) return null;
+  const people = (room.participants || [])
+    .map((p) => ({ ...p, micLive: audioFresh(room.id, p.id, now) }))
+    .filter((p) => p.micLive || !online || online.has(String(p.id)));
+  const liveMics = people.filter((p) => p.micLive).length;
+  if (parsed.kind === "dm") {
+    const ids = parsed.key.split(":").filter(Boolean);
+    const bothHere = ids.length === 2 && ids.every((id) => people.some((p) => sameId(p.id, id)));
+    if (!bothHere || liveMics < 2) return null;
+  } else if (liveMics < 1) {
+    return null;
+  }
+  const speakingUserId = people.some((p) => sameId(p.id, room.speakingUserId)) ? room.speakingUserId : speakerId(people);
+  return { ...room, participants: people, liveCount: people.length, speakingUserId };
+}
+
+function listRooms(kind) {
+  const online = onlineUserIds();
+  const now = Date.now();
+  const out = [];
+  for (const room of listCandidateRooms(kind)) {
+    const real = realRoom(room, online, now);
+    if (real) out.push(real);
+  }
+  // Stop relaying to admins whose room ended.
+  for (const [sid, entry] of [...listeners.entries()]) {
+    if (!entry.socket?.connected) listeners.delete(sid);
+  }
+  return out;
+}
+
 function getRoom(id) {
   const parsed = parseRoomId(id);
   if (!parsed) return null;
@@ -271,6 +334,7 @@ function setSpeaking(roomId, userId, { level = 0, speaking = false } = {}) {
     level: Math.max(0, Math.min(1, Number(level) || 0)),
     speaking: Boolean(speaking),
     at: Date.now(),
+    audioAt: Date.now(),
   });
   scheduleBroadcast();
 }
@@ -286,7 +350,50 @@ function pushPcm(roomId, userId, int16) {
   prev.pcm = int16;
   prev.pcmAt = Date.now();
   prev.at = Date.now();
+  prev.audioAt = Date.now();
   row.set(String(userId), prev);
+  relayPcm(roomId, userId, int16);
+}
+
+/** Send one speaker's raw 16 kHz PCM frame to every admin listening to this room. */
+function relayPcm(roomId, userId, int16) {
+  if (!listeners.size) return;
+  let payload = null;
+  for (const [sid, entry] of [...listeners.entries()]) {
+    if (entry.roomId !== roomId) continue;
+    if (!entry.socket?.connected) {
+      listeners.delete(sid);
+      continue;
+    }
+    if (!payload) {
+      payload = {
+        roomId,
+        userId: String(userId),
+        sampleRate: SAMPLE_RATE,
+        pcm: Buffer.from(int16.buffer, int16.byteOffset, int16.byteLength),
+      };
+    }
+    try {
+      (entry.socket.volatile || entry.socket).emit("admin:voice-live:pcm", payload);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function addListener(socket, roomId) {
+  if (!socket?.id) return false;
+  if (!roomId) {
+    listeners.delete(socket.id);
+    return true;
+  }
+  if (!parseRoomId(roomId)) return false;
+  listeners.set(socket.id, { socket, roomId: String(roomId) });
+  return true;
+}
+
+function removeListener(socket) {
+  if (socket?.id) listeners.delete(socket.id);
 }
 
 function mixFrame() {
@@ -512,14 +619,9 @@ function joinLive(roomId, userId, extra = {}) {
   if (parsed.kind === "dm") {
     const ids = parsed.key.split(":").filter(Boolean);
     if (!ids.some((id) => sameId(id, uid))) return false;
-    const peerId = ids.find((id) => !sameId(id, uid));
-    if (peerId && typeof ensureActiveDmCall === "function") {
-      try {
-        ensureActiveDmCall({ userId: uid, peerId });
-      } catch {
-        /* occupancy seed is best-effort */
-      }
-    }
+    // No occupancy seeding here: a heartbeat alone (possibly from a tap that
+    // outlived its call) must not make a DM look live. Admin Canlı requires
+    // fresh audio from both sides instead (see realRoom).
   }
   leaveUserExcept(uid, roomId);
   const row = ensureLiveRow(roomId, uid);
@@ -603,6 +705,8 @@ module.exports = {
   setSpeaking,
   pushPcm,
   pipeMp3,
+  addListener,
+  removeListener,
   userInRoom,
   occupancyHas,
   joinLive,
