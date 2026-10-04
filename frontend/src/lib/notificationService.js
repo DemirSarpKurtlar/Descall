@@ -39,6 +39,9 @@ class NotificationService {
     this.hasPermission = false;
     this.initialized = false;
     this.lastNotificationTime = 0;
+    // tag → last shown timestamp (cooldown is per conversation, not global,
+    // so a burst across DM/group/server never swallows a different chat)
+    this._lastByTag = new Map();
     this.pendingNotifications = [];
     // tag → timeout id — prevents duplicate notifications for the same event
     this._activeByTag = new Map();
@@ -92,10 +95,17 @@ class NotificationService {
   }
 
   async _isWindowActive() {
+    // Hidden (tray / minimized / background) is never "active".
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
     if (this.isElectron && window.electronAPI?.isWindowFocused) {
-      return window.electronAPI.isWindowFocused();
+      try {
+        return Boolean(await window.electronAPI.isWindowFocused());
+      } catch {
+        // IPC failure must not swallow the notification.
+        return false;
+      }
     }
-    return document.hasFocus();
+    return typeof document !== 'undefined' ? document.hasFocus() : false;
   }
 
   async show({ title, body, tag = 'descall', requireInteraction = false, silent = false, data = {}, avatarUrl = null }) {
@@ -116,32 +126,39 @@ class NotificationService {
       this._activeByTag.delete(tag);
     }
 
-    // Rate limit — skip non-call notifications during cooldown
-    const now = Date.now();
-    if (!requireInteraction && now - this.lastNotificationTime < COOLDOWN_MS) {
+    try {
+      // Rate limit per tag — skip non-call repeats of the same chat during cooldown
+      const now = Date.now();
+      const lastForTag = this._lastByTag.get(tag) || 0;
+      if (!requireInteraction && now - lastForTag < COOLDOWN_MS) return;
+
+      // Skip if window is focused (user can already see the message)
+      const windowActive = await this._isWindowActive();
+      if (windowActive && !requireInteraction) return;
+
+      this._lastByTag.set(tag, now);
+      this.lastNotificationTime = now;
+      if (this._lastByTag.size > 200) {
+        for (const [k, ts] of this._lastByTag) {
+          if (now - ts > 60_000) this._lastByTag.delete(k);
+        }
+      }
+
+      if (this.isElectron && window.electronAPI?.showNotification) {
+        window.electronAPI.showNotification(title, { body, tag, data, requireInteraction, silent, avatarUrl });
+      } else {
+        this._showWebNotification({ title, body, tag, requireInteraction, silent, data });
+      }
+
+      // Track this tag as active; clear after its visible duration
+      const ttl = requireInteraction ? 30_000 : 6_000;
+      const timer = setTimeout(() => this._activeByTag.delete(tag), ttl);
+      this._activeByTag.set(tag, timer);
+    } catch (err) {
+      console.error('[Notification] show failed:', err);
+    } finally {
       this._pendingByTag.delete(tag);
-      return;
     }
-    this.lastNotificationTime = now;
-
-    // Skip if window is focused (user can already see the message)
-    const windowActive = await this._isWindowActive();
-    if (windowActive && !requireInteraction) {
-      this._pendingByTag.delete(tag);
-      return;
-    }
-
-    if (this.isElectron) {
-      window.electronAPI.showNotification(title, { body, tag, data, requireInteraction, silent, avatarUrl });
-    } else {
-      this._showWebNotification({ title, body, tag, requireInteraction, silent, data });
-    }
-
-    // Track this tag as active; clear after its visible duration
-    const ttl = requireInteraction ? 30_000 : 6_000;
-    const timer = setTimeout(() => this._activeByTag.delete(tag), ttl);
-    this._activeByTag.set(tag, timer);
-    this._pendingByTag.delete(tag);
   }
 
   _showWebNotification({ title, body, tag, requireInteraction, silent, data }) {
@@ -238,6 +255,26 @@ class NotificationService {
         channelName,
         from,
       },
+    });
+  }
+
+  /** New message in a server text channel (server notification level "all"). */
+  async serverMessage({ serverId, channelId, serverName, channelName, from, text, kind, avatarUrl = null }) {
+    if (isDndMuted()) return;
+    if (readUserSettings().msgNotifications === false) return;
+    if (channelId && isChannelMuted(channelId)) return;
+    const where = serverName && channelName
+      ? `${serverName} #${channelName}`
+      : serverName || (channelName ? `#${channelName}` : t("New message"));
+    const preview = kind === 'voice'
+      ? t("🎤 Voice message")
+      : (text || '').trim() || (kind === 'media' ? '📎' : t("New message"));
+    await this.show({
+      title: where,
+      body: `${from || t("Someone")}: ${preview.substring(0, 100)}`,
+      tag: `server-${channelId || serverId || 'x'}`,
+      avatarUrl,
+      data: { type: 'server-message', serverId, channelId, serverName, channelName, from },
     });
   }
 

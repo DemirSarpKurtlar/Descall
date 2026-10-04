@@ -1709,6 +1709,16 @@ export default function App() {
             return n;
           });
           socket.emit("dm:mark_read", { withUserId: convWith });
+          // Open chat but window hidden / in tray / unfocused: still notify.
+          // notificationService drops it while the window is focused.
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
+            notificationService.newMessage({
+              from: normalizedMsg.from?.username || 'Birisi',
+              text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
+              preview: message.text?.substring(0, 100),
+              conversationId: convWith
+            });
+          }
         }
       }
     });
@@ -1810,6 +1820,15 @@ export default function App() {
           text: normalized.text,
           groupId,
         });
+      } else if (!isFromMe) {
+        // Open group but window hidden / in tray / unfocused: still notify.
+        const grp = myGroupsRef.current.find((g) => g.id === groupId);
+        notificationService.groupMessage({
+          groupName: grp?.name || "Grup",
+          from: normalized.from.username,
+          text: normalized.text,
+          groupId,
+        });
       }
     });
 
@@ -1852,9 +1871,16 @@ export default function App() {
         messageId,
       } = payload;
       if (channelId && isChannelMuted(channelId)) return;
-      if (channelId && activeChannelRef.current?.id === channelId) return;
       if (serverId && getServerNotificationLevel(serverId) === "muted") return;
-      if (channelId && serverId) {
+      if (
+        channelId &&
+        activeChannelRef.current?.id === channelId &&
+        document.visibilityState === "visible" &&
+        document.hasFocus()
+      ) return;
+      // Open channel: no unread bump, but still notify when the window is
+      // hidden or unfocused (notificationService drops it while focused).
+      if (channelId && serverId && activeChannelRef.current?.id !== channelId) {
         bumpChannelUnreadRef.current?.(channelId, messageId || `mention:${channelId}:${text}`);
       }
       notificationService.mention({
@@ -3135,7 +3161,7 @@ export default function App() {
         return;
       }
 
-      if (type === "mention" && data.serverId) {
+      if ((type === "mention" || type === "server-message") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
         setReplyTo(null);

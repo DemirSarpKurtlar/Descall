@@ -5,10 +5,12 @@ import { normalizeUser } from "../lib/userProfile";
 import { isChannelMuted } from "../lib/serverChannelMutes";
 import { parseAppDate } from "../lib/datetime";
 import { parseVoiceMeta } from "../lib/voiceMessage";
+import notificationService from "../lib/notificationService";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
   "server:channel:message",
+  "server:channel:notify",
   "server:channel:message:deleted",
   "server:channel:message:error",
   "server:channel:message:edited",
@@ -98,6 +100,18 @@ export function bindServerSocketHandlers(socket, ctx) {
   } = ctx;
 
   const patchPinState = makePatchPinState();
+
+  // Message ids that already played the "message" sound (room echo and the
+  // per-user notify can both arrive for the same message).
+  const soundedIds = new Set();
+  const markSounded = (id) => {
+    if (!id) return true;
+    const key = String(id);
+    if (soundedIds.has(key)) return false;
+    soundedIds.add(key);
+    setTimeout(() => soundedIds.delete(key), 15000);
+    return true;
+  };
 
   const upsertServerChannel = (serverId, channel) => {
     if (!serverId || !channel?.id) return;
@@ -325,8 +339,45 @@ export function bindServerSocketHandlers(socket, ctx) {
       notifLevel === "all"
     ) {
       bumpChannelUnreadRef.current?.(channelId, normalized.id);
-      playUiSound("message");
+      if (markSounded(normalized.id)) playUiSound("message");
     }
+  };
+
+  /**
+   * Per-user fan-out for every new message in a server text channel the user
+   * can see. Arrives even when that server isn't open (DMs view, another
+   * server, Electron hidden in the tray), so it drives the desktop
+   * notification plus unread + sound for channels we're not joined to.
+   */
+  const handleChannelNotify = (payload = {}) => {
+    const { serverId, channelId, messageId } = payload;
+    if (!serverId || !channelId) return;
+    const meId = myIdRef.current || getUser()?.id;
+    if (payload.senderId && meId && String(payload.senderId) === String(meId)) return;
+    if (isChannelMuted(channelId)) return;
+    if (getServerNotificationLevel(serverId) !== "all") return;
+    // A direct @mention is shown by the mention:received handler instead.
+    const myName = String(getUser()?.username || "").toLowerCase();
+    if (myName && Array.isArray(payload.mentions) && payload.mentions.includes(myName)) return;
+    const isActiveChannel =
+      activeViewRef.current === "servers" && activeChannelRef.current?.id === channelId;
+    if (!isActiveChannel) {
+      bumpChannelUnreadRef.current?.(channelId, messageId || null);
+      if (markSounded(messageId)) playUiSound("message");
+    }
+    // notificationService skips it while the window is focused and visible.
+    notificationService
+      .serverMessage({
+        serverId,
+        channelId,
+        serverName: payload.serverName || null,
+        channelName: payload.channelName || null,
+        from: payload.from || payload.fromUsername || null,
+        text: payload.text || "",
+        kind: payload.kind || "text",
+        avatarUrl: payload.avatarUrl || null,
+      })
+      .catch(() => {});
   };
 
   const handleChannelMessageDeleted = ({ channelId, messageId } = {}) => {
@@ -625,6 +676,7 @@ export function bindServerSocketHandlers(socket, ctx) {
   const handlers = {
     "server:channel:message:ack": handleChannelMessageAck,
     "server:channel:message": handleChannelMessage,
+    "server:channel:notify": handleChannelNotify,
     "server:channel:message:deleted": handleChannelMessageDeleted,
     "server:channel:message:error": handleChannelMessageError,
     "server:channel:message:edited": handleChannelMessageEdited,

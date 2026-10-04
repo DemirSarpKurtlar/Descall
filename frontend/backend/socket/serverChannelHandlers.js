@@ -184,7 +184,32 @@ function markSlowmodeSend(channelId, userId) {
 }
 
 /** Best-effort unread bump for server members when a message is sent (async). */
-function bumpChannelUnreadForMembers(serverId, channelId, senderId) {
+/** Build the per-user desktop notification payload for a new channel message. */
+function buildChannelNotifyPayload({ serverId, serverName, channelId, channelName, message }) {
+  const content = String(message?.content || "");
+  const isVoice = message?.media_type === "voice" || /^__voice__:/.test(content);
+  const hasMedia = Boolean(message?.media_url) && !isVoice;
+  const mentions = [
+    ...new Set([...content.matchAll(/@(\w{1,32})/g)].map((m) => m[1].toLowerCase())),
+  ];
+  const sender = message?.sender || {};
+  return {
+    serverId,
+    serverName: serverName || null,
+    channelId,
+    channelName: channelName || null,
+    messageId: message?.id || null,
+    senderId: message?.sender_id || sender.id || null,
+    from: sender.display_name || sender.displayName || sender.username || "Someone",
+    fromUsername: sender.username || null,
+    avatarUrl: sender.avatar_url || sender.avatarUrl || null,
+    text: isVoice ? "" : content.slice(0, 160),
+    kind: isVoice ? "voice" : hasMedia ? "media" : "text",
+    mentions,
+  };
+}
+
+function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = null) {
   if (!serverId || !channelId || !senderId) return;
   (async () => {
     try {
@@ -211,6 +236,35 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId) {
         })
       );
       if (!viewerIds.length) return;
+
+      // Desktop notification fan-out: every member who can see the channel
+      // gets it on their personal room, even when the server isn't open in
+      // their client (Electron in the background / tray, DMs view, etc.).
+      if (notify?.io && notify.message) {
+        try {
+          let serverName = notify.serverName || null;
+          if (!serverName) {
+            const { data: srv } = await supabase
+              .from("servers")
+              .select("name")
+              .eq("id", serverId)
+              .maybeSingle();
+            serverName = srv?.name || null;
+          }
+          const payload = buildChannelNotifyPayload({
+            serverId,
+            serverName,
+            channelId,
+            channelName: notify.channelName,
+            message: notify.message,
+          });
+          for (const uid of viewerIds) {
+            notify.io.to(`user:${uid}`).emit("server:channel:notify", payload);
+          }
+        } catch (err) {
+          console.warn("[ServerChannel] notify fan-out failed:", err?.message || err);
+        }
+      }
 
       const { data: existing, error: rErr } = await supabase
         .from("server_channel_reads")
@@ -986,7 +1040,11 @@ function registerServerChannelHandlers(io, socket) {
           tempId,
         });
 
-        bumpChannelUnreadForMembers(channel.server_id, channelId, myId);
+        bumpChannelUnreadForMembers(channel.server_id, channelId, myId, {
+          io,
+          channelName: channel.name || null,
+          message,
+        });
 
         // Direct @mention alerts (works even if the target is not in the channel room)
         if (trimmedContent) {
@@ -1088,5 +1146,7 @@ function registerServerChannelHandlers(io, socket) {
 
 module.exports = {
   registerServerChannelHandlers,
+  buildChannelNotifyPayload,
+  bumpChannelUnreadForMembers,
   assertTextChannelAccess,
 };

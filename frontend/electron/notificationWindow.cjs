@@ -202,14 +202,26 @@ function showNotificationWindow({
   onIpc('notif:accept',  'accept');
   onIpc('notif:decline', 'decline');
 
-  win.once('ready-to-show', () => {
-    win.showInactive();
+  // Show once painted; fall back after 1.5s so a missed ready-to-show
+  // (transparent windows while the main window is hidden) never eats it.
+  let shown = false;
+  const reveal = () => {
+    if (shown || dismissed) return;
+    shown = true;
+    try {
+      if (win.isDestroyed()) return;
+      win.showInactive();
+      win.setAlwaysOnTop(true, 'screen-saver');
+    } catch (_) { return; }
     activeNotifications.push({ win, type });
     repositionAll();
     if (!isCall && duration > 0) {
       dismissTimer = setTimeout(() => dismiss('timeout'), duration);
     }
-  });
+  };
+  win.once('ready-to-show', reveal);
+  const revealFallback = setTimeout(reveal, 1500);
+  win.once('closed', () => clearTimeout(revealFallback));
 
   return win;
 }

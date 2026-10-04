@@ -21,6 +21,16 @@ const {
 log.transports.file.level = 'info';
 log.info('App starting...');
 
+// Background / tray: keep the renderer fully awake so socket events keep
+// arriving and the message sound can play without a prior click (the app
+// can boot straight into the tray with no user gesture at all).
+try {
+  app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+} catch (_) { /* ignore */ }
+
 // Auto-updater — NSIS Setup installs always track the newest GitHub release.
 // Portable .exe cannot self-update; users must install Setup once.
 //
