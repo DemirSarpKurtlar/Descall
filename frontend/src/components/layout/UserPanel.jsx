@@ -6,12 +6,13 @@ import {
   Type, Upload, Check, MonitorSpeaker, AlertTriangle,
   Copy, Image as ImageIcon, RefreshCw, Globe, Shield,
   ShoppingBag, Mail, Monitor, CheckCircle2, UserX, Sparkles, KeyRound, Smile,
-  Trash2,
+  Trash2, AtSign, Lock,
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import StatusBadge from "../ui/StatusBadge";
 import ImageCropModal from "../ui/ImageCropModal";
+import UsernameChangeModal from "../settings/UsernameChangeModal";
 import { getToken, setUser } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { normalizeUser } from "../../lib/userProfile";
@@ -262,6 +263,8 @@ const UserPanel = forwardRef(function UserPanel({
   const [profileError, setProfileError] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarCropSrc, setAvatarCropSrc] = useState("");
+  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [usernameFlash, setUsernameFlash] = useState("");
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerCropSrc, setBannerCropSrc] = useState("");
   const [copiedId, setCopiedId] = useState(false);
@@ -818,6 +821,30 @@ const UserPanel = forwardRef(function UserPanel({
     return normalized;
   };
 
+  // The "admin" account's name is tied to admin access on the server, so it can't be renamed.
+  const usernameLocked = String(me?.username || "").trim().toLowerCase() === "admin";
+
+  const handleUsernameChanged = (user) => {
+    keepTextDrafts();
+    const normalized = applyProfileLocally(user);
+    setUsernameModalOpen(false);
+    setUsernameFlash(normalized?.username ? `@${normalized.username}` : "");
+    setTimeout(() => setUsernameFlash(""), 4000);
+  };
+
+  const renderUsernameAction = () =>
+    usernameLocked ? (
+      <span className="us-username-locked" title={t("This account's username is tied to admin access and can't be changed.")}>
+        <Lock size={12} aria-hidden />
+        {t("Locked")}
+      </span>
+    ) : (
+      <button type="button" className="us-username-change" onClick={() => setUsernameModalOpen(true)}>
+        <AtSign size={13} aria-hidden />
+        {t("Change")}
+      </button>
+    );
+
   const keepTextDrafts = () => {
     keepDraftsRef.current = { displayName, bio, customStatus };
   };
@@ -1163,7 +1190,13 @@ const UserPanel = forwardRef(function UserPanel({
               <div className="us-card">
                 <div className="us-info-row">
                   <span className="us-muted">{t("Username")}</span>
-                  <span className="us-info-value">{me?.username || "User"}</span>
+                  <span className="us-username-value">
+                    {usernameFlash ? (
+                      <span className="us-username-flash">{t("Updated")}</span>
+                    ) : null}
+                    <span className="us-info-value">@{me?.username || "user"}</span>
+                    {renderUsernameAction()}
+                  </span>
                 </div>
                 <div className="us-info-row">
                   <span className="us-muted">{t("Email")}</span>
@@ -1282,7 +1315,10 @@ const UserPanel = forwardRef(function UserPanel({
                     <NameEffectText user={me}>{(displayName || "").trim() || me?.username || "User"}</NameEffectText>
                     <BadgeIcon user={me} />
                   </h3>
-                  <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
+                  <span className="us-username-value">
+                    <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
+                    {renderUsernameAction()}
+                  </span>
                   {customStatus.trim() && <span className="us-status-pill">{customStatus}</span>}
                 </div>
 
@@ -2441,6 +2477,14 @@ const UserPanel = forwardRef(function UserPanel({
           maxOutputSize={1500}
           onCancel={() => setBannerCropSrc("")}
           onConfirm={persistBannerFile}
+        />
+      ) : null}
+      {usernameModalOpen && !usernameLocked ? (
+        <UsernameChangeModal
+          key="username-change"
+          currentUsername={me?.username || ""}
+          onClose={() => setUsernameModalOpen(false)}
+          onChanged={handleUsernameChanged}
         />
       ) : null}
     </AnimatePresence>

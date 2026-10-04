@@ -1,5 +1,5 @@
 const { verifyToken } = require("../config/jwt");
-const { bannedUserIds, banDetailsByUser, revokedSessionIds } = require("../runtime/sharedState");
+const { bannedUserIds, banDetailsByUser, revokedSessionIds, usernameById } = require("../runtime/sharedState");
 
 function socketAuthMiddleware(socket, next) {
   const token = socket.handshake.auth?.token;
@@ -26,7 +26,12 @@ function socketAuthMiddleware(socket, next) {
     if (decoded.sid && revokedSessionIds.has(decoded.sid)) {
       return next(new Error("Authentication failed: session has been signed out."));
     }
-    socket.user = { id: decoded.sub, username: decoded.username, sid: decoded.sid || null };
+    // After a username change, older tokens still carry the old name; prefer the live one.
+    socket.user = {
+      id: decoded.sub,
+      username: usernameById.get(decoded.sub) || decoded.username,
+      sid: decoded.sid || null,
+    };
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") {

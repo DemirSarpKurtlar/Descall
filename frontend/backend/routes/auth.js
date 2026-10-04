@@ -15,9 +15,14 @@ const { createSession, listSessions, removeSession, removeOtherSessions, clientI
 const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
 
-const { toPublicUser } = require("../lib/userProfile");
+const { toPublicUser, cacheUserProfile, broadcastUserProfileUpdate } = require("../lib/userProfile");
 const { publicRiotCard } = require("../lib/riotLink");
 const moderation = require("../lib/moderation");
+const {
+  isReservedUsername,
+  isProtectedAccountUsername,
+  escapeLike,
+} = require("../lib/usernamePolicy");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -208,7 +213,7 @@ function sanitizeUsernameBase(raw) {
     .replace(/[^a-z0-9_.-]/g, "")
     .replace(/^[_.-]+|[_.-]+$/g, "")
     .slice(0, 20);
-  return cleaned.length >= 2 ? cleaned : "user";
+  return cleaned.length >= 2 && !isReservedUsername(cleaned) ? cleaned : "user";
 }
 
 async function allocateUniqueUsername(preferredBase) {
@@ -234,6 +239,7 @@ function validateUsername(username) {
   if (trimmed.length > 24) return "Username must be at most 24 characters.";
   if (!/^[a-zA-Z0-9_.-]+$/.test(trimmed))
     return "Username may only contain letters, numbers, underscores, hyphens, and dots.";
+  if (isReservedUsername(trimmed)) return "That username is reserved. Please pick another one.";
   return null;
 }
 
@@ -1154,6 +1160,139 @@ router.post("/2fa/disable", requireAuth, async (req, res) => {
     return res.json({ message: "Two-factor authentication disabled.", twoFactorEnabled: false });
   } catch (err) {
     console.error("[AUTH] 2fa/disable error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// ─── Username change (password-confirmed) ───────────────────────────
+
+const USERNAME_CHANGE_MAX_FAILS = 5;
+const USERNAME_CHANGE_WINDOW_MS = 15 * 60 * 1000;
+const usernameChangeFails = new Map(); // userId -> { count, firstAt }
+
+function usernameChangeLocked(userId) {
+  const entry = usernameChangeFails.get(userId);
+  if (!entry) return false;
+  if (Date.now() - entry.firstAt > USERNAME_CHANGE_WINDOW_MS) {
+    usernameChangeFails.delete(userId);
+    return false;
+  }
+  return entry.count >= USERNAME_CHANGE_MAX_FAILS;
+}
+
+function noteUsernameChangeFail(userId) {
+  const now = Date.now();
+  const entry = usernameChangeFails.get(userId);
+  if (!entry || now - entry.firstAt > USERNAME_CHANGE_WINDOW_MS) {
+    usernameChangeFails.set(userId, { count: 1, firstAt: now });
+  } else {
+    entry.count += 1;
+  }
+}
+
+/** GET /api/auth/username/available?username=foo → { available, error? } (live check while typing). */
+router.get("/username/available", requireAuth, async (req, res) => {
+  try {
+    const candidate = String(req.query?.username || "").trim();
+    const formatError = validateUsername(candidate);
+    if (formatError) return res.json({ available: false, error: formatError });
+    const { data: taken, error } = await supabase
+      .from("users")
+      .select("id")
+      .ilike("username", escapeLike(candidate))
+      .neq("id", req.user.id)
+      .limit(1);
+    if (error) return res.status(500).json({ error: "Internal server error." });
+    if (taken && taken.length) return res.json({ available: false, error: "Username is already taken." });
+    return res.json({ available: true });
+  } catch (err) {
+    console.error("[AUTH] username/available error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+/** POST /api/auth/username { username, password } → { user, token } */
+router.post("/username", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { username, password } = req.body ?? {};
+
+    if (usernameChangeLocked(userId)) {
+      return res.status(429).json({ error: "Too many wrong passwords. Try again in 15 minutes." });
+    }
+
+    const formatError = validateUsername(username);
+    if (formatError) return res.status(400).json({ error: formatError });
+    const nextUsername = username.trim();
+
+    const { data: user, error: loadError } = await supabase
+      .from("users")
+      .select("id, username, password_hash, email, email_confirmed_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (loadError || !user) return res.status(500).json({ error: "Internal server error." });
+
+    if (isProtectedAccountUsername(user.username)) {
+      return res.status(403).json({ error: "This account's username is tied to admin access and can't be changed." });
+    }
+    if (!user.password_hash) {
+      return res.status(400).json({
+        error: "Your account has no password yet. Set one with \"Forgot password\" on the sign-in page, then try again.",
+        code: "PASSWORD_REQUIRED",
+      });
+    }
+    if (typeof password !== "string" || !(await bcrypt.compare(password, user.password_hash))) {
+      noteUsernameChangeFail(userId);
+      return res.status(401).json({ error: "Incorrect password.", code: "WRONG_PASSWORD" });
+    }
+    usernameChangeFails.delete(userId);
+
+    if (nextUsername === user.username) {
+      return res.status(400).json({ error: "That's already your username." });
+    }
+
+    const caseOnly = nextUsername.toLowerCase() === String(user.username || "").toLowerCase();
+    if (!caseOnly) {
+      const { data: taken, error: takenError } = await supabase
+        .from("users")
+        .select("id")
+        .ilike("username", escapeLike(nextUsername))
+        .neq("id", userId)
+        .limit(1);
+      if (takenError) return res.status(500).json({ error: "Internal server error." });
+      if (taken && taken.length) return res.status(409).json({ error: "Username is already taken." });
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from("users")
+      .update({ username: nextUsername, updated_at: new Date().toISOString() })
+      .eq("id", userId)
+      .select()
+      .single();
+    if (updateError) {
+      if (updateError.code === "23505") return res.status(409).json({ error: "Username is already taken." });
+      console.error("[AUTH] username update error:", updateError);
+      return res.status(500).json({ error: "Could not change username." });
+    }
+
+    const profile = cacheUserProfile(updated);
+    const io = req.app.get("io");
+    if (io) await broadcastUserProfileUpdate(io, userId).catch(() => {});
+
+    // Fresh token so requests from this device carry the new name right away.
+    const token = signToken({ id: userId, username: nextUsername, sid: req.user.sid || null });
+
+    if (user.email && user.email_confirmed_at) {
+      sendEmail({
+        to: user.email,
+        subject: "Your Descall username was changed",
+        text: `Your Descall username was changed from @${user.username} to @${nextUsername}.\n\nIf this wasn't you, reset your password right away and contact ${SUPPORT_EMAIL}.`,
+      }).catch(() => {});
+    }
+
+    return res.json({ user: toPublicUser(profile || updated), token, previousUsername: user.username });
+  } catch (err) {
+    console.error("[AUTH] username change error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
 });

@@ -1,5 +1,5 @@
 const { verifyToken } = require("../config/jwt");
-const { revokedSessionIds, bannedUserIds, banDetailsByUser } = require("../runtime/sharedState");
+const { revokedSessionIds, bannedUserIds, banDetailsByUser, usernameById } = require("../runtime/sharedState");
 const { touchLastSeen } = require("../lib/presenceTouch");
 
 function requireAuth(req, res, next) {
@@ -37,7 +37,12 @@ function requireAuth(req, res, next) {
         });
       }
     }
-    req.user = { id: decoded.sub, username: decoded.username, sid: decoded.sid || null };
+    // After a username change, older tokens still carry the old name; prefer the live one.
+    req.user = {
+      id: decoded.sub,
+      username: usernameById.get(decoded.sub) || decoded.username,
+      sid: decoded.sid || null,
+    };
     touchLastSeen(req.user.id).catch(() => {});
     next();
   } catch (err) {

@@ -78,3 +78,21 @@ export function logout(token) {
   });
 }
 
+
+/** Live check while typing a new @username (signed-in user). */
+export function checkUsernameAvailable(token, username, { signal } = {}) {
+  return httpRequest(`/auth/username/available?username=${encodeURIComponent(username)}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+}
+
+/** Change the signed-in user's @username; requires the current password. Returns { user, token, previousUsername }. */
+export function changeUsername(token, { username, password }) {
+  return httpRequest("/auth/username", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ username, password }),
+  });
+}
