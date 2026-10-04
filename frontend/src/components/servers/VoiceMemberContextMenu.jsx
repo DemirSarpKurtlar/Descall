@@ -60,6 +60,7 @@ export default function VoiceMemberContextMenu({
 
   if (!menu?.user) return null;
   const user = menu.user;
+  const isSelf = Boolean(menu.isSelf);
   const channelId = menu.channelId;
   const currentChannel = voiceChannels.find((c) => c.id === channelId);
   const isStage = currentChannel?.type === "stage";
@@ -67,7 +68,11 @@ export default function VoiceMemberContextMenu({
   const top = Math.min(menu.y || 12, (typeof window !== "undefined" ? window.innerHeight : 400) - 420);
   const voiceLevel = Math.max(0, Math.min(100, Number(voiceVolume) || 0));
   const screenLevel = Math.max(0, Math.min(100, Number(screenVolume) || 0));
-  const hasUserActions = Boolean(onVoiceVolume || onToggleVoiceMute || onViewProfile || onCopyId || showScreenVolume);
+  // Per-listener volume / local mute / screen volume make no sense for yourself.
+  const voiceVolumeHandler = isSelf ? null : onVoiceVolume;
+  const voiceMuteHandler = isSelf ? null : onToggleVoiceMute;
+  const showScreenSlider = !isSelf && showScreenVolume;
+  const hasUserActions = Boolean(voiceVolumeHandler || voiceMuteHandler || onViewProfile || onCopyId || showScreenSlider);
 
   const menuNode = (
     <>
@@ -88,7 +93,7 @@ export default function VoiceMemberContextMenu({
         <div className="server-voice-member-menu-title">
           {resolveDisplayName(user) || user.username}
         </div>
-        {typeof onVoiceVolume === "function" && (
+        {typeof voiceVolumeHandler === "function" && (
           <label className="server-voice-menu-slider">
             <span>
               {t("Volume")}
@@ -100,17 +105,17 @@ export default function VoiceMemberContextMenu({
               min="0"
               max="100"
               value={voiceLevel}
-              onChange={(event) => onVoiceVolume(Number(event.target.value))}
+              onChange={(event) => voiceVolumeHandler(Number(event.target.value))}
             />
           </label>
         )}
-        {typeof onToggleVoiceMute === "function" && (
-          <button type="button" className="server-dropdown-item" onClick={onToggleVoiceMute}>
+        {typeof voiceMuteHandler === "function" && (
+          <button type="button" className="server-dropdown-item" onClick={voiceMuteHandler}>
             {voiceLevel <= 0 ? <Mic size={14} /> : <MicOff size={14} />}
             {voiceLevel <= 0 ? t("Unmute") : t("Mute")}
           </button>
         )}
-        {showScreenVolume && typeof onScreenVolume === "function" && (
+        {showScreenSlider && typeof onScreenVolume === "function" && (
           <label className="server-voice-menu-slider">
             <span>
               <Monitor size={13} aria-hidden />

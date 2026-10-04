@@ -146,11 +146,12 @@ const VoiceTile = memo(function VoiceTile({
   }, [cameraStream, showVideo]);
 
   const openMenu = (event) => {
-    if (tile.isLocal) return;
+    if (!tile.member) return;
     event.preventDefault();
     event.stopPropagation();
     onOpenMenu?.({
       user: tile.member,
+      isSelf: Boolean(tile.isLocal),
       channelId: tile.channelId,
       sharing: Boolean(tile.sharing),
       x: event.clientX,
@@ -741,7 +742,11 @@ export default function ServerVoicePanel({
       list.push({
         id: meId || "local",
         channelId: channel?.id,
-        member: me,
+        member: {
+          ...me,
+          serverMuted: Boolean(serverVoice?.serverMuted),
+          serverDeafened: Boolean(serverVoice?.serverDeafened),
+        },
         label: resolveDisplayName(me) || me.username || t("You"),
         isLocal: true,
         audioStream: serverVoice?.localStream || null,

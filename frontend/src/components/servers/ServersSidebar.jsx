@@ -1095,12 +1095,13 @@ export default function ServersSidebar({
                             setChannelMenuId(null);
                             setChannelModal({ mode: "delete", channel: ch });
                           }}
-                          onVoiceUserMenu={(user, channelId, event) => {
+                          onVoiceUserMenu={(user, channelId, event, isSelf) => {
                             event?.preventDefault?.();
                             event?.stopPropagation?.();
                             setVoiceMenu({
                               user,
                               channelId,
+                              isSelf: Boolean(isSelf),
                               x: event?.clientX || 0,
                               y: event?.clientY || 0,
                             });
@@ -1163,12 +1164,13 @@ export default function ServersSidebar({
                     setChannelMenuId(null);
                     setChannelModal({ mode: "delete", channel: node });
                   }}
-                  onVoiceUserMenu={(user, channelId, event) => {
+                  onVoiceUserMenu={(user, channelId, event, isSelf) => {
                     event?.preventDefault?.();
                     event?.stopPropagation?.();
                     setVoiceMenu({
                       user,
                       channelId,
+                      isSelf: Boolean(isSelf),
                       x: event?.clientX || 0,
                       y: event?.clientY || 0,
                     });
@@ -1199,12 +1201,13 @@ export default function ServersSidebar({
                   serverVoice={serverVoice}
                   draggable={false}
                   onSelect={() => {}}
-                  onVoiceUserMenu={(user, channelId, event) => {
+                  onVoiceUserMenu={(user, channelId, event, isSelf) => {
                     event?.preventDefault?.();
                     event?.stopPropagation?.();
                     setVoiceMenu({
                       user,
                       channelId,
+                      isSelf: Boolean(isSelf),
                       x: event?.clientX || 0,
                       y: event?.clientY || 0,
                     });
@@ -1940,10 +1943,13 @@ function ChannelRow({
                 key={m.id}
                 member={m}
                 stream={stream}
-                onContextMenu={
-                  myUserId != null && String(m.id) === String(myUserId)
-                    ? undefined
-                    : (e) => onVoiceUserMenu?.(m, channel.id, e)
+                onContextMenu={(e) =>
+                  onVoiceUserMenu?.(
+                    m,
+                    channel.id,
+                    e,
+                    myUserId != null && String(m.id) === String(myUserId)
+                  )
                 }
               />
             );

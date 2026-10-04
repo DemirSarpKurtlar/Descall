@@ -10,6 +10,7 @@ import { useT } from '../../context/LocaleContext';
 import { openFeedbackModal } from '../../lib/feedbackNudge';
 import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
 import { TYPE_PRIORITY } from '../../lib/processDatabase';
+import { isVisiblyOnline } from '../../lib/presence';
 
 function typeRank(type) {
   const i = TYPE_PRIORITY.indexOf(type);
@@ -236,6 +237,7 @@ export default function ActivityView({
     .map(([userId, pres]) => {
       const friend = friends?.find(f => f.id === userId);
       if (!friend || !pres?.displayName) return null;
+      if (onlineUsers && !isVisiblyOnline(onlineUsers, userId)) return null;
       return { friend, pres };
     })
     .filter(Boolean)

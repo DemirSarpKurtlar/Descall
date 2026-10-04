@@ -170,6 +170,22 @@ function registerActivityHandlers(io, socket) {
     }, friendIds, privacy);
   });
 
+  // ─── disconnect: drop stale presence once the user's last socket is gone ────
+  // Without this, user_presence kept the last activity forever after the app
+  // closed, so friends saw "Using X" for someone who was already offline.
+  socket.on('disconnect', async () => {
+    try {
+      for (const [, sock] of io.sockets.sockets) {
+        if (sock.id !== socket.id && sock.user && String(sock.user.id) === String(myId)) return;
+      }
+      await supabase.from('user_presence').delete().eq('user_id', myId);
+      const friendIds = await getFriendIds(myId);
+      broadcastPresenceClear(io, myId, friendIds);
+    } catch (err) {
+      console.error('[activity:disconnect] cleanup error:', err?.message || err);
+    }
+  });
+
   // ─── activity:privacy ───────────────────────────────────────────────────────
   socket.on('activity:privacy', async ({ privacy } = {}) => {
     if (!VALID_PRIVACY.has(privacy)) return;
