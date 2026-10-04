@@ -33,7 +33,6 @@ import {
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
-import { startVoiceLiveTap } from "../lib/voiceLiveTap";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 
 /**
@@ -130,7 +129,6 @@ export function useCall(socket, callOccupancyRef = null) {
   }, [mode, networkStats.quality]);
   const localStreamRef = useRef(null);
   const voiceCaptureRef = useRef(null);
-  const voiceLiveTapRef = useRef(null);
   const screenStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const remoteScreenStreamRef = useRef(null);
@@ -198,8 +196,6 @@ export function useCall(socket, callOccupancyRef = null) {
   const cleanup = useCallback(() => {
     try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
     voiceCaptureRef.current = null;
-    try { voiceLiveTapRef.current?.stop(); } catch { /* ignore */ }
-    voiceLiveTapRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
     setDuration(0);
@@ -317,20 +313,6 @@ export function useCall(socket, callOccupancyRef = null) {
       getRemoteStreams: () => [remoteStreamRef.current].filter(Boolean),
       getMeta,
     });
-    try { voiceLiveTapRef.current?.stop(); } catch { /* ignore */ }
-    let tap = null;
-    try {
-      tap = startVoiceLiveTap({
-        socket: socketRef.current,
-        getLocalStream: () => localStreamRef.current,
-        getMeta,
-      });
-      voiceLiveTapRef.current = tap;
-    } catch { /* ignore */ }
-    return () => {
-      try { tap?.stop(); } catch { /* ignore */ }
-      if (voiceLiveTapRef.current === tap) voiceLiveTapRef.current = null;
-    };
   }, [mode]);
 
   // Handle call sounds based on mode

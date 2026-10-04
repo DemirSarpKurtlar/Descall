@@ -2,7 +2,6 @@
  * Shared group call lifecycle helpers — end, broadcast, disconnect cleanup.
  */
 const supabase = require("../db/supabase");
-const voiceLive = require("../lib/voiceLive");
 const { activeGroupCalls } = require("../runtime/sharedState");
 const { mapGroupCallRow } = require("../lib/dmCallLog");
 
@@ -111,11 +110,6 @@ async function endGroupCall(io, groupId, endedBy, activeCall) {
   // Snapshot participants before deleting active call
   const participantSnapshot = new Set(activeCall.allParticipants || []);
   activeGroupCalls.delete(groupId);
-  try {
-    voiceLive.dropRoom(voiceLive.roomIdGroup(groupId));
-  } catch {
-    /* live occupancy is best-effort */
-  }
 
   if (dbCallId) {
     supabase

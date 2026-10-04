@@ -1,4 +1,4 @@
-/** Extra Admin nav item for voice live listen + recordings archive.
+/** Extra Admin nav item for voice recordings archive.
  *  Wired into AdminPanel.jsx:
  *  1. import AdminVoiceRecordings from "./AdminVoiceRecordings";
  *  2. TABS: { id: "voice", label: "Voice", icon: Voicemail }

@@ -15,7 +15,6 @@ const {
   resolveChannelPermissions,
 } = require("../lib/serverPermissions");
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
-const voiceLive = require("../lib/voiceLive");
 
 function resolvePublicUser(socket) {
   const myId = socket.user?.id;
@@ -226,22 +225,8 @@ function removeFromVoice(io, channelId, userId) {
     /* ignore older socket.io */
   }
   const state = emitChannelState(io, call.serverId, channelId);
-  try {
-    voiceLive.leaveUser(uid);
-  } catch {
-    try {
-      voiceLive.leaveLive(voiceLive.roomIdServer(channelId), uid);
-    } catch {
-      /* live occupancy is best-effort */
-    }
-  }
   if (call.participants.size === 0) {
     activeServerVoiceCalls.delete(channelId);
-    try {
-      voiceLive.dropRoom(voiceLive.roomIdServer(channelId));
-    } catch {
-      /* ignore */
-    }
   }
   return state;
 }
@@ -464,11 +449,6 @@ function registerServerVoiceHandlers(io, socket) {
           console.warn("[ServerVoice] leave room failed:", err?.message || err);
         }
       }
-    }
-    try {
-      voiceLive.leaveUser(String(myId));
-    } catch {
-      /* live occupancy is best-effort */
     }
     socket.emit("server:voice:left", { channelId: channelId || null });
   });

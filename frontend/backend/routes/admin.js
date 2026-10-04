@@ -48,21 +48,11 @@ const insights = require("../lib/adminInsightsStore");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
-router.use((req, _res, next) => {
-  if (!req.headers.authorization && req.query?.token) {
-    const url = String(req.originalUrl || req.url || "");
-    if (url.includes("/voice-live/") && url.includes("/audio")) {
-      req.headers.authorization = `Bearer ${String(req.query.token).split("&")[0]}`;
-    }
-  }
-  next();
-});
 router.use(requireAuth, requireAdmin);
 router.use("/dimaai", require("./adminDimaai"));
 router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
 router.use("/voice-recordings", requireNamedAdmin, require("./adminVoice"));
-router.use("/voice-live", requireNamedAdmin, require("./adminVoiceLive"));
 
 function getIo(req) {
   return req.app.get("io");

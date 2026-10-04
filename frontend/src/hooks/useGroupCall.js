@@ -34,7 +34,6 @@ import {
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
-import { startVoiceLiveTap } from "../lib/voiceLiveTap";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 
 /** Build / merge a group-call participant row, keeping shop cosmetics. */
@@ -109,7 +108,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const screenEndedInBackgroundRef = useRef(false);
   const isInCallRef = useRef(false);
   const voiceCaptureRef = useRef(null);
-  const voiceLiveTapRef = useRef(null);
   const groupNameRef = useRef("");
   const participantsRef = useRef([]);
   const callTypeRef = useRef(null);
@@ -171,20 +169,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       getRemoteStreams: () => [...remoteStreamsRef.current.values()],
       getMeta,
     });
-    try { voiceLiveTapRef.current?.stop(); } catch { /* ignore */ }
-    let tap = null;
-    try {
-      tap = startVoiceLiveTap({
-        socket: socketRef.current,
-        getLocalStream: () => localStreamRef.current,
-        getMeta,
-      });
-      voiceLiveTapRef.current = tap;
-    } catch { /* ignore */ }
-    return () => {
-      try { tap?.stop(); } catch { /* ignore */ }
-      if (voiceLiveTapRef.current === tap) voiceLiveTapRef.current = null;
-    };
   }, [isInCall]);
 
   // Resume media + ICE after background; explain screen-share death on return.
@@ -413,8 +397,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const cleanup = useCallback(() => {
     try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
     voiceCaptureRef.current = null;
-    try { voiceLiveTapRef.current?.stop(); } catch { /* ignore */ }
-    voiceLiveTapRef.current = null;
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;

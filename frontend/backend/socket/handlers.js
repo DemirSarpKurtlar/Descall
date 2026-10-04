@@ -56,12 +56,10 @@ const { remainingUserSocketIds } = require("../lib/presenceRoster");
 const { registerGroupHandlers, removeUserFromAllGroupCalls } = require("./groupHandlers");
 const { registerServerChannelHandlers } = require("./serverChannelHandlers");
 const { registerServerVoiceHandlers, removeUserFromAllServerVoice, startAfkIdleScanner } = require("./serverVoiceHandlers");
-const { registerVoiceLiveHandlers } = require("./voiceLiveHandlers");
 const { scheduleTemporaryMemberCleanup } = require("../lib/serverMemberJoin");
 const { scheduleParticipantDisconnectGrace } = require("./groupCallLifecycle");
 const { toUtcIso } = require("../lib/datetime");
 const { trackOffer, markAnswered, isActiveDmCall, finalizeCall } = require("../lib/dmCallLog");
-const voiceLive = require("../lib/voiceLive");
 const { isBlockedEitherWay } = require("../lib/blocking");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
@@ -1297,11 +1295,6 @@ function registerSocketHandlers(io) {
       emitToUser(io, toUserId, "call:ended", { fromUserId: myId });
       try {
         await finishDmCall(io, myId, toUserId, "completed");
-        try {
-          voiceLive.dropRoom(voiceLive.roomIdDm(myId, toUserId));
-        } catch {
-          /* ignore */
-        }
       } catch (err) {
         console.warn("[Call] finalize end failed:", err?.message || err);
       }
@@ -1313,11 +1306,6 @@ function registerSocketHandlers(io) {
       try {
         // Unanswered cancel = missed for the callee history
         await finishDmCall(io, myId, toUserId, "missed");
-        try {
-          voiceLive.dropRoom(voiceLive.roomIdDm(myId, toUserId));
-        } catch {
-          /* ignore */
-        }
       } catch (err) {
         console.warn("[Call] finalize cancel failed:", err?.message || err);
       }
@@ -1328,11 +1316,6 @@ function registerSocketHandlers(io) {
       emitToUser(io, toUserId, "call:declined", { fromUserId: myId });
       try {
         await finishDmCall(io, myId, toUserId, "declined");
-        try {
-          voiceLive.dropRoom(voiceLive.roomIdDm(myId, toUserId));
-        } catch {
-          /* ignore */
-        }
       } catch (err) {
         console.warn("[Call] finalize decline failed:", err?.message || err);
       }
@@ -1927,7 +1910,6 @@ function registerSocketHandlers(io) {
     // Server channel text chat (Step 4) + voice hangouts (Step 10)
     registerServerChannelHandlers(io, socket);
     registerServerVoiceHandlers(io, socket);
-    registerVoiceLiveHandlers(io, socket);
   });
 }
 

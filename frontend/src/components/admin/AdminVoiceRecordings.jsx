@@ -7,7 +7,6 @@ import RippleButton from "../ui/RippleButton";
 import { Avatar } from "../ui/Avatar";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { appDateMs, formatAppDateTime, formatTimeAgo } from "../../lib/datetime";
-import AdminVoiceLive from "./AdminVoiceLive";
 
 const KINDS = ["dm", "group", "server"];
 const KIND_ICON = { dm: MessageCircle, group: Users, server: Server };
@@ -227,7 +226,7 @@ export default function AdminVoiceRecordings({ socket }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(null);
-  const [pane, setPane] = useState("live");
+  const pane = "archive";
 
   const load = useCallback(async (nextKind = kind) => {
     setLoading(true);
@@ -302,17 +301,6 @@ export default function AdminVoiceRecordings({ socket }) {
 
   return (
     <section className="admin-section admin-section-full admin-voice">
-      <div className="avl-mode" role="tablist" aria-label={txt(locale, "title")}>
-        <button type="button" role="tab" aria-selected={pane === "live"} className={pane === "live" ? "is-active" : ""} onClick={() => setPane("live")}>
-          <span className="avl-live-dot" aria-hidden="true" />
-          {txt(locale, "live")}
-        </button>
-        <button type="button" role="tab" aria-selected={pane === "archive"} className={`is-archive${pane === "archive" ? " is-active" : ""}`} onClick={() => setPane("archive")}>
-          {txt(locale, "archive")}
-        </button>
-      </div>
-      {pane === "live" ? <AdminVoiceLive socket={socket} /> : (
-      <>
       <div className="activity-header">
         <div className="activity-title-section">
           <h2>{txt(locale, "title")}</h2>
@@ -415,8 +403,6 @@ export default function AdminVoiceRecordings({ socket }) {
             );
           })}
         </ul>
-      )}
-      </>
       )}
     </section>
   );

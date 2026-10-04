@@ -5,7 +5,6 @@ import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/w
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
 import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
-import { startVoiceLiveTap } from "../lib/voiceLiveTap";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
@@ -120,7 +119,6 @@ export function useServerVoice(socket) {
   const sfuModeRef = useRef(false);
   const liveKitRoomRef = useRef(null);
   const voiceCaptureRef = useRef(null);
-  const voiceLiveTapRef = useRef(null);
   const participantsRef = useRef([]);
   const channelNameRef = useRef("");
   const liveKitConfigRef = useRef(null);
@@ -455,8 +453,6 @@ export function useServerVoice(socket) {
   }, []);
 
   const cleanupAll = useCallback(() => {
-    try { voiceLiveTapRef.current?.stop(); } catch { /* ignore */ }
-    voiceLiveTapRef.current = null;
     emitVoiceLeave();
     try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
     voiceCaptureRef.current = null;
@@ -1905,35 +1901,6 @@ export function useServerVoice(socket) {
         };
       },
     });
-    try { voiceLiveTapRef.current?.stop(); } catch { /* ignore */ }
-    let tap = null;
-    try {
-      tap = startVoiceLiveTap({
-        socket,
-        getLocalStream: () => localStreamRef.current,
-        getMeta: () => {
-          const me = getUser();
-          const parts = participantsRef.current || [];
-          const ids = [...new Set([me?.id, ...parts.map((p) => p.id)].filter(Boolean))];
-          const names = [...new Set([me?.username, ...parts.map((p) => p.username)].filter(Boolean))];
-          const liveChannelId = activeChannelIdRef.current;
-          return {
-            kind: "server",
-            serverId: activeServerIdRef.current || serverId,
-            ...(liveChannelId ? { channelId: liveChannelId } : {}),
-            channelName: channelNameRef.current || "",
-            participantIds: ids,
-            participantUsernames: names,
-            startedAt,
-          };
-        },
-      });
-      voiceLiveTapRef.current = tap;
-    } catch { /* ignore */ }
-    return () => {
-      try { tap?.stop(); } catch { /* ignore */ }
-      if (voiceLiveTapRef.current === tap) voiceLiveTapRef.current = null;
-    };
   }, [activeChannelId]);
 
   const cleanupAllRef = useRef(cleanupAll);
