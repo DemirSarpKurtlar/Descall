@@ -3618,16 +3618,16 @@ button.header-avatar {
 }
 
 @media (max-width: 520px) {
+  /* Keep centered like desktop / Friends — do not pin to the bottom edge. */
   .feedback-overlay {
-    padding: 12px;
-    align-items: flex-end;
+    padding: 16px;
+    align-items: center;
   }
 
   .feedback-modal,
   .feedback-modal-wizard {
     width: 100%;
     max-width: 100%;
-    border-radius: 18px 18px 12px 12px;
   }
 }
 
