@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
   Search,
-  Megaphone,
   MessageSquarePlus,
   Plus,
   Users,
@@ -13,6 +12,7 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getPresenceStatus, isVisiblyOnline } from "../../lib/presence";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
+import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
 import { TYPE_PRIORITY } from "../../lib/processDatabase";
 
@@ -120,14 +120,7 @@ export default function ActivitySidebar({
             >
               <Search size={18} />
             </button>
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Announcements")}
-              onClick={() => openFeedbackModal({ type: "praise", source: "activity_sidebar" })}
-            >
-              <Megaphone size={18} />
-            </button>
+            <AnnouncementsButton />
             <button
               type="button"
               className="icon-btn"

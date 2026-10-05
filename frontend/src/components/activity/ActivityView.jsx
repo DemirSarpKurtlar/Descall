@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
-  Search, Megaphone, MessageSquarePlus, Plus, Menu,
+  Search, MessageSquarePlus, Plus, Menu,
 } from 'lucide-react';
 import { ActivityTypeIcon } from '../../lib/shopIcons';
 import { useT } from '../../context/LocaleContext';
 import { openFeedbackModal } from '../../lib/feedbackNudge';
+import AnnouncementsButton from '../social/AnnouncementsModal';
 import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
 import { TYPE_PRIORITY } from '../../lib/processDatabase';
 import { isVisiblyOnline } from '../../lib/presence';
@@ -282,14 +283,7 @@ export default function ActivityView({
               >
                 <Search size={18} />
               </button>
-              <button
-                type="button"
-                className="icon-btn"
-                title={t('Announcements')}
-                onClick={() => openFeedbackModal({ type: 'praise', source: 'activity_view' })}
-              >
-                <Megaphone size={18} />
-              </button>
+              <AnnouncementsButton />
               <button
                 type="button"
                 className="icon-btn"
