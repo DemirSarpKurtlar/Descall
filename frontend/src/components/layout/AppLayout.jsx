@@ -8,7 +8,7 @@ import ChatPanel from "./ChatPanel";
 import UserPanel from "./UserPanel";
 import ActivitySidebar from "../activity/ActivitySidebar";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
-import FeedbackModal from "../feedback/FeedbackModal";
+import QuickFeedbackModal from "../feedback/QuickFeedbackModal";
 import ValorantHub from "../valorant/ValorantHub";
 import DimaAiWorkspace from "../dimaai/DimaAiWorkspace";
 import { useActivity } from "../../hooks/useActivity";
@@ -147,6 +147,7 @@ export default function AppLayout({
   const [notifBannerDismissed, setNotifBannerDismissed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackInitialType, setFeedbackInitialType] = useState("suggestion");
 
   const activity = useActivity({ socket, me, friends });
 
@@ -154,7 +155,13 @@ export default function AppLayout({
   const openMobileDrawer = useCallback(() => setMobileDrawerOpen(true), []);
 
   useEffect(() => {
-    const onOpenFeedback = () => setShowFeedbackModal(true);
+    const onOpenFeedback = (event) => {
+      const type = event?.detail?.type;
+      setFeedbackInitialType(
+        type === "bug" || type === "praise" || type === "suggestion" ? type : "suggestion"
+      );
+      setShowFeedbackModal(true);
+    };
     window.addEventListener("descall:open-feedback", onOpenFeedback);
     return () => window.removeEventListener("descall:open-feedback", onOpenFeedback);
   }, []);
@@ -380,7 +387,7 @@ export default function AppLayout({
 
       {/* Soft feedback reminder — top banner, auto-hides in 10s */}
       {me && !showNotifBanner && <FeedbackNudgeBanner enabled />}
-      <FeedbackModal isOpen={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} />
+      <QuickFeedbackModal isOpen={showFeedbackModal} initialType={feedbackInitialType} onClose={() => setShowFeedbackModal(false)} />
 
       {/* Mobile drawer backdrop */}
       <AnimatePresence>

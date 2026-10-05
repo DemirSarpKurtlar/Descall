@@ -19,7 +19,7 @@ const layout = readFileSync(join(root, "AppLayout.jsx"), "utf8");
 const css = readFileSync(join(root, "../../styles/app-layout.css"), "utf8");
 const titlebar = readFileSync(join(root, "../../styles/titlebar.css"), "utf8");
 const mobile = readFileSync(join(root, "../../styles/mobile.css"), "utf8");
-const feedbackModal = readFileSync(join(root, "../feedback/FeedbackModal.jsx"), "utf8");
+const feedbackModal = readFileSync(join(root, "../feedback/QuickFeedbackModal.jsx"), "utf8");
 const chatPanel = readFileSync(join(root, "ChatPanel.jsx"), "utf8");
 
 assert(
@@ -68,12 +68,12 @@ assert(
 
 assert(
   feedbackModal.includes("createPortal") && feedbackModal.includes("feedback-overlay"),
-  "FeedbackModal must portal to document.body with .feedback-overlay (never an app-root grid child)",
+  "QuickFeedbackModal must portal to document.body with .feedback-overlay (never an app-root grid child)",
 );
 
 assert(
-  layout.includes("<FeedbackModal") && layout.includes("app-sidebar-shell") && layout.includes("app-main-slot"),
-  "AppLayout still hosts FeedbackModal + sidebar shell + main slot",
+  layout.includes("<QuickFeedbackModal") && layout.includes("app-sidebar-shell") && layout.includes("app-main-slot"),
+  "AppLayout still hosts QuickFeedbackModal + sidebar shell + main slot",
 );
 
 assert(

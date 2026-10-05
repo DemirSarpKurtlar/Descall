@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Plus, Settings, Hash,
   ChevronDown, Bell, UserPlus, X, User, Users, Megaphone,
-  MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, MessageSquarePlus, Star, Bug, Lightbulb, ChevronDown as ChevronDownIcon,
+  MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, MessageSquarePlus, Star, ChevronDown as ChevronDownIcon,
   Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen,
 } from "lucide-react";
 import SwipeRevealRow from "./SwipeRevealRow";
@@ -17,26 +17,14 @@ import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { isVisiblyOnline } from "../../lib/presence";
 import GroupInviteModal from "../groups/GroupInviteModal";
-import { markFeedbackSubmitted } from "../../lib/feedbackNudge";
+import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
 import AdminBadge from "../social/AdminBadge";
 import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/datetime";
 
-const FEEDBACK_TYPE_TO_CATEGORY = {
-  suggestion: "feature",
-  bug: "bug",
-  praise: "improvement",
-};
 
-const RATING_TO_PRIORITY = {
-  1: "critical",
-  2: "high",
-  3: "medium",
-  4: "low",
-  5: "low",
-};
 
 export default function ServerSidebar({
   collapsed,
@@ -102,12 +90,6 @@ export default function ServerSidebar({
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState("");
   const [sentUsernames, setSentUsernames] = useState(() => new Set());
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackType, setFeedbackType] = useState('suggestion');
-  const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackSent, setFeedbackSent] = useState(false);
-  const [feedbackSending, setFeedbackSending] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -312,7 +294,7 @@ export default function ServerSidebar({
             <button
               className="icon-btn"
               title={t("Send Feedback")}
-              onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); setFeedbackRating(0); setFeedbackType('suggestion'); }}
+              onClick={() => openFeedbackModal({ type: "suggestion", source: "server_sidebar" })}
             >
               <MessageSquarePlus size={18} />
             </button>
@@ -352,116 +334,6 @@ export default function ServerSidebar({
             </button>
           </div>
         </div>
-
-        {/* Feedback Modal — portal to body (sidebar contain traps fixed) */}
-        {createPortal(
-        <AnimatePresence>
-          {showFeedback && (
-            <motion.div
-              className="feedback-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={(e) => { if (e.target === e.currentTarget) { setShowFeedback(false); setFeedbackSent(false); } }}
-            >
-              <motion.div
-                className="feedback-modal"
-                initial={{ opacity: 0, scale: 0.92, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 16 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {feedbackSent ? (
-                  <div className="feedback-success">
-                    <div className="feedback-success-icon">✓</div>
-                    <h3>{t("Thanks for your feedback!")}</h3>
-                    <p>{t("We review every submission and use it to make Descall better.")}</p>
-                    <button className="feedback-close-btn" onClick={() => { setShowFeedback(false); setFeedbackSent(false); }}>{t("Close")}</button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="feedback-header">
-                      <div className="feedback-header-left">
-                        <MessageSquarePlus size={20} />
-                        <h3>{t("Send Feedback")}</h3>
-                      </div>
-                      <button className="icon-btn" onClick={() => setShowFeedback(false)}><X size={18} /></button>
-                    </div>
-
-                    <div className="feedback-type-row">
-                      {[
-                        { id: 'suggestion', label: t('Suggestion'), icon: <Lightbulb size={14} /> },
-                        { id: 'bug', label: t('Bug Report'), icon: <Bug size={14} /> },
-                        { id: 'praise', label: t('Praise'), icon: <Star size={14} /> },
-                      ].map(ft => (
-                        <button
-                          key={ft.id}
-                          className={`feedback-type-btn${feedbackType === ft.id ? ' active' : ''}`}
-                          onClick={() => setFeedbackType(ft.id)}
-                        >
-                          {ft.icon} {ft.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="feedback-rating-row">
-                      <span className="feedback-rating-label">{t("Overall experience")}</span>
-                      <div className="feedback-stars">
-                        {[1,2,3,4,5].map(n => (
-                          <button
-                            key={n}
-                            className={`feedback-star${feedbackRating >= n ? ' active' : ''}`}
-                            onClick={() => setFeedbackRating(n)}
-                            aria-label={t("{n} star", { n })}
-                          >
-                            <Star size={18} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <textarea
-                      className="feedback-textarea"
-                      placeholder={feedbackType === 'bug' ? t('Describe the bug — what happened and how to reproduce it…') : feedbackType === 'praise' ? t('Tell us what you love about Descall…') : t('Share your idea or suggestion…')}
-                      value={feedbackText}
-                      onChange={e => setFeedbackText(e.target.value)}
-                      rows={5}
-                      maxLength={1000}
-                    />
-                    <div className="feedback-char-count">{feedbackText.length}/1000</div>
-
-                    <button
-                      className="feedback-submit-btn"
-                      disabled={feedbackText.trim().length < 5 || feedbackSending}
-                      onClick={async () => {
-                        if (feedbackText.trim().length < 5) return;
-                        setFeedbackSending(true);
-                        try {
-                          await fetch(`${API_BASE_URL}/api/feedback/submit`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                            body: JSON.stringify({
-                              category: FEEDBACK_TYPE_TO_CATEGORY[feedbackType] || 'other',
-                              priority: RATING_TO_PRIORITY[feedbackRating] || 'medium',
-                              message: feedbackText.trim(),
-                            }),
-                          });
-                        } catch (_) {}
-                        setFeedbackSending(false);
-                        setFeedbackSent(true);
-                        markFeedbackSubmitted();
-                      }}
-                    >
-                      {feedbackSending ? t('Sending…') : t('Submit Feedback')}
-                    </button>
-                  </>
-                )}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-        )}
 
         {/* Search */}
         <div className="sidebar-search">
