@@ -3,8 +3,11 @@
  * - Blocks two-finger pinch zoom (iOS ignores user-scalable=no, so we cancel
  *   gesture events and multi-touch moves ourselves).
  * - Blocks double-tap zoom.
- * - After an input loses focus (keyboard closes) snaps the viewport back to
- *   scale 1 so the app never stays enlarged.
+ * - After typing ends, if Safari left the page zoomed, snaps scale back to 1.
+ *
+ * Do NOT rewrite the viewport meta while the keyboard is open or on every
+ * visualViewport resize — that fights useMobileKeyboard's --vv-height updates
+ * and makes the chrome jump up/down rapidly while typing.
  */
 const VIEWPORT_LOCKED =
   "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content";
@@ -15,7 +18,14 @@ function isTouchDevice() {
   return "ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0;
 }
 
+function isEditable(el) {
+  return Boolean(
+    el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName || ""))
+  );
+}
+
 function resetViewportScale() {
+  if (isEditable(document.activeElement)) return;
   const meta = document.querySelector('meta[name="viewport"]');
   if (!meta) return;
   // Re-writing the content forces iOS to recompute the scale back to 1.
@@ -52,32 +62,26 @@ export function installMobileZoomLock() {
     "touchend",
     (e) => {
       const now = Date.now();
-      const t = e.target;
-      const editable =
-        t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ""));
-      if (!editable && now - lastTouchEnd < 300) cancel(e);
+      if (!isEditable(e.target) && now - lastTouchEnd < 300) cancel(e);
       lastTouchEnd = now;
     },
     { passive: false }
   );
-  // Keyboard closed / input blurred → snap back to normal size.
+  // Keyboard closed → snap scale only if Safari actually zoomed.
   document.addEventListener("focusout", (e) => {
-    const t = e.target;
-    if (!t || !(t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ""))) return;
+    if (!isEditable(e.target)) return;
     setTimeout(() => {
-      const a = document.activeElement;
-      if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName || ""))) return;
-      resetViewportScale();
-      if (window.visualViewport && window.visualViewport.scale > 1.01) resetViewportScale();
-    }, 60);
-  });
-  window.visualViewport?.addEventListener("resize", () => {
-    if (window.visualViewport.scale > 1.01) resetViewportScale();
+      if (isEditable(document.activeElement)) return;
+      if (window.visualViewport && window.visualViewport.scale > 1.01) {
+        resetViewportScale();
+      }
+    }, 320);
   });
   // Never let the page sit scrolled sideways (app would look cut off).
+  // Skip while typing — useMobileKeyboard already owns scroll while the KB is open.
   const snapX = () => {
+    if (isEditable(document.activeElement)) return;
     if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
   };
   window.addEventListener("scroll", snapX, { passive: true });
-  window.visualViewport?.addEventListener("scroll", snapX);
 }
