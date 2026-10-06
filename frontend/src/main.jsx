@@ -9,7 +9,6 @@ import { isAnalyticsAllowed, markAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
-import { installMobileZoomLock } from "./lib/mobileZoomLock";
 
 try {
   captureVisit();
@@ -25,14 +24,6 @@ const isElectronDesktop =
 // Desktop must never hydrate the SEO/marketing shell — logged-out first
 // paint is the app + AuthView. Web marketing paths stay unchanged.
 const preferMarketingShell = !hasSession && isPublicMarketingPath(path) && !isElectronDesktop;
-// Zoom lock only for the app shell; marketing pages keep pinch-zoom (a11y / axe meta-viewport).
-if (!preferMarketingShell) {
-  try {
-    installMobileZoomLock();
-  } catch {
-    /* zoom lock is best-effort */
-  }
-}
 
 /**
  * Schedule third-party analytics only after cookie consent (or app idle allow).

@@ -1139,36 +1139,14 @@
   z-index: 280;
 }
 
-/* Mobile zoom lock: iOS auto-zooms on focus when an input is < 16px.
-   Keep every editable field at 16px on touch devices so focus never zooms. */
+/* iOS Safari auto-zooms focused inputs under 16px — keep editables at 16px.
+   Do not attach document touch listeners or rewrite the viewport meta here;
+   that caused black screens / keyboard jitter on iPhone (2.9.109–2.9.113). */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 @media (hover: none) and (pointer: coarse) {
-  /* Clip sideways overflow and kill rubber-band on the document.
-     pan-x/pan-y (without pinch-zoom) also blocks CSS pinch zoom.
-     Do not pin html/body here — marketing pages still need to scroll. */
-  html,
-  body {
-    touch-action: pan-x pan-y;
-    overflow-x: hidden !important;
-    overscroll-behavior: none;
-    max-width: 100%;
-    width: 100%;
-  }
-  #root {
-    overflow-x: hidden;
-    max-width: 100%;
-    overscroll-behavior: none;
-  }
-  /* Logged-in app shell: stop the whole UI from sliding under a light finger. */
-  html.mobile-keyboard-lock,
-  html.mobile-keyboard-lock body,
-  html.mobile-keyboard-lock #root {
-    overscroll-behavior: none;
-    touch-action: pan-x pan-y;
-  }
   input,
   textarea,
   select,
