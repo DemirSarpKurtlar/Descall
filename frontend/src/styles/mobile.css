@@ -1138,3 +1138,22 @@
 .app-root.is-mobile .mobile-tab-bar {
   z-index: 280;
 }
+
+/* Mobile zoom lock: iOS auto-zooms on focus when an input is < 16px.
+   Keep every editable field at 16px on touch devices so focus never zooms. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+@media (hover: none) and (pointer: coarse) {
+  html,
+  body {
+    touch-action: pan-x pan-y;
+  }
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+  }
+}

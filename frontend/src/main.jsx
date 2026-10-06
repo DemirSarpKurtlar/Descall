@@ -9,6 +9,7 @@ import { isAnalyticsAllowed, markAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
+import { installMobileZoomLock } from "./lib/mobileZoomLock";
 
 try {
   captureVisit();
@@ -16,6 +17,11 @@ try {
   /* first-touch capture is best-effort */
 }
 installAndroidBack();
+try {
+  installMobileZoomLock();
+} catch {
+  /* zoom lock is best-effort */
+}
 
 const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
 const hasSession = Boolean(getToken());
