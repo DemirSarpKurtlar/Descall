@@ -71,4 +71,10 @@ export function installMobileZoomLock() {
   window.visualViewport?.addEventListener("resize", () => {
     if (window.visualViewport.scale > 1.01) resetViewportScale();
   });
+  // Never let the page sit scrolled sideways (app would look cut off).
+  const snapX = () => {
+    if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+  };
+  window.addEventListener("scroll", snapX, { passive: true });
+  window.visualViewport?.addEventListener("scroll", snapX);
 }

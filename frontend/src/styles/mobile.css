@@ -1146,9 +1146,20 @@ html {
   text-size-adjust: 100%;
 }
 @media (hover: none) and (pointer: coarse) {
+  /* Zoom lock disables Safari's shrink-to-fit, so any horizontal overflow
+     would widen the layout viewport and push the app off-screen (fixed
+     shells use left:0/right:0). Clip the document horizontally. */
   html,
   body {
     touch-action: pan-x pan-y;
+    overflow-x: hidden !important;
+    overscroll-behavior-x: none;
+    max-width: 100%;
+    width: 100%;
+  }
+  #root {
+    overflow-x: hidden;
+    max-width: 100%;
   }
   input,
   textarea,
