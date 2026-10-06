@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server, Sparkles } from "lucide-react";
 import NavigationRail from "./NavigationRail";
+import { installMobileZoomLock } from "../../lib/mobileZoomLock";
 import ServerSidebar from "./ServerSidebar";
 import ServersSidebar from "../servers/ServersSidebar";
 import ChatPanel from "./ChatPanel";
@@ -120,6 +121,14 @@ export default function AppLayout({
   onServerUpdated,
   serverVoice = null,
 }) {
+  // Logged-in app shell: lock mobile zoom (also covers marketing → login without reload).
+  useEffect(() => {
+    try {
+      installMobileZoomLock();
+    } catch {
+      /* best-effort */
+    }
+  }, []);
   const t = useT();
   const publicFeatures = usePublicFeatures();
   const showPlay = valorantPlayVisible(publicFeatures);

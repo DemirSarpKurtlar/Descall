@@ -26,6 +26,9 @@ function resetViewportScale() {
 export function installMobileZoomLock() {
   if (!isTouchDevice() || window.__descallZoomLock) return;
   window.__descallZoomLock = true;
+  // Static index.html keeps a zoomable viewport (marketing a11y); lock it here for the app.
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (meta) meta.setAttribute("content", VIEWPORT_LOCKED);
 
   const cancel = (e) => {
     if (e.cancelable) e.preventDefault();
