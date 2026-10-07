@@ -19,6 +19,7 @@ const { toPublicUser, cacheUserProfile, broadcastUserProfileUpdate } = require("
 const { publicRiotCard } = require("../lib/riotLink");
 const moderation = require("../lib/moderation");
 const accountDeletion = require("../lib/accountDeletion");
+const ageGate = require("../lib/ageGate");
 const {
   isReservedUsername,
   isProtectedAccountUsername,
@@ -165,6 +166,8 @@ function authUserPayload(user, extra = {}) {
     is_admin: isAdmin,
     isAdmin,
     email: user.email || null,
+    // null = known missing (ask for it), undefined = not loaded on this path
+    birthDate: Object.prototype.hasOwnProperty.call(user, "birth_date") ? user.birth_date || null : undefined,
     emailVerified: Boolean(user.email_confirmed_at),
     twoFactorEnabled: Boolean(user.two_factor_enabled),
     descoinBalance: Number(user.descoin_balance) || 0,
@@ -392,10 +395,15 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
 
 router.post("/register", async (req, res) => {
   try {
-    const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution } = req.body ?? {};
+    const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution, birthDate } = req.body ?? {};
 
     if (!termsAccepted) {
       return res.status(400).json({ error: "You must accept the Terms of Service and Privacy Policy to register." });
+    }
+
+    const birth = ageGate.validateBirthDate(birthDate);
+    if (!birth.ok) {
+      return res.status(birth.status).json({ error: birth.error, code: birth.code });
     }
 
     const usernameError = validateUsername(username);
@@ -444,8 +452,8 @@ router.post("/register", async (req, res) => {
     const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     const { data: newUser, error: insertError, attributionColumns } = await insertUserWithAttribution(
-      { username: cleanUsername, password_hash, email, terms_accepted_at: new Date().toISOString() },
-      "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance",
+      { username: cleanUsername, password_hash, email, terms_accepted_at: new Date().toISOString(), birth_date: birth.birthDate },
+      "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
       attribution,
       "email",
       { req, invitedBy },
@@ -554,7 +562,7 @@ router.post("/login", async (req, res) => {
     const { data: user, error: lookupError } = await supabase
       .from("users")
       .select(
-        "id, username, password_hash, avatar_url, display_name, bio, custom_status, banner_url, updated_at, auth_provider, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at"
+        "id, username, password_hash, avatar_url, display_name, bio, custom_status, banner_url, updated_at, auth_provider, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at"
       )
       .ilike("username", cleanUsername)
       .maybeSingle();
@@ -717,6 +725,7 @@ router.post("/google", async (req, res) => {
     }
 
     const credential = req.body?.credential;
+    const rawBirthDate = req.body?.birthDate;
     const invitedBy = req.body?.invitedBy;
     const attribution = req.body?.attribution;
     if (!credential || typeof credential !== "string") {
@@ -746,7 +755,7 @@ router.post("/google", async (req, res) => {
 
     let { data: user, error: byGoogleError } = await supabase
       .from("users")
-      .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, ${USER_BAN_COLS}`)
+      .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`)
       .eq("google_id", googleId)
       .maybeSingle();
 
@@ -758,7 +767,7 @@ router.post("/google", async (req, res) => {
     if (!user && email) {
       const { data: byEmail, error: byEmailError } = await supabase
         .from("users")
-        .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, ${USER_BAN_COLS}`)
+        .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`)
         .ilike("email", email)
         .maybeSingle();
 
@@ -785,7 +794,7 @@ router.post("/google", async (req, res) => {
           .from("users")
           .update(linkUpdate)
           .eq("id", byEmail.id)
-          .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, ${USER_BAN_COLS}`)
+          .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`)
           .single();
 
         if (linkError || !linked) {
@@ -798,6 +807,15 @@ router.post("/google", async (req, res) => {
 
     if (user && (await rejectIfBanned(res, user))) return;
     if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+
+    let newBirthDate = null;
+    if (!user && rawBirthDate) {
+      const birth = ageGate.validateBirthDate(rawBirthDate);
+      if (!birth.ok) {
+        return res.status(birth.status).json({ error: birth.error, code: birth.code });
+      }
+      newBirthDate = birth.birthDate;
+    }
 
     if (!user) {
       const preferred =
@@ -817,9 +835,11 @@ router.post("/google", async (req, res) => {
         avatar_url: picture,
         display_name: displayName,
       };
+      if (newBirthDate) insertPayload.birth_date = newBirthDate;
+      if (req.body?.termsAccepted) insertPayload.terms_accepted_at = new Date().toISOString();
 
       const googleSelect =
-        "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance";
+        "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date";
       const {
         data: created,
         error: insertError,
@@ -1326,6 +1346,48 @@ router.post("/logout", requireAuth, async (req, res) => {
 // POST /api/auth/account/delete — close the account now, anonymize after the
 // grace period (App Store Guideline 5.1.1(v)). Password accounts confirm with
 // their password; Google/Apple-only accounts confirm by typing their username.
+/**
+ * Set date of birth once (accounts created before the age gate, or Google sign-ups).
+ * Under 13 is stored too so the client can lock the account; it can't be changed afterwards.
+ */
+router.post("/birth-date", requireAuth, async (req, res) => {
+  try {
+    const birthDate = ageGate.parseBirthDate(req.body?.birthDate);
+    const age = birthDate ? ageGate.ageFromBirthDate(birthDate) : null;
+    if (!birthDate || age == null || age < 0 || age > 120) {
+      return res.status(400).json({ error: "Enter a valid date of birth.", code: "birth_date_invalid" });
+    }
+    const { data: row, error: readErr } = await supabase
+      .from("users")
+      .select("birth_date")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (readErr || !row) return res.status(500).json({ error: "Internal server error." });
+    if (row.birth_date) {
+      return res.status(409).json({ error: "Your date of birth is already set.", code: "birth_date_locked", birthDate: row.birth_date });
+    }
+    const { error: updErr } = await supabase
+      .from("users")
+      .update({ birth_date: birthDate })
+      .eq("id", req.user.id)
+      .is("birth_date", null);
+    if (updErr) return res.status(500).json({ error: "Could not save your date of birth." });
+    ageGate.forgetBirthDateCache(req.user.id);
+    const group = ageGate.ageGroup(age);
+    if (group === "child") {
+      return res.status(403).json({
+        error: "You must be at least 13 years old to use Descall.",
+        code: "under_age",
+        birthDate,
+      });
+    }
+    return res.json({ birthDate, ageGroup: group });
+  } catch (err) {
+    console.error("[AUTH] birth-date:", err?.message || err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 router.post("/account/delete", requireAuth, async (req, res) => {
   try {
     const { password, confirmUsername } = req.body ?? {};

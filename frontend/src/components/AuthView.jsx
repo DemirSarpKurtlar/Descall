@@ -6,6 +6,8 @@ import ForgotPasswordFlow from "./auth/ForgotPasswordFlow";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
 import LegalContentModal from "./legal/LegalContentModal";
+import BirthDateInput from "./auth/BirthDateInput";
+import { isEligibleBirthDate } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
@@ -18,6 +20,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
   const [legalModal, setLegalModal] = useState(null); // "terms" | "privacy" | null
   const [inviteRef, setInviteRef] = useState(() => peekInviteRef());
   const isElectron = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
@@ -51,7 +54,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
   const [verifying, setVerifying] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
 
-  const needsTerms = mode === "register" && !termsAccepted;
+  const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
   const productTagline = t("Connect with friends through voice, video, and messaging");
 
   const submit = async (event) => {
@@ -66,13 +69,14 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
       }
       return;
     }
-    if (!termsAccepted) return;
+    if (!termsAccepted || !isEligibleBirthDate(birthDate)) return;
     const trimmedEmail = email.trim();
     const invitedBy = inviteRef || peekInviteRef();
     await onRegister({
       username: username.trim(),
       password,
       termsAccepted: true,
+      birthDate,
       ...(trimmedEmail ? { email: trimmedEmail } : {}),
       ...(invitedBy ? { invitedBy } : {}),
     });
@@ -185,12 +189,13 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
         </div>
 
         <GoogleSignInButton
-          disabled={loading || (mode === "register" && !termsAccepted)}
+          disabled={loading || needsTerms}
           onCredential={async (credential) => {
-            if (mode === "register" && !termsAccepted) return;
+            if (needsTerms) return;
             const invitedBy = inviteRef || peekInviteRef();
             await onGoogleLogin?.(credential, {
               termsAccepted: mode === "register",
+              ...(mode === "register" ? { birthDate } : {}),
               ...(invitedBy ? { invitedBy } : {}),
             });
           }}
@@ -251,6 +256,10 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
           )}
 
           {mode === "register" && (
+            <BirthDateInput idPrefix="auth-birth" value={birthDate} onChange={setBirthDate} />
+          )}
+
+          {mode === "register" && (
             <div className="input-wrapper">
               <Mail className="input-icon" size={20} />
               <input
@@ -287,6 +296,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
                   {t("Privacy Policy")}
                 </button>
                 .
+                <span className="legal-consent-note">
+                  {t("Descall has zero tolerance for objectionable content and abusive users.")}
+                </span>
               </label>
             </div>
           )}

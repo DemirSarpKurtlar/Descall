@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { useT } from "../context/localeContextInstance";
 import { peekInviteRef } from "../lib/referral";
 import { Funnel } from "./analytics";
+import BirthDateInput from "../components/auth/BirthDateInput";
+import { isEligibleBirthDate } from "../lib/age";
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
 const ForgotPasswordFlow = lazy(() => import("../components/auth/ForgotPasswordFlow"));
@@ -45,6 +47,8 @@ function AuthModal({
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
+  const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate));
   const [legalModal, setLegalModal] = useState(null);
 
   const [twoFa, setTwoFa] = useState(null);
@@ -93,7 +97,7 @@ function AuthModal({
   const submit = async (e) => {
     e.preventDefault();
     if (isSubmitting || authLoading) return;
-    if (isRegistering && !termsAccepted) return;
+    if (signupBlocked) return;
     setIsSubmitting(true);
     try {
       if (isRegistering) {
@@ -103,6 +107,7 @@ function AuthModal({
             username,
             password,
             termsAccepted: true,
+            birthDate,
             ...(trimmedEmail ? { email: trimmedEmail } : {}),
           })
         );
@@ -212,12 +217,12 @@ function AuthModal({
                 {authError && <div className="auth-error">{authError}</div>}
                 <Suspense fallback={null}>
                   <GoogleSignInButton
-                  disabled={isSubmitting || authLoading || (isRegistering && !termsAccepted)}
+                  disabled={isSubmitting || authLoading || signupBlocked}
                   onCredential={async (credential) => {
-                    if (isRegistering && !termsAccepted) return;
+                    if (signupBlocked) return;
                     setIsSubmitting(true);
                     try {
-                      await onGoogleLogin?.(credential, withInvite({ termsAccepted: isRegistering }));
+                      await onGoogleLogin?.(credential, withInvite({ termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) }));
                     } finally {
                       setIsSubmitting(false);
                     }
@@ -256,6 +261,9 @@ function AuthModal({
                     </div>
                   )}
                   {isRegistering && (
+                    <BirthDateInput idPrefix="mkt-birth" value={birthDate} onChange={setBirthDate} variant="marketing" />
+                  )}
+                  {isRegistering && (
                     <input
                       type="email"
                       value={email}
@@ -290,12 +298,15 @@ function AuthModal({
                           {t("Privacy Policy")}
                         </button>
                         .
+                        <span className="legal-consent-note">
+                          {t("Descall has zero tolerance for objectionable content and abusive users.")}
+                        </span>
                       </label>
                     </div>
                   )}
                   <button
                     type="submit"
-                    disabled={isSubmitting || authLoading || (isRegistering && !termsAccepted)}
+                    disabled={isSubmitting || authLoading || signupBlocked}
                   >
                     {isRegistering ? t("Create Account") : t("Sign In")}
                   </button>

@@ -59,6 +59,7 @@ import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isNativeIOS } from "./lib/platform";
+import BirthDateGate from "./components/auth/BirthDateGate";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
 import { requestNativePushPermission, syncNativePushToken, isNativePushPlatform } from "./lib/nativePush";
@@ -1997,7 +1998,7 @@ export default function App() {
 
     socket.on("game:notice", ({ text } = {}) => {
       if (!text || isNativeIOS()) return;
-      toast(text, "info");
+      toast(t(text), "info");
     });
 
     socket.on("dm:message:update", ({ msgId, convWith, deliveredAt } = {}) => {
@@ -2337,6 +2338,7 @@ export default function App() {
       const data = await loginWithGoogle(credential, {
         invitedBy: invitedBy || undefined,
         termsAccepted: extra?.termsAccepted,
+        birthDate: extra?.birthDate,
       });
       if (invitedBy) consumeInviteRef();
       transportFallbackStepRef.current = 0;
@@ -4030,6 +4032,13 @@ export default function App() {
     <UpdateNotes />
     <div className="app-container">
         <ElectronUpdateToast />
+        <BirthDateGate
+          me={me}
+          onBirthDateSaved={(birthDate) => {
+            if (me) commitSessionUser({ ...me, birthDate });
+          }}
+          onLogout={handleLogout}
+        />
         {(me?.is_admin || me?.username === "admin") && adminOpen && (
           <AdminPanel socket={socketApi} viewerUsername={me?.username} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
         )}

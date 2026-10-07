@@ -23,3 +23,7 @@ export const revokeOtherSessions = () => authedRequest("/api/auth/sessions/revok
 // Account deletion (closes now, permanently deleted after 14 days)
 export const deleteAccount = ({ password, confirmUsername } = {}) =>
   authedRequest("/api/auth/account/delete", { method: "POST", body: { password, confirmUsername } });
+
+// Age gate — set date of birth once (older accounts / Google sign-ups)
+export const setBirthDate = (birthDate) =>
+  authedRequest("/api/auth/birth-date", { method: "POST", body: { birthDate } });

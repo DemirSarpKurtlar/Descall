@@ -83,7 +83,7 @@ async function run() {
 
     // 2. Register without email (terms accepted)
     r = await req(base, "POST", "/register", {
-      body: { username: "alice", password: "password123", termsAccepted: true },
+      body: { username: "alice", password: "password123", termsAccepted: true, birthDate: "2000-01-15" },
     });
     assert(r.status === 201, "register without email succeeds: " + JSON.stringify(r.body));
     assert(r.body.needsEmailVerification === false, "no verification needed without email");
@@ -92,7 +92,7 @@ async function run() {
 
     // 3. Register with email
     r = await req(base, "POST", "/register", {
-      body: { username: "bob", password: "password123", email: "bob@example.com", termsAccepted: true },
+      body: { username: "bob", password: "password123", email: "bob@example.com", termsAccepted: true, birthDate: "2000-01-15" },
     });
     assert(r.status === 201, "register with email succeeds: " + JSON.stringify(r.body));
     assert(r.body.needsEmailVerification === true, "flags email verification needed");
@@ -103,7 +103,7 @@ async function run() {
 
     // 4. Duplicate username rejected
     r = await req(base, "POST", "/register", {
-      body: { username: "bob", password: "password123", termsAccepted: true },
+      body: { username: "bob", password: "password123", termsAccepted: true, birthDate: "2000-01-15" },
     });
     assert(r.status === 409, "duplicate username rejected");
 
@@ -184,6 +184,7 @@ async function run() {
         password: "password123",
         email: "adsuser@example.com",
         termsAccepted: true,
+        birthDate: "2000-01-15",
         attribution: {
           first: {
             gclid: "GCLID123",

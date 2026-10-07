@@ -34,6 +34,7 @@ export function loginWithGoogle(credential, extra = {}) {
   const payload = withAttribution({ credential });
   if (extra?.invitedBy) payload.invitedBy = extra.invitedBy;
   if (extra?.termsAccepted) payload.termsAccepted = true;
+  if (extra?.birthDate) payload.birthDate = extra.birthDate;
   if (extra?.attribution) payload.attribution = extra.attribution;
   return httpRequest(API_ROUTES.google, {
     method: "POST",

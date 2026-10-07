@@ -28,6 +28,8 @@ import { formatReleaseLabel } from '../../lib/releaseVersion';
 import { DESKTOP_RELEASE_FALLBACK } from '../../lib/desktopRelease';
 import { useT } from '../../context/LocaleContext';
 import './DownloadPage.css';
+import BirthDateInput from "../auth/BirthDateInput";
+import { isEligibleBirthDate } from "../../lib/age";
 
 const GITHUB_REPO = 'DemirSarpKurtlar/Descall';
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
@@ -82,6 +84,8 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
+  const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate));
   const [legalModal, setLegalModal] = useState(null);
   const [releaseError, setReleaseError] = useState(null);
   const [downloadLinks, setDownloadLinks] = useState({ windows: null, android: null });
@@ -507,12 +511,12 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             {authError && <div className="auth-error">{authError}</div>}
 
             <GoogleSignInButton
-              disabled={isSubmitting || authLoading || (isRegistering && !termsAccepted)}
+              disabled={isSubmitting || authLoading || signupBlocked}
               onCredential={async (credential) => {
-                if (isRegistering && !termsAccepted) return;
+                if (signupBlocked) return;
                 setIsSubmitting(true);
                 try {
-                  await onGoogleLogin?.(credential, { termsAccepted: isRegistering });
+                  await onGoogleLogin?.(credential, { termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) });
                   setShowLogin(false);
                   setUsername('');
                   setPassword('');
@@ -531,7 +535,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             
             <form onSubmit={async (e) => {
               e.preventDefault();
-              if (isRegistering && !termsAccepted) return;
+              if (signupBlocked) return;
               setIsSubmitting(true);
               try {
                 if (isRegistering) {
@@ -540,6 +544,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
                     username,
                     password,
                     termsAccepted: true,
+                    birthDate,
                     ...(trimmedEmail ? { email: trimmedEmail } : {}),
                   });
                 } else {
@@ -580,6 +585,10 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
               </div>
 
               {isRegistering && (
+                <BirthDateInput idPrefix="dl-birth" value={birthDate} onChange={setBirthDate} variant="marketing" />
+              )}
+
+              {isRegistering && (
                 <div className="form-group">
                   <label>{t("Email (optional)")}</label>
                   <input
@@ -611,6 +620,9 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
                       {t("Privacy Policy")}
                     </button>
                     .
+                    <span className="legal-consent-note">
+                      {t("Descall has zero tolerance for objectionable content and abusive users.")}
+                    </span>
                   </label>
                 </div>
               )}
@@ -618,7 +630,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
               <button
                 type="submit"
                 className="submit-btn"
-                disabled={isSubmitting || authLoading || (isRegistering && !termsAccepted)}
+                disabled={isSubmitting || authLoading || signupBlocked}
               >
                 {(isSubmitting || authLoading) ? t("Loading...") : (isRegistering ? t("Create Account") : t("Sign In"))}
               </button>

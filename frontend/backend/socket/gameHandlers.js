@@ -9,6 +9,16 @@ const { playRound, toPublicState, roundId, LINE_COUNT } = require("../games/Slot
 const { CoinFlipManager } = require("../games/CoinFlipGame");
 const { parsePayArgs, parseCoinArgs, sideLabel } = require("../games/casinoArgs");
 const supabase = require("../db/supabase");
+const { casinoAccess } = require("../lib/ageGate");
+
+const AGE_FREE_COMMANDS = new Set(["help", "yardım", "commands", "jb"]);
+
+async function denyIfNotAllowed(socket, userId, groupId) {
+  const access = await casinoAccess(userId);
+  if (access.ok) return false;
+  socket.emit("game:notice", { groupId, text: access.text, code: "age_gate" });
+  return true;
+}
 
 const BOT_USER = {
   id: "game-bot",
@@ -254,6 +264,7 @@ function registerGameHandlers(io, socket) {
     const roomId = channelId || groupId;
     if (!roomId || !action) return;
     const a = String(action).toLowerCase();
+    if (a !== "help" && (await denyIfNotAllowed(socket, myId, roomId))) return;
     const opts = channelId ? { channelId } : {};
     pushEmitRoom(opts);
     try {
@@ -304,6 +315,9 @@ async function handleGameCommand(io, socket, userId, username, groupId, fullComm
 
   const command = match[1].toLowerCase();
   const arg = match[2];
+  if (VALID_COMMANDS.has(command) && !AGE_FREE_COMMANDS.has(command)) {
+    if (await denyIfNotAllowed(socket, userId, groupId)) return;
+  }
   pushEmitRoom(opts);
   try {
   switch (command) {
