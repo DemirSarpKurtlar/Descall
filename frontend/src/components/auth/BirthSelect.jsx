@@ -1,16 +1,58 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
+import { isNativeIOS } from "../../lib/platform";
 
 const MENU_MAX = 248;
+
+/** iPhone / iPad (native app or Safari, incl. iPadOS that reports as Mac): use Apple's wheel picker. */
+function prefersNativePicker() {
+  if (isNativeIOS()) return true;
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return true;
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
+const USE_NATIVE = prefersNativePicker();
 const GAP = 6;
 
 /**
  * Styled dropdown used by the birth date fields (replaces the raw native <select> lists).
  * Menu is portaled to <body> so modals with overflow don't clip it; flips upward when needed.
  * Keyboard: Enter/Space/ArrowDown opens, arrows/Home/End move, Enter selects, Esc closes, type to jump.
+ * On iOS it renders a styled native <select> so the system wheel picker opens instead.
  */
-export default function BirthSelect({ id, label, placeholder, value, options, onChange, variant = "app" }) {
+export default function BirthSelect(props) {
+  return USE_NATIVE ? <NativeBirthSelect {...props} /> : <CustomBirthSelect {...props} />;
+}
+
+function NativeBirthSelect({ id, label, placeholder, value, options, onChange }) {
+  return (
+    <div className={`birth-select-native${value ? "" : " is-empty"}`}>
+      <select
+        id={id}
+        aria-label={label}
+        className="birth-select"
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        required
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={16} className="birth-select-chevron" aria-hidden="true" />
+    </div>
+  );
+}
+
+function CustomBirthSelect({ id, label, placeholder, value, options, onChange, variant = "app" }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [pos, setPos] = useState(null);

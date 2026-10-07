@@ -23,7 +23,7 @@ function daysIn(year, month) {
  * Day / month / year pickers (styled dropdowns, see BirthSelect).
  * Calls onChange("YYYY-MM-DD") when complete and valid, otherwise onChange("").
  */
-export default function BirthDateInput({ value = "", onChange, idPrefix = "birth", variant = "app", showHint = true }) {
+export default function BirthDateInput({ value = "", onChange, idPrefix = "birth", variant = "app" }) {
   const t = useT();
   const initial = useMemo(() => {
     const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -58,7 +58,7 @@ export default function BirthDateInput({ value = "", onChange, idPrefix = "birth
   }, [iso, invalid]);
 
   return (
-    <fieldset className={`birth-input birth-input--${variant}`} aria-describedby={`${idPrefix}-hint`}>
+    <fieldset className={`birth-input birth-input--${variant}`} aria-describedby={tooYoung ? `${idPrefix}-hint` : undefined}>
       <legend className="birth-input-legend">
         <Cake size={15} aria-hidden="true" />
         <span>{t("Date of birth")}</span>
@@ -95,10 +95,6 @@ export default function BirthDateInput({ value = "", onChange, idPrefix = "birth
       {tooYoung ? (
         <p id={`${idPrefix}-hint`} className="birth-input-error" role="alert">
           {t("You must be at least 13 years old to use Descall.")}
-        </p>
-      ) : showHint ? (
-        <p id={`${idPrefix}-hint`} className="birth-input-hint">
-          {t("Not shown on your profile. Some features, like casino games, are only for users 18 and over.")}
         </p>
       ) : null}
     </fieldset>

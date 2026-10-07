@@ -77,9 +77,38 @@
   transform: rotate(180deg);
 }
 
+/* iOS: native <select> styled like the custom trigger (opens the system wheel picker). */
+.birth-select-native {
+  position: relative;
+  min-width: 0;
+}
+
+.birth-select-native select.birth-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+}
+
+.birth-select-native .birth-select-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  margin-top: -8px;
+  pointer-events: none;
+}
+
+.birth-select-native.is-empty select.birth-select {
+  color: var(--text-muted, #9da5b5);
+}
+
+.birth-select-native select.birth-select option {
+  color: #111;
+}
+
 .birth-select-menu {
   position: fixed;
-  z-index: 10100;
+  /* above every modal/overlay (login modal is 13000, toasts 100050) */
+  z-index: 2147483000;
   margin: 0;
   padding: 6px;
   list-style: none;
