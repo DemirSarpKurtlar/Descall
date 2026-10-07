@@ -29,3 +29,14 @@ for (const file of targets) {
   fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n", "utf8");
   console.log(`[sync-version] ${file} → ${version}`);
 }
+
+// iOS (Capacitor) marketing version shown on the App Store.
+const pbxproj = path.join(__dirname, "..", "ios", "App", "App.xcodeproj", "project.pbxproj");
+if (fs.existsSync(pbxproj)) {
+  const src = fs.readFileSync(pbxproj, "utf8");
+  const next = src.replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${version};`);
+  if (next !== src) {
+    fs.writeFileSync(pbxproj, next, "utf8");
+    console.log(`[sync-version] ${pbxproj} MARKETING_VERSION → ${version}`);
+  }
+}

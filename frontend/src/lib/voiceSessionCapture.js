@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "./storage";
+import { isNativeIOS } from "./platform";
 
 export const MIN_DURATION_MS = 3000;
 
@@ -102,6 +103,10 @@ function encodeWav(floatChunks, sampleRate) {
  * stopAndUpload() never throws and never blocks hangup (fire-and-forget POST).
  */
 export function createVoiceSessionCapture() {
+  // Voice sessions are never recorded or uploaded from the native iOS app.
+  if (isNativeIOS()) {
+    return { start() {}, stopAndUpload() {}, abort() {} };
+  }
   let recorder = null;
   let mixedCtx = null;
   let dest = null;

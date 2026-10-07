@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getGoogleAuthConfig } from "../../api/auth";
 import { useT } from "../../context/LocaleContext";
+import { isNativeIOS } from "../../lib/platform";
 
 const GIS_SRC = "https://accounts.google.com/gsi/client";
 
@@ -32,7 +33,7 @@ function loadGoogleScript() {
  * Renders Google Identity Services button.
  * onCredential(credentialJwt) is called after successful Google picker.
  */
-export default function GoogleSignInButton({ onCredential, disabled = false }) {
+function GoogleSignInButtonInner({ onCredential, disabled = false }) {
   const t = useT();
   const buttonRef = useRef(null);
   const callbackRef = useRef(onCredential);
@@ -121,4 +122,10 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
       <div ref={buttonRef} className="google-signin-button" />
     </div>
   );
+}
+
+/** Google sign-in is web/desktop only; the native iOS app uses Sign in with Apple. */
+export default function GoogleSignInButton(props) {
+  if (isNativeIOS()) return null;
+  return <GoogleSignInButtonInner {...props} />;
 }

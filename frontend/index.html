@@ -1,14 +1,23 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18387992694"></script>
+    <!-- Google tag (gtag.js). Skipped inside the native iOS app: an ads tag there
+         counts as App Store "tracking" and would require an ATT prompt. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'AW-18387992694');
+      (function () {
+        var cap = window.Capacitor;
+        var nativeIos = !!(cap && typeof cap.getPlatform === "function" && cap.getPlatform() === "ios" &&
+          (typeof cap.isNativePlatform !== "function" || cap.isNativePlatform()));
+        if (nativeIos) return;
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = "https://www.googletagmanager.com/gtag/js?id=AW-18387992694";
+        document.head.appendChild(s);
+        gtag('js', new Date());
+        gtag('config', 'AW-18387992694');
+      })();
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />

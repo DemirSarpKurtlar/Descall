@@ -3,6 +3,14 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "./storage";
 
+// iOS ships without message push for now (owner decision, Oct 2026).
+const IOS_MESSAGE_PUSH_ENABLED = false;
+function pushAllowedHere() {
+  if (!Capacitor.isNativePlatform()) return false;
+  if (Capacitor.getPlatform() === "ios" && !IOS_MESSAGE_PUSH_ENABLED) return false;
+  return true;
+}
+
 let listenersAttached = false;
 let lastToken = null;
 
@@ -83,7 +91,7 @@ function ensureListeners() {
 }
 
 export async function requestNativePushPermission() {
-  if (!Capacitor.isNativePlatform()) return null;
+  if (!pushAllowedHere()) return null;
   ensureListeners();
   let permission = await PushNotifications.checkPermissions();
   if (permission.receive === "prompt") {
@@ -96,7 +104,7 @@ export async function requestNativePushPermission() {
 
 /** Re-upload last/known token after login. */
 export async function syncNativePushToken() {
-  if (!Capacitor.isNativePlatform()) return false;
+  if (!pushAllowedHere()) return false;
   ensureListeners();
   try {
     const permission = await PushNotifications.checkPermissions();
@@ -111,5 +119,5 @@ export async function syncNativePushToken() {
 }
 
 export function isNativePushPlatform() {
-  return Capacitor.isNativePlatform();
+  return pushAllowedHere();
 }
