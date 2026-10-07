@@ -950,10 +950,13 @@ router.post("/apple", async (req, res) => {
       return res.status(500).json({ error: "Database error." });
     }
 
-    // Link an existing account with the same verified email (not for private relay addresses).
+    // Link an existing account with the same email only when Descall itself has verified that
+    // email; otherwise someone could pre-register a victim's address and capture their Apple login.
+    let emailTakenUnverified = false;
     if (!user && email && !apple.isPrivateEmail) {
       const { data: byEmail } = await supabase.from("users").select(userCols).ilike("email", email).maybeSingle();
-      if (byEmail && !byEmail.deleted_at) {
+      if (byEmail && !byEmail.email_confirmed_at) emailTakenUnverified = true;
+      if (byEmail && byEmail.email_confirmed_at) {
         if (byEmail.apple_sub && byEmail.apple_sub !== apple.sub) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
@@ -962,7 +965,6 @@ router.post("/apple", async (req, res) => {
           .from("users")
           .update({
             apple_sub: apple.sub,
-            email_confirmed_at: byEmail.email_confirmed_at || new Date().toISOString(),
             auth_provider: provider.includes("apple") ? provider : `${provider}+apple`,
           })
           .eq("id", byEmail.id)
@@ -996,8 +998,9 @@ router.post("/apple", async (req, res) => {
       const insertPayload = {
         username,
         password_hash: null,
-        email: apple.email || null,
-        email_confirmed_at: apple.email && apple.emailVerified ? new Date().toISOString() : null,
+        // An unverified account already holds this address: keep the Apple account separate, no email.
+        email: emailTakenUnverified ? null : apple.email || null,
+        email_confirmed_at: !emailTakenUnverified && apple.email && apple.emailVerified ? new Date().toISOString() : null,
         apple_sub: apple.sub,
         auth_provider: "apple",
         display_name: nameFromApple,
