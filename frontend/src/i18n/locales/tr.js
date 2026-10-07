@@ -3889,6 +3889,13 @@ export const phrases = {
   "Product updates": "Ürün güncellemeleri",
   "Explore by use case": "Kullanım alanına göre keşfet",
   ...TR_I18N_GAPS,
+  "Deleting your account signs you out everywhere right away. After 14 days your profile, email, friends and private data are permanently deleted. Messages you sent in shared chats stay as \u201cDeleted user\u201d. Signing in again within 14 days cancels the deletion.": "Hesabını silersen her yerden hemen çıkış yapılır. 14 gün sonra profilin, e-postan, arkadaşların ve özel verilerin kalıcı olarak silinir. Ortak sohbetlerde gönderdiğin mesajlar \u201cSilinmiş kullanıcı\u201d olarak kalır. 14 gün içinde tekrar giriş yaparsan silme iptal olur.",
+  "Enter your password to confirm (Google or Apple accounts: type your username)": "Onaylamak için şifreni gir (Google veya Apple hesaplarında kullanıcı adını yaz)",
+  "Permanently delete my account": "Hesabımı kalıcı olarak sil",
+  "Deleting…": "Siliniyor…",
+  "Could not delete your account. Try again.": "Hesabın silinemedi. Tekrar dene.",
+  "Deleted user": "Silinmiş kullanıcı",
+  "Casino games are not available in the iOS app.": "Casino oyunları iOS uygulamasında kullanılamıyor.",
   ...TR_INAPP_GAPS,
 };
 

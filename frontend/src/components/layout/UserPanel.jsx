@@ -38,6 +38,7 @@ import { useMobile } from "../../hooks/useMobile";
 import { useLocale } from "../../context/LocaleContext";
 import { detectDefaultLocale } from "../../i18n/detect";
 import RiotLinkCard from "../settings/RiotLinkCard";
+import DeleteAccountSection from "../settings/DeleteAccountSection";
 import ValorantBadge from "../social/ValorantBadge";
 import AdminBadge from "../social/AdminBadge";
 import ShopPanel from "../settings/ShopPanel";
@@ -1780,6 +1781,8 @@ const UserPanel = forwardRef(function UserPanel({
                 )}
               </div>
             </section>
+
+            <DeleteAccountSection onDeleted={() => onLogout?.()} />
           </div>
         );
 

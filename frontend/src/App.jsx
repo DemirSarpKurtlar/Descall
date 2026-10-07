@@ -58,6 +58,7 @@ import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audi
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
+import { isNativeIOS } from "./lib/platform";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
 import { requestNativePushPermission, syncNativePushToken, isNativePushPlatform } from "./lib/nativePush";
@@ -1913,6 +1914,8 @@ export default function App() {
 
     const upsertGameMessage = (roomId, message, { channelId = null } = {}) => {
       if (!roomId || !message) return;
+      // Casino games are hidden in the native iOS app (App Store age rating).
+      if (isNativeIOS()) return;
       const handId = message.gameData?.id;
       const ownerId =
         message.sessionOwnerId ||
@@ -1993,7 +1996,7 @@ export default function App() {
     });
 
     socket.on("game:notice", ({ text } = {}) => {
-      if (!text) return;
+      if (!text || isNativeIOS()) return;
       toast(text, "info");
     });
 
@@ -4317,6 +4320,10 @@ export default function App() {
             } else if (activeGroup) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
+              if (isNativeIOS() && isCasinoSlash(textStr)) {
+                toast(t("Casino games are not available in the iOS app."), "info");
+                return;
+              }
               const isCasinoCmd = isCasinoSlash(textStr);
               const optimistic = {
                 id: tempId,
@@ -4382,6 +4389,10 @@ export default function App() {
             } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
+              if (isNativeIOS() && isCasinoSlash(textStr)) {
+                toast(t("Casino games are not available in the iOS app."), "info");
+                return;
+              }
               const isCasinoCmd = !isMediaObject && isCasinoSlash(textStr);
               if (!isCasinoCmd) {
                 const optimistic = {

@@ -18,6 +18,7 @@ const shop = require("../lib/shop");
 const { toPublicUser, cacheUserProfile, broadcastUserProfileUpdate } = require("../lib/userProfile");
 const { publicRiotCard } = require("../lib/riotLink");
 const moderation = require("../lib/moderation");
+const accountDeletion = require("../lib/accountDeletion");
 const {
   isReservedUsername,
   isProtectedAccountUsername,
@@ -586,6 +587,7 @@ router.post("/login", async (req, res) => {
     }
 
     if (await rejectIfBanned(res, user)) return;
+    await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     if (user.two_factor_enabled && user.email_confirmed_at && user.email) {
       const result = await issueAndSendCode({
@@ -795,6 +797,7 @@ router.post("/google", async (req, res) => {
     }
 
     if (user && (await rejectIfBanned(res, user))) return;
+    if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     if (!user) {
       const preferred =
@@ -903,7 +906,7 @@ router.get("/me", requireAuth, async (req, res) => {
     const { data: user, error } = await supabase
       .from("users")
       .select(
-        "id, username, avatar_url, display_name, bio, custom_status, banner_url, is_admin, updated_at, created_at, language, email, email_confirmed_at, two_factor_enabled, blocked_users, equipped_avatar_frame_id, equipped_banner_id, equipped_background_id, equipped_theme_id, descoin_balance"
+        "id, username, avatar_url, display_name, bio, custom_status, banner_url, is_admin, updated_at, created_at, language, email, email_confirmed_at, two_factor_enabled, blocked_users, equipped_avatar_frame_id, equipped_banner_id, equipped_background_id, equipped_theme_id, descoin_balance, birth_date, deletion_requested_at, deleted_at"
       )
       .eq("id", req.user.id)
       .single();
@@ -911,12 +914,18 @@ router.get("/me", requireAuth, async (req, res) => {
     if (error || !user) {
       return res.status(404).json({ error: "User not found" });
     }
+    if (user.deleted_at || user.deletion_requested_at) {
+      // Closed account: the client drops the session. Signing in again within
+      // the grace period cancels a pending deletion.
+      return res.status(401).json({ error: "This account is closed.", code: "account_closed" });
+    }
 
     const valorant = await loadPublicValorant(user.id);
     const equipped = await shop.getEquippedCosmeticsForUser(user.id).catch(() => ({}));
     return res.status(200).json({
       user: {
         ...toPublicUser(user),
+        birthDate: user.birth_date || null,
         valorant,
         email: user.email || null,
         emailVerified: Boolean(user.email_confirmed_at),
@@ -1310,6 +1319,46 @@ router.post("/logout", requireAuth, async (req, res) => {
     return res.json({ message: "Logged out." });
   } catch (err) {
     console.error("[AUTH] /logout error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// POST /api/auth/account/delete — close the account now, anonymize after the
+// grace period (App Store Guideline 5.1.1(v)). Password accounts confirm with
+// their password; Google/Apple-only accounts confirm by typing their username.
+router.post("/account/delete", requireAuth, async (req, res) => {
+  try {
+    const { password, confirmUsername } = req.body ?? {};
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("id, username, password_hash, deleted_at")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (error || !user || user.deleted_at) return res.status(404).json({ error: "User not found" });
+
+    if (user.password_hash) {
+      if (typeof password !== "string" || !password) {
+        return res.status(400).json({ error: "Enter your password to delete your account.", code: "password_required" });
+      }
+      const ok = await bcrypt.compare(password, user.password_hash);
+      if (!ok) return res.status(401).json({ error: "Wrong password.", code: "wrong_password" });
+    } else if (String(confirmUsername || "").trim().toLowerCase() !== String(user.username).toLowerCase()) {
+      return res.status(400).json({ error: "Type your username to confirm.", code: "confirm_username" });
+    }
+
+    const result = await accountDeletion.requestDeletion(user.id);
+    const ids = new Set([...(result.sessionIds || []), req.user.sid].filter(Boolean));
+    ids.forEach((sid) => {
+      revokedSessionIds.add(sid);
+      disconnectSocketsForSession(req, user.id, sid);
+    });
+    return res.json({
+      message: "Account closed. It will be permanently deleted after the grace period unless you sign in again.",
+      graceDays: accountDeletion.GRACE_DAYS,
+      purgeAfter: result.purgeAfter,
+    });
+  } catch (err) {
+    console.error("[AUTH] /account/delete error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
 });

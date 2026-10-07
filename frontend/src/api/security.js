@@ -19,3 +19,7 @@ export const confirmPasswordResetCode = (code, newPassword) =>
 export const getSessions = () => authedRequest("/api/auth/sessions");
 export const revokeSession = (sessionId) => authedRequest(`/api/auth/sessions/${sessionId}/revoke`, { method: "POST" });
 export const revokeOtherSessions = () => authedRequest("/api/auth/sessions/revoke-others", { method: "POST" });
+
+// Account deletion (closes now, permanently deleted after 14 days)
+export const deleteAccount = ({ password, confirmUsername } = {}) =>
+  authedRequest("/api/auth/account/delete", { method: "POST", body: { password, confirmUsername } });

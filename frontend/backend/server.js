@@ -323,6 +323,7 @@ app.use("/riot", riotRoutes);
 
 // /api/* aliases — frontend calls mix /api/... and /... so support both
 app.use("/api/auth", authRoutes);
+require("./lib/accountDeletion").startDeletionSweeper();
 app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/media", mediaRoutes);
