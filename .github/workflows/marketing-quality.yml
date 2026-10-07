@@ -56,7 +56,9 @@ jobs:
             curl -sf http://127.0.0.1:4173/features >/dev/null && break
             sleep 1
           done
-          AXE_ARGS="--exit --tags wcag2a,wcag2aa"
+          # load-delay: .mkt-section fades in (mkt-rise 0.8s) and restarts on hydration;
+          # auditing mid-fade reported random color-contrast hits (18 vs 30 on the same build).
+          AXE_ARGS="--exit --tags wcag2a,wcag2aa --load-delay 2500"
           if [ -n "${CHROMEDRIVER_PATH:-}" ]; then
             AXE_ARGS="$AXE_ARGS --chromedriver-path $CHROMEDRIVER_PATH"
           fi

@@ -2161,3 +2161,11 @@ body:has(.mkt-consent),
   }
 }
 
+/* Respect reduced-motion: no entrance fades on marketing pages. */
+@media (prefers-reduced-motion: reduce) {
+  .mkt-hero,
+  .mkt-hero-split,
+  .mkt-section {
+    animation: none;
+  }
+}
