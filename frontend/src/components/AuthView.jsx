@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, UserPlus, Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
+import AppleSignInButton from "./auth/AppleSignInButton";
 import ForgotPasswordFlow from "./auth/ForgotPasswordFlow";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
@@ -12,7 +13,7 @@ import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../l
 import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
 
-export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2fa, loading, error }) {
+export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error }) {
   const t = useT();
   const [mode, setMode] = useState("login"); // login | register | forgot
   const [username, setUsername] = useState("");
@@ -188,6 +189,18 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onVerify2
           </button>
         </div>
 
+        <AppleSignInButton
+          disabled={loading || needsTerms}
+          onApple={async (apple) => {
+            if (needsTerms) return;
+            const invitedBy = inviteRef || peekInviteRef();
+            await onAppleLogin?.(apple, {
+              termsAccepted: mode === "register",
+              ...(mode === "register" ? { birthDate } : {}),
+              ...(invitedBy ? { invitedBy } : {}),
+            });
+          }}
+        />
         <GoogleSignInButton
           disabled={loading || needsTerms}
           onCredential={async (credential) => {

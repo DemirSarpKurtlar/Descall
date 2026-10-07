@@ -150,6 +150,7 @@ export const API_ROUTES = {
   login: "/auth/login",
   register: "/auth/register",
   google: "/auth/google",
+  apple: "/auth/apple",
   googleConfig: "/auth/google/config",
   me: "/auth/me",
   logout: "/auth/logout",

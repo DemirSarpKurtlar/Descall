@@ -3930,6 +3930,9 @@ export const phrases = {
   "Add your date of birth to play casino games.": "Casino oyunlarını oynamak için doğum tarihini ekle.",
   "Casino games are only available to users 18 and over.": "Casino oyunları yalnızca 18 yaş ve üstü kullanıcılar içindir.",
   "Casino is temporarily unavailable. Try again.": "Casino şu an kullanılamıyor. Tekrar dene.",
+  "Continue with Apple": "Apple ile devam et",
+  "Sign in with Apple failed.": "Apple ile giriş başarısız oldu.",
+  "Email is already linked to another account.": "Bu e-posta başka bir hesaba bağlı.",
   ...TR_INAPP_GAPS,
 };
 

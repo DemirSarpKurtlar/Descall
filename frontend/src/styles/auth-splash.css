@@ -419,6 +419,42 @@
   justify-content: center;
 }
 
+/* Sign in with Apple (native iOS only) – Apple HIG: black, Apple logo, ≥44pt tall. */
+.apple-signin-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.apple-signin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+  font: 600 16px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.apple-signin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.apple-signin-error {
+  color: #f87171;
+  margin: 0;
+}
+
 @media (min-width: 900px) {
   .auth-brand-panel {
     display: flex;

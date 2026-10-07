@@ -7,7 +7,7 @@ import GroupInviteLanding from "./components/groups/GroupInviteLanding";
 import ServerVanityLanding from "./components/servers/ServerVanityLanding";
 import MarketingApp from "./site/MarketingApp";
 import SeoHead from "./site/SeoHead";
-import { getMe, login, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
+import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
 import { getMyGroups, getGroupMessages } from "./api/groups";
 import { getFriendsList, getFriendRequestsList } from "./api/friends";
@@ -2328,14 +2328,18 @@ export default function App() {
     }
   };
 
-  const handleGoogleLogin = async (credential, extra = {}) => {
+  const handleGoogleLogin = (credential, extra = {}) => handleSocialLogin("google", credential, extra);
+  const handleAppleLogin = (apple, extra = {}) => handleSocialLogin("apple", apple, extra);
+
+  const handleSocialLogin = async (method, credential, extra = {}) => {
     try {
       setAuthLoading(true);
       setAuthError("");
       await verifyBackendEndpoint();
       const { peekInviteRef, consumeInviteRef } = await import("./lib/referral");
       const invitedBy = extra?.invitedBy || peekInviteRef() || "";
-      const data = await loginWithGoogle(credential, {
+      const socialLogin = method === "apple" ? loginWithApple : loginWithGoogle;
+      const data = await socialLogin(credential, {
         invitedBy: invitedBy || undefined,
         termsAccepted: extra?.termsAccepted,
         birthDate: extra?.birthDate,
@@ -2354,18 +2358,18 @@ export default function App() {
             /* ignore */
           }
           Funnel.registerComplete({
-            method: "google",
+            method,
             has_invite: Boolean(data.inviteLinked || invitedBy),
             invited_by: data.invitedBy || invitedBy || undefined,
           });
           if (data.inviteLinked || invitedBy) {
             Funnel.inviteRegisterComplete({
               invited_by: data.invitedBy || invitedBy,
-              method: "google",
+              method,
             });
           }
         } else {
-          Funnel.loginComplete({ method: "google" });
+          Funnel.loginComplete({ method });
         }
       } catch {
         /* analytics optional */
@@ -3723,6 +3727,7 @@ export default function App() {
             onLogin={handleLogin}
             onRegister={handleRegister}
             onGoogleLogin={handleGoogleLogin}
+            onAppleLogin={handleAppleLogin}
             onVerify2fa={handleVerify2fa}
             loading={authLoading}
             error={authError}

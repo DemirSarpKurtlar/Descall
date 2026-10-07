@@ -111,6 +111,7 @@ async function anonymizeUser(userId) {
     email_confirmed_at: null,
     google_id: null,
     apple_sub: null,
+    apple_refresh_token: null,
     auth_provider: "deleted",
     avatar_url: null,
     banner_url: null,

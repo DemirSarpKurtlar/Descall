@@ -42,6 +42,24 @@ export function loginWithGoogle(credential, extra = {}) {
   });
 }
 
+/** Sign in with Apple (native iOS). `apple` is the AppleSignIn plugin result plus the raw nonce. */
+export function loginWithApple(apple, extra = {}) {
+  const payload = withAttribution({
+    identityToken: apple?.identityToken,
+    authorizationCode: apple?.authorizationCode || undefined,
+    givenName: apple?.givenName || undefined,
+    familyName: apple?.familyName || undefined,
+    nonce: apple?.nonce || undefined,
+  });
+  if (extra?.invitedBy) payload.invitedBy = extra.invitedBy;
+  if (extra?.termsAccepted) payload.termsAccepted = true;
+  if (extra?.birthDate) payload.birthDate = extra.birthDate;
+  return httpRequest(API_ROUTES.apple, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getGoogleAuthConfig() {
   return httpRequest(API_ROUTES.googleConfig, {
     method: "GET",

@@ -20,6 +20,7 @@ const { publicRiotCard } = require("../lib/riotLink");
 const moderation = require("../lib/moderation");
 const accountDeletion = require("../lib/accountDeletion");
 const ageGate = require("../lib/ageGate");
+const appleAuth = require("../lib/appleAuth");
 const {
   isReservedUsername,
   isProtectedAccountUsername,
@@ -914,6 +915,165 @@ router.post("/google", async (req, res) => {
   }
 });
 
+/**
+ * Sign in with Apple (native iOS). Body: { identityToken, authorizationCode?, givenName?, familyName?,
+ * birthDate?, termsAccepted?, invitedBy?, attribution? }.
+ */
+router.post("/apple", async (req, res) => {
+  try {
+    const { identityToken, authorizationCode, givenName, familyName, nonce, invitedBy, attribution } = req.body ?? {};
+    if (!identityToken || typeof identityToken !== "string") {
+      return res.status(400).json({ error: "Apple identity token is required." });
+    }
+
+    let apple;
+    try {
+      apple = await appleAuth.verifyIdentityToken(identityToken, {
+        nonce: typeof nonce === "string" && nonce ? nonce : undefined,
+      });
+    } catch (err) {
+      console.warn("[AUTH] Apple token rejected:", err?.message || err);
+      return res.status(401).json({ error: "Sign in with Apple failed." });
+    }
+
+    const userCols = `id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, apple_sub, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`;
+    const email = apple.email && apple.emailVerified ? apple.email : null;
+    const nameFromApple = [givenName, familyName].map((s) => String(s || "").trim()).filter(Boolean).join(" ").slice(0, 32) || null;
+
+    let { data: user, error: lookupError } = await supabase
+      .from("users")
+      .select(userCols)
+      .eq("apple_sub", apple.sub)
+      .maybeSingle();
+    if (lookupError) {
+      console.error("[AUTH] Apple lookup error:", lookupError);
+      return res.status(500).json({ error: "Database error." });
+    }
+
+    // Link an existing account with the same verified email (not for private relay addresses).
+    if (!user && email && !apple.isPrivateEmail) {
+      const { data: byEmail } = await supabase.from("users").select(userCols).ilike("email", email).maybeSingle();
+      if (byEmail && !byEmail.deleted_at) {
+        if (byEmail.apple_sub && byEmail.apple_sub !== apple.sub) {
+          return res.status(409).json({ error: "Email is already linked to another account." });
+        }
+        const provider = String(byEmail.auth_provider || "local");
+        const { data: linked, error: linkError } = await supabase
+          .from("users")
+          .update({
+            apple_sub: apple.sub,
+            email_confirmed_at: byEmail.email_confirmed_at || new Date().toISOString(),
+            auth_provider: provider.includes("apple") ? provider : `${provider}+apple`,
+          })
+          .eq("id", byEmail.id)
+          .select(userCols)
+          .single();
+        if (linkError || !linked) {
+          console.error("[AUTH] Apple link error:", linkError);
+          return res.status(500).json({ error: "Failed to link Apple account." });
+        }
+        user = linked;
+      }
+    }
+
+    if (user && (await rejectIfBanned(res, user))) return;
+    if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+
+    let isNewUser = false;
+    let attributionColumns = null;
+    if (!user) {
+      let birthDate = null;
+      if (req.body?.birthDate) {
+        const birth = ageGate.validateBirthDate(req.body.birthDate);
+        if (!birth.ok) return res.status(birth.status).json({ error: birth.error, code: birth.code });
+        birthDate = birth.birthDate;
+      }
+      const preferred =
+        (email && !apple.isPrivateEmail && email.split("@")[0]) ||
+        String(givenName || "").trim() ||
+        `user${apple.sub.replace(/[^a-z0-9]/gi, "").slice(-6)}`;
+      const username = await allocateUniqueUsername(preferred);
+      const insertPayload = {
+        username,
+        password_hash: null,
+        email: apple.email || null,
+        email_confirmed_at: apple.email && apple.emailVerified ? new Date().toISOString() : null,
+        apple_sub: apple.sub,
+        auth_provider: "apple",
+        display_name: nameFromApple,
+      };
+      if (birthDate) insertPayload.birth_date = birthDate;
+      if (req.body?.termsAccepted) insertPayload.terms_accepted_at = new Date().toISOString();
+
+      const { data: created, error: insertError, attributionColumns: createdAttribution } =
+        await insertUserWithAttribution(
+          insertPayload,
+          "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
+          attribution,
+          "apple",
+          { req, invitedBy }
+        );
+      if (insertError || !created) {
+        console.error("[AUTH] Apple register error:", insertError);
+        const msg = String(insertError?.message || "");
+        if (/email/i.test(msg) && /duplicate|unique/i.test(msg)) {
+          return res.status(409).json({ error: "Email is already in use." });
+        }
+        return res.status(500).json({ error: "Failed to create Apple user." });
+      }
+      user = created;
+      attributionColumns = createdAttribution;
+      isNewUser = true;
+    }
+
+    // Keep a refresh token so the Apple grant can be revoked on account deletion.
+    if (authorizationCode) {
+      const encrypted = await appleAuth.exchangeAuthorizationCode(authorizationCode);
+      if (encrypted) {
+        await supabase.from("users").update({ apple_refresh_token: encrypted }).eq("id", user.id);
+      }
+    }
+
+    let invite = { linked: false };
+    if (isNewUser) {
+      invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io")).catch(() => ({ linked: false }));
+      void recordSignupAnalytics(user, attributionColumns);
+      void flagSuspiciousSignup(user.id, attribution?.visitorKey);
+      void notifyTeamNewSignup({
+        user: { id: user.id, username: user.username, email: user.email, display_name: user.display_name || user.username },
+        method: "apple",
+        invitedBy: invite.inviterUsername || null,
+        req,
+        verified: Boolean(user.email_confirmed_at),
+        onboarding: "Apple ile giriş",
+        attribution: attributionColumns,
+      });
+    }
+
+    const { session } = await createSession(user.id, {
+      userAgent: req.headers["user-agent"],
+      ip: clientIp(req),
+    });
+    const token = signToken({ id: user.id, username: user.username, sid: session.id });
+    await touchLastSeen(user.id, { force: true });
+    void recordAppOpened(user.id);
+    void recordAnalyticsEvent({ userId: user.id, event: "login", props: { method: "apple" } });
+
+    return res.status(200).json({
+      message: "Apple login successful.",
+      token,
+      sessionId: session.id,
+      user: authUserPayload(user, await resolveEquippedExtra(user.id)),
+      isNewUser,
+      invitedBy: invite.inviterUsername || null,
+      inviteLinked: Boolean(invite.linked),
+    });
+  } catch (err) {
+    console.error("[AUTH] Apple login error:", err);
+    return res.status(401).json({ error: "Sign in with Apple failed." });
+  }
+});
+
 router.get("/google/config", (_req, res) => {
   return res.json({
     enabled: Boolean(GOOGLE_CLIENT_ID),
@@ -1393,7 +1553,7 @@ router.post("/account/delete", requireAuth, async (req, res) => {
     const { password, confirmUsername } = req.body ?? {};
     const { data: user, error } = await supabase
       .from("users")
-      .select("id, username, password_hash, deleted_at")
+      .select("id, username, password_hash, deleted_at, apple_refresh_token")
       .eq("id", req.user.id)
       .maybeSingle();
     if (error || !user || user.deleted_at) return res.status(404).json({ error: "User not found" });
@@ -1408,6 +1568,11 @@ router.post("/account/delete", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Type your username to confirm.", code: "confirm_username" });
     }
 
+    if (user.apple_refresh_token) {
+      // App Review: deleting an account must also revoke its Sign in with Apple grant.
+      const revoked = await appleAuth.revokeRefreshToken(user.apple_refresh_token);
+      if (revoked) await supabase.from("users").update({ apple_refresh_token: null }).eq("id", user.id);
+    }
     const result = await accountDeletion.requestDeletion(user.id);
     const ids = new Set([...(result.sessionIds || []), req.user.sid].filter(Boolean));
     ids.forEach((sid) => {
