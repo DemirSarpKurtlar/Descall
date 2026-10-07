@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Cake } from "lucide-react";
 import { useT } from "../../context/localeContextInstance";
 import { ageFromBirthDate, MIN_AGE } from "../../lib/age";
+import BirthSelect from "./BirthSelect";
 import "../../styles/age-gate.css";
 
 const MONTH_KEYS = [
@@ -19,7 +20,7 @@ function daysIn(year, month) {
 }
 
 /**
- * Day / month / year pickers (native selects → wheel pickers on iOS).
+ * Day / month / year pickers (styled dropdowns, see BirthSelect).
  * Calls onChange("YYYY-MM-DD") when complete and valid, otherwise onChange("").
  */
 export default function BirthDateInput({ value = "", onChange, idPrefix = "birth", variant = "app", showHint = true }) {
@@ -63,42 +64,33 @@ export default function BirthDateInput({ value = "", onChange, idPrefix = "birth
         <span>{t("Date of birth")}</span>
       </legend>
       <div className="birth-input-row">
-        <select
+        <BirthSelect
           id={`${idPrefix}-day`}
-          aria-label={t("Day")}
+          label={t("Day")}
+          placeholder={t("Day")}
           value={day}
-          onChange={(e) => setDay(e.target.value)}
-          required
-        >
-          <option value="">{t("Day")}</option>
-          {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
-            <option key={d} value={String(d)}>{d}</option>
-          ))}
-        </select>
-        <select
+          onChange={setDay}
+          variant={variant}
+          options={Array.from({ length: maxDay }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
+        />
+        <BirthSelect
           id={`${idPrefix}-month`}
-          aria-label={t("Month")}
+          label={t("Month")}
+          placeholder={t("Month")}
           value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          required
-        >
-          <option value="">{t("Month")}</option>
-          {MONTH_KEYS.map((m, i) => (
-            <option key={m} value={String(i + 1)}>{t(m)}</option>
-          ))}
-        </select>
-        <select
+          onChange={setMonth}
+          variant={variant}
+          options={MONTH_KEYS.map((m, i) => ({ value: String(i + 1), label: t(m) }))}
+        />
+        <BirthSelect
           id={`${idPrefix}-year`}
-          aria-label={t("Year")}
+          label={t("Year")}
+          placeholder={t("Year")}
           value={year}
-          onChange={(e) => setYear(e.target.value)}
-          required
-        >
-          <option value="">{t("Year")}</option>
-          {years.map((y) => (
-            <option key={y} value={String(y)}>{y}</option>
-          ))}
-        </select>
+          onChange={setYear}
+          variant={variant}
+          options={years.map((y) => ({ value: String(y), label: String(y) }))}
+        />
       </div>
       {tooYoung ? (
         <p id={`${idPrefix}-hint`} className="birth-input-error" role="alert">

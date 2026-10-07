@@ -25,35 +25,153 @@
   gap: 8px;
 }
 
-.birth-input select {
+.birth-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   width: 100%;
   min-width: 0;
   height: 44px;
-  padding: 0 28px 0 12px;
+  padding: 0 10px 0 12px;
   border-radius: 10px;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  background-color: var(--bg-input, rgba(255, 255, 255, 0.05));
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
-    linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 15px) 19px, calc(100% - 10px) 19px;
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
+  background: var(--bg-input, rgba(255, 255, 255, 0.05));
   color: var(--text, #e8ebf2);
+  font: inherit;
   font-size: 15px;
-  appearance: none;
-  -webkit-appearance: none;
+  text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 
-.birth-input select:focus-visible {
+.birth-select:hover {
+  border-color: color-mix(in srgb, var(--primary, #627bff) 45%, var(--border, rgba(255, 255, 255, 0.12)));
+}
+
+.birth-select:focus-visible,
+.birth-select.is-open {
   outline: none;
   border-color: var(--primary, #627bff);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #627bff) 30%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #627bff) 28%, transparent);
 }
 
-.birth-input select option {
-  color: #111;
+.birth-select-value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.birth-select.is-empty .birth-select-value {
+  color: var(--text-muted, #9da5b5);
+}
+
+.birth-select-chevron {
+  flex: none;
+  opacity: 0.7;
+  transition: transform 0.18s ease;
+}
+
+.birth-select.is-open .birth-select-chevron {
+  transform: rotate(180deg);
+}
+
+.birth-select-menu {
+  position: fixed;
+  z-index: 10100;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1b1f2b;
+  color: #e8ebf2;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  animation: birth-select-in 0.14s ease-out;
+  transform-origin: top center;
+}
+
+.birth-select-menu.is-up {
+  transform-origin: bottom center;
+}
+
+.birth-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.birth-select-menu::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.birth-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.birth-select-option.is-active {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.birth-select-option.is-selected {
+  color: #fff;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--primary, #627bff) 32%, transparent);
+}
+
+.birth-select-option.is-selected svg {
+  color: var(--primary, #8ea2ff);
+}
+
+@keyframes birth-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.birth-select-menu.is-up {
+  animation-name: birth-select-in-up;
+}
+
+@keyframes birth-select-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .birth-select-menu {
+    animation: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .birth-select-option {
+    min-height: 42px;
+  }
 }
 
 .birth-input-hint,
@@ -77,10 +195,15 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-.birth-input--marketing select {
-  background-color: rgba(255, 255, 255, 0.06);
+.birth-input--marketing .birth-select {
+  background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
+}
+
+.birth-select-menu--marketing {
+  background: #161a26;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 /* Popup */
