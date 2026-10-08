@@ -1143,6 +1143,7 @@ function registerServerChannelHandlers(io, socket) {
                   serverName: serverMeta?.name || null,
                   messageId: message.id,
                   from: fromName,
+                  fromId: socket.user?.id || null,
                   text: trimmedContent,
                 });
               }

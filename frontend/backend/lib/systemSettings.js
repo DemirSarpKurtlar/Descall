@@ -15,7 +15,6 @@ const DEFAULT_SYSTEM_CONFIG = {
     screen: true,
     valorantLfg: true,
     valorantCompanion: true,
-    dimaai: true,
   },
   themeForce: null,
   maintenanceMode: false,
@@ -57,7 +56,6 @@ function publicFeatureFlags(input) {
   return {
     valorantLfg: flags.valorantLfg,
     valorantCompanion: flags.valorantCompanion,
-    dimaai: flags.dimaai,
   };
 }
 

@@ -3,7 +3,6 @@
  * Used by React pages, prerender bodies, and footer “Explore” blocks.
  */
 export const SEO_PILLARS = [
-  { to: "/dimaai", label: "DimaAI" },
   { to: "/discord-alternative", label: "Discord alternative" },
   { to: "/compare/discord", label: "Descall vs Discord" },
   { to: "/features", label: "Features" },

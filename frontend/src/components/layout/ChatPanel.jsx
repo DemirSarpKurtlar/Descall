@@ -19,6 +19,9 @@ import { API_BASE_URL } from "../../config/api";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
+import { displayText } from "../../lib/profanity";
+import { useBlockedUserIds } from "../../lib/blockedUsers";
+import BlockUserButton from "../social/BlockUserButton";
 import AdminBadge from "../social/AdminBadge";
 import UserProfileModal from "../social/UserProfileModal";
 import ServerMembersPanel from "../servers/ServerMembersPanel";
@@ -111,8 +114,12 @@ export default function ChatPanel({
     (activeView === "servers" &&
       activeChannel?.type === "text" &&
       (canSendChannel || !serverPermissionsReady));
+  const blockedIds = useBlockedUserIds();
+  // DM with someone I blocked: no messages or calls (the server enforces it too).
+  const dmBlockedByMe = Boolean(activeDmUser?.id && blockedIds.has(String(activeDmUser.id)));
   const composerDisabled =
     Boolean(activeTimeout?.timedOut) ||
+    dmBlockedByMe ||
     (!activeDmUser && !activeGroup && !canSendChannel);
 
   useEffect(() => {
@@ -480,7 +487,7 @@ export default function ChatPanel({
               )}
             </button>
           )}
-          {(headerDm || headerGroup) && (
+          {(headerGroup || (headerDm && !dmBlockedByMe)) && (
             <>
               <button 
                 className="icon-btn" 
@@ -499,6 +506,15 @@ export default function ChatPanel({
                 <Video size={20} />
               </button>
             </>
+          )}
+          {headerDm?.id && headerDm.id !== me?.id && (
+            <BlockUserButton
+              userId={headerDm.id}
+              username={headerDm.username}
+              className={`icon-btn ${dmBlockedByMe ? "active" : ""}`}
+              iconSize={20}
+              compact
+            />
           )}
         </div>
       </header>
@@ -667,6 +683,17 @@ export default function ChatPanel({
             )}
           </AnimatePresence>
 
+          {dmBlockedByMe && (
+            <div className="dm-blocked-banner" role="status">
+              <span>{t("You blocked this user. You can't message or call each other.")}</span>
+              <BlockUserButton
+                userId={activeDmUser.id}
+                username={activeDmUser.username}
+                className="dm-blocked-banner-btn"
+                iconSize={14}
+              />
+            </div>
+          )}
           <div className="composer-container">
             <MessageComposer
               onSend={onSendMessage}
@@ -889,7 +916,7 @@ export default function ChatPanel({
                           </span>
                         </div>
                         <p className="pinned-msg-text">
-                          {pm.text || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
+                          {displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
                         </p>
                       </div>
                       <button

@@ -2087,46 +2087,7 @@ body:has(.mkt-consent),
 .seo-pp-is-call .seo-pp-chat { display: none; }
 .seo-pp-is-call .seo-pp-call { border-top: 0; min-height: 100%; }
 
-.mkt-dima-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
-  gap: 32px;
-  align-items: center;
-  padding: 28px 0 40px;
-}
-.mkt-dima-panel {
-  border: 1px solid var(--mkt-border);
-  border-radius: 18px;
-  background: rgba(14, 16, 24, 0.9);
-  min-height: 240px;
-  padding: 18px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-}
-.mkt-dima-panel h3 {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: var(--mkt-muted);
-}
-.mkt-dima-line {
-  height: 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  margin-bottom: 10px;
-}
-.mkt-dima-line.is-ai {
-  width: 72%;
-  background: rgba(79, 124, 255, 0.28);
-}
-.mkt-dima-line.is-user {
-  width: 48%;
-  margin-left: auto;
-  background: rgba(42, 212, 184, 0.22);
-}
-
 @media (max-width: 820px) {
-  .mkt-dima-hero {
-    grid-template-columns: 1fr;
-  }
 
   .mkt-download-hero {
     padding-top: 8px;

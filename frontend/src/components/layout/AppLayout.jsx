@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server, Sparkles } from "lucide-react";
+import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server } from "lucide-react";
 import NavigationRail from "./NavigationRail";
 import ServerSidebar from "./ServerSidebar";
 import ServersSidebar from "../servers/ServersSidebar";
@@ -10,7 +10,6 @@ import ActivitySidebar from "../activity/ActivitySidebar";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
 import QuickFeedbackModal from "../feedback/QuickFeedbackModal";
 import ValorantHub from "../valorant/ValorantHub";
-import DimaAiWorkspace from "../dimaai/DimaAiWorkspace";
 import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
@@ -20,7 +19,7 @@ import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../.
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
 function mainViewId(activeView) {
-  // Play / Dima AI overlay the same slot. A separate motion key remounts the
+  // Play overlays the same slot. A separate motion key remounts the
   // wrapper and lets the underlying server/group empty flash through.
   void activeView;
   return "app";
@@ -123,7 +122,6 @@ export default function AppLayout({
   const t = useT();
   const publicFeatures = usePublicFeatures();
   const showPlay = valorantPlayVisible(publicFeatures);
-  const showDimaai = publicFeatures.dimaai !== false;
   const { isMobile } = useMobile();
   const reduceMotion = useReducedMotion();
   const animateMainViews = isMobile && !reduceMotion;
@@ -133,7 +131,7 @@ export default function AppLayout({
   const [localUserPanelOpen, setLocalUserPanelOpen] = useState(false);
   const activeView = controlledActiveView ?? localActiveView;
   const userPanelOpen = controlledUserPanelOpen ?? localUserPanelOpen;
-  const hideDesktopPlaySidebar = !isMobile && (activeView === "play" || activeView === "dimaai");
+  const hideDesktopPlaySidebar = !isMobile && activeView === "play";
   const setActiveView = useCallback((view) => {
     if (onActiveViewChange) onActiveViewChange(view);
     else setLocalActiveView(view);
@@ -178,7 +176,6 @@ export default function AppLayout({
       isMobile &&
       activeView !== "play" &&
       activeView !== "activity" &&
-      activeView !== "dimaai" &&
       !activeDmUser &&
       !activeGroup &&
       !(activeView === "servers" && activeChannel)
@@ -197,7 +194,7 @@ export default function AppLayout({
   // forcing the drawer open here left a rail-only shell over LFG and broke layout.
   useEffect(() => {
     if (!isMobile) return;
-    if (activeView === "play" || activeView === "activity" || activeView === "dimaai") {
+    if (activeView === "play" || activeView === "activity") {
       setMobileDrawerOpen(false);
       return;
     }
@@ -269,7 +266,7 @@ export default function AppLayout({
     // like a no-op; second click finally sticks).
     setActiveView(view);
     if (isMobile) {
-      setMobileDrawerOpen(view !== "play" && view !== "activity" && view !== "dimaai");
+      setMobileDrawerOpen(view !== "play" && view !== "activity");
     }
   }, [isMobile, setActiveView]);
 
@@ -535,19 +532,10 @@ export default function AppLayout({
                 }}
               />
             ) : null}
-            {activeView === "dimaai" && showDimaai ? (
-              <DimaAiWorkspace
-                key={me?.id || "anon"}
-                me={me}
-                isAdmin={isAdmin}
-                isMobile={isMobile}
-                onClose={() => handleViewChange("chat")}
-              />
-            ) : null}
             <div
-              className={activeView === "play" || activeView === "dimaai" ? "app-chat-keep hidden" : "app-chat-keep"}
-              hidden={activeView === "play" || activeView === "dimaai"}
-              aria-hidden={activeView === "play" || activeView === "dimaai"}
+              className={activeView === "play" ? "app-chat-keep hidden" : "app-chat-keep"}
+              hidden={activeView === "play"}
+              aria-hidden={activeView === "play"}
             >
               <ChatPanel
                 activeView={activeView}
@@ -631,7 +619,6 @@ export default function AppLayout({
               { id: "servers", icon: Server, label: t("Servers") },
               { id: "friends", icon: Users, label: t("Friends") },
               { id: "play", icon: Crosshair, label: t("Play") },
-              { id: "dimaai", icon: Sparkles, label: "DimaAI" },
               { id: "calls", icon: Phone, label: t("Calls") },
               { id: "activity", icon: Activity, label: t("Activity") },
             ],

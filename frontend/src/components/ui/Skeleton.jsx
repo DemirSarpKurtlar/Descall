@@ -150,49 +150,6 @@ export function ServerListSkeleton({ count = 6, label }) {
   );
 }
 
-/** DimaAI history rows — orb + title + time, matching `.dima-history-item`. */
-export function DimaHistorySkeleton({ count = 8, label }) {
-  const t = useT();
-  return (
-    <div
-      className="skeleton-dima-history"
-      aria-busy="true"
-      aria-label={label || t("Loading conversations")}
-    >
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="skeleton-dima-history-item">
-          <div className="skeleton-line skeleton-dima-orb" />
-          <div className="skeleton-dima-copy">
-            <SkeletonLine width={`${48 + (i % 5) * 7}%`} height={12} />
-            <SkeletonLine width={`${26 + (i % 3) * 6}%`} height={10} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** DimaAI thread — user/assistant bubbles, not Discord-style avatar rows. */
-export function DimaThreadSkeleton({ count = 5, label }) {
-  const t = useT();
-  return (
-    <div className="skeleton-dima-thread" aria-busy="true" aria-label={label || t("Loading messages")}>
-      {Array.from({ length: count }).map((_, i) => {
-        const isUser = i % 2 === 0;
-        return (
-          <div key={i} className={`skeleton-dima-msg ${isUser ? "is-user" : "is-assistant"}`}>
-            <div className="skeleton-dima-bubble">
-              <SkeletonLine width={isUser ? `${62 + (i % 3) * 8}%` : "92%"} height={12} />
-              {!isUser && <SkeletonLine width={`${64 + (i % 4) * 7}%`} height={12} />}
-              {!isUser && i % 3 === 0 && <SkeletonLine width="44%" height={12} />}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function ShopGridSkeleton({ count = 6, label }) {
   const t = useT();
   return (

@@ -7,7 +7,7 @@ import {
 } from "../api/valorantMissions";
 
 /**
- * Wire hook for Dima's Adım 5 Companion missions / contracts / BP panel.
+ * Wire hook for the Adım 5 Companion missions / contracts / BP panel.
  * Does not own full UI — polls status + missions when enabled + linked.
  *
  * @param {{ enabled?: boolean, region?: string, puuid?: string, pollMs?: number }} opts

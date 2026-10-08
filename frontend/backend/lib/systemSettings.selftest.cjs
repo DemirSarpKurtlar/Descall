@@ -24,7 +24,6 @@ assert(defaults.maxMessageLength === 2000, "default max length fills empty UI");
 assert(defaults.featureFlags.voice === true, "default voice on");
 assert(defaults.featureFlags.valorantLfg === true, "default lfg on");
 assert(defaults.featureFlags.valorantCompanion === true, "default companion on");
-assert(defaults.featureFlags.dimaai === true, "default dimaai on");
 
 const legacy = mergeSystemConfig({
   featureFlags: { voice: true, dm: true, video: true, screen: false },
@@ -32,13 +31,12 @@ const legacy = mergeSystemConfig({
 assert(legacy.featureFlags.screen === false, "stored screen off survives");
 assert(legacy.featureFlags.valorantLfg === true, "missing lfg defaults on");
 assert(legacy.featureFlags.valorantCompanion === true, "missing companion defaults on");
-assert(legacy.featureFlags.dimaai === true, "missing dimaai defaults on");
 const pub = publicFeatureFlags(legacy.featureFlags);
-assert(pub.valorantLfg === true && pub.dimaai === true, "public flags");
+assert(pub.valorantLfg === true && pub.valorantCompanion === true, "public flags");
 assert(pub.voice === undefined && pub.maintenanceMode === undefined, "public payload is availability only");
-assert(Object.keys(pub).sort().join(",") === "dimaai,valorantCompanion,valorantLfg", "public keys only");
+assert(Object.keys(pub).sort().join(",") === "valorantCompanion,valorantLfg", "public keys only");
 const partial = pickFeatureFlags({ valorantLfg: false });
-assert(partial.valorantLfg === false && partial.voice === true && partial.dimaai === true, "partial flag patch");
+assert(partial.valorantLfg === false && partial.voice === true && partial.valorantCompanion === true, "partial flag patch");
 
 const picked = pickConfig({
   chatFrozen: true,
@@ -147,7 +145,6 @@ function mockSettingsClient({ row, insertError, updateError, selectError } = {})
   );
   assert(flagged.config.featureFlags.valorantLfg === false, "lfg patch persists");
   assert(flagged.config.featureFlags.screen === false, "partial flag patch keeps older flags");
-  assert(flagged.config.featureFlags.dimaai === true, "omitted new flag stays on");
   assert(flagged.config.featureFlags.valorantCompanion === true, "omitted companion stays on");
 
   console.log("systemSettings.selftest.cjs ok");

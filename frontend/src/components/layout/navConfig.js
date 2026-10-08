@@ -8,7 +8,6 @@ import {
   Settings,
   Plus,
   Server,
-  Sparkles,
 } from "lucide-react";
 
 /** Shared primary destinations for the left vertical nav rail. */
@@ -17,7 +16,6 @@ export const MAIN_NAV_IDS = [
   "groups",
   "servers",
   "play",
-  "dimaai",
   "friends",
   "activity",
   "calls",
@@ -33,7 +31,6 @@ export function buildMainNavItems(t) {
     { id: "groups", icon: Users, label: t("nav.groups"), group: "main" },
     { id: "servers", icon: Server, label: t("nav.servers"), group: "main" },
     { id: "play", icon: Crosshair, label: t("nav.play"), group: "main" },
-    { id: "dimaai", icon: Sparkles, label: t("nav.dimaai"), group: "main" },
     { id: "friends", icon: UserPlus, label: t("nav.friends"), group: "main" },
     { id: "activity", icon: Zap, label: t("Activity"), group: "main" },
     { id: "calls", icon: Phone, label: t("nav.calls"), group: "main" },

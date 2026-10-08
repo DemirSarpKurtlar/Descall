@@ -17,6 +17,7 @@ import { useLocale } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
 import { SkeletonLine } from "../ui/Skeleton";
 import ReportUserModal from "./ReportUserModal";
+import BlockUserButton from "./BlockUserButton";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -501,13 +502,22 @@ export default function UserProfileModal({
               )}
 
               {!isSelf && (
-                <button
-                  type="button"
-                  className="user-profile-report-btn"
-                  onClick={() => setReportOpen(true)}
-                >
-                  <Flag size={13} /> {t("report.action")}
-                </button>
+                <div className="user-profile-safety-row">
+                  <BlockUserButton
+                    userId={userId}
+                    username={displayUsername}
+                    onChange={(nowBlocked) => {
+                      if (nowBlocked) setFriendState("none");
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="user-profile-report-btn"
+                    onClick={() => setReportOpen(true)}
+                  >
+                    <Flag size={13} /> {t("report.action")}
+                  </button>
+                </div>
               )}
 
               {/* Friend error */}

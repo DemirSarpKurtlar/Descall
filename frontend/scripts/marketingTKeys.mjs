@@ -34,7 +34,6 @@ export function collectMarketingTKeys(siteDir) {
 }
 
 export const MARKETING_IDENTITY_KEYS = new Set([
-  "DimaAI",
   "Beta",
   "Descall",
   "Blog",

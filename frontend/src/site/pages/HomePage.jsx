@@ -104,7 +104,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
           <div className="mkt-kicker">
             <span className="mkt-header-beta">{t("Beta")}</span>
             {" · "}
-            {t("Voice")} · {t("Servers")} · DimaAI
+            {t("Voice")} · {t("Servers")} · {t("Valorant LFG")}
           </div>
           <h1>{t("Talk together")}</h1>
           <p>
@@ -113,7 +113,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
               : (
                 <>
                   {t(
-                    "A lighter home for friends and squads — real servers, HD calls, DimaAI, and"
+                    "A lighter home for friends and squads — real servers, HD calls, screen share, and"
                   )}{" "}
                   <Link to="/discord-alternative-for-lfg">{t("Valorant LFG")}</Link>.
                 </>
@@ -137,13 +137,6 @@ export default function HomePage({ onSignIn, onSignUp }) {
             >
               {t("Download")} {t("Desktop")}
             </Link>
-            <Link
-              to={href("/dimaai")}
-              className="mkt-btn mkt-btn-ghost"
-              onClick={() => Funnel.ctaClick({ page: "home", placement: "hero", label: "dimaai", intent: "seo" })}
-            >
-              DimaAI
-            </Link>
           </div>
         </div>
         <SeoProductPreview
@@ -155,7 +148,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
       <section className="mkt-section">
         <h2>{t("Why Choose Descall?")}</h2>
         <p className="lead">
-          {t("Servers, chat, calls, and DimaAI in one quieter app — built for friends, gamers, and communities.")}
+          {t("Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.")}
         </p>
         <div className="mkt-feature-grid">
           {HIGHLIGHTS.map((item) => (

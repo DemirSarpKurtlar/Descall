@@ -23,7 +23,6 @@
 @import './styles/servers.css';
 @import './styles/mobile.css';
 @import './styles/admin-glass.css';
-@import './styles/admin-voice.css';
 @import './styles/admin-broadcast.css';
 @import './styles/auth-splash.css';
 @import './styles/incoming-call.css';
@@ -33,8 +32,6 @@
 @import './styles/voice-speaking.css';
 @import './styles/lfg.css';
 @import './styles/valorant.css';
-@import './styles/dimaai.css';
-@import './styles/dimaai-chatgpt-ui.css';
 @import './styles/titlebar.css';
 @import './styles/voice-message.css';
 @import './styles/shop.css';

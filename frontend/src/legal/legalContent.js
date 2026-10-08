@@ -7,9 +7,10 @@
  * Structure: { tr: { title, updated, intro, sections: [{ heading, paragraphs: [...] }] }, en: {...} }
  */
 
-const LAST_UPDATED = "10 Ağustos 2026";
-const LAST_UPDATED_EN = "August 10, 2026";
-// Privacy Policy revised separately (Sentry crash/error reports, iOS APNs push tokens).
+const LAST_UPDATED = "8 Ekim 2026";
+const LAST_UPDATED_EN = "October 8, 2026";
+// Privacy Policy revised separately (2.9.141: calls are never recorded, full list of
+// third-party services incl. PostHog, GIPHY, LiveKit; AI assistant removed).
 const PRIVACY_LAST_UPDATED = "8 Ekim 2026";
 const PRIVACY_LAST_UPDATED_EN = "October 8, 2026";
 
@@ -56,7 +57,7 @@ export const TERMS_CONTENT = {
       {
         heading: "5. Sesli/Görüntülü Aramalar, Ekran Paylaşımı ve İçerik",
         paragraphs: [
-          "Sesli ve görüntülü aramalar ile ekran paylaşımı, katılımcılar arasında doğrudan (peer-to-peer benzeri) gerçek zamanlı olarak iletilir; Descall, aramaların içeriğini varsayılan olarak kaydetmez veya saklamaz. Bir katılımcının aramayı kendi cihazında kayıt etmesi, o katılımcının sorumluluğundadır ve Descall bu tür kayıtlar üzerinde herhangi bir kontrol veya sorumluluk kabul etmez.",
+          "Sesli ve görüntülü aramalar ile ekran paylaşımı, katılımcılar arasında gerçek zamanlı olarak doğrudan veya yalnızca iletimi sağlayan medya aktarma sunucuları (TURN / LiveKit) üzerinden iletilir. Descall aramaları kaydetmez: aramaların ses, görüntü veya ekran içeriği hiçbir zaman kaydedilmez veya saklanmaz. Bir katılımcının aramayı kendi cihazında kayıt etmesi, o katılımcının sorumluluğundadır ve Descall bu tür kayıtlar üzerinde herhangi bir kontrol veya sorumluluk kabul etmez.",
           "Bir görüşmeye veya ekran paylaşımına katılarak, diğer katılımcıların (yasal sınırlar dahilinde) görüşmeyi kaydedebileceğini kabul edersiniz; bu nedenle paylaştığınız içeriğin (ekran görüntüsü dahil) hassas veya gizli bilgi içermediğinden emin olmalısınız.",
           "Gönderdiğiniz mesajlar, medya dosyaları ve profil içerikleri (avatar, banner vb.) için tüm hak ve sorumluluk size aittir; bu içerikleri paylaşarak, Hizmet'i sağlamak amacıyla (depolama, iletim, önizleme oluşturma gibi) gerekli ölçüde işlenmesine izin verirsiniz.",
           "Descall, telif hakkı ihlali, yasa dışı içerik veya bu Şartların ihlali bildirimlerini değerlendirir ve gerekli görüldüğünde ilgili içeriği kaldırabilir. Tekrarlayan ihlallerde bulunan hesaplar kapatılabilir.",
@@ -99,8 +100,8 @@ export const TERMS_CONTENT = {
       {
         heading: "10. Üçüncü Taraf Servisler",
         paragraphs: [
-          "Descall, Hizmet'i işletebilmek için güvenilir üçüncü taraf altyapı sağlayıcılarından yararlanır: veritabanı ve kimlik doğrulama için Supabase, işlemsel e-posta gönderimi için Resend, mobil push bildirimleri için Firebase Cloud Messaging ve barındırma için Render. Bu sağlayıcılar, Descall'ın talimatları doğrultusunda veri işleyicisi olarak hareket eder.",
-          "Google ile giriş özelliğini kullanmayı seçerseniz, Google'ın kendi hizmet şartları da geçerli olur. Descall, bu üçüncü taraf servislerin kendi hizmet kesintilerinden veya politika değişikliklerinden sorumlu tutulamaz.",
+          "Descall, Hizmet'i işletebilmek için güvenilir üçüncü taraf sağlayıcılardan yararlanır: veritabanı ve dosya depolama için Supabase, işlemsel e-posta gönderimi için Resend, mobil push bildirimleri için Firebase Cloud Messaging ve Apple Push Notification service (APNs), sunucu barındırma için Render, web sitesi barındırma için Vercel, sesli kanallarda medya iletimi için LiveKit, ürün analitiği için PostHog, hata raporları için Sentry ve GIF arama için GIPHY. Sağlayıcıların tam listesi ve işledikleri veriler Gizlilik Politikası'nda yer alır.",
+          "Google ile giriş veya Apple ile giriş özelliğini kullanmayı seçerseniz, Google'ın veya Apple'ın kendi hizmet şartları da geçerli olur. Descall, bu üçüncü taraf servislerin kendi hizmet kesintilerinden veya politika değişikliklerinden sorumlu tutulamaz.",
         ],
       },
       {
@@ -205,7 +206,7 @@ export const TERMS_CONTENT = {
       {
         heading: "5. Voice/Video Calls, Screen Sharing, and Content",
         paragraphs: [
-          "Voice and video calls and screen sharing are transmitted in real time directly between participants; Descall does not record or store the content of calls by default. If a participant records a call on their own device, that is solely their responsibility, and Descall accepts no control or liability over such recordings.",
+          "Voice and video calls and screen sharing are transmitted in real time between participants, either directly or through media relay servers (TURN / LiveKit) that only route them. Descall does not record calls: the audio, video, and screen content of calls is never recorded or stored. If a participant records a call on their own device, that is solely their responsibility, and Descall accepts no control or liability over such recordings.",
           "By joining a call or screen share, you acknowledge that other participants may (within legal limits) record the session; you should therefore ensure that anything you share (including on-screen content) does not contain sensitive or confidential information.",
           "You retain full responsibility for the messages, media files, and profile content (avatar, banner, etc.) you send; by sharing such content, you grant Descall the rights necessary to process it (storage, transmission, generating previews) solely to provide the Service.",
           "Descall reviews reports of copyright infringement, illegal content, or violations of these Terms and may remove relevant content when appropriate. Accounts with repeated violations may be closed.",
@@ -248,8 +249,8 @@ export const TERMS_CONTENT = {
       {
         heading: "10. Third-Party Services",
         paragraphs: [
-          "Descall relies on trusted third-party infrastructure providers to operate the Service: Supabase for database and authentication, Resend for transactional email delivery, Firebase Cloud Messaging for mobile push notifications, and Render for hosting. These providers act as data processors under Descall's instructions.",
-          "If you choose to use Google Sign-In, Google's own terms of service also apply. Descall cannot be held responsible for outages or policy changes on the part of these third-party services.",
+          "Descall relies on trusted third-party providers to operate the Service: Supabase for database and file storage, Resend for transactional email delivery, Firebase Cloud Messaging and Apple Push Notification service (APNs) for mobile push notifications, Render for server hosting, Vercel for website hosting, LiveKit for media routing in voice channels, PostHog for product analytics, Sentry for error reports, and GIPHY for GIF search. The full list of providers and the data they process is in the Privacy Policy.",
+          "If you choose to use Google Sign-In or Sign in with Apple, Google's or Apple's own terms of service also apply. Descall cannot be held responsible for outages or policy changes on the part of these third-party services.",
         ],
       },
       {
@@ -326,11 +327,12 @@ export const PRIVACY_CONTENT = {
         paragraphs: [
           "Hesap bilgileri: Kullanıcı adınız, parolanızın güvenli (bcrypt ile) karma (hash) hâli, isteğe bağlı e-posta adresiniz, profil fotoğrafınız ve seçtiğiniz görünen ad gibi hesap oluştururken veya profilinizi düzenlerken sağladığınız bilgiler.",
           "İletişim içeriği: Gönderdiğiniz doğrudan mesajlar (DM) ve grup mesajları, paylaştığınız medya/dosyalar, mesaj sabitlemeleri ve tepkiler (emoji reaksiyonları). Bu içerikler, ilgili sohbetin katılımcılarına gösterilmek üzere işlenir ve saklanır.",
-          "Görüşme meta verileri: Sesli/görüntülü arama süresi, katılımcı sayısı, bağlantı kalitesi göstergeleri (uyarlanabilir bit hızı için) ve ekran paylaşımı oturum bilgileri; görüşmenin ses/görüntü içeriği varsayılan olarak kaydedilmez veya saklanmaz.",
+          "Görüşme meta verileri: Sesli/görüntülü arama süresi, katılımcı sayısı, bağlantı kalitesi göstergeleri (uyarlanabilir bit hızı için) ve ekran paylaşımı oturum bilgileri. Aramalar kaydedilmez: görüşmenin ses, görüntü veya ekran içeriği hiçbir zaman kaydedilmez veya saklanmaz.",
           "Etkinlik ve DesCoin verileri: DesCoin kazanım sisteminin hile içermeyecek şekilde çalışmasını sağlamak için, sesli sohbette bulunma süreniz, mesaj gönderme sıklığınız ve ekran paylaşımı etkinliğiniz gibi sunucu tarafında doğrulanan etkinlik verileri ile DesCoin bakiyeniz ve işlem geçmişiniz (ledger).",
           "Teknik ve cihaz bilgileri: IP adresi, tarayıcı/işletim sistemi türü, cihaz kimliği, uygulama sürümü, oturum belirteçleri (session token) ve push bildirimleri için cihaz kayıt bilgileri (FCM/Web Push belirteçleri; iOS uygulamasında Apple Push Notification service (APNs) cihaz belirteçleri: mesaj bildirimleri için bildirim belirteci ve gelen aramalar için VoIP belirteci). iOS cihaz belirteçleri ve bildirim dili yalnızca bildirimleri ve gelen aramaları o cihaza iletmek için kullanılır; çıkış yaptığınızda, bildirimleri kapattığınızda veya Apple belirtecin geçersiz olduğunu bildirdiğinde silinir.",
           "Ödeme veya finansal bilgi toplamıyoruz: Descall'da gerçek para ile ödeme alınmaz; tüm mağaza satın alımları DesCoin ile yapılır, bu nedenle kredi kartı veya benzeri finansal bilgi toplanmaz veya saklanmaz.",
-          "Yerel depolama ve çerezler: Oturumunuzu sürdürmek, dil ve tema tercihlerinizi hatırlamak amacıyla tarayıcınızın yerel depolama alanını (localStorage) kullanırız; üçüncü taraf reklam takip çerezleri kullanmıyoruz.",
+          "Kullanım analitiği: Uygulamanın nasıl kullanıldığını anlamak için PostHog ile uygulama içi olayları (örneğin kayıt, giriş, açılan sayfalar ve özellik kullanımı) ve beklenmeyen hata olaylarını toplarız. Giriş yaptığınızda bu olaylar hesap kimliğiniz, kullanıcı adınız ve (varsa) e-posta adresinizle ilişkilendirilir. Oturum kaydı (ekran/oturum tekrarı) kapalıdır; ekranınız veya yazdıklarınız kaydedilmez. Analitik verileri reklam için kullanılmaz ve satılmaz.",
+          "Yerel depolama ve çerezler: Oturumunuzu sürdürmek, dil ve tema tercihlerinizi hatırlamak ve PostHog analitiği için tarayıcınızın yerel depolama alanını (localStorage) ve birinci taraf çerezleri kullanırız. iOS uygulamasında reklam veya izleme (tracking) araçları kullanılmaz. Yalnızca web sitesinde ve masaüstü uygulamasında, reklamlardan gelen kayıtları ölçmek için Google Ads dönüşüm etiketi (gtag) yüklenebilir ve çerez kullanabilir.",
         ],
       },
       {
@@ -341,7 +343,7 @@ export const PRIVACY_CONTENT = {
           "Hile önleme ve bütünlük: DesCoin kazanım sisteminin adil çalışmasını sağlamak, bot/otomasyon kullanımını, çoklu hesapları ve manipülasyonu tespit etmek için etkinlik verilerini analiz ederiz.",
           "İletişim: Doğrulama kodları, güvenlik uyarıları, arkadaşlık istekleri, hediye bildirimleri ve önemli hizmet güncellemeleri gibi işlemsel bildirimleri e-posta veya push bildirimi olarak göndermek için.",
           "İyileştirme: Hizmet'in performansını, güvenilirliğini ve kullanıcı deneyimini analiz etmek ve geliştirmek için (örneğin bağlantı kalitesi teşhisleri, hata günlükleri).",
-          "Kişisel verilerinizi hiçbir şekilde üçüncü taraflara satmıyoruz veya reklam amacıyla paylaşmıyoruz.",
+          "Kişisel verilerinizi hiçbir şekilde üçüncü taraflara satmıyoruz. Bölüm 4'te açıklanan web sitesi kayıt dönüşümü ölçümü dışında reklam amacıyla paylaşmıyoruz.",
         ],
       },
       {
@@ -353,7 +355,8 @@ export const PRIVACY_CONTENT = {
       {
         heading: "4. Bilgilerin Paylaşılması ve Hizmet Sağlayıcılar",
         paragraphs: [
-          "Verilerinizi, Hizmet'i işletmemize yardımcı olan ve bizim talimatlarımız doğrultusunda hareket eden güvenilir hizmet sağlayıcılarla (veri işleyicileriyle) paylaşırız: veritabanı ve kimlik doğrulama için Supabase; işlemsel e-posta gönderimi için Resend; mobil push bildirimleri için Firebase Cloud Messaging (Google); iOS uygulamasında bildirimlerin ve gelen aramaların iletilmesi için Apple Push Notification service (APNs, Apple); ve barındırma altyapısı için Render. Bu sağlayıcılarla yalnızca Hizmet'i sağlamak için gerekli veriler paylaşılır.",
+          "Verilerinizi, Hizmet'i işletmemize yardımcı olan ve bizim talimatlarımız doğrultusunda hareket eden güvenilir hizmet sağlayıcılarla (veri işleyicileriyle) paylaşırız: veritabanı, dosya depolama ve kimlik doğrulama için Supabase; işlemsel e-posta gönderimi için Resend; mobil push bildirimleri için Firebase Cloud Messaging (Google); iOS uygulamasında bildirimlerin ve gelen aramaların iletilmesi için Apple Push Notification service (APNs, Apple); sunucu barındırma için Render; web sitesinin barındırılması ve çerez kullanmayan toplu ziyaret istatistikleri (yalnızca web sitesi) için Vercel; sunucu sesli kanallarında ses/görüntü akışlarının iletilmesi için LiveKit ve aramaların bağlantısı için TURN aktarma sunucuları (akışlar yalnızca iletilir, kaydedilmez); ve ürün analitiği için PostHog (AB veri bölgesi). Bu sağlayıcılarla yalnızca Hizmet'i sağlamak için gerekli veriler paylaşılır.",
+          "Kullanmayı seçtiğiniz özelliklere bağlı üçüncü taraflar: GIF aradığınızda arama metniniz ve IP adresiniz doğrudan GIPHY'ye (GIPHY, Inc.) gönderilir; Google ile giriş yaptığınızda Google'dan, Apple ile giriş yaptığınızda Apple'dan yalnızca kimlik doğrulama için gereken bilgiler alınır; bir Valorant hesabı bağlarsanız Riot ID'niz, oyun istatistiklerini getirmek için Riot Games ve HenrikDev API ile paylaşılır. Yalnızca web sitesinde ve masaüstü uygulamasında, reklam kampanyalarından gelen kayıtları ölçmek için Google Ads dönüşüm etiketi (Google) kullanılır; bu etiket iOS uygulamasında yüklenmez.",
           "Çökme ve hata raporları: Uygulama, web sitesi, masaüstü uygulaması veya sunucularımız bir hatayla karşılaştığında, hata izleme sağlayıcımız Sentry'ye (Functional Software, Inc.) teknik bir rapor gönderilir. Rapor; hata mesajını, yığın izini (stack trace), hatanın oluştuğu sayfa veya API adresini ve cihaz, işletim sistemi, tarayıcı ve uygulama sürümü bilgilerini içerir. Raporlar adınızı, e-posta adresinizi, mesaj içeriklerinizi veya IP adresinizi içermeyecek şekilde yapılandırılmıştır; oturum anahtarları (token) rapordan çıkarılır. Bu raporlar Sentry'nin Avrupa Birliği (AB) veri bölgesinde saklanır ve yalnızca hataları bulup düzeltmek için kullanılır.",
           "Gönderdiğiniz mesajlar ve medya, yalnızca seçtiğiniz alıcılara (DM karşı tarafı veya grup üyeleri) gösterilir; Descall çalışanları, yalnızca güvenlik soruşturmaları, kullanıcı şikayetlerinin incelenmesi veya yasal yükümlülüklerin yerine getirilmesi için gerekli olduğunda içeriğe erişebilir.",
           "Yasal bir zorunluluk (mahkeme kararı, yasal talep) olması, haklarımızı korumamız gerekmesi veya kullanıcıların güvenliğini sağlamamız gerektiği durumlar hariç, kişisel verilerinizi kolluk kuvvetleri veya diğer üçüncü taraflarla paylaşmayız.",
@@ -362,7 +365,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "5. Çerezler ve Yerel Depolama",
         paragraphs: [
-          "Descall, üçüncü taraf reklam veya izleme çerezleri kullanmaz. Oturum belirtecinizi, dil tercihinizi, tema ayarlarınızı ve benzeri kullanıcı arayüzü tercihlerini saklamak için tarayıcınızın yerel depolama alanını (localStorage) kullanırız. Bu bilgileri tarayıcı ayarlarınızdan istediğiniz zaman temizleyebilirsiniz; ancak bu, oturumunuzun sonlanmasına neden olabilir.",
+          "iOS uygulamasında reklam veya izleme çerezleri ya da araçları kullanılmaz. Web sitesinde ve masaüstü uygulamasında tek reklam aracı, reklamlardan gelen kayıtları ölçen Google Ads dönüşüm etiketidir (bölüm 4). PostHog analitiği birinci taraf çerez ve yerel depolama kullanır. Oturum belirtecinizi, dil tercihinizi, tema ayarlarınızı ve benzeri kullanıcı arayüzü tercihlerini saklamak için tarayıcınızın yerel depolama alanını (localStorage) kullanırız. Bu bilgileri tarayıcı ayarlarınızdan istediğiniz zaman temizleyebilirsiniz; ancak bu, oturumunuzun sonlanmasına neden olabilir.",
         ],
       },
       {
@@ -396,7 +399,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "10. Uluslararası Veri Transferi",
         paragraphs: [
-          "Hizmet sağlayıcılarımız (Supabase, Resend, Firebase, Render, Sentry), verilerinizi kayıtlı olduğunuz ülkeden farklı ülkelerde bulunan sunucularda işleyebilir. Bu durumlarda, verilerinizin yeterli düzeyde korunmasını sağlamak amacıyla ilgili sağlayıcılarla uygun sözleşmesel güvenceler bulunmasını sağlarız.",
+          "Hizmet sağlayıcılarımız (Supabase, Resend, Firebase, Apple, Render, Vercel, LiveKit, PostHog, Sentry, GIPHY), verilerinizi kayıtlı olduğunuz ülkeden farklı ülkelerde bulunan sunucularda işleyebilir. Bu durumlarda, verilerinizin yeterli düzeyde korunmasını sağlamak amacıyla ilgili sağlayıcılarla uygun sözleşmesel güvenceler bulunmasını sağlarız.",
         ],
       },
       {
@@ -430,11 +433,12 @@ export const PRIVACY_CONTENT = {
         paragraphs: [
           "Account information: Your username, a securely hashed (bcrypt) form of your password, your optional email address, your profile photo, and any display name you choose when creating your account or editing your profile.",
           "Communication content: The direct messages (DMs) and group messages you send, media/files you share, message pins, and reactions (emoji). This content is processed and stored so it can be shown to the participants of the relevant conversation.",
-          "Call metadata: Voice/video call duration, participant count, connection quality indicators (for adaptive bitrate), and screen-share session information; the audio/video content of a call is not recorded or stored by default.",
+          "Call metadata: Voice/video call duration, participant count, connection quality indicators (for adaptive bitrate), and screen-share session information. Calls are not recorded: the audio, video, and screen content of a call is never recorded or stored.",
           "Activity and DesCoin data: To ensure the DesCoin earning system operates fairly and without cheating, we collect server-verified activity data such as your time spent actively present in voice chat, your messaging frequency, and your screen-sharing activity, along with your DesCoin balance and transaction history (ledger).",
           "Technical and device information: IP address, browser/operating system type, device identifier, app version, session tokens, and device registration information for push notifications (FCM/Web Push tokens; in the iOS app, Apple Push Notification service (APNs) device tokens: an alert token for message notifications and a VoIP token for incoming calls). iOS device tokens and the notification language are used only to deliver notifications and incoming calls to that device, and are deleted when you log out, turn notifications off, or Apple reports the token as invalid.",
           "We do not collect payment or financial information: Descall does not accept real-money payments; all shop purchases are made with DesCoin, so no credit card or similar financial information is collected or stored.",
-          "Local storage and cookies: We use your browser's local storage (localStorage) to keep you signed in and remember your language and theme preferences; we do not use third-party advertising or tracking cookies.",
+          "Usage analytics: To understand how the app is used, we collect in-app events with PostHog (for example sign-up, login, pages opened, and feature usage) and unexpected error events. When you are signed in, these events are linked to your account ID, username, and (if set) email address. Session recording (screen/session replay) is turned off; your screen and what you type are not recorded. Analytics data is not used for advertising and is never sold.",
+          "Local storage and cookies: We use your browser's local storage (localStorage) and first-party cookies to keep you signed in, remember your language and theme preferences, and for PostHog analytics. The iOS app does not use advertising or tracking tools. On the website and the desktop app only, the Google Ads conversion tag (gtag) may be loaded to measure sign-ups that come from ads, and it may use cookies.",
         ],
       },
       {
@@ -445,7 +449,7 @@ export const PRIVACY_CONTENT = {
           "Anti-cheat and integrity: we analyze activity data to keep the DesCoin earning system fair and to detect bot/automation use, multi-accounting, and manipulation.",
           "Communication: to send transactional notifications by email or push, such as verification codes, security alerts, friend requests, gift notifications, and important service updates.",
           "Improvement: to analyze and improve the Service's performance, reliability, and user experience (e.g., connection quality diagnostics, error logs).",
-          "We never sell your personal data to third parties or share it for advertising purposes.",
+          "We never sell your personal data to third parties. Apart from the website sign-up conversion measurement described in section 4, we do not share it for advertising purposes.",
         ],
       },
       {
@@ -457,7 +461,8 @@ export const PRIVACY_CONTENT = {
       {
         heading: "4. Sharing of Information and Service Providers",
         paragraphs: [
-          "We share your data with trusted service providers (data processors) who help us operate the Service and act under our instructions: Supabase for database and authentication; Resend for transactional email delivery; Firebase Cloud Messaging (Google) for mobile push notifications; Apple Push Notification service (APNs, Apple) to deliver notifications and incoming calls in the iOS app; and Render for hosting infrastructure. Only the data necessary to provide the Service is shared with these providers.",
+          "We share your data with trusted service providers (data processors) who help us operate the Service and act under our instructions: Supabase for database, file storage, and authentication; Resend for transactional email delivery; Firebase Cloud Messaging (Google) for mobile push notifications; Apple Push Notification service (APNs, Apple) to deliver notifications and incoming calls in the iOS app; Render for server hosting; Vercel for website hosting and cookieless aggregate visit statistics (website only); LiveKit for routing audio/video streams in server voice channels and TURN relay servers for connecting calls (streams are only relayed, never recorded); and PostHog (EU data region) for product analytics. Only the data necessary to provide the Service is shared with these providers.",
+          "Third parties tied to features you choose to use: when you search for GIFs, your search text and IP address are sent directly to GIPHY (GIPHY, Inc.); when you sign in with Google or Apple, we receive only the information needed for authentication from Google or Apple; if you link a Valorant account, your Riot ID is shared with Riot Games and the HenrikDev API to fetch your game stats. On the website and the desktop app only, the Google Ads conversion tag (Google) is used to measure sign-ups from ad campaigns; it is not loaded in the iOS app.",
           "Crash and error reports: when the app, the website, the desktop app or our servers run into an error, a technical report is sent to our error-monitoring provider Sentry (Functional Software, Inc.). A report contains the error message, the stack trace, the page or API address where the error happened, and device, operating system, browser and app version details. Reports are configured not to include your name, email address, message contents or IP address, and sign-in tokens are stripped from them. These reports are stored in Sentry's European Union (EU) data region and are used only to find and fix bugs.",
           "Messages and media you send are shown only to your chosen recipients (the other party in a DM or group members); Descall staff may only access content when necessary for security investigations, reviewing user reports, or fulfilling legal obligations.",
           "We do not share your personal data with law enforcement or other third parties except where required by a legal obligation (court order, legal request), where necessary to protect our rights, or where necessary to protect user safety.",
@@ -466,7 +471,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "5. Cookies and Local Storage",
         paragraphs: [
-          "Descall does not use third-party advertising or tracking cookies. We use your browser's local storage (localStorage) to store your session token, language preference, theme settings, and similar UI preferences. You may clear this information from your browser settings at any time, though doing so may end your session.",
+          "The iOS app does not use advertising or tracking cookies or tools. On the website and the desktop app, the only advertising tool is the Google Ads conversion tag that measures sign-ups from ads (section 4). PostHog analytics uses a first-party cookie and local storage. We use your browser's local storage (localStorage) to store your session token, language preference, theme settings, and similar UI preferences. You may clear this information from your browser settings at any time, though doing so may end your session.",
         ],
       },
       {
@@ -500,7 +505,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "10. International Data Transfers",
         paragraphs: [
-          "Our service providers (Supabase, Resend, Firebase, Render, Sentry) may process your data on servers located in countries other than the one you reside in. In such cases, we ensure appropriate contractual safeguards are in place with those providers to keep your data adequately protected.",
+          "Our service providers (Supabase, Resend, Firebase, Apple, Render, Vercel, LiveKit, PostHog, Sentry, GIPHY) may process your data on servers located in countries other than the one you reside in. In such cases, we ensure appropriate contractual safeguards are in place with those providers to keep your data adequately protected.",
         ],
       },
       {

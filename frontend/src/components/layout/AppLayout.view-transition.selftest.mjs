@@ -15,22 +15,22 @@ const layout = readFileSync(join(root, "AppLayout.jsx"), "utf8");
 const css = readFileSync(join(root, "../../styles/app-layout.css"), "utf8");
 const messagesCss = readFileSync(join(root, "../../styles/messages.css"), "utf8");
 
-assert(layout.includes("app-main-slot"), "main views must share a slot so play/dimaai can crossfade");
-assert(layout.includes("app-main-view"), "play/dimaai/chat must render inside an animated main view");
+assert(layout.includes("app-main-slot"), "main views must share a slot so play can crossfade");
+assert(layout.includes("app-main-view"), "play/chat must render inside an animated main view");
 assert(layout.includes("useReducedMotion"), "view transition must respect reduced motion");
-assert(layout.includes("hideDesktopPlaySidebar"), "mobile must keep the drawer contents while sliding to LFG/DimaAI");
+assert(layout.includes("hideDesktopPlaySidebar"), "mobile must keep the drawer contents while sliding to LFG");
 assert(css.includes(".app-main-slot"), "main slot must fill the app grid cell");
 assert(css.includes(".app-main-view"), "animated view wrapper styles must exist");
-assert(layout.includes("app-chat-keep"), "chat must stay mounted under LFG/Dima AI");
+assert(layout.includes("app-chat-keep"), "chat must stay mounted under LFG");
 assert(
-  !layout.includes('view === "friends" || view === "play" || view === "dimaai"'),
-  "LFG/Dima AI must not clear the open conversation",
+  !layout.includes('view === "friends" || view === "play"'),
+  "LFG must not clear the open conversation",
 );
 
 
 assert(
   css.includes(".app-chat-keep[hidden]") && css.includes("display: none !important"),
-  "chat keep must use display:none !important so LFG/Dima fill the column",
+  "chat keep must use display:none !important so LFG fills the column",
 );
 assert(
   /\.messages-container \{[\s\S]{0,180}min-height:\s*0/.test(css),
@@ -50,8 +50,8 @@ assert(
 );
 
 assert(
-  !/if \(activeView === "play" \|\| activeView === "dimaai"\) return activeView/.test(layout),
-  "play/dimaai must not use a separate motion key (that flashes server empty under LFG/Dima)",
+  !/if \(activeView === "play"\) return activeView/.test(layout),
+  "play must not use a separate motion key (that flashes server empty under LFG)",
 );
 assert(
   /flex:\s*1 1 0/.test(css),
@@ -82,19 +82,14 @@ assert(
   "LfgWorkspace must not mount directly from AppLayout (wrap via ValorantHub)",
 );
 assert(
-  /activeView === "dimaai" \? \([\s\S]{0,40}<DimaAiWorkspace/.test(layout),
-  "DimaAiWorkspace must mount only when activeView is dimaai",
-);
-assert(
-  !/\.app-main-view\s*>\s*\.lfg-workspace,[\s\S]{0,60}\.app-main-view\s*>\s*\.dima-workspace\s*\{[\s\S]{0,80}position:\s*absolute/.test(css),
-  "must not unconditionally absolute-position LFG/Dima under .app-main-view",
+  !/\.app-main-view\s*>\s*\.lfg-workspace\s*\{[\s\S]{0,80}position:\s*absolute/.test(css),
+  "must not unconditionally absolute-position LFG under .app-main-view",
 );
 assert(
   /:not\(\[data-view="play"\]\)\s*\.valorant-hub/.test(css)
     && /:not\(\[data-view="play"\]\)\s*\.lfg-workspace/.test(css)
-    && /:not\(\[data-view="dimaai"\]\)\s*\.dima-workspace/.test(css)
     && /display:\s*none\s*!important/.test(css),
-  "inactive play/dimaai workspaces must hard-hide via data-view",
+  "inactive play workspaces must hard-hide via data-view",
 );
 assert(
   /\[data-view="play"\]\s*\.valorant-hub/.test(css),

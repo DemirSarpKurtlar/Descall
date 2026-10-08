@@ -33,7 +33,6 @@ import {
   disposeNoiseSuppressionSession,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
-import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 
 /** Build / merge a group-call participant row, keeping shop cosmetics. */
@@ -107,7 +106,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const intentionalScreenStopRef = useRef(false);
   const screenEndedInBackgroundRef = useRef(false);
   const isInCallRef = useRef(false);
-  const voiceCaptureRef = useRef(null);
   const groupNameRef = useRef("");
   const participantsRef = useRef([]);
   const callTypeRef = useRef(null);
@@ -143,32 +141,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     } else {
       releaseCallWakeLock();
     }
-  }, [isInCall]);
-
-  useEffect(() => {
-    if (!isInCall) return undefined;
-    const capture = createVoiceSessionCapture();
-    voiceCaptureRef.current = capture;
-    const startedAt = new Date().toISOString();
-    const getMeta = () => {
-        const me = getUser();
-        const parts = participantsRef.current || [];
-        const ids = [...new Set([me?.id, ...parts.map((p) => p.id)].filter(Boolean))];
-        const names = [...new Set([me?.username, ...parts.map((p) => p.username)].filter(Boolean))];
-        return {
-          kind: "group",
-          groupId: activeGroupIdRef.current,
-          groupName: groupNameRef.current || "",
-          participantIds: ids,
-          participantUsernames: names,
-          startedAt,
-        };
-      };
-    capture.start({
-      getLocalStream: () => localStreamRef.current,
-      getRemoteStreams: () => [...remoteStreamsRef.current.values()],
-      getMeta,
-    });
   }, [isInCall]);
 
   // Resume media + ICE after background; explain screen-share death on return.
@@ -395,8 +367,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   }, [isInCall]);
 
   const cleanup = useCallback(() => {
-    try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
-    voiceCaptureRef.current = null;
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;

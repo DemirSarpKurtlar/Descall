@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer } from "lucide-react";
+import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";
@@ -21,6 +21,8 @@ import {
 } from "../../api/servers";
 import { serverHasPermission, serverPermissionsLoaded, isAssignableServerRole, canActOnServerMember } from "../../lib/serverPermissions";
 import { ConversationListSkeleton } from "../ui/Skeleton";
+import ReportUserModal from "../social/ReportUserModal";
+import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 
 function colorToHex(color) {
   const n = Math.max(0, Math.min(0xffffff, Number(color) || 0));
@@ -50,6 +52,8 @@ export default function ServerMembersPanel({
 }) {
   const t = useT();
   const { toast } = useToast();
+  const blockedIds = useBlockedUserIds();
+  const [reportTarget, setReportTarget] = useState(null); // { id, username }
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState(() => server?.roles || []);
   const [loading, setLoading] = useState(true);
@@ -594,6 +598,46 @@ export default function ServerMembersPanel({
             <Copy size={14} />
             {t("Copy username")}
           </button>
+          {!isSelf && (
+            <button
+              type="button"
+              className="server-dropdown-item"
+              onClick={async () => {
+                const target = menuMember.user || {};
+                const targetId = String(menuMember.userId || target.id || "");
+                setMenu(null);
+                try {
+                  const next = await confirmToggleBlock({
+                    userId: targetId,
+                    username: menuMember.username || target.username,
+                    t,
+                  });
+                  if (next !== null) toast(next ? t("User blocked.") : t("User unblocked."), "success");
+                } catch (err) {
+                  toast(err?.message || t("Something went wrong."), "error");
+                }
+              }}
+            >
+              <CircleSlash size={14} />
+              {blockedIds.has(String(menuMember.userId)) ? t("Unblock") : t("Block")}
+            </button>
+          )}
+          {!isSelf && (
+            <button
+              type="button"
+              className="server-dropdown-item"
+              onClick={() => {
+                setReportTarget({
+                  id: String(menuMember.userId || menuMember.user?.id || ""),
+                  username: menuMember.username || menuMember.user?.username || "",
+                });
+                setMenu(null);
+              }}
+            >
+              <Flag size={14} />
+              {t("report.action")}
+            </button>
+          )}
           {canEditMenuNick && (
             <button type="button" className="server-dropdown-item" onClick={() => openNicknameModal(menuMember)}>
               <Pencil size={14} />
@@ -732,6 +776,13 @@ export default function ServerMembersPanel({
             document.body
           )
         : null}
+      <ReportUserModal
+        open={Boolean(reportTarget)}
+        onClose={() => setReportTarget(null)}
+        targetId={reportTarget?.id}
+        targetUsername={reportTarget?.username}
+        contextType="server"
+      />
     </>
   );
 }

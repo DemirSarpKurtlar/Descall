@@ -7,7 +7,7 @@ import {
 } from "../api/valorantStore";
 
 /**
- * Wire hook for Dima's Adım 6 Companion loadout panel (view + equip).
+ * Wire hook for the Adım 6 Companion loadout panel (view + equip).
  *
  * @param {{ enabled?: boolean, region?: string, puuid?: string, pollMs?: number }} opts
  */

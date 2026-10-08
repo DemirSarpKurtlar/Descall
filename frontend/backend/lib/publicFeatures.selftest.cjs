@@ -33,14 +33,13 @@ async function getJson(port, path, headers) {
 
 (async () => {
   const pub = publicFeatureFlags({ voice: false, screen: false });
-  assert(pub.valorantLfg === true && pub.valorantCompanion === true && pub.dimaai === true, "legacy row defaults new flags on");
+  assert(pub.valorantLfg === true && pub.valorantCompanion === true, "legacy row defaults new flags on");
   assert(!("voice" in pub) && !("screen" in pub), "public payload omits private flags");
 
   state.systemConfig.featureFlags = {
     ...original,
     valorantLfg: false,
     valorantCompanion: true,
-    dimaai: false,
   };
 
   const app = express();
@@ -54,8 +53,8 @@ async function getJson(port, path, headers) {
     const port = server.address().port;
     const features = await getJson(port, "/api/features");
     assert(features.status === 200, "public features status");
-    assert(Object.keys(features.body).sort().join(",") === "dimaai,valorantCompanion,valorantLfg", "only public keys");
-    assert(features.body.valorantLfg === false && features.body.dimaai === false, "persisted ram flags are returned");
+    assert(Object.keys(features.body).sort().join(",") === "valorantCompanion,valorantLfg", "only public keys");
+    assert(features.body.valorantLfg === false, "persisted ram flags are returned");
     assert(features.body.valorantCompanion === true, "companion stays on");
     assert(features.body.voice === undefined && features.body.maintenanceMode === undefined, "no admin config leak");
 

@@ -79,7 +79,6 @@ export const TR_INAPP_GAPS = {
   When: "Ne zaman",
   "You received DesCoin!": "DesCoin aldın!",
   "You've been invited to join a server": "Bir sunucuya davet edildin",
-  "Your AI assistant inside Descall.": "Descall içindeki yapay zekâ asistanın.",
   "What's new in {version}": "{version} sürümünde neler yeni",
   "Your session is remembered so you stay signed in.": "Oturumun hatırlanır, girişte kalırsın.",
   "Updates download in the background without stealing focus.": "Güncellemeler odak çalmadan arka planda iner.",

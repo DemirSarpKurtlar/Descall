@@ -23,7 +23,7 @@ assert(/event\.currentTarget\.blur\(\)/.test(rail), "clicking a rail item must b
 assert(/hideTip\(\);\s*\n\s*event\.currentTarget\.blur/.test(rail), "click must dismiss the tooltip before navigating");
 assert(
   /useEffect\(\(\) => \{\s*\n\s*hideTip\(\);\s*\n\s*\}, \[active, dismissToken\]\)/.test(rail),
-  "changing view (play/dimaai) must dismiss any open rail tooltip",
+  "changing view (play/activity) must dismiss any open rail tooltip",
 );
 assert(/dismissToken=\{activeView\}/.test(rail), "rail buttons must receive activeView as a dismiss token");
 assert(

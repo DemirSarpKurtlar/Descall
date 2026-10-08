@@ -990,12 +990,20 @@ router.post("/apple", async (req, res) => {
     let isNewUser = false;
     let attributionColumns = null;
     if (!user) {
-      let birthDate = null;
-      if (req.body?.birthDate) {
-        const birth = ageGate.validateBirthDate(req.body.birthDate);
-        if (!birth.ok) return res.status(birth.status).json({ error: birth.error, code: birth.code });
-        birthDate = birth.birthDate;
+      // New accounts always go through the Terms + date-of-birth step, also when
+      // the user tapped "Continue with Apple" on the Login tab. Nothing is created
+      // until the app sends termsAccepted + birthDate (the same Apple token and
+      // authorization code are re-sent from that step).
+      if (!req.body?.termsAccepted || !req.body?.birthDate) {
+        return res.status(428).json({
+          error: "Accept the Terms of Service and enter your date of birth to create your account.",
+          code: "apple_signup_required",
+          requiresSignup: true,
+        });
       }
+      const birth = ageGate.validateBirthDate(req.body.birthDate);
+      if (!birth.ok) return res.status(birth.status).json({ error: birth.error, code: birth.code });
+      const birthDate = birth.birthDate;
       const preferred =
         (email && !apple.isPrivateEmail && email.split("@")[0]) ||
         String(givenName || "").trim() ||

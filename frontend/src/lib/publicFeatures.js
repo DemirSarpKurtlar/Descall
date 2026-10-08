@@ -3,18 +3,30 @@ import { useSyncExternalStore } from "react";
 export const DEFAULT_PUBLIC_FEATURES = {
   valorantLfg: true,
   valorantCompanion: true,
-  dimaai: true,
 };
 
-let current = { ...DEFAULT_PUBLIC_FEATURES };
+let current = normalizePublicFeatures(DEFAULT_PUBLIC_FEATURES);
 const listeners = new Set();
+
+/**
+ * Native iOS app (Capacitor): the Valorant Companion (third-party Riot client login)
+ * is not offered there (App Review). Checked via window.Capacitor so this module stays
+ * importable from Node selftests.
+ */
+function isNativeIosShell() {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    return Boolean(cap?.isNativePlatform?.() && cap.getPlatform?.() === "ios");
+  } catch {
+    return false;
+  }
+}
 
 export function normalizePublicFeatures(input) {
   const src = input && typeof input === "object" ? input : {};
   return {
     valorantLfg: src.valorantLfg !== false,
-    valorantCompanion: src.valorantCompanion !== false,
-    dimaai: src.dimaai !== false,
+    valorantCompanion: src.valorantCompanion !== false && !isNativeIosShell(),
   };
 }
 
@@ -31,8 +43,7 @@ export function applyPublicFeatures(input) {
   const next = normalizePublicFeatures(input);
   if (
     next.valorantLfg === current.valorantLfg &&
-    next.valorantCompanion === current.valorantCompanion &&
-    next.dimaai === current.dimaai
+    next.valorantCompanion === current.valorantCompanion
   ) {
     return current;
   }
@@ -57,7 +68,6 @@ export function filterMainNavItems(items, features) {
   return (Array.isArray(items) ? items : []).filter((item) => {
     if (!item?.id) return false;
     if (item.id === "play") return play;
-    if (item.id === "dimaai") return flags.dimaai;
     return true;
   });
 }

@@ -1,0 +1,6 @@
+/* Turkish permission prompts (Info.plist usage descriptions). */
+"CFBundleDisplayName" = "Descall";
+"NSMicrophoneUsageDescription" = "Sesli aramalar ve sesli mesajlar için mikrofon izni gerekir.";
+"NSCameraUsageDescription" = "Görüntülü aramalar için kamera izni gerekir.";
+"NSPhotoLibraryUsageDescription" = "Fotoğraflar, profil fotoğrafı ve resim yüklemek için kullanılır.";
+"NSPhotoLibraryAddUsageDescription" = "Descall, saklamayı seçtiğin resimleri fotoğraf arşivine kaydeder.";

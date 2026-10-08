@@ -12,6 +12,7 @@ import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../li
 import { useT } from "../../context/LocaleContext";
 import { filterSlashCommandMatches, getSlashCommandsForSurface } from "../../lib/slashCommands";
 import { serverHasPermission } from "../../lib/serverPermissions";
+import { displayText } from "../../lib/profanity";
 
 const EMOJI_CATEGORIES = [
   { nameKey: "Smileys", emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"] },
@@ -611,7 +612,7 @@ export default function MessageComposer({
               <strong>{t("Replying to")} {replyTo.from?.displayName || replyTo.from?.display_name || replyTo.from?.username || t("message")}</strong>
               <span>
                 {replyTo.text
-                  ? String(replyTo.text).slice(0, 100)
+                  ? displayText(String(replyTo.text).slice(0, 100))
                   : replyTo.mediaType
                   ? `📎 ${replyTo.mediaType}`
                   : t("Message")}

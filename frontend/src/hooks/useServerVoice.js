@@ -4,7 +4,6 @@ import { preloadIceServers } from "../lib/iceConfig";
 import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
-import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
@@ -118,7 +117,6 @@ export function useServerVoice(socket) {
   const [mediaMode, setMediaMode] = useState("mesh");
   const sfuModeRef = useRef(false);
   const liveKitRoomRef = useRef(null);
-  const voiceCaptureRef = useRef(null);
   const participantsRef = useRef([]);
   const channelNameRef = useRef("");
   const liveKitConfigRef = useRef(null);
@@ -454,8 +452,6 @@ export function useServerVoice(socket) {
 
   const cleanupAll = useCallback(() => {
     emitVoiceLeave();
-    try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
-    voiceCaptureRef.current = null;
     const leavingChannelId = activeChannelIdRef.current || lastVoiceChannelIdRef.current;
     const leavingServerId = activeServerIdRef.current;
     const meId = myIdRef.current;
@@ -1858,53 +1854,6 @@ export function useServerVoice(socket) {
   useEffect(() => {
     joinRef.current = join;
   }, [join]);
-
-  useEffect(() => {
-    if (!activeChannelId) return undefined;
-    const capture = createVoiceSessionCapture();
-    voiceCaptureRef.current = capture;
-    const startedAt = new Date().toISOString();
-    const channelId = activeChannelId;
-    const serverId = activeServerIdRef.current;
-    capture.start({
-      getLocalStream: () => localStreamRef.current,
-      getRemoteStreams: () => {
-        const out = [];
-        for (const s of remoteStreamMapRef.current.values()) out.push(s);
-        for (const el of remoteAudioRefs.current.values()) {
-          if (el?.srcObject) out.push(el.srcObject);
-        }
-        const room = liveKitRoomRef.current;
-        if (room?.remoteParticipants) {
-          room.remoteParticipants.forEach((p) => {
-            const pubs = p.audioTrackPublications || p.trackPublications;
-            pubs?.forEach?.((pub) => {
-              const t = pub.track?.mediaStreamTrack;
-              if (t && (pub.kind === "audio" || t.kind === "audio")) {
-                out.push(new MediaStream([t]));
-              }
-            });
-          });
-        }
-        return out;
-      },
-      getMeta: () => {
-        const me = getUser();
-        const parts = participantsRef.current || [];
-        const ids = [...new Set([me?.id, ...parts.map((p) => p.id)].filter(Boolean))];
-        const names = [...new Set([me?.username, ...parts.map((p) => p.username)].filter(Boolean))];
-        return {
-          kind: "server",
-          serverId: activeServerIdRef.current || serverId,
-          channelId: activeChannelIdRef.current || channelId,
-          channelName: channelNameRef.current || "",
-          participantIds: ids,
-          participantUsernames: names,
-          startedAt,
-        };
-      },
-    });
-  }, [activeChannelId]);
 
   const cleanupAllRef = useRef(cleanupAll);
   cleanupAllRef.current = cleanupAll;

@@ -26,7 +26,6 @@ function IconClose() {
 
 const NAV = [
   { to: "/features", label: "Features" },
-  { to: "/dimaai", label: "DimaAI" },
   { to: "/download", label: "Download" },
   { to: "/faq", label: "FAQ" },
 ];
@@ -192,7 +191,6 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
           <section className="mkt-footer-col">
             <h2>{t("Product")}</h2>
             <Link to={L("/features")}>{t("Features")}</Link>
-            <Link to={L("/dimaai")}>{t("DimaAI")}</Link>
             <Link to={L("/download")}>{t("Download")}</Link>
             <Link to={L("/faq")}>{t("FAQ")}</Link>
           </section>

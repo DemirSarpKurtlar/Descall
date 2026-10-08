@@ -5,7 +5,7 @@ import {
   Search, Plus, Settings, Hash,
   ChevronDown, Bell, UserPlus, X, User, Users, Megaphone,
   MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, MessageSquarePlus, Star, ChevronDown as ChevronDownIcon,
-  Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen,
+  Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag,
 } from "lucide-react";
 import SwipeRevealRow from "./SwipeRevealRow";
 import { Avatar } from "../ui/Avatar";
@@ -19,6 +19,9 @@ import { isVisiblyOnline } from "../../lib/presence";
 import GroupInviteModal from "../groups/GroupInviteModal";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
+import { displayText } from "../../lib/profanity";
+import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
+import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
 import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
@@ -785,6 +788,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
   const [confirmClose, setConfirmClose] = useState(null);
   const [actionError, setActionError] = useState("");
   const [swipeOpenId, setSwipeOpenId] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null); // { id, username }
   const menuRef = useRef(null);
   const dotBtnRefs = useRef({});
 
@@ -809,6 +813,19 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
     closeMenu();
     if (action === "close") {
       setConfirmClose(dm);
+      return;
+    }
+    if (action === "report") {
+      setReportTarget({ id: dm.id, username: dm.username });
+      return;
+    }
+    if (action === "block") {
+      try {
+        await confirmToggleBlock({ userId: dm.id, username: dm.username, t });
+      } catch (err) {
+        setActionError(err?.message || t("Something went wrong."));
+        setTimeout(() => setActionError(""), 4000);
+      }
       return;
     }
     try {
@@ -960,6 +977,13 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
         </SidebarSectionContent>
       </div>
 
+      <ReportUserModal
+        open={Boolean(reportTarget)}
+        onClose={() => setReportTarget(null)}
+        targetId={reportTarget?.id}
+        targetUsername={reportTarget?.username}
+        contextType="dm"
+      />
       <AnimatePresence>
         {confirmClose && (
           <ConfirmDialog
@@ -1004,7 +1028,7 @@ function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
         </div>
         <div className="conv-row-bottom">
           <span className={`dm-preview ${unread > 0 ? "unread" : ""}`}>
-            {dm.lastMessage || t("No messages yet")}
+            {displayText(dm.lastMessage) || t("No messages yet")}
           </span>
           <UnreadBadge count={unread} />
         </div>
@@ -1122,6 +1146,7 @@ function DmRowFront({
 
 function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint = null }) {
   const t = useT();
+  const blockedIds = useBlockedUserIds();
   const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0, visibility: "hidden" });
 
@@ -1235,6 +1260,26 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
         {unread > 0 ? t("Mark read") : t("Mark unread")}
       </button>
       <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
+      <button
+        type="button"
+        onClick={() => { onAction?.("block"); onClose(); }}
+        style={itemStyle}
+        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        <CircleSlash size={14} style={{ color: "var(--text-muted)" }} />
+        {blockedIds.has(String(dm.id)) ? t("Unblock") : t("Block")}
+      </button>
+      <button
+        type="button"
+        onClick={() => { onAction?.("report"); onClose(); }}
+        style={itemStyle}
+        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        <Flag size={14} style={{ color: "var(--text-muted)" }} />
+        {t("report.action")}
+      </button>
       <button
         type="button"
         onClick={() => { onAction?.("close"); onClose(); }}
@@ -1956,7 +2001,7 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
           )}
         </div>
         <div className="conv-row-bottom">
-          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{preview}</span>
+          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(preview)}</span>
           <UnreadBadge count={unread} />
         </div>
       </div>

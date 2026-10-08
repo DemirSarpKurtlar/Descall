@@ -44,7 +44,7 @@ const crumbs = [
 ];
 
 /**
- * Marketing download page — same mkt-* chrome as Home / Features / DimaAI.
+ * Marketing download page — same mkt-* chrome as Home / Features.
  */
 export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
   const t = useT();
@@ -216,7 +216,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
       <section className="mkt-section">
         <h2>{t("Why Choose Descall?")}</h2>
         <p className="lead">
-          {t("Servers, chat, calls, and DimaAI in one quieter app — built for friends, gamers, and communities.")}
+          {t("Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.")}
         </p>
         <div className="mkt-feature-grid">
           {FEATURES.map((f) => {

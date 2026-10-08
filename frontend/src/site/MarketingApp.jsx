@@ -32,7 +32,6 @@ const DiscordAlternativeTurkeyPage = lazy(() => import("./pages/DiscordAlternati
 const DiscordAlternativeNichePage = lazy(() => import("./pages/DiscordAlternativeNichePage"));
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
-const DimaAiLandingPage = lazy(() => import("./pages/DimaAiLandingPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 /**
@@ -284,7 +283,7 @@ function MarketingAppSite({
         <Route path="/register" element={withLayout(HomePage, openAuth)} />
         <Route path="/login" element={withLayout(HomePage, openAuth)} />
         <Route path="/features" element={withLayout(FeaturesPage, openAuth)} />
-        <Route path="/dimaai" element={withLayout(DimaAiLandingPage, openAuth)} />
+        <Route path="/dimaai/*" element={<Navigate to="/" replace />} />
         <Route path="/faq" element={withLayout(FaqPage, openAuth)} />
         <Route path="/security" element={withLayout(SecurityPage, openAuth)} />
         <Route path="/status" element={withLayout(StatusPage, openAuth)} />
@@ -307,7 +306,7 @@ function MarketingAppSite({
         <Route path="/tr/register" element={withLayout(HomePage, openAuth)} />
         <Route path="/tr/login" element={withLayout(HomePage, openAuth)} />
         <Route path="/tr/features" element={withLayout(FeaturesPage, openAuth)} />
-        <Route path="/tr/dimaai" element={withLayout(DimaAiLandingPage, openAuth)} />
+        <Route path="/tr/dimaai/*" element={<Navigate to="/tr" replace />} />
         <Route
           path="/tr/download"
           element={withLayout(DownloadPage, openAuth, {

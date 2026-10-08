@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Avatar from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
+import { displayText } from "../../lib/profanity";
 import { formatMessageClock, parseAppDate } from "../../lib/datetime";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
@@ -129,7 +130,7 @@ export default function MessageBubble({
             </div>
           </div>
         ) : (
-          <p className="msg-text">{message.text}</p>
+          <p className="msg-text">{displayText(message.text)}</p>
         )}
 
         <AnimatePresence>

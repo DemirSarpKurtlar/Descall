@@ -25,7 +25,7 @@ export default function SecurityPage() {
         <h2>{t("Voice & video")}</h2>
         <p>
           {t(
-            "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall does not record or store call audio/video by default. If a participant records locally on their device, that recording is outside Descall's control."
+            "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally on their device, that recording is outside Descall's control."
           )}
         </p>
 

@@ -13,7 +13,7 @@ import {
   isMobileScreenCapture,
   captureScreenShareStream,
   showElectronScreenPicker,
-  screenShareComingSoonOnIos,
+  screenShareUnavailableOnIos,
 } from "../lib/webrtcScreenShare";
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
@@ -34,7 +34,6 @@ import {
   getVoiceAudioConstraints,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
-import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 import { callKitOwnsIncomingRing, callKitManagesAudioSession, interceptUiAnswer } from "../lib/iosCallKitState";
 import { IOS_NATIVE } from "../lib/iosCallKit";
@@ -174,7 +173,6 @@ export function useCall(socket, callOccupancyRef = null) {
     applyAdaptiveAudioEncoding(audioSender, networkStats.quality, lastAdaptiveAudioQualityRef);
   }, [mode, networkStats.quality]);
   const localStreamRef = useRef(null);
-  const voiceCaptureRef = useRef(null);
   const screenStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const remoteScreenStreamRef = useRef(null);
@@ -284,8 +282,6 @@ export function useCall(socket, callOccupancyRef = null) {
     micGuardRef.current?.reset();
     callDirectionRef.current = null;
     setCalleeAnswering(false);
-    try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
-    voiceCaptureRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
     setDuration(0);
@@ -361,8 +357,6 @@ export function useCall(socket, callOccupancyRef = null) {
 
   const gracefulEnd = useCallback(() => {
     if (modeRef.current === "active") {
-      try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
-      voiceCaptureRef.current = null;
       setPeerConnectionState("disconnected");
       setRemoteMediaReady(false);
       setPeer(null);
@@ -380,30 +374,6 @@ export function useCall(socket, callOccupancyRef = null) {
     if (mode !== "active") return;
     timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [mode]);
-
-  useEffect(() => {
-    if (mode !== "active") return undefined;
-    const capture = createVoiceSessionCapture();
-    voiceCaptureRef.current = capture;
-    const startedAt = new Date().toISOString();
-    const getMeta = () => {
-        const me = getUser();
-        const other = peerRef.current;
-        const ids = [me?.id, other?.id].filter(Boolean);
-        return {
-          kind: "dm",
-          dmPeerIds: ids,
-          participantIds: ids,
-          participantUsernames: [me?.username, other?.username].filter(Boolean),
-          startedAt,
-        };
-      };
-    capture.start({
-      getLocalStream: () => localStreamRef.current,
-      getRemoteStreams: () => [remoteStreamRef.current].filter(Boolean),
-      getMeta,
-    });
   }, [mode]);
 
   // Handle call sounds based on mode
@@ -1432,10 +1402,7 @@ export function useCall(socket, callOccupancyRef = null) {
       console.log('[ScreenShare] abort: no pc or already sharing');
       return;
     }
-    if (screenShareComingSoonOnIos()) {
-      toast(tRuntime("Screen sharing is coming soon on iPhone."), "info");
-      return;
-    }
+    if (screenShareUnavailableOnIos()) return; // no screen sharing on iPhone
     try {
       const effectiveQuality = qualityOverride || screenQualityRef.current || DM_SCREEN_DEFAULT_QUALITY;
       const { width, height, fps } = resolveScreenCaptureSize(effectiveQuality);

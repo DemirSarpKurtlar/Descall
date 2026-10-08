@@ -14,7 +14,7 @@ import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
 import { resolveAvatarUrl } from "../lib/avatar";
 import { resolveDisplayName } from "../lib/userProfile";
 import ScreenShareQualityPanel from "./voice/ScreenShareQualityPanel";
-import { screenShareComingSoonOnIos } from "../lib/webrtcScreenShare";
+import { screenShareUnavailableOnIos } from "../lib/webrtcScreenShare";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
 import useSpeaking from "../hooks/useSpeaking";
@@ -684,6 +684,8 @@ export default function CallOverlay({ call, groupCall, me }) {
               </CircleBtn>
             </DockDeviceSlot>
 
+            {/* iPhone (native app): no screen sharing, so the button is not shown. */}
+            {!screenShareUnavailableOnIos() && (
             <div
               ref={screenQualityAnchorRef}
               style={{
@@ -701,12 +703,6 @@ export default function CallOverlay({ call, groupCall, me }) {
                 onClick={() => {
                   setShowMoreMenu(false);
                   setShowAudioPanel(false);
-                  if (!screenSharing && screenShareComingSoonOnIos()) {
-                    // WKWebView has no getDisplayMedia (ReplayKit extension not built yet).
-                    setShowScreenQuality(false);
-                    toast(t("Screen sharing is coming soon on iPhone."), "info");
-                    return;
-                  }
                   if (isDm) {
                     if (screenSharing) call.stopScreenShare();
                     else setShowScreenQuality((v) => !v);
@@ -719,7 +715,7 @@ export default function CallOverlay({ call, groupCall, me }) {
               >
                 <Monitor size={narrowViewport ? 19 : 22} />
               </CircleBtn>
-              {(screenSharing || showScreenQuality) && !screenShareComingSoonOnIos() && (
+              {(screenSharing || showScreenQuality) && (
                 <button
                   type="button"
                   title={t("Screen quality")}
@@ -768,6 +764,7 @@ export default function CallOverlay({ call, groupCall, me }) {
                 }}
               />
             </div>
+            )}
 
             {!narrowViewport && (
               <motion.button
@@ -888,7 +885,7 @@ export default function CallOverlay({ call, groupCall, me }) {
                             setShowAudioPanel(true);
                           }}
                         />
-                        {!screenShareComingSoonOnIos() && (
+                        {!screenShareUnavailableOnIos() && (
                           <MoreMenuItem
                             icon={<SlidersHorizontal size={16} />}
                             label={t("Screen quality")}

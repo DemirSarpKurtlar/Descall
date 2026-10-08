@@ -154,9 +154,8 @@
   min-height: 0;
 }
 
-/* Play / DimaAI: only rail + main (sidebar unmounted). */
-.app-root[data-view="play"] > .app-main-slot,
-.app-root[data-view="dimaai"] > .app-main-slot {
+/* Play: only rail + main (sidebar unmounted). */
+.app-root[data-view="play"] > .app-main-slot {
   grid-column: 2 / -1;
 }
 
@@ -186,16 +185,14 @@
   grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
 }
 
-/* Play / LFG + DimaAI: rail + full workspace (no list sidebar column).
+/* Play / LFG: rail + full workspace (no list sidebar column).
    Default app-root is 3 columns (rail | sidebar | main). Without this,
-   DimaAI is placed in --sidebar-width (~280px) and its inner 220px history
+   a full-page workspace is placed in --sidebar-width (~280px) and an inner 220px
    column leaves the chat pane ~60px — text stacks letter-by-letter. */
-.app-root[data-view="play"],
-.app-root[data-view="dimaai"] {
+.app-root[data-view="play"] {
   grid-template-columns: var(--nav-rail-width) 1fr;
 }
-.app-root[data-view="play"] .valorant-hub,
-.app-root[data-view="dimaai"] .dima-workspace {
+.app-root[data-view="play"] .valorant-hub {
   position: absolute;
   inset: 0;
   z-index: 6;
@@ -231,7 +228,6 @@
 
 .app-main-view > .valorant-hub,
 .app-main-view > .lfg-workspace,
-.app-main-view > .dima-workspace,
 .app-main-view > .app-chat-keep,
 .app-main-view > .chat-panel-shell {
   flex: 1 1 0;
@@ -242,16 +238,15 @@
   height: 100%;
 }
 /* Absolute overlay only under matching data-view (rules above). Never paint
-   LFG/DimaAI over servers/chat if a node lingers after a view switch. */
+   LFG over servers/chat if a node lingers after a view switch. */
 .app-root:not([data-view="play"]) .valorant-hub,
-.app-root:not([data-view="play"]) .lfg-workspace,
-.app-root:not([data-view="dimaai"]) .dima-workspace {
+.app-root:not([data-view="play"]) .lfg-workspace {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
-/* Keep chat mounted for LFG/Dima AI, but never paint it over/under those views.
+/* Keep chat mounted for LFG, but never paint it over/under those views.
    HTML hidden is not enough: .app-chat-keep { display:flex } would override UA [hidden]. */
 .app-chat-keep {
   display: flex;
@@ -582,7 +577,7 @@ button.nav-rail-logo:active {
 }
 
 /* Touch: iOS fires mouseenter after tap and never mouseleave. The portal
-   tooltip would otherwise linger over LFG / DimaAI after the drawer closes. */
+   tooltip would otherwise linger over LFG after the drawer closes. */
 @media (hover: none) {
   .rail-tooltip {
     display: none !important;
@@ -1644,6 +1639,63 @@ button.header-avatar {
   font-size: 14px;
   max-width: 300px;
   line-height: 1.5;
+}
+
+/* DM with a user I blocked (2.9.141) */
+.dm-blocked-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 16px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.dm-blocked-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-3, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--text-1);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dm-blocked-banner-btn:hover {
+  background: var(--surface-3);
+}
+
+.msg-blocked-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 16px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+.msg-blocked-collapsed button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .composer-container {

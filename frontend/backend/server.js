@@ -34,12 +34,11 @@ const riotRoutes = require("./routes/riot");
 const valorantRoutes = require("./routes/valorant");
 const webPushRoutes = require("./routes/webPush");
 const shopRoutes = require("./routes/shop");
-const dimaaiRoutes = require("./routes/dimaai");
 const publicFeatureRoutes = require("./routes/publicFeatures");
 const analyticsRoutes = require("./routes/analytics");
 const dmPrefsRoutes = require("./routes/dmPrefs");
 const reportsRoutes = require("./routes/reports");
-const voiceRecordingRoutes = require("./routes/voiceRecordings");
+const { goneRouter } = require("./routes/gone");
 const { sitemapRouter } = require("./routes/sitemap");
 const state = require("./runtime/sharedState");
 const { sendFeedbackEmail } = require("./lib/feedbackEmail");
@@ -155,7 +154,7 @@ if (isVercel) {
 
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/shop", shopRoutes);
-app.use("/api/dimaai", dimaaiRoutes);
+app.use("/api/dimaai", goneRouter("This feature has been removed."));
 
 // Debug - log all requests (skip noise in production)
 if (process.env.NODE_ENV !== "production") {
@@ -266,6 +265,9 @@ app.post("/api/marketing/consent-event", (req, res) => {
 });
 
 // SEO: robots + advanced sitemap (index, pages, invites, announcements, HTML)
+// The DimaAI landing page and app view were removed in 2.9.141: send old links home.
+app.get(["/dimaai", "/dimaai/*"], (_req, res) => res.redirect(301, "/"));
+app.get(["/tr/dimaai", "/tr/dimaai/*"], (_req, res) => res.redirect(301, "/tr"));
 app.use(sitemapRouter);
 
 // Test endpoint - no auth required
@@ -355,8 +357,10 @@ app.use("/api/dm", dmPrefsRoutes);
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/reports", reportsRoutes);
-app.use("/api/voice-recordings", voiceRecordingRoutes);
-app.use("/voice-recordings", voiceRecordingRoutes);
+// Call recording was removed: uploads from old clients are refused and never stored.
+const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");
+app.use("/api/voice-recordings", voiceRecordingsGone);
+app.use("/voice-recordings", voiceRecordingsGone);
 
 // ============================================================================
 // INLINE FEEDBACK ENDPOINTS - Direct in server.js (most reliable)
@@ -1095,12 +1099,6 @@ async function runBoot() {
     applySystemConfigToState(state, settings.config);
   } catch (e) {
     console.warn("[boot] system settings load failed:", e.message);
-  }
-  try {
-    const { startKeyReviveScheduler } = require("./lib/ai/provider-manager");
-    startKeyReviveScheduler();
-  } catch (e) {
-    console.warn("[boot] key revive scheduler failed:", e.message);
   }
   try {
     const { retireSoundPacks } = require("./lib/shop");

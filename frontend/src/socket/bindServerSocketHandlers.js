@@ -6,6 +6,7 @@ import { isChannelMuted } from "../lib/serverChannelMutes";
 import { parseAppDate } from "../lib/datetime";
 import { parseVoiceMeta } from "../lib/voiceMessage";
 import notificationService from "../lib/notificationService";
+import { isBlockedByMe } from "../lib/blockedUsers";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
@@ -354,6 +355,8 @@ export function bindServerSocketHandlers(socket, ctx) {
     if (!serverId || !channelId) return;
     const meId = myIdRef.current || getUser()?.id;
     if (payload.senderId && meId && String(payload.senderId) === String(meId)) return;
+    // People I blocked: no unread bump, sound or notification.
+    if (payload.senderId && isBlockedByMe(payload.senderId)) return;
     if (isChannelMuted(channelId)) return;
     if (getServerNotificationLevel(serverId) !== "all") return;
     // A direct @mention is shown by the mention:received handler instead.

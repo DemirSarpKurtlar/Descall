@@ -505,7 +505,7 @@ export default function CompanionAuthPanel() {
               hidden={subtab !== "loadout"}
               aria-hidden={subtab !== "loadout"}
             >
-              {/* Adım 6 — Dimaru wallet/store + loadout live under Loadout (desktop) */}
+              {/* Adım 6 — wallet/store + loadout live under Loadout (desktop) */}
               <CompanionStorePanel linked={connected} identity={identity} />
               <CompanionLoadoutPanel linked={connected} identity={identity} />
             </div>

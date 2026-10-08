@@ -54,3 +54,14 @@ assert.deepEqual(filterSlashCommandMatches(group, "/pay 500"), []);
 assert.deepEqual(filterSlashCommandMatches(group, "hello"), []);
 
 console.log("slashCommands.selftest ok", typedSlash.join(" "));
+
+// Native iOS app: casino commands are hidden from the picker.
+const iosGroup = getSlashCommandsForSurface({ activeGroup: { id: "g" }, hideCasino: true }).map((c) => c.name);
+for (const name of ["bj", "slot", "coinflip", "cf", "pay", "daily", "credits", "top"]) {
+  assert.equal(iosGroup.includes(name), false, `iOS picker still shows /${name}`);
+}
+assert.ok(iosGroup.includes("help"));
+globalThis.window = { Capacitor: { isNativePlatform: () => true, getPlatform: () => "ios" } };
+assert.equal(getSlashCommandsForSurface({ activeGroup: { id: "g" } }).some((c) => c.casino), false);
+delete globalThis.window;
+console.log("slashCommands iOS casino ok");

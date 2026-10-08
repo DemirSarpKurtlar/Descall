@@ -102,7 +102,7 @@ assert(electronAuth.includes("/chat/v4/presences"), "local chat presence path");
 assert(auth.includes("CompanionFriendsPanel"), "auth panel mounts CompanionFriendsPanel (Adım 4 UI)");
 
 const friendsPanel = readFileSync(join(root, "CompanionFriendsPanel.jsx"), "utf8");
-assert(friendsPanel.includes("useValorantFriends"), "friends panel uses Dimaru hook");
+assert(friendsPanel.includes("useValorantFriends"), "friends panel uses the friends hook");
 assert(friendsPanel.includes("inviteToParty"), "friends panel invites via hook");
 assert(!friendsPanel.includes("inviteValorantParty("), "invite must use friends/party-invite path via hook, not parallel party invite");
 assert(friendsPanel.includes("sendRequest"), "friends panel can send requests");

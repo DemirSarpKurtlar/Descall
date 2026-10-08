@@ -65,15 +65,6 @@ export const PUBLIC_ROUTES = [
     keywords: "descall features, free voice chat, screen share app",
   },
   {
-    path: "/dimaai",
-    title: "DimaAI — ChatGPT-style assistant inside Descall",
-    description:
-      "Ask Dima anything. Fast, Thinking, and Deep models for writing, explaining, and brainstorming — a ChatGPT-style assistant built into Descall.",
-    changefreq: "weekly",
-    priority: "0.85",
-    keywords: "dimaai, dima ai, chatgpt alternative, descall ai assistant",
-  },
-  {
     path: "/discord-alternative",
     title: "Free Discord Alternative — Voice, Screen Share & LFG",
     description:
@@ -360,15 +351,6 @@ export const PUBLIC_ROUTES = [
     priority: "0.8",
   },
   {
-    path: "/tr/dimaai",
-    title: "DimaAI — Descall içinde ChatGPT tarzı asistan",
-    description:
-      "Dima’ya her şeyi sorun. Yazmak, açıklamak ve fikir üretmek için Fast, Thinking ve Deep modelleri — Descall’a gömülü asistan.",
-    changefreq: "weekly",
-    priority: "0.8",
-    keywords: "dimaai, dima yapay zeka, descall ai",
-  },
-  {
     path: "/tr/download",
     title: "Descall İndir — Windows için Ücretsiz Sesli Sohbet",
     description:
@@ -434,14 +416,6 @@ export function routeMeta(pathname) {
       path: clean,
       title: clean === "/register" ? "Create account — Descall" : "Sign in — Descall",
       description: "Create a free Descall account for chat, voice, video, and screen share.",
-      noindex: true,
-    };
-  }
-  if (clean.startsWith("/dimaai/")) {
-    return {
-      path: clean,
-      title: "DimaAI — Dima 1.1",
-      description: "Dima 1.1 — AI assistant inside Descall.",
       noindex: true,
     };
   }

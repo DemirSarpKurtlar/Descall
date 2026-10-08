@@ -48,7 +48,6 @@ function missionsCapabilities() {
       battlePass: true,
       activateContract: true,
     },
-    uiOwner: "dima",
     clientHook: "useValorantMissions",
     endpoints: {
       status: "GET /api/valorant/missions/status",

@@ -848,7 +848,6 @@
         <a href="/compare/discord">vs Discord</a>
         <a href="/apps-like-discord">Apps like Discord</a>
         <a href="/features">Features</a>
-        <a href="/dimaai">DimaAI</a>
         <a href="/download">Download</a>
         <a href="/blog">Blog</a>
         <a href="/faq">FAQ</a>
@@ -902,7 +901,6 @@
               "/features": "/tr/features",
               "/download": "/tr/download",
               "/faq": "/tr/faq",
-              "/dimaai": "/tr/dimaai",
               "/compare/discord": "/tr/compare/discord",
               "/about": "/tr/about",
               "/contact": "/tr/contact",
@@ -940,12 +938,10 @@
       (function () {
         try {
           var path = (location.pathname || "/").replace(/\/+$/, "") || "/";
-          var appPrefixes = ["/direct", "/groups", "/servers", "/friends", "/calls", "/activity", "/play", "/dimaai", "/settings"];
-          var isPublicDimaLanding = path === "/dimaai" || path === "/tr/dimaai";
+          var appPrefixes = ["/direct", "/groups", "/servers", "/friends", "/calls", "/activity", "/play", "/settings"];
           var isApp = false;
           for (var i = 0; i < appPrefixes.length; i++) {
             var p = appPrefixes[i];
-            if (isPublicDimaLanding && p === "/dimaai") continue;
             if (path === p || path.indexOf(p + "/") === 0) {
               isApp = true;
               break;

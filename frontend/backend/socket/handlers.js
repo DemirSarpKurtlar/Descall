@@ -1,7 +1,6 @@
 "use strict";
 
 const supabase = require("../db/supabase");
-const iosPresence = require("../lib/iosPresence");
 const iosPushContext = require("../lib/iosPushContext");
 const {
   loadUserProfile,
@@ -554,8 +553,8 @@ function registerSocketHandlers(io) {
     });
     socket.join(`user:${myId}`);
     socketToUser.set(socket.id, myId);
-    const fromIosApp = iosPresence.isIosHandshake(socket);
-    if (fromIosApp) iosPresence.markConnected(myId);
+    // Native iOS app sockets identify with auth.platform === "ios" (used for push context).
+    const fromIosApp = String(socket?.handshake?.auth?.platform || "").toLowerCase() === "ios";
     socket.data.activeDmPeer = null;
 
     // Durable activity timestamp for admin "recently active" boards.
@@ -1974,7 +1973,6 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("disconnect", async () => {
-      if (fromIosApp) iosPresence.markDisconnected(myId);
       if (fromIosApp) iosPushContext.clearSocket(socket.id);
       // Only drop group-call participation when THIS user has no other live
       // sockets (other tabs / reconnect). Removing on every socket disconnect

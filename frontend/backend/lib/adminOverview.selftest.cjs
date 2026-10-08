@@ -209,7 +209,7 @@ const mapped = mapModerationActionToAudit(
 assert(mapped.action === "ban" && mapped.actor === "admin" && mapped.target === "u2", "moderation row maps");
 
 const auditMerged = mergeAuditEntries(
-  [{ id: "mem1", at: "2026-08-30T01:00:00Z", actorUsername: "dimaru", action: "kick", target: "x" }],
+  [{ id: "mem1", at: "2026-08-30T01:00:00Z", actorUsername: "modmaru", action: "kick", target: "x" }],
   [{ id: "a1", action_type: "ban", actor_user_id: "u1", target_user_id: "u2", created_at: "2026-08-29T00:00:00Z" }],
   8
 );

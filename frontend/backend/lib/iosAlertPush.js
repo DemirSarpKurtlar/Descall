@@ -23,6 +23,7 @@
  */
 
 const apns = require("./apnsClient");
+const { maskProfanity } = require("./profanity");
 
 const IOS_ALERT_PLATFORM = "ios";
 const VOIP_PLATFORM = "ios_voip";
@@ -116,11 +117,10 @@ function buildApnsBody(payload = {}) {
 function previewFor(event, s) {
   const kind = String(event.previewKind || "text");
   if (kind === "voice") return s.voice;
-  if (kind === "media") {
-    const text = clip(event.text, MAX_PREVIEW);
-    return text || s.media;
-  }
-  return clip(event.text, MAX_PREVIEW) || s.newMessage;
+  // Bad words are masked with *** in iOS notification text (App Review).
+  const text = clip(maskProfanity(event.text), MAX_PREVIEW);
+  if (kind === "media") return text || s.media;
+  return text || s.newMessage;
 }
 
 function channelLabel(event) {
@@ -347,12 +347,12 @@ function createIosAlertPusher(deps = {}) {
     return targets;
   }
 
-  async function loadUserMeta(userIds) {
+  async function loadUserMeta(userIds, senderId = "") {
     const meta = new Map();
     for (const ids of chunk(userIds, CHUNK)) {
       const { data, error } = await getDb()
         .from("users")
-        .select("id, presence_status, language")
+        .select("id, presence_status, language, blocked_users")
         .in("id", ids);
       if (error) {
         log.warn("[APNs] load user prefs failed:", error.message);
@@ -362,6 +362,8 @@ function createIosAlertPusher(deps = {}) {
         meta.set(row.id, {
           dnd: String(row.presence_status || "") === "dnd",
           language: row.language || null,
+          // Recipient blocked the sender: no notification from them.
+          blocksSender: Boolean(senderId) && Array.isArray(row.blocked_users) && row.blocked_users.includes(senderId),
         });
       }
     }
@@ -412,13 +414,15 @@ function createIosAlertPusher(deps = {}) {
 
       const isCall = CALL_TYPES.has(event.type);
       const targetUsers = [...new Set(targets.map((t) => t.userId))];
-      const meta = await loadUserMeta(targetUsers);
+      const senderId = String(event.fromId || event.excludeUserId || "");
+      const meta = await loadUserMeta(targetUsers, senderId);
       const voipUsers = event.type === "call" ? await usersWithVoipTokens(targetUsers) : new Set();
       const chatKey = chatKeyFor(event);
       const at = now();
 
       const deliver = targets.filter((t) => {
         const m = meta.get(t.userId);
+        if (m?.blocksSender) return false;
         if (!isCall && m?.dnd) return false;
         // DM calls ring through PushKit/CallKit; a banner would duplicate it.
         if (voipUsers.has(t.userId)) return false;

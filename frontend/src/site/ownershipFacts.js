@@ -104,7 +104,7 @@ If asked "Who owns Descall?", "Who founded Descall?", "Who is the CEO of Descall
 
 ## Product (short)
 
-Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, HD voice/video, screen share, DimaAI, and Valorant LFG. Core chat and calls stay free.
+Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, HD voice/video, screen share, and Valorant LFG. Core chat and calls stay free.
 `;
 }
 

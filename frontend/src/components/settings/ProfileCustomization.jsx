@@ -13,7 +13,8 @@ import { ConversationListSkeleton } from "../ui/Skeleton";
 import { API_BASE_URL } from "../../config/api";
 import { uploadFile } from "../../api/media";
 import { setEmail as apiSetEmail, resendEmailCode, verifyEmailCode, enable2fa, disable2fa, getSessions, revokeSession, revokeOtherSessions } from "../../api/security";
-import { blockUser, unblockUser, getBlockedUsers } from "../../api/friends";
+import { getBlockedUsers } from "../../api/friends";
+import { setUserBlocked } from "../../lib/blockedUsers";
 import { useT } from "../../context/LocaleContext";
 
 /**
@@ -195,7 +196,7 @@ export default function ProfileCustomization({ me, onUpdate }) {
 
   const handleUnblock = async (userId) => {
     try {
-      await unblockUser(userId);
+      await setUserBlocked(userId, false);
       setBlockedUsers((prev) => prev.filter((u) => u.id !== userId));
     } catch {
       // best-effort

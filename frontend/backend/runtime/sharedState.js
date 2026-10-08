@@ -32,7 +32,6 @@ const systemConfig = {
     screen: true,
     valorantLfg: true,
     valorantCompanion: true,
-    dimaai: true,
   },
   themeForce: null,
   maintenanceMode: false,

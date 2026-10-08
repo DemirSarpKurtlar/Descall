@@ -1,5 +1,5 @@
 /**
- * Adım 4 — friends / presence API surface for Dima's Companion panel.
+ * Adım 4 — friends / presence API surface for the Companion panel.
  * List/requests: Electron local chat (valorantSecureStore).
  * Party invite: Render GLZ proxy (/api/valorant/friends/party-invite).
  */

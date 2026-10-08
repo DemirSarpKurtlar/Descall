@@ -28,7 +28,7 @@ export default function CompanionSkinDetail({ skinUuid, fallbackName, fallbackIc
     getValorantSkinDetail(skinUuid)
       .then((body) => {
         if (cancelled) return;
-        // Dimaru contract: { ok, skin: { displayIcon, levels, chromas } }
+        // API contract: { ok, skin: { displayIcon, levels, chromas } }
         setSkin(body?.skin || null);
         setLoading(false);
       })

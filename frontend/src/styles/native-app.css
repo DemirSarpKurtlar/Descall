@@ -49,11 +49,6 @@
   html.native-app .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-secondary {
     padding-top: env(safe-area-inset-top, 0px) !important;
   }
-
-  /* DimaAI: the workspace is absolutely inset:0 — clear the Dynamic Island. */
-  html.native-app .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
-    padding-top: env(safe-area-inset-top, 0px) !important;
-  }
 }
 
 /* Top-sliding banners / toasts: in the edge-to-edge WebView they started at

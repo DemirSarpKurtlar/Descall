@@ -463,13 +463,12 @@ router.post("/party/accessibility", requireAuth, async (req, res) => {
  */
 
 
-// GET /api/valorant/friends/status — capabilities for Dima's Companion friends panel
+// GET /api/valorant/friends/status — capabilities for the Companion friends panel
 router.get("/friends/status", requireAuth, async (_req, res) => {
   return res.json({
     implemented: true,
     adim: 4,
     source: "electron_local_chat",
-    uiOwner: "dima",
     clientHook: "useValorantFriends",
     endpoints: {
       status: "GET /api/valorant/friends/status",
@@ -491,7 +490,7 @@ router.get("/friends/status", requireAuth, async (_req, res) => {
 
 /**
  * POST /api/valorant/friends/party-invite
- * Convenience alias for Dima's friends panel → same GLZ invite as /party/invite.
+ * Convenience alias for the Companion friends panel → same GLZ invite as /party/invite.
  * Body: { riotId } or { gameName, tagLine }
  * Headers: X-Riot-Access-Token + X-Riot-Entitlement when available.
  */
@@ -606,7 +605,7 @@ router.get("/missions", requireAuth, async (req, res) => {
   });
 });
 
-// GET /api/valorant/contracts — same bundle (contracts-first alias for Dima)
+// GET /api/valorant/contracts — same bundle (contracts-first alias)
 router.get("/contracts", requireAuth, async (req, res) => {
   return withMissionsSession(req, res, async (session) => {
     const bundle = await missionsApi.getMissionsBundle({

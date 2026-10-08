@@ -11,7 +11,6 @@ export const TR_MIRROR_PATHS = [
   "/features",
   "/download",
   "/faq",
-  "/dimaai",
   "/compare/discord",
   "/about",
   "/contact",

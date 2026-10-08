@@ -3,6 +3,7 @@
  * Keeps the wire format as plain strings.
  */
 import { splitHighlightRanges } from "../../lib/textHighlight";
+import { displayText } from "../../lib/profanity";
 import { isDescallInviteUrl, parseDescallInviteUrl, isVanityServerInvite, vanitySlugFromInviteCode } from "../../lib/inviteLinks";
 
 const URL_RE =
@@ -85,7 +86,9 @@ function renderInline(text, keyPrefix = "t", highlight = "") {
   return parts.length ? parts : highlightPlain(text, highlight, keyPrefix);
 }
 
-export default function MessageContent({ text, highlight = "" }) {
+export default function MessageContent({ text: rawText, highlight = "" }) {
+  // Native iOS app: bad words are masked with *** (display only).
+  const text = displayText(rawText);
   if (!text) return null;
 
   const blocks = text.split(/(```[\s\S]*?```)/g);

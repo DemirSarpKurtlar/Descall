@@ -24,7 +24,6 @@ const RESERVED_USERNAMES = new Set([
   "mod",
   "security",
   "help",
-  "dimaai",
   "null",
   "undefined",
   "everyone",

@@ -56,7 +56,6 @@ export const INDEXING_PRIORITY_PATHS = [
   "/discord-alternative-for-friends",
   "/discord-alternative-for-communities",
   "/features",
-  "/dimaai",
   "/blog",
   "/blog/discord-vs-descall",
   "/blog/best-discord-alternatives-2026",
@@ -93,7 +92,7 @@ function tableIdForPath(path) {
   ) {
     return "niches";
   }
-  if (["/", "/download", "/features", "/faq", "/dimaai"].includes(p)) return "core";
+  if (["/", "/download", "/features", "/faq"].includes(p)) return "core";
   return "company";
 }
 

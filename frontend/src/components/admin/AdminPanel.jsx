@@ -13,17 +13,14 @@ import {
   Activity as ActivityIcon, Box, Code, GitBranch, Layers2, Monitor,
   MousePointer, Play, Pause, Square, Maximize2, Minimize2, Copy,
   ExternalLink, FileDown, Printer, Share2, Star, ThumbsUp,
-  ThumbsDown, Upload, Video, Voicemail, ZoomIn, ZoomOut, Megaphone,
-  Coins, DollarSign, Wallet, Plus, Minus, ShoppingBag, Sparkles, BellRing, FolderSearch, LayoutDashboard
+  ThumbsDown, Upload, Video, ZoomIn, ZoomOut, Megaphone,
+  Coins, DollarSign, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedback from "./AdminFeedback";
 import AdminShop from "./AdminShop";
-import AdminDimaai from "./AdminDimaai";
-import AdminVoiceRecordings from "./AdminVoiceRecordings";
-import { visibleAdminTabs } from "./adminTabs";
 import AdminModeration from "./AdminModeration";
 import AdminLivePopup from "./AdminLivePopup";
 import AdminAnalytics from "./AdminAnalytics";
@@ -81,7 +78,6 @@ const TABS = [
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
   { id: "shop", label: "admin.shop", icon: ShoppingBag },
-  { id: "dimaai", label: "admin.dimaai.title", icon: Sparkles },
   { id: "announcements", label: "admin.announcements", icon: Megaphone },
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
@@ -90,20 +86,12 @@ const TABS = [
   { id: "security", label: "admin.security", icon: Lock },
   { id: "maintenance", label: "admin.maintenance", icon: Server },
   { id: "audit", label: "admin.audit", icon: FileText },
-  { id: "voice", label: "Voice recordings", icon: Voicemail },
 ];
 
 export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername }) {
   const { t, locale } = useLocale();
   const [tab, setTab] = useState("overview");
-  const tabs = useMemo(
-    () => visibleAdminTabs(TABS, viewerUsername),
-    [viewerUsername]
-  );
-  const canSeeVoiceArchive = viewerUsername === "admin";
-  useEffect(() => {
-    if (tab === "voice" && !canSeeVoiceArchive) setTab("overview");
-  }, [tab, canSeeVoiceArchive]);
+  const tabs = TABS;
   const [dossierUserId, setDossierUserId] = useState(null);
   const [openReportCount, setOpenReportCount] = useState(0);
   const [stats, setStats] = useState(null);
@@ -735,9 +723,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               whileTap={{ scale: 0.98 }}
             >
               <Icon size={16} />
-              {tabDef.id === "voice"
-                ? (locale === "tr" ? "Ses kayıtları" : "Voice recordings")
-                : t(tabDef.label)}
+              {t(tabDef.label)}
               {tabDef.id === "reports" && openReportCount > 0 ? (
                 <span className="admin-tab-badge">{openReportCount > 99 ? "99+" : openReportCount}</span>
               ) : null}
@@ -760,11 +746,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         )}
 
 
-        {tab === "dimaai" && (
-          <AdminDimaai />
-        )}
-
-        {canSeeVoiceArchive && tab === "voice" && <AdminVoiceRecordings socket={socket} />}
 
         {tab === "livepopup" && <AdminLivePopup />}
 
@@ -1690,15 +1671,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       checked={system.config?.featureFlags?.valorantCompanion !== false}
                       disabled={busy}
                       onChange={(enabled) => setFeatureFlag("valorantCompanion", enabled)}
-                    />
-                    <SystemSwitch
-                      icon={Sparkles}
-                      tone="dima"
-                      label={t("nav.dimaai")}
-                      status={system.config?.featureFlags?.dimaai !== false ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.dimaai !== false}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("dimaai", enabled)}
                     />
                   </div>
                 </article>

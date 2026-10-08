@@ -14,7 +14,7 @@ import {
 const EMPTY_COUNTS = { total: 0, online: 0, inGame: 0, offline: 0 };
 
 /**
- * Wire hook for Dima's Adım 4 Companion friends/presence panel.
+ * Wire hook for the Adım 4 Companion friends/presence panel.
  * Does not render UI — polls Electron local chat when available.
  *
  * @param {{ enabled?: boolean, pollMs?: number, region?: string, puuid?: string }} opts

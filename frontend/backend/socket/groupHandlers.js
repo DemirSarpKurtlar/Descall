@@ -396,6 +396,7 @@ function registerGroupHandlers(io, socket, state) {
             groupId,
             groupName: groupMeta?.name || "Grup",
             from: socket.user.username,
+            fromId: myId,
             text: trimmedContent,
           });
         }

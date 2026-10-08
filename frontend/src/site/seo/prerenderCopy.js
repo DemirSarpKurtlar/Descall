@@ -51,15 +51,6 @@ const EXTRA_TR = {
   "Chat, voice, video, and screen share": "Sohbet, ses, görüntü ve ekran paylaşımı",
   "Valorant LFG and friend presence": "Valorant LFG ve arkadaş durumu",
   "See features": "Özelliklere bak",
-  "DimaAI — Ask Dima anything": "DimaAI — Dima’ya her şeyi sorun",
-  "A ChatGPT-style assistant built into Descall. Fast, Thinking, and Deep models for writing, explaining, and brainstorming with your squad.":
-    "Descall’a gömülü ChatGPT tarzı asistan. Yazmak, açıklamak ve ekiple fikir üretmek için Fast, Thinking ve Deep modelleri.",
-  "Three modes": "Üç mod",
-  "Dima 1.1 Fast — quick answers for everyday questions":
-    "Dima 1.1 Fast — günlük sorular için hızlı yanıtlar",
-  "Dima 1.2 Thinking — stronger reasoning when the problem needs a second look":
-    "Dima 1.2 Thinking — ikinci bakış isteyen sorunlarda daha güçlü muhakeme",
-  "Dima 1.3 Deep — long analysis and max quality": "Dima 1.3 Deep — uzun analiz ve en yüksek kalite",
   "About Descall": "Descall Hakkında",
   "Who owns Descall?": "Descall’ın sahibi kim?",
   "Descall is an independent messaging and voice platform built for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.":
@@ -101,7 +92,6 @@ export function navLabels(isTr) {
     ? {
         explore: "Keşfet",
         features: "Özellikler",
-        dimaai: "DimaAI",
         alternative: "Discord alternatifi",
         alternatives: "Alternatifler",
         lfg: "Valorant LFG",
@@ -121,7 +111,6 @@ export function navLabels(isTr) {
     : {
         explore: "Explore",
         features: "Features",
-        dimaai: "DimaAI",
         alternative: "Discord alternative",
         alternatives: "Alternatives",
         lfg: "Valorant LFG",
@@ -179,7 +168,7 @@ export function homeHero(isTr) {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
         h1: "Birlikte konuşun",
-        lead: "Arkadaşlar ve ekipler için daha hafif bir yuva — gerçek sunucular, HD aramalar, DimaAI ve Valorant LFG. Arkadaşlar ve oyuncular için ücretsiz sohbet.",
+        lead: "Arkadaşlar ve ekipler için daha hafif bir yuva — gerçek sunucular, HD aramalar, ekran paylaşımı ve Valorant LFG. Arkadaşlar ve oyuncular için ücretsiz sohbet.",
         why: "Ekipler neden geçiyor",
         bullets: [
           "Rol, kanal izni, davet ve moderasyonlu Discord tarzı sunucular",
@@ -242,7 +231,7 @@ export function homeHero(isTr) {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
         h1: "Talk together",
-        lead: "A lighter home for friends and squads — real servers, HD calls, DimaAI, and Valorant LFG. Free chat for friends and gamers.",
+        lead: "A lighter home for friends and squads — real servers, HD calls, screen share, and Valorant LFG. Free chat for friends and gamers.",
         why: "Why teams switch",
         bullets: [
           "Discord-style servers with roles, channel overrides, invites, and moderation",
@@ -315,7 +304,6 @@ export function prefixHref(href, isTr) {
     "/features",
     "/download",
     "/faq",
-    "/dimaai",
     "/compare/discord",
     "/about",
     "/contact",
@@ -355,7 +343,6 @@ export function seoSiteNavHtml(isTr = false) {
       <h2>${product}</h2>
       <ul>
         ${footerItem(h("/features"), n.features)}
-        ${footerItem(h("/dimaai"), n.dimaai)}
         ${footerItem(h("/download"), n.download)}
         ${footerItem(h("/faq"), n.faq)}
       </ul>

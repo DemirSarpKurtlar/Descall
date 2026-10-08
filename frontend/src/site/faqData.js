@@ -7,7 +7,7 @@ export const FAQ_ITEMS = [
   {
     group: "product",
     q: "What is Descall?",
-    a: "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, DimaAI, a Windows desktop client, Android builds, and a browser app.",
+    a: "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.",
   },
   {
     group: "product",
@@ -33,11 +33,6 @@ export const FAQ_ITEMS = [
     group: "product",
     q: "Who is the CEO of Descall?",
     a: "Demir Sarp Kurtlar is the founder, owner, and CEO of Descall.",
-  },
-  {
-    group: "product",
-    q: "Does Descall have DimaAI?",
-    a: "Yes. DimaAI is a ChatGPT-style assistant inside Descall with Fast, Thinking, and Deep models for writing, explaining, and brainstorming.",
   },
   {
     group: "servers",

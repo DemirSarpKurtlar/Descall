@@ -1,5 +1,6 @@
 import { t } from '../i18n/runtime';
 import { isChannelMuted } from './serverChannelMutes';
+import { displayText } from './profanity';
 import { brandIconUrl } from "../components/brand/brandIconUrl";
 
 const COOLDOWN_MS = 800;
@@ -108,7 +109,9 @@ class NotificationService {
     return typeof document !== 'undefined' ? document.hasFocus() : false;
   }
 
-  async show({ title, body, tag = 'descall', requireInteraction = false, silent = false, data = {}, avatarUrl = null }) {
+  async show({ title, body: rawBody, tag = 'descall', requireInteraction = false, silent = false, data = {}, avatarUrl = null }) {
+    // Native iOS app: bad words in notification text are masked with ***.
+    const body = displayText(rawBody);
     if (!this.initialized) {
       this.pendingNotifications.push({ title, body, tag, requireInteraction, silent, data, avatarUrl });
       await this.init();

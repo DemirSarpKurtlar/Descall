@@ -11,6 +11,9 @@ import ReportUserModal from "../social/ReportUserModal";
 import GameMessageBubble from "./GameMessageBubble";
 import MessageReactions from "./MessageReactions";
 import MessageContent from "./MessageContent";
+import { displayText } from "../../lib/profanity";
+import { casinoHiddenOnThisDevice } from "../../lib/casinoCommands";
+import { useBlockedUserIds } from "../../lib/blockedUsers";
 import { InviteLinkEmbedList } from "./InviteLinkEmbed";
 import SlashCommandEmbed from "./SlashCommandEmbed";
 import MessageMediaLightbox from "./MessageMediaLightbox";
@@ -123,6 +126,9 @@ export default function MessageList({
   const stickToBottomRef = useRef(true);
   const prevLastIdRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
+  // Messages from people I blocked are collapsed until tapped ("Show").
+  const blockedIds = useBlockedUserIds();
+  const [revealedBlocked, setRevealedBlocked] = useState(() => new Set());
   const [reportTarget, setReportTarget] = useState(null);
   const [hoverUser, setHoverUser] = useState(null);
   const [hoverPos, setHoverPos] = useState(null);
@@ -307,6 +313,8 @@ export default function MessageList({
       // Game messages render standalone (no grouping)
       if (msg.isGameMessage || msg.type?.startsWith("game_")) {
         flush();
+        // Native iOS app: casino games are not shown.
+        if (casinoHiddenOnThisDevice()) return;
         grouped.push({ isGame: true, gameMsg: msg, id: msg.id });
         return;
       }
@@ -396,6 +404,37 @@ export default function MessageList({
               socket={socket}
               onGameAction={() => {}}
             />
+          );
+        }
+
+        const groupKey = group.messages?.[0]?.id || group.id || `msg-group-${groupIndex}`;
+        if (
+          group.user?.id &&
+          group.user.id !== currentUser?.id &&
+          blockedIds.has(String(group.user.id)) &&
+          !revealedBlocked.has(groupKey)
+        ) {
+          const n = group.messages?.length || 1;
+          return (
+            <div key={`blocked-${groupKey}`} className="msg-blocked-collapsed" role="note">
+              <span>
+                {n === 1
+                  ? t("1 message from a blocked user")
+                  : t("{count} messages from a blocked user", { count: n })}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setRevealedBlocked((prev) => {
+                    const next = new Set(prev);
+                    next.add(groupKey);
+                    return next;
+                  })
+                }
+              >
+                {t("Show")}
+              </button>
+            </div>
           );
         }
 
@@ -822,7 +861,7 @@ function MessageBubble({
             </span>
             <span className="message-reply-text">
               {reply.text
-                ? String(reply.text).slice(0, 120)
+                ? displayText(String(reply.text).slice(0, 120))
                 : reply.mediaType
                 ? `📎 ${reply.mediaType}`
                 : t("Original message")}

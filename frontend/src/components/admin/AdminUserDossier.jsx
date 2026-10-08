@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, Ban, Clock, Coins, Flag, Globe, History, Lock, LockOpen,
-  LogOut, Monitor, RefreshCw, Shield, Smartphone, Sparkles, Timer, UserX,
+  LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
   Wallet,
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
@@ -99,7 +99,6 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
   const wallet = dossier?.wallet || { balance: 0, frozen: false, ledger: [] };
   const reports = dossier?.reports || { against: [], filed: [], openCount: 0 };
   const moderation = dossier?.moderation || { history: [] };
-  const dima = dossier?.dima || {};
 
   const flagLabels = useMemo(() => ({
     repeat_reports: t("admin.riskRepeatReports"),
@@ -325,19 +324,6 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
                     </li>
                   ))}
                 </ul>
-              )}
-            </section>
-
-            <section className="dossier-card">
-              <h3><Sparkles size={15} /> {t("admin.dossierDima")}</h3>
-              {dima.unavailable ? (
-                <p className="muted">{t("admin.dimaUnavailable")}</p>
-              ) : (
-                <dl>
-                  <div><dt>{t("admin.dimaChats")}</dt><dd>{dima.conversationCount || 0}</dd></div>
-                  <div><dt>{t("admin.dimaMessages")}</dt><dd>{dima.messageCount || 0}</dd></div>
-                  <div><dt>{t("admin.dimaLast")}</dt><dd>{when(dima.lastUsedAt, locale, t)}</dd></div>
-                </dl>
               )}
             </section>
 

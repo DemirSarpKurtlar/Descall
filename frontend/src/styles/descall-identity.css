@@ -137,33 +137,6 @@
   background: var(--surface-1);
 }
 
-.dima-welcome {
-  max-width: 640px;
-}
-
-.dima-welcome h2 {
-  font-family: var(--font-heading);
-  letter-spacing: -0.04em;
-  color: var(--text-0);
-}
-
-.dima-welcome-lede {
-  margin: 0 auto 20px;
-  max-width: 420px;
-  color: var(--text-2);
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.dima-chip {
-  border-color: var(--border-3);
-  background: var(--surface-1);
-}
-
-.dima-chip:hover {
-  border-color: rgba(79, 124, 255, 0.4);
-}
-
 .nav-rail .nav-item.active,
 .navigation-rail .is-active {
   color: var(--text-0);

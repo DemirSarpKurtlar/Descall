@@ -211,12 +211,11 @@
    * so a rail-only shell cannot cover or squeeze the LFG list after view switches.
    */
   /*
-   * Play / DimaAI mobile: ONE column. Desktop sets main-slot to grid-column 2,
+   * Play mobile: ONE column. Desktop sets main-slot to grid-column 2,
    * which creates an implicit empty column on phones (solid black until zoom-out).
    * Put main in column 1 and take nav/sidebar out of the grid flow.
    */
-  .app-root.is-mobile[data-view="play"],
-  .app-root.is-mobile[data-view="dimaai"] {
+  .app-root.is-mobile[data-view="play"] {
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: minmax(0, 1fr) !important;
     height: var(--vv-height, 100dvh) !important;
@@ -226,8 +225,7 @@
     background: var(--surface-0, #111214) !important;
   }
 
-  .app-root.is-mobile[data-view="play"] > .app-main-slot,
-  .app-root.is-mobile[data-view="dimaai"] > .app-main-slot {
+  .app-root.is-mobile[data-view="play"] > .app-main-slot {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
     width: 100% !important;
@@ -242,35 +240,27 @@
   }
 
   .app-root.is-mobile[data-view="play"] .nav-rail,
-  .app-root.is-mobile[data-view="dimaai"] .nav-rail,
   .app-root.is-mobile[data-view="play"] .app-sidebar-shell > .nav-rail,
-  .app-root.is-mobile[data-view="dimaai"] .app-sidebar-shell > .nav-rail,
   .app-root.is-mobile[data-view="play"] .sidebar-secondary,
-  .app-root.is-mobile[data-view="dimaai"] .sidebar-secondary,
-  .app-root.is-mobile[data-view="play"] .activity-sidebar,
-  .app-root.is-mobile[data-view="dimaai"] .activity-sidebar {
+  .app-root.is-mobile[data-view="play"] .activity-sidebar {
     display: none !important;
   }
 
   .app-root.is-mobile[data-view="play"] .app-sidebar-shell,
-  .app-root.is-mobile[data-view="play"].mobile-drawer-open .app-sidebar-shell,
-  .app-root.is-mobile[data-view="dimaai"] .app-sidebar-shell,
-  .app-root.is-mobile[data-view="dimaai"].mobile-drawer-open .app-sidebar-shell {
+  .app-root.is-mobile[data-view="play"].mobile-drawer-open .app-sidebar-shell {
     transform: none;
     pointer-events: none;
     box-shadow: none;
   }
 
-  .app-root.is-mobile[data-view="play"] .mobile-drawer-backdrop,
-  .app-root.is-mobile[data-view="dimaai"] .mobile-drawer-backdrop {
+  .app-root.is-mobile[data-view="play"] .mobile-drawer-backdrop {
     display: none !important;
   }
 
   /* Fill viewport edge-to-edge. Tab-bar clearance belongs on SCROLL areas only
-     — outer padding-bottom left a dead black band under LFG/Companion/DimaAI. */
+     — outer padding-bottom left a dead black band under LFG/Companion. */
   .app-root.is-mobile[data-view="play"] .valorant-hub,
-  .app-root.is-mobile[data-view="play"] .lfg-workspace,
-  .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
+  .app-root.is-mobile[data-view="play"] .lfg-workspace {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
@@ -302,15 +292,13 @@
 
   .app-root.is-mobile[data-view="play"] .valorant-hub-body,
   .app-root.is-mobile[data-view="play"] .valorant-hub-panel,
-  .app-root.is-mobile[data-view="play"] .lfg-sidebar,
-  .app-root.is-mobile[data-view="dimaai"] .dima-history,
-  .app-root.is-mobile[data-view="dimaai"] .dima-main {
+  .app-root.is-mobile[data-view="play"] .lfg-sidebar {
     min-height: 0;
     flex: 1 1 0;
   }
 
   /* Tab-bar clearance ONLY on scroll containers — never on hub-panel wrappers
-     (double padding left a black void under Companion/LFG/DimaAI). */
+     (double padding left a black void under Companion/LFG). */
   .app-root.is-mobile[data-view="play"] .valorant-hub-body,
   .app-root.is-mobile[data-view="play"] .valorant-hub-panel {
     padding-bottom: 0;
@@ -319,10 +307,7 @@
 
   .app-root.is-mobile[data-view="play"] .valorant-companion,
   .app-root.is-mobile[data-view="play"] .lfg-lobby-list,
-  .app-root.is-mobile[data-view="play"] .lfg-main,
-  .app-root.is-mobile[data-view="dimaai"] .dima-history-list,
-  .app-root.is-mobile[data-view="dimaai"] .dima-thread,
-  .app-root.is-mobile[data-view="dimaai"] .dima-scroll {
+  .app-root.is-mobile[data-view="play"] .lfg-main {
     padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
   }
@@ -996,8 +981,7 @@
 
 /* ── v2.9.47: LFG/Companion swap + kill residual ~67px bottom band ── */
 @supports (height: 100dvh) {
-  .app-root.is-mobile[data-view="play"],
-  .app-root.is-mobile[data-view="dimaai"] {
+  .app-root.is-mobile[data-view="play"] {
     height: var(--vv-height, 100dvh) !important;
     max-height: var(--vv-height, 100dvh) !important;
     /* Never min-height:100dvh — that exceeds visualViewport and leaves a black band. */
@@ -1006,12 +990,9 @@
 }
 
 .app-root.is-mobile[data-view="play"],
-.app-root.is-mobile[data-view="dimaai"],
 .app-root.is-mobile[data-view="play"] > .app-main-slot,
-.app-root.is-mobile[data-view="dimaai"] > .app-main-slot,
 .app-root.is-mobile[data-view="play"] .valorant-hub,
-.app-root.is-mobile[data-view="play"] .lfg-workspace,
-.app-root.is-mobile[data-view="dimaai"] .dima-workspace {
+.app-root.is-mobile[data-view="play"] .lfg-workspace {
   background-color: var(--surface-0, #111214) !important;
   background-image: none !important;
 }
@@ -1019,9 +1000,7 @@
 /* Outer shells never pad for the tab bar — only scrollable inners do. */
 .app-root.is-mobile[data-view="play"] .valorant-hub,
 .app-root.is-mobile[data-view="play"] .lfg-workspace,
-.app-root.is-mobile[data-view="dimaai"] .dima-workspace,
-.app-root.is-mobile[data-view="play"] > .app-main-slot,
-.app-root.is-mobile[data-view="dimaai"] > .app-main-slot {
+.app-root.is-mobile[data-view="play"] > .app-main-slot {
   padding-bottom: 0 !important;
 }
 
@@ -1091,10 +1070,7 @@
 }
 
 .app-root.is-mobile[data-view="play"] .lfg-lobby-list,
-.app-root.is-mobile[data-view="play"] .lfg-main,
-.app-root.is-mobile[data-view="dimaai"] .dima-history-list,
-.app-root.is-mobile[data-view="dimaai"] .dima-thread,
-.app-root.is-mobile[data-view="dimaai"] .dima-scroll {
+.app-root.is-mobile[data-view="play"] .lfg-main {
   padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px)) !important;
   box-sizing: border-box;
   background: var(--surface-0, #111214) !important;
@@ -1122,8 +1098,7 @@
 }
 
 /* Seal under fixed tab bar — same token as measured tab height (no 56/67 drift). */
-.app-root.is-mobile[data-view="play"]::after,
-.app-root.is-mobile[data-view="dimaai"]::after {
+.app-root.is-mobile[data-view="play"]::after {
   content: "";
   position: fixed;
   left: 0;

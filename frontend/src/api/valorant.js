@@ -216,7 +216,7 @@ export function getValorantStorefront(tokens = {}) {
   return partyFetch("/store/storefront", { method: "GET", ...tokens });
 }
 
-/* ─── Adım 4 — friends / presence (API + Electron hooks for Dima's panel) ─── */
+/* ─── Adım 4 — friends / presence (API + Electron hooks for the Companion panel) ─── */
 
 export async function getValorantFriendsStatus() {
   const res = await fetch(`${BASE}/friends/status`, { headers: getHeaders() });

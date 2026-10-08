@@ -183,22 +183,6 @@ export function corePageBody(path) {
   ${navBlock(isTr)}
 </main>`;
 
-    case "/dimaai":
-      return `
-<main>
-  ${brandBlock(isTr)}
-  <h1>${escapeHtml(trCopy("DimaAI — Ask Dima anything", isTr))}</h1>
-  <p>${escapeHtml(trCopy("A ChatGPT-style assistant built into Descall. Fast, Thinking, and Deep models for writing, explaining, and brainstorming with your squad.", isTr))}</p>
-  <h2>${escapeHtml(trCopy("Three modes", isTr))}</h2>
-  <ul>
-    <li>${escapeHtml(trCopy("Dima 1.1 Fast — quick answers for everyday questions", isTr))}</li>
-    <li>${escapeHtml(trCopy("Dima 1.2 Thinking — stronger reasoning when the problem needs a second look", isTr))}</li>
-    <li>${escapeHtml(trCopy("Dima 1.3 Deep — long analysis and max quality", isTr))}</li>
-  </ul>
-  <p><a href="${h("/features")}">${escapeHtml(n.features)}</a> · <a href="${h("/download")}">${escapeHtml(n.download)}</a></p>
-  ${navBlock(isTr)}
-</main>`;
-
     case "/about":
       return `
 <main>
@@ -281,7 +265,7 @@ export function corePageBody(path) {
   <h2>Transport encryption (not default E2E)</h2>
   <p>Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server — messages are encrypted in transit and stored to deliver chat history to your devices.</p>
   <h2>Voice &amp; video</h2>
-  <p>Call media is transmitted with WebRTC security (DTLS/SRTP). Descall does not record or store call audio/video by default. If a participant records locally, that is outside Descall's control.</p>
+  <p>Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally, that is outside Descall's control.</p>
   <h2>${escapeHtml(trCopy("Accounts", isTr))}</h2>
   <p>Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available. Session management lets you revoke devices.</p>
   <h2>${escapeHtml(trCopy("Report an issue", isTr))}</h2>

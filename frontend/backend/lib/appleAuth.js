@@ -12,7 +12,7 @@
  */
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const { encryptSecret, decryptSecret } = require("./ai/cryptoKeys");
+const { encryptSecret, decryptSecret } = require("./cryptoKeys");
 
 const APPLE_ISSUER = "https://appleid.apple.com";
 const KEYS_URL = "https://appleid.apple.com/auth/keys";

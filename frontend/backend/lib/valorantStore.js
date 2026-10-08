@@ -71,7 +71,6 @@ function storeCapabilities() {
       dailyStore: true,
       bundles: true,
     },
-    uiOwner: "dima",
     clientHooks: ["useValorantStore", "useValorantLoadout"],
     endpoints: {
       status: "GET /api/valorant/store/status",

@@ -1,3 +1,5 @@
+import { casinoHiddenOnThisDevice } from "./casinoCommands.js";
+
 export const SLASH_COMMANDS = [
   { name: "bj", description: "Start a blackjack hand.", insert: "/bj 100", label: "Blackjack", chatOnly: true, casino: true },
   { name: "slot", description: "Spin the five-reel slot.", insert: "/slot 100", label: "Slot", chatOnly: true, casino: true },
@@ -22,12 +24,20 @@ export const SLASH_COMMANDS = [
   { name: "purge", description: "Delete the last N messages (1–100).", insert: "/purge 10", label: "Purge", chatOnly: true, serverOnly: true, permission: "MANAGE_MESSAGES" },
 ];
 
-export function getSlashCommandsForSurface({ activeChannel, activeGroup, permissionFlags = {}, isOwner = false } = {}) {
+export function getSlashCommandsForSurface({
+  activeChannel,
+  activeGroup,
+  permissionFlags = {},
+  isOwner = false,
+  hideCasino = casinoHiddenOnThisDevice(),
+} = {}) {
   const inServerText = activeChannel?.type === "text";
   const inGroup = Boolean(activeGroup);
   if (!inServerText && !inGroup) return [];
 
   return SLASH_COMMANDS.filter((cmd) => {
+    // Native iOS app: no casino commands in the picker.
+    if (hideCasino && cmd.casino) return false;
     if (cmd.serverOnly && !inServerText) return false;
     if (cmd.groupOnly && !inGroup) return false;
     if (cmd.voiceOnly) return false;

@@ -10,7 +10,7 @@ import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
 import { getMyGroups, getGroupMessages } from "./api/groups";
-import { getFriendsList, getFriendRequestsList } from "./api/friends";
+import { getBlockedUsers, getFriendsList, getFriendRequestsList } from "./api/friends";
 import { getDmPrefs, patchDmPref } from "./api/dmPrefs";
 import { getDmMessages, getDmPreviews } from "./api/dm";
 import {
@@ -78,7 +78,7 @@ import { useToast } from "./context/ToastContext";
 import { useLocale } from "./context/LocaleContext";
 import { t as tRuntime } from "./i18n/runtime";
 import { resolveInitialLocale } from "./i18n";
-import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, isPublicDimaLandingPath, parseAppRoute } from "./lib/appRoutes";
+import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
@@ -95,6 +95,8 @@ import TitleBar from "./components/TitleBar";
 import UpdateNotes from "./components/UpdateNotes";
 import ElectronUpdateToast from "./components/ElectronUpdateToast";
 import MessageList from "./components/chat/MessageList";
+import { profanityMaskingActive, setExtraProfanityWords } from "./lib/profanity";
+import { isBlockedByMe, setBlockedUserIds } from "./lib/blockedUsers";
 import MessageComposer from "./components/chat/MessageComposer";
 import CallOverlay from "./components/CallOverlay";
 import GroupCallIncomingModal from "./components/GroupCallIncomingModal";
@@ -862,6 +864,27 @@ export default function App() {
     return normalized;
   }, []);
 
+  // People I blocked (profile popout, DM header, message list read this store).
+  useEffect(() => {
+    if (!me?.id) {
+      setBlockedUserIds([]);
+      return undefined;
+    }
+    if (Array.isArray(me.blockedUsers)) setBlockedUserIds(me.blockedUsers);
+    let cancelled = false;
+    getBlockedUsers()
+      .then((res) => {
+        if (!cancelled && Array.isArray(res?.blocked)) {
+          setBlockedUserIds(res.blocked.map((u) => u?.id).filter(Boolean));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.id]);
+
   // Identify restored sessions in PostHog (login/register paths already identify).
   useEffect(() => {
     if (!me?.id) return;
@@ -1128,7 +1151,7 @@ export default function App() {
                 clearUser();
                 setMe(null);
               }
-              // else keep token; user can refresh — avoid dumping /dimaai → marketing
+              // else keep token; user can refresh — avoid dumping an app deep-link → marketing
               if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
             }
           }
@@ -1200,6 +1223,15 @@ export default function App() {
         if (!cancelled && data) applyPublicFeatures(data);
       })
       .catch((err) => console.warn("[features] load failed:", err?.message || err));
+    // Native iOS app masks bad words; merge the admin-managed extra words.
+    if (profanityMaskingActive()) {
+      fetch(`${API_BASE_URL}/api/features/profanity`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!cancelled && Array.isArray(data?.words)) setExtraProfanityWords(data.words);
+        })
+        .catch(() => {});
+    }
     return () => {
       cancelled = true;
     };
@@ -1615,6 +1647,10 @@ export default function App() {
     socket.on("friend:accepted", () => {
       socket.emit("friend:list");
     });
+    // A block (either direction) removes the friendship server-side: re-pull lists.
+    socket.on("friend:blocked", () => {
+      socket.emit("friend:list");
+    });
     socket.on("user:profile:updated", ({ user }) => {
       if (user) applyProfileUpdate(user);
     });
@@ -1839,6 +1875,8 @@ export default function App() {
       // Notify for messages from others in non-active group
       const isFromMe = normalized.from.id === myIdRef.current;
       const isActiveGroup = activeGroupRef.current?.id === groupId;
+      // No sound / notification for people I blocked (their messages are collapsed).
+      if (!isFromMe && isBlockedByMe(normalized.from?.id)) return;
       if (!isFromMe && !isActiveGroup) {
         setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
         playUiSound("message");
@@ -1899,6 +1937,7 @@ export default function App() {
         channelName,
         messageId,
       } = payload;
+      if (payload.fromId && isBlockedByMe(payload.fromId)) return;
       if (channelId && isChannelMuted(channelId)) return;
       if (serverId && getServerNotificationLevel(serverId) === "muted") return;
       if (
@@ -2402,6 +2441,8 @@ export default function App() {
         /* analytics optional */
       }
     } catch (error) {
+      // New Apple account: AuthView shows the Terms + date-of-birth step instead of an error.
+      if (error?.code === "apple_signup_required") throw error;
       setAuthError(formatBanAuthError(error));
       throw error;
     } finally {
@@ -2928,17 +2969,10 @@ export default function App() {
     setActiveView(requestedRoute.view);
     setUserPanelOpen(Boolean(requestedRoute.settingsTab));
 
-    // Play / DimaAI keep the open conversation mounted under app-chat-keep.
+    // Play keeps the open conversation mounted under app-chat-keep.
     // Do not tear it down on route sync (nav return to Chat restores the DM).
     if (requestedRoute.view === "play") {
       if (!valorantPlayVisible(publicFeatures)) {
-        navigate(appPathForView("chat"), { replace: true });
-        return;
-      }
-      return;
-    }
-    if (requestedRoute.view === "dimaai") {
-      if (publicFeatures.dimaai === false) {
         navigate(appPathForView("chat"), { replace: true });
         return;
       }
@@ -3818,7 +3852,7 @@ export default function App() {
     const isElectronDesktop =
       typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
     const nativeOrDesktop = Capacitor.isNativePlatform() || isElectronDesktop;
-    // Token still present on an app deep-link (e.g. /dimaai): never dump to
+    // Token still present on an app deep-link (e.g. /play): never dump to
     // marketing — keep the boot skeleton. Hard refresh used to Navigate → "/"
     // while descall_token remained, which looked like a session drop.
     if (getToken() && isAuthenticatedAppPath(location.pathname)) {
@@ -3848,7 +3882,7 @@ export default function App() {
         </>
       );
     }
-    if (isAuthenticatedAppPath(location.pathname) && !isPublicDimaLandingPath(location.pathname)) {
+    if (isAuthenticatedAppPath(location.pathname)) {
       return <Navigate to="/" replace />;
     }
     return (
@@ -4200,8 +4234,7 @@ export default function App() {
           onActiveViewChange={(view) => {
             const featuresNow = getPublicFeatures();
             if (
-              (view === "play" && !valorantPlayVisible(featuresNow)) ||
-              (view === "dimaai" && featuresNow.dimaai === false)
+              view === "play" && !valorantPlayVisible(featuresNow)
             ) {
               setActiveView("chat");
               const nextPath = appPathForView("chat");
@@ -4213,7 +4246,7 @@ export default function App() {
             // Single navigate owner — clear conversation state here without
             // calling onDmSelect(null)/onGroupSelect(null)/onServerBack, which
             // would navigate to /direct|/groups|/servers and race this path.
-            if (view === "play" || view === "dimaai") {
+            if (view === "play") {
               const nextPath = appPathForView(view);
               if (location.pathname !== nextPath) navigate(nextPath);
               return;
@@ -4222,7 +4255,7 @@ export default function App() {
             if (view === "chat") {
               setActiveServer(null);
               setActiveChannel(null);
-              // Restore kept DM under play/dimaai instead of dumping to /direct.
+              // Restore kept DM under play instead of dumping to /direct.
               const dm = activeDmRef.current;
               const nextPath = dm?.username ? directPath(dm) : appPathForView("chat");
               if (location.pathname !== nextPath) navigate(nextPath);

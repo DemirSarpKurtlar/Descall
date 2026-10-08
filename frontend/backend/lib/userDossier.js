@@ -2,7 +2,7 @@
 
 /**
  * Assembles one admin "user file" from existing sources — identity, signup,
- * sessions, moderation, reports, wallet, Dima — without dump-style lists.
+ * sessions, moderation, reports, wallet — without dump-style lists.
  */
 
 const supabase = require("../db/supabase");
@@ -45,36 +45,6 @@ async function loadUserRow(userId) {
   return safe.data;
 }
 
-async function loadDimaUsage(userId) {
-  try {
-    const { data: convos, error } = await supabase
-      .from("dimaai_conversations")
-      .select("id, updated_at")
-      .eq("user_id", userId)
-      .order("updated_at", { ascending: false })
-      .limit(200);
-    if (error) return { conversationCount: 0, messageCount: 0, lastUsedAt: null, unavailable: true };
-    const rows = convos || [];
-    const ids = rows.map((c) => c.id);
-    let messageCount = 0;
-    if (ids.length) {
-      const msg = await supabase
-        .from("dimaai_messages")
-        .select("id", { count: "exact", head: true })
-        .in("conversation_id", ids);
-      if (!msg.error) messageCount = msg.count || 0;
-    }
-    return {
-      conversationCount: rows.length,
-      messageCount,
-      lastUsedAt: rows[0]?.updated_at || null,
-      unavailable: false,
-    };
-  } catch {
-    return { conversationCount: 0, messageCount: 0, lastUsedAt: null, unavailable: true };
-  }
-}
-
 async function buildDossier(userId, { io } = {}) {
   const user = await loadUserRow(userId);
   if (!user) {
@@ -93,7 +63,7 @@ async function buildDossier(userId, { io } = {}) {
     user.last_seen ||
     null;
 
-  const [history, reports, ledger, sessions, dima] = await Promise.all([
+  const [history, reports, ledger, sessions] = await Promise.all([
     moderation.listHistory({ targetUserId: user.id, limit: 40 }).catch(() => []),
     reportsForUser(user.id, { limit: 40 }).catch(() => ({
       against: [],
@@ -103,7 +73,6 @@ async function buildDossier(userId, { io } = {}) {
     })),
     descoin.getLedger(user.id, { limit: 20 }).catch(() => []),
     listSessions(user.id).catch(() => []),
-    loadDimaUsage(user.id),
   ]);
 
   const frozen = Boolean(user.descoin_frozen);
@@ -178,7 +147,6 @@ async function buildDossier(userId, { io } = {}) {
       frozen,
       ledger: ledger || [],
     },
-    dima,
     risk,
     generatedAt: new Date().toISOString(),
   };

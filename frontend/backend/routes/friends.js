@@ -2,7 +2,7 @@ const express = require("express");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { pendingRequests, presence, usernameById } = require("../runtime/sharedState");
-const { blockUser, unblockUser, getBlockedList } = require("../lib/blocking");
+const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
 
 const router = express.Router();
 
@@ -41,6 +41,11 @@ router.post("/request", requireAuth, async (req, res) => {
 
     if (targetUser.id === userId) {
       return res.status(400).json({ error: "Cannot add yourself as a friend" });
+    }
+
+    // Blocked either way: no friend requests (same rule as the socket path).
+    if (await isBlockedEitherWay(userId, targetUser.id)) {
+      return res.status(403).json({ error: "You can't send a request to this user.", code: "blocked" });
     }
 
     // Check if already friends or request already pending
@@ -129,6 +134,10 @@ router.post("/accept", requireAuth, async (req, res) => {
 
     if (!existingRequest) {
       return res.status(404).json({ error: "Friend request not found or already processed" });
+    }
+
+    if (await isBlockedEitherWay(userId, fromUserId)) {
+      return res.status(403).json({ error: "You can't add this user.", code: "blocked" });
     }
 
     // Update the request

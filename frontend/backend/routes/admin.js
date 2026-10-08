@@ -5,7 +5,6 @@ const bcrypt = require("bcryptjs");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin } = require("../middleware/requireAdmin");
-const { requireNamedAdmin } = require("../lib/namedAdmin");
 const state = require("../runtime/sharedState");
 const {
   kickUser,
@@ -49,10 +48,8 @@ const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
 router.use(requireAuth, requireAdmin);
-router.use("/dimaai", require("./adminDimaai"));
 router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
-router.use("/voice-recordings", requireNamedAdmin, require("./adminVoice"));
 
 function getIo(req) {
   return req.app.get("io");

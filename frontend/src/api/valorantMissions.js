@@ -1,5 +1,5 @@
 /**
- * Adım 5 barrel — missions / contracts / BP for Dima's Companion panel.
+ * Adım 5 barrel — missions / contracts / BP for the Companion panel.
  */
 export {
   getValorantMissionsStatus,

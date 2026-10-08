@@ -37,6 +37,8 @@ const OWN_ROWS = [
   ["server_channel_reads", "user_id"],
   ["server_channel_mutes", "user_id"],
   ["group_invites", "invited_user_id"],
+  // Legacy tables (assistant and call recording removed in 2.9.141). Kept so a
+  // user-requested account deletion still erases any rows they left behind.
   ["dimaai_pending_actions", "user_id"],
   ["dimaai_messages", "user_id"],
   ["dimaai_conversations", "user_id"],

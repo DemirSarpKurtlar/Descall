@@ -55,7 +55,7 @@ function RailButton({
 
   const showTip = () => {
     // Touch synthesizes mouseenter after tap and never mouseleave. The tooltip
-    // is portaled to document.body, so it stays on LFG/DimaAI after the drawer
+    // is portaled to document.body, so it stays on LFG/Activity after the drawer
     // slides away. Only real hover pointers get a label.
     if (!canUseHoverTooltips()) return;
     const el = btnRef.current;

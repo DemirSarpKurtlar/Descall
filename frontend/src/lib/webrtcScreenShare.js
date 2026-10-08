@@ -68,11 +68,11 @@ export function isMobileScreenCapture() {
 }
 
 /**
- * Native iOS app (Capacitor WKWebView): there is no getDisplayMedia, and the
- * ReplayKit Broadcast Upload Extension isn't built yet — the share button
- * shows "coming soon" instead of failing. Viewing others' shares works.
+ * Native iOS app (Capacitor WKWebView): there is no getDisplayMedia and no
+ * ReplayKit Broadcast Upload Extension, so the screen-share controls are not
+ * shown at all on iPhone. Viewing others' shares still works.
  */
-export function screenShareComingSoonOnIos() {
+export function screenShareUnavailableOnIos() {
   try {
     const cap = typeof window !== "undefined" ? window.Capacitor : null;
     const nativeIos = Boolean(cap?.isNativePlatform?.() && cap.getPlatform?.() === "ios");

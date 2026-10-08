@@ -1,0 +1,13 @@
+{
+  "_comment": "Built-in bad-word list used to mask messages in the native iOS app (and iOS APNs alert text). Admin-managed words (system_settings config.profanityWords) are merged on top. A trailing * means prefix match; otherwise the whole word must match. Matching is case-insensitive.",
+  "words": [
+    "fuck*", "motherfuck*", "fck", "fcking", "shit", "shits", "shitty", "shithead*", "bullshit*",
+    "bitch*", "cunt*", "asshole*", "bastard*", "dick", "dicks", "dickhead*", "pussy", "pussies",
+    "cocksucker*", "whore*", "slut*", "nigger*", "nigga*", "faggot*", "fag", "fags", "wanker*", "twat*",
+    "siktir*", "siktim", "siktin", "sikti", "sikerim", "sikeyim", "sikiyim", "sikik*", "sikiş*", "sikis*", "sikem",
+    "amk", "amq", "aq", "amına*", "amina*", "amcık*", "amcik*", "orospu*", "oç", "piç", "piçler", "piçlik",
+    "yarrak*", "yarak", "yarağ*", "yarram*", "dalyarak*", "dalyarrak*", "taşak*", "tasak*",
+    "göt", "götü", "götün", "götveren*", "gotveren*", "götlek*", "ibne*", "pezevenk*", "kahpe*", "kaltak*",
+    "şerefsiz*", "serefsiz*", "gavat*", "puşt*", "yavşak*", "yavsak*", "ananı", "ananızı", "anasını", "bok", "boktan"
+  ]
+}

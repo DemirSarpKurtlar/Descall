@@ -1,0 +1,6 @@
+/* English permission prompts (same text as Info.plist). */
+"CFBundleDisplayName" = "Descall";
+"NSMicrophoneUsageDescription" = "Microphone permission required for voice calls and voice messages.";
+"NSCameraUsageDescription" = "Camera permission required for video calls.";
+"NSPhotoLibraryUsageDescription" = "Photos are used for profile photos and image uploads.";
+"NSPhotoLibraryAddUsageDescription" = "Descall saves images you choose to keep to your photo library.";

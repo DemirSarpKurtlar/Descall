@@ -223,13 +223,10 @@ export function initAnalytics() {
           capture_pageleave: true,
           capture_exceptions: true,
           persistence: "localStorage+cookie",
-          // Marketing path: never load session replay / surveys by default.
-          disable_session_recording: preferMarketingAnalyticsCold(),
+          // Session replay is never used (web, desktop, iOS): no screen/DOM recording,
+          // even if it is switched on in the PostHog project settings.
+          disable_session_recording: true,
           disable_surveys: preferMarketingAnalyticsCold(),
-          session_recording: {
-            maskAllInputs: true,
-            recordCrossOriginIframes: false,
-          },
           advanced_disable_feature_flags_on_first_load: false,
           loaded: (instance) => {
             posthogReady = true;

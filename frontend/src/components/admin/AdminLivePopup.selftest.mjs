@@ -20,7 +20,6 @@ const css = readFileSync(join(root, "../../styles/admin-broadcast.css"), "utf8")
 
 assert(panel.includes('id: "livepopup"'), "admin tabs must include the live popup tab");
 assert(panel.includes("<AdminLivePopup"), "admin panel must render the live popup composer");
-assert(panel.includes("<AdminDimaai"), "DimaAI tab must still render");
 assert(live.includes('adminFetch("/popup"'), "composer posts to /popup");
 assert(live.includes("preview: true"), "composer confirms recipients before sending");
 assert(popup.includes('"dialog"'), "member popup is a dialog");

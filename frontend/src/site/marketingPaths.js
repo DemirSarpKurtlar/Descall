@@ -4,7 +4,6 @@
 const MARKETING_EXACT = new Set([
   "/",
   "/features",
-  "/dimaai",
   "/faq",
   "/download",
   "/about",
@@ -29,7 +28,6 @@ const MARKETING_EXACT = new Set([
   "/register",
   "/tr",
   "/tr/features",
-  "/tr/dimaai",
   "/tr/download",
   "/tr/faq",
   "/tr/discord-alternative",

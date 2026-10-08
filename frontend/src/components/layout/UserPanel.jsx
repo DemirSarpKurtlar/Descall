@@ -32,7 +32,8 @@ import {
   requestPasswordResetCode,
   confirmPasswordResetCode,
 } from "../../api/security";
-import { unblockUser, getBlockedUsers } from "../../api/friends";
+import { getBlockedUsers } from "../../api/friends";
+import { setUserBlocked } from "../../lib/blockedUsers";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useLocale } from "../../context/LocaleContext";
@@ -510,7 +511,7 @@ const UserPanel = forwardRef(function UserPanel({
 
   const handleUnblock = async (userId) => {
     try {
-      await unblockUser(userId);
+      await setUserBlocked(userId, false);
       setBlockedUsers((prev) => prev.filter((u) => u.id !== userId));
     } catch {
       /* best-effort */

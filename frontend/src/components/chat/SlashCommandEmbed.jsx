@@ -1,4 +1,6 @@
 import { Avatar } from "../ui/Avatar";
+import { casinoHiddenOnThisDevice, isCasinoGameCommandName } from "../../lib/casinoCommands";
+import { displayText } from "../../lib/profanity";
 
 function colorToCss(color) {
   const n = Number(color);
@@ -8,7 +10,8 @@ function colorToCss(color) {
 }
 
 function renderInlineMarkdown(text) {
-  const raw = String(text ?? "");
+  // Native iOS app: bad words are masked with *** (display only).
+  const raw = displayText(String(text ?? ""));
   if (!raw) return null;
   const parts = [];
   const re = /(\*\*[^*]+\*\*|`[^`]+`)/g;
@@ -59,7 +62,14 @@ export default function SlashCommandEmbed({ embed, type }) {
   if (!embed || typeof embed !== "object") return null;
 
   const accent = colorToCss(embed.color);
-  const fields = Array.isArray(embed.fields) ? embed.fields : [];
+  let fields = Array.isArray(embed.fields) ? embed.fields : [];
+  // Native iOS app: /help does not list casino commands.
+  if (type === "app_help" && casinoHiddenOnThisDevice()) {
+    fields = fields.filter((f) => {
+      const name = String(f?.name || "").trim().split(/\s+/)[0];
+      return !isCasinoGameCommandName(name);
+    });
+  }
   const thumbUrl = embed.thumbnail?.url || null;
   const imageUrl = embed.image?.url || null;
   const author = embed.author || null;
@@ -80,7 +90,7 @@ export default function SlashCommandEmbed({ embed, type }) {
 
         <div className={`slash-embed-main${thumbUrl ? " has-thumb" : ""}`}>
           <div className="slash-embed-copy">
-            {embed.title ? <h3 className="slash-embed-title">{embed.title}</h3> : null}
+            {embed.title ? <h3 className="slash-embed-title">{displayText(embed.title)}</h3> : null}
             {embed.description ? (
               <p className="slash-embed-desc">{renderInlineMarkdown(embed.description)}</p>
             ) : null}

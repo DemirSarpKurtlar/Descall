@@ -5,7 +5,7 @@ import { SkeletonLine } from "../ui/Skeleton";
 
 /**
  * Adım 5 — missions / contracts / Battle Pass Companion panel.
- * Keep useValorantMissions as the data source (Dimaru API contract).
+ * Keep useValorantMissions as the data source (backend API contract).
  */
 export default function CompanionMissionsPanel({ linked, identity }) {
   const t = useT();

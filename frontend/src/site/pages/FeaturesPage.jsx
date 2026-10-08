@@ -62,12 +62,6 @@ const FEATURES = [
     to: "/discord-alternative-for-lfg",
   },
   {
-    icon: IconSparkles,
-    title: "DimaAI",
-    desc: "A ChatGPT-style assistant in the app — Fast, Thinking, and Deep models for writing, explaining, and brainstorming.",
-    to: "/dimaai",
-  },
-  {
     icon: IconUsers,
     title: "Friends & presence",
     desc: "Friend requests, online presence, and quick invites so your squad can jump into chat or voice.",

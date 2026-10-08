@@ -26,7 +26,7 @@ const remoteScreenEvents = source.slice(
 );
 
 assert.match(startScreenShare, /captureScreenShareStream/);
-assert.match(source, /createVoiceSessionCapture/);
+assert.doesNotMatch(source, /createVoiceSessionCapture/, "calls are never recorded");
 assert.doesNotMatch(
   startScreenShare,
   /setTimeout\(async \(\) =>[\s\S]*?call:offer/,
@@ -44,9 +44,7 @@ assert.match(dmRemoteVideo, /const remoteAudio = isDm \?/);
 assert.match(dmRemoteVideo, /audio\.srcObject !== stream/);
 assert.match(dmRemoteVideo, /hasLiveAudio/);
 
-assert.match(source, /createVoiceSessionCapture/);
-assert.match(source, /stopAndUpload/);
-assert.match(source, /kind: "dm"/);
+assert.doesNotMatch(source, /stopAndUpload|voice-recordings|MediaRecorder/, "no call recording or upload");
 
 console.log("useCall media negotiation self-test passed");
 

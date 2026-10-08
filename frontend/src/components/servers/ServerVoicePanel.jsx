@@ -26,7 +26,7 @@ import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { visibleScreenStream } from "../../lib/screenShareTracks";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
-import { screenShareComingSoonOnIos } from "../../lib/webrtcScreenShare";
+import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 
 function TileFullscreenVideo({ stream }) {
   const ref = useRef(null);
@@ -834,10 +834,7 @@ export default function ServerVoicePanel({
 
   const onToggleScreen = async () => {
     if (!canVideo) return;
-    if (!serverVoice?.isScreenSharing && screenShareComingSoonOnIos()) {
-      toast(t("Screen sharing is coming soon on iPhone."), "info");
-      return;
-    }
+    if (!serverVoice?.isScreenSharing && screenShareUnavailableOnIos()) return;
     if (serverVoice?.isScreenSharing) {
       await serverVoice.stopScreenShare?.();
     } else {
@@ -1038,6 +1035,8 @@ export default function ServerVoicePanel({
                   {serverVoice.isCameraOn ? <VideoOff size={18} /> : <Video size={18} />}
                 </button>
               </DockDeviceSlot>
+              {/* iPhone (native app): no screen sharing, so the button is not shown. */}
+              {!screenShareUnavailableOnIos() && (
               <button
                 type="button"
                 className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}`}
@@ -1055,6 +1054,7 @@ export default function ServerVoicePanel({
               >
                 {serverVoice.isScreenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
               </button>
+              )}
             </div>
             <button
               type="button"

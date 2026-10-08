@@ -199,6 +199,24 @@
   cursor: pointer;
 }
 
+.user-profile-safety-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.user-profile-safety-row .user-profile-report-btn {
+  flex: 1 1 0;
+  width: auto;
+  margin-bottom: 0;
+}
+
+.user-profile-safety-row > .auth-field-hint {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .user-profile-report-btn:hover {
   background: var(--danger-soft, rgba(242, 63, 67, 0.12));
   color: var(--danger, #f23f43);
