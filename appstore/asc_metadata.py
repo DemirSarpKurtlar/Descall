@@ -368,7 +368,8 @@ def price(asc, app_id, apply):
     sched = (sched or {}).get("data")
     current = None
     if sched:
-        mp = asc.req("GET", f"/v1/appPriceSchedules/{sched['id']}/manualPrices", params={"include": "appPricePoint,territory", "limit": 50})
+        mp = asc.req("GET", f"/v1/appPriceSchedules/{sched['id']}/manualPrices", params={"include": "appPricePoint,territory", "limit": 50},
+                     ok=(200,), quiet_codes=(404,)) or {}
         pts = {i["id"]: i for i in mp.get("included", []) if i["type"] == "appPricePoints"}
         current = [pts.get(p["relationships"]["appPricePoint"]["data"]["id"], {}).get("attributes", {}).get("customerPrice") for p in mp.get("data", [])]
         log(f"  current manual prices (customerPrice): {current}")
