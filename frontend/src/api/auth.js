@@ -30,6 +30,15 @@ export function verify2faLogin(pendingToken, code) {
   });
 }
 
+/**
+ * Sign in with Apple / Google for an account that doesn't exist yet: the backend
+ * created nothing and wants Terms + date of birth first (HTTP 428).
+ */
+export const SOCIAL_SIGNUP_REQUIRED_CODES = ["apple_signup_required", "google_signup_required"];
+export function isSocialSignupRequired(error) {
+  return SOCIAL_SIGNUP_REQUIRED_CODES.includes(error?.code);
+}
+
 export function loginWithGoogle(credential, extra = {}) {
   const payload = withAttribution({ credential });
   if (extra?.invitedBy) payload.invitedBy = extra.invitedBy;

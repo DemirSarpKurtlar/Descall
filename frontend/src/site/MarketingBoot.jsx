@@ -5,6 +5,7 @@ import {
   register as apiRegister,
   verify2faLogin as apiVerify2fa,
   loginWithGoogle as apiGoogleLogin,
+  isSocialSignupRequired,
 } from "../api/auth";
 import { setToken, setUser } from "../lib/storage";
 
@@ -97,16 +98,27 @@ export default function MarketingBoot() {
   );
 
   const onGoogleLogin = useCallback(
-    async (credential) => {
+    async (credential, extra = {}) => {
       setAuthLoading(true);
       setAuthError("");
       try {
-        const res = await apiGoogleLogin(credential);
+        // extra = { termsAccepted, birthDate, invitedBy } from the Register tab or the
+        // Terms + date-of-birth step for a new Google account.
+        const res = await apiGoogleLogin(credential, extra);
         if (res?.token) setToken(res.token);
         if (res?.user) setUser(res.user);
+        if (res?.isNewUser) {
+          try {
+            sessionStorage.setItem("descall:justRegistered", "1");
+          } catch {
+            /* ignore */
+          }
+        }
         enterApp();
         return res;
       } catch (err) {
+        // New Google account: the auth UI shows the Terms + date-of-birth step instead of an error.
+        if (isSocialSignupRequired(err)) throw err;
         setAuthError(err?.message || "Google sign-in failed");
         throw err;
       } finally {

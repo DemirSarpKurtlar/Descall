@@ -8,34 +8,14 @@ import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
 import LegalContentModal from "./legal/LegalContentModal";
 import BirthDateInput from "./auth/BirthDateInput";
+import TermsConsent from "./auth/TermsConsent";
+import SocialSignupStep from "./auth/SocialSignupStep";
+import { isSocialSignupRequired } from "../api/auth";
 import { isEligibleBirthDate } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
 import { initialAuthMode, isCapacitorNativeShell } from "../lib/entryShell";
-
-function TermsConsent({ id, checked, onChange, onOpenLegal }) {
-  const t = useT();
-  return (
-    <div className="legal-consent">
-      <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <label htmlFor={id}>
-        {t("I have read and agree to the")}{" "}
-        <button type="button" className="legal-consent-link" onClick={() => onOpenLegal("terms")}>
-          {t("Terms of Service")}
-        </button>{" "}
-        {t("and")}{" "}
-        <button type="button" className="legal-consent-link" onClick={() => onOpenLegal("privacy")}>
-          {t("Privacy Policy")}
-        </button>
-        .
-        <span className="legal-consent-note">
-          {t("Descall has zero tolerance for objectionable content and abusive users.")}
-        </span>
-      </label>
-    </div>
-  );
-}
 
 export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error }) {
   const t = useT();
@@ -85,10 +65,11 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
-  // Sign in with Apple for an account that doesn't exist yet: the backend answers
-  // apple_signup_required and the user finishes Terms + date of birth here first.
-  const [appleSignup, setAppleSignup] = useState(null);
-  const [appleSigningUp, setAppleSigningUp] = useState(false);
+  // Sign in with Apple / Google for an account that doesn't exist yet: the backend
+  // answers <provider>_signup_required and the user finishes Terms + date of birth
+  // here first. { provider: "apple" | "google", credential }.
+  const [socialSignup, setSocialSignup] = useState(null);
+  const [socialSigningUp, setSocialSigningUp] = useState(false);
 
   const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
   const productTagline = t("Connect with friends through voice, video, and messaging");
@@ -118,22 +99,21 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     });
   };
 
-  const appleSignupReady = termsAccepted && isEligibleBirthDate(birthDate);
-  const submitAppleSignup = async (event) => {
-    event.preventDefault();
-    if (!appleSignup || !appleSignupReady || appleSigningUp) return;
-    setAppleSigningUp(true);
+  const submitSocialSignup = async () => {
+    if (!socialSignup || socialSigningUp || !termsAccepted || !isEligibleBirthDate(birthDate)) return;
+    setSocialSigningUp(true);
     try {
       const invitedBy = inviteRef || peekInviteRef();
-      await onAppleLogin?.(appleSignup, {
+      const finish = socialSignup.provider === "apple" ? onAppleLogin : onGoogleLogin;
+      await finish?.(socialSignup.credential, {
         termsAccepted: true,
         birthDate,
         ...(invitedBy ? { invitedBy } : {}),
       });
     } catch {
-      /* error prop shows the message; user can go back and retry Apple */
+      /* error prop shows the message; user can go back and retry */
     } finally {
-      setAppleSigningUp(false);
+      setSocialSigningUp(false);
     }
   };
 
@@ -153,7 +133,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
 
   const subtitle = twoFa
     ? t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })
-    : appleSignup
+    : socialSignup
       ? t("Finish creating your account")
       : mode === "forgot"
       ? t("Reset your password with a secure email code")
@@ -222,38 +202,19 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
               <span>{t("Back to login")}</span>
             </button>
           </form>
-        ) : appleSignup ? (
-          <form onSubmit={submitAppleSignup} className="auth-form auth-apple-signup">
-            <p className="auth-field-hint">
-              {t("No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.")}
-            </p>
-            <BirthDateInput idPrefix="auth-apple-birth" value={birthDate} onChange={setBirthDate} />
-            <TermsConsent
-              id="auth-apple-terms-checkbox"
-              checked={termsAccepted}
-              onChange={setTermsAccepted}
-              onOpenLegal={setLegalModal}
-            />
-
-            {error && <p className="error-message">{error}</p>}
-
-            <button
-              type="submit"
-              className="auth-submit"
-              disabled={loading || appleSigningUp || !appleSignupReady}
-            >
-              {loading || appleSigningUp ? <span>{t("Please wait...")}</span> : <span>{t("Create Account")}</span>}
-            </button>
-
-            <button
-              type="button"
-              className="auth-tab auth-back-btn"
-              onClick={() => setAppleSignup(null)}
-            >
-              <ArrowLeft size={16} />
-              <span>{t("Back to login")}</span>
-            </button>
-          </form>
+        ) : socialSignup ? (
+          <SocialSignupStep
+            provider={socialSignup.provider}
+            birthDate={birthDate}
+            onBirthDateChange={setBirthDate}
+            termsAccepted={termsAccepted}
+            onTermsChange={setTermsAccepted}
+            onOpenLegal={setLegalModal}
+            error={error}
+            busy={loading || socialSigningUp}
+            onSubmit={submitSocialSignup}
+            onBack={() => setSocialSignup(null)}
+          />
         ) : mode === "forgot" ? (
           <ForgotPasswordFlow onBack={() => setMode("login")} />
         ) : (
@@ -289,8 +250,8 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
                 ...(invitedBy ? { invitedBy } : {}),
               });
             } catch (err) {
-              if (err?.code === "apple_signup_required") {
-                setAppleSignup(apple);
+              if (isSocialSignupRequired(err)) {
+                setSocialSignup({ provider: "apple", credential: apple });
                 return;
               }
               throw err;
@@ -302,11 +263,20 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           onCredential={async (credential) => {
             if (needsTerms) return;
             const invitedBy = inviteRef || peekInviteRef();
-            await onGoogleLogin?.(credential, {
-              termsAccepted: mode === "register",
-              ...(mode === "register" ? { birthDate } : {}),
-              ...(invitedBy ? { invitedBy } : {}),
-            });
+            try {
+              await onGoogleLogin?.(credential, {
+                termsAccepted: mode === "register",
+                ...(mode === "register" ? { birthDate } : {}),
+                ...(invitedBy ? { invitedBy } : {}),
+              });
+            } catch (err) {
+              // New Google account (also from the Login tab): Terms + date of birth first.
+              if (isSocialSignupRequired(err)) {
+                setSocialSignup({ provider: "google", credential });
+                return;
+              }
+              /* other errors: App shows them via the error prop */
+            }
           }}
         />
         {inviteRef && mode === "register" && (

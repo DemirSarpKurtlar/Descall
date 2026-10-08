@@ -2441,8 +2441,8 @@ export default function App() {
         /* analytics optional */
       }
     } catch (error) {
-      // New Apple account: AuthView shows the Terms + date-of-birth step instead of an error.
-      if (error?.code === "apple_signup_required") throw error;
+      // New Apple / Google account: AuthView shows the Terms + date-of-birth step instead of an error.
+      if (error?.code === "apple_signup_required" || error?.code === "google_signup_required") throw error;
       setAuthError(formatBanAuthError(error));
       throw error;
     } finally {

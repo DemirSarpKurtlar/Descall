@@ -7,6 +7,7 @@
 - Google Sign-In: GIS ID token → `POST /auth/google` → same app JWT. Requires `GOOGLE_CLIENT_ID` (and ideally `VITE_GOOGLE_CLIENT_ID` at frontend build). If client ID is missing, the UI shows “not configured” and password auth still works.
 - Before Google login works end-to-end, apply `supabase/migrations/20260729_add_google_oauth_columns.sql` (adds `email`, `google_id`, `auth_provider`; makes `password_hash` nullable).
 - Google-only accounts have `password_hash = null`; password login returns a message to use Google.
+- **New social accounts need Terms + date of birth (2.9.143):** `POST /auth/google` and `/auth/apple` create nothing for an unknown account unless the body has `termsAccepted` + `birthDate` (under 13 → 403 `under_age`); otherwise 428 `google_signup_required` / `apple_signup_required` and the client shows `SocialSignupStep` (AuthView, MarketingAuthModal), then re-sends the same credential. Existing accounts log in unchanged. Shared gate: `backend/lib/socialSignup.js`; test: `backend/routes/authSocialSignup.selftest.cjs`.
 
 ### Voice / group calls
 - DM calls signal with `call:offer` → accept/reject UI is `CallOverlay` (`mode === "incoming"`).

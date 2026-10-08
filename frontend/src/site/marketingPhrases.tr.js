@@ -143,6 +143,7 @@ export const MARKETING_TR = {
   "Is Descall free?": "Descall ücretsiz mi?",
   "Join {name} on Descall — free chat, voice, and calls.": "{name} ile Descall’da buluş — ücretsiz sohbet, ses ve arama.",
   "Join Descall today": "Bugün Descall’a katıl",
+  "Finish creating your account": "Hesabını oluşturmayı tamamla",
   "Keep Discord only for bot-heavy communities you still need.": "Discord’u yalnızca hâlâ ihtiyaç duyduğun bot ağırlıklı topluluklar için tut.",
   "Keep exploring": "Keşfetmeye devam",
   "No Nitro paywall on core chat & calls": "Temel sohbet ve aramalarda Nitro duvarı yok",

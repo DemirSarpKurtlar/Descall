@@ -2714,6 +2714,7 @@ export const phrases = {
   "You blocked this user. You can't message or call each other.": "You blocked this user. You can't message or call each other.",
   "Finish creating your account": "Finish creating your account",
   "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.": "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.",
+  "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.": "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.",
   "Quick Add": "Quick Add",
   "People you may know — ranked by mutual friends and shared groups.": "People you may know — ranked by mutual friends and shared groups.",
   "Finding people you may know...": "Finding people you may know...",

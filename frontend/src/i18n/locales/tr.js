@@ -3052,6 +3052,7 @@ export const phrases = {
   "You blocked this user. You can't message or call each other.": "Bu kullanıcıyı engelledin. Birbirinize mesaj gönderemez veya arama yapamazsınız.",
   "Finish creating your account": "Hesabını oluşturmayı tamamla",
   "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.": "Bu Apple Kimliğine bağlı bir Descall hesabı henüz yok. Hesap oluşturmak için doğum tarihini gir ve Koşulları kabul et.",
+  "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.": "Bu Google hesabına bağlı bir Descall hesabı henüz yok. Hesap oluşturmak için doğum tarihini gir ve Koşulları kabul et.",
   "Quick Add": "Hızlı Ekle",
   "People you may know — ranked by mutual friends and shared groups.": "Tanıyor olabileceğin kişiler — ortak arkadaş ve ortak grup sayısına göre sıralandı.",
   "Finding people you may know...": "Tanıdığın kişiler aranıyor...",

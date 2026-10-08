@@ -887,6 +887,21 @@ body:has(.mkt-consent),
   gap: 12px;
 }
 
+/* New Google account: Terms + date-of-birth step (SocialSignupStep, marketing variant). */
+.login-modal .mkt-social-signup > .auth-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 0;
+  margin-top: 2px;
+}
+.login-modal .mkt-social-signup > .mkt-auth-field-hint {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .login-modal form input {
   box-sizing: border-box;
   width: 100%;

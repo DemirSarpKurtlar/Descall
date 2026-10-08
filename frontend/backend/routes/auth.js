@@ -21,6 +21,7 @@ const moderation = require("../lib/moderation");
 const accountDeletion = require("../lib/accountDeletion");
 const ageGate = require("../lib/ageGate");
 const appleAuth = require("../lib/appleAuth");
+const { socialSignupGate } = require("../lib/socialSignup");
 const {
   isReservedUsername,
   isProtectedAccountUsername,
@@ -726,7 +727,6 @@ router.post("/google", async (req, res) => {
     }
 
     const credential = req.body?.credential;
-    const rawBirthDate = req.body?.birthDate;
     const invitedBy = req.body?.invitedBy;
     const attribution = req.body?.attribution;
     if (!credential || typeof credential !== "string") {
@@ -814,12 +814,14 @@ router.post("/google", async (req, res) => {
     if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let newBirthDate = null;
-    if (!user && rawBirthDate) {
-      const birth = ageGate.validateBirthDate(rawBirthDate);
-      if (!birth.ok) {
-        return res.status(birth.status).json({ error: birth.error, code: birth.code });
-      }
-      newBirthDate = birth.birthDate;
+    if (!user) {
+      // Same as Sign in with Apple: a new Google account is only created after the
+      // app has collected Terms acceptance + date of birth (also from the Login tab).
+      // Without them we answer 428 google_signup_required and create nothing; the app
+      // re-sends the same Google credential from its Terms + date-of-birth step.
+      const gate = socialSignupGate(req.body, "google");
+      if (!gate.ok) return res.status(gate.status).json(gate.body);
+      newBirthDate = gate.birthDate;
     }
 
     if (!user) {
@@ -994,16 +996,9 @@ router.post("/apple", async (req, res) => {
       // the user tapped "Continue with Apple" on the Login tab. Nothing is created
       // until the app sends termsAccepted + birthDate (the same Apple token and
       // authorization code are re-sent from that step).
-      if (!req.body?.termsAccepted || !req.body?.birthDate) {
-        return res.status(428).json({
-          error: "Accept the Terms of Service and enter your date of birth to create your account.",
-          code: "apple_signup_required",
-          requiresSignup: true,
-        });
-      }
-      const birth = ageGate.validateBirthDate(req.body.birthDate);
-      if (!birth.ok) return res.status(birth.status).json({ error: birth.error, code: birth.code });
-      const birthDate = birth.birthDate;
+      const gate = socialSignupGate(req.body, "apple");
+      if (!gate.ok) return res.status(gate.status).json(gate.body);
+      const birthDate = gate.birthDate;
       const preferred =
         (email && !apple.isPrivateEmail && email.split("@")[0]) ||
         String(givenName || "").trim() ||

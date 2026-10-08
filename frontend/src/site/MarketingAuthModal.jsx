@@ -5,6 +5,8 @@ import { peekInviteRef } from "../lib/referral";
 import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
 import { isEligibleBirthDate } from "../lib/age";
+import { isSocialSignupRequired } from "../api/auth";
+import SocialSignupStep from "../components/auth/SocialSignupStep";
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
 const ForgotPasswordFlow = lazy(() => import("../components/auth/ForgotPasswordFlow"));
@@ -55,9 +57,13 @@ function AuthModal({
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
+  // New Google account (also from "Sign in"): the backend created nothing and wants
+  // Terms + date of birth first. { provider: "google", credential }.
+  const [socialSignup, setSocialSignup] = useState(null);
 
   useEffect(() => {
     if (!open) {
+      setSocialSignup(null);
       setUsername("");
       setPassword("");
       setEmail("");
@@ -138,6 +144,18 @@ function AuthModal({
     }
   };
 
+  const submitSocialSignup = async () => {
+    if (!socialSignup || isSubmitting || !termsAccepted || !isEligibleBirthDate(birthDate)) return;
+    setIsSubmitting(true);
+    try {
+      await onGoogleLogin?.(socialSignup.credential, withInvite({ termsAccepted: true, birthDate }));
+    } catch {
+      /* authError shows the message; the user can go back and retry Google */
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
@@ -191,6 +209,24 @@ function AuthModal({
                   {t("Back to login")}
                 </button>
               </>
+            ) : socialSignup ? (
+              <>
+                <h2>{t("Create Account")}</h2>
+                <p>{t("Finish creating your account")}</p>
+                <SocialSignupStep
+                  provider={socialSignup.provider}
+                  variant="marketing"
+                  birthDate={birthDate}
+                  onBirthDateChange={setBirthDate}
+                  termsAccepted={termsAccepted}
+                  onTermsChange={setTermsAccepted}
+                  onOpenLegal={setLegalModal}
+                  error={authError}
+                  busy={isSubmitting || authLoading}
+                  onSubmit={submitSocialSignup}
+                  onBack={() => setSocialSignup(null)}
+                />
+              </>
             ) : forgotMode ? (
               <>
                 <h2>{t("Forgot your password?")}</h2>
@@ -223,6 +259,9 @@ function AuthModal({
                     setIsSubmitting(true);
                     try {
                       await onGoogleLogin?.(credential, withInvite({ termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) }));
+                    } catch (err) {
+                      if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
+                      /* other errors: authError shows them */
                     } finally {
                       setIsSubmitting(false);
                     }
