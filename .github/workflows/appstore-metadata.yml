@@ -1,0 +1,117 @@
+# Pushes the App Store listing for com.descall.app (Apple ID 6820558264) to App Store Connect
+# with direct App Store Connect API calls (appstore/asc_metadata.py). Manual trigger only.
+#
+# Source of truth (committed): appstore/metadata.json (generated from the listing drafts),
+# appstore/age-rating.json, appstore/review-notes.txt (credential placeholders filled from secrets),
+# appstore/screenshots/iphone69 (1320x2868, APP_IPHONE_67) and appstore/screenshots/ipad13
+# (2064x2752, APP_IPAD_PRO_3GEN_129). The same screenshots are used for tr and en-US.
+#
+# Secrets: ASC_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID (same Admin key as ios-testflight.yml),
+# ASC_DEMO_USERNAME / ASC_DEMO_PASSWORD (App Review sign-in, account A),
+# ASC_DEMO_B_USERNAME / ASC_DEMO_B_PASSWORD (account B, in the review notes), ASC_REVIEW_PHONE.
+# GitHub masks secret values in logs; the script additionally never prints them.
+#
+# submit=true submits the version for review (manual release after approval). Default: false.
+# App Privacy nutrition labels are not in the API and must be set in the App Store Connect web UI.
+
+name: App Store metadata
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "App Store version (blank = frontend/package.json version)"
+        required: false
+        default: ""
+      mode:
+        description: "apply = write metadata, verify = read-only report"
+        type: choice
+        options: [apply, verify]
+        default: apply
+      submit:
+        description: "Submit for review after applying (manual release)"
+        type: boolean
+        default: false
+      wait_build_minutes:
+        description: "Wait up to N minutes for a VALID build of the version"
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appstore-metadata
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync App Store Connect listing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ASC_APP_ID: "6820558264"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install --quiet pyjwt cryptography requests pillow
+
+      - name: Install App Store Connect API key (temporary)
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          for name in ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; do
+            [ -n "${!name}" ] || { echo "::error::Missing secret ${name}"; exit 1; }
+          done
+          umask 077
+          KEY_PATH="$RUNNER_TEMP/asc_key.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY_PATH"
+          grep -q 'BEGIN PRIVATE KEY' "$KEY_PATH" || { echo "::error::ASC_KEY_P8 is not a .p8 key"; exit 1; }
+          echo "ASC_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: Resolve version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          V="${INPUT_VERSION:-$(node -p "require('./frontend/package.json').version")}"
+          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::bad version '$V'"; exit 1; }
+          echo "APP_VERSION=$V" >> "$GITHUB_ENV"
+          echo "App Store version: $V"
+
+      - name: Sync listing
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          DEMO_A_USERNAME: ${{ secrets.ASC_DEMO_USERNAME }}
+          DEMO_A_PASSWORD: ${{ secrets.ASC_DEMO_PASSWORD }}
+          DEMO_B_USERNAME: ${{ secrets.ASC_DEMO_B_USERNAME }}
+          DEMO_B_PASSWORD: ${{ secrets.ASC_DEMO_B_PASSWORD }}
+          REVIEW_PHONE: ${{ secrets.ASC_REVIEW_PHONE }}
+          REVIEW_FIRST_NAME: "Demir Sarp"
+          REVIEW_LAST_NAME: "Kurtlar"
+          REVIEW_EMAIL: "team@descall.com"
+          MODE: ${{ inputs.mode }}
+          SUBMIT: ${{ inputs.submit }}
+          WAIT_BUILD: ${{ inputs.wait_build_minutes }}
+        run: |
+          set -euo pipefail
+          # Belt and braces: secrets are masked by GitHub already.
+          for v in "$DEMO_A_USERNAME" "$DEMO_A_PASSWORD" "$DEMO_B_USERNAME" "$DEMO_B_PASSWORD" "$REVIEW_PHONE"; do
+            [ -n "$v" ] && echo "::add-mask::$v"
+          done
+          args=(--mode "${MODE:-apply}" --wait-build-minutes "${WAIT_BUILD:-0}")
+          if [ "${SUBMIT}" = "true" ]; then args+=(--submit); fi
+          python appstore/asc_metadata.py "${args[@]}"
+
+      - name: Remove API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/asc_key.p8"
