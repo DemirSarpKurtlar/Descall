@@ -1,22 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <device id="retina4_7" orientation="portrait" appearance="dark"/>
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
+        <!--Launch Screen: Descall app-icon tile (LaunchLogo, 192x192pt incl. its soft shadow; the tile itself is 120pt) centered on the app's dark surface #1E1F22. The web boot splash (index.html, html.boot-mobile) draws the same image at the same size/center, and DescallBridgeViewController keeps this view up until the first page load, so launch -> splash -> app is one continuous screen.-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
+                    <view key="view" contentMode="scaleToFill" id="Dsc-Lv-001">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                        <color key="backgroundColor" red="0.2235294117647059" green="0.23529411764705882" blue="0.30196078431372547" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    </imageView>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="Dsc-Lg-001">
+                                <rect key="frame" x="91.5" y="237.5" width="192" height="192"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="192" id="Dsc-Lg-W01"/>
+                                    <constraint firstAttribute="height" constant="192" id="Dsc-Lg-H01"/>
+                                </constraints>
+                            </imageView>
+                        </subviews>
+                        <color key="backgroundColor" red="0.11764705882352941" green="0.12156862745098039" blue="0.13333333333333333" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="Dsc-Lg-001" firstAttribute="centerX" secondItem="Dsc-Lv-001" secondAttribute="centerX" id="Dsc-Lg-CX1"/>
+                            <constraint firstItem="Dsc-Lg-001" firstAttribute="centerY" secondItem="Dsc-Lv-001" secondAttribute="centerY" id="Dsc-Lg-CY1"/>
+                        </constraints>
+                    </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -24,6 +37,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="Splash" width="1024" height="1024"/>
+        <image name="LaunchLogo" width="192" height="192"/>
     </resources>
 </document>

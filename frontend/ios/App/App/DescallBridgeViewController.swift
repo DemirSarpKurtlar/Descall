@@ -1,7 +1,18 @@
 import UIKit
 import Capacitor
+import WebKit
 
 class DescallBridgeViewController: CAPBridgeViewController {
+    /// LaunchScreen.storyboard's view, kept over the WebView until the first
+    /// page load finishes (see "Launch overlay" below).
+    private var launchOverlay: UIView?
+    private var launchLoadObservation: NSKeyValueObservation?
+
+    override open func viewDidLoad() {
+        super.viewDidLoad()
+        showLaunchOverlay()
+    }
+
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CallKeepAlivePlugin())
         bridge?.registerPluginInstance(AppleSignInPlugin())
@@ -10,6 +21,50 @@ class DescallBridgeViewController: CAPBridgeViewController {
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
+    }
+}
+
+// MARK: - Launch overlay
+
+/// Without this the system launch screen is replaced by the bare WebView
+/// background (#1E1F22) for a moment before index.html paints its boot splash,
+/// so the logo blinked out and back in. The launch view stays on top until the
+/// first navigation finishes (the HTML splash, which draws the same logo at the
+/// same size and position, is painted by then) and then fades out over it.
+extension DescallBridgeViewController {
+    private func showLaunchOverlay() {
+        guard launchOverlay == nil,
+              let host = view,
+              let overlay = UIStoryboard(name: "LaunchScreen", bundle: nil).instantiateInitialViewController()?.view
+        else { return }
+        overlay.frame = host.bounds
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.isUserInteractionEnabled = false
+        host.addSubview(overlay)
+        launchOverlay = overlay
+
+        launchLoadObservation = webView?.observe(\.isLoading, options: [.new]) { [weak self] webView, _ in
+            guard !webView.isLoading else { return }
+            DispatchQueue.main.async { self?.hideLaunchOverlay() }
+        }
+        // Never leave the launch view up if the page load stalls or fails.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.hideLaunchOverlay()
+        }
+    }
+
+    private func hideLaunchOverlay() {
+        launchLoadObservation?.invalidate()
+        launchLoadObservation = nil
+        guard let overlay = launchOverlay else { return }
+        launchOverlay = nil
+        UIView.animate(
+            withDuration: 0.25,
+            delay: 0.05,
+            options: [.curveEaseOut, .beginFromCurrentState],
+            animations: { overlay.alpha = 0 },
+            completion: { _ in overlay.removeFromSuperview() }
+        )
     }
 }
 

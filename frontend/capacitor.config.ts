@@ -16,15 +16,19 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     captureInput: true,
+    // Same dark surface as the Android 12+ splash (values/colors.xml
+    // splash_background) and the in-app boot splash.
+    backgroundColor: "#1E1F22",
   },
   ios: {
     // Existing CSS already pads with env(safe-area-inset-*) — the WebView runs
     // edge-to-edge and the app paints its own colors under the status bar /
     // Dynamic Island and home indicator (src/styles/native-app.css).
     contentInset: "never",
-    // Same slate as the LaunchScreen (Splash image background) and the native
-    // boot splash, so launch → WebView → app never flashes black.
-    backgroundColor: "#393C4D",
+    // The app's dark surface (--surface-1, chat list) — same as the LaunchScreen
+    // background and the in-app boot splash, so launch → WebView → app has no
+    // color jump.
+    backgroundColor: "#1E1F22",
     scheme: "Descall",
   },
   plugins: {

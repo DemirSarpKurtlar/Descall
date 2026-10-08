@@ -11,10 +11,12 @@ function isMobileBootSurface() {
 }
 
 /**
- * Mobile: never a skeleton. Keep the launch-style splash (logo on #393C4D) up
- * for as long as the app is booting: hold the pre-React #boot-splash so it does
- * not fade into a placeholder, and paint the identical splash underneath for
- * the cases where the HTML splash is already gone.
+ * Mobile: never a skeleton. Keep the launch-style splash (the original Descall
+ * app-icon tile on the app's dark surface #1E1F22, same size/position as the
+ * native launch screen) up for as long as the app is booting: hold the
+ * pre-React #boot-splash so it does not fade into a placeholder, and paint the
+ * identical splash underneath for the cases where the HTML splash is already
+ * gone. Styles live in index.html (.descall-boot-splash).
  */
 function MobileBootSplash() {
   const t = useT();
@@ -24,8 +26,14 @@ function MobileBootSplash() {
   }, []);
   return (
     <div className="descall-boot-splash" role="status" aria-busy="true" aria-label={t("Loading")}>
-      <div className="boot-mark" aria-hidden="true">
-        <img src={`${import.meta.env.BASE_URL || "/"}brand/descall-icon.png`} alt="" width="112" height="112" decoding="sync" />
+      <div className="boot-card" aria-hidden="true">
+        <div
+          className="boot-mark"
+          style={{ backgroundImage: `url("${import.meta.env.BASE_URL || "/"}brand/descall-launch.png")` }}
+        />
+        <div className="boot-bar">
+          <i />
+        </div>
       </div>
     </div>
   );
