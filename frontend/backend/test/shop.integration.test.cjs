@@ -36,6 +36,22 @@ const fakeSupabase = createFakeSupabase({
       sort_order: 0,
     },
     {
+      id: "item-banner-svg",
+      sku: "banner-inline-svg",
+      name: "Inline SVG Banner",
+      description: "A banner stored as an inline SVG data URI.",
+      category: "banner",
+      asset_url:
+        "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%2F%3E",
+      preview_url:
+        "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%2F%3E",
+      price_descoin: 250,
+      theme_key: null,
+      active: true,
+      rarity: "common",
+      sort_order: 0,
+    },
+    {
       id: "item-frame-1",
       sku: "frame-gold",
       name: "Gold Frame",
@@ -145,22 +161,56 @@ async function run() {
     const aliceToken = signToken({ id: "u-alice", username: "alice" });
     const bobToken = signToken({ id: "u-bob", username: "bob" });
 
-    // Catalog only lists active items (2 of the 3 seeded: banner + theme)
+    // Catalog only lists active items (3 of the 5 seeded: 2 banners + theme)
     let r = await req(base, "GET", "/api/shop/catalog", { token: bobToken });
     assert(r.status === 200, "catalog loads: " + JSON.stringify(r.body));
-    assert(r.body.items.length === 2, "only active items listed: " + JSON.stringify(r.body.items));
+    assert(r.body.items.length === 3, "only active items listed: " + JSON.stringify(r.body.items));
     assert(r.body.items.some((i) => i.sku === "banner-aurora"), "active banner listed");
     assert(r.body.items.some((i) => i.sku === "theme-midnight"), "active theme listed");
     assert(!r.body.items.some((i) => i.category === "sound_pack"), "retired sound packs stay out of the catalog");
-    const listedBanner = r.body.items.find((i) => i.sku === "banner-aurora");
-    assert(listedBanner.asset_url == null && listedBanner.preview_url == null, "catalog list omits image payloads");
-
-    r = await req(base, "GET", "/api/shop/catalog?category=banner&assets=1", { token: bobToken });
-    assert(r.status === 200 && r.body.items.length === 1, "banner asset query: " + JSON.stringify(r.body));
     assert(
-      r.body.items[0].asset_url === "https://cdn.example.com/aurora.png",
-      "banner category includes its image: " + JSON.stringify(r.body.items[0])
+      !JSON.stringify(r.body).includes("data:"),
+      "catalog never ships inline data: images: " + JSON.stringify(r.body)
     );
+    const listedTheme = r.body.items.find((i) => i.sku === "theme-midnight");
+    assert(listedTheme.asset_url == null, "CSS cosmetics carry no image URL");
+    // Image previews come with the main catalog (not only the per-category call)
+    const listedBanner = r.body.items.find((i) => i.sku === "banner-aurora");
+    assert(listedBanner.asset_url === "https://cdn.example.com/aurora.png", "http image URLs pass through");
+    const svgBanner = r.body.items.find((i) => i.sku === "banner-inline-svg");
+    const svgUrl = new URL(svgBanner.asset_url);
+    assert(
+      svgUrl.origin === base && /^\/api\/shop\/assets\/item-banner-svg$/.test(svgUrl.pathname) && svgUrl.searchParams.get("v"),
+      "inline SVG becomes an absolute, versioned asset URL: " + svgBanner.asset_url
+    );
+    assert(svgBanner.preview_url == null, "identical preview is not duplicated");
+
+    // Older clients (2.9.147) still ask per category with assets=1 — same URLs
+    r = await req(base, "GET", "/api/shop/catalog?category=banner&assets=1", { token: bobToken });
+    assert(r.status === 200 && r.body.items.length === 2, "banner asset query: " + JSON.stringify(r.body));
+    assert(
+      r.body.items.find((i) => i.sku === "banner-aurora").asset_url === "https://cdn.example.com/aurora.png",
+      "banner category includes its image: " + JSON.stringify(r.body.items)
+    );
+    assert(
+      r.body.items.find((i) => i.sku === "banner-inline-svg").asset_url === svgBanner.asset_url,
+      "per-category asset URL matches the main catalog"
+    );
+
+    // The asset route serves the SVG publicly (img tags send no token), cacheable
+    let raw = await fetch(svgBanner.asset_url);
+    let text = await raw.text();
+    assert(raw.status === 200, "asset route 200: " + raw.status);
+    assert(raw.headers.get("content-type").startsWith("image/svg+xml"), "svg content type: " + raw.headers.get("content-type"));
+    assert(text.startsWith("<svg") && text.includes('width="10"'), "decoded svg body: " + text);
+    assert(/immutable/.test(raw.headers.get("cache-control") || ""), "versioned asset is immutable");
+    assert(/sandbox/.test(raw.headers.get("content-security-policy") || ""), "svg document is sandboxed");
+    raw = await fetch(`${base}/api/shop/assets/item-banner-svg`);
+    assert(raw.status === 200 && !/immutable/.test(raw.headers.get("cache-control") || ""), "unversioned asset gets a short cache");
+    raw = await fetch(`${base}/api/shop/assets/item-theme-1`);
+    assert(raw.status === 404, "non-image items have no asset: " + raw.status);
+    raw = await fetch(`${base}/api/shop/assets/item-frame-1`);
+    assert(raw.status === 404, "inactive items have no asset: " + raw.status);
 
     const shopLib = require("../lib/shop");
     await shopLib.retireSoundPacks();

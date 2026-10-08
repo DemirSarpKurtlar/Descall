@@ -14,6 +14,11 @@ const descoin = require("../lib/descoin");
 
 const router = express.Router();
 
+/** Public origin of this API, for absolute image URLs (native apps run on a custom scheme). */
+function publicApiBase(req) {
+  return `${req.protocol}://${req.get("host")}`;
+}
+
 router.get("/catalog", requireAuth, async (req, res) => {
   try {
     const rawCategory = typeof req.query.category === "string" ? req.query.category : "";
@@ -22,11 +27,40 @@ router.get("/catalog", requireAuth, async (req, res) => {
     const items = await shop.listActiveItems({
       category: includeAssets ? category : null,
       includeAssets,
+      assetBase: publicApiBase(req),
     });
     res.json({ items });
   } catch (err) {
     console.error("[shop] catalog error:", err.message);
     res.status(500).json({ error: "Failed to load shop catalog." });
+  }
+});
+
+/**
+ * Catalog card image (banner / frame / background SVG) — public and
+ * cacheable so <img> can load it without a token. URLs carry ?v=<hash>, so a
+ * matching version is immutable; anything else gets a short cache.
+ */
+router.get("/assets/:id", async (req, res) => {
+  try {
+    const kind = req.query.kind === "preview" ? "preview" : "asset";
+    const image = await shop.getCatalogAsset(req.params.id, kind);
+    if (!image) return res.status(404).type("text/plain").send("Not found");
+    const versioned = typeof req.query.v === "string" && req.query.v === image.version;
+    res.set({
+      "Content-Type": image.contentType,
+      "Cache-Control": versioned ? "public, max-age=31536000, immutable" : "public, max-age=300",
+      ETag: `"${image.version}"`,
+      "X-Content-Type-Options": "nosniff",
+      "Cross-Origin-Resource-Policy": "cross-origin",
+      // Opened directly, an SVG is a document: no scripts, no outbound loads.
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox",
+    });
+    if (req.get("if-none-match") === `"${image.version}"`) return res.status(304).end();
+    res.send(image.body);
+  } catch (err) {
+    console.error("[shop] asset error:", err.message);
+    res.status(500).type("text/plain").send("Failed to load image");
   }
 });
 

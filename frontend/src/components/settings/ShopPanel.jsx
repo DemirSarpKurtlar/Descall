@@ -55,10 +55,12 @@ const IMAGE_ASSET_CATEGORIES = new Set(["banner", "avatar_frame", "profile_backg
 
 function shopLoadNotice(err, t) {
   const msg = String(err?.message || "").trim();
+  // WebKit appends the host on newer iOS: "Load failed (des-call.onrender.com)".
   const generic =
     !msg ||
-    msg === "Load failed" ||
-    msg === "Failed to fetch" ||
+    err?.name === "TypeError" ||
+    /^Load failed\b/.test(msg) ||
+    /^Failed to fetch\b/.test(msg) ||
     msg === "NetworkError when attempting to fetch resource." ||
     msg === "Failed to load shop catalog." ||
     msg === "Failed to load your inventory." ||
@@ -181,6 +183,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [catalogError, setCatalogError] = useState("");
   const [catalogGeneration, setCatalogGeneration] = useState(0);
   const loadedAssetCategories = useRef(new Set());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const load = useCallback(async ({ silent = false } = {}) => {
     // Full loading flash unmounts the grid and resets .us-main-scroll to top.
@@ -239,6 +243,12 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   useEffect(() => {
     if (!activeCategory || !IMAGE_ASSET_CATEGORIES.has(activeCategory)) return;
     if (loadedAssetCategories.current.has(activeCategory)) return;
+    // The catalog already carries image URLs (backend 2.9.148+) — no second request.
+    const inCategory = itemsRef.current.filter((item) => item.category === activeCategory);
+    if (inCategory.length && inCategory.every((item) => item.asset_url || item.preview_url)) {
+      loadedAssetCategories.current.add(activeCategory);
+      return;
+    }
     let cancel = false;
     getShopCatalog({ category: activeCategory, assets: true })
       .then(({ items: withAssets }) => {

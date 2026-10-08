@@ -7,6 +7,7 @@
  * backend module, matching the rest of the app's data-access pattern.
  */
 
+const crypto = require("crypto");
 const supabase = require("../db/supabase");
 
 /** Shop sound packs are retired. Equipped packs fall back to the default tones. */
@@ -55,20 +56,130 @@ function isUsableAsset(url) {
   return typeof url === "string" && url.length > 0 && url !== "data:,";
 }
 
+/** Public, cacheable image route for catalog previews (see routes/shop.js). */
+const ASSET_ROUTE_PATH = "/api/shop/assets";
+const CATALOG_CACHE_TTL_MS = 60_000;
+const ALLOWED_ASSET_TYPES = new Set([
+  "image/svg+xml",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+
+/**
+ * Decode a stored `data:` image URI into bytes. Returns null for anything that
+ * is not an inline image (http(s) URLs, the `data:,` placeholder, garbage).
+ */
+function decodeDataImage(url) {
+  if (!isUsableAsset(url) || !/^data:/i.test(url)) return null;
+  const comma = url.indexOf(",");
+  if (comma < 0) return null;
+  const meta = url.slice(5, comma).split(";").map((part) => part.trim());
+  const contentType = (meta[0] || "").toLowerCase();
+  if (!ALLOWED_ASSET_TYPES.has(contentType)) return null;
+  const isBase64 = meta.slice(1).some((part) => part.toLowerCase() === "base64");
+  const payload = url.slice(comma + 1);
+  let body;
+  try {
+    body = isBase64 ? Buffer.from(payload, "base64") : Buffer.from(decodeURIComponent(payload), "utf8");
+  } catch {
+    return null;
+  }
+  if (!body.length) return null;
+  const version = crypto.createHash("sha1").update(url).digest("hex").slice(0, 12);
+  return { contentType, body, version };
+}
+
+let catalogCache = null; // { at, items, assetsById }
+let catalogLoading = null;
+
+/** Drop the in-memory catalog so the next request re-reads shop_items. */
+function invalidateCatalogCache() {
+  catalogCache = null;
+}
+
+/**
+ * Active, non-retired shop rows (normalized) plus decoded inline images keyed
+ * by item id. Cached briefly: the catalog is the same for every user, and the
+ * Render instance is small — re-reading ~600 rows with inline SVGs on every
+ * shop open made each response slow.
+ */
+async function getActiveCatalog() {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_CACHE_TTL_MS) return catalogCache;
+  if (catalogLoading) return catalogLoading;
+  catalogLoading = (async () => {
+    const { data, error } = await supabase
+      .from("shop_items")
+      .select(ITEM_COLUMNS)
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw error;
+    const items = (data || [])
+      .filter((item) => !RETIRED_SHOP_CATEGORIES.has(item.category))
+      .map(normalizeItem);
+    const assetsById = new Map();
+    for (const item of items) {
+      if (!IMAGE_ASSET_CATEGORIES.has(item.category)) continue;
+      const asset = decodeDataImage(item.asset_url);
+      const preview =
+        isUsableAsset(item.preview_url) && item.preview_url !== item.asset_url
+          ? decodeDataImage(item.preview_url)
+          : null;
+      if (asset || preview) assetsById.set(String(item.id), { asset, preview });
+    }
+    catalogCache = { at: Date.now(), items, assetsById };
+    return catalogCache;
+  })();
+  try {
+    return await catalogLoading;
+  } finally {
+    catalogLoading = null;
+  }
+}
+
+/** Image bytes for `GET /api/shop/assets/:id` (`kind` = "asset" | "preview"). */
+async function getCatalogAsset(itemId, kind = "asset") {
+  const { assetsById } = await getActiveCatalog();
+  const entry = assetsById.get(String(itemId));
+  if (!entry) return null;
+  return (kind === "preview" ? entry.preview : entry.asset) || null;
+}
+
+/**
+ * Image URL for a catalog card. Inline `data:` images become a short,
+ * cacheable `GET /api/shop/assets/:id?v=<hash>` URL on the API origin so the
+ * catalog JSON stays small; real http(s) URLs pass through unchanged.
+ * `decoded` is the pre-decoded entry from the catalog cache (if any).
+ */
+function catalogImageUrl(item, url, kind, assetBase, decoded) {
+  if (!isUsableAsset(url)) return null;
+  if (!/^data:/i.test(url)) return url;
+  const image = decoded === undefined ? decodeDataImage(url) : decoded;
+  if (!image) return null;
+  const base = String(assetBase || "").replace(/\/+$/, "");
+  const query = kind === "preview" ? `kind=preview&v=${image.version}` : `v=${image.version}`;
+  return `${base}${ASSET_ROUTE_PATH}/${encodeURIComponent(item.id)}?${query}`;
+}
+
 /**
  * Catalog list payload. CSS cosmetics (bubbles, flares, themes, …) do not
- * need the stored SVG data URI. Image categories omit it until the client
- * asks for that category — a full catalog of inline SVGs is large enough
- * for mobile WebViews to abort the fetch with "Load failed".
+ * need the stored SVG data URI. Image categories (banner, frame, background)
+ * always carry a short image URL — never the inline SVG — so card previews
+ * paint from the main catalog request alone. Shipping inline SVGs made the
+ * per-category response ~280 KB, and when that one request failed on iOS
+ * ("Load failed") every preview stayed an empty placeholder.
  */
-function toCatalogItem(item, { includeAssets = false } = {}) {
+function toCatalogItem(item, { assetBase = "", decoded = null } = {}) {
   const normalized = normalizeItem(item);
   if (!normalized) return normalized;
-  const keep = includeAssets && IMAGE_ASSET_CATEGORIES.has(normalized.category);
-  const asset = keep && isUsableAsset(normalized.asset_url) ? normalized.asset_url : null;
+  const isImage = IMAGE_ASSET_CATEGORIES.has(normalized.category);
+  const asset = isImage
+    ? catalogImageUrl(normalized, normalized.asset_url, "asset", assetBase, decoded ? decoded.asset : undefined)
+    : null;
   const preview =
-    keep && isUsableAsset(normalized.preview_url) && normalized.preview_url !== asset
-      ? normalized.preview_url
+    isImage && isUsableAsset(normalized.preview_url) && normalized.preview_url !== normalized.asset_url
+      ? catalogImageUrl(normalized, normalized.preview_url, "preview", assetBase, decoded ? decoded.preview : undefined)
       : null;
   return {
     id: normalized.id,
@@ -88,15 +199,20 @@ function toCatalogItem(item, { includeAssets = false } = {}) {
   };
 }
 
-async function listActiveItems({ category = null, includeAssets = false } = {}) {
+/**
+ * Active catalog, optionally one category. `assetBase` is the public API
+ * origin (e.g. https://des-call.onrender.com) used for image URLs — the native
+ * apps load the UI from a custom scheme, so the URL must be absolute.
+ * `includeAssets` is accepted for older clients and no longer changes the
+ * payload: image URLs are always present.
+ */
+async function listActiveItems({ category = null, includeAssets = false, assetBase = "" } = {}) {
+  void includeAssets;
   if (category && RETIRED_SHOP_CATEGORIES.has(category)) return [];
-  let query = supabase.from("shop_items").select(ITEM_COLUMNS).eq("active", true);
-  if (category) query = query.eq("category", category);
-  const { data, error } = await query.order("sort_order", { ascending: true });
-  if (error) throw error;
-  return (data || [])
-    .filter((item) => !RETIRED_SHOP_CATEGORIES.has(item.category))
-    .map((item) => toCatalogItem(item, { includeAssets }));
+  const { items, assetsById } = await getActiveCatalog();
+  return items
+    .filter((item) => !category || item.category === category)
+    .map((item) => toCatalogItem(item, { assetBase, decoded: assetsById.get(String(item.id)) || null }));
 }
 
 /**
@@ -136,7 +252,10 @@ async function ensureChatBubbleCatalog() {
     if (insertError) throw insertError;
     created += 1;
   }
-  if (created) console.log(`[shop] chat bubble catalog inserted ${created}`);
+  if (created) {
+    invalidateCatalogCache();
+    console.log(`[shop] chat bubble catalog inserted ${created}`);
+  }
   return created;
 }
 
@@ -173,7 +292,10 @@ async function ensureNameEffectCatalog() {
     if (insertError) throw insertError;
     created += 1;
   }
-  if (created) console.log(`[shop] name effect catalog inserted ${created}`);
+  if (created) {
+    invalidateCatalogCache();
+    console.log(`[shop] name effect catalog inserted ${created}`);
+  }
   return created;
 }
 
@@ -184,6 +306,7 @@ async function retireSoundPacks() {
     .eq("category", "sound_pack")
     .eq("active", true);
   if (itemError) throw itemError;
+  invalidateCatalogCache();
 
   const { error: userError } = await supabase
     .from("users")
@@ -219,6 +342,7 @@ async function createItem(fields) {
     preview_url: normalizeAssetUrl(fields.preview_url),
   };
   const { data, error } = await supabase.from("shop_items").insert(payload).select(ITEM_COLUMNS).single();
+  invalidateCatalogCache();
   if (error) throw error;
   return normalizeItem(data);
 }
@@ -233,6 +357,7 @@ async function updateItem(itemId, fields) {
     .eq("id", itemId)
     .select(ITEM_COLUMNS)
     .maybeSingle();
+  invalidateCatalogCache();
   if (error) throw error;
   return normalizeItem(data);
 }
@@ -472,6 +597,9 @@ module.exports = {
   RETIRED_SHOP_CATEGORIES,
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
+  getCatalogAsset,
+  invalidateCatalogCache,
+  decodeDataImage,
   ensureChatBubbleCatalog,
   ensureNameEffectCatalog,
   retireSoundPacks,
