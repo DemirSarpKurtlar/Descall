@@ -153,7 +153,6 @@ jobs:
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            "CODE_SIGN_IDENTITY[sdk=iphoneos*]=Apple Distribution" \
             MARKETING_VERSION="$MARKETING_VERSION" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             archive 2>&1 | tee "$LOG_DIR/archive.log"
