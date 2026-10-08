@@ -34,6 +34,7 @@ import {
 } from "../lib/noiseSuppression";
 import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
+import { callKitOwnsIncomingRing, callKitManagesAudioSession } from "../lib/iosCallKitState";
 
 /**
  * Unified WebRTC call hook supporting:
@@ -61,13 +62,20 @@ export function useCall(socket, callOccupancyRef = null) {
   const [peerConnectionState, setPeerConnectionState] = useState("idle");
   const [remoteMediaReady, setRemoteMediaReady] = useState(false);
   const [localStream, setLocalStream] = useState(null);
+  // Server-assigned id of the current ring (CallKit call UUID on native iOS).
+  const [callUuid, setCallUuid] = useState(null);
 
   // Keep the screen awake / tab exempt from background throttling for as
   // long as a call is ringing or active — screen lock and aggressive tab
   // suspension are common causes of calls silently dropping on mobile.
   useEffect(() => {
     if (mode) {
-      acquireCallWakeLock({ title: "Descall call", artist: peer?.username || "" });
+      // Native iOS with CallKit: CallKit owns the AVAudioSession for DM calls.
+      acquireCallWakeLock({
+        title: "Descall call",
+        artist: peer?.username || "",
+        skipNative: callKitManagesAudioSession(),
+      });
     } else {
       releaseCallWakeLock();
     }
@@ -247,6 +255,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setMode(null);
     setCallAnchorAt(null);
     setCallType(null);
+    setCallUuid(null);
     setPeer(null);
     setMuted(false);
     setDeafened(false);
@@ -320,7 +329,8 @@ export function useCall(socket, callOccupancyRef = null) {
     const prev = prevCallModeRef.current;
     prevCallModeRef.current = mode;
     if (mode === "incoming") {
-      audioManager.play("incomingCall", { loop: true });
+      // Native iOS: CallKit is already ringing — never ring twice.
+      if (!callKitOwnsIncomingRing()) audioManager.play("incomingCall", { loop: true });
     } else if (mode === "outgoing") {
       audioManager.play("outgoingCall", { loop: true });
     } else if (mode === "active") {
@@ -671,6 +681,7 @@ export function useCall(socket, callOccupancyRef = null) {
           toUserId: peerRef.current.id,
           offer: pc.localDescription,
           callType: callTypeRef.current || "voice",
+          renegotiate: true,
         });
       } catch (err) {
         negotiateFailures += 1;
@@ -784,7 +795,7 @@ export function useCall(socket, callOccupancyRef = null) {
   useEffect(() => {
     if (!socket) return;
 
-    const onOffer = async ({ fromUser, offer, callType: incomingType } = {}) => {
+    const onOffer = async ({ fromUser, offer, callType: incomingType, callUuid: incomingCallUuid } = {}) => {
       if (!fromUser?.id || !offer) return;
       if (callOccupancyRef?.current?.groupActive) {
         socketRef.current?.emit("call:decline", { toUserId: fromUser.id });
@@ -858,9 +869,12 @@ export function useCall(socket, callOccupancyRef = null) {
         avatarUrl: fromUser?.avatarUrl || fromUser?.avatar_url || null,
       });
       setCallType(incomingType || "voice");
+      setCallUuid(typeof incomingCallUuid === "string" ? incomingCallUuid : null);
       setCallAnchorAt(Date.now());
       setMode("incoming");
-      notificationService.incomingCall({ from: fromUser.username, type: incomingType || "voice" });
+      if (!callKitOwnsIncomingRing()) {
+        notificationService.incomingCall({ from: fromUser.username, type: incomingType || "voice" });
+      }
     };
 
     const onAnswer = async ({ fromUserId, answer } = {}) => {
@@ -1011,7 +1025,12 @@ export function useCall(socket, callOccupancyRef = null) {
         cleanup();
         return;
       }
-      socketRef.current.emit("call:offer", { toUserId: String(peerId), offer: pc.localDescription, callType: type });
+      socketRef.current.emit("call:offer", {
+        toUserId: String(peerId),
+        offer: pc.localDescription,
+        callType: type,
+        renegotiate: false,
+      });
     } catch (err) {
       console.error("[Call] startCall failed:", err?.name || err?.message || err);
       toast(tRuntime(voiceMicErrorCopy(err)), "error");
@@ -1568,6 +1587,7 @@ export function useCall(socket, callOccupancyRef = null) {
     mode,
     callAnchorAt,
     callType,
+    callUuid,
     peer,
     muted,
     deafened,

@@ -9,6 +9,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         registerCallNotificationCategories()
+        // PushKit + CallKit must exist before the first VoIP push is delivered,
+        // which can be right after a background launch, before any web JS runs.
+        DescallCallManager.shared.start()
         return true
     }
 

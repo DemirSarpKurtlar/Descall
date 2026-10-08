@@ -69,6 +69,9 @@ router.post("/fcm-token", requireAuth, async (req, res) => {
   if (!token || token.length < 20) {
     return res.status(400).json({ error: "Invalid FCM token." });
   }
+  if (platform === fcm.VOIP_PLATFORM && !fcm.isApnsDeviceToken(token)) {
+    return res.status(400).json({ error: "Invalid VoIP token." });
+  }
   try {
     await fcm.upsertDeviceToken(req.user.id, token, platform);
     return res.status(204).end();

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
@@ -23,6 +23,7 @@ import { useToast } from "../context/ToastContext";
 import { DockDeviceSlot } from "./call/DevicePicker";
 import VoiceMemberContextMenu from "./servers/VoiceMemberContextMenu";
 import UserProfileModal from "./social/UserProfileModal";
+import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
 
 /*
  * Google Meet-style call overlay
@@ -142,6 +143,11 @@ export default function CallOverlay({ call, groupCall, me }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAudioPanel]);
 
+  // Native iOS: CallKit shows the incoming ring; only fall back to the card
+  // when CallKit couldn't report it. Always false on web/Electron/Android.
+  const callKitUi = useSyncExternalStore(subscribeCallKitUi, getCallKitUiSnapshot, getCallKitUiSnapshot);
+  const incomingShownByCallKit = callKitUi.enabled && !callKitUi.fallback;
+
   // Auto-decline unanswered DM incoming calls (match group modal)
   useEffect(() => {
     if (call?.mode !== "incoming") return;
@@ -260,6 +266,14 @@ export default function CallOverlay({ call, groupCall, me }) {
   ));
 
   /* ---------- Incoming DM: FaceTime-style avatar rings ---------- */
+  if (isDm && mode === "incoming" && incomingShownByCallKit) {
+    return (
+      <>
+        {remoteAudio}
+        {durableScreenAudio}
+      </>
+    );
+  }
   if (isDm && mode === "incoming") {
     return (
       <>

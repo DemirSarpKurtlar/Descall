@@ -36,6 +36,8 @@ import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
 import { preloadIceServers } from "./lib/iceConfig";
 import { useCall } from "./hooks/useCall";
+import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
+import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
@@ -469,6 +471,8 @@ export default function App() {
   const channelUnreadBumpIdsRef = useRef(new Set());
   const callOccupancyRef = useRef({ dmMode: null, groupActive: false });
   const call = useCall(socketApi, callOccupancyRef);
+  // Native iOS only (CallKit + VoIP push); a no-op everywhere else.
+  useIosCallKitBridge({ call, socket: socketApi, meId: me?.id });
   const groupCall = useGroupCall(socketApi, me?.id, callOccupancyRef);
   const serverVoice = useServerVoice(socketApi);
   // Electron always-on-top voice overlay — mirrors whichever surface (DM
@@ -2451,7 +2455,12 @@ export default function App() {
     sessionEpochRef.current += 1;
     const epoch = sessionEpochRef.current;
     const token = getToken();
-    if (token) {
+    if (token && IOS_NATIVE) {
+      // Drop this iPhone's VoIP token before the session is revoked.
+      unregisterIosVoipToken(token)
+        .catch(() => {})
+        .finally(() => logoutRequest(token).catch(() => {}));
+    } else if (token) {
       logoutRequest(token).catch(() => {});
     }
     try {

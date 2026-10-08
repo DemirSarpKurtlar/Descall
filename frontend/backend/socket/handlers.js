@@ -60,7 +60,16 @@ const { registerServerVoiceHandlers, removeUserFromAllServerVoice, startAfkIdleS
 const { scheduleTemporaryMemberCleanup } = require("../lib/serverMemberJoin");
 const { scheduleParticipantDisconnectGrace } = require("./groupCallLifecycle");
 const { toUtcIso } = require("../lib/datetime");
-const { trackOffer, markAnswered, isActiveDmCall, finalizeCall } = require("../lib/dmCallLog");
+const {
+  trackOffer,
+  markAnswered,
+  isActiveDmCall,
+  finalizeCall,
+  getPendingCall,
+  bufferCallerIce,
+  listRingingForCallee,
+  callStateByUuid,
+} = require("../lib/dmCallLog");
 const { isBlockedEitherWay } = require("../lib/blocking");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
@@ -1209,7 +1218,7 @@ function registerSocketHandlers(io) {
       emitToUser(io, myId, "notifications:sync", { notifications: getNotifications(myId) });
     });
 
-    socket.on("call:offer", async ({ toUserId, offer, callType } = {}) => {
+    socket.on("call:offer", async ({ toUserId, offer, callType, renegotiate } = {}) => {
       if (typeof toUserId !== "string" || !offer) return;
       const targetId = toUserId.trim();
       if (!targetId) return;
@@ -1222,10 +1231,17 @@ function registerSocketHandlers(io) {
       const presenceHit = Boolean(presence.get(targetId)?.socketId);
       const delivered = (room && room.size > 0) || presenceHit;
 
-      trackOffer({
+      // Clients since 2.9.133 say whether this is a renegotiation inside a
+      // connected call; older clients don't, so fall back to "already active".
+      const prior = getPendingCall(myId, targetId);
+      const renegotiation =
+        renegotiate === true || (renegotiate === undefined && prior?.status === "active");
+      const { callUuid } = trackOffer({
         callerId: myId,
         calleeId: targetId,
         callType: callType || "voice",
+        offer,
+        renegotiation,
       });
 
       // Full public user (frame / name effect / badge) so the callee call
@@ -1242,7 +1258,27 @@ function registerSocketHandlers(io) {
         fromUser,
         offer,
         callType: callType || "voice",
+        callUuid,
       });
+
+      // Native iOS: PushKit VoIP ring → CallKit. Fresh rings only, never a
+      // renegotiation (that would ring a phone that is already in the call).
+      if (!renegotiation && callUuid) {
+        try {
+          const { sendIncomingCallVoip } = require("../lib/voipPush");
+          void sendIncomingCallVoip(targetId, {
+            callUuid,
+            callerId: myId,
+            callerName:
+              fromUser.displayName || fromUser.display_name || fromUser.username || me.username,
+            callerAvatar: fromUser.avatarUrl || fromUser.avatar_url || "",
+            video: (callType || "voice") === "video",
+            conversationId: myId,
+          });
+        } catch (err) {
+          console.warn("[Call] VoIP ring failed:", err?.message || err);
+        }
+      }
 
       // Wake backgrounded Android / PWA clients even when Socket.IO is asleep.
       // Push carries no SDP — opening the app lets the live offer (or a retry) connect.
@@ -1277,8 +1313,17 @@ function registerSocketHandlers(io) {
 
     socket.on("call:answer", ({ toUserId, answer } = {}) => {
       if (typeof toUserId !== "string" || !answer) return;
+      const ringing = getPendingCall(toUserId, myId);
+      const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
       markAnswered({ callerId: toUserId, calleeId: myId });
+      if (wasRinging) {
+        // Stop the ring on the callee's other devices (iOS ends its CallKit call).
+        socket.to(`user:${myId}`).emit("call:answered-elsewhere", {
+          fromUserId: toUserId,
+          callUuid: ringing.callUuid || null,
+        });
+      }
       emitToUser(io, toUserId, "call:answer", {
         fromUserId: myId,
         answer,
@@ -1287,6 +1332,7 @@ function registerSocketHandlers(io) {
 
     socket.on("call:ice-candidate", ({ toUserId, candidate } = {}) => {
       if (typeof toUserId !== "string" || !candidate) return;
+      bufferCallerIce({ callerId: myId, calleeId: toUserId, candidate });
       emitToUser(io, toUserId, "call:ice-candidate", {
         fromUserId: myId,
         candidate,
@@ -1316,12 +1362,47 @@ function registerSocketHandlers(io) {
 
     socket.on("call:decline", async ({ toUserId } = {}) => {
       if (typeof toUserId !== "string") return;
+      const ringing = getPendingCall(toUserId, myId);
+      if (ringing?.status === "ringing" && ringing.calleeId === myId) {
+        socket.to(`user:${myId}`).emit("call:declined-elsewhere", {
+          fromUserId: toUserId,
+          callUuid: ringing.callUuid || null,
+        });
+      }
       emitToUser(io, toUserId, "call:declined", { fromUserId: myId });
       try {
         await finishDmCall(io, myId, toUserId, "declined");
       } catch (err) {
         console.warn("[Call] finalize decline failed:", err?.message || err);
       }
+    });
+
+    // Native iOS after a VoIP wake / CallKit answer: replay still-ringing offers
+    // (plus buffered caller ICE) to THIS socket only, and report the state of
+    // the CallKit calls it was woken for so it can end stale ones.
+    socket.on("call:resume-pending", ({ callUuids } = {}) => {
+      const wanted = Array.isArray(callUuids)
+        ? callUuids.filter((id) => typeof id === "string" && id.length <= 64).slice(0, 8)
+        : [];
+      const ringing = listRingingForCallee(myId);
+      for (const call of ringing) {
+        const fromUser =
+          enrichFriendEntry(call.callerId) ||
+          getCachedPublicUser(call.callerId) || { id: call.callerId };
+        socket.emit("call:offer", {
+          fromUser,
+          offer: call.offer,
+          callType: call.callType,
+          callUuid: call.callUuid,
+          resumed: true,
+        });
+        for (const candidate of call.callerIce) {
+          socket.emit("call:ice-candidate", { fromUserId: call.callerId, candidate });
+        }
+      }
+      socket.emit("call:resume-pending:result", {
+        calls: wanted.map((callUuid) => ({ callUuid, state: callStateByUuid(callUuid, myId) })),
+      });
     });
 
     socket.on("screen:share-start", ({ toUserId } = {}) => {

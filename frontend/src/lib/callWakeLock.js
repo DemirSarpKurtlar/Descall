@@ -8,7 +8,7 @@
  *  - Silent AudioContext keepalive (keeps media pipeline warm)
  *  - Native Android CallKeepAlive foreground service (Capacitor APK)
  *  - Native iOS CallKeepAlive AVAudioSession (keeps WebRTC alive in background;
- *    not CallKit — incoming rings still use the existing push notification path)
+ *    skipped for DM calls that CallKit manages, see lib/iosCallKit.js)
  *
  * The native FGS is what actually keeps DM WebRTC alive when the Android
  * shell is backgrounded; the web mechanisms help browser/PWA and soften
@@ -208,11 +208,12 @@ async function stopNativeCallKeepAlive() {
 }
 
 /** Call once when a call starts/is accepted/is joined. */
-export function acquireCallWakeLock({ title, artist } = {}) {
+export function acquireCallWakeLock({ title, artist, skipNative = false } = {}) {
   setMediaSessionActive(title, artist);
   void acquireScreenWakeLock();
   startSilentAudioKeepalive();
-  void startNativeCallKeepAlive({ title, artist });
+  // skipNative: native iOS DM calls under CallKit, which activates the audio session itself.
+  if (!skipNative) void startNativeCallKeepAlive({ title, artist });
 
   if (!reacquireOnVisible) {
     reacquireOnVisible = () => {

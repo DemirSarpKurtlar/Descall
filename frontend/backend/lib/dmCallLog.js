@@ -1,5 +1,6 @@
 "use strict";
 
+const crypto = require("crypto");
 const supabase = require("../db/supabase");
 
 /** @type {Map<string, object>} key = `${callerId}:${calleeId}` */
@@ -17,9 +18,40 @@ function findPending(userA, userB) {
   return null;
 }
 
-function trackOffer({ callerId, calleeId, callType }) {
-  if (!callerId || !calleeId) return;
+/** A re-sent ring within this window keeps its CallKit UUID (no second ring). */
+const RING_UUID_REUSE_MS = 60_000;
+/** iOS asks for a ringing offer again after a VoIP wake; older offers are dead. */
+const RESUME_MAX_AGE_MS = 60_000;
+const MAX_BUFFERED_ICE = 64;
+
+function newCallUuid() {
+  return crypto.randomUUID();
+}
+
+/**
+ * Track a DM call:offer.
+ *
+ * `renegotiation` (camera / screen / ICE restart inside a connected call)
+ * keeps the connected record (status, startedAt, callUuid) instead of turning
+ * it back into a ring. Fresh rings get a stable per-ring `callUuid` (CallKit
+ * call id) and keep the initial offer + caller ICE in memory so a callee woken
+ * by a VoIP push can fetch them (call:resume-pending).
+ *
+ * @returns {{ callUuid: string, renegotiation: boolean }}
+ */
+function trackOffer({ callerId, calleeId, callType, offer = null, renegotiation = false }) {
+  if (!callerId || !calleeId) return { callUuid: "", renegotiation: false };
   const key = pendingKey(callerId, calleeId);
+  const existing = findPending(callerId, calleeId);
+  if (renegotiation && existing && existing.call.status === "active") {
+    if (callType === "video") existing.call.callType = "video";
+    return { callUuid: existing.call.callUuid || "", renegotiation: true };
+  }
+  const prev = pendingDmCalls.get(key);
+  const prevAge = prev ? Date.now() - Date.parse(prev.offeredAt || 0) : Infinity;
+  const reuseUuid =
+    prev && prev.callUuid && prev.status === "ringing" && prevAge < RING_UUID_REUSE_MS;
+  const callUuid = reuseUuid ? prev.callUuid : newCallUuid();
   pendingDmCalls.set(key, {
     callerId,
     calleeId,
@@ -27,7 +59,47 @@ function trackOffer({ callerId, calleeId, callType }) {
     status: "ringing",
     offeredAt: new Date().toISOString(),
     startedAt: null,
+    callUuid,
+    offer: offer || null,
+    callerIce: [],
   });
+  return { callUuid, renegotiation: false };
+}
+
+/** Pending record for caller → callee (either direction), or null. */
+function getPendingCall(userA, userB) {
+  return findPending(userA, userB)?.call || null;
+}
+
+/** Remember caller ICE while ringing so a late (VoIP-woken) callee gets it too. */
+function bufferCallerIce({ callerId, calleeId, candidate }) {
+  const call = pendingDmCalls.get(pendingKey(callerId, calleeId));
+  if (!call || call.status !== "ringing" || !candidate) return;
+  if (call.callerIce.length < MAX_BUFFERED_ICE) call.callerIce.push(candidate);
+}
+
+/** Ringing offers addressed to `calleeId` that are still fresh enough to answer. */
+function listRingingForCallee(calleeId) {
+  const out = [];
+  const now = Date.now();
+  for (const call of pendingDmCalls.values()) {
+    if (call.calleeId !== calleeId || call.status !== "ringing" || !call.offer) continue;
+    if (now - Date.parse(call.offeredAt || 0) > RESUME_MAX_AGE_MS) continue;
+    out.push(call);
+  }
+  return out;
+}
+
+/** "ringing" | "active" | "ended" for a CallKit call UUID the callee was woken for. */
+function callStateByUuid(callUuid, calleeId) {
+  if (!callUuid) return "ended";
+  for (const call of pendingDmCalls.values()) {
+    if (call.callUuid !== callUuid || call.calleeId !== calleeId) continue;
+    if (call.status === "active") return "active";
+    const fresh = Date.now() - Date.parse(call.offeredAt || 0) <= RESUME_MAX_AGE_MS;
+    return fresh ? "ringing" : "ended";
+  }
+  return "ended";
 }
 
 function markAnswered({ callerId, calleeId }) {
@@ -35,6 +107,8 @@ function markAnswered({ callerId, calleeId }) {
   if (!hit) return;
   hit.call.status = "active";
   hit.call.startedAt = hit.call.startedAt || new Date().toISOString();
+  hit.call.offer = null;
+  hit.call.callerIce = [];
 }
 
 /**
@@ -381,6 +455,10 @@ function buildGroupCallHistoryRecord({ callRow, group, meId, joined = true }) {
 
 module.exports = {
   trackOffer,
+  getPendingCall,
+  bufferCallerIce,
+  listRingingForCallee,
+  callStateByUuid,
   markAnswered,
   ensureActiveDmCall,
   isActiveDmCall,

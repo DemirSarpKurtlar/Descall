@@ -14,6 +14,8 @@ const http2 = require("http2");
 const jwt = require("jsonwebtoken");
 const supabase = require("../db/supabase");
 
+const VOIP_PLATFORM = "ios_voip";
+
 let messaging = null;
 let initAttempted = false;
 
@@ -194,6 +196,9 @@ async function sendFcmToUsers(userIds, payload = {}) {
   const devices = [];
   for (const row of rows || []) {
     const token = String(row?.token || "").trim();
+    // PushKit VoIP tokens only take apns-push-type voip (lib/voipPush.js);
+    // an alert push to them fails with DeviceTokenNotForTopic.
+    if (String(row?.platform || "") === VOIP_PLATFORM) continue;
     if (!token || seen.has(token)) continue;
     seen.add(token);
     devices.push({ token, platform: String(row.platform || "") });
@@ -281,4 +286,7 @@ module.exports = {
   isApnsDeviceToken,
   buildApnsBody,
   apnsTokenShouldDrop,
+  apnsConfig,
+  getApnsJwt,
+  VOIP_PLATFORM,
 };

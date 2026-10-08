@@ -9,10 +9,9 @@ import AVFoundation
 /// .playAndRecord, plus the audio background mode, is what keeps an in-progress
 /// WebRTC call running when the app is backgrounded.
 ///
-/// This is not CallKit. Incoming rings still use the existing alert push
-/// (category INCOMING_CALL) and the web call UI. PushKit/CallKit is intentionally
-/// not enabled: Apple requires every VoIP push to report a CallKit call, and the
-/// current backend sends alert pushes, not VoIP pushes.
+/// DM calls with CallKit (DescallCallManager, since 2.9.133) skip this plugin:
+/// CallKit activates the audio session for them. It is still used for group /
+/// server voice, and for DM calls where CallKit isn't available (mainland China).
 @objc(CallKeepAlivePlugin)
 public class CallKeepAlivePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CallKeepAlivePlugin"
