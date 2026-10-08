@@ -167,6 +167,8 @@ def age_rating(asc, info, age, apply):
     if mismatch:
         (err if apply else warn)(f"age rating differs from age-rating.json: {mismatch}")
     info_attrs = asc.get(f"/v1/appInfos/{info['id']}")["data"]["attributes"]
+    if info_attrs.get("appStoreAgeRating") != "THIRTEEN_PLUS":
+        warn(f"App Store age rating is {info_attrs.get('appStoreAgeRating')}, expected THIRTEEN_PLUS")
     log(f"  computed rating (appInfo): {info_attrs.get('appStoreAgeRating')} "
         f"kids={info_attrs.get('kidsAgeBand')} brazil={info_attrs.get('brazilAgeRatingV2') or info_attrs.get('brazilAgeRating')}")
 

@@ -1,5 +1,5 @@
 {
-  "_source": "appstore-listing/age-rating.md (v2.9.144 questionnaire answers; expected rating 13+ via socialMedia=true)",
+  "_source": "appstore-listing/age-rating.md (v2.9.144 questionnaire answers; 13+: socialMedia=true, plus ageRatingOverrideV2=THIRTEEN_PLUS because the API computed FOUR_PLUS from the answers alone)",
   "parentalControls": false,
   "ageAssurance": false,
   "unrestrictedWebAccess": false,
@@ -25,6 +25,6 @@
   "contests": "NONE",
   "lootBox": false,
   "kidsAgeBand": null,
-  "ageRatingOverrideV2": "NONE",
+  "ageRatingOverrideV2": "THIRTEEN_PLUS",
   "developerAgeRatingInfoUrl": "https://descall.com/terms"
 }
