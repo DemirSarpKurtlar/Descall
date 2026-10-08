@@ -4,6 +4,7 @@ import { FileText, Download, Smile, Reply, X, Pin, PinOff, Pencil, Trash2, Flag 
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
+import { resolveCallSummary } from "../../lib/callSummary";
 import VoiceMessagePlayer from "./VoiceMessagePlayer";
 import ActiveCallBanner from "../ActiveCallBanner";
 import UserProfileModal from "../social/UserProfileModal";
@@ -283,22 +284,9 @@ export default function MessageList({
 
       // Call summary and active call bubbles break grouping — render standalone
       // Also recover legacy rows that were stored/rendered as raw JSON text.
-      let summaryMsg = msg;
-      if (msg?.type !== "call_summary" && typeof msg?.text === "string" && msg.text.trim().startsWith("{")) {
-        try {
-          const parsed = JSON.parse(msg.text);
-          if (parsed && (parsed.type === "call_summary" || parsed.callType || parsed.durationSeconds !== undefined)) {
-            summaryMsg = {
-              ...parsed,
-              id: parsed.id || msg.id,
-              timestamp: msg.timestamp || parsed.endedAt,
-              type: "call_summary",
-            };
-          }
-        } catch {
-          /* ignore */
-        }
-      }
+      // DM rows are tagged type "call_summary" with the numbers in the JSON
+      // text — always merge it in (see lib/callSummary.js).
+      const summaryMsg = resolveCallSummary(msg) || msg;
 
       if (summaryMsg.type === "call_summary") {
         flush();

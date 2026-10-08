@@ -1,6 +1,6 @@
 {
   "name": "descall-electron",
-  "version": "2.9.143",
+  "version": "2.9.144",
   "description": "Descall - Discord-like chat application",
   "main": "main.cjs",
   "author": {

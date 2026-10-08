@@ -70,6 +70,7 @@ const {
   listRingingForCallee,
   callStateByUuid,
 } = require("../lib/dmCallLog");
+const { buildDmCallSummary, callSummaryMessageFields } = require("../lib/callSummary");
 const { isBlockedEitherWay } = require("../lib/blocking");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
@@ -102,22 +103,11 @@ async function notifyCallHistory(io, record) {
  */
 async function publishDmCallSummary(io, record) {
   if (!record?.callerId || !record?.calleeId) return;
-  const durationSeconds = Number(record.durationSeconds) || 0;
   const callerName =
     usernameById.get(record.callerId) ||
     getCachedPublicUser(record.callerId)?.username ||
     "User";
-  const summary = {
-    type: "call_summary",
-    callType: record.callType === "video" ? "video" : "voice",
-    status: record.status || "missed",
-    initiatorId: record.callerId,
-    initiatorUsername: callerName,
-    participantCount: record.status === "completed" ? 2 : 1,
-    durationSeconds,
-    durationMinutes: Math.floor(durationSeconds / 60),
-    endedAt: record.endedAt || new Date().toISOString(),
-  };
+  const summary = buildDmCallSummary(record, callerName);
   const content = JSON.stringify(summary);
   const { data: row, error } = await supabase
     .from("dm_messages")
@@ -135,7 +125,11 @@ async function publishDmCallSummary(io, record) {
 
   const sender = messageSender(record.callerId, callerName);
   const timestamp = toUtcIso(row.created_at) || row.created_at;
+  // Summary fields ride on the message itself: clients render the card from
+  // msg.durationSeconds / msg.participantCount (the JSON text alone rendered
+  // "< 1s · 0 participants" for every DM call since 2.9.88).
   const messagePayload = {
+    ...callSummaryMessageFields(summary),
     id: row.id,
     from: sender,
     text: content,

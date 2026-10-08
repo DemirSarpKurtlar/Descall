@@ -4,6 +4,8 @@
 const supabase = require("../db/supabase");
 const { activeGroupCalls } = require("../runtime/sharedState");
 const { mapGroupCallRow } = require("../lib/dmCallLog");
+const clock = require("../lib/callClock");
+const { computeGroupCallSummary } = require("../lib/callSummary");
 
 async function getGroupMemberIds(groupId) {
   const { data } = await supabase
@@ -92,17 +94,24 @@ async function endGroupCall(io, groupId, endedBy, activeCall) {
   for (const timer of activeCall.disconnectGraceByUser?.values?.() || []) clearTimeout(timer);
   activeCall.disconnectGraceByUser?.clear?.();
 
-  const durationSeconds = Math.floor((Date.now() - activeCall.startTime) / 1000);
-  const endedAt = new Date().toISOString();
+  // Duration counts from when the call actually connected (a second person
+  // joined), not from the ring; participants = people who actually joined.
+  const nowMs = clock.now();
+  const stats = computeGroupCallSummary(activeCall, nowMs);
+  const durationSeconds = stats.durationSeconds;
+  const endedAt = new Date(nowMs).toISOString();
   const summary = {
-    id: `call-summary-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `call-summary-${nowMs}-${Math.random().toString(36).slice(2, 7)}`,
     type: "call_summary",
     callType: activeCall.callType,
+    status: stats.status,
+    hangout: Boolean(activeCall.hangout),
     initiatorId: activeCall.initiatorId,
     initiatorUsername: activeCall.initiatorUsername,
-    participantCount: activeCall.allParticipants.size,
+    participantCount: stats.participantCount,
     durationSeconds,
-    durationMinutes: Math.floor(durationSeconds / 60),
+    durationMinutes: stats.durationMinutes,
+    connectedAt: stats.connectedAt,
     endedAt,
   };
 
@@ -186,7 +195,7 @@ async function removeUserFromGroupCall(io, groupId, userId, socket) {
   if (activeCall.dbCallId) {
     supabase
       .from("group_call_participants")
-      .update({ left_at: new Date().toISOString() })
+      .update({ left_at: new Date(clock.now()).toISOString() })
       .eq("call_id", activeCall.dbCallId)
       .eq("user_id", userId)
       .then(({ error }) => {

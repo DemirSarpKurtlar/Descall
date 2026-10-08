@@ -1,5 +1,10 @@
 import { Video, Phone, Users, Clock } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
+import {
+  formatSummaryDuration,
+  summaryDurationSeconds,
+  summaryParticipantCount,
+} from "../../lib/callSummary";
 
 /**
  * WhatsApp-style ended call summary bubble rendered inside the message list.
@@ -9,15 +14,8 @@ export default function CallSummaryBubble({ summary }) {
   if (!summary) return null;
 
   const isVideo = summary.callType === "video";
-  const mins = summary.durationMinutes ?? Math.floor((summary.durationSeconds ?? 0) / 60);
-  const secs = (summary.durationSeconds ?? 0) % 60;
-
-  const durationLabel =
-    mins > 0
-      ? `${mins}m${secs > 0 ? ` ${secs}s` : ""}`
-      : secs > 0
-      ? `${secs}s`
-      : t("< 1s");
+  const durationLabel = formatSummaryDuration(summaryDurationSeconds(summary)) || t("< 1s");
+  const participantCount = summaryParticipantCount(summary);
 
   const statusLabel =
     summary.status === "missed"
@@ -55,7 +53,7 @@ export default function CallSummaryBubble({ summary }) {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Users size={11} />
               <span>
-                {t("{count} participants joined", { count: summary.participantCount ?? 0 })}
+                {t("{count} participants joined", { count: participantCount })}
               </span>
             </div>
           </div>

@@ -10,6 +10,8 @@ const { sendGroupCallPush } = require("../lib/webPush");
 const descoin = require("../lib/descoin");
 const { shouldCreditMessage } = require("../lib/descoinMessageGuard");
 const { toUtcIso } = require("../lib/datetime");
+const clock = require("../lib/callClock");
+const { markGroupParticipantJoined } = require("../lib/callSummary");
 const {
   executeSlashCommand,
   emitAppMessage,
@@ -506,7 +508,8 @@ function registerGroupHandlers(io, socket, state) {
       hangout: isHangout,
       participants: new Set([myId]),
       allParticipants: new Set([myId]),
-      startTime: Date.now(),
+      startTime: clock.now(),
+      connectedAt: null,
       dbCallId: null,
       disconnectGraceByUser: new Map(),
     });
@@ -589,8 +592,7 @@ function registerGroupHandlers(io, socket, state) {
     // Add participant to active call tracking
     const activeCall = activeGroupCalls.get(groupId);
     if (activeCall) {
-      activeCall.participants.add(myId);
-      activeCall.allParticipants.add(myId);
+      markGroupParticipantJoined(activeCall, myId, clock.now());
       if (activeCall.dbCallId) {
         supabase.from("group_call_participants")
           .insert({ call_id: activeCall.dbCallId, user_id: myId })
@@ -630,9 +632,9 @@ function registerGroupHandlers(io, socket, state) {
     // Ensure joiner is in the group room for left/ended/screen events
     socket.join(`group:${groupId}`);
 
-    // Add participant to tracking
-    activeCall.participants.add(myId);
-    activeCall.allParticipants.add(myId);
+    // Add participant to tracking (also starts the connected clock once a
+    // second person is in the call).
+    markGroupParticipantJoined(activeCall, myId, clock.now());
 
     if (activeCall.dbCallId) {
       supabase.from("group_call_participants")

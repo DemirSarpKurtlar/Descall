@@ -19,6 +19,7 @@ const {
   MAX_DM_PER_CONV,
 } = require("../runtime/sharedState");
 const { toUtcIso } = require("./datetime");
+const { parseCallSummaryText, callSummaryMessageFields } = require("./callSummary");
 
 const DM_MESSAGE_COLUMNS =
   "id, from_user_id, to_user_id, content, media_url, media_type, mime_type, file_size, original_name, duration, reply_to, delivered_at, read_at, edited_at, edit_history, pinned_at, pinned_by, created_at";
@@ -90,27 +91,22 @@ function messageSender(userId, fallbackUsername, fallbackAvatar) {
 }
 
 function callSummaryType(text) {
-  const raw = String(text || "").trim();
-  if (!raw.startsWith("{") || !raw.includes('"call_summary"')) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed?.type === "call_summary" ? "call_summary" : null;
-  } catch {
-    return null;
-  }
+  return parseCallSummaryText(text) ? "call_summary" : null;
 }
 
 function mapDmRow(row, usersById) {
   const profile = usersById.get(row.from_user_id);
   if (profile) cacheUserProfile(profile);
   const text = row.content || "";
-  const type = callSummaryType(text);
+  const summary = parseCallSummaryText(text);
   return {
+    // Call summary rows: lift duration / participants / status onto the message.
+    ...(summary ? callSummaryMessageFields(summary) : {}),
     id: row.id,
     from: messageSender(row.from_user_id, profile?.username || usernameById.get(row.from_user_id)),
     to: { id: row.to_user_id },
     text,
-    ...(type ? { type } : {}),
+    ...(summary ? { type: "call_summary" } : {}),
     mediaUrl: row.media_url || null,
     mediaType: row.media_type || null,
     mimeType: row.mime_type || null,

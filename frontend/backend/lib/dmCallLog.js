@@ -2,9 +2,30 @@
 
 const crypto = require("crypto");
 const supabase = require("../db/supabase");
+const clock = require("./callClock");
+
+function nowIso() {
+  return new Date(clock.now()).toISOString();
+}
 
 /** @type {Map<string, object>} key = `${callerId}:${calleeId}` */
 const pendingDmCalls = new Map();
+
+/**
+ * Pair key → ms when its last call was finalized. A late renegotiation from a
+ * peer that has not processed the hang-up yet must not resurrect that call.
+ */
+const recentlyEndedPairs = new Map();
+const RECENTLY_ENDED_MS = 120_000;
+
+function pairKey(a, b) {
+  return [a, b].sort().join("::");
+}
+
+function endedRecently(a, b, now = clock.now()) {
+  const at = recentlyEndedPairs.get(pairKey(a, b));
+  return typeof at === "number" && now - at < RECENTLY_ENDED_MS;
+}
 
 function pendingKey(callerId, calleeId) {
   return `${callerId}:${calleeId}`;
@@ -30,7 +51,7 @@ const ANSWERING_MAX_AGE_MS = 120_000;
 const MAX_BUFFERED_ICE = 64;
 
 /** Still worth replaying to a (VoIP-woken / just-unlocked) callee? */
-function isResumable(call, now = Date.now()) {
+function isResumable(call, now = clock.now()) {
   if (!call || call.status !== "ringing") return false;
   if (now - Date.parse(call.offeredAt || 0) <= RESUME_MAX_AGE_MS) return true;
   return Boolean(call.answeringAt) && now - call.answeringAt <= ANSWERING_MAX_AGE_MS;
@@ -59,8 +80,19 @@ function trackOffer({ callerId, calleeId, callType, offer = null, renegotiation 
     if (callType === "video") existing.call.callType = "video";
     return { callUuid: existing.call.callUuid || "", renegotiation: true };
   }
+  if (renegotiation && !existing && !endedRecently(callerId, calleeId)) {
+    // A renegotiation (ICE restart after a socket reconnect, camera toggle)
+    // for a call the server no longer tracks — e.g. the backend restarted
+    // mid-call. The two peers are clearly connected: track it as active
+    // (from now, the best we know) instead of a fresh ring that would end up
+    // logged as "missed" with no duration.
+    const call = ensureActiveDmCall({ userId: callerId, peerId: calleeId });
+    if (call && callType === "video") call.callType = "video";
+    if (call && !call.callUuid) call.callUuid = newCallUuid();
+    return { callUuid: call?.callUuid || "", renegotiation: true };
+  }
   const prev = pendingDmCalls.get(key);
-  const prevAge = prev ? Date.now() - Date.parse(prev.offeredAt || 0) : Infinity;
+  const prevAge = prev ? clock.now() - Date.parse(prev.offeredAt || 0) : Infinity;
   const reuseUuid =
     prev && prev.callUuid && prev.status === "ringing" && prevAge < RING_UUID_REUSE_MS;
   const callUuid = reuseUuid ? prev.callUuid : newCallUuid();
@@ -69,7 +101,7 @@ function trackOffer({ callerId, calleeId, callType, offer = null, renegotiation 
     calleeId,
     callType: callType === "video" ? "video" : "voice",
     status: "ringing",
-    offeredAt: new Date().toISOString(),
+    offeredAt: nowIso(),
     startedAt: null,
     callUuid,
     offer: offer || null,
@@ -93,7 +125,7 @@ function bufferCallerIce({ callerId, calleeId, candidate }) {
 /** Ringing offers addressed to `calleeId` that are still fresh enough to answer. */
 function listRingingForCallee(calleeId) {
   const out = [];
-  const now = Date.now();
+  const now = clock.now();
   for (const call of pendingDmCalls.values()) {
     if (call.calleeId !== calleeId || call.status !== "ringing" || !call.offer) continue;
     if (!isResumable(call, now)) continue;
@@ -130,17 +162,23 @@ function findRingingByUuid(callUuid, calleeId) {
 function markCalleeAnswering(callUuid, calleeId) {
   const call = findRingingByUuid(callUuid, calleeId);
   if (!call) return null;
-  if (!call.answeringAt) call.answeringAt = Date.now();
+  if (!call.answeringAt) call.answeringAt = clock.now();
   return call;
 }
 
+/**
+ * The callee's SDP answer reached the server: the call is connected from now.
+ * A repeated answer (renegotiation, iOS CallKit answer + in-app answer) keeps
+ * the first connect time so the duration is never reset mid-call.
+ */
 function markAnswered({ callerId, calleeId }) {
   const hit = findPending(callerId, calleeId);
-  if (!hit) return;
+  if (!hit) return null;
   hit.call.status = "active";
-  hit.call.startedAt = hit.call.startedAt || new Date().toISOString();
+  hit.call.startedAt = hit.call.startedAt || nowIso();
   hit.call.offer = null;
   hit.call.callerIce = [];
+  return hit.call;
 }
 
 /**
@@ -153,7 +191,7 @@ function ensureActiveDmCall({ userId, peerId }) {
   if (hit) {
     if (hit.call.status !== "active") {
       hit.call.status = "active";
-      hit.call.startedAt = hit.call.startedAt || new Date().toISOString();
+      hit.call.startedAt = hit.call.startedAt || nowIso();
     }
     return hit.call;
   }
@@ -162,8 +200,9 @@ function ensureActiveDmCall({ userId, peerId }) {
     calleeId: peerId,
     callType: "voice",
     status: "active",
-    offeredAt: new Date().toISOString(),
-    startedAt: new Date().toISOString(),
+    offeredAt: nowIso(),
+    startedAt: nowIso(),
+    callerIce: [],
   };
   pendingDmCalls.set(pendingKey(userId, peerId), call);
   return call;
@@ -209,9 +248,14 @@ async function finalizeCall(userA, userB, status) {
   const hit = findPending(userA, userB);
   if (!hit) return null;
   pendingDmCalls.delete(hit.key);
+  const nowMs = clock.now();
+  recentlyEndedPairs.set(pairKey(userA, userB), nowMs);
+  for (const [key, at] of recentlyEndedPairs) {
+    if (nowMs - at >= RECENTLY_ENDED_MS) recentlyEndedPairs.delete(key);
+  }
 
   const call = hit.call;
-  const endedAt = new Date();
+  const endedAt = new Date(nowMs);
   const startedAt = call.startedAt ? new Date(call.startedAt) : null;
   let finalStatus = status;
   if (!finalStatus) {
@@ -220,7 +264,10 @@ async function finalizeCall(userA, userB, status) {
   if (finalStatus === "completed" && !startedAt) {
     finalStatus = "missed";
   }
-  if ((finalStatus === "cancelled" || finalStatus === "missed") && startedAt) {
+  // Once answered, any way of hanging up is a completed call: a late
+  // "decline" (stale CallKit UI, a busy second device) or a "cancel" from a
+  // caller whose UI had not flipped to active yet must not erase the duration.
+  if ((finalStatus === "cancelled" || finalStatus === "missed" || finalStatus === "declined") && startedAt) {
     finalStatus = "completed";
   }
 
@@ -250,6 +297,7 @@ async function finalizeCall(userA, userB, status) {
     startedAt: row.started_at,
     endedAt: row.ended_at,
     durationSeconds,
+    participantCount: finalStatus === "completed" ? 2 : 1,
     createdAt: endedAt.toISOString(),
   };
 }
@@ -485,7 +533,14 @@ function buildGroupCallHistoryRecord({ callRow, group, meId, joined = true }) {
   );
 }
 
+/** Test helper: forget every in-memory DM call. */
+function _resetDmCallStateForTests() {
+  pendingDmCalls.clear();
+  recentlyEndedPairs.clear();
+}
+
 module.exports = {
+  _resetDmCallStateForTests,
   trackOffer,
   getPendingCall,
   bufferCallerIce,
