@@ -22,7 +22,19 @@ function findPending(userA, userB) {
 const RING_UUID_REUSE_MS = 60_000;
 /** iOS asks for a ringing offer again after a VoIP wake; older offers are dead. */
 const RESUME_MAX_AGE_MS = 60_000;
+/**
+ * Answered on a locked iPhone (CallKit) but the web app can't join until the
+ * phone is unlocked: the ring stays resumable this long after that answer.
+ */
+const ANSWERING_MAX_AGE_MS = 120_000;
 const MAX_BUFFERED_ICE = 64;
+
+/** Still worth replaying to a (VoIP-woken / just-unlocked) callee? */
+function isResumable(call, now = Date.now()) {
+  if (!call || call.status !== "ringing") return false;
+  if (now - Date.parse(call.offeredAt || 0) <= RESUME_MAX_AGE_MS) return true;
+  return Boolean(call.answeringAt) && now - call.answeringAt <= ANSWERING_MAX_AGE_MS;
+}
 
 function newCallUuid() {
   return crypto.randomUUID();
@@ -84,7 +96,7 @@ function listRingingForCallee(calleeId) {
   const now = Date.now();
   for (const call of pendingDmCalls.values()) {
     if (call.calleeId !== calleeId || call.status !== "ringing" || !call.offer) continue;
-    if (now - Date.parse(call.offeredAt || 0) > RESUME_MAX_AGE_MS) continue;
+    if (!isResumable(call, now)) continue;
     out.push(call);
   }
   return out;
@@ -96,10 +108,30 @@ function callStateByUuid(callUuid, calleeId) {
   for (const call of pendingDmCalls.values()) {
     if (call.callUuid !== callUuid || call.calleeId !== calleeId) continue;
     if (call.status === "active") return "active";
-    const fresh = Date.now() - Date.parse(call.offeredAt || 0) <= RESUME_MAX_AGE_MS;
-    return fresh ? "ringing" : "ended";
+    return isResumable(call) ? "ringing" : "ended";
   }
   return "ended";
+}
+
+/** The ringing call with this CallKit UUID addressed to `calleeId`, or null. */
+function findRingingByUuid(callUuid, calleeId) {
+  if (!callUuid || !calleeId) return null;
+  for (const call of pendingDmCalls.values()) {
+    if (call.callUuid === callUuid && call.calleeId === calleeId && call.status === "ringing") return call;
+  }
+  return null;
+}
+
+/**
+ * The callee answered this ring on CallKit (e.g. lock screen) and is waiting
+ * for the app to open. Keeps the offer resumable a while longer.
+ * @returns {object|null} the call, when it is still ringing
+ */
+function markCalleeAnswering(callUuid, calleeId) {
+  const call = findRingingByUuid(callUuid, calleeId);
+  if (!call) return null;
+  if (!call.answeringAt) call.answeringAt = Date.now();
+  return call;
 }
 
 function markAnswered({ callerId, calleeId }) {
@@ -459,6 +491,9 @@ module.exports = {
   bufferCallerIce,
   listRingingForCallee,
   callStateByUuid,
+  findRingingByUuid,
+  markCalleeAnswering,
+  isResumable,
   markAnswered,
   ensureActiveDmCall,
   isActiveDmCall,

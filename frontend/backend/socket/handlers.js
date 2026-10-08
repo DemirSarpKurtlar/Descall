@@ -2033,4 +2033,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers, loadFriendsFromDB };
+module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall };

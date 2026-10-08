@@ -3231,6 +3231,12 @@ export const phrases = {
   "Screen sharing requires a secure connection (HTTPS).":
     "Screen sharing requires a secure connection (HTTPS).",
   "Could not start screen share.": "Could not start screen share.",
+  "Loudspeaker": "Speaker",
+  "Audio output": "Audio output",
+  "Screen sharing is coming soon on iPhone.": "Screen sharing is coming soon on iPhone.",
+  "Answered on iPhone — waiting for unlock…": "Answered on iPhone — waiting for unlock…",
+  "They answered on a locked iPhone but couldn't join in time. Try calling again.":
+    "They answered on a locked iPhone but couldn't join in time. Try calling again.",
   "getDisplayMedia unsupported": "Screen sharing is not available in this browser.",
   "You've been invited to a server": "You've been invited to a server",
   "You've been invited to a group": "You've been invited to a group",

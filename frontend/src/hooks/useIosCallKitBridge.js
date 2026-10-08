@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import audioManager from "../lib/audioManager";
-import { pulseCallWakeLock } from "../lib/callWakeLock";
+import { ensureNativeCallKeepAlive, pulseCallWakeLock } from "../lib/callWakeLock";
 import {
   IOS_NATIVE,
   callKitPlugin,
@@ -11,7 +11,12 @@ import {
   cleanupStaleVoipToken,
 } from "../lib/iosCallKit";
 import { createCallKitController } from "../lib/iosCallKitController";
-import { setCallKitFallback, subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
+import {
+  setCallKitAudioReleased,
+  setCallKitFallback,
+  subscribeCallKitUi,
+  getCallKitUiSnapshot,
+} from "../lib/iosCallKitState";
 
 /**
  * Native iOS only: keeps CallKit in step with the DM call from useCall().
@@ -37,6 +42,8 @@ export function useIosCallKitBridge({ call, socket, meId }) {
       },
       onAudioSessionActivated: () => {
         pulseCallWakeLock();
+        // Microphone capture that started before CallKit took the session is re-acquired.
+        callRef.current?.onCallAudioSessionActivated?.();
         const audio = callRef.current?.remoteAudioRef?.current;
         if (audio) {
           try {
@@ -47,6 +54,13 @@ export function useIosCallKitBridge({ call, socket, meId }) {
             /* ignore */
           }
         }
+      },
+      onAudioReleased: () => {
+        setCallKitAudioReleased(true);
+        ensureNativeCallKeepAlive({ title: "Descall call", artist: callRef.current?.peer?.username || "" });
+        setTimeout(() => {
+          void callRef.current?.refreshMicrophone?.("callkit-released", { force: true });
+        }, 800);
       },
       log: (...args) => console.warn("[CallKit]", ...args),
     });
@@ -69,6 +83,30 @@ export function useIosCallKitBridge({ call, socket, meId }) {
       unsub();
     };
   }, []);
+
+  // Microphone still silent after recovery (lib/iosCallMic.js) → drop CallKit's
+  // hold on the audio session; app visible → a locked-screen answer joins.
+  useEffect(() => {
+    if (!IOS_NATIVE) return undefined;
+    const onUnrecoverable = () => {
+      if (getCallKitUiSnapshot().enabled) controllerRef.current?.releaseAudio();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && getCallKitUiSnapshot().enabled) {
+        controllerRef.current?.onAppVisible();
+      }
+    };
+    window.addEventListener("descall:ios-call-mic-unrecoverable", onUnrecoverable);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("descall:ios-call-mic-unrecoverable", onUnrecoverable);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (IOS_NATIVE && !call?.mode) setCallKitAudioReleased(false);
+  }, [call?.mode]);
 
   // Register the VoIP token once signed in.
   useEffect(() => {

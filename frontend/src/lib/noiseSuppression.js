@@ -30,6 +30,23 @@ import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?u
 import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
 
 const STORAGE_KEY = "descall:noiseSuppressionEnabled";
+
+/**
+ * Native iOS app (Capacitor WKWebView): send the raw microphone track.
+ * The WebAudio pipeline's output track comes from an AudioContext, which iOS
+ * suspends/interrupts when the call audio session changes (CallKit
+ * activation, route changes) — the call then "connects" but sends silence.
+ * iOS' own voice processing (echo cancellation + noise suppression) is on.
+ * Global check so this module doesn't pull in @capacitor/core.
+ */
+function isNativeIosApp() {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    return Boolean(cap?.isNativePlatform?.() && cap.getPlatform?.() === "ios");
+  } catch {
+    return false;
+  }
+}
 const ENGINE_KEY = "descall:noiseSuppressionEngine";
 
 /** @type {AudioContext | null} */
@@ -57,6 +74,7 @@ function writeEnabled(enabled) {
 }
 
 export function isNoiseSuppressionEnabled() {
+  if (isNativeIosApp()) return false;
   return readEnabled();
 }
 

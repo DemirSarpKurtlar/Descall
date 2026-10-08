@@ -14,6 +14,7 @@ import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
 import { resolveAvatarUrl } from "../lib/avatar";
 import { resolveDisplayName } from "../lib/userProfile";
 import ScreenShareQualityPanel from "./voice/ScreenShareQualityPanel";
+import { screenShareComingSoonOnIos } from "../lib/webrtcScreenShare";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
 import useSpeaking from "../hooks/useSpeaking";
@@ -213,7 +214,9 @@ export default function CallOverlay({ call, groupCall, me }) {
     ? mode === "incoming"
       ? t("Incoming call...")
       : mode === "outgoing"
-      ? (call?.connectionQuality === "failed"
+      ? (call?.calleeAnswering
+          ? t("Answered on iPhone — waiting for unlock…")
+          : call?.connectionQuality === "failed"
           ? t("User may be offline — waiting…")
           : t("Calling..."))
       : call?.peerConnectionState === "reconnecting"
@@ -306,8 +309,8 @@ export default function CallOverlay({ call, groupCall, me }) {
           exit={{ opacity: 0, y: 60, scale: 0.9 }}
           style={{
             position: "fixed",
-            bottom: 20,
-            right: 20,
+            bottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
+            right: "calc(20px + env(safe-area-inset-right, 0px))",
             zIndex: 9999,
             ...(callOverlayKey ? {} : { background: "#1e1f23" }),
             borderRadius: 14,
@@ -486,7 +489,11 @@ export default function CallOverlay({ call, groupCall, me }) {
           left: 0,
           right: 0,
           zIndex: 10,
-          padding: "16px 20px",
+          // Below the status bar / Dynamic Island; the gradient still runs edge to edge.
+          padding:
+            "calc(16px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) 16px calc(20px + env(safe-area-inset-left, 0px))",
+          boxSizing: "border-box",
+          gap: 8,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -494,7 +501,7 @@ export default function CallOverlay({ call, groupCall, me }) {
           pointerEvents: "none",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, pointerEvents: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 4, minWidth: 0, pointerEvents: "auto" }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>{title}</span>
           {anyScreenShare && (
             <span style={{ background: "#3ba55d", color: "#fff", fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4 }}>
@@ -509,7 +516,7 @@ export default function CallOverlay({ call, groupCall, me }) {
             <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={call?.networkStats} />
           )}
         </div>
-        <div style={{ display: "flex", gap: 8, pointerEvents: "auto" }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, pointerEvents: "auto" }}>
           <TopIconBtn onClick={() => setShowParticipants(!showParticipants)} active={showParticipants}><Users size={18} /></TopIconBtn>
           <TopIconBtn onClick={() => setShowChat(!showChat)} active={showChat}><MessageSquare size={18} /></TopIconBtn>
           <TopIconBtn onClick={() => setMinimized(true)}><Minus size={18} /></TopIconBtn>
@@ -527,10 +534,14 @@ export default function CallOverlay({ call, groupCall, me }) {
           // visible — catalog avatar frames extend past the tile (~132%)
           overflow: "visible",
           minHeight: 0,
-          paddingTop: narrowViewport ? 56 : 60,
+          paddingTop: narrowViewport
+            ? "calc(56px + env(safe-area-inset-top, 0px))"
+            : "calc(60px + env(safe-area-inset-top, 0px))",
           paddingBottom: narrowViewport
             ? "calc(72px + env(safe-area-inset-bottom, 0px))"
-            : 96,
+            : "calc(96px + env(safe-area-inset-bottom, 0px))",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
         }}
       >
         {anyScreenShare ? (
@@ -596,8 +607,8 @@ export default function CallOverlay({ call, groupCall, me }) {
           justifyContent: "space-evenly",
           gap: narrowViewport ? 6 : 14,
           padding: narrowViewport
-            ? "12px 12px calc(12px + env(safe-area-inset-bottom, 0px))"
-            : "20px 24px 28px",
+            ? "12px calc(12px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px))"
+            : "20px calc(24px + env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px))",
           background: "linear-gradient(to top, rgba(0,0,0,0.85) 40%, transparent)",
           boxSizing: "border-box",
         }}
@@ -625,7 +636,7 @@ export default function CallOverlay({ call, groupCall, me }) {
                 },
                 {
                   id: "out",
-                  label: t("Headphones"),
+                  label: (isDm ? call : groupCall)?.audioOutputLabel || t("Headphones"),
                   devices: (isDm ? call : groupCall)?.audioOutputDevices || [],
                   selectedId: (isDm ? call : groupCall)?.selectedAudioOutput || "",
                   onSelect: (deviceId) => (isDm ? call : groupCall)?.setAudioOutput?.(deviceId),
@@ -690,6 +701,12 @@ export default function CallOverlay({ call, groupCall, me }) {
                 onClick={() => {
                   setShowMoreMenu(false);
                   setShowAudioPanel(false);
+                  if (!screenSharing && screenShareComingSoonOnIos()) {
+                    // WKWebView has no getDisplayMedia (ReplayKit extension not built yet).
+                    setShowScreenQuality(false);
+                    toast(t("Screen sharing is coming soon on iPhone."), "info");
+                    return;
+                  }
                   if (isDm) {
                     if (screenSharing) call.stopScreenShare();
                     else setShowScreenQuality((v) => !v);
@@ -702,7 +719,7 @@ export default function CallOverlay({ call, groupCall, me }) {
               >
                 <Monitor size={narrowViewport ? 19 : 22} />
               </CircleBtn>
-              {(screenSharing || showScreenQuality) && (
+              {(screenSharing || showScreenQuality) && !screenShareComingSoonOnIos() && (
                 <button
                   type="button"
                   title={t("Screen quality")}
@@ -871,14 +888,16 @@ export default function CallOverlay({ call, groupCall, me }) {
                             setShowAudioPanel(true);
                           }}
                         />
-                        <MoreMenuItem
-                          icon={<SlidersHorizontal size={16} />}
-                          label={t("Screen quality")}
-                          onClick={() => {
-                            setShowMoreMenu(false);
-                            setShowScreenQuality(true);
-                          }}
-                        />
+                        {!screenShareComingSoonOnIos() && (
+                          <MoreMenuItem
+                            icon={<SlidersHorizontal size={16} />}
+                            label={t("Screen quality")}
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setShowScreenQuality(true);
+                            }}
+                          />
+                        )}
                         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "4px 0" }} />
                       </>
                     )}
@@ -984,6 +1003,9 @@ export default function CallOverlay({ call, groupCall, me }) {
               display: "flex",
               flexDirection: "column",
               boxSizing: "border-box",
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              paddingRight: "env(safe-area-inset-right, 0px)",
             }}
           >
             <div
@@ -1767,11 +1789,11 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                 willChange: "contents",
               }}
             />
-            <div style={{ position: "absolute", top: 16, left: 16, display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.7)", borderRadius: 8, padding: "6px 14px" }}>
+            <div style={{ position: "absolute", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "calc(16px + env(safe-area-inset-left, 0px))", display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.7)", borderRadius: 8, padding: "6px 14px" }}>
               <Monitor size={14} color="#3ba55d" />
               <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{sharerLabel}</span>
             </div>
-            <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "#b5bac1", fontSize: 12, padding: "5px 14px", borderRadius: 6 }}>
+            <div style={{ position: "absolute", bottom: "calc(20px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "#b5bac1", fontSize: 12, padding: "5px 14px", borderRadius: 6 }}>
               {t("Click anywhere to exit fullscreen")}
             </div>
           </div>
@@ -2082,7 +2104,7 @@ function AudioDevicePanel({ isDm, call, groupCall, onClose, narrow = false }) {
             <div style={{ width: 22, height: 22, borderRadius: 6, background: "rgba(114,137,218,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Volume2 size={12} color="#7289da" />
             </div>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "#72767d", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("Speaker")}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#72767d", textTransform: "uppercase", letterSpacing: "0.06em" }}>{hook?.audioOutputLabel || t("Speaker")}</span>
             {switching === "output" && (
               <span style={{ fontSize: 10, color: "#7289da", marginLeft: "auto" }}>{t("Switching…")}</span>
             )}

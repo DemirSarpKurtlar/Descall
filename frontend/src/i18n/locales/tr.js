@@ -3558,6 +3558,12 @@ export const phrases = {
   "Screen sharing requires a secure connection (HTTPS).":
     "Ekran paylaşımı için güvenli bağlantı (HTTPS) gerekir.",
   "Could not start screen share.": "Ekran paylaşımı başlatılamadı.",
+  "Loudspeaker": "Hoparlör",
+  "Audio output": "Ses çıkışı",
+  "Screen sharing is coming soon on iPhone.": "Ekran paylaşımı iPhone'da yakında.",
+  "Answered on iPhone — waiting for unlock…": "iPhone'da yanıtlandı — kilidin açılması bekleniyor…",
+  "They answered on a locked iPhone but couldn't join in time. Try calling again.":
+    "Kilitli iPhone'da yanıtladı ama zamanında katılamadı. Tekrar aramayı dene.",
   "getDisplayMedia unsupported": "Bu tarayıcıda ekran paylaşımı kullanılamıyor.",
   "You've been invited to a server": "Bir sunucuya davet edildin",
   "You've been invited to a group": "Bir gruba davet edildin",

@@ -6,12 +6,18 @@
  * false, so every check below is a no-op there.
  */
 
-let snapshot = Object.freeze({ enabled: false, fallback: false });
+let snapshot = Object.freeze({ enabled: false, fallback: false, audioReleased: false });
 const subscribers = new Set();
 
 function update(patch) {
   const next = { ...snapshot, ...patch };
-  if (next.enabled === snapshot.enabled && next.fallback === snapshot.fallback) return;
+  if (
+    next.enabled === snapshot.enabled &&
+    next.fallback === snapshot.fallback &&
+    next.audioReleased === snapshot.audioReleased
+  ) {
+    return;
+  }
   snapshot = Object.freeze(next);
   subscribers.forEach((fn) => {
     try {
@@ -45,7 +51,20 @@ export function callKitOwnsIncomingRing() {
   return snapshot.enabled && !snapshot.fallback;
 }
 
-/** CallKit activates/deactivates the AVAudioSession for calls itself. */
-export function callKitManagesAudioSession() {
-  return snapshot.enabled;
+/**
+ * The current call's CallKit entry was ended to free the microphone (last-
+ * resort recovery); the web call continues on the plain audio session.
+ * Reset when the call ends.
+ */
+export function setCallKitAudioReleased(released) {
+  update({ audioReleased: Boolean(released) });
+}
+
+/**
+ * CallKit activates/deactivates the AVAudioSession for INCOMING DM calls
+ * itself. Outgoing calls are not reported to CallKit (see
+ * iosCallKitController.js), so they always use the CallKeepAlive session.
+ */
+export function callKitManagesAudioSession(direction = "incoming") {
+  return snapshot.enabled && direction === "incoming" && !snapshot.audioReleased;
 }

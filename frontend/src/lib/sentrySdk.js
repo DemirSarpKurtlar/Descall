@@ -6,6 +6,7 @@ export {
   init,
   captureException,
   captureReactException,
+  captureMessage,
   breadcrumbsIntegration,
 } from "@sentry/react";
 export { isNativeIOS } from "./platform";

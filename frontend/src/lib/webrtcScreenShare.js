@@ -68,6 +68,21 @@ export function isMobileScreenCapture() {
 }
 
 /**
+ * Native iOS app (Capacitor WKWebView): there is no getDisplayMedia, and the
+ * ReplayKit Broadcast Upload Extension isn't built yet — the share button
+ * shows "coming soon" instead of failing. Viewing others' shares works.
+ */
+export function screenShareComingSoonOnIos() {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    const nativeIos = Boolean(cap?.isNativePlatform?.() && cap.getPlatform?.() === "ios");
+    return nativeIos && typeof navigator?.mediaDevices?.getDisplayMedia !== "function";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Build getDisplayMedia constraints.
  *
  * Mobile: prefer the entire screen (`monitor`). Sharing only the Descall tab

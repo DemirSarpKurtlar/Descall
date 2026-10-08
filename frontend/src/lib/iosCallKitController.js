@@ -3,9 +3,20 @@
  * it is unit-testable in Node). The hook in hooks/useIosCallKitBridge.js wires
  * it to the plugin, the socket and the useCall() object.
  *
- * One CallKit call (uuid) per DM call session:
- *   incoming  → server callUuid (same uuid as the VoIP push)
- *   outgoing  → fresh uuid, CXStartCallAction
+ * One CallKit call (uuid) per INCOMING DM call (server callUuid, same uuid as
+ * the VoIP push). Outgoing calls are not reported to CallKit since 2.9.135:
+ * CallKit activating the audio session while WKWebView's microphone capture
+ * is running silences it (2.9.133 "ses karşıya gitmiyor"), and the outgoing
+ * CallKit UI added nothing the app needs. (REPORT_OUTGOING_TO_CALLKIT)
+ *
+ * Answering: the web app starts its microphone only after CallKit activated
+ * the audio session (or after AUDIO_ACTIVATION_WAIT_MS), so capture starts
+ * inside the call session instead of being interrupted by it.
+ *
+ * Locked phone: WKWebView can't capture the mic / run the web app while the
+ * phone is locked. Native code shows "open Descall to connect", tells the
+ * caller to keep waiting, and ends the call after 60 s ("joinTimeout"). When
+ * the user opens the app in time, the pending answer joins automatically.
  *
  * Cold start (VoIP push woke the app, user answered on the lock screen
  * before the web app had the offer): the answer is kept as `pendingAnswer`,
@@ -15,7 +26,10 @@
  */
 
 const ENDED_HINT_MS = 5_000;
-const PENDING_ANSWER_MS = 25_000;
+// Native ends a locked-screen answer after 60 s (DescallCallManager.lockedJoinTimeout).
+const PENDING_ANSWER_MS = 75_000;
+const AUDIO_ACTIVATION_WAIT_MS = 1_200;
+const REPORT_OUTGOING_TO_CALLKIT = false;
 const RESUME_THROTTLE_MS = 1_500;
 const OFFER_SETTLE_MS = 1_500;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -35,6 +49,8 @@ export function createCallKitController({
   getSocket,
   onFallbackRing = () => {},
   onAudioSessionActivated = () => {},
+  onAudioReleased = () => {},
+  isHidden = () => typeof document !== "undefined" && document.visibilityState === "hidden",
   newUuid,
   now = () => Date.now(),
   setTimer = (fn, ms) => setTimeout(fn, ms),
@@ -50,6 +66,11 @@ export function createCallKitController({
   const endedUuids = new Set(); // ended on CallKit; a late offer for them is declined silently
   let remoteEnd = null; // { peerId, reason, at }
   let lastResumeAt = -Infinity;
+  let audioActive = false; // CallKit didActivate … didDeactivate
+  let acceptTimer = null; // waiting for didActivate before starting the mic
+  // Answered on the lock screen (native "awaitingJoin"): WKWebView can't
+  // capture the mic while hidden, so the answer waits for the app to be opened.
+  let waitingForUnlock = false;
 
   const safe = (promise) => {
     if (promise && typeof promise.catch === "function") {
@@ -91,6 +112,27 @@ export function createCallKitController({
   function clearPendingAnswer() {
     if (pendingAnswer?.timer != null) clearTimer(pendingAnswer.timer);
     pendingAnswer = null;
+  }
+
+  function clearAcceptTimer() {
+    if (acceptTimer != null) clearTimer(acceptTimer);
+    acceptTimer = null;
+  }
+
+  /** Answered on CallKit: start the mic once CallKit's audio session is up. */
+  function acceptWhenAudioReady() {
+    if (waitingForUnlock && isHidden()) return; // onAppVisible() accepts
+    waitingForUnlock = false;
+    if (audioActive) {
+      clearAcceptTimer();
+      acceptNow();
+      return;
+    }
+    if (acceptTimer != null) return;
+    acceptTimer = setTimer(() => {
+      acceptTimer = null;
+      acceptNow();
+    }, AUDIO_ACTIVATION_WAIT_MS);
   }
 
   function acceptNow() {
@@ -161,10 +203,11 @@ export function createCallKitController({
       });
     }
 
-    if (answerQueued) acceptNow();
+    if (answerQueued) acceptWhenAudioReady();
   }
 
   function beginOutgoing(c) {
+    if (!REPORT_OUTGOING_TO_CALLKIT) return;
     const uuid = newUuid();
     current = { uuid, direction: "outgoing", peerId: c.peer?.id, answered: true, endedByCallKit: false, fallback: false };
     safe(
@@ -188,6 +231,8 @@ export function createCallKitController({
       current.answered = true;
       safe(plugin.answerCall({ uuid: current.uuid }));
     }
+    // Clears the locked-screen "open Descall" hint and its join timeout.
+    if (typeof plugin.callJoined === "function") safe(plugin.callJoined({ uuid: current.uuid }));
     if (current.fallback) {
       current.fallback = false;
       onFallbackRing(false);
@@ -197,6 +242,8 @@ export function createCallKitController({
   function finish() {
     const cur = current;
     current = null;
+    clearAcceptTimer();
+    waitingForUnlock = false;
     if (cur.fallback) onFallbackRing(false);
     if (cur.endedByCallKit) return;
     const hint =
@@ -246,6 +293,7 @@ export function createCallKitController({
     const uuid = normUuid(data.uuid);
     if (!uuid) return;
     knownPushes.delete(uuid);
+    if (data.awaitingJoin && isHidden()) waitingForUnlock = true;
     const c = getCall();
     if (current && current.uuid === uuid) {
       if (current.answered) return;
@@ -254,13 +302,13 @@ export function createCallKitController({
         current.fallback = false;
         onFallbackRing(false);
       }
-      acceptNow();
+      acceptWhenAudioReady();
       return;
     }
     if (!current && c?.mode === "incoming" && data.callerId && c.peer?.id === data.callerId) {
       current = { uuid, direction: "incoming", peerId: c.peer.id, answered: true, endedByCallKit: false, fallback: false };
       prevMode = "incoming";
-      acceptNow();
+      acceptWhenAudioReady();
       return;
     }
     // Cold start: the offer hasn't reached the web app yet.
@@ -270,8 +318,13 @@ export function createCallKitController({
       callerId: data.callerId || "",
       timer: setTimer(() => {
         if (pendingAnswer?.uuid !== uuid) return;
+        const callerId = pendingAnswer.callerId;
         pendingAnswer = null;
+        rememberEnded(uuid);
         safe(plugin.reportCallEnded({ uuid, reason: "failed" }));
+        // Don't leave the caller ringing for a call this phone can't join.
+        const sock = getSocket();
+        if (callerId && sock?.connected) sock.emit("call:decline", { toUserId: callerId });
       }, PENDING_ANSWER_MS),
     };
     requestResume(true);
@@ -329,6 +382,47 @@ export function createCallKitController({
     }
   }
 
+  /** Native gave up on a locked-screen answer (app not opened in time). */
+  function onJoinTimeout(data) {
+    const uuid = normUuid(data.uuid);
+    if (!uuid) return;
+    rememberEnded(uuid);
+    knownPushes.delete(uuid);
+    if (pendingAnswer?.uuid === uuid) clearPendingAnswer();
+    waitingForUnlock = false;
+    const c = getCall();
+    if (current && current.uuid === uuid) {
+      current.endedByCallKit = true;
+      clearAcceptTimer();
+      // The backend already ended the ring for the caller (voip-status "failed").
+      if (c?.mode === "incoming" || c?.mode === "active") c.cleanup?.();
+    }
+  }
+
+  /**
+   * Last resort when the microphone stays silent under CallKit: end the
+   * CallKit entry (frees the call-priority audio session) and keep the web
+   * call going on the plain session. Returns true when released.
+   */
+  function releaseAudio() {
+    if (!current || current.direction !== "incoming" || !current.answered || current.endedByCallKit) return false;
+    current.endedByCallKit = true;
+    safe(plugin.reportCallEnded({ uuid: current.uuid, reason: "failed" }));
+    onAudioReleased();
+    return true;
+  }
+
+  /** The app became visible: a locked-screen answer can join now. */
+  function onAppVisible() {
+    if (waitingForUnlock) {
+      const c = getCall();
+      if (current?.answered && current.direction === "incoming" && c?.mode === "incoming") {
+        acceptWhenAudioReady();
+      }
+    }
+    if (pendingAnswer || knownPushes.size) requestResume(true);
+  }
+
   function onIncomingReportFailed(data) {
     // Push-reported call already ended natively (busy / DND / blocked).
     const uuid = normUuid(data.uuid);
@@ -358,7 +452,17 @@ export function createCallKitController({
       case "reset":
         return onReset();
       case "audioSessionActivated":
-        return onAudioSessionActivated();
+        audioActive = true;
+        if (acceptTimer != null) {
+          clearAcceptTimer();
+          acceptNow();
+        }
+        return onAudioSessionActivated(data);
+      case "audioSessionDeactivated":
+        audioActive = false;
+        return undefined;
+      case "joinTimeout":
+        return onJoinTimeout(data);
       default:
         return undefined;
     }
@@ -434,7 +538,17 @@ export function createCallKitController({
     onHandledElsewhere,
     onResumeResult,
     onOfferSeen,
+    onAppVisible,
+    releaseAudio,
     // for tests / diagnostics
-    _state: () => ({ current, pendingAnswer, knownPushes: [...knownPushes.keys()], pendingDeclines: [...pendingDeclines.keys()] }),
+    _state: () => ({
+      current,
+      pendingAnswer,
+      knownPushes: [...knownPushes.keys()],
+      pendingDeclines: [...pendingDeclines.keys()],
+      audioActive,
+      acceptPending: acceptTimer != null,
+      waitingForUnlock,
+    }),
   };
 }

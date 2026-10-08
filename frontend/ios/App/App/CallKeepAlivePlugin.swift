@@ -24,14 +24,22 @@ public class CallKeepAlivePlugin: CAPPlugin, CAPBridgedPlugin {
     private var sessionActive = false
 
     @objc func start(_ call: CAPPluginCall) {
+        // preserveCategory (DM calls): when WebKit's getUserMedia already put the
+        // session in .playAndRecord, leave its category/mode alone — re-setting it
+        // mid-capture tears down WebKit's capture unit (silent microphone).
+        let preserveCategory = call.getBool("preserveCategory") ?? false
         DispatchQueue.main.async {
             let session = AVAudioSession.sharedInstance()
             do {
-                try session.setCategory(
-                    .playAndRecord,
-                    mode: .voiceChat,
-                    options: [.allowBluetooth, .defaultToSpeaker]
-                )
+                if !(preserveCategory && session.category == .playAndRecord) {
+                    // DM calls route receiver/speaker themselves (DescallAudioRouter);
+                    // .defaultToSpeaker would make "iPhone" (receiver) impossible to pick.
+                    try session.setCategory(
+                        .playAndRecord,
+                        mode: .voiceChat,
+                        options: preserveCategory ? [.allowBluetooth] : [.allowBluetooth, .defaultToSpeaker]
+                    )
+                }
                 try session.setActive(true)
                 self.sessionActive = true
                 call.resolve()

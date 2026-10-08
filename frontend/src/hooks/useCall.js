@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
 import audioManager from "../lib/audioManager";
 import notificationService from "../lib/notificationService";
@@ -13,6 +13,7 @@ import {
   isMobileScreenCapture,
   captureScreenShareStream,
   showElectronScreenPicker,
+  screenShareComingSoonOnIos,
 } from "../lib/webrtcScreenShare";
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
@@ -30,11 +31,28 @@ import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  getVoiceAudioConstraints,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 import { callKitOwnsIncomingRing, callKitManagesAudioSession } from "../lib/iosCallKitState";
+import { IOS_NATIVE } from "../lib/iosCallKit";
+import {
+  beginIosCallAudio,
+  endIosCallAudio,
+  getIosAudioDiagnostics,
+  getIosAudioRouteSnapshot,
+  iosRoutesAsOutputDevices,
+  reactivateIosCapture,
+  selectIosAudioRoute,
+  subscribeIosAudioRoute,
+} from "../lib/iosAudioRoute";
+import { createMicGuard, withCaptureRetry } from "../lib/iosCallMic";
+import { reportDiagnostic } from "../lib/sentry";
+
+const noopSubscribe = () => () => {};
+const getNoRoute = () => null;
 
 /**
  * Unified WebRTC call hook supporting:
@@ -64,17 +82,24 @@ export function useCall(socket, callOccupancyRef = null) {
   const [localStream, setLocalStream] = useState(null);
   // Server-assigned id of the current ring (CallKit call UUID on native iOS).
   const [callUuid, setCallUuid] = useState(null);
+  // Caller side: the callee answered on a locked iPhone and is unlocking.
+  const [calleeAnswering, setCalleeAnswering] = useState(false);
+  // "incoming" | "outgoing" — native iOS: only incoming calls use CallKit audio.
+  const callDirectionRef = useRef(null);
 
   // Keep the screen awake / tab exempt from background throttling for as
   // long as a call is ringing or active — screen lock and aggressive tab
   // suspension are common causes of calls silently dropping on mobile.
   useEffect(() => {
     if (mode) {
-      // Native iOS with CallKit: CallKit owns the AVAudioSession for DM calls.
+      // Native iOS with CallKit: CallKit owns the AVAudioSession for incoming
+      // DM calls. preserveAudioCategory: never re-set the category WebKit
+      // configured for the running microphone capture.
       acquireCallWakeLock({
         title: "Descall call",
         artist: peer?.username || "",
-        skipNative: callKitManagesAudioSession(),
+        skipNative: callKitManagesAudioSession(callDirectionRef.current || "incoming"),
+        preserveAudioCategory: true,
       });
     } else {
       releaseCallWakeLock();
@@ -177,6 +202,37 @@ export function useCall(socket, callOccupancyRef = null) {
   // recover only a likely display track, never an arbitrary camera receiver.
   const receivedVideoTracksRef = useRef(new Map());
 
+  // Native iOS: keep the microphone sending across CallKit audio-session
+  // activation (lib/iosCallMic.js). null on web / Electron / Android.
+  const micGuardRef = useRef(null);
+  if (IOS_NATIVE && !micGuardRef.current) {
+    micGuardRef.current = createMicGuard({
+      getPc: () => pcRef.current,
+      getLocalStream: () => localStreamRef.current,
+      getScreenAudioSender: () => screenAudioSenderRef.current,
+      isCallOngoing: () => modeRef.current === "active" || modeRef.current === "outgoing",
+      getContext: () => ({
+        direction: callDirectionRef.current || "",
+        callType: callTypeRef.current || "",
+        mode: modeRef.current || "",
+        visibility: typeof document !== "undefined" ? document.visibilityState : "",
+      }),
+      getUserMedia: (constraints) => navigator.mediaDevices.getUserMedia(constraints),
+      audioConstraints: () => getVoiceAudioConstraints().audio,
+      reactivateCapture: reactivateIosCapture,
+      getDiagnostics: getIosAudioDiagnostics,
+      report: (kind, context) => {
+        console.warn("[CallAudio]", kind, context);
+        reportDiagnostic(kind, context);
+      },
+      onUnrecoverable: (reason) => {
+        if (typeof window === "undefined") return;
+        window.dispatchEvent(new CustomEvent("descall:ios-call-mic-unrecoverable", { detail: { reason } }));
+      },
+      log: (...args) => console.info("[CallAudio]", ...args),
+    });
+  }
+
   useEffect(() => { peerRef.current = peer; }, [peer]);
   useEffect(() => { socketRef.current = socket; }, [socket]);
   useEffect(() => { callTypeRef.current = callType; }, [callType]);
@@ -202,6 +258,9 @@ export function useCall(socket, callOccupancyRef = null) {
   }, []);
 
   const cleanup = useCallback(() => {
+    micGuardRef.current?.reset();
+    callDirectionRef.current = null;
+    setCalleeAnswering(false);
     try { voiceCaptureRef.current?.stopAndUpload(); } catch { /* hangup must never block */ }
     voiceCaptureRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -861,6 +920,7 @@ export function useCall(socket, callOccupancyRef = null) {
       }
       
       // New incoming call
+      callDirectionRef.current = "incoming";
       incomingOfferRef.current = offer;
       incomingCallTypeRef.current = incomingType || "voice";
       setRemoteCameraOn(incomingType === "video");
@@ -901,8 +961,15 @@ export function useCall(socket, callOccupancyRef = null) {
       try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch { /* ignore */ }
     };
 
-    const onEnded = ({ fromUserId } = {}) => {
+    const onEnded = ({ fromUserId, reason } = {}) => {
       if (!fromUserId || peerRef.current?.id === fromUserId) {
+        if (reason === "callee_unavailable" && modeRef.current === "outgoing") {
+          // Answered on a locked iPhone but never got to join (native timeout).
+          toastRef.current?.(
+            tRuntime("They answered on a locked iPhone but couldn't join in time. Try calling again."),
+            "info"
+          );
+        }
         if (!suppressRemoteEndCueRef.current) {
           if (modeRef.current === "incoming" || modeRef.current === "outgoing") audioManager.play("callReject");
           else if (modeRef.current === "active") audioManager.play("userLeave");
@@ -941,6 +1008,14 @@ export function useCall(socket, callOccupancyRef = null) {
       });
     };
 
+    const onCalleeAnswering = ({ fromUserId } = {}) => {
+      if (!fromUserId || peerRef.current?.id !== fromUserId) return;
+      if (modeRef.current !== "outgoing") return;
+      setCalleeAnswering(true);
+      setConnectionQuality("connecting");
+      setPeerConnectionState("connecting");
+    };
+
     const onUnreachable = ({ toUserId, reason } = {}) => {
       if (!toUserId || peerRef.current?.id !== toUserId) return;
       if (modeRef.current !== "outgoing") return;
@@ -958,6 +1033,7 @@ export function useCall(socket, callOccupancyRef = null) {
     socket.on('call:declined', onEnded);
     socket.on('call:cancelled', onCancelled);
     socket.on('call:unreachable', onUnreachable);
+    socket.on('call:callee-answering', onCalleeAnswering);
     socket.on('call:media-state', onMediaState);
 
     socket.on('user:profile:updated', onProfileUpdated);
@@ -970,10 +1046,27 @@ export function useCall(socket, callOccupancyRef = null) {
       socket.off('call:declined', onEnded);
       socket.off('call:cancelled', onCancelled);
       socket.off('call:unreachable', onUnreachable);
+      socket.off('call:callee-answering', onCalleeAnswering);
       socket.off('call:media-state', onMediaState);
       socket.off('user:profile:updated', onProfileUpdated);
     };
   }, [socket, gracefulEnd, cleanup]);
+
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; }, [toast]);
+
+  // Mic (+ camera) for a DM call. Native iOS retries a capture that collides
+  // with CallKit activating the audio session (NotReadableError).
+  const acquireCallMicStream = useCallback((type) => {
+    const acquire = () =>
+      acquireVoiceMicStream(
+        type === "video"
+          ? { video: { width: 1280, height: 720, facingMode: "user" } }
+          : { video: false }
+      );
+    if (!IOS_NATIVE) return acquire();
+    return withCaptureRetry(acquire, { log: (...args) => console.info("[CallAudio]", ...args) });
+  }, []);
 
   const startCall = useCallback(async (friend, type = "voice") => {
     const peerId = friend?.id || friend?.userId;
@@ -989,14 +1082,13 @@ export function useCall(socket, callOccupancyRef = null) {
       return;
     }
     try {
-      const stream = await acquireVoiceMicStream(
-        type === "video"
-          ? { video: { width: 1280, height: 720, facingMode: "user" } }
-          : { video: false }
-      );
+      callDirectionRef.current = "outgoing";
+      micGuardRef.current?.noteCaptureStart();
+      const stream = await acquireCallMicStream(type);
       localStreamRef.current = stream;
       setLocalStream(stream);
       setNoiseSuppressedTrackEnabled(true);
+      micGuardRef.current?.watchTrack(stream.getAudioTracks()[0]);
 
       // Sync peerRef immediately — unreachable/decline can arrive before React commit
       const peerObj = { ...friend, id: peerId };
@@ -1036,7 +1128,7 @@ export function useCall(socket, callOccupancyRef = null) {
       toast(tRuntime(voiceMicErrorCopy(err)), "error");
       cleanup();
     }
-  }, [cleanup, setupPeerConnection, toast]);
+  }, [cleanup, setupPeerConnection, toast, acquireCallMicStream]);
 
   const acceptIncoming = useCallback(async () => {
     const offer = incomingOfferRef.current;
@@ -1049,14 +1141,18 @@ export function useCall(socket, callOccupancyRef = null) {
       if (modeRef.current !== "incoming") return;
     }
     try {
-      const stream = await acquireVoiceMicStream(
-        type === "video"
-          ? { video: { width: 1280, height: 720, facingMode: "user" } }
-          : { video: false }
-      );
+      micGuardRef.current?.noteCaptureStart();
+      const stream = await acquireCallMicStream(type);
+      // The ring may have ended while the capture was pending (iOS defers
+      // getUserMedia until the app is visible, e.g. answered on a locked phone).
+      if (modeRef.current !== "incoming" || peerRef.current?.id !== currentPeer.id || incomingOfferRef.current !== offer) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       localStreamRef.current = stream;
       setLocalStream(stream);
       setNoiseSuppressedTrackEnabled(true);
+      micGuardRef.current?.watchTrack(stream.getAudioTracks()[0]);
       setCallType(type);
       setCameraOn(type === "video");
 
@@ -1084,7 +1180,7 @@ export function useCall(socket, callOccupancyRef = null) {
       toast(tRuntime(voiceMicErrorCopy(err)), "error");
       cleanup();
     }
-  }, [peer, cleanup, setupPeerConnection, toast]);
+  }, [peer, cleanup, setupPeerConnection, toast, acquireCallMicStream]);
 
   const endCall = useCallback((toUserId) => {
     const targetId = toUserId ?? peerRef.current?.id;
@@ -1283,6 +1379,10 @@ export function useCall(socket, callOccupancyRef = null) {
     const pc = pcRef.current;
     if (!pc || screenSharingRef.current) {
       console.log('[ScreenShare] abort: no pc or already sharing');
+      return;
+    }
+    if (screenShareComingSoonOnIos()) {
+      toast(tRuntime("Screen sharing is coming soon on iPhone."), "info");
       return;
     }
     try {
@@ -1568,6 +1668,51 @@ export function useCall(socket, callOccupancyRef = null) {
     else setParticipantVolume(userId, lastRemoteVolumeRef.current || 1);
   }, [setParticipantVolume]);
 
+  // ── Native iOS: microphone health + audio output routing ────────────────
+  useEffect(() => {
+    const guard = micGuardRef.current;
+    if (!guard || mode !== "active") return undefined;
+    guard.startMonitoring();
+    return () => guard.stopMonitoring();
+  }, [mode]);
+
+  const iosRouteActiveRef = useRef(false);
+  useEffect(() => {
+    if (!IOS_NATIVE) return;
+    if (mode === "outgoing" || mode === "active") {
+      iosRouteActiveRef.current = true;
+      void beginIosCallAudio({ video: callType === "video" });
+    } else if (!mode && iosRouteActiveRef.current) {
+      iosRouteActiveRef.current = false;
+      void endIosCallAudio();
+    }
+  }, [mode, callType]);
+
+  /** CallKit didActivate (from useIosCallKitBridge). */
+  const onCallAudioSessionActivated = useCallback(() => {
+    micGuardRef.current?.onAudioSessionActivated();
+    if (iosRouteActiveRef.current) void beginIosCallAudio({ video: callTypeRef.current === "video" });
+  }, []);
+
+  /** Re-acquire the microphone (native iOS recovery; no-op elsewhere). */
+  const refreshMicrophone = useCallback(
+    (reason = "manual", opts) => micGuardRef.current?.refresh(reason, opts) ?? Promise.resolve(false),
+    []
+  );
+
+  const iosRoute = useSyncExternalStore(
+    IOS_NATIVE ? subscribeIosAudioRoute : noopSubscribe,
+    IOS_NATIVE ? getIosAudioRouteSnapshot : getNoRoute,
+    IOS_NATIVE ? getIosAudioRouteSnapshot : getNoRoute
+  );
+  const iosOutputDevices = useMemo(
+    () => (IOS_NATIVE && iosRoute ? iosRoutesAsOutputDevices(iosRoute, tRuntime) : null),
+    [iosRoute]
+  );
+  const setIosAudioOutput = useCallback((routeId) => {
+    void selectIosAudioRoute(routeId);
+  }, []);
+
   const formatDuration = (s) => {
     const m = Math.floor(s / 60).toString().padStart(2, "0");
     const sec = (s % 60).toString().padStart(2, "0");
@@ -1588,6 +1733,7 @@ export function useCall(socket, callOccupancyRef = null) {
     callAnchorAt,
     callType,
     callUuid,
+    calleeAnswering,
     peer,
     muted,
     deafened,
@@ -1625,13 +1771,17 @@ export function useCall(socket, callOccupancyRef = null) {
     handleRemoteScreenShareStop,
     cleanup,
     audioInputDevices,
-    audioOutputDevices,
+    // Native iOS: native routes (iPhone / Speaker / AirPods…); setSinkId does nothing there.
+    audioOutputDevices: iosOutputDevices || audioOutputDevices,
+    audioOutputLabel: iosOutputDevices ? tRuntime("Audio output") : null,
     videoInputDevices,
     selectedAudioInput,
-    selectedAudioOutput,
+    selectedAudioOutput: iosOutputDevices ? iosRoute?.selected || "" : selectedAudioOutput,
     selectedVideoInput,
     setAudioInput,
-    setAudioOutput,
+    setAudioOutput: iosOutputDevices ? setIosAudioOutput : setAudioOutput,
+    refreshMicrophone,
+    onCallAudioSessionActivated,
     setVideoInput,
     setParticipantVolume,
     toggleParticipantMute,

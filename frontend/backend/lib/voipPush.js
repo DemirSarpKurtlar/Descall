@@ -39,7 +39,7 @@ function voipHost() {
 function buildVoipPayload(call = {}) {
   const avatar = clip(call.callerAvatar, MAX_URL);
   const video = call.video === true || call.callType === "video";
-  return {
+  const payload = {
     type: "call",
     callUuid: clip(call.callUuid, 64),
     callerId: clip(call.callerId, 64),
@@ -50,6 +50,15 @@ function buildVoipPayload(call = {}) {
     conversationId: clip(call.conversationId || call.callerId, 64),
     sentAt: new Date().toISOString(),
   };
+  // Lets the phone report "answered on the lock screen" / "couldn't join"
+  // for this one ring while its web layer is suspended (lib/voipStatus.js).
+  const statusUrl = clip(call.statusUrl, MAX_URL);
+  if (call.statusToken && call.calleeId && /^https:\/\//i.test(statusUrl)) {
+    payload.calleeId = clip(call.calleeId, 64);
+    payload.statusToken = clip(call.statusToken, 128);
+    payload.statusUrl = statusUrl;
+  }
+  return payload;
 }
 
 function buildVoipHeaders(cfg, token, jwtToken) {
@@ -108,7 +117,15 @@ function createVoipPusher(deps = {}) {
         log.warn("[VoIP] APNS_KEY_ID / APNS_TEAM_ID / APNS_PRIVATE_KEY not set — VoIP ring skipped");
         return { ...result, skipped: true };
       }
-      const body = JSON.stringify(buildVoipPayload(call));
+      const { signVoipStatus, voipStatusUrl } = require("./voipStatus");
+      const body = JSON.stringify(
+        buildVoipPayload({
+          ...call,
+          calleeId: userId,
+          statusToken: signVoipStatus(call.callUuid, userId),
+          statusUrl: voipStatusUrl(),
+        })
+      );
       const host = voipHost();
       const jwtToken = fcm.getApnsJwt(cfg);
       await Promise.allSettled(

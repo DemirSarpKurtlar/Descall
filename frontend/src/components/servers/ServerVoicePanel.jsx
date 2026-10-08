@@ -26,6 +26,7 @@ import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { visibleScreenStream } from "../../lib/screenShareTracks";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
+import { screenShareComingSoonOnIos } from "../../lib/webrtcScreenShare";
 
 function TileFullscreenVideo({ stream }) {
   const ref = useRef(null);
@@ -833,6 +834,10 @@ export default function ServerVoicePanel({
 
   const onToggleScreen = async () => {
     if (!canVideo) return;
+    if (!serverVoice?.isScreenSharing && screenShareComingSoonOnIos()) {
+      toast(t("Screen sharing is coming soon on iPhone."), "info");
+      return;
+    }
     if (serverVoice?.isScreenSharing) {
       await serverVoice.stopScreenShare?.();
     } else {

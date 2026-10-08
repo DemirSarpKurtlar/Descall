@@ -180,12 +180,15 @@ function nativeCallPlatform() {
   return platform === "android" || platform === "ios" ? platform : "";
 }
 
-async function startNativeCallKeepAlive({ title, artist } = {}) {
+async function startNativeCallKeepAlive({ title, artist, preserveAudioCategory = false } = {}) {
   if (!nativeCallPlatform()) return;
   try {
     await CallKeepAlive.start({
       title: title || "Descall",
       body: artist ? `In call with ${artist}` : "Call in progress",
+      // iOS: don't re-set the category WebKit configured for an already
+      // running getUserMedia capture (that silences the microphone).
+      preserveCategory: Boolean(preserveAudioCategory),
     });
     nativeKeepAliveActive = true;
   } catch (err) {
@@ -208,12 +211,12 @@ async function stopNativeCallKeepAlive() {
 }
 
 /** Call once when a call starts/is accepted/is joined. */
-export function acquireCallWakeLock({ title, artist, skipNative = false } = {}) {
+export function acquireCallWakeLock({ title, artist, skipNative = false, preserveAudioCategory = false } = {}) {
   setMediaSessionActive(title, artist);
   void acquireScreenWakeLock();
   startSilentAudioKeepalive();
   // skipNative: native iOS DM calls under CallKit, which activates the audio session itself.
-  if (!skipNative) void startNativeCallKeepAlive({ title, artist });
+  if (!skipNative) void startNativeCallKeepAlive({ title, artist, preserveAudioCategory });
 
   if (!reacquireOnVisible) {
     reacquireOnVisible = () => {
@@ -242,6 +245,12 @@ export function acquireCallWakeLock({ title, artist, skipNative = false } = {}) 
     };
     document.addEventListener("visibilitychange", reacquireOnVisible);
   }
+}
+
+/** Native keep-alive now (e.g. CallKit gave up the call's audio but the call goes on). */
+export function ensureNativeCallKeepAlive({ title, artist } = {}) {
+  if (nativeKeepAliveActive) return;
+  void startNativeCallKeepAlive({ title, artist, preserveAudioCategory: true });
 }
 
 /** Call once when the call fully ends (not on every temporary state change). */

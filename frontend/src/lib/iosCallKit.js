@@ -42,10 +42,18 @@ let enabled = false;
 let voipToken = null;
 let uploadedFor = ""; // `${authToken}|${voipToken}` already registered
 const handlers = new Set();
+const taps = new Set(); // live observers (audio route); never consume the backlog
 const backlog = []; // events that arrived before the hook subscribed
 
 function dispatch(name, data) {
   if (!name) return;
+  taps.forEach((fn) => {
+    try {
+      fn(name, data || {});
+    } catch (err) {
+      console.warn("[CallKit] tap failed:", err?.message || err);
+    }
+  });
   if (name === "voipToken") {
     voipToken = data?.token || null;
     void syncIosVoipToken();
@@ -85,6 +93,12 @@ export function onCallKitEvent(fn) {
   return () => handlers.delete(fn);
 }
 
+/** Observe events as they arrive (no backlog replay, doesn't affect onCallKitEvent). */
+export function tapCallKitEvents(fn) {
+  taps.add(fn);
+  return () => taps.delete(fn);
+}
+
 export function isIosCallKitEnabled() {
   return enabled;
 }
@@ -95,15 +109,19 @@ export function initIosCallKit() {
   initPromise = (async () => {
     try {
       const res = await callKitPlugin.isAvailable();
+      // The listener is needed without CallKit too: call audio routing
+      // ("audioRoute") works everywhere, including mainland China.
+      await callKitPlugin.addListener("callkitEvent", (e) => dispatch(e?.event, e?.data));
       if (!res?.available) {
         // e.g. device region changed to mainland China: stop VoIP rings for
         // a token registered earlier (the app no longer handles them).
         enabled = false;
         setCallKitEnabled(false);
         void cleanupStaleVoipToken();
+        const { events } = (await callKitPlugin.drainEvents()) || {};
+        (events || []).forEach((e) => dispatch(e?.event, e?.data));
         return false;
       }
-      await callKitPlugin.addListener("callkitEvent", (e) => dispatch(e?.event, e?.data));
       enabled = true;
       setCallKitEnabled(true);
       const { events } = (await callKitPlugin.drainEvents()) || {};
