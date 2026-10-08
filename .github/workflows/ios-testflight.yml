@@ -6,6 +6,8 @@
 # (Xcode's default at archive time) cannot create a profile, and Xcode 26 refuses an Apple
 # Distribution identity with automatic signing. So the archive is built unsigned and the export
 # step signs it with the cloud-managed Apple Distribution certificate + App Store profile.
+# Before export the archived app gets an ad-hoc signature carrying App.release.entitlements,
+# because export only keeps entitlements that are present in the archived binary.
 # The exported IPA's entitlements are checked before upload; upload uses altool + the API key.
 # No certificate or profile is stored in the repo or in secrets.
 #
@@ -158,6 +160,19 @@ jobs:
             archive 2>&1 | tee "$LOG_DIR/archive.log"
           test -d "$ARCHIVE_PATH/Products/Applications/App.app"
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
+
+      - name: Embed release entitlements in the archive (ad-hoc, re-signed at export)
+        run: |
+          set -euo pipefail
+          # Export keeps only the entitlements found in the archived binary, so an unsigned archive
+          # would lose Push (aps-environment) and Sign in with Apple. Ad-hoc sign the archived app
+          # with App.release.entitlements; export replaces this with the Apple Distribution signature.
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          ENT="frontend/ios/App/App/App.release.entitlements"
+          find "$APP/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) -print0 2>/dev/null |
+            while IFS= read -r -d '' fw; do codesign --force --sign - --timestamp=none "$fw"; done
+          codesign --force --sign - --timestamp=none --entitlements "$ENT" --generate-entitlement-der "$APP"
+          codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p -
 
       - name: Inspect archive (version)
         run: |
