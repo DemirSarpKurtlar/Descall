@@ -79,4 +79,16 @@ assert(/html\.native-app \.toast-stack\s*\{[^}]*safe-area-inset-top/.test(native
 assert(/html\.native-app \.app-feedback-banner,[\s\S]{0,80}\{[^}]*safe-area-inset-top/.test(nativeCss), "native top banners must pad for the Dynamic Island");
 assert(/is-native/.test(authView) && /auth-legal-links/.test(authView), "AuthView must render native safe-area class + legal links");
 
+// Mobile boot: launch-style splash (logo on #393C4D), never the skeleton.
+assert(/classList\.add\("boot-mobile"\)/.test(indexHtml), "index.html must flag the mobile boot surface before paint");
+assert(/window\.__descallHoldBootSplash = function/.test(indexHtml), "index.html must expose the boot splash hold");
+assert((indexHtml.match(/if \(window\.__descallBootHolds > 0\) return;/g) || []).length >= 5, "every splash dismiss path must respect holds");
+assert(/html\.boot-mobile #boot-splash,\s*\.descall-boot-splash\s*\{[^}]*background: #393c4d;/.test(indexHtml), "mobile splash must be flat #393C4D like the launch screen");
+assert(/html\.boot-mobile #boot-splash \.boot-title,/.test(indexHtml), "mobile splash must hide the title/bar/orbs (logo only)");
+const bootSkeleton = readFileSync(join(here, "..", "components", "boot", "AppBootSkeleton.jsx"), "utf8");
+assert(/if \(isMobileBootSurface\(\)\) return <MobileBootSplash \/>;/.test(bootSkeleton), "AppBootSkeleton must render the splash on mobile");
+assert(/__descallHoldBootSplash/.test(bootSkeleton) && /descall-boot-splash/.test(bootSkeleton), "mobile boot placeholder must hold the HTML splash");
+const mobileBranch = bootSkeleton.slice(bootSkeleton.indexOf("function MobileBootSplash"), bootSkeleton.indexOf("export default function AppBootSkeleton"));
+assert(mobileBranch && !/Loading Descall|app-boot-skeleton/.test(mobileBranch), "mobile boot placeholder must have no skeleton / English text");
+
 console.log("entryShell.selftest.mjs: ok");

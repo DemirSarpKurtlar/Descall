@@ -19,6 +19,40 @@
         gtag('config', 'AW-18387992694');
       })();
     </script>
+    <script>
+      /* Mobile boot surface (native Capacitor app + phone/touch web, same rule as
+         hooks/useMobile.js; never Electron): the boot splash is the launch-screen
+         look (Descall logo on #393C4D, no text) and React's boot placeholder keeps
+         it up instead of painting a skeleton. Desktop web / Electron unchanged. */
+      (function () {
+        window.__descallBootHolds = 0;
+        window.__descallHoldBootSplash = function () {
+          window.__descallBootHolds += 1;
+          var released = false;
+          return function () {
+            if (released) return;
+            released = true;
+            window.__descallBootHolds = Math.max(0, window.__descallBootHolds - 1);
+            window.setTimeout(function () {
+              if (window.__descallBootHolds === 0 && window.__descallDismissBootSplash) {
+                window.__descallDismissBootSplash({ minMs: 0, maxMs: 0 });
+              }
+            }, 0);
+          };
+        };
+        try {
+          var w = window;
+          var ua = navigator.userAgent || "";
+          if ((w.electronAPI && w.electronAPI.isElectron) || /Electron/i.test(ua)) return;
+          var cap = w.Capacitor;
+          var nativeApp = !!(cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform());
+          var mobileUa = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua);
+          if (nativeApp || mobileUa || (w.innerWidth || 0) <= 768) {
+            document.documentElement.classList.add("boot-mobile");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -197,6 +231,62 @@
         visibility: hidden;
         transform: scale(1.03);
         pointer-events: none;
+      }
+      /* Mobile boot splash = the native launch screen: the original Descall icon
+         (its background is #393C4D) aspect-fit to the screen on a flat #393C4D,
+         edge to edge, no text / bar / orbs. .descall-boot-splash is the identical
+         React placeholder (components/boot/AppBootSkeleton.jsx) that replaces the
+         skeleton on mobile, so launch → splash → app is one continuous image. */
+      html.boot-mobile #boot-splash,
+      .descall-boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #393c4d;
+        overflow: hidden;
+      }
+      html.boot-mobile #boot-splash {
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+      .descall-boot-splash {
+        z-index: 2147482000;
+      }
+      html.boot-mobile #boot-splash.boot-splash--hide {
+        transform: none;
+      }
+      html.boot-mobile #boot-splash .boot-orb,
+      html.boot-mobile #boot-splash .boot-title,
+      html.boot-mobile #boot-splash .boot-bar {
+        display: none;
+      }
+      html.boot-mobile #boot-splash .boot-card {
+        padding: 0;
+        gap: 12px;
+        animation: none;
+      }
+      html.boot-mobile #boot-splash .boot-mark,
+      .descall-boot-splash .boot-mark {
+        width: min(100vw, 100vh);
+        height: min(100vw, 100vh);
+        border-radius: 0;
+        box-shadow: none;
+        animation: none;
+        overflow: visible;
+      }
+      html.boot-mobile #boot-splash .boot-mark img,
+      .descall-boot-splash .boot-mark img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 0;
+        display: block;
+      }
+      /* Boot failure (retry button): shrink the logo so the message fits. */
+      html.boot-mobile #boot-splash[data-boot-failed="1"] .boot-mark {
+        width: 112px;
+        height: 112px;
       }
       /* Static SEO shell — readable first paint before React hydrate (all niche pages). */
       #seo-static {
@@ -824,6 +914,7 @@
               window.__descallDismissBootSplash = function (opts) {
                 var root = document.getElementById("boot-splash");
                 if (!root || root.classList.contains("boot-splash--hide")) return;
+                if (window.__descallBootHolds > 0) return;
                 var minMs = (opts && typeof opts.minMs === "number") ? opts.minMs : 450;
                 var maxMs = (opts && typeof opts.maxMs === "number") ? opts.maxMs : 1800;
                 var shownAt = Number(root.getAttribute("data-shown-at") || Date.now());
@@ -833,6 +924,7 @@
                 var status = document.getElementById("boot-status");
                 if (status) status.textContent = "Ready";
                 window.setTimeout(function () {
+                  if (window.__descallBootHolds > 0) return;
                   root.classList.add("boot-splash--hide");
                   window.setTimeout(function () {
                     if (root && root.parentNode) root.parentNode.removeChild(root);
@@ -857,6 +949,16 @@
     <script>
       /* Boot splash only — prerender strips this with #boot-splash. */
       (function () {
+        // Mobile: the app-shell safety net (above) injects a fallback splash
+        // before this markup is parsed; keep only this one so the held splash
+        // and its single release-dismiss target the splash actually on screen.
+        // (Desktop web / Electron keep their existing two-step timing.)
+        if (document.documentElement.classList.contains("boot-mobile")) {
+          var all = document.querySelectorAll("#boot-splash");
+          for (var di = 0; di < all.length - 1; di += 1) {
+            if (all[di].parentNode) all[di].parentNode.removeChild(all[di]);
+          }
+        }
         var el = document.getElementById("boot-splash");
         if (el) el.setAttribute("data-shown-at", String(Date.now()));
         var logo = document.getElementById("boot-logo");
@@ -919,6 +1021,8 @@
           splash.__descallWaitPaint = true;
           var tries = 0;
           var timer = window.setInterval(function () {
+            // A held splash is intentional (mobile boot placeholder), not a stall.
+            if (window.__descallBootHolds > 0) return;
             tries += 1;
             if (!document.getElementById("boot-splash")) {
               window.clearInterval(timer);
@@ -939,6 +1043,8 @@
         window.__descallDismissBootSplash = function (opts) {
           var root = document.getElementById("boot-splash");
           if (!root || root.classList.contains("boot-splash--hide")) return;
+          // Mobile boot placeholder is mounted: keep the splash up until it releases.
+          if (window.__descallBootHolds > 0) return;
           if (root.getAttribute("data-boot-failed") === "1" && !(opts && opts.force)) return;
           var force = opts && opts.force;
           if (!force && !appHasPainted()) {
@@ -957,6 +1063,7 @@
           window.setTimeout(function () {
             if (!root || root.classList.contains("boot-splash--hide")) return;
             if (root.getAttribute("data-boot-failed") === "1") return;
+            if (window.__descallBootHolds > 0) return;
             root.classList.add("boot-splash--hide");
             kickPaint();
             window.setTimeout(function () {

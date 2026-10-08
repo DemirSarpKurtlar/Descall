@@ -1,8 +1,47 @@
+import { useEffect } from "react";
+import { useT } from "../../context/localeContextInstance";
+
+/** Set before first paint by index.html (native app + phone/touch web, never Electron). */
+function isMobileBootSurface() {
+  try {
+    return typeof document !== "undefined" && document.documentElement.classList.contains("boot-mobile");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mobile: never a skeleton. Keep the launch-style splash (logo on #393C4D) up
+ * for as long as the app is booting: hold the pre-React #boot-splash so it does
+ * not fade into a placeholder, and paint the identical splash underneath for
+ * the cases where the HTML splash is already gone.
+ */
+function MobileBootSplash() {
+  const t = useT();
+  useEffect(() => {
+    const hold = typeof window !== "undefined" ? window.__descallHoldBootSplash : null;
+    return typeof hold === "function" ? hold() : undefined;
+  }, []);
+  return (
+    <div className="descall-boot-splash" role="status" aria-busy="true" aria-label={t("Loading")}>
+      <div className="boot-mark" aria-hidden="true">
+        <img src={`${import.meta.env.BASE_URL || "/"}brand/descall-icon.png`} alt="" width="112" height="112" decoding="sync" />
+      </div>
+    </div>
+  );
+}
+
 /**
  * Visible shell while the authenticated app chunk hydrates / session resolves.
  * Replaces the empty black #root that made hard navigations look crashed.
+ * Desktop web / Electron: skeleton (unchanged). Mobile: launch splash.
  */
-export default function AppBootSkeleton({ label = "Loading Descall" }) {
+export default function AppBootSkeleton(props) {
+  if (isMobileBootSurface()) return <MobileBootSplash />;
+  return <DesktopBootSkeleton {...props} />;
+}
+
+function DesktopBootSkeleton({ label = "Loading Descall" }) {
   return (
     <div className="app-boot-skeleton" role="status" aria-busy="true" aria-label={label}>
       <div className="app-boot-skeleton__rail" aria-hidden="true">
