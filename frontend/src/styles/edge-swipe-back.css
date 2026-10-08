@@ -14,6 +14,13 @@
   will-change: opacity;
 }
 
+/* Root screens (no previous page): the rubber-banding page reveals a plain
+   backdrop, never the screen that happens to be mounted behind it. */
+.edge-swipe-scrim.is-void {
+  background: var(--bg, #0b0b0f);
+  opacity: 1;
+}
+
 .edge-swipe-shadow {
   top: 0;
   bottom: 0;

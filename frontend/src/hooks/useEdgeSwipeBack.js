@@ -12,7 +12,7 @@ import {
   layerFrame,
   progressFor,
 } from "../lib/edgeSwipeBack";
-import { hapticLight } from "../lib/haptics";
+import { hapticLight, primeHaptics } from "../lib/haptics";
 
 /**
  * iOS-style interactive swipe-back for inner mobile screens.
@@ -24,7 +24,13 @@ import { hapticLight } from "../lib/haptics";
  *     underlayRef | getUnderlay, // the live previous screen (parallax + dim), optional
  *     placeholder,             // no live previous screen → skeleton placeholder
  *     priority,                // nested screens: the highest enabled one wins
+ *     canGoBack,               // false = no previous page: edge drag rubber-bands and returns
  *   })
+ *
+ * Motion follows /workspace/design/apple-design.md: 10px hysteresis, 1:1
+ * tracking, commit by release-velocity sign + momentum projection, the finger's
+ * velocity handed to a critically damped spring, interruptible from the live
+ * position, haptic in the same frame as the commit, reduced motion = cross-fade.
  *
  * One shared touch driver serves every registered screen, so nested screens
  * never both react. Frames are transform/opacity only, written straight to
@@ -204,9 +210,14 @@ function entryUnderlay(entry) {
 }
 
 /** The screen a new touch belongs to: highest priority, then most recently mounted. */
+function entryCanGoBack(entry) {
+  const props = entry.props.current;
+  return props.canGoBack !== false && typeof props.onBack === "function";
+}
+
 function pickEntry() {
   const ordered = [...entries]
-    .filter((entry) => entry.props.current.enabled && typeof entry.props.current.onBack === "function")
+    .filter((entry) => entry.props.current.enabled && (entryCanGoBack(entry) || entry.props.current.canGoBack === false))
     .sort((a, b) => (b.props.current.priority || 0) - (a.props.current.priority || 0) || b.order - a.order);
   for (const entry of ordered) {
     const surface = entrySurface(entry);
@@ -259,11 +270,12 @@ function beginSession(entry, surface) {
   const width = surface.getBoundingClientRect().width || window.innerWidth;
   const reduceMotion = prefersReducedMotion();
   const options = { ...SWIPE_BACK_DEFAULTS, ...(props.dimOpacity != null ? { dimOpacity: props.dimOpacity } : null) };
+  const canGoBack = entryCanGoBack(entry);
 
-  let underlay = entryUnderlay(entry);
+  let underlay = canGoBack ? entryUnderlay(entry) : null;
   if (underlay === surface || (underlay && underlay.contains(surface))) underlay = null;
   let placeholder = null;
-  if (!underlay && props.placeholder) {
+  if (canGoBack && !underlay && props.placeholder) {
     placeholder = createPlaceholder();
     parent.insertBefore(placeholder, surface);
     underlay = placeholder;
@@ -280,7 +292,8 @@ function beginSession(entry, surface) {
   const layerPosition = parentStyle.position === "static" ? "fixed" : "absolute";
 
   const scrim = document.createElement("div");
-  scrim.className = "edge-swipe-scrim";
+  // No previous page: an opaque backdrop shows behind the rubber-banding page.
+  scrim.className = canGoBack ? "edge-swipe-scrim" : "edge-swipe-scrim is-void";
   scrim.setAttribute("aria-hidden", "true");
   scrim.style.position = layerPosition;
   scrim.style.zIndex = String(surfaceZ - 1);
@@ -327,8 +340,10 @@ function beginSession(entry, surface) {
     reduceMotion,
     surfaceSaved,
     underlaySaved,
+    canGoBack,
     x: 0,
     finishing: false,
+    committed: false,
   };
 }
 
@@ -343,7 +358,7 @@ function renderFrame(s, x) {
     s.shadow.style.opacity = String(f.shadowOpacity);
   }
   if (s.underlay) s.underlay.style.transform = s.reduceMotion ? "none" : `translate3d(${f.underlayX}px,0,0)`;
-  s.scrim.style.opacity = String(f.dimOpacity);
+  s.scrim.style.opacity = s.canGoBack ? String(f.dimOpacity) : "1";
 }
 
 function teardown(s, { keepSurfaceHidden = false } = {}) {
@@ -447,7 +462,6 @@ function finish(s, decision) {
       /* ignore */
     }
   }
-  hapticLight();
   // The page is fully off-screen / faded out; keep it from flashing back while React swaps screens.
   s.surface.style.visibility = "hidden";
   try {
@@ -482,8 +496,16 @@ function finish(s, decision) {
   });
 }
 
+/** The commit moment: haptic in the same frame the page is released to go back (once per swipe). */
+function commitFeedback(s, decision) {
+  if (decision !== "complete" || s.committed) return;
+  s.committed = true;
+  hapticLight();
+}
+
 function settle(s, decision, velocity) {
   stopAnim();
+  commitFeedback(s, decision);
   const target = decision === "complete" ? s.width : 0;
   if (s.reduceMotion) {
     const from = progressFor(s.x, s.width);
@@ -499,12 +521,16 @@ function settle(s, decision, velocity) {
     anim = { kind: decision, raf: requestAnimationFrame(tick) };
     return;
   }
-  // Finger velocity carries into the spring so release feels continuous.
+  // The finger's release velocity is handed to a critically damped spring
+  // as-is, so the page keeps moving exactly as it was let go.
   const spring = createSpring({
     from: s.x,
     to: target,
-    velocity: decision === "complete" ? Math.max(velocity, 0) : Math.min(velocity, 0),
+    velocity,
     response: decision === "complete" ? SPRING_COMPLETE_MS : SPRING_CANCEL_MS,
+    dampingRatio: 1,
+    min: 0,
+    max: s.width,
   });
   let last = performance.now();
   const tick = (now) => {
@@ -538,7 +564,14 @@ function onTouchStart(event) {
   // Interruptible: a finger landing while the page is still settling catches it.
   if (session && anim && !session.finishing) {
     stopAnim();
-    machine.grab({ x: touch.clientX, y: touch.clientY, t: event.timeStamp, width: session.width, fromX: session.x });
+    machine.grab({
+      x: touch.clientX,
+      y: touch.clientY,
+      t: event.timeStamp,
+      width: session.width,
+      fromX: session.x,
+      canGoBack: session.canGoBack,
+    });
     candidate = { entry: session.entry, surface: session.surface, touchId: touch.identifier };
     return;
   }
@@ -549,22 +582,32 @@ function onTouchStart(event) {
     candidate = null;
     return;
   }
+  const canGoBack = entryCanGoBack(picked.entry);
+  // Nothing to go back to: only the very edge reacts (a rubber-band "end of
+  // the stack"), and not at all with reduced motion.
+  if (!canGoBack && prefersReducedMotion()) {
+    candidate = null;
+    return;
+  }
   const width = picked.surface.getBoundingClientRect().width || window.innerWidth;
   const rect = picked.surface.getBoundingClientRect();
   const x = touch.clientX - rect.left;
-  const zone = classifyStart({
-    x,
-    width,
-    hasSelection: hasTextSelection(),
-    edgeInset: safeAreaLeft(),
-    ...(x > SWIPE_BACK_DEFAULTS.edgeWidth ? inspectTouchTarget(event.target, picked.surface) : null),
-  });
+  const zone = classifyStart(
+    {
+      x,
+      width,
+      hasSelection: hasTextSelection(),
+      edgeInset: safeAreaLeft(),
+      ...(x > SWIPE_BACK_DEFAULTS.edgeWidth ? inspectTouchTarget(event.target, picked.surface) : null),
+    },
+    canGoBack ? SWIPE_BACK_DEFAULTS : { ...SWIPE_BACK_DEFAULTS, bodyZoneRatio: 0 },
+  );
   if (!zone) {
     candidate = null;
     return;
   }
   candidate = { ...picked, touchId: touch.identifier };
-  machine.begin({ x: touch.clientX, y: touch.clientY, t: event.timeStamp, width, zone });
+  machine.begin({ x: touch.clientX, y: touch.clientY, t: event.timeStamp, width, zone, canGoBack });
 }
 
 function onTouchMove(event) {
@@ -590,6 +633,8 @@ function onTouchMove(event) {
       return;
     }
     renderFrame(session, 0);
+    // Load the haptics plugin now so the commit tap fires in the release frame.
+    if (session.canGoBack) primeHaptics();
   }
   if (machine.state.phase === PHASE.DRAGGING && session) {
     // We own this touch now: no page scroll, no rubber-banding, no text selection.
@@ -622,7 +667,7 @@ function syncListeners() {
   listenersOn = want;
   const method = want ? "addEventListener" : "removeEventListener";
   // touchmove must be non-passive so a locked swipe can stop the page from scrolling.
-  // It is only installed while an inner screen is open (root tabs keep zero listeners).
+  // Installed only while a registered screen is enabled (never on desktop / Electron).
   document[method]("touchstart", onTouchStart, { capture: true, passive: true });
   document[method]("touchmove", onTouchMove, { capture: true, passive: false });
   document[method]("touchend", onTouchEnd, { capture: true, passive: true });
