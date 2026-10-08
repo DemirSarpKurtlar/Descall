@@ -9,6 +9,10 @@ import { isAnalyticsAllowed, markAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
+import { startErrorReporting } from "./lib/sentry";
+
+// Crash/error reporting (prod only, lazy-loaded after first paint, buffers earlier errors).
+startErrorReporting();
 
 try {
   captureVisit();

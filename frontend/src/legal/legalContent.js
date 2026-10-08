@@ -9,6 +9,9 @@
 
 const LAST_UPDATED = "10 Ağustos 2026";
 const LAST_UPDATED_EN = "August 10, 2026";
+// Privacy Policy revised separately (Sentry crash/error reports).
+const PRIVACY_LAST_UPDATED = "8 Ekim 2026";
+const PRIVACY_LAST_UPDATED_EN = "October 8, 2026";
 
 export const TERMS_CONTENT = {
   tr: {
@@ -314,7 +317,7 @@ export const TERMS_CONTENT = {
 export const PRIVACY_CONTENT = {
   tr: {
     title: "Gizlilik Politikası",
-    updated: `Son güncelleme: ${LAST_UPDATED}`,
+    updated: `Son güncelleme: ${PRIVACY_LAST_UPDATED}`,
     intro:
       "Bu Gizlilik Politikası, Descall'ı (\"biz\", \"bizim\") kullanırken hangi bilgileri topladığımızı, bu bilgileri nasıl kullandığımızı, kimlerle paylaştığımızı ve verileriniz üzerindeki haklarınızı açıklar. Descall'a bir hesap oluşturarak veya Hizmet'i kullanarak, bu politikada açıklanan uygulamaları kabul etmiş olursunuz.",
     sections: [
@@ -351,6 +354,7 @@ export const PRIVACY_CONTENT = {
         heading: "4. Bilgilerin Paylaşılması ve Hizmet Sağlayıcılar",
         paragraphs: [
           "Verilerinizi, Hizmet'i işletmemize yardımcı olan ve bizim talimatlarımız doğrultusunda hareket eden güvenilir hizmet sağlayıcılarla (veri işleyicileriyle) paylaşırız: veritabanı ve kimlik doğrulama için Supabase; işlemsel e-posta gönderimi için Resend; mobil push bildirimleri için Firebase Cloud Messaging (Google); ve barındırma altyapısı için Render. Bu sağlayıcılarla yalnızca Hizmet'i sağlamak için gerekli veriler paylaşılır.",
+          "Çökme ve hata raporları: Uygulama, web sitesi, masaüstü uygulaması veya sunucularımız bir hatayla karşılaştığında, hata izleme sağlayıcımız Sentry'ye (Functional Software, Inc.) teknik bir rapor gönderilir. Rapor; hata mesajını, yığın izini (stack trace), hatanın oluştuğu sayfa veya API adresini ve cihaz, işletim sistemi, tarayıcı ve uygulama sürümü bilgilerini içerir. Raporlar adınızı, e-posta adresinizi, mesaj içeriklerinizi veya IP adresinizi içermeyecek şekilde yapılandırılmıştır; oturum anahtarları (token) rapordan çıkarılır. Bu raporlar Sentry'nin Avrupa Birliği (AB) veri bölgesinde saklanır ve yalnızca hataları bulup düzeltmek için kullanılır.",
           "Gönderdiğiniz mesajlar ve medya, yalnızca seçtiğiniz alıcılara (DM karşı tarafı veya grup üyeleri) gösterilir; Descall çalışanları, yalnızca güvenlik soruşturmaları, kullanıcı şikayetlerinin incelenmesi veya yasal yükümlülüklerin yerine getirilmesi için gerekli olduğunda içeriğe erişebilir.",
           "Yasal bir zorunluluk (mahkeme kararı, yasal talep) olması, haklarımızı korumamız gerekmesi veya kullanıcıların güvenliğini sağlamamız gerektiği durumlar hariç, kişisel verilerinizi kolluk kuvvetleri veya diğer üçüncü taraflarla paylaşmayız.",
         ],
@@ -392,7 +396,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "10. Uluslararası Veri Transferi",
         paragraphs: [
-          "Hizmet sağlayıcılarımız (Supabase, Resend, Firebase, Render), verilerinizi kayıtlı olduğunuz ülkeden farklı ülkelerde bulunan sunucularda işleyebilir. Bu durumlarda, verilerinizin yeterli düzeyde korunmasını sağlamak amacıyla ilgili sağlayıcılarla uygun sözleşmesel güvenceler bulunmasını sağlarız.",
+          "Hizmet sağlayıcılarımız (Supabase, Resend, Firebase, Render, Sentry), verilerinizi kayıtlı olduğunuz ülkeden farklı ülkelerde bulunan sunucularda işleyebilir. Bu durumlarda, verilerinizin yeterli düzeyde korunmasını sağlamak amacıyla ilgili sağlayıcılarla uygun sözleşmesel güvenceler bulunmasını sağlarız.",
         ],
       },
       {
@@ -417,7 +421,7 @@ export const PRIVACY_CONTENT = {
   },
   en: {
     title: "Privacy Policy",
-    updated: `Last updated: ${LAST_UPDATED_EN}`,
+    updated: `Last updated: ${PRIVACY_LAST_UPDATED_EN}`,
     intro:
       "This Privacy Policy explains what information we collect when you use Descall (\"we\", \"us\"), how we use it, who we share it with, and what rights you have over your data. By creating an account or using the Service, you agree to the practices described in this policy.",
     sections: [
@@ -454,6 +458,7 @@ export const PRIVACY_CONTENT = {
         heading: "4. Sharing of Information and Service Providers",
         paragraphs: [
           "We share your data with trusted service providers (data processors) who help us operate the Service and act under our instructions: Supabase for database and authentication; Resend for transactional email delivery; Firebase Cloud Messaging (Google) for mobile push notifications; and Render for hosting infrastructure. Only the data necessary to provide the Service is shared with these providers.",
+          "Crash and error reports: when the app, the website, the desktop app or our servers run into an error, a technical report is sent to our error-monitoring provider Sentry (Functional Software, Inc.). A report contains the error message, the stack trace, the page or API address where the error happened, and device, operating system, browser and app version details. Reports are configured not to include your name, email address, message contents or IP address, and sign-in tokens are stripped from them. These reports are stored in Sentry's European Union (EU) data region and are used only to find and fix bugs.",
           "Messages and media you send are shown only to your chosen recipients (the other party in a DM or group members); Descall staff may only access content when necessary for security investigations, reviewing user reports, or fulfilling legal obligations.",
           "We do not share your personal data with law enforcement or other third parties except where required by a legal obligation (court order, legal request), where necessary to protect our rights, or where necessary to protect user safety.",
         ],
@@ -495,7 +500,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "10. International Data Transfers",
         paragraphs: [
-          "Our service providers (Supabase, Resend, Firebase, Render) may process your data on servers located in countries other than the one you reside in. In such cases, we ensure appropriate contractual safeguards are in place with those providers to keep your data adequately protected.",
+          "Our service providers (Supabase, Resend, Firebase, Render, Sentry) may process your data on servers located in countries other than the one you reside in. In such cases, we ensure appropriate contractual safeguards are in place with those providers to keep your data adequately protected.",
         ],
       },
       {

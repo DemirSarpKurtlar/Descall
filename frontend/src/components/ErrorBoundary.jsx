@@ -43,6 +43,7 @@ function IconHome({ size = 14, style }) {
 
 import { t } from "../i18n/runtime";
 import { isModuleLoadError, recoverFromModuleLoadError } from "../lib/moduleLoadError";
+import { reportReactError } from "../lib/sentry";
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -109,6 +110,9 @@ export default class ErrorBoundary extends React.Component {
       systemInfo,
       connectionInfo,
     });
+
+    // Crash report to Sentry (no-op outside production web/desktop/iOS builds).
+    reportReactError(error, errorInfo);
 
     // Log error to backend
     this.logErrorToBackend(error, errorInfo);

@@ -11,6 +11,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@sentry/node": "^11.5.0",
     "@supabase/supabase-js": "^2.103.3",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

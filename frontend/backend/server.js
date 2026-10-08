@@ -8,6 +8,8 @@
 const path = require("path");
 const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+// Sentry must load before express/routes so it can instrument them (no-op without SENTRY_DSN).
+const { setupSentryExpressErrorHandler } = require("./instrument");
 
 const express = require("express");
 const http = require("http");
@@ -1041,6 +1043,9 @@ app.use((_req, res) => {
   console.log("[404]", _req.method, _req.path);
   res.status(404).json({ error: "Not found" });
 });
+
+// Sentry captures 5xx errors here, then passes them on to our handler (no-op without SENTRY_DSN).
+setupSentryExpressErrorHandler(app);
 
 // Error handler
 app.use((err, _req, res, _next) => {

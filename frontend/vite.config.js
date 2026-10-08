@@ -112,8 +112,14 @@ function electronClassicScriptPlugin() {
   };
 }
 
+const appVersion = require("./package.json").version;
+
 export default defineConfig({
   plugins: [react(), descallHtmlSeoPlugin(), electronClassicScriptPlugin()].filter(Boolean),
+  // Sentry release tag (descall@<version>), kept in sync by electron/sync-version.cjs.
+  define: {
+    __DESCALL_VERSION__: JSON.stringify(appVersion),
+  },
   // Serve prerendered dist/<route>/index.html shells in preview (not SPA fallback to /).
   appType: "mpa",
   base: electronBase ? "./" : "/",
@@ -135,6 +141,8 @@ export default defineConfig({
         : {
             manualChunks(id) {
               if (id.includes("node_modules")) {
+                // Lazy-loaded error reporting; must stay out of vendor-react ("/@sentry/react/" matches "/react/").
+                if (id.includes("/@sentry/") || id.includes("/@sentry-internal/")) return "vendor-sentry";
                 if (id.includes("livekit")) return "vendor-livekit";
                 if (id.includes("framer-motion")) return "vendor-motion";
                 if (id.includes("socket.io")) return "vendor-socket";
