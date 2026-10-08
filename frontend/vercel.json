@@ -79,6 +79,16 @@
       "statusCode": 301
     },
     {
+      "source": "/dimaai",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/dimaai/:path*",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
       "source": "/:path+/",
       "destination": "/:path+",
       "statusCode": 301

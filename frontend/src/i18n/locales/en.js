@@ -2322,6 +2322,7 @@ export const phrases = {
   "Server mute": "Server mute",
   "Server deafen": "Server deafen",
   "Deafen": "Deafen",
+  "Deafened": "Deafened",
   "Undeafen": "Undeafen",
   "Move to": "Move to",
   "Disconnect from voice": "Disconnect from voice",

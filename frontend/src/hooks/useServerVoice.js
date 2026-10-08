@@ -866,6 +866,7 @@ export function useServerVoice(socket) {
       socket.emit("server:voice:media-state", {
         channelId,
         muted: nextMuted,
+        deafened: deafenedRef.current,
         cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
       });
     }
@@ -884,14 +885,6 @@ export function useServerVoice(socket) {
         track.enabled = false;
         setMuted(true);
         mutedByDeafenRef.current = true;
-        const channelId = activeChannelIdRef.current;
-        if (channelId && socket?.connected) {
-          socket.emit("server:voice:media-state", {
-            channelId,
-            muted: true,
-            cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
-          });
-        }
       }
       audioManager.play("deafen");
     } else {
@@ -899,16 +892,19 @@ export function useServerVoice(socket) {
         track.enabled = true;
         setMuted(false);
         mutedByDeafenRef.current = false;
-        const channelId = activeChannelIdRef.current;
-        if (channelId && socket?.connected) {
-          socket.emit("server:voice:media-state", {
-            channelId,
-            muted: false,
-            cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
-          });
-        }
       }
       audioManager.play("undeafen");
+    }
+    // Always publish — remote tiles show the headphones-off badge even when
+    // the mic was already muted before deafening.
+    const channelId = activeChannelIdRef.current;
+    if (channelId && socket?.connected) {
+      socket.emit("server:voice:media-state", {
+        channelId,
+        muted: track ? !track.enabled : Boolean(mutedRef.current),
+        deafened: next,
+        cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
+      });
     }
   }, [applyVoiceElement, socket]);
 
@@ -1144,7 +1140,7 @@ export function useServerVoice(socket) {
     const channelId = activeChannelIdRef.current;
     if (channelId && socket?.connected) {
       socket.emit("server:voice:camera:stop", { channelId });
-      socket.emit("server:voice:media-state", { channelId, muted: mutedRef.current, cameraOn: false });
+      socket.emit("server:voice:media-state", { channelId, muted: mutedRef.current, cameraOn: false, deafened: deafenedRef.current });
     }
   }, [isCameraOn, renegotiateWithPeer, socket]);
 
@@ -1166,7 +1162,7 @@ export function useServerVoice(socket) {
       const channelId = activeChannelIdRef.current;
       if (socket?.connected && channelId) {
         socket.emit("server:voice:camera:start", { channelId });
-        socket.emit("server:voice:media-state", { channelId, muted: mutedRef.current, cameraOn: true });
+        socket.emit("server:voice:media-state", { channelId, muted: mutedRef.current, cameraOn: true, deafened: deafenedRef.current });
       }
       if (sfuModeRef.current && liveKitRoomRef.current) {
         await liveKitRoomRef.current.localParticipant.publishTrack(cameraTrack, {
@@ -1420,7 +1416,7 @@ export function useServerVoice(socket) {
         applyLocalMute(true, { forced: Boolean(forcedMute) });
         const ch = activeChannelIdRef.current;
         if (ch && socket?.connected) {
-          socket.emit("server:voice:media-state", { channelId: ch, muted: true, cameraOn: false });
+          socket.emit("server:voice:media-state", { channelId: ch, muted: true, cameraOn: false, deafened: deafenedRef.current });
         }
       }
     };
@@ -1529,6 +1525,7 @@ export function useServerVoice(socket) {
       muted: isMuted,
       serverMuted: sMuted,
       serverDeafened: sDeafened,
+      deafened: selfDeafened,
       cameraOn,
     } = {}) => {
       if (!channelId || !fromUserId) return;
@@ -1541,6 +1538,7 @@ export function useServerVoice(socket) {
                   muted: Boolean(isMuted),
                   serverMuted: Boolean(sMuted),
                   serverDeafened: sDeafened !== undefined ? Boolean(sDeafened) : p.serverDeafened,
+                  deafened: selfDeafened !== undefined ? Boolean(selfDeafened) : p.deafened,
                   cameraOn: cameraOn !== undefined ? Boolean(cameraOn) : p.cameraOn,
                 }
               : p

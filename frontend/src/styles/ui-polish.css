@@ -430,23 +430,20 @@
     box-shadow 0.22s ease;
 }
 
-/* Only the tile border pulses while speaking — rings get their own
-   .speaking-ring.active styles. Applying box-shadow to every .speaking-ring
-   left inactive rings painted green under opacity quirks. */
-.participant-tile.is-speaking,
+/* Video tiles: a static green border that transitions in/out (0.22s, see
+   above). No pulsing animation on the tile itself — adding/removing an
+   `animation` on every VAD flip snapped the glow off for a frame, and on
+   avatar-only tiles it fought the one-shot join animation (black blink).
+   Avatar-only tiles draw speaking with <SpeakingRings> instead. */
+.participant-tile.is-speaking:not(.participant-tile--avatar-only),
 .call-tile.is-speaking {
   box-shadow: 0 0 0 2px var(--success), 0 0 0 5px rgba(35, 165, 90, 0.22);
+  border-color: var(--success) !important;
 }
 
 @keyframes speakingPulse {
   0%, 100% { box-shadow: 0 0 0 2px var(--success), 0 0 10px rgba(35, 165, 90, 0.22); }
   50% { box-shadow: 0 0 0 3px var(--success), 0 0 16px rgba(35, 165, 90, 0.34); }
-}
-
-.participant-tile.is-speaking,
-.call-tile.is-speaking {
-  animation: speakingPulse 1.6s ease-in-out infinite;
-  border-color: var(--success) !important;
 }
 
 .speaking-dot {
@@ -910,7 +907,6 @@
 }
 
 .participant-tile--avatar-only.is-speaking {
-  animation: none;
   box-shadow: none;
   border-color: transparent !important;
 }
@@ -1108,7 +1104,6 @@
 .call-quality-hud.failed { color: var(--danger); }
 
 @media (prefers-reduced-motion: reduce) {
-  .participant-tile.is-speaking,
   .call-tile.is-speaking,
   .speaking-dot {
     animation: none !important;

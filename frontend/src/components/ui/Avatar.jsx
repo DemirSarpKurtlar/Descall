@@ -191,16 +191,28 @@ export function Avatar({
     role: onClick ? "button" : undefined,
   };
 
-  // Only use Framer while speaking. Idle avatars stay as plain divs so Electron
-  // DM→group switches cannot leave projected letter ghosts in the chat header.
-  const Root = isSpeaking ? motion.div : "div";
+  // Framer is only used by voice avatars. Chat / header avatars stay plain
+  // divs so Electron DM→group switches cannot leave projected letter ghosts.
+  // Voice avatars (animate="speaking") stay a motion.div for their whole
+  // life: swapping div <-> motion.div on every speaking toggle remounted the
+  // avatar subtree (fresh <img>, async decode) and blinked the call tile.
+  const speakingCapable = animate === "speaking";
+  const Root = speakingCapable || isSpeaking ? motion.div : "div";
   const motionProps = isSpeaking
     ? {
         layout: false,
-        animate: { scale: [1, 1.1, 1.03, 1.1, 1] },
-        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" },
+        // `null` = start from the current scale (no jump when speech resumes
+        // mid-settle); "mirror" keeps every loop boundary continuous.
+        animate: { scale: [null, 1.1, 1.03, 1.1, 1] },
+        transition: { duration: 0.85, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
       }
-    : {};
+    : speakingCapable
+      ? {
+          layout: false,
+          animate: { scale: 1 },
+          transition: { duration: 0.22, ease: "easeOut" },
+        }
+      : {};
 
   return (
     <Root

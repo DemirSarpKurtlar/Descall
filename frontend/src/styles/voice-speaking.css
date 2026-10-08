@@ -1,36 +1,166 @@
-/* DM / group voice: keep avatar-only tiles chrome-less, pulse the round avatar.
-   ui-polish zeros speakingPulse on .participant-tile--avatar-only.is-speaking;
-   restore a circular green pulse on the avatar shell instead of a square tile glow. */
+/* DM / group voice: avatar-only tiles stay chrome-less; the speaking state is
+   drawn by the always-mounted <SpeakingRings> layer inside the avatar core.
+
+   Flicker rules (see SpeakingRings.jsx):
+   - Never change `animation` on .participant-tile--avatar-only when speaking
+     toggles. The tile owns the one-shot `call-avatar-join` pop
+     (visual-polish-pack.css); overriding it with `animation: none` while
+     speaking re-ran the pop (opacity 0 -> 1) every time speech ended, which
+     painted a black frame where the avatar + rings were.
+   - Speaking only fades the ring layer (opacity transition) and resumes /
+     pauses its keyframes; it never mounts, unmounts or restarts anything.
+   - Keyframes only scale and start/end on the same frame — no opacity or
+     border-colour dips, so a loop boundary is invisible. */
 
 .participant-tile--avatar-only.is-speaking {
-  animation: none;
   box-shadow: none;
   border-color: transparent !important;
 }
 
-.participant-tile--avatar-only.is-speaking .participant-tile-avatar-shell,
-.participant-tile--avatar-only.is-speaking .participant-tile-avatar-core {
-  animation: speakingPulse 1.6s ease-in-out infinite;
+.speaking-rings {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease;
 }
 
-.participant-tile--avatar-only.is-speaking .speaking-ring {
+.speaking-rings.is-active {
   opacity: 1;
 }
 
-.participant-tile--avatar-only.is-speaking .speaking-ring.ring-a {
-  border-color: rgba(35, 165, 90, 0.55);
-  box-shadow: 0 0 18px rgba(35, 165, 90, 0.35);
+.speaking-rings > span {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  box-sizing: border-box;
+  animation-duration: 1.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  /* Paused (not removed) while silent: resuming continues from the same
+     frame instead of restarting, and the fade hides the paused pose. */
+  animation-play-state: paused;
 }
 
-.participant-tile--avatar-only.is-speaking .speaking-ring.ring-b {
-  border-color: rgba(35, 165, 90, 0.28);
-  box-shadow: none;
+.speaking-rings.is-active > span {
+  animation-play-state: running;
+}
+
+/* Thick green ring hugging the avatar. */
+.speaking-rings-glow {
+  inset: 0;
+  box-shadow:
+    0 0 0 3px #23a55a,
+    0 0 14px rgba(35, 165, 90, 0.45);
+  animation-name: speakingRingsGlow;
+}
+
+/* Outer ring — sits on the avatar shell edge. */
+.speaking-rings-ring.ring-a {
+  inset: -19px;
+  border: 2px solid #23a55a;
+  box-shadow:
+    0 0 0 2px rgba(35, 165, 90, 0.55),
+    0 0 18px rgba(35, 165, 90, 0.35);
+  animation-name: speakingRingsWave;
+  scale: calc(1 + var(--speak-level, 0) * 0.12);
+  transition: scale 0.16s ease-out;
+}
+
+/* Inner concentric ring. */
+.speaking-rings-ring.ring-b {
+  inset: -10px;
+  border: 1px solid rgba(35, 165, 90, 0.45);
+  animation-name: speakingRingsWave;
+  /* Negative delay: phase offset without a different first frame. */
+  animation-delay: -0.4s;
+  scale: calc(1 + var(--speak-level, 0) * 0.2);
+  transition: scale 0.16s ease-out;
+}
+
+.participant-tile.small .speaking-rings-glow {
+  box-shadow:
+    0 0 0 2px #23a55a,
+    0 0 8px rgba(35, 165, 90, 0.4);
+}
+.participant-tile.small .speaking-rings-ring.ring-a {
+  inset: -7px;
+  border-width: 1px;
+  box-shadow: 0 0 8px rgba(35, 165, 90, 0.28);
+}
+.participant-tile.small .speaking-rings-ring.ring-b {
+  inset: -4px;
+}
+
+@keyframes speakingRingsGlow {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+@keyframes speakingRingsWave {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Remote + local mic / headphones / camera badges on call tiles. */
+.participant-state-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 0;
+}
+
+.participant-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(237, 66, 69, 0.88);
+  box-shadow: 0 0 0 2px rgba(15, 17, 21, 0.85);
+  flex-shrink: 0;
+}
+
+.participant-state-icon.is-camera-off {
+  background: rgba(79, 84, 92, 0.92);
+}
+
+.participant-state-icons.is-compact {
+  gap: 4px;
+}
+
+.participant-state-icons.is-compact .participant-state-icon {
+  width: 18px;
+  height: 18px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .participant-tile--avatar-only.is-speaking .participant-tile-avatar-shell,
-  .participant-tile--avatar-only.is-speaking .participant-tile-avatar-core {
+  .speaking-rings > span {
     animation: none;
   }
+}
+
+/* Screen-share strip (small) tiles: badges in the corner, clear of the avatar. */
+.participant-tile.small .participant-tile-avatar-status {
+  top: 4px;
+  right: 4px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  opacity: 1;
 }

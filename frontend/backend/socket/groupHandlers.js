@@ -745,7 +745,7 @@ function registerGroupHandlers(io, socket, state) {
 
   // Broadcast per-participant UI state. Media tracks can remain live after
   // their sender is disabled, so receivers cannot reliably infer these flags.
-  socket.on("group:call:media-state", ({ groupId, muted, cameraOn } = {}) => {
+  socket.on("group:call:media-state", ({ groupId, muted, cameraOn, deafened, requestState } = {}) => {
     if (!groupId) return;
     const activeCall = activeGroupCalls.get(groupId);
     if (!activeCall?.participants?.has(myId)) return;
@@ -754,6 +754,9 @@ function registerGroupHandlers(io, socket, state) {
       fromUserId: myId,
       muted: Boolean(muted),
       cameraOn: Boolean(cameraOn),
+      deafened: Boolean(deafened),
+      // Late joiners ask everyone to re-send their state once.
+      requestState: Boolean(requestState),
     });
   });
 

@@ -51,6 +51,7 @@ import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
 import ImageCropModal from "../ui/ImageCropModal";
 import useSpeaking from "../../hooks/useSpeaking";
+import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isChannelMuted, setChannelMutedAsync } from "../../lib/serverChannelMutes";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import {
@@ -1616,16 +1617,20 @@ function resolveMemberVoiceStream(member, { joinedHere, myUserId, localStream, p
 function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu }) {
   const t = useT();
   const name = resolveDisplayName(member) || member?.username || "User";
-  const speaking = useSpeaking(stream, {
-    muted: Boolean(member?.muted || member?.serverMuted),
+  const memberMuted = Boolean(member?.muted || member?.serverMuted);
+  const memberDeafened = Boolean(member?.serverDeafened || member?.deafened);
+  const speakingRaw = useSpeaking(stream, {
+    muted: memberMuted,
     threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
   });
+  // Hold the off-edge so VAD flapping can't blink the ring.
+  const speaking = useHeldSpeaking(speakingRaw && !memberMuted);
   const isPrioritySpeaker = Boolean(speaking && member?.canPrioritySpeaker);
   return (
     <li
-      className={`server-voice-user${member?.muted || member?.serverMuted ? " is-muted" : ""}${member?.serverDeafened ? " is-deafened" : ""}${speaking ? " is-speaking" : ""}${isPrioritySpeaker ? " is-priority-speaker" : ""}`}
+      className={`server-voice-user${memberMuted ? " is-muted" : ""}${memberDeafened ? " is-deafened" : ""}${speaking ? " is-speaking" : ""}${isPrioritySpeaker ? " is-priority-speaker" : ""}`}
       title={member?.username || name}
       onContextMenu={onContextMenu}
       onClick={(e) => {
@@ -1656,11 +1661,11 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu })
           {t("Priority")}
         </span>
       ) : null}
-      {member?.serverDeafened ? (
-        <HeadphoneOff size={12} className="server-voice-user-deafen" aria-hidden />
+      {memberDeafened ? (
+        <HeadphoneOff size={12} className="server-voice-user-deafen" aria-label={t("Deafened")} />
       ) : null}
-      {member?.muted || member?.serverMuted ? (
-        <MicOff size={12} className="server-voice-user-mic" aria-hidden />
+      {memberMuted ? (
+        <MicOff size={12} className="server-voice-user-mic" aria-label={t("Muted")} />
       ) : null}
       {onContextMenu ? (
         <button

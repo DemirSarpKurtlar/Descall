@@ -1497,12 +1497,16 @@ function registerSocketHandlers(io) {
 
     // Media state is presentation-only; it lets the remote tile immediately
     // show muted/camera-off status instead of inferring it from a frozen track.
-    socket.on("call:media-state", ({ toUserId, muted, cameraOn } = {}) => {
+    // `deafened` and `requestState` (ask the peer to re-send its state, e.g.
+    // after this client connected or its socket reconnected) are optional.
+    socket.on("call:media-state", ({ toUserId, muted, cameraOn, deafened, requestState } = {}) => {
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:media-state", {
         fromUserId: myId,
         muted: Boolean(muted),
         cameraOn: Boolean(cameraOn),
+        deafened: Boolean(deafened),
+        requestState: Boolean(requestState),
       });
     });
 

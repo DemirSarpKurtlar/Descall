@@ -38,6 +38,8 @@ function resolvePublicUser(socket) {
     muted: false,
     serverMuted: false,
     serverDeafened: false,
+    // Self-deafen (headphones off) — presentation-only, set via media-state.
+    deafened: false,
     cameraOn: false,
     isScreenSharing: false,
     requestedToSpeak: false,
@@ -910,7 +912,7 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
-  socket.on("server:voice:media-state", ({ channelId, muted, cameraOn } = {}) => {
+  socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened } = {}) => {
     if (!channelId) return;
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
@@ -947,6 +949,7 @@ function registerServerVoiceHandlers(io, socket) {
       }
       me.muted = Boolean(muted);
       if (cameraOn !== undefined) me.cameraOn = Boolean(cameraOn);
+      if (deafened !== undefined) me.deafened = Boolean(deafened);
       const wasMuted = Boolean(self.member?.muted);
       if (me.muted && !wasMuted) {
         me.afkIdleSince = Date.now();
@@ -961,6 +964,7 @@ function registerServerVoiceHandlers(io, socket) {
       muted: Boolean(muted),
       serverMuted: Boolean(me?.serverMuted),
       serverDeafened: Boolean(me?.serverDeafened),
+      deafened: Boolean(me?.deafened),
       cameraOn: Boolean(me?.cameraOn),
     });
     emitChannelState(io, call.serverId, channelId);

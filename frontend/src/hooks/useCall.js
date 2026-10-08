@@ -86,6 +86,7 @@ export function useCall(socket, callOccupancyRef = null) {
   const [cameraOn, setCameraOn] = useState(false);
   const [remoteMuted, setRemoteMuted] = useState(false);
   const [remoteCameraOn, setRemoteCameraOn] = useState(null);
+  const [remoteDeafened, setRemoteDeafened] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
   const [duration, setDuration] = useState(0);
   const [connectionQuality, setConnectionQuality] = useState("unknown");
@@ -342,6 +343,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setCameraOn(false);
     setRemoteMuted(false);
     setRemoteCameraOn(null);
+    setRemoteDeafened(false);
     setScreenSharing(false);
     setConnectionQuality("unknown");
     setPeerConnectionState("idle");
@@ -975,11 +977,21 @@ export function useCall(socket, callOccupancyRef = null) {
       }
     };
 
-    const onMediaState = ({ fromUserId, muted: peerMuted, cameraOn: peerCameraOn } = {}) => {
+    const onMediaState = ({
+      fromUserId,
+      muted: peerMuted,
+      cameraOn: peerCameraOn,
+      deafened: peerDeafened,
+      requestState,
+    } = {}) => {
       if (!fromUserId || fromUserId !== peerRef.current?.id) return;
       setRemoteMuted(Boolean(peerMuted));
       setRemoteCameraOn(Boolean(peerCameraOn));
+      setRemoteDeafened(Boolean(peerDeafened));
       if (peerCameraOn) reclaimMisfiledCamera();
+      // The peer just connected / reconnected and has no idea about our
+      // mute / deafen / camera state yet — answer once (never with a request).
+      if (requestState) emitLocalMediaStateRef.current?.();
     };
 
     const onCancelled = ({ fromUserId } = {}) => {
@@ -1252,6 +1264,42 @@ export function useCall(socket, callOccupancyRef = null) {
     };
   }, []);
 
+  // Remote participants render our mic / headphones / camera badges from
+  // this presentation-only signal. One effect publishes every change (toggle
+  // buttons, CallKit mute, deafen-implied mute) with fresh values — the old
+  // per-toggle emits captured a stale `cameraOn` and never sent deafen.
+  const localMediaStateRef = useRef({ muted: false, cameraOn: false, deafened: false });
+  localMediaStateRef.current = { muted: Boolean(muted), cameraOn: Boolean(cameraOn), deafened: Boolean(deafened) };
+  const emitLocalMediaState = useCallback((opts = {}) => {
+    const toUserId = peerRef.current?.id;
+    const s = socketRef.current;
+    if (!toUserId || !s?.connected) return;
+    s.emit("call:media-state", {
+      toUserId,
+      ...localMediaStateRef.current,
+      ...(opts.requestState ? { requestState: true } : {}),
+    });
+  }, []);
+  const emitLocalMediaStateRef = useRef(emitLocalMediaState);
+  emitLocalMediaStateRef.current = emitLocalMediaState;
+  const peerIdForMedia = peer?.id || null;
+  const mediaStateActive = mode === "active" && Boolean(peerIdForMedia);
+  useEffect(() => {
+    if (!mediaStateActive) return;
+    emitLocalMediaState();
+  }, [mediaStateActive, peerIdForMedia, muted, cameraOn, deafened, emitLocalMediaState]);
+  useEffect(() => {
+    if (!mediaStateActive) return undefined;
+    // Ask the peer for its state on connect and after every socket reconnect
+    // (iOS foreground / network switch) so its badges are never stale.
+    emitLocalMediaState({ requestState: true });
+    const s = socket;
+    if (!s) return undefined;
+    const onReconnect = () => emitLocalMediaState({ requestState: true });
+    s.on("connect", onReconnect);
+    return () => s.off("connect", onReconnect);
+  }, [mediaStateActive, peerIdForMedia, socket, emitLocalMediaState]);
+
   const toggleMute = useCallback(() => {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (track) {
@@ -1260,13 +1308,7 @@ export function useCall(socket, callOccupancyRef = null) {
       setMuted(nextMuted);
       if (!nextMuted) mutedByDeafenRef.current = false;
       audioManager.play(nextMuted ? "mute" : "unmute");
-      if (peerRef.current?.id && socketRef.current?.connected) {
-        socketRef.current.emit("call:media-state", {
-          toUserId: peerRef.current.id,
-          muted: !track.enabled,
-          cameraOn: Boolean(cameraOn),
-        });
-      }
+      // Remote tile state is published by the media-state effect below.
     }
   }, []);
 
@@ -1280,21 +1322,11 @@ export function useCall(socket, callOccupancyRef = null) {
       audio.volume = next ? 0 : remoteVolumeRef.current;
     }
     const track = localStreamRef.current?.getAudioTracks()?.[0];
-    const emitMute = (mutedNow) => {
-      if (peerRef.current?.id && socketRef.current?.connected) {
-        socketRef.current.emit("call:media-state", {
-          toUserId: peerRef.current.id,
-          muted: mutedNow,
-          cameraOn: Boolean(cameraOn),
-        });
-      }
-    };
     if (next) {
       if (track?.enabled) {
         track.enabled = false;
         setMuted(true);
         mutedByDeafenRef.current = true;
-        emitMute(true);
       }
       audioManager.play("deafen");
     } else {
@@ -1302,11 +1334,10 @@ export function useCall(socket, callOccupancyRef = null) {
         track.enabled = true;
         setMuted(false);
         mutedByDeafenRef.current = false;
-        emitMute(false);
       }
       audioManager.play("undeafen");
     }
-  }, [cameraOn]);
+  }, []);
 
   const toggleCamera = useCallback(async () => {
     const pc = pcRef.current;
@@ -1320,13 +1351,6 @@ export function useCall(socket, callOccupancyRef = null) {
       }
       if (localVideoRef.current) localVideoRef.current.style.display = "none";
       setCameraOn(false);
-      if (peerRef.current?.id && socketRef.current?.connected) {
-        socketRef.current.emit("call:media-state", {
-          toUserId: peerRef.current.id,
-          muted: Boolean(muted),
-          cameraOn: false,
-        });
-      }
     } else {
       try {
         let videoTrack = localStreamRef.current?.getVideoTracks()[0];
@@ -1372,13 +1396,6 @@ export function useCall(socket, callOccupancyRef = null) {
         setCameraOn(true);
         callTypeRef.current = "video";
         setCallType("video");
-        if (peerRef.current?.id && socketRef.current?.connected) {
-          socketRef.current.emit("call:media-state", {
-            toUserId: peerRef.current.id,
-            muted: Boolean(muted),
-            cameraOn: true,
-          });
-        }
 
         // One serialized offer. Re-enabling an existing track still renegotiates
         // so a previous offer that lost glare is sent again.
@@ -1758,6 +1775,7 @@ export function useCall(socket, callOccupancyRef = null) {
     cameraOn,
     remoteMuted,
     remoteCameraOn,
+    remoteDeafened,
     screenSharing,
     duration,
     connectionQuality,

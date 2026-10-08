@@ -13,6 +13,7 @@ export const TR_INAPP_GAPS = {
   "Call connection unavailable. Please wait and try again.":
     "Arama bağlantısı yok. Lütfen bekleyip tekrar dene.",
   "Camera off": "Kamera kapalı",
+  Deafened: "Sağırlaştırıldı",
   "Change icon": "Simgeyi değiştir",
   "Change member nickname": "Üye takma adını değiştir",
   "Content filters": "İçerik filtreleri",

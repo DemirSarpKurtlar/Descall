@@ -18,6 +18,9 @@ import { screenShareUnavailableOnIos } from "../lib/webrtcScreenShare";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
 import useSpeaking from "../hooks/useSpeaking";
+import useHeldSpeaking from "../hooks/useHeldSpeaking";
+import SpeakingRings from "./voice/SpeakingRings";
+import ParticipantStateIcons from "./voice/ParticipantStateIcons";
 import useAudioLevel from "../hooks/useAudioLevel";
 import { useT } from "../context/LocaleContext";
 import { useToast } from "../context/ToastContext";
@@ -417,6 +420,7 @@ export default function CallOverlay({ call, groupCall, me }) {
             stream: call.remoteStream,
             hasVideo: call.remoteCameraOn !== false && streamHasLiveVideo(call.remoteStream),
             isMuted: Boolean(call.remoteMuted),
+            isDeafened: Boolean(call.remoteDeafened),
             isCameraOn: call.remoteCameraOn,
             isScreenSharing: Boolean(call.remoteScreenSharing),
             screenStream: call.remoteScreenStream,
@@ -1197,6 +1201,7 @@ function ParticipantTile({
   small = false,
   stream = null,
   muted = false,
+  deafened = false,
   cameraOn = true,
   connectionQuality = null,
   handRaised = false,
@@ -1210,9 +1215,9 @@ function ParticipantTile({
     releaseMs: 220,
   });
   const level = useAudioLevel(stream, { muted: muted || !stream });
-  const isSpeaking = Boolean(speakingProp || detected);
-  // Cap ring motion so level jitter doesn't look like flicker
-  const ringScale = 1 + (isSpeaking ? Math.max(0.06, Math.min(0.22, level * 0.28)) : 0);
+  // Hold the off-edge (~320ms) so VAD flapping between words never blinks
+  // the ring / restarts its animation.
+  const isSpeaking = useHeldSpeaking(Boolean(speakingProp || detected) && !muted);
   const avatarSize = small ? 36 : 96;
   // Frame overlay is ~132% of the avatar — pad the shell so overflow:hidden
   // ancestors (call stage / framer layout) don't clip catalog frames.
@@ -1283,14 +1288,8 @@ function ParticipantTile({
             style={{ width: shellSize, height: shellSize }}
           >
             <div className="participant-tile-avatar-core" style={{ width: avatarSize, height: avatarSize }}>
-              <span
-                className={`speaking-ring ring-a${isSpeaking ? " active" : ""}`}
-                style={{ transform: `scale(${ringScale})` }}
-              />
-              <span
-                className={`speaking-ring ring-b${isSpeaking ? " active" : ""}`}
-                style={{ transform: `scale(${1 + (isSpeaking ? level * 0.55 : 0)})` }}
-              />
+              {/* Always mounted — speaking only fades it (no remount / restart). */}
+              <SpeakingRings speaking={isSpeaking} level={level} />
               <Avatar
                 name={displayName}
                 size={avatarSize}
@@ -1310,6 +1309,11 @@ function ParticipantTile({
                 <BadgeIcon user={user} />
               </span>
               <AdminBadge user={user} variant="chip" />
+              <ParticipantStateIcons
+                muted={muted}
+                deafened={deafened}
+                cameraOff={cameraOn === false}
+              />
             </div>
           )}
         </div>
@@ -1317,12 +1321,13 @@ function ParticipantTile({
 
       {showVideo && (
         <div className="participant-tile-label">
-          {isSpeaking && <span className="speaking-dot" />}
+          <span className="speaking-dot" />
           <span className="participant-tile-name">
             <NameEffectText user={user}>{displayName}</NameEffectText>
             <BadgeIcon user={user} />
           </span>
           {muted && <MicOff size={14} aria-label={t("Muted")} title={t("Muted")} />}
+          {deafened && <HeadphoneOff size={14} aria-label={t("Deafened")} title={t("Deafened")} />}
           {cameraOn === false && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
           {!isLocal && (connectionQuality === "poor" || connectionQuality === "fair") && (
             <span
@@ -1333,10 +1338,15 @@ function ParticipantTile({
           )}
         </div>
       )}
-      {!showVideo && (muted || cameraOn === false) && (
+      {!showVideo && small && (muted || deafened || cameraOn === false) && (
         <div className="participant-tile-avatar-status">
-          {muted && <MicOff size={14} aria-label={t("Muted")} title={t("Muted")} />}
-          {cameraOn === false && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
+          <ParticipantStateIcons
+            muted={muted}
+            deafened={deafened}
+            cameraOff={cameraOn === false}
+            size={11}
+            className="is-compact"
+          />
         </div>
       )}
     </div>
@@ -1385,6 +1395,7 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
       isLocal
       stream={localStream}
       muted={Boolean(isDm ? call?.muted : groupCall?.isMuted)}
+      deafened={Boolean(isDm ? call?.deafened : groupCall?.deafened)}
       cameraOn={Boolean(isDm ? call?.cameraOn : groupCall?.isCameraOn)}
     />
   );
@@ -1410,6 +1421,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
       stream: p.stream || null,
       hasVideo: p.isCameraOn !== false && live,
       muted: Boolean(p.isMuted),
+      deafened: Boolean(p.isDeafened),
       cameraOn: p.isCameraOn,
       connectionQuality: p.connectionQuality || null,
       handRaised: Boolean(p.isHandRaised),
@@ -1466,6 +1478,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             videoRef={call?.remoteVideoRef}
             remoteStream={call?.remoteStream}
             isMuted={Boolean(call?.remoteMuted)}
+            isDeafened={Boolean(call?.remoteDeafened)}
             cameraOn={call?.remoteCameraOn}
             onContextMenu={(event) => onOpenUserMenu?.(event, call?.peer, Boolean(call?.remoteScreenSharing))}
           />
@@ -1483,6 +1496,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             hasVideo={tile.hasVideo}
             isLocal={false}
             muted={tile.muted}
+            deafened={tile.deafened}
             cameraOn={tile.cameraOn}
             connectionQuality={tile.connectionQuality}
             handRaised={tile.handRaised}
@@ -1600,6 +1614,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       user: localUser,
       stream: isDm ? call?.localStream : groupCall?.localStream,
       muted: Boolean(isDm ? call?.muted : groupCall?.isMuted),
+      deafened: Boolean(isDm ? call?.deafened : groupCall?.deafened),
       cameraOn: Boolean(isDm ? call?.cameraOn : groupCall?.isCameraOn),
     },
     ...remoteParticipants.map((p) => ({
@@ -1611,6 +1626,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       hasVideo: streamHasLiveVideo(p.stream) || Boolean(p.hasVideo) || Boolean(p.isCameraOn),
       stream: p.stream || null,
       muted: Boolean(p.isMuted),
+      deafened: Boolean(p.isDeafened),
       cameraOn: p.isCameraOn,
     })),
   ];
@@ -1859,6 +1875,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                 hasVideo={tile.hasVideo}
                 isLocal={tile.isLocal}
                 muted={tile.muted}
+                deafened={tile.deafened}
                 cameraOn={tile.cameraOn}
                 small
                 onContextMenu={

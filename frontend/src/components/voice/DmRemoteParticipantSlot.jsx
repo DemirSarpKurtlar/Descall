@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, VideoOff, Wifi, WifiOff } from "lucide-react";
+import { HeadphoneOff, Mic, MicOff, VideoOff, Wifi, WifiOff } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import AdminBadge from "../social/AdminBadge";
 import { BadgeIcon, NameEffectText } from "../ui/Cosmetics";
@@ -12,6 +12,9 @@ import {
   DM_PARTICIPANT_EXIT_MS,
 } from "../../hooks/useDmRemoteParticipant";
 import { useT } from "../../context/LocaleContext";
+import useHeldSpeaking from "../../hooks/useHeldSpeaking";
+import SpeakingRings from "./SpeakingRings";
+import ParticipantStateIcons from "./ParticipantStateIcons";
 
 const PARTICIPANT_EASE = [0.16, 1, 0.3, 1];
 
@@ -131,12 +134,15 @@ export default function DmRemoteParticipantSlot({
   hasVideo,
   videoRef,
   remoteStream,
-  isSpeaking = false,
+  isSpeaking: speakingRaw = false,
   isMuted = false,
+  isDeafened = false,
   cameraOn = true,
   onContextMenu,
 }) {
   const t = useT();
+  // Hold the off-edge so VAD flapping can't blink the ring between words.
+  const isSpeaking = useHeldSpeaking(speakingRaw && !isMuted);
   const user = displayPeer;
   const username = resolveDisplayName(displayPeer) || displayPeer?.username || t("User");
 
@@ -205,36 +211,9 @@ export default function DmRemoteParticipantSlot({
                 className="participant-tile-avatar-shell"
                 style={{ width: 96 + 38, height: 96 + 38, position: "relative" }}
               >
-                {isSpeaking && (
-                  <>
-                    <span
-                      aria-hidden="true"
-                      className="speaking-ring ring-a active"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        borderRadius: "50%",
-                        border: "2px solid #3ba55d",
-                        boxShadow: "0 0 0 3px rgba(59,165,93,0.22)",
-                        animation: "callTilePulse 1.2s infinite",
-                        opacity: 1,
-                      }}
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="speaking-ring ring-b active"
-                      style={{
-                        position: "absolute",
-                        inset: 8,
-                        borderRadius: "50%",
-                        border: "1px solid rgba(59,165,93,0.38)",
-                        animation: "callTilePulse 1.2s 0.18s infinite",
-                        opacity: 1,
-                      }}
-                    />
-                  </>
-                )}
                 <div className="participant-tile-avatar-core" style={{ width: 96, height: 96 }}>
+                  {/* Always mounted — only fades; see SpeakingRings. */}
+                  <SpeakingRings speaking={isSpeaking} />
                   <Avatar
                     name={username}
                     size={96}
@@ -252,6 +231,11 @@ export default function DmRemoteParticipantSlot({
                 </span>
                 <AdminBadge user={user} variant="chip" />
                 <ConnectionBadge status="connected" />
+                <ParticipantStateIcons
+                  muted={isMuted}
+                  deafened={isDeafened}
+                  cameraOff={cameraOn === false}
+                />
               </div>
             </div>
           )}
@@ -317,6 +301,23 @@ export default function DmRemoteParticipantSlot({
                 title={t("Muted")}
               >
                 <MicOff size={12} color="#fff" />
+              </span>
+            )}
+            {isDeafened && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "rgba(237,66,69,0.85)",
+                  flexShrink: 0,
+                }}
+                title={t("Deafened")}
+              >
+                <HeadphoneOff size={12} color="#fff" />
               </span>
             )}
             {cameraOn === false && (

@@ -91,8 +91,9 @@ assert(
 
 const avatar = readFileSync(join(root, "../ui/Avatar.jsx"), "utf8");
 assert(
-  /const Root = isSpeaking \? motion\.div : "div"/.test(avatar),
-  "idle Avatar must be a plain div (no Framer transform bleed on Electron)",
+  /const speakingCapable = animate === "speaking";/.test(avatar) &&
+    /const Root = speakingCapable \|\| isSpeaking \? motion\.div : "div"/.test(avatar),
+  "idle non-voice Avatar must be a plain div (no Framer transform bleed on Electron); only voice avatars (animate=\"speaking\") keep a stable motion.div",
 );
 
 const serversCss = readFileSync(join(stylesRoot, "servers.css"), "utf8");

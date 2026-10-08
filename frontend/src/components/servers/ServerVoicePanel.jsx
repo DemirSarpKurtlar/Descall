@@ -22,6 +22,7 @@ import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useSpeaking from "../../hooks/useSpeaking";
+import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { visibleScreenStream } from "../../lib/screenShareTracks";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
@@ -130,12 +131,14 @@ const VoiceTile = memo(function VoiceTile({
   const t = useT();
   const videoRef = useRef(null);
   const cameraStream = tile.cameraStream || null;
-  const speaking = useSpeaking(tile.audioStream, {
+  const speakingRaw = useSpeaking(tile.audioStream, {
     muted: Boolean(tile.muted),
     threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
   });
+  // Hold the off-edge so VAD flapping can't blink the speaking state.
+  const speaking = useHeldSpeaking(speakingRaw && !tile.muted);
   const name = tile.label || "User";
   const showVideo = streamHasLiveVideo(cameraStream);
 
@@ -213,7 +216,11 @@ const VoiceTile = memo(function VoiceTile({
             </span>
           ) : null}
           {tile.deafened ? (
-            <span className="server-voice-flag is-deaf" title={t("Server deafen")} aria-label={t("Server deafen")}>
+            <span
+              className="server-voice-flag is-deaf"
+              title={tile.member?.serverDeafened ? t("Server deafen") : t("Deafened")}
+              aria-label={tile.member?.serverDeafened ? t("Server deafen") : t("Deafened")}
+            >
               <HeadphoneOff size={13} aria-hidden />
             </span>
           ) : null}
@@ -754,7 +761,7 @@ export default function ServerVoicePanel({
         cameraStream: serverVoice?.isCameraOn ? serverVoice.cameraStream : null,
         cameraOn: Boolean(serverVoice?.isCameraOn),
         muted: Boolean(serverVoice?.muted || serverVoice?.serverMuted),
-        deafened: Boolean(serverVoice?.serverDeafened),
+        deafened: Boolean(serverVoice?.serverDeafened || serverVoice?.deafened),
         sharing: Boolean(serverVoice?.isScreenSharing),
       });
     }
@@ -776,7 +783,7 @@ export default function ServerVoicePanel({
         cameraStream: inThis && !cameraIsScreen ? member.cameraStream || null : null,
         cameraOn: Boolean(member.cameraOn || (member.cameraStream && !cameraIsScreen)),
         muted: Boolean(member.muted || member.serverMuted),
-        deafened: Boolean(member.serverDeafened),
+        deafened: Boolean(member.serverDeafened || member.deafened),
         sharing: Boolean(member.isScreenSharing || member.screenStream || cameraIsScreen),
       });
     }
@@ -793,6 +800,7 @@ export default function ServerVoicePanel({
     serverVoice?.muted,
     serverVoice?.remoteStreams,
     serverVoice?.serverDeafened,
+    serverVoice?.deafened,
     serverVoice?.serverMuted,
     t,
   ]);

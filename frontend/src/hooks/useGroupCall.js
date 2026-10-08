@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import audioManager from "../lib/audioManager";
 import notificationService from "../lib/notificationService";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
@@ -67,6 +67,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [duration, setDuration] = useState(0);
   const [participants, setParticipants] = useState([]);
+  // userId -> { muted, cameraOn, deafened } from group:call:media-state.
+  // Kept apart from `participants` so a state that arrives before the peer
+  // is in our list (late join / reconnect) is not dropped.
+  const [remoteMediaStates, setRemoteMediaStates] = useState({});
   const [incomingCall, setIncomingCall] = useState(null);
   const incomingCallRef = useRef(null);
   const activeGroupIdRef = useRef(null);
@@ -432,6 +436,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     setIsHandRaised(false);
     setIsScreenSharing(false);
     setParticipants([]);
+    setRemoteMediaStates({});
     setIncomingCall(null);
 
     audioManager.stop("incomingCall");
@@ -1024,6 +1029,53 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     renegotiateWithPeerRef.current = renegotiateWithPeer;
   }, [renegotiateWithPeer]);
 
+  // Every remote tile renders our mic / headphones / camera badges from this
+  // presentation-only signal. Publish on every change, whenever the roster
+  // grows (late joiners), and ask for everyone's state when we join or our
+  // socket reconnects — otherwise remote badges only appeared after a toggle.
+  const localMediaStateRef = useRef({ muted: false, cameraOn: false, deafened: false });
+  localMediaStateRef.current = { muted: Boolean(isMuted), cameraOn: Boolean(isCameraOn), deafened: Boolean(deafened) };
+  const emitGroupMediaState = useCallback((opts = {}) => {
+    const groupId = activeGroupIdRef.current;
+    const s = socketRef.current;
+    if (!groupId || !s?.connected || !isInCallRef.current) return;
+    s.emit("group:call:media-state", {
+      groupId,
+      ...localMediaStateRef.current,
+      ...(opts.requestState ? { requestState: true } : {}),
+    });
+  }, []);
+  const emitGroupMediaStateRef = useRef(emitGroupMediaState);
+  emitGroupMediaStateRef.current = emitGroupMediaState;
+  const groupMediaActive = Boolean(isInCall && activeGroupId);
+  const participantCount = participants.length;
+  useEffect(() => {
+    if (!groupMediaActive) return;
+    emitGroupMediaState();
+  }, [groupMediaActive, activeGroupId, isMuted, isCameraOn, deafened, participantCount, emitGroupMediaState]);
+  useEffect(() => {
+    if (!groupMediaActive) return undefined;
+    emitGroupMediaState({ requestState: true });
+    const s = socket;
+    if (!s) return undefined;
+    const onReconnect = () => emitGroupMediaState({ requestState: true });
+    s.on("connect", onReconnect);
+    return () => s.off("connect", onReconnect);
+  }, [groupMediaActive, activeGroupId, socket, emitGroupMediaState]);
+
+  const participantsWithMedia = useMemo(() => {
+    if (!participants.length) return participants;
+    let changed = false;
+    const next = participants.map((p) => {
+      const st = remoteMediaStates[p.id];
+      if (!st) return p;
+      if (p.isMuted === st.muted && p.isCameraOn === st.cameraOn && p.isDeafened === st.deafened) return p;
+      changed = true;
+      return { ...p, isMuted: st.muted, isCameraOn: st.cameraOn, isDeafened: st.deafened };
+    });
+    return changed ? next : participants;
+  }, [participants, remoteMediaStates]);
+
   const toggleMute = useCallback(() => {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (track) {
@@ -1032,16 +1084,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       setIsMuted(nextMuted);
       if (!nextMuted) mutedByDeafenRef.current = false;
       audioManager.play(nextMuted ? "mute" : "unmute");
-      const groupId = activeGroupIdRef.current;
-      if (groupId && socketRef.current?.connected) {
-        socketRef.current.emit("group:call:media-state", {
-          groupId,
-          muted: !track.enabled,
-          cameraOn: Boolean(isCameraOn),
-        });
-      }
+      // Published to the room by the media-state effect.
     }
-  }, [isCameraOn]);
+  }, []);
 
   const toggleDeafen = useCallback(() => {
     const next = !deafenedRef.current;
@@ -1061,10 +1106,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         track.enabled = false;
         setIsMuted(true);
         mutedByDeafenRef.current = true;
-        const groupId = activeGroupIdRef.current;
-        if (groupId && socketRef.current?.connected) {
-          socketRef.current.emit("group:call:media-state", { groupId, muted: true, cameraOn: Boolean(isCameraOn) });
-        }
       }
       audioManager.play("deafen");
     } else {
@@ -1072,14 +1113,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         track.enabled = true;
         setIsMuted(false);
         mutedByDeafenRef.current = false;
-        const groupId = activeGroupIdRef.current;
-        if (groupId && socketRef.current?.connected) {
-          socketRef.current.emit("group:call:media-state", { groupId, muted: false, cameraOn: Boolean(isCameraOn) });
-        }
       }
       audioManager.play("undeafen");
     }
-  }, [isCameraOn]);
+  }, []);
 
   const toggleHandRaise = useCallback(() => {
     setIsHandRaised((prev) => {
@@ -1100,14 +1137,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       }
       if (localVideoRef.current) localVideoRef.current.style.display = "none";
       setIsCameraOn(false);
-      const groupId = activeGroupIdRef.current;
-      if (groupId && socketRef.current?.connected) {
-        socketRef.current.emit("group:call:media-state", {
-          groupId,
-          muted: Boolean(isMuted),
-          cameraOn: false,
-        });
-      }
     } else {
       try {
         let videoTrack = localStreamRef.current?.getVideoTracks()[0];
@@ -1149,14 +1178,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           localVideoRef.current.play().catch(() => {});
         }
         setIsCameraOn(true);
-        const groupId = activeGroupIdRef.current;
-        if (groupId && socketRef.current?.connected) {
-          socketRef.current.emit("group:call:media-state", {
-            groupId,
-            muted: Boolean(isMuted),
-            cameraOn: true,
-          });
-        }
         if (!addedNewTrack) {
           setCallType("video");
           callTypeRef.current = "video";
@@ -1165,7 +1186,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         console.error("[GroupCall] toggleCamera failed:", err);
       }
     }
-  }, [isCameraOn, isMuted, renegotiateWithPeer]);
+  }, [isCameraOn, renegotiateWithPeer]);
 
   const startScreenShare = useCallback(async (quality, opts = {}) => {
     console.log('[GroupScreenShare] startScreenShare called, quality:', quality);
@@ -2022,13 +2043,20 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       ));
     };
 
-    const onMediaState = ({ groupId, fromUserId, muted, cameraOn }) => {
+    const onMediaState = ({ groupId, fromUserId, muted, cameraOn, deafened, requestState }) => {
       if (!groupId || !fromUserId || fromUserId === myIdRef.current) return;
+      if (activeGroupIdRef.current && groupId !== activeGroupIdRef.current) return;
+      setRemoteMediaStates((prev) => ({
+        ...prev,
+        [fromUserId]: { muted: Boolean(muted), cameraOn: Boolean(cameraOn), deafened: Boolean(deafened) },
+      }));
       setParticipants((prev) => prev.map((p) =>
         p.id === fromUserId
-          ? { ...p, isMuted: Boolean(muted), isCameraOn: Boolean(cameraOn) }
+          ? { ...p, isMuted: Boolean(muted), isCameraOn: Boolean(cameraOn), isDeafened: Boolean(deafened) }
           : p
       ));
+      // A participant joined / reconnected and asked for everyone's state.
+      if (requestState) emitGroupMediaStateRef.current?.();
     };
 
     const onHandRaise = ({ groupId, fromUserId, raised }) => {
@@ -2476,7 +2504,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     isHandRaised,
     isScreenSharing,
     duration,
-    participants,
+    participants: participantsWithMedia,
     incomingCall,
     activeCallBanner,
     dismissActiveBanner,
