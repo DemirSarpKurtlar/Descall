@@ -25,6 +25,12 @@ const ACTIVATION_SETTLE_MS = 350;
 const READY_POLL_MS = 250;
 const READY_POLL_TRIES = 20;
 const MUTE_GRACE_MS = 700;
+// First seconds of a call: sample every second and act on two silent samples
+// (~2–3 s) — an interrupted capture produces digital silence (energy frozen),
+// which a real microphone never does, so this doesn't trip on a quiet room.
+const STATS_START_MS = 1_000;
+const STATS_START_WINDOW_MS = 15_000;
+const SILENT_SAMPLES_START = 2;
 const STATS_FAST_MS = 3_000;
 const STATS_SLOW_MS = 10_000;
 const STATS_FAST_WINDOW_MS = 60_000;
@@ -302,7 +308,8 @@ export function createMicGuard({
     s.lastEnergy = energy;
     const silent = Boolean(track.muted) || zeroEnergy;
     s.silentSamples = silent ? s.silentSamples + 1 : 0;
-    if (s.silentSamples < SILENT_SAMPLES) return;
+    const needed = now() - s.monitorStartedAt < STATS_START_WINDOW_MS ? SILENT_SAMPLES_START : SILENT_SAMPLES;
+    if (s.silentSamples < needed) return;
     s.silentSamples = 0;
     const why = track.muted ? "track-muted" : "zero-energy";
     void reportOnce("ios_call_mic_silent", {
@@ -326,7 +333,7 @@ export function createMicGuard({
       if (gen !== s.generation || s.monitorTimer == null) return;
       await sample();
       if (gen === s.generation && s.monitorTimer != null && isCallOngoing()) scheduleSample();
-    }, elapsed < STATS_FAST_WINDOW_MS ? STATS_FAST_MS : STATS_SLOW_MS);
+    }, elapsed < STATS_START_WINDOW_MS ? STATS_START_MS : elapsed < STATS_FAST_WINDOW_MS ? STATS_FAST_MS : STATS_SLOW_MS);
   }
 
   function startMonitoring() {

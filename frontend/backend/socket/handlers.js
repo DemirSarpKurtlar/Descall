@@ -530,6 +530,12 @@ function registerSocketHandlers(io) {
       return;
     }
 
+    // Liveness probe used by clients right after returning to the foreground
+    // (zombie-socket detection). Registered first, answers immediately.
+    socket.on("app:ping", (ack) => {
+      if (typeof ack === "function") ack(Date.now());
+    });
+
     socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags));
 
     if (!userRoles.has(myId)) {

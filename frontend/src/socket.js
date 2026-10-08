@@ -1,7 +1,17 @@
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "./config/api";
 import { getDmMessages } from "./api/dmPrefs";
+import { Capacitor } from "@capacitor/core";
 import { isNativeIOS } from "./lib/platform";
+import { installSocketResumeWatchdog } from "./lib/socketResume";
+
+function isNativeApp() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
 
 function isElectronRuntime() {
   if (typeof window === "undefined") return false;
@@ -32,7 +42,14 @@ function pullDmHistory(socket, withUserId) {
 
 export function createSocket(token, options = {}) {
   const local = isLocalVite();
-  const { transports = ["polling", "websocket"] } = options;
+  const native = isNativeApp();
+  // Native shells: WebSocket first. One handshake instead of polling + upgrade,
+  // and it never reuses a pooled keep-alive HTTP connection that died while
+  // the phone was locked (that stalled reconnects for a full 20 s timeout).
+  // tryAllTransports falls back to polling if WebSocket can't open.
+  const {
+    transports = native ? ["websocket", "polling"] : ["polling", "websocket"],
+  } = options;
 
   const opts = {
     auth: isNativeIOS() ? { token, platform: "ios" } : { token },
@@ -42,9 +59,12 @@ export function createSocket(token, options = {}) {
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
-    reconnectionDelayMax: 30000,
+    // Was 30 s: after a long outage a client could sit idle for up to 30 s
+    // even though the server was already back.
+    reconnectionDelayMax: 10000,
     randomizationFactor: 0.5,
     timeout: 20000,
+    tryAllTransports: true,
   };
   // Render (and local Express) mount Socket.IO at /socket.io.
   // Do not use /api/socket.io — that was the Vercel Fluid rewrite.
@@ -62,6 +82,9 @@ export function createSocket(token, options = {}) {
     }
     return ret;
   };
+  // Foreground watchdog: reconnect at once (no backoff) when the app comes
+  // back with a dead / zombie socket. Dispose via socket.resumeWatchdog.
+  socket.resumeWatchdog = installSocketResumeWatchdog(socket);
   // App loads servers/groups inside the `connected` handler. Don't wait for the
   // live socket — fire that handler as soon as listeners are registered.
   setTimeout(() => {

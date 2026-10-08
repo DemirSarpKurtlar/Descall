@@ -14,6 +14,7 @@ import { createCallKitController } from "../lib/iosCallKitController";
 import {
   setCallKitAudioReleased,
   setCallKitFallback,
+  setUiAnswerInterceptor,
   subscribeCallKitUi,
   getCallKitUiSnapshot,
 } from "../lib/iosCallKitState";
@@ -70,6 +71,7 @@ export function useIosCallKitBridge({ call, socket, meId }) {
   useEffect(() => {
     if (!IOS_NATIVE) return undefined;
     const off = onCallKitEvent((name, data) => controllerRef.current?.handleEvent(name, data));
+    setUiAnswerInterceptor(() => controllerRef.current?.answerFromUi() === true);
     void initIosCallKit();
     const unsub = subscribeCallKitUi(() => {
       const snap = getCallKitUiSnapshot();
@@ -81,6 +83,7 @@ export function useIosCallKitBridge({ call, socket, meId }) {
     return () => {
       off();
       unsub();
+      setUiAnswerInterceptor(null);
     };
   }, []);
 

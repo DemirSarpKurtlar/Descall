@@ -36,7 +36,7 @@ import {
 } from "../lib/noiseSuppression";
 import { createVoiceSessionCapture } from "../lib/voiceSessionCapture";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
-import { callKitOwnsIncomingRing, callKitManagesAudioSession } from "../lib/iosCallKitState";
+import { callKitOwnsIncomingRing, callKitManagesAudioSession, interceptUiAnswer } from "../lib/iosCallKitState";
 import { IOS_NATIVE } from "../lib/iosCallKit";
 import {
   beginIosCallAudio,
@@ -50,6 +50,19 @@ import {
 } from "../lib/iosAudioRoute";
 import { createMicGuard, withCaptureRetry } from "../lib/iosCallMic";
 import { reportDiagnostic } from "../lib/sentry";
+import { createCallSetupTimeline } from "../lib/callSetupTimeline";
+
+function callPlatformTag() {
+  if (IOS_NATIVE) return "ios-app";
+  if (typeof window !== "undefined" && window.electronAPI?.isElectron) return "electron";
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    if (cap?.isNativePlatform?.() && cap.getPlatform?.() === "android") return "android-app";
+  } catch {
+    /* ignore */
+  }
+  return "web";
+}
 
 const noopSubscribe = () => () => {};
 const getNoRoute = () => null;
@@ -202,6 +215,15 @@ export function useCall(socket, callOccupancyRef = null) {
   // recover only a likely display track, never an arbitrary camera receiver.
   const receivedVideoTracksRef = useRef(new Map());
 
+  // Tap → audio timeline, logged once per call (lib/callSetupTimeline.js).
+  const setupTimelineRef = useRef(null);
+  if (!setupTimelineRef.current) {
+    setupTimelineRef.current = createCallSetupTimeline({
+      report: reportDiagnostic,
+      context: () => ({ platform: callPlatformTag() }),
+    });
+  }
+
   // Native iOS: keep the microphone sending across CallKit audio-session
   // activation (lib/iosCallMic.js). null on web / Electron / Android.
   const micGuardRef = useRef(null);
@@ -258,6 +280,7 @@ export function useCall(socket, callOccupancyRef = null) {
   }, []);
 
   const cleanup = useCallback(() => {
+    setupTimelineRef.current?.end();
     micGuardRef.current?.reset();
     callDirectionRef.current = null;
     setCalleeAnswering(false);
@@ -678,6 +701,7 @@ export function useCall(socket, callOccupancyRef = null) {
     pc.oniceconnectionstatechange = () => {
       const ice = pc.iceConnectionState;
       if (ice === "connected" || ice === "completed") {
+        setupTimelineRef.current?.mark("ice");
         setConnectionQuality("good");
         setPeerConnectionState("connected");
         iceRestartAttemptedRef.current = false;
@@ -942,7 +966,9 @@ export function useCall(socket, callOccupancyRef = null) {
       if (peerRef.current?.id && fromUserId !== peerRef.current.id) return;
       try {
         if (pcRef.current.signalingState !== "have-local-offer") return;
+        setupTimelineRef.current?.mark("answerRecv");
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        setupTimelineRef.current?.watch(pcRef.current);
         await flushIce(pcRef.current);
         setMode("active");
         modeRef.current = "active";
@@ -1083,8 +1109,10 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     try {
       callDirectionRef.current = "outgoing";
+      setupTimelineRef.current?.start("outgoing", type);
       micGuardRef.current?.noteCaptureStart();
       const stream = await acquireCallMicStream(type);
+      setupTimelineRef.current?.mark("gum");
       localStreamRef.current = stream;
       setLocalStream(stream);
       setNoiseSuppressedTrackEnabled(true);
@@ -1113,6 +1141,12 @@ export function useCall(socket, callOccupancyRef = null) {
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      // The initial offer already carries every track attached above. The
+      // `negotiationneeded` that addTrack queued while dialing must not trigger
+      // a second offer/answer right after the callee answers (an extra
+      // signaling round trip at connect). If something really changes later,
+      // the browser re-fires negotiationneeded once signaling is stable.
+      negotiationQueuedRef.current = false;
       if (!socketRef.current?.connected) {
         cleanup();
         return;
@@ -1123,6 +1157,7 @@ export function useCall(socket, callOccupancyRef = null) {
         callType: type,
         renegotiate: false,
       });
+      setupTimelineRef.current?.mark("offerSent");
     } catch (err) {
       console.error("[Call] startCall failed:", err?.name || err?.message || err);
       toast(tRuntime(voiceMicErrorCopy(err)), "error");
@@ -1130,7 +1165,20 @@ export function useCall(socket, callOccupancyRef = null) {
     }
   }, [cleanup, setupPeerConnection, toast, acquireCallMicStream]);
 
-  const acceptIncoming = useCallback(async () => {
+  const acceptIncoming = useCallback(async (opts) => {
+    // iOS: an in-app Accept while CallKit owns the ring is answered on CallKit
+    // first; the controller calls back here ({ fromCallKit }) once the audio
+    // session is up. (UI handlers may pass a click event as `opts`.)
+    const timeline = setupTimelineRef.current;
+    const tlState = timeline?._state();
+    if (opts?.fromCallKit === true && tlState && !tlState.done && tlState.direction === "incoming") {
+      timeline.mark("callKitReady"); // in-app Accept answered via CallKit first
+    } else if (modeRef.current === "incoming") {
+      timeline?.start("incoming", incomingCallTypeRef.current || "voice");
+    }
+    if (IOS_NATIVE && opts?.fromCallKit !== true && modeRef.current === "incoming" && interceptUiAnswer()) {
+      return;
+    }
     const offer = incomingOfferRef.current;
     const type = incomingCallTypeRef.current || "voice";
     // Use peerRef — Electron Accept IPC can fire with a stale React `peer` closure
@@ -1143,6 +1191,7 @@ export function useCall(socket, callOccupancyRef = null) {
     try {
       micGuardRef.current?.noteCaptureStart();
       const stream = await acquireCallMicStream(type);
+      timeline?.mark("gum");
       // The ring may have ended while the capture was pending (iOS defers
       // getUserMedia until the app is visible, e.g. answered on a locked phone).
       if (modeRef.current !== "incoming" || peerRef.current?.id !== currentPeer.id || incomingOfferRef.current !== offer) {
@@ -1174,6 +1223,8 @@ export function useCall(socket, callOccupancyRef = null) {
         return;
       }
       socketRef.current.emit("call:answer", { toUserId: currentPeer.id, answer: pc.localDescription });
+      timeline?.mark("answerSent");
+      timeline?.watch(pc);
       setMode("active");
       modeRef.current = "active";
     } catch (err) {

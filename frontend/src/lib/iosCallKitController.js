@@ -139,7 +139,7 @@ export function createCallKitController({
     const c = getCall();
     if (c?.mode !== "incoming") return;
     try {
-      const p = c.acceptIncoming?.();
+      const p = c.acceptIncoming?.({ fromCallKit: true });
       if (p && typeof p.catch === "function") p.catch(() => {});
     } catch (err) {
       log("acceptIncoming failed", err?.message || err);
@@ -412,6 +412,40 @@ export function createCallKitController({
     return true;
   }
 
+  /**
+   * In-app Accept while CallKit shows this ring: answer on CallKit first and
+   * start the mic once its audio session is active (same order as a CallKit
+   * answer). Returns false when the web UI should accept directly.
+   */
+  function answerFromUi() {
+    const c = getCall();
+    if (!current || current.direction !== "incoming" || current.answered) return false;
+    if (current.fallback || current.endedByCallKit || c?.mode !== "incoming") return false;
+    if (c.peer?.id && current.peerId && c.peer.id !== current.peerId) return false;
+    if (typeof plugin.answerCall !== "function") return false;
+    const uuid = current.uuid;
+    current.answered = true;
+    waitingForUnlock = false;
+    let req = null;
+    try {
+      req = plugin.answerCall({ uuid });
+    } catch (err) {
+      log("answerCall failed", err?.message || err);
+    }
+    if (req && typeof req.then === "function") {
+      req.then(null, (err) => {
+        log("answerCall failed", err?.message || err);
+        // CallKit refused: join directly instead of waiting for didActivate.
+        if (current?.uuid === uuid && acceptTimer != null) {
+          clearAcceptTimer();
+          acceptNow();
+        }
+      });
+    }
+    acceptWhenAudioReady();
+    return true;
+  }
+
   /** The app became visible: a locked-screen answer can join now. */
   function onAppVisible() {
     if (waitingForUnlock) {
@@ -539,6 +573,7 @@ export function createCallKitController({
     onResumeResult,
     onOfferSeen,
     onAppVisible,
+    answerFromUi,
     releaseAudio,
     // for tests / diagnostics
     _state: () => ({

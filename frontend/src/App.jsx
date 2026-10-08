@@ -1205,16 +1205,23 @@ export default function App() {
     };
   }, []);
 
+  // Native shells connect the socket in parallel with the boot getMe() when a
+  // cached session exists (JWT-only socket auth), so a pending call can be
+  // resumed ~one round trip sooner after a cold launch / unlock. The gate stays
+  // true when sessionChecked flips, so the socket is not torn down; an auth
+  // failure clears `me`, which disconnects it via the cleanup below.
+  const socketGateOpen = Boolean(me?.id) && (sessionChecked || isCapacitorNativeShell());
   useEffect(() => {
     const token = getToken();
-    if (!token || !me || !sessionChecked) return;
+    if (!token || !me || !socketGateOpen) return;
     connectSocket(token);
     return () => {
       serverSocketUnbindRef.current?.();
       serverSocketUnbindRef.current = null;
+      socketRef.current?.resumeWatchdog?.dispose();
       socketRef.current?.disconnect();
     };
-  }, [me?.id, sessionChecked]);
+  }, [me?.id, socketGateOpen]);
 
   // Listen for user:updated event to refresh me
   useEffect(() => {
@@ -1295,6 +1302,7 @@ export default function App() {
     if (socketRef.current) {
       serverSocketUnbindRef.current?.();
       serverSocketUnbindRef.current = null;
+      socketRef.current.resumeWatchdog?.dispose();
       socketRef.current.disconnect();
       socketRef.current = null;
     }
@@ -2488,6 +2496,7 @@ export default function App() {
     }
     try {
       socketRef.current?.emit("dm:set_active", { withUserId: null });
+      socketRef.current?.resumeWatchdog?.dispose();
       socketRef.current?.disconnect();
     } catch {
       /* ignore */
@@ -2681,7 +2690,11 @@ export default function App() {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       const sock = socketRef.current;
       if (!sock?.connected) {
-        try { sock?.connect?.(); } catch { /* ignore */ }
+        // connect() is a no-op while a reconnect backoff timer is pending;
+        // the watchdog reconnects immediately instead.
+        try {
+          if (!sock?.resumeWatchdog?.ensureFresh("focus")) sock?.connect?.();
+        } catch { /* ignore */ }
         handleRefresh();
         return;
       }

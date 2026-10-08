@@ -724,6 +724,9 @@ export function useServerVoice(socket) {
 
       setConnecting(true);
       setError("");
+      // Fetch media-config while the microphone starts (cached after the
+      // first join) instead of serially after the join emit.
+      const mediaConfigPromise = getMediaConfig();
       try {
         const nextChannelType = channel.type === "stage" ? "stage" : "voice";
         const isStage = nextChannelType === "stage";
@@ -761,7 +764,7 @@ export function useServerVoice(socket) {
         socket.emit("server:voice:join", { serverId, channelId: channel.id });
         // Prefer LiveKit SFU whenever media-config reports it. Retry once on
         // transient token/connect failures before optionally falling back to mesh.
-        const mediaConfig = await getMediaConfig();
+        const mediaConfig = await mediaConfigPromise;
         if (!stillJoining()) return;
         if (mediaConfig?.sfu || mediaConfig?.preferSfu) {
           let sfuConnected = false;

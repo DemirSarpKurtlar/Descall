@@ -68,3 +68,23 @@ export function setCallKitAudioReleased(released) {
 export function callKitManagesAudioSession(direction = "incoming") {
   return snapshot.enabled && direction === "incoming" && !snapshot.audioReleased;
 }
+
+/**
+ * In-app "Accept" while CallKit owns the ring: the bridge answers through
+ * CallKit first so the microphone starts inside CallKit's audio session
+ * (capture started before didActivate is interrupted and has to be
+ * re-acquired, which left the peer hearing silence for a second or more).
+ * Returns true when the answer was taken over.
+ */
+let uiAnswerInterceptor = null;
+export function setUiAnswerInterceptor(fn) {
+  uiAnswerInterceptor = typeof fn === "function" ? fn : null;
+}
+export function interceptUiAnswer() {
+  if (!uiAnswerInterceptor || !snapshot.enabled) return false;
+  try {
+    return Boolean(uiAnswerInterceptor());
+  } catch {
+    return false;
+  }
+}
