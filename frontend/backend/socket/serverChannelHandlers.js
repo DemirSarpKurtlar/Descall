@@ -209,6 +209,64 @@ function buildChannelNotifyPayload({ serverId, serverName, channelId, channelNam
   };
 }
 
+/**
+ * Native iOS alert push for a new channel message, same rules as the desktop
+ * notification (server:channel:notify): notification level "all", channel not
+ * muted, not the sender, and not a member who is @mentioned (they get the
+ * mention push). Never throws.
+ */
+async function pushChannelMessageToIos({ serverId, channelId, viewerIds, payload }) {
+  try {
+    const { usersWithIosAlertTokens } = require("../lib/iosAlertPush");
+    const withTokens = await usersWithIosAlertTokens(
+      viewerIds.filter((uid) => uid && uid !== payload.senderId)
+    );
+    if (!withTokens.size) return;
+    const ids = [...withTokens];
+    const mentions = Array.isArray(payload.mentions) ? payload.mentions : [];
+    const [{ data: memberships, error: lErr }, { data: mutes, error: mErr }, mentionedRes] = await Promise.all([
+      supabase
+        .from("server_members")
+        .select("user_id, notification_level")
+        .eq("server_id", serverId)
+        .in("user_id", ids),
+      supabase.from("server_channel_mutes").select("user_id").eq("channel_id", channelId).in("user_id", ids),
+      mentions.length
+        ? supabase.from("users").select("id, username").in("id", ids)
+        : Promise.resolve({ data: [] }),
+    ]);
+    if (lErr || mErr) throw lErr || mErr;
+    const allLevel = new Set(
+      (memberships || [])
+        .filter((r) => String(r.notification_level || "all").toLowerCase() === "all")
+        .map((r) => r.user_id)
+    );
+    const muted = new Set((mutes || []).map((r) => r.user_id));
+    const mentionSet = new Set(mentions.map((m) => String(m).toLowerCase()));
+    const mentioned = new Set(
+      (mentionedRes?.data || [])
+        .filter((u) => mentionSet.has(String(u.username || "").toLowerCase()))
+        .map((u) => u.id)
+    );
+    const targets = ids.filter((uid) => allLevel.has(uid) && !muted.has(uid) && !mentioned.has(uid));
+    if (!targets.length) return;
+    const { sendServerMessagePush } = require("../lib/webPush");
+    await sendServerMessagePush(targets, {
+      serverId,
+      serverName: payload.serverName,
+      channelId,
+      channelName: payload.channelName,
+      fromId: payload.senderId,
+      from: payload.from,
+      text: payload.text,
+      previewKind: payload.kind,
+      messageId: payload.messageId,
+    });
+  } catch (err) {
+    console.warn("[ServerChannel] iOS push skipped:", err?.message || err);
+  }
+}
+
 function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = null) {
   if (!serverId || !channelId || !senderId) return;
   (async () => {
@@ -261,6 +319,7 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = nul
           for (const uid of viewerIds) {
             notify.io.to(`user:${uid}`).emit("server:channel:notify", payload);
           }
+          void pushChannelMessageToIos({ serverId, channelId, viewerIds, payload });
         } catch (err) {
           console.warn("[ServerChannel] notify fan-out failed:", err?.message || err);
         }
@@ -1149,4 +1208,5 @@ module.exports = {
   buildChannelNotifyPayload,
   bumpChannelUnreadForMembers,
   assertTextChannelAccess,
+  pushChannelMessageToIos,
 };

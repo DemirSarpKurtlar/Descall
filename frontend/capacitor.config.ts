@@ -29,7 +29,10 @@ const config: CapacitorConfig = {
   },
   plugins: {
     PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert", "banner", "list"],
+      // Foreground: banner without the system sound; the open app already
+      // plays its own message sound. The chat on screen gets no push at all
+      // (backend lib/iosPushContext.js).
+      presentationOptions: ["badge", "alert", "banner", "list"],
     },
   },
 };

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
@@ -65,7 +65,15 @@ import { isCapacitorNativeShell } from "./lib/entryShell";
 import BirthDateGate from "./components/auth/BirthDateGate";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
-import { requestNativePushPermission, syncNativePushToken, isNativePushPlatform } from "./lib/nativePush";
+import {
+  getIosAlertToken,
+  initNativePush,
+  isNativePushPlatform,
+  requestNativePushPermission,
+  setNativeTapConsumerReady,
+  syncNativePushToken,
+  unregisterNativePushToken,
+} from "./lib/nativePush";
 import { useToast } from "./context/ToastContext";
 import { useLocale } from "./context/LocaleContext";
 import { t as tRuntime } from "./i18n/runtime";
@@ -92,6 +100,8 @@ import CallOverlay from "./components/CallOverlay";
 import GroupCallIncomingModal from "./components/GroupCallIncomingModal";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
+// Native iOS only, so the web bundle doesn't carry it.
+const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 
 function mergeById(existing, incoming) {
   const ids = new Set(existing.map((m) => m.id));
@@ -1135,7 +1145,9 @@ export default function App() {
     initAudioManager().catch(() => {});
     notificationService.init().catch(() => {});
     setNotifPermission(notificationService.getPermissionState());
-    requestNativePushPermission()
+    // Android asks right away; iOS only checks here and asks after sign-in
+    // (IosPushPermissionPrompt), never on the login screen.
+    initNativePush()
       .then((permission) => {
         if (permission) setNotifPermission(permission);
       })
@@ -2459,8 +2471,11 @@ export default function App() {
     const epoch = sessionEpochRef.current;
     const token = getToken();
     if (token && IOS_NATIVE) {
-      // Drop this iPhone's VoIP token before the session is revoked.
-      unregisterIosVoipToken(token)
+      // Drop this iPhone's VoIP + alert push tokens before the session is revoked.
+      Promise.allSettled([unregisterIosVoipToken(token), unregisterNativePushToken(token)])
+        .finally(() => logoutRequest(token).catch(() => {}));
+    } else if (token && isNativePushPlatform()) {
+      unregisterNativePushToken(token)
         .catch(() => {})
         .finally(() => logoutRequest(token).catch(() => {}));
     } else if (token) {
@@ -3178,7 +3193,13 @@ export default function App() {
           { id: groupId, name: data.groupName || "Grup" };
         setReplyTo(null);
         setActiveDmUser(null);
+        setActiveServer(null);
+        setActiveChannel(null);
         setActiveGroup(group);
+        const route = requestedRouteRef.current;
+        if (route?.view !== "groups" || String(route?.groupId || "") !== String(groupId)) {
+          navigate(groupPath(group));
+        }
         socketRef.current?.emit("dm:set_active", { withUserId: null });
         setGroupUnread((u) => {
           if (!u[groupId]) return u;
@@ -3322,6 +3343,57 @@ export default function App() {
     };
     // handleOpenDm closes over dmUnread/dmByUserId — rebind when those change
   }, [dmUnread, dmByUserId]);
+
+  // Native push taps that arrived before sign-in finished (cold start from a
+  // notification) are replayed once the app can open the chat.
+  useEffect(() => {
+    if (!me?.id || !sessionChecked) return undefined;
+    const timer = window.setTimeout(() => setNativeTapConsumerReady(true), 400);
+    return () => {
+      window.clearTimeout(timer);
+      setNativeTapConsumerReady(false);
+    };
+  }, [me?.id, sessionChecked]);
+
+  // Native iOS: tell the server which chat is on screen and whether the app is
+  // in the foreground, so no system banner is shown for the chat being read.
+  const iosPushChat = useMemo(() => {
+    if (!IOS_NATIVE) return null;
+    const path = location.pathname || "";
+    if (path.startsWith("/direct/") && activeDmUser?.id) return { kind: "dm", id: activeDmUser.id };
+    if (path.startsWith("/groups/") && activeGroup?.id) return { kind: "group", id: activeGroup.id };
+    if (path.startsWith("/servers/") && activeView === "servers" && activeChannel?.id && activeChannel.type === "text") {
+      return { kind: "channel", id: activeChannel.id };
+    }
+    return null;
+  }, [location.pathname, activeDmUser?.id, activeGroup?.id, activeView, activeChannel?.id, activeChannel?.type]);
+  const iosPushChatRef = useRef(null);
+  iosPushChatRef.current = iosPushChat;
+  const reportIosPushContext = useCallback(() => {
+    if (!IOS_NATIVE) return;
+    const socket = socketRef.current;
+    const token = getIosAlertToken();
+    if (!socket?.connected || !token) return;
+    const foreground = typeof document === "undefined" || document.visibilityState === "visible";
+    socket.emit("push:ios-context", { token, foreground, chat: foreground ? iosPushChatRef.current : null });
+  }, []);
+  useEffect(() => {
+    reportIosPushContext();
+  }, [reportIosPushContext, iosPushChat, isConnected, me?.id]);
+  useEffect(() => {
+    if (!IOS_NATIVE) return undefined;
+    const onVisibility = () => reportIosPushContext();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("descall:ios-push-token", onVisibility);
+    const heartbeat = window.setInterval(() => {
+      if (document.visibilityState === "visible") reportIosPushContext();
+    }, 15_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("descall:ios-push-token", onVisibility);
+      window.clearInterval(heartbeat);
+    };
+  }, [reportIosPushContext]);
 
   const handleSendDm = (toUserId, text) => {
     socketRef.current?.emit("dm:send", { toUserId, text });
@@ -4622,6 +4694,11 @@ export default function App() {
           onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
           onDecline={(groupId, fromUserId, fromUser, callType) => groupCall?.declineCall(groupId, fromUserId, fromUser, callType)}
         />
+        {IOS_NATIVE && me?.id ? (
+          <Suspense fallback={null}>
+            <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
+          </Suspense>
+        ) : null}
       </div>
     </>
   );

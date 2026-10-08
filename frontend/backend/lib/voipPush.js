@@ -5,8 +5,9 @@
  *
  * - Tokens live in device_push_tokens with platform "ios_voip" (registered by
  *   the iOS app's PKPushRegistry, see frontend/src/lib/iosCallKit.js).
- * - Same APNs auth key / JWT as lib/fcm.js (team-scoped key, so it can send
- *   VoIP pushes), but topic "<bundle>.voip" and apns-push-type "voip".
+ * - Same APNs auth key / JWT / HTTP/2 transport as the alert pushes
+ *   (lib/apnsClient.js; team-scoped key, so it can send VoIP pushes), but
+ *   topic "<bundle>.voip" and apns-push-type "voip".
  * - apns-expiration 0: APNs delivers now or drops the push. A ring that
  *   arrives late is useless and would make the phone ring for a dead call.
  * - Only RING pushes are sent. iOS must report a CallKit call for every VoIP
@@ -16,7 +17,7 @@
  *   App Store builds get production tokens).
  */
 
-const http2 = require("http2");
+const { http2Transport, apnsHost } = require("./apnsClient");
 
 const MAX_NAME = 64;
 const MAX_URL = 512;
@@ -31,9 +32,7 @@ function voipTopic(cfg) {
 }
 
 function voipHost() {
-  return String(process.env.APNS_VOIP_USE_SANDBOX || "").toLowerCase() === "true"
-    ? "api.sandbox.push.apple.com"
-    : "api.push.apple.com";
+  return apnsHost("APNS_VOIP_USE_SANDBOX");
 }
 
 /** Small JSON payload (VoIP pushes are capped at 5 KB). No aps block is needed. */
@@ -63,35 +62,6 @@ function buildVoipHeaders(cfg, token, jwtToken) {
     "apns-priority": "10",
     "apns-expiration": "0",
   };
-}
-
-/** Default HTTP/2 transport, same shape as lib/fcm.js sendApns. */
-function http2Transport({ host, headers, body }) {
-  return new Promise((resolve, reject) => {
-    const client = http2.connect(`https://${host}`);
-    const fail = (err) => {
-      client.close();
-      reject(err);
-    };
-    client.on("error", fail);
-    const req = client.request(headers);
-    let status = 0;
-    let responseBody = "";
-    req.on("response", (h) => {
-      status = Number(h[":status"] || 0);
-    });
-    req.setEncoding("utf8");
-    req.on("data", (chunk) => {
-      responseBody += chunk;
-    });
-    req.on("end", () => {
-      client.close();
-      resolve({ status, body: responseBody });
-    });
-    req.on("error", fail);
-    req.setTimeout(10_000, () => req.close(http2.constants.NGHTTP2_CANCEL));
-    req.end(body);
-  });
 }
 
 function createVoipPusher(deps = {}) {

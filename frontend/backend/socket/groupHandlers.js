@@ -26,6 +26,40 @@ const {
   resumeParticipantInGroupCall,
 } = require("./groupCallLifecycle");
 
+/** iOS alert push for a group DM message; mentioned members get a mention push. Never throws. */
+async function pushGroupMessageToIos({ groupId, groupName, fromId, from, message, isVoice, mentionedUserIds }) {
+  try {
+    const [{ data: members, error }, groupRow] = await Promise.all([
+      supabase.from("group_members").select("user_id").eq("group_id", groupId).neq("user_id", fromId),
+      groupName
+        ? Promise.resolve({ data: { name: groupName } })
+        : supabase.from("groups").select("name").eq("id", groupId).maybeSingle(),
+    ]);
+    if (error) throw error;
+    const memberIds = (members || []).map((r) => r.user_id).filter(Boolean);
+    if (!memberIds.length) return;
+    const { sendGroupMessagePush, sendIosGroupMentionPush } = require("../lib/webPush");
+    const content = String(message?.content || "");
+    const payload = {
+      groupId,
+      groupName: groupRow?.data?.name || null,
+      fromId,
+      from,
+      text: isVoice ? "" : content.slice(0, 160),
+      previewKind: isVoice ? "voice" : message?.media_url ? "media" : "text",
+      messageId: message?.id || null,
+    };
+    const mentioned = memberIds.filter((id) => mentionedUserIds?.has(id));
+    const others = memberIds.filter((id) => !mentionedUserIds?.has(id));
+    await Promise.allSettled([
+      mentioned.length ? sendIosGroupMentionPush(mentioned, payload) : null,
+      others.length ? sendGroupMessagePush(others, payload) : null,
+    ]);
+  } catch (err) {
+    console.warn("[GroupMessage] iOS push skipped:", err?.message || err);
+  }
+}
+
 function resolveSocketAvatar(socket) {
   const cached = getCachedPublicUser(socket.user?.id);
   return (
@@ -338,6 +372,8 @@ function registerGroupHandlers(io, socket, state) {
     socket.emit("group:message", { groupId, message, tempId });
 
     // Detect @mentions and notify mentioned users
+    const mentionedUserIds = new Set();
+    let groupNameForPush = null;
     if (trimmedContent) {
       const mentionedUsernames = extractMentionedUsernames(trimmedContent);
       if (mentionedUsernames.length > 0) {
@@ -346,6 +382,7 @@ function registerGroupHandlers(io, socket, state) {
           .select("name")
           .eq("id", groupId)
           .single();
+        groupNameForPush = groupMeta?.name || null;
 
         const { data: mentionedUsers } = await supabase
           .from("users")
@@ -354,6 +391,7 @@ function registerGroupHandlers(io, socket, state) {
 
         for (const mentioned of (mentionedUsers || [])) {
           if (mentioned.id === myId) continue;
+          mentionedUserIds.add(mentioned.id);
           emitMentionToUser(io, mentioned.id, {
             groupId,
             groupName: groupMeta?.name || "Grup",
@@ -363,6 +401,17 @@ function registerGroupHandlers(io, socket, state) {
         }
       }
     }
+
+    // Native iOS alert pushes (web / desktop notify from the socket events above).
+    void pushGroupMessageToIos({
+      groupId,
+      groupName: groupNameForPush,
+      fromId: myId,
+      from: socket.user.username,
+      message,
+      isVoice,
+      mentionedUserIds,
+    });
   });
 
   // ========== GROUP CALL ==========
@@ -474,16 +523,37 @@ function registerGroupHandlers(io, socket, state) {
         io.to(`user:${targetUserId}`).emit("group:call:incoming", payload);
       });
       // Backgrounded clients cannot rely on Socket.IO; push contains no SDP/ICE.
-      void sendGroupCallPush(targets, {
-        type: "group-call",
-        groupId,
-        callType,
-        title: `${socket.user.username} is calling`,
-        body: `Join the ${callType} call in your group.`,
-        tag: `group-call-${groupId}`,
-        deepLink: `/?group=${encodeURIComponent(groupId)}`,
-        action: "join",
-      });
+      // Push only to real members (client-sent memberIds are not trusted for push).
+      void (async () => {
+        let pushTargets = targets;
+        let groupName = null;
+        try {
+          const [{ data: rows, error }, { data: groupRow }] = await Promise.all([
+            supabase.from("group_members").select("user_id").eq("group_id", groupId),
+            supabase.from("groups").select("name").eq("id", groupId).maybeSingle(),
+          ]);
+          if (!error && rows) {
+            const memberSet = new Set(rows.map((r) => r.user_id));
+            pushTargets = targets.filter((id) => memberSet.has(id));
+          }
+          groupName = groupRow?.name || null;
+        } catch {
+          /* fall back to the resolved targets */
+        }
+        if (!pushTargets.length) return;
+        await sendGroupCallPush(pushTargets, {
+          type: "group-call",
+          groupId,
+          groupName,
+          callType,
+          from: socket.user.username,
+          title: `${socket.user.username} is calling`,
+          body: `Join the ${callType} call in your group.`,
+          tag: `group-call-${groupId}`,
+          deepLink: `/?group=${encodeURIComponent(groupId)}`,
+          action: "join",
+        });
+      })().catch((err) => console.warn("[GroupCall] push failed:", err?.message || err));
       socket.to(`group:${groupId}`).emit("group:call:incoming", payload);
     } else {
       // Soft notify open chats only — no ring, no push spam.
@@ -738,4 +808,4 @@ function registerGroupHandlers(io, socket, state) {
   });
 }
 
-module.exports = { registerGroupHandlers, removeUserFromAllGroupCalls };
+module.exports = { registerGroupHandlers, removeUserFromAllGroupCalls, pushGroupMessageToIos };

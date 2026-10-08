@@ -72,8 +72,14 @@ router.post("/fcm-token", requireAuth, async (req, res) => {
   if (platform === fcm.VOIP_PLATFORM && !fcm.isApnsDeviceToken(token)) {
     return res.status(400).json({ error: "Invalid VoIP token." });
   }
+  // iOS alert tokens are raw 64-hex APNs device tokens (lib/iosAlertPush.js).
+  if (platform === fcm.IOS_ALERT_PLATFORM && !fcm.isApnsDeviceToken(token)) {
+    return res.status(400).json({ error: "Invalid iOS push token." });
+  }
+  const rawLocale = typeof req.body?.locale === "string" ? req.body.locale.trim().toLowerCase() : "";
+  const locale = platform === fcm.IOS_ALERT_PLATFORM && (rawLocale === "tr" || rawLocale === "en") ? rawLocale : null;
   try {
-    await fcm.upsertDeviceToken(req.user.id, token, platform);
+    await fcm.upsertDeviceToken(req.user.id, token, platform, locale);
     return res.status(204).end();
   } catch (err) {
     console.error("[FCM] token save failed:", err.message);

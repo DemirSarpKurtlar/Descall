@@ -36,6 +36,12 @@ import { unblockUser, getBlockedUsers } from "../../api/friends";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useLocale } from "../../context/LocaleContext";
+import {
+  getNativePushPermission,
+  isNativeIosPush,
+  requestNativePushPermission,
+  syncNativePushToken,
+} from "../../lib/nativePush";
 import { detectDefaultLocale } from "../../i18n/detect";
 import RiotLinkCard from "../settings/RiotLinkCard";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
@@ -644,6 +650,25 @@ const UserPanel = forwardRef(function UserPanel({
   const [msgNotifications, setMsgNotifications] = useState(stored.msgNotifications !== false);
   const [callNotifications, setCallNotifications] = useState(stored.callNotifications !== false);
 
+  /* ── iPhone push permission (native iOS app only) ── */
+  const iosPush = isNativeIosPush();
+  const [iosPushPermission, setIosPushPermission] = useState(null);
+  useEffect(() => {
+    if (!iosPush || activeTab !== "notifications") return undefined;
+    let cancelled = false;
+    getNativePushPermission().then((p) => {
+      if (!cancelled) setIosPushPermission(p);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [iosPush, activeTab]);
+  const handleIosPushAllow = async () => {
+    const p = await requestNativePushPermission().catch(() => null);
+    if (p) setIosPushPermission(p);
+    if (p === "granted") syncNativePushToken().catch(() => {});
+  };
+
   /* ── Sound ── */
   const audioDefaults = getAudioSettings?.() || {};
   const [msgSounds, setMsgSounds] = useState(
@@ -701,6 +726,17 @@ const UserPanel = forwardRef(function UserPanel({
     selectedVideoIn,
     locale,
   ]);
+
+  // iOS: "Message notifications" off removes this iPhone's push token; on
+  // registers it again (runs after the settings above are saved).
+  const msgNotifFirstRun = useRef(true);
+  useEffect(() => {
+    if (msgNotifFirstRun.current) {
+      msgNotifFirstRun.current = false;
+      return;
+    }
+    if (iosPush) syncNativePushToken().catch(() => {});
+  }, [msgNotifications, iosPush]);
 
   const handleMsgSounds = (v) => {
     setMsgSounds(v);
@@ -2003,6 +2039,23 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Message notifications")}
                   />
                 </SettingRow>
+                {iosPush && iosPushPermission && iosPushPermission !== "granted" && (
+                  <SettingRow
+                    icon={AlertTriangle}
+                    title={t("iPhone notifications are off")}
+                    description={
+                      iosPushPermission === "denied"
+                        ? t("Turn them on in iPhone Settings → Descall → Notifications.")
+                        : t("Allow notifications to get messages while Descall is closed.")
+                    }
+                  >
+                    {iosPushPermission === "prompt" && (
+                      <button type="button" className="us-btn primary" onClick={handleIosPushAllow}>
+                        {t("Allow")}
+                      </button>
+                    )}
+                  </SettingRow>
+                )}
                 <SettingRow
                   icon={Mic}
                   title={t("Call notifications")}

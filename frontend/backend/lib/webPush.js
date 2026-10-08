@@ -3,6 +3,7 @@
 const webpush = require("web-push");
 const supabase = require("../db/supabase");
 const { sendFcmToUsers } = require("./fcm");
+const { sendIosAlertToUsers } = require("./iosAlertPush");
 
 let configured = false;
 
@@ -56,11 +57,18 @@ async function sendWebPushToUsers(userIds, payload) {
   }));
 }
 
-async function deliverPush(userIds, payload = {}) {
+/** Web Push + FCM (Android) get `payload`; iOS alert tokens get `iosEvent` (localized there). */
+async function deliverPush(userIds, payload = {}, iosEvent = null) {
   await Promise.allSettled([
     sendWebPushToUsers(userIds, payload),
     sendFcmToUsers(userIds, payload),
+    iosEvent ? sendIosAlertToUsers(userIds, iosEvent) : Promise.resolve(),
   ]);
+}
+
+function previewKindOf(payload = {}) {
+  const kind = String(payload.previewKind || "");
+  return kind === "voice" || kind === "media" ? kind : "text";
 }
 
 /**
@@ -76,10 +84,19 @@ async function sendGroupCallPush(userIds, payload = {}) {
     deepLink: payload.deepLink || "/",
     ...payload,
   };
-  await deliverPush(userIds, body);
+  await deliverPush(userIds, body, {
+    type: "group-call",
+    groupId: payload.groupId,
+    groupName: payload.groupName,
+    fromName: payload.from,
+    callType: payload.callType,
+  });
 }
 
-/** DM / 1:1 incoming call — wake backgrounded native + web clients. */
+/**
+ * DM / 1:1 incoming call — wake backgrounded native + web clients. iOS phones
+ * with a VoIP token ring through CallKit instead (lib/iosAlertPush.js skips them).
+ */
 async function sendIncomingCallPush(userIds, payload = {}) {
   const body = {
     type: "call",
@@ -89,7 +106,12 @@ async function sendIncomingCallPush(userIds, payload = {}) {
     deepLink: payload.deepLink || "/",
     ...payload,
   };
-  await deliverPush(userIds, body);
+  await deliverPush(userIds, body, {
+    type: "call",
+    fromId: payload.fromId,
+    fromName: payload.from,
+    callType: payload.callType,
+  });
 }
 
 /** Direct message while recipient is backgrounded / offline. */
@@ -107,7 +129,14 @@ async function sendDmMessagePush(userIds, payload = {}) {
     ...payload,
     body: preview,
   };
-  await deliverPush(userIds, body);
+  await deliverPush(userIds, body, {
+    type: "dm",
+    fromId: payload.fromId,
+    fromName: payload.from,
+    text: payload.rawText != null ? payload.rawText : preview,
+    previewKind: previewKindOf(payload),
+    messageId: payload.messageId,
+  });
 }
 
 /** @mention in a server channel or DM. */
@@ -134,7 +163,78 @@ async function sendMentionPush(userIds, payload = {}) {
     body: preview,
     deepLink,
   };
-  await deliverPush(userIds, body);
+  await deliverPush(userIds, body, {
+    type: "mention",
+    fromId: payload.fromId,
+    fromName: payload.from,
+    text: payload.rawText != null ? payload.rawText : preview,
+    previewKind: previewKindOf(payload),
+    serverId: payload.serverId,
+    serverName: payload.serverName,
+    channelId: payload.channelId,
+    channelName: payload.channelName,
+    dmConversationId: payload.dmConversationId || (payload.serverId ? null : payload.fromId),
+    messageId: payload.messageId,
+  });
+}
+
+/*
+ * Events below only reach the native iOS app. Web and desktop show them from
+ * the live socket (notificationService); iOS needs an APNs push because the
+ * app is suspended in the background.
+ */
+
+/** New group DM message. Mentioned members get sendIosGroupMentionPush instead. */
+function sendGroupMessagePush(userIds, payload = {}) {
+  return sendIosAlertToUsers(userIds, {
+    type: "group",
+    groupId: payload.groupId,
+    groupName: payload.groupName,
+    fromName: payload.from,
+    text: payload.text,
+    previewKind: previewKindOf(payload),
+    messageId: payload.messageId,
+    excludeUserId: payload.fromId,
+  });
+}
+
+/** @mention inside a group DM. */
+function sendIosGroupMentionPush(userIds, payload = {}) {
+  return sendIosAlertToUsers(userIds, {
+    type: "mention",
+    groupId: payload.groupId,
+    groupName: payload.groupName,
+    fromName: payload.from,
+    text: payload.text,
+    previewKind: previewKindOf(payload),
+    messageId: payload.messageId,
+    excludeUserId: payload.fromId,
+  });
+}
+
+/** New server text channel message for members whose notification level is "all". */
+function sendServerMessagePush(userIds, payload = {}) {
+  return sendIosAlertToUsers(userIds, {
+    type: "server-message",
+    serverId: payload.serverId,
+    serverName: payload.serverName,
+    channelId: payload.channelId,
+    channelName: payload.channelName,
+    fromName: payload.from,
+    text: payload.text,
+    previewKind: previewKindOf(payload),
+    messageId: payload.messageId,
+    excludeUserId: payload.fromId,
+  });
+}
+
+/** Incoming friend request. */
+function sendFriendRequestPush(userId, payload = {}) {
+  return sendIosAlertToUsers([userId], {
+    type: "friend-request",
+    fromId: payload.fromId,
+    fromName: payload.from,
+  });
 }
 
 module.exports = {
@@ -143,4 +243,8 @@ module.exports = {
   sendIncomingCallPush,
   sendDmMessagePush,
   sendMentionPush,
+  sendGroupMessagePush,
+  sendIosGroupMentionPush,
+  sendServerMessagePush,
+  sendFriendRequestPush,
 };

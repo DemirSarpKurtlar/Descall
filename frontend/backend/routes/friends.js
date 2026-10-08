@@ -89,6 +89,12 @@ router.post("/request", requireAuth, async (req, res) => {
         from: { id: userId, username: senderUsername },
       });
     }
+    try {
+      const { sendFriendRequestPush } = require("../lib/webPush");
+      void sendFriendRequestPush(targetUser.id, { fromId: userId, from: senderUsername });
+    } catch (pushErr) {
+      console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
+    }
 
     res.json({ success: true, message: "Friend request sent" });
   } catch (err) {

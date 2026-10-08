@@ -3934,6 +3934,14 @@ export const phrases = {
   "Continue with Apple": "Apple ile devam et",
   "Sign in with Apple failed.": "Apple ile giriş başarısız oldu.",
   "Email is already linked to another account.": "Bu e-posta başka bir hesaba bağlı.",
+  "Turn on notifications": "Bildirimleri aç",
+  "Get notified about DMs, group messages, server messages, mentions and friend requests, even when Descall is closed.":
+    "Descall kapalıyken bile DM, grup ve sunucu mesajları, bahsetmeler ve arkadaşlık istekleri için bildirim al.",
+  "iPhone notifications are off": "iPhone bildirimleri kapalı",
+  "Turn them on in iPhone Settings → Descall → Notifications.":
+    "iPhone Ayarlar → Descall → Bildirimler bölümünden açabilirsin.",
+  "Allow notifications to get messages while Descall is closed.":
+    "Descall kapalıyken mesajları almak için bildirimlere izin ver.",
   ...TR_INAPP_GAPS,
 };
 

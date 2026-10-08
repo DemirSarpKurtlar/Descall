@@ -2,6 +2,7 @@
 
 const supabase = require("../db/supabase");
 const iosPresence = require("../lib/iosPresence");
+const iosPushContext = require("../lib/iosPushContext");
 const {
   loadUserProfile,
   savePresenceStatus,
@@ -755,6 +756,15 @@ function registerSocketHandlers(io) {
           body: `${me.username} sent you a friend request`,
           meta: { fromUserId: myId },
         });
+        try {
+          const { sendFriendRequestPush } = require("../lib/webPush");
+          void sendFriendRequestPush(target.id, {
+            fromId: myId,
+            from: me.username,
+          });
+        } catch (pushErr) {
+          console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
+        }
         socket.emit("friend:request:sent", { to: target.username });
       } catch (e) {
         console.error("[Friends] request error:", e);
@@ -898,6 +908,19 @@ function registerSocketHandlers(io) {
 
     socket.on("dm:set_active", ({ withUserId } = {}) => {
       socket.data.activeDmPeer = typeof withUserId === "string" ? withUserId : null;
+    });
+
+    // Native iOS app: which chat is on screen and whether the app is in the
+    // foreground, so its alert pushes skip the chat being read (lib/iosPushContext.js).
+    socket.on("push:ios-context", (payload = {}) => {
+      if (!fromIosApp || !payload || typeof payload !== "object") return;
+      iosPushContext.report({
+        userId: myId,
+        socketId: socket.id,
+        token: payload.token,
+        foreground: payload.foreground === true,
+        chat: payload.chat,
+      });
     });
 
     socket.on("typing:start", (payload = {}) => {
@@ -1088,21 +1111,30 @@ function registerSocketHandlers(io) {
                 : mediaUrl
                   ? "Sent an attachment"
                   : String(storedText || text || "").slice(0, 140) || "New message";
+            const previewKind = isVoice ? "voice" : mediaUrl ? "media" : "text";
+            const rawText = isVoice ? "" : String(storedText || text || "").slice(0, 140);
             if (dmMentioned) {
               void sendMentionPush([toUserId], {
                 title: `${me.username || "Someone"} mentioned you`,
                 body: preview,
                 text: preview,
+                rawText,
+                previewKind,
                 from: me.username,
                 fromId: myId,
+                dmConversationId: myId,
+                messageId,
                 deepLink: `/?dm=${encodeURIComponent(myId)}`,
               });
             } else {
               void sendDmMessagePush([toUserId], {
                 title: me.username || "New message",
                 body: preview,
+                rawText,
+                previewKind,
                 from: me.username,
                 fromId: myId,
+                messageId,
                 deepLink: `/?dm=${encodeURIComponent(myId)}`,
               });
             }
@@ -1282,7 +1314,9 @@ function registerSocketHandlers(io) {
 
       // Wake backgrounded Android / PWA clients even when Socket.IO is asleep.
       // Push carries no SDP — opening the app lets the live offer (or a retry) connect.
-      try {
+      // iOS: only phones without CallKit/VoIP get this as an alert (lib/iosAlertPush.js).
+      // A renegotiation is an already-running call, so nothing should ring.
+      if (!renegotiation) try {
         const { sendIncomingCallPush } = require("../lib/webPush");
         void sendIncomingCallPush([targetId], {
           type: "call",
@@ -1935,6 +1969,7 @@ function registerSocketHandlers(io) {
 
     socket.on("disconnect", async () => {
       if (fromIosApp) iosPresence.markDisconnected(myId);
+      if (fromIosApp) iosPushContext.clearSocket(socket.id);
       // Only drop group-call participation when THIS user has no other live
       // sockets (other tabs / reconnect). Removing on every socket disconnect
       // kicked the remaining participant out of the room on brief blips and

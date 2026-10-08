@@ -343,6 +343,20 @@ async function sendGroupMessage(fromUserId, { groupId, text }, { io } = {}) {
   if (io) {
     io.to(`group:${groupId}`).emit("group:message", { groupId, message });
   }
+  try {
+    const { pushGroupMessageToIos } = require("../../socket/groupHandlers");
+    void pushGroupMessageToIos({
+      groupId,
+      groupName: group.name || null,
+      fromId: fromUserId,
+      from: message.sender?.username || pub?.username || null,
+      message,
+      isVoice: false,
+      mentionedUserIds: new Set(),
+    });
+  } catch (pushErr) {
+    logInternal("agent-group-push", pushErr);
+  }
   return {
     ok: true,
     summary: `Message sent in ${group.name || "group"}.`,
