@@ -32,6 +32,10 @@ on:
         description: "Submit for review after applying (manual release)"
         type: boolean
         default: false
+      build:
+        description: "Exact build number to attach, e.g. 20261008.2053 (blank = latest VALID build of the version)"
+        required: false
+        default: ""
       wait_build_minutes:
         description: "Wait up to N minutes for a VALID build of the version"
         required: false
@@ -102,6 +106,7 @@ jobs:
           MODE: ${{ inputs.mode }}
           SUBMIT: ${{ inputs.submit }}
           WAIT_BUILD: ${{ inputs.wait_build_minutes }}
+          BUILD_NUMBER: ${{ inputs.build }}
         run: |
           set -euo pipefail
           # Belt and braces: secrets are masked by GitHub already.
@@ -109,6 +114,10 @@ jobs:
             [ -n "$v" ] && echo "::add-mask::$v"
           done
           args=(--mode "${MODE:-apply}" --wait-build-minutes "${WAIT_BUILD:-0}")
+          if [ -n "${BUILD_NUMBER}" ]; then
+            [[ "$BUILD_NUMBER" =~ ^[0-9.]+$ ]] || { echo "::error::bad build number"; exit 1; }
+            args+=(--build "$BUILD_NUMBER")
+          fi
           if [ "${SUBMIT}" = "true" ]; then args+=(--submit); fi
           python appstore/asc_metadata.py "${args[@]}"
 

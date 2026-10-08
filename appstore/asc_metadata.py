@@ -391,18 +391,21 @@ def price(asc, app_id, apply):
 
 
 @step("Build")
-def build(asc, app_id, ver, version, apply, wait_minutes):
+def build(asc, app_id, ver, version, apply, wait_minutes, pin=""):
     cur = asc.req("GET", f"/v1/appStoreVersions/{ver['id']}/build", ok=(200,), quiet_codes=(404,))
     cur = (cur or {}).get("data")
     deadline = time.time() + wait_minutes * 60
     while True:
-        builds = asc.get("/v1/builds", **{"filter[app]": app_id, "filter[preReleaseVersion.version]": version,
-                                          "filter[processingState]": "VALID", "sort": "-uploadedDate", "limit": 1}).get("data", [])
+        q = {"filter[app]": app_id, "filter[preReleaseVersion.version]": version,
+             "filter[processingState]": "VALID", "sort": "-uploadedDate", "limit": 1}
+        if pin:
+            q["filter[version]"] = pin  # exact build number (CFBundleVersion)
+        builds = asc.get("/v1/builds", **q).get("data", [])
         if builds or time.time() > deadline or not apply:
             break
         log("  no VALID build yet, waiting 60 s"); time.sleep(60)
     if not builds:
-        (err if apply else warn)(f"no VALID build for {version}"); return None
+        (err if apply else warn)(f"no VALID build {pin or ''} for {version}".replace("  ", " ")); return None
     b = builds[0]
     log(f"  latest VALID build: {b['attributes']['version']} uploaded {b['attributes'].get('uploadedDate')} "
         f"usesNonExemptEncryption={b['attributes'].get('usesNonExemptEncryption')}")
@@ -418,8 +421,18 @@ def build(asc, app_id, ver, version, apply, wait_minutes):
 
 
 @step("Submit for review")
-def submit(asc, app_id, ver):
+def submit(asc, app_id, ver, pin=""):
     blockers = [e for e in errors]
+    cur = asc.req("GET", f"/v1/appStoreVersions/{ver['id']}/build", ok=(200,), quiet_codes=(404,))
+    cur = (cur or {}).get("data")
+    attached = cur["attributes"].get("version") if cur else None
+    if not attached:
+        blockers.append("no build attached")
+    elif pin and attached != pin:
+        blockers.append(f"attached build {attached} != requested {pin}")
+    elif cur["attributes"].get("processingState") != "VALID":
+        blockers.append(f"attached build {attached} is {cur['attributes'].get('processingState')}")
+    log(f"  preflight: attached build={attached} errors={len(errors)} warnings={len(warnings)}")
     if not os.environ.get("REVIEW_PHONE", "").strip():
         blockers.append("contact phone missing")
     if not (HERE / "screenshots" / "ipad13").glob("*.png") or not list((HERE / "screenshots" / "ipad13").glob("*.png")):
@@ -435,8 +448,10 @@ def submit(asc, app_id, ver):
         asc.req("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
                 "relationships": {"reviewSubmission": rel("reviewSubmissions", sub["id"]), "appStoreVersion": rel("appStoreVersions", ver["id"])}}})
     asc.req("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {"type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
-    state = asc.get(f"/v1/reviewSubmissions/{sub['id']}")["data"]["attributes"].get("state")
-    log(f"  review submission {sub['id']} state={state}")
+    sa = asc.get(f"/v1/reviewSubmissions/{sub['id']}")["data"]["attributes"]
+    va = asc.get(f"/v1/appStoreVersions/{ver['id']}")["data"]["attributes"]
+    log(f"  review submission {sub['id']} state={sa.get('state')} submittedDate={sa.get('submittedDate')}")
+    log(f"  version {va.get('versionString')} state={va.get('appVersionState') or va.get('appStoreState')}")
 
 
 def readback(asc, app_id, ver, meta):
@@ -472,6 +487,7 @@ def main():
     ap.add_argument("--mode", choices=["apply", "verify"], default="apply")
     ap.add_argument("--submit", action="store_true")
     ap.add_argument("--wait-build-minutes", type=int, default=0)
+    ap.add_argument("--build", default="", help="exact build number to attach (blank = latest VALID)")
     a = ap.parse_args()
     apply = a.mode == "apply"
     app_id, version = os.environ["ASC_APP_ID"], os.environ["APP_VERSION"]
@@ -492,7 +508,7 @@ def main():
     availability(asc, app_id, apply)
     price(asc, app_id, apply)
     if ver:
-        build(asc, app_id, ver, version, apply, a.wait_build_minutes)
+        build(asc, app_id, ver, version, apply, a.wait_build_minutes, a.build.strip())
 
     # Read-back summary of the text fields (always)
     try:
@@ -501,7 +517,7 @@ def main():
         err(f"read-back: {e}")
 
     if a.submit and apply and ver:
-        submit(asc, app_id, ver)
+        submit(asc, app_id, ver, a.build.strip())
     elif a.submit:
         err("submit requested but mode is not apply or the version is missing")
 
