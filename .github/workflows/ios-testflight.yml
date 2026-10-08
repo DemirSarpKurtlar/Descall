@@ -2,8 +2,11 @@
 # TestFlight. This runner is the only iOS build machine (no local Mac).
 #
 # Signing: Xcode automatic, cloud-managed signing via the App Store Connect API key (Team key
-# "Descall CI", Admin). The archive is pinned to the Apple Distribution identity because a CI
-# runner has no registered devices (a development profile cannot be created without one).
+# "Descall CI", Admin). The team has no registered devices, so automatic *development* signing
+# (Xcode's default at archive time) cannot create a profile, and Xcode 26 refuses an Apple
+# Distribution identity with automatic signing. So the archive is built unsigned and the export
+# step signs it with the cloud-managed Apple Distribution certificate + App Store profile.
+# The exported IPA's entitlements are checked before upload; upload uses altool + the API key.
 # No certificate or profile is stored in the repo or in secrets.
 #
 # Secrets: ASC_KEY_P8 (raw .p8 text), ASC_KEY_ID, ASC_ISSUER_ID, APPLE_TEAM_ID.
@@ -132,7 +135,7 @@ jobs:
           set -euo pipefail
           xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App 2>&1 | tee "$LOG_DIR/resolve-packages.log"
 
-      - name: Archive (Release, Apple Distribution, cloud-managed signing)
+      - name: Archive (Release, unsigned; signed at export)
         working-directory: frontend/ios/App
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -146,30 +149,25 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
             MARKETING_VERSION="$MARKETING_VERSION" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             archive 2>&1 | tee "$LOG_DIR/archive.log"
           test -d "$ARCHIVE_PATH/Products/Applications/App.app"
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
 
-      - name: Inspect archive (version, entitlements, icon)
+      - name: Inspect archive (version)
         run: |
           set -euo pipefail
           APP="$ARCHIVE_PATH/Products/Applications/App.app"
           echo "CFBundleShortVersionString: $(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
           echo "CFBundleVersion: $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
           echo "ITSAppUsesNonExemptEncryption: $(/usr/libexec/PlistBuddy -c 'Print ITSAppUsesNonExemptEncryption' "$APP/Info.plist")"
-          echo "Signing:"; codesign -dvv "$APP" 2>&1 | grep -E '^(Authority|TeamIdentifier|Identifier)=' || true
-          echo "Entitlements:"; codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p - || true
 
-      - name: Export and upload to App Store Connect
+      - name: Export signed IPA (cloud-managed distribution signing)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -179,7 +177,7 @@ jobs:
           EXPORT_PATH="$RUNNER_TEMP/export"
           rm -rf "$EXPORT_PLIST" "$EXPORT_PATH"
           /usr/libexec/PlistBuddy -c "Add :method string app-store-connect" "$EXPORT_PLIST" >/dev/null
-          /usr/libexec/PlistBuddy -c "Add :destination string upload" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :destination string export" "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" "$EXPORT_PLIST"
@@ -194,8 +192,43 @@ jobs:
             -authenticationKeyPath "$ASC_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            2>&1 | tee "$LOG_DIR/export-upload.log"
-          grep -E "Upload succeeded|EXPORT SUCCEEDED|Uploaded" "$LOG_DIR/export-upload.log" || true
+            2>&1 | tee "$LOG_DIR/export.log"
+          IPA="$(find "$EXPORT_PATH" -maxdepth 1 -name '*.ipa' | head -n 1)"
+          test -s "$IPA"
+          ls -lh "$IPA"
+          echo "IPA_PATH=$IPA" >> "$GITHUB_ENV"
+
+      - name: Verify IPA signature and entitlements
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/ipa-check"
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          unzip -q "$IPA_PATH" -d "$WORK"
+          APP="$(find "$WORK/Payload" -maxdepth 1 -name '*.app' | head -n 1)"
+          codesign -dvv "$APP" 2>&1 | grep -E '^(Authority|TeamIdentifier|Identifier)=' || true
+          codesign -d --entitlements - --xml "$APP" > "$WORK/ent.plist" 2>/dev/null
+          plutil -p "$WORK/ent.plist"
+          aps="$(/usr/libexec/PlistBuddy -c 'Print :aps-environment' "$WORK/ent.plist" 2>/dev/null || true)"
+          siwa="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.applesignin:0' "$WORK/ent.plist" 2>/dev/null || true)"
+          gta="$(/usr/libexec/PlistBuddy -c 'Print :get-task-allow' "$WORK/ent.plist" 2>/dev/null || true)"
+          ok=1
+          [ "$aps" = "production" ] || { echo "::error::aps-environment is '$aps', expected production"; ok=0; }
+          [ "$siwa" = "Default" ] || { echo "::error::Sign in with Apple entitlement missing ('$siwa')"; ok=0; }
+          [ "$gta" != "true" ] || { echo "::error::get-task-allow is true (development signature)"; ok=0; }
+          [ "$ok" -eq 1 ]
+          echo "Entitlements OK for App Store distribution."
+
+      - name: Upload to App Store Connect (altool + API key)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          # altool finds the key in ~/.appstoreconnect/private_keys/AuthKey_<id>.p8
+          xcrun altool --upload-app --type ios --file "$IPA_PATH" \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
+            --show-progress --output-format normal 2>&1 | tee "$LOG_DIR/upload.log"
+          grep -Ei "UPLOAD SUCCEEDED|Delivery UUID" "$LOG_DIR/upload.log"
 
       - name: Confirm the build reached App Store Connect
         continue-on-error: true
