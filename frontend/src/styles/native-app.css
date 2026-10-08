@@ -1,0 +1,57 @@
+/* ============================================
+   Native iOS/Android app (Capacitor) only — html.native-app is set before
+   first paint by index.html / main.jsx. Web and Electron never get it.
+
+   The WebView runs edge-to-edge (contentInset: never + viewport-fit=cover).
+   Safe-area regions (status bar / Dynamic Island, home indicator) must show
+   the app's own surfaces — not the near-black .app-root behind a transparent
+   padding band — while interactive content stays inside the safe area.
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* The bottom tab bar is hidden on mobile (ui-polish.css), but .app-root still
+     reserved 60px + home indicator for it — a dead dark band under the chat.
+     In the app keep only the home-indicator clearance. */
+  html.native-app .app-root.is-mobile {
+    --mobile-tab-bar-h: 0px;
+  }
+
+  html.native-app .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-secondary {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Chat / friends / servers / calls list drawer: the shell pads for the safe
+     area but is transparent, which left a black band above and below the list.
+     Paint those bands with the list surface and run the nav rail edge-to-edge. */
+  html.native-app .app-root.is-mobile:not([data-view="activity"]) .app-sidebar-shell {
+    background:
+      linear-gradient(var(--surface-1), var(--surface-1)) left top / 100% env(safe-area-inset-top, 0px) no-repeat,
+      linear-gradient(var(--surface-1), var(--surface-1)) left bottom / 100% env(safe-area-inset-bottom, 0px) no-repeat;
+  }
+
+  html.native-app .app-root.is-mobile:not([data-view="activity"]) .app-sidebar-shell > .nav-rail {
+    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+    height: calc(100% + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+    max-height: none;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Activity: rail + list are edge-pinned (absolute, top:0) inside a shell that
+     pads for the notch, so the header slid under the Dynamic Island. Keep the
+     backgrounds edge-to-edge and push the content down instead. */
+  html.native-app .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .nav-rail {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html.native-app .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-secondary {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  /* DimaAI: the workspace is absolutely inset:0 — clear the Dynamic Island. */
+  html.native-app .app-root.is-mobile[data-view="dimaai"] .dima-workspace {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+}

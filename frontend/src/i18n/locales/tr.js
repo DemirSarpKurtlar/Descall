@@ -3121,6 +3121,7 @@ export const phrases = {
   "How we use data": "Verileri nasıl kullanıyoruz",
   "Sharing": "Paylaşım",
   "Your choices": "Seçimlerin",
+  "Legal": "Yasal",
   "Terms of Service": "Hizmet Şartları",
   "I have read and agree to the": "Okudum ve kabul ediyorum:",
   "Acceptance": "Kabul",

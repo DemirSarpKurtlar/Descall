@@ -19,6 +19,21 @@ import { isAnalyticsAllowed } from "./analyticsGate";
 import { isPublicMarketingPath } from "./marketingPaths";
 import { peekAttribution } from "../lib/attribution";
 
+/**
+ * Native iOS app (Capacitor bridge global, same check as index.html's gtag skip).
+ * Google Ads / GA / Clarity there count as App Store "tracking" (ATT prompt),
+ * so the authenticated app must not load them either.
+ */
+function isNativeIosShell() {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    if (!cap || typeof cap.getPlatform !== "function" || cap.getPlatform() !== "ios") return false;
+    return typeof cap.isNativePlatform !== "function" || Boolean(cap.isNativePlatform());
+  } catch {
+    return false;
+  }
+}
+
 function preferMarketingAnalyticsCold() {
   try {
     const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
@@ -110,6 +125,7 @@ function googleAdsSignupSendTo() {
  */
 function ensureGtagConfigs(ids, { anonymizeIpIds } = {}) {
   if (typeof window === "undefined") return;
+  if (isNativeIosShell()) return;
   const list = [...new Set((ids || []).map((id) => String(id || "").trim()).filter(Boolean))];
   if (!list.length) return;
 
@@ -254,7 +270,7 @@ export function initAnalytics() {
     ensureGtagConfigs(gtagIds, { anonymizeIpIds: new Set(gaId ? [gaId] : []) });
   }
 
-  if (clarityId && !marketingCold) {
+  if (clarityId && !marketingCold && !isNativeIosShell()) {
     (function (c, l, a, r, i, t, y) {
       c[a] =
         c[a] ||

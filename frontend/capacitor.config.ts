@@ -18,9 +18,13 @@ const config: CapacitorConfig = {
     captureInput: true,
   },
   ios: {
-    // Existing CSS already pads with env(safe-area-inset-*).
+    // Existing CSS already pads with env(safe-area-inset-*) — the WebView runs
+    // edge-to-edge and the app paints its own colors under the status bar /
+    // Dynamic Island and home indicator (src/styles/native-app.css).
     contentInset: "never",
-    backgroundColor: "#0b0c10",
+    // Same slate as the LaunchScreen (Splash image background) and the native
+    // boot splash, so launch → WebView → app never flashes black.
+    backgroundColor: "#393C4D",
     scheme: "Descall",
   },
   plugins: {

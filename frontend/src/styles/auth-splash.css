@@ -504,3 +504,50 @@
     animation: none !important;
   }
 }
+
+/* Native iOS/Android app: AuthView is the standalone entry screen (no web
+   landing). Scroll inside the screen (sign-up + age gate is taller than a
+   phone) and keep everything clear of the notch / Dynamic Island and the home
+   indicator. The gradient background still runs edge-to-edge. */
+.auth-shell.is-native {
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 16px)
+    calc(env(safe-area-inset-right, 0px) + 12px)
+    calc(env(safe-area-inset-bottom, 0px) + 16px)
+    calc(env(safe-area-inset-left, 0px) + 12px);
+}
+
+.auth-shell.is-native .auth-bg {
+  position: fixed;
+}
+
+.auth-shell.is-native .auth-card {
+  /* margin:auto centers when it fits and falls back to top-aligned scrolling. */
+  margin: auto;
+  width: min(440px, 100%);
+}
+
+.auth-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #9aa3b2);
+}
+
+.auth-legal-links .legal-consent-link {
+  min-height: 32px;
+  padding: 0 4px;
+}

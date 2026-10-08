@@ -12,10 +12,15 @@ import { isEligibleBirthDate } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
+import { initialAuthMode, isCapacitorNativeShell } from "../lib/entryShell";
 
 export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error }) {
   const t = useT();
-  const [mode, setMode] = useState("login"); // login | register | forgot
+  const [mode, setMode] = useState(() =>
+    typeof window !== "undefined"
+      ? initialAuthMode(window.location?.pathname, window.location?.search)
+      : "login"
+  ); // login | register | forgot
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +30,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [legalModal, setLegalModal] = useState(null); // "terms" | "privacy" | null
   const [inviteRef, setInviteRef] = useState(() => peekInviteRef());
   const isElectron = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  // Native iOS/Android app: this is the standalone entry screen (no web landing),
+  // so it scrolls within the safe areas and keeps the legal docs one tap away.
+  const isNativeApp = !isElectron && isCapacitorNativeShell();
 
   useEffect(() => {
     try {
@@ -104,7 +112,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       : productTagline;
 
   return (
-    <main className={`auth-shell${isElectron ? " is-electron" : ""}`}>
+    <main className={`auth-shell${isElectron ? " is-electron" : ""}${isNativeApp ? " is-native" : ""}`}>
       <div className="auth-bg" aria-hidden="true">
         <div className="gradient-orb orb-1" />
         <div className="gradient-orb orb-2" />
@@ -336,6 +344,17 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         <p className="auth-footer">
           {t("By continuing, you agree to our Terms of Service")}
         </p>
+        {isNativeApp && (
+          <nav className="auth-legal-links" aria-label={t("Legal")}>
+            <button type="button" className="legal-consent-link" onClick={() => setLegalModal("terms")}>
+              {t("Terms of Service")}
+            </button>
+            <span aria-hidden="true">·</span>
+            <button type="button" className="legal-consent-link" onClick={() => setLegalModal("privacy")}>
+              {t("Privacy Policy")}
+            </button>
+          </nav>
+        )}
         </>
         )}
       </motion.section>

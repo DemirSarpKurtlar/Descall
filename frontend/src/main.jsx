@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { resolveInitialLocale, translate, loadI18nCatalogs } from "./i18n";
 import { isPublicMarketingPath } from "./site/marketingPaths";
+import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken } from "./lib/storage";
 import { isAnalyticsAllowed, markAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
@@ -25,9 +26,17 @@ const path = typeof window !== "undefined" ? window.location.pathname || "/" : "
 const hasSession = Boolean(getToken());
 const isElectronDesktop =
   typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
-// Desktop must never hydrate the SEO/marketing shell — logged-out first
-// paint is the app + AuthView. Web marketing paths stay unchanged.
-const preferMarketingShell = !hasSession && isPublicMarketingPath(path) && !isElectronDesktop;
+// Native Capacitor app (iOS/Android) — the landing page is web-only.
+const isNativeApp = isCapacitorNativeShell();
+// Desktop and the native apps must never hydrate the SEO/marketing shell —
+// logged-out first paint is the app + its own AuthView (login / sign-up).
+// Web marketing paths stay unchanged.
+const preferMarketingShell = shouldBootMarketingShell({
+  pathname: path,
+  hasSession,
+  isElectron: isElectronDesktop,
+  isNativeApp,
+});
 
 /**
  * Schedule third-party analytics only after cookie consent (or app idle allow).
@@ -177,6 +186,9 @@ async function bootApp() {
       document.documentElement.classList.add("electron-app");
       document.body.classList.add("electron-app");
     }
+    if (isNativeApp) {
+      document.documentElement.classList.add("native-app");
+    }
     document.documentElement.setAttribute("data-marketing-ready", "1");
     const seo = document.getElementById("seo-static");
     if (seo) {
@@ -221,9 +233,13 @@ async function bootApp() {
                 <RootApp />
               </Suspense>
               <IosPwaInstallBanner />
-              <Suspense fallback={null}>
-                <AnalyticsLazy />
-              </Suspense>
+              {/* Vercel Web Analytics only exists on the Vercel-hosted web app; in the
+                  native shell its /_vercel/insights script is a dead local request. */}
+              {!isNativeApp && (
+                <Suspense fallback={null}>
+                  <AnalyticsLazy />
+                </Suspense>
+              )}
             </Router>
           </LocaleProvider>
         </ToastProvider>

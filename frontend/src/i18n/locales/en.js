@@ -2208,6 +2208,7 @@ export const phrases = {
   "Help": "Help",
   "Support": "Support",
   "Terms": "Terms",
+  "Legal": "Legal",
   "Terms of Service": "Terms of Service",
   "Privacy Policy": "Privacy Policy",
   "I have read and agree to the": "I have read and agree to the",

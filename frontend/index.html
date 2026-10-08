@@ -185,6 +185,13 @@
         font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif !important;
         transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
       }
+      /* Native app: continue the iOS launch screen (logo on #393C4D, same color as
+         capacitor.config ios.backgroundColor) instead of flashing near-black. */
+      html.native-app #boot-splash {
+        background:
+          radial-gradient(120% 80% at 50% -10%, rgba(88, 101, 242, 0.18), transparent 55%),
+          #393c4d;
+      }
       #boot-splash.boot-splash--hide {
         opacity: 0;
         visibility: hidden;
@@ -713,7 +720,14 @@
             try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e1) {}
             if (/(^|,)tr(-|,|$)/.test(langs) || tz === "Europe/Istanbul") tr = true;
           }
-          if (tr && stored !== "en" && !isTrUrl) {
+          // Native Capacitor app: the /tr marketing mirror is web-only. Redirecting
+          // there reloaded the whole document on every Turkish cold start.
+          var nativeApp = false;
+          try {
+            var capNative = window.Capacitor;
+            nativeApp = !!(capNative && typeof capNative.isNativePlatform === "function" && capNative.isNativePlatform());
+          } catch (eNat) {}
+          if (tr && stored !== "en" && !isTrUrl && !nativeApp) {
             var mirrors = {
               "/": "/tr",
               "/features": "/tr/features",
@@ -772,7 +786,15 @@
           try {
             hasToken = !!localStorage.getItem("descall_token");
           } catch (e0) {}
-          if (!isApp && !hasToken) return;
+          // Native Capacitor app (iOS/Android): the marketing landing is web-only —
+          // boot straight into the app shell (own login / sign-up screen), like Electron.
+          var nativeShell = false;
+          try {
+            var capBridge = window.Capacitor;
+            nativeShell = !!(capBridge && typeof capBridge.isNativePlatform === "function" && capBridge.isNativePlatform());
+          } catch (eCap) {}
+          if (!isApp && !hasToken && !nativeShell) return;
+          if (nativeShell) document.documentElement.classList.add("native-app");
           document.documentElement.setAttribute("data-react-ready", "1");
           document.documentElement.setAttribute("data-app-shell", "1");
           var seo = document.getElementById("seo-static");

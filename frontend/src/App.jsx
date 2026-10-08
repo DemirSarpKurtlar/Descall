@@ -61,6 +61,7 @@ import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isNativeIOS } from "./lib/platform";
+import { isCapacitorNativeShell } from "./lib/entryShell";
 import BirthDateGate from "./components/auth/BirthDateGate";
 import { isChannelMuted } from "./lib/serverChannelMutes";
 import { listenForPushSubscriptionChange, subscribeWebPush } from "./lib/webPushSubscription";
@@ -417,6 +418,8 @@ export default function App() {
   const [descoinGift, setDescoinGift] = useState(null);
   const [adminPopupQueue, setAdminPopupQueue] = useState([]);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
+  // Native cold start: user id whose lists were fetched before getMe resolved.
+  const earlyListsFetchRef = useRef(null);
   const [groupsLoaded, setGroupsLoaded] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [unreadMarker, setUnreadMarker] = useState(null); // { key, count }
@@ -2844,7 +2847,23 @@ export default function App() {
     // Wait for session validation so we never fire authed REST calls with a
     // stale cached user and a missing/expired token (common on descall.com
     // after an old tab, while descall.vercel.app still had a fresh login).
-    if (!sessionChecked || !me?.id || !getToken()) return;
+    // Native app cold start: the token + cached user live in the app's own
+    // storage, so load the lists in parallel with getMe instead of after it
+    // (saves a full API round trip before the chat list leaves its skeleton).
+    // A bad token just 401s these calls; getMe then signs the user out.
+    if (!me?.id) {
+      earlyListsFetchRef.current = null;
+      return;
+    }
+    const earlyNative = !sessionChecked && isCapacitorNativeShell();
+    if ((!sessionChecked && !earlyNative) || !getToken()) return;
+    if (earlyNative) {
+      earlyListsFetchRef.current = String(me.id);
+    } else if (earlyListsFetchRef.current) {
+      const alreadyFetched = earlyListsFetchRef.current === String(me.id);
+      earlyListsFetchRef.current = null;
+      if (alreadyFetched) return;
+    }
     friendsFromSocketRef.current = false;
     fetchGroups();
     fetchFriends();
