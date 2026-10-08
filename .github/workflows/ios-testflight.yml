@@ -1,0 +1,259 @@
+# Builds the Capacitor iOS app (com.descall.app) on a GitHub macOS runner and uploads it to
+# TestFlight. This runner is the only iOS build machine (no local Mac).
+#
+# Signing: Xcode automatic, cloud-managed signing via the App Store Connect API key (Team key
+# "Descall CI", Admin). The archive is pinned to the Apple Distribution identity because a CI
+# runner has no registered devices (a development profile cannot be created without one).
+# No certificate or profile is stored in the repo or in secrets.
+#
+# Secrets: ASC_KEY_P8 (raw .p8 text), ASC_KEY_ID, ASC_ISSUER_ID, APPLE_TEAM_ID.
+# The key is written to a 600-permission file outside the workspace and removed at the end.
+#
+# Versions: CFBundleShortVersionString = frontend/package.json version (sync-version.cjs keeps the
+# iOS MARKETING_VERSION in sync). CFBundleVersion = UTC timestamp YYYYMMDD.HHMM, so every build
+# number is higher than the previous one regardless of tag, re-run or manual dispatch.
+
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  testflight:
+    name: Archive and upload to TestFlight
+    runs-on: macos-26
+    timeout-minutes: 75
+    env:
+      BUNDLE_ID: com.descall.app
+      ASC_APP_ID: "6820558264"
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      XCODE_APP: /Applications/Xcode_26.6.app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require App Store Connect secrets
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID TEAM_ID; do
+            if [ -z "${!name}" ]; then echo "::error::Missing secret for ${name}"; missing=1; fi
+          done
+          [ "$missing" -eq 0 ]
+          echo "LOG_DIR=$RUNNER_TEMP/ios-logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/ios-logs"
+
+      - name: Select Xcode (App Store uploads need Xcode 26+ / iOS 26 SDK)
+        run: |
+          set -euo pipefail
+          if [ -d "$XCODE_APP" ]; then
+            sudo xcode-select -s "$XCODE_APP"
+          else
+            echo "::warning::$XCODE_APP not found, using the image default"
+          fi
+          xcodebuild -version
+          major="$(xcodebuild -version | awk '/^Xcode/ {split($2, v, "."); print v[1]}')"
+          if [ "$major" -lt 26 ]; then
+            echo "::error::Xcode $major is too old for App Store Connect (needs 26+)."
+            exit 1
+          fi
+          echo "iOS SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
+
+      - name: Install Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build web assets (same production build as Render)
+        working-directory: frontend
+        run: npm run build:prod
+
+      - name: Sync Capacitor iOS
+        working-directory: frontend
+        run: npx cap sync ios
+
+      - name: Versions
+        run: |
+          set -euo pipefail
+          MARKETING_VERSION="$(node -p "require('./frontend/package.json').version")"
+          BUILD_NUMBER="$(date -u +%Y%m%d.%H%M)"
+          PBX_VERSION="$(grep -m1 -o 'MARKETING_VERSION = [0-9.]*' frontend/ios/App/App.xcodeproj/project.pbxproj | awk '{print $3}')"
+          if [ "$PBX_VERSION" != "$MARKETING_VERSION" ]; then
+            echo "::warning::pbxproj MARKETING_VERSION ($PBX_VERSION) differs from package.json ($MARKETING_VERSION); using package.json."
+          fi
+          echo "MARKETING_VERSION=$MARKETING_VERSION" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "Building Descall $MARKETING_VERSION ($BUILD_NUMBER)"
+
+      - name: Install App Store Connect API key (temporary)
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$KEY_DIR"
+          KEY_PATH="$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          if ! grep -q 'BEGIN PRIVATE KEY' "$KEY_PATH"; then
+            echo "::error::ASC_KEY_P8 does not look like a .p8 private key."
+            exit 1
+          fi
+          echo "ASC_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: Resolve Swift packages
+        working-directory: frontend/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App 2>&1 | tee "$LOG_DIR/resolve-packages.log"
+
+      - name: Archive (Release, Apple Distribution, cloud-managed signing)
+        working-directory: frontend/ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          ARCHIVE_PATH="$RUNNER_TEMP/Descall.xcarchive"
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            "CODE_SIGN_IDENTITY[sdk=iphoneos*]=Apple Distribution" \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            archive 2>&1 | tee "$LOG_DIR/archive.log"
+          test -d "$ARCHIVE_PATH/Products/Applications/App.app"
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
+
+      - name: Inspect archive (version, entitlements, icon)
+        run: |
+          set -euo pipefail
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          echo "CFBundleShortVersionString: $(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+          echo "CFBundleVersion: $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+          echo "ITSAppUsesNonExemptEncryption: $(/usr/libexec/PlistBuddy -c 'Print ITSAppUsesNonExemptEncryption' "$APP/Info.plist")"
+          echo "Signing:"; codesign -dvv "$APP" 2>&1 | grep -E '^(Authority|TeamIdentifier|Identifier)=' || true
+          echo "Entitlements:"; codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p - || true
+
+      - name: Export and upload to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          EXPORT_PLIST="$RUNNER_TEMP/ExportOptions.plist"
+          EXPORT_PATH="$RUNNER_TEMP/export"
+          rm -rf "$EXPORT_PLIST" "$EXPORT_PATH"
+          /usr/libexec/PlistBuddy -c "Add :method string app-store-connect" "$EXPORT_PLIST" >/dev/null
+          /usr/libexec/PlistBuddy -c "Add :destination string upload" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :manageAppVersionAndBuildNumber bool false" "$EXPORT_PLIST"
+          plutil -p "$EXPORT_PLIST"
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist "$EXPORT_PLIST" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee "$LOG_DIR/export-upload.log"
+          grep -E "Upload succeeded|EXPORT SUCCEEDED|Uploaded" "$LOG_DIR/export-upload.log" || true
+
+      - name: Confirm the build reached App Store Connect
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/ascvenv"
+          "$RUNNER_TEMP/ascvenv/bin/pip" install --quiet pyjwt cryptography
+          "$RUNNER_TEMP/ascvenv/bin/python" - <<'PY'
+          import json, os, time, urllib.parse, urllib.request
+          import jwt
+          key = open(os.environ["ASC_KEY_PATH"]).read()
+          def token():
+              now = int(time.time())
+              return jwt.encode({"iss": os.environ["ASC_ISSUER_ID"], "iat": now, "exp": now + 900, "aud": "appstoreconnect-v1"},
+                                key, algorithm="ES256", headers={"kid": os.environ["ASC_KEY_ID"], "typ": "JWT"})
+          q = urllib.parse.urlencode({"filter[app]": os.environ["ASC_APP_ID"], "filter[version]": os.environ["BUILD_NUMBER"],
+                                      "fields[builds]": "version,processingState,uploadedDate,usesNonExemptEncryption"})
+          url = f"https://api.appstoreconnect.apple.com/v1/builds?{q}"
+          for attempt in range(30):
+              req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token()}"})
+              data = json.load(urllib.request.urlopen(req, timeout=30)).get("data", [])
+              if data:
+                  a = data[0]["attributes"]
+                  print(f"App Store Connect build {a.get('version')}: processingState={a.get('processingState')} uploaded={a.get('uploadedDate')} usesNonExemptEncryption={a.get('usesNonExemptEncryption')}")
+                  if a.get("processingState") in ("VALID", "INVALID", "FAILED"):
+                      break
+              else:
+                  print(f"[{attempt}] build {os.environ['BUILD_NUMBER']} not visible in App Store Connect yet")
+              time.sleep(30)
+          PY
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          mkdir -p "$LOG_DIR"
+          # Xcode distribution logs (export/upload details); never includes the API key file.
+          find "${TMPDIR:-/tmp}" -maxdepth 3 -name '*.xcdistributionlogs' -print -exec cp -R {} "$LOG_DIR/" \; 2>/dev/null || true
+          if [ -n "${ARCHIVE_PATH:-}" ] && [ -d "$ARCHIVE_PATH" ]; then
+            ditto -c -k --keepParent "$ARCHIVE_PATH" "$LOG_DIR/Descall.xcarchive.zip" || true
+          fi
+          find "$RUNNER_TEMP/export" -name '*.ipa' -exec cp {} "$LOG_DIR/" \; 2>/dev/null || true
+          ls -la "$LOG_DIR" || true
+
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-testflight-debug-${{ github.run_number }}
+          path: ${{ runner.temp }}/ios-logs
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove App Store Connect API key
+        if: always()
+        run: |
+          rm -rf "$HOME/.appstoreconnect/private_keys" "$RUNNER_TEMP/ExportOptions.plist" "$RUNNER_TEMP/ascvenv"
+          echo "API key removed."

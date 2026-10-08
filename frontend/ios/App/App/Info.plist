@@ -64,6 +64,8 @@
 	<string>Camera permission required for video calls.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photos are used for profile photos and image uploads.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Descall saves images you choose to keep to your photo library.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UISupportedInterfaceOrientations</key>
