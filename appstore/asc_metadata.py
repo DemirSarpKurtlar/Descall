@@ -167,8 +167,9 @@ def age_rating(asc, info, age, apply):
     if mismatch:
         (err if apply else warn)(f"age rating differs from age-rating.json: {mismatch}")
     info_attrs = asc.get(f"/v1/appInfos/{info['id']}")["data"]["attributes"]
-    if info_attrs.get("appStoreAgeRating") != "THIRTEEN_PLUS":
-        warn(f"App Store age rating is {info_attrs.get('appStoreAgeRating')}, expected THIRTEEN_PLUS")
+    # appStoreAgeRating uses the pre-iOS 26 scale: the new 13+ shows as TWELVE_PLUS there.
+    if info_attrs.get("appStoreAgeRating") not in ("TWELVE_PLUS", "THIRTEEN_PLUS"):
+        warn(f"App Store age rating is {info_attrs.get('appStoreAgeRating')}, expected 13+ (TWELVE_PLUS on the legacy scale)")
     log(f"  computed rating (appInfo): {info_attrs.get('appStoreAgeRating')} "
         f"kids={info_attrs.get('kidsAgeBand')} brazil={info_attrs.get('brazilAgeRatingV2') or info_attrs.get('brazilAgeRating')}")
 
