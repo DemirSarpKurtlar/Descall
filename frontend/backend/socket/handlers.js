@@ -1,6 +1,7 @@
 "use strict";
 
 const supabase = require("../db/supabase");
+const iosPresence = require("../lib/iosPresence");
 const {
   loadUserProfile,
   savePresenceStatus,
@@ -537,6 +538,8 @@ function registerSocketHandlers(io) {
     });
     socket.join(`user:${myId}`);
     socketToUser.set(socket.id, myId);
+    const fromIosApp = iosPresence.isIosHandshake(socket);
+    if (fromIosApp) iosPresence.markConnected(myId);
     socket.data.activeDmPeer = null;
 
     // Durable activity timestamp for admin "recently active" boards.
@@ -1850,6 +1853,7 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("disconnect", async () => {
+      if (fromIosApp) iosPresence.markDisconnected(myId);
       // Only drop group-call participation when THIS user has no other live
       // sockets (other tabs / reconnect). Removing on every socket disconnect
       // kicked the remaining participant out of the room on brief blips and

@@ -111,6 +111,9 @@ router.post("/", requireAuth, (req, res) => {
         sourceMime: req.file.mimetype,
         meta,
       });
+      if (result.skipped) {
+        return res.status(200).json({ skipped: true, reason: result.reason });
+      }
       const status = result.duplicate ? 200 : 201;
       return res.status(status).json({
         recording: voice.publicRow(result.row),

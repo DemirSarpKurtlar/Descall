@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "./config/api";
 import { getDmMessages } from "./api/dmPrefs";
+import { isNativeIOS } from "./lib/platform";
 
 function isElectronRuntime() {
   if (typeof window === "undefined") return false;
@@ -34,7 +35,7 @@ export function createSocket(token, options = {}) {
   const { transports = ["polling", "websocket"] } = options;
 
   const opts = {
-    auth: { token },
+    auth: isNativeIOS() ? { token, platform: "ios" } : { token },
     autoConnect: false,
     transports,
     withCredentials: false,

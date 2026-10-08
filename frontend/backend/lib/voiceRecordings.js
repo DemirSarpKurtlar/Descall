@@ -1,6 +1,7 @@
 "use strict";
 
 const { spawn } = require("child_process");
+const iosPresence = require("./iosPresence");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -470,6 +471,12 @@ async function saveRecording({ userId, buffer, sourceMime, meta: rawMeta }) {
   }
   const meta = await enrichMeta({ ...rawMeta, kind });
   await verifyMembership(userId, meta);
+  // Never keep a recording that includes someone on the native iOS app.
+  const startedMs = Date.parse(meta.startedAt || "") || Date.now() - (Number(meta.durationMs) || 0);
+  const everyone = [userId, ...(meta.participantIds || []), ...(meta.dmPeerIds || [])];
+  if (iosPresence.anyIosSince(everyone, startedMs - 5 * 60 * 1000)) {
+    return { skipped: true, reason: "ios_participant" };
+  }
   if (meta.durationMs < MIN_DURATION_MS) {
     const err = new Error("Recording is shorter than 3 seconds.");
     err.code = "TOO_SHORT";
