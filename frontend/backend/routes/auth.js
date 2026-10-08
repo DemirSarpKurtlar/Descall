@@ -765,7 +765,11 @@ router.post("/google", async (req, res) => {
       return res.status(500).json({ error: "Database error." });
     }
 
-    if (!user && email) {
+    // Link an existing account with the same email only when Descall itself has verified that
+    // email (and Google has too); otherwise someone could pre-register a victim's address and
+    // capture their Google login. Mirrors the Sign in with Apple rule (2.9.123).
+    let emailTakenUnverified = false;
+    if (!user && email && emailVerified) {
       const { data: byEmail, error: byEmailError } = await supabase
         .from("users")
         .select(`id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, google_id, auth_provider, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`)
@@ -777,7 +781,8 @@ router.post("/google", async (req, res) => {
         return res.status(500).json({ error: "Database error." });
       }
 
-      if (byEmail) {
+      if (byEmail && !byEmail.email_confirmed_at) emailTakenUnverified = true;
+      if (byEmail && byEmail.email_confirmed_at) {
         if (byEmail.google_id && byEmail.google_id !== googleId) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
@@ -785,7 +790,6 @@ router.post("/google", async (req, res) => {
         const linkUpdate = {
           google_id: googleId,
           email,
-          email_confirmed_at: byEmail.email_confirmed_at || new Date().toISOString(),
           auth_provider: byEmail.auth_provider === "local" ? "local+google" : "google",
           avatar_url: byEmail.avatar_url || picture,
         };
@@ -829,8 +833,10 @@ router.post("/google", async (req, res) => {
       const insertPayload = {
         username,
         password_hash: null,
-        email,
-        email_confirmed_at: email ? new Date().toISOString() : null,
+        // An unverified account already holds this address: keep the Google account separate, no
+        // email (users_email_uidx forbids a duplicate). The existing account is left untouched.
+        email: emailTakenUnverified ? null : email,
+        email_confirmed_at: !emailTakenUnverified && email && emailVerified ? new Date().toISOString() : null,
         google_id: googleId,
         auth_provider: "google",
         avatar_url: picture,
