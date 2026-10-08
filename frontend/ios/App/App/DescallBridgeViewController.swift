@@ -10,6 +10,11 @@ class DescallBridgeViewController: CAPBridgeViewController {
 
     override open func viewDidLoad() {
         super.viewDidLoad()
+        // Back is the web app's own iOS edge swipe (useEdgeSwipeBack), which runs
+        // the same back handler as each screen's ‹ button. WebKit's history swipe
+        // would fire a second, unrelated back (history.back() / blank page) on the
+        // same gesture — keep it off explicitly so only one mechanism exists.
+        webView?.allowsBackForwardNavigationGestures = false
         showLaunchOverlay()
     }
 

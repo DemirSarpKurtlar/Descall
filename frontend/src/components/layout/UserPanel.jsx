@@ -20,6 +20,7 @@ import { cssUrl } from "../../lib/cssUrl";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { uploadAvatar, uploadFile } from "../../api/media";
 import { getMe } from "../../api/auth";
+import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import {
   setEmail as apiSetEmail,
   resendEmailCode,
@@ -216,6 +217,15 @@ const TAB_TITLE_KEYS = {
   sound: "settings.soundEffects",
   shop: "settings.shop",
 };
+
+/** What the settings sheet covers: the open list drawer on a root tab, else the main page. */
+function settingsUnderlay() {
+  if (typeof document === "undefined") return null;
+  return (
+    document.querySelector(".app-root.mobile-drawer-open > .app-sidebar-shell") ||
+    document.querySelector(".app-root > .app-main-slot")
+  );
+}
 
 const UserPanel = forwardRef(function UserPanel({
   me,
@@ -2312,6 +2322,31 @@ const UserPanel = forwardRef(function UserPanel({
   };
 
   const panelRef = useRef(null);
+  const menuPaneRef = useRef(null);
+  const detailPaneRef = useRef(null);
+
+  // iOS edge swipe-back. Section → menu runs the header ‹ (backToMenu) with the
+  // live menu sliding in underneath; on the menu itself it runs the same close
+  // as the ✕ and the app underneath is the previous screen.
+  useEdgeSwipeBack({
+    enabled: isMobile && mobileDetail,
+    onBack: backToMenu,
+    surfaceRef: detailPaneRef,
+    underlayRef: menuPaneRef,
+    priority: 30,
+  });
+  useEdgeSwipeBack({
+    enabled: isMobile && !mobileDetail,
+    onBack: onClose,
+    surfaceRef: panelRef,
+    getUnderlay: settingsUnderlay,
+    // Same dim as the sheet backdrop so the hand-over is seamless.
+    dimOpacity: 0.45,
+    // AnimatePresence plays the sheet exit after close — keep it hidden until it unmounts.
+    persistUntilUnmount: true,
+    priority: 20,
+  });
+
   const handleShellClick = (e) => {
     // Close only when the click lands outside the dialog panel
     if (panelRef.current && !panelRef.current.contains(e.target)) onClose?.();
@@ -2400,7 +2435,7 @@ const UserPanel = forwardRef(function UserPanel({
       onClick={(e) => e.stopPropagation()}
     >
       {/* Sidebar / mobile menu */}
-      <aside className={`us-sidebar ${showMenu ? "visible" : "hidden"}`}>
+      <aside ref={menuPaneRef} className={`us-sidebar ${showMenu ? "visible" : "hidden"}`}>
         <div className="us-sidebar-top">
           <div className="us-sidebar-brand">
             <div>
@@ -2469,7 +2504,7 @@ const UserPanel = forwardRef(function UserPanel({
       </aside>
 
       {/* Detail pane */}
-      <section className={`us-main ${showDetail ? "visible" : "hidden"}`}>
+      <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
         <header className="us-main-header">
           {isMobile ? (
             <button type="button" className="us-icon-btn" onClick={backToMenu} aria-label={t("Back")}>

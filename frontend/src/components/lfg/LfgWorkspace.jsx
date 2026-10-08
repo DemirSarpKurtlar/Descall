@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Crosshair, Plus, Users, Mic, Filter, X, Gamepad2,
@@ -18,6 +18,9 @@ import { Avatar } from "../ui/Avatar";
 import { LfgListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
 import PartyCodeReveal from "./PartyCodeReveal";
 import { useT } from "../../context/LocaleContext";
+import { useMobile } from "../../hooks/useMobile";
+import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
+import { useIsNarrowViewport } from "../../lib/useIsNarrowViewport";
 
 const FALLBACK_RANKS = [
   "Iron 1", "Iron 2", "Iron 3",
@@ -88,6 +91,20 @@ export default function LfgWorkspace({
     setSelectedId(null);
     setDetail(null);
   };
+
+  // Phone layout (≤860px, lfg.css): the lobby detail is pushed over the list.
+  // Edge swipe-back runs the same "Back to list" with the live list underneath.
+  const { isMobile } = useMobile();
+  const lfgStacked = useIsNarrowViewport(861);
+  const lfgListRef = useRef(null);
+  const lfgDetailRef = useRef(null);
+  useEdgeSwipeBack({
+    enabled: isMobile && lfgStacked && Boolean(selectedId),
+    onBack: clearLobbySelection,
+    surfaceRef: lfgDetailRef,
+    underlayRef: lfgListRef,
+    priority: 20,
+  });
 
   const refreshList = useCallback(async () => {
     setLoading(true);
@@ -265,7 +282,7 @@ export default function LfgWorkspace({
 
   return (
     <div className={`lfg-workspace${selectedId ? " has-selection" : ""}`}>
-      <aside className="lfg-sidebar">
+      <aside ref={lfgListRef} className="lfg-sidebar">
         <header className="lfg-sidebar-header">
           <div className="lfg-sidebar-title">
             {onClose && (
@@ -388,7 +405,7 @@ export default function LfgWorkspace({
         </div>
       </aside>
 
-      <main className={`lfg-main${selectedId ? " is-open" : ""}`}>
+      <main ref={lfgDetailRef} className={`lfg-main${selectedId ? " is-open" : ""}`}>
         {error && <div className="lfg-error-banner">{error}</div>}
 
         {selectedId && (

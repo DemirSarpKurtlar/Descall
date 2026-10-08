@@ -1,0 +1,129 @@
+/* ============================================
+   Edge swipe-back (hooks/useEdgeSwipeBack.js)
+   Layers created only while a swipe is running: dim over the previous
+   screen, a soft shadow on the moving page's left edge, and — where the
+   previous screen is not mounted — a skeleton placeholder of it.
+   Everything animates with transform / opacity only.
+   ============================================ */
+
+.edge-swipe-scrim {
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.edge-swipe-shadow {
+  top: 0;
+  bottom: 0;
+  left: -26px;
+  width: 26px;
+  pointer-events: none;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.16) 40%, rgba(0, 0, 0, 0));
+  will-change: transform, opacity;
+}
+
+html.edge-swipe-active,
+html.edge-swipe-active body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Settings: the menu is display:none while a section is open — show it
+   underneath the section during the swipe, in the same place it lays out
+   (inside the safe area, never under the Dynamic Island). */
+.user-settings.is-mobile .us-sidebar.hidden.edge-swipe-underlay {
+  display: flex;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: env(safe-area-inset-top, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 0;
+}
+
+/* Settings sheet swiped away: its own backdrop hands over to the swipe dim. */
+.user-settings-shell.is-mobile.edge-swipe-host {
+  background: transparent !important;
+}
+
+/* Previous screen placeholder (Play → chat list is not mounted under Play). */
+.edge-swipe-placeholder {
+  position: fixed;
+  inset: 0;
+  z-index: 301;
+  display: flex;
+  pointer-events: none;
+  background: var(--surface-1, #1e1f22);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.edge-swipe-placeholder .esp-rail {
+  width: 60px;
+  flex-shrink: 0;
+  background:
+    radial-gradient(circle at 30px calc(env(safe-area-inset-top, 0px) + 34px), rgba(255, 255, 255, 0.1) 20px, transparent 21px),
+    radial-gradient(circle at 30px calc(env(safe-area-inset-top, 0px) + 92px), rgba(255, 255, 255, 0.06) 18px, transparent 19px),
+    radial-gradient(circle at 30px calc(env(safe-area-inset-top, 0px) + 144px), rgba(255, 255, 255, 0.06) 18px, transparent 19px),
+    radial-gradient(circle at 30px calc(env(safe-area-inset-top, 0px) + 196px), rgba(255, 255, 255, 0.06) 18px, transparent 19px),
+    var(--surface-0, #17181b);
+  margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+}
+
+.edge-swipe-placeholder .esp-list {
+  flex: 1;
+  min-width: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px 0;
+}
+
+.edge-swipe-placeholder .esp-head {
+  height: 28px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.edge-swipe-placeholder .esp-head span {
+  width: 96px;
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.edge-swipe-placeholder .esp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+}
+
+.edge-swipe-placeholder .esp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.edge-swipe-placeholder .esp-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edge-swipe-placeholder .esp-lines span {
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  width: 62%;
+}
+
+.edge-swipe-placeholder .esp-lines span + span {
+  width: 38%;
+  background: rgba(255, 255, 255, 0.05);
+}

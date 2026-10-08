@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server } from "lucide-react";
 import NavigationRail from "./NavigationRail";
@@ -13,6 +13,7 @@ import ValorantHub from "../valorant/ValorantHub";
 import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
+import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
 
@@ -298,9 +299,31 @@ export default function AppLayout({
     openMobileDrawer,
   ]);
 
+  const closePlay = useCallback(() => handleViewChange("chat"), [handleViewChange]);
+
   const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
   const inServersChannel = activeView === "servers" && !!activeServer && !!activeChannel;
   const inConversation = !!(activeDmUser || activeGroup || inServersChannel);
+  // Mobile main navigation: the bottom tab bar and the rail + list drawer only
+  // show on root tabs. Inner screens (open DM / group / channel, settings) hide
+  // it, and so does Play (full-page, own ‹ Descall back). Only those screens
+  // get the iOS edge swipe-back; it runs the same back handler as their ‹ button.
+  const showMobileTabBar = isMobile && !userPanelOpen && !inConversation;
+  const isPlayPage = activeView === "play" && showPlay;
+  const mobileNavHidden = isMobile && !mobileDrawerOpen && (!showMobileTabBar || isPlayPage);
+  const mainSlotRef = useRef(null);
+  const sidebarShellRef = useRef(null);
+  useEdgeSwipeBack({
+    // Settings has its own swipe-back (UserPanel); Activity keeps its rail.
+    enabled: mobileNavHidden && !userPanelOpen && activeView !== "activity" && (isPlayPage || inConversation),
+    onBack: isPlayPage ? closePlay : handleMobileBack,
+    surfaceRef: mainSlotRef,
+    // The list drawer is the real previous screen of a conversation — it slides
+    // in live underneath. Play has no list mounted under it → skeleton placeholder.
+    underlayRef: isPlayPage ? null : sidebarShellRef,
+    placeholder: isPlayPage,
+    priority: 10,
+  });
   // On a narrow conversation surface the fixed banner sits directly over the
   // DM header, stealing profile/voice-call taps. Offer it once the user leaves
   // the conversation instead.
@@ -402,7 +425,7 @@ export default function AppLayout({
       </AnimatePresence>
 
       {/* Sidebar shell: left vertical nav rail + list sidebar (desktop + mobile drawer). */}
-      <div className={`app-sidebar-shell${mobileDrawerOpen ? " open" : ""}`}>
+      <div ref={sidebarShellRef} className={`app-sidebar-shell${mobileDrawerOpen ? " open" : ""}`}>
         <NavigationRail
           activeView={activeView}
           onViewChange={handleViewChange}
@@ -500,7 +523,7 @@ export default function AppLayout({
         )}
       </div>
 
-      <div className="app-main-slot">
+      <div ref={mainSlotRef} className="app-main-slot">
         <AnimatePresence initial={false}>
           <motion.div
             key={mainViewId(activeView)}
@@ -518,7 +541,7 @@ export default function AppLayout({
               <ValorantHub
                 me={me}
                 socket={socket}
-                onClose={() => handleViewChange("chat")}
+                onClose={closePlay}
                 onGroupCreated={onGroupCreated}
                 onOpenGroup={(group) => {
                   handleGroupSelect(group);
@@ -611,7 +634,7 @@ export default function AppLayout({
         )}
       </AnimatePresence>
 
-      {isMobile && !userPanelOpen && !inConversation && (
+      {showMobileTabBar && (
         <nav className="mobile-tab-bar" aria-label={t("Primary")}>
           {filterMainNavItems(
             [
