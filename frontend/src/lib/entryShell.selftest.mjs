@@ -74,6 +74,9 @@ assert(/&& !nativeApp\)/.test(indexHtml), "native app must not reload into the /
 assert(/@import '\.\/styles\/native-app\.css';/.test(stylesCss), "native-app.css must be imported");
 const analyticsJs = readFileSync(join(here, "..", "site", "analytics.js"), "utf8");
 assert(/if \(isNativeIosShell\(\)\) return;/.test(analyticsJs), "native iOS app must never load gtag (Google Ads) from analytics.js");
+const nativeCss = readFileSync(join(here, "..", "styles", "native-app.css"), "utf8");
+assert(/html\.native-app \.toast-stack\s*\{[^}]*safe-area-inset-top/.test(nativeCss), "native toasts must sit below the Dynamic Island");
+assert(/html\.native-app \.app-feedback-banner,[\s\S]{0,80}\{[^}]*safe-area-inset-top/.test(nativeCss), "native top banners must pad for the Dynamic Island");
 assert(/is-native/.test(authView) && /auth-legal-links/.test(authView), "AuthView must render native safe-area class + legal links");
 
 console.log("entryShell.selftest.mjs: ok");

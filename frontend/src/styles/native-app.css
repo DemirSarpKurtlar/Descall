@@ -55,3 +55,19 @@
     padding-top: env(safe-area-inset-top, 0px) !important;
   }
 }
+
+/* Top-sliding banners / toasts: in the edge-to-edge WebView they started at
+   y=0 and slid up under the status bar / Dynamic Island. Let the banner color
+   run under the status bar but keep the content (and toasts) below it. */
+html.native-app .app-feedback-banner,
+html.native-app .app-notif-banner {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-left: calc(env(safe-area-inset-left, 0px) + 12px);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 12px);
+}
+
+html.native-app .toast-stack {
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+  max-width: min(360px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+}
