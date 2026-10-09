@@ -1137,19 +1137,31 @@ html.glass-ui .add-modal-backdrop.g-scrim {
   backdrop-filter: blur(6px) saturate(120%);
 }
 
+/* The scrim is a flex centering box with its own backdrop-filter, which
+   makes a position:fixed sheet relative to a zero-height flex item on iOS.
+   Pin the sheet in normal flow, under the toolbar, and scroll the list. */
+html.glass-ui .add-modal-backdrop.g-announce-scrim {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 14vh 14px 24px;
+}
+
 html.glass-ui .add-modal.g-announce {
-  position: fixed;
-  top: 14%;
-  left: 14px;
-  right: 14px;
-  bottom: auto;
-  width: auto;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100%;
   max-width: none;
-  max-height: 72%;
+  max-height: 72vh;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 0;
   border-radius: var(--g-r-sheet);
-  padding: 8px 16px 24px;
+  padding: 8px 16px 16px;
   background:
     linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
     var(--g-heavy-base);
@@ -1158,6 +1170,21 @@ html.glass-ui .add-modal.g-announce {
   box-shadow: var(--g-shadow-heavy);
   color: var(--g-t1);
   font-family: var(--g-font) !important;
+}
+
+html.glass-ui .add-modal.g-announce .announcements-modal-content {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.glass-ui .add-modal.g-announce .announcements-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--g-t1);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 html.glass-ui .add-modal.g-announce * {
@@ -1201,22 +1228,29 @@ html.glass-ui .add-modal.g-announce .announcement-item {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   margin-bottom: 8px;
-  min-height: 0;
+  min-height: 64px;
   padding: 12px;
   border: 0;
   position: relative;
+  flex-shrink: 0;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-item::before {
-  content: "";
+  content: none;
+}
+
+html.glass-ui .add-modal.g-announce .g-ann-mark {
   grid-column: 1;
   grid-row: 1 / span 2;
   width: 40px;
   height: 40px;
   border-radius: 30%;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10.268 21a2 2 0 0 0 3.464 0'/><path d='M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'/></svg>") center / 20px 20px no-repeat,
-    var(--g-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--g-brand);
+  font-size: 18px;
+  line-height: 1;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-title {

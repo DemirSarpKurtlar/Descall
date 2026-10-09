@@ -1229,6 +1229,7 @@ export const phrases = {
   "Add members (optional)": "Add members (optional)",
   "Loading announcements...": "Loading announcements...",
   "No announcements": "No announcements",
+  "Failed to load announcements": "Failed to load announcements",
   "Add Member": "Add Member",
   "Rename Group": "Rename Group",
   "Invite": "Invite",

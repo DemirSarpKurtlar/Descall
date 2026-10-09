@@ -1233,6 +1233,7 @@ export const phrases = {
   "Add members (optional)": "Üye ekle (isteğe bağlı)",
   "Loading announcements...": "Duyurular yükleniyor...",
   "No announcements": "Duyuru yok",
+  "Failed to load announcements": "Duyurular yüklenemedi",
   "Add Member": "Üye Ekle",
   "Rename Group": "Grubu Yeniden Adlandır",
   "Invite": "Davet et",

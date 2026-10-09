@@ -558,7 +558,7 @@ export default function AppLayout({
             key={mainViewId(activeView)}
             className="app-main-view"
             initial={animateMainViews ? (glassShell ? { opacity: 0 } : { opacity: 0, y: 20 }) : false}
-            animate={{ opacity: 1, y: 0 }}
+            animate={glassShell ? { opacity: 1 } : { opacity: 1, y: 0 }}
             exit={
               animateMainViews
                 ? glassShell
@@ -672,7 +672,7 @@ export default function AppLayout({
       </AnimatePresence>
 
       {glassShell ? (
-        showMobileTabBar && !isPlayPage ? (
+        showMobileTabBar && (!isPlayPage || glassShell) ? (
           <>
             <div className="g-edge-bot" aria-hidden="true" />
             <GlassTabBar

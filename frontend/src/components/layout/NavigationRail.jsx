@@ -17,6 +17,7 @@ import {
 } from "./navConfig";
 import { filterMainNavItems, usePublicFeatures } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
+import useMaterialize from "../../hooks/useMaterialize";
 
 const STATUS_OPTIONS = ["online", "idle", "dnd", "invisible"];
 const STATUS_EMOJIS = ["💬", "😀", "🎮", "🎵", "💼", "📚", "☕", "🌙"];
@@ -163,6 +164,7 @@ export default function NavigationRail({
   const t = useT();
   const publicFeatures = usePublicFeatures();
   const [statusOpen, setStatusOpen] = useState(false);
+  const statusMat = useMaterialize(Boolean(glass && statusOpen));
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [statusEmoji, setStatusEmoji] = useState("💬");
   const [statusDraft, setStatusDraft] = useState("");
@@ -307,45 +309,37 @@ export default function NavigationRail({
   };
 
   const statusMenu = (
+    <>
+      {glass && statusMat.mounted && (
+        <div className="g-status-layer">
+          <button type="button" className="g-scrim" aria-label={t("Close")} onClick={() => setStatusOpen(false)} />
+          <button
+            type="button"
+            ref={glassLensRef}
+            className="g-me-btn g-glass g-lens g-status-me"
+            aria-label={t("Close")}
+            onClick={() => setStatusOpen(false)}
+          >
+            <span className="g-press-plate" aria-hidden="true" />
+            <GlassMeAvatar me={railUser || me} statusKey={statusKey} imageUrl={railAvatarUrl} />
+          </button>
+        </div>
+      )}
     <AnimatePresence>
-      {statusOpen && glass && (
-        <motion.div
-          key="g-status-scrim"
-          className="g-scrim"
-          aria-hidden="true"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-        />
-      )}
-      {statusOpen && glass && (
-        <motion.button
-          key="g-status-lens"
-          ref={glassLensRef}
-          type="button"
-          className="g-me-btn g-glass g-lens g-status-me"
-          aria-label={t("Close")}
-          onClick={() => setStatusOpen(false)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.12 }}
-        >
-          <GlassMeAvatar me={railUser || me} statusKey={statusKey} imageUrl={railAvatarUrl} />
-        </motion.button>
-      )}
-      {statusOpen && (
+      {(glass ? statusMat.mounted : statusOpen) && (
         <motion.div
           key="status-menu"
-          ref={menuRef}
-          className={glass ? "status-picker g-status-menu g-glass g-heavy" : "status-picker status-picker-portal"}
-          style={glass ? { transformOrigin: "16px 100%" } : { top: menuPos.top, left: menuPos.left }}
+          ref={(node) => {
+            menuRef.current = node;
+            if (glass) statusMat.ref.current = node;
+          }}
+          className={glass ? "status-picker g-status-menu g-glass g-heavy g-materialize" : "status-picker status-picker-portal"}
+          style={glass ? { "--g-mat-origin": "32px 0%" } : { top: menuPos.top, left: menuPos.left }}
           role="menu"
           aria-label={t("Status")}
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
+          initial={glass ? false : { opacity: 0, scale: 0.96 }}
+          animate={glass ? undefined : { opacity: 1, scale: 1 }}
+          exit={glass ? undefined : { opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.14 }}
         >
           <div className="status-picker-header">{t("Set status")}</div>
@@ -474,6 +468,7 @@ export default function NavigationRail({
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 
   return (

@@ -59,3 +59,14 @@ Sürüm **2.9.155**. Yalnız iPhone. Başka bir temada da bir kez dene.
 - [ ] Klavye açıkken composer klavyenin üstünde kalır.
 - [ ] Duyurular: “📢 Duyurular”, zil, göreli süre.
 - [ ] Masaüstü / web / Android aynı eski görünümde.
+
+## Hotfix — araç çubuğu basışı, durum menüsü, Oyna, duyurular · 2.9.156
+
+TestFlight 2.9.155 notları. Yalnız `html.glass-ui`.
+
+- Araç çubuğu (avatar, grup, +) basınca 0.88 ölçeğe iner ve titreşir. Buzlu cam dolgusu alt öğede; WebKit, `backdrop-filter` taşıyan öğedeki `transform`u yok sayıyordu.
+- Durum menüsü soldan 16, alttan 100, genişlik 280. Keskin lens avatar araç çubuğundaki yerinde (y 60), menü avatar yönünden büyür (`transform-origin: 32px 0`).
+- Oyna: cam liste çekmecesi tam ekran ortamı LFG’nin üstüne boyuyordu. Çekmece gizlenir; hub 440×956 görünür; cam sekme çubuğu durur.
+- Duyurular: API `created_at` döndürür, sayfa `createdAt` okuyordu. İkisi de kabul edilir, sayfa her açılışta yenilenir, liste kayar. Boş veya hata durumu görünür.
+
+440×956 ölçüm (Vite + shotkit, cam açık): menü 16,421,280×435 (alt kenar 100); lens 16,60,44; duyuru sayfası y 134, iki satır ve tarih; Oyna hub 0,0,440×956, çekmece `display:none`, sekme çubuğu duruyor. Basış ölçeği grup 0.885, avatar 0.885, artı 0.890.

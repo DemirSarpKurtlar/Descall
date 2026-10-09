@@ -8,10 +8,12 @@ import {
   Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag,
 } from "lucide-react";
 import SwipeRevealRow from "./SwipeRevealRow";
+import CallsView from "../calls/CallsView";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
+import { loadAnnouncements } from "../../lib/announcements";
 import { addMemberToGroup } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -91,6 +93,7 @@ export default function ServerSidebar({
   const [showAnnouncements, setShowAnnouncements] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [announcementsError, setAnnouncementsError] = useState("");
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -117,25 +120,28 @@ export default function ServerSidebar({
   }, [socket, t]);
 
   useEffect(() => {
-    if (showAnnouncements && announcements.length === 0) {
-      const fetchAnnouncements = async () => {
-        setAnnouncementsLoading(true);
-        try {
-          const token = getToken();
-          const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-          setAnnouncements(Array.isArray(data.announcements) ? data.announcements : []);
-        } catch (err) {
-          console.error("Failed to load announcements:", err);
-        } finally {
-          setAnnouncementsLoading(false);
+    if (!showAnnouncements) return undefined;
+    let cancelled = false;
+    (async () => {
+      setAnnouncementsLoading(true);
+      setAnnouncementsError("");
+      try {
+        const rows = await loadAnnouncements(API_BASE_URL, getToken());
+        if (!cancelled) setAnnouncements(rows);
+      } catch (err) {
+        console.error("Failed to load announcements:", err);
+        if (!cancelled) {
+          setAnnouncements([]);
+          setAnnouncementsError(t("Failed to load announcements"));
         }
-      };
-      fetchAnnouncements();
-    }
-  }, [showAnnouncements]);
+      } finally {
+        if (!cancelled) setAnnouncementsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showAnnouncements, t]);
 
   const fetchSuggestions = async () => {
     setSuggestionsLoading(true);
@@ -485,7 +491,21 @@ export default function ServerSidebar({
           )}
 
           {/* Canonical Calls UI lives in ChatPanel — sidebar only offers contacts. */}
-          {activeView === "calls" && (
+          {activeView === "calls" && glassShell ? (
+            <CallsView
+              me={me}
+              friends={friends}
+              groups={groups}
+              onlineUsers={onlineUsers}
+              socket={socket}
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              onStartCall={onStartCall}
+              onStartGroupCall={onStartGroupCall}
+              onOpenChat={onOpenChatFromCalls}
+              onOpenGroup={onOpenGroupFromCalls}
+            />
+          ) : activeView === "calls" && (
             <FriendsList
               friends={friends}
               onlineUsers={onlineUsers}
@@ -682,7 +702,7 @@ export default function ServerSidebar({
         <AnimatePresence>
           {showAnnouncements && (
               <motion.div
-                className={`add-modal-backdrop${glassShell ? " g-scrim" : ""}`}
+                className={`add-modal-backdrop${glassShell ? " g-scrim g-announce-scrim" : ""}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -690,10 +710,10 @@ export default function ServerSidebar({
               >
                 <motion.div
                   className={`add-modal${glassShell ? " g-announce" : ""}`}
-                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  initial={glassShell ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                  animate={glassShell ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
+                  exit={glassShell ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                  transition={glassShell ? { duration: 0.18 } : { type: "spring", damping: 25, stiffness: 300 }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
@@ -704,11 +724,18 @@ export default function ServerSidebar({
                 <div className="announcements-modal-content">
                   {announcementsLoading ? (
                     <BlockListSkeleton count={4} label={t("Loading announcements...")} />
+                  ) : announcementsError ? (
+                    <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{announcementsError}</div>
                   ) : announcements.length === 0 ? (
-                    <div style={{ padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{t("No announcements")}</div>
+                    <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{t("No announcements")}</div>
                   ) : (
                     announcements.map((a) => (
                       <div key={a.id} className="announcement-item">
+                        {glassShell ? (
+                          <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
+                            {a.emoji || "📢"}
+                          </span>
+                        ) : null}
                         <div className="announcement-title">{a.title}</div>
                         <div className="announcement-content">{a.content}</div>
                         <div className="announcement-meta">

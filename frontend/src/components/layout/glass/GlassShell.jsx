@@ -40,9 +40,14 @@ function prefersReducedMotion() {
 }
 
 function PressButton({ className = "", children, ...rest }) {
-  const press = usePressFeedback();
+  // Small toolbar controls read as dead at the default 0.97. 0.88 is the
+  // optical press, and the glass fill is a child so iOS can scale the button
+  // (WebKit ignores transform on the element that owns backdrop-filter).
+  const press = usePressFeedback({ scale: 0.88, haptic: true });
+  const fill = /\bg-glass\b/.test(className);
   return (
     <button type="button" {...rest} {...press} className={className}>
+      {fill ? <span className="g-press-plate" aria-hidden="true" /> : null}
       {children}
     </button>
   );

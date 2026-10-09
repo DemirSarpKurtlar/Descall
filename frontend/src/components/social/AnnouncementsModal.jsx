@@ -4,9 +4,29 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Megaphone, X } from "lucide-react";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
+import { loadAnnouncements } from "../../lib/announcements";
 import { useT } from "../../context/LocaleContext";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import useGlassUi from "../../hooks/useGlassUi";
+
+const emptyStyle = {
+  padding: "16px",
+  color: "var(--text-muted)",
+  fontSize: "14px",
+  textAlign: "center",
+};
+
+function glassAnnouncementWhen(iso) {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const min = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (min < 60) return `${Math.max(1, min)}dk`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}sa`;
+  const day = Math.round(hr / 24);
+  if (day < 14) return `${day}g`;
+  return new Date(iso).toLocaleDateString("tr-TR");
+}
 
 /**
  * Same announcements modal as Friends/DM sidebar Megaphone.
@@ -18,23 +38,23 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
   const [open, setOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open || announcements.length > 0) return undefined;
+    if (!open) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError("");
       try {
-        const token = getToken();
-        const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (!cancelled) {
-          setAnnouncements(Array.isArray(data.announcements) ? data.announcements : []);
-        }
+        const rows = await loadAnnouncements(API_BASE_URL, getToken());
+        if (!cancelled) setAnnouncements(rows);
       } catch (err) {
         console.error("Failed to load announcements:", err);
+        if (!cancelled) {
+          setAnnouncements([]);
+          setError(t("Failed to load announcements"));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -42,7 +62,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
     return () => {
       cancelled = true;
     };
-  }, [open, announcements.length]);
+  }, [open, t]);
 
   const modal =
     typeof document === "undefined"
@@ -51,7 +71,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
           <AnimatePresence>
             {open && (
               <motion.div
-                className={`add-modal-backdrop${glass ? " g-scrim" : ""}`}
+                className={`add-modal-backdrop${glass ? " g-scrim g-announce-scrim" : ""}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -59,10 +79,10 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
               >
                 <motion.div
                   className={`add-modal${glass ? " g-announce" : ""}`}
-                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  initial={glass ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                  animate={glass ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
+                  exit={glass ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                  transition={glass ? { duration: 0.18 } : { type: "spring", damping: 25, stiffness: 300 }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
@@ -74,20 +94,28 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                   <div className="announcements-modal-content">
                     {loading ? (
                       <BlockListSkeleton count={4} label={t("Loading announcements...")} />
+                    ) : error ? (
+                      <div
+                        className={glass ? "announcements-empty" : undefined}
+                        style={glass ? undefined : emptyStyle}
+                      >
+                        {error}
+                      </div>
                     ) : announcements.length === 0 ? (
                       <div
-                        style={{
-                          padding: "16px",
-                          color: "var(--text-muted)",
-                          fontSize: "14px",
-                          textAlign: "center",
-                        }}
+                        className={glass ? "announcements-empty" : undefined}
+                        style={glass ? undefined : emptyStyle}
                       >
                         {t("No announcements")}
                       </div>
                     ) : (
                       announcements.map((a) => (
                         <div key={a.id} className="announcement-item">
+                          {glass ? (
+                            <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
+                              {a.emoji || "📢"}
+                            </span>
+                          ) : null}
                           <div className="announcement-title">{a.title}</div>
                           <div className="announcement-content">{a.content}</div>
                           <div className="announcement-meta">
@@ -98,7 +126,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                             )}
                             {a.createdAt && (
                               <span className="announcement-date">
-                                {new Date(a.createdAt).toLocaleDateString()}
+                                {glass ? glassAnnouncementWhen(a.createdAt) : new Date(a.createdAt).toLocaleDateString()}
                               </span>
                             )}
                           </div>
