@@ -88,3 +88,11 @@ TestFlight 2.9.156. Yalnız `html.glass-ui`.
 - Sohbet listesindeki avatarların iç gölge çerçevesi kalktı. Durum noktası ayrımı duruyor.
 
 440×956 ölçüm: DM başlığı 12,60,416×48 (geri 48, kimlik 166×48, eylemler 186×48). Kanal başlığı 12,60,416×48; başlık “genel”, alt yazı “Oyun Gecesi · 128 üye”, sağda ara / üyeler / sabitle. Duyuru kartı 380×104, ikon 40×40 kartın içinde, gövde iki satır.
+
+## Hotfix — GIF seçici aramayı kendiliğinden açmasın · 2.9.158
+
+TestFlight. Yalnız `html.glass-ui`.
+
+GIF seçici açılınca arama alanı odaklanıyor, iPhone klavyeyi trendlerin üstüne çıkarıyordu. Seçici altta bir sayfa olarak açılır, Trendler seçilidir, arama salt okunurdur. Arama kutusuna veya Ara’ya dokununca klavye gelir.
+
+440×956: sayfa 12,290,416×620, alt kenar 910. Açılışta odak `body`, alan `readOnly`. Dokununca odak arama alanına geçer.

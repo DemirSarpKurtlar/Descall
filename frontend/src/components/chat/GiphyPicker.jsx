@@ -3,13 +3,21 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, TrendingUp, Loader2 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
+import useGlassUi from "../../hooks/useGlassUi";
 
 const GIPHY_API_KEY = "dtgxSdCkeVkjYcEeEpSYlqP4mmv4LQgi";
 const GIPHY_API_URL = "https://api.giphy.com/v1/gifs";
 
 export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef }) {
   const t = useT();
+  const glass = useGlassUi();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchArmed, setSearchArmed] = useState(false);
+  const searchArmedRef = useRef(false);
+  const armSearch = () => {
+    searchArmedRef.current = true;
+    setSearchArmed(true);
+  };
   const [gifs, setGifs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -58,12 +66,24 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
     if (!isOpen) {
       setSearchQuery("");
       setActiveTab("trending");
+      setSearchArmed(false);
+      searchArmedRef.current = false;
       return;
     }
     fetchTrending();
+    // iPhone opens the keyboard the moment this field is focused, which
+    // covers the GIF grid. Trending stays up until the user taps search.
+    if (glass) {
+      const active = document.activeElement;
+      if (active && active !== document.body && typeof active.blur === "function") active.blur();
+      const blurSearch = () => searchInputRef.current?.blur();
+      blurSearch();
+      const timer = setTimeout(blurSearch, 80);
+      return () => clearTimeout(timer);
+    }
     const timer = setTimeout(() => searchInputRef.current?.focus(), 60);
     return () => clearTimeout(timer);
-  }, [isOpen, fetchTrending]);
+  }, [isOpen, fetchTrending, glass]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -130,7 +150,7 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="giphy-overlay"
+          className={`giphy-overlay${glass ? " g-giphy-scrim" : ""}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -141,17 +161,17 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
         >
           <motion.div
             ref={panelRef}
-            className="giphy-panel"
+            className={`giphy-panel${glass ? " g-giphy" : ""}`}
             role="dialog"
             aria-label={t("GIF picker")}
-            style={{
+            style={glass ? undefined : {
               bottom: panelPos.bottom,
               left: panelPos.left,
               width: panelPos.width,
             }}
-            initial={{ opacity: 0, y: 12, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            initial={glass ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.97 }}
+            animate={glass ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={glass ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.97 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={(e) => e.stopPropagation()}
           >
@@ -170,8 +190,22 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
               <input
                 ref={searchInputRef}
                 type="text"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                readOnly={glass && !searchArmed}
                 placeholder={t("Search GIFs…")}
                 value={searchQuery}
+                onPointerDown={(event) => {
+                  if (!glass || searchArmedRef.current) return;
+                  armSearch();
+                  event.currentTarget.readOnly = false;
+                }}
+                onFocus={(event) => {
+                  if (glass && !searchArmedRef.current) event.currentTarget.blur();
+                }}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
@@ -206,7 +240,16 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
               <button
                 type="button"
                 className={activeTab === "search" ? "active" : ""}
-                onClick={() => searchInputRef.current?.focus()}
+                onClick={() => {
+                  armSearch();
+                  setActiveTab("search");
+                  requestAnimationFrame(() => {
+                    const input = searchInputRef.current;
+                    if (!input) return;
+                    input.readOnly = false;
+                    input.focus();
+                  });
+                }}
               >
                 <Search size={13} />
                 {t("Search")}
