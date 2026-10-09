@@ -18,8 +18,8 @@ Self-contained brief for the Cursor cloud agent continuing this work in the repo
 |---|---|---|---|
 | 1 | Glass foundation (tokens, materials, physics, hooks, native display plugin) + login (01) | 2.9.151 | shipped, Demir tested OK |
 | fix | Mobile DM header: name wrapped one letter per line next to the admin badge | 2.9.153 | shipped |
-| 2 | Navigation shell: floating 7-tab glass bar, toolbar (me-btn · bgroup · +), large titles, search, scroll-edge, status menu (02/02b/09/11/19/20 chrome, 18) | 2.9.154 (see git tags) | shipped with this handoff |
-| 3 | Chats / DM / groups rows, message menu, attach, composer, announcements (02, 02b, 03, 04, 05, 16) | next free | TODO |
+| 2 | Navigation shell: floating 7-tab glass bar, toolbar (me-btn · bgroup · +), large titles, search, scroll-edge, status menu (02/02b/09/11/19/20 chrome, 18) | 2.9.154 · commit 8907c8c · tag v2.9.154 | shipped; CI green (TestFlight, Windows release, Vercel, Render, Marketing gates) — awaiting Demir's TestFlight test |
+| 3 | Chats / DM / groups rows, message menu, attach, composer, announcements (02, 02b, 03, 04, 05, 16) | 2.9.155 | shipped in this commit — see PROGRESS.md; CI must be green before Stage 4 |
 | 4 | Calls (06, 07, 08, 19) | | TODO |
 | 5 | Friends, add friend, servers, channel, server menu, profile (09, 10, 11, 12, 13, 14, 14b) | | TODO |
 | 6 | Settings, notifications, Play, Activity, Shop (15, 15b, 17, 20, 21, 21b) | | TODO |
@@ -100,3 +100,9 @@ The glass conversation header (mockup 03: back `cbtn` 48 · `.peer` capsule (ava
 - Rows are `<button>`s (UA `text-align:center`) — glass lists set `text-align:start`.
 - Playwright tap leaves the mouse where it was → hover popovers in screenshots are artefacts.
 - Port 3000 on the shared box belongs to another agent; use 31xx/32xx for mocks.
+
+## 9. Stage 2 results (2.9.154)
+
+- Compare @3x (geometry ±1pt pairs · chrome pixel Δ>8 / Δ>32): 02-chats 25/25 · 0.67% / 0.56%; 02b-groups 25/25 · 0.68% / 0.56%; 09-friends 25/26 · 0.91% / 0.79% (tab label "Arkadaşlar" 1.27pt narrower: Inter build difference); 11-servers 19/19 · 0.51% / 0.43%; 19-calls 20/21 · 3.89% / 1.13% (title/sub glyph rendering, same font cause); 20-activity 23/23 · 0.84% / 0.63%; 18-status 24/24 · 2.83% / 0.61%.
+- Zero-diff (22 desktop/web/Electron/Android/iPad/iPhone-glass-off scenarios): 0 px, DOM identical. Exception: 3 friends/calls scenarios differ only by the mock-server port in the invite link (localhost:3200 vs :3201): a harness artifact (when the port is normalised they are identical). For Stage 3+, start before/after on the same port one after the other, or normalise `localhost:\d+` in zero-diff.mjs.
+- Selftests: 77 pass + the 5 known pre-existing failures. `npm run build:prod` ok (perf-budget ok).

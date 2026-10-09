@@ -6,6 +6,7 @@ import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { useT } from "../../context/LocaleContext";
 import { BlockListSkeleton } from "../ui/Skeleton";
+import useGlassUi from "../../hooks/useGlassUi";
 
 /**
  * Same announcements modal as Friends/DM sidebar Megaphone.
@@ -13,6 +14,7 @@ import { BlockListSkeleton } from "../ui/Skeleton";
  */
 export default function AnnouncementsButton({ className = "icon-btn", iconSize = 18 }) {
   const t = useT();
+  const glass = useGlassUi();
   const [open, setOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,14 +51,14 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
           <AnimatePresence>
             {open && (
               <motion.div
-                className="add-modal-backdrop"
+                className={`add-modal-backdrop${glass ? " g-scrim" : ""}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setOpen(false)}
               >
                 <motion.div
-                  className="add-modal"
+                  className={`add-modal${glass ? " g-announce" : ""}`}
                   initial={{ scale: 0.9, opacity: 0, y: 20 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -64,7 +66,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
-                    <h3>📢 Announcements</h3>
+                    <h3>{glass ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
                     <button type="button" className="icon-btn" onClick={() => setOpen(false)}>
                       <X size={18} />
                     </button>

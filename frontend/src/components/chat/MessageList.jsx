@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
@@ -26,6 +27,10 @@ import { BadgeIcon, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
 import { formatMessageClock, formatMessageDate, parseAppDate } from "../../lib/datetime";
+import useGlassUi from "../../hooks/useGlassUi";
+import useMaterialize from "../../hooks/useMaterialize";
+import { hapticLight } from "../../lib/haptics";
+import { MESSAGE_MENU_LONG_PRESS_MS, messageMenuOpensOnTap } from "../../lib/glassMessageMenu";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
 const PICKER_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "👏", "🤔", "👎"];
@@ -592,6 +597,9 @@ function MessageBubble({
   reactionBurstKey = null,
 }) {
   const t = useT();
+  const glass = useGlassUi();
+  const bubbleRef = useRef(null);
+  const pressTimer = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
@@ -798,6 +806,7 @@ function MessageBubble({
       )}
 
       <motion.div
+        ref={bubbleRef}
         initial={{
           opacity: 0,
           y: isOwn && isFresh ? 14 : 8,
@@ -823,11 +832,40 @@ function MessageBubble({
           if (shouldReply) triggerReply();
         }}
         className={`message-bubble ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
-        onMouseEnter={openMenu}
-        onMouseLeave={scheduleClose}
+        onMouseEnter={glass ? undefined : openMenu}
+        onMouseLeave={glass ? undefined : scheduleClose}
+        onPointerDown={(e) => {
+          if (!glass || editing) return;
+          if (e.target.closest("a, button, video, img, .message-media, .message-reactions, .slash-embed")) return;
+          const el = e.currentTarget;
+          const sx = e.clientX;
+          const sy = e.clientY;
+          el.setAttribute("data-pressed", "");
+          const clear = () => {
+            el.removeAttribute("data-pressed");
+            clearTimeout(pressTimer.current);
+            el.removeEventListener("pointermove", move);
+            el.removeEventListener("pointerup", up);
+            el.removeEventListener("pointercancel", up);
+          };
+          const move = (ev) => {
+            if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 10) clear();
+          };
+          const up = () => clear();
+          el.addEventListener("pointermove", move);
+          el.addEventListener("pointerup", up);
+          el.addEventListener("pointercancel", up);
+          pressTimer.current = setTimeout(() => {
+            clear();
+            hapticLight();
+            setMenuOpen(true);
+            setPickerOpen(false);
+          }, MESSAGE_MENU_LONG_PRESS_MS);
+        }}
         onClick={(e) => {
-          // Touch / click toggle for devices without hover
+          // Touch / click toggle for devices without hover. Glass uses long-press.
           if (e.target.closest("a, button, video, img, .message-media, .message-hover-bar, .message-reactions, .slash-embed")) return;
+          if (!messageMenuOpensOnTap(glass) ) return;
           if (window.matchMedia("(hover: none)").matches) {
             setMenuOpen((v) => !v);
             setPickerOpen(false);
@@ -1014,7 +1052,7 @@ function MessageBubble({
         )}
 
         <AnimatePresence>
-          {menuOpen && !editing && (
+          {menuOpen && !editing && !glass && (
             <motion.div
               className={`message-hover-bar ${isOwn ? "own" : "other"}`}
               initial={{ opacity: 0, y: 6, scale: 0.96 }}
@@ -1158,8 +1196,131 @@ function MessageBubble({
             </motion.div>
           )}
         </AnimatePresence>
+        {glass && menuOpen && !editing && (
+          <GlassMessageMenu
+            bubbleRef={bubbleRef}
+            isOwn={isOwn}
+            text={String(message.text || "").slice(0, 280)}
+            onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
+            quick={QUICK_EMOJIS}
+            onReact={emitReact}
+            onMore={() => setPickerOpen((v) => !v)}
+            pickerOpen={pickerOpen}
+            pickerEmojis={PICKER_EMOJIS}
+            onReply={triggerReply}
+            canPin={canPin}
+            isPinned={isPinned}
+            onPin={togglePin}
+            canEdit={canEdit}
+            onEdit={() => {
+              setEditDraft(message.text || "");
+              setEditing(true);
+              setMenuOpen(false);
+              setPickerOpen(false);
+            }}
+            canDelete={canDelete}
+            onDelete={deleteMessage}
+            canReport={!isOwn}
+            onReport={() => {
+              const author = message.from || {};
+              const id = author.id || message.sender_id || message.userId || message.user_id;
+              if (!id || id === currentUserId) return;
+              onReport?.({
+                id,
+                username: author.username || message.username,
+                snippet: String(message.text || "").slice(0, 400),
+                contextType: conversationType,
+                contextId: message.id,
+                occurredAt: message.timestamp || message.created_at || message.createdAt,
+              });
+              setMenuOpen(false);
+            }}
+            t={t}
+          />
+        )}
       </motion.div>
     </div>
+  );
+}
+
+function GlassMessageMenu({
+  bubbleRef, isOwn, text, onClose, quick, onReact, onMore, pickerOpen, pickerEmojis,
+  onReply, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
+}) {
+  const { ref } = useMaterialize(true);
+  const [box, setBox] = useState(null);
+  useLayoutEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setBox({ top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width });
+  }, [bubbleRef]);
+  if (!box || typeof document === "undefined") return null;
+  const menuW = 250;
+  const reactH = 66;
+  const spaceBelow = window.innerHeight - box.bottom;
+  const below = spaceBelow > 280;
+  const top = below ? box.top - reactH : Math.max(12, box.bottom - reactH);
+  return createPortal(
+    <>
+      <button type="button" className="g-scrim" aria-label={t("Close")} onClick={onClose} />
+      <div
+        ref={ref}
+        className="g-msg-pop g-materialize"
+        style={{
+          position: "fixed",
+          top,
+          left: isOwn ? "auto" : Math.max(12, box.left),
+          right: isOwn ? Math.max(12, window.innerWidth - box.right) : "auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isOwn ? "flex-end" : "flex-start",
+          gap: 10,
+          zIndex: 90,
+          ["--g-mat-origin"]: isOwn ? "100% 30%" : "0% 30%",
+        }}
+      >
+        <div className="g-react-bar g-glass g-heavy" role="toolbar">
+          {quick.map((e) => (
+            <button key={e} type="button" className="emoji-chip" onClick={() => onReact(e)}>{e}</button>
+          ))}
+          <button type="button" className="hover-bar-btn" aria-label={t("More reactions")} onClick={onMore}>
+            <Smile size={18} />
+          </button>
+        </div>
+        <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{text}</div>
+        <div className="g-menu g-glass g-heavy" role="menu">
+          <button type="button" className="g-mi" onClick={onReply}><Reply size={19} />{t("Reply")}</button>
+          {canPin && (
+            <button type="button" className="g-mi" onClick={onPin}>
+              {isPinned ? <PinOff size={19} /> : <Pin size={19} />}
+              {isPinned ? t("Unpin") : t("Pin")}
+            </button>
+          )}
+          {canEdit && (
+            <button type="button" className="g-mi" onClick={onEdit}><Pencil size={19} />{t("Edit")}</button>
+          )}
+          <button type="button" className="g-mi" onClick={onMore}><Smile size={19} />{t("More reactions")}</button>
+          {(canDelete || canReport) && <div className="g-msep" />}
+          {canDelete && (
+            <button type="button" className="g-mi danger" onClick={onDelete}><Trash2 size={19} />{t("Delete")}</button>
+          )}
+          {canReport && (
+            <button type="button" className="g-mi" onClick={onReport}><Flag size={19} />{t("report.action")}</button>
+          )}
+        </div>
+        {pickerOpen && (
+          <div className="g-menu g-glass g-heavy" style={{ width: 250 }}>
+            <div className="message-inline-picker-grid">
+              {pickerEmojis.map((e) => (
+                <button key={e} type="button" className="emoji-chip" onClick={() => onReact(e)}>{e}</button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>,
+    document.body
   );
 }
 

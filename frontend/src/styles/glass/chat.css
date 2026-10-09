@@ -1,0 +1,1308 @@
+/* ============================================
+   Liquid Glass — chats, DMs, groups (2.9.155, Stage 3)
+   Mockups 02, 02b, 03, 04, 05, 16. Geometry from final/src/glass.css.
+   Scoped under html.glass-ui so every other platform is unchanged.
+   ============================================ */
+
+/* Conversation surfaces sit on the same ambient as the list pages. */
+html.glass-ui .app-root.g-shell .main-panel,
+html.glass-ui .app-root.g-shell .messages-container,
+html.glass-ui .app-root.g-shell .chat-panel-shell {
+  background-color: var(--g-deep) !important;
+  background-image:
+    radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
+    radial-gradient(55% 34% at 100% 22%, rgba(var(--g-brand2-rgb), var(--g-amb-b)), transparent 70%),
+    radial-gradient(70% 40% at 20% 70%, rgba(var(--g-brand-rgb), var(--g-amb-c)), transparent 70%),
+    radial-gradient(60% 35% at 95% 96%, rgba(var(--g-brand2-rgb), var(--g-amb-d)), transparent 70%),
+    linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%) !important;
+  background-attachment: fixed !important;
+  color: var(--g-t1);
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .app-root.g-shell .main-panel *,
+html.glass-ui .app-root.g-shell .sidebar-content .conv-list *,
+html.glass-ui .app-root.g-shell .sidebar-content .group-item *,
+html.glass-ui .app-root.g-shell .sidebar-content .dm-item * {
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .app-root.g-shell .main-panel pre,
+html.glass-ui .app-root.g-shell .main-panel code,
+html.glass-ui .app-root.g-shell .main-panel .message-code,
+html.glass-ui .app-root.g-shell .main-panel .code-block {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace !important;
+}
+
+/* ── List section + rows (02 / 02b) ── */
+html.glass-ui .app-root.g-shell .sidebar-content .sidebar-section {
+  padding: 0 8px;
+}
+
+html.glass-ui .app-root.g-shell .sidebar-content .section-content {
+  padding: 0 !important;
+}
+
+html.glass-ui .app-root.g-shell .conv-list {
+  gap: 0;
+}
+
+html.glass-ui .app-root.g-shell .sidebar-content .section-header {
+  padding: 0 4px;
+  margin: 0 0 8px;
+  height: 17px;
+  min-height: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--g-t3);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  line-height: 17px;
+  text-transform: uppercase;
+}
+
+html.glass-ui .app-root.g-shell .sidebar-content .section-header:hover,
+html.glass-ui .app-root.g-shell .sidebar-content .section-header:active {
+  background: transparent !important;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell .sidebar-content .section-title {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell .sidebar-content .section-header svg {
+  width: 16px;
+  height: 16px;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell .group-swipe-viewport {
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+html.glass-ui .app-root.g-shell .group-swipe-track .group-row-front,
+html.glass-ui .app-root.g-shell button.dm-item.conv-row,
+html.glass-ui .app-root.g-shell button.group-item.conv-row {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px !important;
+  min-height: 76px;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--g-t1);
+  text-align: start;
+  width: 100%;
+  line-height: normal;
+}
+
+html.glass-ui .app-root.g-shell .group-swipe-track .group-row-front.active,
+html.glass-ui .app-root.g-shell .group-swipe-track .group-row-front:hover,
+html.glass-ui .app-root.g-shell button.dm-item.conv-row.active,
+html.glass-ui .app-root.g-shell button.group-item.conv-row.active {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.glass-ui .app-root.g-shell .dm-info,
+html.glass-ui .app-root.g-shell .group-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0;
+  align-items: stretch;
+}
+
+html.glass-ui .app-root.g-shell .conv-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  padding-right: 52px;
+}
+
+html.glass-ui .app-root.g-shell .conv-row-bottom {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+  margin-top: 2px;
+  padding-right: 36px;
+}
+
+html.glass-ui .app-root.g-shell .dm-avatar,
+html.glass-ui .app-root.g-shell .group-icon {
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  flex: 0 0 56px;
+  align-self: center;
+  position: relative;
+}
+
+html.glass-ui .app-root.g-shell .group-icon {
+  border-radius: 30% !important;
+  background: linear-gradient(145deg, #6c86ff, #8a5cf6) !important;
+  color: #fff !important;
+  font-size: 19px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -8px 16px rgba(0, 0, 0, 0.12);
+}
+
+html.glass-ui .app-root.g-shell .group-icon img {
+  border-radius: 30% !important;
+}
+
+html.glass-ui .app-root.g-shell .dm-avatar .ui-avatar {
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  min-height: 56px !important;
+  font-size: 22px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -8px 16px rgba(0, 0, 0, 0.12);
+}
+
+html.glass-ui .app-root.g-shell .dm-avatar .status-badge,
+html.glass-ui .app-root.g-shell .dm-avatar .g-st-off {
+  width: 17px !important;
+  height: 17px !important;
+  min-width: 17px !important;
+  min-height: 17px !important;
+  right: -1px !important;
+  bottom: -1px !important;
+  border: 0 !important;
+  box-shadow: 0 0 0 2.5px var(--g-ring);
+}
+
+html.glass-ui .app-root.g-shell .dm-avatar .status-online { background: var(--g-ok) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-idle,
+html.glass-ui .app-root.g-shell .dm-avatar .status-away { background: var(--g-idle) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-dnd,
+html.glass-ui .app-root.g-shell .dm-avatar .status-busy { background: var(--g-dnd) !important; }
+html.glass-ui .app-root.g-shell .dm-avatar .status-offline,
+html.glass-ui .app-root.g-shell .dm-avatar .g-st-off { background: var(--g-off) !important; }
+
+html.glass-ui .app-root.g-shell .dm-avatar .status-idle::after,
+html.glass-ui .app-root.g-shell .dm-avatar .status-away::after {
+  content: "";
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  top: -5%;
+  left: -5%;
+  border-radius: 50%;
+  background: var(--g-ring);
+}
+
+html.glass-ui .app-root.g-shell .dm-name,
+html.glass-ui .app-root.g-shell .group-name {
+  font-size: 16px;
+  font-weight: 600 !important;
+  letter-spacing: -0.018em;
+  color: var(--g-t1) !important;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  min-width: 0;
+  line-height: 22px;
+}
+
+html.glass-ui .app-root.g-shell .conv-row-flags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--g-t3);
+  flex: 0 0 auto;
+}
+
+html.glass-ui .app-root.g-shell .conv-row-flags svg {
+  width: 14px;
+  height: 14px;
+}
+
+html.glass-ui .app-root.g-shell .dm-preview,
+html.glass-ui .app-root.g-shell .group-members {
+  font-size: 14px;
+  line-height: 19px;
+  color: var(--g-t2) !important;
+  margin-top: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-weight: 400 !important;
+  display: block;
+}
+
+html.glass-ui .app-root.g-shell .dm-preview.is-typing {
+  color: var(--g-brand-hi) !important;
+  font-weight: 550;
+}
+
+html.glass-ui .app-root.g-shell .dm-item.has-unread::before,
+html.glass-ui .app-root.g-shell .group-item.has-unread::before {
+  content: none !important;
+}
+
+html.glass-ui .app-root.g-shell .conv-time {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(calc(-100% - 4px));
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0;
+  color: var(--g-t3) !important;
+  font-weight: 400;
+  margin: 0;
+}
+
+html.glass-ui .app-root.g-shell button.conv-row {
+  position: relative;
+}
+
+html.glass-ui .app-root.g-shell button.conv-row.has-unread .conv-time {
+  color: var(--g-brand-hi) !important;
+  font-weight: 600;
+}
+
+html.glass-ui .app-root.g-shell .conv-unread-badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(2px) !important;
+  animation: none !important;
+  margin: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--g-brand) !important;
+  color: #fff !important;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+html.glass-ui .app-root.g-shell button.conv-row.is-muted .conv-unread-badge {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+html.glass-ui .app-root.g-shell .g-member-stack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  min-width: 0;
+}
+
+html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  font-size: 9px !important;
+  box-shadow: 0 0 0 2px var(--g-ring);
+  margin-left: -6px;
+}
+
+html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar:first-child {
+  margin-left: 0;
+}
+
+html.glass-ui .app-root.g-shell .g-member-count {
+  font-size: 12px;
+  color: var(--g-t3);
+  font-weight: 500;
+}
+
+/* Swipe actions: four 46pt circles + labels (mockup 02). */
+html.glass-ui .app-root.g-shell .group-swipe-actions {
+  align-items: center !important;
+  gap: 6px;
+  padding: 0 2px 0 6px;
+  background: transparent !important;
+}
+
+html.glass-ui .app-root.g-shell .group-swipe-btn {
+  flex: 0 0 50px !important;
+  width: 50px !important;
+  min-width: 50px;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--g-t2) !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html.glass-ui .app-root.g-shell .group-swipe-btn svg {
+  width: 22px;
+  height: 22px;
+  padding: 12px;
+  box-sizing: content-box;
+  border-radius: 23px;
+  background: var(--g-brand);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+html.glass-ui .app-root.g-shell .group-swipe-btn.pin svg { background: #ff9f0a; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.mute svg { background: #6e6cf0; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.unread svg { background: #587AF6; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.close svg,
+html.glass-ui .app-root.g-shell .group-swipe-btn.leave svg { background: #ff453a; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.invite svg { background: #587AF6; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.add svg { background: #30D158; }
+html.glass-ui .app-root.g-shell .group-swipe-btn.rename svg { background: #ff9f0a; color: #fff; }
+
+/* ── Conversation header capsule (03) ── */
+html.glass-ui .app-root.g-shell.in-conversation .chat-top-chrome {
+  height: 0;
+  overflow: visible;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv {
+  position: fixed;
+  top: var(--g-chrome-top);
+  left: 12px;
+  right: 12px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 !important;
+  margin: 0;
+  gap: 8px;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  contain: none;
+  overflow: visible;
+  z-index: 60;
+  isolation: auto;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  margin: 0;
+  border-radius: 24px;
+  color: var(--g-t1);
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 48px;
+  border-radius: 24px;
+  gap: 10px;
+  padding: 0 14px 0 6px;
+  overflow: visible;
+  contain: none;
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar,
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar .ui-avatar,
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border-radius: 50%;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon {
+  border-radius: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #6c86ff, #8a5cf6);
+  color: #fff;
+  font-weight: 650;
+  overflow: hidden;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .g-peer-name {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 20px;
+  color: var(--g-t1);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .g-peer-status {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--g-ok);
+  font-weight: 500;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .g-peer-status.is-dim {
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right {
+  flex: 0 0 auto;
+  height: 48px;
+  border-radius: 24px;
+  padding: 0 3px;
+  gap: 0;
+  margin: 0;
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--g-t1);
+  padding: 0;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn svg {
+  width: 19px;
+  height: 19px;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.active,
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn.danger {
+  color: #ff6961;
+}
+
+/* Narrow iPhones: keep the long name + inline shield on one line with a real ellipsis. */
+@media (max-width: 400px) {
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv {
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-left {
+    gap: 6px;
+  }
+
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn {
+    width: 44px !important;
+    min-width: 44px !important;
+  }
+
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn {
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 44px !important;
+  }
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .icon-btn-badge {
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--g-brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── Messages (03) ── */
+html.glass-ui .app-root.g-shell.in-conversation .messages-container {
+  padding: calc(var(--g-chrome-top) + 62px) 14px calc(var(--g-bar-bottom) + 78px) !important;
+  background-color: transparent !important;
+}
+
+html.glass-ui .app-root.g-shell .message-list {
+  padding: 0 !important;
+  gap: 0;
+}
+
+html.glass-ui .app-root.g-shell .message-group {
+  gap: 4px;
+  margin: 14px 0 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  width: 100%;
+}
+
+html.glass-ui .app-root.g-shell .message-group:hover {
+  background: transparent !important;
+}
+
+html.glass-ui .app-root.g-shell .message-header {
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+html.glass-ui .app-root.g-shell .message-avatar,
+html.glass-ui .app-root.g-shell .message-avatar .ui-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+}
+
+html.glass-ui .app-root.g-shell .message-author {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--g-t1);
+  gap: 6px;
+}
+
+html.glass-ui .app-root.g-shell .message-timestamp {
+  font-size: 12px;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell .message-content-wrapper {
+  width: 100%;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+html.glass-ui .app-root.g-shell .message-group.own .message-content-wrapper {
+  align-items: flex-end;
+}
+
+html.glass-ui .app-root.g-shell .message-bubble {
+  max-width: min(300px, calc(100% - 52px));
+  margin-left: 46px !important;
+  padding: 9px 13px;
+  border-radius: 18px;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 18px;
+  font-size: 15.5px;
+  line-height: 21px;
+  letter-spacing: -0.012em;
+  background: rgba(58, 61, 80, 0.78) !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+  color: var(--g-t1);
+  border: 0;
+}
+
+html.glass-ui .app-root.g-shell .message-bubble.compact {
+  margin-left: 46px;
+  border-top-left-radius: 18px;
+  border-bottom-left-radius: 6px;
+}
+
+html.glass-ui .app-root.g-shell .message-bubble.own {
+  margin-left: 0 !important;
+  margin-right: 0;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 18px;
+  background: rgba(88, 122, 246, 0.26) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.28);
+}
+
+html.glass-ui .app-root.g-shell .message-bubble.own.compact {
+  border-top-right-radius: 18px;
+  border-bottom-right-radius: 6px;
+}
+
+html.glass-ui .app-root.g-shell .message-text {
+  font-size: 15.5px;
+  line-height: 21px;
+  letter-spacing: -0.012em;
+  color: var(--g-t1);
+}
+
+html.glass-ui .app-root.g-shell .message-bubble[data-pressed] {
+  filter: brightness(1.12);
+}
+
+html.glass-ui .app-root.g-shell .message-reply-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 0;
+  border-left: 2.5px solid var(--g-brand-hi);
+  text-align: start;
+}
+
+html.glass-ui .app-root.g-shell .message-reply-author {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--g-brand-hi);
+}
+
+html.glass-ui .app-root.g-shell .message-reply-text {
+  font-size: 13px;
+  color: var(--g-t2);
+}
+
+html.glass-ui .app-root.g-shell .message-pinned-badge {
+  color: var(--g-gold);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+html.glass-ui .app-root.g-shell .msg-edited {
+  color: var(--g-t3) !important;
+  font-size: 11px !important;
+}
+
+html.glass-ui .app-root.g-shell .message-footer,
+html.glass-ui .app-root.g-shell .message-status {
+  color: var(--g-brand-hi);
+  font-size: 11px;
+  justify-content: flex-end;
+}
+
+html.glass-ui .app-root.g-shell .message-reactions {
+  margin-left: 46px;
+}
+
+html.glass-ui .app-root.g-shell .message-group.own .message-reactions {
+  margin-left: 0;
+  justify-content: flex-end;
+}
+
+html.glass-ui .app-root.g-shell .reaction-chip {
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  border: 0;
+  gap: 5px;
+}
+
+html.glass-ui .app-root.g-shell .reaction-chip.reaction-mine {
+  background: rgba(88, 122, 246, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.6);
+}
+
+html.glass-ui .app-root.g-shell .reaction-count {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--g-t2);
+}
+
+html.glass-ui .app-root.g-shell .message-day-sep {
+  color: var(--g-t3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+html.glass-ui .app-root.g-shell .message-unread-sep,
+html.glass-ui .app-root.g-shell .message-unread-sep span {
+  color: #ff6961;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+html.glass-ui .app-root.g-shell .voice-message-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  background: transparent;
+}
+
+html.glass-ui .app-root.g-shell .voice-play-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: var(--g-brand);
+  color: #fff;
+}
+
+html.glass-ui .app-root.g-shell .voice-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+html.glass-ui .app-root.g-shell .voice-bar.played {
+  background: #fff;
+}
+
+html.glass-ui .app-root.g-shell .typing-indicator,
+html.glass-ui .app-root.g-shell .typing-indicator-shell {
+  color: var(--g-t3);
+  font-size: 12.5px;
+}
+
+/* ── Composer capsule (03 / 05) ── */
+html.glass-ui .app-root.g-shell.in-conversation .composer-container {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: var(--g-bar-bottom);
+  z-index: 60;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html.glass-ui .app-root.g-shell .message-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  min-height: 52px;
+  padding: 0;
+  margin: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  flex-wrap: nowrap;
+  position: relative;
+}
+
+html.glass-ui .app-root.g-shell .composer-left {
+  flex: 0 0 auto;
+}
+
+html.glass-ui .app-root.g-shell .composer-left .composer-action-btn {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  border-radius: 26px;
+  color: var(--g-t1);
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base) !important;
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+  border: 0;
+}
+
+html.glass-ui .app-root.g-shell .composer-left .composer-action-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+html.glass-ui .app-root.g-shell .composer-input-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 52px;
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 124px 0 18px;
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+  border: 0;
+}
+
+html.glass-ui .app-root.g-shell .composer-input {
+  flex: 1;
+  min-height: 0 !important;
+  height: 40px !important;
+  max-height: 40px !important;
+  padding: 8px 0 !important;
+  margin: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--g-t1);
+  font-size: 16px !important;
+  letter-spacing: -0.012em;
+  resize: none;
+}
+
+html.glass-ui .app-root.g-shell .composer-input::placeholder {
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell .composer-right {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+html.glass-ui .app-root.g-shell .composer-right .composer-action-btn {
+  width: 38px !important;
+  height: 40px !important;
+  min-width: 38px !important;
+  min-height: 40px !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--g-t2);
+  border: 0;
+  box-shadow: none;
+}
+
+html.glass-ui .app-root.g-shell .composer-right .composer-action-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+html.glass-ui .app-root.g-shell .composer-send-btn {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  border-radius: 20px;
+  background: transparent !important;
+  color: var(--g-t4) !important;
+  border: 0;
+  box-shadow: none;
+}
+
+html.glass-ui .app-root.g-shell .composer-send-btn.active {
+  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot)) !important;
+  color: var(--g-on-brand) !important;
+  box-shadow: 0 8px 22px rgba(var(--g-brand-rgb), 0.45);
+}
+
+html.glass-ui .app-root.g-shell .composer-send-btn svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* Attach sheet (05) — only the three existing actions. */
+html.glass-ui .app-root.g-shell .attachment-menu {
+  position: fixed;
+  left: 12px;
+  right: auto;
+  bottom: calc(var(--g-bar-bottom) + 72px);
+  width: 236px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 30px;
+  border: 0;
+  background:
+    linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
+    var(--g-heavy-base);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  box-shadow: var(--g-shadow-heavy);
+  z-index: 80;
+  gap: 0;
+}
+
+html.glass-ui .app-root.g-shell .attachment-item {
+  height: 60px;
+  gap: 14px;
+  padding: 0 10px;
+  border-radius: 20px;
+  color: var(--g-t1);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+html.glass-ui .app-root.g-shell .attachment-item:hover,
+html.glass-ui .app-root.g-shell .attachment-item:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .app-root.g-shell .attachment-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(145deg, #7d97ff, #4a68e8);
+}
+
+html.glass-ui .app-root.g-shell .attachment-item:nth-child(1) .attachment-icon {
+  background: linear-gradient(145deg, #4cd97b, #1fa850);
+}
+
+html.glass-ui .app-root.g-shell .attachment-item:nth-child(3) .attachment-icon {
+  background: linear-gradient(145deg, #ff8fc1, #bf5af2);
+}
+
+html.glass-ui .app-root.g-shell .attachment-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+html.glass-ui .app-root.g-shell .attachment-menu.g-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(5, 6, 10, 0.42);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+/* ── Long-press message menu (04) ── */
+html.glass-ui .g-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(5, 6, 10, 0.42);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+html.glass-ui .g-msg-pop {
+  z-index: 90;
+  pointer-events: none;
+}
+
+html.glass-ui .g-msg-pop .g-react-bar,
+html.glass-ui .g-msg-pop .g-menu {
+  pointer-events: auto;
+}
+
+html.glass-ui .g-react-bar {
+  height: 56px;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+html.glass-ui .g-react-bar .emoji-chip {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  font-size: 25px;
+  background: transparent;
+  min-width: 44px;
+  padding: 0;
+}
+
+html.glass-ui .g-react-bar .hover-bar-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--g-t1);
+}
+
+html.glass-ui .g-menu {
+  width: 250px;
+  border-radius: 26px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+html.glass-ui .g-menu .hover-bar-btn,
+html.glass-ui .g-menu .g-mi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 46px;
+  width: 100%;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--g-t1);
+  font-size: 16px;
+  letter-spacing: -0.015em;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+html.glass-ui .g-menu .hover-bar-btn svg,
+html.glass-ui .g-menu .g-mi svg {
+  width: 19px;
+  height: 19px;
+  color: var(--g-t2);
+  flex: 0 0 auto;
+}
+
+html.glass-ui .g-menu .hover-bar-btn.danger,
+html.glass-ui .g-menu .g-mi.danger,
+html.glass-ui .g-menu .hover-bar-btn.danger svg {
+  color: #ff6961;
+}
+
+html.glass-ui .g-menu .g-msep {
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 5px 14px;
+}
+
+html.glass-ui .g-lift-bub {
+  max-width: 300px;
+  padding: 9px 13px;
+  border-radius: 18px;
+  font-size: 15.5px;
+  line-height: 21px;
+  letter-spacing: -0.012em;
+  color: var(--g-t1);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 0 0 0.5px rgba(143, 166, 255, 0.4);
+  background: rgba(64, 86, 170, 0.96);
+  pointer-events: none;
+}
+
+html.glass-ui .g-lift-bub.other {
+  background: rgba(48, 50, 66, 0.96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+  border-top-left-radius: 6px;
+}
+
+html.glass-ui .g-lift-bub.own {
+  border-top-right-radius: 6px;
+}
+
+html.glass-ui .message-bubble.menu-open {
+  visibility: hidden;
+}
+
+/* ── Announcements sheet (16) ── */
+html.glass-ui .add-modal-backdrop.g-scrim {
+  background: rgba(5, 6, 10, 0.42);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+html.glass-ui .add-modal.g-announce {
+  position: fixed;
+  top: 14%;
+  left: 14px;
+  right: 14px;
+  bottom: auto;
+  width: auto;
+  max-width: none;
+  max-height: 72%;
+  margin: 0;
+  border: 0;
+  border-radius: var(--g-r-sheet);
+  padding: 8px 16px 24px;
+  background:
+    linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
+    var(--g-heavy-base);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  box-shadow: var(--g-shadow-heavy);
+  color: var(--g-t1);
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .add-modal.g-announce * {
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .add-modal.g-announce .add-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  margin-bottom: 14px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+html.glass-ui .add-modal.g-announce .add-modal-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  margin: 0;
+}
+
+html.glass-ui .add-modal.g-announce .add-modal-header .icon-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 17px;
+  background: var(--g-chip-bg);
+  color: var(--g-t1);
+}
+
+html.glass-ui .add-modal.g-announce .announcement-item {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  margin-bottom: 8px;
+  min-height: 0;
+  padding: 12px;
+  border: 0;
+  position: relative;
+}
+
+html.glass-ui .add-modal.g-announce .announcement-item::before {
+  content: "";
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 30%;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10.268 21a2 2 0 0 0 3.464 0'/><path d='M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'/></svg>") center / 20px 20px no-repeat,
+    var(--g-brand);
+}
+
+html.glass-ui .add-modal.g-announce .announcement-title {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--g-t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.glass-ui .add-modal.g-announce .announcement-content {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 14px;
+  color: var(--g-t2);
+  margin-top: 2px;
+  white-space: normal;
+}
+
+html.glass-ui .add-modal.g-announce .announcement-meta {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 13px;
+  color: var(--g-t3);
+}
+
+html.glass-ui .add-modal.g-announce .announcement-date,
+html.glass-ui .add-modal.g-announce .announcement-author {
+  font-size: 13px;
+  color: var(--g-t3);
+}
+
+/* Reduced motion: menus fade, no scale. */
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .g-materialize {
+    transform: none !important;
+  }
+}
+
+/* Reduce Transparency / Increase Contrast for surfaces that paint their own
+   blur (header capsules, composer, attach, announcements). The message menu
+   uses .g-glass and already follows material.css. */
+html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
+html.glass-ui.a11y-solid .app-root.g-shell .composer-left .composer-action-btn,
+html.glass-ui.a11y-solid .app-root.g-shell .composer-input-wrapper,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-left .composer-action-btn,
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper {
+  background: var(--g-solid) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-ui.a11y-solid .app-root.g-shell .attachment-menu,
+html.glass-ui.a11y-solid .add-modal.g-announce,
+html.glass-ui.a11y-contrast .app-root.g-shell .attachment-menu,
+html.glass-ui.a11y-contrast .add-modal.g-announce {
+  background: var(--g-solid-heavy) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-ui.a11y-solid .g-scrim,
+html.glass-ui.a11y-solid .add-modal-backdrop.g-scrim,
+html.glass-ui.a11y-contrast .g-scrim,
+html.glass-ui.a11y-contrast .add-modal-backdrop.g-scrim {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-left .composer-action-btn,
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper,
+html.glass-ui.a11y-contrast .app-root.g-shell .attachment-menu,
+html.glass-ui.a11y-contrast .add-modal.g-announce {
+  outline: 1px solid var(--g-contrast-border);
+  outline-offset: -1px;
+}

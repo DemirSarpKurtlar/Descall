@@ -27,6 +27,13 @@ import UserProfileModal from "../social/UserProfileModal";
 import ServerMembersPanel from "../servers/ServerMembersPanel";
 import ServerVoicePanel from "../servers/ServerVoicePanel";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
+import useGlassUi from "../../hooks/useGlassUi";
+
+function glassGroupInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toLocaleUpperCase("tr");
+  return (parts[0]?.[0] || "").toLocaleUpperCase("tr");
+}
 
 export default function ChatPanel({
   activeView,
@@ -76,6 +83,7 @@ export default function ChatPanel({
   serverVoice = null,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   const messagesRef = useRef(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -390,7 +398,7 @@ export default function ChatPanel({
           key={headerConversationKey}
           style={activeView === "activity" ? { display: "none" } : undefined}
         >
-        <header className="panel-header">
+        <header className={glass && (headerDm || headerGroup) ? "panel-header g-conv" : "panel-header"}>
         <div className="header-left">
           {isMobile && (
             <button
@@ -403,7 +411,7 @@ export default function ChatPanel({
               {showMobileBack ? <ChevronLeft size={22} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="header-identity">
+          <div className={`header-identity${glass && (headerDm || headerGroup) ? " g-peer" : ""}`}>
             {headerDm ? (
               <button
                 type="button"
@@ -426,12 +434,12 @@ export default function ChatPanel({
                 {headerGroup.icon ? (
                   <img src={headerGroup.icon} alt="" />
                 ) : (
-                  <span>{headerGroup.name?.charAt(0)?.toUpperCase()}</span>
+                  <span>{glass && headerGroup ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}</span>
                 )}
               </div>
             ) : null}
             <div
-              className={`header-title-block${headerDm ? " is-dm" : ""}`}
+              className={`header-title-block${headerDm ? " is-dm" : ""}${glass && (headerDm || headerGroup) ? " g-peer-text" : ""}`}
               role={headerDm ? "button" : undefined}
               tabIndex={headerDm ? 0 : undefined}
               onClick={headerDm ? () => setProfileTarget(headerDm) : undefined}
@@ -444,12 +452,12 @@ export default function ChatPanel({
               title={headerDm ? t("View profile") : undefined}
               style={{ cursor: headerDm ? "pointer" : "default" }}
             >
-              <h1 className="header-title">
-                <span className="header-title-text">{getTitle()}</span>
+              <h1 className={glass && (headerDm || headerGroup) ? "header-title g-peer-name" : "header-title"}>
+                <span className={glass && (headerDm || headerGroup) ? "header-title-text g-peer-name-text" : "header-title-text"}>{getTitle()}</span>
                 {headerDm && <AdminBadge user={headerDm} variant="inline" />}
               </h1>
               {getSubtitle() && (
-                <span className="header-subtitle">{getSubtitle()}</span>
+                <span className={`header-subtitle${glass && (headerDm || headerGroup) ? " g-peer-status" : ""}${glass && (headerGroup || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>{getSubtitle()}</span>
               )}
             </div>
           </div>

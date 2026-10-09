@@ -1,10 +1,71 @@
 import { useEffect, useRef, useState } from "react";
+import useGlassUi from "../../hooks/useGlassUi";
+import useDragSpring from "../../hooks/useDragSpring";
+import { hapticLight } from "../../lib/haptics";
 
 /**
  * Mobile swipe-to-reveal: front + actions as flex siblings (same row height).
  * Shared by group and DM conversation rows.
+ * Glass (iPhone): 1:1 tracking + velocity snap via useDragSpring.
+ * Everywhere else: the pre-2.9.155 touch handler, unchanged.
  */
-export default function SwipeRevealRow({
+export default function SwipeRevealRow(props) {
+  const glass = useGlassUi();
+  if (glass) return <FluidSwipeRevealRow {...props} />;
+  return <LegacySwipeRevealRow {...props} />;
+}
+
+function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, actions }) {
+  const trackRef = useRef(null);
+  const openRef = useRef(open);
+  openRef.current = open;
+  const drag = useDragSpring({
+    axis: "x",
+    min: -width,
+    max: 0,
+    snapPoints: [-width, 0],
+    dimension: Math.max(width, 1),
+    rubberBand: true,
+    onFrame: (x) => {
+      if (trackRef.current) trackRef.current.style.transform = `translate3d(${x}px,0,0)`;
+    },
+    onSettle: (x) => {
+      const shouldOpen = x < -width * 0.5;
+      if (shouldOpen && !openRef.current) hapticLight();
+      if (shouldOpen !== openRef.current) onOpenChange?.(shouldOpen);
+    },
+  });
+
+  useEffect(() => {
+    drag.springTo(open ? -width : 0);
+    // springTo identity is stable for a given width; re-run when the open flag changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, width]);
+
+  return (
+    <div
+      className="group-swipe-viewport"
+      {...drag.bind}
+      onPointerDown={(e) => {
+        onCloseOthers?.();
+        drag.bind.onPointerDown(e);
+      }}
+    >
+      <div ref={trackRef} className="group-swipe-track" style={{ transform: "translate3d(0px,0,0)" }}>
+        {front}
+        <div
+          className="group-swipe-actions"
+          style={{ flex: `0 0 ${width}px`, width, minWidth: width }}
+          aria-hidden={!open}
+        >
+          {actions}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegacySwipeRevealRow({
   open,
   width,
   onOpenChange,

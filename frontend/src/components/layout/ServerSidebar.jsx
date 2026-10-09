@@ -27,6 +27,7 @@ import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/datetime";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
+import useGlassUi from "../../hooks/useGlassUi";
 
 
 
@@ -680,23 +681,23 @@ export default function ServerSidebar({
         {createPortal(
         <AnimatePresence>
           {showAnnouncements && (
-            <motion.div
-              className="add-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAnnouncements(false)}
-            >
               <motion.div
-                className="add-modal"
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                onClick={(e) => e.stopPropagation()}
+                className={`add-modal-backdrop${glassShell ? " g-scrim" : ""}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowAnnouncements(false)}
               >
-                <div className="add-modal-header">
-                  <h3>📢 Announcements</h3>
+                <motion.div
+                  className={`add-modal${glassShell ? " g-announce" : ""}`}
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="add-modal-header">
+                    <h3>{glassShell ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
                   <button className="icon-btn" onClick={() => setShowAnnouncements(false)}><X size={18} /></button>
                 </div>
 
@@ -712,7 +713,7 @@ export default function ServerSidebar({
                         <div className="announcement-content">{a.content}</div>
                         <div className="announcement-meta">
                           {a.author && <span className="announcement-author">{t("By {author}", { author: a.author })}</span>}
-                          {a.createdAt && <span className="announcement-date">{new Date(a.createdAt).toLocaleDateString()}</span>}
+                          {a.createdAt && <span className="announcement-date">{glassShell ? glassAnnouncementWhen(a.createdAt) : new Date(a.createdAt).toLocaleDateString()}</span>}
                         </div>
                       </div>
                     ))
@@ -1068,9 +1069,14 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
 }
 
 const DM_SWIPE_WIDTH = 248;
+const GLASS_SWIPE_WIDTH = 226;
 
 function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
   const t = useT();
+  const glass = useGlassUi();
+  const presence = onlineUsers?.find((u) => u.id === dm.id)?.status || (isOnline ? "online" : "offline");
+  const preview = displayText(dm.lastMessage) || t("No messages yet");
+  const typing = glass && /yazıyor|typing/i.test(String(preview));
   return (
     <>
       <div className="dm-avatar">
@@ -1080,7 +1086,10 @@ function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
           size={40}
           user={dm}
         />
-        <StatusBadge status={onlineUsers?.find((u) => u.id === dm.id)?.status || (isOnline ? "online" : "offline")} />
+        <StatusBadge status={presence} />
+        {glass && (presence === "offline" || presence === "invisible") ? (
+          <span className="status-badge g-st-off" aria-hidden />
+        ) : null}
       </div>
       <div className="dm-info conv-row-body">
         <div className="conv-row-top">
@@ -1094,8 +1103,8 @@ function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
           )}
         </div>
         <div className="conv-row-bottom">
-          <span className={`dm-preview ${unread > 0 ? "unread" : ""}`}>
-            {displayText(dm.lastMessage) || t("No messages yet")}
+          <span className={`dm-preview ${unread > 0 ? "unread" : ""}${typing ? " is-typing" : ""}`}>
+            {preview}
           </span>
           <UnreadBadge count={unread} />
         </div>
@@ -1118,16 +1127,17 @@ function SwipeableDmRow({
   onCloseOthers,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   return (
     <SwipeRevealRow
       open={swipeOpen}
-      width={DM_SWIPE_WIDTH}
+      width={glass ? GLASS_SWIPE_WIDTH : DM_SWIPE_WIDTH}
       onOpenChange={onSwipeOpenChange}
       onCloseOthers={onCloseOthers}
       front={
         <button
           type="button"
-          className={`dm-item conv-row group-row-front ${isActive ? "active" : ""} ${unread > 0 ? "has-unread" : ""}`}
+          className={`dm-item conv-row group-row-front ${isActive ? "active" : ""} ${unread > 0 ? "has-unread" : ""}${glass && dm.muted ? " is-muted" : ""}`}
           onClick={() => {
             if (swipeOpen) {
               onSwipeOpenChange?.(false);
@@ -2050,14 +2060,36 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
 
 const GROUP_SWIPE_WIDTH = 248;
 
+function glassAnnouncementWhen(iso) {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const min = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (min < 60) return `${Math.max(1, min)}dk`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}sa`;
+  const day = Math.round(hr / 24);
+  if (day < 14) return `${day}g`;
+  return new Date(iso).toLocaleDateString("tr-TR");
+}
+
+function glassGroupInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toLocaleUpperCase("tr");
+  return (parts[0]?.[0] || "").toLocaleUpperCase("tr");
+}
+
 function GroupRowContent({ group, unread, timeLabel, preview }) {
+  const t = useT();
+  const glass = useGlassUi();
+  const members = glass && Array.isArray(group.members) ? group.members.slice(0, 4) : [];
+  const memberCount = group.memberCount || group.members?.length || 0;
   return (
     <>
       <div className="group-icon" style={{ width: 36, height: 36, borderRadius: 10, background: "var(--primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
         {group.icon ? (
           <img src={group.icon} alt={group.name} style={{ width: "100%", height: "100%", borderRadius: 10, objectFit: "cover" }} />
         ) : (
-          <span>{group.name?.charAt(0)?.toUpperCase()}</span>
+          <span>{glass ? glassGroupInitials(group.name) : group.name?.charAt(0)?.toUpperCase()}</span>
         )}
       </div>
       <div className="group-info conv-row-body">
@@ -2071,6 +2103,14 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
           <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(preview)}</span>
           <UnreadBadge count={unread} />
         </div>
+        {glass && memberCount > 0 ? (
+          <div className="g-member-stack">
+            {members.map((m) => (
+              <Avatar key={m.id || m.username} name={resolveDisplayName(m)} size={20} user={m} />
+            ))}
+            <span className="g-member-count">{t("{count} members", { count: memberCount })}</span>
+          </div>
+        ) : null}
       </div>
     </>
   );
@@ -2090,10 +2130,11 @@ function SwipeableGroupRow({
   onCloseOthers,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   return (
     <SwipeRevealRow
       open={swipeOpen}
-      width={GROUP_SWIPE_WIDTH}
+      width={glass ? GLASS_SWIPE_WIDTH : GROUP_SWIPE_WIDTH}
       onOpenChange={onSwipeOpenChange}
       onCloseOthers={onCloseOthers}
       front={

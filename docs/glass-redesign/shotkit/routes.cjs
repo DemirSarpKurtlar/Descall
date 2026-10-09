@@ -136,6 +136,10 @@ module.exports = function routes(app, D, log) {
   // Misc
   ok(["/api/calls*", "/calls*"], () => ({ calls: [], history: [] }));
   ok("/api/webrtc/ice-config", () => ({ iceServers: [] }));
-  ok("/api/announcements", () => ({ announcements: [] }));
+  ok("/api/announcements", () => ({ announcements: [
+    { id: "a1", title: "2.9.147 yayında", content: "Kaydırarak geri gitme ve glass mobil cilası.", createdAt: iso(120), author: null },
+    { id: "a2", title: "Mağaza güncellemesi", content: "Yeni aura ve çerçeveler DesCoin ile.", createdAt: iso(1440), author: null },
+    { id: "a3", title: "Topluluk kuralları", content: "Lütfen arkadaşlık isteklerinde kibar olun.", createdAt: iso(4320), author: null },
+  ] }));
   ok(["/api/shop*"], () => ({ items: [], inventory: [], balance: 1250 }));
 };

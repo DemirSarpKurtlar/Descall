@@ -13,6 +13,7 @@ import { useT } from "../../context/LocaleContext";
 import { filterSlashCommandMatches, getSlashCommandsForSurface } from "../../lib/slashCommands";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import { displayText } from "../../lib/profanity";
+import useGlassUi from "../../hooks/useGlassUi";
 
 const EMOJI_CATEGORIES = [
   { nameKey: "Smileys", emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"] },
@@ -66,6 +67,7 @@ export default function MessageComposer({
   onClearReply,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   const [message, setMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -704,7 +706,7 @@ export default function MessageComposer({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="attachment-menu"
+            className={glass ? "attachment-menu g-open" : "attachment-menu"}
           >
             <button className="attachment-item" onClick={() => { imageInputRef.current?.click(); setShowAttachmentMenu(false); }}>
               <div className="attachment-icon"><Image size={24} /></div>

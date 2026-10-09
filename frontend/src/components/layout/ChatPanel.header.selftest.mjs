@@ -64,7 +64,7 @@ assert(
   "header + Ses Odası must remount under one keyed chat-top-chrome",
 );
 assert(
-  /className="header-identity"/.test(chatPanel),
+  /className="header-identity"/.test(chatPanel) || /className=\{`header-identity\$\{/.test(chatPanel),
   "header identity block must remain a single exclusive avatar/icon host",
 );
 assert(
