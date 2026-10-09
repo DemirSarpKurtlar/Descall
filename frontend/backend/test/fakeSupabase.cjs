@@ -61,8 +61,12 @@ class FakeQuery {
     this.maybe = false;
   }
 
-  select() {
+  select(_cols, opts = {}) {
     if (this.mode === null) this.mode = "select";
+    if (opts && opts.count) {
+      this.wantCount = true;
+      this.headOnly = Boolean(opts.head);
+    }
     return this;
   }
   eq(col, val) {
@@ -207,6 +211,7 @@ class FakeQuery {
       return { data: matched[0], error: null };
     }
     if (typeof this.limitCount === "number") matched = matched.slice(0, this.limitCount);
+    if (this.wantCount) return { data: this.headOnly ? null : matched, count: matched.length, error: null };
     return { data: matched, error: null };
   }
 

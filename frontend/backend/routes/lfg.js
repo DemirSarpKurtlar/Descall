@@ -571,12 +571,36 @@ router.post("/reports", requireAuth, async (req, res) => {
     const { lobbyId, targetId, reason } = req.body || {};
     const clean = String(reason || "").trim().slice(0, 400);
     if (!clean) return res.status(400).json({ error: "Reason required" });
-    await supabase.from("lfg_reports").insert({
-      reporter_id: req.user.id,
-      target_id: targetId || null,
-      lobby_id: lobbyId || null,
-      reason: clean,
-    });
+    const { data: lfgReportRow } = await supabase
+      .from("lfg_reports")
+      .insert({
+        reporter_id: req.user.id,
+        target_id: targetId || null,
+        lobby_id: lobbyId || null,
+        reason: clean,
+      })
+      .select("id")
+      .maybeSingle();
+    if (!targetId || targetId === req.user.id) {
+      // Lobby-only report: no user_reports row, so alert the owner directly (fire-and-forget).
+      try {
+        require("../lib/reportAlertEmail").scheduleReportAlert({
+          report: {
+            id: lfgReportRow?.id ? `lfg:${lfgReportRow.id}` : null,
+            kind: "lfg_lobby",
+            reporterId: req.user.id,
+            targetId: null,
+            reason: "other",
+            note: clean,
+            contextType: "lfg",
+            contextId: lobbyId || null,
+            createdAt: new Date().toISOString(),
+          },
+        });
+      } catch (alertErr) {
+        console.warn("[LFG] report alert schedule failed:", alertErr?.message || alertErr);
+      }
+    }
     if (targetId && targetId !== req.user.id) {
       try {
         const userReports = require("../lib/userReports");

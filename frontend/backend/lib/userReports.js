@@ -324,8 +324,16 @@ async function createReport({
 
   const openCount = count || 0;
   const usersById = await loadUsersById([reporterId, targetId]);
+  const report = publicReport(data, usersById);
+  // Owner email alert for every report path (route, LFG dual-write). Fire-and-forget:
+  // never awaited, never throws, throttled inside lib/reportAlertEmail.js.
+  try {
+    require("./reportAlertEmail").scheduleReportAlert({ report: { ...report, kind: "user" }, openCount });
+  } catch (alertErr) {
+    console.warn("[reports] alert schedule failed:", alertErr?.message || alertErr);
+  }
   return {
-    report: publicReport(data, usersById),
+    report,
     openCount,
     autoOpen: shouldAutoOpenDossier(openCount),
   };
