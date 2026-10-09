@@ -4,8 +4,13 @@ const { showNotificationWindow, closeShownNotification } = require('./notificati
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
 const { registerRiotRsoAuthIPC } = require('./riotRsoAuth.cjs');
-const { registerOverlayIPC, destroyOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
+const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
 const { autoUpdater } = require('electron-updater');
+const {
+  decideUpdateInstall,
+  applyDeferralEvent,
+  createDeferralState,
+} = require('./updateDeferral.cjs');
 const log = require('electron-log');
 const path = require('path');
 const fs = require('fs');
@@ -97,13 +102,19 @@ let installTimer = null;
 let installWaitTimer = null;
 let updateCheckInFlight = false;
 let powerHooksBound = false;
+/** Renderer-reported voice session. Overlay visibility is OR'd in at read time. */
+let voiceBusyFromRenderer = false;
+/** OS session lock. Input-idle time is read from powerMonitor on each decision. */
+let sessionLocked = false;
+let deferral = createDeferralState();
+let lastHoldReason = null;
+let installStarted = false;
 /** Discord-style gate: splash stays up until check finishes / update installs. */
 let prelaunchActive = false;
 let prelaunchResolvers = null;
 let mainLaunchStarted = false;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes while running (incl. background/tray)
-const UPDATE_INSTALL_DELAY_MS = 12 * 1000;       // after in-session download → silent install
-const INSTALL_RETRY_INTERVAL_MS = 60 * 1000;     // re-check "is it safe to install yet?"
+const UPDATE_INSTALL_POLL_MS = 5 * 1000;         // re-evaluate grace / idle / background
 const PRELAUNCH_CHECK_TIMEOUT_MS = 25 * 1000;
 const PRELAUNCH_DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -123,16 +134,28 @@ function pruneOldSetupDownloads(reason, keepVersion) {
   }
 }
 
-function applyDownloadedUpdate(reason = 'auto') {
-  if (!updateReady || !app.isPackaged) return;
+function applyDownloadedUpdate(reason = 'auto', { allowDuringCall = false } = {}) {
+  if (installStarted) return true;
+  if (!updateReady || !app.isPackaged) return false;
+  // Last line of defense for every automatic path, including anything that
+  // used to install immediately. Explicit confirm and the pre-window splash
+  // gate opt in. Normal quit still installs via autoInstallOnAppQuit.
+  if (!allowDuringCall && isBusyWithLiveSession()) {
+    log.info(`[updater] quitAndInstall blocked — voice session active (${reason})`);
+    return false;
+  }
   log.info(`[updater] quitAndInstall (${reason}) → v${updateVersion || '?'}`);
+  installStarted = true;
   isQuitting = true;
   try {
     // isSilent=true → NSIS /S replaces old install; isForceRunAfter=true relaunches
     autoUpdater.quitAndInstall(true, true);
+    return true;
   } catch (err) {
     log.error('[updater] quitAndInstall failed:', err?.message || err);
+    installStarted = false;
     isQuitting = false;
+    return false;
   }
 }
 
@@ -148,18 +171,91 @@ function isAppInBackground() {
 }
 
 /**
- * A live voice/video session keeps the always-on-top overlay visible. Never
- * restart under an active call, even silently.
+ * Busy when the renderer says so (DM / group / server voice, including an
+ * incoming ring) OR the always-on-top voice overlay is up. Either signal
+ * blocks an automatic restart. Defaults to not-busy; a crashed or reloaded
+ * renderer clears the flag (see bindVoiceBusyLifecycle).
  */
 function isBusyWithLiveSession() {
   try {
-    return isOverlayWindowVisible();
+    return voiceBusyFromRenderer || isOverlayWindowVisible();
   } catch (_) {
-    return false;
+    return voiceBusyFromRenderer;
   }
 }
 
+function readSystemIdleMs() {
+  try {
+    const seconds = powerMonitor.getSystemIdleTime();
+    const n = Number(seconds);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.round(n * 1000);
+  } catch (_) {
+    return 0;
+  }
+}
+
+function syncDeferralSignals(now = Date.now()) {
+  const busy = isBusyWithLiveSession();
+  if (busy !== deferral.voiceBusy) {
+    deferral = applyDeferralEvent(deferral, { type: 'voice-busy', busy, now });
+  }
+  deferral = applyDeferralEvent(deferral, {
+    type: 'presence',
+    now,
+    appInBackground: isAppInBackground(),
+    systemIdleMs: readSystemIdleMs(),
+    sessionLocked,
+    prelaunch: prelaunchActive,
+  });
+}
+
+function noteUpdateReady() {
+  syncDeferralSignals();
+  deferral = applyDeferralEvent(deferral, { type: 'update-ready', now: Date.now() });
+}
+
+/**
+ * Crash, reload, or window close. The call cannot survive the renderer, so
+ * busy goes back to false. If a call was up, the post-call grace still runs
+ * so we don't restart in the same instant the process died.
+ */
+function resetVoiceBusyFromLifecycle(why) {
+  const wasBusy = isBusyWithLiveSession() || deferral.voiceBusy;
+  log.info(`[updater] voice-busy reset (${why}) wasBusy=${wasBusy}`);
+  try { hideOverlayWindow(); } catch (_) { /* overlay already gone */ }
+  voiceBusyFromRenderer = false;
+  if (!wasBusy) return;
+  deferral = applyDeferralEvent(
+    { ...deferral, voiceBusy: true },
+    { type: 'reset-voice', now: Date.now() },
+  );
+}
+
+function bindVoiceBusyLifecycle(win) {
+  if (!win || win.isDestroyed?.()) return;
+  const contents = win.webContents;
+  // The first did-finish-load is the initial document. Busy is still false
+  // and the renderer reports after React mounts. Later loads are reloads —
+  // the call died with the old page, so the flag must not stay stuck.
+  let mainFrameLoads = 0;
+  contents.on('render-process-gone', () => resetVoiceBusyFromLifecycle('render-process-gone'));
+  contents.on('did-finish-load', () => {
+    mainFrameLoads += 1;
+    if (mainFrameLoads === 1) return;
+    resetVoiceBusyFromLifecycle('did-finish-load');
+  });
+  win.on('closed', () => resetVoiceBusyFromLifecycle('closed'));
+}
+
 function installQuietly(reason) {
+  // Re-check at the door. A call that started after the scheduler said "go"
+  // must not be cut, and this must not flip the relaunch-to-background flag
+  // when we bail out.
+  if (isBusyWithLiveSession()) {
+    log.info(`[updater] quiet install refused — live voice session (${reason})`);
+    return false;
+  }
   // Come back exactly as backgrounded: minimized stays minimized (taskbar
   // button, unfocused), tray-hidden stays hidden. Either way nothing is
   // raised and nothing takes focus.
@@ -167,25 +263,69 @@ function installQuietly(reason) {
   try {
     if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) mode = 'minimized';
   } catch (_) { /* ignore */ }
+  const previousBackground = startInBackgroundMode();
   setStartInBackground(true, mode);
-  applyDownloadedUpdate(reason);
+  const installed = applyDownloadedUpdate(reason);
+  if (!installed) {
+    // A call slipped in, or quitAndInstall threw. Don't leave the next
+    // launch stuck in the tray because of an install that never happened.
+    if (previousBackground) setStartInBackground(true, previousBackground);
+    else setStartInBackground(false);
+  }
+  return installed;
 }
 
-/** Re-check every minute until the app is safe to restart quietly. */
+function evaluatePendingUpdate(reason) {
+  if (!updateReady || installStarted) {
+    if (!updateReady && installWaitTimer) {
+      clearInterval(installWaitTimer);
+      installWaitTimer = null;
+    }
+    return { action: 'wait', reason: 'no-update' };
+  }
+  // Splash: no window and no call yet. Do not wait out a grace period.
+  if (prelaunchActive) {
+    applyDownloadedUpdate('prelaunch', { allowDuringCall: true });
+    return { action: 'install', reason: 'prelaunch' };
+  }
+  if (!app.isPackaged) return { action: 'wait', reason: 'unpackaged' };
+
+  syncDeferralSignals();
+  const decision = decideUpdateInstall({ ...deferral, now: Date.now() });
+  if (decision.action !== 'install') {
+    if (lastHoldReason !== decision.reason) {
+      log.info(`[updater] holding staged update (${decision.reason})`);
+      lastHoldReason = decision.reason;
+    }
+    return decision;
+  }
+
+  // Re-read busy / idle / grace immediately before install. A call that
+  // started during the grace window (or during this tick) cancels it.
+  syncDeferralSignals();
+  const again = decideUpdateInstall({ ...deferral, now: Date.now() });
+  if (again.action !== 'install') {
+    log.info(`[updater] install re-check aborted (${again.reason}) was ${decision.reason}`);
+    lastHoldReason = again.reason;
+    return again;
+  }
+
+  lastHoldReason = null;
+  log.info(`[updater] applying staged update (${again.reason} via ${reason})`);
+  const installed = installQuietly(again.reason);
+  if (!installed && isBusyWithLiveSession()) {
+    syncDeferralSignals();
+    queueSilentInstallRetry();
+  }
+  return again;
+}
+
+/** Keep evaluating until the update is installed or discarded. */
 function queueSilentInstallRetry() {
   if (installWaitTimer) return;
   installWaitTimer = setInterval(() => {
-    if (!updateReady) {
-      clearInterval(installWaitTimer);
-      installWaitTimer = null;
-      return;
-    }
-    if (isBusyWithLiveSession() || !isAppInBackground()) return;
-    clearInterval(installWaitTimer);
-    installWaitTimer = null;
-    log.info('[updater] window went to background — applying staged update quietly');
-    installQuietly('background-silent-retry');
-  }, INSTALL_RETRY_INTERVAL_MS);
+    evaluatePendingUpdate('poll');
+  }, UPDATE_INSTALL_POLL_MS);
 }
 
 function scheduleSilentInstall() {
@@ -196,25 +336,42 @@ function scheduleSilentInstall() {
   if (!updateReady) return;
   // Splash/prelaunch: install before the main window exists (no focus steal).
   if (prelaunchActive) {
-    applyDownloadedUpdate('prelaunch');
+    applyDownloadedUpdate('prelaunch', { allowDuringCall: true });
     return;
   }
   if (!app.isPackaged) return;
 
-  installTimer = setTimeout(() => {
-    installTimer = null;
-    if (!updateReady) return;
-    // Quiet means quiet: only restart while the window is in the tray /
-    // minimized / unfocused and no call is live. Otherwise wait —
-    // autoInstallOnAppQuit still applies it if the user quits first.
-    if (isBusyWithLiveSession() || !isAppInBackground()) {
-      log.info('[updater] update staged; foreground or live call — will install once the app is idle in the background');
-      queueSilentInstallRetry();
-      return;
-    }
-    log.info('[updater] applying staged update quietly (app is in the background)');
-    installQuietly('background-silent');
-  }, UPDATE_INSTALL_DELAY_MS);
+  noteUpdateReady();
+  queueSilentInstallRetry();
+  evaluatePendingUpdate('staged');
+}
+
+/**
+ * Tray "Güncelle ve Çık" and the in-app Restart button. A live call is not
+ * cut silently — the renderer shows a confirm dialog. Quitting the app
+ * without this prompt still applies the update (autoInstallOnAppQuit).
+ */
+function requestExplicitInstall(reason) {
+  if (!updateReady) {
+    isQuitting = true;
+    app.relaunch();
+    app.quit();
+    return { installing: false, relaunch: true };
+  }
+  syncDeferralSignals();
+  if (isBusyWithLiveSession()) {
+    log.info(`[updater] explicit restart (${reason}) while voice-busy — asking confirmation`);
+    try { showMainWindow(); } catch (_) { /* window not up yet */ }
+    try {
+      mainWindow?.webContents?.send('update:confirm-restart', {
+        version: updateVersion,
+        reason,
+      });
+    } catch (_) { /* renderer gone — do not install */ }
+    return { needsConfirm: true, installing: false };
+  }
+  const installed = applyDownloadedUpdate(reason, { allowDuringCall: false });
+  return { installing: installed, needsConfirm: false };
 }
 
 function checkForAppUpdates(reason = 'manual') {
@@ -271,7 +428,12 @@ function scheduleBackgroundUpdateChecks() {
       powerMonitor.on('resume', () => {
         setTimeout(() => checkForAppUpdates('resume'), 5 * 1000);
       });
+      powerMonitor.on('lock-screen', () => {
+        sessionLocked = true;
+        evaluatePendingUpdate('lock-screen');
+      });
       powerMonitor.on('unlock-screen', () => {
+        sessionLocked = false;
         setTimeout(() => checkForAppUpdates('unlock'), 5 * 1000);
       });
     } catch (err) {
@@ -464,8 +626,8 @@ async function runPrelaunchUpdateGate() {
       showProgress: true,
       percent: 100,
     });
-    applyDownloadedUpdate('prelaunch-downloaded');
-    return;
+    const installed = applyDownloadedUpdate('prelaunch-downloaded', { allowDuringCall: true });
+    if (installed) return;
   }
 
   if (outcome?.type === 'update-available' || outcome?.type === 'downloading') {
@@ -489,8 +651,8 @@ async function runPrelaunchUpdateGate() {
         showProgress: true,
         percent: 100,
       });
-      applyDownloadedUpdate('prelaunch-downloaded');
-      return; // process relaunches after install
+      const installed = applyDownloadedUpdate('prelaunch-downloaded', { allowDuringCall: true });
+      if (installed) return; // process relaunches after install
     }
   }
 
@@ -610,6 +772,7 @@ function createMainWindow() {
 
   mainWindow.setMenu(null);
   Menu.setApplicationMenu(null);
+  bindVoiceBusyLifecycle(mainWindow);
 
   // Close → minimize to tray instead of quitting.
   // NEVER quitAndInstall here: close-to-tray is how Demir backgrounds the app;
@@ -936,15 +1099,15 @@ function createTray() {
     {
       label: updateReady ? `Güncelle ve Çık (v${updateVersion || ''})` : 'Çıkış',
       click: () => {
-        isQuitting = true;
         if (updateReady) {
-          try {
-            autoUpdater.quitAndInstall(true, true);
-            return;
-          } catch (err) {
-            log.error('[updater] tray quitAndInstall failed:', err?.message);
-          }
+          // In a voice chat this asks before cutting the call. Otherwise it
+          // installs. A plain quit (no staged update) still just quits, and
+          // autoInstallOnAppQuit covers a real app quit.
+          const result = requestExplicitInstall('tray');
+          if (result?.needsConfirm) return;
+          if (result?.installing) return;
         }
+        isQuitting = true;
         app.quit();
       },
     },
@@ -1114,13 +1277,19 @@ autoUpdater.on('update-downloaded', (info) => {
     return;
   }
 
-  mainWindow?.webContents?.send('update:ready', { version: info.version });
+  const deferredForCall = isBusyWithLiveSession();
+  mainWindow?.webContents?.send('update:ready', {
+    version: info.version,
+    deferred: deferredForCall,
+  });
   // Staged only — do not send update:installing (that used to imply an immediate restart).
   rebuildTrayMenu?.();
 
   showNotificationWindow({
     title: 'Descall',
-    body: `v${info.version} indirildi. Arka planda sessizce kurulacak.`,
+    body: deferredForCall
+      ? `v${info.version} indirildi. Sesli sohbet bitene kadar kurulmayacak.`
+      : `v${info.version} indirildi. Arka planda sessizce kurulacak.`,
     type: 'default',
     duration: 8000,
     // Do not show()/focus() — notification must not steal the window.
@@ -1229,14 +1398,38 @@ ipcMain.handle('check-for-updates', async () => {
   }
 });
 
-ipcMain.handle('restart-app', () => {
-  if (updateReady) {
+ipcMain.on('voice:set-busy', (event, busy) => {
+  if (!mainWindow || mainWindow.isDestroyed?.() || event.sender !== mainWindow.webContents) return;
+  const next = Boolean(busy);
+  if (next === voiceBusyFromRenderer && next === deferral.voiceBusy) return;
+  voiceBusyFromRenderer = next;
+  deferral = applyDeferralEvent(deferral, { type: 'voice-busy', busy: next, now: Date.now() });
+  log.info(`[updater] voice-busy=${next} graceUntil=${deferral.graceUntil || 0} armed=${deferral.callDeferralArmed}`);
+  if (updateReady) evaluatePendingUpdate('voice-busy');
+});
+
+ipcMain.handle('restart-app', () => requestExplicitInstall('ipc'));
+
+ipcMain.handle('restart-app-confirmed', () => {
+  // The user explicitly chose to end the call and restart.
+  if (!updateReady) {
     isQuitting = true;
-    autoUpdater.quitAndInstall(true, true); // silent, force run after
-  } else {
     app.relaunch();
     app.quit();
+    return { installing: false, relaunch: true };
   }
+  const decision = decideUpdateInstall({
+    ...deferral,
+    updateReady: true,
+    voiceBusy: isBusyWithLiveSession(),
+    now: Date.now(),
+    explicitConfirm: true,
+  });
+  if (decision.reason !== 'user-confirmed') {
+    return { installing: false };
+  }
+  const installed = applyDownloadedUpdate('user-confirmed', { allowDuringCall: true });
+  return { installing: installed };
 });
 
 ipcMain.handle('get-update-status', () => {

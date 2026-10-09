@@ -2656,6 +2656,58 @@ body.electron-app .electron-update-toast {
   color: var(--text-muted, #949ba4);
 }
 
+.electron-update-toast-restart {
+  pointer-events: auto;
+  margin-top: 10px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-0, #f2f3f5);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.electron-update-toast-restart:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.electron-update-toast-restart:focus-visible {
+  outline: 2px solid var(--primary, #ff4655);
+  outline-offset: 2px;
+}
+
+.update-restart-copy {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--text-1, #dbdee1);
+}
+
+.update-restart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.update-restart-actions .btn {
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .electron-update-toast-bar-fill {
+    transition: none;
+  }
+}
+
 /* ── Shared Modal (UpdateNotes / ui/Modal) ── */
 .modal-backdrop {
   position: fixed;

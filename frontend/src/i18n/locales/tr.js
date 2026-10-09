@@ -224,6 +224,12 @@ export const nested = {
     "downloading": "Descall {version} arka planda indiriliyor…",
     "installing": "Descall {version} kuruluyor…",
     "ready": "Descall {version} hazır; sessizce kurulacak.",
+    "readyDeferred": "Descall {version} hazır. Sesli sohbet bitince kurulacak.",
+    "restart": "Şimdi yeniden başlat",
+    "confirmTitle": "Yeniden başlatıp güncellensin mi?",
+    "confirmBody": "Sesli sohbettesin. Şimdi yeniden başlatmak sohbeti bitirir. Descall {version} sohbetten çıktıktan sonra kendiliğinden de kurulabilir.",
+    "confirmRestart": "Sohbeti bitir ve yeniden başlat",
+    "confirmLater": "Şimdi değil",
     "percent": "%{percent}"
   },
   "status": {

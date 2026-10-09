@@ -8,7 +8,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
+  confirmRestartApp: () => ipcRenderer.invoke('restart-app-confirmed'),
   getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
+  // True while a DM call, group call, or server voice channel is up (ringing counts).
+  setVoiceBusy: (busy) => ipcRenderer.send('voice:set-busy', Boolean(busy)),
+  onConfirmRestart: (callback) => {
+    const handler = (_, data) => callback(data);
+    ipcRenderer.on('update:confirm-restart', handler);
+    return () => ipcRenderer.off('update:confirm-restart', handler);
+  },
 
   // Window controls
   minimizeWindow: () => ipcRenderer.send('window:minimize'),

@@ -69,10 +69,19 @@ assert(main.includes("autoUpdater.autoDownload = true"), "updates must download 
 assert(main.includes("autoUpdater.autoInstallOnAppQuit = true"), "a staged update must also apply on quit");
 const installer = main.slice(main.indexOf("function installQuietly"), main.indexOf("function checkForAppUpdates"));
 assert(installer.includes("isBusyWithLiveSession()"), "a quiet install must never interrupt a live call");
-assert(installer.includes("!isAppInBackground()"), "a quiet install must wait until the window is in the background");
+assert(main.includes("isAppInBackground()"), "a quiet install must still know when the window is backgrounded");
 assert(installer.includes("setStartInBackground(true, mode)"), "the post-install relaunch must come back backgrounded (no focus steal)");
 assert(installer.includes("queueSilentInstallRetry()"), "a deferred install must retry instead of being dropped");
+assert(installer.includes("decideUpdateInstall"), "quiet install timing must use the deferral decision");
+assert(installer.includes("again.action"), "install must be re-checked immediately before it runs");
 assert(main.includes("autoUpdater.quitAndInstall(true, true)"), "install must be silent + force-run-after");
+assert(main.includes("voice:set-busy"), "renderer must be able to report voice-busy");
+assert(main.includes("render-process-gone"), "voice-busy must reset if the renderer crashes");
+assert(main.includes("did-finish-load"), "voice-busy must reset if the renderer reloads");
+assert(main.includes("allowDuringCall"), "a mid-call install is an explicit opt-in");
+assert(main.includes("user-confirmed"), "confirmed restart is the only in-session mid-call install");
+assert(main.includes("requestExplicitInstall"), "tray and in-app restart must share the confirm gate");
+assert(main.includes("updateDeferral.cjs"), "deferral rules live in the tested module");
 assert(main.includes("backgroundThrottling: false"), "tray/minimized windows must keep sockets and the update poller alive");
 assert(!/quitAndInstall[\s\S]{0,120}mainWindow\.(show|focus)/.test(main), "installing an update must not show or focus the window");
 
