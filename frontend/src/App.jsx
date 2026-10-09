@@ -4741,7 +4741,7 @@ export default function App() {
             }
           />
         </AppLayout>
-        <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} />
+        <CallOverlay call={call} groupCall={groupCall} me={me} />
         <GroupCallIncomingModal
           incomingCall={groupCall?.incomingCall}
           onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}

@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Phone, PhoneOff, Video, Users } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
-import useGlassUi from "../../hooks/useGlassUi";
 
 /**
  * FaceTime-style incoming call card — large avatar + ripple rings.
@@ -18,13 +17,12 @@ export default function IncomingCallCard({
   onDecline,
 }) {
   const t = useT();
-  const glass = useGlassUi();
   const isVideo = callType === "video";
   const name = username || user?.username || t("Someone");
 
   return (
     <motion.div
-      className={glass ? "incoming-call-card g-incoming" : "incoming-call-card"}
+      className="incoming-call-card"
       initial={{ opacity: 0, y: -48, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -48, scale: 0.96 }}
@@ -39,7 +37,7 @@ export default function IncomingCallCard({
           animate={{ scale: [1, 1.04, 1] }}
           transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
         >
-          <Avatar name={name} size={glass ? 120 : 72} user={user} />
+          <Avatar name={name} size={72} user={user} />
         </motion.div>
         <div className={`incoming-call-badge ${isVideo ? "is-video" : "is-voice"}`}>
           {isVideo ? <Video size={13} color="#fff" /> : <Phone size={13} color="#fff" />}
@@ -48,46 +46,17 @@ export default function IncomingCallCard({
 
       <div className="incoming-call-meta">
         <div className="incoming-call-kind">
-          {glass ? <Phone size={14} strokeWidth={1.9} /> : null}
           {isVideo ? t("Incoming video call") : t("Incoming voice call")}
         </div>
         <div className="incoming-call-name">{t("{name} is calling", { name })}</div>
-        {(subtitle || isGroup || glass) && (
+        {(subtitle || isGroup) && (
           <div className="incoming-call-sub">
-            {isGroup && !glass && <Users size={12} />}
-            <span>{subtitle || (isVideo ? t("Video call") : isGroup ? t("Group call") : t("Voice call"))}</span>
+            {isGroup && <Users size={12} />}
+            <span>{subtitle || t("Group call")}</span>
           </div>
         )}
       </div>
 
-      {glass ? (
-        <div className="incoming-call-actions g-incoming-actions">
-          <div className="g-incoming-choice">
-            <motion.button
-              type="button"
-              className="incoming-call-btn incoming-call-btn--decline"
-              whileTap={{ scale: 0.97 }}
-              onClick={onDecline}
-              title={t("Decline")}
-            >
-              <PhoneOff size={28} />
-            </motion.button>
-            <span className="g-incoming-label">{t("Decline")}</span>
-          </div>
-          <div className="g-incoming-choice">
-            <motion.button
-              type="button"
-              className="incoming-call-btn incoming-call-btn--accept"
-              whileTap={{ scale: 0.97 }}
-              onClick={onAccept}
-              title={t("Accept")}
-            >
-              <Phone size={28} />
-            </motion.button>
-            <span className="g-incoming-label">{t("Accept")}</span>
-          </div>
-        </div>
-      ) : (
       <div className="incoming-call-actions">
         <motion.button
           type="button"
@@ -110,7 +79,6 @@ export default function IncomingCallCard({
           <Phone size={22} />
         </motion.button>
       </div>
-      )}
     </motion.div>
   );
 }
