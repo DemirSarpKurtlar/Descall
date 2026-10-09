@@ -221,6 +221,12 @@ export const nested = {
     "downloading": "Downloading Descall {version} in the background…",
     "installing": "Installing Descall {version}…",
     "ready": "Descall {version} is ready and will install quietly.",
+    "readyDeferred": "Descall {version} is ready. It will install after your voice chat ends.",
+    "restart": "Restart now",
+    "confirmTitle": "Restart and update?",
+    "confirmBody": "You're in a voice chat. Restarting now will end it. Descall {version} can also install on its own after you leave.",
+    "confirmRestart": "End call and restart",
+    "confirmLater": "Not now",
     "percent": "{percent}%"
   },
   "status": {

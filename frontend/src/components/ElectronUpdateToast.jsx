@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "../context/LocaleContext";
+import Modal from "./ui/Modal";
+import { getVoiceBusy, subscribeVoiceBusy } from "../lib/voiceBusy";
 
 /**
  * Premium charcoal desktop update toast — no emoji spam, clear status/progress,
@@ -10,6 +12,18 @@ export default function ElectronUpdateToast() {
   const [state, setState] = useState(null); // null | downloading | installing | ready
   const [version, setVersion] = useState(null);
   const [percent, setPercent] = useState(null);
+  const [deferred, setDeferred] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(() => getVoiceBusy());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const confirmingRef = useRef(false);
+
+  useEffect(() => subscribeVoiceBusy(setVoiceBusy), []);
+
+  useEffect(() => {
+    // Drop the main-process "deferred" hint once we know the user is not in
+    // a call. While they are, the live voice-busy flag owns the copy.
+    if (!voiceBusy && deferred) setDeferred(false);
+  }, [voiceBusy, deferred]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.electronAPI?.onUpdateDownloading) {
@@ -39,10 +53,19 @@ export default function ElectronUpdateToast() {
     }
     if (api.onUpdateReady) {
       unsubs.push(
-        api.onUpdateReady(({ version: v } = {}) => {
+        api.onUpdateReady(({ version: v, deferred: isDeferred } = {}) => {
           setVersion(v || null);
+          setDeferred(Boolean(isDeferred));
           setState("ready");
           setPercent(100);
+        }),
+      );
+    }
+    if (api.onConfirmRestart) {
+      unsubs.push(
+        api.onConfirmRestart(({ version: v } = {}) => {
+          if (v) setVersion(v);
+          setConfirmOpen(true);
         }),
       );
     }
@@ -75,14 +98,50 @@ export default function ElectronUpdateToast() {
     };
   }, []);
 
-  if (!state) return null;
+  if (!state && !confirmOpen) return null;
 
+  const heldForCall = voiceBusy;
   const label =
     state === "installing"
       ? t("updateToast.installing", { version: version || "" })
       : state === "ready"
-        ? t("updateToast.ready", { version: version || "" })
+        ? t(heldForCall || deferred ? "updateToast.readyDeferred" : "updateToast.ready", { version: version || "" })
         : t("updateToast.downloading", { version: version || "" });
+
+  const askRestart = async () => {
+    const api = window.electronAPI;
+    if (!api?.restartApp) return;
+    // Local busy is enough to ask first. Calling restart-app here would
+    // install if the main-process flag hasn't caught up to this render yet.
+    if (heldForCall) {
+      setConfirmOpen(true);
+      return;
+    }
+    try {
+      const result = await api.restartApp();
+      if (result?.needsConfirm) setConfirmOpen(true);
+      else if (result?.installing) setState("installing");
+    } catch {
+      /* main process owns the install */
+    }
+  };
+
+  const confirmRestart = async () => {
+    if (confirmingRef.current) return;
+    confirmingRef.current = true;
+    setConfirmOpen(false);
+    setState("installing");
+    try {
+      const result = await window.electronAPI?.confirmRestartApp?.();
+      if (!result?.installing && !result?.relaunch) {
+        confirmingRef.current = false;
+        setState("ready");
+      }
+    } catch {
+      confirmingRef.current = false;
+      setState("ready");
+    }
+  };
 
   const showBar = state === "downloading" || state === "installing" || state === "ready";
   const barWidth =
@@ -93,35 +152,74 @@ export default function ElectronUpdateToast() {
         : 8;
 
   return (
-    <div
-      className={`electron-update-toast is-${state}`}
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <div className="electron-update-toast-inner">
-        <div className="electron-update-toast-kicker">{t("updateToast.kicker")}</div>
-        <div className="electron-update-toast-label">{label}</div>
-        {showBar ? (
-          <div
-            className="electron-update-toast-bar"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(barWidth)}
+    <>
+      {state ? (
+        <div
+          className={`electron-update-toast is-${state}`}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div className="electron-update-toast-inner">
+            <div className="electron-update-toast-kicker">{t("updateToast.kicker")}</div>
+            <div className="electron-update-toast-label">{label}</div>
+            {showBar ? (
+              <div
+                className="electron-update-toast-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(barWidth)}
+              >
+                <div
+                  className="electron-update-toast-bar-fill"
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            ) : null}
+            {state === "downloading" && percent != null ? (
+              <div className="electron-update-toast-meta">
+                {t("updateToast.percent", { percent: Math.round(percent) })}
+              </div>
+            ) : null}
+            {state === "ready" ? (
+              <button
+                type="button"
+                className="electron-update-toast-restart"
+                onClick={askRestart}
+              >
+                {t("updateToast.restart")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={t("updateToast.confirmTitle")}
+      >
+        <p className="update-restart-copy">
+          {t("updateToast.confirmBody", { version: version || "" })}
+        </p>
+        <div className="update-restart-actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            autoFocus
+            onClick={() => setConfirmOpen(false)}
           >
-            <div
-              className="electron-update-toast-bar-fill"
-              style={{ width: `${barWidth}%` }}
-            />
-          </div>
-        ) : null}
-        {state === "downloading" && percent != null ? (
-          <div className="electron-update-toast-meta">
-            {t("updateToast.percent", { percent: Math.round(percent) })}
-          </div>
-        ) : null}
-      </div>
-    </div>
+            {t("updateToast.confirmLater")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={confirmRestart}
+          >
+            {t("updateToast.confirmRestart")}
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 }

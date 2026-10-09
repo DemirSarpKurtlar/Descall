@@ -41,6 +41,7 @@ import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
+import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import {
   clearToken,
   clearUser,
@@ -494,6 +495,7 @@ export default function App() {
   // Electron always-on-top voice overlay — mirrors whichever surface (DM
   // call / group hangout / server voice) is currently active.
   useElectronOverlay({ call, groupCall, serverVoice });
+  useElectronVoiceBusy({ call, groupCall, serverVoice });
   const callRef = useRef(call);
   const groupCallRef = useRef(groupCall);
   const serverVoiceRef = useRef(serverVoice);
