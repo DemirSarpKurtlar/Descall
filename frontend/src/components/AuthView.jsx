@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, UserPlus, Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
@@ -16,6 +16,11 @@ import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../l
 import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
 import { initialAuthMode, isCapacitorNativeShell } from "../lib/entryShell";
+import { useGlassUi } from "../hooks/useGlassUi";
+import { usePressFeedbackScope } from "../hooks/usePressFeedback";
+import { useMaterialize } from "../hooks/useMaterialize";
+import { createValueAnimator } from "../lib/fluid/animator";
+import { SPRINGS } from "../lib/fluid/springs";
 
 export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error }) {
   const t = useT();
@@ -36,6 +41,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   // Native iOS/Android app: this is the standalone entry screen (no web landing),
   // so it scrolls within the safe areas and keeps the legal docs one tap away.
   const isNativeApp = !isElectron && isCapacitorNativeShell();
+  // Liquid Glass (iPhone app only, 2.9.151): same features and handlers, the
+  // approved mockup layout (logo + tagline above a heavy glass card, legal below).
+  const glass = useGlassUi();
+  const glassRootRef = useRef(null);
+  usePressFeedbackScope(glassRootRef, { enabled: glass });
+  const card = useMaterialize(true, { appear: true });
 
   useEffect(() => {
     try {
@@ -139,6 +150,279 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       ? t("Reset your password with a secure email code")
       : productTagline;
 
+  const isLoginOrRegister = !twoFa && !socialSignup && mode !== "forgot";
+  const showLegalInCard = !glass;
+  const legalFooter = (
+    <>
+      <p className="auth-footer">
+        {t("By continuing, you agree to our Terms of Service")}
+      </p>
+      {isNativeApp && (
+        <nav className="auth-legal-links" aria-label={t("Legal")}>
+          <button type="button" className="legal-consent-link" onClick={() => setLegalModal("terms")}>
+            {t("Terms of Service")}
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" className="legal-consent-link" onClick={() => setLegalModal("privacy")}>
+            {t("Privacy Policy")}
+          </button>
+        </nav>
+      )}
+    </>
+  );
+
+  const cardBody = (
+    <>
+      {twoFa ? (
+        <form onSubmit={submitCode} className="auth-form">
+          <div className="input-wrapper">
+            <ShieldCheck className="input-icon" size={20} />
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder={t("Verification code")}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              maxLength={8}
+              autoFocus
+              required
+            />
+          </div>
+
+          {(twoFaError || error) && <p className="error-message">{twoFaError || error}</p>}
+
+          <button type="submit" className="auth-submit" disabled={verifying || !code.trim()}>
+            {verifying ? <span>{t("Please wait...")}</span> : <span>{t("Verify")}</span>}
+          </button>
+
+          <button
+            type="button"
+            className="auth-tab auth-back-btn"
+            onClick={() => {
+              setTwoFa(null);
+              setCode("");
+              setTwoFaError("");
+            }}
+          >
+            <ArrowLeft size={16} />
+            <span>{t("Back to login")}</span>
+          </button>
+        </form>
+      ) : socialSignup ? (
+        <SocialSignupStep
+          provider={socialSignup.provider}
+          birthDate={birthDate}
+          onBirthDateChange={setBirthDate}
+          termsAccepted={termsAccepted}
+          onTermsChange={setTermsAccepted}
+          onOpenLegal={setLegalModal}
+          error={error}
+          busy={loading || socialSigningUp}
+          onSubmit={submitSocialSignup}
+          onBack={() => setSocialSignup(null)}
+        />
+      ) : mode === "forgot" ? (
+        <ForgotPasswordFlow onBack={() => setMode("login")} />
+      ) : (
+      <>
+      <div className={`auth-tabs${glass ? " g-chip g-seg" : ""}`} role={glass ? "tablist" : undefined}>
+        {glass && <SegLens index={mode === "register" ? 1 : 0} />}
+        <button
+          className={`auth-tab ${mode === "login" ? "active" : ""}`}
+          onClick={() => setMode("login")}
+          type="button"
+        >
+          {!glass && <MessageCircle size={18} />}
+          <span>{t("Login")}</span>
+        </button>
+        <button
+          className={`auth-tab ${mode === "register" ? "active" : ""}`}
+          onClick={() => setMode("register")}
+          type="button"
+        >
+          {!glass && <UserPlus size={18} />}
+          <span>{t("Register")}</span>
+        </button>
+      </div>
+
+      <AppleSignInButton
+        disabled={loading || needsTerms}
+        onApple={async (apple) => {
+          if (needsTerms) return;
+          const invitedBy = inviteRef || peekInviteRef();
+          try {
+            await onAppleLogin?.(apple, {
+              termsAccepted: mode === "register",
+              ...(mode === "register" ? { birthDate } : {}),
+              ...(invitedBy ? { invitedBy } : {}),
+            });
+          } catch (err) {
+            if (isSocialSignupRequired(err)) {
+              setSocialSignup({ provider: "apple", credential: apple });
+              return;
+            }
+            throw err;
+          }
+        }}
+      />
+      <GoogleSignInButton
+        disabled={loading || needsTerms}
+        onCredential={async (credential) => {
+          if (needsTerms) return;
+          const invitedBy = inviteRef || peekInviteRef();
+          try {
+            await onGoogleLogin?.(credential, {
+              termsAccepted: mode === "register",
+              ...(mode === "register" ? { birthDate } : {}),
+              ...(invitedBy ? { invitedBy } : {}),
+            });
+          } catch (err) {
+            // New Google account (also from the Login tab): Terms + date of birth first.
+            if (isSocialSignupRequired(err)) {
+              setSocialSignup({ provider: "google", credential });
+              return;
+            }
+            /* other errors: App shows them via the error prop */
+          }
+        }}
+      />
+      {inviteRef && mode === "register" && (
+        <p className="auth-field-hint" role="status">
+          {t("Invited by @{username}", { username: inviteRef })}
+        </p>
+      )}
+
+      <div className="auth-divider" aria-hidden="true">
+        <span>{t("or")}</span>
+      </div>
+
+      <form onSubmit={submit} className="auth-form">
+        <div className="input-wrapper">
+          <User className="input-icon" size={20} />
+          <input
+            type="text"
+            placeholder={t("Username")}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            maxLength={24}
+            autoComplete="username"
+            required
+          />
+        </div>
+
+        <div className="input-wrapper has-toggle">
+          <Lock className="input-icon" size={20} />
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder={t("Password")}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            maxLength={72}
+            autoComplete={mode === "register" ? "new-password" : "current-password"}
+            required
+          />
+          <button
+            type="button"
+            className="auth-password-toggle"
+            onClick={() => setShowPassword((open) => !open)}
+            aria-label={showPassword ? t("Hide password") : t("Show password")}
+            aria-pressed={showPassword}
+            title={showPassword ? t("Hide password") : t("Show password")}
+          >
+            {showPassword ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
+          </button>
+        </div>
+
+        {mode === "login" && (
+          <div className="auth-forgot-row">
+            <button type="button" className="auth-forgot-link" onClick={() => setMode("forgot")}>
+              {t("Forgot your password?")}
+            </button>
+          </div>
+        )}
+
+        {mode === "register" && (
+          <BirthDateInput idPrefix="auth-birth" value={birthDate} onChange={setBirthDate} />
+        )}
+
+        {mode === "register" && (
+          <div className="input-wrapper">
+            <Mail className="input-icon" size={20} />
+            <input
+              type="email"
+              placeholder={t("Email (optional)")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              maxLength={254}
+              autoComplete="email"
+            />
+          </div>
+        )}
+        {mode === "register" && (
+          <p className="auth-field-hint">
+            {t("Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings.")}
+          </p>
+        )}
+
+        {mode === "register" && (
+          <TermsConsent
+            id="auth-terms-checkbox"
+            checked={termsAccepted}
+            onChange={setTermsAccepted}
+            onOpenLegal={setLegalModal}
+          />
+        )}
+
+        {error && <p className="error-message">{error}</p>}
+
+        <button
+          type="submit"
+          className="auth-submit"
+          disabled={loading || !username.trim() || !password || needsTerms}
+        >
+          {loading ? (
+            <span>{t("Please wait...")}</span>
+          ) : mode === "login" ? (
+            <span>{t("Login")}</span>
+          ) : (
+            <span>{t("Create Account")}</span>
+          )}
+        </button>
+      </form>
+
+      {showLegalInCard && legalFooter}
+      </>
+      )}
+    </>
+  );
+
+  if (glass) {
+    return (
+      <main ref={glassRootRef} className="g-auth" data-gid="screen">
+        <div className="g-ambient" aria-hidden="true" />
+        <div className="g-auth-glow" aria-hidden="true" />
+        <div className="g-auth-scroll">
+          <header className="g-auth-head">
+            <DescallBrand compact className="g-auth-mark" />
+            <h1 className="g-auth-title" data-gid="title">{t("Descall")}</h1>
+            <p className="g-auth-tagline" data-gid="tagline">{subtitle}</p>
+          </header>
+          <section
+            ref={card.ref}
+            className="g-glass g-heavy g-materialize g-auth-card"
+            data-gid="card"
+          >
+            {cardBody}
+          </section>
+          {isLoginOrRegister && <div className="g-auth-legal">{legalFooter}</div>}
+        </div>
+        <LegalContentModal open={legalModal === "terms"} type="terms" onClose={() => setLegalModal(null)} />
+        <LegalContentModal open={legalModal === "privacy"} type="privacy" onClose={() => setLegalModal(null)} />
+      </main>
+    );
+  }
+
   return (
     <main className={`auth-shell${isElectron ? " is-electron" : ""}${isNativeApp ? " is-native" : ""}`}>
       <div className="auth-bg" aria-hidden="true">
@@ -166,243 +450,40 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           <p className="auth-subtitle">{subtitle}</p>
         </div>
 
-        {twoFa ? (
-          <form onSubmit={submitCode} className="auth-form">
-            <div className="input-wrapper">
-              <ShieldCheck className="input-icon" size={20} />
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder={t("Verification code")}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                maxLength={8}
-                autoFocus
-                required
-              />
-            </div>
-
-            {(twoFaError || error) && <p className="error-message">{twoFaError || error}</p>}
-
-            <button type="submit" className="auth-submit" disabled={verifying || !code.trim()}>
-              {verifying ? <span>{t("Please wait...")}</span> : <span>{t("Verify")}</span>}
-            </button>
-
-            <button
-              type="button"
-              className="auth-tab auth-back-btn"
-              onClick={() => {
-                setTwoFa(null);
-                setCode("");
-                setTwoFaError("");
-              }}
-            >
-              <ArrowLeft size={16} />
-              <span>{t("Back to login")}</span>
-            </button>
-          </form>
-        ) : socialSignup ? (
-          <SocialSignupStep
-            provider={socialSignup.provider}
-            birthDate={birthDate}
-            onBirthDateChange={setBirthDate}
-            termsAccepted={termsAccepted}
-            onTermsChange={setTermsAccepted}
-            onOpenLegal={setLegalModal}
-            error={error}
-            busy={loading || socialSigningUp}
-            onSubmit={submitSocialSignup}
-            onBack={() => setSocialSignup(null)}
-          />
-        ) : mode === "forgot" ? (
-          <ForgotPasswordFlow onBack={() => setMode("login")} />
-        ) : (
-        <>
-        <div className="auth-tabs">
-          <button
-            className={`auth-tab ${mode === "login" ? "active" : ""}`}
-            onClick={() => setMode("login")}
-            type="button"
-          >
-            <MessageCircle size={18} />
-            <span>{t("Login")}</span>
-          </button>
-          <button
-            className={`auth-tab ${mode === "register" ? "active" : ""}`}
-            onClick={() => setMode("register")}
-            type="button"
-          >
-            <UserPlus size={18} />
-            <span>{t("Register")}</span>
-          </button>
-        </div>
-
-        <AppleSignInButton
-          disabled={loading || needsTerms}
-          onApple={async (apple) => {
-            if (needsTerms) return;
-            const invitedBy = inviteRef || peekInviteRef();
-            try {
-              await onAppleLogin?.(apple, {
-                termsAccepted: mode === "register",
-                ...(mode === "register" ? { birthDate } : {}),
-                ...(invitedBy ? { invitedBy } : {}),
-              });
-            } catch (err) {
-              if (isSocialSignupRequired(err)) {
-                setSocialSignup({ provider: "apple", credential: apple });
-                return;
-              }
-              throw err;
-            }
-          }}
-        />
-        <GoogleSignInButton
-          disabled={loading || needsTerms}
-          onCredential={async (credential) => {
-            if (needsTerms) return;
-            const invitedBy = inviteRef || peekInviteRef();
-            try {
-              await onGoogleLogin?.(credential, {
-                termsAccepted: mode === "register",
-                ...(mode === "register" ? { birthDate } : {}),
-                ...(invitedBy ? { invitedBy } : {}),
-              });
-            } catch (err) {
-              // New Google account (also from the Login tab): Terms + date of birth first.
-              if (isSocialSignupRequired(err)) {
-                setSocialSignup({ provider: "google", credential });
-                return;
-              }
-              /* other errors: App shows them via the error prop */
-            }
-          }}
-        />
-        {inviteRef && mode === "register" && (
-          <p className="auth-field-hint" role="status">
-            {t("Invited by @{username}", { username: inviteRef })}
-          </p>
-        )}
-
-        <div className="auth-divider" aria-hidden="true">
-          <span>{t("or")}</span>
-        </div>
-
-        <form onSubmit={submit} className="auth-form">
-          <div className="input-wrapper">
-            <User className="input-icon" size={20} />
-            <input
-              type="text"
-              placeholder={t("Username")}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              maxLength={24}
-              autoComplete="username"
-              required
-            />
-          </div>
-
-          <div className="input-wrapper has-toggle">
-            <Lock className="input-icon" size={20} />
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder={t("Password")}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              maxLength={72}
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-              required
-            />
-            <button
-              type="button"
-              className="auth-password-toggle"
-              onClick={() => setShowPassword((open) => !open)}
-              aria-label={showPassword ? t("Hide password") : t("Show password")}
-              aria-pressed={showPassword}
-              title={showPassword ? t("Hide password") : t("Show password")}
-            >
-              {showPassword ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
-            </button>
-          </div>
-
-          {mode === "login" && (
-            <div className="auth-forgot-row">
-              <button type="button" className="auth-forgot-link" onClick={() => setMode("forgot")}>
-                {t("Forgot your password?")}
-              </button>
-            </div>
-          )}
-
-          {mode === "register" && (
-            <BirthDateInput idPrefix="auth-birth" value={birthDate} onChange={setBirthDate} />
-          )}
-
-          {mode === "register" && (
-            <div className="input-wrapper">
-              <Mail className="input-icon" size={20} />
-              <input
-                type="email"
-                placeholder={t("Email (optional)")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                maxLength={254}
-                autoComplete="email"
-              />
-            </div>
-          )}
-          {mode === "register" && (
-            <p className="auth-field-hint">
-              {t("Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings.")}
-            </p>
-          )}
-
-          {mode === "register" && (
-            <TermsConsent
-              id="auth-terms-checkbox"
-              checked={termsAccepted}
-              onChange={setTermsAccepted}
-              onOpenLegal={setLegalModal}
-            />
-          )}
-
-          {error && <p className="error-message">{error}</p>}
-
-          <button
-            type="submit"
-            className="auth-submit"
-            disabled={loading || !username.trim() || !password || needsTerms}
-          >
-            {loading ? (
-              <span>{t("Please wait...")}</span>
-            ) : mode === "login" ? (
-              <span>{t("Login")}</span>
-            ) : (
-              <span>{t("Create Account")}</span>
-            )}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          {t("By continuing, you agree to our Terms of Service")}
-        </p>
-        {isNativeApp && (
-          <nav className="auth-legal-links" aria-label={t("Legal")}>
-            <button type="button" className="legal-consent-link" onClick={() => setLegalModal("terms")}>
-              {t("Terms of Service")}
-            </button>
-            <span aria-hidden="true">·</span>
-            <button type="button" className="legal-consent-link" onClick={() => setLegalModal("privacy")}>
-              {t("Privacy Policy")}
-            </button>
-          </nav>
-        )}
-        </>
-        )}
+        {cardBody}
       </motion.section>
 
       <LegalContentModal open={legalModal === "terms"} type="terms" onClose={() => setLegalModal(null)} />
       <LegalContentModal open={legalModal === "privacy"} type="privacy" onClose={() => setLegalModal(null)} />
     </main>
   );
+}
+
+/**
+ * Glass segmented-control lens (Giriş / Kayıt ol). Slides on a critically
+ * damped spring from wherever it is (interruptible); reduced motion jumps.
+ */
+function SegLens({ index }) {
+  const ref = useRef(null);
+  const animRef = useRef(null);
+  if (!animRef.current) {
+    animRef.current = createValueAnimator(
+      index,
+      (v) => ref.current?.style.setProperty("--g-seg-x", v.toFixed(4)),
+      { scale: 0.001 }
+    );
+  }
+  useEffect(() => {
+    const anim = animRef.current;
+    let reduced = false;
+    try {
+      reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch {
+      /* ignore */
+    }
+    if (reduced) anim.set(index);
+    else anim.to(index, { preset: SPRINGS.move });
+  }, [index]);
+  useEffect(() => () => animRef.current?.stop(), []);
+  return <span ref={ref} className="g-lens g-seg-lens" aria-hidden="true" style={{ "--g-seg-x": index }} />;
 }

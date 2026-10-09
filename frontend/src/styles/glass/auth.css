@@ -1,0 +1,505 @@
+/* ============================================
+   Liquid Glass — Login / Register / 2FA / Forgot / Social sign-up
+   (AuthView glass branch, 2.9.151). Geometry is the approved mockup
+   final/01-login.png (440×956 @3x) measured 1:1:
+     logo y92 88×88 · title y194 (39) · tagline y237 (2×21) · card y301 r34
+     seg 42/r21 · Apple 50/r25 · divider 16 · fields 50/r16 · forgot 17 ·
+     CTA 52/r26 · footer 18 · legal 15.
+   Every line-height is explicit so the geometry does not depend on the
+   font's metrics (SF Pro on iPhone, Inter fallback elsewhere).
+   Colours come from theme tokens (tokens.css / themes.css).
+   ============================================ */
+
+html.glass-ui .g-auth {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: var(--g-deep);
+  color: var(--g-t1);
+  font-family: var(--g-font);
+  font-size: 15px;
+  letter-spacing: -0.012em;
+  font-feature-settings: "cv11" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.glass-ui .g-auth *,
+html.glass-ui .g-auth *::before,
+html.glass-ui .g-auth *::after {
+  box-sizing: border-box;
+  /* Beats the global "* { font-family: var(--font-ui) !important }"
+     (Apple system font on glass surfaces, decision 3). */
+  font-family: var(--g-font) !important;
+}
+
+/* Brand glow behind the logo (mockup: radial 40%/20% at 50% 17%). */
+html.glass-ui .g-auth-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(40% 20% at 50% 17%, rgba(var(--g-brand-rgb), var(--g-glow)), transparent 70%);
+}
+
+html.glass-ui .g-auth-scroll {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100%;
+  margin: 0 auto;
+  /* Island-safe: content starts 30pt under the safe area (= y92 on a
+     62pt-inset iPhone, exactly the mockup); nothing ever sits under it. */
+  padding:
+    calc(env(safe-area-inset-top, 0px) + var(--g-top-gap))
+    calc(env(safe-area-inset-right, 0px) + 20px)
+    calc(env(safe-area-inset-bottom, 0px) + 24px)
+    calc(env(safe-area-inset-left, 0px) + 20px);
+}
+
+/* ── Head: original Descall logo + title + tagline (outside the card) ── */
+html.glass-ui .g-auth-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+html.glass-ui .g-auth .g-auth-mark {
+  display: block;
+  width: 88px;
+  height: 88px;
+  line-height: 0;
+}
+
+html.glass-ui .g-auth .g-auth-mark .descall-brand-mark {
+  display: block;
+  width: 88px;
+  height: 88px;
+  filter: drop-shadow(0 14px 30px rgba(var(--g-brand-rgb), var(--g-glow)));
+}
+
+html.glass-ui .g-auth-title {
+  margin: 14px 0 0;
+  font-size: 32px;
+  line-height: 39px;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  color: var(--g-t1);
+}
+
+html.glass-ui .g-auth-tagline {
+  max-width: 270px;
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 21px;
+  color: var(--g-t2);
+  text-align: center;
+}
+
+/* ── Card: heavy glass sheet ── */
+html.glass-ui .g-auth-card {
+  width: 100%;
+  margin-top: 22px;
+  border-radius: 34px;
+  padding: 16px 16px 18px;
+  color: var(--g-t1);
+}
+
+/* ── Segmented control (Giriş / Kayıt ol) with a sliding glass lens ── */
+html.glass-ui .g-auth .auth-tabs.g-seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  height: 42px;
+  margin: 0 0 16px;
+  padding: 3px;
+  border-radius: 21px;
+}
+
+html.glass-ui .g-auth .g-seg .g-seg-lens {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: 36px;
+  border-radius: 18px;
+  transform: translate3d(calc(var(--g-seg-x, 0) * 100%), 0, 0);
+  will-change: transform;
+}
+
+html.glass-ui .g-auth .g-seg .auth-tab {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--g-t2);
+  font: 600 14px/17px var(--g-font);
+  letter-spacing: -0.012em;
+  cursor: pointer;
+}
+
+html.glass-ui .g-auth .g-seg .auth-tab.active {
+  background: transparent;
+  color: var(--g-seg-on);
+}
+
+/* ── Sign in with Apple (HIG: system white on dark / black on light, 50pt) ── */
+html.glass-ui .g-auth .apple-signin-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0;
+}
+
+html.glass-ui .g-auth .apple-signin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: none;
+  height: 50px;
+  min-height: 50px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 25px;
+  background: var(--g-apple-bg);
+  color: var(--g-apple-fg);
+  font: 650 16px/20px var(--g-font);
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+}
+
+html.glass-ui .g-auth .apple-signin-btn svg {
+  width: auto;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── "veya" divider ── */
+html.glass-ui .g-auth .auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 16px;
+  margin: 16px 4px;
+  overflow: visible;
+  background: none;
+  border: 0;
+  color: var(--g-t3);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+html.glass-ui .g-auth .auth-divider span {
+  display: block;
+}
+
+html.glass-ui .g-auth .auth-divider::before,
+html.glass-ui .g-auth .auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 0.5px;
+  background: var(--g-hair);
+}
+
+/* ── Form ── */
+html.glass-ui .g-auth .auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+html.glass-ui .g-auth .auth-form > * + * {
+  margin-top: 10px;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--g-field-bg);
+  box-shadow: var(--g-field-shadow);
+  color: var(--g-t3);
+  font-size: 16px;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper:focus-within {
+  border: 0;
+  box-shadow: var(--g-field-shadow), inset 0 0 0 1.5px rgba(var(--g-brand-rgb), 0.75);
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--g-t1);
+  caret-color: var(--g-brand-hi);
+  font: 400 16px/20px var(--g-font);
+  letter-spacing: -0.012em;
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper input::placeholder {
+  color: var(--g-t3);
+  opacity: 1;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper input[type="password"] {
+  letter-spacing: 0.14em;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper input[type="password"]::placeholder {
+  letter-spacing: -0.012em;
+}
+
+html.glass-ui .g-auth .auth-form .input-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--g-t3);
+  stroke-width: 1.9;
+}
+
+/* Eye toggle: 18pt glyph flush with the 16pt field inset, 44pt hit area. */
+html.glass-ui .g-auth .auth-password-toggle {
+  width: 44px;
+  height: 44px;
+  margin: 0 -13px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--g-t3);
+}
+
+html.glass-ui .g-auth .auth-password-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.9;
+}
+
+html.glass-ui .g-auth .auth-password-toggle:hover,
+html.glass-ui .g-auth .auth-password-toggle:focus-visible {
+  background: transparent;
+  color: var(--g-t2);
+}
+
+html.glass-ui .g-auth .auth-form > .auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  height: 17px;
+  margin: 10px 4px 0;
+}
+
+html.glass-ui .g-auth .auth-forgot-link {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--g-brand-hi);
+  font: 600 14px/17px var(--g-font);
+  letter-spacing: -0.012em;
+}
+
+/* 44pt hit area without moving anything. */
+html.glass-ui .g-auth .auth-forgot-link::after,
+html.glass-ui .g-auth .g-auth-legal .legal-consent-link::after {
+  content: "";
+  position: absolute;
+  inset: -14px -6px;
+}
+
+html.glass-ui .g-auth .auth-forgot-link:hover {
+  text-decoration: none;
+  color: var(--g-brand-hi);
+}
+
+html.glass-ui .g-auth .auth-submit {
+  height: 52px;
+  margin-top: 14px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 26px;
+  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
+  box-shadow: 0 8px 22px rgba(var(--g-brand-rgb), 0.45);
+  color: var(--g-on-brand);
+  font: 650 17px/22px var(--g-font);
+  letter-spacing: -0.012em;
+}
+
+html.glass-ui .g-auth .auth-form > .auth-submit {
+  margin-top: 14px;
+}
+
+html.glass-ui .g-auth .auth-submit:hover:not(:disabled) {
+  filter: none;
+}
+
+html.glass-ui .g-auth .auth-submit:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* Secondary capsule (← Girişe dön) in 2FA / forgot / social steps. */
+html.glass-ui .g-auth .auth-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  margin-top: 10px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--g-fill);
+  box-shadow: inset 0 0 0 0.5px var(--g-fill-hair);
+  color: var(--g-t1);
+  font: 600 15px/20px var(--g-font);
+}
+
+html.glass-ui .g-auth .error-message,
+html.glass-ui .g-auth .apple-signin-error {
+  margin: 0;
+  color: #ff6961;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+}
+
+html.glass-ui .g-auth .auth-field-hint {
+  margin: 0 4px;
+  color: var(--g-t3);
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+html.glass-ui .g-auth .apple-signin-wrap + .auth-field-hint {
+  margin-top: 10px;
+}
+
+html.glass-ui .g-auth .auth-success-hint {
+  color: var(--g-ok);
+}
+
+html.glass-ui .g-auth .auth-support-card {
+  border: 0;
+  border-radius: 22px;
+  background: var(--g-fill);
+  box-shadow: inset 0 0 0 0.5px var(--g-fill-hair);
+  color: var(--g-t2);
+}
+
+html.glass-ui .g-auth .auth-support-card h3 {
+  color: var(--g-t1);
+}
+
+html.glass-ui .g-auth .auth-support-card svg,
+html.glass-ui .g-auth .auth-support-link {
+  color: var(--g-brand-hi);
+}
+
+html.glass-ui .g-auth .forgot-password-flow .auth-form {
+  gap: 0;
+}
+
+/* Register: date of birth + terms consent. */
+html.glass-ui .g-auth .birth-input-legend,
+html.glass-ui .g-auth .legal-consent label,
+html.glass-ui .g-auth .legal-consent-note {
+  color: var(--g-t2);
+}
+
+html.glass-ui .g-auth .birth-select {
+  height: 50px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--g-field-bg);
+  box-shadow: var(--g-field-shadow);
+  color: var(--g-t1);
+  font-family: var(--g-font);
+  font-size: 16px;
+}
+
+html.glass-ui .g-auth .birth-select-chevron {
+  color: var(--g-t3);
+}
+
+html.glass-ui .g-auth .legal-consent-link {
+  color: var(--g-brand-hi);
+}
+
+/* ── Footer + legal (outside the card) ── */
+html.glass-ui .g-auth-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+html.glass-ui .g-auth-legal .auth-footer {
+  margin: 16px 0 0;
+  color: var(--g-t3);
+  font-size: 12.5px;
+  line-height: 18px;
+  text-align: center;
+}
+
+html.glass-ui .g-auth-legal .auth-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-top: 6px;
+  color: var(--g-t4);
+  font-size: 12.5px;
+  line-height: 15px;
+  font-weight: 600;
+}
+
+html.glass-ui .g-auth-legal .legal-consent-link {
+  position: relative;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--g-t2);
+  font: 600 12.5px/15px var(--g-font);
+  letter-spacing: -0.012em;
+  text-decoration: none;
+}

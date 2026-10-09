@@ -20,6 +20,7 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		A1B2C3D51FED79650016851F /* CallKeepAlivePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */; };
 		D35C0A102E9A000100A1B2C3 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */; };
+		D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */; };
 		E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A022F5B000100D35C0A /* DescallCallManager.swift */; };
 		E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */; };
 		B1B2C3D51FED79650016851F /* DescallBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */; };
@@ -41,6 +42,7 @@
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKeepAlivePlugin.swift; sourceTree = "<group>"; };
 		D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
+		D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDisplayPlugin.swift; sourceTree = "<group>"; };
 		E7C41A022F5B000100D35C0A /* DescallCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallManager.swift; sourceTree = "<group>"; };
 		E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallKitPlugin.swift; sourceTree = "<group>"; };
 		B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallBridgeViewController.swift; sourceTree = "<group>"; };
@@ -84,6 +86,7 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */,
 				D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */,
+				D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */,
 				E7C41A022F5B000100D35C0A /* DescallCallManager.swift */,
 				E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */,
 				B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */,
@@ -191,6 +194,7 @@
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				A1B2C3D51FED79650016851F /* CallKeepAlivePlugin.swift in Sources */,
 				D35C0A102E9A000100A1B2C3 /* AppleSignInPlugin.swift in Sources */,
+				D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */,
 				E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */,
 				E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */,
 				B1B2C3D51FED79650016851F /* DescallBridgeViewController.swift in Sources */,
@@ -351,7 +355,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.9.150;
+				MARKETING_VERSION = 2.9.151;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -374,7 +378,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.9.150;
+				MARKETING_VERSION = 2.9.151;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";

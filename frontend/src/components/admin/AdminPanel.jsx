@@ -1672,6 +1672,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       disabled={busy}
                       onChange={(enabled) => setFeatureFlag("valorantCompanion", enabled)}
                     />
+                    <SystemSwitch
+                      icon={Smartphone}
+                      tone="glass"
+                      label={t("iOS Liquid Glass")}
+                      status={system.config?.featureFlags?.iosGlass !== false ? t("On") : t("Off")}
+                      checked={system.config?.featureFlags?.iosGlass !== false}
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("iosGlass", enabled)}
+                    />
                   </div>
                 </article>
 

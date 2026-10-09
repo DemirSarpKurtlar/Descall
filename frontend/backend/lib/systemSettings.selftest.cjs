@@ -34,7 +34,9 @@ assert(legacy.featureFlags.valorantCompanion === true, "missing companion defaul
 const pub = publicFeatureFlags(legacy.featureFlags);
 assert(pub.valorantLfg === true && pub.valorantCompanion === true, "public flags");
 assert(pub.voice === undefined && pub.maintenanceMode === undefined, "public payload is availability only");
-assert(Object.keys(pub).sort().join(",") === "valorantCompanion,valorantLfg", "public keys only");
+assert(Object.keys(pub).sort().join(",") === "iosGlass,valorantCompanion,valorantLfg", "public keys only");
+assert(pub.iosGlass === true, "iOS glass kill switch defaults on");
+assert(defaults.featureFlags.iosGlass === true && legacy.featureFlags.iosGlass === true, "missing iosGlass defaults on");
 const partial = pickFeatureFlags({ valorantLfg: false });
 assert(partial.valorantLfg === false && partial.voice === true && partial.valorantCompanion === true, "partial flag patch");
 

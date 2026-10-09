@@ -7,6 +7,9 @@ class DescallBridgeViewController: CAPBridgeViewController {
     /// page load finishes (see "Launch overlay" below).
     private var launchOverlay: UIView?
     private var launchLoadObservation: NSKeyValueObservation?
+    /// Status-bar content colour. White by default (dark themes); the Liquid
+    /// Glass light theme asks for black via DescallDisplay.setStatusBarStyle.
+    private var statusBarDarkContent = false
 
     override open func viewDidLoad() {
         super.viewDidLoad()
@@ -22,10 +25,17 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(CallKeepAlivePlugin())
         bridge?.registerPluginInstance(AppleSignInPlugin())
         bridge?.registerPluginInstance(DescallCallKitPlugin())
+        bridge?.registerPluginInstance(DescallDisplayPlugin())
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
-        .lightContent
+        statusBarDarkContent ? .darkContent : .lightContent
+    }
+
+    func setStatusBarContent(dark: Bool) {
+        guard statusBarDarkContent != dark else { return }
+        statusBarDarkContent = dark
+        setNeedsStatusBarAppearanceUpdate()
     }
 }
 

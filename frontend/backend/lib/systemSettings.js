@@ -15,6 +15,8 @@ const DEFAULT_SYSTEM_CONFIG = {
     screen: true,
     valorantLfg: true,
     valorantCompanion: true,
+    // iPhone app Liquid Glass UI (2.9.151+): remote kill switch, default on.
+    iosGlass: true,
   },
   themeForce: null,
   maintenanceMode: false,
@@ -56,6 +58,7 @@ function publicFeatureFlags(input) {
   return {
     valorantLfg: flags.valorantLfg,
     valorantCompanion: flags.valorantCompanion,
+    iosGlass: flags.iosGlass,
   };
 }
 

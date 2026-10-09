@@ -1,0 +1,84 @@
+/* ============================================
+   Liquid Glass — design tokens (2.9.151, Stage 1)
+   iPhone app only: every rule is scoped under html.glass-ui (set by
+   lib/glassUi.js), so web / Electron / Android / iPad never see it.
+
+   Default dark theme = the approved mockup values VERBATIM
+   (/workspace/glass-redesign/final/src/glass.css). Other themes override the
+   palette tokens in themes.css (generated); geometry is shared.
+   ============================================ */
+
+html.glass-ui {
+  /* Palette (mockup) */
+  --g-scheme: dark;
+  --g-brand: #587AF6;
+  --g-brand-rgb: 88,122,246;
+  --g-brand-hi: #8FA6FF;
+  --g-brand2-rgb: 124,92,255;
+  --g-deep: #0D0E13;
+  --g-base-0: #151724;
+  --g-base-1: #17181F;
+  --g-base-2: #101118;
+  --g-amb-a: 0.42; --g-amb-b: 0.30; --g-amb-c: 0.16; --g-amb-d: 0.26; --g-glow: 0.45;
+  --g-t1: rgba(255,255,255,0.96);
+  --g-t2: rgba(235,238,255,0.72);
+  --g-t3: rgba(235,238,255,0.46);
+  --g-t4: rgba(235,238,255,0.28);
+  --g-ok: #30D158; --g-idle: #FFD60A; --g-dnd: #FF453A; --g-off: #8E8E93; --g-red: #FF453A; --g-gold: #FFC94D;
+  --g-on-brand: #fff;
+
+  /* Material (mockup .glass / .heavy / .glass-chip / .lens) */
+  --g-tint-top: rgba(255,255,255,0.13);
+  --g-tint-bot: rgba(255,255,255,0.06);
+  --g-tint-base: rgba(22,24,36,0.22);
+  --g-heavy-top: rgba(255,255,255,0.12);
+  --g-heavy-bot: rgba(255,255,255,0.05);
+  --g-heavy-base: rgba(20,21,30,0.62);
+  --g-chip-bg: rgba(255,255,255,0.10);
+  --g-lens-top: rgba(255,255,255,0.22);
+  --g-lens-bot: rgba(255,255,255,0.10);
+  --g-blur: 26px;
+  --g-blur-heavy: 40px;
+  --g-blur-chip: 16px;
+  --g-saturate: 190%;
+  --g-saturate-heavy: 200%;
+  --g-saturate-chip: 180%;
+  --g-brightness: 1.06;
+  --g-shadow: 0 12px 32px rgba(0,0,0,0.34), 0 2px 6px rgba(0,0,0,0.22);
+  --g-shadow-heavy: 0 24px 64px rgba(0,0,0,0.55), 0 4px 14px rgba(0,0,0,0.3);
+  --g-shadow-chip: 0 2px 8px rgba(0,0,0,0.22);
+  --g-shadow-lens: 0 4px 14px rgba(0,0,0,0.25);
+  --g-rim-a: rgba(255,255,255,0.62);
+  --g-rim-b: rgba(255,255,255,0.16);
+  --g-rim-c: rgba(255,255,255,0.04);
+  --g-rim-d: rgba(255,255,255,0.10);
+  --g-rim-e: rgba(255,255,255,0.30);
+  --g-refract-a: rgba(255,255,255,0.30);
+  --g-refract-b: rgba(255,255,255,0.14);
+  --g-cta-top: rgba(120,150,255,0.95);
+  --g-cta-bot: rgba(80,112,240,0.95);
+  --g-hair: rgba(255,255,255,0.16);
+  --g-fill: rgba(255,255,255,0.09);
+  --g-fill-hair: rgba(255,255,255,0.1);
+  --g-field-bg: rgba(0,0,0,0.26);
+  --g-field-shadow: inset 0 1px 2px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(255,255,255,0.1);
+  --g-apple-bg: #fff;
+  --g-apple-fg: #000;
+  --g-seg-on: #fff;            /* selected segment label */
+  /* Reduce Transparency / Increase Contrast surfaces */
+  --g-solid: #1B1C24;
+  --g-solid-heavy: #16171E;
+  --g-contrast-border: rgba(255,255,255,0.55);
+
+  /* Geometry (8pt grid; Island-safe chrome) */
+  --g-top-gap: 30px;          /* login content below the safe area (mockup y 92 at inset 62) */
+  --g-chrome-top: calc(env(safe-area-inset-top, 0px) - 2px); /* = 60 on a 62pt-inset iPhone */
+  --g-bar-bottom: 24px;
+  --g-r-card: 22px;
+  --g-r-sheet: 38px;
+
+  /* Apple system font: on iOS -apple-system resolves to SF Pro with automatic
+     Text/Display optical sizes. Same stack as the approved mockup (Inter is
+     only the off-Apple fallback the mockup itself was rendered with). */
+  --g-font: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+}

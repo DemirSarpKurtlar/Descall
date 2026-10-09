@@ -86,6 +86,7 @@ import {
   usePublicFeatures,
   valorantPlayVisible,
 } from "./lib/publicFeatures";
+import { applyRemoteGlassFlag } from "./lib/glassUi";
 import { parseAppDate } from "./lib/datetime";
 import AdminPanel from "./components/admin/AdminPanel";
 import ShopGiftPopup from "./components/shop/ShopGiftPopup";
@@ -1220,7 +1221,10 @@ export default function App() {
     fetch(`${API_BASE_URL}/api/features`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data) applyPublicFeatures(data);
+        if (!cancelled && data) {
+          applyPublicFeatures(data);
+          applyRemoteGlassFlag(data.iosGlass);
+        }
       })
       .catch((err) => console.warn("[features] load failed:", err?.message || err));
     // Native iOS app masks bad words; merge the admin-managed extra words.
@@ -2213,6 +2217,7 @@ export default function App() {
 
     socket.on("features:updated", (payload) => {
       applyPublicFeatures(payload);
+      applyRemoteGlassFlag(payload?.iosGlass);
     });
 
     socket.on("admin:popup", (payload = {}) => {

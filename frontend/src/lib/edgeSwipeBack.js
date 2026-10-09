@@ -14,6 +14,20 @@
  * interruptible from the live value, rubber-band where there is no previous page.
  */
 
+import {
+  clamp,
+  computeVelocity as computeVelocityBase,
+  createSpring,
+  easeOutCubic,
+  project as projectBase,
+  rubberband as rubberbandBase,
+  rubberbandInverse as rubberbandInverseBase,
+} from "./fluid/physics.js";
+
+// Physics lives in lib/fluid/physics.js (shared with every glass gesture);
+// re-exported here with the swipe-back defaults so callers/tests are unchanged.
+export { clamp, createSpring, easeOutCubic };
+
 export const SWIPE_BACK_DEFAULTS = Object.freeze({
   /** Touches that start this close to the left edge always qualify (even over horizontal scrollers). */
   edgeWidth: 28,
@@ -46,10 +60,6 @@ export const PHASE = Object.freeze({
   PENDING: "pending",
   DRAGGING: "dragging",
 });
-
-export function clamp(value, min, max) {
-  return value < min ? min : value > max ? max : value;
-}
 
 export function progressFor(x, width) {
   if (!(width > 0)) return 0;
@@ -103,45 +113,6 @@ export function lockDirection(dx, dy, zone, options = SWIPE_BACK_DEFAULTS) {
   if (dx > 0 && adx >= slop && adx > ady * dominance) return "horizontal";
   if (dx < 0 && adx >= ady) return "reverse";
   return "vertical";
-}
-
-/** Least-squares-free velocity: newest sample vs the oldest one inside the window. */
-export function computeVelocity(samples, windowMs = SWIPE_BACK_DEFAULTS.velocityWindowMs) {
-  if (!Array.isArray(samples) || samples.length < 2) return 0;
-  const last = samples[samples.length - 1];
-  let first = samples[samples.length - 2];
-  for (let i = samples.length - 2; i >= 0; i -= 1) {
-    if (last.t - samples[i].t > windowMs) break;
-    first = samples[i];
-  }
-  const dt = last.t - first.t;
-  if (!(dt > 0)) return 0;
-  return (last.x - first.x) / dt;
-}
-
-/**
- * Apple's momentum projection (Designing Fluid Interfaces sample code):
- * distance a flick would travel under scroll-like exponential deceleration.
- * Velocity in px/s, result in px.
- */
-export function project(velocityPxPerSec, decelerationRate = SWIPE_BACK_DEFAULTS.decelerationRate) {
-  return ((velocityPxPerSec / 1000) * decelerationRate) / (1 - decelerationRate);
-}
-
-/** Progressive resistance past a boundary: follows less the further you pull. */
-export function rubberband(overshoot, dimension, constant = SWIPE_BACK_DEFAULTS.rubberBand) {
-  if (!(dimension > 0)) return 0;
-  const o = Math.abs(overshoot);
-  const r = (o * dimension * constant) / (dimension + constant * o);
-  return overshoot < 0 ? -r : r;
-}
-
-/** Inverse of rubberband(): the raw finger travel that shows `displayed` px. */
-export function rubberbandInverse(displayed, dimension, constant = SWIPE_BACK_DEFAULTS.rubberBand) {
-  if (!(dimension > 0)) return 0;
-  const x = Math.min(Math.abs(displayed), dimension * 0.999);
-  const o = (x * dimension) / (constant * (dimension - x));
-  return displayed < 0 ? -o : o;
 }
 
 /**
@@ -286,66 +257,21 @@ export function createSwipeBackMachine(options = SWIPE_BACK_DEFAULTS) {
   };
 }
 
-/**
- * Critically damped spring (UIKit-like: no overshoot, so the page never
- * bounces past the edge and shows a gap). Position px, velocity px/ms.
- * `response` ≈ the settle time constant in ms (UIKit's spring "response").
- */
-export function createSpring({ from, to, velocity = 0, response = 330, dampingRatio = 1, min = -Infinity, max = Infinity }) {
-  const omega = (2 * Math.PI) / Math.max(1, response); // rad/ms
-  const zeta = dampingRatio;
-  let x = from;
-  let v = velocity;
-  let done = Math.abs(to - from) < 0.5 && Math.abs(velocity) < 0.02;
-  // Physical bounds (0…width): the finger's velocity is handed off as-is, even
-  // against the target, but the page never leaves the screen edge it rests on.
-  const lo = Math.min(min, from, to);
-  const hi = Math.max(max, from, to);
-  return {
-    get value() {
-      return x;
-    },
-    get velocity() {
-      return v;
-    },
-    get done() {
-      return done;
-    },
-    /** Advance by dt ms; returns the new position. Semi-implicit Euler in 4 ms substeps. */
-    step(dt) {
-      if (done) return x;
-      let remaining = clamp(dt, 0, 64);
-      while (remaining > 0) {
-        const h = Math.min(4, remaining);
-        const accel = -omega * omega * (x - to) - 2 * zeta * omega * v;
-        v += accel * h;
-        x += v * h;
-        remaining -= h;
-      }
-      // Never travel outside the bounds; reaching the target bound ends the motion.
-      if (x <= lo || x >= hi || (to === hi && x >= to) || (to === lo && x <= to)) {
-        const clamped = clamp(x, lo, hi);
-        if ((to === hi && clamped >= to) || (to === lo && clamped <= to)) {
-          x = to;
-          v = 0;
-          done = true;
-          return x;
-        }
-        x = clamped;
-        if ((to - x) * v < 0) v = 0;
-      }
-      if (Math.abs(to - x) < 0.5 && Math.abs(v) < 0.02) {
-        x = to;
-        v = 0;
-        done = true;
-      }
-      return x;
-    },
-  };
+export function computeVelocity(samples, windowMs = SWIPE_BACK_DEFAULTS.velocityWindowMs) {
+  return computeVelocityBase(samples, windowMs);
 }
 
-/** Linear-in-time tween with an ease, used for the reduced-motion fade. */
-export function easeOutCubic(t) {
-  const c = clamp(t, 0, 1);
-  return 1 - (1 - c) ** 3;
+/** Apple's momentum projection. Velocity in px/s, result in px. */
+export function project(velocityPxPerSec, decelerationRate = SWIPE_BACK_DEFAULTS.decelerationRate) {
+  return projectBase(velocityPxPerSec, decelerationRate);
+}
+
+/** Progressive resistance past a boundary: follows less the further you pull. */
+export function rubberband(overshoot, dimension, constant = SWIPE_BACK_DEFAULTS.rubberBand) {
+  return rubberbandBase(overshoot, dimension, constant);
+}
+
+/** Inverse of rubberband(): the raw finger travel that shows `displayed` px. */
+export function rubberbandInverse(displayed, dimension, constant = SWIPE_BACK_DEFAULTS.rubberBand) {
+  return rubberbandInverseBase(displayed, dimension, constant);
 }

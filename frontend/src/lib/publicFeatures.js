@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 export const DEFAULT_PUBLIC_FEATURES = {
   valorantLfg: true,
   valorantCompanion: true,
+  iosGlass: true,
 };
 
 let current = normalizePublicFeatures(DEFAULT_PUBLIC_FEATURES);
@@ -27,6 +28,8 @@ export function normalizePublicFeatures(input) {
   return {
     valorantLfg: src.valorantLfg !== false,
     valorantCompanion: src.valorantCompanion !== false && !isNativeIosShell(),
+    // Remote kill switch for the iPhone Liquid Glass UI (lib/glassUi.js).
+    iosGlass: src.iosGlass !== false,
   };
 }
 
@@ -43,7 +46,8 @@ export function applyPublicFeatures(input) {
   const next = normalizePublicFeatures(input);
   if (
     next.valorantLfg === current.valorantLfg &&
-    next.valorantCompanion === current.valorantCompanion
+    next.valorantCompanion === current.valorantCompanion &&
+    next.iosGlass === current.iosGlass
   ) {
     return current;
   }

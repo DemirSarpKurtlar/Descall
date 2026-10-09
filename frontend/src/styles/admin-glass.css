@@ -3449,6 +3449,11 @@ button.overview-kpi:hover {
   color: #8ec7ff;
 }
 
+.admin-system-switch-mark.is-glass {
+  background: rgba(88, 122, 246, 0.18);
+  color: #8fa6ff;
+}
+
 .admin-system-switch-mark.is-chat {
   background: rgba(255, 159, 10, 0.16);
   color: #ffc56b;

@@ -212,6 +212,10 @@ async function bootApp() {
       import("./components/IosPwaInstallBanner"),
       import("./styles.css"),
       loadI18nCatalogs(),
+      // Liquid Glass gate (iPhone app only; adds html.glass-ui before first paint).
+      isNativeApp
+        ? import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {})
+        : null,
     ]);
 
   const [{ default: AppBootSkeleton }] = await Promise.all([

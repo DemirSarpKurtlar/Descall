@@ -324,15 +324,8 @@ export default function AppLayout({
     placeholder: isPlayPage,
     priority: 10,
   });
-  // Root tabs have no previous page: an edge drag rubber-bands the screen and
-  // springs back (Apple fluid-interface rule), it never navigates.
-  useEdgeSwipeBack({
-    enabled: isMobile && !userPanelOpen && !mobileNavHidden && !inConversation && !isPlayPage,
-    canGoBack: false,
-    getSurface: () =>
-      mobileDrawerOpen || activeView === "activity" ? sidebarShellRef.current : mainSlotRef.current,
-    priority: 0,
-  });
+  // Root tabs have no previous page: an edge drag is fully inert there (no
+  // rubber-band, no navigation) — same as iOS root views (2.9.151).
   // On a narrow conversation surface the fixed banner sits directly over the
   // DM header, stealing profile/voice-call taps. Offer it once the user leaves
   // the conversation instead.

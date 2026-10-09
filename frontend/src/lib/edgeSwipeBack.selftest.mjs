@@ -327,7 +327,7 @@ assert.ok(/primeHaptics\(\)/.test(hook) && /function commitFeedback/.test(hook),
 assert.ok(/commitFeedback\(s, decision\);\s*const target/.test(hook), "haptic fires in the release frame, before the spring starts");
 assert.ok(!/hapticLight\(\);\s*\/\/ The page is fully/.test(hook), "no late haptic after the animation");
 assert.ok(/velocity,\s*response: decision/.test(hook) && /dampingRatio: 1/.test(hook), "release velocity → critically damped spring");
-assert.ok(/canGoBack: false/.test(layout), "root tabs rubber-band (no previous page)");
+assert.ok(!/canGoBack: false/.test(layout), "root tabs are inert (no rubber-band, no previous page)");
 assert.ok(/SPRING_COMPLETE_MS = 3\d\d;/.test(hook) && /SPRING_CANCEL_MS = 3\d\d;/.test(hook), "spring response 0.3–0.4 s");
 
 console.log("edgeSwipeBack.selftest ok");

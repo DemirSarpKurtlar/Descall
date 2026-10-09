@@ -1,0 +1,252 @@
+/* ============================================
+   Liquid Glass — materials (2.9.151, Stage 1)
+   Ported 1:1 from the approved mockup (final/src/glass.css): light-tint glass
+   + specular rim (::before) + inner refraction (::after); material weight =
+   hierarchy (heavy sheet > glass > chip > lens).
+
+   Performance rule (uygulama-plani.md §2.3): real backdrop-filter only where
+   content moves underneath (chrome, sheets, menus). Static cards over the
+   ambient use .g-static (same look, no blur — blurring a smooth gradient is
+   visually identical and costs nothing).
+   ============================================ */
+
+/* Ambient light (full viewport incl. status bar / Island / home indicator →
+   never a black band). */
+html.glass-ui .g-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
+    radial-gradient(55% 34% at 100% 22%, rgba(var(--g-brand2-rgb), var(--g-amb-b)), transparent 70%),
+    radial-gradient(70% 40% at 20% 70%, rgba(var(--g-brand-rgb), var(--g-amb-c)), transparent 70%),
+    radial-gradient(60% 35% at 95% 96%, rgba(var(--g-brand2-rgb), var(--g-amb-d)), transparent 70%),
+    linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%);
+  background-color: var(--g-deep);
+}
+
+/* ── Glass material ── */
+html.glass-ui .g-glass,
+html.glass-ui .g-chip,
+html.glass-ui .g-lens,
+html.glass-ui .g-static {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+/* Specular rim — light catching the edge (mask ring, 1px). */
+html.glass-ui .g-glass::before,
+html.glass-ui .g-chip::before,
+html.glass-ui .g-lens::before,
+html.glass-ui .g-static::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(150deg, var(--g-rim-a) 0%, var(--g-rim-b) 26%, var(--g-rim-c) 55%, var(--g-rim-d) 80%, var(--g-rim-e) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+/* Inner refraction / lensing. */
+html.glass-ui .g-glass::after,
+html.glass-ui .g-lens::after,
+html.glass-ui .g-static::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow:
+    inset 7px 9px 16px -10px var(--g-refract-a),
+    inset -7px -9px 16px -10px var(--g-refract-b),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+}
+
+html.glass-ui .g-glass > *,
+html.glass-ui .g-chip > *,
+html.glass-ui .g-lens > *,
+html.glass-ui .g-static > * {
+  position: relative;
+  z-index: 4;
+}
+
+html.glass-ui .g-glass.g-heavy {
+  background:
+    linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
+    var(--g-heavy-base);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  box-shadow: var(--g-shadow-heavy);
+}
+
+html.glass-ui .g-chip {
+  background: var(--g-chip-bg);
+  -webkit-backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
+  backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
+  box-shadow: var(--g-shadow-chip);
+}
+
+html.glass-ui .g-chip::before {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.18));
+}
+
+html.glass-ui .g-lens {
+  background: linear-gradient(180deg, var(--g-lens-top), var(--g-lens-bot));
+  box-shadow: var(--g-shadow-lens);
+}
+
+/* Static glass: identical look, no live blur (cards over the static ambient). */
+html.glass-ui .g-static {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Tinted capsules (CTA / destructive / accept). */
+html.glass-ui .g-tint-brand {
+  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
+  color: var(--g-on-brand);
+  box-shadow: 0 8px 22px rgba(var(--g-brand-rgb), 0.45);
+}
+
+html.glass-ui .g-tint-red {
+  background: linear-gradient(180deg, #ff5a50, #e8352c);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(255, 69, 58, 0.42);
+}
+
+html.glass-ui .g-tint-green {
+  background: linear-gradient(180deg, #3ddc6a, #26b752);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(48, 209, 88, 0.42);
+}
+
+/* ── Press feedback (usePressFeedback / usePressFeedbackScope) ──
+   Scale is driven by a spring in JS; the material brightens on the same frame. */
+html.glass-ui [data-pressed] {
+  filter: brightness(1.12);
+}
+
+html.glass-ui .g-tint-brand[data-pressed] {
+  filter: brightness(1.08) saturate(1.05);
+}
+
+/* ── Materialize (useMaterialize): blur + scale + opacity from one spring ── */
+html.glass-ui .g-materialize {
+  --g-mat: 1;
+  opacity: var(--g-mat);
+  transform: scale(calc(0.96 + 0.04 * var(--g-mat)));
+  transform-origin: var(--g-mat-origin, 50% 0%);
+}
+
+html.glass-ui .g-materialize.g-glass.g-heavy {
+  -webkit-backdrop-filter: blur(calc(var(--g-blur-heavy) * var(--g-mat))) saturate(var(--g-saturate-heavy));
+  backdrop-filter: blur(calc(var(--g-blur-heavy) * var(--g-mat))) saturate(var(--g-saturate-heavy));
+}
+
+html.glass-ui .g-materialize[data-reduced-motion] {
+  transform: none;
+  transition: opacity 200ms ease;
+}
+
+/* ============================================
+   Lite material: Low Power Mode, thermal "serious"+, A11-and-older iPhones,
+   or measured jank (lib/glassDisplay.js). Same look family, cheaper blur.
+   ============================================ */
+html.glass-ui.glass-lite {
+  --g-blur: 12px;
+  --g-blur-heavy: 16px;
+  --g-blur-chip: 10px;
+  --g-saturate: 100%;
+  --g-saturate-heavy: 100%;
+  --g-saturate-chip: 100%;
+  --g-brightness: 1;
+}
+
+/* ============================================
+   Reduce Transparency (native → html.a11y-solid): opaque, no blur.
+   prefers-reduced-transparency is not in WebKit today; kept for the future.
+   ============================================ */
+html.glass-ui.a11y-solid .g-glass,
+html.glass-ui.a11y-solid .g-chip,
+html.glass-ui.a11y-solid .g-static {
+  background: var(--g-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.glass-ui.a11y-solid .g-glass.g-heavy {
+  background: var(--g-solid-heavy);
+}
+
+html.glass-ui.a11y-solid .g-lens {
+  background: var(--g-lens-top);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html.glass-ui .g-glass,
+  html.glass-ui .g-chip,
+  html.glass-ui .g-static {
+    background: var(--g-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  html.glass-ui .g-glass.g-heavy {
+    background: var(--g-solid-heavy);
+  }
+}
+
+/* ============================================
+   Increase Contrast (native Darker Colors → html.a11y-contrast, or
+   prefers-contrast: more): near-solid + defined border.
+   ============================================ */
+html.glass-ui.a11y-contrast .g-glass,
+html.glass-ui.a11y-contrast .g-chip,
+html.glass-ui.a11y-contrast .g-static {
+  background: var(--g-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  outline: 1px solid var(--g-contrast-border);
+  outline-offset: -1px;
+}
+
+html.glass-ui.a11y-contrast .g-glass.g-heavy {
+  background: var(--g-solid-heavy);
+}
+
+@media (prefers-contrast: more) {
+  html.glass-ui .g-glass,
+  html.glass-ui .g-chip,
+  html.glass-ui .g-static {
+    background: var(--g-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    outline: 1px solid var(--g-contrast-border);
+    outline-offset: -1px;
+  }
+
+  html.glass-ui .g-glass.g-heavy {
+    background: var(--g-solid-heavy);
+  }
+}
+
+/* Reduce Motion: no scale on press (opacity/brightness only). */
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui [data-pressed] {
+    transform: none !important;
+    opacity: 0.8;
+  }
+}
