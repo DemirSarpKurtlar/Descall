@@ -1,4 +1,4 @@
-Thank you for reviewing Descall, a messaging and calling app: private and group chats, one-on-one and group voice/video calls, servers with text channels and voice rooms, friends with presence, profiles and a VALORANT looking-for-group (LFG) lobby list. Free: no in-app purchases, subscriptions, ads or real-money features. UI follows the device language (English/Turkish).
+Thank you for reviewing Descall, a messaging and calling app: private and group chats, one-on-one and group voice/video calls, servers with text channels and voice rooms, friends with presence, profiles and a looking-for-group (LFG) lobby list. Free: no in-app purchases, subscriptions, ads or real-money features. UI follows the device language (English/Turkish).
 
 DEMO ACCOUNTS (already friends with each other; sign in with Username + Password on the first screen, then tap "Login")
 A: {{DEMO_A_USERNAME}} / {{DEMO_A_PASSWORD}}
@@ -20,16 +20,19 @@ Settings (gear, bottom of the left rail) > Security > "Delete account". Confirm 
 
 SAFETY (Guideline 1.2)
 - Terms with zero tolerance for objectionable content and abusive users must be accepted before an account is created.
-- Report: tap a message from another user > flag icon, or open a profile > "Report". Reports reach our moderation queue instantly.
+- Report: tap a message from another user > flag icon, or open a profile > "Report". Reports reach our moderation queue instantly, the developer is emailed immediately and every report is reviewed within 24 hours.
 - Block: profile > "Block" (also in the DM header and member/DM menus). Blocked users can't message, call or friend-request you, you get no notifications from them and their messages are collapsed. Unblock in Settings > Security > Blocked users.
 - Profanity in messages, replies, previews, pinned messages and notifications is masked with *** in the iOS app.
 - Server owners/moderators can kick, ban, time out and delete messages. The developer reviews every report within 24 hours and removes content or suspends/bans accounts.
 - Users must be 13+ (date of birth required).
 
-VALORANT LFG: crosshair icon on the left rail > browse or create lobbies by mode, region and rank range. Players pick their rank themselves; no Riot sign-in in the iOS app. Not affiliated with Riot Games.
-
-NOT IN THE iOS APP: screen sharing, casino mini-games and Riot account linking.
+NOT IN THE iOS APP: screen sharing and casino mini-games.
 
 The backend runs on Render; if the first request is slow, wait a few seconds and retry.
 
 Contact: Demir Sarp Kurtlar (developer), team@descall.com
+
+PURPOSE: free chat/call app for friends, gamers and communities, 13+ (DOB required).
+SERVICES: Render (backend), Supabase (DB/files), Sign in with Apple, APNs/CallKit, WebRTC + STUN/TURN, LiveKit (voice rooms), Resend (email codes), GIPHY API (GIFs), Sentry (crashes), PostHog EU (analytics, no tracking). No payments or AI.
+REGIONS: same everywhere; UI in Turkish or English by device language.
+REGULATED: none; GIFs via official GIPHY API.
