@@ -10,6 +10,7 @@ html.glass-ui[data-theme="light"] {
   --g-brand-hi: #006CE7;
   --g-brand2-rgb: 67,105,217;
   --g-deep: #EBEEF5;
+  --g-edge-rgb: 235,238,245; --g-ring: #F9F9FA;
   --g-base-0: #F6F8FF;
   --g-base-1: #F9F9FA;
   --g-base-2: #EBECEE;
@@ -40,6 +41,7 @@ html.glass-ui[data-theme="midnight"] {
   --g-brand-hi: #A78BFA;
   --g-brand2-rgb: 104,69,232;
   --g-deep: #090913;
+  --g-edge-rgb: 9,9,19; --g-ring: #101021;
   --g-base-0: #1B1837;
   --g-base-1: #111023;
   --g-base-2: #0A0A16;
@@ -57,6 +59,7 @@ html.glass-ui[data-theme="crimson"] {
   --g-brand-hi: #FF7A8A;
   --g-brand2-rgb: 212,42,60;
   --g-deep: #110606;
+  --g-edge-rgb: 17,6,6; --g-ring: #1A0B0B;
   --g-base-0: #2B1011;
   --g-base-1: #1B0B0B;
   --g-base-2: #130707;
@@ -74,6 +77,7 @@ html.glass-ui[data-theme="ocean"] {
   --g-brand-hi: #5CE1EC;
   --g-brand2-rgb: 26,166,179;
   --g-deep: #051013;
+  --g-edge-rgb: 5,16,19; --g-ring: #091A1F;
   --g-base-0: #0D2930;
   --g-base-1: #0A1B20;
   --g-base-2: #051216;
@@ -91,6 +95,7 @@ html.glass-ui[data-theme="emerald"] {
   --g-brand-hi: #7BF4B4;
   --g-brand2-rgb: 34,145,86;
   --g-deep: #06120C;
+  --g-edge-rgb: 6,18,12; --g-ring: #0B1E15;
   --g-base-0: #102E1F;
   --g-base-1: #0C1F16;
   --g-base-2: #07140E;
@@ -108,6 +113,7 @@ html.glass-ui[data-theme="sakura"] {
   --g-brand-hi: #F47BA3;
   --g-brand2-rgb: 243,68,126;
   --g-deep: #11070A;
+  --g-edge-rgb: 17,7,10; --g-ring: #1C0D12;
   --g-base-0: #30161E;
   --g-base-1: #1D0D12;
   --g-base-2: #13080C;
@@ -125,6 +131,7 @@ html.glass-ui[data-theme="solar"] {
   --g-brand-hi: #F4C47B;
   --g-brand2-rgb: 230,142,10;
   --g-deep: #120D07;
+  --g-edge-rgb: 18,13,7; --g-ring: #1D150C;
   --g-base-0: #312311;
   --g-base-1: #1E160D;
   --g-base-2: #140E08;
@@ -142,6 +149,7 @@ html.glass-ui[data-theme="aurora"] {
   --g-brand-hi: #B47BF4;
   --g-brand2-rgb: 139,55,235;
   --g-deep: #070F11;
+  --g-edge-rgb: 7,15,17; --g-ring: #0C1A1D;
   --g-base-0: #182430;
   --g-base-1: #0D1B1E;
   --g-base-2: #081113;
@@ -159,6 +167,7 @@ html.glass-ui[data-theme="sunset"] {
   --g-brand-hi: #F4B07B;
   --g-brand2-rgb: 243,115,18;
   --g-deep: #11070F;
+  --g-edge-rgb: 17,7,15; --g-ring: #1D0C1A;
   --g-base-0: #311722;
   --g-base-1: #1E0D1B;
   --g-base-2: #130811;
@@ -176,6 +185,7 @@ html.glass-ui[data-theme="cottoncandy"] {
   --g-brand-hi: #F47BF4;
   --g-brand2-rgb: 233,99,233;
   --g-deep: #0E0811;
+  --g-edge-rgb: 14,8,17; --g-ring: #170D1C;
   --g-base-0: #2A182F;
   --g-base-1: #180E1D;
   --g-base-2: #0F0913;
@@ -193,6 +203,7 @@ html.glass-ui[data-theme="peach"] {
   --g-brand-hi: #F49F7B;
   --g-brand2-rgb: 242,107,49;
   --g-deep: #120907;
+  --g-edge-rgb: 18,9,7; --g-ring: #1D0F0C;
   --g-base-0: #311A14;
   --g-base-1: #1E0F0D;
   --g-base-2: #140A08;
@@ -210,6 +221,7 @@ html.glass-ui[data-theme="lavender"] {
   --g-brand-hi: #A77BF4;
   --g-brand2-rgb: 144,96,225;
   --g-deep: #0B0811;
+  --g-edge-rgb: 11,8,17; --g-ring: #130E1C;
   --g-base-0: #20192E;
   --g-base-1: #130E1D;
   --g-base-2: #0D0913;
@@ -227,6 +239,7 @@ html.glass-ui[data-theme="mint"] {
   --g-brand-hi: #7BF4D4;
   --g-brand2-rgb: 45,215,170;
   --g-deep: #071110;
+  --g-edge-rgb: 7,17,16; --g-ring: #0D1C1B;
   --g-base-0: #152E2B;
   --g-base-1: #0D1D1C;
   --g-base-2: #081312;
@@ -244,6 +257,7 @@ html.glass-ui[data-theme="rosegold"] {
   --g-brand-hi: #F48B7B;
   --g-brand2-rgb: 224,87,66;
   --g-deep: #110B08;
+  --g-edge-rgb: 17,11,8; --g-ring: #1C130E;
   --g-base-0: #2E1D17;
   --g-base-1: #1D130E;
   --g-base-2: #130D09;
@@ -261,6 +275,7 @@ html.glass-ui[data-theme="deepspace"] {
   --g-brand-hi: #8F7BF4;
   --g-brand2-rgb: 68,38,223;
   --g-deep: #080712;
+  --g-edge-rgb: 8,7,18; --g-ring: #0E0C1E;
   --g-base-0: #171231;
   --g-base-1: #0E0C1F;
   --g-base-2: #090814;
@@ -278,6 +293,7 @@ html.glass-ui[data-theme="neontokyo"] {
   --g-brand-hi: #F47BC8;
   --g-brand2-rgb: 250,10,162;
   --g-deep: #0A0A0F;
+  --g-edge-rgb: 10,10,15; --g-ring: #101019;
   --g-base-0: #221728;
   --g-base-1: #11111A;
   --g-base-2: #0B0B11;
@@ -295,6 +311,7 @@ html.glass-ui[data-theme="cyberpunk"] {
   --g-brand-hi: #F4E47B;
   --g-brand2-rgb: 237,206,2;
   --g-deep: #0F0A0F;
+  --g-edge-rgb: 15,10,15; --g-ring: #1A101A;
   --g-base-0: #2D1F21;
   --g-base-1: #1B101B;
   --g-base-2: #110B11;
@@ -312,6 +329,7 @@ html.glass-ui[data-theme="vaporwave"] {
   --g-brand-hi: #7BE0F4;
   --g-brand2-rgb: 15,207,245;
   --g-deep: #0F090F;
+  --g-edge-rgb: 15,9,15; --g-ring: #1A0F1A;
   --g-base-0: #221F2D;
   --g-base-1: #1B101B;
   --g-base-2: #110A11;
@@ -329,6 +347,7 @@ html.glass-ui[data-theme="neonjungle"] {
   --g-brand-hi: #93F47B;
   --g-brand2-rgb: 51,220,9;
   --g-deep: #0A0F0A;
+  --g-edge-rgb: 10,15,10; --g-ring: #101912;
   --g-base-0: #182C17;
   --g-base-1: #111A12;
   --g-base-2: #0B110C;
@@ -346,6 +365,7 @@ html.glass-ui[data-theme="electricviolet"] {
   --g-brand-hi: #C07BF4;
   --g-brand2-rgb: 146,10,250;
   --g-deep: #0C0A0F;
+  --g-edge-rgb: 12,10,15; --g-ring: #15101A;
   --g-base-0: #23162D;
   --g-base-1: #16101B;
   --g-base-2: #0E0B11;
@@ -363,6 +383,7 @@ html.glass-ui[data-theme="toxicgreen"] {
   --g-brand-hi: #B4F47B;
   --g-brand2-rgb: 103,215,4;
   --g-deep: #0C0E0A;
+  --g-edge-rgb: 12,14,10; --g-ring: #141910;
   --g-base-0: #1F2C14;
   --g-base-1: #151A11;
   --g-base-2: #0E100B;
@@ -380,6 +401,7 @@ html.glass-ui[data-theme="neonblaze"] {
   --g-brand-hi: #F4977B;
   --g-brand2-rgb: 235,58,5;
   --g-deep: #0F0A0A;
+  --g-edge-rgb: 15,10,10; --g-ring: #1A1110;
   --g-base-0: #2D1915;
   --g-base-1: #1B1210;
   --g-base-2: #110C0B;
@@ -397,6 +419,7 @@ html.glass-ui[data-theme="hyperdrive"] {
   --g-brand-hi: #7BBCF4;
   --g-brand2-rgb: 5,133,245;
   --g-deep: #0A0B0F;
+  --g-edge-rgb: 10,11,15; --g-ring: #10131A;
   --g-base-0: #151F2D;
   --g-base-1: #10131B;
   --g-base-2: #0B0D11;
@@ -414,6 +437,7 @@ html.glass-ui[data-theme="phoenixfire"] {
   --g-brand-hi: #F49B7B;
   --g-brand2-rgb: 230,68,10;
   --g-deep: #120A06;
+  --g-edge-rgb: 18,10,6; --g-ring: #1E100B;
   --g-base-0: #321810;
   --g-base-1: #1F100C;
   --g-base-2: #140B07;
@@ -431,6 +455,7 @@ html.glass-ui[data-theme="frostbite"] {
   --g-brand-hi: #7BD4F4;
   --g-brand2-rgb: 39,187,241;
   --g-deep: #070E11;
+  --g-edge-rgb: 7,14,17; --g-ring: #0C171D;
   --g-base-0: #142831;
   --g-base-1: #0D181E;
   --g-base-2: #080F13;
@@ -448,6 +473,7 @@ html.glass-ui[data-theme="voidwalker"] {
   --g-brand-hi: #CC7BF4;
   --g-brand2-rgb: 162,15,235;
   --g-deep: #08040C;
+  --g-edge-rgb: 8,4,12; --g-ring: #0F0817;
   --g-base-0: #1E0D2C;
   --g-base-1: #100819;
   --g-base-2: #09050E;
@@ -465,6 +491,7 @@ html.glass-ui[data-theme="starlight"] {
   --g-brand-hi: #F4D87B;
   --g-brand2-rgb: 244,195,37;
   --g-deep: #070912;
+  --g-edge-rgb: 7,9,18; --g-ring: #0C0F1D;
   --g-base-0: #1D1E27;
   --g-base-1: #0D0F1E;
   --g-base-2: #080A14;
@@ -482,6 +509,7 @@ html.glass-ui[data-theme="plasmastorm"] {
   --g-brand-hi: #7B8BF4;
   --g-brand2-rgb: 15,46,245;
   --g-deep: #090612;
+  --g-edge-rgb: 9,6,18; --g-ring: #0F0B1E;
   --g-base-0: #151332;
   --g-base-1: #0F0C1F;
   --g-base-2: #0A0714;
@@ -499,6 +527,7 @@ html.glass-ui[data-theme="moltencore"] {
   --g-brand-hi: #F4877B;
   --g-brand2-rgb: 208,31,11;
   --g-deep: #0F0605;
+  --g-edge-rgb: 15,6,5; --g-ring: #1B0A09;
   --g-base-0: #2F0F0C;
   --g-base-1: #1D0B09;
   --g-base-2: #110605;
@@ -516,6 +545,7 @@ html.glass-ui[data-theme="goldenhour"] {
   --g-brand-hi: #F4CC7B;
   --g-brand2-rgb: 233,164,28;
   --g-deep: #110C07;
+  --g-edge-rgb: 17,12,7; --g-ring: #1D140C;
   --g-base-0: #302313;
   --g-base-1: #1E150D;
   --g-base-2: #130E08;
@@ -533,6 +563,7 @@ html.glass-ui[data-theme="desertbloom"] {
   --g-brand-hi: #F49B7B;
   --g-brand2-rgb: 207,86,42;
   --g-deep: #110B08;
+  --g-edge-rgb: 17,11,8; --g-ring: #1C130E;
   --g-base-0: #2D1E15;
   --g-base-1: #1D140E;
   --g-base-2: #130D09;

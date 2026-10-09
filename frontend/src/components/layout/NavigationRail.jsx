@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Check } from "lucide-react";
+import { Settings, Check, Shield } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { STATUS_META } from "../../lib/presence";
 import { getToken, getUser, setUser } from "../../lib/storage";
@@ -16,6 +16,7 @@ import {
   NAV_ICON_STROKE,
 } from "./navConfig";
 import { filterMainNavItems, usePublicFeatures } from "../../lib/publicFeatures";
+import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
 
 const STATUS_OPTIONS = ["online", "idle", "dnd", "invisible"];
 const STATUS_EMOJIS = ["💬", "😀", "🎮", "🎵", "💼", "📚", "☕", "🌙"];
@@ -156,6 +157,8 @@ export default function NavigationRail({
   onStatusChange,
   onProfileUpdated,
   badges = {},
+  /** Liquid Glass shell (iPhone app): rail hidden; avatar lives in the list toolbar. */
+  glass = false,
 }) {
   const t = useT();
   const publicFeatures = usePublicFeatures();
@@ -167,6 +170,7 @@ export default function NavigationRail({
   const [statusSaving, setStatusSaving] = useState(false);
   const avatarBtnRef = useRef(null);
   const menuRef = useRef(null);
+  const glassLensRef = useRef(null);
 
   const mainItems = useMemo(
     () => filterMainNavItems(buildMainNavItems(t), publicFeatures),
@@ -192,6 +196,7 @@ export default function NavigationRail({
     null;
 
   const placeMenu = () => {
+    if (glass) return; // glass menu is CSS-anchored above the tab bar (mockup 18)
     const el = avatarBtnRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -227,6 +232,7 @@ export default function NavigationRail({
     const onDoc = (e) => {
       if (avatarBtnRef.current?.contains(e.target)) return;
       if (menuRef.current?.contains(e.target)) return;
+      if (glassLensRef.current?.contains(e.target)) return;
       setStatusOpen(false);
     };
     const onKey = (e) => {
@@ -239,6 +245,14 @@ export default function NavigationRail({
       document.removeEventListener("keydown", onKey);
     };
   }, [statusOpen]);
+
+  // Glass toolbar avatar (GlassMeButton) opens this same picker.
+  useEffect(() => {
+    if (!glass) return undefined;
+    const open = () => setStatusOpen(true);
+    window.addEventListener(GLASS_STATUS_EVENT, open);
+    return () => window.removeEventListener(GLASS_STATUS_EVENT, open);
+  }, [glass]);
 
   useEffect(() => {
     if (!statusOpen) {
@@ -294,11 +308,39 @@ export default function NavigationRail({
 
   const statusMenu = (
     <AnimatePresence>
+      {statusOpen && glass && (
+        <motion.div
+          key="g-status-scrim"
+          className="g-scrim"
+          aria-hidden="true"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+        />
+      )}
+      {statusOpen && glass && (
+        <motion.button
+          key="g-status-lens"
+          ref={glassLensRef}
+          type="button"
+          className="g-me-btn g-glass g-lens g-status-me"
+          aria-label={t("Close")}
+          onClick={() => setStatusOpen(false)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.12 }}
+        >
+          <GlassMeAvatar me={railUser || me} statusKey={statusKey} imageUrl={railAvatarUrl} />
+        </motion.button>
+      )}
       {statusOpen && (
         <motion.div
+          key="status-menu"
           ref={menuRef}
-          className="status-picker status-picker-portal"
-          style={{ top: menuPos.top, left: menuPos.left }}
+          className={glass ? "status-picker g-status-menu g-glass g-heavy" : "status-picker status-picker-portal"}
+          style={glass ? { transformOrigin: "16px 100%" } : { top: menuPos.top, left: menuPos.left }}
           role="menu"
           aria-label={t("Status")}
           initial={{ opacity: 0, scale: 0.96 }}
@@ -326,6 +368,9 @@ export default function NavigationRail({
               <span className="status-picker-label">
                 {t(key === "dnd" ? "Do Not Disturb" : STATUS_META[key]?.label || key)}
               </span>
+              {glass && statusKey === key ? (
+                <Check className="g-status-check" size={19} strokeWidth={1.9} aria-hidden="true" />
+              ) : null}
             </button>
           ))}
           <div className="status-picker-divider" />
@@ -399,6 +444,21 @@ export default function NavigationRail({
             </div>
           </div>
           <div className="status-picker-divider" />
+          {glass && isAdmin ? (
+            // The rail logo was the admin entry; with the rail hidden it lives here.
+            <button
+              type="button"
+              role="menuitem"
+              className="status-picker-item"
+              onClick={() => {
+                setStatusOpen(false);
+                onAdminClick?.();
+              }}
+            >
+              <Shield size={15} strokeWidth={NAV_ICON_STROKE} />
+              <span className="status-picker-label">{t("Admin Panel")}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"

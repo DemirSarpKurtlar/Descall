@@ -14,6 +14,9 @@ import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
+import { useGlassUi } from "../../hooks/useGlassUi";
+import { buildMainNavItems } from "./navConfig";
+import { GlassShellContext, GlassTabBar } from "./glass/GlassShell";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
 
@@ -125,6 +128,10 @@ export default function AppLayout({
   const showPlay = valorantPlayVisible(publicFeatures);
   const { isMobile } = useMobile();
   const reduceMotion = useReducedMotion();
+  // Liquid Glass navigation shell (Stage 2): iPhone app (html.glass-ui) + mobile
+  // layout only. Off → the exact pre-glass tree (desktop / web / Android / iPad).
+  const glassUi = useGlassUi();
+  const glassShell = Boolean(glassUi && isMobile);
   const animateMainViews = isMobile && !reduceMotion;
   useMobileKeyboard(isMobile);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -365,14 +372,33 @@ export default function AppLayout({
     };
   }, [dmUnread, groupUnread, channelUnread]);
 
+  const glassTabItems = useMemo(
+    () => (glassShell ? filterMainNavItems(buildMainNavItems(t), publicFeatures) : []),
+    [glassShell, t, publicFeatures]
+  );
+  const pendingFriendCount = Array.isArray(friendRequests) ? friendRequests.length : 0;
+  const glassTabBadges = useMemo(
+    () => ({ ...navBadges, friends: pendingFriendCount }),
+    [navBadges, pendingFriendCount]
+  );
+  const glassShellValue = useMemo(
+    () =>
+      glassShell
+        ? { me, myStatus, onRefresh }
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [glassShell, me, myStatus, onRefresh]
+  );
+
   const handleVoiceClick = () => {
     if (activeDmUser && onVoiceCall) onVoiceCall();
     else if (activeGroup && onGroupVoiceCall) onGroupVoiceCall();
   };
 
   return (
+    <GlassShellContext.Provider value={glassShellValue}>
     <div
-      className={`app-root${isMobile ? " is-mobile" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}`}
+      className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}`}
       data-view={activeView}
     >
       <AnimatePresence>
@@ -441,6 +467,7 @@ export default function AppLayout({
           onStatusChange={onStatusChange}
           onProfileUpdated={onProfileUpdated}
           badges={navBadges}
+          glass={glassShell}
         />
 
         {hideDesktopPlaySidebar ? null : activeView === "activity" ? (
@@ -530,14 +557,22 @@ export default function AppLayout({
           <motion.div
             key={mainViewId(activeView)}
             className="app-main-view"
-            initial={animateMainViews ? { opacity: 0, y: 20 } : false}
+            initial={animateMainViews ? (glassShell ? { opacity: 0 } : { opacity: 0, y: 20 }) : false}
             animate={{ opacity: 1, y: 0 }}
             exit={
               animateMainViews
-                ? { opacity: 0, y: 12, position: "absolute", top: 0, left: 0, right: 0, height: "100%" }
+                ? glassShell
+                  ? { opacity: 0, position: "absolute", top: 0, left: 0, right: 0, height: "100%" }
+                  : { opacity: 0, y: 12, position: "absolute", top: 0, left: 0, right: 0, height: "100%" }
                 : undefined
             }
-            transition={animateMainViews ? { duration: 0.38, ease: VIEW_EASE } : { duration: 0 }}
+            transition={
+              animateMainViews
+                ? glassShell
+                  ? { duration: 0.18, ease: "easeOut" } // iOS tab switch: instant, cross-fade only
+                  : { duration: 0.38, ease: VIEW_EASE }
+                : { duration: 0 }
+            }
           >
             {activeView === "play" && showPlay ? (
               <ValorantHub
@@ -636,7 +671,20 @@ export default function AppLayout({
         )}
       </AnimatePresence>
 
-      {showMobileTabBar && (
+      {glassShell ? (
+        showMobileTabBar && !isPlayPage ? (
+          <>
+            <div className="g-edge-bot" aria-hidden="true" />
+            <GlassTabBar
+              items={glassTabItems}
+              activeId={activeView}
+              onSelect={handleViewChange}
+              badges={glassTabBadges}
+            />
+          </>
+        ) : null
+      ) : null}
+      {!glassShell && showMobileTabBar && (
         <nav className="mobile-tab-bar" aria-label={t("Primary")}>
           {filterMainNavItems(
             [
@@ -673,5 +721,6 @@ export default function AppLayout({
         </nav>
       )}
     </div>
+    </GlassShellContext.Provider>
   );
 }

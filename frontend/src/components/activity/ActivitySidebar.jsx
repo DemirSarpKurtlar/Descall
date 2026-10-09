@@ -6,6 +6,7 @@ import {
   MessageSquarePlus,
   Plus,
   Users,
+  UserPlus,
 } from "lucide-react";
 import { ActivityTypeIcon } from "../../lib/shopIcons";
 import { Avatar } from "../ui/Avatar";
@@ -15,6 +16,7 @@ import { openFeedbackModal } from "../../lib/feedbackNudge";
 import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
 import { TYPE_PRIORITY } from "../../lib/processDatabase";
+import { GlassListHeader, useGlassShell } from "../layout/glass/GlassShell";
 
 const TYPE_COLOR = {
   game: "#23a55a",
@@ -97,6 +99,7 @@ export default function ActivitySidebar({
   onFriendSelect,
 }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const searchRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { active, idle, onlineCount } = useOnlinePresenceLists(
@@ -109,48 +112,65 @@ export default function ActivitySidebar({
   return (
     <aside className="sidebar-secondary activity-sidebar">
       <div className="sidebar-inner">
-        <div className="sidebar-header">
-          <h2 className="sidebar-title">{t("Activity")}</h2>
-          <div className="sidebar-actions">
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Search")}
-              onClick={() => searchRef.current?.focus()}
-            >
-              <Search size={18} />
-            </button>
-            <AnnouncementsButton />
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Send Feedback")}
-              onClick={() => openFeedbackModal({ type: "suggestion", source: "activity_sidebar" })}
-            >
-              <MessageSquarePlus size={18} />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Add friend")}
-              onClick={() => onAddFriend?.()}
-            >
-              <Plus size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="sidebar-search">
-          <Search size={16} className="search-icon" />
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder={t("Search")}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+        {glassShell ? (
+          <GlassListHeader
+            title={t("Activity")}
+            sub={t("Your presence and history")}
+            searchCollapsible
+            buttons={[
+              { id: "search", icon: Search, label: t("Search") },
+              { id: "feedback", icon: MessageSquarePlus, label: t("Send Feedback"), onClick: () => openFeedbackModal({ type: "suggestion", source: "activity_sidebar" }) },
+            ]}
+            plus={{ icon: UserPlus, label: t("Add friend"), onClick: () => onAddFriend?.() }}
+            search={{ value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), inputRef: searchRef, placeholder: t("Search") }}
           />
-        </div>
+        ) : (
+          <>
+          <div className="sidebar-header">
+            <h2 className="sidebar-title">{t("Activity")}</h2>
+            <div className="sidebar-actions">
+              <button
+                type="button"
+                className="icon-btn"
+                title={t("Search")}
+                onClick={() => searchRef.current?.focus()}
+              >
+                <Search size={18} />
+              </button>
+              <AnnouncementsButton />
+              <button
+                type="button"
+                className="icon-btn"
+                title={t("Send Feedback")}
+                onClick={() => openFeedbackModal({ type: "suggestion", source: "activity_sidebar" })}
+              >
+                <MessageSquarePlus size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title={t("Add friend")}
+                onClick={() => onAddFriend?.()}
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="sidebar-search">
+            <Search size={16} className="search-icon" />
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder={t("Search")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          </>
+        )}
 
         <div className="sidebar-content activity-sidebar-content">
           {onlineCount > 0 && (

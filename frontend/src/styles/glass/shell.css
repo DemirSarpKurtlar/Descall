@@ -1,0 +1,787 @@
+/* ============================================
+   Liquid Glass — navigation shell (2.9.154, Stage 2)
+   Floating 7-tab glass bar, large-title list headers with a glass toolbar
+   (me-btn · bgroup · +), scroll-under edge masks, mockup-18 status menu.
+   Geometry is the approved mockup (final/src/glass.css, 440×956) with the
+   chrome anchored to the safe area: C = --g-chrome-top (60 at a 62pt inset).
+
+   Scope: html.glass-ui (iPhone app) + .app-root.g-shell (mobile layout).
+   ============================================ */
+
+html.glass-ui .app-root.g-shell {
+  /* Bar floats 24pt above the bottom on Face ID iPhones (home indicator 34 − 10),
+     12pt on Home-button iPhones. */
+  --g-bar-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px));
+  --g-tab-h: 64px;
+  --g-list-bottom: calc(var(--g-bar-bottom) + var(--g-tab-h) + 24px);
+  --g-head-top: calc(var(--g-chrome-top) + 162px); /* 222: content under toolbar + title + search */
+}
+
+/* ── Root list pages: full-screen, edge-to-edge over the ambient light ── */
+@media (max-width: 768px) {
+  html.glass-ui .app-root.g-shell .app-sidebar-shell,
+  html.glass-ui .app-root.g-shell[data-view="activity"] .app-sidebar-shell {
+    width: 100% !important;
+    max-width: none !important;
+    right: 0;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background-color: var(--g-deep) !important;
+    background-image:
+      radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
+      radial-gradient(55% 34% at 100% 22%, rgba(var(--g-brand2-rgb), var(--g-amb-b)), transparent 70%),
+      radial-gradient(70% 40% at 20% 70%, rgba(var(--g-brand-rgb), var(--g-amb-c)), transparent 70%),
+      radial-gradient(60% 35% at 95% 96%, rgba(var(--g-brand2-rgb), var(--g-amb-d)), transparent 70%),
+      linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%) !important;
+    background-size: 100% 100% !important;
+    background-position: 0 0 !important;
+    background-repeat: no-repeat !important;
+  }
+
+  /* The rail is replaced by the tab bar + toolbar avatar (navigation inventory
+     selftest keeps every rail action reachable). */
+  html.glass-ui .app-root.g-shell .app-sidebar-shell > .nav-rail {
+    display: none !important;
+  }
+
+  html.glass-ui .app-root.g-shell .app-sidebar-shell .sidebar-secondary,
+  html.glass-ui .app-root.g-shell[data-view="activity"] .app-sidebar-shell .sidebar-secondary,
+  html.glass-ui .app-root.g-shell[data-view="activity"].mobile-drawer-open .app-sidebar-shell .sidebar-secondary {
+    left: 0 !important;
+    right: 0 !important;
+    flex: 1 1 auto;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  html.glass-ui .app-root.g-shell .app-sidebar-shell .sidebar-inner {
+    position: relative;
+    height: 100% !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-family: var(--g-font) !important;
+  }
+
+  html.glass-ui .app-root.g-shell .app-sidebar-shell .sidebar-inner * {
+    font-family: var(--g-font) !important;
+  }
+
+  /* Content scrolls under the toolbar / title / tab bar. */
+  html.glass-ui .app-root.g-shell .g-list-head ~ .sidebar-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    padding-top: var(--g-content-top, var(--g-head-top)) !important;
+    padding-bottom: var(--g-list-bottom) !important;
+    scroll-padding-top: var(--g-content-top, var(--g-head-top));
+    background: transparent !important;
+  }
+
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-search ~ .sidebar-content { --g-content-top: calc(var(--g-chrome-top) + 162px); }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-search.g-head-has-sub ~ .sidebar-content { --g-content-top: calc(var(--g-chrome-top) + 182px); }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-sub ~ .sidebar-content { --g-content-top: calc(var(--g-chrome-top) + 124px); }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-title ~ .sidebar-content { --g-content-top: calc(var(--g-chrome-top) + 104px); }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-inline ~ .sidebar-content { --g-content-top: calc(var(--g-chrome-top) + 60px); }
+
+  /* Servers: the "owned n / max" line sits between header and list. */
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-inline ~ .server-owned-banner {
+    margin-top: calc(var(--g-chrome-top) + 56px);
+    background: transparent;
+  }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-inline ~ .server-owned-banner ~ .sidebar-content {
+    padding-top: 0 !important;
+  }
+
+  /* Open server (channel list, Stage 5 redesigns it): keep it below the Island. */
+  html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  }
+  html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header ~ .sidebar-content,
+  html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header ~ * .sidebar-content {
+    padding-bottom: var(--g-list-bottom) !important;
+  }
+}
+
+/* Typographic root of every shell surface = mockup body (font, 15px, tracking,
+   Inter fallback features; SF Pro on device ignores cv11/ss01). */
+html.glass-ui .g-list-head,
+html.glass-ui .g-tabbar,
+html.glass-ui .g-menu,
+html.glass-ui .status-picker.g-status-menu,
+html.glass-ui .g-status-me {
+  font-size: 15px;
+  letter-spacing: -0.012em;
+  line-height: normal;
+  font-feature-settings: "cv11" 1, "ss01" 1;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  color: var(--g-t1);
+}
+
+html.glass-ui .g-list-head *,
+html.glass-ui .g-tabbar *,
+html.glass-ui .g-menu *,
+html.glass-ui .status-picker.g-status-menu * {
+  text-rendering: auto;
+}
+
+/* ── List header (absolute over the scrolling content) ── */
+html.glass-ui .g-list-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 40;
+  color: var(--g-t1);
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .g-list-head * {
+  font-family: var(--g-font) !important;
+}
+
+/* Scroll edge effect (no hard divider): blur + fade. */
+html.glass-ui .g-edge-top,
+html.glass-ui .g-edge-bot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+html.glass-ui .g-edge-top {
+  top: 0;
+  height: calc(var(--g-chrome-top) + 176px); /* 236 with search */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13,14,19), 0.86) 0%, rgba(var(--g-edge-rgb, 13,14,19), 0.55) 60%, rgba(var(--g-edge-rgb, 13,14,19), 0) 100%);
+  -webkit-mask: linear-gradient(180deg, #000 55%, transparent);
+  mask: linear-gradient(180deg, #000 55%, transparent);
+}
+
+html.glass-ui .g-head-search.g-head-has-sub .g-edge-top { height: calc(var(--g-chrome-top) + 196px); }
+html.glass-ui .g-head-sub .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
+html.glass-ui .g-head-title .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
+html.glass-ui .g-head-inline .g-edge-top { height: calc(var(--g-chrome-top) + 70px); }
+
+html.glass-ui .g-edge-bot {
+  position: fixed;
+  bottom: 0;
+  height: 150px;
+  z-index: 315;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  background: linear-gradient(0deg, rgba(var(--g-edge-rgb, 13,14,19), 0.80) 0%, rgba(var(--g-edge-rgb, 13,14,19), 0.35) 55%, rgba(var(--g-edge-rgb, 13,14,19), 0) 100%);
+  -webkit-mask: linear-gradient(0deg, #000 50%, transparent);
+  mask: linear-gradient(0deg, #000 50%, transparent);
+}
+
+/* Toolbar */
+html.glass-ui .g-toolbar {
+  position: absolute;
+  top: var(--g-chrome-top);
+  left: 16px;
+  right: 16px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+html.glass-ui .g-toolbar .g-sp {
+  flex: 1;
+}
+
+html.glass-ui .g-me-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 22px;
+  padding: 3px;
+  flex-shrink: 0;
+  border: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.glass-ui .g-me-av {
+  position: relative;
+  display: block;
+  width: 38px;
+  height: 38px;
+}
+
+html.glass-ui .g-me-av > :first-child {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+}
+
+html.glass-ui .g-me-av .g-st {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11.4px;
+  height: 11.4px;
+  border-radius: 50%;
+  background: var(--g-ok);
+  box-shadow: 0 0 0 2.5px var(--g-ring, #15161d);
+  z-index: 2;
+}
+
+html.glass-ui .g-me-av .g-st.status-idle { background: var(--g-idle); }
+html.glass-ui .g-me-av .g-st.status-dnd { background: var(--g-dnd); }
+html.glass-ui .g-me-av .g-st.status-invisible,
+html.glass-ui .g-me-av .g-st.status-offline { background: var(--g-off); }
+
+html.glass-ui .g-bgroup {
+  height: 44px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+html.glass-ui .g-bgroup-btn {
+  width: 40px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: var(--g-t1);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.glass-ui .g-bgroup-btn svg { width: 20px; height: 20px; }
+html.glass-ui .g-bgroup-btn.danger { color: #ff6961; }
+html.glass-ui .g-bgroup-btn.on { color: var(--g-brand-hi); }
+
+html.glass-ui .g-nb {
+  position: absolute;
+  top: 7px;
+  right: 5px;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 8px;
+  padding: 0 4px;
+  background: var(--g-brand);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+  z-index: 5;
+}
+
+html.glass-ui .g-cbtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--g-t1);
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.glass-ui .g-cbtn.g-tint-brand { color: var(--g-on-brand); }
+html.glass-ui .g-cbtn svg { width: 20px; height: 20px; }
+html.glass-ui .g-cbtn:disabled { opacity: 0.5; }
+
+html.glass-ui .g-inline-title {
+  font-size: 17px;
+  line-height: normal;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin-right: 8px;
+  color: var(--g-t1);
+  white-space: nowrap;
+}
+
+html.glass-ui .g-large-title {
+  position: absolute;
+  top: calc(var(--g-chrome-top) + 52px);
+  left: 20px;
+  right: 20px;
+  margin: 0;
+  padding: 0;
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.026em;
+  color: var(--g-t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 1;
+  pointer-events: none;
+}
+
+html.glass-ui .g-large-title small {
+  display: block;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--g-t3);
+  letter-spacing: -0.005em;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.glass-ui .g-searchbar {
+  position: absolute;
+  top: calc(var(--g-chrome-top) + 102px);
+  left: 16px;
+  right: 16px;
+  height: 42px;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  color: var(--g-t3);
+  font-size: 16px;
+  z-index: 1;
+  cursor: text;
+}
+
+html.glass-ui .g-head-has-sub .g-searchbar { top: calc(var(--g-chrome-top) + 122px); }
+
+html.glass-ui .g-searchbar > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--g-t2);
+  flex-shrink: 0;
+}
+
+html.glass-ui .g-searchbar .g-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0;
+  color: var(--g-t1);
+  font-size: 16px !important;
+  letter-spacing: -0.012em;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+html.glass-ui .g-searchbar .g-search-input::placeholder {
+  color: var(--g-t3);
+  opacity: 1;
+}
+
+/* ── Floating tab bar ── */
+html.glass-ui .g-tabbar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: var(--g-bar-bottom, 24px);
+  height: var(--g-tab-h, 64px);
+  border-radius: 32px;
+  z-index: 320;
+  display: grid;
+  padding: 4px;
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .g-tabbar * {
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .g-tab-lens {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--g-tab-n, 7));
+  border-radius: 28px;
+  z-index: 1 !important;
+  pointer-events: none;
+  will-change: transform;
+}
+
+html.glass-ui .g-tab-lens.is-hidden { opacity: 0; }
+
+html.glass-ui .g-tab {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  border-radius: 28px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: var(--g-t2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: normal;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.glass-ui .g-tab svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+html.glass-ui .g-tab.on { color: var(--g-brand-hi); }
+
+html.glass-ui .g-tab-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.glass-ui .g-dotb {
+  position: absolute;
+  top: 5px;
+  left: calc(50% + 6px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--g-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+  box-shadow: 0 0 0 2px rgba(20, 22, 32, 0.9);
+}
+
+/* Keyboard up: the bar never hangs above the keyboard. */
+html.glass-ui.kb-open .g-tabbar,
+html.glass-ui.kb-open .g-edge-bot {
+  display: none;
+}
+
+/* ── Menus (mockup .menu / .mi / .msep / .mhead) ── */
+html.glass-ui .g-menu {
+  border-radius: 26px;
+  padding: 6px;
+  color: var(--g-t1);
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .g-menu * { font-family: var(--g-font) !important; }
+
+html.glass-ui .g-toolbar-menu {
+  position: absolute;
+  top: calc(var(--g-chrome-top) + 52px);
+  right: 16px;
+  min-width: 250px;
+  max-width: calc(100vw - 32px);
+  z-index: 70;
+}
+
+html.glass-ui .g-toolbar-menu .g-mi span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.glass-ui .g-mi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--g-t1);
+  font-size: 16px;
+  letter-spacing: -0.015em;
+  text-align: left;
+  cursor: pointer;
+}
+
+html.glass-ui .g-mi svg { width: 19px; height: 19px; color: var(--g-t2); flex-shrink: 0; }
+html.glass-ui .g-mi.on { background: rgba(255, 255, 255, 0.08); }
+html.glass-ui .g-mi:disabled { opacity: 0.5; }
+html.glass-ui .g-msep { height: 0.5px; background: rgba(255, 255, 255, 0.12); margin: 5px 14px; }
+
+/* ── Status picker (mockup 18) ── */
+html.glass-ui .g-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100040;
+  background: rgba(5, 6, 10, 0.42);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+html.glass-ui .g-status-me {
+  position: fixed;
+  top: var(--g-chrome-top);
+  left: 16px;
+  z-index: 100060;
+}
+
+html.glass-ui .status-picker.g-status-menu {
+  position: fixed;
+  left: 16px;
+  bottom: calc(var(--g-bar-bottom, 24px) + 76px); /* 100: 12 above the bar */
+  top: auto;
+  width: 280px;
+  min-width: 0;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - var(--g-chrome-top) - 160px);
+  overflow-y: auto;
+  padding: 8px;
+  border: 0;
+  border-radius: 26px;
+  z-index: 100050;
+  color: var(--g-t1);
+  font-family: var(--g-font) !important;
+}
+
+html.glass-ui .status-picker.g-status-menu * { font-family: var(--g-font) !important; }
+
+html.glass-ui .g-status-menu .status-picker-header,
+html.glass-ui .g-status-menu .status-picker-custom-label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--g-t3);
+  letter-spacing: 0.06em;
+  line-height: normal;
+  text-transform: uppercase;
+  padding: 10px 14px 6px;
+}
+
+html.glass-ui .g-status-menu .status-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--g-t1);
+  background: transparent;
+}
+
+html.glass-ui .g-status-menu .status-picker-item:hover { background: transparent; }
+html.glass-ui .g-status-menu .status-picker-item.active { background: rgba(255, 255, 255, 0.08); }
+html.glass-ui .g-status-menu .status-picker-item > svg { width: 19px; height: 19px; color: var(--g-t2); flex-shrink: 0; }
+html.glass-ui .g-status-menu .status-picker-item > svg.g-status-check { color: var(--g-t2); margin-left: auto; }
+
+html.glass-ui .g-status-menu .status-picker-dot {
+  width: 12px;
+  height: 12px;
+}
+html.glass-ui .g-status-menu .status-picker-dot.status-online { background: #30D158 !important; box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.2); }
+html.glass-ui .g-status-menu .status-picker-dot.status-idle { background: #FFD60A !important; box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.2); }
+html.glass-ui .g-status-menu .status-picker-dot.status-dnd { background: #FF453A !important; box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2); }
+html.glass-ui .g-status-menu .status-picker-dot.status-invisible { background: #8E8E93 !important; box-shadow: 0 0 0 3px rgba(142, 142, 147, 0.2); }
+
+html.glass-ui .g-status-menu .status-picker-divider {
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 5px 14px;
+}
+
+html.glass-ui .g-status-menu .status-picker-custom {
+  display: block;
+  padding: 0;
+}
+
+html.glass-ui .g-status-menu .status-picker-input-wrap {
+  margin: 4px 8px 8px;
+  height: 44px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: var(--g-field-bg);
+  box-shadow: var(--g-field-shadow);
+}
+
+html.glass-ui .g-status-menu .status-picker-emoji-btn {
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 18px;
+}
+
+html.glass-ui .g-status-menu .status-picker-input {
+  height: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: var(--g-t1);
+  font-size: 16px;
+}
+
+html.glass-ui .g-status-menu .status-picker-input::placeholder { color: var(--g-t3); }
+html.glass-ui .g-status-menu .status-picker-input:focus { box-shadow: none; }
+
+html.glass-ui .g-status-menu .status-picker-emoji-grid { padding: 0 8px 8px; }
+
+html.glass-ui .g-status-menu .status-picker-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 4px 8px 8px;
+}
+
+html.glass-ui .g-status-menu .status-picker-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 34px;
+  border-radius: 17px;
+  padding: 0 14px;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  border: 0;
+  color: var(--g-t1);
+}
+
+html.glass-ui .g-status-menu .status-picker-btn svg { width: 18px; height: 18px; }
+
+html.glass-ui .g-status-menu .status-picker-btn.primary {
+  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
+  color: var(--g-on-brand);
+  box-shadow: 0 8px 22px rgba(var(--g-brand-rgb), 0.45);
+}
+
+html.glass-ui .g-status-menu .status-picker-btn.ghost {
+  background: var(--g-fill);
+  box-shadow: inset 0 0 0 0.5px var(--g-fill-hair);
+  border: 0;
+}
+
+/* Narrow iPhones (mini / SE / 390pt): 7 columns of ~49pt — keep every label
+   whole (iOS never truncates tab titles) by tightening type a touch. */
+@media (max-width: 400px) {
+  html.glass-ui .g-tab {
+    font-size: 9.5px;
+    letter-spacing: -0.03em;
+  }
+
+  html.glass-ui .g-tab-label {
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
+
+/* List rows are <button>s (UA text-align: center); glass lists read from the
+   leading edge like the mockup. Row visuals themselves are Stage 3. */
+@media (max-width: 768px) {
+  html.glass-ui .app-root.g-shell .app-sidebar-shell .sidebar-content button.conv-row,
+  html.glass-ui .app-root.g-shell .app-sidebar-shell .sidebar-content button.dm-item {
+    text-align: start;
+  }
+}
+
+/* ── Conversation header peer capsule (mockup 03; built in Stage 3) ──
+   Same contract as the 2.9.153 DM-header fix: the name keeps ONE line
+   (ellipsis, never one letter per line), the admin badge stays inline and
+   collapses to the shield icon on narrow iPhones, status line sits below.
+   (navInventory.selftest asserts these rules so Stage 3 inherits them.) */
+html.glass-ui .g-peer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.glass-ui .g-peer-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+html.glass-ui .g-peer-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+html.glass-ui .g-peer-name-text {
+  min-width: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+html.glass-ui .g-peer-name .dsc-admin-badge--inline {
+  flex: 0 0 auto;
+}
+
+html.glass-ui .g-peer-status {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 430px) {
+  html.glass-ui .g-peer-name .dsc-admin-badge--inline {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  html.glass-ui .g-peer-name .dsc-admin-badge--inline .dsc-admin-badge-label {
+    display: none;
+  }
+}

@@ -63,6 +63,7 @@ export function themeBlock(t) {
   --g-brand-hi: ${hex(link)};
   --g-brand2-rgb: ${rgb(brand2)};
   --g-deep: ${hex(deep)};
+  --g-edge-rgb: ${rgb(deep)}; --g-ring: ${hex(mix(s0, s1, 0.5))};
   --g-base-0: ${hex(mix(s1, brand, 0.05))};
   --g-base-1: ${hex(mix(s0, s1, 0.5))};
   --g-base-2: ${hex(mix(s0, [0, 0, 0], 0.03))};
@@ -94,6 +95,7 @@ export function themeBlock(t) {
   --g-brand-hi: ${hex(link)};
   --g-brand2-rgb: ${rgb(brand2)};
   --g-deep: ${hex(deep)};
+  --g-edge-rgb: ${rgb(deep)}; --g-ring: ${hex(mix(s0, s1, 0.5))};
   --g-base-0: ${hex(mix(s1, brand, 0.06))};
   --g-base-1: ${hex(mix(s0, s1, 0.6))};
   --g-base-2: ${hex(mix(s0, [0, 0, 0], 0.1))};

@@ -44,6 +44,7 @@ import {
   GripVertical,
   HeadphoneOff,
 } from "lucide-react";
+import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -125,6 +126,8 @@ export default function ServersSidebar({
   isMobile = false,
 }) {
   const t = useT();
+  const glassShell = useGlassShell();
+  const [glassAddMenuOpen, setGlassAddMenuOpen] = useState(false);
   const { toast } = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
@@ -1384,45 +1387,91 @@ export default function ServersSidebar({
   return (
     <aside className="sidebar-secondary servers-sidebar">
       <div className="sidebar-inner">
-        <div className="sidebar-header">
-          <h2 className="sidebar-title">{t("Servers")}</h2>
-          <div className="sidebar-actions">
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("Join Server")}
-              onClick={() => setShowJoin(true)}
-            >
-              <LogIn size={18} />
-            </button>
-            <button
-              type="button"
-              className={`icon-btn${serverListReorderMode ? " active" : ""}`}
-              title={isMobile ? t("Reorder servers") : dragReorderTitle}
-              aria-pressed={serverListReorderMode}
-              onClick={() => setServerListReorderMode((v) => !v)}
-            >
-              <GripVertical size={18} />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
-              title={t("New folder")}
-              onClick={handleCreateFolder}
-            >
-              <FolderPlus size={18} />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
-              title={canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned })}
-              disabled={!canCreate}
-              onClick={() => canCreate && setShowCreate(true)}
-            >
-              <Plus size={18} />
-            </button>
+        {glassShell ? (
+          <>
+            <GlassListHeader
+              title={t("Servers")}
+              inlineTitle
+              buttons={
+                serverListReorderMode
+                  ? [{ id: "reorder-done", icon: Check, label: t("Done"), active: true, onClick: () => setServerListReorderMode(false) }]
+                  : []
+              }
+              plus={{
+                label: t("Add"),
+                menu: true,
+                onClick: () => setGlassAddMenuOpen((v) => !v),
+              }}
+            />
+            {/* Same four actions as the classic header, behind the glass + (mockup 11). */}
+            <GlassToolbarMenu
+              open={glassAddMenuOpen}
+              onClose={() => setGlassAddMenuOpen(false)}
+              items={[
+                {
+                  id: "create",
+                  icon: Plus,
+                  label: canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned }),
+                  disabled: !canCreate,
+                  onClick: () => canCreate && setShowCreate(true),
+                },
+                { id: "join", icon: LogIn, label: t("Join Server"), onClick: () => setShowJoin(true) },
+                { id: "folder", icon: FolderPlus, label: t("New folder"), onClick: handleCreateFolder },
+                { id: "sep", sep: true },
+                {
+                  id: "reorder",
+                  icon: GripVertical,
+                  label: t("Reorder servers"),
+                  active: serverListReorderMode,
+                  onClick: () => setServerListReorderMode((v) => !v),
+                },
+              ]}
+            />
+          </>
+        ) : (
+          <>
+          <div className="sidebar-header">
+            <h2 className="sidebar-title">{t("Servers")}</h2>
+            <div className="sidebar-actions">
+              <button
+                type="button"
+                className="icon-btn"
+                title={t("Join Server")}
+                onClick={() => setShowJoin(true)}
+              >
+                <LogIn size={18} />
+              </button>
+              <button
+                type="button"
+                className={`icon-btn${serverListReorderMode ? " active" : ""}`}
+                title={isMobile ? t("Reorder servers") : dragReorderTitle}
+                aria-pressed={serverListReorderMode}
+                onClick={() => setServerListReorderMode((v) => !v)}
+              >
+                <GripVertical size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title={t("New folder")}
+                onClick={handleCreateFolder}
+              >
+                <FolderPlus size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title={canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned })}
+                disabled={!canCreate}
+                onClick={() => canCreate && setShowCreate(true)}
+              >
+                <Plus size={18} />
+              </button>
+            </div>
           </div>
-        </div>
+
+          </>
+        )}
 
         <div className="server-owned-banner">
           {t("Owned {owned} / {max}", { owned: ownedCount, max: maxOwned })}

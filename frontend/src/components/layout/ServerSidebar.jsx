@@ -26,6 +26,7 @@ import AdminBadge from "../social/AdminBadge";
 import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/datetime";
+import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 
 
 
@@ -68,6 +69,7 @@ export default function ServerSidebar({
   onDmPrefAction,
 }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState({
     dms: true,
@@ -253,6 +255,21 @@ export default function ServerSidebar({
     );
   }, [groups, searchQuery]);
 
+  const copyInviteLink = async () => {
+    try {
+      const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
+      const { Funnel } = await import("../../site/analytics");
+      const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
+      await navigator.clipboard.writeText(url);
+      Funnel.inviteGenerated({ method: "copy_link", username: me.username });
+      setAddSuccess(t("Invite link copied"));
+      setTimeout(() => setAddSuccess(""), 3000);
+    } catch {
+      setAddError(t("Could not copy invite link"));
+      setTimeout(() => setAddError(""), 3000);
+    }
+  };
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -267,88 +284,138 @@ export default function ServerSidebar({
   return (
     <aside className="sidebar-secondary">
       <div className="sidebar-inner">
+        {glassShell ? (
+          <GlassListHeader
+            title={
+              activeView === "dms"
+                ? t("Direct Messages")
+                : activeView === "groups"
+                  ? t("Groups")
+                  : activeView === "friends"
+                    ? t("Friends")
+                    : activeView === "calls"
+                      ? t("Calls")
+                      : t("Chats")
+            }
+            sub={activeView === "calls" ? t("Quick-dial friends or jump back into recent DM & group calls.") : ""}
+            searchCollapsible={activeView === "calls"}
+            buttons={
+              activeView === "calls"
+                ? [
+                    { id: "search", icon: Search, label: t("Search") },
+                    { id: "refresh", icon: RefreshCw, label: t("Refresh"), onClick: () => glassShell.onRefresh?.() },
+                  ]
+                : [
+                    { id: "search", icon: Search, label: t("Search") },
+                    { id: "announcements", icon: Megaphone, label: t("Announcements"), onClick: () => setShowAnnouncements(!showAnnouncements) },
+                    { id: "feedback", icon: MessageSquarePlus, label: t("Send Feedback"), onClick: () => openFeedbackModal({ type: "suggestion", source: "server_sidebar" }) },
+                    ...(activeView === "friends" && me?.username
+                      ? [{ id: "invite", icon: Link2, label: t("Copy invite link"), onClick: copyInviteLink }]
+                      : []),
+                  ]
+            }
+            plus={
+              activeView === "calls"
+                ? null
+                : {
+                    label: t("Add"),
+                    onClick: () => {
+                      setShowAddModal(true);
+                      setAddTab(activeView === "groups" ? "group" : "friend");
+                      setAddError("");
+                      setAddSuccess("");
+                    },
+                  }
+            }
+            search={{ value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: t("Search") }}
+          />
+        ) : (
+          <>
         {/* Header */}
-        <div className="sidebar-header">
-          <h2 className="sidebar-title">
-            {activeView === "chat" && t("Chats")}
-            {activeView === "dms" && t("Direct Messages")}
-            {activeView === "groups" && t("Groups")}
-            {activeView === "friends" && t("Friends")}
-            {activeView === "calls" && t("Calls")}
-          </h2>
-          <div className="sidebar-actions">
-            <button
-              className="icon-btn"
-              title={t("Search")}
-              onClick={() => {
-                const searchInput = document.querySelector('.search-input');
-                searchInput?.focus();
-              }}
-            >
-              <Search size={18} />
-            </button>
-            <button
-              className="icon-btn"
-              title={t("Announcements")}
-              onClick={() => setShowAnnouncements(!showAnnouncements)}
-            >
-              <Megaphone size={18} />
-            </button>
-            <button
-              className="icon-btn"
-              title={t("Send Feedback")}
-              onClick={() => openFeedbackModal({ type: "suggestion", source: "server_sidebar" })}
-            >
-              <MessageSquarePlus size={18} />
-            </button>
-            {activeView === "friends" && me?.username && (
+          <div className="sidebar-header">
+            <h2 className="sidebar-title">
+              {activeView === "chat" && t("Chats")}
+              {activeView === "dms" && t("Direct Messages")}
+              {activeView === "groups" && t("Groups")}
+              {activeView === "friends" && t("Friends")}
+              {activeView === "calls" && t("Calls")}
+            </h2>
+            <div className="sidebar-actions">
               <button
                 className="icon-btn"
-                title={t("Copy invite link")}
-                onClick={async () => {
-                  try {
-                    const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
-                    const { Funnel } = await import("../../site/analytics");
-                    const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
-                    await navigator.clipboard.writeText(url);
-                    Funnel.inviteGenerated({ method: "copy_link", username: me.username });
-                    setAddSuccess(t("Invite link copied"));
-                    setTimeout(() => setAddSuccess(""), 3000);
-                  } catch {
-                    setAddError(t("Could not copy invite link"));
-                    setTimeout(() => setAddError(""), 3000);
-                  }
+                title={t("Search")}
+                onClick={() => {
+                  const searchInput = document.querySelector('.search-input');
+                  searchInput?.focus();
                 }}
               >
-                <Link2 size={18} />
+                <Search size={18} />
               </button>
-            )}
-            <button
-              className="icon-btn"
-              title={t("Add")}
-              onClick={() => {
-                setShowAddModal(true);
-                setAddTab(activeView === "groups" ? "group" : "friend");
-                setAddError("");
-                setAddSuccess("");
-              }}
-            >
-              <Plus size={18} />
-            </button>
+              <button
+                className="icon-btn"
+                title={t("Announcements")}
+                onClick={() => setShowAnnouncements(!showAnnouncements)}
+              >
+                <Megaphone size={18} />
+              </button>
+              <button
+                className="icon-btn"
+                title={t("Send Feedback")}
+                onClick={() => openFeedbackModal({ type: "suggestion", source: "server_sidebar" })}
+              >
+                <MessageSquarePlus size={18} />
+              </button>
+              {activeView === "friends" && me?.username && (
+                <button
+                  className="icon-btn"
+                  title={t("Copy invite link")}
+                  onClick={async () => {
+                    try {
+                      const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
+                      const { Funnel } = await import("../../site/analytics");
+                      const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
+                      await navigator.clipboard.writeText(url);
+                      Funnel.inviteGenerated({ method: "copy_link", username: me.username });
+                      setAddSuccess(t("Invite link copied"));
+                      setTimeout(() => setAddSuccess(""), 3000);
+                    } catch {
+                      setAddError(t("Could not copy invite link"));
+                      setTimeout(() => setAddError(""), 3000);
+                    }
+                  }}
+                >
+                  <Link2 size={18} />
+                </button>
+              )}
+              <button
+                className="icon-btn"
+                title={t("Add")}
+                onClick={() => {
+                  setShowAddModal(true);
+                  setAddTab(activeView === "groups" ? "group" : "friend");
+                  setAddError("");
+                  setAddSuccess("");
+                }}
+              >
+                <Plus size={18} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Search */}
-        <div className="sidebar-search">
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            placeholder={t("Search")}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-        </div>
+          {/* Search */}
+          <div className="sidebar-search">
+            <Search size={16} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("Search")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          </>
+        )}
 
         {/* Content */}
         <div className="sidebar-content">

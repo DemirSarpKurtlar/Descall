@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0b10;color:#fff;font-family:-apple-system,BlinkMacSystemFont,Inter,system-ui,sans-serif;padding:56px 64px 80px;width:4200px}
+.brand{display:flex;align-items:center;gap:18px;margin-bottom:8px}
+.brand img{width:56px;height:56px;border-radius:14px;box-shadow:0 8px 28px rgba(88,122,246,0.4)}
+h1{font-size:42px;font-weight:700;letter-spacing:-0.028em;line-height:1.1}
+.sub{color:rgba(255,255,255,0.48);font-size:17px;margin:10px 0 40px;letter-spacing:-0.01em}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:28px 22px}
+.cell{display:flex;flex-direction:column;gap:10px;min-width:0}
+.frame{background:#111318;border-radius:28px;padding:10px;box-shadow:0 16px 48px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.08)}
+.frame img{width:100%;height:auto;display:block;border-radius:20px;aspect-ratio:440/956;object-fit:cover;object-position:top}
+.label{font-size:14px;font-weight:650;text-align:center;letter-spacing:-0.015em}
+.label span{display:block;font-weight:500;font-size:12px;color:rgba(255,255,255,0.42);margin-top:3px}
+</style></head><body>
+<header class="brand">
+  <img src="assets/brand/descall-icon.png" alt="Descall"/>
+  <div>
+    <h1>Descall · Liquid Glass FINAL</h1>
+  </div>
+</header>
+<p class="sub">iOS 27 mockups · 2.9.147 özellik 1:1 · 440×956 @3× · Türkçe UI · Akşam Ekibi</p>
+<div class="grid" id="g"></div>
+<script>
+const items=[
+["01-login.png","01 Giriş","Auth · Apple/Google"],
+["02-chats.png","02 Sohbetler","DM list + swipe"],
+["02b-groups.png","02b Gruplar","GroupList"],
+["03-dm.png","03 DM","Discord-style MessageList"],
+["04-msg-menu.png","04 Mesaj menü","Own: Edit/Delete"],
+["05-attach.png","05 Ekle","Image/File/GIF"],
+["06-call-11.png","06 1:1 Arama","Full CallOverlay"],
+["07-group-call.png","07 Grup arama","2×2 + capsule header"],
+["08-incoming.png","08 Gelen","Accept/Decline"],
+["09-friends.png","09 Arkadaşlar","Pending/Online/Off"],
+["10-add-friend.png","10 Ekle modal","Hızlı/Arkadaş/Grup"],
+["11-servers.png","11 Sunucular","Rail + channels"],
+["12-server-channel.png","12 #genel","Channel + code/reactions"],
+["13-server-menu.png","13 Sunucu menü","Full dropdown"],
+["14-profile.png","14 Profil","Other-user modal"],
+["14b-profile-edit.png","14b Profil düzenle","Own profile edit"],
+["15-settings.png","15 Ayarlar","All NAV_GROUPS"],
+["15b-settings-notifications.png","15b Bildirimler","Notif + activity status"],
+["16-notifications.png","16 Duyurular","Announcements"],
+["17-play.png","17 Oyna","ValorantHub LFG"],
+["18-status.png","18 Durum","Rail status picker"],
+["19-calls.png","19 Aramalar","5 filters + quick dial"],
+["20-activity.png","20 Aktivite","Presence + friends"],
+["21-shop.png","21 Mağaza","Wallet + daily + invite + banners"],
+["21b-shop-items.png","21b Mağaza öğeler","More banners + frames"],
+];
+const g=document.getElementById('g');
+for(const [src,t,s] of items){
+  const c=document.createElement('div');c.className='cell';
+  c.innerHTML=`<div class="frame"><img src="${src}" alt="${t}"/></div><div class="label">${t}<span>${s}</span></div>`;
+  g.appendChild(c);
+}
+</script></body></html>
