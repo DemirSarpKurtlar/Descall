@@ -1017,6 +1017,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-main-body {
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-main-header {
   padding-top: calc(var(--g-chrome-top) + 8px);
+  justify-content: space-between;
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-profile-tab {

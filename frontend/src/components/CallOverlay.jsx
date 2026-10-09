@@ -2375,7 +2375,7 @@ function GlassCallShot({ kind }) {
           {tiles.map((tile) => (
             <div key={tile.name} className={`participant-tile participant-tile--avatar-only${tile.speaking ? " is-speaking" : ""}`}>
               {tile.speaking && !group ? <div className="g-call-qchip"><span className="speaking-dot" />Mükemmel</div> : null}
-              {tile.camOff || tile.corner ? <div className={`g-call-corner${tile.corner === "video" ? " is-cam" : " is-mic"}`}>{tile.corner === "video" ? <VideoOff size={14} /> : <MicOff size={14} />}</div> : null}
+              {tile.corner ? <div className={`g-call-corner${tile.corner === "video" ? " is-cam" : " is-mic"}`}>{tile.corner === "video" ? <VideoOff size={14} /> : <MicOff size={14} />}</div> : null}
               <div className="participant-tile-avatar-stack">
                 <div className="participant-tile-avatar-shell">
                   <div className="participant-tile-avatar-core" style={{ position: "relative" }}>
@@ -2387,7 +2387,7 @@ function GlassCallShot({ kind }) {
               <div className="participant-tile-label">
                 {tile.speaking ? <span className="speaking-dot" /> : null}
                 <span className="participant-tile-name">{tile.name}</span>
-                {tile.camOff ? <MicOff size={14} /> : null}
+                {tile.corner === "video" ? <VideoOff size={14} /> : null}
               </div>
             </div>
           ))}

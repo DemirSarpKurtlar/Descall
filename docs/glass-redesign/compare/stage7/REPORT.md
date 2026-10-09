@@ -2,7 +2,7 @@
 
 Tarih: 2026-10-09. Karşılaştırma Chrome’da, üst güvenli alan 62 / alt 34 maskelenerek. Mockup solda, uygulama sağda: `docs/glass-redesign/compare/stage7/*-side-by-side.png`.
 
-Piksel eşiği (HANDOFF) maskelenmiş alanda ≤%0,5, bilinen veri ve yazı tipi farkları dışında. Aşağıdaki yüzdeler o eşiğin üstünde; ölçüldüğü yerde krom geometrisi ±1pt. Yüksek yüzde, eksik bir eylemden değil, fikstür metni / avatar / Inter glif genişliği / arama karosu görselinden geliyor. Gerçek stil farkı olarak bulunan tek şey arkadaş satırındaki uzun ad + yönetici rozetiydi; **2.9.167** ile düzeltildi.
+Bu tablo **2.9.168** yeniden çekimidir (Dimaru denetimi sonrası). Piksel eşiği (HANDOFF) maskelenmiş alanda ≤%0,5, bilinen veri ve yazı tipi farkları dışında. Yüzdeler o eşiğin üstünde kalır: Inter glif genişliği, fikstür metni, avatar rengi ve mağaza karosu. Denetimdeki krom farkları (düz ayarlar/oyna/mağaza, kontrol çubuğu, 1:1 karo, menü, üst solma, aktivite kartı, çipler, konuşma halkası, ek menüsü, harf boyu) ölçüyle kapatıldı; ayrıntı sondaki “Dimaru denetim düzeltmeleri” bölümünde.
 
 Görsel denetim, App Store ekran görüntüleri ve “Bu sürümde yenilikler” Dimaru’da. Bu turda App Store’a gönderilmedi. `styles/mobile-glass.css` duruyor.
 
@@ -12,31 +12,31 @@ Maskelenmiş piksel farkı (eşik 0.15, `includeAA`). 21b, kaydırılmış mağa
 
 | Ekran | Fark | Karar |
 | --- | --- | --- |
-| 01-login | %12.65 | Google düğmesi iOS’ta yok (bilinçli). Kart ~64pt kısa, Giriş ~68pt yukarıda. Kalan krom duruyor. |
-| 02-chats | %10.89 | Başlık 20,112,400×40. Arama 16,162,408×42. Sekme 12,868,416×64. Satır 408×76. Metin farkı fikstür. |
-| 02b-groups | %9.29 | Grup listesi, üye yığını kare çerçevesiz (2.9.160). Ad: Akşam Ekibi. |
-| 03-dm | %9.50 | Başlık kapsülü, sohbet içi arama başlığın altında (2.9.162). |
-| 04-msg-menu | %9.04 | Hızlı tepkiler + Yanıtla / Sabitle / Düzenle / Sil. İlet / Kopyala yok. |
-| 05-attach | %6.91 | Görsel, Dosya, GIF. |
-| 06-call-11 | %16.29 | Başlık 12,60,416×56. Kontrol 12,856,416×76. PIP 110×148. Karo sanatı mockup karesi değil. |
-| 07-group-call | %23.61 | İlk karo 12,132,203×349. 2×2. Yüksek fark gradyan karo. |
-| 08-incoming | %9.50 | Reddet / Kabul Et. |
-| 09-friends | %9.36 | Başlık ve arama 02 ile aynı yerde. Satır 76, avatar 52 (Aşama 5). |
-| 10-add-friend | %9.52 | Hızlı Ekle / Arkadaş / Grup sayfası. |
-| 11-servers | %4.59 | Ray + kanal bölmesi. Başlık eylemleri 30px daire, aralık 6 (2.9.166). |
-| 12-server-channel | %4.14 | Kanal kapsülü. Fikstürde `#duyurular` boş. |
-| 13-server-menu | %6.84 | Alt sayfa: kanal, rol, davet, ayarlar. |
-| 14-profile | %16.59 | Banner, 88pt avatar, Mesaj / Arkadaşlar, Engelle / Şikayet. |
-| 14b-profile-edit | %24.52 | İptal · Profil · Kaydet. Kimlik grubu. Fark alan düzeni + fikstür. |
-| 15-settings | %11.93 | Profil 28,134,408×68. Grup 22,232,396×212. Satır ~59. Çıkış 26,804,388×52. |
-| 15b-settings-notifications | %9.12 | Mesaj / arama bildirimleri, aktivite durumu. |
-| 16-notifications | %6.18 | Duyurular sayfası. |
-| 17-play | %16.34 | Sekme çubuğu duruyor (2.9.163). Liste çekmecesi gizli. Companion yok. |
-| 18-status | %3.58 | Dört durum + özel + Kullanıcı Ayarları. En düşük fark. |
-| 19-calls | %11.68 | Tümü / Cevapsız / Gelen / Giden / Grup. |
-| 20-activity | %14.61 | Durum kartı, Arkadaşlar / Geçmiş. |
-| 21-shop | %26.59 | Cüzdan 1.250 (mockup 8.325), günlük ödül, davet, kategori çipleri, banner kartları. |
-| 21b-shop-items | %28.17 | Aynı mağaza, `.us-main-scroll` kaydırılmış. Çerçeve / banner kartları listede. |
+| 01-login | %12.65 | Google düğmesi iOS’ta yok (bilinçli). |
+| 02-chats | %10.73 | Harf 23.52px / 56px avatar (0.42em). |
+| 02b-groups | %9.30 | Grup listesi, üye yığını kare çerçevesiz. |
+| 03-dm | %9.72 | Üst solma `.g-edge-conv` sabit, 440×124, işaretçi yok. |
+| 04-msg-menu | %10.98 | Son balon menüsü alt 876 (güvenli alt 922). Üst balon da açıldı. |
+| 05-attach | %3.97 | Tam ekran scrim, `+` 45°, köşe 30px, taşma gizli. |
+| 06-call-11 | %6.52 | Kontrol ızgarası, kırmızı bitiş sağ 418. Ad hapı. (2.9.167’de %16.29.) |
+| 07-group-call | %20.11 | Halka merkezi = çekirdek merkezi. Yalnız “Sen” nötr kamera çipi. Kalan fark gradyan karo. |
+| 08-incoming | %6.95 | Reddet / Kabul Et. |
+| 09-friends | %9.59 | Satır 76, avatar 52. |
+| 10-add-friend | %8.70 | Hızlı Ekle / Arkadaş / Grup. |
+| 11-servers | %8.26 | Ray + kanal bölmesi. Başlık eylemleri 30px daire. |
+| 12-server-channel | %7.84 | Kanal sohbeti, üst solma duruyor. |
+| 13-server-menu | %6.88 | Alt sayfa: kanal, rol, davet, ayarlar. |
+| 14-profile | %22.60 | Banner, avatar, Mesaj / Arkadaşlar. Fark fikstür biyografisi. |
+| 14b-profile-edit | %20.33 | İptal y 64, başlık ortalı, Kaydet sağda. Zemin ambient. |
+| 15-settings | %7.17 | “Ayarlar”, kart ve satır x 16–424, sekme duruyor, X gizli. |
+| 15b-settings-notifications | %7.99 | “Bildirimler” ortalı, kaydırma saydam, sekme gizli. |
+| 16-notifications | %6.20 | Duyurular sayfası. |
+| 17-play | %13.74 | Ambient, filtreler açık, kicker gizli, sekme duruyor, Companion yok. |
+| 18-status | %3.41 | Dört durum + özel + Kullanıcı Ayarları. |
+| 19-calls | %11.59 | Avatar `box-shadow: none`. |
+| 20-activity | %16.61 | “DURUMUN … Durum Ayarla” ve “Arkadaşlar / Geçmiş”. |
+| 21-shop | %26.92 | 14 çip, önizleme gizli, davet link + Linki kopyala + Paylaş. Bakiye 1.250. |
+| 21b-shop-items | %30.19 | Aynı mağaza kaydırılmış. Kart sanatı mockup SVG’si değil. |
 
 ## Uzun ad + yönetici rozeti
 
@@ -143,7 +143,7 @@ Arkadaş listesinde uzun ad, `flex-wrap: wrap` yüzünden yönetici rozetini iki
 
 ## TestFlight kontrol listesi (Demir)
 
-Sürüm **2.9.167**. Yalnız iPhone. App Store’a gönderme.
+Sürüm **2.9.168**. Yalnız iPhone. App Store’a gönderme.
 
 - [ ] Sohbetler, Gruplar, Sunucular, Oyna, Arkadaşlar, Aktivite, Aramalar sekmesi duruyor. Oyna’da da sekme duruyor; liste çekmecesi yok.
 - [ ] Uzun bir ad + yönetici rozeti: sohbet başlığında tek satır, rozet görünür (dar telefonda yalnız kalkan). Arkadaş satırında ad kesilir, “Yönetici” alt satıra kaymaz.
