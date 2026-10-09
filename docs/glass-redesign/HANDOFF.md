@@ -20,7 +20,7 @@ Self-contained brief for the Cursor cloud agent continuing this work in the repo
 | fix | Mobile DM header: name wrapped one letter per line next to the admin badge | 2.9.153 | shipped |
 | 2 | Navigation shell: floating 7-tab glass bar, toolbar (me-btn · bgroup · +), large titles, search, scroll-edge, status menu (02/02b/09/11/19/20 chrome, 18) | 2.9.154 · commit 8907c8c · tag v2.9.154 | shipped; CI green (TestFlight, Windows release, Vercel, Render, Marketing gates) — awaiting Demir's TestFlight test |
 | 3 | Chats / DM / groups rows, message menu, attach, composer, announcements (02, 02b, 03, 04, 05, 16) | 2.9.155 | shipped — see PROGRESS.md. TestFlight hotfix (toolbar press, status menu, Play/LFG, announcements) is 2.9.156 |
-| 4 | Calls (06, 07, 08, 19) | | TODO |
+| 4 | Calls (06, 07, 08, 19) | see PROGRESS.md | shipped in this commit |
 | 5 | Friends, add friend, servers, channel, server menu, profile (09, 10, 11, 12, 13, 14, 14b) | | TODO |
 | 6 | Settings, notifications, Play, Activity, Shop (15, 15b, 17, 20, 21, 21b) | | TODO |
 | 7 | Final QA + App Store screenshots (submission only with Demir's explicit OK) | | TODO |

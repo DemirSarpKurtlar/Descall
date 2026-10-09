@@ -25,6 +25,7 @@ import { resolveDisplayName } from "../../lib/userProfile";
 import { getPresenceStatus } from "../../lib/presence";
 import { useT } from "../../context/LocaleContext";
 import { ConversationListSkeleton } from "../ui/Skeleton";
+import useGlassUi from "../../hooks/useGlassUi";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -55,6 +56,33 @@ function statusMeta(call) {
     return { label: "Incoming", Icon: PhoneIncoming, tone: "ok" };
   }
   return { label: "Outgoing", Icon: PhoneOutgoing, tone: "ok" };
+}
+
+function glassWhen(iso) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const min = Math.round((Date.now() - then) / 60000);
+  if (min < 1) return "1 dk";
+  if (min < 60) return `${min} dk`;
+  const hours = Math.round(min / 60);
+  if (hours < 24) return `${hours} sa`;
+  if (hours < 48) return "Dün";
+  return `${Math.round(hours / 24)}g`;
+}
+
+function glassDuration(seconds) {
+  const s = Math.max(0, Number(seconds) || 0);
+  if (s <= 0) return "";
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+
+function groupInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "G";
+  return parts.slice(0, 2).map((p) => p[0]).join("").toLocaleUpperCase("tr");
 }
 
 function callTitle(call, t) {
@@ -105,11 +133,19 @@ export default function CallsView({
   onOpenChat,
   onOpenGroup,
   compact = false,
+  query: queryProp,
+  onQueryChange,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   const meId = me?.id;
   const [filter, setFilter] = useState("all");
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
+  const query = queryProp ?? localQuery;
+  const setQuery = (value) => {
+    if (onQueryChange) onQueryChange(value);
+    else setLocalQuery(value);
+  };
   const [calls, setCalls] = useState(() => loadCachedCalls(meId));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -258,8 +294,22 @@ export default function CallsView({
   };
 
   return (
-    <div className={`calls-view ${compact ? "is-compact" : ""}`}>
-      {!compact && (
+    <div className={`calls-view ${compact ? "is-compact" : ""}${glass ? " g-calls" : ""}`}>
+      {glass && (
+        <div className="g-call-chips" data-gid="call-chips">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`calls-filter-chip ${filter === f.id ? "active" : ""}`}
+              onClick={() => setFilter(f.id)}
+            >
+              {t(f.label)}
+            </button>
+          ))}
+        </div>
+      )}
+      {!compact && !glass && (
         <div className="calls-hero">
           <div className="calls-hero-copy">
             <h2>{t("Calls")}</h2>
@@ -302,7 +352,7 @@ export default function CallsView({
                     onClick={() => onOpenChat?.(friend)}
                     title={t("Open chat with {name}", { name: resolveDisplayName(friend) })}
                   >
-                    <Avatar name={resolveDisplayName(friend)} size={compact ? 40 : 48} user={friend} />
+                    <Avatar name={resolveDisplayName(friend)} size={glass ? 44 : compact ? 40 : 48} user={friend} />
                     <StatusBadge status={status || "online"} />
                   </button>
                   <span className="calls-quick-name">{resolveDisplayName(friend)}</span>
@@ -338,7 +388,7 @@ export default function CallsView({
           {missedCount > 0 && <em className="is-missed">{t("{count} missed", { count: missedCount })}</em>}
         </div>
 
-        <div className="calls-toolbar">
+        {!glass && <div className="calls-toolbar">
           <div className="calls-filters">
             {FILTERS.map((f) => (
               <button
@@ -359,7 +409,7 @@ export default function CallsView({
               placeholder={t("Search calls")}
             />
           </div>
-        </div>
+        </div>}
 
         {error && <div className="calls-error">{error}</div>}
 
@@ -378,8 +428,8 @@ export default function CallsView({
                 const meta = statusMeta(call);
                 const Icon = meta.Icon;
                 const TypeIcon = call.callType === "video" ? Video : Phone;
-                const duration = formatCallDuration(call.durationSeconds);
-                const when = formatCallWhen(call.endedAt || call.createdAt);
+                const duration = glass ? glassDuration(call.durationSeconds) : formatCallDuration(call.durationSeconds);
+                const when = glass ? glassWhen(call.endedAt || call.createdAt) : formatCallWhen(call.endedAt || call.createdAt);
                 const isGroup = call.kind === "group";
                 const peerStatus = !isGroup
                   ? getPresenceStatus(onlineUsers, call.peer?.id)
@@ -401,11 +451,15 @@ export default function CallsView({
                     >
                       <div className="calls-row-avatar">
                         {isGroup ? (
+                          glass ? (
+                            <div className="calls-group-avatar" aria-hidden="true">{groupInitials(title)}</div>
+                          ) : (
                           <div className="calls-group-avatar" aria-hidden="true">
                             <Users size={18} />
                           </div>
+                          )
                         ) : (
-                          <Avatar name={title} size={40} user={call.peer} />
+                          <Avatar name={title} size={glass ? 52 : 40} user={call.peer} />
                         )}
                         {peerStatus && peerStatus !== "offline" && (
                           <StatusBadge status={peerStatus} />
@@ -414,14 +468,19 @@ export default function CallsView({
                       <div className="calls-row-meta">
                         <div className="calls-row-top">
                           <strong>{title}</strong>
-                          <span>{when}</span>
+                          {!glass && <span>{when}</span>}
                         </div>
                         <div className="calls-row-sub">
                           <Icon size={13} />
-                          <TypeIcon size={13} />
+                          {!glass && <TypeIcon size={13} />}
                           <span>
+                            {glass && call.callType === "video" ? `${t("Video call").replace(/ arama$/, "")} · ` : ""}
                             {t(meta.label)}
-                            {call.participantCount
+                            {glass && isGroup && call.participantCount
+                              ? ` · ${t("{count} people", { count: call.participantCount })}`
+                              : ""}
+                            {glass && when ? ` · ${when}` : ""}
+                            {!glass && call.participantCount
                               ? ` · ${t("{count} people", { count: call.participantCount })}`
                               : ""}
                             {duration ? ` · ${duration}` : ""}

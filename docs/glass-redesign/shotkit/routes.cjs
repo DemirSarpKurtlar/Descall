@@ -134,7 +134,12 @@ module.exports = function routes(app, D, log) {
   ], pendingActions: [] }); });
 
   // Misc
-  ok(["/api/calls*", "/calls*"], () => ({ calls: [], history: [] }));
+  ok(["/api/calls*", "/calls*"], () => ({ history: [], calls: [
+    { id: "c1", kind: "dm", direction: "incoming", callType: "voice", status: "ended", durationSeconds: 252, endedAt: iso(18), createdAt: iso(18), peer: { id: MERT.id, username: MERT.username, displayName: "Mert K.", avatarUrl: null } },
+    { id: "c2", kind: "dm", direction: "outgoing", callType: "voice", status: "ended", durationSeconds: 760, endedAt: iso(60), createdAt: iso(60), peer: { id: AYSE.id, username: AYSE.username, displayName: AYSE.displayName, avatarUrl: null } },
+    { id: "c3", kind: "group", direction: "incoming", callType: "voice", status: "missed", durationSeconds: 0, participantCount: 4, endedAt: iso(1500), createdAt: iso(1500), group: { id: "60000000-0000-4000-8000-000000000001", name: "Akşam Ekibi", avatarUrl: null } },
+    { id: "c4", kind: "dm", direction: "outgoing", callType: "video", status: "ended", durationSeconds: 485, endedAt: iso(2880), createdAt: iso(2880), peer: { id: ELIF.id, username: ELIF.username, displayName: ELIF.displayName, avatarUrl: null } },
+  ] }));
   ok("/api/webrtc/ice-config", () => ({ iceServers: [] }));
   ok("/api/announcements", () => ({ announcements: [
     { id: "a1", title: "2.9.147 yayında", content: "Kaydırarak geri gitme ve glass mobil cilası.", createdAt: iso(120), author: null },
