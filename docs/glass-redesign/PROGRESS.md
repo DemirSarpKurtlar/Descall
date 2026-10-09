@@ -162,3 +162,9 @@ TestFlight. Yalnız `html.glass-ui`.
 Grup satırındaki üye yığını (20pt) kare `.ui-avatar` kutusuna `box-shadow: 0 0 0 2px` çiziyordu; daire içeride olduğu için her simgenin etrafında siyah kare görünüyordu. Gölge, kenarlık ve dış çizgi kaldırıldı. Üst üste binme (`margin-left: -6px`) ve “N üye” duruyor. Büyük grup ikonu (squircle) aynı.
 
 440×956, cam açık: dört simge, `box-shadow: none`, kenarlık 0, iç daire `border-radius: 50%`. Kutunun köşe pikseli sayfa rengiyle aynı `(22, 23, 32)`; ortası avatar rengi. `glass-scope` 669 seçici.
+
+## Hotfix — sohbet içi mesaj araması başlığın altında · 2.9.162
+
+TestFlight. Yalnız `html.glass-ui`.
+
+Sohbette Ara’ya basınca arama çubuğu akışta kalıyordu. Başlık sabit olduğu ve krom kutusu 0 yükseklikte olduğu için çubuk y=0’da, durum çubuğunun üstüne çıkıyordu. Artık başlık kapsülünün hemen altında cam bir alan. Mesaj listesinin üst boşluğu arama açıkken buna göre uzuyor. Yazı 16pt, iPhone yakınlaştırmaz.

@@ -613,10 +613,92 @@ html.glass-ui .app-root.g-shell.in-conversation .icon-btn-badge {
   font-weight: 700;
 }
 
+/* Message search sits under the header capsule. The chrome box is 0px tall
+   and the header is fixed, so an in-flow bar otherwise paints at y=0,
+   over the status bar. */
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar {
+  position: fixed;
+  top: calc(var(--g-chrome-top) + 56px);
+  left: 12px;
+  right: 12px;
+  z-index: 58;
+  width: auto;
+  max-width: none;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-field {
+  height: 44px;
+  border: 0 !important;
+  border-radius: 22px;
+  padding: 0 14px;
+  gap: 8px;
+  color: var(--g-t2);
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-field svg {
+  width: 18px;
+  height: 18px;
+  color: var(--g-t2);
+  flex-shrink: 0;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-field input,
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar input {
+  font-size: 16px !important;
+  color: var(--g-t1);
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-field input::placeholder {
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn {
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 22px !important;
+  color: var(--g-t1);
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+@media (max-width: 400px) {
+  html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar {
+    top: calc(var(--g-chrome-top) + 52px);
+    left: 8px;
+    right: 8px;
+  }
+}
+
 /* ── Messages (03) ── */
 html.glass-ui .app-root.g-shell.in-conversation .messages-container {
   padding: calc(var(--g-chrome-top) + 62px) 14px calc(var(--g-bar-bottom) + 78px) !important;
   background-color: transparent !important;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.chat-search-bar) .messages-container {
+  padding-top: calc(var(--g-chrome-top) + 112px) !important;
 }
 
 html.glass-ui .app-root.g-shell .message-list {
@@ -1463,11 +1545,15 @@ html.glass-ui .giphy-panel.g-giphy .giphy-footer {
 html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
 html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
 html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
+html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .chat-search-field,
+html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn,
 html.glass-ui.a11y-solid .app-root.g-shell .composer-left .composer-action-btn,
 html.glass-ui.a11y-solid .app-root.g-shell .composer-input-wrapper,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-field,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-left .composer-action-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper {
   background: var(--g-solid) !important;
@@ -1499,6 +1585,8 @@ html.glass-ui.a11y-contrast .giphy-overlay.g-giphy-scrim {
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-field,
+html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-left .composer-action-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper,
 html.glass-ui.a11y-contrast .app-root.g-shell .attachment-menu,
