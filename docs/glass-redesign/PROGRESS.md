@@ -89,6 +89,12 @@ TestFlight 2.9.156. Yalnız `html.glass-ui`.
 
 440×956 ölçüm: DM başlığı 12,60,416×48 (geri 48, kimlik 166×48, eylemler 186×48). Kanal başlığı 12,60,416×48; başlık “genel”, alt yazı “Oyun Gecesi · 128 üye”, sağda ara / üyeler / sabitle. Duyuru kartı 380×104, ikon 40×40 kartın içinde, gövde iki satır.
 
+## Hotfix — grup listesi üye simgelerindeki kare çerçeve · 2.9.159
+
+TestFlight. Yalnız `html.glass-ui`.
+
+Grup satırındaki üye yığını (20pt) kare `.ui-avatar` kutusuna `box-shadow: 0 0 0 2px` çiziyordu; daire içeride olduğu için her simgenin etrafında siyah kare görünüyordu. Gölge, kenarlık ve dış çizgi kaldırıldı. Üst üste binme (`margin-left: -6px`) ve “N üye” duruyor. Büyük grup ikonu (squircle) aynı.
+
 ## Hotfix — GIF seçici aramayı kendiliğinden açmasın · 2.9.158
 
 TestFlight. Yalnız `html.glass-ui`.

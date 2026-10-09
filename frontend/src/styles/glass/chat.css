@@ -324,14 +324,24 @@ html.glass-ui .app-root.g-shell .g-member-stack {
   min-width: 0;
 }
 
+/* .ui-avatar is a square box (the circle is .ui-avatar-inner). A ring on the
+   box paints a black square around each member icon. No frame on the stack. */
+html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar,
+html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar-inner,
+html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar-img {
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: none !important;
+}
+
 html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar {
   width: 20px !important;
   height: 20px !important;
   min-width: 20px !important;
   min-height: 20px !important;
   font-size: 9px !important;
-  box-shadow: 0 0 0 2px var(--g-ring);
   margin-left: -6px;
+  background: transparent !important;
 }
 
 html.glass-ui .app-root.g-shell .g-member-stack .ui-avatar:first-child {
