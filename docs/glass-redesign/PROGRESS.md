@@ -42,7 +42,7 @@ Friends and calls differ only by the mock port inside the invite link (`localhos
 
 ### CI
 
-Recorded after the tag is pushed.
+Commit `b78b715`. Tag `v2.9.155` is pushed with this stage. CI results are filled in after TestFlight, the Windows release, Vercel, Render, and the quality gates finish.
 
 ### TestFlight kontrol listesi (Demir)
 
