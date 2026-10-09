@@ -849,7 +849,7 @@ function MessageBubble({
             el.removeEventListener("pointercancel", up);
           };
           const move = (ev) => {
-            if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 10) clear();
+            if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 24) clear();
           };
           const up = () => clear();
           el.addEventListener("pointermove", move);
@@ -1258,9 +1258,20 @@ function GlassMessageMenu({
   if (!box || typeof document === "undefined") return null;
   const menuW = 250;
   const reactH = 66;
-  const spaceBelow = window.innerHeight - box.bottom;
-  const below = spaceBelow > 280;
-  const top = below ? box.top - reactH : Math.max(12, box.bottom - reactH);
+  const menuRows = 2
+    + (canPin ? 1 : 0)
+    + (canEdit ? 1 : 0)
+    + ((canDelete || canReport) ? 1 : 0)
+    + (canDelete ? 1 : 0)
+    + (canReport ? 1 : 0);
+  const menuH = 12 + menuRows * 48 + (pickerOpen ? 180 : 0);
+  const stackH = reactH + 10 + Math.min(box.height || 48, 160) + 10 + menuH;
+  const safeTop = 62;
+  const safeBot = 34;
+  let top = box.top - reactH - 8;
+  const limit = window.innerHeight - safeBot - stackH;
+  if (top > limit) top = limit;
+  if (top < safeTop) top = safeTop;
   return createPortal(
     <>
       <button type="button" className="g-scrim" aria-label={t("Close")} onClick={onClose} />

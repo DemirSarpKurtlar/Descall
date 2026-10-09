@@ -700,6 +700,14 @@ export default function MessageComposer({
         )}
       </AnimatePresence>
 
+      {glass && showAttachmentMenu && (
+        <button
+          type="button"
+          className="g-attach-scrim"
+          aria-label={t("Close")}
+          onClick={() => setShowAttachmentMenu(false)}
+        />
+      )}
       <AnimatePresence>
         {showAttachmentMenu && (
           <motion.div
@@ -758,7 +766,7 @@ export default function MessageComposer({
       <div className="composer-left">
         <motion.button
           ref={attachBtnRef}
-          className="composer-action-btn"
+          className={`composer-action-btn${glass && showAttachmentMenu ? " is-open" : ""}`}
           onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}

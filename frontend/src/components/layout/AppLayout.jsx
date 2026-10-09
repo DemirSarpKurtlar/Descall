@@ -273,10 +273,11 @@ export default function AppLayout({
     // /groups, or /servers and race the destination path (first click looks
     // like a no-op; second click finally sticks).
     setActiveView(view);
+    if (userPanelOpen) closeUserPanel();
     if (isMobile) {
       setMobileDrawerOpen(view !== "play" && view !== "activity");
     }
-  }, [isMobile, setActiveView]);
+  }, [isMobile, setActiveView, userPanelOpen, closeUserPanel]);
 
   const handleMobileBack = useCallback(() => {
     // Servers: channel → channel list → server list
@@ -315,7 +316,7 @@ export default function AppLayout({
   // show on root tabs. Inner screens (open DM / group / channel, settings) hide
   // it, and so does Play (full-page, own ‹ Descall back). Only those screens
   // get the iOS edge swipe-back; it runs the same back handler as their ‹ button.
-  const showMobileTabBar = isMobile && !userPanelOpen && !inConversation;
+  const showMobileTabBar = isMobile && !inConversation && (!userPanelOpen || glassShell);
   const isPlayPage = activeView === "play" && showPlay;
   const mobileNavHidden = isMobile && !mobileDrawerOpen && (!showMobileTabBar || isPlayPage);
   const mainSlotRef = useRef(null);
@@ -478,6 +479,11 @@ export default function AppLayout({
             onRefresh={onRefresh}
             onAddFriend={() => handleAddClick("friend")}
             onFriendSelect={handleDmSelect}
+            me={me}
+            myStatus={myStatus}
+            history={activity.history}
+            currentActivity={activity.currentActivity}
+            privacy={activity.settings?.privacy}
           />
         ) : activeView === "servers" ? (
           <ServersSidebar

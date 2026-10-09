@@ -7,6 +7,7 @@ import {
   Plus,
   Users,
   UserPlus,
+  Clock,
 } from "lucide-react";
 import { ActivityTypeIcon } from "../../lib/shopIcons";
 import { Avatar } from "../ui/Avatar";
@@ -16,7 +17,7 @@ import { openFeedbackModal } from "../../lib/feedbackNudge";
 import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
 import { TYPE_PRIORITY } from "../../lib/processDatabase";
-import { GlassListHeader, useGlassShell } from "../layout/glass/GlassShell";
+import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/glass/GlassShell";
 
 const TYPE_COLOR = {
   game: "#23a55a",
@@ -33,9 +34,11 @@ const TYPE_COLOR = {
 
 export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const status = getPresenceStatus(onlineUsers, friend.id);
   const isOnline = isVisiblyOnline(onlineUsers, friend.id);
   const accentColor = presence ? TYPE_COLOR[presence.appType] || "#5865f2" : null;
+  const label = friend.displayName || friend.display_name || friend.username;
 
   return (
     <motion.button
@@ -50,11 +53,11 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
       onClick={() => onSelect?.(friend)}
     >
       <div className="activity-presence-avatar">
-        <Avatar name={friend.username} user={friend} size={36} />
+        <Avatar name={label} user={friend} size={glassShell ? 52 : 36} />
         <StatusBadge status={isOnline ? status : "offline"} />
       </div>
       <div className="activity-presence-info">
-        <span className="activity-presence-name">{friend.username}</span>
+        <span className="activity-presence-name">{label}</span>
         {presence ? (
           <span className="activity-presence-status" style={{ color: accentColor }}>
             <span className="activity-presence-icon"><ActivityTypeIcon type={presence.appType} size={14} /></span>
@@ -97,11 +100,17 @@ export default function ActivitySidebar({
   onlineUsers,
   onAddFriend,
   onFriendSelect,
+  me = null,
+  myStatus = "online",
+  history = [],
+  currentActivity = null,
+  privacy = "friends",
 }) {
   const t = useT();
   const glassShell = useGlassShell();
   const searchRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [segment, setSegment] = useState("friends");
   const { active, idle, onlineCount } = useOnlinePresenceLists(
     friends,
     friendPresence,
@@ -173,14 +182,70 @@ export default function ActivitySidebar({
         )}
 
         <div className="sidebar-content activity-sidebar-content">
-          {onlineCount > 0 && (
+          {glassShell && (
+            <>
+              <div className="g-activity-status">
+                <div className="g-activity-status-top">
+                  <div>
+                    <div className="g-activity-kicker">{t("Your status")}</div>
+                    <div className="s" style={{ fontSize: 13, color: "var(--g-t3)", marginTop: 2 }}>{t("Your presence and history")}</div>
+                  </div>
+                  {privacy !== "hidden" && privacy !== "only-me" ? (
+                    <div className="g-activity-vis"><Users size={13} /> {t("Visible to Friends")}</div>
+                  ) : null}
+                </div>
+                <div className="g-activity-me">
+                  <Avatar name={me?.displayName || me?.username || t("You")} user={me} size={44} />
+                  <div>
+                    <strong>{myStatus === "idle" ? t("Idle") : myStatus === "dnd" ? t("Do Not Disturb") : myStatus === "invisible" ? t("Invisible") : t("Online")}</strong>
+                    <span>{me?.customStatus || me?.custom_status || currentActivity?.displayName || t("Online")}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="g-activity-set"
+                  onClick={() => window.dispatchEvent(new CustomEvent(GLASS_STATUS_EVENT))}
+                >
+                  {t("Set Status")}
+                </button>
+              </div>
+              <div className="g-activity-seg" role="tablist">
+                <button type="button" className={segment === "friends" ? "on" : ""} onClick={() => setSegment("friends")}>
+                  <Zap size={14} /> {t("Friends")}
+                </button>
+                <button type="button" className={segment === "history" ? "on" : ""} onClick={() => setSegment("history")}>
+                  <Clock size={14} /> {t("History")}
+                </button>
+              </div>
+            </>
+          )}
+          {glassShell && segment === "history" ? (
+            (history || []).length > 0 ? (
+              <div className="activity-history-list">
+                {history.map((entry) => (
+                  <div key={entry.id} className="activity-history-row">
+                    <div className="activity-history-info">
+                      <span className="activity-history-name">{entry.display_name || entry.displayName}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="activity-empty-state">
+                <div className="activity-empty-icon"><Clock size={28} /></div>
+                <p>{t("No activity history yet")}</p>
+                <span>{t("Start using apps and games to see them here")}</span>
+              </div>
+            )
+          ) : null}
+          {(!glassShell || segment === "friends") && onlineCount > 0 && !glassShell && (
             <div className="activity-sidebar-summary">
               <Users size={14} />
               <span>{t("{count} online", { count: onlineCount })}</span>
             </div>
           )}
 
-          {active.length > 0 && (
+          {(!glassShell || segment === "friends") && active.length > 0 && (
             <div className="activity-sidebar-section">
               <div className="activity-sidebar-label">
                 {t("Active Now — {count}", { count: active.length })}
@@ -199,7 +264,7 @@ export default function ActivitySidebar({
             </div>
           )}
 
-          {idle.length > 0 && (
+          {(!glassShell || segment === "friends") && idle.length > 0 && (
             <div className="activity-sidebar-section" style={{ marginTop: active.length ? 12 : 0 }}>
               <div className="activity-sidebar-label">
                 {t("Online — {count}", { count: idle.length })}
@@ -218,7 +283,7 @@ export default function ActivitySidebar({
             </div>
           )}
 
-          {onlineCount === 0 && (
+          {(!glassShell || segment === "friends") && onlineCount === 0 && (
             <div className="activity-empty-state">
               <div className="activity-empty-icon">
                 <Zap size={28} />

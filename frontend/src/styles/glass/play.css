@@ -2,11 +2,16 @@
    Mockups 17 and 20. Companion segment stays hidden on iOS.
    Scoped under html.glass-ui. */
 
+html.glass-ui .app-root.g-shell[data-view="play"] .app-main-slot,
 html.glass-ui .app-root.g-shell[data-view="play"] .lfg-workspace,
-html.glass-ui .app-root.g-shell[data-view="play"] .lfg-sidebar {
-  background: transparent;
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-sidebar,
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-main {
+  background:
+    radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
+    linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%) !important;
   color: var(--g-t1);
   font-family: var(--g-font);
+  border: 0 !important;
 }
 
 html.glass-ui .app-root.g-shell[data-view="play"] .lfg-kicker {
@@ -48,6 +53,166 @@ html.glass-ui .app-root.g-shell[data-view="play"] .lfg-filter-chip {
   background: rgba(255, 255, 255, 0.07);
   color: var(--g-t2);
   border: 0;
+}
+
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-sidebar-header {
+  background: transparent;
+  border: 0;
+  padding-top: calc(var(--g-chrome-top) + 8px);
+  align-items: center;
+}
+
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-back-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-back-label,
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-sidebar-header .lfg-kicker,
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-filters-toggle {
+  display: none !important;
+}
+
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-filters {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-filters select {
+  height: 34px;
+  border-radius: 17px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--g-t1);
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-mode,
+html.glass-ui .app-root.g-shell[data-view="play"] .lfg-slots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.10);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-status {
+  margin: 0 16px 14px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-kicker {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-status-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-vis {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  color: var(--g-t2);
+  white-space: nowrap;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-me {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-me strong {
+  display: block;
+  font-size: 16px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-me span {
+  display: block;
+  font-size: 13px;
+  color: var(--g-t2);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-set {
+  width: 100%;
+  margin-top: 14px;
+  height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 40px;
+  margin: 0 16px 14px;
+  padding: 3px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg button {
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--g-t2);
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg button.on {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--g-t1);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-presence-card {
+  min-height: 76px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-presence-avatar .ui-avatar {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: 52px !important;
 }
 
 html.glass-ui .app-root.g-shell[data-view="activity"] .activity-view,

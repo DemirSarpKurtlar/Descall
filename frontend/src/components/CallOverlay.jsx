@@ -1021,7 +1021,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
 
             {/* Mobile audio panel (opened from More) */}
             {narrowViewport && (
-              <div ref={audioPanelRef} style={{ position: "absolute", width: 0, height: 0, overflow: "visible" }}>
+              <div ref={audioPanelRef} className={glass ? "g-call-audio-slot" : undefined} style={{ position: "absolute", width: 0, height: 0, overflow: "visible" }}>
                 <AnimatePresence>
                   {showAudioPanel && (
                     <AudioDevicePanel
@@ -1357,6 +1357,7 @@ function ParticipantTile({
             <div className="participant-tile-avatar-core" style={{ width: avatarSize, height: avatarSize }}>
               {/* Always mounted — speaking only fades it (no remount / restart). */}
               <SpeakingRings speaking={isSpeaking} level={level} />
+              {glass && isSpeaking ? <span className="g-speak-ring" aria-hidden="true" /> : null}
               <Avatar
                 name={displayName}
                 size={avatarSize}
@@ -1395,12 +1396,12 @@ function ParticipantTile({
           <AdminBadge user={user} variant="inline" />
           {muted && <MicOff size={14} aria-label={t("Muted")} title={t("Muted")} />}
           {deafened && <HeadphoneOff size={14} aria-label={t("Deafened")} title={t("Deafened")} />}
-          {cameraOn === false && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
+          {isLocal && cameraOn === false && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
         </div>
       )}
-      {glass && !small && (muted || cameraOn === false) && (
-        <div className="g-call-corner" aria-hidden>
-          {cameraOn === false ? <VideoOff size={14} /> : <MicOff size={14} />}
+      {glass && !small && (muted || (isLocal && cameraOn === false)) && (
+        <div className={`g-call-corner${muted ? " is-mic" : " is-cam"}`} aria-hidden>
+          {muted ? <MicOff size={14} /> : <VideoOff size={14} />}
         </div>
       )}
       {showVideo && (
@@ -2374,12 +2375,12 @@ function GlassCallShot({ kind }) {
           {tiles.map((tile) => (
             <div key={tile.name} className={`participant-tile participant-tile--avatar-only${tile.speaking ? " is-speaking" : ""}`}>
               {tile.speaking && !group ? <div className="g-call-qchip"><span className="speaking-dot" />Mükemmel</div> : null}
-              {tile.camOff || tile.corner ? <div className="g-call-corner">{tile.corner === "video" ? <VideoOff size={14} /> : <MicOff size={14} />}</div> : null}
+              {tile.camOff || tile.corner ? <div className={`g-call-corner${tile.corner === "video" ? " is-cam" : " is-mic"}`}>{tile.corner === "video" ? <VideoOff size={14} /> : <MicOff size={14} />}</div> : null}
               <div className="participant-tile-avatar-stack">
                 <div className="participant-tile-avatar-shell">
                   <div className="participant-tile-avatar-core" style={{ position: "relative" }}>
                     {tile.speaking ? <span className="g-speak-ring" /> : null}
-                    <div className="ui-avatar" style={{ borderRadius: "50%", display: "grid", placeItems: "center", background: tile.letter === "A" ? "linear-gradient(145deg,#ff7a7f,#e5484d)" : "linear-gradient(145deg,#9b85ff,#6e4ff0)", color: "#fff", fontWeight: 650 }}>{tile.letter}</div>
+                    <div className="ui-avatar" style={{ borderRadius: "50%", display: "grid", placeItems: "center", background: tile.letter === "A" ? "linear-gradient(145deg,#ff7a7f,#e5484d)" : tile.letter === "D" ? "linear-gradient(145deg,#7d97ff,#4a68e8)" : tile.letter === "E" ? "linear-gradient(145deg,#ffc15a,#f08c00)" : "linear-gradient(145deg,#9b85ff,#6e4ff0)", color: "#fff", fontWeight: 700 }}><span className="ui-avatar-letter">{tile.letter}</span></div>
                   </div>
                 </div>
               </div>

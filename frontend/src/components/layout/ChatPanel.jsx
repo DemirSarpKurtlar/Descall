@@ -405,6 +405,7 @@ export default function ChatPanel({
           key={headerConversationKey}
           style={activeView === "activity" ? { display: "none" } : undefined}
         >
+        {glassConv ? <div className="g-edge-top g-edge-conv" aria-hidden="true" /> : null}
         <header className={glassConv ? "panel-header g-conv" : "panel-header"}>
         <div className="header-left">
           {isMobile && (

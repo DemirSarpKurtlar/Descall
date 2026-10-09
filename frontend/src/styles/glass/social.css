@@ -160,7 +160,7 @@ html.glass-ui .g-friend-row .friend-avatar .ui-avatar-img {
   box-shadow: none !important;
   border: 0 !important;
   outline: none !important;
-  font-size: 20px !important;
+  font-size: 52px !important;
 }
 
 html.glass-ui .g-friend-row .friend-avatar .ui-avatar {
@@ -566,21 +566,21 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-channel-cat-btn {
   width: auto;
   flex: 1 1 auto;
   min-width: 0;
-  padding: 8px 8px 4px;
+  padding: 8px 4px 4px;
   margin: 0;
   background: transparent;
   border: 0;
   color: var(--g-t3);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-channel-cat-btn span {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -588,7 +588,8 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-channel-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 10px;
+  min-height: 38px;
+  padding: 6px 10px;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 500;
@@ -623,7 +624,8 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0 4px 34px;
+  min-height: 30px;
+  padding: 2px 0 2px 22px;
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-avatar,
@@ -631,7 +633,7 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user .ui-avatar {
   width: 22px !important;
   height: 22px !important;
   min-width: 22px !important;
-  font-size: 10px !important;
+  font-size: 22px !important;
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-name {
@@ -746,6 +748,19 @@ html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.danger svg {
   color: #ff6961;
 }
 
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.danger {
+  margin: 10px 8px 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item::after {
+  content: "›";
+  margin-left: auto;
+  color: var(--g-t3);
+  font-size: 18px;
+}
+
 html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.is-active {
   color: var(--g-t1);
 }
@@ -854,7 +869,7 @@ html.glass-ui .g-profile-avatar {
 html.glass-ui .g-profile-avatar .ui-avatar {
   width: 88px !important;
   height: 88px !important;
-  font-size: 32px !important;
+  font-size: 88px !important;
 }
 
 html.glass-ui .g-profile-name {

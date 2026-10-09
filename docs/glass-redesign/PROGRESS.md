@@ -1,5 +1,9 @@
 # Liquid Glass — progress log
 
+## Stage 7 audit fixes · 2.9.168
+
+Dimaru’nun 25 ekran denetimindeki zorunlu farklar (ayarlar/profil/oyna/mağaza düz panel, arama kontrol çubuğu, 1:1 karo, mesaj menüsü, sohbet üst solması, aktivite durum kartı, mağaza çipleri, konuşma halkası, ek menüsü, harf avatarları). Ölçüler: `docs/glass-redesign/compare/stage7/REPORT.md` son bölüm. App Store’a gönderilmedi. `mobile-glass.css` duruyor.
+
 ## Stage 7 — Mühendislik QA · 2.9.167
 
 25 ekranın yan yana PNG’leri ve tablo: `docs/glass-redesign/compare/stage7/REPORT.md`. App Store’a gönderilmedi. `mobile-glass.css` duruyor. Görsel denetim, mağaza ekran görüntüleri ve “Bu sürümde yenilikler” Dimaru’da.

@@ -165,10 +165,13 @@ html.glass-ui .g-call-grid.is-dm {
 
 html.glass-ui .g-call-grid.is-dm > :only-child {
   position: absolute !important;
-  left: 16px;
-  right: 16px;
-  top: 8px;
-  bottom: 8px;
+  left: 2px !important;
+  right: 2px !important;
+  width: auto !important;
+  height: min(556px, calc(100% - 24px)) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
 }
 
 html.glass-ui .g-call-grid.is-dm > :first-child:not(:only-child) {
@@ -183,10 +186,13 @@ html.glass-ui .g-call-grid.is-dm > :first-child:not(:only-child) {
 
 html.glass-ui .g-call-grid.is-dm > :nth-child(2) {
   position: absolute !important;
-  left: 16px;
-  right: 16px;
-  top: 8px;
-  bottom: 8px;
+  left: 2px !important;
+  right: 2px !important;
+  width: auto !important;
+  height: min(556px, calc(100% - 24px)) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
   min-height: 0 !important;
 }
 
@@ -217,6 +223,9 @@ html.glass-ui .g-call .participant-tile .status-badge {
 html.glass-ui .g-call .participant-tile-label {
   position: absolute;
   left: 10px;
+  right: auto !important;
+  width: fit-content;
+  max-width: calc(100% - 20px);
   bottom: 10px;
   height: 30px;
   border-radius: 15px;
@@ -225,7 +234,6 @@ html.glass-ui .g-call .participant-tile-label {
   display: flex;
   align-items: center;
   gap: 6px;
-  max-width: calc(100% - 20px);
   font-size: 13.5px;
   font-weight: 600;
   color: var(--g-t1);
@@ -263,6 +271,7 @@ html.glass-ui .g-call-grid.is-dm > :nth-child(2) .participant-tile-avatar-core >
 html.glass-ui .g-call-grid.is-dm > :only-child .participant-tile-avatar-core > .ui-avatar {
   width: 140px !important;
   height: 140px !important;
+  font-size: 140px !important;
 }
 
 html.glass-ui .g-call-grid.is-dm > :first-child:not(:only-child) .participant-tile-avatar-shell {
@@ -274,6 +283,7 @@ html.glass-ui .g-call-grid.is-dm > :first-child:not(:only-child) .participant-ti
 html.glass-ui .g-call-grid.is-dm > :first-child:not(:only-child) .participant-tile-avatar-core > .ui-avatar {
   width: 56px !important;
   height: 56px !important;
+  font-size: 56px !important;
 }
 
 html.glass-ui .g-call-grid.is-dm > :first-child:not(:only-child) .participant-tile-label {
@@ -293,9 +303,10 @@ html.glass-ui .g-call-grid.is-group .participant-tile-avatar-core,
 html.glass-ui .g-call-grid.is-group .participant-tile-avatar-core > .ui-avatar {
   width: 72px !important;
   height: 72px !important;
+  font-size: 72px !important;
 }
 
-/* Control capsule — the one real blur surface on the call. */
+/* Control capsule — equal slots so End sits on the right with 5 or 6 buttons. */
 html.glass-ui .g-call .call-control-bar.g-call-ctrl {
   position: absolute !important;
   left: 12px !important;
@@ -306,8 +317,12 @@ html.glass-ui .g-call .call-control-bar.g-call-ctrl {
   border-radius: 38px;
   padding: 0 10px !important;
   gap: 0 !important;
-  flex-wrap: nowrap !important;
-  justify-content: space-between !important;
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: 1fr !important;
+  align-items: center !important;
+  justify-items: center !important;
+  justify-content: stretch !important;
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
     var(--g-tint-base) !important;
@@ -345,17 +360,54 @@ html.glass-ui .g-call-corner {
   right: 10px;
   min-width: 30px;
   padding: 0 8px;
+  background: rgba(20, 21, 30, 0.72);
+}
+
+html.glass-ui .g-call-corner.is-mic {
   background: rgba(255, 69, 58, 0.85);
 }
 
 html.glass-ui .g-call-corner svg { width: 15px; height: 15px; }
 
-html.glass-ui .g-call .is-speaking .g-speak-ring {
-  position: absolute;
+html.glass-ui .g-call .participant-tile-avatar-core {
+  position: relative !important;
+}
+
+html.glass-ui .g-call .speaking-rings {
+  opacity: 0 !important;
+}
+
+html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: calc(100% + 16px) !important;
+  height: calc(100% + 16px) !important;
+  margin: 0;
+  transform: translate(-50%, -50%) !important;
   border-radius: 50%;
-  border: 2px solid rgba(48, 209, 88, 0.75);
-  inset: -8px;
+  border: 2.5px solid rgba(48, 209, 88, 0.9);
+  box-shadow: 0 0 0 8px rgba(48, 209, 88, 0.16);
   pointer-events: none;
+  z-index: 3;
+}
+
+html.glass-ui .g-call .call-control-bar.g-call-ctrl > :first-child {
+  justify-self: start;
+}
+
+html.glass-ui .g-call .call-control-bar.g-call-ctrl > .g-cb.is-end,
+html.glass-ui .g-call .call-control-bar.g-call-ctrl > :last-child {
+  justify-self: end;
+}
+
+html.glass-ui .g-call .g-call-audio-slot {
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: visible;
 }
 
 html.glass-ui .g-call .g-cb {
@@ -473,7 +525,7 @@ html.glass-ui .incoming-call-card.g-incoming {
   align-items: center;
   justify-content: flex-start;
   gap: 0;
-  padding: 150px 24px calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 108px 24px calc(72px + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   text-align: center;
   background:
@@ -516,7 +568,7 @@ html.glass-ui .g-incoming .incoming-call-avatar-wrap {
   order: 1;
   width: 228px;
   height: 228px;
-  margin-top: 36px;
+  margin-top: 18px;
 }
 
 html.glass-ui .g-incoming .incoming-call-ring {
@@ -556,7 +608,7 @@ html.glass-ui .g-incoming .incoming-call-badge {
 
 html.glass-ui .g-incoming .incoming-call-name {
   order: 2;
-  margin-top: 28px;
+  margin-top: 14px;
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.026em;
@@ -817,7 +869,18 @@ html.glass-ui .g-calls .calls-icon-btn:active {
 
 html.glass-ui .g-calls .calls-row-avatar .ui-avatar,
 html.glass-ui .g-calls .calls-quick-avatar .ui-avatar {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: none;
+}
+
+html.glass-ui .g-calls .calls-row-avatar .status-badge,
+html.glass-ui .g-calls .calls-quick-avatar .status-badge,
+html.glass-ui .g-profile-avatar .status-badge,
+html.glass-ui .activity-presence-avatar .status-badge {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  border-width: 3px;
 }
 
 html.glass-ui .call-banner-card {

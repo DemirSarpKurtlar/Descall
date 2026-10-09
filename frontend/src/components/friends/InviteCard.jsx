@@ -35,7 +35,7 @@ async function copyText(text) {
 /**
  * Shareable personal invite card with DesCoin reward copy.
  */
-export default function InviteCard({ username, compact = false, onCopied, onShared }) {
+export default function InviteCard({ username, compact = false, onCopied, onShared, variant = "friends" }) {
   const t = useT();
   const glassShell = useGlassShell();
   const [copied, setCopied] = useState(false);
@@ -107,6 +107,25 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
       setShareBusy(false);
     }
   };
+
+  if (glassShell && variant === "shop") {
+    const shown = url.replace(/^https?:\/\//, "");
+    return (
+      <div className="g-invite-link">
+        <div className="g-invite-link-field" title={url}>{shown}</div>
+        <div className="g-invite-link-actions">
+          <button type="button" className="primary" onClick={copy}>
+            {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+            {copied ? t("Copied") : t("Copy link")}
+          </button>
+          <button type="button" className="secondary" onClick={share} disabled={shareBusy}>
+            <Share2 size={14} aria-hidden />
+            {t("Share")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (glassShell) {
     return (

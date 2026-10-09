@@ -115,6 +115,28 @@ Bilinçli olarak olmayanlar: DimaAI, arama kaydı, ilet/kopyala, “Valorant Squ
 - `npm run build:prod`: pazarlama ilk boya JS **202.0 KB / 220 KB**. `perf-budget: ok`.
 - Sentry bu ortamda okunmadı. Yeni cam kaynaklı hata tipi iddia edilmiyor.
 
+## Dimaru denetim düzeltmeleri (2.9.168)
+
+440×956, güvenli alan 62/34, `html.glass-ui`, Vite + shotkit. Sayılar `getBoundingClientRect` (pt).
+
+| Konu | Ölçü |
+| --- | --- |
+| Ayarlar başlığı | “Ayarlar”, y 120, kapatma X `display: none` |
+| Ayarlar sekmesi | 12,868,416×64, menünün üstünde |
+| Profil kartı ve satır | ikisi de x 16, genişlik 408, sağ 424. DesCoin satırı var. İkonlar renkli. Grup zemini saydam, satır `rgba(255,255,255,0.06)` |
+| Bildirimler | Başlık ortalı (“Bildirimler”), kaydırma zemini saydam, sekme gizli |
+| 1:1 karo | x 14, y 208, 412×556, sağ 426, alt 764. Ad hapı genişlik ~114 (tam bar değil) |
+| 6 düğmeli çubuk | kapsül 12,856,416×76. Son (kırmızı) düğme sağ 418. `display: grid` |
+| Konuşma halkası | çekirdek merkezi ile halka merkezi aynı (grup, Ayşe) |
+| Kamera kapalı | “Sen” nötr `is-cam`; mikrofon kapalı kırmızı `is-mic` |
+| Aktivite | “DURUMUN … Durum Ayarla” ve “Arkadaşlar Geçmiş” |
+| Mağaza | 14 yatay çip (Bannerlar, Çerçeveler, …). Önizleme `display: none`. Davet: link + Linki kopyala + Paylaş |
+| Oyna | ambient gradyan, kicker gizli, filtreler `flex`, “Filtreler” düğmesi gizli |
+| Harf | 56px avatar, harf `font-size` 23.52px (0.42em) |
+| Aramalar | avatar `box-shadow: none` (saç çizgisi yok) |
+
+Sohbet üst solması `.g-edge-conv` (sabit, üst, işaretçi yok). Mesaj menüsü güvenli alan 62/34 arasına sıkışır. Ek menüsü tam ekran scrim + `+` 45° döner.
+
 ## 2.9.167
 
 Arkadaş listesinde uzun ad, `flex-wrap: wrap` yüzünden yönetici rozetini ikinci satıra itiyordu (satır adı 22pt yerine 40pt). Cam kuralı adı ellipsis’li ayrı bir span’a alıyor, rozeti `flex: 0 0 auto` tutuyor. Grup üye satırı ve ayar mini profili aynı sözleşmeye çekildi. Masaüstü / web / Android / iPad seçicileri `html.glass-ui` dışında değişmedi.

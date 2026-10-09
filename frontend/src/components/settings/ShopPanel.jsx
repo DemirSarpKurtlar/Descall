@@ -29,6 +29,8 @@ import {
   claimDesCoinDaily,
 } from "../../api/shop";
 import { useT } from "../../context/LocaleContext";
+import { useMobile } from "../../hooks/useMobile";
+import { useGlassShell } from "../layout/glass/GlassShell";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
@@ -302,9 +304,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     return map;
   }, [items]);
 
+  const glassShell = useGlassShell();
+  const { isMobile } = useMobile();
   const availableTabs = useMemo(
-    () => CATEGORY_TABS.filter((tab) => countsByCategory.has(tab.id)),
-    [countsByCategory]
+    () => (glassShell && isMobile
+      ? CATEGORY_TABS
+      : CATEGORY_TABS.filter((tab) => countsByCategory.has(tab.id))),
+    [countsByCategory, glassShell, isMobile]
   );
 
   useEffect(() => {
@@ -439,7 +445,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             </div>
           )}
         </div>
-        {me?.username && <InviteCard username={me.username} compact />}
+        {me?.username && <InviteCard username={me.username} compact variant="shop" />}
       </div>
 
       {notice && <p className="us-inline-notice" style={{ margin: "-6px 0 4px" }}>{notice}</p>}

@@ -2421,7 +2421,7 @@ const UserPanel = forwardRef(function UserPanel({
   return (
     <motion.div
       ref={ref}
-      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}`}
+      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}`}
       variants={shellVariants}
       initial="hidden"
       animate="visible"
@@ -2442,28 +2442,53 @@ const UserPanel = forwardRef(function UserPanel({
         <div className="us-sidebar-top">
           <div className="us-sidebar-brand">
             <div>
-              <h2>{t("settings.title")}</h2>
+              {glassShell && isMobile && (
+                <button
+                  type="button"
+                  className="g-settings-me"
+                  aria-label={t("Your status")}
+                  onClick={() => window.dispatchEvent(new CustomEvent("descall:glass-status-open"))}
+                >
+                  <Avatar
+                    name={me?.username || t("User")}
+                    size={38}
+                    user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
+                  />
+                </button>
+              )}
+              <h2>{glassShell && isMobile ? t("Settings") : t("settings.title")}</h2>
               <p>{t("Manage your Descall account")}</p>
             </div>
             {isMobile && (
-              <button type="button" className="us-icon-btn" onClick={onClose} aria-label={t("Close")}>
+              <button type="button" className={`us-icon-btn${glassShell ? " g-settings-close" : ""}`} onClick={onClose} aria-label={t("Close")}>
                 <X size={20} />
               </button>
             )}
           </div>
 
           <button type="button" className="us-mini-profile" onClick={() => openTab("overview")}>
-            <Avatar
-              name={me?.username || t("User")}
-              size={40}
-              user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-            />
+            <span className="us-mini-avatar">
+              <Avatar
+                name={me?.username || t("User")}
+                size={glassShell && isMobile ? 56 : 40}
+                user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
+              />
+              {glassShell && isMobile ? <StatusBadge status={myStatus || "online"} /> : null}
+            </span>
             <div className="us-mini-meta">
               <strong style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap" }}>
                 <span className="us-mini-name">{displayName || me?.username || t("User")}</span>
                 <AdminBadge user={me} variant="inline" />
               </strong>
-              <span>@{me?.username?.toLowerCase() || "user"}</span>
+              <span>
+                @{me?.username?.toLowerCase() || "user"}
+                {glassShell && isMobile ? (
+                  <>
+                    {" · "}
+                    <em className="us-descoin">◈ {Number(me?.descoinBalance || 0).toLocaleString(locale === "tr" ? "tr-TR" : "en-US")} DesCoin</em>
+                  </>
+                ) : null}
+              </span>
             </div>
             {isMobile && <ChevronRight size={16} className="us-chevron" />}
           </button>
@@ -2481,6 +2506,7 @@ const UserPanel = forwardRef(function UserPanel({
                     key={item.id}
                     type="button"
                     className={`us-nav-item ${active ? "active" : ""}`}
+                    data-nav={item.id}
                     onClick={() => openTab(item.id)}
                   >
                     <span className="us-nav-ico">
@@ -2490,7 +2516,11 @@ const UserPanel = forwardRef(function UserPanel({
                       <span className="us-nav-label">{item.label}</span>
                       {isMobile && <span className="us-nav-hint">{item.hint}</span>}
                     </span>
-                    {isMobile && <ChevronRight size={16} className="us-chevron" />}
+                    {isMobile && glassShell && item.id === "language" ? (
+                      <span className="us-nav-value">{locale === "tr" ? "Türkçe" : "English"}</span>
+                    ) : isMobile ? (
+                      <ChevronRight size={16} className="us-chevron" />
+                    ) : null}
                   </button>
                 );
               })}
@@ -2533,7 +2563,7 @@ const UserPanel = forwardRef(function UserPanel({
               {savingProfile ? t("Saving…") : profileSaved ? t("Saved") : t("Save")}
             </button>
           ) : (
-            <button type="button" className="us-icon-btn" onClick={onClose} aria-label={t("Close settings")}>
+            <button type="button" className={`us-icon-btn${glassShell && isMobile ? " g-settings-close" : ""}`} onClick={onClose} aria-label={t("Close settings")}>
               <X size={20} />
             </button>
           )}
