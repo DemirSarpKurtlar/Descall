@@ -42,7 +42,15 @@ Friends and calls differ only by the mock port inside the invite link (`localhos
 
 ### CI
 
-Commit `b78b715`. Tag `v2.9.155` is pushed with this stage. CI results are filled in after TestFlight, the Windows release, Vercel, Render, and the quality gates finish.
+Commit `b78b715`. Tag `v2.9.155` points at `60110a7`.
+
+CI for `60110a7920ccdae588189d5a7c4fe151be407950`:
+
+- Marketing quality gates: success (run 37972752993)
+- Publish Descall release (Windows): success (run 37972754711)
+- iOS TestFlight: success (run 37972754684)
+- Deploy SPA to Vercel: success (run 37972752755)
+- Deploy to Render: success (run 37972752896)
 
 ### TestFlight kontrol listesi (Demir)
 
@@ -70,3 +78,13 @@ TestFlight 2.9.155 notları. Yalnız `html.glass-ui`.
 - Duyurular: API `created_at` döndürür, sayfa `createdAt` okuyordu. İkisi de kabul edilir, sayfa her açılışta yenilenir, liste kayar. Boş veya hata durumu görünür.
 
 440×956 ölçüm (Vite + shotkit, cam açık): menü 16,421,280×435 (alt kenar 100); lens 16,60,44; duyuru sayfası y 134, iki satır ve tarih; Oyna hub 0,0,440×956, çekmece `display:none`, sekme çubuğu duruyor. Basış ölçeği grup 0.885, avatar 0.885, artı 0.890.
+
+## Hotfix — duyuru kartı, sohbet başlığı, liste avatarı · 2.9.157
+
+TestFlight 2.9.156. Yalnız `html.glass-ui`.
+
+- Duyuru kartı artık üstte hizalı: ikon solda, başlık tek satır, gövde en fazla iki satır, süre sağ üstte, “admin tarafından” gövdenin altında. Uzun metin kartın dışına taşmıyor.
+- Sohbet başlığı `contain: paint` olan 0 yükseklikteki kutuya sabitlendiği için görünmüyordu. DM, grup ve sunucu kanalları geri · kimlik kapsülü · eylem kapsülü ile açılır. Kanal başlığı: `#` + ad, “Sunucu · N üye”, ara / üyeler / sabitle.
+- Sohbet listesindeki avatarların iç gölge çerçevesi kalktı. Durum noktası ayrımı duruyor.
+
+440×956 ölçüm: DM başlığı 12,60,416×48 (geri 48, kimlik 166×48, eylemler 186×48). Kanal başlığı 12,60,416×48; başlık “genel”, alt yazı “Oyun Gecesi · 128 üye”, sağda ara / üyeler / sabitle. Duyuru kartı 380×104, ikon 40×40 kartın içinde, gövde iki satır.

@@ -164,13 +164,21 @@ html.glass-ui .app-root.g-shell .group-icon img {
   border-radius: 30% !important;
 }
 
+html.glass-ui .app-root.g-shell .dm-avatar .ui-avatar,
+html.glass-ui .app-root.g-shell .dm-avatar .ui-avatar-inner,
+html.glass-ui .app-root.g-shell .dm-avatar .ui-avatar-img {
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: none !important;
+}
+
 html.glass-ui .app-root.g-shell .dm-avatar .ui-avatar {
   width: 56px !important;
   height: 56px !important;
   min-width: 56px !important;
   min-height: 56px !important;
   font-size: 22px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -8px 16px rgba(0, 0, 0, 0.12);
+  background: transparent !important;
 }
 
 html.glass-ui .app-root.g-shell .dm-avatar .status-badge,
@@ -387,7 +395,11 @@ html.glass-ui .app-root.g-shell .group-swipe-btn.rename svg { background: #ff9f0
 /* ── Conversation header capsule (03) ── */
 html.glass-ui .app-root.g-shell.in-conversation .chat-top-chrome {
   height: 0;
+  min-height: 0;
   overflow: visible;
+  /* contain:paint on a 0-height box clips the fixed capsule header to nothing. */
+  contain: none;
+  isolation: auto;
 }
 
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv {
@@ -472,6 +484,25 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   color: #fff;
   font-weight: 650;
   overflow: hidden;
+}
+
+/* Channel pages: a hash glyph in the identity capsule, not a second avatar. */
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon.g-hash {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  margin-left: 8px;
+  border-radius: 0;
+  background: none !important;
+  color: var(--g-t2);
+  box-shadow: none;
+  overflow: visible;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon.g-hash svg {
+  width: 18px;
+  height: 18px;
 }
 
 html.glass-ui .app-root.g-shell.in-conversation .g-peer-name {
@@ -1222,17 +1253,23 @@ html.glass-ui .add-modal.g-announce .add-modal-header .icon-btn {
 html.glass-ui .add-modal.g-announce .announcement-item {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
+  grid-template-areas:
+    "mark title time"
+    "mark body time"
+    "mark author time";
   column-gap: 12px;
-  align-items: center;
+  row-gap: 2px;
+  align-items: start;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   margin-bottom: 8px;
-  min-height: 64px;
+  min-height: 0;
   padding: 12px;
   border: 0;
   position: relative;
   flex-shrink: 0;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-item::before {
@@ -1240,8 +1277,8 @@ html.glass-ui .add-modal.g-announce .announcement-item::before {
 }
 
 html.glass-ui .add-modal.g-announce .g-ann-mark {
-  grid-column: 1;
-  grid-row: 1 / span 2;
+  grid-area: mark;
+  align-self: start;
   width: 40px;
   height: 40px;
   border-radius: 30%;
@@ -1251,11 +1288,12 @@ html.glass-ui .add-modal.g-announce .g-ann-mark {
   background: var(--g-brand);
   font-size: 18px;
   line-height: 1;
+  overflow: hidden;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-title {
-  grid-column: 2;
-  grid-row: 1;
+  grid-area: title;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -1263,29 +1301,46 @@ html.glass-ui .add-modal.g-announce .announcement-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin: 0;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-content {
-  grid-column: 2;
-  grid-row: 2;
+  grid-area: body;
+  min-width: 0;
   font-size: 14px;
+  line-height: 1.35;
   color: var(--g-t2);
-  margin-top: 2px;
+  margin: 0;
   white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-meta {
-  grid-column: 3;
-  grid-row: 1 / span 2;
-  align-self: center;
-  font-size: 13px;
-  color: var(--g-t3);
+  display: contents;
 }
 
-html.glass-ui .add-modal.g-announce .announcement-date,
-html.glass-ui .add-modal.g-announce .announcement-author {
+html.glass-ui .add-modal.g-announce .announcement-date {
+  grid-area: time;
+  justify-self: end;
+  align-self: start;
+  margin-top: 2px;
   font-size: 13px;
   color: var(--g-t3);
+  white-space: nowrap;
+}
+
+html.glass-ui .add-modal.g-announce .announcement-author {
+  grid-area: author;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--g-t3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Reduced motion: menus fade, no scale. */

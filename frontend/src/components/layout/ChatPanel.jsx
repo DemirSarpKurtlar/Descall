@@ -263,6 +263,9 @@ export default function ChatPanel({
     headerDm?.equippedAvatarFrame?.asset_url || headerDm?.equippedAvatarEffect?.effect_key,
   );
   const headerDmAvatarSize = headerDmHasCosmetics ? 28 : 40;
+  const glassServerChannel = Boolean(glass && activeView === "servers" && activeChannel);
+  const glassConv = Boolean(glass && (headerDm || headerGroup || glassServerChannel));
+  const glassHash = glassServerChannel && activeChannel?.type !== "voice" && activeChannel?.type !== "stage";
   const headerConversationKey = headerGroup
     ? `group:${headerGroup.id}`
     : headerDm
@@ -299,6 +302,10 @@ export default function ChatPanel({
       return t("{count} members", { count: headerGroup.memberCount || 0 });
     }
     if (activeView === "servers" && activeChannel) {
+      if (glass && activeServer?.name) {
+        const count = activeServer.memberCount || 0;
+        return `${activeServer.name} · ${t("{count} members", { count })}`;
+      }
       if (activeChannel.topic) return activeChannel.topic;
       if (activeChannel.type === "voice") return t("Voice channel");
       if (activeChannel.type === "stage") return t("Stage channel");
@@ -398,7 +405,7 @@ export default function ChatPanel({
           key={headerConversationKey}
           style={activeView === "activity" ? { display: "none" } : undefined}
         >
-        <header className={glass && (headerDm || headerGroup) ? "panel-header g-conv" : "panel-header"}>
+        <header className={glassConv ? "panel-header g-conv" : "panel-header"}>
         <div className="header-left">
           {isMobile && (
             <button
@@ -411,7 +418,7 @@ export default function ChatPanel({
               {showMobileBack ? <ChevronLeft size={22} /> : <Menu size={20} />}
             </button>
           )}
-          <div className={`header-identity${glass && (headerDm || headerGroup) ? " g-peer" : ""}`}>
+          <div className={`header-identity${glassConv ? " g-peer" : ""}`}>
             {headerDm ? (
               <button
                 type="button"
@@ -437,9 +444,13 @@ export default function ChatPanel({
                   <span>{glass && headerGroup ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}</span>
                 )}
               </div>
+            ) : glassHash ? (
+              <div className="header-icon g-hash" aria-hidden="true">
+                <Hash size={18} />
+              </div>
             ) : null}
             <div
-              className={`header-title-block${headerDm ? " is-dm" : ""}${glass && (headerDm || headerGroup) ? " g-peer-text" : ""}`}
+              className={`header-title-block${headerDm ? " is-dm" : ""}${glassConv ? " g-peer-text" : ""}`}
               role={headerDm ? "button" : undefined}
               tabIndex={headerDm ? 0 : undefined}
               onClick={headerDm ? () => setProfileTarget(headerDm) : undefined}
@@ -452,12 +463,12 @@ export default function ChatPanel({
               title={headerDm ? t("View profile") : undefined}
               style={{ cursor: headerDm ? "pointer" : "default" }}
             >
-              <h1 className={glass && (headerDm || headerGroup) ? "header-title g-peer-name" : "header-title"}>
-                <span className={glass && (headerDm || headerGroup) ? "header-title-text g-peer-name-text" : "header-title-text"}>{getTitle()}</span>
+              <h1 className={glassConv ? "header-title g-peer-name" : "header-title"}>
+                <span className={glassConv ? "header-title-text g-peer-name-text" : "header-title-text"}>{glassHash ? (activeChannel?.name || "") : getTitle()}</span>
                 {headerDm && <AdminBadge user={headerDm} variant="inline" />}
               </h1>
               {getSubtitle() && (
-                <span className={`header-subtitle${glass && (headerDm || headerGroup) ? " g-peer-status" : ""}${glass && (headerGroup || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>{getSubtitle()}</span>
+                <span className={`header-subtitle${glassConv ? " g-peer-status" : ""}${glass && (headerGroup || glassServerChannel || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>{getSubtitle()}</span>
               )}
             </div>
           </div>
