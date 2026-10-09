@@ -92,7 +92,8 @@ for (const s of SCEN.filter((x) => !ONLY || ONLY.includes(x.name))) {
     diffPx = pixelmatch(A.data, B.data, d.data, A.width, A.height, { threshold: 0 });
     if (diffPx) fs.writeFileSync(`${OUT}/${s.name}-diff.png`, PNG.sync.write(d));
   }
-  const domSame = a.dom === b.dom;
+  const norm = (html) => html.replace(/localhost:\d+/g, "localhost:PORT");
+  const domSame = norm(a.dom) === norm(b.dom);
   if (!domSame) { fs.writeFileSync(`${OUT}/${s.name}-before.html`, b.dom); fs.writeFileSync(`${OUT}/${s.name}-after.html`, a.dom); }
   rows.push({ name: s.name, diffPx, domSame, glass: /glass-ui/.test(a.htmlClass), htmlClass: a.htmlClass, domLen: a.dom.length });
   console.log(s.name, "diffPx=" + diffPx, "dom=" + (domSame ? "same" : "DIFFERENT"), "glass=" + /glass-ui/.test(a.htmlClass), a.dom.length);

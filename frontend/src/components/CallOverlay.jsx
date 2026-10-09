@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
   Minus, Maximize2, Users, MessageSquare, Hand, MoreVertical, Check, X as XIcon,
-  Volume2, ChevronUp, Mic2, SlidersHorizontal,
+  Volume2, ChevronUp, ChevronDown, Mic2, SlidersHorizontal,
 } from "lucide-react";
 import { Avatar } from "./ui/Avatar";
 import StatusBadge from "./ui/StatusBadge";
@@ -28,6 +28,7 @@ import { DockDeviceSlot } from "./call/DevicePicker";
 import VoiceMemberContextMenu from "./servers/VoiceMemberContextMenu";
 import UserProfileModal from "./social/UserProfileModal";
 import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
+import useGlassUi from "../hooks/useGlassUi";
 
 /*
  * Google Meet-style call overlay
@@ -89,7 +90,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
-export default function CallOverlay({ call, groupCall, me }) {
+export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const t = useT();
   const { toast } = useToast();
   const callOverlayKey = me?.equippedCallOverlay?.effect_key || null;
@@ -121,6 +122,7 @@ export default function CallOverlay({ call, groupCall, me }) {
   };
   const [copiedInfo, setCopiedInfo] = useState(false);
   const narrowViewport = useIsNarrowViewport(720);
+  const glass = useGlassUi();
   const moreMenuRef = useRef(null);
   const audioPanelRef = useRef(null);
   const screenQualityAnchorRef = useRef(null);
@@ -183,6 +185,13 @@ export default function CallOverlay({ call, groupCall, me }) {
     }
   }, [active]);
 
+  useEffect(() => {
+    if (!glass || !active) return undefined;
+    const root = document.documentElement;
+    root.classList.add("g-in-call");
+    return () => root.classList.remove("g-in-call");
+  }, [glass, active]);
+
   // `ontrack` can run while an incoming caller is still negotiating, before
   // the active-call UI mounts its <audio>. Retry attachment after each render
   // so the first remote audio track is never lost until a later renegotiation.
@@ -198,7 +207,11 @@ export default function CallOverlay({ call, groupCall, me }) {
     audio.play().catch(() => {});
   }, [isDm, call?.mode, call?.remoteAudioRef, call?.remoteStream]);
 
-  if (!active) return null;
+  if (!active) {
+    const shot = glass && typeof window !== "undefined" ? window.__DESCALL_SHOT_CALL : null;
+    if (shot) return <GlassCallShot kind={shot} />;
+    return null;
+  }
 
   const mode = isDm ? call.mode : "active";
   const peer = isDm ? call.peer : null;
@@ -211,7 +224,9 @@ export default function CallOverlay({ call, groupCall, me }) {
   const formattedDuration = duration
     ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`
     : "";
-  const title = isDm ? (peer?.username || t("User")) : t("Group Call");
+  const title = isDm
+    ? (glass ? (resolveDisplayName(peer) || peer?.username || t("User")) : (peer?.username || t("User")))
+    : (glass && groupName ? groupName : t("Group Call"));
   const participantCount = (groupCall.participants?.filter((p) => p.id !== me?.id).length ?? 0) + 1;
   const subtitle = isDm
     ? mode === "incoming"
@@ -306,7 +321,7 @@ export default function CallOverlay({ call, groupCall, me }) {
         {remoteAudio}
         {durableScreenAudio}
         <motion.div
-          className={`call-overlay-minimized ${callOverlayClass}`.trim()}
+          className={`call-overlay-minimized ${callOverlayClass}${glass ? " g-call-min" : ""}`.trim()}
           initial={{ opacity: 0, y: 60, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 60, scale: 0.9 }}
@@ -470,7 +485,7 @@ export default function CallOverlay({ call, groupCall, me }) {
     {durableScreenAudio}
     <motion.div
       data-call-overlay="true"
-      className={`call-overlay-root ${callOverlayClass}`.trim()}
+      className={`call-overlay-root ${callOverlayClass}${glass ? ` g-call${isDm ? " is-dm" : " is-group"}` : ""}`.trim()}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -486,6 +501,38 @@ export default function CallOverlay({ call, groupCall, me }) {
     >
       <style>{PULSE_STYLE}</style>
       {/* ====== TOP INFO BAR ====== */}
+      {glass ? (
+        <div className="g-call-head">
+          <button type="button" className="g-cbtn g-glass" onClick={() => setMinimized(true)} aria-label={t("Minimize")}>
+            <ChevronDown size={22} strokeWidth={1.9} />
+          </button>
+          <div className="g-call-title g-glass">
+            <div className="g-call-title-text">
+              <div className="g-call-name">
+                <span className="g-call-name-text">{title}</span>
+                {isDm ? <AdminBadge user={peer} variant="inline" /> : null}
+              </div>
+              <div className="g-call-sub">
+                {subtitle}{formattedDuration ? ` · ${formattedDuration}` : ""}
+                {anyScreenShare ? ` · ${t("Presenting")}` : ""}
+              </div>
+            </div>
+            {isDm && mode === "active" ? (
+              <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={call?.networkStats} />
+            ) : null}
+            {!isDm ? (
+              <button
+                type="button"
+                className="g-cbtn g-glass g-call-people"
+                onClick={() => setShowParticipants((v) => !v)}
+                aria-label={t("Show participants")}
+              >
+                <Users size={18} strokeWidth={1.9} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
       <div
         style={{
           position: "absolute",
@@ -526,6 +573,7 @@ export default function CallOverlay({ call, groupCall, me }) {
           <TopIconBtn onClick={() => setMinimized(true)}><Minus size={18} /></TopIconBtn>
         </div>
       </div>
+      )}
 
       {/* ====== MAIN CONTENT AREA ====== */}
       {/* Reserve real control-bar height so screen share never sits under the buttons */}
@@ -596,7 +644,7 @@ export default function CallOverlay({ call, groupCall, me }) {
 
       {/* ====== BOTTOM CONTROL BAR ====== */}
       <div
-        className="call-control-bar"
+        className={glass ? "call-control-bar g-call-ctrl g-glass" : "call-control-bar"}
         style={{
           position: "absolute",
           bottom: 0,
@@ -648,6 +696,7 @@ export default function CallOverlay({ call, groupCall, me }) {
               ]}
             >
               <CircleBtn
+                className={glass ? `g-cb${muted ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
                 color={muted ? "#ed4245" : "#3c4043"}
                 onClick={isDm ? call.toggleMute : groupCall.toggleMute}
@@ -658,6 +707,7 @@ export default function CallOverlay({ call, groupCall, me }) {
             </DockDeviceSlot>
 
             <CircleBtn
+              className={glass ? `g-cb${deafened ? " is-on" : ""}` : undefined}
               size={narrowViewport ? 46 : 52}
               color={deafened ? "#ed4245" : "#3c4043"}
               onClick={isDm ? call.toggleDeafen : groupCall.toggleDeafen}
@@ -679,6 +729,7 @@ export default function CallOverlay({ call, groupCall, me }) {
               ]}
             >
               <CircleBtn
+                className={glass ? `g-cb${cameraOn ? "" : " is-on"}` : undefined}
                 size={narrowViewport ? 46 : 52}
                 color={cameraOn ? "#3c4043" : "#ed4245"}
                 onClick={isDm ? call.toggleCamera : groupCall.toggleCamera}
@@ -702,6 +753,7 @@ export default function CallOverlay({ call, groupCall, me }) {
               }}
             >
               <CircleBtn
+                className={glass ? `g-cb${screenSharing ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
                 color={screenSharing ? "#3ba55d" : "#3c4043"}
                 onClick={() => {
@@ -798,6 +850,7 @@ export default function CallOverlay({ call, groupCall, me }) {
             {!narrowViewport && (
               <div ref={audioPanelRef} style={{ position: "relative", flexShrink: 0 }}>
                 <CircleBtn
+                  className={glass ? "g-cb" : undefined}
                   size={52}
                   color={showAudioPanel ? "rgba(255,255,255,0.18)" : "#3c4043"}
                   title={t("Audio devices")}
@@ -825,6 +878,7 @@ export default function CallOverlay({ call, groupCall, me }) {
 
             <div ref={moreMenuRef} style={{ position: "relative", flexShrink: 0 }}>
               <CircleBtn
+                className={glass ? "g-cb" : undefined}
                 size={narrowViewport ? 46 : 52}
                 color={showMoreMenu || (narrowViewport && handRaised) ? "rgba(255,255,255,0.15)" : "#3c4043"}
                 title={t("More options")}
@@ -840,6 +894,7 @@ export default function CallOverlay({ call, groupCall, me }) {
               <AnimatePresence>
                 {showMoreMenu && (
                   <motion.div
+                    className={glass ? "g-call-menu" : undefined}
                     initial={narrowViewport ? { opacity: 0, y: 20 } : { opacity: 0, y: 8, scale: 0.95 }}
                     animate={narrowViewport ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: 1 }}
                     exit={narrowViewport ? { opacity: 0, y: 20 } : { opacity: 0, y: 8, scale: 0.95 }}
@@ -871,6 +926,16 @@ export default function CallOverlay({ call, groupCall, me }) {
                       boxSizing: "border-box",
                     }}
                   >
+                    {glass && (
+                      <MoreMenuItem
+                        icon={<MessageSquare size={16} />}
+                        label={t("Chat")}
+                        onClick={() => {
+                          setShowChat((v) => !v);
+                          setShowMoreMenu(false);
+                        }}
+                      />
+                    )}
                     {narrowViewport && (
                       <>
                         <MoreMenuItem
@@ -972,6 +1037,7 @@ export default function CallOverlay({ call, groupCall, me }) {
             )}
 
             <CircleBtn
+              className={glass ? "g-cb is-end" : undefined}
               color="#ed4245"
               size={narrowViewport ? 50 : 56}
               onClick={() => (isDm ? call.endCall(peer?.id) : groupCall.leaveCall())}
@@ -1208,6 +1274,7 @@ function ParticipantTile({
   onContextMenu,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   const elRef = useRef(null);
   const detected = useSpeaking(stream, {
     muted: muted || (isLocal === false && !stream),
@@ -1319,6 +1386,23 @@ function ParticipantTile({
         </div>
       )}
 
+      {!showVideo && glass && !small && (
+        <div className="participant-tile-label">
+          {isSpeaking ? <span className="speaking-dot" /> : null}
+          <span className="participant-tile-name">
+            <NameEffectText user={user}>{displayName}</NameEffectText>
+          </span>
+          <AdminBadge user={user} variant="inline" />
+          {muted && <MicOff size={14} aria-label={t("Muted")} title={t("Muted")} />}
+          {deafened && <HeadphoneOff size={14} aria-label={t("Deafened")} title={t("Deafened")} />}
+          {cameraOn === false && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
+        </div>
+      )}
+      {glass && !small && (muted || cameraOn === false) && (
+        <div className="g-call-corner" aria-hidden>
+          {cameraOn === false ? <VideoOff size={14} /> : <MicOff size={14} />}
+        </div>
+      )}
       {showVideo && (
         <div className="participant-tile-label">
           <span className="speaking-dot" />
@@ -1403,6 +1487,7 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
 
 function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
   const t = useT();
+  const glass = useGlassUi();
   const dmRemote = useDmRemoteParticipant({
     peer: isDm ? call?.peer : null,
     mode: isDm ? call?.mode : null,
@@ -1440,8 +1525,14 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
   return (
     <motion.div
       layout
+      className={glass ? `g-call-grid${isDm ? " is-dm" : " is-group"}` : undefined}
       transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
-      style={{
+      style={glass ? {
+        flex: 1,
+        minHeight: 0,
+        height: "100%",
+        position: "relative",
+      } : {
         flex: 1,
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
@@ -1894,9 +1985,10 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 
 /* ---------- Sub-components ---------- */
 
-function CircleBtn({ children, color = "#3c4043", size = 52, onClick, title }) {
+function CircleBtn({ children, color = "#3c4043", size = 52, onClick, title, className }) {
   return (
     <button
+      className={className}
       onClick={onClick}
       title={title}
       style={{
@@ -1968,6 +2060,7 @@ function PersonRow({ name, avatarUrl, isHost }) {
    ───────────────────────────────────────────────────────────────── */
 function AudioDevicePanel({ isDm, call, groupCall, onClose, narrow = false }) {
   const t = useT();
+  const glass = useGlassUi();
   const hook = isDm ? call : groupCall;
   const {
     audioInputDevices = [],
@@ -1998,6 +2091,7 @@ function AudioDevicePanel({ isDm, call, groupCall, onClose, narrow = false }) {
 
   return (
     <motion.div
+      className={glass ? "g-call-sheet" : undefined}
       initial={narrow ? { opacity: 0, y: 24 } : { opacity: 0, y: 12, x: "-50%", scale: 0.96 }}
       animate={narrow ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, x: "-50%", scale: 1 }}
       exit={narrow ? { opacity: 0, y: 24 } : { opacity: 0, y: 12, x: "-50%", scale: 0.96 }}
@@ -2210,5 +2304,102 @@ function MoreMenuItem({ icon, label, onClick, danger }) {
       <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
       {label}
     </button>
+  );
+}
+
+/** Screenshot-only stage (window.__DESCALL_SHOT_CALL). Never set in production. */
+function GlassCallShot({ kind }) {
+  const t = useT();
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("g-in-call");
+    return () => root.classList.remove("g-in-call");
+  }, []);
+  if (kind === "incoming" || kind === "group-incoming") {
+    return (
+      <IncomingCallCard
+        username="Mert K."
+        callType={kind === "video-incoming" ? "video" : "voice"}
+        isGroup={kind === "group-incoming"}
+        subtitle={kind === "group-incoming" ? t("Group call") : undefined}
+        onAccept={() => {}}
+        onDecline={() => {}}
+      />
+    );
+  }
+  const group = kind === "group";
+  const longName = kind === "dm-long";
+  const tiles = group
+    ? [
+        { name: "Ayşe", letter: "A", speaking: true },
+        { name: "Mert K.", letter: "M" },
+        { name: "Elif", letter: "E", camOff: true },
+        { name: t("You"), letter: "D", corner: "video" },
+      ]
+    : [
+        { name: t("You"), letter: "D" },
+        { name: "Ayşe Yılmaz", letter: "A", speaking: true },
+      ];
+  return (
+    <div className={`call-overlay-root g-call${group ? " is-group" : " is-dm"}`} data-call-overlay="true" style={{ position: "fixed", inset: 0, zIndex: 9998, display: "flex", flexDirection: "column" }}>
+      <div className="g-call-head">
+        <button type="button" className="g-cbtn g-glass" aria-label={t("Minimize")}>
+          <ChevronDown size={22} strokeWidth={1.9} />
+        </button>
+        <div className="g-call-title g-glass">
+          <div className="g-call-title-text">
+            <div className="g-call-name">
+              <span className="g-call-name-text">{group ? "Akşam Ekibi" : longName ? "Ayşe Nur Karadenizlioğlu" : "Ayşe Yılmaz"}</span>
+              {longName ? <AdminBadge user={{ is_admin: true, isAdmin: true, role: "admin" }} variant="inline" /> : null}
+            </div>
+            <div className="g-call-sub">{group ? "Grup araması · 4 katılımcı · 12:08" : "04:12 · Sesli arama"}</div>
+          </div>
+          <div className="call-quality-hud excellent" aria-hidden>
+            <div className="call-quality-bars">
+              <span className="on" style={{ height: 5 }} />
+              <span className="on" style={{ height: 8 }} />
+              <span className="on" style={{ height: 11 }} />
+              <span className="on" style={{ height: 14 }} />
+            </div>
+          </div>
+          {group ? (
+            <button type="button" className="g-cbtn g-glass g-call-people" aria-label={t("Show participants")}>
+              <Users size={18} strokeWidth={1.9} />
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <div className="call-main-stage" style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        <div className={`g-call-grid${group ? " is-group" : " is-dm"}`} style={{ flex: 1, minHeight: 0, height: "100%", position: "relative" }}>
+          {tiles.map((tile) => (
+            <div key={tile.name} className={`participant-tile participant-tile--avatar-only${tile.speaking ? " is-speaking" : ""}`}>
+              {tile.speaking && !group ? <div className="g-call-qchip"><span className="speaking-dot" />Mükemmel</div> : null}
+              {tile.camOff || tile.corner ? <div className="g-call-corner">{tile.corner === "video" ? <VideoOff size={14} /> : <MicOff size={14} />}</div> : null}
+              <div className="participant-tile-avatar-stack">
+                <div className="participant-tile-avatar-shell">
+                  <div className="participant-tile-avatar-core" style={{ position: "relative" }}>
+                    {tile.speaking ? <span className="g-speak-ring" /> : null}
+                    <div className="ui-avatar" style={{ borderRadius: "50%", display: "grid", placeItems: "center", background: tile.letter === "A" ? "linear-gradient(145deg,#ff7a7f,#e5484d)" : "linear-gradient(145deg,#9b85ff,#6e4ff0)", color: "#fff", fontWeight: 650 }}>{tile.letter}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="participant-tile-label">
+                {tile.speaking ? <span className="speaking-dot" /> : null}
+                <span className="participant-tile-name">{tile.name}</span>
+                {tile.camOff ? <MicOff size={14} /> : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="call-control-bar g-call-ctrl g-glass">
+        <button type="button" className="g-cb" aria-label={t("Mute")}><Mic size={23} /></button>
+        <button type="button" className="g-cb" aria-label={t("Deafen")}><Headphones size={23} /></button>
+        <button type="button" className="g-cb" aria-label={t("Turn on camera")}><Video size={23} /></button>
+        <button type="button" className="g-cb" aria-label={t("Present screen")}><Monitor size={23} /><span className="g-qb"><SlidersHorizontal size={11} /></span></button>
+        <button type="button" className="g-cb" aria-label={t("More options")}><MoreVertical size={23} /></button>
+        <button type="button" className="g-cb is-end" aria-label={t("End call")}><PhoneOff size={24} /></button>
+      </div>
+    </div>
   );
 }
