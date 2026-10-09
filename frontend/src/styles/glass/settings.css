@@ -32,6 +32,19 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar-brand p {
   display: none;
 }
 
+html.glass-ui .user-settings.is-mobile.g-settings .us-mini-meta strong {
+  flex-wrap: nowrap !important;
+  min-width: 0;
+  max-width: 100%;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-mini-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 html.glass-ui .user-settings.is-mobile.g-settings .us-mini-profile {
   margin: 8px 12px 12px;
   padding: 14px;

@@ -2314,7 +2314,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     </div>
                     <div className="g-friend-meta">
                       <span className="friend-name">
-                        {resolveDisplayName(friend)}
+                        <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
                       </span>
                       <span className="g-friend-sub">{friendSub(friend)}</span>
@@ -2342,7 +2342,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     </div>
                     <div className="g-friend-meta">
                       <span className="friend-name">
-                        {resolveDisplayName(friend)}
+                        <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
                       </span>
                       <span className="g-friend-sub is-dim">{friendSub(friend)}</span>

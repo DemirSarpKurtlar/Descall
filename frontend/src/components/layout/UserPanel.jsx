@@ -2460,7 +2460,7 @@ const UserPanel = forwardRef(function UserPanel({
             />
             <div className="us-mini-meta">
               <strong style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap" }}>
-                {displayName || me?.username || t("User")}
+                <span className="us-mini-name">{displayName || me?.username || t("User")}</span>
                 <AdminBadge user={me} variant="inline" />
               </strong>
               <span>@{me?.username?.toLowerCase() || "user"}</span>

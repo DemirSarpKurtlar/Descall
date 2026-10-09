@@ -21,6 +21,8 @@ const sidebar = read("../ServerSidebar.jsx");
 const servers = read("../../servers/ServersSidebar.jsx");
 const activity = read("../../activity/ActivitySidebar.jsx");
 const css = read("../../../styles/glass/shell.css");
+const social = read("../../../styles/glass/social.css");
+const chat = read("../../../styles/glass/chat.css");
 const index = read("../../../styles/glass/index.css");
 
 /* 1. Primary destinations: the glass tab bar is built from the same source as the rail. */
@@ -71,5 +73,10 @@ match(css, /html\.glass-ui\.kb-open \.g-tabbar/, "bar hidden with the keyboard")
 match(css, /\.g-peer-name-text \{[^}]*white-space: nowrap;[^}]*text-overflow: ellipsis;/, "Stage 3 peer name: one line + ellipsis");
 match(css, /\.g-peer-name \.dsc-admin-badge--inline \.dsc-admin-badge-label \{\s*display: none;/, "Stage 3 admin badge: icon-only on narrow iPhones");
 match(css, /\.g-peer \{\s*flex: 1 1 auto;\s*min-width: 0;/, "Stage 3 peer capsule can shrink");
+match(sidebar, /friend-name-text/, "friend row name is its own ellipsis span");
+match(social, /\.friend-name \{[^}]*flex-wrap: nowrap;/, "friend row: name and admin badge stay one line");
+match(social, /\.friend-name-text \{[^}]*text-overflow: ellipsis;/, "friend row name ellipsizes");
+match(social, /\.friend-name \.dsc-admin-badge--inline \{[^}]*flex: 0 0 auto;/, "friend row admin badge does not shrink");
+match(chat, /\.member-name-row \{[^}]*flex-wrap: nowrap;/, "group member row keeps the badge on one line");
 
 console.log("navInventory.selftest ok");

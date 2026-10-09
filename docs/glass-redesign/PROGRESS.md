@@ -1,28 +1,22 @@
 # Liquid Glass — progress log
 
-## Stage 7 — Son QA notları · etiketlenmedi
+## Stage 7 — Mühendislik QA · 2.9.167
 
-Bu aşama App Store’a gönderilmez. Cihaz matrisi (eski iPhone, Reduce Transparency, Increase Contrast, Reduce Motion, Low Power, büyük yazı) bu ortamda çalıştırılamadı. Aşağıdaki not, 2.9.165’e kadar ölçülen ekranlar ve Demir’in TestFlight’ta bakacağı listedir. Yeni bir sürüm numarası yok.
+25 ekranın yan yana PNG’leri ve tablo: `docs/glass-redesign/compare/stage7/REPORT.md`. App Store’a gönderilmedi. `mobile-glass.css` duruyor. Görsel denetim, mağaza ekran görüntüleri ve “Bu sürümde yenilikler” Dimaru’da.
 
-### Ölçülen (440×956, üst güvenli alan 62, alt 34)
+Düzeltme: arkadaş satırında uzun ad + yönetici rozeti ikinci satıra kayıyordu (`flex-wrap: wrap`). Camda ad ellipsis, rozet sabit, satır yüksekliği 22pt. Grup üye satırı ve ayar mini profili aynı sözleşme.
 
-- Aşama 3 sohbetler 2.9.155, arama çubuğu başlığın altında 2.9.162.
-- Aşama 4 aramalar 2.9.161.
-- Oyna sekme çubuğu 2.9.163: `showMobileTabBar && (!isPlayPage || glassShell)`. Liste çekmecesi gizli.
-- Aşama 5 2.9.164: arkadaş satırı 76×408, avatar 52, davet kartı, ekle sayfası üst %12, sunucu rayı 68 / ikon 48, kanal başlığı 12,60,416×48, profil sayfası üst %8.
-- Aşama 6 2.9.165: ayarlar satırı ~59, çıkış 52. Companion sekmesi iOS’ta yok.
+Chrome matrisi: 32 tema, Reduce Transparency / Increase Contrast (blur yok), glass-lite, Reduce Motion, 375 ve 440, yatay 844×390’ta sekme duruyor. Electron, Android, iPad ve `descall:glass=0` üzerinde `glass-ui` yok. `build:prod` 202.0 KB / 220 KB. Sentry bu ortamda okunmadı.
 
-### App Store ekran görüntüsü notu
+### TestFlight kontrol listesi (Demir)
 
-Mevcut `appstore/screenshots` dosyalarına dokunulmadı. Yeni cam görselleri TestFlight onayından sonra, Demir isteyince `docs/glass-redesign/shotkit` ile yeniden üretilir. “Bu sürümde yenilikler” metni yazılmadı ve gönderilmedi.
+Sürüm **2.9.167**. Yalnız iPhone.
 
-### Demir’in cihaz listesi
-
-- [ ] Bir güncel iPhone ve, varsa, daha eski bir iPhone. Reduce Transparency, Increase Contrast, Reduce Motion, Düşük Güç.
-- [ ] Açık tema ve bir renkli temada camın kapandığını veya tonun temadan geldiğini bir kez kontrol et (cam varsayılan koyu mockup).
-- [ ] Masaüstü Windows ve tarayıcı: cam sınıfı yok, eski görünüm.
-- [ ] Google ile giriş iOS’ta yok. Companion iOS’ta gizli.
-- [ ] Sentry’de yeni bir cam kaynaklı çökme yok.
+- [ ] Uzun ad + yönetici rozeti tek satır (arkadaş satırında “Yönetici” alt satıra kaymaz).
+- [ ] Oyna sekmesinde cam sekme çubuğu duruyor. Companion yok. Google ile giriş yok.
+- [ ] Sohbet içi arama başlığın altında. Sunucu başlık daireleri ayrı. Grup üye simgelerinde kare çerçeve yok.
+- [ ] Reduce Transparency, Increase Contrast, Reduce Motion, Düşük Güç.
+- [ ] Masaüstü / tarayıcı eski görünüm.
 
 ## Stage 6 — Ayarlar, Oyna, Aktivite, Mağaza · 2.9.165
 

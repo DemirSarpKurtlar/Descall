@@ -1532,6 +1532,16 @@ html.glass-ui .giphy-panel.g-giphy .giphy-footer {
   color: var(--g-t3);
 }
 
+/* Group member rows: long names stay one line; the admin badge stays inline. */
+html.glass-ui .member-name-row {
+  flex-wrap: nowrap;
+}
+
+html.glass-ui .member-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Reduced motion: menus fade, no scale. */
 @media (prefers-reduced-motion: reduce) {
   html.glass-ui .g-materialize {

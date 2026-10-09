@@ -193,13 +193,30 @@ html.glass-ui .g-friend-meta {
 }
 
 html.glass-ui .g-friend-meta .friend-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.018em;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   color: var(--g-t1);
+}
+
+html.glass-ui .g-friend-meta .friend-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.glass-ui .g-friend-meta .friend-name .dsc-admin-badge--inline {
+  flex: 0 0 auto;
+  margin-left: 0;
 }
 
 html.glass-ui .g-friend-sub {
