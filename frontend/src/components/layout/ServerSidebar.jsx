@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Plus, Settings, Hash,
+  Search, Plus, Settings, Hash, Phone, MessageSquare,
   ChevronDown, Bell, UserPlus, X, User, Users, Megaphone,
   MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, MessageSquarePlus, Star, ChevronDown as ChevronDownIcon,
   Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag,
@@ -17,7 +17,7 @@ import { loadAnnouncements } from "../../lib/announcements";
 import { addMemberToGroup } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
-import { isVisiblyOnline } from "../../lib/presence";
+import { getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
 import GroupInviteModal from "../groups/GroupInviteModal";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -29,6 +29,7 @@ import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/datetime";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
+import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import useGlassUi from "../../hooks/useGlassUi";
 
 
@@ -466,6 +467,8 @@ export default function ServerSidebar({
               expanded={expandedSections.friends}
               onToggle={() => toggleSection("friends")}
               onFriendSelect={onFriendSelect}
+              onStartCall={onStartCall}
+              searchQuery={searchQuery}
               friendRequests={friendRequests}
               onAcceptFriend={onAcceptFriend}
               onDeclineFriend={onDeclineFriend}
@@ -531,20 +534,21 @@ export default function ServerSidebar({
         <AnimatePresence>
           {showAddModal && (
             <motion.div
-              className="add-modal-backdrop"
+              className={`add-modal-backdrop${glassShell ? " g-scrim g-add-scrim" : ""}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAddModal(false)}
             >
               <motion.div
-                className="add-modal"
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className={`add-modal${glassShell ? " g-add-sheet g-glass g-heavy" : ""}`}
+                initial={glassShell ? { y: 28, opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                animate={glassShell ? { y: 0, opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
+                exit={glassShell ? { y: 28, opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
+                transition={glassShell ? framerSpring(SPRINGS.sheet) : { type: "spring", damping: 25, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
               >
+                {glassShell ? <div className="g-grabber" aria-hidden="true" /> : null}
                 <div className="add-modal-header">
                   <h3>{t("Create New")}</h3>
                   <button className="icon-btn" onClick={() => setShowAddModal(false)}><X size={18} /></button>
@@ -639,6 +643,7 @@ export default function ServerSidebar({
                       <label className="add-modal-label">{t("Enter a username to add")}</label>
                       <input className="add-modal-input" value={friendUsername} onChange={(e) => setFriendUsername(e.target.value)} placeholder={t("e.g. johndoe")} onKeyDown={(e) => e.key === "Enter" && handleAddFriend()} />
                       <motion.button type="button" className="add-modal-btn" onClick={handleAddFriend} disabled={addLoading || !friendUsername.trim()} whileTap={{ scale: 0.97 }}>
+                        {glassShell && !addLoading ? <UserPlus size={18} /> : null}
                         {addLoading ? t("Sending...") : t("Send Friend Request")}
                       </motion.button>
                     </>
@@ -2243,14 +2248,129 @@ function GroupRowFront({
   );
 }
 
-function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, friendRequests, onAcceptFriend, onDeclineFriend, isMobile, onQuickAdd, me, onShareInvite, loading = false }) {
+function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, onAcceptFriend, onDeclineFriend, isMobile, onQuickAdd, me, onShareInvite, loading = false }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const safeFriends = Array.isArray(friends) ? friends : [];
   const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
   const pendingRequests = Array.isArray(friendRequests) ? friendRequests : [];
 
   const onlineFriends = safeFriends.filter((f) => isVisiblyOnline(safeOnlineUsers, f.id));
   const offlineFriends = safeFriends.filter((f) => !isVisiblyOnline(safeOnlineUsers, f.id));
+
+  if (glassShell) {
+    const q = String(searchQuery || "").trim().toLowerCase();
+    const matches = (friend) => {
+      if (!q) return true;
+      const name = resolveDisplayName(friend).toLowerCase();
+      const handle = String(friend.username || "").toLowerCase();
+      const custom = String(friend.customStatus || friend.custom_status || "").toLowerCase();
+      return name.includes(q) || handle.includes(q) || custom.includes(q);
+    };
+    const pendingShown = pendingRequests.filter(matches);
+    const onlineShown = onlineFriends.filter(matches);
+    const offlineShown = offlineFriends.filter(matches);
+    const friendSub = (friend) => {
+      const custom = friend.customStatus || friend.custom_status;
+      if (custom) return custom;
+      const status = getPresenceStatus(safeOnlineUsers, friend.id);
+      return t(STATUS_META[status]?.label || "Offline");
+    };
+    return (
+      <div className="sidebar-section g-friends">
+        <div className="section-content">
+          {me?.username ? <InviteCard username={me.username} compact /> : null}
+          {pendingShown.length > 0 && (
+            <div className="friend-category">
+              <div className="g-sect is-pending"><span>{t("Pending — {count}", { count: pendingShown.length })}</span></div>
+              {pendingShown.map((req) => (
+                <div key={req.id} className="g-friend-row">
+                  <div className="friend-avatar">
+                    <Avatar name={resolveDisplayName(req)} size={52} user={req} />
+                  </div>
+                  <div className="g-friend-meta">
+                    <span className="friend-name">{resolveDisplayName(req)}</span>
+                    <span className="g-friend-sub is-dim">@{req.username}</span>
+                  </div>
+                  <button type="button" className="g-ib ok" title={t("Accept")} aria-label={t("Accept Friend")} onClick={() => onAcceptFriend?.(req.id)}>
+                    <Check size={18} />
+                  </button>
+                  <button type="button" className="g-ib no" title={t("Decline")} aria-label={t("Decline")} onClick={() => onDeclineFriend?.(req.id)}>
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {onlineShown.length > 0 && (
+            <div className="friend-category">
+              <div className="g-sect"><span>{t("Online — {count}", { count: onlineShown.length })}</span></div>
+              {onlineShown.map((friend) => (
+                <div key={friend.id} className="g-friend-row">
+                  <button type="button" className="g-friend-main" onClick={() => onFriendSelect?.(friend)}>
+                    <div className="friend-avatar">
+                      <Avatar name={resolveDisplayName(friend)} size={52} user={friend} />
+                      <StatusBadge status={safeOnlineUsers.find((u) => u.id === friend.id)?.status || "online"} />
+                    </div>
+                    <div className="g-friend-meta">
+                      <span className="friend-name">
+                        {resolveDisplayName(friend)}
+                        <AdminBadge user={friend} variant="inline" />
+                      </span>
+                      <span className="g-friend-sub">{friendSub(friend)}</span>
+                    </div>
+                  </button>
+                  <button type="button" className="g-ib brand" title={t("Send Message")} aria-label={t("Send Message")} onClick={() => onFriendSelect?.(friend)}>
+                    <MessageSquare size={18} />
+                  </button>
+                  <button type="button" className="g-ib" title={t("Voice Call")} aria-label={t("Voice Call")} onClick={() => onStartCall?.(friend, "voice")}>
+                    <Phone size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {offlineShown.length > 0 && (
+            <div className="friend-category">
+              <div className="g-sect"><span>{t("Offline — {count}", { count: offlineShown.length })}</span></div>
+              {offlineShown.map((friend) => (
+                <div key={friend.id} className="g-friend-row">
+                  <button type="button" className="g-friend-main" onClick={() => onFriendSelect?.(friend)}>
+                    <div className="friend-avatar">
+                      <Avatar name={resolveDisplayName(friend)} size={52} user={friend} />
+                      <StatusBadge status="offline" />
+                    </div>
+                    <div className="g-friend-meta">
+                      <span className="friend-name">
+                        {resolveDisplayName(friend)}
+                        <AdminBadge user={friend} variant="inline" />
+                      </span>
+                      <span className="g-friend-sub is-dim">{friendSub(friend)}</span>
+                    </div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {loading && safeFriends.length === 0 && pendingRequests.length === 0 ? (
+            <ConversationListSkeleton count={6} label={t("Loading conversations")} />
+          ) : safeFriends.length === 0 && pendingRequests.length === 0 ? (
+            <div className="sidebar-empty-friends">
+              <strong>{t("No friends yet")}</strong>
+              <span>{t("Share your invite link — friends join free and connect with you instantly.")}</span>
+              <div className="sidebar-empty-friends-actions">
+                <button type="button" className="mkt-btn mkt-btn-soft" onClick={onQuickAdd}>
+                  {t("Add friend")}
+                </button>
+              </div>
+            </div>
+          ) : onlineShown.length === 0 && offlineShown.length === 0 && pendingShown.length === 0 ? (
+            <p className="g-friends-empty">{t("No results")}</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="sidebar-section">

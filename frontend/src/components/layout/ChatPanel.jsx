@@ -740,6 +740,7 @@ export default function ChatPanel({
       onClose={() => setProfileTarget(null)}
       userId={profileTarget?.id}
       username={profileTarget?.username}
+      displayName={profileTarget?.displayName || profileTarget?.display_name}
       avatarUrl={profileTarget?.avatarUrl || profileTarget?.avatar_url}
       me={me}
       friends={friends}

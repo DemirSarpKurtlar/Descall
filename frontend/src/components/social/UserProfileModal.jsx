@@ -11,6 +11,8 @@ import AdminBadge from "./AdminBadge";
 import { BadgeIcon, NameEffectText, TitleTag } from "../ui/Cosmetics";
 import { getUserValorant } from "../../api/riot";
 import { useT } from "../../context/LocaleContext";
+import { useGlassShell } from "../layout/glass/GlassShell";
+import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { isUserAdmin } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import { useLocale } from "../../context/LocaleContext";
@@ -49,6 +51,7 @@ export default function UserProfileModal({
   onClose,
   userId,
   username,
+  displayName: displayNameProp,
   avatarUrl,
   me,
   friends = [],
@@ -57,6 +60,7 @@ export default function UserProfileModal({
   onFriendSent,
 }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const { locale } = useLocale();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -181,7 +185,7 @@ export default function UserProfileModal({
 
   const displayUsername = profile?.username || username || t("Unknown");
   const displayName =
-    profile?.displayName || profile?.display_name || displayUsername;
+    profile?.displayName || profile?.display_name || displayNameProp || displayUsername;
   const displayAvatar = profile?.avatarUrl ?? avatarUrl ?? null;
   const equippedBannerUrl = profile?.equippedBanner?.asset_url || null;
   const equippedBackgroundUrl = profile?.equippedBackground?.asset_url || null;
@@ -192,6 +196,139 @@ export default function UserProfileModal({
     idle: t("Idle"),
     dnd: t("Do Not Disturb"),
   }[status] || t("Offline");
+  const statusClass = status === "online" ? "is-on" : status === "idle" ? "is-idle" : status === "dnd" ? "is-dnd" : "is-off";
+  const customStatus = profile?.customStatus || profile?.custom_status || "";
+
+  if (glassShell) {
+    return (
+      <>
+        <AnimatePresence>
+          {open && (
+            <motion.div className="g-profile-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+              <motion.div
+                className="g-profile-sheet g-glass g-heavy"
+                initial={{ y: 28, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 24, opacity: 0 }}
+                transition={framerSpring(SPRINGS.sheet)}
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-label={displayName}
+              >
+                <div
+                  className="g-profile-banner"
+                  style={{
+                    background: equippedBannerUrl
+                      ? undefined
+                      : bannerGradient,
+                    backgroundImage: equippedBannerUrl ? cssUrl(equippedBannerUrl) : undefined,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <button type="button" className="g-profile-close g-chip" onClick={onClose} aria-label={t("Close")}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="g-profile-body">
+                  <div className="g-profile-avatar">
+                    <Avatar
+                      name={displayName}
+                      size={88}
+                      user={profile || { avatarUrl: displayAvatar, username: displayUsername, displayName }}
+                    />
+                    <StatusBadge status={status} />
+                  </div>
+                  <div className="g-profile-name">
+                    <NameEffectText user={profile}>{displayName}</NameEffectText>
+                    <BadgeIcon user={profile} />
+                    <TitleTag user={profile} />
+                  </div>
+                  <div className="g-profile-handle">
+                    @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
+                  </div>
+                  {(isUserAdmin(profile || { username: displayUsername }) || valorant?.linked) && (
+                    <div className="g-profile-chips">
+                      {isUserAdmin(profile || { username: displayUsername }) && (
+                        <AdminBadge user={profile || { username: displayUsername, is_admin: true }} variant="chip" />
+                      )}
+                      {valorant?.linked ? <ValorantBadge valorant={valorant} /> : null}
+                    </div>
+                  )}
+                  {profile?.bio ? <p className="g-profile-bio">{profile.bio}</p> : null}
+                  {!isSelf && (
+                    <div className="g-profile-actions">
+                      <button
+                        type="button"
+                        className="is-brand"
+                        onClick={() => {
+                          onStartDm?.({ id: userId, username: displayUsername, avatarUrl: displayAvatar });
+                          onClose();
+                        }}
+                      >
+                        <MessageSquare size={16} /> {t("Send Message")}
+                      </button>
+                      <button
+                        type="button"
+                        className="is-fill"
+                        disabled={friendLoading || friendState === "sent"}
+                        onClick={friendState === "friend" ? handleRemoveFriend : handleAddFriend}
+                      >
+                        {friendState === "friend" ? <UserMinus size={16} /> : friendState === "sent" ? <Check size={16} /> : <UserPlus size={16} />}
+                        {friendState === "friend" ? t("Friends") : friendState === "sent" ? t("Sent") : t("Add Friend")}
+                      </button>
+                    </div>
+                  )}
+                  <div className="g-profile-group">
+                    {profile?.createdAt ? (
+                      <div className="g-profile-grow">
+                        <b>{t("Member Since")}</b>
+                        <span>{formatMemberSince(profile.createdAt, t, locale)}</span>
+                      </div>
+                    ) : null}
+                    {!isSelf ? (
+                      <div className="g-profile-grow">
+                        <b>{t("Mutual Friends")}</b>
+                        <span>{mutualFriends.length}</span>
+                      </div>
+                    ) : null}
+                    {customStatus ? (
+                      <div className="g-profile-grow">
+                        <b>{t("Custom status")}</b>
+                        <span>{customStatus}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {friendError ? <p className="g-profile-bio">{friendError}</p> : null}
+                  {!isSelf && (
+                    <div className="g-profile-safety">
+                      <BlockUserButton
+                        userId={userId}
+                        username={displayUsername}
+                        onChange={(nowBlocked) => {
+                          if (nowBlocked) setFriendState("none");
+                        }}
+                      />
+                      <button type="button" className="user-profile-report-btn" onClick={() => setReportOpen(true)}>
+                        <Flag size={13} /> {t("report.action")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <ReportUserModal
+          open={open && reportOpen}
+          onClose={() => setReportOpen(false)}
+          targetId={userId}
+          targetUsername={displayUsername}
+          contextType="profile"
+        />
+      </>
+    );
+  }
 
   return (
     <AnimatePresence>

@@ -1,5 +1,51 @@
 # Liquid Glass — progress log
 
+## Stage 5 — Arkadaşlar, sunucular, profil · 2.9.164
+
+iPhone-only (`html.glass-ui`). Desktop, web, Electron, Android and iPad stay on the previous UI. New rules live in `styles/glass/social.css`. `servers.css` was not edited. The Play tab bar condition stays `showMobileTabBar && (!isPlayPage || glassShell)`.
+
+### Compare (440×956 @3x, safe area top 62 / bottom 34)
+
+| Screen | Result |
+|---|---|
+| 09 friends | Title 20,112,400×40. Search 16,162,408×42. Invite card 16,222,408×129. Row 16,394,408×76. Avatar 52. Message / call and accept / decline buttons 38. Sections: Bekleyen, Çevrimiçi, Çevrimdışı. |
+| 10 add | Sheet 12,115,416×305 (top 12%). “Yeni Oluştur”, Hızlı Ekle / Arkadaş Ekle / Grup Oluştur, username field, “Arkadaşlık İsteği Gönder”. |
+| 11 servers | Rail 12,120, width 68, icons 48. Glass pane 88,120,340×716. Selected server “Oyun Gecesi”, text and voice channels, voice members. Category label one line (28.8pt). |
+| 12 channel | Header capsule 12,60,416×48. “# duyurular”, “Oyun Gecesi · 128 üye”, search / members / pin. Same capsule as DM and group. In-chat search stays under the header (2.9.162). |
+| 13 menu | Bottom sheet 8,202,424×746. Server identity, Roller, davet, ayarlar, topluluk, ikon, bildirim seviyeleri, yasaklar, denetim, ayrıl/sil. |
+| 14 profile | Sheet top 8% (y 76.5), inset 12. Banner, 88pt avatar, Mesaj Gönder / Arkadaşlar, üyelik ve ortak arkadaşlar, Engelle / Şikayet et. |
+| 14b edit | İptal · Profil · Kaydet. 96pt avatar, Kimlik (görünen ad, biyografi, özel durum), banner under that group. |
+
+Side by side (mockup | app):
+
+- `docs/glass-redesign/compare/stage5-09-friends-side-by-side.png`
+- `docs/glass-redesign/compare/stage5-10-add-side-by-side.png`
+- `docs/glass-redesign/compare/stage5-11-servers-side-by-side.png`
+- `docs/glass-redesign/compare/stage5-12-channel-side-by-side.png`
+- `docs/glass-redesign/compare/stage5-13-menu-side-by-side.png`
+- `docs/glass-redesign/compare/stage5-14-profile-side-by-side.png`
+- `docs/glass-redesign/compare/stage5-14b-edit-side-by-side.png`
+
+Known, not style bugs: the fixture has five online friends and one offline, plus one pending request; the mockup draws four and three. Avatar colors are initials. The invite card keeps Paylaş as an icon, so the DesCoin line wraps. The server header keeps geri, kanal oluştur and sırala next to the menu chevron. Category titles are the server’s own names. Profile edit keeps bio and custom status in the Kimlik group, with the banner after that group. The channel compare opened `#duyurular`, which has no fixture messages; the header is the check.
+
+### Tests
+
+`glass-scope.selftest` ok (862 selectors). `edgeSwipeBack.selftest` ok, including the Play tab-bar regex.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.164**. Yalnız iPhone. Oyna sekmesinde cam sekme çubuğu duruyor; liste çekmecesi gizli.
+
+- [ ] Arkadaşlar: büyük başlık, arama hapı, davet kartı (kopyala ve paylaş), bekleyen istekte kabul/red, çevrimiçi satırda mesaj ve ara, çevrimdışı satırda ara yok.
+- [ ] + sayfası: Hızlı Ekle, Arkadaş, Grup. Kullanıcı adıyla istek gidiyor. Grup oluşturma duruyor.
+- [ ] Sunucular: solda ray, sağda kanal listesi. Yazı kanalına girince başlık `#ad` ve “Sunucu · N üye”. Geri kaydırma kanal → liste.
+- [ ] Ses kanalına girme duruyor. Üye satırları görünüyor.
+- [ ] Sunucu menüsü: Roller, davet, ayarlar, topluluk, ikon, bildirim seviyesi, ayrıl veya sil.
+- [ ] Başkasının profili: banner, çerçeve, unvan, Mesaj / Arkadaşlar, Engelle / Şikayet.
+- [ ] Profil düzenle: avatar kırpma, banner, özel durum kaydediliyor. İptal menüye döner, Kaydet yazar.
+- [ ] Sohbet içi arama hâlâ başlığın hemen altında.
+- [ ] Masaüstü / web / Android aynı eski görünümde.
+
 ## Stage 4 — Aramalar · 2.9.161
 
 iPhone-only (`html.glass-ui`). Desktop, web, Electron, Android and iPad stay on the previous UI. While a call is open the document gets `g-in-call`, which drops blur to the glass-lite budget. Tiles are flat gradients. The header capsule and the control bar are the real blur surfaces.

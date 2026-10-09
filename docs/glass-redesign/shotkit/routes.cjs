@@ -58,7 +58,11 @@ module.exports = function routes(app, D, log) {
   ok("/api/features", () => ({ features: { valorantLfg: true, valorantCompanion: true, dimaai: true }, valorantLfg: true, valorantCompanion: true, dimaai: true }));
   ok(["/health", "/api/health", "/api/status"], () => ({ ok: true }));
   ok(["/api/friends/list", "/friends/list"], () => ({ friends: FRIENDS }));
-  ok(["/api/friends/requests", "/friends/requests"], () => ({ requests: [], incoming: [], outgoing: [] }));
+  ok(["/api/friends/requests", "/friends/requests"], () => ({
+    requests: process.env.MOCK_BADGES ? [D.U("00000000-0000-4000-8000-000000000099", "kaan", "Kaan")] : [],
+    incoming: [],
+    outgoing: [],
+  }));
   ok(["/api/friends/blocked"], () => ({ blocked: [] }));
   ok(["/api/friends/suggestions*"], () => ({ suggestions: [] }));
 

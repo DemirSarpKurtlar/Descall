@@ -37,6 +37,7 @@ import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
+import { useGlassShell } from "./glass/GlassShell";
 import { useLocale } from "../../context/LocaleContext";
 import {
   getNativePushPermission,
@@ -239,6 +240,7 @@ const UserPanel = forwardRef(function UserPanel({
   activity = {},
 }, ref) {
   const { isMobile } = useMobile();
+  const glassShell = useGlassShell();
   const { t, locale, setLocale, locales } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -1148,6 +1150,7 @@ const UserPanel = forwardRef(function UserPanel({
 
   const showMenu = !isMobile || !mobileDetail;
   const showDetail = !isMobile || mobileDetail;
+  const glassProfileEdit = Boolean(glassShell && isMobile && activeTab === "profile" && mobileDetail);
 
   /* ─── Tab content ─── */
   const renderTab = () => {
@@ -2427,7 +2430,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -2506,7 +2509,11 @@ const UserPanel = forwardRef(function UserPanel({
       {/* Detail pane */}
       <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
         <header className="us-main-header">
-          {isMobile ? (
+          {glassProfileEdit ? (
+            <button type="button" className="g-profile-cancel" onClick={backToMenu}>
+              {t("Cancel")}
+            </button>
+          ) : isMobile ? (
             <button type="button" className="us-icon-btn" onClick={backToMenu} aria-label={t("Back")}>
               <ChevronLeft size={22} />
             </button>
@@ -2516,9 +2523,20 @@ const UserPanel = forwardRef(function UserPanel({
             </div>
           )}
           {isMobile && <h3 className="us-mobile-title">{tabTitles[activeTab]}</h3>}
-          <button type="button" className="us-icon-btn" onClick={onClose} aria-label={t("Close settings")}>
-            <X size={20} />
-          </button>
+          {glassProfileEdit ? (
+            <button
+              type="button"
+              className="g-profile-save"
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+            >
+              {savingProfile ? t("Saving…") : profileSaved ? t("Saved") : t("Save")}
+            </button>
+          ) : (
+            <button type="button" className="us-icon-btn" onClick={onClose} aria-label={t("Close settings")}>
+              <X size={20} />
+            </button>
+          )}
         </header>
 
         <div className="us-main-body">

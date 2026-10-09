@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { Check, Coins, Copy, Gift, Share2 } from "lucide-react";
+import { Check, Coins, Copy, Gift, Link2, Share2 } from "lucide-react";
 import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";
+import { useGlassShell } from "../layout/glass/GlassShell";
 
 async function copyText(text) {
   try {
@@ -36,6 +37,7 @@ async function copyText(text) {
  */
 export default function InviteCard({ username, compact = false, onCopied, onShared }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const [copied, setCopied] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const url = useMemo(() => toPublicShareUrl(buildFriendInviteUrl(username)), [username]);
@@ -105,6 +107,28 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
       setShareBusy(false);
     }
   };
+
+  if (glassShell) {
+    return (
+      <div className={`invite-card g-invite${compact ? " compact" : ""}`}>
+        <div className="g-invite-mark" aria-hidden="true">
+          <Link2 size={22} />
+        </div>
+        <div className="g-invite-copy">
+          <strong>{t("Invite friends")}</strong>
+          <span>{t("Join me on Descall — we both get DesCoin")}</span>
+          <em>{t("You get 100 DesCoin · they get 50")}</em>
+        </div>
+        <button type="button" className="g-invite-btn" onClick={copy}>
+          {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+          {copied ? t("Copied") : t("Copy")}
+        </button>
+        <button type="button" className="g-ib" onClick={share} disabled={shareBusy} aria-label={t("Share")} title={t("Share")}>
+          <Share2 size={16} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`invite-card${compact ? " compact" : ""}`}>

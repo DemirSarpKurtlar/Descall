@@ -45,6 +45,7 @@ import {
   HeadphoneOff,
 } from "lucide-react";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
+import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -743,10 +744,81 @@ export default function ServersSidebar({
     else await onLeaveServer?.(server.id, confirmName);
   };
 
+  const renderGlassServerChrome = () => (
+    <>
+      <GlassListHeader
+        title={t("Servers")}
+        inlineTitle
+        buttons={
+          serverListReorderMode
+            ? [{ id: "reorder-done", icon: Check, label: t("Done"), active: true, onClick: () => setServerListReorderMode(false) }]
+            : []
+        }
+        plus={{
+          label: t("Add"),
+          menu: true,
+          onClick: () => setGlassAddMenuOpen((v) => !v),
+        }}
+      />
+      <GlassToolbarMenu
+        open={glassAddMenuOpen}
+        onClose={() => setGlassAddMenuOpen(false)}
+        items={[
+          {
+            id: "create",
+            icon: Plus,
+            label: canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned }),
+            disabled: !canCreate,
+            onClick: () => canCreate && setShowCreate(true),
+          },
+          { id: "join", icon: LogIn, label: t("Join Server"), onClick: () => setShowJoin(true) },
+          { id: "folder", icon: FolderPlus, label: t("New folder"), onClick: handleCreateFolder },
+          { id: "sep", sep: true },
+          {
+            id: "reorder",
+            icon: GripVertical,
+            label: t("Reorder servers"),
+            active: serverListReorderMode,
+            onClick: () => setServerListReorderMode((v) => !v),
+          },
+        ]}
+      />
+    </>
+  );
+
   if (activeServer) {
+    const glassServerOpen = Boolean(glassShell && isMobile);
     return (
-      <aside className="sidebar-secondary servers-sidebar">
+      <aside className={`sidebar-secondary servers-sidebar${glassServerOpen ? " g-server-open" : ""}`}>
         <div className="sidebar-inner">
+          {glassServerOpen ? renderGlassServerChrome() : null}
+          <GlassWrap when={glassServerOpen} className="sidebar-content g-server-split">
+            {glassServerOpen ? (
+              <nav className="g-server-rail" aria-label={t("Servers")}>
+                {servers.map((server) => (
+                  <button
+                    key={server.id}
+                    type="button"
+                    className={`g-server-rail-btn${String(server.id) === String(activeServer.id) ? " on" : ""}`}
+                    aria-label={server.name}
+                    aria-current={String(server.id) === String(activeServer.id) ? "page" : undefined}
+                    onClick={() => onSelectServer?.(server)}
+                  >
+                    <ServerAvatar server={server} />
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="g-server-rail-add"
+                  aria-label={canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned })}
+                  disabled={!canCreate}
+                  onClick={() => canCreate && setShowCreate(true)}
+                >
+                  <Plus size={20} />
+                </button>
+              </nav>
+            ) : null}
+            <GlassWrap when={glassServerOpen} className="g-server-pane g-glass">
           <div
             className="server-shell-header"
             onContextMenu={(e) => {
@@ -796,23 +868,29 @@ export default function ServersSidebar({
               ) : null}
               <button
                 type="button"
-                className="icon-btn"
+                className="icon-btn g-server-menu-btn"
                 title={t("Server menu")}
                 onClick={() => setMenuOpen((v) => !v)}
               >
-                <MoreHorizontal size={18} />
+                {glassShell ? <ChevronRight size={18} /> : <MoreHorizontal size={18} />}
               </button>
             </div>
           </div>
 
-          <AnimatePresence>
-            {menuOpen && (
-              <motion.div
-                className="server-dropdown"
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-              >
+          <ServerMenuFrame glass={Boolean(glassShell)} open={menuOpen} onClose={() => setMenuOpen(false)}>
+            {glassShell ? (
+              <>
+                <div className="g-grabber" aria-hidden="true" />
+                <div className="g-server-sheet-id">
+                  <ServerAvatar server={activeServer} />
+                  <div>
+                    <strong>{activeServer.name}</strong>
+                    <span>{t("{count} members", { count: activeServer.memberCount || 1 })}</span>
+                  </div>
+                </div>
+              </>
+            ) : null}
+            <div className={glassShell ? "g-menu-group" : undefined}>
                 {canManageChannels && (
                   <>
                     <button
@@ -965,9 +1043,8 @@ export default function ServersSidebar({
                     {t("Leave server")}
                   </button>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+          </ServerMenuFrame>
 
           <div className="sidebar-content server-channels-scroll">
             {activeServer && !channelListReady ? (
@@ -1228,6 +1305,8 @@ export default function ServersSidebar({
               </p>
             ) : null}
           </div>
+            </GlassWrap>
+          </GlassWrap>
         </div>
 
         {renderLeaveDeleteConfirm()}
@@ -1388,46 +1467,7 @@ export default function ServersSidebar({
     <aside className="sidebar-secondary servers-sidebar">
       <div className="sidebar-inner">
         {glassShell ? (
-          <>
-            <GlassListHeader
-              title={t("Servers")}
-              inlineTitle
-              buttons={
-                serverListReorderMode
-                  ? [{ id: "reorder-done", icon: Check, label: t("Done"), active: true, onClick: () => setServerListReorderMode(false) }]
-                  : []
-              }
-              plus={{
-                label: t("Add"),
-                menu: true,
-                onClick: () => setGlassAddMenuOpen((v) => !v),
-              }}
-            />
-            {/* Same four actions as the classic header, behind the glass + (mockup 11). */}
-            <GlassToolbarMenu
-              open={glassAddMenuOpen}
-              onClose={() => setGlassAddMenuOpen(false)}
-              items={[
-                {
-                  id: "create",
-                  icon: Plus,
-                  label: canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned }),
-                  disabled: !canCreate,
-                  onClick: () => canCreate && setShowCreate(true),
-                },
-                { id: "join", icon: LogIn, label: t("Join Server"), onClick: () => setShowJoin(true) },
-                { id: "folder", icon: FolderPlus, label: t("New folder"), onClick: handleCreateFolder },
-                { id: "sep", sep: true },
-                {
-                  id: "reorder",
-                  icon: GripVertical,
-                  label: t("Reorder servers"),
-                  active: serverListReorderMode,
-                  onClick: () => setServerListReorderMode((v) => !v),
-                },
-              ]}
-            />
-          </>
+          renderGlassServerChrome()
         ) : (
           <>
           <div className="sidebar-header">
@@ -1632,6 +1672,47 @@ export default function ServersSidebar({
       />
     </aside>
   );
+}
+
+function GlassWrap({ when, className, children }) {
+  if (!when) return children;
+  return <div className={className}>{children}</div>;
+}
+
+function ServerMenuFrame({ glass, open, onClose, children }) {
+  const sheet = (
+    <motion.div
+      className={glass ? "server-dropdown g-server-sheet g-glass g-heavy" : "server-dropdown"}
+      initial={glass ? { y: 28, opacity: 0 } : { opacity: 0, y: -6 }}
+      animate={glass ? { y: 0, opacity: 1 } : { opacity: 1, y: 0 }}
+      exit={glass ? { y: 28, opacity: 0 } : { opacity: 0, y: -6 }}
+      transition={glass ? framerSpring(SPRINGS.sheet) : { duration: 0.16 }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </motion.div>
+  );
+  const tree = (
+    <AnimatePresence>
+      {open ? (
+        glass ? (
+          <motion.div
+            className="add-modal-backdrop g-scrim g-server-menu-scrim"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          >
+            {sheet}
+          </motion.div>
+        ) : (
+          sheet
+        )
+      ) : null}
+    </AnimatePresence>
+  );
+  if (glass && typeof document !== "undefined") return createPortal(tree, document.body);
+  return tree;
 }
 
 function ServerAvatar({ server }) {
