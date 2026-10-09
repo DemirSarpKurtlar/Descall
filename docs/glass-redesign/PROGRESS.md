@@ -1,5 +1,57 @@
 # Liquid Glass — progress log
 
+## Stage 4 — Aramalar · 2.9.157
+
+iPhone-only (`html.glass-ui`). Desktop, web, Electron, Android and iPad stay on the previous UI. While a call is open the document gets `g-in-call`, which drops blur to the glass-lite budget. Tiles are flat gradients. The header capsule and the control bar are the real blur surfaces.
+
+### Compare (440×956 @3x)
+
+| Screen | Result |
+|---|---|
+| 06 1:1 call | Header capsule 12,60,416×56 (title starts at x68). Control bar 12,856,416×76. Self PIP 110×148 at the lower right. Speaking tile has a green rim, name chip, and “Mükemmel”. |
+| 07 group | 2×2 tiles from 12,132, each 203×349, gap 10. Header shows the group name, “Grup araması · 4 katılımcı · 12:08”, quality bars, and the people button. |
+| 08 incoming | Full-screen. “GELEN SESLİ ARAMA”, rings, “Mert K. arıyor”, “Sesli arama”, Reddet / Kabul Et at 76pt. |
+| 19 calls | Chips at 16,178,408×34 (Tümü Cevapsız Gelen Giden Grup). Quick-dial cards 88pt. Rows 76pt. Copy: “Gelen · 18 dk · 04:12”, “Giden · 1 sa · 12:40”, “Cevapsız grup · 4 kişi · Dün”, “Görüntülü · Giden · 2g · 08:05”. |
+
+Long name + admin (`Ayşe Nur Karadenizlioğlu`, shield) stays one line in the call capsule at 440 and at 375. The shield stays inline.
+
+Side by side (mockup | app):
+
+- `docs/glass-redesign/compare/stage4-06-call-side-by-side.png`
+- `docs/glass-redesign/compare/stage4-07-group-side-by-side.png`
+- `docs/glass-redesign/compare/stage4-08-incoming-side-by-side.png`
+- `docs/glass-redesign/compare/stage4-19-calls-side-by-side.png`
+
+Known, not style bugs: Chrome has no SF Pro. Fixture has five online friends (idle and dnd count); the mockup draws three. Avatar colors are initials, not the mockup gradients. On a real iPhone the screen-share button stays hidden (`screenShareUnavailableOnIos`); the compare shot draws the six-button bar so the capsule can be checked. 2.9.156 had inverted the Play tab-bar hide (`|| glassShell` inside the glass branch, always true); this stage restores `!isPlayPage`.
+
+### Zero-diff
+
+Glass off, against 2.9.156, synced mock servers. 0 px and identical DOM on desktop, mobile web, Electron, Android, iPad, groups, servers, activity, and iPhone with `descall:glass=0`.
+
+Friends and calls differ only by the mock port inside the invite link (`localhost:3216` vs `localhost:3214`): 974–1012 px. After normalising `localhost:\d+` the DOM matches. `glass-ui` was absent on every scenario.
+
+### Tests
+
+78 selftests pass. The five pre-existing failures are unchanged: Skeleton, AppLayout.view-transition, AdminPanel.analytics, useCall, sitemap. `edgeSwipeBack` passes again after the Play tab-bar restore. Styles gzip 109.33 KB.
+
+### CI
+
+Filled in after TestFlight, the Windows release, Vercel, Render, and the quality gates finish.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.157**. Yalnız iPhone. Bir aramayı başka bir temada da dene. Telefon ısınırsa cam kendiliğinden hafifler.
+
+- [ ] Aramalar sekmesi: başlık “Aramalar”, 5 filtre (Tümü / Cevapsız / Gelen / Giden / Grup), hızlı ara kartları, son aramalar, geri ara ve görüntülü ara.
+- [ ] Cevapsız satır kırmızı. Grup satırında yuvarlatılmış kare avatar.
+- [ ] 1:1 sesli arama: kapsül başlık (isim tek satır, süre, kalite), büyük karo, küçük “Sen” önizlemesi, alt kontrol kapsülü.
+- [ ] Sessiz / sağırlaştır / kamera / Diğer menüsü / Bitir çalışıyor. Ses aygıtı Diğer menüsünden açılıyor. Küçült (aşağı ok) görüşmeyi karta indiriyor.
+- [ ] Grup araması: 2×2 ızgara, konuşanın yeşil çerçevesi, sağ üstte sessiz/kamera kapalı rozeti.
+- [ ] Gelen arama (uygulama açıkken): tam ekran, Reddet ve Kabul Et. CallKit’ten kabul/red aynı işi yapıyor (görünüm kodu CallKit’e dokunmaz).
+- [ ] Uzun isim + yönetici kalkanı arama başlığında tek satır (375 ve büyük iPhone).
+- [ ] 10 dakikalık görüşmede takılma yok; kontrol çubuğu dışında ağır blur yok.
+- [ ] Masaüstü / web / Android aynı eski arama görünümünde.
+
 ## Stage 3 — Sohbetler, DM, gruplar, mesaj menüsü, ek, composer, duyurular · 2.9.155
 
 iPhone-only (`html.glass-ui`). Desktop, web, Electron, Android and iPad stay on the previous UI.
@@ -94,6 +146,8 @@ TestFlight 2.9.156. Yalnız `html.glass-ui`.
 TestFlight. Yalnız `html.glass-ui`.
 
 Grup satırındaki üye yığını (20pt) kare `.ui-avatar` kutusuna `box-shadow: 0 0 0 2px` çiziyordu; daire içeride olduğu için her simgenin etrafında siyah kare görünüyordu. Gölge, kenarlık ve dış çizgi kaldırıldı. Üst üste binme (`margin-left: -6px`) ve “N üye” duruyor. Büyük grup ikonu (squircle) aynı.
+
+440×956, cam açık: dört simge, `box-shadow: none`, kenarlık 0, iç daire `border-radius: 50%`. Kutunun köşe pikseli sayfa rengiyle aynı `(22, 23, 32)`; ortası avatar rengi. `glass-scope` 669 seçici.
 
 ## Hotfix — GIF seçici aramayı kendiliğinden açmasın · 2.9.158
 
