@@ -1,5 +1,29 @@
 # Liquid Glass — progress log
 
+## Stage 7 — Son QA notları · etiketlenmedi
+
+Bu aşama App Store’a gönderilmez. Cihaz matrisi (eski iPhone, Reduce Transparency, Increase Contrast, Reduce Motion, Low Power, büyük yazı) bu ortamda çalıştırılamadı. Aşağıdaki not, 2.9.165’e kadar ölçülen ekranlar ve Demir’in TestFlight’ta bakacağı listedir. Yeni bir sürüm numarası yok.
+
+### Ölçülen (440×956, üst güvenli alan 62, alt 34)
+
+- Aşama 3 sohbetler 2.9.155, arama çubuğu başlığın altında 2.9.162.
+- Aşama 4 aramalar 2.9.161.
+- Oyna sekme çubuğu 2.9.163: `showMobileTabBar && (!isPlayPage || glassShell)`. Liste çekmecesi gizli.
+- Aşama 5 2.9.164: arkadaş satırı 76×408, avatar 52, davet kartı, ekle sayfası üst %12, sunucu rayı 68 / ikon 48, kanal başlığı 12,60,416×48, profil sayfası üst %8.
+- Aşama 6 2.9.165: ayarlar satırı ~59, çıkış 52. Companion sekmesi iOS’ta yok.
+
+### App Store ekran görüntüsü notu
+
+Mevcut `appstore/screenshots` dosyalarına dokunulmadı. Yeni cam görselleri TestFlight onayından sonra, Demir isteyince `docs/glass-redesign/shotkit` ile yeniden üretilir. “Bu sürümde yenilikler” metni yazılmadı ve gönderilmedi.
+
+### Demir’in cihaz listesi
+
+- [ ] Bir güncel iPhone ve, varsa, daha eski bir iPhone. Reduce Transparency, Increase Contrast, Reduce Motion, Düşük Güç.
+- [ ] Açık tema ve bir renkli temada camın kapandığını veya tonun temadan geldiğini bir kez kontrol et (cam varsayılan koyu mockup).
+- [ ] Masaüstü Windows ve tarayıcı: cam sınıfı yok, eski görünüm.
+- [ ] Google ile giriş iOS’ta yok. Companion iOS’ta gizli.
+- [ ] Sentry’de yeni bir cam kaynaklı çökme yok.
+
 ## Stage 6 — Ayarlar, Oyna, Aktivite, Mağaza · 2.9.165
 
 iPhone-only (`html.glass-ui`). New sheets: `styles/glass/settings.css`, `shop.css`, `play.css`. Companion / LFG segment stays hidden on iOS (parity). The Play tab bar condition is unchanged.
