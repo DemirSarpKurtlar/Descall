@@ -12,6 +12,7 @@ const NOTIF_MARGIN       = 12;
 const DEFAULT_DURATION   = 5000;
 
 const activeNotifications = [];
+const closers = new WeakMap();
 
 function getWindowHeight(type) {
   return type === 'call' ? NOTIF_HEIGHT_CALL : NOTIF_HEIGHT;
@@ -178,6 +179,7 @@ function showNotificationWindow({
   const dismiss = (action) => {
     if (dismissed) return;
     dismissed = true;
+    closers.delete(win);
     if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null; }
     const idx = activeNotifications.findIndex(e => e.win === win);
     if (idx !== -1) activeNotifications.splice(idx, 1);
@@ -201,6 +203,7 @@ function showNotificationWindow({
   onIpc('notif:close',   'close');
   onIpc('notif:accept',  'accept');
   onIpc('notif:decline', 'decline');
+  closers.set(win, dismiss);
 
   // Show once painted; fall back after 1.5s so a missed ready-to-show
   // (transparent windows while the main window is hidden) never eats it.
@@ -226,4 +229,18 @@ function showNotificationWindow({
   return win;
 }
 
-module.exports = { showNotificationWindow };
+/** Close a toast without firing click / accept / decline. */
+function closeShownNotification(win) {
+  if (!win) return false;
+  const dismiss = closers.get(win);
+  if (typeof dismiss === "function") {
+    dismiss("external");
+    return true;
+  }
+  try {
+    if (!win.isDestroyed()) win.close();
+  } catch (_) { /* ignore */ }
+  return false;
+}
+
+module.exports = { showNotificationWindow, closeShownNotification };

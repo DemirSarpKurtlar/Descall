@@ -75,6 +75,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Notifications
   requestNotificationPermission: () => ipcRenderer.invoke('notification:request-permission'),
   showNotification: (title, options) => ipcRenderer.send('notification:show', { title, options }),
+  closeNotification: (payload) => ipcRenderer.send('notification:close', payload || {}),
   onNotificationClick: (callback) => {
     const handler = (_, data) => callback(data);
     ipcRenderer.on('notification:click', handler);

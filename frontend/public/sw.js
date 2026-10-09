@@ -40,6 +40,37 @@ self.addEventListener("push", (event) => {
   }));
 });
 
+// Page asks us to drop an incoming-call push once the ring is over
+// (accepted, declined, cancelled, ended, missed, answered on another device).
+// Message / mention notifications are not selected.
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type !== "descall:close-call-notifications") return;
+  const tags = new Set(Array.isArray(data.tags) ? data.tags : []);
+  const kind = data.kind === "group" ? "group" : "dm";
+  event.waitUntil((async () => {
+    let notifications = [];
+    try {
+      notifications = await self.registration.getNotifications();
+    } catch {
+      return;
+    }
+    for (const notification of notifications) {
+      const payload = notification.data || {};
+      const tagHit = Boolean(notification.tag && tags.has(notification.tag));
+      const dmHit = kind === "dm"
+        && payload.type === "call"
+        && (!data.fromId || !payload.fromId || payload.fromId === data.fromId);
+      const groupHit = kind === "group"
+        && payload.type === "group-call"
+        && (!data.groupId || !payload.groupId || payload.groupId === data.groupId);
+      if (tagHit || dmHit || groupHit) {
+        try { notification.close(); } catch { /* ignore */ }
+      }
+    }
+  })());
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};

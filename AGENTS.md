@@ -11,6 +11,7 @@
 
 ### Voice / group calls
 - DM calls signal with `call:offer` → accept/reject UI is `CallOverlay` (`mode === "incoming"`).
+- **Incoming-call notifications (2.9.150):** the desktop card (`new Notification` in Chrome, service-worker push, Electron toast) is shown with `requireInteraction` / duration 0 and closed by `notificationService.dismissIncomingCall` when the ring ends — accept, decline, decline or answer on another device/tab, caller cancel, call ended, 30s miss. DM tag `descall-incoming-call` (push `call-<fromId>`); group tag `group-call-<groupId>`. Click still focuses the app. Test: `node frontend/src/lib/callNotificationClose.selftest.mjs`.
 - Group calls signal with `group:call:incoming` → accept/reject UI is `GroupCallIncomingModal`.
 - Backend delivery uses Socket.IO `user:${userId}` rooms (not presence-map-only). Presence is kept if another tab stays connected.
 - `useGroupCall(socket, currentUserId)` needs the logged-in user id — `socket.user` is **not** set on the client.

@@ -188,6 +188,7 @@ export function useCall(socket, callOccupancyRef = null) {
   const pendingIceRef = useRef([]);
   const incomingOfferRef = useRef(null);
   const incomingCallTypeRef = useRef(null);
+  const incomingNotifFromIdRef = useRef(null);
   const prevCallModeRef = useRef(null);
   const suppressRemoteEndCueRef = useRef(false);
   const deafenedRef = useRef(false);
@@ -395,7 +396,20 @@ export function useCall(socket, callOccupancyRef = null) {
       audioManager.stop("incomingCall");
       audioManager.stop("outgoingCall");
     }
+    if (prev === "incoming" && mode !== "incoming") {
+      const fromId = incomingNotifFromIdRef.current;
+      incomingNotifFromIdRef.current = null;
+      notificationService.dismissIncomingCall({ kind: "dm", fromId });
+    }
   }, [mode]);
+
+  useEffect(() => () => {
+    if (modeRef.current !== "incoming") return;
+    notificationService.dismissIncomingCall({
+      kind: "dm",
+      fromId: incomingNotifFromIdRef.current,
+    });
+  }, []);
 
   const flushIce = async (pc) => {
     for (const c of pendingIceRef.current) {
@@ -928,8 +942,14 @@ export function useCall(socket, callOccupancyRef = null) {
       setCallUuid(typeof incomingCallUuid === "string" ? incomingCallUuid : null);
       setCallAnchorAt(Date.now());
       setMode("incoming");
+      modeRef.current = "incoming";
+      incomingNotifFromIdRef.current = fromUser.id;
       if (!callKitOwnsIncomingRing()) {
-        notificationService.incomingCall({ from: fromUser.username, type: incomingType || "voice" });
+        notificationService.incomingCall({
+          from: fromUser.username,
+          fromId: fromUser.id,
+          type: incomingType || "voice",
+        });
       }
     };
 
@@ -1002,6 +1022,16 @@ export function useCall(socket, callOccupancyRef = null) {
       }
     };
 
+    // Another tab/device of this user already answered or declined. Stop the
+    // local ring only — that device already told the caller.
+    const onHandledElsewhere = ({ fromUserId } = {}) => {
+      if (modeRef.current !== "incoming") return;
+      const peerId = peerRef.current?.id;
+      if (fromUserId && peerId && fromUserId !== peerId) return;
+      audioManager.stop("incomingCall");
+      gracefulEnd();
+    };
+
     const onProfileUpdated = ({ user } = {}) => {
       if (!user?.id) return;
       setPeer((prev) => {
@@ -1040,6 +1070,8 @@ export function useCall(socket, callOccupancyRef = null) {
     socket.on('call:ended', onEnded);
     socket.on('call:declined', onEnded);
     socket.on('call:cancelled', onCancelled);
+    socket.on('call:answered-elsewhere', onHandledElsewhere);
+    socket.on('call:declined-elsewhere', onHandledElsewhere);
     socket.on('call:unreachable', onUnreachable);
     socket.on('call:callee-answering', onCalleeAnswering);
     socket.on('call:media-state', onMediaState);
@@ -1053,6 +1085,8 @@ export function useCall(socket, callOccupancyRef = null) {
       socket.off('call:ended', onEnded);
       socket.off('call:declined', onEnded);
       socket.off('call:cancelled', onCancelled);
+      socket.off("call:answered-elsewhere", onHandledElsewhere);
+      socket.off("call:declined-elsewhere", onHandledElsewhere);
       socket.off('call:unreachable', onUnreachable);
       socket.off('call:callee-answering', onCalleeAnswering);
       socket.off('call:media-state', onMediaState);

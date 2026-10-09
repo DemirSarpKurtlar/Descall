@@ -589,6 +589,9 @@ function registerGroupHandlers(io, socket, state) {
       return;
     }
 
+    // Other tabs/devices of this user should drop their incoming ring.
+    socket.to(`user:${myId}`).emit("group:call:answered-elsewhere", { groupId });
+
     // Add participant to active call tracking
     const activeCall = activeGroupCalls.get(groupId);
     if (activeCall) {
@@ -708,6 +711,8 @@ function registerGroupHandlers(io, socket, state) {
   // Decline call
   socket.on("group:call:decline", ({ groupId, toUserId }) => {
     if (!groupId || !toUserId) return;
+
+    socket.to(`user:${myId}`).emit("group:call:declined-elsewhere", { groupId });
 
     io.to(`user:${toUserId}`).emit("group:call:declined", {
       groupId,

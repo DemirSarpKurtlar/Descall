@@ -2,9 +2,17 @@ import { t } from '../i18n/runtime';
 import { isChannelMuted } from './serverChannelMutes';
 import { displayText } from './profanity';
 import { brandIconUrl } from "../components/brand/brandIconUrl";
+import {
+  DM_INCOMING_TAG,
+  beginIncomingShow,
+  createIncomingCloseGate,
+  incomingShowStillCurrent,
+  markIncomingDismissed,
+  planIncomingDismiss,
+} from "./callNotificationClose";
 
 const COOLDOWN_MS = 800;
-const CALL_TAG = 'descall-incoming-call';
+const CALL_TAG = DM_INCOMING_TAG;
 
 function readUserSettings() {
   try {
@@ -46,8 +54,15 @@ class NotificationService {
     this.pendingNotifications = [];
     // tag → timeout id — prevents duplicate notifications for the same event
     this._activeByTag = new Map();
+    // tag → { notification, data } for page Notification handles.
+    // requireInteraction call cards never time out; without the handle nothing
+    // can close() them when the ring ends.
+    this._shownByTag = new Map();
     // tags currently executing the async show() path
     this._pendingByTag = new Set();
+    // In-flight incoming-call shows. Dismiss marks that ticket cancelled so a
+    // show() that is still awaiting focus does not raise a dead ring.
+    this._incomingGate = createIncomingCloseGate();
   }
 
   async init() {
@@ -109,11 +124,11 @@ class NotificationService {
     return typeof document !== 'undefined' ? document.hasFocus() : false;
   }
 
-  async show({ title, body: rawBody, tag = 'descall', requireInteraction = false, silent = false, data = {}, avatarUrl = null }) {
+  async show({ title, body: rawBody, tag = 'descall', requireInteraction = false, silent = false, data = {}, avatarUrl = null, incomingTicket = null }) {
     // Native iOS app: bad words in notification text are masked with ***.
     const body = displayText(rawBody);
     if (!this.initialized) {
-      this.pendingNotifications.push({ title, body, tag, requireInteraction, silent, data, avatarUrl });
+      this.pendingNotifications.push({ title, body, tag, requireInteraction, silent, data, avatarUrl, incomingTicket });
       await this.init();
       return;
     }
@@ -130,6 +145,8 @@ class NotificationService {
     }
 
     try {
+      if (incomingTicket && !incomingShowStillCurrent(this._incomingGate, incomingTicket)) return;
+
       // Rate limit per tag — skip non-call repeats of the same chat during cooldown
       const now = Date.now();
       const lastForTag = this._lastByTag.get(tag) || 0;
@@ -138,6 +155,7 @@ class NotificationService {
       // Skip if window is focused (user can already see the message)
       const windowActive = await this._isWindowActive();
       if (windowActive && !requireInteraction) return;
+      if (incomingTicket && !incomingShowStillCurrent(this._incomingGate, incomingTicket)) return;
 
       this._lastByTag.set(tag, now);
       this.lastNotificationTime = now;
@@ -167,6 +185,8 @@ class NotificationService {
   _showWebNotification({ title, body, tag, requireInteraction, silent, data }) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try {
+      const prev = this._shownByTag.get(tag);
+      try { prev?.notification?.close(); } catch { /* replaced by the new card */ }
       const n = new Notification(title, {
         body,
         tag,
@@ -176,6 +196,10 @@ class NotificationService {
         badge: brandIconUrl(),
         data,
       });
+      this._shownByTag.set(tag, { notification: n, data });
+      n.onclose = () => {
+        if (this._shownByTag.get(tag)?.notification === n) this._shownByTag.delete(tag);
+      };
       n.onclick = () => {
         window.focus();
         n.close();
@@ -185,6 +209,61 @@ class NotificationService {
     } catch (err) {
       console.error('[Notification] Failed to show:', err);
     }
+  }
+
+  _closeHandle(tag) {
+    if (this._activeByTag.has(tag)) {
+      clearTimeout(this._activeByTag.get(tag));
+      this._activeByTag.delete(tag);
+    }
+    const entry = this._shownByTag.get(tag);
+    if (!entry) return;
+    this._shownByTag.delete(tag);
+    try { entry.notification?.close(); } catch { /* already gone */ }
+  }
+
+  /**
+   * Close the incoming-call desktop notification for one ring outcome.
+   * Page Notification handles, Electron toasts, and service-worker pushes
+   * that share the call tag are all closed. Other tags are left alone.
+   */
+  dismissIncomingCall(query = {}) {
+    const kind = query.kind === "group" ? "group" : "dm";
+    const identity = kind === "group" ? (query.groupId || null) : (query.fromId || null);
+    markIncomingDismissed(this._incomingGate, kind, identity);
+    const shown = [...this._shownByTag.entries()].map(([tag, entry]) => ({
+      tag,
+      data: entry?.data,
+    }));
+    const plan = planIncomingDismiss({ ...query, kind }, shown);
+    for (const tag of plan.shownTags) this._closeHandle(tag);
+    this._closeNativeIncoming(plan.closeTags, plan.query);
+  }
+
+  _closeNativeIncoming(tags, query) {
+    if (typeof window !== "undefined" && window.electronAPI?.closeNotification) {
+      try { window.electronAPI.closeNotification({ tags }); } catch { /* ignore */ }
+    }
+    this._closeServiceWorkerCallNotifications(query);
+  }
+
+  _closeServiceWorkerCallNotifications(query) {
+    if (typeof navigator === "undefined" || !navigator.serviceWorker?.getRegistration) return;
+    const message = {
+      type: "descall:close-call-notifications",
+      kind: query.kind,
+      tags: query.tags || [],
+      fromId: query.fromId || null,
+      groupId: query.groupId || null,
+    };
+    const send = (worker) => {
+      try { worker?.postMessage(message); } catch { /* ignore */ }
+    };
+    try { send(navigator.serviceWorker.controller); } catch { /* ignore */ }
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      send(reg?.active);
+      if (reg?.waiting && reg.waiting !== reg.active) send(reg.waiting);
+    }).catch(() => {});
   }
 
   _drainPending() {
@@ -286,26 +365,31 @@ class NotificationService {
     await this.mention({ groupName, from, text, groupId });
   }
 
-  async incomingCall({ from, type = 'voice' }) {
+  async incomingCall({ from, fromId = null, type = 'voice' }) {
     // Live calls still notify during DND so you don't miss them
     if (readUserSettings().callNotifications === false) return;
+    const incomingTicket = beginIncomingShow(this._incomingGate, "dm", fromId);
     await this.show({
       title: `📞 ${t("{from} is calling", { from })}`,
       body: type === 'video' ? t("Video call") : t("Voice call"),
       tag: CALL_TAG,
       requireInteraction: true,
-      data: { type: 'call', from, callType: type },
+      incomingTicket,
+      data: { type: 'call', from, fromId, callType: type },
     });
   }
 
-  async groupCall({ groupName, from }) {
+  async groupCall({ groupName, from, groupId = null }) {
     if (readUserSettings().callNotifications === false) return;
+    const incomingTicket = beginIncomingShow(this._incomingGate, "group", groupId);
+    const tag = groupId ? `group-call-${groupId}` : `group-call-${groupName || "Grup"}`;
     await this.show({
       title: `📞 ${t("{groupName} — Group Call", { groupName })}`,
       body: t("{from} started a group call", { from }),
-      tag: `group-call-${groupName}`,
+      tag,
       requireInteraction: true,
-      data: { type: 'group-call', groupName, from },
+      incomingTicket,
+      data: { type: 'group-call', groupName, groupId, from },
     });
   }
 

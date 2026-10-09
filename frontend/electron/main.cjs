@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen } = require('electron');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
-const { showNotificationWindow } = require('./notificationWindow.cjs');
+const { showNotificationWindow, closeShownNotification } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
 const { registerRiotRsoAuthIPC } = require('./riotRsoAuth.cjs');
@@ -1139,8 +1139,8 @@ function showAppNotification({ title, options = {} } = {}) {
   // Deduplicate: close any existing window with the same tag
   if (activeNotifByTag.has(tag)) {
     const existing = activeNotifByTag.get(tag);
-    try { if (!existing.isDestroyed()) existing.close(); } catch (_) {}
     activeNotifByTag.delete(tag);
+    closeShownNotification(existing);
   }
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
@@ -1183,6 +1183,18 @@ function showAppNotification({ title, options = {} } = {}) {
 
 ipcMain.on('notification:show', (_event, payload = {}) => {
   showAppNotification(payload);
+});
+
+// Incoming-call toasts use duration 0. The renderer closes them by tag when
+// the ring ends (accept, decline, cancel, end, miss, answered elsewhere).
+ipcMain.on('notification:close', (_event, payload = {}) => {
+  const tags = Array.isArray(payload.tags) ? payload.tags : [payload.tag];
+  for (const tag of tags) {
+    if (!tag || !activeNotifByTag.has(tag)) continue;
+    const win = activeNotifByTag.get(tag);
+    activeNotifByTag.delete(tag);
+    closeShownNotification(win);
+  }
 });
 
 ipcMain.handle('show-notification', (_event, payload = {}) => {

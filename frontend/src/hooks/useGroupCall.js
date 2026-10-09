@@ -1427,9 +1427,13 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         return;
       }
 
-      setIncomingCall({ groupId, fromUser, callType: type || "voice" });
+      setIncomingCall({ groupId, fromUser, callType: type || "voice", groupName: groupName || null });
       audioManager.play("incomingCall", { loop: true });
-      notificationService.groupCall({ groupName: groupName || "Grup", from: fromUser.username });
+      notificationService.groupCall({
+        groupName: groupName || "Grup",
+        groupId,
+        from: fromUser.username,
+      });
     };
 
     socket.on("connect", onConnect);
@@ -1870,6 +1874,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     const onEnded = ({ groupId, summary }) => {
       setActiveCallBanner((prev) => (prev?.groupId === groupId ? null : prev));
+      // Caller cancelled or the room ended while this client was still ringing.
+      if (incomingCallRef.current?.groupId === groupId) {
+        audioManager.stop("incomingCall");
+        setIncomingCall(null);
+      }
       // Only tear down if WE are still in this group call. A stale ended event
       // for another group must not kill the active session.
       if (groupId && groupId === activeGroupIdRef.current && isInCallRef.current) {
@@ -2172,6 +2181,14 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       }
     };
 
+    const clearRingingGroup = (groupId) => {
+      if (!groupId || incomingCallRef.current?.groupId !== groupId) return;
+      audioManager.stop("incomingCall");
+      setIncomingCall(null);
+    };
+    const onAnsweredElsewhere = ({ groupId } = {}) => clearRingingGroup(groupId);
+    const onDeclinedElsewhere = ({ groupId } = {}) => clearRingingGroup(groupId);
+
     const onProfileUpdated = ({ user } = {}) => {
       if (!user?.id) return;
       const avatarUrl = user.avatarUrl || user.avatar_url;
@@ -2192,6 +2209,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     socket.on("group:call:left", onLeft);
     socket.on("group:call:ended", onEnded);
     socket.on("group:call:declined", onDeclined);
+    socket.on("group:call:answered-elsewhere", onAnsweredElsewhere);
+    socket.on("group:call:declined-elsewhere", onDeclinedElsewhere);
     socket.on("group:screen:started", onScreenStarted);
     socket.on("group:screen:stopped", onScreenStopped);
     socket.on("group:call:media-state", onMediaState);
@@ -2214,6 +2233,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       socket.off("group:call:left", onLeft);
       socket.off("group:call:ended", onEnded);
       socket.off("group:call:declined", onDeclined);
+      socket.off("group:call:answered-elsewhere", onAnsweredElsewhere);
+      socket.off("group:call:declined-elsewhere", onDeclinedElsewhere);
       socket.off("group:screen:started", onScreenStarted);
       socket.off("group:screen:stopped", onScreenStopped);
       socket.off("group:call:media-state", onMediaState);
@@ -2236,6 +2257,34 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
   // Keep ref current so Electron IPC callbacks can read latest incomingCall without stale closure
   useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
+
+  // One close path for every way the group ring ends: accept, decline, timeout,
+  // join, caller cancelled, call ended, answered or declined on another device.
+  const incomingNotifRef = useRef(null);
+  useEffect(() => {
+    const prev = incomingNotifRef.current;
+    const next = incomingCall?.groupId
+      ? { groupId: incomingCall.groupId, groupName: incomingCall.groupName || null }
+      : null;
+    if (prev && (!next || prev.groupId !== next.groupId)) {
+      notificationService.dismissIncomingCall({
+        kind: "group",
+        groupId: prev.groupId,
+        groupName: prev.groupName,
+      });
+    }
+    incomingNotifRef.current = next;
+  }, [incomingCall]);
+
+  useEffect(() => () => {
+    const ringing = incomingCallRef.current;
+    if (!ringing?.groupId) return;
+    notificationService.dismissIncomingCall({
+      kind: "group",
+      groupId: ringing.groupId,
+      groupName: ringing.groupName || null,
+    });
+  }, []);
 
   const acceptGroupCallRef = useRef(acceptGroupCall);
   const declineCallRef = useRef(declineCall);
