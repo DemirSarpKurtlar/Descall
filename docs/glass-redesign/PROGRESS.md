@@ -36,7 +36,13 @@ Friends and calls differ only by the mock port inside the invite link (`localhos
 
 ### CI
 
-Filled in after TestFlight, the Windows release, Vercel, Render, and the quality gates finish.
+Commit `77d2203`. Tag `v2.9.161`.
+
+- Marketing quality gates: success (run 37981412397)
+- Deploy to Render: success (run 37981412395)
+- Deploy SPA to Vercel: success (run 37981412444)
+- Publish Descall release (Windows): success (run 37981413840)
+- iOS TestFlight: success (run 37981413819)
 
 ### TestFlight kontrol listesi (Demir)
 
