@@ -260,6 +260,14 @@ TestFlight. Yalnız `html.glass-ui`.
 
 Sohbette Ara’ya basınca arama çubuğu akışta kalıyordu. Başlık sabit olduğu ve krom kutusu 0 yükseklikte olduğu için çubuk y=0’da, durum çubuğunun üstüne çıkıyordu. Artık başlık kapsülünün hemen altında cam bir alan. Mesaj listesinin üst boşluğu arama açıkken buna göre uzuyor. Yazı 16pt, iPhone yakınlaştırmaz.
 
+## Hotfix — sunucu başlığındaki eylem daireleri · 2.9.166
+
+TestFlight. Yalnız `html.glass-ui`.
+
+Sunucu kanal panelinde kanal oluştur, sırala ve menü, mobil 44pt dokunma hedefi ve `gap: 0` yüzünden tek bir erimiş hapa dönüşüyordu. Üçü de ayrı 30×30 daire (yarıçap 15, aralık 6). Geri düğmesi de 30×30. İşlemler duruyor: kanal oluştur, sırala, sunucu menüsü. Üstteki mavi “Sunucular +” aynı.
+
+440×956: pane 88,120,340×716. Eylemler 310,140, 346,140, 382,140; her biri 30×30, ikon 16. Üst üste binme yok. Kanal oluştur “Kanal oluştur” sayfasını açıyor, sırala `aria-pressed`, menü 13 öğe.
+
 ## Hotfix — Oyna’da cam sekme çubuğu · 2.9.163
 
 2.9.161, cam dalındaki `(!isPlayPage || glassShell)` koşulunu `!isPlayPage` yaptı. 2.9.156’da bu çubuk Oyna’da bilerek duruyordu: liste çekmecesi gizlenir, hub görünür, sekmeler kalır. LFG alt boşluğu hâlâ sekme yüksekliğine göre. Çubuk Oyna’da yine duruyor. Çekmece gizli.

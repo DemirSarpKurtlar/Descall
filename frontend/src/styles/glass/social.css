@@ -506,15 +506,38 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-shell-meta {
   color: var(--g-t3);
 }
 
+/* Mobile .icon-btn is a 44px touch target and .sidebar-actions has gap 0,
+   so create / reorder / menu stretch into one fused pill. Keep every action
+   as its own 30px circle (mockup chip size). */
+html.glass-ui .app-root.g-shell .g-server-pane .sidebar-actions {
+  height: auto;
+  gap: 6px;
+  margin-left: auto;
+}
+
 html.glass-ui .app-root.g-shell .g-server-pane .server-back-btn,
 html.glass-ui .app-root.g-shell .g-server-pane .sidebar-actions .icon-btn {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  border-radius: 15px;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+  flex: 0 0 30px;
+  padding: 0 !important;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 15px !important;
+  box-shadow: none !important;
   background: var(--g-chip-bg);
   color: var(--g-t1);
-  border: 0;
+}
+
+html.glass-ui .app-root.g-shell .g-server-pane .server-back-btn svg,
+html.glass-ui .app-root.g-shell .g-server-pane .sidebar-actions .icon-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-channel-cat-row {
