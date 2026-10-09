@@ -2421,7 +2421,7 @@ const UserPanel = forwardRef(function UserPanel({
   return (
     <motion.div
       ref={ref}
-      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}`}
+      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}`}
       variants={shellVariants}
       initial="hidden"
       animate="visible"
@@ -2430,7 +2430,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassProfileEdit ? " g-profile-edit" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}

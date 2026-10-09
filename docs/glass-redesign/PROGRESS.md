@@ -1,5 +1,26 @@
 # Liquid Glass — progress log
 
+## Stage 6 — Ayarlar, Oyna, Aktivite, Mağaza · 2.9.165
+
+iPhone-only (`html.glass-ui`). New sheets: `styles/glass/settings.css`, `shop.css`, `play.css`. Companion / LFG segment stays hidden on iOS (parity). The Play tab bar condition is unchanged.
+
+### Compare (440×956, safe area top 62 / bottom 34)
+
+Settings menu (Kullanıcı Ayarları): title height 40 at y 80. Profile row 28,134,408×68. First group 22,232,396×212. Row 22,269,396×59 (“Hesabım”). Çıkış Yap 26,804,388×52. Groups are static glass (no per-row blur). Toggles are 51×31.
+
+Play and Activity use the same glass tokens on the existing LFG cards and the activity status card. The list drawer on Play stays hidden.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.165**. Yalnız iPhone.
+
+- [ ] Ayarlar: Hesap, Uygulama, Medya, Kişiselleştirme grupları ve Çıkış Yap. Her alt sayfa açılıyor, kenardan kaydırarak geri.
+- [ ] Bildirim anahtarları anında dönüyor. iPhone izin satırı duruyor.
+- [ ] Oyna: Companion sekmesi yok. LFG kartları, oluştur, katıl, parti kodu. Sekme çubuğu duruyor.
+- [ ] Aktivite: durum kartı, Durum Ayarla, Arkadaşlar / Geçmiş.
+- [ ] Mağaza: cüzdan hapı, günlük ödül, kategori chipleri, ürün kartları. Satın al / kuşan bakiyeyi güncelliyor.
+- [ ] Masaüstü / web / Android aynı eski görünümde.
+
 ## Stage 5 — Arkadaşlar, sunucular, profil · 2.9.164
 
 iPhone-only (`html.glass-ui`). Desktop, web, Electron, Android and iPad stay on the previous UI. New rules live in `styles/glass/social.css`. `servers.css` was not edited. The Play tab bar condition stays `showMobileTabBar && (!isPlayPage || glassShell)`.

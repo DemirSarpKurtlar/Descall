@@ -1,0 +1,140 @@
+/* Liquid Glass — settings menu and notification toggles (Stage 6).
+   Mockups 15 and 15b. Scoped under html.glass-ui. */
+
+html.glass-ui .user-settings-shell.g-settings {
+  background: rgba(5, 6, 10, 0.42);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings {
+  background:
+    radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
+    linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%);
+  color: var(--g-t1);
+  font-family: var(--g-font);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar,
+html.glass-ui .user-settings.is-mobile.g-settings .us-main,
+html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar-foot {
+  background: transparent;
+  border: 0;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar-brand h2 {
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.026em;
+  color: var(--g-t1);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar-brand p {
+  display: none;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-mini-profile {
+  margin: 8px 12px 12px;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  border: 0;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-group-label {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  color: var(--g-t3);
+  padding: 14px 8px 6px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-group {
+  margin: 0 12px 8px;
+  border-radius: var(--g-r-card);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item {
+  min-height: 56px;
+  border-radius: 0;
+  padding: 8px 14px;
+  color: var(--g-t1);
+  background: transparent;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-item + .us-nav-item {
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.09);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--g-brand);
+  color: #fff;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-label {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav-hint {
+  font-size: 13px;
+  color: var(--g-t3);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-logout {
+  margin: 8px 12px 16px;
+  width: calc(100% - 24px);
+  min-height: 52px;
+  border-radius: var(--g-r-card);
+  border: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ff6961;
+  font-size: 16px;
+  font-weight: 500;
+  justify-content: flex-start;
+  padding: 0 16px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-toggle {
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+  background: rgba(120, 120, 128, 0.36);
+  border: 0;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-toggle.active {
+  background: var(--g-ok);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-toggle-knob {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-section-label {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g-t3);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 0;
+  border-radius: var(--g-r-card);
+  box-shadow: none;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-mobile-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}

@@ -1,0 +1,40 @@
+/* Liquid Glass — shop (Stage 6). Mockups 21 and 21b.
+   Static cards, no per-row blur. Scoped under html.glass-ui. */
+
+html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(240, 178, 50, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(240, 178, 50, 0.45);
+  color: var(--g-gold);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .shop-panel-intro {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--g-t2);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .shop-item-card,
+html.glass-ui .user-settings.is-mobile.g-settings .shop-daily,
+html.glass-ui .user-settings.is-mobile.g-settings .shop-reward-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 0;
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tabs button,
+html.glass-ui .user-settings.is-mobile.g-settings .shop-chip {
+  height: 34px;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--g-t2);
+  border: 0;
+}
