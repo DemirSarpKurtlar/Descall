@@ -168,3 +168,7 @@ Grup satırındaki üye yığını (20pt) kare `.ui-avatar` kutusuna `box-shadow
 TestFlight. Yalnız `html.glass-ui`.
 
 Sohbette Ara’ya basınca arama çubuğu akışta kalıyordu. Başlık sabit olduğu ve krom kutusu 0 yükseklikte olduğu için çubuk y=0’da, durum çubuğunun üstüne çıkıyordu. Artık başlık kapsülünün hemen altında cam bir alan. Mesaj listesinin üst boşluğu arama açıkken buna göre uzuyor. Yazı 16pt, iPhone yakınlaştırmaz.
+
+## Hotfix — Oyna’da cam sekme çubuğu · 2.9.163
+
+2.9.161, cam dalındaki `(!isPlayPage || glassShell)` koşulunu `!isPlayPage` yaptı. 2.9.156’da bu çubuk Oyna’da bilerek duruyordu: liste çekmecesi gizlenir, hub görünür, sekmeler kalır. LFG alt boşluğu hâlâ sekme yüksekliğine göre. Çubuk Oyna’da yine duruyor. Çekmece gizli.

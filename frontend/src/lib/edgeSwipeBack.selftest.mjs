@@ -313,7 +313,7 @@ const hook = read("../hooks/useEdgeSwipeBack.js");
 const bridge = read("../../ios/App/App/DescallBridgeViewController.swift");
 
 assert.ok(/\{!glassShell && showMobileTabBar && \(\s*<nav/.test(layout), "tab bar and swipe-back share one nav-visibility flag");
-assert.ok(/showMobileTabBar && !isPlayPage \? \(\s*<>/.test(layout), "glass tab bar (2.9.154) uses the same nav-visibility flag");
+assert.ok(/showMobileTabBar && \(!isPlayPage \|\| glassShell\) \? \(\s*<>/.test(layout), "glass tab bar stays on Play (2.9.156)");
 assert.ok(/onBack: isPlayPage \? closePlay : handleMobileBack/.test(layout), "conversation swipe runs the ‹ back handler");
 assert.ok(/onClose=\{closePlay\}/.test(layout), "Play swipe and ‹ Descall share closePlay");
 assert.ok(/onBack: backToMenu/.test(panel) && /onBack: onClose/.test(panel), "settings swipe uses its ‹ / ✕ handlers");

@@ -672,7 +672,7 @@ export default function AppLayout({
       </AnimatePresence>
 
       {glassShell ? (
-        showMobileTabBar && !isPlayPage ? (
+        showMobileTabBar && (!isPlayPage || glassShell) ? (
           <>
             <div className="g-edge-bot" aria-hidden="true" />
             <GlassTabBar
