@@ -97,7 +97,7 @@ GIF seçici açılınca arama alanı odaklanıyor, iPhone klavyeyi trendlerin ü
 
 440×956: sayfa 12,290,416×620, alt kenar 910. Açılışta odak `body`, alan `readOnly`. Dokununca odak arama alanına geçer.
 
-## Hotfix — grup listesi üye simgelerindeki kare çerçeve · 2.9.159
+## Hotfix — grup listesi üye simgelerindeki kare çerçeve · 2.9.160
 
 TestFlight. Yalnız `html.glass-ui`.
 
