@@ -1,6 +1,6 @@
 # Liquid Glass — progress log
 
-## Cihaz düzeltmeleri · 2.9.176
+## Cihaz düzeltmeleri · 2.9.177
 
 iPhone’da dokunuşlar tek bir yerden titrer: `src/lib/fluid/haptics.js`. Web, Electron ve Android sessiz. Sistemin Haptics anahtarı UIKit’te durur; Azaltılmış Hareket animasyonu kısar, onay titreşimini kesmez. Aynı tür 50 ms içinde ikinci kez çalmaz. Kaydırma ve basılı tutulan jest tekrar etmez; eşik bir kez.
 
@@ -8,7 +8,7 @@ Seçim: sekme, çip, filtre, tema, durum, emoji, tepki, anahtar. Hafif: birincil
 
 ### TestFlight kontrol listesi (Demir)
 
-Sürüm **2.9.176**. Yalnız iPhone. Ayarlar → Ses ve Dokunuş → Sistem Dokunuşları açık.
+Sürüm **2.9.177**. Yalnız iPhone. Ayarlar → Ses ve Dokunuş → Sistem Dokunuşları açık.
 
 - [ ] Sekme değiştir, çip veya tema seç: kısa seçim tiki. Aynı sekmeye tekrar basınca susar.
 - [ ] Mesaj gönder: bir başarı tiki. Gelen mesajda tik yok. Gönderilemezse hata tiki.
