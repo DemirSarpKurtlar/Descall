@@ -1293,6 +1293,9 @@ const UserPanel = forwardRef(function UserPanel({
             {/* Live profile card — tap the banner or the photo to change them.
                 Photo & banner save immediately (same crop flow as Hesabım). */}
             <div className="us-pe-card">
+              {glassShell && isMobile && (
+                <h4 className="us-section-label g-pe-banner-kicker">{t("Banner")}</h4>
+              )}
               <div
                 className={`us-pe-banner${effectiveBannerUrl ? " has-image" : ""}`}
                 style={effectiveBannerUrl ? { backgroundImage: cssUrl(effectiveBannerUrl) } : undefined}
@@ -1304,12 +1307,17 @@ const UserPanel = forwardRef(function UserPanel({
                   disabled={bannerUploading || shopBanner}
                   aria-label={effectiveBannerUrl ? t("Change banner") : t("Add banner")}
                 >
-                  {!effectiveBannerUrl && (
+                  {glassShell && isMobile ? (
+                    <span className="g-pe-banner-label">
+                      {bannerUploading ? <RefreshCw size={15} className="us-spin" /> : <ImageIcon size={16} />}
+                      {t("Change banner")}
+                    </span>
+                  ) : !effectiveBannerUrl ? (
                     <span className="us-pe-banner-empty">
                       {bannerUploading ? <RefreshCw size={15} className="us-spin" /> : <ImageIcon size={16} />}
                       {t("Add banner")}
                     </span>
-                  )}
+                  ) : null}
                 </button>
                 {!shopBanner && effectiveBannerUrl && (
                   <div className="us-pe-banner-actions">
@@ -1360,6 +1368,16 @@ const UserPanel = forwardRef(function UserPanel({
                     {avatarUploading ? <RefreshCw size={13} className="us-spin" /> : <Camera size={13} />}
                   </span>
                 </button>
+                {glassShell && isMobile && (
+                  <button
+                    type="button"
+                    className="g-pe-avatar-link"
+                    onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                    disabled={avatarUploading}
+                  >
+                    {t("Change avatar")}
+                  </button>
+                )}
 
                 <div className="us-pe-meta">
                   <h3>
@@ -1430,7 +1448,70 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             )}
 
-            <section className="us-section">
+            {glassShell && isMobile && (
+              <>
+                <section className="us-section g-pe-glass" style={{ order: 2 }}>
+                  <h4 className="us-section-label">{t("Identity")}</h4>
+                  <div className="us-card us-form">
+                    <label className="us-field">
+                      <span>{t("Display name")}</span>
+                      <input
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder={t("Your display name")}
+                        maxLength={32}
+                      />
+                    </label>
+                    <div className="us-field">
+                      <span>{t("Username")}</span>
+                      <em className="g-pe-readonly">@{me?.username || "user"}</em>
+                    </div>
+                  </div>
+                </section>
+                <section className="us-section g-pe-glass" style={{ order: 4 }}>
+                  <h4 className="us-section-label">{t("About me")}</h4>
+                  <label className="g-pe-bio">
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder={t("Tell others about yourself…")}
+                      rows={3}
+                      maxLength={190}
+                    />
+                  </label>
+                </section>
+                <section className="us-section g-pe-glass" style={{ order: 5 }}>
+                  <h4 className="us-section-label">{t("Custom status")}</h4>
+                  <div className="us-card us-form">
+                    <div className="us-field">
+                      <div className="us-status-edit-row">
+                        <button
+                          type="button"
+                          className="us-status-emoji-btn"
+                          onClick={() => setStatusEmojiOpen((v) => !v)}
+                          aria-label={t("Status Emoji")}
+                          aria-expanded={statusEmojiOpen}
+                        >
+                          {splitStatusEmoji(customStatus).emoji || <Smile size={18} />}
+                        </button>
+                        <input
+                          value={splitStatusEmoji(customStatus).text}
+                          onChange={(e) => {
+                            const { emoji } = splitStatusEmoji(customStatus);
+                            const next = e.target.value;
+                            setCustomStatus(emoji ? `${emoji} ${next}`.trim() : next);
+                          }}
+                          placeholder={t("What's on your mind?")}
+                          maxLength={60}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
+
+            <section className={`us-section${glassShell && isMobile ? " g-pe-classic" : ""}`}>
               <h4 className="us-section-label">{t("Identity")}</h4>
               <div className="us-card us-form">
                 <label className="us-field">
@@ -2038,7 +2119,7 @@ const UserPanel = forwardRef(function UserPanel({
 
       case "notifications":
         return (
-          <div className="us-tab">
+          <div className="us-tab g-notif">
             <p className="us-lead">{t("Control desktop and browser alerts.")}</p>
             <section className="us-section">
               <div className="us-card stack">
@@ -2135,12 +2216,12 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Descall usage time")}
                   />
                 </SettingRow>
-                {!activity?.isElectron && (
-                  <p className="us-row-desc" style={{ padding: "4px 4px 0" }}>
-                    {t("Install the Descall desktop app to share game and app activity automatically.")}
-                  </p>
-                )}
               </div>
+              {!activity?.isElectron && (
+                <p className="us-row-desc g-activity-footnote">
+                  {t("Install the Descall desktop app to share game and app activity automatically.")}
+                </p>
+              )}
             </section>
           </div>
         );

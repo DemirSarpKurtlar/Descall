@@ -33,7 +33,7 @@ import { hapticLight } from "../../lib/haptics";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
   messageMenuOpensOnTap,
-  openingPressShouldSwallow,
+  pressToActivate,
   swallowOpeningPress,
 } from "../../lib/glassMessageMenu";
 
@@ -1256,15 +1256,7 @@ function GlassMessageMenu({
   onReply, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const { ref } = useMaterialize(true);
-  const openedAt = useRef(typeof performance !== "undefined" ? performance.now() : 0);
-  const guard = (fn) => (event) => {
-    if (openingPressShouldSwallow(openedAt.current, performance.now())) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-    fn?.(event);
-  };
+  const act = (fn) => pressToActivate(fn);
   const [box, setBox] = useState(null);
   useLayoutEffect(() => {
     const el = bubbleRef.current;
@@ -1291,7 +1283,7 @@ function GlassMessageMenu({
   if (top < safeTop) top = safeTop;
   return createPortal(
     <>
-      <button type="button" className="g-scrim" aria-label={t("Close")} onClick={guard(onClose)} />
+      <button type="button" className="g-scrim" aria-label={t("Close")} {...act(onClose)} />
       <div
         ref={ref}
         className="g-msg-pop g-materialize"
@@ -1310,38 +1302,38 @@ function GlassMessageMenu({
       >
         <div className="g-react-bar g-glass g-heavy" role="toolbar">
           {quick.map((e) => (
-            <button key={e} type="button" className="emoji-chip" onClick={guard(() => onReact(e))}>{e}</button>
+            <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
           ))}
-          <button type="button" className="hover-bar-btn" aria-label={t("More reactions")} onClick={guard(onMore)}>
+          <button type="button" className="hover-bar-btn" aria-label={t("More reactions")} {...act(onMore)}>
             <Smile size={18} />
           </button>
         </div>
         <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{text}</div>
         <div className="g-menu g-glass g-heavy" role="menu">
-          <button type="button" className="g-mi" onClick={guard(onReply)}><Reply size={19} />{t("Reply")}</button>
+          <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
           {canPin && (
-            <button type="button" className="g-mi" onClick={guard(onPin)}>
+            <button type="button" className="g-mi" {...act(onPin)}>
               {isPinned ? <PinOff size={19} /> : <Pin size={19} />}
               {isPinned ? t("Unpin") : t("Pin")}
             </button>
           )}
           {canEdit && (
-            <button type="button" className="g-mi" onClick={guard(onEdit)}><Pencil size={19} />{t("Edit")}</button>
+            <button type="button" className="g-mi" {...act(onEdit)}><Pencil size={19} />{t("Edit")}</button>
           )}
-          <button type="button" className="g-mi" onClick={guard(onMore)}><Smile size={19} />{t("More reactions")}</button>
+          <button type="button" className="g-mi" {...act(onMore)}><Smile size={19} />{t("More reactions")}</button>
           {(canDelete || canReport) && <div className="g-msep" />}
           {canDelete && (
-            <button type="button" className="g-mi danger" onClick={guard(onDelete)}><Trash2 size={19} />{t("Delete")}</button>
+            <button type="button" className="g-mi danger" {...act(onDelete)}><Trash2 size={19} />{t("Delete")}</button>
           )}
           {canReport && (
-            <button type="button" className="g-mi" onClick={guard(onReport)}><Flag size={19} />{t("report.action")}</button>
+            <button type="button" className="g-mi" {...act(onReport)}><Flag size={19} />{t("report.action")}</button>
           )}
         </div>
         {pickerOpen && (
           <div className="g-menu g-glass g-heavy" style={{ width: 250 }}>
             <div className="message-inline-picker-grid">
               {pickerEmojis.map((e) => (
-                <button key={e} type="button" className="emoji-chip" onClick={guard(() => onReact(e))}>{e}</button>
+                <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
               ))}
             </div>
           </div>

@@ -28,7 +28,7 @@ import {
   getDesCoinDaily,
   claimDesCoinDaily,
 } from "../../api/shop";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import InviteCard from "../friends/InviteCard";
@@ -172,6 +172,7 @@ function ShopItemPreview({ category, item, t }) {
 
 export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me = null, onBalanceChange }) {
   const t = useT();
+  const { locale } = useLocale();
   const [items, setItems] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -439,11 +440,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                 <b>{daily.goals.voice.earned}/{daily.goals.voice.cap}</b>
               </div>
               <div className="descoin-goal">
-                <span>{t("Messages")}</span>
+                <span>{glassShell && locale === "tr" ? "Mesajlar" : t("Messages")}</span>
                 <b>{daily.goals.message.earned}/{daily.goals.message.cap}</b>
               </div>
               <div className="descoin-goal">
-                <span>{t("Screenshare")}</span>
+                <span>{glassShell && locale === "tr" ? "Ekran" : t("Screenshare")}</span>
                 <b>{daily.goals.screenshare.earned}/{daily.goals.screenshare.cap}</b>
               </div>
             </div>

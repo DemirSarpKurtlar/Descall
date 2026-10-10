@@ -683,7 +683,7 @@ export default function AppLayout({
             <div className="g-edge-bot" aria-hidden="true" />
             <GlassTabBar
               items={glassTabItems}
-              activeId={activeView}
+              activeId={userPanelOpen ? null : activeView}
               onSelect={handleViewChange}
               badges={glassTabBadges}
             />

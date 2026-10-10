@@ -112,6 +112,13 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
     const shown = url.replace(/^https?:\/\//, "");
     return (
       <div className="g-invite-link">
+        <div className="g-invite-link-head">
+          <Gift size={18} aria-hidden />
+          <div>
+            <strong>{t("Invite friends")}</strong>
+            <span>{t("You get 100 DesCoin · they get 50")}</span>
+          </div>
+        </div>
         <div className="g-invite-link-field" title={url}>{shown}</div>
         <div className="g-invite-link-actions">
           <button type="button" className="primary" onClick={copy}>

@@ -426,7 +426,7 @@ export default function CallsView({
             <AnimatePresence initial={false}>
               {filtered.map((call) => {
                 const meta = statusMeta(call);
-                const Icon = meta.Icon;
+                const Icon = glass && call.callType === "video" ? Video : meta.Icon;
                 const TypeIcon = call.callType === "video" ? Video : Phone;
                 const duration = glass ? glassDuration(call.durationSeconds) : formatCallDuration(call.durationSeconds);
                 const when = glass ? glassWhen(call.endedAt || call.createdAt) : formatCallWhen(call.endedAt || call.createdAt);
@@ -497,6 +497,7 @@ export default function CallsView({
                       >
                         <Phone size={15} />
                       </button>
+                      {!(glass && isGroup) && (
                       <button
                         type="button"
                         className="calls-icon-btn is-video"
@@ -505,6 +506,7 @@ export default function CallsView({
                       >
                         <Video size={15} />
                       </button>
+                      )}
                     </div>
                   </motion.div>
                 );

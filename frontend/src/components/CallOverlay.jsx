@@ -1396,7 +1396,7 @@ function ParticipantTile({
           <AdminBadge user={user} variant="inline" />
           {muted && <MicOff size={14} aria-label={t("Muted")} title={t("Muted")} />}
           {deafened && <HeadphoneOff size={14} aria-label={t("Deafened")} title={t("Deafened")} />}
-          {isLocal && cameraOn === false && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
+          {isLocal && cameraOn === false && muted && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
         </div>
       )}
       {glass && !small && (muted || (isLocal && cameraOn === false)) && (
@@ -2374,7 +2374,17 @@ function GlassCallShot({ kind }) {
         <div className={`g-call-grid${group ? " is-group" : " is-dm"}`} style={{ flex: 1, minHeight: 0, height: "100%", position: "relative" }}>
           {tiles.map((tile) => (
             <div key={tile.name} className={`participant-tile participant-tile--avatar-only${tile.speaking ? " is-speaking" : ""}`}>
-              {tile.speaking && !group ? <div className="g-call-qchip"><span className="speaking-dot" />Mükemmel</div> : null}
+              {tile.speaking && !group ? (
+                <div className="g-call-qchip">
+                  <span className="call-quality-bars" aria-hidden="true">
+                    <span className="on" style={{ height: 5 }} />
+                    <span className="on" style={{ height: 8 }} />
+                    <span className="on" style={{ height: 11 }} />
+                    <span className="on" style={{ height: 14 }} />
+                  </span>
+                  Mükemmel
+                </div>
+              ) : null}
               {tile.corner ? <div className={`g-call-corner${tile.corner === "video" ? " is-cam" : " is-mic"}`}>{tile.corner === "video" ? <VideoOff size={14} /> : <MicOff size={14} />}</div> : null}
               <div className="participant-tile-avatar-stack">
                 <div className="participant-tile-avatar-shell">
@@ -2387,7 +2397,6 @@ function GlassCallShot({ kind }) {
               <div className="participant-tile-label">
                 {tile.speaking ? <span className="speaking-dot" /> : null}
                 <span className="participant-tile-name">{tile.name}</span>
-                {tile.corner === "video" ? <VideoOff size={14} /> : null}
               </div>
             </div>
           ))}

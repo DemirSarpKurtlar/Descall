@@ -2,7 +2,7 @@
 
 Tarih: 2026-10-09. Karşılaştırma Chrome’da, üst güvenli alan 62 / alt 34 maskelenerek. Mockup solda, uygulama sağda: `docs/glass-redesign/compare/stage7/*-side-by-side.png`.
 
-Bu tablo **2.9.169** yeniden çekimidir (2. tur denetim; etkilenen ekranlar yeniden çekildi, diğer satırlar 2.9.168 ölçüsü). Piksel eşiği (HANDOFF) maskelenmiş alanda ≤%0,5, bilinen veri ve yazı tipi farkları dışında. Yüzdeler o eşiğin üstünde kalır: Inter glif genişliği, fikstür metni, avatar rengi ve mağaza karosu. 2. tur: fotoğraf avatarı halkası, uzun basış, Oyna DOM’u, mağaza sayacı, ek düğmesi, aktivite harfi, ayarlar altlığı, 150px üst solma. Ayrıntı sondaki “2. tur” bölümünde.
+Bu tablo **2.9.170** yeniden çekimidir (3. tur denetim; etkilenen ekranlar yeniden çekildi, diğer satırlar 2.9.169 ölçüsü). Piksel eşiği (HANDOFF) maskelenmiş alanda ≤%0,5, bilinen veri ve yazı tipi farkları dışında. Yüzdeler o eşiğin üstünde kalır: Inter glif genişliği, fikstür metni, avatar rengi ve mağaza karosu. 3. tur: uzun basışın ilk kalkışı, mağaza cüzdan solması, davet başlığı, profil şeridi, sunucu menüsü, profil düzenleme grupları, bildirim dipnotu, arama ofseti, Oyna çipleri. Ayrıntı “3. tur” bölümünde.
 
 Görsel denetim, App Store ekran görüntüleri ve “Bu sürümde yenilikler” Dimaru’da. Bu turda App Store’a gönderilmedi. `styles/mobile-glass.css` duruyor.
 
@@ -16,27 +16,27 @@ Maskelenmiş piksel farkı (eşik 0.15, `includeAA`). 21b, kaydırılmış mağa
 | 02-chats | %10.73 | Harf 23.52px / 56px avatar (0.42em). |
 | 02b-groups | %9.30 | Grup listesi, üye yığını kare çerçevesiz. |
 | 03-dm | %9.70 | Üst solma `.g-edge-conv` 150px, maske %72 opak. |
-| 04-msg-menu | %9.46 | Parmak kalkışı menüyü kapatmıyor / Düzenle’yi açmıyor. 400ms sonra dokunuş çalışıyor. |
+| 04-msg-menu | %13.63 | 1600ms basılı tutup bırakınca menü açık kalıyor. Yeni bir basış Düzenle’yi çalıştırır. |
 | 05-attach | %3.76 | `+` z-index 85, scrim 70. Düğme scrim’in üstünde (elementFromPoint path). |
-| 06-call-11 | %6.52 | Kontrol ızgarası, kırmızı bitiş sağ 418. Ad hapı. (2.9.167’de %16.29.) |
-| 07-group-call | %20.11 | Harf çekimi aynı. Fotoğraf ölçümü: img 72×72, halka merkezi ile fark 0,0 (inline min 96 bastırıldı). |
-| 08-incoming | %6.95 | Reddet / Kabul Et. |
+| 06-call-11 | %6.93 | Saç teli konuşma halkası (dolgu yok). Kalite çubukları mavi tonda. |
+| 07-group-call | %20.19 | Grup ızgarasında avatar halkası gizli; karo kenarı yeşil. Karo gradyanları ayrı. |
+| 08-incoming | %7.67 | Hap y 148. Avatar kutu gölgesi 3px beyaz halka. |
 | 09-friends | %9.59 | Satır 76, avatar 52. |
 | 10-add-friend | %8.70 | Hızlı Ekle / Arkadaş / Grup. |
 | 11-servers | %8.26 | Ray + kanal bölmesi. Başlık eylemleri 30px daire. |
 | 12-server-channel | %7.84 | Kanal sohbeti, üst solma duruyor. |
-| 13-server-menu | %6.88 | Alt sayfa: kanal, rol, davet, ayarlar. |
-| 14-profile | %22.60 | Banner, avatar, Mesaj / Arkadaşlar. Fark fikstür biyografisi. |
-| 14b-profile-edit | %20.33 | İptal y 64, başlık ortalı, Kaydet sağda. Zemin ambient. |
-| 15-settings | %7.23 | Ad 17px. Çıkış Yap listenin sonunda (nav overflow visible). Sol üst avatar durum noktası. |
-| 15b-settings-notifications | %7.99 | “Bildirimler” ortalı, kaydırma saydam, sekme gizli. |
+| 13-server-menu | %7.10 | Düz bildirim satırları, mavi çek sağda. Sahip satırı “Sunucuyu sil”. Alt yazı “· 4 sesli”. |
+| 14-profile | %8.19 | Bannersız hesapta marka şeridi. Durum 22×22, 3px halka. Üyelik Tarihi 10 Oca 2026. |
+| 14b-profile-edit | %10.89 | Gruplar: Kimlik, Hakkımda, Banner, Özel durum. “Banner'ı değiştir”, “Avatarı değiştir”, salt okunur kullanıcı adı. |
+| 15-settings | %6.97 | Ayarlar açıkken sekme vurgusu yok (`.g-tab.on` boş). Profil kartı %4.5 beyaz + blur. |
+| 15b-settings-notifications | %7.93 | Dipnot kartın altında, sol boşluk 16px. Satır ikonları gizli. |
 | 16-notifications | %6.20 | Duyurular sayfası. |
-| 17-play | %16.18 | Hub başlığı yok. Cam geri + VALORANT, çip select (`appearance: none`), cam kart, Katıl. Companion yok. Fark mockuptaki Companion segmentinden. |
+| 17-play | %15.80 | Başlık zemini saydam, alt solma. Çipler tek satır 32px. Kart blur. Competitive mavi, Unrated yeşil, Swiftplay amber. |
 | 18-status | %3.41 | Dört durum + özel + Kullanıcı Ayarları. |
-| 19-calls | %11.59 | Avatar `box-shadow: none`. |
+| 19-calls | %11.34 | İçerik üstü `chrome + 142px`. Görüntülü satırda video ikonu. Grup satırında yalnız telefon. |
 | 20-activity | %18.45 | Durum kartı harfi 21.84px beyaz, durum noktası 14px. Avatar 52. |
-| 21-shop | %27.31 | Cüzdan yapışkan z 8. Günlük “40 DesCoin al” kayınca barın altında kalmıyor. |
-| 21b-shop-items | %26.41 | “Bannerlar · 4” sayaç hapı. Kartlar sayacın altında. Kart sanatı mockup SVG’si değil. |
+| 21-shop | %27.91 | Cüzdan saydam, altı blur solma. Davet: “Arkadaş davet et” + “Sen 100 DesCoin · onlar 50 kazanır”. Hedefler Mesajlar / Ekran. |
+| 21b-shop-items | %22.91 | Kaydırılmış kartlar cam + kenar. Kart sanatı mockup SVG’si değil. |
 
 ## Uzun ad + yönetici rozeti
 
@@ -158,9 +158,38 @@ Arkadaş listesinde uzun ad, `flex-wrap: wrap` yüzünden yönetici rozetini iki
 
 `glass-scope.selftest` 1074 seçici. `glassMessageMenu.selftest` açılış koruması 400ms.
 
+## 3. tur (2.9.170)
+
+440×956 @3x, güvenli alan 62/34 maskeli, `html.glass-ui`, Vite 5174 + shotkit 3000. Sayılar `getBoundingClientRect`.
+
+| Konu | Ölçü |
+| --- | --- |
+| Uzun basış | 1600ms basılı tutup bırakınca menü açık (“Düzenle” görünür), rapor diyaloğu yok. Koruma süreye bağlı değil: ilk `pointerup` / `click` yutulur, sonraki `pointerdown` yeni basıştır. Satır, üzerine basılmadan çalışmaz. |
+| Mağaza cüzdan | Çubuk zemini saydam. `::before` blur 16px, maske `rgba(13,14,19,0.88) → 0`. |
+| Davet kartı | “Arkadaş davet et” / “Sen 100 DesCoin · onlar 50 kazanır” / Linki kopyala / Paylaş. Günlük kart `blur(18px) saturate(1.5)`. Hedefler: Konuşma, Mesajlar, Ekran. |
+| Başkasının profili | Banner `linear-gradient` (banner yokken de). Durum 22×22, kenar 3px. Avatar `::after` halka. “Üyelik Tarihi 10 Oca 2026”. Özel durum satırı yalnız doluysa. |
+| Sunucu menüsü | “İnsanları davet et”, “Sunucu Ayarları”, “Topluluk ve Keşif”. Bildirim satırları ikonsuz. Alt yazı “128 üye · 4 sesli”. Ayrı kırmızı satır: sahipte “Sunucuyu sil”. |
+| Profil düzenle | “Banner'ı değiştir”, “Avatarı değiştir”, “Kullanıcı adı @deniz”, Hakkımda ve Özel durum ayrı grup. |
+| Bildirimler | Dipnot kartın altında (y 436, kart altı 309), `padding-left` 16px. `.g-notif` satır ikonu `display: none`. |
+| Aramalar | İçerik `--g-content-top: chrome + 142px`. |
+| Oyna | Filtre `nowrap`, select 32px. Mod renkleri competitive `rgb(158,182,255)`, unrated `rgb(94,224,138)`, swiftplay `rgb(240,193,90)`. Kart blur. Başlık zemini saydam, alt solma. |
+| Gelen arama | Hap y 148. Avatar `box-shadow` 3px beyaz. |
+| Ayarlar sekmesi | Ayarlar açıkken `.g-tab.on` yok. |
+
+`glass-scope.selftest` 1112 seçici. `glassMessageMenu.selftest`, `edgeSwipeBack.selftest`, `navInventory.selftest` geçti.
+
+### Bilinçli olarak eklenmeyenler
+
+- Mağaza davet kartında sağ üst × yok. Onaylı `21-shop` HTML’inde de kapatma yok; uygulamada davet kartını kapatan bir eylem yok.
+- “Sunucudan Ayrıl” yalnız sahip olunmayan sunucuda. Çekimdeki sunucuların sahibi Deniz; kırmızı satır “Sunucuyu sil”. Ayrıl eylemi duruyor, silinmed.
+- “· N sesli” yalnız o an ses kanalında biri varken. Çekimde 4 kişi olduğu için yazıldı.
+- Özel durum satırı, kullanıcıda özel durum yokken çizilmez. Fikstürde yok; “Ranked arıyorum” uydurulmadı.
+- Premier etiket rengi listede yok; gri kaldı.
+- Taşınan düşük notlar bu tura girmedi: duyuru rozeti, smile-plus, davet metni, ekle-arkadaş segment etiketleri, ses üye satırı yüksekliği, kanal “···”, “Mesaj…” yer tutucusu, duyuru listesinde aynı ikon, durum yer tutucusunun kırpılması. Bunlar ya uygulamada olmayan bir özelliği ya da mevcut metni değiştirir.
+
 ## TestFlight kontrol listesi (Demir)
 
-Sürüm **2.9.169**. Yalnız iPhone. App Store’a gönderme.
+Sürüm **2.9.170**. Yalnız iPhone. App Store’a gönderme.
 
 - [ ] Sohbetler, Gruplar, Sunucular, Oyna, Arkadaşlar, Aktivite, Aramalar sekmesi duruyor. Oyna’da da sekme duruyor; liste çekmecesi yok.
 - [ ] Uzun bir ad + yönetici rozeti: sohbet başlığında tek satır, rozet görünür (dar telefonda yalnız kalkan). Arkadaş satırında ad kesilir, “Yönetici” alt satıra kaymaz.

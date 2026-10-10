@@ -350,9 +350,23 @@ html.glass-ui .g-call-qchip {
   left: 10px;
   gap: 5px;
   padding: 0 10px 0 8px;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(88, 122, 246, 0.32);
+  box-shadow: inset 0 0 0 0.5px rgba(158, 176, 255, 0.45);
   -webkit-backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
   backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
+}
+
+html.glass-ui .g-call-qchip .call-quality-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+html.glass-ui .g-call-qchip .call-quality-bars span {
+  width: 3px;
+  border-radius: 1px;
+  background: #9eb6ff;
 }
 
 html.glass-ui .g-call-corner {
@@ -383,15 +397,38 @@ html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring {
   top: 50% !important;
   right: auto !important;
   bottom: auto !important;
-  width: calc(100% + 16px) !important;
-  height: calc(100% + 16px) !important;
+  width: calc(100% + 14px) !important;
+  height: calc(100% + 14px) !important;
   margin: 0;
   transform: translate(-50%, -50%) !important;
   border-radius: 50%;
-  border: 2.5px solid rgba(48, 209, 88, 0.9);
-  box-shadow: 0 0 0 8px rgba(48, 209, 88, 0.16);
+  border: 1.5px solid rgba(48, 209, 88, 0.95);
+  box-shadow: 0 0 0 4px transparent, 0 0 0 5.5px rgba(48, 209, 88, 0.55);
+  background: transparent;
   pointer-events: none;
   z-index: 3;
+}
+
+html.glass-ui .g-call-grid.is-group .g-speak-ring {
+  display: none !important;
+}
+
+html.glass-ui .g-call-grid.is-group > .participant-tile:nth-child(2) {
+  background:
+    radial-gradient(120% 80% at 15% 20%, rgba(255, 122, 127, 0.85) 0%, transparent 58%),
+    linear-gradient(160deg, #3a2030, #241820) !important;
+}
+
+html.glass-ui .g-call-grid.is-group > .participant-tile:nth-child(3) {
+  background:
+    radial-gradient(120% 80% at 80% 10%, rgba(240, 178, 50, 0.75) 0%, transparent 58%),
+    linear-gradient(160deg, #3a2a14, #221a10) !important;
+}
+
+html.glass-ui .g-call-grid.is-group > .participant-tile:nth-child(4) {
+  background:
+    radial-gradient(120% 80% at 20% 80%, rgba(125, 151, 255, 0.8) 0%, transparent 58%),
+    linear-gradient(160deg, #1a2444, #16182c) !important;
 }
 
 /* Avatar.jsx paints inline min/max = the call size (96). That beats a 72px
@@ -577,7 +614,7 @@ html.glass-ui .incoming-call-card.g-incoming {
   align-items: center;
   justify-content: flex-start;
   gap: 0;
-  padding: 108px 24px calc(72px + env(safe-area-inset-bottom, 0px));
+  padding: 148px 24px calc(72px + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   text-align: center;
   background:
@@ -620,7 +657,11 @@ html.glass-ui .g-incoming .incoming-call-avatar-wrap {
   order: 1;
   width: 228px;
   height: 228px;
-  margin-top: 18px;
+  margin-top: 0;
+}
+
+html.glass-ui .g-incoming .incoming-call-avatar-wrap .ui-avatar {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.88);
 }
 
 html.glass-ui .g-incoming .incoming-call-ring {
@@ -660,7 +701,7 @@ html.glass-ui .g-incoming .incoming-call-badge {
 
 html.glass-ui .g-incoming .incoming-call-name {
   order: 2;
-  margin-top: 14px;
+  margin-top: 0;
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.026em;
@@ -733,7 +774,7 @@ html.glass-ui .g-incoming .incoming-call-btn:active {
 
 /* ── Calls tab (19) ── */
 html.glass-ui .app-root.g-shell[data-view="calls"] .g-list-head.g-head-sub ~ .sidebar-content {
-  --g-content-top: calc(var(--g-chrome-top) + 158px);
+  --g-content-top: calc(var(--g-chrome-top) + 142px);
 }
 
 html.glass-ui .app-sidebar-shell .g-calls.calls-view {

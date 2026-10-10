@@ -288,9 +288,25 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub[data-g
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-header {
   background: transparent !important;
+  background-image: none !important;
   border: 0 !important;
+  box-shadow: none !important;
   padding: calc(var(--g-chrome-top) + 8px) 16px 8px !important;
   align-items: center;
+  position: relative;
+}
+
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 36px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.55), rgba(var(--g-edge-rgb, 13, 14, 19), 0));
+  -webkit-mask: linear-gradient(180deg, #000, transparent);
+  mask: linear-gradient(180deg, #000, transparent);
 }
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-header .lfg-kicker {
@@ -328,9 +344,11 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-actions
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-filters {
   display: flex !important;
-  flex-wrap: wrap;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
   gap: 8px;
-  padding: 0 16px 12px !important;
+  align-items: center;
+  padding: 0 16px 8px !important;
   grid-template-columns: none !important;
 }
 
@@ -339,14 +357,15 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle {
   appearance: none;
   -webkit-appearance: none;
   width: auto !important;
-  max-width: 100%;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 17px;
+  max-width: none;
+  height: 32px !important;
+  min-height: 32px !important;
+  flex: 0 0 auto !important;
+  border-radius: 16px;
   border: 0 !important;
   background: rgba(255, 255, 255, 0.07) !important;
   color: var(--g-t1);
-  padding: 0 14px;
+  padding: 0 12px;
   font-size: 13px;
   font-weight: 600;
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
@@ -373,11 +392,15 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle:has(
   color: #16171f;
 }
 
-html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-lobby-card {
-  background: rgba(255, 255, 255, 0.06) !important;
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-lobby-card,
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-lobby-card:hover,
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-lobby-card.active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)) !important;
   border: 0 !important;
   border-radius: 20px !important;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
   padding: 14px !important;
   margin-bottom: 0;
   text-align: left;
@@ -396,6 +419,21 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-slots {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mode[data-mode="competitive"] {
+  background: rgba(88, 122, 246, 0.28);
+  color: #9eb6ff;
+}
+
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mode[data-mode="unrated"] {
+  background: rgba(48, 209, 88, 0.22);
+  color: #5ee08a;
+}
+
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mode[data-mode="swiftplay"] {
+  background: rgba(240, 178, 50, 0.24);
+  color: #f0c15a;
 }
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-lobby-note {

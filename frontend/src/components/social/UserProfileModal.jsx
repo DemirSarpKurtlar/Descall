@@ -187,7 +187,7 @@ export default function UserProfileModal({
   const displayName =
     profile?.displayName || profile?.display_name || displayNameProp || displayUsername;
   const displayAvatar = profile?.avatarUrl ?? avatarUrl ?? null;
-  const equippedBannerUrl = profile?.equippedBanner?.asset_url || null;
+  const equippedBannerUrl = profile?.equippedBanner?.asset_url || profile?.bannerUrl || profile?.banner_url || null;
   const equippedBackgroundUrl = profile?.equippedBackground?.asset_url || null;
   const bannerGradient = generateBannerGradient(displayUsername);
   const statusLabel = {
@@ -197,7 +197,9 @@ export default function UserProfileModal({
     dnd: t("Do Not Disturb"),
   }[status] || t("Offline");
   const statusClass = status === "online" ? "is-on" : status === "idle" ? "is-idle" : status === "dnd" ? "is-dnd" : "is-off";
-  const customStatus = profile?.customStatus || profile?.custom_status || "";
+  const known = friends.find((f) => f && (f.id === userId || f.username === username)) || null;
+  const customStatus = profile?.customStatus || profile?.custom_status || known?.customStatus || known?.custom_status || "";
+  const memberSince = profile?.createdAt || profile?.created_at || known?.createdAt || known?.created_at || null;
 
   if (glassShell) {
     return (
@@ -218,9 +220,6 @@ export default function UserProfileModal({
                 <div
                   className="g-profile-banner"
                   style={{
-                    background: equippedBannerUrl
-                      ? undefined
-                      : bannerGradient,
                     backgroundImage: equippedBannerUrl ? cssUrl(equippedBannerUrl) : undefined,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
@@ -280,10 +279,10 @@ export default function UserProfileModal({
                     </div>
                   )}
                   <div className="g-profile-group">
-                    {profile?.createdAt ? (
+                    {memberSince ? (
                       <div className="g-profile-grow">
                         <b>{t("Member Since")}</b>
-                        <span>{formatMemberSince(profile.createdAt, t, locale)}</span>
+                        <span>{formatMemberSince(memberSince, t, locale)}</span>
                       </div>
                     ) : null}
                     {!isSelf ? (
@@ -472,7 +471,7 @@ export default function UserProfileModal({
                   <div style={{ height: 8 }} />
                   <SkeletonLine width="48%" height={12} />
                 </div>
-              ) : profile?.createdAt ? (
+              ) : memberSince ? (
                 <div style={{ marginBottom: 14 }}>
                   <div
                     style={{
@@ -487,7 +486,7 @@ export default function UserProfileModal({
                     {t("Member Since")}
                   </div>
                   <div style={{ fontSize: 13, color: "var(--text-1)", fontWeight: 500 }}>
-                    {formatMemberSince(profile.createdAt, t, locale)}
+                    {formatMemberSince(memberSince, t, locale)}
                   </div>
                 </div>
               ) : null}

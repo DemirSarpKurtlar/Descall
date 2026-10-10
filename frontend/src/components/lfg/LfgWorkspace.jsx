@@ -398,7 +398,7 @@ export default function LfgWorkspace({
                 } : undefined}
               >
                 <div className="lfg-lobby-card-top">
-                  <span className="lfg-mode">{trLabel(t, modeLabel(meta.modes, lobby.mode))}</span>
+                  <span className="lfg-mode" data-mode={lobby.mode}>{trLabel(t, modeLabel(meta.modes, lobby.mode))}</span>
                   <span className="lfg-slots">
                     <Users size={12} />
                     {lobby.partySizeCurrent}/{lobby.partySizeMax}

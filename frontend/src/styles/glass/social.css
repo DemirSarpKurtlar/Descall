@@ -748,10 +748,16 @@ html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.danger svg {
   color: #ff6961;
 }
 
-html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.danger {
-  margin: 10px 8px 8px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
+html.glass-ui .server-dropdown.g-server-sheet .g-menu-group.is-leave {
+  margin-top: 12px;
+}
+
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.danger,
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.is-leave {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  justify-content: flex-start;
 }
 
 html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item::after {
@@ -761,13 +767,23 @@ html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item::after {
   font-size: 18px;
 }
 
-html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.is-active {
-  color: var(--g-t1);
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.is-plain::after,
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.is-leave::after {
+  content: none;
+}
+
+html.glass-ui .server-dropdown.g-server-sheet .g-menu-group.is-plain .server-dropdown-item {
+  justify-content: space-between;
 }
 
 html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-check {
   margin-left: auto;
   color: var(--g-brand);
+  flex-shrink: 0;
+}
+
+html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-item.is-active {
+  color: var(--g-t1);
 }
 
 html.glass-ui .server-dropdown.g-server-sheet .server-dropdown-section {
@@ -834,6 +850,7 @@ html.glass-ui .g-profile-sheet * {
 html.glass-ui .g-profile-banner {
   height: 120px;
   position: relative;
+  background: linear-gradient(135deg, rgba(88, 122, 246, 0.9), rgba(124, 92, 255, 0.7) 50%, rgba(30, 31, 34, 0.35));
 }
 
 html.glass-ui .g-profile-close {
@@ -864,12 +881,34 @@ html.glass-ui .g-profile-avatar {
   display: inline-block;
   width: 88px;
   height: 88px;
+  overflow: visible;
+}
+
+html.glass-ui .g-profile-avatar::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(168, 185, 255, 0.75);
+  pointer-events: none;
+  z-index: 2;
+}
+
+html.glass-ui .g-profile-avatar .status-badge {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  border-width: 3px !important;
+  box-sizing: border-box;
+  z-index: 3;
 }
 
 html.glass-ui .g-profile-avatar .ui-avatar {
   width: 88px !important;
   height: 88px !important;
   font-size: 88px !important;
+  overflow: visible !important;
 }
 
 html.glass-ui .g-profile-name {
@@ -1090,11 +1129,79 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-section {
   order: 2;
 }
 
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-banner-kicker,
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner {
   order: 3;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner {
   height: 80px;
-  margin-top: 16px;
+  margin-top: 0;
   border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(88, 122, 246, 0.85), rgba(124, 92, 255, 0.65)) !important;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-banner-label {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 650;
+  pointer-events: none;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner-actions,
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-classic {
+  display: none !important;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-avatar-link {
+  display: inline-flex;
+  margin: 10px auto 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9eb0ff;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-glass .us-field > span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-readonly {
+  display: block;
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--g-t1);
+  margin-top: 2px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-bio textarea {
+  width: 100%;
+  min-height: 88px;
+  border: 0;
+  border-radius: 18px;
+  padding: 14px;
+  resize: vertical;
+  color: var(--g-t1);
+  font-size: 15px;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-section-label {

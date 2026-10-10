@@ -29,6 +29,9 @@ import {
   Lock,
   Radio,
   ShieldCheck,
+  UserPlus,
+  Settings,
+  Globe,
   Check,
   Gamepad2,
   Crosshair,
@@ -46,7 +49,7 @@ import {
 } from "lucide-react";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
@@ -127,6 +130,7 @@ export default function ServersSidebar({
   isMobile = false,
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const glassShell = useGlassShell();
   const [glassAddMenuOpen, setGlassAddMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -315,6 +319,11 @@ export default function ServersSidebar({
   const [channelAccess, setChannelAccess] = useState(null); // channel
   const [voiceMenu, setVoiceMenu] = useState(null); // { user, channelId, x, y }
   const voiceStates = serverVoice?.voiceStatesByServer?.[activeServer?.id] || {};
+  const voiceNow = Object.values(voiceStates).reduce(
+    (n, st) => n + (Array.isArray(st?.members) ? st.members.length : 0),
+    0
+  );
+  const voiceNote = voiceNow > 0 ? ` · ${voiceNow} ${locale === "tr" ? "sesli" : "in voice"}` : "";
   const participantStreams = serverVoice?.remoteStreams || null;
   const localVoiceStream = serverVoice?.localStream || null;
   const myVoiceUserId = serverVoice?.myUserId || null;
@@ -885,7 +894,10 @@ export default function ServersSidebar({
                   <ServerAvatar server={activeServer} />
                   <div>
                     <strong>{activeServer.name}</strong>
-                    <span>{t("{count} members", { count: activeServer.memberCount || 1 })}</span>
+                    <span>
+                      {t("{count} members", { count: activeServer.memberCount || 1 })}
+                      {voiceNote}
+                    </span>
                   </div>
                 </div>
               </>
@@ -939,8 +951,8 @@ export default function ServersSidebar({
                       setShowInvite(true);
                     }}
                   >
-                    <Link2 size={15} />
-                    {t("Invite people")}
+                    {glassShell ? <UserPlus size={15} /> : <Link2 size={15} />}
+                    {glassShell && locale === "tr" ? "İnsanları davet et" : t("Invite people")}
                   </button>
                 )}
                 {canManageGuild && (
@@ -952,7 +964,7 @@ export default function ServersSidebar({
                       setShowSettings(true);
                     }}
                   >
-                    <Settings2 size={15} />
+                    {glassShell ? <Settings size={15} /> : <Settings2 size={15} />}
                     {t("Server Settings")}
                   </button>
                 )}
@@ -965,7 +977,7 @@ export default function ServersSidebar({
                       setShowCommunity(true);
                     }}
                   >
-                    <ShieldCheck size={15} />
+                    {glassShell ? <Globe size={15} /> : <ShieldCheck size={15} />}
                     {t("Community & Discovery")}
                   </button>
                 )}
@@ -986,27 +998,7 @@ export default function ServersSidebar({
                     {t("Change server icon")}
                   </button>
                 )}
-                <div className="server-dropdown-section">
-                  <span className="server-dropdown-section-label">{t("Notification Settings")}</span>
-                  {NOTIF_LEVELS.map((lvl) => {
-                    const Icon = lvl.icon;
-                    const active = notifLevel === lvl.value;
-                    return (
-                      <button
-                        key={lvl.value}
-                        type="button"
-                        className={`server-dropdown-item${active ? " is-active" : ""}`}
-                        disabled={notifBusy}
-                        onClick={() => setNotificationLevel(lvl.value)}
-                      >
-                        <Icon size={15} />
-                        <span>{t(lvl.label)}</span>
-                        {active ? <Check size={14} className="server-dropdown-check" /> : null}
-                      </button>
-                    );
-                  })}
-                </div>
-                {canBanMembers && (
+                {glassShell && canBanMembers && (
                   <button
                     type="button"
                     className="server-dropdown-item"
@@ -1019,7 +1011,7 @@ export default function ServersSidebar({
                     {t("Bans")}
                   </button>
                 )}
-                {canViewAudit && (
+                {glassShell && canViewAudit && (
                   <button
                     type="button"
                     className="server-dropdown-item"
@@ -1032,18 +1024,78 @@ export default function ServersSidebar({
                     {t("Audit log")}
                   </button>
                 )}
+            </div>
+            <div className={glassShell ? undefined : "server-dropdown-section"}>
+              <span className="server-dropdown-section-label">{t("Notification Settings")}</span>
+              <div className={glassShell ? "g-menu-group is-plain" : undefined}>
+                {NOTIF_LEVELS.map((lvl) => {
+                  const Icon = lvl.icon;
+                  const active = notifLevel === lvl.value;
+                  return (
+                    <button
+                      key={lvl.value}
+                      type="button"
+                      className={`server-dropdown-item is-plain${active ? " is-active" : ""}`}
+                      disabled={notifBusy}
+                      onClick={() => setNotificationLevel(lvl.value)}
+                    >
+                      {glassShell ? null : <Icon size={15} />}
+                      <span>{t(lvl.label)}</span>
+                      {active ? <Check size={14} className="server-dropdown-check" /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {!glassShell && canBanMembers && (
+              <button
+                type="button"
+                className="server-dropdown-item"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setShowModeration("bans");
+                }}
+              >
+                <Ban size={15} />
+                {t("Bans")}
+              </button>
+            )}
+            {!glassShell && canViewAudit && (
+              <button
+                type="button"
+                className="server-dropdown-item"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setShowModeration("audit");
+                }}
+              >
+                <ScrollText size={15} />
+                {t("Audit log")}
+              </button>
+            )}
+            {glassShell ? (
+              <div className="g-menu-group is-leave">
                 {activeServer.isOwner ? (
-                  <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("delete")}>
-                    <Trash2 size={15} />
+                  <button type="button" className="server-dropdown-item danger is-leave" onClick={() => openConfirm("delete")}>
                     {t("Delete server")}
                   </button>
                 ) : (
-                  <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("leave")}>
-                    <LogOut size={15} />
+                  <button type="button" className="server-dropdown-item danger is-leave" onClick={() => openConfirm("leave")}>
                     {t("Leave server")}
                   </button>
                 )}
-            </div>
+              </div>
+            ) : activeServer.isOwner ? (
+              <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("delete")}>
+                <Trash2 size={15} />
+                {t("Delete server")}
+              </button>
+            ) : (
+              <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("leave")}>
+                <LogOut size={15} />
+                {t("Leave server")}
+              </button>
+            )}
           </ServerMenuFrame>
 
           <div className="sidebar-content server-channels-scroll">
