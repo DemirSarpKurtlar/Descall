@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Mic, Smile,
   Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply, Dice5, HelpCircle, Wallet, Trophy, CalendarDays,
@@ -14,6 +14,7 @@ import { filterSlashCommandMatches, getSlashCommandsForSurface } from "../../lib
 import { serverHasPermission } from "../../lib/serverPermissions";
 import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
+import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 
 const EMOJI_CATEGORIES = [
   { nameKey: "Smileys", emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"] },
@@ -68,6 +69,16 @@ export default function MessageComposer({
 }) {
   const t = useT();
   const glass = useGlassUi();
+  const reduceMotion = useReducedMotion();
+  // Critically damped spring (ζ = 1, response 0.35s). Reduced motion is a fade.
+  const replyStripTransition = !glass
+    ? { duration: 0.16 }
+    : (reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default));
+  // Cancel sits outside the field. preventDefault keeps the textarea focused
+  // so the iOS keyboard stays up while the strip springs out.
+  const keepComposerFocus = (event) => {
+    event.preventDefault();
+  };
   const [message, setMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -605,9 +616,16 @@ export default function MessageComposer({
         {replyTo && (
           <motion.div
             className="composer-reply-bar"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={glass
+              ? (reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, height: 0 })
+              : { opacity: 0, height: 0 }}
+            animate={glass
+              ? (reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, height: "auto" })
+              : { opacity: 1, height: "auto" }}
+            exit={glass
+              ? (reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, height: 0 })
+              : { opacity: 0, height: 0 }}
+            transition={replyStripTransition}
           >
             <Reply size={14} />
             <div className="composer-reply-meta">
@@ -620,7 +638,17 @@ export default function MessageComposer({
                   : t("Message")}
               </span>
             </div>
-            <button type="button" className="composer-reply-clear" onClick={() => onClearReply?.()} aria-label={t("Cancel reply")}>
+            <button
+              type="button"
+              className="composer-reply-clear"
+              onPointerDown={keepComposerFocus}
+              onMouseDown={keepComposerFocus}
+              onClick={() => {
+                onClearReply?.();
+                inputRef.current?.focus({ preventScroll: true });
+              }}
+              aria-label={t("Cancel reply")}
+            >
               <X size={14} />
             </button>
           </motion.div>
@@ -654,6 +682,8 @@ export default function MessageComposer({
                 setPendingAttach(null);
               }}
               aria-label={t("Remove attachment")}
+              onPointerDown={keepComposerFocus}
+              onMouseDown={keepComposerFocus}
             >
               <X size={14} />
             </button>
@@ -763,6 +793,7 @@ export default function MessageComposer({
       <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" style={{ display: "none" }} onChange={uploadFile} />
       <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.json" style={{ display: "none" }} onChange={uploadFile} />
 
+      <div className="composer-row">
       <div className="composer-left">
         <motion.button
           ref={attachBtnRef}
@@ -837,6 +868,7 @@ export default function MessageComposer({
           <span className="composer-send-flash" aria-hidden />
           <Send size={20} />
         </motion.button>
+      </div>
       </div>
     </div>
   );

@@ -697,6 +697,13 @@ html.glass-ui .app-root.g-shell.in-conversation .messages-container {
   background-color: transparent !important;
 }
 
+/* Reply / attach strip sits above the 52px capsule (~52px + 8px gap). */
+html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-reply-bar) .messages-container,
+html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-attach-preview) .messages-container,
+html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-slowmode-hint) .messages-container {
+  padding-bottom: calc(var(--g-bar-bottom) + 142px) !important;
+}
+
 html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.chat-search-bar) .messages-container {
   padding-top: calc(var(--g-chrome-top) + 112px) !important;
 }
@@ -951,9 +958,11 @@ html.glass-ui .app-root.g-shell.in-conversation .composer-container {
 
 html.glass-ui .app-root.g-shell .message-composer {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
   gap: 8px;
-  height: 52px;
+  height: auto;
   min-height: 52px;
   padding: 0;
   margin: 0;
@@ -962,6 +971,105 @@ html.glass-ui .app-root.g-shell .message-composer {
   box-shadow: none !important;
   flex-wrap: nowrap;
   position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Capsule stays 52px. The reply strip is a sibling above it, so the send
+   cluster (absolute inside this row) never shares a box with the cancel ×. */
+html.glass-ui .app-root.g-shell .composer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  min-width: 0;
+  position: relative;
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-bar,
+html.glass-ui .app-root.g-shell .composer-attach-preview,
+html.glass-ui .app-root.g-shell .composer-slowmode-hint {
+  flex: 0 0 auto;
+  order: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-bar {
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  padding: 7px 4px 7px 12px;
+  border: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  color: var(--g-t2);
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    var(--g-tint-base);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-bar > svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--g-brand-hi);
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  gap: 1px;
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-meta strong,
+html.glass-ui .app-root.g-shell .composer-reply-meta span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-meta strong {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--g-t1);
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-meta span {
+  font-size: 12.5px;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-bar .composer-reply-clear {
+  position: relative;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--g-t2);
+  background: transparent;
+}
+
+html.glass-ui .app-root.g-shell .composer-reply-bar .composer-reply-clear:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--g-t1);
 }
 
 html.glass-ui .app-root.g-shell .composer-left {
@@ -1074,6 +1182,16 @@ html.glass-ui .app-root.g-shell .composer-send-btn.active {
 html.glass-ui .app-root.g-shell .composer-send-btn svg {
   width: 19px;
   height: 19px;
+}
+
+/* Popovers anchor to the capsule. Lift them above a reply strip. */
+html.glass-ui .app-root.g-shell .message-composer:has(.composer-reply-bar) .emoji-picker,
+html.glass-ui .app-root.g-shell .message-composer:has(.composer-reply-bar) .slash-command-menu {
+  bottom: 124px;
+}
+
+html.glass-ui .app-root.g-shell .message-composer:has(.composer-reply-bar) .attachment-menu {
+  bottom: calc(var(--g-bar-bottom) + 132px);
 }
 
 /* Attach sheet (05) — only the three existing actions. */
@@ -1610,13 +1728,15 @@ html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .chat-search-field,
 html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn,
 html.glass-ui.a11y-solid .app-root.g-shell .composer-left .composer-action-btn,
 html.glass-ui.a11y-solid .app-root.g-shell .composer-input-wrapper,
+html.glass-ui.a11y-solid .app-root.g-shell .composer-reply-bar,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .panel-header.g-conv .header-right,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-field,
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-left .composer-action-btn,
-html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper {
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper,
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-reply-bar {
   background: var(--g-solid) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
@@ -1650,6 +1770,7 @@ html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-field
 html.glass-ui.a11y-contrast .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-left .composer-action-btn,
 html.glass-ui.a11y-contrast .app-root.g-shell .composer-input-wrapper,
+html.glass-ui.a11y-contrast .app-root.g-shell .composer-reply-bar,
 html.glass-ui.a11y-contrast .app-root.g-shell .attachment-menu,
 html.glass-ui.a11y-contrast .add-modal.g-announce,
 html.glass-ui.a11y-contrast .giphy-panel.g-giphy {

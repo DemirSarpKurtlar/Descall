@@ -1660,6 +1660,15 @@
   flex-wrap: wrap;
   position: relative;
 }
+/* Reply / attach sit above this row. Glass turns it into the 52px capsule. */
+.composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+}
 .message-composer.is-dragover {
   outline: 2px dashed var(--primary);
   outline-offset: -4px;

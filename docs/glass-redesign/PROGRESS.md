@@ -1,5 +1,21 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.174
+
+Demir’in 2.9.171 iPhone testi, dördüncü madde. Yanıtlarken önizleme (“Yanıtlanıyor …” + alıntı) 52px kapsülün içine eziliyordu: yazı alanı kayboluyor, iptal × gönder okunun üstüne biniyordu.
+
+Önizleme artık kapsülün üstünde ayrı bir cam şerit: yanıt ikonu, “Yanıtlanıyor &lt;isim&gt;”, tek satır alıntı (ellipsis), şeridin sağında kendi × düğmesi. Alttaki besteci aynı (+, yazı alanı, emoji, mikrofon, gönder). Gönder ile × çakışmaz. Şerit standart yay ile girer çıkar (ζ = 1, 0.35s); iptal klavyeyi kapatmaz. Düzenleme bu şeridi kullanmaz; balonun içinde Kaydet / İptal olarak durur. App Store’a gönderilmedi. `mobile-glass.css` duruyor.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.174**. Yalnız iPhone, cam açık.
+
+- [ ] Bir mesaja yanıtla: üstte “Yanıtlanıyor &lt;isim&gt;” ve alıntı, altta normal yazı alanı ve yer tutucu. Gönder oku × ile örtülmez.
+- [ ] Uzun isim ve uzun alıntı tek satırda kesilir.
+- [ ] × yanıtı kapatır, klavye açık kalır, şerit yay ile iner.
+- [ ] Mesajı düzenle balonun içinde kalır (Kaydet / İptal).
+- [ ] Masaüstü / tarayıcı eski besteci.
+
 ## Cihaz düzeltmeleri · 2.9.172
 
 Demir’in 2.9.171 iPhone testi. Üç düzeltme, yeni özellik yok.
