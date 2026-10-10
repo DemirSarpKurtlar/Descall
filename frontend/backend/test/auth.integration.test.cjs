@@ -6,6 +6,7 @@
  * Supabase client + fake email transport (no network, no real DB).
  */
 
+process.env.PASSWORD_HIBP = "0";
 process.env.JWT_SECRET = "test-secret-do-not-use-in-prod";
 process.env.JWT_EXPIRES_IN = "7d";
 process.env.SUPABASE_URL = "https://placeholder.supabase.co";

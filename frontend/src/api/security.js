@@ -1,7 +1,9 @@
 import { authedRequest } from "./authedHttp";
 
 // Email verification
-export const setEmail = (email) => authedRequest("/api/auth/email/set", { method: "POST", body: { email } });
+export const setEmail = (email, extra = {}) =>
+  authedRequest("/api/auth/email/set", { method: "POST", body: { email, ...extra } });
+export const requestEmailReauth = () => authedRequest("/api/auth/email/reauth", { method: "POST" });
 export const resendEmailCode = () => authedRequest("/api/auth/email/resend", { method: "POST" });
 export const verifyEmailCode = (code) => authedRequest("/api/auth/email/verify", { method: "POST", body: { code } });
 
@@ -12,8 +14,11 @@ export const disable2fa = (password) => authedRequest("/api/auth/2fa/disable", {
 // Password reset (authenticated — Settings)
 export const requestPasswordResetCode = () =>
   authedRequest("/api/auth/password/request", { method: "POST" });
-export const confirmPasswordResetCode = (code, newPassword) =>
-  authedRequest("/api/auth/password/confirm", { method: "POST", body: { code, newPassword } });
+export const confirmPasswordResetCode = (code, newPassword, currentPassword) =>
+  authedRequest("/api/auth/password/confirm", {
+    method: "POST",
+    body: { code, newPassword, ...(currentPassword ? { currentPassword } : {}) },
+  });
 
 // Session management
 export const getSessions = () => authedRequest("/api/auth/sessions");

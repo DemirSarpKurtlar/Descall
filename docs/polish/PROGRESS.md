@@ -1,5 +1,28 @@
 # Polish progress
 
+## 2.9.193 — auth and session hardening
+
+Account changes now need the current password (or a code sent to the confirmed email for a social-only account). Changing email stores `pending_email` and does not turn off 2FA or clear `email_confirmed_at`. Password reset emails go only to a confirmed address, and the public forgot/reset responses no longer say whether the account exists. A signed-in password change also requires the current password when the account has one. Old clients that omit it receive a Turkish error.
+
+Login, register, reset, 2FA, email codes, username checks, Google/Apple, and socket handshakes are rate limited in memory (failures for login; generous caps). `429` includes `Retry-After` and `Çok fazla deneme. Lütfen biraz sonra tekrar dene.` Set `REVIEW_DEMO_USERNAMES` (comma-separated) so those accounts skip the per-account bucket. Successful logins do not consume the budget.
+
+One-time codes use `crypto.randomInt` and `timingSafeEqual`. Wrong guesses are counted in `auth_code_attempts` for an hour and are not reset when a new code is sent. Sessions are checked against `users.active_sessions` (20s cache) plus the in-memory revoke set. Password reset/change and email change revoke the other sessions, including ones dropped by the 10-session cap. Tokens that already omit a session id stay valid if they were issued before 2026-10-11T12:00:00Z. Newer session-less tokens are rejected. Token lifetime is still 7 days. No refresh-token flow.
+
+`/api/errors` list, resolve, and delete require an admin. The public test routes and `/api/auth/test` are gone. `/debug/*` cannot be enabled in production. Admin role changes require username `admin` or `users.is_super_admin` (set for the admin account only). New passwords must be at least 10 characters and are checked against Have I Been Pwned (fail-open, 2s); set `PASSWORD_HIBP=0` to skip. The signup, reset, and change forms show a Turkish strength meter. Email 2FA stays optional. Authenticator-app 2FA was not added. iOS still keeps the JWT in localStorage; the desktop app stores it with `safeStorage` and loads packaged pages from `descall://app` with `webSecurity` on.
+
+Migration `20261011_auth_security.sql` is applied: `pending_email`, `is_super_admin`, and `auth_code_attempts` (RLS on, no anon access).
+
+### TestFlight checklist (Demir)
+
+Sürüm **2.9.193**. Eski uygulama (2.9.182) açılmaya devam eder. Demo hesaplar kilitlenmez.
+
+- [ ] Demo hesapla birkaç kez giriş yap; yanlış şifreden sonra da giriş çalışır.
+- [ ] Ayarlar → e-posta kodu isterken mevcut şifreyi yaz. Şifresiz dene: Türkçe uyarı gör.
+- [ ] İki adımlı doğrulama açıkken e-posta değiştirince kapanmasın. Yeni adres doğrulanınca açılsın.
+- [ ] Şifre değiştirirken mevcut şifre + en az 10 karakter. Zayıf şifrede Türkçe uyarı.
+- [ ] Başka bir oturumdan şifreyi değiştirince o oturum düşsün.
+- [ ] Bilinmeyen kullanıcı adı ile şifre sıfırlama, var olan hesapla aynı genel cümleyi göstersin.
+
 ## 2.9.190 — icon buttons have accessible names
 
 Icon-only `<button>` and `<motion.button>` controls now have an accessible name. Where a `title` already existed, the same expression is copied to `aria-label` (including the hand-raise ternary). Close, end-call, mute, grid/focus, bet, and copy/revoke controls use existing translation keys. Four new Turkish strings: Grid view, Decrease bet, Increase bet, Audio settings. Switches in profile customization and the rebuilt settings panel set `aria-label` from the visible row label and `aria-pressed` from the boolean field. The shared admin `Toggle` takes a `label` prop so each row is named, not the last row in the file.

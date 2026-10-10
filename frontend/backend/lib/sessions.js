@@ -29,9 +29,15 @@ function describeDevice(userAgent = "") {
 }
 
 function clientIp(req) {
-  const fwd = req.headers?.["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd.length) return fwd.split(",")[0].trim();
-  return req.ip || req.socket?.remoteAddress || "unknown";
+  // Express resolves req.ip from the trusted hop (trust proxy = 1 on Render).
+  // The first X-Forwarded-For value is client-controlled and must not be used.
+  if (req?.ip) return req.ip;
+  const fwd = req?.headers?.["x-forwarded-for"];
+  if (typeof fwd === "string" && fwd.length) {
+    const parts = fwd.split(",").map((s) => s.trim()).filter(Boolean);
+    return parts[parts.length - 1] || "unknown";
+  }
+  return req?.socket?.remoteAddress || "unknown";
 }
 
 /**
@@ -59,10 +65,18 @@ async function createSession(userId, { userAgent, ip } = {}) {
 
   const existing = Array.isArray(userRow?.active_sessions) ? userRow.active_sessions : [];
   const next = [session, ...existing].slice(0, MAX_SESSIONS_PER_USER);
+  const droppedIds = existing.slice(MAX_SESSIONS_PER_USER - 1).map((s) => s && s.id).filter(Boolean);
 
   await supabase.from("users").update({ active_sessions: next }).eq("id", userId);
 
-  return { session, sessions: next };
+  try {
+    const { noteDroppedSessions } = require("./sessionGuard");
+    noteDroppedSessions(userId, droppedIds);
+  } catch {
+    /* session guard is best-effort on top of the row update */
+  }
+
+  return { session, sessions: next, droppedIds };
 }
 
 async function listSessions(userId) {
@@ -74,10 +88,20 @@ async function listSessions(userId) {
   return Array.isArray(data?.active_sessions) ? data.active_sessions : [];
 }
 
+function rememberDropped(userId, ids) {
+  try {
+    const { noteDroppedSessions } = require("./sessionGuard");
+    noteDroppedSessions(userId, ids);
+  } catch {
+    /* session guard is best-effort on top of the row update */
+  }
+}
+
 async function removeSession(userId, sessionId) {
   const sessions = await listSessions(userId);
   const next = sessions.filter((s) => s.id !== sessionId);
   await supabase.from("users").update({ active_sessions: next }).eq("id", userId);
+  rememberDropped(userId, [sessionId]);
   return next;
 }
 
@@ -86,7 +110,16 @@ async function removeOtherSessions(userId, keepSessionId) {
   const removed = sessions.filter((s) => s.id !== keepSessionId).map((s) => s.id);
   const next = sessions.filter((s) => s.id === keepSessionId);
   await supabase.from("users").update({ active_sessions: next }).eq("id", userId);
+  rememberDropped(userId, removed);
   return { removed, sessions: next };
+}
+
+async function clearAllSessions(userId) {
+  const sessions = await listSessions(userId);
+  const removed = sessions.map((s) => s && s.id).filter(Boolean);
+  await supabase.from("users").update({ active_sessions: [] }).eq("id", userId);
+  rememberDropped(userId, removed);
+  return removed;
 }
 
 async function touchSession(userId, sessionId) {
@@ -109,6 +142,7 @@ module.exports = {
   listSessions,
   removeSession,
   removeOtherSessions,
+  clearAllSessions,
   touchSession,
   MAX_SESSIONS_PER_USER,
 };

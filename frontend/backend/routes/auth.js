@@ -11,7 +11,11 @@ const { buildUserAttributionColumns, isMissingColumnError } = require("../lib/si
 const { sanitizeVisitorKey } = require("../lib/userAnalytics");
 const { recordSignupAnalytics, flagSuspiciousSignup, recordAppOpened, recordAnalyticsEvent } = require("../lib/userAnalyticsStore");
 const { hashCode, verifyStoredCode, isCodeFresh } = require("../lib/authCodes");
-const { createSession, listSessions, removeSession, removeOtherSessions, clientIp } = require("../lib/sessions");
+const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts } = require("../lib/authAttempts");
+const { checkNewPassword } = require("../lib/passwordPolicy");
+const { peek, recordFailure, rejectIfLimited, isReviewDemo } = require("../lib/rateLimit");
+const { noteDroppedSessions } = require("../lib/sessionGuard");
+const { createSession, listSessions, removeSession, removeOtherSessions, clearAllSessions, clientIp } = require("../lib/sessions");
 const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
 
@@ -29,6 +33,19 @@ const {
 } = require("../lib/usernamePolicy");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Real bcrypt cost-12 hash so unknown users take the same time as a miss. Not a login credential. */
+const DUMMY_BCRYPT_HASH = "$2b$12$vBwiXx.Pn.bQ3emAQbmAPuQnbGxVl8zBbmWYnLoFFy2XbHw7nvqLi";
+const GENERIC_LOGIN_ERROR = "Invalid username or password.";
+const GENERIC_RESET_MESSAGE = "If an account with a confirmed email exists, a reset code is on the way.";
+const EMAIL_CHANGE_NEEDS_PASSWORD = "E-postayı değiştirmek için mevcut şifreni gir.";
+const EMAIL_CHANGE_NEEDS_REAUTH = "Bu hesap şifresiz. Kayıtlı e-postana gelen kodu girdikten sonra yeni adresi ekleyebilirsin.";
+const PASSWORD_CHANGE_NEEDS_CURRENT = "Şifreyi değiştirmek için mevcut şifreni gir.";
+
+function guard(res, ipKey, accountKey, opts, accountOpts) {
+  const checks = [peek(ipKey, opts)];
+  if (accountKey) checks.push(peek(accountKey, accountOpts || opts));
+  return rejectIfLimited(res, checks);
+}
 
 async function insertUserWithAttribution(basePayload, selectCols, attribution, authMethod, extra = {}) {
   const attributionColumns = buildUserAttributionColumns({
@@ -86,6 +103,43 @@ function attemptKey(userId, purpose) {
   return `${userId}:${purpose}`;
 }
 
+async function judgeCode({ userId, purpose, code, storedHash, sentAtIso }) {
+  const attempts = await getCodeAttempts(userId, purpose);
+  const verdict = verifyStoredCode({ code, storedHash, sentAtIso, attempts });
+  const key = attemptKey(userId, purpose);
+  if (!verdict.ok) {
+    const next = await bumpCodeAttempts(userId, purpose);
+    authCodeAttempts.set(key, next);
+    return verdict;
+  }
+  await clearCodeAttempts(userId, purpose);
+  authCodeAttempts.delete(key);
+  return verdict;
+}
+
+async function notifyAccountChange(user, kind) {
+  if (!user?.email || !user.email_confirmed_at) return;
+  const text =
+    kind === "password"
+      ? "Descall hesabının şifresi az önce değiştirildi. Bu sen değilsen destek ile iletişime geç."
+      : "Descall hesabında e-posta adresini değiştirme isteği var. Bu sen değilsen hemen şifreni değiştir ve destek ile iletişime geç.";
+  const subject = kind === "password" ? "Descall şifren değişti" : "Descall e-posta değişikliği";
+  await sendEmail({
+    to: user.email,
+    subject,
+    text,
+    html: `<p>${text}</p><p>${SUPPORT_EMAIL}</p>`,
+  });
+}
+
+async function dropSessions(req, userId, keepSessionId) {
+  const removed = keepSessionId
+    ? (await removeOtherSessions(userId, keepSessionId)).removed
+    : await clearAllSessions(userId);
+  for (const id of removed) disconnectSocketsForSession(req, userId, id);
+  return removed;
+}
+
 async function issueAndSendCode({
   userId,
   email,
@@ -102,7 +156,7 @@ async function issueAndSendCode({
   const code = generateCode();
   const update = { [column]: hashCode(code), [sentAtColumn]: new Date().toISOString() };
   await supabase.from("users").update(update).eq("id", userId);
-  authCodeAttempts.set(attemptKey(userId, purpose), 0);
+  // Attempt counts stay for the hour. Sending another code must not reset them.
   const mailSubject = subject || title;
   const result = await sendEmail({
     to: email,
@@ -119,7 +173,7 @@ async function issueAndSendCode({
     }),
   });
   if (!result.sent && !result.skipped) {
-    console.warn(`[AUTH] ${purpose} email failed for`, username, result.error);
+    console.warn(`[AUTH] ${purpose} email failed`, result.error);
   }
   return result;
 }
@@ -230,7 +284,7 @@ async function allocateUniqueUsername(preferredBase) {
     const { data: existing, error } = await supabase
       .from("users")
       .select("id")
-      .ilike("username", candidate)
+      .ilike("username", escapeLike(candidate))
       .maybeSingle();
     if (error) throw error;
     if (!existing) return candidate;
@@ -249,11 +303,9 @@ function validateUsername(username) {
   return null;
 }
 
-function validatePassword(password) {
-  if (typeof password !== "string") return "Password must be a string.";
-  if (password.length < 6) return "Password must be at least 6 characters.";
-  if (password.length > 72) return "Password must be at most 72 characters.";
-  return null;
+async function validatePassword(password) {
+  const checked = await checkNewPassword(password);
+  return checked.error;
 }
 
 /**
@@ -321,7 +373,7 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
   const { data: inviter, error } = await supabase
     .from("users")
     .select("id, username")
-    .ilike("username", invitedBy)
+    .ilike("username", escapeLike(invitedBy))
     .maybeSingle();
 
   if (error || !inviter || inviter.id === newUserId) {
@@ -397,6 +449,9 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
 
 router.post("/register", async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;
+    recordFailure(`register:ip:${ip}`, { max: 20 });
     const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution, birthDate } = req.body ?? {};
 
     if (!termsAccepted) {
@@ -413,9 +468,9 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: usernameError });
     }
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
+    const passwordCheck = await checkNewPassword(password);
+    if (passwordCheck.error) {
+      return res.status(400).json({ error: passwordCheck.error, code: passwordCheck.code });
     }
 
     const email = rawEmail ? String(rawEmail).trim().toLowerCase() : null;
@@ -428,7 +483,7 @@ router.post("/register", async (req, res) => {
     const { data: existing, error: lookupError } = await supabase
       .from("users")
       .select("id")
-      .ilike("username", cleanUsername)
+      .ilike("username", escapeLike(cleanUsername))
       .maybeSingle();
 
     if (lookupError) {
@@ -546,54 +601,45 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body ?? {};
-    console.log("[AUTH] Login request received:", { username, hasPassword: !!password });
 
     if (!username || !password) {
-      console.log("[AUTH] Missing credentials");
       return res.status(400).json({ error: "Username and password are required." });
     }
 
     if (typeof username !== "string" || typeof password !== "string") {
-      console.log("[AUTH] Invalid types:", typeof username, typeof password);
       return res.status(400).json({ error: "Invalid request body." });
     }
 
     const cleanUsername = username.trim();
-    console.log("[AUTH] Login attempt for:", cleanUsername, "password length:", password.length);
+    const ip = clientIp(req);
+    const accountKey = isReviewDemo(cleanUsername) ? null : `login:acct:${cleanUsername.toLowerCase()}`;
+    if (guard(res, `login:ip:${ip}`, accountKey, { max: 40 }, { max: 30 })) return;
 
     const { data: user, error: lookupError } = await supabase
       .from("users")
       .select(
         "id, username, password_hash, avatar_url, display_name, bio, custom_status, banner_url, updated_at, auth_provider, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date, is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at"
       )
-      .ilike("username", cleanUsername)
+      .ilike("username", escapeLike(cleanUsername))
       .maybeSingle();
 
     if (lookupError) {
-      console.error("[AUTH] Supabase lookup error:", lookupError);
+      console.error("[AUTH] Supabase lookup error");
       return res.status(500).json({ error: "Database error." });
     }
 
-    console.log("[AUTH] User found:", !!user);
-    if (user) {
-      console.log("[AUTH] User details:", { id: user.id, username: user.username, hasHash: !!user.password_hash });
+    const hashToCompare = user?.password_hash || DUMMY_BCRYPT_HASH;
+    let passwordMatch = false;
+    try {
+      passwordMatch = await bcrypt.compare(password, hashToCompare);
+    } catch {
+      passwordMatch = false;
     }
 
-    if (user && !user.password_hash) {
-      return res.status(401).json({
-        error: "This account uses Google Sign-In. Please continue with Google.",
-      });
-    }
-
-    const dummyHash = "$2a$12$invalidhashfortimingprotection000000000000000000000000";
-    const hashToCompare = user?.password_hash || dummyHash;
-
-    const passwordMatch = await bcrypt.compare(password, hashToCompare);
-    console.log("[AUTH] Password match result:", passwordMatch);
-
-    if (!user || !passwordMatch) {
-      console.log("[AUTH] Login failed - user exists:", !!user, "password match:", passwordMatch);
-      return res.status(401).json({ error: "Invalid username or password." });
+    if (!user || !user.password_hash || !passwordMatch) {
+      recordFailure(`login:ip:${ip}`, { max: 40 });
+      if (accountKey) recordFailure(accountKey, { max: 30 });
+      return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
     }
 
     if (await rejectIfBanned(res, user)) return;
@@ -613,7 +659,7 @@ router.post("/login", async (req, res) => {
       }).catch(() => ({ sent: false, error: "send_failed" }));
 
       if (!result.sent) {
-        console.error("[AUTH] 2FA code email failed for", user.username, result.error);
+        console.error("[AUTH] 2FA code email failed", result.error);
         return res.status(503).json({ error: "Could not send your sign-in code. Please try again shortly." });
       }
 
@@ -642,15 +688,18 @@ router.post("/login", async (req, res) => {
       user: authUserPayload(user, await resolveEquippedExtra(user.id)),
     });
   } catch (err) {
-    console.error("[AUTH] Login error:", err);
-    return res.status(500).json({ error: "Internal server error.", details: err.message });
+    console.error("[AUTH] Login error:", err?.message || err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
 router.post("/2fa/verify-login", async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `2fa:ip:${ip}`, null, { max: 40 })) return;
     const { pendingToken, code } = req.body ?? {};
     if (!pendingToken || !code) {
+      recordFailure(`2fa:ip:${ip}`, { max: 40 });
       return res.status(400).json({ error: "Code is required." });
     }
 
@@ -671,18 +720,24 @@ router.post("/2fa/verify-login", async (req, res) => {
       )
       .eq("id", decoded.sub)
       .maybeSingle();
-    if (error || !user) return res.status(401).json({ error: "Invalid sign-in session." });
+    if (error || !user) {
+      recordFailure(`2fa:ip:${ip}`, { max: 40 });
+      return res.status(401).json({ error: "Invalid sign-in session." });
+    }
 
-    const key = attemptKey(user.id, "2fa_login");
-    const attempts = authCodeAttempts.get(key) || 0;
-    const verdict = verifyStoredCode({
+    const accountKey = isReviewDemo(user.username) ? null : `2fa:acct:${user.id}`;
+    if (accountKey && guard(res, null, accountKey, { max: 30 })) return;
+
+    const verdict = await judgeCode({
+      userId: user.id,
+      purpose: "2fa_login",
       code,
       storedHash: user.reauthentication_token,
       sentAtIso: user.reauthentication_sent_at,
-      attempts,
     });
     if (!verdict.ok) {
-      authCodeAttempts.set(key, attempts + 1);
+      recordFailure(`2fa:ip:${ip}`, { max: 40 });
+      if (accountKey) recordFailure(accountKey, { max: 30 });
       const message =
         verdict.reason === "expired"
           ? "Code expired. Please log in again to request a new one."
@@ -692,7 +747,6 @@ router.post("/2fa/verify-login", async (req, res) => {
       return res.status(401).json({ error: message });
     }
 
-    authCodeAttempts.delete(key);
     if (await rejectIfChildAccount(req, res, user)) return;
     await supabase
       .from("users")
@@ -722,6 +776,8 @@ router.post("/2fa/verify-login", async (req, res) => {
 
 router.post("/google", async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `oauth:ip:${ip}`, null, { max: 60 })) return;
     if (!googleClient || !GOOGLE_CLIENT_ID) {
       return res.status(503).json({
         error: "Google Sign-In is not configured. Set GOOGLE_CLIENT_ID on the server.",
@@ -732,6 +788,7 @@ router.post("/google", async (req, res) => {
     const invitedBy = req.body?.invitedBy;
     const attribution = req.body?.attribution;
     if (!credential || typeof credential !== "string") {
+      recordFailure(`oauth:ip:${ip}`, { max: 60 });
       return res.status(400).json({ error: "Google credential is required." });
     }
 
@@ -741,6 +798,7 @@ router.post("/google", async (req, res) => {
     });
     const payload = ticket.getPayload();
     if (!payload?.sub) {
+      recordFailure(`oauth:ip:${ip}`, { max: 60 });
       return res.status(401).json({ error: "Invalid Google token." });
     }
 
@@ -922,7 +980,8 @@ router.post("/google", async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] Google login error:", err);
-    return res.status(401).json({ error: "Google Sign-In failed.", details: err.message });
+    recordFailure(`oauth:ip:${clientIp(req)}`, { max: 60 });
+    return res.status(401).json({ error: "Google Sign-In failed." });
   }
 });
 
@@ -932,8 +991,11 @@ router.post("/google", async (req, res) => {
  */
 router.post("/apple", async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `oauth:ip:${ip}`, null, { max: 60 })) return;
     const { identityToken, authorizationCode, givenName, familyName, nonce, invitedBy, attribution } = req.body ?? {};
     if (!identityToken || typeof identityToken !== "string") {
+      recordFailure(`oauth:ip:${ip}`, { max: 60 });
       return res.status(400).json({ error: "Apple identity token is required." });
     }
 
@@ -944,6 +1006,7 @@ router.post("/apple", async (req, res) => {
       });
     } catch (err) {
       console.warn("[AUTH] Apple token rejected:", err?.message || err);
+      recordFailure(`oauth:ip:${ip}`, { max: 60 });
       return res.status(401).json({ error: "Sign in with Apple failed." });
     }
 
@@ -1194,59 +1257,122 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/test", async (_req, res) => {
+// ─── Email verification ─────────────────────────────────────────────
+
+router.post("/email/reauth", requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase.from("users").select("count").limit(1);
-    if (error) {
-      return res.status(500).json({ status: "db_error", error: error.message });
+    const ip = clientIp(req);
+    if (guard(res, `emailreauth:ip:${ip}`, `emailreauth:acct:${req.user.id}`, { max: 10 })) return;
+    recordFailure(`emailreauth:ip:${ip}`, { max: 10 });
+    recordFailure(`emailreauth:acct:${req.user.id}`, { max: 10 });
+    const { data: user } = await supabase
+      .from("users")
+      .select("username, email, email_confirmed_at")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (!user?.email || !user.email_confirmed_at) {
+      return res.status(400).json({ error: "Doğrulanmış bir e-posta yok. Önce mevcut adresi doğrula." });
     }
-    return res.json({ status: "ok", message: "Auth service running" });
+    const result = await issueAndSendCode({
+      userId: req.user.id,
+      email: user.email,
+      username: user.username,
+      purpose: "email_reauth",
+      column: "reauthentication_token",
+      sentAtColumn: "reauthentication_sent_at",
+      title: "Confirm it's you",
+      footer: "Enter this code to confirm an email change on your Descall account.",
+    });
+    if (!result.sent && !result.skipped) {
+      return res.status(503).json({ error: "Could not send verification email. Please try again." });
+    }
+    return res.json({ message: "Code sent to your current email.", emailHint: maskEmail(user.email) });
   } catch (err) {
-    return res.status(500).json({ status: "error", message: err.message });
+    console.error("[AUTH] email/reauth error:", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
-
-// ─── Email verification ─────────────────────────────────────────────
 
 router.post("/email/set", requireAuth, async (req, res) => {
   try {
     const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = req.body?.password;
+    const reauthCode = String(req.body?.reauthCode || "").trim();
     if (!EMAIL_RE.test(email)) {
       return res.status(400).json({ error: "Enter a valid email address." });
+    }
+    const ip = clientIp(req);
+    if (guard(res, `emailset:ip:${ip}`, `emailset:acct:${req.user.id}`, { max: 15 })) return;
+    recordFailure(`emailset:ip:${ip}`, { max: 15 });
+    recordFailure(`emailset:acct:${req.user.id}`, { max: 15 });
+
+    const { data: user, error: loadErr } = await supabase
+      .from("users")
+      .select("id, username, email, email_confirmed_at, two_factor_enabled, password_hash, reauthentication_token, reauthentication_sent_at")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (loadErr || !user) return res.status(500).json({ error: "Internal server error." });
+
+    if (user.password_hash) {
+      if (typeof password !== "string" || !password) {
+        return res.status(400).json({ error: EMAIL_CHANGE_NEEDS_PASSWORD });
+      }
+      const match = await bcrypt.compare(password, user.password_hash);
+      if (!match) return res.status(401).json({ error: "Incorrect password." });
+    } else if (user.email_confirmed_at && user.email) {
+      if (!reauthCode) {
+        return res.status(428).json({ error: EMAIL_CHANGE_NEEDS_REAUTH, code: "reauth_required" });
+      }
+      const verdict = await judgeCode({
+        userId: user.id,
+        purpose: "email_reauth",
+        code: reauthCode,
+        storedHash: user.reauthentication_token,
+        sentAtIso: user.reauthentication_sent_at,
+      });
+      if (!verdict.ok) return res.status(401).json({ error: "Incorrect code." });
     }
 
     const { data: taken } = await supabase
       .from("users")
       .select("id")
-      .ilike("email", email)
+      .ilike("email", escapeLike(email))
       .not("email_confirmed_at", "is", null)
       .neq("id", req.user.id)
       .maybeSingle();
-    if (taken) {
-      return res.status(409).json({ error: "This email is already in use." });
+    if (taken) return res.status(409).json({ error: "This email is already in use." });
+
+    const pendingUpdate = await supabase.from("users").update({ pending_email: email }).eq("id", req.user.id);
+    if (pendingUpdate.error) {
+      if (isMissingColumnError(pendingUpdate.error)) {
+        return res.status(503).json({ error: "E-posta değişikliği şu an kullanılamıyor. Biraz sonra tekrar dene." });
+      }
+      console.error("[AUTH] email/set pending update failed");
+      return res.status(500).json({ error: "Internal server error." });
     }
 
-    await supabase
-      .from("users")
-      .update({ email, email_confirmed_at: null })
-      .eq("id", req.user.id);
+    if (user.email && user.email_confirmed_at && user.email !== email) {
+      await notifyAccountChange(user, "email").catch((err) => {
+        console.warn("[AUTH] email change notice failed:", err?.message || err);
+      });
+    }
 
     const result = await issueAndSendCode({
       userId: req.user.id,
       email,
-      username: req.user.username,
+      username: user.username || req.user.username,
       purpose: "email_verify",
       column: "confirmation_token",
       sentAtColumn: "confirmation_sent_at",
       title: "Verify your Descall email",
       footer: "Enter this code in Descall to verify your email address.",
     });
-
     if (!result.sent && !result.skipped) {
       return res.status(503).json({ error: "Could not send verification email. Please try again." });
     }
 
-    return res.json({ message: "Verification code sent.", emailConfigured: !result.skipped });
+    await dropSessions(req, req.user.id, req.user.sid);
+    return res.json({ message: "Verification code sent.", emailConfigured: !result.skipped, pending: true });
   } catch (err) {
     console.error("[AUTH] email/set error:", err);
     return res.status(500).json({ error: "Internal server error." });
@@ -1255,17 +1381,35 @@ router.post("/email/set", requireAuth, async (req, res) => {
 
 router.post("/email/resend", requireAuth, async (req, res) => {
   try {
-    const { data: user } = await supabase
+    const ip = clientIp(req);
+    if (guard(res, `emailresend:ip:${ip}`, `emailresend:acct:${req.user.id}`, { max: 10 })) return;
+    recordFailure(`emailresend:ip:${ip}`, { max: 10 });
+    recordFailure(`emailresend:acct:${req.user.id}`, { max: 10 });
+
+    let { data: user, error } = await supabase
       .from("users")
-      .select("email, email_confirmed_at")
+      .select("email, email_confirmed_at, pending_email")
       .eq("id", req.user.id)
       .maybeSingle();
-    if (!user?.email) return res.status(400).json({ error: "No email on file. Add one first." });
-    if (user.email_confirmed_at) return res.status(400).json({ error: "Email is already verified." });
+    if (error && isMissingColumnError(error)) {
+      const fallback = await supabase
+        .from("users")
+        .select("email, email_confirmed_at")
+        .eq("id", req.user.id)
+        .maybeSingle();
+      user = fallback.data;
+      error = fallback.error;
+    }
+    if (error || !user) return res.status(500).json({ error: "Internal server error." });
+    const target = user.pending_email || user.email;
+    if (!target) return res.status(400).json({ error: "No email on file. Add one first." });
+    if (user.email_confirmed_at && !user.pending_email) {
+      return res.status(400).json({ error: "Email is already verified." });
+    }
 
     const result = await issueAndSendCode({
       userId: req.user.id,
-      email: user.email,
+      email: target,
       username: req.user.username,
       purpose: "email_verify",
       column: "confirmation_token",
@@ -1286,22 +1430,28 @@ router.post("/email/resend", requireAuth, async (req, res) => {
 router.post("/email/verify", requireAuth, async (req, res) => {
   try {
     const code = String(req.body?.code || "").trim();
-    const { data: user } = await supabase
+    let { data: user, error } = await supabase
       .from("users")
-      .select("confirmation_token, confirmation_sent_at")
+      .select("email, pending_email, confirmation_token, confirmation_sent_at, two_factor_enabled")
       .eq("id", req.user.id)
       .maybeSingle();
+    if (error && isMissingColumnError(error)) {
+      const fallback = await supabase
+        .from("users")
+        .select("email, confirmation_token, confirmation_sent_at, two_factor_enabled")
+        .eq("id", req.user.id)
+        .maybeSingle();
+      user = fallback.data;
+    }
 
-    const key = attemptKey(req.user.id, "email_verify");
-    const attempts = authCodeAttempts.get(key) || 0;
-    const verdict = verifyStoredCode({
+    const verdict = await judgeCode({
+      userId: req.user.id,
+      purpose: "email_verify",
       code,
       storedHash: user?.confirmation_token,
       sentAtIso: user?.confirmation_sent_at,
-      attempts,
     });
     if (!verdict.ok) {
-      authCodeAttempts.set(key, attempts + 1);
       const message =
         verdict.reason === "expired"
           ? "Code expired. Request a new one."
@@ -1313,13 +1463,22 @@ router.post("/email/verify", requireAuth, async (req, res) => {
       return res.status(400).json({ error: message });
     }
 
-    authCodeAttempts.delete(key);
-    await supabase
-      .from("users")
-      .update({ email_confirmed_at: new Date().toISOString(), confirmation_token: null })
-      .eq("id", req.user.id);
+    const update = {
+      email_confirmed_at: new Date().toISOString(),
+      confirmation_token: null,
+      confirmation_sent_at: null,
+    };
+    if (user?.pending_email) {
+      update.email = user.pending_email;
+      update.pending_email = null;
+    }
+    const saved = await supabase.from("users").update(update).eq("id", req.user.id);
+    if (saved.error && isMissingColumnError(saved.error) && update.pending_email === null) {
+      delete update.pending_email;
+      await supabase.from("users").update(update).eq("id", req.user.id);
+    }
 
-    return res.json({ message: "Email verified.", emailVerified: true });
+    return res.json({ message: "Email verified.", emailVerified: true, twoFactorEnabled: Boolean(user?.two_factor_enabled) });
   } catch (err) {
     console.error("[AUTH] email/verify error:", err);
     return res.status(500).json({ error: "Internal server error." });
@@ -1398,6 +1557,11 @@ function noteUsernameChangeFail(userId) {
 /** GET /api/auth/username/available?username=foo → { available, error? } (live check while typing). */
 router.get("/username/available", requireAuth, async (req, res) => {
   try {
+    const ip = clientIp(req);
+    const opts = { windowMs: 60 * 1000, max: 120 };
+    if (guard(res, `useravail:ip:${ip}`, `useravail:acct:${req.user.id}`, opts)) return;
+    recordFailure(`useravail:ip:${ip}`, opts);
+    recordFailure(`useravail:acct:${req.user.id}`, opts);
     const candidate = String(req.query?.username || "").trim();
     const formatError = validateUsername(candidate);
     if (formatError) return res.json({ available: false, error: formatError });
@@ -1713,7 +1877,7 @@ async function findUserForPasswordReset(usernameOrEmail) {
     const { data } = await supabase
       .from("users")
       .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider")
-      .ilike("email", email)
+      .ilike("email", escapeLike(email))
       .maybeSingle();
     return data || null;
   }
@@ -1794,32 +1958,30 @@ async function sendPasswordResetCode(user) {
 }
 
 async function applyPasswordReset({ user, code, newPassword }) {
-  const passwordError = validatePassword(newPassword);
-  if (passwordError) return { ok: false, status: 400, error: passwordError };
+  const checked = await checkNewPassword(newPassword);
+  if (checked.error) return { ok: false, status: 400, error: checked.error, code: checked.code };
 
   const cleanCode = String(code || "").trim();
   if (!/^\d{6}$/.test(cleanCode)) {
     return { ok: false, status: 400, error: "Enter the 6-digit code from your email." };
   }
 
-  const key = attemptKey(user.id, "password_reset");
-  const attempts = authCodeAttempts.get(key) || 0;
-  const verdict = verifyStoredCode({
+  const verdict = await judgeCode({
+    userId: user.id,
+    purpose: "password_reset",
     code: cleanCode,
     storedHash: user.password_reset_token,
     sentAtIso: user.password_reset_sent_at,
-    attempts,
   });
 
   if (!verdict.ok) {
-    authCodeAttempts.set(key, attempts + 1);
     const map = {
       no_pending_code: "No active reset code. Request a new one.",
       expired: "This code expired. Request a new one.",
       too_many_attempts: "Too many incorrect attempts. Request a new code.",
       invalid_code: "Incorrect code.",
     };
-    return { ok: false, status: 400, error: map[verdict.reason] || "Incorrect code." };
+    return { ok: false, status: 400, error: map[verdict.reason] || "Incorrect code.", code: verdict.reason };
   }
 
   const password_hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -1839,57 +2001,43 @@ async function applyPasswordReset({ user, code, newPassword }) {
     return { ok: false, status: 500, error: "Could not update password." };
   }
 
-  authCodeAttempts.set(key, 0);
   return { ok: true };
 }
 
 // ─── Password reset (public forgot + authenticated settings) ─────────
 
+const GENERIC_RESET_BODY = { status: "sent", message: GENERIC_RESET_MESSAGE };
+
 router.post("/password/forgot", async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `pwreset:ip:${ip}`, null, { max: 20 })) return;
+    recordFailure(`pwreset:ip:${ip}`, { max: 20 });
     const usernameOrEmail = String(req.body?.usernameOrEmail || req.body?.email || req.body?.username || "").trim();
     if (!usernameOrEmail) {
       return res.status(400).json({ error: "Enter your username or email." });
     }
 
     const user = await findUserForPasswordReset(usernameOrEmail);
-    if (!user) {
-      // Soft response — avoid confirming which accounts exist when looking up by email.
-      // Username lookups can still return no_email when the account is known.
-      if (!usernameOrEmail.includes("@")) {
-        return res.status(404).json({
-          error: "No account found with that username.",
-          status: "not_found",
-          supportEmail: SUPPORT_CONTACT,
-        });
+    if (user?.email && user.email_confirmed_at) {
+      const outcome = await sendPasswordResetCode(user);
+      if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
+        console.error("[AUTH] password/forgot send failed");
       }
-      return res.json({
-        status: "sent",
-        message: "If an account exists for that email, a reset code is on the way.",
-      });
     }
-
-    if (!user.email) {
-      return res.json({
-        status: "no_email",
-        supportEmail: SUPPORT_CONTACT,
-        message: `This account has no email address. Email ${SUPPORT_CONTACT} to reset your password.`,
-      });
-    }
-
-    const outcome = await sendPasswordResetCode(user);
-    if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
-      return res.status(503).json(outcome);
-    }
-    return res.json(outcome);
+    return res.json(GENERIC_RESET_BODY);
   } catch (err) {
     console.error("[AUTH] password/forgot error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
 });
 
+const GENERIC_RESET_FAIL = "Could not reset the password. Check the code and try again.";
+
 router.post("/password/reset", async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `pwconfirm:ip:${ip}`, null, { max: 30 })) return;
     const usernameOrEmail = String(req.body?.usernameOrEmail || req.body?.email || req.body?.username || "").trim();
     const code = req.body?.code;
     const newPassword = req.body?.newPassword || req.body?.password;
@@ -1898,15 +2046,21 @@ router.post("/password/reset", async (req, res) => {
     }
 
     const user = await findUserForPasswordReset(usernameOrEmail);
-    if (!user) {
-      return res.status(404).json({ error: "Account not found." });
-    }
-    if (!user.password_reset_token) {
-      return res.status(400).json({ error: "No active reset code. Request a new one." });
+    if (!user || !user.email_confirmed_at || !user.password_reset_token) {
+      recordFailure(`pwconfirm:ip:${ip}`, { max: 30 });
+      return res.status(400).json({ error: GENERIC_RESET_FAIL });
     }
 
     const result = await applyPasswordReset({ user, code, newPassword });
-    if (!result.ok) return res.status(result.status).json({ error: result.error });
+    if (!result.ok) {
+      recordFailure(`pwconfirm:ip:${ip}`, { max: 30 });
+      if (result.code === "weak_password" || result.code === "pwned") {
+        return res.status(result.status).json({ error: result.error, code: result.code });
+      }
+      return res.status(400).json({ error: GENERIC_RESET_FAIL });
+    }
+    await dropSessions(req, user.id, null);
+    await notifyAccountChange(user, "password").catch(() => {});
     return res.json({ message: "Password updated. You can sign in with your new password." });
   } catch (err) {
     console.error("[AUTH] password/reset error:", err);
@@ -1916,6 +2070,10 @@ router.post("/password/reset", async (req, res) => {
 
 router.post("/password/request", requireAuth, async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `pwreq:ip:${ip}`, `pwreq:acct:${req.user.id}`, { max: 10 })) return;
+    recordFailure(`pwreq:ip:${ip}`, { max: 10 });
+    recordFailure(`pwreq:acct:${req.user.id}`, { max: 10 });
     const { data: user } = await supabase
       .from("users")
       .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider")
@@ -1924,11 +2082,11 @@ router.post("/password/request", requireAuth, async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found." });
 
-    if (!user.email) {
+    if (!user.email || !user.email_confirmed_at) {
       return res.json({
         status: "no_email",
         supportEmail: SUPPORT_CONTACT,
-        message: `Add an email in Settings, or contact ${SUPPORT_CONTACT} to reset your password.`,
+        message: "Doğrulanmış bir e-posta olmadan şifre sıfırlanamaz. Önce e-postanı doğrula.",
       });
     }
 
@@ -1945,18 +2103,43 @@ router.post("/password/request", requireAuth, async (req, res) => {
 
 router.post("/password/confirm", requireAuth, async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (guard(res, `pwconfirm:ip:${ip}`, `pwconfirm:acct:${req.user.id}`, { max: 20 })) return;
     const code = req.body?.code;
     const newPassword = req.body?.newPassword || req.body?.password;
+    const currentPassword = req.body?.currentPassword;
     const { data: user } = await supabase
       .from("users")
-      .select("id, username, email, password_reset_token, password_reset_sent_at, auth_provider")
+      .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider")
       .eq("id", req.user.id)
       .maybeSingle();
 
     if (!user) return res.status(404).json({ error: "User not found." });
+    if (!user.email_confirmed_at) {
+      return res.status(400).json({
+        error: "Doğrulanmış bir e-posta olmadan şifre sıfırlanamaz. Önce e-postanı doğrula.",
+      });
+    }
+    if (user.password_hash) {
+      if (typeof currentPassword !== "string" || !currentPassword) {
+        return res.status(400).json({ error: PASSWORD_CHANGE_NEEDS_CURRENT });
+      }
+      const match = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!match) {
+        recordFailure(`pwconfirm:ip:${ip}`, { max: 20 });
+        recordFailure(`pwconfirm:acct:${req.user.id}`, { max: 20 });
+        return res.status(401).json({ error: "Incorrect password." });
+      }
+    }
 
     const result = await applyPasswordReset({ user, code, newPassword });
-    if (!result.ok) return res.status(result.status).json({ error: result.error });
+    if (!result.ok) {
+      recordFailure(`pwconfirm:ip:${ip}`, { max: 20 });
+      recordFailure(`pwconfirm:acct:${req.user.id}`, { max: 20 });
+      return res.status(result.status).json({ error: result.error, code: result.code || null });
+    }
+    await dropSessions(req, user.id, req.user.sid);
+    await notifyAccountChange(user, "password").catch(() => {});
     return res.json({ message: "Password updated successfully." });
   } catch (err) {
     console.error("[AUTH] password/confirm error:", err);

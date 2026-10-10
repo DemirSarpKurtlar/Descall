@@ -10,6 +10,7 @@ import LegalContentModal from "./legal/LegalContentModal";
 import BirthDateInput from "./auth/BirthDateInput";
 import TermsConsent from "./auth/TermsConsent";
 import SocialSignupStep from "./auth/SocialSignupStep";
+import PasswordStrength from "./auth/PasswordStrength";
 import { isSocialSignupRequired } from "../api/auth";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
@@ -351,6 +352,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             {showPassword ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
           </button>
         </div>
+        {mode === "register" ? <PasswordStrength password={password} /> : null}
 
         {mode === "login" && (
           <div className="auth-forgot-row">

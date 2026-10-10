@@ -79,6 +79,9 @@ function disconnectAll(io, actorId, actorUsername) {
 }
 
 function setupAdminSocket(io, socket) {
+  // Privileged admin events trust only the verified JWT username. is_admin is
+  // loaded from the database on connect (socket/handlers.js loadUserProfile)
+  // and is not taken from the client. Promoting admins is HTTP + super-admin.
   if (socket.user.username !== "admin") return;
 
   socket.join("admin");

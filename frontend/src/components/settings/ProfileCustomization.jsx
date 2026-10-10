@@ -56,6 +56,7 @@ export default function ProfileCustomization({ me, onUpdate }) {
   const [emailStage, setEmailStage] = useState(me?.email && !me?.emailVerified ? "code" : "idle"); // idle | sending | code
   const [emailNotice, setEmailNotice] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
+  const [emailPassword, setEmailPassword] = useState("");
 
   // Two-factor authentication
   const [twoFactorOn, setTwoFactorOn] = useState(Boolean(me?.twoFactorEnabled));
@@ -105,7 +106,7 @@ export default function ProfileCustomization({ me, onUpdate }) {
     setEmailBusy(true);
     setEmailNotice("");
     try {
-      await apiSetEmail(emailDraft.trim());
+      await apiSetEmail(emailDraft.trim(), emailPassword ? { password: emailPassword } : {});
       setEmailStage("code");
       setEmailNotice(t("Verification code sent. Check your inbox."));
     } catch (err) {
@@ -814,6 +815,15 @@ export default function ProfileCustomization({ me, onUpdate }) {
                     placeholder={t("you@example.com")}
                     value={emailDraft}
                     onChange={(e) => setEmailDraft(e.target.value)}
+                    disabled={emailStage === "code"}
+                  />
+                  <input
+                    type="password"
+                    className="pc-inline-input"
+                    placeholder={t("Current password")}
+                    value={emailPassword}
+                    onChange={(e) => setEmailPassword(e.target.value)}
+                    autoComplete="current-password"
                     disabled={emailStage === "code"}
                   />
                   {emailStage !== "code" ? (

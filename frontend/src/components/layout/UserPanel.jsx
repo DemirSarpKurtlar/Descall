@@ -52,6 +52,7 @@ import {
 import { detectDefaultLocale } from "../../i18n/detect";
 import RiotLinkCard from "../settings/RiotLinkCard";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
+import PasswordStrength from "../auth/PasswordStrength";
 import ValorantBadge from "../social/ValorantBadge";
 import AdminBadge from "../social/AdminBadge";
 import ShopPanel from "../settings/ShopPanel";
@@ -361,6 +362,7 @@ const UserPanel = forwardRef(function UserPanel({
   const [emailStage, setEmailStage] = useState(me?.email && !me?.emailVerified ? "code" : "idle");
   const [emailNotice, setEmailNotice] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
+  const [emailPassword, setEmailPassword] = useState("");
   const [twoFactorOn, setTwoFactorOn] = useState(Boolean(me?.twoFactorEnabled));
   const [disable2faPassword, setDisable2faPassword] = useState("");
   const [show2faPasswordPrompt, setShow2faPasswordPrompt] = useState(false);
@@ -373,6 +375,7 @@ const UserPanel = forwardRef(function UserPanel({
   const [pwStage, setPwStage] = useState("idle"); // idle | code | done
   const [pwCode, setPwCode] = useState("");
   const [pwNew, setPwNew] = useState("");
+  const [pwCurrent, setPwCurrent] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
   const [pwNotice, setPwNotice] = useState("");
@@ -434,7 +437,7 @@ const UserPanel = forwardRef(function UserPanel({
     setEmailBusy(true);
     setEmailNotice("");
     try {
-      await apiSetEmail(emailDraft.trim());
+      await apiSetEmail(emailDraft.trim(), emailPassword ? { password: emailPassword } : {});
       setEmailStage("code");
       setEmailNotice(t("Verification code sent. Check your inbox."));
     } catch (err) {
@@ -511,17 +514,18 @@ const UserPanel = forwardRef(function UserPanel({
       setPwNotice(t("Passwords do not match."));
       return;
     }
-    if (pwNew.length < 6) {
-      setPwNotice(t("Password must be at least 6 characters."));
+    if (pwNew.length < 10) {
+      setPwNotice(t("Password must be at least 10 characters."));
       return;
     }
     setPwBusy(true);
     setPwNotice("");
     try {
-      await confirmPasswordResetCode(pwCode.trim(), pwNew);
+      await confirmPasswordResetCode(pwCode.trim(), pwNew, pwCurrent);
       setPwStage("done");
       setPwCode("");
       setPwNew("");
+      setPwCurrent("");
       setPwConfirm("");
       setPwNotice(t("Password updated successfully."));
     } catch (err) {
@@ -1691,6 +1695,9 @@ const UserPanel = forwardRef(function UserPanel({
         return (
           <div className="us-tab">
             <p className="us-lead">{t("Protect your account with email verification, password reset, and two-factor sign-in.")}</p>
+            {!emailVerified && (
+              <p className="us-inline-notice">{t("Verify your email to protect this account and to turn on two-factor sign-in.")}</p>
+            )}
 
             <section className="us-section">
               <h4 className="us-section-label">{t("Email address")}</h4>
@@ -1719,6 +1726,15 @@ const UserPanel = forwardRef(function UserPanel({
                       placeholder={t("you@example.com")}
                       value={emailDraft}
                       onChange={(e) => setEmailDraft(e.target.value)}
+                      disabled={emailStage === "code"}
+                    />
+                    <input
+                      type="password"
+                      className="us-inline-input"
+                      placeholder={t("Current password")}
+                      value={emailPassword}
+                      onChange={(e) => setEmailPassword(e.target.value)}
+                      autoComplete="current-password"
                       disabled={emailStage === "code"}
                     />
                     {emailStage !== "code" ? (
@@ -1810,12 +1826,22 @@ const UserPanel = forwardRef(function UserPanel({
                     <input
                       type="password"
                       className="us-inline-input"
+                      placeholder={t("Current password")}
+                      value={pwCurrent}
+                      onChange={(e) => setPwCurrent(e.target.value)}
+                      autoComplete="current-password"
+                      maxLength={72}
+                    />
+                    <input
+                      type="password"
+                      className="us-inline-input"
                       placeholder={t("New password")}
                       value={pwNew}
                       onChange={(e) => setPwNew(e.target.value)}
                       autoComplete="new-password"
                       maxLength={72}
                     />
+                    <PasswordStrength password={pwNew} />
                     <input
                       type="password"
                       className="us-inline-input"
