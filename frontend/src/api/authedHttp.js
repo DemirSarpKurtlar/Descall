@@ -23,6 +23,7 @@ export async function authedRequest(path, { method = "GET", body, signal } = {})
     err.status = res.status;
     if (data?.code) err.code = data.code;
     if (data?.action) err.action = data.action;
+    if (data && typeof data.balance === "number") err.balance = data.balance;
     throw err;
   }
   return data;

@@ -89,6 +89,55 @@ async function run() {
     "ledger sum matches the balance — no drift under concurrency"
   );
 
+  // A failed daily claim must not burn today's streak.
+  userRow().descoin_streak = 3;
+  userRow().descoin_last_daily_claim = null;
+  const balanceBeforeClaim = userRow().descoin_balance;
+  let failClaimLedger = true;
+  fakeSupabase.from = function (name) {
+    const query = originalInsert.call(fakeSupabase, name);
+    if (name === "descoin_ledger") {
+      const originalThen = query.then.bind(query);
+      query.then = (resolve, reject) => {
+        if (query.mode === "insert" && failClaimLedger) {
+          failClaimLedger = false;
+          return Promise.resolve({ data: null, error: { message: "simulated ledger failure" } }).then(
+            resolve,
+            reject
+          );
+        }
+        return originalThen(resolve, reject);
+      };
+    }
+    return query;
+  };
+  let claimThrew = false;
+  try {
+    await descoin.claimDaily("u-charlie");
+  } catch (err) {
+    claimThrew = err.message === "simulated ledger failure";
+  }
+  assert(claimThrew, "claimDaily propagates a ledger failure");
+  assert(userRow().descoin_last_daily_claim == null, "claim date rolled back so the user can retry");
+  assert(userRow().descoin_streak === 3, "streak rolled back after a failed claim");
+  assert(userRow().descoin_balance === balanceBeforeClaim, "failed claim does not keep the coins");
+
+  fakeSupabase.from = originalInsert;
+  const claimed = await descoin.claimDaily("u-charlie");
+  assert(claimed.claimed === true, "the same user can claim after the failed attempt: " + JSON.stringify(claimed));
+  assert(userRow().descoin_last_daily_claim, "claim date is stored only after the credit lands");
+
+  // A purchase refund must not eat the activity earning cap.
+  fakeSupabase._tables.users.rows.push({
+    id: "u-dana",
+    username: "dana",
+    descoin_balance: 0,
+    descoin_frozen: false,
+  });
+  await descoin.credit("u-dana", descoin.GLOBAL_DAILY_CAP, "shop_refund", {});
+  const afterRefund = await descoin.creditCapped("u-dana", 1, "message_activity", {});
+  assert(afterRefund.credited === 1, "shop_refund does not consume the daily earning cap: " + JSON.stringify(afterRefund));
+
   console.log("descoin.unit.test.cjs: ok");
 }
 

@@ -190,6 +190,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [catalogGeneration, setCatalogGeneration] = useState(0);
   const loadedAssetCategories = useRef(new Set());
   const itemsRef = useRef(items);
+  const buyLockRef = useRef(new Set());
   itemsRef.current = items;
 
   const load = useCallback(async ({ silent = false } = {}) => {
@@ -335,6 +336,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   );
 
   const handleBuy = async (item) => {
+    if (!item?.id || buyLockRef.current.has(item.id)) return;
+    buyLockRef.current.add(item.id);
     setBusyItemId(item.id);
     setBusyAction("buy");
     setNotice("");
@@ -355,9 +358,15 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         await load({ silent: true });
       });
     } catch (err) {
+      if (typeof err.balance === "number") onBalanceChange?.(err.balance);
+      if (err.status === 409 && err.code !== "theme_client") {
+        await load({ silent: true });
+        return;
+      }
       hapticError();
       setNotice(err.message || t("Purchase failed. Please try again."));
     } finally {
+      buyLockRef.current.delete(item.id);
       setBusyItemId(null);
       setBusyAction(null);
     }

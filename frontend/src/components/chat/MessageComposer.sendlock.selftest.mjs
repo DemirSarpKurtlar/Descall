@@ -19,5 +19,8 @@ assert(composer.includes("nameKey"), "emoji categories must be translated");
 assert(chat.includes("composerDisabled"), "timeout and missing send permission must disable the composer");
 assert(chat.includes("activeTimeout?.timedOut"), "timeout banner must actually block sending");
 assert(chat.includes("aria-label={t(\"Voice Call\")}"), "call buttons need aria-labels");
+assert(composer.includes("aria-label={t(\"Add Attachment\")}"), "attach button needs an accessible name");
+assert(composer.includes("aria-label={t(\"Emoji\")}"), "emoji button needs an accessible name");
+assert(composer.includes("aria-label={t(\"Voice Message\")}"), "voice-message button needs an accessible name");
 
 console.log("MessageComposer.sendlock.selftest.mjs: ok");

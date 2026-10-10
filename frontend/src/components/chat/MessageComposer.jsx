@@ -868,7 +868,7 @@ export default function MessageComposer({
           >
             <div className="emoji-picker-header">
               <span>{t("Emojis")}</span>
-              <button className="emoji-picker-close" onClick={() => setShowEmojiPicker(false)}><X size={14} /></button>
+              <button className="emoji-picker-close" onClick={() => setShowEmojiPicker(false)} aria-label={t("Close")}><X size={14} /></button>
             </div>
             <div className="emoji-picker-body">
               {EMOJI_CATEGORIES.map((cat) => (
@@ -901,6 +901,7 @@ export default function MessageComposer({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           title={t("Add Attachment")}
+          aria-label={t("Add Attachment")}
         >
           <Plus size={24} />
         </motion.button>
@@ -953,16 +954,16 @@ export default function MessageComposer({
         <motion.button className="composer-action-btn" onClick={() => {
           if (!showEmojiPicker) hapticImpactLight();
           setShowEmojiPicker(!showEmojiPicker);
-        }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Emoji")}>
+        }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Emoji")} aria-label={t("Emoji")}>
           <Smile size={24} />
         </motion.button>
 
         {isRecording ? (
-          <motion.button className="composer-action-btn recording" onClick={stopRecording} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Stop Recording")}>
+          <motion.button className="composer-action-btn recording" onClick={stopRecording} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Stop Recording")} aria-label={t("Stop Recording")}>
             <StopCircle size={24} color="#f23f43" />
           </motion.button>
         ) : (
-          <motion.button className="composer-action-btn" onClick={startRecording} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Voice Message")}>
+          <motion.button className="composer-action-btn" onClick={startRecording} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Voice Message")} aria-label={t("Voice Message")}>
             <Mic size={24} />
           </motion.button>
         )}

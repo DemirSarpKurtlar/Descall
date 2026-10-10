@@ -19,6 +19,7 @@ const fakeSupabase = createFakeSupabase({
   users: [
     { id: "u-alice", username: "alice", is_admin: true, descoin_balance: 0, equipped_sound_pack_id: null },
     { id: "u-bob", username: "bob", is_admin: false, descoin_balance: 500, equipped_sound_pack_id: "item-sound-1" },
+    { id: "u-cara", username: "cara", is_admin: false, descoin_balance: 900, equipped_sound_pack_id: null },
   ],
   shop_items: [
     {
@@ -334,6 +335,47 @@ async function run() {
     await shop.markGiftsNotified(pending.map((g) => g.inventoryId));
     pending = await shop.getUnnotifiedGifts("u-bob");
     assert(pending.length === 0, "gift no longer pending after being marked notified");
+
+    // Two in-flight purchases of the same item must debit once.
+    const caraToken = signToken({ id: "u-cara", username: "cara" });
+    const [firstBuy, secondBuy] = await Promise.all([
+      req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-1" } }),
+      req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-1" } }),
+    ]);
+    const statuses = [firstBuy.status, secondBuy.status].sort((a, b) => a - b);
+    assert(
+      statuses[0] === 200 && statuses[1] === 409,
+      "concurrent purchase: one success and one already-owned: " + JSON.stringify([firstBuy, secondBuy])
+    );
+    const cara = fakeSupabase._tables.users.rows.find((u) => u.id === "u-cara");
+    assert(cara.descoin_balance === 600, "concurrent purchase debits once (900 - 300): " + cara.descoin_balance);
+    const caraDebits = fakeSupabase._tables.descoin_ledger.rows.filter(
+      (row) => row.user_id === "u-cara" && row.reason === "shop_purchase"
+    );
+    assert(caraDebits.length === 1 && caraDebits[0].amount === -300, "one shop_purchase ledger row");
+    const caraOwned = fakeSupabase._tables.user_inventory.rows.filter((row) => row.user_id === "u-cara");
+    assert(caraOwned.length === 1, "one inventory row after the double tap");
+
+    // If the grant loses a cross-instance race, the debit is refunded.
+    const shopLibLive = require("../lib/shop");
+    const originalGrant = shopLibLive.grantItem;
+    shopLibLive.grantItem = async () => null;
+    try {
+      r = await req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-svg" } });
+      assert(r.status === 409, "lost grant race is not a successful purchase: " + JSON.stringify(r.body));
+      assert(r.body.balance === 600, "refund restores the balance: " + JSON.stringify(r.body));
+    } finally {
+      shopLibLive.grantItem = originalGrant;
+    }
+    assert(cara.descoin_balance === 600, "balance unchanged after the refund");
+    const caraRefunds = fakeSupabase._tables.descoin_ledger.rows.filter(
+      (row) => row.user_id === "u-cara" && row.reason === "shop_refund"
+    );
+    assert(caraRefunds.length === 1 && caraRefunds[0].amount === 250, "shop_refund credits the item price");
+    const caraSvg = fakeSupabase._tables.user_inventory.rows.filter(
+      (row) => row.user_id === "u-cara" && row.item_id === "item-banner-svg"
+    );
+    assert(caraSvg.length === 0, "lost race does not leave an inventory row");
 
     console.log("shop.integration.test.cjs: ok");
   } finally {

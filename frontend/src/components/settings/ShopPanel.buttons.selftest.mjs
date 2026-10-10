@@ -30,6 +30,7 @@ assert(
   panel.includes('busyAction === "buy"') && panel.includes('t("Buying…")'),
   "purchase stays on Buying until the item is owned",
 );
+assert(panel.includes("buyLockRef"), "a second tap cannot start another purchase before the first returns");
 const buyFn = panel.slice(panel.indexOf("const handleBuy"), panel.indexOf("const handleEquip"));
 assert(buyFn.length > 0 && !buyFn.includes("onEquippedChange"), "buying must not equip or refresh cosmetics");
 assert(

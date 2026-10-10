@@ -11,6 +11,7 @@ const express = require("express");
 const { requireAuth } = require("../middleware/auth");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
+const { purchaseItem } = require("../lib/shopPurchase");
 
 const router = express.Router();
 
@@ -115,8 +116,8 @@ router.get("/ledger", requireAuth, async (req, res) => {
   }
 });
 
-// Instant DesCoin purchase — no redirect, no pending state. Debits the
-// buyer's balance and grants the item atomically-ish (balance CAS + insert).
+// Instant DesCoin purchase — no redirect, no pending state. The debit and
+// the inventory grant run under a per-user lock; a lost race is refunded.
 router.post("/purchase", requireAuth, async (req, res) => {
   try {
     const { itemId } = req.body || {};
@@ -127,9 +128,6 @@ router.post("/purchase", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Item not found." });
     }
 
-    if (await shop.userOwnsItem(req.user.id, itemId)) {
-      return res.status(409).json({ error: "You already own this item." });
-    }
     if (item.category === "theme") {
       const { themeEquipAllowed } = require("../lib/glassThemeCatalog");
       if (!themeEquipAllowed(item.theme_key, req.body?.themeEngine)) {
@@ -140,10 +138,9 @@ router.post("/purchase", requireAuth, async (req, res) => {
       }
     }
 
-    const price = Number(item.price_descoin) || 0;
-    let debitResult;
+    let result;
     try {
-      debitResult = await descoin.debit(req.user.id, price, "shop_purchase", { itemId: item.id, sku: item.sku });
+      result = await purchaseItem(req.user.id, item);
     } catch (err) {
       if (err.message === "INSUFFICIENT_BALANCE") {
         return res.status(402).json({ error: "Not enough DesCoin for this item." });
@@ -154,17 +151,14 @@ router.post("/purchase", requireAuth, async (req, res) => {
       throw err;
     }
 
-    await shop.grantItem(req.user.id, itemId, { acquiredVia: "purchase" });
+    if (result.alreadyOwned) {
+      return res.status(409).json({
+        error: "You already own this item.",
+        balance: result.balance,
+      });
+    }
 
-    const supabase = require("../db/supabase");
-    await supabase.from("shop_purchases").insert({
-      user_id: req.user.id,
-      item_id: item.id,
-      amount_descoin: price,
-      status: "paid",
-    });
-
-    res.json({ ok: true, balance: debitResult.balance, item });
+    res.json({ ok: true, balance: result.balance, item });
   } catch (err) {
     console.error("[shop] purchase error:", err.message);
     res.status(500).json({ error: "Failed to complete purchase." });
