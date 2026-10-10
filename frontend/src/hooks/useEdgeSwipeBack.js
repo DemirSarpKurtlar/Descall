@@ -78,6 +78,8 @@ export const SWIPE_BACK_BLOCKERS = [
   ".status-picker-portal",
   ".profile-popover",
   ".user-profile-card",
+  ".g-profile-scrim",
+  ".g-profile-sheet",
   ".user-settings-shell",
 ].join(",");
 

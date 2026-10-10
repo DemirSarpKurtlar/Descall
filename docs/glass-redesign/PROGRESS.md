@@ -1,5 +1,22 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.175
+
+Demir’in 2.9.174 iPhone testi. DM’de karşı kullanıcının avatarına veya adına dokununca profil iki kez açılıyordu ve tam kart, yüzen sohbet başlığının altında kalıyordu.
+
+Tam kart `position: fixed` olduğu halde sohbet panelinin `overflow` / `background-attachment` kutusuna sıkışıyordu; başlık (z-index 60) banner’ı kesiyordu. Cam profil artık `document.body` üzerinde tek bir sayfa: güvenli alanın altında (`max(8%, safe-top + 12px)`), arkada karartılmış blur örtü, aşağı sürükleyince yay + hız devri, örtüye veya × ile kapanma. Azaltılmış hareket 0.2s solma, sürükleme kapalı. iOS dokunuşu `mouseenter` ürettiği için camda küçük hover kartı hiç açılmaz; masaüstünde hover duruyor. Uzun ad tek satırda ellipsis, rozet ve Certified aynı satırda. İçerik aynı: banner, avatar + durum, ad efekti, taç, Certified, @kullanıcı · durum, YÖNETİCİ, Riot kartı, biyografi, Üyelik Tarihi, Ortak Arkadaşlar, Özel durum, Mesaj Gönder / Arkadaşlar, Engelle / Şikayet. Aynı kart grup sohbeti, sunucu kanalı ve üye listesinden de açılır. App Store’a gönderilmedi. `mobile-glass.css` duruyor.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.175**. Yalnız iPhone, cam açık.
+
+- [ ] DM’de karşı kullanıcının avatarına veya adına bir kez dokun: yalnız bir cam profil açılır. Altta küçük kart (YÖNETİCİ / Certified / Silver) çıkmaz.
+- [ ] Kart Dynamic Island ve sohbet başlığının altında durur; banner kesilmez. Arkada sohbet kararır ve bulanıklaşır.
+- [ ] Örtüye dokununca, × ile veya banner’dan aşağı sürükleyince kapanır. Hızlı sürükleme kartı aşağı bırakır.
+- [ ] Uzun yönetici adı tek satırda kesilir; rozet alta kaymaz.
+- [ ] Grup sohbetinde ve sunucu kanalında da tek kart, aynı yerde açılır.
+- [ ] Masaüstü / tarayıcı eski profil kartı; üzerine gelince küçük kart duruyor.
+
 ## Cihaz düzeltmeleri · 2.9.174
 
 Demir’in 2.9.171 iPhone testi, dördüncü madde. Yanıtlarken önizleme (“Yanıtlanıyor …” + alıntı) 52px kapsülün içine eziliyordu: yazı alanı kayboluyor, iptal × gönder okunun üstüne biniyordu.

@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
 import { X, UserPlus, MessageSquare, Check, UserMinus, Flag } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
@@ -12,7 +13,7 @@ import { BadgeIcon, NameEffectText, TitleTag } from "../ui/Cosmetics";
 import { getUserValorant } from "../../api/riot";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
-import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
+import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { isUserAdmin } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import { useLocale } from "../../context/LocaleContext";
@@ -61,6 +62,9 @@ export default function UserProfileModal({
 }) {
   const t = useT();
   const glassShell = useGlassShell();
+  const reduceMotion = useReducedMotion();
+  const dragControls = useDragControls();
+  const dismissV = useRef(0);
   const { locale } = useLocale();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -202,30 +206,77 @@ export default function UserProfileModal({
   const memberSince = profile?.createdAt || profile?.created_at || known?.createdAt || known?.created_at || null;
 
   if (glassShell) {
-    return (
+    const dismissSheet = (velocity = 0) => {
+      dismissV.current = Number.isFinite(velocity) ? velocity : 0;
+      onClose?.();
+    };
+    const tree = (
       <>
-        <AnimatePresence>
+        <AnimatePresence custom={dismissV.current}>
           {open && (
-            <motion.div className="g-profile-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+            <motion.div
+              className="g-profile-scrim"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={reduceMotion ? REDUCED_MOTION_FADE : { duration: 0.2 }}
+              onClick={() => dismissSheet(0)}
+            >
               <motion.div
                 className="g-profile-sheet g-glass g-heavy"
-                initial={{ y: 28, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 24, opacity: 0 }}
-                transition={framerSpring(SPRINGS.sheet)}
+                custom={dismissV.current}
+                variants={{
+                  initial: reduceMotion ? { opacity: 0 } : { y: 40, opacity: 0 },
+                  animate: reduceMotion
+                    ? { opacity: 1, transition: REDUCED_MOTION_FADE }
+                    : { y: 0, opacity: 1, transition: framerSpring(SPRINGS.sheet) },
+                  exit: (velocity) => (
+                    reduceMotion
+                      ? { opacity: 0, transition: REDUCED_MOTION_FADE }
+                      : {
+                          y: 560,
+                          opacity: 0,
+                          transition: framerSpring(SPRINGS.sheet, Number.isFinite(velocity) ? velocity : undefined),
+                        }
+                  ),
+                }}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                drag={reduceMotion ? false : "y"}
+                dragControls={dragControls}
+                dragListener={false}
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0.04, bottom: 0.55 }}
+                dragMomentum={false}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 88 || info.velocity.y > 750) dismissSheet(info.velocity.y);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-label={displayName}
               >
                 <div
                   className="g-profile-banner"
+                  onPointerDown={(event) => {
+                    if (reduceMotion) return;
+                    if (event.target.closest("button, a, input, textarea")) return;
+                    dragControls.start(event);
+                  }}
                   style={{
                     backgroundImage: equippedBannerUrl ? cssUrl(equippedBannerUrl) : undefined,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 >
-                  <button type="button" className="g-profile-close g-chip" onClick={onClose} aria-label={t("Close")}>
+                  <div className="g-profile-grabber" aria-hidden="true" />
+                  <button
+                    type="button"
+                    className="g-profile-close g-chip"
+                    onClick={() => dismissSheet(0)}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    aria-label={t("Close")}
+                  >
                     <X size={16} />
                   </button>
                 </div>
@@ -239,7 +290,9 @@ export default function UserProfileModal({
                     <StatusBadge status={status} />
                   </div>
                   <div className="g-profile-name">
-                    <NameEffectText user={profile}>{displayName}</NameEffectText>
+                    <span className="g-profile-name-text">
+                      <NameEffectText user={profile}>{displayName}</NameEffectText>
+                    </span>
                     <BadgeIcon user={profile} />
                     <TitleTag user={profile} />
                   </div>
@@ -327,6 +380,8 @@ export default function UserProfileModal({
         />
       </>
     );
+    if (typeof document === "undefined") return tree;
+    return createPortal(tree, document.body);
   }
 
   return (

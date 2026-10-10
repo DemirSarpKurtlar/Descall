@@ -875,7 +875,9 @@ html.glass-ui .server-modal {
   font-family: var(--g-font);
 }
 
-/* ── Profile sheet (14) ── */
+/* ── Profile sheet (14) ──
+   Portaled to document.body. Higher specificity than .g-glass { position: relative }
+   so the sheet stays a viewport layer, never a card trapped under the DM header. */
 html.glass-ui .g-profile-scrim {
   position: fixed;
   inset: 0;
@@ -885,18 +887,33 @@ html.glass-ui .g-profile-scrim {
   backdrop-filter: blur(6px) saturate(120%);
 }
 
-html.glass-ui .g-profile-sheet {
+html.glass-ui .g-profile-scrim > .g-profile-sheet {
   position: fixed;
-  top: 8%;
+  top: max(8%, calc(env(safe-area-inset-top, 0px) + 12px));
   left: 12px;
   right: 12px;
-  max-height: 84%;
+  bottom: auto;
+  max-height: min(84%, calc(100% - env(safe-area-inset-top, 0px) - 28px));
   z-index: 100061;
   overflow: auto;
   border-radius: var(--g-r-sheet);
   padding: 0 0 22px;
   color: var(--g-t1);
   font-family: var(--g-font);
+  touch-action: pan-y;
+}
+
+html.glass-ui .g-profile-grabber {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 36px;
+  height: 5px;
+  margin-left: -18px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  z-index: 3;
 }
 
 html.glass-ui .g-profile-sheet * {
@@ -906,6 +923,7 @@ html.glass-ui .g-profile-sheet * {
 html.glass-ui .g-profile-banner {
   height: 120px;
   position: relative;
+  touch-action: none;
   background: linear-gradient(135deg, rgba(88, 122, 246, 0.9), rgba(124, 92, 255, 0.7) 50%, rgba(30, 31, 34, 0.35));
 }
 
@@ -971,11 +989,28 @@ html.glass-ui .g-profile-name {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   margin-top: 12px;
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.024em;
+}
+
+html.glass-ui .g-profile-name-text,
+html.glass-ui .g-profile-name-text .cosmetic-name-effect {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.glass-ui .g-profile-name .cosmetic-badge-icon,
+html.glass-ui .g-profile-name .cosmetic-title-tag {
+  flex: 0 0 auto;
 }
 
 html.glass-ui .g-profile-handle {
@@ -1032,6 +1067,20 @@ html.glass-ui .g-profile-actions .is-fill {
   color: var(--g-t1);
   background: rgba(255, 255, 255, 0.09);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+html.glass-ui .g-profile-actions button:active,
+html.glass-ui .g-profile-safety button:active,
+html.glass-ui .g-profile-close:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .g-profile-actions button:active,
+  html.glass-ui .g-profile-safety button:active,
+  html.glass-ui .g-profile-close:active {
+    transform: none;
+  }
 }
 
 html.glass-ui .g-profile-group {
@@ -1291,6 +1340,10 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-field textarea {
 
 html.glass-ui.a11y-solid .add-modal.g-add-sheet,
 html.glass-ui.a11y-solid .server-dropdown.g-server-sheet,
+html.glass-ui .report-modal-overlay {
+  z-index: 100070;
+}
+
 html.glass-ui.a11y-solid .g-profile-sheet,
 html.glass-ui.a11y-solid .server-modal {
   background: var(--g-solid-heavy);

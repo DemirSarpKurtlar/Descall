@@ -134,6 +134,7 @@ export default function MessageList({
   searchQuery = "",
 }) {
   const t = useT();
+  const glassUi = useGlassUi();
   const messagesEndRef = useRef(null);
   const listRef = useRef(null);
   const stickToBottomRef = useRef(true);
@@ -441,9 +442,15 @@ export default function MessageList({
         const isOwn = group.user?.id === currentUser?.id;
         const avatarUser = enrichAvatarUser(group.user, { me, friends, onlineUsers, currentUser });
         const openProfile = () => {
+          setHoverUser(null);
+          setHoverPos(null);
           if (avatarUser?.id) setProfileTarget(avatarUser);
         };
-        const showHoverCard = (el) => {
+        const showHoverCard = (el, event) => {
+          // iOS turns a tap into mouseenter and leaves the card up. Glass
+          // already presents the profile sheet, so the hover card must not open.
+          if (glassUi) return;
+          if (event?.pointerType === "touch") return;
           if (!avatarUser?.id || !el) return;
           const rect = el.getBoundingClientRect();
           const friend = (friends || []).find((f) => f.id === avatarUser.id);
@@ -471,7 +478,7 @@ export default function MessageList({
                   className="message-avatar"
                   onClick={openProfile}
                   style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
-                  onMouseEnter={(e) => showHoverCard(e.currentTarget)}
+                  onMouseEnter={glassUi ? undefined : (e) => showHoverCard(e.currentTarget, e)}
                   onMouseLeave={hideHoverCard}
                 >
                   <Avatar
@@ -492,10 +499,10 @@ export default function MessageList({
                     className="message-author"
                     onClick={openProfile}
                     style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
-                    onMouseEnter={(e) => {
+                    onMouseEnter={glassUi ? undefined : (e) => {
                       if (!avatarUser?.id) return;
                       e.currentTarget.style.textDecoration = "underline";
-                      showHoverCard(e.currentTarget);
+                      showHoverCard(e.currentTarget, e);
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.textDecoration = "";
