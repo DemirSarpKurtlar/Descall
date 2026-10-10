@@ -120,8 +120,13 @@ function isAdminWalletReason(reason) {
   return reason === "admin_grant" || reason === "admin_revoke";
 }
 
+/** Refunds must land even if the wallet was frozen between debit and grant. */
+function bypassesWalletFreeze(reason) {
+  return isAdminWalletReason(reason) || reason === "shop_refund";
+}
+
 async function assertWalletWritable(userId, reason) {
-  if (isAdminWalletReason(reason)) return;
+  if (bypassesWalletFreeze(reason)) return;
   if (await isWalletFrozen(userId)) {
     const err = new Error("WALLET_FROZEN");
     err.code = "WALLET_FROZEN";
@@ -129,17 +134,23 @@ async function assertWalletWritable(userId, reason) {
   }
 }
 
+/** Positive ledger rows that are not activity earnings (a purchase refund). */
+const EXCLUDED_FROM_EARNING_CAP = new Set(["shop_refund"]);
+
 async function sumCreditsSince(userId, sinceIso, reason = null) {
   let query = supabase
     .from("descoin_ledger")
-    .select("amount")
+    .select(reason ? "amount" : "amount, reason")
     .eq("user_id", userId)
     .gt("amount", 0)
     .gte("created_at", sinceIso);
   if (reason) query = query.eq("reason", reason);
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []).reduce((sum, row) => sum + row.amount, 0);
+  return (data || []).reduce((sum, row) => {
+    if (!reason && EXCLUDED_FROM_EARNING_CAP.has(row.reason)) return sum;
+    return sum + row.amount;
+  }, 0);
 }
 
 /** Optimistic-concurrency balance mutation. Throws INSUFFICIENT_BALANCE on overdraw. */
@@ -431,11 +442,33 @@ async function claimDaily(userId) {
       .eq("id", userId);
     if (updateError) throw updateError;
 
-    const result = await credit(userId, amount, "daily_claim", {
-      streak: nextStreak,
-      base: DAILY_CLAIM_BASE,
-      streakBonus,
-    });
+    let result;
+    try {
+      result = await credit(userId, amount, "daily_claim", {
+        streak: nextStreak,
+        base: DAILY_CLAIM_BASE,
+        streakBonus,
+      });
+    } catch (creditError) {
+      // The date is already "today", so a failed credit would lock the user
+      // out of the reward until tomorrow. Put the streak back and rethrow;
+      // credit() has already reversed the balance if the ledger write failed.
+      try {
+        await supabase
+          .from("users")
+          .update({
+            descoin_streak: prevStreak,
+            descoin_last_daily_claim: lastClaim,
+          })
+          .eq("id", userId);
+      } catch (rollbackError) {
+        console.error(
+          `[descoin] CRITICAL: daily claim credit failed for user ${userId} and streak rollback also failed.`,
+          rollbackError
+        );
+      }
+      throw creditError;
+    }
 
     return {
       claimed: true,
@@ -466,6 +499,7 @@ module.exports = {
   credit,
   debit,
   creditCapped,
+  runSerialized: withUserQueue,
   getLedger,
   getUnnotifiedGrants,
   markGrantsNotified,
