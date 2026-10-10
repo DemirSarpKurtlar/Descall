@@ -23,6 +23,14 @@ assert.match(css, /opacity:\s*0\.5/);
 assert.doesNotMatch(css, /opacity:\s*0\.85/);
 assert.match(css, /-webkit-mask:\s*linear-gradient\(#000 0 0\) content-box/);
 assert.match(css, /-webkit-mask-composite:\s*xor/);
+assert.match(
+  code,
+  /html\.glass-ui \.app-root\.g-shell:not\(\.in-conversation\) \.main-panel > \.messages-container > \.empty-state \{\s*visibility:\s*hidden;/,
+);
+assert.match(
+  code,
+  /html\.glass-ui \.app-root\.g-shell\.mobile-settings-open > \.app-sidebar-shell,\s*html\.glass-ui \.app-root\.g-shell\.mobile-settings-open > \.app-main-slot \{\s*visibility:\s*hidden;/,
+);
 
 for (const key of keys) {
   assert.ok(css.includes(`[data-theme="${key}"] .g-theme-stage`), `${key} stage`);

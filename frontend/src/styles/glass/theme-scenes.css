@@ -186,6 +186,19 @@ html.glass-ui[data-theme="iriscape"] .call-overlay-root.g-call {
   background-image: none !important;
 }
 
+/* The desktop "your chats live here" pane stays mounted under the phone.
+   A translucent scene let that title and its buttons read through Settings.
+   Hide it off a conversation, and hide the list itself while Settings is open
+   so only the theme shows behind the sheet. No transform or contain here. */
+html.glass-ui .app-root.g-shell:not(.in-conversation) .main-panel > .messages-container > .empty-state {
+  visibility: hidden;
+}
+
+html.glass-ui .app-root.g-shell.mobile-settings-open > .app-sidebar-shell,
+html.glass-ui .app-root.g-shell.mobile-settings-open > .app-main-slot {
+  visibility: hidden;
+}
+
 /* Tuned material: blur, saturation, ambient, specular. */
 html.glass-ui[data-theme="lagoon"] {
   --g-blur: 28px; --g-saturate: 200%; --g-brightness: 1.05;

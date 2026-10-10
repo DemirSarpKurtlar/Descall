@@ -1,5 +1,19 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.186
+
+Ayarlar açılınca ortada “Sohbetleriniz burada” ve altındaki düğmeler okunuyordu. Telefon listesi ekranı kapatsa da masaüstünün boş sohbet alanı arkada duruyor; saydam tema o yazıyı ayarların arasından gösteriyordu.
+
+Sohbet seçili değilken o boş alan çizilmez. Ayarlar açıkken liste de gizlenir; arkada yalnız tema kalır. Sekme çubuğu ayar menüsünde durur. Masaüstü ve web aynı. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.186**. Yalnız iPhone. Iriscape (ve diğer yeni temalar).
+
+- [ ] Ayarlar: “Sohbetleriniz burada”, “Grup oluştur” ve “Uygulamayı keşfet” arkada yok. Satırlar okunur, tema arkadan renk verir.
+- [ ] Sohbetler listesinde de o yazı yok.
+- [ ] Bir sohbet aç: mesajlar durur. Geri dön, ayarları kapat: liste geri gelir.
+
 ## Cihaz düzeltmeleri · 2.9.185
 
 Iriscape kuşanılınca sohbet listesi kayboluyordu. Ekranda renk çarkı, saat ve sekme çubuğu kalıyordu. Aynı sahne katmanı sekiz yeni temada da listeyi `z-index` 1’e indiriyordu; iPhone dönen katmanı yazının üstüne boyuyordu.
