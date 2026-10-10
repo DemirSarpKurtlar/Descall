@@ -1,5 +1,9 @@
 # Liquid Glass — progress log
 
+## Carry-over polish · 2.9.171
+
+Stage 7’nin kalan cila turu. Yeni özellik yok. Duyuru rozeti, var olan okunmamış sayacından (`GET /api/announcements/unread/count`); sayaç yoksa rozet çizilmez. Duyuru satırı ikonu kayıtlı `emoji` + `color` alanından; bilinen glif Lucide, diğerleri glif olarak kalır. Mesaj menüsünde “Daha fazla tepki” smile-plus. Arkadaş davetinde altın satır “Sen 100 · onlar 50 DesCoin” (mağaza metni duruyor). Ekle sayfasında Hızlı Ekle / Arkadaş / Grup, kullanıcı alanı ikonu ve “Kullanıcı adıyla arkadaşlık isteği gönder”. Ses üye satırı 30px; kanal “···” camda gizli, menü eylemleri duruyor. Kanal yer tutucusu `#genel'e mesaj yaz…`. Özel durum yer tutucusu kırpılmıyor. Bu turdan sonra Stage 7 mühendisliği, Demir’in cihaz testinde sorun çıkmazsa kapalıdır. App Store’a gönderilmedi. `mobile-glass.css` duruyor. Ölçüler: `docs/glass-redesign/compare/stage7/REPORT.md`.
+
 ## Round 3 audit fixes · 2.9.170
 
 Dimaru’nun 2.9.169 turu. Uzun basışta menü, parmak ne kadar tutulursa tutulsun ilk kalkışta satırı çalıştırmaz; yeni basış çalıştırır. Mağaza cüzdanı başlığın altında yumuşak blur. Davet kartında başlık satırı; günlük ve eşya kartları cam. Başkasının profilinde bannersız şerit, 22pt durum noktası, üyelik tarihi. Sunucu menüsü düz bildirim satırları ve ayrı kırmızı sahip/ayrıl satırı. Profil düzenleme grupları, bildirim dipnotu kartın altında, arama listesi 16pt yukarı, Oyna çipleri tek satır ve mod renkleri. App Store’a gönderilmedi. `mobile-glass.css` duruyor. Ölçüler: `docs/glass-redesign/compare/stage7/REPORT.md`.

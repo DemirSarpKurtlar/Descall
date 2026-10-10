@@ -2,7 +2,7 @@
 
 Tarih: 2026-10-09. Karşılaştırma Chrome’da, üst güvenli alan 62 / alt 34 maskelenerek. Mockup solda, uygulama sağda: `docs/glass-redesign/compare/stage7/*-side-by-side.png`.
 
-Bu tablo **2.9.170** yeniden çekimidir (3. tur denetim; etkilenen ekranlar yeniden çekildi, diğer satırlar 2.9.169 ölçüsü). Piksel eşiği (HANDOFF) maskelenmiş alanda ≤%0,5, bilinen veri ve yazı tipi farkları dışında. Yüzdeler o eşiğin üstünde kalır: Inter glif genişliği, fikstür metni, avatar rengi ve mağaza karosu. 3. tur: uzun basışın ilk kalkışı, mağaza cüzdan solması, davet başlığı, profil şeridi, sunucu menüsü, profil düzenleme grupları, bildirim dipnotu, arama ofseti, Oyna çipleri. Ayrıntı “3. tur” bölümünde.
+Bu tablo **2.9.171** cila turunun yeniden çekilen ekranlarını (02, 04, 09, 10, 11, 12, 16, 18) ve 2.9.170’te kalan satırları gösterir. Piksel eşiği (HANDOFF) maskelenmiş alanda ≤%0,5, bilinen veri ve yazı tipi farkları dışında. Yüzdeler o eşiğin üstünde kalır: Inter glif genişliği, fikstür metni, avatar rengi ve mağaza karosu. Cila: duyuru rozeti, smile-plus, davet altın satırı, ekle-arkadaş etiketleri, 30px ses satırı, kanal yer tutucusu, duyuru ikonları, durum yer tutucusu. Ayrıntı “Cila” bölümünde.
 
 Görsel denetim, App Store ekran görüntüleri ve “Bu sürümde yenilikler” Dimaru’da. Bu turda App Store’a gönderilmedi. `styles/mobile-glass.css` duruyor.
 
@@ -13,26 +13,26 @@ Maskelenmiş piksel farkı (eşik 0.15, `includeAA`). 21b, kaydırılmış mağa
 | Ekran | Fark | Karar |
 | --- | --- | --- |
 | 01-login | %12.65 | Google düğmesi iOS’ta yok (bilinçli). |
-| 02-chats | %10.73 | Harf 23.52px / 56px avatar (0.42em). |
+| 02-chats | %10.69 | Megafon rozeti 2 (okunmamış sayaç). |
 | 02b-groups | %9.30 | Grup listesi, üye yığını kare çerçevesiz. |
 | 03-dm | %9.70 | Üst solma `.g-edge-conv` 150px, maske %72 opak. |
-| 04-msg-menu | %13.63 | 1600ms basılı tutup bırakınca menü açık kalıyor. Yeni bir basış Düzenle’yi çalıştırır. |
+| 04-msg-menu | %13.62 | “Daha fazla tepki” smile-plus. Menü ilk kalkışta açık kalıyor. |
 | 05-attach | %3.76 | `+` z-index 85, scrim 70. Düğme scrim’in üstünde (elementFromPoint path). |
 | 06-call-11 | %6.93 | Saç teli konuşma halkası (dolgu yok). Kalite çubukları mavi tonda. |
 | 07-group-call | %20.19 | Grup ızgarasında avatar halkası gizli; karo kenarı yeşil. Karo gradyanları ayrı. |
 | 08-incoming | %7.67 | Hap y 148. Avatar kutu gölgesi 3px beyaz halka. |
-| 09-friends | %9.59 | Satır 76, avatar 52. |
-| 10-add-friend | %8.70 | Hızlı Ekle / Arkadaş / Grup. |
-| 11-servers | %8.26 | Ray + kanal bölmesi. Başlık eylemleri 30px daire. |
-| 12-server-channel | %7.84 | Kanal sohbeti, üst solma duruyor. |
+| 09-friends | %9.56 | Davet: “Arkadaş davet et” / “Descall'a katıl — ikimiz de DesCoin kazanırız” / “Sen 100 · onlar 50 DesCoin”. |
+| 10-add-friend | %9.25 | Hızlı Ekle / Arkadaş / Grup. Alan ikonu ve “Kullanıcı adıyla arkadaşlık isteği gönder”. |
+| 11-servers | %4.49 | Ses üye satırı 30px. Kanal “···” gizli. |
+| 12-server-channel | %7.70 | Yer tutucu `#genel'e mesaj yaz…`. |
 | 13-server-menu | %7.10 | Düz bildirim satırları, mavi çek sağda. Sahip satırı “Sunucuyu sil”. Alt yazı “· 4 sesli”. |
 | 14-profile | %8.19 | Bannersız hesapta marka şeridi. Durum 22×22, 3px halka. Üyelik Tarihi 10 Oca 2026. |
 | 14b-profile-edit | %10.89 | Gruplar: Kimlik, Hakkımda, Banner, Özel durum. “Banner'ı değiştir”, “Avatarı değiştir”, salt okunur kullanıcı adı. |
 | 15-settings | %6.97 | Ayarlar açıkken sekme vurgusu yok (`.g-tab.on` boş). Profil kartı %4.5 beyaz + blur. |
 | 15b-settings-notifications | %7.93 | Dipnot kartın altında, sol boşluk 16px. Satır ikonları gizli. |
-| 16-notifications | %6.20 | Duyurular sayfası. |
+| 16-notifications | %6.13 | Satır ikonları kayıtlı emoji/renk: zil, çanta, kişiler. |
 | 17-play | %15.80 | Başlık zemini saydam, alt solma. Çipler tek satır 32px. Kart blur. Competitive mavi, Unrated yeşil, Swiftplay amber. |
-| 18-status | %3.41 | Dört durum + özel + Kullanıcı Ayarları. |
+| 18-status | %3.47 | “Aklınızdan neler geçiyor?” kırpılmıyor (scrollWidth = clientWidth). |
 | 19-calls | %11.34 | İçerik üstü `chrome + 142px`. Görüntülü satırda video ikonu. Grup satırında yalnız telefon. |
 | 20-activity | %18.45 | Durum kartı harfi 21.84px beyaz, durum noktası 14px. Avatar 52. |
 | 21-shop | %27.91 | Cüzdan saydam, altı blur solma. Davet: “Arkadaş davet et” + “Sen 100 DesCoin · onlar 50 kazanır”. Hedefler Mesajlar / Ekran. |
@@ -185,11 +185,30 @@ Arkadaş listesinde uzun ad, `flex-wrap: wrap` yüzünden yönetici rozetini iki
 - “· N sesli” yalnız o an ses kanalında biri varken. Çekimde 4 kişi olduğu için yazıldı.
 - Özel durum satırı, kullanıcıda özel durum yokken çizilmez. Fikstürde yok; “Ranked arıyorum” uydurulmadı.
 - Premier etiket rengi listede yok; gri kaldı.
-- Taşınan düşük notlar bu tura girmedi: duyuru rozeti, smile-plus, davet metni, ekle-arkadaş segment etiketleri, ses üye satırı yüksekliği, kanal “···”, “Mesaj…” yer tutucusu, duyuru listesinde aynı ikon, durum yer tutucusunun kırpılması. Bunlar ya uygulamada olmayan bir özelliği ya da mevcut metni değiştirir.
+- Taşınan düşük notlar 2.9.171 cila turunda işlendi. Aşağıya bakın.
+
+## Cila (2.9.171)
+
+440×956 @3x, güvenli alan 62/34 maskeli, `html.glass-ui`, Vite 5174 kaynak + shotkit 3300. Yeni eylem yok.
+
+| Konu | Ölçü |
+| --- | --- |
+| 02 rozet | `.g-nb` metni “2”. `aria-label` “Duyurular 2”. Sayaç `GET /api/announcements/unread/count`. Sayfa açılınca mevcut okundu ucu çağrılır, rozet sıfırlanır. |
+| 04 ikon | “Daha fazla tepki” satırı SmilePlus (`M22 11v1a10…`). Besteci gülümsemesi duruyor. |
+| 09 davet | “Arkadaş davet et Descall'a katıl — ikimiz de DesCoin kazanırız Sen 100 · onlar 50 DesCoin”. Mağaza kartı “Sen 100 DesCoin · onlar 50 kazanır”. |
+| 10 ekle | Sekmeler “Hızlı Ekle / Arkadaş / Grup”. `.g-add-field` kullanıcı ikonu. Dipnot “Kullanıcı adıyla arkadaşlık isteği gönder”. |
+| 11 sunucu | `.server-voice-user` yükseklik 30. Satır sayısı 4. Kanal “···” ve ses satırı “···” `display: none`. Menü eylemleri duruyor. |
+| 12 yer tutucu | `#genel'e mesaj yaz…`. DM yer tutucusu `Mesaj…`. |
+| 16 ikonlar | Üç `.g-ann-mark` svg. Zemin `rgb(88,122,246)`, `rgb(124,92,255)`, `rgb(48,209,88)`. Kaynak `emoji` + `color`. |
+| 18 durum | Yer tutucu “Aklınızdan neler geçiyor?”. `scrollWidth` 188 = `clientWidth` 188. `clipped` false. |
+
+`glass-scope.selftest` 1121 seçici. `glassMessageMenu.selftest`, `edgeSwipeBack.selftest`, `navInventory.selftest` geçti.
+
+Stage 7 mühendisliği bu sürümle kapanır. Kalan fark, Demir’in cihaz testinde çıkarsa ayrıca ele alınır.
 
 ## TestFlight kontrol listesi (Demir)
 
-Sürüm **2.9.170**. Yalnız iPhone. App Store’a gönderme.
+Sürüm **2.9.171**. Yalnız iPhone. App Store’a gönderme.
 
 - [ ] Sohbetler, Gruplar, Sunucular, Oyna, Arkadaşlar, Aktivite, Aramalar sekmesi duruyor. Oyna’da da sekme duruyor; liste çekmecesi yok.
 - [ ] Uzun bir ad + yönetici rozeti: sohbet başlığında tek satır, rozet görünür (dar telefonda yalnız kalkan). Arkadaş satırında ad kesilir, “Yönetici” alt satıra kaymaz.
@@ -205,3 +224,8 @@ Sürüm **2.9.170**. Yalnız iPhone. App Store’a gönderme.
 - [ ] Grup aramasında fotoğraflı avatar, yeşil konuşma halkasının tam ortasında.
 - [ ] Mesaja uzun basıp parmağı kaldırınca Düzenle / Şikayet kendiliğinden açılmaz.
 - [ ] Oyna: cam başlık, çip filtreler, lobi kartında Katıl. Mağazada “Bannerlar · N” sayacı listenin üstünde kalır.
+- [ ] Sohbetler megafonunda okunmamış duyuru sayısı (yoksa rozet yok). Duyuru satırlarında kayıtlı emoji/renk.
+- [ ] Mesaj menüsünde “Daha fazla tepki” smile-plus. Arkadaş davetinde “Sen 100 · onlar 50 DesCoin”.
+- [ ] Ekle: Hızlı Ekle / Arkadaş / Grup, kullanıcı ikonu, “Kullanıcı adıyla arkadaşlık isteği gönder”.
+- [ ] Ses kanalındaki üye satırı sıkı (~30pt). Kanal satırında “···” yok. `#genel` yer tutucusu `#genel'e mesaj yaz…`.
+- [ ] Durum menüsünde “Aklınızdan neler geçiyor?” kesilmeden görünür.
