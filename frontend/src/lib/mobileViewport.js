@@ -35,7 +35,7 @@ export function mobileViewportBox({
 
   if (!open) {
     const height = Math.max(visibleH, layoutH);
-    return { open: false, top: 0, left: 0, height, kb: 0 };
+    return { open: false, top: 0, left: 0, height, kb: 0, gap: 0 };
   }
 
   const fitted = Math.max(160, layoutH - top);
@@ -46,6 +46,9 @@ export function mobileViewportBox({
     left,
     height,
     kb: Math.max(gap, top),
+    // Bottom overlap only. A pan (offsetTop) already moves the shell; adding
+    // it again would park the composer in the middle of the chat.
+    gap,
   };
 }
 

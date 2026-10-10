@@ -25,6 +25,7 @@ import GroupInviteModal from "../groups/GroupInviteModal";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { displayText } from "../../lib/profanity";
+import { localizeListPreview } from "../../lib/listPreview";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
@@ -1147,7 +1148,7 @@ function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
   const t = useT();
   const glass = useGlassUi();
   const presence = onlineUsers?.find((u) => u.id === dm.id)?.status || (isOnline ? "online" : "offline");
-  const preview = displayText(dm.lastMessage) || t("No messages yet");
+  const preview = displayText(localizeListPreview(dm.lastMessage, t)) || t("No messages yet");
   const typing = glass && /yazıyor|typing/i.test(String(preview));
   return (
     <>
@@ -2190,7 +2191,7 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
           )}
         </div>
         <div className="conv-row-bottom">
-          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(preview)}</span>
+          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(localizeListPreview(preview, t))}</span>
           <UnreadBadge count={unread} />
         </div>
         {glass && memberCount > 0 ? (

@@ -32,6 +32,12 @@ class DescallBridgeViewController: CAPBridgeViewController {
         showLaunchOverlay()
     }
 
+    override open func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // WKContentView can load after the first viewDidLoad attempt.
+        DescallFormAccessoryBar.hide()
+    }
+
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CallKeepAlivePlugin())
         bridge?.registerPluginInstance(AppleSignInPlugin())
@@ -96,16 +102,84 @@ extension DescallBridgeViewController {
 
 /// Hides the iPhone form accessory bar (‹ › ✓) for the whole Capacitor shell.
 enum DescallFormAccessoryBar {
-    private static var hidden = false
+    private static var swizzled = false
+    private static var observing = false
 
     static func hide() {
-        if hidden { return }
-        guard let cls = NSClassFromString("WKContentView"),
-              let method = class_getInstanceMethod(cls, NSSelectorFromString("inputAccessoryView"))
+        swizzleIfPossible()
+        observeKeyboard()
+        stripAccessory(passes: 4)
+    }
+
+    /// Replace WKContentView's own getter. An inherited UIView method must not
+    /// count — that set a "done" flag before WebKit's real implementation loaded.
+    private static func swizzleIfPossible() {
+        if swizzled { return }
+        let selector = NSSelectorFromString("inputAccessoryView")
+        guard let cls: AnyClass = NSClassFromString("WKContentView"),
+              implements(cls, selector),
+              let method = class_getInstanceMethod(cls, selector)
         else { return }
-        hidden = true
         let block: @convention(block) (AnyObject) -> UIView? = { _ in nil }
         method_setImplementation(method, imp_implementationWithBlock(block))
+        swizzled = true
+    }
+
+    private static func implements(_ cls: AnyClass, _ selector: Selector) -> Bool {
+        var count: UInt32 = 0
+        guard let methods = class_copyMethodList(cls, &count) else { return false }
+        defer { free(UnsafeMutableRawPointer(methods)) }
+        for index in 0..<Int(count) where method_getName(methods[index]) == selector {
+            return true
+        }
+        return false
+    }
+
+    private static func observeKeyboard() {
+        if observing { return }
+        observing = true
+        let names: [Notification.Name] = [
+            UIResponder.keyboardWillShowNotification,
+            UIResponder.keyboardDidShowNotification,
+            UIResponder.keyboardWillChangeFrameNotification,
+        ]
+        for name in names {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+                swizzleIfPossible()
+                stripAccessory(passes: 8)
+            }
+        }
+    }
+
+    /// The bar is WKFormAccessoryView, drawn over the bottom of the web view
+    /// even when the getter swizzle misses. Hide that view only.
+    private static func stripAccessory(passes: Int) {
+        for window in everyWindow() {
+            hideFormAccessory(in: window, depth: 0)
+        }
+        guard passes > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+            stripAccessory(passes: passes - 1)
+        }
+    }
+
+    private static func everyWindow() -> [UIWindow] {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+    }
+
+    private static func hideFormAccessory(in view: UIView, depth: Int) {
+        if depth > 14 { return }
+        let name = NSStringFromClass(type(of: view))
+        if name.contains("FormAccessory") {
+            view.isHidden = true
+            view.alpha = 0
+            view.isUserInteractionEnabled = false
+        }
+        for child in view.subviews {
+            hideFormAccessory(in: child, depth: depth + 1)
+        }
     }
 }
 

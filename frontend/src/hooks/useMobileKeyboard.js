@@ -71,6 +71,7 @@ export function useMobileKeyboard(enabled = true) {
       root.style.setProperty("--vv-offset-top", `${box.top}px`);
       root.style.setProperty("--vv-offset-left", `${open ? box.left : 0}px`);
       root.style.setProperty("--kb-inset", `${box.kb}px`);
+      root.style.setProperty("--kb-gap", `${box.gap || 0}px`);
       root.classList.toggle("kb-open", open);
 
       if (open !== lastOpen) {
@@ -162,6 +163,7 @@ export function useMobileKeyboard(enabled = true) {
       root.style.removeProperty("--vv-offset-top");
       root.style.removeProperty("--vv-offset-left");
       root.style.removeProperty("--kb-inset");
+      root.style.removeProperty("--kb-gap");
       resetScroll();
     };
   }, [enabled]);

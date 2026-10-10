@@ -931,7 +931,15 @@ export default function MessageComposer({
           <textarea
             ref={inputRef}
             value={message}
-            onChange={(e) => { setMessage(e.target.value); if (e.target.value) emitTypingStart(); else emitTypingStop(); }}
+            onChange={(e) => {
+              if (e.target.scrollTop) e.target.scrollTop = 0;
+              setMessage(e.target.value);
+              if (e.target.value) emitTypingStart();
+              else emitTypingStop();
+            }}
+            onFocus={(e) => {
+              if (e.target.scrollTop) e.target.scrollTop = 0;
+            }}
             onKeyDown={handleKeyDown}
             placeholder={dragOver ? t("Drop file to attach…") : (glass && activeChannel?.name && !activeDmUser && !activeGroup ? t("Message #{name}…", { name: activeChannel.name }) : t("Message…"))}
             className="composer-input"

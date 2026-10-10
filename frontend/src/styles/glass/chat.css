@@ -965,6 +965,13 @@ html.glass-ui .app-root.g-shell.in-conversation .composer-container {
   box-shadow: none !important;
 }
 
+/* The capsule is fixed to the layout viewport. While the keyboard is up that
+   bottom is behind the keys, so the line being typed never comes on screen.
+   --kb-gap is only the covered strip (not the pan offset). */
+html.glass-ui.kb-open .app-root.g-shell.in-conversation .composer-container {
+  bottom: calc(var(--kb-gap, 0px) + 8px);
+}
+
 html.glass-ui .app-root.g-shell .message-composer {
   display: flex;
   flex-direction: column;
@@ -1135,8 +1142,10 @@ html.glass-ui .app-root.g-shell .composer-input {
   box-shadow: none !important;
   color: var(--g-t1);
   font-size: 16px !important;
+  line-height: 24px !important;
   letter-spacing: -0.012em;
   resize: none;
+  overflow: hidden !important;
 }
 
 html.glass-ui .app-root.g-shell .composer-input::placeholder {
@@ -1203,6 +1212,10 @@ html.glass-ui .app-root.g-shell .message-composer:has(.composer-reply-bar) .atta
   bottom: calc(var(--g-bar-bottom) + 132px);
 }
 
+html.glass-ui.kb-open .app-root.g-shell .message-composer:has(.composer-reply-bar) .attachment-menu {
+  bottom: calc(var(--kb-gap, 0px) + 132px);
+}
+
 /* Attach sheet (05) — only the three existing actions. */
 html.glass-ui .app-root.g-shell .attachment-menu {
   position: fixed;
@@ -1222,6 +1235,10 @@ html.glass-ui .app-root.g-shell .attachment-menu {
   box-shadow: var(--g-shadow-heavy);
   z-index: 80;
   gap: 0;
+}
+
+html.glass-ui.kb-open .app-root.g-shell .attachment-menu {
+  bottom: calc(var(--kb-gap, 0px) + 72px);
 }
 
 html.glass-ui .app-root.g-shell .attachment-item {
@@ -1427,7 +1444,9 @@ html.glass-ui .g-lift-bub:empty {
 /* GIF / image stays in the lifted stack. An empty text bubble was a blue stub. */
 html.glass-ui .g-lift-media {
   position: relative;
+  width: min(240px, calc(100vw - 48px));
   max-width: min(260px, calc(100vw - 48px));
+  min-height: 72px;
   border-radius: 16px;
   overflow: hidden;
   line-height: 0;
@@ -1446,14 +1465,17 @@ html.glass-ui .g-lift-media.other {
 
 html.glass-ui .g-lift-media img {
   display: block;
-  max-width: min(260px, calc(100vw - 48px));
-  max-height: 240px;
-  width: auto;
+  width: 100%;
   height: auto;
+  min-height: 72px;
+  max-height: 240px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.35);
 }
 
 html.glass-ui .message-bubble.menu-open {
-  visibility: hidden;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 /* ── Announcements sheet (16) ── */

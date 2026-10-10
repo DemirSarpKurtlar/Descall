@@ -36,9 +36,11 @@ import { attachReplySwipe } from "../../lib/messageReplySwipe";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
+  liftMediaBox,
   messageMenuOpensOnTap,
   pressToActivate,
   swallowOpeningPress,
+  visualMediaPreview,
 } from "../../lib/glassMessageMenu";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
@@ -633,16 +635,9 @@ function MessageBubble({
   const hideTimer = useRef(null);
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
   const mediaUrl = message.mediaUrl || message.media_url || "";
-  const looksLikeVisualUrl = /\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(mediaUrl)
-    || /giphy\.com|tenor\.com/i.test(mediaUrl);
-  const isVisualMedia =
-    !!mediaUrl &&
-    (mediaTypeNorm === "gif" ||
-      mediaTypeNorm === "image" ||
-      mediaTypeNorm === "photo" ||
-      (!mediaTypeNorm && looksLikeVisualUrl));
-  const isGif =
-    mediaTypeNorm === "gif" || /\.gif(\?|#|$)/i.test(mediaUrl) || /giphy\.com/i.test(mediaUrl);
+  const mediaPreview = visualMediaPreview(message);
+  const isVisualMedia = Boolean(mediaPreview);
+  const isGif = Boolean(mediaPreview?.isGif);
   const mediaOnly = isVisualMedia && !String(message.text || "").trim();
   const hasSlashEmbed = Boolean(message.embed && typeof message.embed === "object");
   const x = useMotionValue(0);
@@ -1329,7 +1324,7 @@ function MessageBubble({
             bubbleRef={bubbleRef}
             isOwn={isOwn}
             text={String(message.text || "").slice(0, 280)}
-            preview={isVisualMedia && mediaUrl ? { src: mediaUrl, isGif } : null}
+            preview={mediaPreview}
             onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
             quick={QUICK_EMOJIS}
             onReact={emitReact}
@@ -1388,6 +1383,7 @@ function GlassMessageMenu({
   const { ref } = useMaterialize(true);
   const act = (fn) => pressToActivate(fn);
   const [box, setBox] = useState(null);
+  const [shot, setShot] = useState(null);
   useLayoutEffect(() => {
     const el = bubbleRef.current;
     if (!el) return;
@@ -1400,7 +1396,17 @@ function GlassMessageMenu({
       width: r.width,
       height: r.height,
     });
-  }, [bubbleRef]);
+    const img = el.querySelector("img.message-image, .message-media img");
+    const src = String(preview?.src || img?.currentSrc || img?.getAttribute("src") || "").trim();
+    if (!src) {
+      setShot(null);
+      return;
+    }
+    const ir = img?.getBoundingClientRect();
+    const size = liftMediaBox(ir, r);
+    const isGif = Boolean(preview?.isGif) || /\.gif(\?|#|$)/i.test(src) || /giphy\.com/i.test(src);
+    setShot({ src, isGif, width: size.width, height: size.height });
+  }, [bubbleRef, preview]);
   if (!box || typeof document === "undefined") return null;
   const menuW = 250;
   const reactH = 66;
@@ -1411,9 +1417,10 @@ function GlassMessageMenu({
     + (canDelete ? 1 : 0)
     + (canReport ? 1 : 0);
   const menuH = 12 + menuRows * 48 + (pickerOpen ? 180 : 0);
-  const liftH = preview
-    ? Math.min(box.height || 180, 240)
-    : (text ? Math.min(box.height || 48, 160) : 0);
+  const caption = String(text || "").trim();
+  const liftH = shot
+    ? Math.min(shot.height || 180, 240)
+    : (caption ? Math.min(box.height || 48, 160) : 0);
   const stackH = reactH + (liftH ? 10 + liftH + 10 : 10) + menuH;
   const safeTop = 62;
   const safeBot = 34;
@@ -1448,11 +1455,18 @@ function GlassMessageMenu({
             <Smile size={18} />
           </button>
         </div>
-        {String(text || "").trim() ? <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{text}</div> : null}
-        {preview?.src ? (
-          <div className={`g-lift-media ${isOwn ? "own" : "other"}`}>
-            <img src={preview.src} alt={preview.isGif ? "GIF" : ""} />
-            {preview.isGif ? <span className="message-media-badge">GIF</span> : null}
+        {caption ? <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{caption}</div> : null}
+        {shot?.src ? (
+          <div
+            className={`g-lift-media ${isOwn ? "own" : "other"}`}
+            style={{ width: shot.width, minHeight: shot.height }}
+          >
+            <img
+              src={shot.src}
+              alt={shot.isGif ? "GIF" : ""}
+              style={{ width: shot.width, height: shot.height }}
+            />
+            {shot.isGif ? <span className="message-media-badge">GIF</span> : null}
           </div>
         ) : null}
         <div className="g-menu g-glass g-heavy" role="menu">

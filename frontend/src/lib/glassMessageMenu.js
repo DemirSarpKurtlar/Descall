@@ -5,6 +5,52 @@ export function messageMenuOpensOnTap(glass) {
   return !glass;
 }
 
+const VISUAL_EXT = /\.(gif|png|jpe?g|webp|avif|heic|heif)(\?|#|$)/i;
+
+/**
+ * Photo / GIF the long-press menu should keep on screen. Signed storage
+ * URLs often have no extension; the type, mime, or filename still counts.
+ * A non-image file does not.
+ */
+export function visualMediaPreview(message) {
+  const url = String(message?.mediaUrl || message?.media_url || "").trim();
+  if (!url) return null;
+  const type = String(message?.mediaType || message?.media_type || "").toLowerCase();
+  const mime = String(message?.mimeType || message?.mime_type || "").toLowerCase();
+  const name = String(message?.originalName || message?.original_name || "");
+  const looks =
+    VISUAL_EXT.test(url) ||
+    VISUAL_EXT.test(name) ||
+    /giphy\.com|tenor\.com/i.test(url) ||
+    mime.startsWith("image/");
+  const typed =
+    type === "gif" ||
+    type === "image" ||
+    type === "photo" ||
+    type === "sticker" ||
+    type.startsWith("image/");
+  if (!typed && !looks) return null;
+  const isGif =
+    type === "gif" ||
+    mime === "image/gif" ||
+    /\.gif(\?|#|$)/i.test(url) ||
+    /giphy\.com/i.test(url);
+  return { src: url, isGif };
+}
+
+/** On-screen size so the lifted copy cannot collapse to an empty box. */
+export function liftMediaBox(imageRect, bubbleRect) {
+  const width =
+    imageRect && imageRect.width >= 24
+      ? Math.round(imageRect.width)
+      : Math.min(240, Math.max(160, Math.round((bubbleRect?.width || 200) - 8)));
+  const height =
+    imageRect && imageRect.height >= 24
+      ? Math.round(Math.min(imageRect.height, 240))
+      : Math.min(160, Math.round(width * 0.72));
+  return { width, height };
+}
+
 /**
  * A row (or the scrim) runs only if this finger pressed down on that control.
  * The long-press that opened the menu pressed the bubble, so its release

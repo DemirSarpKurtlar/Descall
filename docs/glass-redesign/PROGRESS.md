@@ -1,5 +1,23 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.184
+
+Sohbet listesinde aynı önizleme bazen İngilizce (“Call”, “Attachment”), bazen Türkçe (“Arama”) duruyordu. Sunucu bu satırları İngilizce token olarak gönderiyor; sohbet açılınca istemci çeviriyordu, liste ise gelen metni olduğu gibi basıyordu. Artık satır çizilirken yalnız bu sistem önizlemeleri dile çevriliyor: Call → Arama, Attachment → Ek dosya, Photo → Fotoğraf, Voice message → Sesli mesaj. Grup satırındaki “ada: 📞 Call” de çevrilir. Kullanıcının kendi mesajı (“Call me”) aynı kalır.
+
+Mesaj yazarken satır klavyenin altında kalıyordu; iPhone’un ok ve onay çubuğu da alanın üstünü kapatıyordu. Cam yazı kapsülü artık klavyenin kapattığı şerit kadar yukarı çıkar, yazılan satır görünür. Çubuk, klavye açılınca da yeniden gizlenir. Düzenleme kipi aynı kapsülü kullanır.
+
+Fotoğrafa uzun basınca GIF’teki gibi görsel kaybolup sağda mavi bir kutu kalıyordu. Uzantısız depo adresi de fotoğraf sayılır. Kalkmış kopya, ekrandaki görselin boyunu alır; boş yazı balonu çizilmez. Kısa dokunuş ışık kutusunu açar. Masaüstü ve web aynı. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.184**. Yalnız iPhone. Dil Türkçe.
+
+- [ ] Sohbetler: arama satırı “Arama”, dosya satırı “Ek dosya”. “Call” veya “Attachment” yok. Kendi yazdığın mesaj aynı.
+- [ ] Bir sohbet aç, klavyeyle yaz: yazdığın kelime klavyenin üstünde durur. Ok ve onay çubuğu görünmez.
+- [ ] Bir mesajı Düzenle: aynı alanda yazı görünür, onayla kaydolur.
+- [ ] Bir fotoğrafa uzun bas: fotoğraf bulanıklığın üstünde durur. Sağda mavi boş kutu yok. Kısa dokunuş fotoğrafı açar.
+- [ ] GIF aynı. Masaüstü / tarayıcı listesi ve menüsü bozulmaz.
+
 ## Mağaza temaları · 2.9.183
 
 Sekiz yeni tema, mevcut tema kataloğunun üstüne eklendi. Aynı `shop_items` satırı, aynı kuşanma, aynı `[data-theme]`. Eski satırlar değişmedi. Sunucu açılışında yalnız eksik SKU eklenir; güncelleme veya silme yok. Üretim veritabanına elle SQL çalıştırılmadı.
