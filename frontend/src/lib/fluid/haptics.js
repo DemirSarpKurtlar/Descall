@@ -15,8 +15,8 @@
  * Selection is a one-shot UISelectionFeedbackGenerator tick (start, change, end
  * queued in order — selectionChanged alone is a no-op until start).
  */
-import { isNativeIOS } from "../platform";
-import { shouldEmitHaptic } from "./hapticCoalesce";
+import { isNativeIOS } from "../platform.js";
+import { shouldEmitHaptic } from "./hapticCoalesce.js";
 
 const COALESCE_MS = 50;
 

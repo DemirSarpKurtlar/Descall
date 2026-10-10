@@ -1052,6 +1052,8 @@ export const phrases = {
   "Enter word...": "Kelime girin...",
   "Announcement text": "Duyuru metni",
   "Delete": "Sil",
+  "Delete message": "Mesajı sil",
+  "This message will be deleted for everyone. This cannot be undone.": "Bu mesaj herkes için silinecek. Bu işlem geri alınamaz.",
   "Growth period": "Büyüme dönemi",
   "Daily new registrations chart": "Günlük yeni kayıtlar grafiği",
   "Engagement": "Etkileşim",

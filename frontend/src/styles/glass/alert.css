@@ -1,0 +1,153 @@
+/* ============================================
+   Liquid Glass — compact alert (iOS 27 / UIAlertController)
+   iPhone only. Desktop dialogs stay in app-layout.css / servers.css.
+   ============================================ */
+
+html.glass-ui .g-alert-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+html.glass-ui .g-alert {
+  width: min(300px, calc(100vw - 48px));
+  max-width: 300px;
+  border-radius: 28px;
+  overflow: hidden;
+  color: var(--g-t1);
+  font-family: var(--g-font);
+  text-align: center;
+}
+
+html.glass-ui .g-alert-copy {
+  padding: 20px 16px 16px;
+}
+
+html.glass-ui .g-alert-copy h2 {
+  margin: 0;
+  font-family: var(--g-font);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--g-t1);
+  text-align: center;
+}
+
+html.glass-ui .g-alert-copy p {
+  margin: 6px 0 0;
+  font-family: var(--g-font);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--g-t2);
+  text-align: center;
+}
+
+html.glass-ui .g-alert-error {
+  color: var(--g-red) !important;
+  font-size: 12px !important;
+}
+
+html.glass-ui .g-alert-extra {
+  padding: 0 16px 14px;
+}
+
+html.glass-ui .g-alert-extra label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--g-t3);
+  text-align: center;
+}
+
+html.glass-ui .g-alert-extra input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border-radius: 10px;
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--g-t1);
+  font-family: var(--g-font);
+  font-size: 16px;
+  line-height: 1.2;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+html.glass-ui .g-alert-actions {
+  display: flex;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+html.glass-ui .g-alert-actions.is-stacked {
+  flex-direction: column;
+}
+
+html.glass-ui .g-alert-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--g-t1);
+  font-family: var(--g-font);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  min-height: 44px;
+  padding: 12px 8px;
+  cursor: pointer;
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+}
+
+html.glass-ui .g-alert-btn.is-cancel {
+  font-weight: 600;
+}
+
+html.glass-ui .g-alert-btn.is-action {
+  font-weight: 600;
+  color: var(--g-brand);
+}
+
+html.glass-ui .g-alert-btn.is-danger {
+  font-weight: 600;
+  color: var(--g-red);
+}
+
+html.glass-ui .g-alert-actions:not(.is-stacked) .g-alert-btn + .g-alert-btn {
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+html.glass-ui .g-alert-actions.is-stacked .g-alert-btn + .g-alert-btn {
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+html.glass-ui .g-alert-btn:active {
+  background: rgba(255, 255, 255, 0.14);
+  transition: none;
+}
+
+html.glass-ui .g-alert-btn:disabled {
+  opacity: 0.4;
+}
+
+html.glass-ui .g-alert-btn:disabled:active {
+  background: transparent;
+}

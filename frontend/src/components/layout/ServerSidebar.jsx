@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import SwipeRevealRow from "./SwipeRevealRow";
 import { hapticWarning } from "../../lib/fluid/haptics";
+import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import CallsView from "../calls/CallsView";
 import { Avatar } from "../ui/Avatar";
@@ -1770,9 +1771,23 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
 
 function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = false, onConfirm, onCancel }) {
   const t = useT();
+  const glass = useGlassUi();
   useEffect(() => {
-    if (danger) hapticWarning();
-  }, [danger]);
+    if (danger && !glass) hapticWarning();
+  }, [danger, glass]);
+  if (glass) {
+    return (
+      <GlassConfirm
+        title={title}
+        message={message}
+        confirmLabel={confirmLabel}
+        cancelLabel={t("Cancel")}
+        danger={danger}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    );
+  }
   return createPortal(
     <motion.div
       className="conv-confirm-overlay"

@@ -3,6 +3,8 @@ import { Trash2 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { deleteAccount } from "../../api/security";
 import { hapticError, hapticWarning } from "../../lib/fluid/haptics";
+import useGlassUi from "../../hooks/useGlassUi";
+import GlassConfirm from "../ui/GlassConfirm";
 
 /**
  * Settings → Security → Delete account (App Store Guideline 5.1.1(v)).
@@ -11,13 +13,14 @@ import { hapticError, hapticWarning } from "../../lib/fluid/haptics";
  */
 export default function DeleteAccountSection({ onDeleted }) {
   const t = useT();
+  const glass = useGlassUi();
   const [open, setOpen] = useState(false);
   const [secret, setSecret] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    if (open) hapticWarning();
-  }, [open]);
+    if (open && !glass) hapticWarning();
+  }, [open, glass]);
 
   const submit = async (e) => {
     e?.preventDefault?.();
@@ -45,6 +48,37 @@ export default function DeleteAccountSection({ onDeleted }) {
           <button type="button" className="us-danger-btn" onClick={() => setOpen(true)}>
             <Trash2 size={14} /> {t("Delete account")}
           </button>
+        ) : glass ? (
+          <GlassConfirm
+            title={t("Delete account")}
+            message={t("Deleting your account signs you out everywhere right away. After 14 days your profile, email, friends and private data are permanently deleted. Messages you sent in shared chats stay as \u201cDeleted user\u201d. Signing in again within 14 days cancels the deletion.")}
+            confirmLabel={busy ? t("Deleting…") : t("Permanently delete my account")}
+            cancelLabel={t("Cancel")}
+            danger
+            busy={busy}
+            error={error}
+            confirmDisabled={!secret.trim()}
+            onConfirm={() => submit()}
+            onCancel={() => {
+              if (busy) return;
+              setOpen(false);
+              setSecret("");
+              setError("");
+            }}
+          >
+            <label htmlFor="delete-account-confirm">
+              {t("Enter your password to confirm (Google or Apple accounts: type your username)")}
+              <input
+                id="delete-account-confirm"
+                type="password"
+                autoComplete="current-password"
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                disabled={busy}
+                autoFocus
+              />
+            </label>
+          </GlassConfirm>
         ) : (
           <form onSubmit={submit} className="us-field" style={{ display: "grid", gap: 8 }}>
             <label htmlFor="delete-account-confirm">

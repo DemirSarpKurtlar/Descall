@@ -1,5 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { hapticImpactMedium, hapticWarning } from "../../lib/fluid/haptics";
+import { confirmAction } from "../../lib/glassConfirm";
+import GlassConfirm from "../ui/GlassConfirm";
+import useGlassUi from "../../hooks/useGlassUi";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -461,10 +464,12 @@ export default function ServersSidebar({
   const handleDeleteFolder = async (folder) => {
     if (!folder?.id) return;
     setFolderMenu(null);
-    hapticWarning();
-    if (!window.confirm(t("Delete folder \"{name}\"? Servers will stay unfiled.", { name: folder.name }))) {
-      return;
-    }
+    const ok = await confirmAction({
+      message: t("Delete folder \"{name}\"? Servers will stay unfiled.", { name: folder.name }),
+      confirmLabel: t("Delete"),
+      cancelLabel: t("Cancel"),
+    });
+    if (!ok) return;
     try {
       await deleteServerFolder(folder.id);
       onServerFoldersChange?.((serverFolders || []).filter((f) => f.id !== folder.id));
@@ -2485,10 +2490,40 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
 
 function ConfirmDeleteChannelDialog({ channel, onConfirm, onCancel }) {
   const t = useT();
+  const glass = useGlassUi();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isCategory = channel.type === "category";
+  const title = isCategory ? t("Delete category") : t("Delete channel");
+  const message = isCategory
+    ? t("Delete {name}? Channels inside stay, but leave this category.", { name: channel.name })
+    : t("Delete #{name}? This cannot be undone.", { name: channel.name });
+  const confirm = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await onConfirm();
+    } catch (err) {
+      setError(err?.message || t("Something went wrong."));
+      setBusy(false);
+    }
+  };
   if (typeof document === "undefined") return null;
+  if (glass) {
+    return (
+      <GlassConfirm
+        title={title}
+        message={message}
+        confirmLabel={busy ? t("Please wait...") : title}
+        cancelLabel={t("Cancel")}
+        danger
+        busy={busy}
+        error={error}
+        onConfirm={confirm}
+        onCancel={onCancel}
+      />
+    );
+  }
 
   return createPortal(
     <motion.div
@@ -2896,12 +2931,38 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
 
 function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
   const t = useT();
+  const glass = useGlassUi();
   useEffect(() => {
-    hapticWarning();
-  }, []);
+    if (!glass) hapticWarning();
+  }, [glass]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const confirm = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await onConfirm();
+    } catch (err) {
+      setError(err?.message || t("Something went wrong."));
+      setBusy(false);
+    }
+  };
   if (typeof document === "undefined") return null;
+  if (glass) {
+    return (
+      <GlassConfirm
+        title={t("Leave server")}
+        message={t("Are you sure you want to leave {name}?", { name: serverName })}
+        confirmLabel={busy ? t("Please wait...") : t("Leave server")}
+        cancelLabel={t("Cancel")}
+        danger
+        busy={busy}
+        error={error}
+        onConfirm={confirm}
+        onCancel={onCancel}
+      />
+    );
+  }
 
   return createPortal(
     <motion.div
@@ -2953,9 +3014,10 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
 
 function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
   const t = useT();
+  const glass = useGlassUi();
   useEffect(() => {
-    hapticWarning();
-  }, []);
+    if (!glass) hapticWarning();
+  }, [glass]);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -2971,7 +3033,44 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
           name: serverName,
         });
 
+  const confirm = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await onConfirm(value.trim());
+    } catch (err) {
+      setError(err?.message || t("Something went wrong."));
+      setBusy(false);
+    }
+  };
+
   if (typeof document === "undefined") return null;
+  if (glass) {
+    return (
+      <GlassConfirm
+        title={title}
+        message={message}
+        confirmLabel={busy ? t("Please wait...") : title}
+        cancelLabel={t("Cancel")}
+        danger
+        busy={busy}
+        error={error}
+        confirmDisabled={!match}
+        onConfirm={confirm}
+        onCancel={onCancel}
+      >
+        <label>
+          <span>{t("Server name")}</span>
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={serverName}
+            autoFocus
+          />
+        </label>
+      </GlassConfirm>
+    );
+  }
 
   return createPortal(
     <motion.div

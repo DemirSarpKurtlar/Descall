@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hapticWarning } from "../../lib/fluid/haptics";
+import { confirmAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "lucide-react";
@@ -439,8 +439,12 @@ export default function ServerMembersPanel({
 
   const kick = async (member) => {
     if (!server?.id) return;
-    hapticWarning();
-    if (!window.confirm(t("Kick {name} from this server?", { name: member._name }))) return;
+    const ok = await confirmAction({
+      message: t("Kick {name} from this server?", { name: member._name }),
+      confirmLabel: t("Kick"),
+      cancelLabel: t("Cancel"),
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await kickServerMember(server.id, member.userId);

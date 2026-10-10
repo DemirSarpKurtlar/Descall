@@ -8,6 +8,7 @@ import { parseVoiceMeta } from "../lib/voiceMessage";
 import notificationService from "../lib/notificationService";
 import { isBlockedByMe } from "../lib/blockedUsers";
 import { hapticError, hapticWarning } from "../lib/fluid/haptics";
+import { resolveMessageDeleted, resolveMessageDeleteFailedForScope } from "../lib/messageDeleteFeedback";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
@@ -393,6 +394,7 @@ export function bindServerSocketHandlers(socket, ctx) {
       if (next.length === cur.length) return prev;
       return { ...prev, [channelId]: next };
     });
+    resolveMessageDeleted(messageId);
   };
 
   const handleChannelMessageError = ({ channelId, tempId, message, code, retryAfterSeconds } = {}) => {
@@ -411,6 +413,8 @@ export function bindServerSocketHandlers(socket, ctx) {
     if (tempId) {
       if (code === "SLOWMODE" || code === "RULES_REQUIRED") hapticWarning();
       else hapticError();
+    } else if (channelId) {
+      resolveMessageDeleteFailedForScope(`server:${channelId}`);
     }
     const showOnActiveChannel =
       !channelId || String(activeChannelRef.current?.id || "") === String(channelId);

@@ -71,6 +71,8 @@ import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isNativeIOS } from "./lib/platform";
 import { hapticError, hapticImpactMedium, hapticSuccess } from "./lib/fluid/haptics";
+import { resolveMessageDeleted, resolveMessageDeleteFailed } from "./lib/messageDeleteFeedback";
+import { GlassConfirmHost } from "./components/ui/GlassConfirm";
 import { isCapacitorNativeShell } from "./lib/entryShell";
 import BirthDateGate from "./components/auth/BirthDateGate";
 import { isChannelMuted } from "./lib/serverChannelMutes";
@@ -1721,7 +1723,7 @@ export default function App() {
       setDmHasMore(!!hasMore);
     });
 
-    socket.on("dm:error", ({ message, tempId, toUserId } = {}) => {
+    socket.on("dm:error", ({ message, tempId, toUserId, messageId } = {}) => {
       if (tempId && toUserId) {
         setDmByUserId((prev) => {
           const cur = prev[toUserId] ?? [];
@@ -1734,10 +1736,23 @@ export default function App() {
           };
         });
       }
+      const deleteFailed = messageId ? resolveMessageDeleteFailed(messageId) : false;
       if (message) {
         toast(message, "error");
-        hapticError();
+        if (!deleteFailed) hapticError();
       }
+    });
+
+    socket.on("dm:message:deleted", ({ messageId, withUserId } = {}) => {
+      if (!messageId || !withUserId) return;
+      setDmByUserId((prev) => {
+        const cur = prev[withUserId];
+        if (!cur?.length) return prev;
+        const next = cur.filter((m) => m.id !== messageId);
+        if (next.length === cur.length) return prev;
+        return { ...prev, [withUserId]: next };
+      });
+      resolveMessageDeleted(messageId);
     });
 
     socket.on("dm:message", (message) => {
@@ -1937,7 +1952,7 @@ export default function App() {
       });
     });
 
-    socket.on("group:message:error", ({ groupId, tempId, message } = {}) => {
+    socket.on("group:message:error", ({ groupId, tempId, message, messageId } = {}) => {
       if (groupId && tempId) {
         setGroupMessagesById((prev) => {
           const cur = prev[groupId] ?? [];
@@ -1950,10 +1965,23 @@ export default function App() {
           };
         });
       }
+      const deleteFailed = messageId ? resolveMessageDeleteFailed(messageId) : false;
       if (message) {
         toast(message, "error");
-        hapticError();
+        if (!deleteFailed) hapticError();
       }
+    });
+
+    socket.on("group:message:deleted", ({ messageId, groupId } = {}) => {
+      if (!messageId || !groupId) return;
+      setGroupMessagesById((prev) => {
+        const cur = prev[groupId];
+        if (!cur?.length) return prev;
+        const next = cur.filter((m) => m.id !== messageId);
+        if (next.length === cur.length) return prev;
+        return { ...prev, [groupId]: next };
+      });
+      resolveMessageDeleted(messageId);
     });
 
     socket.on("mention:received", (payload = {}) => {
@@ -4910,6 +4938,7 @@ export default function App() {
           />
         </AppLayout>
         <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} />
+        <GlassConfirmHost />
         <GroupCallIncomingModal
           incomingCall={groupCall?.incomingCall}
           onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}

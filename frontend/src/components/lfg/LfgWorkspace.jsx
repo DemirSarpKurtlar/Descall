@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { hapticWarning } from "../../lib/fluid/haptics";
+import { confirmAction } from "../../lib/glassConfirm";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Crosshair, Plus, Users, Mic, Filter, X, Gamepad2,
@@ -252,8 +252,11 @@ export default function LfgWorkspace({
     if (!selectedId) return;
     const closingAsHost = detail?.isHost;
     if (closingAsHost) {
-      hapticWarning();
-      const ok = window.confirm(t("Close this lobby for everyone? Only you (the host) can do this."));
+      const ok = await confirmAction({
+        message: t("Close this lobby for everyone? Only you (the host) can do this."),
+        confirmLabel: t("Close"),
+        cancelLabel: t("Cancel"),
+      });
       if (!ok) return;
     }
     setBusy(true);

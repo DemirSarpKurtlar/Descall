@@ -1,5 +1,23 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.179
+
+iPhone’daki onay pencereleri tek bir Liquid Glass uyarısı oldu. Ortada, yaklaşık 300 pt, kalın ortalanmış başlık, ortalanmış ikincil metin, saç teliyle ayrılmış tam genişlik düğmeler. İptal yarı kalın, yıkıcı eylem kırmızı. Arkada karartma ve bulanıklık. Açılış kritik sönümlü yay (1.1 → 1) ve solma; Azaltılmış Hareket’te yalnız solma. Dışarı dokunmak kapatmaz. Görününce uyarı titremesi.
+
+Aynı pencere: sohbeti kapat, engelle, gruptan ayrıl, sunucudan ayrıl / sunucuyu sil (ad yazma durur), kanal / kategori / klasör / rol sil, at, Valorant bağlantısını kaldır, lobiyi kapat, hesabı sil (şifre alanı durur). Masaüstü ve web kendi kutularını korur.
+
+Mesaj silme artık iPhone’da onay ister: başlık “Mesajı sil”, gövde “Bu mesaj herkes için silinecek. Bu işlem geri alınamaz.”, İptal ve kırmızı Sil. Uzun basış menüsü ve üzerine gelince çıkan silme. Uyarı titremesi pencerede, başarı silme oturunca, hata olursa hata titremesi. DM ve grup silme artık sunucuda da herkes için siler (önceden olay gidiyor, satır duruyordu). Masaüstünde onay kutusu yok; silme yine hemen gider. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.179**. Yalnız iPhone. Sistem Dokunuşları açık.
+
+- [ ] Bir DM’yi kapat: ortadan cam uyarı, kalın ortalanmış başlık, ortalanmış gövde, İptal yarı kalın, “Sohbeti kapat” kırmızı, düğmeler saç teliyle ayrık. Dışarı dokununca kapanmaz. Açılınca uyarı titremesi.
+- [ ] Aynı cam: engelle, gruptan ayrıl, sunucudan ayrıl / sunucuyu sil, klasör veya rol sil, at, Valorant bağlantısını kaldır, lobiyi kapat, hesabı sil.
+- [ ] Mesaja uzun basıp sil: “Mesajı sil” / herkes için / İptal ve kırmızı Sil. Pencere açılınca uyarı, silinince başarı, olmazsa hata titremesi. DM, grup ve sunucu kanalı.
+- [ ] Azaltılmış Hareket: yay yok, yalnız solma.
+- [ ] Masaüstü / tarayıcı: eski kutular durur, mesaj silme yine onaysız.
+
 ## Cihaz düzeltmeleri · 2.9.178
 
 Giden 1:1 aramada kendi büyük avatarı sese tepki vermiyordu. iOS, dokunuştan sonra açılan AudioContext’i askıda bırakıyor; CallKit ses oturumu da eski analizörü susturuyordu. Mikrofon yakalama, dokunuşun içinde context’i uyandırır; CallKit `didActivate` grafiği yeniden kurar. Halka ~25 fps, karo ekran dışındayken ve uygulama gizlenince durur. Sessizde halka yok. Azaltılmış Hareket nabız yerine sabit yeşil halka. Camda halka fotoğrafın merkezinde, seviye ile büyür. Aynı grafik grup araması ve sunucu ses odasında da kullanılır. App Store’a gönderilmedi.

@@ -1762,6 +1762,39 @@ function registerSocketHandlers(io) {
       });
     });
 
+    // Message delete — DM. Own messages only, removed for both people.
+    socket.on("dm:message:delete", async ({ messageId, toUserId } = {}) => {
+      if (!messageId || !toUserId) return;
+      const fail = (message) => socket.emit("dm:error", {
+        message: message || "Failed to delete message.",
+        toUserId,
+        messageId,
+        code: "DELETE_FAILED",
+      });
+      if (!friends.get(myId)?.has(toUserId)) return fail("Failed to delete message.");
+      try {
+        const { data, error } = await supabase
+          .from("dm_messages")
+          .delete()
+          .eq("id", messageId)
+          .eq("from_user_id", myId)
+          .eq("to_user_id", toUserId)
+          .select("id")
+          .maybeSingle();
+        if (error || !data) return fail(error?.message || "Failed to delete message.");
+        const key = convKey(myId, toUserId);
+        const arr = dmHistory.get(key);
+        if (arr) {
+          const idx = arr.findIndex((m) => m.id === messageId);
+          if (idx >= 0) arr.splice(idx, 1);
+        }
+        socket.emit("dm:message:deleted", { messageId, withUserId: toUserId });
+        emitToUser(io, toUserId, "dm:message:deleted", { messageId, withUserId: myId });
+      } catch (err) {
+        fail(err?.message);
+      }
+    });
+
     // Message pinning - DM (either participant may pin/unpin)
     socket.on("dm:message:pin", async ({ messageId, toUserId } = {}) => {
       if (!messageId || !toUserId) return;
@@ -1883,6 +1916,34 @@ function registerSocketHandlers(io) {
         io.to(`group:${groupId}`).emit("group:message:edited", editData);
       } catch (err) {
         console.error("[group:message:edit] Error:", err);
+      }
+    });
+
+    // Message delete — group. Own messages only, removed for every member.
+    socket.on("group:message:delete", async ({ messageId, groupId } = {}) => {
+      if (!messageId || !groupId) return;
+      const fail = (message) => socket.emit("group:message:error", {
+        groupId,
+        messageId,
+        message: message || "Failed to delete message.",
+      });
+      if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to delete message.");
+      try {
+        const { data, error } = await supabase
+          .from("group_messages")
+          .delete()
+          .eq("id", messageId)
+          .eq("group_id", groupId)
+          .eq("sender_id", myId)
+          .select("id")
+          .maybeSingle();
+        if (error || !data) return fail(error?.message || "Failed to delete message.");
+        const payload = { messageId, groupId };
+        io.to(`group:${groupId}`).emit("group:message:deleted", payload);
+        socket.emit("group:message:deleted", payload);
+      } catch (err) {
+        console.error("[group:message:delete] Error:", err);
+        fail(err?.message);
       }
     });
 

@@ -1048,6 +1048,8 @@ export const phrases = {
   "Enter word...": "Enter word...",
   "Announcement text": "Announcement text",
   "Delete": "Delete",
+  "Delete message": "Delete message",
+  "This message will be deleted for everyone. This cannot be undone.": "This message will be deleted for everyone. This cannot be undone.",
   "Growth period": "Growth period",
   "Daily new registrations chart": "Daily new registrations chart",
   "Engagement": "Engagement",

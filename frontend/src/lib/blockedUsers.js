@@ -6,7 +6,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { blockUser, unblockUser } from "../api/friends";
-import { hapticWarning } from "./fluid/haptics";
+import { confirmAction } from "./glassConfirm";
 
 let blocked = new Set();
 const listeners = new Set();
@@ -76,14 +76,13 @@ export async function confirmToggleBlock({ userId, username, t = (k) => k }) {
   const message = blockedNow
     ? t("Unblock {username}?", { username: name })
     : t("Block {username}? They won't be able to message you, call you, or send you friend requests, and their messages will be hidden.", { username: name });
-  if (!blockedNow) hapticWarning();
-  try {
-    if (typeof window !== "undefined" && typeof window.confirm === "function" && !window.confirm(message)) {
-      return null;
-    }
-  } catch {
-    /* no confirm available: continue */
-  }
+  const ok = await confirmAction({
+    message,
+    confirmLabel: blockedNow ? t("Unblock") : t("Block"),
+    cancelLabel: t("Cancel"),
+    danger: !blockedNow,
+  });
+  if (!ok) return null;
   await setUserBlocked(userId, !blockedNow);
   return !blockedNow;
 }

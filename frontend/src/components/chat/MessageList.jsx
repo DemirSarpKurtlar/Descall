@@ -28,6 +28,8 @@ import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/
 import { useT } from "../../context/LocaleContext";
 import { formatMessageClock, formatMessageDate, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
+import GlassConfirm from "../ui/GlassConfirm";
+import { trackMessageDelete } from "../../lib/messageDeleteFeedback";
 import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
@@ -620,6 +622,7 @@ function MessageBubble({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.text || "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const hideTimer = useRef(null);
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
   const mediaUrl = message.mediaUrl || message.media_url || "";
@@ -716,15 +719,18 @@ function MessageBubble({
     serverId,
   ]);
 
-  const deleteMessage = useCallback(() => {
+  const emitDelete = useCallback(() => {
     if (!message?.id || String(message.id).startsWith("temp-")) return;
+    let scope = "";
     if (conversationType === "server") {
+      scope = `server:${conversationId}`;
       socket?.emit("server:channel:message:delete", {
         serverId,
         channelId: conversationId,
         messageId: message.id,
       });
     } else if (conversationType === "group") {
+      scope = `group:${conversationId}`;
       socket?.emit("group:message:delete", {
         messageId: message.id,
         groupId: conversationId,
@@ -732,10 +738,23 @@ function MessageBubble({
     } else if (conversationId) {
       const [a, b] = String(conversationId).split("::");
       const toUserId = a === currentUserId ? b : a;
+      scope = `dm:${toUserId}`;
       socket?.emit("dm:message:delete", { messageId: message.id, toUserId });
     }
+    if (glass) trackMessageDelete(message.id, scope);
     setMenuOpen(false);
-  }, [message?.id, conversationType, conversationId, currentUserId, socket, serverId]);
+  }, [message?.id, conversationType, conversationId, currentUserId, socket, serverId, glass]);
+
+  const deleteMessage = useCallback(() => {
+    if (!message?.id || String(message.id).startsWith("temp-")) return;
+    if (glass) {
+      setMenuOpen(false);
+      setPickerOpen(false);
+      setConfirmDelete(true);
+      return;
+    }
+    emitDelete();
+  }, [message?.id, glass, emitDelete]);
 
   const canDelete = isOwn || (conversationType === "server" && canManageMessages);
   const canEdit = isOwn && Boolean(String(message.text || "").trim());
@@ -1284,6 +1303,20 @@ function MessageBubble({
               setMenuOpen(false);
             }}
             t={t}
+          />
+        )}
+        {confirmDelete && (
+          <GlassConfirm
+            title={t("Delete message")}
+            message={t("This message will be deleted for everyone. This cannot be undone.")}
+            confirmLabel={t("Delete")}
+            cancelLabel={t("Cancel")}
+            danger
+            onConfirm={() => {
+              setConfirmDelete(false);
+              emitDelete();
+            }}
+            onCancel={() => setConfirmDelete(false)}
           />
         )}
       </motion.div>

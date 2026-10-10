@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { hapticImpactMedium, hapticWarning } from "../../lib/fluid/haptics";
+import { hapticImpactMedium } from "../../lib/fluid/haptics";
+import { confirmAction } from "../../lib/glassConfirm";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Plus, Shield, Trash2, X, Users } from "lucide-react";
@@ -214,8 +215,12 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
 
   const removeRole = async () => {
     if (!selected || selected.isEveryone || !server?.id) return;
-    hapticWarning();
-    if (!window.confirm(t("Delete role {name}?", { name: selected.name }))) return;
+    const ok = await confirmAction({
+      message: t("Delete role {name}?", { name: selected.name }),
+      confirmLabel: t("Delete"),
+      cancelLabel: t("Cancel"),
+    });
+    if (!ok) return;
     setBusy(true);
     setError("");
     try {
