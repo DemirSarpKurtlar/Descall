@@ -14,7 +14,8 @@
 # mode=apply   writes the listing (renames the rejected/editable version, attaches the build, replaces
 #               screenshots). Never submits.
 # mode=verify   read-only report (screenshot counts per locale, attached build, review submissions).
-# mode=submit   read-only verify, then submits for review (manual release) only if verify is clean.
+# mode=submit   read-only verify, then submits for review only if verify is clean.
+# mode=release-auto  only sets the version release type to "automatically release after approval".
 #               Requires the exact build number. Run it only after the owner confirms.
 # App Privacy nutrition labels are not in the API and must be set in the App Store Connect web UI.
 
@@ -30,7 +31,7 @@ on:
       mode:
         description: "apply = write metadata (no submit), verify = read-only report, submit = verify then submit for review"
         type: choice
-        options: [verify, apply, submit]
+        options: [verify, apply, submit, release-auto]
         default: verify
       build:
         description: "Exact build number to attach, e.g. 20261008.2053 (blank = latest VALID build of the version)"

@@ -190,7 +190,7 @@ def store_version(asc, app_id, version, meta, apply):
     match = next((v for v in versions if v["attributes"]["versionString"] == version), None)
     if not apply:
         return match
-    attrs = {"copyright": meta["shared"]["copyright"], "releaseType": "MANUAL"}
+    attrs = {"copyright": meta["shared"]["copyright"], "releaseType": "AFTER_APPROVAL"}
     if match:
         if st(match) not in EDITABLE_VERSION_STATES and st(match) not in ("PREPARE_FOR_SUBMISSION",):
             raise RuntimeError(f"version {version} is in state {st(match)} and can't be edited")
@@ -207,7 +207,7 @@ def store_version(asc, app_id, version, meta, apply):
                         "relationships": {"app": rel("apps", app_id)}}})["data"]
             log(f"  created version {version} ({v['id']})")
     asc.req("PATCH", f"/v1/appStoreVersions/{v['id']}", {"data": {"type": "appStoreVersions", "id": v["id"], "attributes": attrs}})
-    log(f"  version {version}: copyright set, releaseType MANUAL")
+    log(f"  version {version}: copyright set, releaseType AFTER_APPROVAL")
     return asc.get(f"/v1/appStoreVersions/{v['id']}")["data"]
 
 
@@ -565,7 +565,7 @@ def readback(asc, app_id, ver, meta):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["apply", "verify", "submit"], default="apply")
+    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto"], default="apply")
     ap.add_argument("--wait-build-minutes", type=int, default=0)
     ap.add_argument("--build", default="", help="exact build number to attach (blank = latest VALID)")
     a = ap.parse_args()
@@ -599,6 +599,17 @@ def main():
     if ver:
         listing_text_check(asc, ver)
     subs = review_submissions(asc, app_id, ver)
+
+    if a.mode == "release-auto":
+        if ver:
+            asc.req("PATCH", f"/v1/appStoreVersions/{ver['id']}", {"data": {"type": "appStoreVersions", "id": ver["id"],
+                    "attributes": {"releaseType": "AFTER_APPROVAL"}}})
+            rt = asc.get(f"/v1/appStoreVersions/{ver['id']}")["data"]["attributes"].get("releaseType")
+            log(f"  releaseType now {rt}")
+            if rt != "AFTER_APPROVAL":
+                err(f"releaseType is {rt}, expected AFTER_APPROVAL")
+        else:
+            err("release-auto requested but the version is missing")
 
     if a.mode == "submit":
         if ver:
