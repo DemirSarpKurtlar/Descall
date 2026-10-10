@@ -15,10 +15,21 @@ function xmlEscape(value) {
 
 assert.strictEqual(xmlEscape(`a&b<"'>`), "a&amp;b&lt;&quot;&apos;&gt;");
 
-const { staticPages, siteOrigin } = require("./sitemap.js");
+const { staticPages, catalogEntries, siteOrigin } = require("./sitemap.js");
 
 const ORIGIN = "https://descall.com";
-const pages = staticPages(ORIGIN);
+
+async function main() {
+// Published sitemaps use the shared catalog. staticPages is only the
+// sync fallback (home, download, sitemap.html) if that catalog cannot load.
+const fallback = staticPages(ORIGIN).map((p) => p.loc);
+assert.deepStrictEqual(fallback.sort(), [
+  `${ORIGIN}/`,
+  `${ORIGIN}/download`,
+  `${ORIGIN}/sitemap.html`,
+].sort());
+
+const pages = await catalogEntries(ORIGIN);
 const locs = pages.map((p) => p.loc);
 
 assert.ok(locs.includes(`${ORIGIN}/`));
@@ -65,3 +76,9 @@ assert.strictEqual(siteOrigin(fakeReq), "https://descall.com");
 process.env.PUBLIC_APP_URL = prev;
 
 console.log("sitemap.selftest.cjs: ok");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

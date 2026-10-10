@@ -1,5 +1,18 @@
 # Polish progress
 
+## 2.9.189 — sitemap selftest uses the published catalog
+
+`sitemap.selftest.cjs` asserted `/faq` against `staticPages`, which is only the three-page fallback used when the ESM catalog fails to load. The live sitemap (`catalogEntries`, served by `/sitemap-pages.xml` and the child tables) already includes `/faq`. The test now checks that catalog, and checks the fallback stays the three-page list. `node frontend/backend/routes/sitemap.selftest.cjs` passes.
+
+`idx_group_messages_group_created` was applied to production on 2026-10-10 with Demir's approval. The migration file now says not to run it again. It was not re-applied.
+
+### TestFlight checklist (Demir)
+
+Sürüm **2.9.189**. Uygulama davranışı değişmedi. Site haritası.
+
+- [ ] https://descall.com/sitemap-core.xml içinde `https://descall.com/faq` durur.
+- [ ] Sohbet, mağaza ve aramalar 2.9.188 ile aynı.
+
 ## 2.9.188 — anon lockdown, purchase idempotency, daily claim
 
 ### P0
@@ -29,7 +42,7 @@ Composer attach, emoji, and voice buttons now have `aria-label`s. `MessageCompos
 ### Migrations
 
 - `20261010_lock_anon_table_access.sql` — applied.
-- `20261010_chat_list_indexes.sql` — not applied. The file says it needs approval, and EXPLAIN was already under 2 ms.
+- `20261010_chat_list_indexes.sql` — `idx_group_messages_group_created` was already applied to production on 2026-10-10 with Demir's approval (valid and ready). Do not re-apply.
 
 ### Env
 

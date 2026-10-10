@@ -452,6 +452,7 @@ module.exports = {
   sitemapRouter: router,
   siteOrigin,
   staticPages,
+  catalogEntries,
   fetchActiveInvites,
   fetchAnnouncements,
 };
