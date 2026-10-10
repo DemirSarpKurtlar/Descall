@@ -1,5 +1,19 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.180
+
+Takım bul üstü kesiliyordu. Filtre çipleri satırdan taşıyor, “Silver 3” ekranın sağında kesiliyordu; çiplerin altı da düz siyah bir şeritti. Çipler artık seçili yazıya göre daralır, satır ekranın içinde kalır, taşan olursa kayar. Mikrofon şartı ikon olarak durur, yazısı VoiceOver’da kalır. Liste zemini saydam; başlığın gradyanı boş duruma kadar iner. Geri ve artı durur. Masaüstü ve web aynı. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.180**. Yalnız iPhone.
+
+- [ ] Oyna → Takım bul: “Tüm modlar”, “Avrupa” ve rank çipi (Silver 3) tam görünür, sağdan kesilmez.
+- [ ] Çiplerin altı siyah bir şerit değil; gradyan boş lobiye kadar iner.
+- [ ] Mikrofon çipi ikon; dokununca açılıp kapanır.
+- [ ] Geri ve artı durur. Lobi oluştur hâlâ çalışır.
+- [ ] Masaüstü / tarayıcıda Play aynı.
+
 ## Cihaz düzeltmeleri · 2.9.179
 
 iPhone’daki onay pencereleri tek bir Liquid Glass uyarısı oldu. Ortada, yaklaşık 300 pt, kalın ortalanmış başlık, ortalanmış ikincil metin, saç teliyle ayrılmış tam genişlik düğmeler. İptal yarı kalın, yıkıcı eylem kırmızı. Arkada karartma ve bulanıklık. Açılış kritik sönümlü yay (1.1 → 1) ve solma; Azaltılmış Hareket’te yalnız solma. Dışarı dokunmak kapatmaz. Görününce uyarı titremesi.

@@ -280,6 +280,8 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-main {
   background-color: transparent !important;
   color: var(--g-t1);
   border: 0 !important;
+  min-width: 0;
+  max-width: 100%;
 }
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub[data-glass-lfg="1"] .valorant-hub-header {
@@ -296,17 +298,15 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-header 
   position: relative;
 }
 
-html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-header::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 36px;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.55), rgba(var(--g-edge-rgb, 13, 14, 19), 0));
-  -webkit-mask: linear-gradient(180deg, #000, transparent);
-  mask: linear-gradient(180deg, #000, transparent);
+/* The header fade used to paint a dark band over the chips and the top of
+   the list. The list stays transparent so the sidebar gradient continues
+   through the empty state (mobile.css paints #111214 !important).
+   .lfg-main is the lobby sheet and keeps the gradient above. */
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-lobby-list,
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-empty {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-header .lfg-kicker {
@@ -342,22 +342,43 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar-actions
   height: 22px;
 }
 
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-filters-bar {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 !important;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: transparent !important;
+}
+
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-filters {
   display: flex !important;
   flex-wrap: nowrap !important;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   gap: 8px;
   align-items: center;
-  padding: 0 16px 8px !important;
+  padding: 2px 16px 12px !important;
   grid-template-columns: none !important;
+}
+
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-filters::-webkit-scrollbar {
+  display: none;
 }
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-filters select,
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle {
   appearance: none;
   -webkit-appearance: none;
+  field-sizing: content;
   width: auto !important;
-  max-width: none;
+  max-width: 46vw;
   height: 32px !important;
   min-height: 32px !important;
   flex: 0 0 auto !important;
@@ -374,8 +395,36 @@ html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle {
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 0;
   position: relative;
+  width: 32px !important;
+  min-width: 32px;
+  max-width: 32px;
+  padding: 0 !important;
+}
+
+/* "Mikrofon zorunlu" is wider than the row. The control stays; the label is
+   read by VoiceOver and the chip shows the mic icon so Silver 3 is not cut. */
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
 }
 
 html.glass-ui .app-root.g-shell.is-mobile[data-view="play"] .lfg-mic-toggle input,
