@@ -72,6 +72,7 @@ import { isCasinoSlash } from "./lib/casinoCommands";
 import { isNativeIOS } from "./lib/platform";
 import { hapticError, hapticImpactMedium, hapticSuccess } from "./lib/fluid/haptics";
 import { resolveMessageDeleted, resolveMessageDeleteFailed } from "./lib/messageDeleteFeedback";
+import { trackMessageEdit, resolveMessageEdited, resolveMessageEditFailed, cancelMessageEdit } from "./lib/messageEditFeedback";
 import { GlassConfirmHost } from "./components/ui/GlassConfirm";
 import { isCapacitorNativeShell } from "./lib/entryShell";
 import BirthDateGate from "./components/auth/BirthDateGate";
@@ -422,6 +423,7 @@ export default function App() {
     return "online";
   });
   const [replyTo, setReplyTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
@@ -481,6 +483,9 @@ export default function App() {
   const [serversLoaded, setServersLoaded] = useState(false);
   const [activeServer, setActiveServer] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
+  useEffect(() => {
+    setEditingMessage(null);
+  }, [activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
   const [channelMessagesById, setChannelMessagesById] = useState({});
   const [ownedServerCount, setOwnedServerCount] = useState(0);
   const [maxOwnedServers, setMaxOwnedServers] = useState(10);
@@ -1737,10 +1742,33 @@ export default function App() {
         });
       }
       const deleteFailed = messageId ? resolveMessageDeleteFailed(messageId) : false;
+      const editFailed = messageId ? resolveMessageEditFailed(messageId) : false;
       if (message) {
         toast(message, "error");
-        if (!deleteFailed) hapticError();
+        if (!deleteFailed && !editFailed) hapticError();
       }
+    });
+
+    socket.on("dm:message:edited", ({ messageId, newText, editedAt, withUserId } = {}) => {
+      if (!messageId) return;
+      const stamp = editedAt || new Date().toISOString();
+      setDmByUserId((prev) => {
+        const patch = (list) => list.map((m) => (
+          m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
+        ));
+        if (withUserId && prev[withUserId]?.some((m) => m.id === messageId)) {
+          return { ...prev, [withUserId]: patch(prev[withUserId]) };
+        }
+        let changed = false;
+        const next = { ...prev };
+        for (const [peerId, list] of Object.entries(prev)) {
+          if (!list?.some((m) => m.id === messageId)) continue;
+          changed = true;
+          next[peerId] = patch(list);
+        }
+        return changed ? next : prev;
+      });
+      resolveMessageEdited(messageId);
     });
 
     socket.on("dm:message:deleted", ({ messageId, withUserId } = {}) => {
@@ -1966,10 +1994,33 @@ export default function App() {
         });
       }
       const deleteFailed = messageId ? resolveMessageDeleteFailed(messageId) : false;
+      const editFailed = messageId ? resolveMessageEditFailed(messageId) : false;
       if (message) {
         toast(message, "error");
-        if (!deleteFailed) hapticError();
+        if (!deleteFailed && !editFailed) hapticError();
       }
+    });
+
+    socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt } = {}) => {
+      if (!messageId) return;
+      const stamp = editedAt || new Date().toISOString();
+      setGroupMessagesById((prev) => {
+        const apply = (list) => list.map((m) => (
+          m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
+        ));
+        if (groupId && prev[groupId]?.some((m) => m.id === messageId)) {
+          return { ...prev, [groupId]: apply(prev[groupId]) };
+        }
+        let changed = false;
+        const next = { ...prev };
+        for (const [id, list] of Object.entries(prev)) {
+          if (!list?.some((m) => m.id === messageId)) continue;
+          changed = true;
+          next[id] = apply(list);
+        }
+        return changed ? next : prev;
+      });
+      resolveMessageEdited(messageId);
     });
 
     socket.on("group:message:deleted", ({ messageId, groupId } = {}) => {
@@ -4615,6 +4666,40 @@ export default function App() {
           onDeclineFriend={handleDeclineFriend}
           replyTo={replyTo}
           onClearReply={() => setReplyTo(null)}
+          editingMessage={editingMessage}
+          onCancelEdit={() => {
+            if (editingMessage?.id) cancelMessageEdit(editingMessage.id);
+            setEditingMessage(null);
+          }}
+          onSaveEdit={(payload) => {
+            const id = payload?.id;
+            const next = String(payload?.newText || "").trim();
+            if (!id || !next) return;
+            trackMessageEdit(id, {
+              onSuccess: () => setEditingMessage((cur) => (cur?.id === id ? null : cur)),
+            });
+            const sock = socketRef.current;
+            if (payload.conversationType === "server") {
+              sock?.emit("server:channel:message:edit", {
+                serverId: payload.serverId,
+                channelId: payload.conversationId,
+                messageId: id,
+                newText: next,
+              });
+            } else if (payload.conversationType === "group") {
+              sock?.emit("group:message:edit", {
+                messageId: id,
+                newText: next,
+                groupId: payload.conversationId,
+              });
+            } else {
+              sock?.emit("dm:message:edit", {
+                messageId: id,
+                newText: next,
+                toUserId: payload.toUserId,
+              });
+            }
+          }}
           onSendMessage={(msg) => {
             const isObj = msg && typeof msg === "object";
             const isMediaObject = isObj && (msg.type === "gif" || msg.type === "media");
@@ -4900,7 +4985,16 @@ export default function App() {
             friends={friends}
             onlineUsers={onlineUsers}
             onStartDm={(user) => setActiveDmUser(user)}
-            onReply={setReplyTo}
+            onReply={(msg) => {
+              if (editingMessage?.id) cancelMessageEdit(editingMessage.id);
+              setEditingMessage(null);
+              setReplyTo(msg);
+            }}
+            editingMessageId={editingMessage?.id || null}
+            onStartEdit={(payload) => {
+              setReplyTo(null);
+              setEditingMessage(payload);
+            }}
             onJoinActiveCall={() => {
               if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
                 call.acceptIncoming?.();

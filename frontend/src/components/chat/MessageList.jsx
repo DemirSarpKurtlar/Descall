@@ -134,6 +134,8 @@ export default function MessageList({
   unreadCount = 0,
   onReply,
   searchQuery = "",
+  editingMessageId = null,
+  onStartEdit,
 }) {
   const t = useT();
   const glassUi = useGlassUi();
@@ -545,6 +547,8 @@ export default function MessageList({
                   serverId={serverId}
                   canManageMessages={canManageMessages}
                   onReply={onReply}
+                  onStartEdit={onStartEdit}
+                  editingMessageId={editingMessageId}
                   onReport={setReportTarget}
                   highlight={trimmedSearch}
                   chatBubbleKey={
@@ -607,6 +611,8 @@ function MessageBubble({
   serverId = null,
   canManageMessages = false,
   onReply,
+  onStartEdit,
+  editingMessageId = null,
   onReport,
   highlight = "",
   chatBubbleKey = null,
@@ -758,6 +764,44 @@ function MessageBubble({
 
   const canDelete = isOwn || (conversationType === "server" && canManageMessages);
   const canEdit = isOwn && Boolean(String(message.text || "").trim());
+  const isEditTarget = Boolean(glass && editingMessageId && editingMessageId === message.id);
+
+  const beginEdit = useCallback(() => {
+    if (glass) {
+      let toUserId = null;
+      if (conversationType !== "server" && conversationType !== "group" && conversationId) {
+        const [a, b] = String(conversationId).split("::");
+        toUserId = a === currentUserId ? b : a;
+      }
+      onStartEdit?.({
+        id: message.id,
+        text: message.text || "",
+        conversationType,
+        conversationId,
+        serverId,
+        toUserId,
+      });
+    } else {
+      setEditDraft(message.text || "");
+      setEditing(true);
+    }
+    setMenuOpen(false);
+    setPickerOpen(false);
+  }, [
+    glass,
+    conversationType,
+    conversationId,
+    currentUserId,
+    onStartEdit,
+    message.id,
+    message.text,
+    serverId,
+  ]);
+
+  useEffect(() => {
+    if (!isEditTarget) return;
+    bubbleRef.current?.scrollIntoView({ block: "center", inline: "nearest" });
+  }, [isEditTarget]);
   const canPin =
     conversationType === "server" ? canManageMessages : Boolean(conversationId);
 
@@ -895,7 +939,8 @@ function MessageBubble({
           if (shouldReply) triggerReply();
         }}
         data-no-swipe-back=""
-        className={`message-bubble ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        data-editing={isEditTarget ? "1" : undefined}
+        className={`message-bubble ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
@@ -969,7 +1014,7 @@ function MessageBubble({
           </div>
         )}
 
-        {editing ? (
+        {editing && !glass ? (
           <div className="msg-edit-box" onClick={(e) => e.stopPropagation()}>
             <input
               className="msg-edit-input"
@@ -1188,10 +1233,7 @@ function MessageBubble({
                   title={t("Edit")}
                   onClick={(ev) => {
                     ev.stopPropagation();
-                    setEditDraft(message.text || "");
-                    setEditing(true);
-                    setMenuOpen(false);
-                    setPickerOpen(false);
+                    beginEdit();
                   }}
                 >
                   <Pencil size={14} />
@@ -1279,12 +1321,7 @@ function MessageBubble({
             isPinned={isPinned}
             onPin={togglePin}
             canEdit={canEdit}
-            onEdit={() => {
-              setEditDraft(message.text || "");
-              setEditing(true);
-              setMenuOpen(false);
-              setPickerOpen(false);
-            }}
+            onEdit={beginEdit}
             canDelete={canDelete}
             onDelete={deleteMessage}
             canReport={!isOwn}

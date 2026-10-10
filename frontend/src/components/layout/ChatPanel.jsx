@@ -65,6 +65,9 @@ export default function ChatPanel({
   onTypingChannelStop,
   replyTo = null,
   onClearReply,
+  editingMessage = null,
+  onCancelEdit,
+  onSaveEdit,
   isMobile = false,
   onMenuClick,
   onMobileBack,
@@ -730,6 +733,9 @@ export default function ChatPanel({
               onTypingChannelStop={onTypingChannelStop}
               replyTo={replyTo}
               onClearReply={onClearReply}
+              editingMessage={editingMessage}
+              onCancelEdit={onCancelEdit}
+              onSaveEdit={onSaveEdit}
             />
           </div>
         </>

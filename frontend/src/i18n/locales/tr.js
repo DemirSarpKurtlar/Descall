@@ -1481,6 +1481,8 @@ export const phrases = {
   "Your screen": "Your screen",
   "Saved": "Kaydedildi",
   "Edit": "Düzenle",
+  "Edit message": "Mesajı düzenle",
+  "Cancel edit": "Düzenlemeyi iptal et",
   "Send": "Gönder",
   "Loading": "Yükleniyor",
   "Retry": "Tekrar dene",

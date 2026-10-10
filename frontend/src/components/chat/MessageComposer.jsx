@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
-  Send, Mic, Smile,
+  Send, Check, Mic, Smile,
   Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply, Dice5, HelpCircle, Wallet, Trophy, CalendarDays,
   Info, UserRound, ImageIcon, Pencil, BarChart3, Timer, Cherry, Coins, HandCoins
 } from "lucide-react";
@@ -67,6 +67,9 @@ export default function MessageComposer({
   onTypingChannelStop,
   replyTo = null,
   onClearReply,
+  editingMessage = null,
+  onCancelEdit,
+  onSaveEdit,
 }) {
   const t = useT();
   const glass = useGlassUi();
@@ -105,6 +108,9 @@ export default function MessageComposer({
   const slowmodeRemaining = Math.max(0, Math.ceil((slowmodeUntil - nowTick) / 1000));
   const slowmodeBlocked = Boolean(activeChannel?.id) && !bypassSlowmode && slowmodeRemaining > 0;
   const inputRef = useRef(null);
+  const messageRef = useRef("");
+  const editStashRef = useRef(null);
+  const editIdRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -118,6 +124,44 @@ export default function MessageComposer({
   const rafRef = useRef(null);
   const audioCtxRef = useRef(null);
   const sendingRef = useRef(false);
+
+  messageRef.current = message;
+
+  useEffect(() => {
+    if (!glass) return undefined;
+    const id = editingMessage?.id || null;
+    if (id && editIdRef.current !== id) {
+      if (editIdRef.current == null) editStashRef.current = messageRef.current;
+      editIdRef.current = id;
+      const text = editingMessage.text || "";
+      setMessage(text);
+      let timer = 0;
+      const place = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        el.focus({ preventScroll: true });
+        const end = el.value.length;
+        try { el.setSelectionRange(end, end); } catch { /* ignore */ }
+      };
+      const frame = requestAnimationFrame(place);
+      timer = window.setTimeout(place, 60);
+      return () => {
+        cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+      };
+    }
+    if (!id && editIdRef.current) {
+      editIdRef.current = null;
+      const stash = editStashRef.current;
+      editStashRef.current = null;
+      if (stash != null) setMessage(stash);
+      const frame = requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    return undefined;
+  }, [glass, editingMessage]);
 
   useEffect(() => {
     // Autofocus on mobile opens the iOS keyboard and often leaves the shell
@@ -285,6 +329,13 @@ export default function MessageComposer({
   };
 
   const handleSend = () => {
+    if (glass && editingMessage) {
+      const next = message.trim();
+      const original = String(editingMessage.text || "").trim();
+      if (!next || next === original || disabled) return;
+      onSaveEdit?.({ ...editingMessage, newText: next });
+      return;
+    }
     if (disabled || slowmodeBlocked || sendingRef.current) return;
     sendingRef.current = true;
     window.setTimeout(() => {
@@ -342,6 +393,12 @@ export default function MessageComposer({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+    if (e.key === "Escape" && glass && editingMessage) {
+      e.preventDefault();
+      onCancelEdit?.();
+      inputRef.current?.focus({ preventScroll: true });
+      return;
     }
     if (e.key === "Escape" && replyTo) {
       onClearReply?.();
@@ -579,7 +636,12 @@ export default function MessageComposer({
   };
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-  const canSend = Boolean(message.trim() || pendingAttach) && !slowmodeBlocked;
+  const editing = Boolean(glass && editingMessage);
+  const editOriginal = String(editingMessage?.text || "").trim();
+  const canSaveEdit = editing && Boolean(message.trim()) && message.trim() !== editOriginal;
+  const canSend = editing
+    ? canSaveEdit
+    : Boolean(message.trim() || pendingAttach) && !slowmodeBlocked;
 
   return (
     <div
@@ -614,7 +676,7 @@ export default function MessageComposer({
       </AnimatePresence>
 
       <AnimatePresence>
-        {replyTo && (
+        {replyTo && !editing && (
           <motion.div
             className="composer-reply-bar"
             initial={glass
@@ -649,6 +711,39 @@ export default function MessageComposer({
                 inputRef.current?.focus({ preventScroll: true });
               }}
               aria-label={t("Cancel reply")}
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editing && (
+          <motion.div
+            className="composer-reply-bar composer-edit-bar"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, height: 0 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, height: "auto" }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, height: 0 }}
+            transition={replyStripTransition}
+          >
+            <Pencil size={14} />
+            <div className="composer-reply-meta">
+              <strong>{t("Edit message")}</strong>
+              <span>
+                {displayText(String(editingMessage.text || "").replace(/\s+/g, " ").slice(0, 100))}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="composer-reply-clear"
+              onPointerDown={keepComposerFocus}
+              onMouseDown={keepComposerFocus}
+              onClick={() => {
+                onCancelEdit?.();
+                inputRef.current?.focus({ preventScroll: true });
+              }}
+              aria-label={t("Cancel edit")}
             >
               <X size={14} />
             </button>
@@ -870,10 +965,11 @@ export default function MessageComposer({
           disabled={!canSend || disabled}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          title={t("Send Message")}
+          title={editing ? t("Save") : t("Send Message")}
+          aria-label={editing ? t("Save") : t("Send Message")}
         >
           <span className="composer-send-flash" aria-hidden />
-          <Send size={20} />
+          {editing ? <Check size={20} /> : <Send size={20} />}
         </motion.button>
       </div>
       </div>

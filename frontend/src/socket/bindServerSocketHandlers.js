@@ -9,6 +9,7 @@ import notificationService from "../lib/notificationService";
 import { isBlockedByMe } from "../lib/blockedUsers";
 import { hapticError, hapticWarning } from "../lib/fluid/haptics";
 import { resolveMessageDeleted, resolveMessageDeleteFailedForScope } from "../lib/messageDeleteFeedback";
+import { resolveMessageEdited, resolveMessageEditFailed } from "../lib/messageEditFeedback";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
@@ -397,7 +398,7 @@ export function bindServerSocketHandlers(socket, ctx) {
     resolveMessageDeleted(messageId);
   };
 
-  const handleChannelMessageError = ({ channelId, tempId, message, code, retryAfterSeconds } = {}) => {
+  const handleChannelMessageError = ({ channelId, tempId, message, code, retryAfterSeconds, messageId } = {}) => {
     if (channelId && tempId) {
       setChannelMessagesById((prev) => {
         const cur = prev[channelId] ?? [];
@@ -410,10 +411,11 @@ export function bindServerSocketHandlers(socket, ctx) {
         };
       });
     }
+    const editFailed = messageId ? resolveMessageEditFailed(messageId) : false;
     if (tempId) {
       if (code === "SLOWMODE" || code === "RULES_REQUIRED") hapticWarning();
       else hapticError();
-    } else if (channelId) {
+    } else if (!editFailed && channelId) {
       resolveMessageDeleteFailedForScope(`server:${channelId}`);
     }
     const showOnActiveChannel =
@@ -448,6 +450,7 @@ export function bindServerSocketHandlers(socket, ctx) {
       });
       return changed ? { ...prev, [channelId]: next } : prev;
     });
+    resolveMessageEdited(messageId);
   };
 
   const handleChannelMessagePinned = ({ channelId, messageId, pinnedAt, pinnedBy } = {}) => {

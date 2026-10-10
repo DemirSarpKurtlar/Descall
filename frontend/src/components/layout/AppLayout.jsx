@@ -87,6 +87,9 @@ export default function AppLayout({
   onStatusChange,
   replyTo = null,
   onClearReply,
+  editingMessage = null,
+  onCancelEdit,
+  onSaveEdit,
   activeView: controlledActiveView,
   onActiveViewChange,
   userPanelOpen: controlledUserPanelOpen,
@@ -638,6 +641,9 @@ export default function AppLayout({
                 onTypingChannelStop={onTypingChannelStop}
                 replyTo={replyTo}
                 onClearReply={onClearReply}
+                editingMessage={editingMessage}
+                onCancelEdit={onCancelEdit}
+                onSaveEdit={onSaveEdit}
                 isMobile={isMobile}
                 onMenuClick={openMobileDrawer}
                 onMobileBack={handleMobileBack}

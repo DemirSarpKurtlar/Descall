@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import WebKit
+import ObjectiveC
 
 class DescallBridgeViewController: CAPBridgeViewController {
     /// LaunchScreen.storyboard's view, kept over the WebView until the first
@@ -23,6 +24,11 @@ class DescallBridgeViewController: CAPBridgeViewController {
         // off for chrome and on for the composer, so the web layer owns that
         // split (html.glass-ui user-select / touch-callout, plus selectstart).
         webView?.allowsLinkPreview = false
+        // Keyboard.setAccessoryBarVisible({ isVisible: false }) — WKWebView has
+        // no public switch, so the content view's inputAccessoryView (the
+        // up/down arrows and checkmark) is cleared for every field.
+        DescallFormAccessoryBar.hide()
+        DispatchQueue.main.async { DescallFormAccessoryBar.hide() }
         showLaunchOverlay()
     }
 
@@ -85,6 +91,21 @@ extension DescallBridgeViewController {
             animations: { overlay.alpha = 0 },
             completion: { _ in overlay.removeFromSuperview() }
         )
+    }
+}
+
+/// Hides the iPhone form accessory bar (‹ › ✓) for the whole Capacitor shell.
+enum DescallFormAccessoryBar {
+    private static var hidden = false
+
+    static func hide() {
+        if hidden { return }
+        guard let cls = NSClassFromString("WKContentView"),
+              let method = class_getInstanceMethod(cls, NSSelectorFromString("inputAccessoryView"))
+        else { return }
+        hidden = true
+        let block: @convention(block) (AnyObject) -> UIView? = { _ in nil }
+        method_setImplementation(method, imp_implementationWithBlock(block))
     }
 }
 

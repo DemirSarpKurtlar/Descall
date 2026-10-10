@@ -474,23 +474,21 @@ function registerServerChannelHandlers(io, socket) {
 
   /** Edit own channel message. */
   socket.on("server:channel:message:edit", async ({ serverId, channelId, messageId, newText } = {}) => {
-    if (!channelId || !messageId || typeof newText !== "string") return;
-    const trimmed = newText.trim();
-    if (!trimmed) {
+    const fail = (message, code = "EDIT_FAILED") => {
       socket.emit("server:channel:message:error", {
         channelId,
-        message: "Message cannot be empty.",
+        messageId,
+        message,
+        code,
       });
-      return;
-    }
+    };
+    if (!channelId || !messageId || typeof newText !== "string") return fail("Failed to edit message.");
+    const trimmed = newText.trim();
+    if (!trimmed) return fail("Message cannot be empty.");
     try {
       const { channel } = await assertTextChannelAccess(myId, channelId, Permissions.SEND_MESSAGES);
       if (serverId && serverId !== channel.server_id) {
-        socket.emit("server:channel:message:error", {
-          channelId,
-          message: "Channel does not belong to this server.",
-        });
-        return;
+        return fail("Channel does not belong to this server.");
       }
       if (
         await assertServerTimeout({
@@ -510,21 +508,8 @@ function registerServerChannelHandlers(io, socket) {
         .eq("channel_id", channelId)
         .maybeSingle();
       if (error) throw error;
-      if (!row) {
-        socket.emit("server:channel:message:error", {
-          channelId,
-          message: "Message not found.",
-        });
-        return;
-      }
-      if (row.sender_id !== myId) {
-        socket.emit("server:channel:message:error", {
-          channelId,
-          message: "You can only edit your own messages.",
-          code: "MISSING_PERMISSION",
-        });
-        return;
-      }
+      if (!row) return fail("Message not found.");
+      if (row.sender_id !== myId) return fail("You can only edit your own messages.", "MISSING_PERMISSION");
       const editedAt = new Date().toISOString();
       const { error: updErr } = await supabase
         .from("server_messages")
@@ -543,11 +528,7 @@ function registerServerChannelHandlers(io, socket) {
       io.to(`server-channel:${channelId}`).emit("server:channel:message:edited", payload);
       socket.emit("server:channel:message:edited", payload);
     } catch (err) {
-      socket.emit("server:channel:message:error", {
-        channelId,
-        message: err.message || "Failed to edit message.",
-        code: err.code || null,
-      });
+      fail(err.message || "Failed to edit message.", err.code || "EDIT_FAILED");
     }
   });
 

@@ -1713,10 +1713,16 @@ function registerSocketHandlers(io) {
 
     // Message Edit - DM
     socket.on("dm:message:edit", async ({ messageId, newText, toUserId } = {}) => {
-      if (!messageId || !newText || !toUserId) return;
+      const fail = (message) => socket.emit("dm:error", {
+        message: message || "Failed to edit message.",
+        toUserId,
+        messageId,
+        code: "EDIT_FAILED",
+      });
+      if (!messageId || !newText || !toUserId) return fail("Failed to edit message.");
 
       // Verify friendship
-      if (!friends.get(myId)?.has(toUserId)) return;
+      if (!friends.get(myId)?.has(toUserId)) return fail("Failed to edit message.");
 
       const key = convKey(myId, toUserId);
       const arr = dmHistory.get(key) || [];
@@ -1740,26 +1746,17 @@ function registerSocketHandlers(io) {
         .maybeSingle();
       if (error || !data) {
         console.error("[DM] Edit failed:", error?.message || "Message not found");
-        return socket.emit("dm:error", { message: "Failed to edit message.", toUserId });
+        return fail("Failed to edit message.");
       }
       if (msg) {
         msg.editHistory = nextEditHistory;
         msg.text = newText;
         msg.editedAt = editedAt;
       }
-      // Broadcast to other user
       emitToUser(io, toUserId, "dm:message:edited", {
-        messageId,
-        newText,
-        editedAt: msg.editedAt,
-        from: myId
+        messageId, newText, editedAt, withUserId: myId, from: myId,
       });
-      
-      socket.emit("dm:message:edited", {
-        messageId,
-        newText,
-        editedAt: msg.editedAt
-      });
+      socket.emit("dm:message:edited", { messageId, newText, editedAt, withUserId: toUserId });
     });
 
     // Message delete — DM. Own messages only, removed for both people.
@@ -1879,10 +1876,16 @@ function registerSocketHandlers(io) {
 
     // Message Edit - Group
     socket.on("group:message:edit", async ({ messageId, newText, groupId } = {}) => {
-      if (!messageId || !newText || !groupId) return;
-      
+      const fail = (message) => socket.emit("group:message:error", {
+        groupId,
+        messageId,
+        message: message || "Failed to edit message.",
+        code: "EDIT_FAILED",
+      });
+      if (!messageId || !newText || !groupId) return fail("Failed to edit message.");
+
       // Check membership
-      if (!socket.rooms.has(`group:${groupId}`)) return;
+      if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to edit message.");
       
       const editedAt = new Date().toISOString();
       
@@ -1901,11 +1904,12 @@ function registerSocketHandlers(io) {
         
         if (error) {
           console.error("[group:message:edit] Error updating message:", error);
-          return;
+          return fail("Failed to edit message.");
         }
         
         // Broadcast edit to group room
         const editData = {
+          groupId,
           messageId,
           newText,
           editedAt,
@@ -1916,6 +1920,7 @@ function registerSocketHandlers(io) {
         io.to(`group:${groupId}`).emit("group:message:edited", editData);
       } catch (err) {
         console.error("[group:message:edit] Error:", err);
+        fail("Failed to edit message.");
       }
     });
 

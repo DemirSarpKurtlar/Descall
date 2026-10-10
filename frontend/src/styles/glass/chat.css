@@ -813,6 +813,15 @@ html.glass-ui .app-root.g-shell .message-bubble.own.compact {
   border-bottom-right-radius: 6px;
 }
 
+/* The bubble stays put while the composer edits it. */
+html.glass-ui .app-root.g-shell .message-bubble.is-editing {
+  box-shadow: inset 0 0 0 1.5px rgba(143, 166, 255, 0.9);
+}
+
+html.glass-ui .app-root.g-shell .message-bubble.own.is-editing {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.8);
+}
+
 html.glass-ui .app-root.g-shell .message-text {
   font-size: 15.5px;
   line-height: 21px;

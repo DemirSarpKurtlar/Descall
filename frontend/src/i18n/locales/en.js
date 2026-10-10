@@ -1518,6 +1518,8 @@ export const phrases = {
   "Your screen": "Your screen",
   "Saved": "Saved",
   "Edit": "Edit",
+  "Edit message": "Edit message",
+  "Cancel edit": "Cancel edit",
   "Send": "Send",
   "Loading": "Loading",
   "Retry": "Retry",

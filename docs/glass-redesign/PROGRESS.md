@@ -1,5 +1,20 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.181
+
+Mesaj düzenleme iPhone’da artık balonun içinde kutu açmıyor. Düzenle denince balon yerinde kalır, ince bir çerçeveyle vurgulanır. Alt yazı alanı düzenleme kipine geçer: yanıt şeridiyle aynı cam şerit, kalem, “Mesajı düzenle”, tek satırlık alıntı ve ×. Alan mesajın yazısıyla dolar, imleç sonda, klavye açık kalır. Gönder oku onay işaretine döner; yazı boşsa veya değişmediyse kapalıdır. Kayıt olunca başarı titremesi, balon yerinde “(düzenlendi)” olur. × normal yazı alanına döner, klavye açık kalır. Hata olursa hata titremesi ve düzenleme durur. iPhone klavyesinin üstündeki ok ve onay çubuğu bütün uygulamada kapalı. DM, grup ve sunucu kanalı. Masaüstü ve web balonun içindeki kutuyu korur. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.181**. Yalnız iPhone.
+
+- [ ] Kendi mesajına uzun bas → Düzenle: balon yerinde, altta cam şerit “Mesajı düzenle”, yazı dolu, imleç sonda.
+- [ ] Klavyenin üstünde yukarı/aşağı ok ve onay çubuğu yok.
+- [ ] Yazı değişmeden onay kapalı. Değiştirip onayla: başarı titremesi, balonda “(düzenlendi)”.
+- [ ] × yazı alanını eski haline alır, klavye açık kalır.
+- [ ] Aynı şey grupta ve sunucu kanalında.
+- [ ] Masaüstü / tarayıcı: düzenleme yine balonun içinde.
+
 ## Cihaz düzeltmeleri · 2.9.180
 
 Takım bul üstü kesiliyordu. Filtre çipleri satırdan taşıyor, “Silver 3” ekranın sağında kesiliyordu; çiplerin altı da düz siyah bir şeritti. Çipler artık seçili yazıya göre daralır, satır ekranın içinde kalır, taşan olursa kayar. Mikrofon şartı ikon olarak durur, yazısı VoiceOver’da kalır. Liste zemini saydam; başlığın gradyanı boş duruma kadar iner. Geri ve artı durur. Masaüstü ve web aynı. App Store’a gönderilmedi.
