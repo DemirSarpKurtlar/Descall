@@ -803,7 +803,7 @@ export default function MessageComposer({
             value={message}
             onChange={(e) => { setMessage(e.target.value); if (e.target.value) emitTypingStart(); else emitTypingStop(); }}
             onKeyDown={handleKeyDown}
-            placeholder={dragOver ? t("Drop file to attach…") : t("Message…")}
+            placeholder={dragOver ? t("Drop file to attach…") : (glass && activeChannel?.name && !activeDmUser && !activeGroup ? t("Message #{name}…", { name: activeChannel.name }) : t("Message…"))}
             className="composer-input"
             rows={1}
             style={{ minHeight: "44px", maxHeight: "120px", resize: "none" }}

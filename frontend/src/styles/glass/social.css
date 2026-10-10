@@ -355,6 +355,7 @@ html.glass-ui .add-modal.g-add-sheet .add-modal-tab {
   font-weight: 600;
   color: var(--g-t2);
   background: transparent;
+  white-space: nowrap;
 }
 
 html.glass-ui .add-modal.g-add-sheet .add-modal-tab svg {
@@ -387,6 +388,41 @@ html.glass-ui .add-modal.g-add-sheet .add-modal-input {
   background: var(--g-field-bg);
   border: 0;
   box-shadow: var(--g-field-shadow);
+}
+
+html.glass-ui .add-modal.g-add-sheet .g-add-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: var(--g-field-bg);
+  box-shadow: var(--g-field-shadow);
+}
+
+html.glass-ui .add-modal.g-add-sheet .g-add-field > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--g-t3);
+  flex-shrink: 0;
+}
+
+html.glass-ui .add-modal.g-add-sheet .g-add-field .add-modal-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.glass-ui .add-modal.g-add-sheet .g-add-hint {
+  margin: 14px 8px 0;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--g-t3);
 }
 
 html.glass-ui .add-modal.g-add-sheet .add-modal-input::placeholder {
@@ -624,8 +660,28 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user {
   display: flex;
   align-items: center;
   gap: 8px;
+  box-sizing: border-box;
+  height: 30px;
   min-height: 30px;
-  padding: 2px 0 2px 22px;
+  max-height: 30px;
+  padding: 4px 0;
+}
+
+html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-list {
+  gap: 0;
+  margin: 0 0 4px;
+  padding: 2px 8px 6px 34px;
+}
+
+html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-avatar-shell {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+}
+
+html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-more,
+html.glass-ui .app-root.g-shell .g-server-pane .server-channel-row-actions {
+  display: none;
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-avatar,

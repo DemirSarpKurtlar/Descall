@@ -143,7 +143,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
         <div className="g-invite-copy">
           <strong>{t("Invite friends")}</strong>
           <span>{t("Join me on Descall — we both get DesCoin")}</span>
-          <em>{t("You get 100 DesCoin · they get 50")}</em>
+          <em>{t("You 100 · they 50 DesCoin")}</em>
         </div>
         <button type="button" className="g-invite-btn" onClick={copy}>
           {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}

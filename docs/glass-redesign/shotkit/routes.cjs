@@ -145,10 +145,12 @@ module.exports = function routes(app, D, log) {
     { id: "c4", kind: "dm", direction: "outgoing", callType: "video", status: "ended", durationSeconds: 485, endedAt: iso(2880), createdAt: iso(2880), peer: { id: ELIF.id, username: ELIF.username, displayName: ELIF.displayName, avatarUrl: null } },
   ] }));
   ok("/api/webrtc/ice-config", () => ({ iceServers: [] }));
+  ok("/api/announcements/unread/count", () => ({ success: true, count: 2 }));
+  ok("/api/announcements/:id/read", () => ({ success: true }));
   ok("/api/announcements", () => ({ announcements: [
-    { id: "a1", title: "2.9.147 yayında", content: "Kaydırarak geri gitme ve glass mobil cilası.", createdAt: iso(120), author: null },
-    { id: "a2", title: "Mağaza güncellemesi", content: "Yeni aura ve çerçeveler DesCoin ile.", createdAt: iso(1440), author: null },
-    { id: "a3", title: "Topluluk kuralları", content: "Lütfen arkadaşlık isteklerinde kibar olun.", createdAt: iso(4320), author: null },
+    { id: "a1", title: "2.9.147 yayında", content: "Kaydırarak geri gitme ve glass mobil cilası.", createdAt: iso(120), author: null, emoji: "🔔", color: "#587AF6" },
+    { id: "a2", title: "Mağaza güncellemesi", content: "Yeni aura ve çerçeveler DesCoin ile.", createdAt: iso(1440), author: null, emoji: "🛍️", color: "#7c5cff" },
+    { id: "a3", title: "Topluluk kuralları", content: "Lütfen arkadaşlık isteklerinde kibar olun.", createdAt: iso(4320), author: null, emoji: "👥", color: "#30D158" },
   ] }));
   ok(["/api/shop*"], () => ({ items: [], inventory: [], balance: 1250 }));
 };

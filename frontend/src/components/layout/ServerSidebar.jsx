@@ -13,7 +13,7 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
-import { loadAnnouncements } from "../../lib/announcements";
+import { announcementIcon, loadAnnouncements, loadUnreadAnnouncementCount, markAnnouncementRead } from "../../lib/announcements";
 import { addMemberToGroup } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -95,6 +95,7 @@ export default function ServerSidebar({
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [announcementsError, setAnnouncementsError] = useState("");
+  const [announcementUnread, setAnnouncementUnread] = useState(0);
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -121,6 +122,22 @@ export default function ServerSidebar({
   }, [socket, t]);
 
   useEffect(() => {
+    if (!glassShell) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const count = await loadUnreadAnnouncementCount(API_BASE_URL, getToken());
+        if (!cancelled && count != null && count > 0) setAnnouncementUnread(count);
+      } catch {
+        /* no count in this response — leave the badge off */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [glassShell]);
+
+  useEffect(() => {
     if (!showAnnouncements) return undefined;
     let cancelled = false;
     (async () => {
@@ -128,7 +145,14 @@ export default function ServerSidebar({
       setAnnouncementsError("");
       try {
         const rows = await loadAnnouncements(API_BASE_URL, getToken());
-        if (!cancelled) setAnnouncements(rows);
+        if (!cancelled) {
+          setAnnouncements(rows);
+          if (glassShell) {
+            setAnnouncementUnread(0);
+            const token = getToken();
+            for (const row of rows) markAnnouncementRead(API_BASE_URL, token, row.id);
+          }
+        }
       } catch (err) {
         console.error("Failed to load announcements:", err);
         if (!cancelled) {
@@ -142,7 +166,7 @@ export default function ServerSidebar({
     return () => {
       cancelled = true;
     };
-  }, [showAnnouncements, t]);
+  }, [showAnnouncements, t, glassShell]);
 
   const fetchSuggestions = async () => {
     setSuggestionsLoading(true);
@@ -315,7 +339,7 @@ export default function ServerSidebar({
                   ]
                 : [
                     { id: "search", icon: Search, label: t("Search") },
-                    { id: "announcements", icon: Megaphone, label: t("Announcements"), onClick: () => setShowAnnouncements(!showAnnouncements) },
+                    { id: "announcements", icon: Megaphone, label: t("Announcements"), badge: announcementUnread > 0 ? announcementUnread : undefined, onClick: () => setShowAnnouncements(!showAnnouncements) },
                     { id: "feedback", icon: MessageSquarePlus, label: t("Send Feedback"), onClick: () => openFeedbackModal({ type: "suggestion", source: "server_sidebar" }) },
                     ...(activeView === "friends" && me?.username
                       ? [{ id: "invite", icon: Link2, label: t("Copy invite link"), onClick: copyInviteLink }]
@@ -559,10 +583,10 @@ export default function ServerSidebar({
                     <Sparkles size={16} /> {t("Quick Add")}
                   </button>
                   <button className={`add-modal-tab ${addTab === "friend" ? "active" : ""}`} onClick={() => { setAddTab("friend"); setAddError(""); setAddSuccess(""); }}>
-                    <User size={16} /> {t("Add Friend")}
+                    <User size={16} /> {glassShell ? t("Friend") : t("Add Friend")}
                   </button>
                   <button className={`add-modal-tab ${addTab === "group" ? "active" : ""}`} onClick={() => { setAddTab("group"); setAddError(""); setAddSuccess(""); }}>
-                    <Users size={16} /> {t("Create Group")}
+                    <Users size={16} /> {glassShell ? t("Group") : t("Create Group")}
                   </button>
                 </div>
 
@@ -641,11 +665,19 @@ export default function ServerSidebar({
                   {addTab === "friend" && (
                     <>
                       <label className="add-modal-label">{t("Enter a username to add")}</label>
-                      <input className="add-modal-input" value={friendUsername} onChange={(e) => setFriendUsername(e.target.value)} placeholder={t("e.g. johndoe")} onKeyDown={(e) => e.key === "Enter" && handleAddFriend()} />
+                      {glassShell ? (
+                        <div className="g-add-field">
+                          <User size={18} aria-hidden />
+                          <input className="add-modal-input" value={friendUsername} onChange={(e) => setFriendUsername(e.target.value)} placeholder={t("e.g. johndoe")} onKeyDown={(e) => e.key === "Enter" && handleAddFriend()} />
+                        </div>
+                      ) : (
+                        <input className="add-modal-input" value={friendUsername} onChange={(e) => setFriendUsername(e.target.value)} placeholder={t("e.g. johndoe")} onKeyDown={(e) => e.key === "Enter" && handleAddFriend()} />
+                      )}
                       <motion.button type="button" className="add-modal-btn" onClick={handleAddFriend} disabled={addLoading || !friendUsername.trim()} whileTap={{ scale: 0.97 }}>
                         {glassShell && !addLoading ? <UserPlus size={18} /> : null}
                         {addLoading ? t("Sending...") : t("Send Friend Request")}
                       </motion.button>
+                      {glassShell ? <p className="g-add-hint">{t("Send a friend request with their username")}</p> : null}
                     </>
                   )}
                   {addTab === "group" && (
@@ -734,11 +766,13 @@ export default function ServerSidebar({
                   ) : announcements.length === 0 ? (
                     <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{t("No announcements")}</div>
                   ) : (
-                    announcements.map((a) => (
+                    announcements.map((a) => {
+                      const AnnIcon = glassShell ? announcementIcon(a.emoji) : null;
+                      return (
                       <div key={a.id} className="announcement-item">
                         {glassShell ? (
                           <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                            {a.emoji || "📢"}
+                            {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : (a.emoji || "📢")}
                           </span>
                         ) : null}
                         <div className="announcement-title">{a.title}</div>
@@ -748,7 +782,8 @@ export default function ServerSidebar({
                           {a.createdAt && <span className="announcement-date">{glassShell ? glassAnnouncementWhen(a.createdAt) : new Date(a.createdAt).toLocaleDateString()}</span>}
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </motion.div>

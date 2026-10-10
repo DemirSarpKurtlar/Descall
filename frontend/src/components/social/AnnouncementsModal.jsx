@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Megaphone, X } from "lucide-react";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
-import { loadAnnouncements } from "../../lib/announcements";
+import { announcementIcon, loadAnnouncements } from "../../lib/announcements";
 import { useT } from "../../context/LocaleContext";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import useGlassUi from "../../hooks/useGlassUi";
@@ -109,11 +109,13 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                         {t("No announcements")}
                       </div>
                     ) : (
-                      announcements.map((a) => (
+                      announcements.map((a) => {
+                        const AnnIcon = glass ? announcementIcon(a.emoji) : null;
+                        return (
                         <div key={a.id} className="announcement-item">
                           {glass ? (
                             <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                              {a.emoji || "📢"}
+                              {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : (a.emoji || "📢")}
                             </span>
                           ) : null}
                           <div className="announcement-title">{a.title}</div>
@@ -131,7 +133,8 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                             )}
                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </motion.div>

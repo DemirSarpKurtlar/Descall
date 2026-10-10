@@ -1421,9 +1421,16 @@ html.glass-ui .add-modal.g-announce .g-ann-mark {
   align-items: center;
   justify-content: center;
   background: var(--g-brand);
+  color: #fff;
   font-size: 18px;
   line-height: 1;
   overflow: hidden;
+}
+
+html.glass-ui .add-modal.g-announce .g-ann-mark svg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
 }
 
 html.glass-ui .add-modal.g-announce .announcement-title {

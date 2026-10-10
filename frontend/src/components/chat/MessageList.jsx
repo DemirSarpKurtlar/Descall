@@ -1,7 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { FileText, Download, Smile, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "lucide-react";
+import { FileText, Download, Smile, SmilePlus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
@@ -1320,7 +1320,7 @@ function GlassMessageMenu({
           {canEdit && (
             <button type="button" className="g-mi" {...act(onEdit)}><Pencil size={19} />{t("Edit")}</button>
           )}
-          <button type="button" className="g-mi" {...act(onMore)}><Smile size={19} />{t("More reactions")}</button>
+          <button type="button" className="g-mi" {...act(onMore)}><SmilePlus size={19} />{t("More reactions")}</button>
           {(canDelete || canReport) && <div className="g-msep" />}
           {canDelete && (
             <button type="button" className="g-mi danger" {...act(onDelete)}><Trash2 size={19} />{t("Delete")}</button>
