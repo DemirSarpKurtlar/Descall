@@ -1,14 +1,15 @@
 const { verifyToken } = require("../config/jwt");
-const { revokedSessionIds, bannedUserIds, banDetailsByUser, usernameById } = require("../runtime/sharedState");
+const { bannedUserIds, banDetailsByUser, revokedSessionIds, usernameById } = require("../runtime/sharedState");
 const { touchLastSeen } = require("../lib/presenceTouch");
 const ageGate = require("../lib/ageGate");
+const { sessionAllowed } = require("../lib/sessionGuard");
 
 function childCheckExempt(req) {
   const path = String(req.originalUrl || req.url || req.path || "").split("?")[0];
   return path.endsWith("/logout") || path.endsWith("/account/delete");
 }
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -22,8 +23,12 @@ function requireAuth(req, res, next) {
     if (decoded.pending2fa) {
       return res.status(401).json({ error: "Two-factor verification required." });
     }
-    if (decoded.sid && revokedSessionIds.has(decoded.sid)) {
-      return res.status(401).json({ error: "Session has been signed out.", code: "SESSION_REVOKED" });
+    const session = await sessionAllowed(decoded);
+    if (!session.ok) {
+      return res.status(401).json({
+        error: "Session has been signed out.",
+        code: session.code || "SESSION_REVOKED",
+      });
     }
     if (bannedUserIds.has(decoded.sub)) {
       const detail = banDetailsByUser.get(decoded.sub);

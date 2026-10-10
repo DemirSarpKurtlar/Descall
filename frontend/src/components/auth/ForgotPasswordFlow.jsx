@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Lock, Mail, ShieldCheck, ArrowLeft, KeyRound } from "lucide-react";
 import { requestPasswordReset, confirmPasswordReset } from "../../api/auth";
 import { useT } from "../../context/LocaleContext";
+import PasswordStrength from "./PasswordStrength";
 
 const SUPPORT_EMAIL = "support@descall.com";
 
@@ -69,8 +70,8 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
       setError(t("Passwords do not match."));
       return;
     }
-    if (newPassword.length < 6) {
-      setError(t("Password must be at least 6 characters."));
+    if (newPassword.length < 10) {
+      setError(t("Password must be at least 10 characters."));
       return;
     }
     setBusy(true);
@@ -154,6 +155,7 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
               required
             />
           </div>
+          <PasswordStrength password={newPassword} />
           <div className="input-wrapper">
             <KeyRound className="input-icon" size={20} />
             <input

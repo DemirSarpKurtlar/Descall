@@ -68,6 +68,7 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:3000",
+  "descall://app",
 ]);
 
 function isAllowedOrigin(origin) {
@@ -165,8 +166,8 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-const debugRoutesEnabled =
-  process.env.NODE_ENV !== "production" || process.env.ENABLE_DEBUG_ROUTES === "true";
+// Hard-off in production. ENABLE_DEBUG_ROUTES must not reopen /debug/*.
+const debugRoutesEnabled = process.env.NODE_ENV !== "production";
 
 // TEMP DEBUG: list all tables in public schema
 if (debugRoutesEnabled) app.get("/debug/tables", async (_req, res) => {
@@ -257,7 +258,8 @@ app.post("/api/marketing/waitlist", async (req, res) => {
     return res.json({ ok: true });
   } catch (e) {
     if (e?.status === 400) return res.status(400).json({ error: "Invalid email" });
-    return res.status(500).json({ error: e.message || "waitlist failed" });
+    console.error("[marketing] waitlist failed:", e?.message || e);
+    return res.status(500).json({ error: "Could not save that request." });
   }
 });
 
@@ -1078,7 +1080,7 @@ setupSentryExpressErrorHandler(app);
 // Error handler
 app.use((err, _req, res, _next) => {
   console.error("[ERROR]", err);
-  res.status(500).json({ error: err.message || "Internal error" });
+  res.status(500).json({ error: "Internal server error." });
 });
 
 // Socket.IO

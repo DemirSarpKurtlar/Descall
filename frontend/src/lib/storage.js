@@ -10,17 +10,59 @@ function getStorage() {
   }
 }
 
-export function getToken() {
-  const storage = getStorage();
-  if (!storage) return null;
+function electronToken() {
   try {
-    return storage.getItem(TOKEN_KEY);
+    return typeof window !== "undefined" ? window.electronAPI?.secureToken : null;
   } catch {
     return null;
   }
 }
 
+export function getToken() {
+  const bridge = electronToken();
+  if (bridge?.get) {
+    try {
+      const secure = bridge.get();
+      if (secure) return secure;
+    } catch {
+      /* fall through to localStorage */
+    }
+  }
+  const storage = getStorage();
+  if (!storage) return null;
+  let local = null;
+  try {
+    local = storage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+  if (local && bridge?.set) {
+    try {
+      if (bridge.set(local)) storage.removeItem(TOKEN_KEY);
+    } catch {
+      /* keep the local copy if the safe store rejects it */
+    }
+  }
+  return local;
+}
+
 export function setToken(token) {
+  const bridge = electronToken();
+  if (bridge?.set) {
+    try {
+      if (bridge.set(token)) {
+        const storage = getStorage();
+        try {
+          storage?.removeItem(TOKEN_KEY);
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+    } catch {
+      /* fall through */
+    }
+  }
   const storage = getStorage();
   if (!storage) return;
   try {
@@ -31,6 +73,12 @@ export function setToken(token) {
 }
 
 export function clearToken() {
+  const bridge = electronToken();
+  try {
+    bridge?.clear?.();
+  } catch {
+    /* ignore */
+  }
   const storage = getStorage();
   if (!storage) return;
   try {

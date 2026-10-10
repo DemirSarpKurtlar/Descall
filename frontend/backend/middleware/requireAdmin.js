@@ -35,4 +35,30 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-module.exports = { requireAdmin };
+/**
+ * Promoting or demoting admins is limited to the username "admin" account
+ * or a row with is_super_admin. If that column cannot be read, only the
+ * username "admin" account is treated as super-admin.
+ */
+async function userIsSuperAdmin(req) {
+  if (req?.user?.username === "admin") return true;
+  if (!req?.user?.id) return false;
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("is_super_admin")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (error) return false;
+    return Boolean(data?.is_super_admin);
+  } catch {
+    return false;
+  }
+}
+
+async function requireSuperAdmin(req, res, next) {
+  if (await userIsSuperAdmin(req)) return next();
+  return res.status(403).json({ error: "Only the super admin can change admin roles." });
+}
+
+module.exports = { requireAdmin, requireSuperAdmin, userIsSuperAdmin };

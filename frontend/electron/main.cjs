@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net } = require('electron');
+const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
@@ -25,6 +26,104 @@ const {
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+
+// Standard scheme so packaged pages can call https APIs with webSecurity on.
+// file:// cannot. Register before ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'descall',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+]);
+
+function distRoot() {
+  const candidates = [
+    path.join(process.resourcesPath || '', 'dist'),
+    path.join(app.getAppPath(), 'dist'),
+    path.join(__dirname, 'dist'),
+    path.join(__dirname, '..', 'dist'),
+  ];
+  return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html'))) || null;
+}
+
+function registerDescallProtocol() {
+  const root = distRoot();
+  if (!root) return null;
+  protocol.handle('descall', (request) => {
+    try {
+      const url = new URL(request.url);
+      let rel = decodeURIComponent(url.pathname || '/index.html');
+      if (!rel || rel === '/') rel = '/index.html';
+      const filePath = path.normalize(path.join(root, rel));
+      const rootNorm = path.normalize(root + path.sep);
+      if (!filePath.startsWith(rootNorm) && filePath !== path.normalize(root)) {
+        return new Response('forbidden', { status: 403 });
+      }
+      return net.fetch(pathToFileURL(filePath).href);
+    } catch (err) {
+      log.warn('[protocol] descall fetch failed:', err?.message || err);
+      return new Response('bad request', { status: 400 });
+    }
+  });
+  return root;
+}
+
+function tokenFilePath() {
+  return path.join(app.getPath('userData'), 'auth-token.bin');
+}
+
+ipcMain.on('secure-token:get', (event) => {
+  try {
+    const file = tokenFilePath();
+    if (!fs.existsSync(file)) {
+      event.returnValue = null;
+      return;
+    }
+    const buf = fs.readFileSync(file);
+    event.returnValue = safeStorage.isEncryptionAvailable()
+      ? safeStorage.decryptString(buf)
+      : buf.toString('utf8');
+  } catch (err) {
+    log.warn('[secure-token] read failed:', err?.message || err);
+    event.returnValue = null;
+  }
+});
+
+ipcMain.on('secure-token:set', (event, token) => {
+  try {
+    const file = tokenFilePath();
+    const value = String(token || '');
+    if (!value) {
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+      event.returnValue = true;
+      return;
+    }
+    const buf = safeStorage.isEncryptionAvailable()
+      ? safeStorage.encryptString(value)
+      : Buffer.from(value, 'utf8');
+    fs.writeFileSync(file, buf);
+    event.returnValue = true;
+  } catch (err) {
+    log.warn('[secure-token] write failed:', err?.message || err);
+    event.returnValue = false;
+  }
+});
+
+ipcMain.on('secure-token:clear', (event) => {
+  try {
+    const file = tokenFilePath();
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+    event.returnValue = true;
+  } catch {
+    event.returnValue = false;
+  }
+});
 
 // Background / tray: keep the renderer fully awake so socket events keep
 // arriving and the message sound can play without a prior click (the app
@@ -762,8 +861,7 @@ function createMainWindow() {
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      webSecurity: false,
-      allowRunningInsecureContent: true,
+      webSecurity: true,
       // Hidden-to-tray must not throttle sockets/timers — notifications and
       // the update poller keep running in the background.
       backgroundThrottling: false
@@ -926,7 +1024,7 @@ function createMainWindow() {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-          "connect-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://o4512220968779776.ingest.de.sentry.io; " +
+          "connect-src 'self' descall: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://*.posthog.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io; " +
           "img-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data: blob:; " +
           "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
           "style-src 'self' 'unsafe-inline'; " +
@@ -942,37 +1040,15 @@ function createMainWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // extraResources puts files in resources/dist/
-    const indexPath = path.join(process.resourcesPath, 'dist', 'index.html');
-    console.log('Loading from:', indexPath);
-    
-    if (require('fs').existsSync(indexPath)) {
-      mainWindow.loadFile(indexPath).catch(err => {
+    const root = distRoot();
+    console.log('Loading from:', root);
+    if (root) {
+      mainWindow.loadURL('descall://app/index.html').catch((err) => {
         console.error('Failed to load:', err);
         dialog.showErrorBox('Loading Error', `Failed to load app: ${err.message}`);
       });
     } else {
-      // Fallback paths
-      const altPaths = [
-        path.join(app.getAppPath(), 'dist', 'index.html'),
-        path.join(__dirname, 'dist', 'index.html'),
-        path.join(__dirname, '..', 'dist', 'index.html')
-      ];
-      
-      let found = false;
-      for (const altPath of altPaths) {
-        console.log('Trying:', altPath);
-        if (require('fs').existsSync(altPath)) {
-          console.log('Found at:', altPath);
-          mainWindow.loadFile(altPath);
-          found = true;
-          break;
-        }
-      }
-      
-      if (!found) {
-        dialog.showErrorBox('Loading Error', `index.html not found at: ${indexPath}\nTried:\n${altPaths.join('\n')}`);
-      }
+      dialog.showErrorBox('Loading Error', 'index.html was not found in the app resources.');
     }
   }
 
@@ -1134,6 +1210,7 @@ function createTray() {
 
 // App events
 app.whenReady().then(async () => {
+  registerDescallProtocol();
   // Enable startup on first run (packaged only)
   if (isPackaged && !app.getLoginItemSettings().openAtLogin) {
     app.setLoginItemSettings({ openAtLogin: true });

@@ -304,6 +304,15 @@
           "value": "max-age=63072000; includeSubDomains; preload"
         }
       ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://descall.com https://www.descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com https://*.githubusercontent.com; media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.giphy.com https://*.tenor.com; connect-src 'self' https://descall.com https://www.descall.com https://des-call.onrender.com wss://des-call.onrender.com https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu.posthog.com https://*.posthog.com https://o4512220968779776.ingest.de.sentry.io https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://api.github.com https://*.livekit.cloud wss://*.livekit.cloud; frame-src 'self' https://www.googletagmanager.com; worker-src 'self' blob:"
+        }
+      ]
     }
   ],
   "fluid": true

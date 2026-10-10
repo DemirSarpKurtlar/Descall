@@ -142,6 +142,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   overlayShow: (payload) => ipcRenderer.send('descall:overlay:show', payload || {}),
   overlayHide: () => ipcRenderer.send('descall:overlay:hide'),
   overlayUpdate: (payload) => ipcRenderer.send('descall:overlay:update', payload || {}),
+  secureToken: {
+    get: () => ipcRenderer.sendSync('secure-token:get'),
+    set: (token) => ipcRenderer.sendSync('secure-token:set', token),
+    clear: () => ipcRenderer.sendSync('secure-token:clear'),
+  },
+
   onOverlayAction: (callback) => {
     const handler = (_, action) => callback(action);
     ipcRenderer.on('descall:overlay:action', handler);

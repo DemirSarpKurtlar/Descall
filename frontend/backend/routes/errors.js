@@ -3,6 +3,7 @@ const router = express.Router();
 const supabase = require("../db/supabase");
 const state = require("../runtime/sharedState");
 const { requireAuth } = require("../middleware/auth");
+const { requireAdmin } = require("../middleware/requireAdmin");
 
 console.log("[ERRORS-JS] File loaded! Routes being registered...");
 
@@ -62,7 +63,7 @@ router.post("/", async (req, res) => {
 });
 
 // Get all errors (admin only)
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("error_logs")
@@ -80,7 +81,7 @@ router.get("/", async (req, res) => {
 });
 
 // Mark error as resolved
-router.patch("/:id/resolve", async (req, res) => {
+router.patch("/:id/resolve", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { error } = await supabase
       .from("error_logs")
@@ -97,7 +98,7 @@ router.patch("/:id/resolve", async (req, res) => {
 });
 
 // Delete error
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { error } = await supabase
       .from("error_logs")
@@ -114,26 +115,6 @@ router.delete("/:id", async (req, res) => {
 });
 
 // ========== USER FEEDBACK ENDPOINTS ==========
-
-// GET test - çalışıyor mu kontrol
-router.get("/feedback-test", (_req, res) => {
-  console.log("[ROUTE-TEST] GET /api/errors/feedback-test - WORKING!");
-  res.json({ message: "GET working", time: Date.now() });
-});
-
-// POST test - aynı route üzerine
-router.post("/feedback-test", (req, res) => {
-  console.log("[ROUTE-TEST] POST /api/errors/feedback-test - HIT!");
-  console.log("[ROUTE-TEST] Body received:", JSON.stringify(req.body));
-  res.json({ success: true, received: req.body, time: Date.now() });
-});
-
-// SUPER SIMPLE POST TEST - No auth, no supabase, just test if POST works
-router.post("/simple-test", (req, res) => {
-  console.log("[SIMPLE-TEST] POST /api/errors/simple-test - HIT!");
-  console.log("[SIMPLE-TEST] Body:", JSON.stringify(req.body));
-  res.json({ success: true, received: req.body, time: Date.now() });
-});
 
 // Submit feedback (authenticated users)
 console.log("[ERRORS-JS] Registering POST /feedback route...");

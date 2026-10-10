@@ -44,7 +44,8 @@ async function sendEmail(
 
 /** 6-digit numeric code, safe for display/typing on mobile keyboards. */
 function generateCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  const crypto = require("crypto");
+  return String(crypto.randomInt(100000, 1000000));
 }
 
 function escapeHtml(value) {

@@ -4,7 +4,9 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
-const { requireAdmin } = require("../middleware/requireAdmin");
+const { requireAdmin, requireSuperAdmin, userIsSuperAdmin } = require("../middleware/requireAdmin");
+const { isReservedUsername } = require("../lib/usernamePolicy");
+const { checkNewPassword } = require("../lib/passwordPolicy");
 const state = require("../runtime/sharedState");
 const {
   kickUser,
@@ -452,14 +454,25 @@ router.post("/users", async (req, res) => {
       return res.status(400).json({ error: "username and password required." });
     }
     const clean = username.trim();
-    if (clean.length < 2) return res.status(400).json({ error: "Invalid username." });
+    if (
+      clean.length < 2 ||
+      clean.length > 24 ||
+      !/^[a-zA-Z0-9_.-]+$/.test(clean) ||
+      isReservedUsername(clean)
+    ) {
+      return res.status(400).json({ error: "Invalid username." });
+    }
+    const passwordCheck = await checkNewPassword(password);
+    if (passwordCheck.error) {
+      return res.status(400).json({ error: passwordCheck.error, code: passwordCheck.code });
+    }
     const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const { data, error } = await supabase
       .from("users")
       .insert({ username: clean, password_hash: hash })
       .select("id, username")
       .single();
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) return res.status(400).json({ error: "Could not create user." });
     audit(req.user, "user_create", data.id, { username: data.username });
     notifyAdminRoom(getIo(req), { type: "user_created", id: data.id });
     res.status(201).json({ user: data });
@@ -472,6 +485,11 @@ router.patch("/users/:id", async (req, res) => {
   try {
     const { role } = req.body || {};
     if (role && ["user", "mod", "admin"].includes(role)) {
+      if (role === "admin" || role === "user") {
+        if (!(await userIsSuperAdmin(req))) {
+          return res.status(403).json({ error: "Only the super admin can change admin roles." });
+        }
+      }
       state.userRoles.set(req.params.id, role);
       // Persist admin flag to DB — in-memory role alone does not grant AdminPanel access
       if (role === "admin" || role === "user") {
@@ -479,7 +497,7 @@ router.patch("/users/:id", async (req, res) => {
           .from("users")
           .update({ is_admin: role === "admin" })
           .eq("id", req.params.id);
-        if (error) return res.status(500).json({ error: error.message });
+        if (error) return res.status(500).json({ error: "Could not update role." });
         const io = getIo(req);
         io?.to(`user:${req.params.id}`)?.emit("user:updated", { is_admin: role === "admin" });
       }
@@ -493,7 +511,7 @@ router.patch("/users/:id", async (req, res) => {
 });
 
 // Durable make/remove admin — used by AdminPanel Users tab
-router.put("/make-admin/:userId", async (req, res) => {
+router.put("/make-admin/:userId", requireSuperAdmin, async (req, res) => {
   try {
     const userId = req.params.userId;
     if (!userId) return res.status(400).json({ success: false, error: "Missing userId" });
@@ -503,7 +521,7 @@ router.put("/make-admin/:userId", async (req, res) => {
       .eq("id", userId)
       .select("id, username, avatar_url, is_admin")
       .single();
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return res.status(500).json({ success: false, error: "Could not update admin role." });
     state.userRoles.set(userId, "admin");
     audit(req.user, "make_admin", userId, {});
     const io = getIo(req);
@@ -511,11 +529,11 @@ router.put("/make-admin/:userId", async (req, res) => {
     notifyAdminRoom(io, { type: "user_admin", id: userId, is_admin: true });
     return res.json({ success: true, user: data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Could not update admin role." });
   }
 });
 
-router.put("/remove-admin/:userId", async (req, res) => {
+router.put("/remove-admin/:userId", requireSuperAdmin, async (req, res) => {
   try {
     const userId = req.params.userId;
     if (!userId) return res.status(400).json({ success: false, error: "Missing userId" });
@@ -528,7 +546,7 @@ router.put("/remove-admin/:userId", async (req, res) => {
       .eq("id", userId)
       .select("id, username, avatar_url, is_admin")
       .single();
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return res.status(500).json({ success: false, error: "Could not update admin role." });
     state.userRoles.set(userId, "user");
     audit(req.user, "remove_admin", userId, {});
     const io = getIo(req);
@@ -536,7 +554,7 @@ router.put("/remove-admin/:userId", async (req, res) => {
     notifyAdminRoom(io, { type: "user_admin", id: userId, is_admin: false });
     return res.json({ success: true, user: data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Could not update admin role." });
   }
 });
 

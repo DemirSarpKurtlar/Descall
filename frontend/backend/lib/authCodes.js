@@ -25,8 +25,11 @@ function verifyStoredCode({ code, storedHash, sentAtIso, attempts = 0 }) {
   if (!storedHash || !sentAtIso) return { ok: false, reason: "no_pending_code" };
   if (attempts >= MAX_ATTEMPTS) return { ok: false, reason: "too_many_attempts" };
   if (!isCodeFresh(sentAtIso)) return { ok: false, reason: "expired" };
-  const match = hashCode(code) === storedHash;
-  return { ok: match, reason: match ? null : "invalid_code" };
+  const actual = Buffer.from(hashCode(code), "hex");
+  const expected = Buffer.from(String(storedHash || ""), "hex");
+  const sameLength = actual.length === expected.length && actual.length > 0;
+  const match = crypto.timingSafeEqual(sameLength ? actual : Buffer.alloc(32), sameLength ? expected : Buffer.alloc(32));
+  return { ok: sameLength && match, reason: sameLength && match ? null : "invalid_code" };
 }
 
 module.exports = { hashCode, isCodeFresh, verifyStoredCode, CODE_TTL_MS, MAX_ATTEMPTS };
