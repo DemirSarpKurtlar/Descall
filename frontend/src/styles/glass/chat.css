@@ -1420,6 +1420,38 @@ html.glass-ui .g-lift-bub.own {
   border-top-right-radius: 6px;
 }
 
+html.glass-ui .g-lift-bub:empty {
+  display: none;
+}
+
+/* GIF / image stays in the lifted stack. An empty text bubble was a blue stub. */
+html.glass-ui .g-lift-media {
+  position: relative;
+  max-width: min(260px, calc(100vw - 48px));
+  border-radius: 16px;
+  overflow: hidden;
+  line-height: 0;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+html.glass-ui .g-lift-media.own {
+  border-top-right-radius: 6px;
+}
+
+html.glass-ui .g-lift-media.other {
+  border-top-left-radius: 6px;
+}
+
+html.glass-ui .g-lift-media img {
+  display: block;
+  max-width: min(260px, calc(100vw - 48px));
+  max-height: 240px;
+  width: auto;
+  height: auto;
+}
+
 html.glass-ui .message-bubble.menu-open {
   visibility: hidden;
 }

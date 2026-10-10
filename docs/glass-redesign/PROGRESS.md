@@ -1,5 +1,19 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.182
+
+GIF’e uzun basınca görsel kayboluyordu. Menü bulanıklığın üstünde açılıyor, asıl balon gizleniyor; kalkmış kopya yalnız yazıyı taşıyordu. GIF’in yazısı boş olduğu için o kopya sağda küçük mavi bir kutuydu. Artık görsel de kalkıyor: tepki çubuğu, GIF (köşede GIF etiketi) ve menü. Boş yazı balonu çizilmiyor. Görselin kendisine basılı tutmak da menüyü açar; kısa dokunuş ışık kutusunu açar. Uzun basışın bıraktığı tık bir sonraki açılışı yutmaz. Düzenle yine yalnız yazısı olan mesajda. DM, grup ve sunucu. Masaüstü ve web aynı. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.182**. Yalnız iPhone.
+
+- [ ] Bir GIF’e (DM, grup veya sunucu) uzun bas: GIF bulanıklığın üstünde durur, tepki çubuğu ve menü görünür. Sağda mavi boş kutu yok.
+- [ ] Kısa dokunuş GIF’i açar, menü açılmaz.
+- [ ] Menüyü kapatıp tekrar kısa dokununca GIF yine açılır.
+- [ ] Yazısı olan görselde hem yazı hem görsel kalkar. Düzenle yalnız yazı varsa çıkar.
+- [ ] Masaüstü / tarayıcı: üzerine gelince menü aynı, görsele tıklamak yine açar.
+
 ## Cihaz düzeltmeleri · 2.9.181
 
 Mesaj düzenleme iPhone’da artık balonun içinde kutu açmıyor. Düzenle denince balon yerinde kalır, ince bir çerçeveyle vurgulanır. Alt yazı alanı düzenleme kipine geçer: yanıt şeridiyle aynı cam şerit, kalem, “Mesajı düzenle”, tek satırlık alıntı ve ×. Alan mesajın yazısıyla dolar, imleç sonda, klavye açık kalır. Gönder oku onay işaretine döner; yazı boşsa veya değişmediyse kapalıdır. Kayıt olunca başarı titremesi, balon yerinde “(düzenlendi)” olur. × normal yazı alanına döner, klavye açık kalır. Hata olursa hata titremesi ve düzenleme durur. iPhone klavyesinin üstündeki ok ve onay çubuğu bütün uygulamada kapalı. DM, grup ve sunucu kanalı. Masaüstü ve web balonun içindeki kutuyu korur. App Store’a gönderilmedi.

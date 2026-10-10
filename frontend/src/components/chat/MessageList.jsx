@@ -622,6 +622,7 @@ function MessageBubble({
   const glass = useGlassUi();
   const bubbleRef = useRef(null);
   const pressTimer = useRef(null);
+  const suppressMediaClickUntil = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
@@ -818,6 +819,44 @@ function MessageBubble({
     }
   };
 
+  const beginMenuPress = useCallback((event, { pressed = false, fromMedia = false } = {}) => {
+    if (!glass || editing) return;
+    if (event.button != null && event.button !== 0) return;
+    const el = event.currentTarget;
+    const sx = event.clientX;
+    const sy = event.clientY;
+    if (pressed) el.setAttribute("data-pressed", "");
+    clearTimeout(pressTimer.current);
+    const clear = () => {
+      if (pressed) el.removeAttribute("data-pressed");
+      clearTimeout(pressTimer.current);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+    };
+    const move = (ev) => {
+      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 24) clear();
+    };
+    const up = () => clear();
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    pressTimer.current = setTimeout(() => {
+      clear();
+      hapticImpactMedium();
+      swallowOpeningPress();
+      // The opening gesture's click is swallowed on window capture, so the
+      // button handler may never see it. Ignore taps only briefly.
+      if (fromMedia) suppressMediaClickUntil.current = Date.now() + 800;
+      setMenuOpen(true);
+      setPickerOpen(false);
+    }, MESSAGE_MENU_LONG_PRESS_MS);
+  }, [glass, editing]);
+
+  useEffect(() => {
+    if (!menuOpen) suppressMediaClickUntil.current = 0;
+  }, [menuOpen]);
+
   const openMenu = () => {
     clearHide();
     setMenuOpen(true);
@@ -944,35 +983,8 @@ function MessageBubble({
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
-          if (!glass || editing) return;
           if (e.target.closest("a, button, video, img, .message-media, .message-reactions, .slash-embed")) return;
-          const el = e.currentTarget;
-          const sx = e.clientX;
-          const sy = e.clientY;
-          el.setAttribute("data-pressed", "");
-          const clear = () => {
-            el.removeAttribute("data-pressed");
-            clearTimeout(pressTimer.current);
-            el.removeEventListener("pointermove", move);
-            el.removeEventListener("pointerup", up);
-            el.removeEventListener("pointercancel", up);
-          };
-          const move = (ev) => {
-            if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 24) clear();
-          };
-          const up = () => clear();
-          el.addEventListener("pointermove", move);
-          el.addEventListener("pointerup", up);
-          el.addEventListener("pointercancel", up);
-          pressTimer.current = setTimeout(() => {
-            clear();
-            hapticImpactMedium();
-            // The finger is still down. Swallow that release so it cannot
-            // activate Edit / Report or the scrim once the menu slides under it.
-            swallowOpeningPress();
-            setMenuOpen(true);
-            setPickerOpen(false);
-          }, MESSAGE_MENU_LONG_PRESS_MS);
+          beginMenuPress(e, { pressed: true });
         }}
         onClick={(e) => {
           // Touch / click toggle for devices without hover. Glass uses long-press.
@@ -1067,10 +1079,17 @@ function MessageBubble({
               <button
                 type="button"
                 className="message-media-trigger"
-                onPointerDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  beginMenuPress(e, { fromMedia: true });
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (Date.now() < suppressMediaClickUntil.current) {
+                    suppressMediaClickUntil.current = 0;
+                    return;
+                  }
                   setLightboxOpen(true);
                 }}
                 aria-label={isGif ? t("Open GIF") : t("Open image")}
@@ -1310,6 +1329,7 @@ function MessageBubble({
             bubbleRef={bubbleRef}
             isOwn={isOwn}
             text={String(message.text || "").slice(0, 280)}
+            preview={isVisualMedia && mediaUrl ? { src: mediaUrl, isGif } : null}
             onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
             quick={QUICK_EMOJIS}
             onReact={emitReact}
@@ -1362,7 +1382,7 @@ function MessageBubble({
 }
 
 function GlassMessageMenu({
-  bubbleRef, isOwn, text, onClose, quick, onReact, onMore, pickerOpen, pickerEmojis,
+  bubbleRef, isOwn, text, preview, onClose, quick, onReact, onMore, pickerOpen, pickerEmojis,
   onReply, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const { ref } = useMaterialize(true);
@@ -1372,7 +1392,14 @@ function GlassMessageMenu({
     const el = bubbleRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setBox({ top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width });
+    setBox({
+      top: r.top,
+      bottom: r.bottom,
+      left: r.left,
+      right: r.right,
+      width: r.width,
+      height: r.height,
+    });
   }, [bubbleRef]);
   if (!box || typeof document === "undefined") return null;
   const menuW = 250;
@@ -1384,7 +1411,10 @@ function GlassMessageMenu({
     + (canDelete ? 1 : 0)
     + (canReport ? 1 : 0);
   const menuH = 12 + menuRows * 48 + (pickerOpen ? 180 : 0);
-  const stackH = reactH + 10 + Math.min(box.height || 48, 160) + 10 + menuH;
+  const liftH = preview
+    ? Math.min(box.height || 180, 240)
+    : (text ? Math.min(box.height || 48, 160) : 0);
+  const stackH = reactH + (liftH ? 10 + liftH + 10 : 10) + menuH;
   const safeTop = 62;
   const safeBot = 34;
   let top = box.top - reactH - 8;
@@ -1418,7 +1448,13 @@ function GlassMessageMenu({
             <Smile size={18} />
           </button>
         </div>
-        <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{text}</div>
+        {String(text || "").trim() ? <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{text}</div> : null}
+        {preview?.src ? (
+          <div className={`g-lift-media ${isOwn ? "own" : "other"}`}>
+            <img src={preview.src} alt={preview.isGif ? "GIF" : ""} />
+            {preview.isGif ? <span className="message-media-badge">GIF</span> : null}
+          </div>
+        ) : null}
         <div className="g-menu g-glass g-heavy" role="menu">
           <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
           {canPin && (
