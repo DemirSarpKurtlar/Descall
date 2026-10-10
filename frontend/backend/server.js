@@ -110,6 +110,7 @@ app.use(cors({ origin: corsOrigin, credentials: false }));
 app.use(canonicalHostMiddleware);
 
 app.use(express.json());
+app.use(require("./middleware/gzipJson"));
 
 // Vercel rewrites backend traffic onto /api (api/index.js). Restore the
 // original path, then strip a synthetic /api prefix for root mounts.

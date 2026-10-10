@@ -162,29 +162,40 @@ async function cacheEquippedCosmetics(userId) {
   return equipped;
 }
 
-/** Batch-load cosmetics for many users (DM/group history). */
+function cosmeticsAlreadyCached(cached) {
+  if (!cached) return false;
+  if (cached._cosmeticsLoaded) return true;
+  if (
+    cached.equippedAvatarFrame ||
+    cached.equippedBadge ||
+    cached.equippedNameEffect ||
+    cached.equippedChatBubble
+  ) {
+    cached._cosmeticsLoaded = true;
+    return true;
+  }
+  return false;
+}
+
+/** Batch-load cosmetics for many users (DM/group/channel history). */
 async function ensureCosmeticsCached(userIds = []) {
   const ids = [...new Set((userIds || []).filter(Boolean))];
-  await Promise.all(
-    ids.map(async (id) => {
-      const cached = userProfileById.get(id);
-      if (
-        cached?._cosmeticsLoaded ||
-        cached?.equippedAvatarFrame ||
-        cached?.equippedBadge ||
-        cached?.equippedNameEffect ||
-        cached?.equippedChatBubble
-      ) {
-        if (cached && !cached._cosmeticsLoaded) cached._cosmeticsLoaded = true;
-        return;
-      }
-      const equipped = await loadEquippedCosmetics(id);
-      const profile = userProfileById.get(id) || { id };
-      applyCosmeticsToProfile(profile, equipped || {});
-      profile._cosmeticsLoaded = true;
-      userProfileById.set(id, profile);
-    })
-  );
+  const missing = ids.filter((id) => !cosmeticsAlreadyCached(userProfileById.get(id)));
+  if (!missing.length) return;
+  let map = new Map();
+  try {
+    const shop = require("./shop");
+    map = await shop.getEquippedCosmeticsForUsers(missing);
+  } catch (err) {
+    console.warn("[profile] batch cosmetics failed:", err?.message || err);
+    return;
+  }
+  for (const id of missing) {
+    const profile = userProfileById.get(id) || { id };
+    applyCosmeticsToProfile(profile, map.get(id) || {});
+    profile._cosmeticsLoaded = true;
+    userProfileById.set(id, profile);
+  }
 }
 
 async function loadUserProfile(userId, { withCosmetics = true } = {}) {

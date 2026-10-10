@@ -10,6 +10,9 @@ const {
   buildDmPreviewMaps,
   attachReactions,
 } = require("../lib/dmMessages");
+const { createSingleflight } = require("../lib/singleflight");
+
+const previewFlight = createSingleflight();
 
 const router = express.Router();
 
@@ -62,8 +65,12 @@ router.patch("/prefs/:peerId", requireAuth, async (req, res) => {
 // Static paths MUST be registered before /:peerId/messages so "previews"
 // and "prefs" are never treated as peer ids.
 router.get("/previews", requireAuth, async (req, res) => {
+  const started = Date.now();
   try {
-    const { dmPreviewsByPeer, dmLastActivityByPeer } = await buildDmPreviewMaps(req.user.id);
+    const { dmPreviewsByPeer, dmLastActivityByPeer } = await previewFlight.run(
+      req.user.id,
+      () => buildDmPreviewMaps(req.user.id),
+    );
     const previews = {};
     for (const peerId of new Set([
       ...Object.keys(dmPreviewsByPeer || {}),
@@ -74,6 +81,7 @@ router.get("/previews", requireAuth, async (req, res) => {
         timestamp: dmLastActivityByPeer[peerId] || null,
       };
     }
+    console.log(`[DM] previews ${Object.keys(previews).length} in ${Date.now() - started}ms`);
     res.json({ previews, dmPreviewsByPeer, dmLastActivityByPeer });
   } catch (err) {
     console.error("[DM] REST previews failed:", err?.message || err);
@@ -90,14 +98,24 @@ router.get("/:peerId/messages", requireAuth, async (req, res) => {
   if (!(await isAcceptedFriend(myId, peerId))) {
     return res.json({ withUserId: peerId, messages: [], hasMore: false });
   }
+  const started = Date.now();
   try {
     const before = typeof req.query.before === "string" ? req.query.before : null;
-    const { messages, hasMore } = await loadDmMessages(myId, peerId, {
+    const since = typeof req.query.since === "string" ? req.query.since : null;
+    const { messages, hasMore, incremental } = await loadDmMessages(myId, peerId, {
       before,
+      since,
       limit: req.query.limit,
     });
     const withReactions = await attachReactions(messages, "dm", convKey(myId, peerId));
-    res.json({ withUserId: peerId, messages: withReactions, hasMore });
+    console.log(`[DM] history ${withReactions.length} in ${Date.now() - started}ms`);
+    res.json({
+      withUserId: peerId,
+      messages: withReactions,
+      hasMore,
+      incremental: Boolean(incremental),
+      reactionsIncluded: true,
+    });
   } catch (err) {
     console.error("[DM] REST history failed:", err?.message || err);
     res.status(500).json({ error: "Failed to load message history." });

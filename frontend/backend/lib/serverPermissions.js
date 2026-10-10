@@ -148,13 +148,17 @@ function hasPermission(bits, flag) {
  * @param {string} userId
  * @returns {Promise<{ bits: bigint, isOwner: boolean, isMember: boolean }>}
  */
-async function resolveMemberPermissions(supabase, serverId, userId) {
-  const { data: server, error: sErr } = await supabase
-    .from("servers")
-    .select("id, owner_id")
-    .eq("id", serverId)
-    .maybeSingle();
-  if (sErr) throw sErr;
+async function resolveMemberPermissions(supabase, serverId, userId, preloaded = null) {
+  let server = preloaded?.server || null;
+  if (!server) {
+    const { data, error: sErr } = await supabase
+      .from("servers")
+      .select("id, owner_id")
+      .eq("id", serverId)
+      .maybeSingle();
+    if (sErr) throw sErr;
+    server = data;
+  }
   if (!server) {
     return { bits: 0n, isOwner: false, isMember: false };
   }
@@ -163,29 +167,45 @@ async function resolveMemberPermissions(supabase, serverId, userId) {
     return { bits: ALL_PERMISSIONS, isOwner: true, isMember: true };
   }
 
-  const { data: membership, error: mErr } = await supabase
-    .from("server_members")
-    .select("user_id")
-    .eq("server_id", serverId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (mErr) throw mErr;
-  if (!membership) {
+  let isMember;
+  if (preloaded && Object.prototype.hasOwnProperty.call(preloaded, "isMember")) {
+    isMember = Boolean(preloaded.isMember);
+  } else {
+    const { data: membership, error: mErr } = await supabase
+      .from("server_members")
+      .select("user_id")
+      .eq("server_id", serverId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (mErr) throw mErr;
+    isMember = Boolean(membership);
+  }
+  if (!isMember) {
     return { bits: 0n, isOwner: false, isMember: false };
   }
 
-  const { data: roles, error: rErr } = await supabase
-    .from("server_roles")
-    .select("id, permissions, is_everyone")
-    .eq("server_id", serverId);
-  if (rErr) throw rErr;
-
-  const { data: assigned, error: aErr } = await supabase
-    .from("server_member_roles")
-    .select("role_id")
-    .eq("server_id", serverId)
-    .eq("user_id", userId);
-  if (aErr) throw aErr;
+  let roles;
+  let assigned;
+  if (preloaded?.roles && preloaded?.assigned) {
+    roles = preloaded.roles;
+    assigned = preloaded.assigned;
+  } else {
+    const [rolesRes, assignedRes] = await Promise.all([
+      supabase
+        .from("server_roles")
+        .select("id, permissions, is_everyone")
+        .eq("server_id", serverId),
+      supabase
+        .from("server_member_roles")
+        .select("role_id")
+        .eq("server_id", serverId)
+        .eq("user_id", userId),
+    ]);
+    if (rolesRes.error) throw rolesRes.error;
+    if (assignedRes.error) throw assignedRes.error;
+    roles = rolesRes.data;
+    assigned = assignedRes.data;
+  }
 
   const assignedIds = new Set((assigned || []).map((r) => r.role_id));
   let bits = 0n;
@@ -204,8 +224,17 @@ async function resolveMemberPermissions(supabase, serverId, userId) {
   return { bits, isOwner: false, isMember: true };
 }
 
-async function getMemberHighestPosition(supabase, serverId, userId) {
+async function getMemberHighestPosition(supabase, serverId, userId, preloaded = null) {
   if (!serverId || !userId) return 0;
+
+  if (preloaded?.roles && preloaded?.assigned) {
+    const roleIds = new Set((preloaded.assigned || []).map((row) => row.role_id).filter(Boolean));
+    return (preloaded.roles || []).reduce((top, row) => {
+      if (!roleIds.has(row.id)) return top;
+      const pos = Number(row?.position);
+      return Number.isFinite(pos) ? Math.max(top, pos) : top;
+    }, 0);
+  }
 
   // Prefer a plain join shape — nested `role:role_id(...)` embeds are flaky
   // across PostgREST versions and silently returned position 0 before.

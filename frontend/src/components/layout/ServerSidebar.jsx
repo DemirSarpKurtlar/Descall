@@ -31,6 +31,7 @@ import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/d
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import useGlassUi from "../../hooks/useGlassUi";
+import { requestChatPrefetch } from "../../lib/chatPrefetch";
 
 
 
@@ -1040,6 +1041,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                     className={`conv-group-wrap${isMobile ? " is-swipeable" : " is-desktop"}${swipeOpen ? " swipe-open" : ""}${openMenuId === dm.id ? " menu-open" : ""}${isActive ? " is-active-row" : ""}`}
                     transition={LIST_LAYOUT_TRANSITION}
                     style={{ position: "relative" }}
+                    onMouseEnter={() => requestChatPrefetch("dm", dm.id)}
                     onContextMenu={(e) => {
                       if (isMobile) return;
                       e.preventDefault();
@@ -2009,6 +2011,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                       className={`conv-group-wrap${isMobile ? " is-swipeable" : " is-desktop"}${swipeOpen ? " swipe-open" : ""}${openMenuId === group.id ? " menu-open" : ""}${isActive ? " is-active-row" : ""}`}
                       transition={LIST_LAYOUT_TRANSITION}
                       style={{ position: "relative" }}
+                      onMouseEnter={() => requestChatPrefetch("group", group.id)}
                       onContextMenu={(e) => {
                         if (isMobile) return;
                         e.preventDefault();

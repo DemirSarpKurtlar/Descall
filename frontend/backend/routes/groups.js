@@ -2,6 +2,9 @@ const express = require("express");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser } = require("../runtime/sharedState");
+const { getUserGroups } = require("../lib/groupList");
+const { parseSince } = require("../lib/messagePage");
+const { attachReactions } = require("../lib/dmMessages");
 
 const router = express.Router();
 const MAX_GROUP_SIZE = 15;
@@ -41,146 +44,6 @@ function getUserSocketId(userId) {
     if (id === userId) return socketId;
   }
   return null;
-}
-
-function formatGroupListPreview(msg) {
-  if (!msg) return null;
-  const username = msg.sender?.username || msg.sender_username || null;
-  const mediaType = msg.media_type || msg.mediaType || null;
-  const messageType = msg.message_type || msg.type || null;
-  let body = null;
-
-  if (messageType === "call_summary") {
-    body = "📞 Call";
-  } else {
-    const raw = String(msg.content || msg.text || "").trim();
-    if (raw && !raw.startsWith("__voice__:") && !raw.startsWith("{")) {
-      body = raw;
-    } else if (mediaType === "image") {
-      body = "📷 Photo";
-    } else if (mediaType === "voice" || mediaType === "audio" || raw.startsWith("__voice__:")) {
-      body = "🎤 Voice message";
-    } else if (msg.media_url || msg.mediaUrl) {
-      body = "📎 Attachment";
-    } else if (raw) {
-      body = raw.slice(0, 80);
-    }
-  }
-
-  if (!body) return null;
-  const preview = username ? `${username}: ${body}` : body;
-  return preview.slice(0, 80);
-}
-
-async function getLastMessagesByGroupIds(groupIds) {
-  const map = new Map();
-  if (!Array.isArray(groupIds) || groupIds.length === 0) return map;
-
-  await Promise.all(
-    groupIds.map(async (groupId) => {
-      const { data, error } = await supabase
-        .from("group_messages")
-        .select(`
-          content,
-          media_type,
-          media_url,
-          message_type,
-          created_at,
-          sender:sender_id (id, username)
-        `)
-        .eq("group_id", groupId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (error) {
-        console.error("[Groups] Last message fetch error:", groupId, error.message);
-        return;
-      }
-      if (data?.[0]) map.set(groupId, data[0]);
-    })
-  );
-
-  return map;
-}
-
-// Helper: User'in member oldugu gruplari getir (member detaylari ile)
-async function getUserGroups(userId) {
-  // once group_members tablosundan group_id'leri al
-  const { data: memberships, error: membershipError } = await supabase
-    .from("group_members")
-    .select("group_id, joined_at")
-    .eq("user_id", userId);
-  
-  if (membershipError) {
-    console.error("[Groups] Membership error:", membershipError);
-    return [];
-  }
-  
-  if (!memberships || memberships.length === 0) {
-    return [];
-  }
-  
-  // group_id'leri al
-  const groupIds = memberships.map(m => m.group_id);
-  
-  // groups tablosundan detaylari al
-  const { data: groups, error: groupsError } = await supabase
-    .from("groups")
-    .select("id, name, avatar_url, created_by, created_at")
-    .in("id", groupIds);
-  
-  if (groupsError) {
-    console.error("[Groups] Groups fetch error:", groupsError);
-    return [];
-  }
-
-  const lastByGroup = await getLastMessagesByGroupIds(groupIds);
-  
-  // Her grup icin member count ve member listesini al
-  const groupsWithDetails = await Promise.all(
-    (groups || []).map(async (group) => {
-      // Grup uyelerini getir
-      const { data: groupMembers, error: membersError } = await supabase
-        .from("group_members")
-        .select("user_id, joined_at")
-        .eq("group_id", group.id);
-      
-      if (membersError) {
-        console.error("[Groups] Members fetch error:", membersError);
-      }
-      
-      // User detaylarini getir
-      const memberIds = groupMembers?.map(m => m.user_id) || [];
-      let members = [];
-      
-      if (memberIds.length > 0) {
-        const { data: users, error: usersError } = await supabase
-          .from("users")
-          .select("id, username, avatar_url, status, is_admin")
-          .in("id", memberIds);
-        
-        if (usersError) {
-          console.error("[Groups] Users fetch error:", usersError);
-        } else {
-          members = users || [];
-        }
-      }
-      
-      const membership = memberships.find(m => m.group_id === group.id);
-      const last = lastByGroup.get(group.id) || null;
-      
-      return {
-        ...group,
-        memberCount: groupMembers?.length || 0,
-        memberIds: memberIds, // Grup arama icin gerekli
-        members: members, // Grup detay icin
-        joinedAt: membership?.joined_at,
-        lastMessage: formatGroupListPreview(last),
-        lastActivity: last?.created_at || group.created_at || null,
-      };
-    })
-  );
-  
-  return groupsWithDetails;
 }
 
 // ─── Invite links (Discord-style) ───────────────────────────────────────────
@@ -336,13 +199,11 @@ router.post("/invite-links/:code/join", requireAuth, async (req, res) => {
 
 // Get all groups where user is member
 router.get("/my", requireAuth, async (req, res) => {
+  const started = Date.now();
   try {
     const userId = req.user.id;
-    console.log("[Groups API] Fetching groups for user:", userId);
-    
     const groups = await getUserGroups(userId);
-    
-    console.log("[Groups API] Found groups:", groups.length);
+    console.log(`[Groups API] Found groups: ${groups.length} in ${Date.now() - started}ms`);
     res.json({ groups });
   } catch (err) {
     console.error("[Groups API] Error:", err);
@@ -508,11 +369,20 @@ router.delete("/:groupId/invite-links/:code", requireAuth, async (req, res) => {
 });
 
 // Get group messages
+const GROUP_MESSAGE_COLUMNS = `
+  id, group_id, sender_id, content, media_url, media_type, created_at, updated_at,
+  edited_at, edited_by, is_edited, message_type, original_name, file_size, pinned_at, pinned_by,
+  sender:sender_id (id, username, avatar_url)
+`;
+
 router.get("/:groupId/messages", requireAuth, async (req, res) => {
+  const started = Date.now();
   try {
     const userId = req.user.id;
     const { groupId } = req.params;
-    const { before, limit = 50 } = req.query;
+    const { before, since, limit = 50 } = req.query;
+    const sinceIso = parseSince(since);
+    const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
     
     // Check membership
     const { data: member } = await supabase
@@ -523,23 +393,43 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
       .maybeSingle();
     
     if (!member) return res.status(403).json({ error: "Not a member of this group" });
-    
-    let query = supabase
-      .from("group_messages")
-      .select(`
-        *,
-        sender:sender_id (id, username, avatar_url)
-      `)
-      .eq("group_id", groupId)
-      .order("created_at", { ascending: false })
-      .limit(parseInt(limit));
-    
-    if (before) {
-      query = query.lt("created_at", before);
+
+    let messages;
+    let incremental = false;
+    if (sinceIso && !before) {
+      incremental = true;
+      const [createdRes, editedRes] = await Promise.all([
+        supabase
+          .from("group_messages")
+          .select(GROUP_MESSAGE_COLUMNS)
+          .eq("group_id", groupId)
+          .gt("created_at", sinceIso)
+          .order("created_at", { ascending: true })
+          .limit(pageSize),
+        supabase
+          .from("group_messages")
+          .select(GROUP_MESSAGE_COLUMNS)
+          .eq("group_id", groupId)
+          .gt("edited_at", sinceIso)
+          .order("edited_at", { ascending: false })
+          .limit(pageSize),
+      ]);
+      if (createdRes.error) throw createdRes.error;
+      const byId = new Map();
+      for (const row of [...(editedRes.data || []), ...(createdRes.data || [])]) byId.set(row.id, row);
+      messages = [...byId.values()].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    } else {
+      let query = supabase
+        .from("group_messages")
+        .select(GROUP_MESSAGE_COLUMNS)
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: false })
+        .limit(pageSize);
+      if (before) query = query.lt("created_at", before);
+      const { data, error } = await query;
+      if (error) throw error;
+      messages = data;
     }
-    
-    const { data: messages, error } = await query;
-    if (error) throw error;
 
     const senderIds = [...new Set((messages || []).map((m) => m.sender_id || m.sender?.id).filter(Boolean))];
     try {
@@ -564,7 +454,8 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
       console.warn("[Groups] cosmetics enrich failed:", err?.message || err);
     }
 
-    const normalized = (messages || []).reverse().map((m) => {
+    const ordered = incremental ? (messages || []) : (messages || []).slice().reverse();
+    const normalized = ordered.map((m) => {
       if (m.message_type === "call_summary") {
         try {
           const summary = typeof m.content === "string" ? JSON.parse(m.content) : m.content;
@@ -575,8 +466,9 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
       }
       return m;
     });
-
-    res.json({ messages: normalized });
+    const withReactions = await attachReactions(normalized, "group", groupId);
+    console.log(`[Groups] messages ${withReactions.length} in ${Date.now() - started}ms`);
+    res.json({ messages: withReactions, incremental, reactionsIncluded: true });
   } catch (err) {
     console.error("[Groups] Messages error:", err);
     res.status(500).json({ error: "Failed to fetch messages" });

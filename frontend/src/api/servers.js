@@ -131,14 +131,22 @@ export function deleteChannelOverride(serverId, channelId, targetType, targetId)
 }
 
 /** Text channel message history (membership-gated). */
-export function getChannelMessages(serverId, channelId, { before, limit = 50 } = {}) {
+const channelMessageFlight = new Map();
+
+export function getChannelMessages(serverId, channelId, { before, since, limit = 50 } = {}) {
   const q = new URLSearchParams();
   if (before) q.set("before", before);
+  if (since && !before) q.set("since", since);
   if (limit) q.set("limit", String(limit));
   const qs = q.toString();
-  return serversRequest(
-    `/api/servers/${serverId}/channels/${channelId}/messages${qs ? `?${qs}` : ""}`
-  );
+  const path = `/api/servers/${serverId}/channels/${channelId}/messages${qs ? `?${qs}` : ""}`;
+  const existing = channelMessageFlight.get(path);
+  if (existing) return existing;
+  const pending = serversRequest(path).finally(() => {
+    if (channelMessageFlight.get(path) === pending) channelMessageFlight.delete(path);
+  });
+  channelMessageFlight.set(path, pending);
+  return pending;
 }
 
 export function getServerRoles(serverId) {

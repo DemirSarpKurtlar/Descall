@@ -514,52 +514,90 @@ const EMPTY_EQUIPPED = {
 };
 
 /** Resolves one user's equip slots (all cosmetic categories) into full item records. */
-async function getEquippedCosmeticsForUser(userId) {
-  const { data: user, error } = await supabase
-    .from("users")
-    .select(EQUIPPED_USER_COLUMNS)
-    .eq("id", userId)
-    .maybeSingle();
-  if (error || !user) return { ...EMPTY_EQUIPPED };
+const EQUIPPED_ID_FIELDS = [
+  "equipped_avatar_frame_id",
+  "equipped_banner_id",
+  "equipped_background_id",
+  "equipped_theme_id",
+  "equipped_badge_id",
+  "equipped_title_id",
+  "equipped_name_effect_id",
+  "equipped_avatar_effect_id",
+  "equipped_chat_bubble_id",
+  "equipped_presence_flare_id",
+  "equipped_profile_aura_id",
+  "equipped_sound_pack_id",
+  "equipped_typing_flare_id",
+  "equipped_reaction_burst_id",
+  "equipped_call_overlay_id",
+];
 
-  const ids = [
-    user.equipped_avatar_frame_id,
-    user.equipped_banner_id,
-    user.equipped_background_id,
-    user.equipped_theme_id,
-    user.equipped_badge_id,
-    user.equipped_title_id,
-    user.equipped_name_effect_id,
-    user.equipped_avatar_effect_id,
-    user.equipped_chat_bubble_id,
-    user.equipped_presence_flare_id,
-    user.equipped_profile_aura_id,
-    user.equipped_sound_pack_id,
-    user.equipped_typing_flare_id,
-    user.equipped_reaction_burst_id,
-    user.equipped_call_overlay_id,
-  ].filter(Boolean);
-  if (!ids.length) return { ...EMPTY_EQUIPPED };
-
-  const { data: shopRows } = await supabase.from("shop_items").select(ITEM_COLUMNS).in("id", ids);
-  const byId = new Map((shopRows || []).map((i) => [i.id, normalizeItem(i)]));
-  return {
-    avatarFrame: byId.get(user.equipped_avatar_frame_id) || null,
-    banner: byId.get(user.equipped_banner_id) || null,
-    background: byId.get(user.equipped_background_id) || null,
-    theme: byId.get(user.equipped_theme_id) || null,
-    badge: byId.get(user.equipped_badge_id) || null,
-    title: byId.get(user.equipped_title_id) || null,
-    nameEffect: byId.get(user.equipped_name_effect_id) || null,
-    avatarEffect: byId.get(user.equipped_avatar_effect_id) || null,
-    chatBubble: byId.get(user.equipped_chat_bubble_id) || null,
-    presenceFlare: byId.get(user.equipped_presence_flare_id) || null,
-    profileAura: byId.get(user.equipped_profile_aura_id) || null,
-    soundPack: null,
-    typingFlare: byId.get(user.equipped_typing_flare_id) || null,
-    reactionBurst: byId.get(user.equipped_reaction_burst_id) || null,
-    callOverlay: byId.get(user.equipped_call_overlay_id) || null,
+function equippedRecord(user, byId) {
+  if (!user) return { ...EMPTY_EQUIPPED };
+  const pick = (field) => {
+    const id = user[field];
+    return id ? byId.get(id) || null : null;
   };
+  return {
+    avatarFrame: pick("equipped_avatar_frame_id"),
+    banner: pick("equipped_banner_id"),
+    background: pick("equipped_background_id"),
+    theme: pick("equipped_theme_id"),
+    badge: pick("equipped_badge_id"),
+    title: pick("equipped_title_id"),
+    nameEffect: pick("equipped_name_effect_id"),
+    avatarEffect: pick("equipped_avatar_effect_id"),
+    chatBubble: pick("equipped_chat_bubble_id"),
+    presenceFlare: pick("equipped_presence_flare_id"),
+    profileAura: pick("equipped_profile_aura_id"),
+    soundPack: null,
+    typingFlare: pick("equipped_typing_flare_id"),
+    reactionBurst: pick("equipped_reaction_burst_id"),
+    callOverlay: pick("equipped_call_overlay_id"),
+  };
+}
+
+async function getEquippedCosmeticsForUser(userId) {
+  const map = await getEquippedCosmeticsForUsers([userId]);
+  return map.get(userId) || { ...EMPTY_EQUIPPED };
+}
+
+/** Two queries for every sender on a message page, not two queries per sender. */
+async function getEquippedCosmeticsForUsers(userIds) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  const out = new Map();
+  if (!ids.length) return out;
+  const { data: users, error } = await supabase
+    .from("users")
+    .select(`id, ${EQUIPPED_USER_COLUMNS}`)
+    .in("id", ids);
+  if (error || !users) {
+    for (const id of ids) out.set(id, { ...EMPTY_EQUIPPED });
+    return out;
+  }
+  const itemIds = new Set();
+  for (const user of users) {
+    for (const field of EQUIPPED_ID_FIELDS) {
+      if (user[field]) itemIds.add(user[field]);
+    }
+  }
+  const byId = new Map();
+  if (itemIds.size) {
+    const { data: shopRows } = await supabase
+      .from("shop_items")
+      .select(ITEM_COLUMNS)
+      .in("id", [...itemIds]);
+    for (const item of shopRows || []) byId.set(item.id, normalizeItem(item));
+  }
+  const seen = new Set();
+  for (const user of users) {
+    seen.add(user.id);
+    out.set(user.id, equippedRecord(user, byId));
+  }
+  for (const id of ids) {
+    if (!seen.has(id)) out.set(id, { ...EMPTY_EQUIPPED });
+  }
+  return out;
 }
 
 async function getEquippedForUsers(userIds) {
@@ -614,5 +652,6 @@ module.exports = {
   markGiftsNotified,
   equipItem,
   getEquippedCosmeticsForUser,
+  getEquippedCosmeticsForUsers,
   getEquippedForUsers,
 };

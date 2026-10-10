@@ -31,6 +31,14 @@ import {
 } from "./api/servers";
 import { syncChannelMutesFromServer } from "./lib/serverChannelMutes";
 import { applyDmListPrefs, prefsMapFromList, mergePrefIntoMap, applyLocalPrefPatch } from "./lib/dmConversationPrefs";
+import {
+  hydrateChatCache,
+  schedulePersistChatCache,
+  reconcileHistoryWindow,
+  newestCursor,
+  peekChatCache,
+} from "./lib/chatCache";
+import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, setChatPrefetchHandler } from "./lib/chatPrefetch";
 import { createSocket } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
@@ -332,11 +340,11 @@ function normalizeIncomingDmMessages(messages) {
 }
 
 /** Merge REST/socket DM history into client maps without dropping live rows. */
-function mergeDmHistory(setDmByUserId, setDmLastActivity, setDmPreviews, withUserId, messages, t) {
+function mergeDmHistory(setDmByUserId, setDmLastActivity, setDmPreviews, withUserId, messages, t, { incremental = false } = {}) {
   const normalized = normalizeIncomingDmMessages(messages);
   setDmByUserId((prev) => {
     const existing = prev[withUserId] ?? [];
-    return { ...prev, [withUserId]: mergeById(existing, normalized) };
+    return { ...prev, [withUserId]: reconcileHistoryWindow(existing, normalized, { incremental }) };
   });
   const last = normalized.length > 0 ? normalized[normalized.length - 1] : null;
   if (last) {
@@ -415,6 +423,19 @@ export default function App() {
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
   const [dmByUserId, setDmByUserId] = useState({});
+  const dmByUserIdRef = useRef({});
+  const groupMessagesRef = useRef({});
+  const channelMessagesRef = useRef({});
+  const chatCacheLiveRef = useRef(false);
+  const [chatCacheEpoch, setChatCacheEpoch] = useState(0);
+  const loadDmRestRef = useRef(null);
+  const refreshGroupRestRef = useRef(null);
+  const listCommitRef = useRef({ friends: false, groups: false, servers: false });
+  const groupsFlightRef = useRef(null);
+  const serversFlightRef = useRef(null);
+  const previewsFlightRef = useRef(null);
+  const fetchGroupsRef = useRef(null);
+  const fetchServersRef = useRef(null);
   const [dmUnread, setDmUnread] = useState({});
   const [dmPrefs, setDmPrefs] = useState({});
   const [groupUnread, setGroupUnread] = useState({});
@@ -793,21 +814,34 @@ export default function App() {
 
   const fetchServers = useCallback(async () => {
     if (!getToken()) return;
+    if (serversFlightRef.current) return serversFlightRef.current;
+    const run = (async () => {
     try {
       const data = await getMyServers();
       setMyServers(data?.servers || []);
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
+      listCommitRef.current.servers = true;
       setServersLoaded(true);
       syncServerChannelMeta();
     } catch (err) {
       console.error("[App] load servers error:", err);
+      listCommitRef.current.servers = true;
       setServersLoaded(true);
+    }
+    })();
+    serversFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      if (serversFlightRef.current === run) serversFlightRef.current = null;
     }
   }, [syncServerChannelMeta]);
 
   const fetchDmPreviews = useCallback(async () => {
     if (!getToken()) return;
+    if (previewsFlightRef.current) return previewsFlightRef.current;
+    const run = (async () => {
     try {
       const data = await getDmPreviews();
       const byPeer = { ...(data?.dmPreviewsByPeer || {}) };
@@ -824,14 +858,28 @@ export default function App() {
     } catch (err) {
       console.error("[DM] REST previews failed", err);
     }
+    })();
+    previewsFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      if (previewsFlightRef.current === run) previewsFlightRef.current = null;
+    }
   }, []);
+
+  dmByUserIdRef.current = dmByUserId;
+  groupMessagesRef.current = groupMessagesById;
+  channelMessagesRef.current = channelMessagesById;
 
   const loadDmMessagesRest = useCallback((peerId) => {
     if (!peerId) return Promise.resolve();
-    return getDmMessages(peerId)
+    const cached = dmByUserIdRef.current?.[peerId];
+    const since = Array.isArray(cached) && cached.length ? newestCursor(cached) : null;
+    return getDmMessages(peerId, since ? { since, limit: 50 } : { limit: 50 })
       .then((res) => {
         const withUserId = res?.withUserId || peerId;
         const msgs = Array.isArray(res?.messages) ? res.messages : [];
+        const incremental = Boolean(res?.incremental && since);
         const normalized = mergeDmHistory(
           setDmByUserId,
           setDmLastActivity,
@@ -839,17 +887,25 @@ export default function App() {
           withUserId,
           msgs,
           t,
+          { incremental },
         );
         // Stale responses from a previous DM must not flip the open chat's chrome.
         if (activeDmRef.current?.id !== withUserId) return;
-        if (typeof res?.hasMore === "boolean") setDmHasMore(res.hasMore);
-        else setDmHasMore((normalized?.length ?? 0) >= 50);
+        if (!incremental) {
+          if (typeof res?.hasMore === "boolean") setDmHasMore(res.hasMore);
+          else setDmHasMore((normalized?.length ?? 0) >= 50);
+        }
       })
-      .catch((err) => console.error("[App] fetch DM messages error:", err))
+      .catch((err) => {
+        console.error("[App] fetch DM messages error:", err);
+        if (!socketRef.current?.connected) return;
+        socketRef.current.emit("dm:history", { withUserId: peerId });
+      })
       .finally(() => {
         if (activeDmRef.current?.id === peerId) setMessagesLoading(false);
       });
   }, [t]);
+  loadDmRestRef.current = loadDmMessagesRest;
 
   /** Discord-like per-server notification level: all | mentions | muted */
   const getServerNotificationLevel = useCallback((serverId) => {
@@ -1033,9 +1089,9 @@ export default function App() {
   useEffect(() => {
     if (!activeDmUser?.id) return;
     const peerId = activeDmUser.id;
-    const cached = dmByUserId[peerId];
-    if (!cached) setMessagesLoading(true);
-    socketRef.current?.emit("dm:history", { withUserId: peerId });
+    const cached = dmByUserIdRef.current?.[peerId];
+    if (!cached?.length) setMessagesLoading(true);
+    else setMessagesLoading(false);
     loadDmMessagesRest(peerId);
   }, [activeDmUser?.id, loadDmMessagesRest]);
 
@@ -1436,45 +1492,9 @@ export default function App() {
         // Merge — never let a thin socket payload wipe displayName / bio / banner.
         commitSessionUser({ ...(getUser() || me || {}), ...payload.user });
       }
-      getMyGroups().then((raw) => {
-        const groups = normalizeGroups(raw);
-        setMyGroups(groups);
-        // Seed list previews from API lastMessage/lastActivity (same idea as friend:list).
-        setGroupPreviews((prev) => {
-          let changed = false;
-          const next = { ...prev };
-          for (const g of groups) {
-            if (g?.id && g.lastMessage && g.lastMessage !== next[g.id]) {
-              next[g.id] = g.lastMessage;
-              changed = true;
-            }
-          }
-          return changed ? next : prev;
-        });
-        setGroupLastActivity((prev) => {
-          let changed = false;
-          const next = { ...prev };
-          for (const g of groups) {
-            if (!g?.id || !g.lastActivity) continue;
-            const prevTs = next[g.id] ? new Date(next[g.id]).getTime() : 0;
-            const nextTs = new Date(g.lastActivity).getTime();
-            if (!prevTs || nextTs >= prevTs) {
-              if (next[g.id] !== g.lastActivity) {
-                next[g.id] = g.lastActivity;
-                changed = true;
-              }
-            }
-          }
-          return changed ? next : prev;
-        });
-        // Rejoin after groups load — connect-time rejoin often runs with empty list.
-        const ids = groups.map((g) => g.id).filter(Boolean);
-        if (ids.length > 0 && socket.connected) {
-          socket.emit("groups:rejoin", ids);
-        }
-      }).catch(console.error);
+      fetchGroupsRef.current?.();
       // Refresh on connect — session bootstrap / handleRefresh already load via REST.
-      fetchServers();
+      fetchServersRef.current?.();
     });
 
     socket.on("status:current", ({ status } = {}) => {
@@ -2522,6 +2542,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    chatCacheLiveRef.current = false;
     // Bump epoch so any in-flight getMe/socket reconnect cannot restore the session.
     sessionEpochRef.current += 1;
     const epoch = sessionEpochRef.current;
@@ -2610,6 +2631,7 @@ export default function App() {
       // Socket payload includes presence + DM previews — don't clobber it.
       if (!friendsFromSocketRef.current) {
         setFriends(list.map((u) => normalizeUser(u)));
+        listCommitRef.current.friends = true;
         setFriendsLoaded(true);
       }
       setFriendRequests(requests.map((u) => normalizeUser(u)));
@@ -2618,12 +2640,17 @@ export default function App() {
       // Don't mark loaded on auth failure — socket friend:list may still arrive.
       const msg = String(err?.message || "");
       const authFail = /authorization|token|401|unauthorized/i.test(msg);
-      if (!friendsFromSocketRef.current && !authFail) setFriendsLoaded(true);
+      if (!friendsFromSocketRef.current && !authFail) {
+        listCommitRef.current.friends = true;
+        setFriendsLoaded(true);
+      }
     }
   }, []);
 
   const fetchGroups = useCallback(async () => {
     if (!getToken()) return;
+    if (groupsFlightRef.current) return groupsFlightRef.current;
+    const run = (async () => {
     try {
       const raw = await getMyGroups();
       const groups = normalizeGroups(raw);
@@ -2663,9 +2690,51 @@ export default function App() {
       // Keep previous list — a transient API failure should not wipe the sidebar
       console.error("[groups] fetch failed", err);
     } finally {
+      listCommitRef.current.groups = true;
       setGroupsLoaded(true);
     }
+    })();
+    groupsFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      if (groupsFlightRef.current === run) groupsFlightRef.current = null;
+    }
   }, []);
+  fetchGroupsRef.current = fetchGroups;
+  fetchServersRef.current = fetchServers;
+
+  const refreshGroupMessages = useCallback((groupId, { showLoading = false } = {}) => {
+    if (!groupId) return Promise.resolve();
+    const cached = groupMessagesRef.current?.[groupId];
+    const since = Array.isArray(cached) && cached.length ? newestCursor(cached) : null;
+    if (showLoading && !cached?.length) setMessagesLoading(true);
+    return getGroupMessages(groupId, since ? { since, limit: 50 } : { limit: 50 })
+      .then(async (res) => {
+        const msgs = Array.isArray(res?.messages) ? res.messages : Array.isArray(res) ? res : [];
+        let normalized = msgs.map(normalizeGroupMessage).filter(Boolean);
+        if (!res?.reactionsIncluded) {
+          const rx = await fetchConversationReactions("group", groupId);
+          normalized = mergeReactionsIntoMessages(normalized, rx);
+        }
+        const incremental = Boolean(res?.incremental && since);
+        setGroupMessagesById((prev) => ({
+          ...prev,
+          [groupId]: reconcileHistoryWindow(prev[groupId] || [], normalized, { incremental }),
+        }));
+        const last = normalized[normalized.length - 1];
+        const preview = formatGroupPreviewFromMsg(last, t);
+        if (preview) setGroupPreviews((prev) => ({ ...prev, [groupId]: preview }));
+        if (last?.timestamp) {
+          setGroupLastActivity((prev) => ({ ...prev, [groupId]: last.timestamp }));
+        }
+      })
+      .catch((err) => console.error("[App] fetch group messages error:", err))
+      .finally(() => {
+        if (activeGroupRef.current?.id === groupId) setMessagesLoading(false);
+      });
+  }, [t]);
+  refreshGroupRestRef.current = refreshGroupMessages;
 
   const handleRefresh = useCallback(() => {
     const s = socketRef.current;
@@ -2689,7 +2758,6 @@ export default function App() {
 
     // Active DM
     if (dmPeer) {
-      s.emit("dm:history", { withUserId: dmPeer.id });
       s.emit("dm:unread:sync");
     }
 
@@ -2697,38 +2765,9 @@ export default function App() {
     const grp = activeGroupRef.current;
     if (grp?.id) {
       s.emit("group:join", grp.id);
-      getGroupMessages(grp.id)
-        .then(async (res) => {
-          const msgs = Array.isArray(res?.messages) ? res.messages : Array.isArray(res) ? res : [];
-          let normalized = msgs.map(normalizeGroupMessage).filter(Boolean);
-          const rx = await fetchConversationReactions("group", grp.id);
-          normalized = mergeReactionsIntoMessages(normalized, rx);
-          setGroupMessagesById((prev) => {
-            const existing = prev[grp.id] || [];
-            // Preserve ephemeral socket-only rows (casino boards, pending sends)
-            const keep = existing.filter((m) =>
-              m?.isGameMessage ||
-              m?.sending ||
-              m?.failed ||
-              (typeof m?.id === "string" && (m.id.startsWith("temp-") || m.id.startsWith("casino-"))) ||
-              (typeof m?.type === "string" && m.type.startsWith("game_"))
-            );
-            const byId = new Map(normalized.map((m) => [m.id, m]));
-            for (const m of keep) {
-              if (!byId.has(m.id)) byId.set(m.id, m);
-            }
-            // Keep chronological order: DB messages + any keep-only at end if missing timestamps
-            const merged = Array.from(byId.values()).sort((a, b) => {
-              const ta = new Date(a.timestamp || a.created_at || 0).getTime();
-              const tb = new Date(b.timestamp || b.created_at || 0).getTime();
-              return ta - tb;
-            });
-            return { ...prev, [grp.id]: merged };
-          });
-        })
-        .catch(console.error);
+      refreshGroupMessages(grp.id);
     }
-  }, [fetchGroups, fetchFriends, fetchServers, fetchDmPreviews, loadDmMessagesRest]);
+  }, [fetchGroups, fetchFriends, fetchServers, fetchDmPreviews, loadDmMessagesRest, refreshGroupMessages]);
 
   // Prefer socket live updates. Catch up on reconnect/focus.
   // Conservative REST fallback only when the socket is down (no 30s full refresh).
@@ -2765,36 +2804,14 @@ export default function App() {
     };
   }, [handleRefresh]);
 
-  // Fetch group messages when activeGroup changes
+  // Fetch group messages when activeGroup changes. Cached rows paint first.
   useEffect(() => {
     if (!activeGroup?.id) return;
-    if (groupMessagesById[activeGroup.id]) {
-      setMessagesLoading(false);
-      return;
-    }
-    setMessagesLoading(true);
-    getGroupMessages(activeGroup.id)
-      .then(async (res) => {
-        const msgs = Array.isArray(res?.messages) ? res.messages : Array.isArray(res) ? res : [];
-        let normalized = msgs.map(normalizeGroupMessage).filter(Boolean);
-        const rx = await fetchConversationReactions("group", activeGroup.id);
-        normalized = mergeReactionsIntoMessages(normalized, rx);
-        setGroupMessagesById((prev) => ({
-          ...prev,
-          [activeGroup.id]: sortMessagesChronologically(normalized),
-        }));
-        const last = normalized[normalized.length - 1];
-        const preview = formatGroupPreviewFromMsg(last, t);
-        if (preview) {
-          setGroupPreviews((prev) => ({ ...prev, [activeGroup.id]: preview }));
-        }
-        if (last?.timestamp) {
-          setGroupLastActivity((prev) => ({ ...prev, [activeGroup.id]: last.timestamp }));
-        }
-      })
-      .catch((err) => console.error("[App] fetch group messages error:", err))
-      .finally(() => setMessagesLoading(false));
-  }, [activeGroup?.id, t]);
+    const cached = groupMessagesRef.current?.[activeGroup.id];
+    if (!cached?.length) setMessagesLoading(true);
+    else setMessagesLoading(false);
+    refreshGroupMessages(activeGroup.id);
+  }, [activeGroup?.id, refreshGroupMessages]);
 
   // Live structure/member events for the open server.
   useEffect(() => {
@@ -2841,10 +2858,8 @@ export default function App() {
     }
     const channelId = activeChannel.id;
     const serverId = activeServer.id;
-    if (channelMessagesById[channelId]) {
-      setMessagesLoading(false);
-      return undefined;
-    }
+    const cachedChannel = channelMessagesRef.current?.[channelId];
+    if (cachedChannel?.length) setMessagesLoading(false);
     const token = ++channelHistoryEpochRef.current;
     let cancelled = false;
     const still = () =>
@@ -2855,15 +2870,17 @@ export default function App() {
         requestedChannelId: channelId,
         activeChannelId: activeChannelRef.current?.id,
       });
-    setMessagesLoading(true);
-    getChannelMessages(serverId, channelId)
+    if (!cachedChannel?.length) setMessagesLoading(true);
+    const since = cachedChannel?.length ? newestCursor(cachedChannel) : null;
+    getChannelMessages(serverId, channelId, since ? { since, limit: 50 } : { limit: 50 })
       .then((res) => {
         if (!still()) return;
         const msgs = Array.isArray(res?.messages) ? res.messages : [];
         const normalized = msgs.map(normalizeGroupMessage).filter(Boolean);
+        const incremental = Boolean(res?.incremental && since);
         setChannelMessagesById((prev) => ({
           ...prev,
-          [channelId]: sortMessagesChronologically(normalized),
+          [channelId]: reconcileHistoryWindow(prev[channelId] || [], normalized, { incremental }),
         }));
       })
       .catch((err) => {
@@ -2918,6 +2935,106 @@ export default function App() {
       serverVoice.checkChannel?.(activeChannel.id);
     }
   }, [activeView, activeChannel?.id, activeChannel?.type, serverVoice.checkChannel]);
+
+  useEffect(() => {
+    if (!me?.id) {
+      chatCacheLiveRef.current = false;
+      listCommitRef.current = { friends: false, groups: false, servers: false };
+      return undefined;
+    }
+    let cancelled = false;
+    const userId = String(me.id);
+    const applySnap = (snap) => {
+      if (cancelled || !snap || snap.userId !== userId) return;
+      const committed = listCommitRef.current;
+      if (!committed.servers && Array.isArray(snap.servers) && snap.servers.length) {
+        setMyServers((prev) => (prev.length ? prev : snap.servers));
+        setOwnedServerCount((n) => n || snap.ownedCount || 0);
+        setMaxOwnedServers((n) => n || snap.maxOwned || 10);
+        setServersLoaded(true);
+      }
+      if (!committed.groups && Array.isArray(snap.groups) && snap.groups.length) {
+        setMyGroups((prev) => (prev.length ? prev : snap.groups));
+        setGroupPreviews((prev) => ({ ...(snap.groupPreviews || {}), ...prev }));
+        setGroupLastActivity((prev) => ({ ...(snap.groupLastActivity || {}), ...prev }));
+        setGroupsLoaded(true);
+      }
+      if (!committed.friends && Array.isArray(snap.friends) && snap.friends.length && !friendsFromSocketRef.current) {
+        setFriends((prev) => (prev.length ? prev : snap.friends.map((user) => normalizeUser(user))));
+        setFriendsLoaded(true);
+      }
+      setDmPreviews((prev) => ({ ...(snap.dmPreviews || {}), ...prev }));
+      setDmLastActivity((prev) => ({ ...(snap.dmLastActivity || {}), ...prev }));
+      setDmUnread((prev) => ({ ...(snap.dmUnread || {}), ...prev }));
+      setGroupUnread((prev) => ({ ...(snap.groupUnread || {}), ...prev }));
+      setChannelUnread((prev) => ({ ...(snap.channelUnread || {}), ...prev }));
+      const dm = snap.messages?.dm || {};
+      const groups = snap.messages?.group || {};
+      const channels = snap.messages?.channel || {};
+      setDmByUserId((prev) => ({ ...dm, ...prev }));
+      setGroupMessagesById((prev) => ({ ...groups, ...prev }));
+      setChannelMessagesById((prev) => ({ ...channels, ...prev }));
+      const openDm = activeDmRef.current?.id;
+      if (openDm && dm[openDm]?.length) setMessagesLoading(false);
+      const openGroup = activeGroupRef.current?.id;
+      if (openGroup && groups[openGroup]?.length) setMessagesLoading(false);
+    };
+    const memorySnap = peekChatCache(userId);
+    if (memorySnap) applySnap(memorySnap);
+    hydrateChatCache(userId).then((snap) => {
+      applySnap(snap);
+      if (cancelled) return;
+      chatCacheLiveRef.current = true;
+      // The persist effect bails until this flips. Bump state so the lists
+      // already on screen are written even when IndexedDB had nothing.
+      setChatCacheEpoch((n) => n + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [me?.id]);
+
+  useEffect(() => {
+    if (!me?.id || !chatCacheLiveRef.current) return undefined;
+    schedulePersistChatCache(me.id, {
+      servers: myServers,
+      ownedCount: ownedServerCount,
+      maxOwned: maxOwnedServers,
+      groups: myGroups,
+      friends,
+      friendRequests,
+      dmPreviews,
+      dmLastActivity,
+      groupPreviews,
+      groupLastActivity,
+      dmUnread,
+      groupUnread,
+      channelUnread,
+      dmByUserId,
+      groupMessagesById,
+      channelMessagesById,
+    });
+    return undefined;
+  }, [
+    me?.id,
+    myServers,
+    ownedServerCount,
+    maxOwnedServers,
+    myGroups,
+    friends,
+    friendRequests,
+    dmPreviews,
+    dmLastActivity,
+    groupPreviews,
+    groupLastActivity,
+    dmUnread,
+    groupUnread,
+    channelUnread,
+    dmByUserId,
+    groupMessagesById,
+    channelMessagesById,
+    chatCacheEpoch,
+  ]);
 
   useEffect(() => {
     // Wait for session validation so we never fire authed REST calls with a
@@ -3216,7 +3333,6 @@ export default function App() {
     if (!dmByUserId[friend.id]) setMessagesLoading(true);
     setDmUnread((u) => { const n = { ...u }; delete n[friend.id]; return n; });
     socketRef.current?.emit("dm:mark_read", { withUserId: friend.id });
-    socketRef.current?.emit("dm:history", { withUserId: friend.id });
     socketRef.current?.emit("dm:set_active", { withUserId: friend.id });
   };
 
@@ -3643,6 +3759,46 @@ export default function App() {
       return (a.name || "").localeCompare(b.name || "");
     });
   }, [myGroups, groupLastActivity, groupPreviews, groupUnread, groupMessagesById, t]);
+
+  useEffect(() => {
+    if (!me?.id || !getToken()) return undefined;
+    const queue = createPrefetchQueue(2);
+    const prefetchChannel = (serverId, channelId) => {
+      const cached = channelMessagesRef.current?.[channelId];
+      const since = cached?.length ? newestCursor(cached) : null;
+      return getChannelMessages(serverId, channelId, since ? { since, limit: 50 } : { limit: 50 })
+        .then((res) => {
+          const msgs = Array.isArray(res?.messages) ? res.messages : [];
+          const normalized = msgs.map(normalizeGroupMessage).filter(Boolean);
+          const incremental = Boolean(res?.incremental && since);
+          setChannelMessagesById((prev) => ({
+            ...prev,
+            [channelId]: reconcileHistoryWindow(prev[channelId] || [], normalized, { incremental }),
+          }));
+        })
+        .catch((err) => console.warn("[App] prefetch channel failed:", err?.message || err));
+    };
+    const clear = setChatPrefetchHandler((kind, id) => {
+      if (kind === "dm") queue.enqueue(`dm:${id}`, () => loadDmRestRef.current?.(id));
+      else if (kind === "group") queue.enqueue(`group:${id}`, () => refreshGroupRestRef.current?.(id));
+      else if (kind === "channel") {
+        const [serverId, channelId] = String(id).split(":");
+        if (serverId && channelId) queue.enqueue(`channel:${channelId}`, () => prefetchChannel(serverId, channelId));
+      }
+    });
+    return () => clear();
+  }, [me?.id]);
+
+  useEffect(() => {
+    if (!me?.id || !friendsLoaded || !groupsLoaded || !serversLoaded) return undefined;
+    const plan = planStartupPrefetch({ dms: sortedDms, groups: sortedGroups, servers: myServers });
+    for (const id of plan.dmIds) requestChatPrefetch("dm", id);
+    for (const id of plan.groupIds) requestChatPrefetch("group", id);
+    for (const channel of plan.channels) {
+      requestChatPrefetch("channel", `${channel.serverId}:${channel.channelId}`);
+    }
+    return undefined;
+  }, [me?.id, friendsLoaded, groupsLoaded, serversLoaded, sortedDms, sortedGroups, myServers]);
 
   // HTML boot splash covers first paint only. Dismiss as soon as App mounts
   // (skeleton is already painted) — never wait for getMe / sessionChecked
@@ -4374,7 +4530,6 @@ export default function App() {
             if (dmByUserId[dm.id] === undefined) setMessagesLoading(true);
             setDmUnread((u) => { const n = { ...u }; delete n[dm.id]; return n; });
             socketRef.current?.emit("dm:mark_read", { withUserId: dm.id });
-            socketRef.current?.emit("dm:history", { withUserId: dm.id });
             socketRef.current?.emit("dm:set_active", { withUserId: dm.id });
           }}
           onDmPrefAction={handleDmPrefAction}

@@ -20,6 +20,10 @@ const {
 } = require("../runtime/sharedState");
 const { toUtcIso } = require("./datetime");
 const { parseCallSummaryText, callSummaryMessageFields } = require("./callSummary");
+const { createSingleflight } = require("./singleflight");
+const { parseSince } = require("./messagePage");
+
+const dmLoadFlight = createSingleflight();
 
 const DM_MESSAGE_COLUMNS =
   "id, from_user_id, to_user_id, content, media_url, media_type, mime_type, file_size, original_name, duration, reply_to, delivered_at, read_at, edited_at, edit_history, pinned_at, pinned_by, created_at";
@@ -124,21 +128,12 @@ function mapDmRow(row, usersById) {
   };
 }
 
-async function loadDmMessages(myId, peerId, { before, limit = 100 } = {}) {
-  const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 100);
-  let query = supabase
-    .from("dm_messages")
-    .select(DM_MESSAGE_COLUMNS)
-    .or(`and(from_user_id.eq.${myId},to_user_id.eq.${peerId}),and(from_user_id.eq.${peerId},to_user_id.eq.${myId})`)
-    .order("created_at", { ascending: false })
-    .limit(pageSize + 1);
-  if (before) query = query.lt("created_at", before);
+function dmPairFilter(myId, peerId) {
+  return `and(from_user_id.eq.${myId},to_user_id.eq.${peerId}),and(from_user_id.eq.${peerId},to_user_id.eq.${myId})`;
+}
 
-  const { data: rows, error } = await query;
-  if (error) throw error;
-
-  const hasMore = (rows || []).length > pageSize;
-  const page = hasMore ? rows.slice(0, pageSize) : (rows || []);
+async function mapDmPage(rows, myId, peerId) {
+  const page = rows || [];
   const userIds = [...new Set(page.map((row) => row.from_user_id))];
   const { data: profiles, error: profileError } = userIds.length
     ? await supabase
@@ -150,11 +145,66 @@ async function loadDmMessages(myId, peerId, { before, limit = 100 } = {}) {
 
   const usersById = new Map((profiles || []).map((profile) => [profile.id, profile]));
   for (const profile of usersById.values()) cacheUserProfile(profile);
-  // Attach equipped cosmetics so chat avatars/name effects/bubbles match profiles
   await ensureCosmeticsCached([...userIds, myId, peerId]);
-  const messages = page.reverse().map((row) => mapDmRow(row, usersById));
+  return page.map((row) => mapDmRow(row, usersById));
+}
+
+async function loadDmMessagesUncached(myId, peerId, { before, since, limit = 100 } = {}) {
+  const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 100);
+  const sinceIso = parseSince(since);
+
+  if (sinceIso && !before) {
+    const pair = dmPairFilter(myId, peerId);
+    const [createdRes, editedRes] = await Promise.all([
+      supabase
+        .from("dm_messages")
+        .select(DM_MESSAGE_COLUMNS)
+        .or(pair)
+        .gt("created_at", sinceIso)
+        .order("created_at", { ascending: true })
+        .limit(pageSize),
+      supabase
+        .from("dm_messages")
+        .select(DM_MESSAGE_COLUMNS)
+        .or(pair)
+        .gt("edited_at", sinceIso)
+        .order("edited_at", { ascending: false })
+        .limit(pageSize),
+    ]);
+    if (createdRes.error) throw createdRes.error;
+    if (editedRes.error) console.warn("[DM] edited-since lookup failed:", editedRes.error.message);
+    const byId = new Map();
+    for (const row of [...(editedRes.data || []), ...(createdRes.data || [])]) byId.set(row.id, row);
+    const rows = [...byId.values()].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const messages = await mapDmPage(rows, myId, peerId);
+    cacheDmMessages(convKey(myId, peerId), messages);
+    return { messages, hasMore: false, incremental: true };
+  }
+
+  let query = supabase
+    .from("dm_messages")
+    .select(DM_MESSAGE_COLUMNS)
+    .or(dmPairFilter(myId, peerId))
+    .order("created_at", { ascending: false })
+    .limit(pageSize + 1);
+  if (before) query = query.lt("created_at", before);
+
+  const { data: rows, error } = await query;
+  if (error) throw error;
+
+  const hasMore = (rows || []).length > pageSize;
+  const page = hasMore ? rows.slice(0, pageSize) : (rows || []);
+  const messages = (await mapDmPage(page, myId, peerId)).reverse();
   cacheDmMessages(convKey(myId, peerId), messages);
-  return { messages, hasMore };
+  return { messages, hasMore, incremental: false };
+}
+
+function loadDmMessages(myId, peerId, options = {}) {
+  const since = parseSince(options.since) || "";
+  const before = options.before || "";
+  const limit = Math.min(Math.max(Number(options.limit) || 100, 1), 100);
+  const key = `${myId}:${peerId}:${before}:${since}:${limit}`;
+  return dmLoadFlight.run(key, () => loadDmMessagesUncached(myId, peerId, { ...options, limit }));
 }
 
 async function listAcceptedFriendIds(userId) {
@@ -278,15 +328,19 @@ async function buildDmPreviewMaps(userId) {
   }
 
   const remaining = new Set(missingPeerIds);
+  const previewLimit = Math.max(500, missingPeerIds.length * 3);
+  let bulkRows = [];
+  let bulkFailed = false;
   try {
     const { data: rows, error } = await supabase
       .from("dm_messages")
       .select("from_user_id, to_user_id, content, media_url, media_type, created_at")
       .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
       .order("created_at", { ascending: false })
-      .limit(Math.max(500, missingPeerIds.length * 3));
+      .limit(previewLimit);
     if (error) throw error;
-    for (const row of rows || []) {
+    bulkRows = rows || [];
+    for (const row of bulkRows) {
       const peerId = row.from_user_id === userId ? row.to_user_id : row.from_user_id;
       if (!remaining.has(peerId)) continue;
       remaining.delete(peerId);
@@ -294,17 +348,23 @@ async function buildDmPreviewMaps(userId) {
       if (remaining.size === 0) break;
     }
   } catch (error) {
+    bulkFailed = true;
     console.warn("[DM] Bulk preview lookup failed:", error?.message || error);
   }
 
-  await Promise.all([...remaining].map(async (peerId) => {
-    try {
-      const data = await lookupLastDmRow(userId, peerId);
-      applyPreviewRow(dmPreviewsByPeer, dmLastActivityByPeer, peerId, data);
-    } catch (error) {
-      console.warn("[DM] Preview lookup failed:", error?.message || error);
-    }
-  }));
+  // A short page means every message for this user was in the bulk read.
+  // Friends with no messages do not need their own round trip.
+  const truncated = bulkFailed || bulkRows.length >= previewLimit;
+  if (truncated && remaining.size) {
+    await Promise.all([...remaining].map(async (peerId) => {
+      try {
+        const data = await lookupLastDmRow(userId, peerId);
+        applyPreviewRow(dmPreviewsByPeer, dmLastActivityByPeer, peerId, data);
+      } catch (error) {
+        console.warn("[DM] Preview lookup failed:", error?.message || error);
+      }
+    }));
+  }
 
   return { dmPreviewsByPeer, dmLastActivityByPeer };
 }

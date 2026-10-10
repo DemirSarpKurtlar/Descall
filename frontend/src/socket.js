@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "./config/api";
-import { getDmMessages } from "./api/dmPrefs";
+import { getDmMessages } from "./api/dm";
+import { shouldPullDmHistory } from "./lib/dmHistoryFetch";
 import { Capacitor } from "@capacitor/core";
 import { isNativeIOS } from "./lib/platform";
 import { installSocketResumeWatchdog } from "./lib/socketResume";
@@ -76,7 +77,7 @@ export function createSocket(token, options = {}) {
   const origEmit = socket.emit;
   socket.emit = function patchedEmit(event, ...args) {
     const ret = origEmit.apply(this, [event, ...args]);
-    if (event === "dm:set_active" || event === "dm:history") {
+    if (shouldPullDmHistory(event, socket.connected)) {
       const withUserId = args[0] && args[0].withUserId;
       if (withUserId) pullDmHistory(this, withUserId);
     }

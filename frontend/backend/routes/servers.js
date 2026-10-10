@@ -27,6 +27,9 @@ const {
   clipRolePermissions,
 } = require("../lib/serverPermissions");
 const { notifyServerAccessChanged } = require("../lib/serverAccessRealtime");
+const { createSingleflight } = require("../lib/singleflight");
+const { parseSince } = require("../lib/messagePage");
+const myServersFlight = createSingleflight();
 const {
   applyServerTimeout,
   clearServerTimeout,
@@ -144,9 +147,9 @@ const CHANNEL_OVERRIDE_KEYS = {
  * Supports raw DB rows (parent_id) and publicChannel objects (parentId).
  * Category overwrites apply to children (Discord-like). Empty categories are hidden.
  */
-async function filterChannelsForMember(serverId, userId, channels) {
+async function filterChannelsForMember(serverId, userId, channels, preloaded = null) {
   const list = Array.isArray(channels) ? channels : [];
-  const base = await resolveMemberPermissions(supabase, serverId, userId);
+  const base = await resolveMemberPermissions(supabase, serverId, userId, preloaded);
   if (!base.isMember) return [];
   if (canBrowsePrivateChannels(base)) {
     return list;
@@ -157,8 +160,16 @@ async function filterChannelsForMember(serverId, userId, channels) {
   ];
   const overrideIds = [...new Set([...list.map((c) => c.id).filter(Boolean), ...parentIds])];
 
-  const [{ data: overrides, error: oErr }, { data: roles, error: rErr }, { data: assigned, error: aErr }] =
-    await Promise.all([
+  let overrides;
+  let roles;
+  let assigned;
+  if (preloaded?.overrides && preloaded?.roles && preloaded?.assigned) {
+    const allowed = new Set(overrideIds.map(String));
+    overrides = (preloaded.overrides || []).filter((row) => allowed.has(String(row.channel_id)));
+    roles = preloaded.roles;
+    assigned = preloaded.assigned;
+  } else {
+    const [overridesRes, rolesRes, assignedRes] = await Promise.all([
       overrideIds.length
         ? supabase
             .from("server_channel_overrides")
@@ -172,9 +183,13 @@ async function filterChannelsForMember(serverId, userId, channels) {
         .eq("server_id", serverId)
         .eq("user_id", userId),
     ]);
-  if (oErr) throw oErr;
-  if (rErr) throw rErr;
-  if (aErr) throw aErr;
+    if (overridesRes.error) throw overridesRes.error;
+    if (rolesRes.error) throw rolesRes.error;
+    if (assignedRes.error) throw assignedRes.error;
+    overrides = overridesRes.data;
+    roles = rolesRes.data;
+    assigned = assignedRes.data;
+  }
 
   const everyoneRoleId = (roles || []).find((r) => r.is_everyone)?.id || null;
   const rolePos = new Map((roles || []).map((r) => [String(r.id), Number(r.position) || 0]));
@@ -219,8 +234,8 @@ async function filterChannelsForMember(serverId, userId, channels) {
   });
 }
 
-async function publicVisibleChannels(serverId, userId, channels) {
-  const visible = await filterChannelsForMember(serverId, userId, channels || []);
+async function publicVisibleChannels(serverId, userId, channels, preloaded = null) {
+  const visible = await filterChannelsForMember(serverId, userId, channels || [], preloaded);
   return visible.map(publicChannel);
 }
 
@@ -435,10 +450,10 @@ async function requireServerPermission(serverId, userId, flag) {
   };
 }
 
-async function buildMyPermissionsPayload(serverId, userId) {
+async function buildMyPermissionsPayload(serverId, userId, preloaded = null) {
   const [resolved, highestPosition] = await Promise.all([
-    resolveMemberPermissions(supabase, serverId, userId),
-    getMemberHighestPosition(supabase, serverId, userId),
+    resolveMemberPermissions(supabase, serverId, userId, preloaded),
+    getMemberHighestPosition(supabase, serverId, userId, preloaded),
   ]);
   return {
     bits: toPgBigint(resolved.bits),
@@ -874,8 +889,19 @@ function notifyServerMemberRemoved(req, {
  * Servers the user is a member of (owned + joined), ordered by list_position.
  */
 router.get("/my", requireAuth, async (req, res) => {
+  const started = Date.now();
   try {
-    const userId = req.user.id;
+    const payload = await myServersFlight.run(req.user.id, () => buildMyServerList(req.user.id));
+    console.log(`[SERVERS] GET /my ${payload.servers?.length || 0} servers in ${Date.now() - started}ms`);
+    return res.json(payload);
+  } catch (err) {
+    console.error("[SERVERS] GET /my error:", err);
+    return res.status(500).json({ error: "Failed to load servers." });
+  }
+});
+
+async function buildMyServerList(userId) {
+  try {
     const { data: memberships, error } = await supabase
       .from("server_members")
       .select(
@@ -887,49 +913,96 @@ router.get("/my", requireAuth, async (req, res) => {
 
     const ids = (memberships || []).map((m) => m.server_id);
     if (ids.length === 0) {
-      return res.json({ servers: [], ownedCount: 0, maxOwned: MAX_OWNED_SERVERS });
+      return { servers: [], ownedCount: 0, maxOwned: MAX_OWNED_SERVERS };
     }
 
-    const { data: servers, error: sErr } = await supabase.from("servers").select("*").in("id", ids);
-    if (sErr) throw sErr;
+    const [serversRes, memberRowsRes, channelsRes] = await Promise.all([
+      supabase.from("servers").select("*").in("id", ids),
+      supabase.from("server_members").select("server_id").in("server_id", ids),
+      supabase
+        .from("server_channels")
+        .select("*")
+        .in("server_id", ids)
+        .order("position", { ascending: true }),
+    ]);
+    if (serversRes.error) throw serversRes.error;
+    const servers = serversRes.data || [];
+    if (memberRowsRes.error) {
+      console.warn("[SERVERS] member count batch failed:", memberRowsRes.error.message);
+    }
+    const channels = channelsRes.error ? [] : (channelsRes.data || []);
+    if (channelsRes.error) console.warn("[SERVERS] channel batch failed:", channelsRes.error.message);
 
-    const byId = new Map((servers || []).map((s) => [s.id, s]));
-    const ownedCount = (servers || []).filter((s) => s.owner_id === userId).length;
+    const byId = new Map(servers.map((s) => [s.id, s]));
+    const ownedCount = servers.filter((s) => s.owner_id === userId).length;
 
-    // Member counts in one query instead of N+1 HEAD counts per server.
     const counts = new Map();
-    const { data: memberRows, error: countErr } = await supabase
-      .from("server_members")
-      .select("server_id")
-      .in("server_id", ids);
-    if (countErr) {
-      console.warn("[SERVERS] member count batch failed:", countErr.message);
-    } else {
-      for (const row of memberRows || []) {
-        counts.set(row.server_id, (counts.get(row.server_id) || 0) + 1);
-      }
+    for (const row of memberRowsRes.data || []) {
+      counts.set(row.server_id, (counts.get(row.server_id) || 0) + 1);
     }
-
-    const { data: channels } = await supabase
-      .from("server_channels")
-      .select("*")
-      .in("server_id", ids)
-      .order("position", { ascending: true });
 
     const rawChannelsByServer = new Map();
-    for (const ch of channels || []) {
+    for (const ch of channels) {
       if (!rawChannelsByServer.has(ch.server_id)) rawChannelsByServer.set(ch.server_id, []);
       rawChannelsByServer.get(ch.server_id).push(ch);
     }
 
-    // Attach resolved permissions so clients don't need a separate GET /:id
-    // before CONNECT / manage UI works (reload + list hydration path).
-    // Channel lists are VIEW_CHANNEL-filtered so @everyone never sees staff/private channels.
+    const channelIds = channels.map((ch) => ch.id).filter(Boolean);
+    const [rolesRes, assignedRes, overridesRes] = await Promise.all([
+      supabase
+        .from("server_roles")
+        .select("id, server_id, permissions, is_everyone, position")
+        .in("server_id", ids),
+      supabase
+        .from("server_member_roles")
+        .select("server_id, role_id, user_id")
+        .eq("user_id", userId)
+        .in("server_id", ids),
+      channelIds.length
+        ? supabase
+            .from("server_channel_overrides")
+            .select("id, channel_id, target_type, target_id, allow_permissions, deny_permissions")
+            .in("channel_id", channelIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (rolesRes.error) throw rolesRes.error;
+    if (assignedRes.error) throw assignedRes.error;
+    if (overridesRes.error) console.warn("[SERVERS] override batch failed:", overridesRes.error.message);
+
+    const rolesByServer = new Map();
+    for (const role of rolesRes.data || []) {
+      if (!rolesByServer.has(role.server_id)) rolesByServer.set(role.server_id, []);
+      rolesByServer.get(role.server_id).push(role);
+    }
+    const assignedByServer = new Map();
+    for (const row of assignedRes.data || []) {
+      if (!assignedByServer.has(row.server_id)) assignedByServer.set(row.server_id, []);
+      assignedByServer.get(row.server_id).push(row);
+    }
+    const channelServer = new Map(channels.map((ch) => [String(ch.id), ch.server_id]));
+    const overridesByServer = new Map();
+    for (const row of overridesRes.data || []) {
+      const serverId = channelServer.get(String(row.channel_id));
+      if (!serverId) continue;
+      if (!overridesByServer.has(serverId)) overridesByServer.set(serverId, []);
+      overridesByServer.get(serverId).push(row);
+    }
+
+    // Permissions and VIEW_CHANNEL filtering run in memory from the three
+    // batched reads above. Previously each server repeated those queries.
     const metaEntries = await Promise.all(
       ids.map(async (id) => {
+        const row = byId.get(id);
+        const preloaded = {
+          server: row ? { id: row.id, owner_id: row.owner_id } : null,
+          isMember: true,
+          roles: rolesByServer.get(id) || [],
+          assigned: assignedByServer.get(id) || [],
+          overrides: overridesRes.error ? null : (overridesByServer.get(id) || []),
+        };
         const [myPermissions, visibleChannels] = await Promise.all([
-          buildMyPermissionsPayload(id, userId),
-          publicVisibleChannels(id, userId, rawChannelsByServer.get(id) || []),
+          buildMyPermissionsPayload(id, userId, preloaded),
+          publicVisibleChannels(id, userId, rawChannelsByServer.get(id) || [], preloaded),
         ]);
         return [id, { myPermissions, channels: visibleChannels }];
       })
@@ -958,16 +1031,15 @@ router.get("/my", requireAuth, async (req, res) => {
       })
       .filter(Boolean);
 
-    return res.json({
+    return {
       servers: list,
       ownedCount,
       maxOwned: MAX_OWNED_SERVERS,
-    });
+    };
   } catch (err) {
-    console.error("[SERVERS] GET /my error:", err);
-    return res.status(500).json({ error: "Failed to load servers." });
+    throw err;
   }
-});
+}
 
 /**
  * PUT /servers/my/order — reorder the current user's server list (list_position).
@@ -2303,7 +2375,9 @@ router.get("/:id/channels/:channelId/messages", requireAuth, async (req, res) =>
   try {
     const serverId = req.params.id;
     const channelId = req.params.channelId;
-    const { before, limit = 50 } = req.query;
+    const started = Date.now();
+    const { before, since, limit = 50 } = req.query;
+    const sinceIso = parseSince(since);
 
     const { data: channel, error: cErr } = await supabase
       .from("server_channels")
@@ -2333,23 +2407,52 @@ router.get("/:id/channels/:channelId/messages", requireAuth, async (req, res) =>
       return res.json({ messages: [] });
     }
 
-    let query = supabase
-      .from("server_messages")
-      .select(
-        `
-        *,
+    const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+    const messageSelect = `
+        id, server_id, channel_id, sender_id, content, media_url, media_type,
+        reply_to, created_at, updated_at, edited_at, pinned_at, pinned_by,
+        message_type, system_kind, system_meta,
         sender:sender_id (id, username, display_name, avatar_url)
-      `
-      )
-      .eq("channel_id", channelId)
-      .eq("server_id", serverId)
-      .order("created_at", { ascending: false })
-      .limit(Math.min(100, Math.max(1, parseInt(limit, 10) || 50)));
-
-    if (before) query = query.lt("created_at", before);
-
-    const { data: messages, error } = await query;
-    if (error) throw error;
+      `;
+    let messages;
+    let incremental = false;
+    if (sinceIso && !before) {
+      incremental = true;
+      const [createdRes, editedRes] = await Promise.all([
+        supabase
+          .from("server_messages")
+          .select(messageSelect)
+          .eq("channel_id", channelId)
+          .eq("server_id", serverId)
+          .gt("created_at", sinceIso)
+          .order("created_at", { ascending: true })
+          .limit(pageSize),
+        supabase
+          .from("server_messages")
+          .select(messageSelect)
+          .eq("channel_id", channelId)
+          .eq("server_id", serverId)
+          .gt("edited_at", sinceIso)
+          .order("edited_at", { ascending: false })
+          .limit(pageSize),
+      ]);
+      if (createdRes.error) throw createdRes.error;
+      const byId = new Map();
+      for (const row of [...(editedRes.data || []), ...(createdRes.data || [])]) byId.set(row.id, row);
+      messages = [...byId.values()].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    } else {
+      let query = supabase
+        .from("server_messages")
+        .select(messageSelect)
+        .eq("channel_id", channelId)
+        .eq("server_id", serverId)
+        .order("created_at", { ascending: false })
+        .limit(pageSize);
+      if (before) query = query.lt("created_at", before);
+      const { data, error } = await query;
+      if (error) throw error;
+      messages = data;
+    }
 
     const senderIds = [...new Set((messages || []).map((m) => m.sender_id || m.sender?.id).filter(Boolean))];
     try {
@@ -2374,9 +2477,10 @@ router.get("/:id/channels/:channelId/messages", requireAuth, async (req, res) =>
       console.warn("[SERVERS] cosmetics enrich failed:", err?.message || err);
     }
 
-    const ordered = (messages || []).reverse();
+    const ordered = incremental ? (messages || []) : (messages || []).slice().reverse();
     const withReactions = await attachServerReactions(ordered, channelId);
-    return res.json({ messages: withReactions });
+    console.log(`[SERVERS] channel messages ${withReactions.length} in ${Date.now() - started}ms`);
+    return res.json({ messages: withReactions, incremental, reactionsIncluded: true });
   } catch (err) {
     console.error("[SERVERS] GET channel messages error:", err);
     return res.status(500).json({ error: "Failed to load messages." });

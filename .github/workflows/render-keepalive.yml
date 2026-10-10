@@ -5,7 +5,7 @@ name: Render keepalive
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/8 * * * *"
   workflow_dispatch:
 
 jobs:

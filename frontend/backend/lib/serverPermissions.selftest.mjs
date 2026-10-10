@@ -135,4 +135,31 @@ assert(
   "@everyone can keep VIEW_CHANNEL"
 );
 
+const { resolveMemberPermissions, ALL_PERMISSIONS } = require("./serverPermissions.js");
+const throwingDb = {
+  from() {
+    throw new Error("preloaded permissions must not query");
+  },
+};
+const owner = await resolveMemberPermissions(throwingDb, "srv", "owner-1", {
+  server: { id: "srv", owner_id: "owner-1" },
+});
+assert(owner.isOwner === true, "preloaded owner short-circuit");
+assert(owner.bits === ALL_PERMISSIONS, "owner still receives every permission");
+
+const member = await resolveMemberPermissions(throwingDb, "srv", "user-1", {
+  server: { id: "srv", owner_id: "someone-else" },
+  isMember: true,
+  roles: [
+    { id: "everyone", permissions: String(Permissions.VIEW_CHANNEL | Permissions.SEND_MESSAGES), is_everyone: true },
+    { id: "mod", permissions: String(Permissions.MANAGE_MESSAGES), is_everyone: false },
+  ],
+  assigned: [{ role_id: "mod" }],
+});
+assert(member.isOwner === false, "preloaded member is not owner");
+assert(member.isMember === true, "preloaded member stays a member");
+assert(hasPermission(member.bits, Permissions.VIEW_CHANNEL), "everyone VIEW_CHANNEL");
+assert(hasPermission(member.bits, Permissions.MANAGE_MESSAGES), "assigned MANAGE_MESSAGES");
+assert(!hasPermission(member.bits, Permissions.BAN_MEMBERS), "unassigned bits stay off");
+
 console.log("serverPermissions.selftest: ok");

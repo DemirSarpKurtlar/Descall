@@ -27,13 +27,25 @@ export async function createGroup({ name, memberIds }) {
   return res.json();
 }
 
-export async function getGroupMessages(groupId, { before, limit = 50 } = {}) {
+const groupMessageFlight = new Map();
+
+export async function getGroupMessages(groupId, { before, since, limit = 50 } = {}) {
   const url = new URL(`${BASE}/${groupId}/messages`, window.location.origin);
   if (before) url.searchParams.set("before", before);
+  if (since && !before) url.searchParams.set("since", since);
   url.searchParams.set("limit", limit);
-  const res = await fetch(url.toString(), { headers: getHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch messages");
-  return res.json();
+  const key = url.toString();
+  const existing = groupMessageFlight.get(key);
+  if (existing) return existing;
+  const pending = (async () => {
+    const res = await fetch(key, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch messages");
+    return res.json();
+  })().finally(() => {
+    if (groupMessageFlight.get(key) === pending) groupMessageFlight.delete(key);
+  });
+  groupMessageFlight.set(key, pending);
+  return pending;
 }
 
 export async function sendGroupMessage(groupId, { content, mediaUrl, mediaType }) {

@@ -8,9 +8,4 @@ export const patchDmPref = (peerId, body) =>
     body,
   });
 
-export const getDmMessages = (peerId, { before, limit = 50 } = {}) => {
-  const qs = new URLSearchParams();
-  if (before) qs.set("before", before);
-  qs.set("limit", String(limit));
-  return authedRequest(`/api/dm/${encodeURIComponent(peerId)}/messages?${qs}`);
-};
+export { getDmMessages } from "./dm";
