@@ -1,10 +1,37 @@
 /* Scene themes (2.9.183). iPhone glass only.
-   One fixed stage behind the shell. Motion is transform/opacity.
+   One stage painted behind the shell. Motion is transform/opacity.
    Reduce Motion, Reduce Transparency, Increase Contrast, Low Power
    and an open call leave a still frame. Hidden app pauses the clock. */
 
 html.glass-ui .g-theme-stage {
   display: none;
+}
+
+/* The shell is the stacking context. The stage sits behind in-flow and
+   fixed UI (list is position:fixed, z-index 300). A fixed stage at z-index 0
+   whose child spins was promoted over that list on iOS; absolute + z-index -1
+   stays behind it. Do not set position/transform/contain on the sidebar or
+   the main slot — that drops the list under the stage and traps the composer. */
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell,
+html.glass-ui[data-theme="grove"] .app-root.g-shell,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell {
+  isolation: isolate;
+}
+
+html.glass-ui[data-theme="lagoon"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="grove"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="hanami"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="emberfall"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="borealis"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="starwell"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="chromeveil"]:not(.mobile-keyboard-lock) .app-root.g-shell,
+html.glass-ui[data-theme="iriscape"]:not(.mobile-keyboard-lock) .app-root.g-shell {
+  position: relative;
 }
 
 html.glass-ui[data-theme="lagoon"] .g-theme-stage,
@@ -16,11 +43,13 @@ html.glass-ui[data-theme="starwell"] .g-theme-stage,
 html.glass-ui[data-theme="chromeveil"] .g-theme-stage,
 html.glass-ui[data-theme="iriscape"] .g-theme-stage {
   display: block;
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   overflow: hidden;
+  contain: paint;
+  isolation: isolate;
   background: var(--g-deep);
 }
 
@@ -152,28 +181,9 @@ html.glass-ui[data-theme="borealis"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="starwell"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="chromeveil"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="iriscape"] .call-overlay-root.g-call {
-  background-color: transparent !important;
+  background-color: var(--g-deep) !important;
+  background-color: color-mix(in srgb, var(--g-deep) 62%, transparent) !important;
   background-image: none !important;
-}
-
-html.glass-ui[data-theme="lagoon"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="grove"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="hanami"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="emberfall"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="borealis"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="starwell"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="chromeveil"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="iriscape"] .app-root.g-shell > .app-sidebar-shell,
-html.glass-ui[data-theme="lagoon"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="grove"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="hanami"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="emberfall"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="borealis"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="starwell"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="chromeveil"] .app-root.g-shell > .app-main-slot,
-html.glass-ui[data-theme="iriscape"] .app-root.g-shell > .app-main-slot {
-  position: relative;
-  z-index: 1;
 }
 
 /* Tuned material: blur, saturation, ambient, specular. */
@@ -330,7 +340,7 @@ html.glass-ui[data-theme="iriscape"] .g-theme-drift {
   display: block;
   inset: -35%;
   background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.45), rgba(34, 211, 238, 0.28), rgba(244, 114, 182, 0.4), rgba(250, 204, 21, 0.22), rgba(124, 58, 237, 0.45));
-  opacity: 0.85;
+  opacity: 0.5;
   animation: g-theme-spin 72s linear infinite;
 }
 html.glass-ui[data-theme="iriscape"] .g-theme-sheen {
@@ -341,8 +351,12 @@ html.glass-ui[data-theme="chromeveil"] .g-glass::before,
 html.glass-ui[data-theme="chromeveil"] .g-chip::before,
 html.glass-ui[data-theme="iriscape"] .g-glass::before,
 html.glass-ui[data-theme="iriscape"] .g-chip::before {
+  padding: 1px;
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.9) 0%, rgba(125, 220, 255, 0.7) 22%, rgba(232, 121, 249, 0.65) 48%, rgba(253, 230, 138, 0.7) 72%, rgba(255, 255, 255, 0.85) 100%);
   background-size: 240% 240%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   animation: g-theme-rim 12s linear infinite;
 }
 

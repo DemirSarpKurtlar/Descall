@@ -1,5 +1,21 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.185
+
+Iriscape kuşanılınca sohbet listesi kayboluyordu. Ekranda renk çarkı, saat ve sekme çubuğu kalıyordu. Aynı sahne katmanı sekiz yeni temada da listeyi `z-index` 1’e indiriyordu; iPhone dönen katmanı yazının üstüne boyuyordu.
+
+Sahne artık kabuğun arkasında. Lagoon, Grove, Hanami, Emberfall, Borealis, Starwell, Chrome Veil ve Iriscape aynı. Liste, başlık ve arama durur. Tema arkadan renk verir; yazının üstünü kapatmaz. Iriscape’in çarkı daha sönük, cam kenarı hâlâ ince bir şerit. Klavye açıkken yazı kapsülü aynı yerde kalır. Masaüstü ve web aynı. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.185**. Yalnız iPhone.
+
+- [ ] Iriscape: Sohbetler listesi, “Sohbetler” başlığı ve arama görünür. Renk çarkı arkada kalır, isimler okunur.
+- [ ] Lagoon, Grove, Hanami: liste durur, renk durgundur.
+- [ ] Emberfall, Borealis, Starwell, Chrome Veil: liste durur, hareket arkada kalır.
+- [ ] Bir sohbet aç, klavyeyle yaz: yazdığın satır klavyenin üstündedir. Sekme çubuğu listede durur.
+- [ ] Masaüstü ve tarayıcı bu temalarda bozulmaz.
+
 ## Cihaz düzeltmeleri · 2.9.184
 
 Sohbet listesinde aynı önizleme bazen İngilizce (“Call”, “Attachment”), bazen Türkçe (“Arama”) duruyordu. Sunucu bu satırları İngilizce token olarak gönderiyor; sohbet açılınca istemci çeviriyordu, liste ise gelen metni olduğu gibi basıyordu. Artık satır çizilirken yalnız bu sistem önizlemeleri dile çevriliyor: Call → Arama, Attachment → Ek dosya, Photo → Fotoğraf, Voice message → Sesli mesaj. Grup satırındaki “ada: 📞 Call” de çevrilir. Kullanıcının kendi mesajı (“Call me”) aynı kalır.
