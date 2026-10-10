@@ -405,6 +405,12 @@ export default function AppLayout({
       className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}`}
       data-view={activeView}
     >
+      <div className="g-theme-stage" aria-hidden="true">
+        <span className="g-theme-wash" />
+        <span className="g-theme-drift" />
+        <span className="g-theme-specks" />
+        <span className="g-theme-sheen" />
+      </div>
       <AnimatePresence>
         {showNotifBanner && (
           <motion.div

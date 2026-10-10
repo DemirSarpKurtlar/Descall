@@ -299,6 +299,46 @@ async function ensureNameEffectCatalog() {
   return created;
 }
 
+/**
+ * Insert scene-theme SKUs that are not in shop_items yet.
+ * Idempotent. Does not update or delete existing rows.
+ */
+async function ensureGlassThemeCatalog() {
+  const { GLASS_THEME_CATALOG } = require("./glassThemeCatalog");
+  const skus = GLASS_THEME_CATALOG.map((item) => item.sku);
+  const { data, error } = await supabase.from("shop_items").select("sku").in("sku", skus);
+  if (error) throw error;
+  const have = new Set((data || []).map((row) => row.sku));
+  let created = 0;
+  for (const item of GLASS_THEME_CATALOG) {
+    if (have.has(item.sku)) continue;
+    const { error: insertError } = await supabase.from("shop_items").insert({
+      sku: item.sku,
+      name: item.name,
+      description: item.description,
+      category: "theme",
+      asset_url: "data:,",
+      preview_url: null,
+      price_cents: 0,
+      price_descoin: item.price_descoin,
+      theme_key: item.key,
+      badge_icon: null,
+      title_text: null,
+      effect_key: null,
+      rarity: item.rarity,
+      sort_order: item.sort_order,
+      active: true,
+    });
+    if (insertError) throw insertError;
+    created += 1;
+  }
+  if (created) {
+    invalidateCatalogCache();
+    console.log(`[shop] glass theme catalog inserted ${created}`);
+  }
+  return created;
+}
+
 async function retireSoundPacks() {
   const { error: itemError } = await supabase
     .from("shop_items")
@@ -640,6 +680,7 @@ module.exports = {
   decodeDataImage,
   ensureChatBubbleCatalog,
   ensureNameEffectCatalog,
+  ensureGlassThemeCatalog,
   retireSoundPacks,
   listAllItems,
   getItemById,

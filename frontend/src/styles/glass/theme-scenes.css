@@ -1,0 +1,433 @@
+/* Scene themes (2.9.183). iPhone glass only.
+   One fixed stage behind the shell. Motion is transform/opacity.
+   Reduce Motion, Reduce Transparency, Increase Contrast, Low Power
+   and an open call leave a still frame. Hidden app pauses the clock. */
+
+html.glass-ui .g-theme-stage {
+  display: none;
+}
+
+html.glass-ui[data-theme="lagoon"] .g-theme-stage,
+html.glass-ui[data-theme="grove"] .g-theme-stage,
+html.glass-ui[data-theme="hanami"] .g-theme-stage,
+html.glass-ui[data-theme="emberfall"] .g-theme-stage,
+html.glass-ui[data-theme="borealis"] .g-theme-stage,
+html.glass-ui[data-theme="starwell"] .g-theme-stage,
+html.glass-ui[data-theme="chromeveil"] .g-theme-stage,
+html.glass-ui[data-theme="iriscape"] .g-theme-stage {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--g-deep);
+}
+
+html.glass-ui .g-theme-wash,
+html.glass-ui .g-theme-drift,
+html.glass-ui .g-theme-specks,
+html.glass-ui .g-theme-sheen {
+  position: absolute;
+  inset: -14%;
+  pointer-events: none;
+}
+
+html.glass-ui .g-theme-drift,
+html.glass-ui .g-theme-specks,
+html.glass-ui .g-theme-sheen {
+  display: none;
+}
+
+/* The painted ambient on these surfaces would hide the stage. */
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="grove"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell .app-sidebar-shell,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="grove"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell .main-panel,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="grove"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell .messages-container,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="grove"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell .chat-panel-shell,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="grove"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="grove"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="hanami"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="borealis"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="starwell"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell.is-mobile[data-view="play"],
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="grove"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell.is-mobile[data-view="play"] > .app-main-slot,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="grove"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell.is-mobile[data-view="play"] .valorant-hub,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="grove"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-workspace,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="grove"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-sidebar,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="grove"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell.is-mobile[data-view="play"] .lfg-main,
+html.glass-ui[data-theme="lagoon"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="grove"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="hanami"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="emberfall"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="borealis"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="starwell"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="chromeveil"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="iriscape"] .user-settings.is-mobile.g-settings,
+html.glass-ui[data-theme="lagoon"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="grove"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="hanami"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="emberfall"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="borealis"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="starwell"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="chromeveil"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="iriscape"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="lagoon"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="grove"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="hanami"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="emberfall"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="borealis"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="starwell"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="chromeveil"] .call-overlay-root.g-call,
+html.glass-ui[data-theme="iriscape"] .call-overlay-root.g-call {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="grove"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell > .app-sidebar-shell,
+html.glass-ui[data-theme="lagoon"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="grove"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="hanami"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="emberfall"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="borealis"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="starwell"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="chromeveil"] .app-root.g-shell > .app-main-slot,
+html.glass-ui[data-theme="iriscape"] .app-root.g-shell > .app-main-slot {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tuned material: blur, saturation, ambient, specular. */
+html.glass-ui[data-theme="lagoon"] {
+  --g-blur: 28px; --g-saturate: 200%; --g-brightness: 1.05;
+  --g-amb-a: 0.48; --g-amb-b: 0.22; --g-amb-c: 0.16; --g-amb-d: 0.2;
+  --g-rim-a: rgba(190, 240, 255, 0.72);
+  --g-rim-b: rgba(80, 190, 220, 0.22);
+}
+html.glass-ui[data-theme="grove"] {
+  --g-blur: 26px; --g-saturate: 185%; --g-brightness: 1.04;
+  --g-amb-a: 0.36; --g-amb-b: 0.2; --g-amb-c: 0.14; --g-amb-d: 0.18;
+  --g-rim-a: rgba(190, 240, 200, 0.66);
+  --g-rim-b: rgba(80, 180, 110, 0.2);
+}
+html.glass-ui[data-theme="hanami"] {
+  --g-blur: 30px; --g-saturate: 175%; --g-brightness: 1.05;
+  --g-amb-a: 0.34; --g-amb-b: 0.22; --g-amb-c: 0.12; --g-amb-d: 0.2;
+  --g-rim-a: rgba(255, 210, 224, 0.7);
+  --g-rim-b: rgba(220, 120, 150, 0.22);
+}
+html.glass-ui[data-theme="emberfall"] {
+  --g-blur: 24px; --g-saturate: 170%; --g-brightness: 1.06;
+  --g-amb-a: 0.4; --g-amb-b: 0.26; --g-amb-c: 0.14; --g-amb-d: 0.22;
+  --g-rim-a: rgba(255, 196, 150, 0.7);
+  --g-rim-b: rgba(220, 100, 40, 0.24);
+}
+html.glass-ui[data-theme="borealis"] {
+  --g-blur: 32px; --g-saturate: 210%; --g-brightness: 1.06;
+  --g-amb-a: 0.46; --g-amb-b: 0.32; --g-amb-c: 0.16; --g-amb-d: 0.24;
+  --g-rim-a: rgba(180, 255, 230, 0.72);
+  --g-rim-e: rgba(170, 150, 255, 0.45);
+}
+html.glass-ui[data-theme="starwell"] {
+  --g-blur: 30px; --g-saturate: 195%; --g-brightness: 1.05;
+  --g-amb-a: 0.4; --g-amb-b: 0.28; --g-amb-c: 0.14; --g-amb-d: 0.22;
+  --g-rim-a: rgba(210, 200, 255, 0.7);
+  --g-rim-b: rgba(80, 140, 255, 0.22);
+}
+html.glass-ui[data-theme="chromeveil"] {
+  --g-blur: 22px; --g-saturate: 150%; --g-brightness: 1.08;
+  --g-amb-a: 0.22; --g-amb-b: 0.16; --g-amb-c: 0.1; --g-amb-d: 0.14;
+  --g-rim-a: rgba(255, 255, 255, 0.88);
+  --g-rim-b: rgba(190, 210, 230, 0.28);
+  --g-rim-e: rgba(255, 255, 255, 0.55);
+}
+html.glass-ui[data-theme="iriscape"] {
+  --g-blur: 34px; --g-saturate: 220%; --g-brightness: 1.07;
+  --g-amb-a: 0.42; --g-amb-b: 0.34; --g-amb-c: 0.18; --g-amb-d: 0.26;
+  --g-rim-a: rgba(255, 255, 255, 0.8);
+  --g-rim-e: rgba(255, 180, 240, 0.5);
+}
+
+html.glass-ui[data-theme="lagoon"] .g-theme-wash {
+  background:
+    radial-gradient(42% 30% at 18% 82%, rgba(20, 170, 200, 0.42), transparent 70%),
+    radial-gradient(34% 24% at 80% 16%, rgba(40, 110, 190, 0.32), transparent 68%),
+    linear-gradient(180deg, #0A2836 0%, #06141C 58%, #041018 100%);
+}
+html.glass-ui[data-theme="grove"] .g-theme-wash {
+  background:
+    linear-gradient(100deg, transparent 10%, rgba(70, 160, 90, 0.16) 28%, transparent 46%),
+    linear-gradient(80deg, transparent 50%, rgba(40, 130, 70, 0.14) 70%, transparent 88%),
+    radial-gradient(36% 28% at 12% 0%, rgba(90, 190, 100, 0.24), transparent 70%),
+    linear-gradient(180deg, #102818 0%, #07140E 100%);
+}
+html.glass-ui[data-theme="hanami"] .g-theme-wash {
+  background:
+    radial-gradient(16% 12% at 24% 28%, rgba(255, 176, 196, 0.55), transparent 70%),
+    radial-gradient(12% 10% at 68% 20%, rgba(255, 140, 170, 0.4), transparent 72%),
+    radial-gradient(14% 11% at 46% 72%, rgba(255, 186, 206, 0.32), transparent 70%),
+    radial-gradient(10% 8% at 82% 64%, rgba(255, 160, 186, 0.28), transparent 70%),
+    linear-gradient(180deg, #2C1420 0%, #160910 100%);
+}
+html.glass-ui[data-theme="emberfall"] .g-theme-wash {
+  background: linear-gradient(180deg, #2A140C 0%, #140C08 55%, #0C0806 100%);
+}
+html.glass-ui[data-theme="emberfall"] .g-theme-drift {
+  display: block;
+  background:
+    radial-gradient(36% 28% at 30% 70%, rgba(255, 120, 40, 0.38), transparent 70%),
+    radial-gradient(28% 22% at 72% 24%, rgba(255, 70, 20, 0.28), transparent 70%);
+  animation: g-theme-drift 32s ease-in-out infinite alternate;
+}
+html.glass-ui[data-theme="emberfall"] .g-theme-specks {
+  display: block;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 18% 70%, rgba(255, 180, 80, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 40% 40%, rgba(255, 140, 60, 0.75), transparent),
+    radial-gradient(2px 2px at 62% 78%, rgba(255, 200, 120, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 78% 32%, rgba(255, 120, 40, 0.7), transparent),
+    radial-gradient(2px 2px at 30% 22%, rgba(255, 170, 90, 0.6), transparent);
+  animation: g-theme-twinkle 4.8s ease-in-out infinite;
+}
+html.glass-ui[data-theme="borealis"] .g-theme-wash {
+  background: linear-gradient(180deg, #07141C 0%, #071018 100%);
+}
+html.glass-ui[data-theme="borealis"] .g-theme-drift {
+  display: block;
+  background:
+    linear-gradient(180deg, transparent 8%, rgba(80, 230, 180, 0.28) 28%, transparent 48%),
+    linear-gradient(180deg, transparent 40%, rgba(130, 110, 255, 0.32) 62%, transparent 82%),
+    linear-gradient(180deg, transparent 62%, rgba(60, 200, 170, 0.2) 78%, transparent 92%);
+  animation: g-theme-curtain 36s ease-in-out infinite alternate;
+}
+html.glass-ui[data-theme="starwell"] .g-theme-wash {
+  background:
+    radial-gradient(40% 32% at 30% 40%, rgba(90, 70, 200, 0.45), transparent 70%),
+    radial-gradient(32% 28% at 74% 62%, rgba(40, 120, 220, 0.28), transparent 70%),
+    linear-gradient(180deg, #100C22 0%, #0A0816 100%);
+}
+html.glass-ui[data-theme="starwell"] .g-theme-drift {
+  display: block;
+  background: radial-gradient(28% 22% at 60% 30%, rgba(160, 120, 255, 0.28), transparent 70%);
+  animation: g-theme-drift 40s ease-in-out infinite alternate;
+}
+html.glass-ui[data-theme="starwell"] .g-theme-specks {
+  display: block;
+  inset: 0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 18%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 28% 62%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1.6px 1.6px at 46% 28%, #fff, transparent),
+    radial-gradient(1px 1px at 63% 74%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 78% 22%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 88% 58%, rgba(220, 230, 255, 0.85), transparent),
+    radial-gradient(1px 1px at 20% 84%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.4px 1.4px at 54% 48%, rgba(255, 255, 255, 0.9), transparent);
+  animation: g-theme-twinkle 6s ease-in-out infinite;
+}
+html.glass-ui[data-theme="chromeveil"] .g-theme-wash {
+  background:
+    linear-gradient(160deg, #1A212C 0%, #0A0C10 42%, #141A24 100%);
+}
+html.glass-ui[data-theme="chromeveil"] .g-theme-drift {
+  display: block;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.08) 42%, transparent 58%);
+  animation: g-theme-drift 28s ease-in-out infinite alternate;
+}
+html.glass-ui[data-theme="chromeveil"] .g-theme-sheen,
+html.glass-ui[data-theme="iriscape"] .g-theme-sheen {
+  display: block;
+  inset: -20% auto;
+  width: 38%;
+  left: -40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  animation: g-theme-sheen 16s ease-in-out infinite;
+}
+html.glass-ui[data-theme="iriscape"] .g-theme-wash {
+  background: linear-gradient(180deg, #16101E 0%, #0C0A12 100%);
+}
+html.glass-ui[data-theme="iriscape"] .g-theme-drift {
+  display: block;
+  inset: -35%;
+  background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.45), rgba(34, 211, 238, 0.28), rgba(244, 114, 182, 0.4), rgba(250, 204, 21, 0.22), rgba(124, 58, 237, 0.45));
+  opacity: 0.85;
+  animation: g-theme-spin 72s linear infinite;
+}
+html.glass-ui[data-theme="iriscape"] .g-theme-sheen {
+  background: linear-gradient(90deg, transparent, rgba(255, 210, 250, 0.35), rgba(180, 255, 255, 0.28), transparent);
+}
+
+html.glass-ui[data-theme="chromeveil"] .g-glass::before,
+html.glass-ui[data-theme="chromeveil"] .g-chip::before,
+html.glass-ui[data-theme="iriscape"] .g-glass::before,
+html.glass-ui[data-theme="iriscape"] .g-chip::before {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.9) 0%, rgba(125, 220, 255, 0.7) 22%, rgba(232, 121, 249, 0.65) 48%, rgba(253, 230, 138, 0.7) 72%, rgba(255, 255, 255, 0.85) 100%);
+  background-size: 240% 240%;
+  animation: g-theme-rim 12s linear infinite;
+}
+
+@keyframes g-theme-drift {
+  from { transform: translate3d(-3%, -2%, 0); }
+  to { transform: translate3d(3%, 2.5%, 0); }
+}
+@keyframes g-theme-curtain {
+  from { transform: translate3d(0, -4%, 0); }
+  to { transform: translate3d(0, 4%, 0); }
+}
+@keyframes g-theme-twinkle {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+@keyframes g-theme-sheen {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(420%, 0, 0); }
+}
+@keyframes g-theme-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes g-theme-rim {
+  from { background-position: 0% 40%; }
+  to { background-position: 100% 60%; }
+}
+
+html.glass-ui.g-theme-paused .g-theme-drift,
+html.glass-ui.g-theme-paused .g-theme-specks,
+html.glass-ui.g-theme-paused .g-theme-sheen,
+html.glass-ui.g-theme-paused .g-glass::before,
+html.glass-ui.g-theme-paused .g-chip::before {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .g-theme-drift,
+  html.glass-ui .g-theme-specks,
+  html.glass-ui .g-theme-sheen,
+  html.glass-ui[data-theme="chromeveil"] .g-glass::before,
+  html.glass-ui[data-theme="chromeveil"] .g-chip::before,
+  html.glass-ui[data-theme="iriscape"] .g-glass::before,
+  html.glass-ui[data-theme="iriscape"] .g-chip::before {
+    animation: none;
+  }
+  html.glass-ui .g-theme-sheen {
+    left: 28%;
+    opacity: 0.4;
+    transform: none;
+  }
+  html.glass-ui[data-theme="iriscape"] .g-theme-drift {
+    transform: rotate(18deg);
+  }
+}
+
+html.glass-ui.a11y-solid .g-theme-drift,
+html.glass-ui.a11y-solid .g-theme-specks,
+html.glass-ui.a11y-solid .g-theme-sheen,
+html.glass-ui.a11y-contrast .g-theme-drift,
+html.glass-ui.a11y-contrast .g-theme-specks,
+html.glass-ui.a11y-contrast .g-theme-sheen,
+html.glass-ui.glass-lite .g-theme-drift,
+html.glass-ui.glass-lite .g-theme-specks,
+html.glass-ui.glass-lite .g-theme-sheen,
+html.glass-ui.g-in-call .g-theme-specks,
+html.glass-ui.g-in-call .g-theme-sheen,
+html.glass-ui.a11y-solid[data-theme="chromeveil"] .g-glass::before,
+html.glass-ui.a11y-solid[data-theme="iriscape"] .g-glass::before,
+html.glass-ui.a11y-contrast[data-theme="chromeveil"] .g-glass::before,
+html.glass-ui.a11y-contrast[data-theme="iriscape"] .g-glass::before,
+html.glass-ui.glass-lite[data-theme="chromeveil"] .g-glass::before,
+html.glass-ui.glass-lite[data-theme="iriscape"] .g-glass::before {
+  animation: none;
+}
+
+html.glass-ui.a11y-contrast[data-theme="lagoon"],
+html.glass-ui.a11y-contrast[data-theme="grove"],
+html.glass-ui.a11y-contrast[data-theme="hanami"],
+html.glass-ui.a11y-contrast[data-theme="emberfall"],
+html.glass-ui.a11y-contrast[data-theme="borealis"],
+html.glass-ui.a11y-contrast[data-theme="starwell"],
+html.glass-ui.a11y-contrast[data-theme="chromeveil"],
+html.glass-ui.a11y-contrast[data-theme="iriscape"] {
+  --g-t1: rgba(255, 255, 255, 0.98);
+  --g-t2: rgba(255, 255, 255, 0.86);
+  --g-contrast-border: rgba(255, 255, 255, 0.72);
+}

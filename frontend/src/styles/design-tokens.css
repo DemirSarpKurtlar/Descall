@@ -1481,6 +1481,301 @@
 
 
 /* ============================================
+   SCENE THEMES (2.9.183) — Lagoon, Grove, Hanami are still palettes.
+   Emberfall, Borealis and Starwell drift. Chrome Veil and Iriscape
+   add a second moving layer and an edge sheen. Glass scenes live in
+   theme-scenes.css / glass/theme-scenes.css.
+   ============================================ */
+
+/* ─── Lagoon (deep water, still) ─── */
+[data-theme="lagoon"] {
+  color-scheme: dark;
+  --primary: #0E7C9A;
+  --primary-2: #0B6882;
+  --primary-3: #084E63;
+  --primary-glow: rgba(14, 124, 154, 0.35);
+  --primary-soft: rgba(14, 124, 154, 0.16);
+  --surface-0: #06141C;
+  --surface-1: #0C2430;
+  --surface-2: #123244;
+  --surface-3: #183E52;
+  --surface-hover: #1E4C64;
+  --surface-active: #265C78;
+  --text-0: #FFFFFF;
+  --text-1: #E7F6FB;
+  --text-2: #C5E4EE;
+  --text-3: #9FCDDB;
+  --text-muted: #8FB8C4;
+  --text-link: #7EE0FF;
+  --border-1: rgba(160, 220, 235, 0.06);
+  --border-2: rgba(160, 220, 235, 0.12);
+  --border-3: rgba(160, 220, 235, 0.18);
+  --border-4: rgba(160, 220, 235, 0.28);
+  --shadow-glow-primary: 0 0 20px rgba(14, 124, 154, 0.32);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Grove (forest, still) ─── */
+[data-theme="grove"] {
+  color-scheme: dark;
+  --primary: #187A42;
+  --primary-2: #146838;
+  --primary-3: #0F4E2A;
+  --primary-glow: rgba(24, 122, 66, 0.35);
+  --primary-soft: rgba(24, 122, 66, 0.16);
+  --surface-0: #07140E;
+  --surface-1: #0E2418;
+  --surface-2: #163222;
+  --surface-3: #1C3E2A;
+  --surface-hover: #244E36;
+  --surface-active: #2C6042;
+  --text-0: #FFFFFF;
+  --text-1: #E8F6EC;
+  --text-2: #C6E6D0;
+  --text-3: #A0CDB0;
+  --text-muted: #8FB8A4;
+  --text-link: #7DDC9A;
+  --border-1: rgba(160, 220, 180, 0.06);
+  --border-2: rgba(160, 220, 180, 0.12);
+  --border-3: rgba(160, 220, 180, 0.18);
+  --border-4: rgba(160, 220, 180, 0.28);
+  --shadow-glow-primary: 0 0 20px rgba(24, 122, 66, 0.32);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Hanami (night blossom, still) ─── */
+[data-theme="hanami"] {
+  color-scheme: dark;
+  --primary: #C43B6A;
+  --primary-2: #A8325A;
+  --primary-3: #7E2444;
+  --primary-glow: rgba(196, 59, 106, 0.35);
+  --primary-soft: rgba(196, 59, 106, 0.16);
+  --surface-0: #160910;
+  --surface-1: #26141C;
+  --surface-2: #361E28;
+  --surface-3: #442430;
+  --surface-hover: #542C3C;
+  --surface-active: #663648;
+  --text-0: #FFFFFF;
+  --text-1: #FBE8EF;
+  --text-2: #F0C8D4;
+  --text-3: #E0A8B8;
+  --text-muted: #E0A8B8;
+  --text-link: #FFB3C7;
+  --border-1: rgba(255, 180, 200, 0.06);
+  --border-2: rgba(255, 180, 200, 0.12);
+  --border-3: rgba(255, 180, 200, 0.18);
+  --border-4: rgba(255, 180, 200, 0.28);
+  --shadow-glow-primary: 0 0 20px rgba(196, 59, 106, 0.32);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Emberfall (drifting embers) ─── */
+[data-theme="emberfall"] {
+  color-scheme: dark;
+  --primary: #C2410C;
+  --primary-2: #9A3412;
+  --primary-3: #7C2D12;
+  --primary-glow: rgba(194, 65, 12, 0.38);
+  --primary-soft: rgba(194, 65, 12, 0.16);
+  --surface-0: #140C08;
+  --surface-1: #24160F;
+  --surface-2: #342016;
+  --surface-3: #422818;
+  --surface-hover: #543220;
+  --surface-active: #683E28;
+  --text-0: #FFFFFF;
+  --text-1: #FBF1E8;
+  --text-2: #F0D4C0;
+  --text-3: #E0B89A;
+  --text-muted: #E0B89A;
+  --text-link: #FFB07A;
+  --border-1: rgba(255, 180, 120, 0.06);
+  --border-2: rgba(255, 180, 120, 0.12);
+  --border-3: rgba(255, 180, 120, 0.18);
+  --border-4: rgba(255, 180, 120, 0.28);
+  --shadow-glow-primary: 0 0 22px rgba(194, 65, 12, 0.34);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Borealis (aurora curtains) ─── */
+[data-theme="borealis"] {
+  color-scheme: dark;
+  --primary: #0F766E;
+  --primary-2: #5B4BDB;
+  --primary-3: #0A4E48;
+  --primary-glow: rgba(15, 118, 110, 0.36);
+  --primary-soft: rgba(15, 118, 110, 0.16);
+  --surface-0: #071018;
+  --surface-1: #0E1C28;
+  --surface-2: #142838;
+  --surface-3: #1A3448;
+  --surface-hover: #224258;
+  --surface-active: #2A526C;
+  --text-0: #FFFFFF;
+  --text-1: #E7FBF4;
+  --text-2: #C4E8DE;
+  --text-3: #9FD4C8;
+  --text-muted: #8FCFC0;
+  --text-link: #7EE0C8;
+  --border-1: rgba(140, 230, 210, 0.06);
+  --border-2: rgba(140, 230, 210, 0.12);
+  --border-3: rgba(140, 230, 210, 0.18);
+  --border-4: rgba(140, 230, 210, 0.28);
+  --shadow-glow-primary: 0 0 22px rgba(15, 118, 110, 0.32);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Starwell (nebula + stars) ─── */
+[data-theme="starwell"] {
+  color-scheme: dark;
+  --primary: #6D5AE6;
+  --primary-2: #3D8BFF;
+  --primary-3: #4636B0;
+  --primary-glow: rgba(109, 90, 230, 0.38);
+  --primary-soft: rgba(109, 90, 230, 0.16);
+  --surface-0: #0A0816;
+  --surface-1: #161230;
+  --surface-2: #221C44;
+  --surface-3: #2C2456;
+  --surface-hover: #382E68;
+  --surface-active: #463A7C;
+  --text-0: #FFFFFF;
+  --text-1: #F0EEFF;
+  --text-2: #D4CEF5;
+  --text-3: #B4A8E0;
+  --text-muted: #B4A8E0;
+  --text-link: #C4B8FF;
+  --border-1: rgba(180, 170, 255, 0.06);
+  --border-2: rgba(180, 170, 255, 0.12);
+  --border-3: rgba(180, 170, 255, 0.18);
+  --border-4: rgba(180, 170, 255, 0.28);
+  --shadow-glow-primary: 0 0 22px rgba(109, 90, 230, 0.34);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Chrome Veil (midnight metal, parallax) ─── */
+[data-theme="chromeveil"] {
+  color-scheme: dark;
+  --primary: #4F7090;
+  --primary-2: #3E5C78;
+  --primary-3: #314860;
+  --primary-glow: rgba(197, 214, 230, 0.28);
+  --primary-soft: rgba(79, 112, 144, 0.18);
+  --surface-0: #0A0C10;
+  --surface-1: #141820;
+  --surface-2: #1E242E;
+  --surface-3: #282E3A;
+  --surface-hover: #343C4A;
+  --surface-active: #424C5C;
+  --text-0: #FFFFFF;
+  --text-1: #F4F7FB;
+  --text-2: #D5DEE8;
+  --text-3: #B7C4D4;
+  --text-muted: #B7C4D4;
+  --text-link: #D5E4F5;
+  --border-1: rgba(220, 230, 240, 0.07);
+  --border-2: rgba(220, 230, 240, 0.14);
+  --border-3: rgba(220, 230, 240, 0.22);
+  --border-4: rgba(220, 230, 240, 0.32);
+  --shadow-glow-primary: 0 0 18px rgba(197, 214, 230, 0.22);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ─── Iriscape (iridescent, multi-layer) ─── */
+[data-theme="iriscape"] {
+  color-scheme: dark;
+  --primary: #7C3AED;
+  --primary-2: #DB2777;
+  --primary-3: #5B21B6;
+  --primary-glow: rgba(124, 58, 237, 0.38);
+  --primary-soft: rgba(124, 58, 237, 0.16);
+  --surface-0: #0C0A12;
+  --surface-1: #181422;
+  --surface-2: #241C32;
+  --surface-3: #302640;
+  --surface-hover: #3C3050;
+  --surface-active: #4C3C64;
+  --text-0: #FFFFFF;
+  --text-1: #F7F2FF;
+  --text-2: #E4D4F8;
+  --text-3: #C8B0E0;
+  --text-muted: #C8B0E0;
+  --text-link: #E0B3FF;
+  --border-1: rgba(220, 180, 255, 0.07);
+  --border-2: rgba(220, 180, 255, 0.14);
+  --border-3: rgba(220, 180, 255, 0.22);
+  --border-4: rgba(220, 180, 255, 0.32);
+  --shadow-glow-primary: 0 0 22px rgba(124, 58, 237, 0.34);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}
+
+/* ============================================
    SPECIAL "GLOW" PREMIUM THEMES
    Phoenix Fire, Frostbite, Voidwalker, Starlight,
    Plasma Storm and Molten Core layer an animated

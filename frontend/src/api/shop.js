@@ -14,9 +14,12 @@ export const getDesCoinDaily = () => authedRequest("/api/shop/daily");
 export const claimDesCoinDaily = () =>
   authedRequest("/api/shop/daily/claim", { method: "POST", body: {} });
 export const purchaseShopItem = (itemId) =>
-  authedRequest("/api/shop/purchase", { method: "POST", body: { itemId } });
+  authedRequest("/api/shop/purchase", { method: "POST", body: { itemId, themeEngine: "scenes-1" } });
 export const equipShopItem = (category, itemId) =>
-  authedRequest("/api/shop/equip", { method: "POST", body: { category, itemId } });
+  authedRequest("/api/shop/equip", {
+    method: "POST",
+    body: { category, itemId, themeEngine: "scenes-1" },
+  });
 
 // Admin-only
 export const listAllShopItems = () => authedRequest("/api/admin/shop/items");

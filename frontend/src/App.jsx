@@ -1003,6 +1003,18 @@ export default function App() {
     }
   }, [me, me?.equippedTheme?.theme_key]);
 
+  useEffect(() => {
+    const sync = () => {
+      document.documentElement.classList.toggle("g-theme-paused", document.hidden);
+    };
+    document.addEventListener("visibilitychange", sync);
+    sync();
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      document.documentElement.classList.remove("g-theme-paused");
+    };
+  }, []);
+
   // Shop sound packs are retired. Always play the default message and call tones.
   useEffect(() => {
     try {

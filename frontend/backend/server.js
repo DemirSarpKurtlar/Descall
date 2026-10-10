@@ -1119,6 +1119,12 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] name effect catalog failed:", e.message);
   }
+  try {
+    const { ensureGlassThemeCatalog } = require("./lib/shop");
+    await ensureGlassThemeCatalog();
+  } catch (e) {
+    console.warn("[boot] glass theme catalog failed:", e.message);
+  }
 }
 
 if (isVercel) {

@@ -1,5 +1,21 @@
 # Liquid Glass — progress log
 
+## Mağaza temaları · 2.9.183
+
+Sekiz yeni tema, mevcut tema kataloğunun üstüne eklendi. Aynı `shop_items` satırı, aynı kuşanma, aynı `[data-theme]`. Eski satırlar değişmedi. Sunucu açılışında yalnız eksik SKU eklenir; güncelleme veya silme yok. Üretim veritabanına elle SQL çalıştırılmadı.
+
+Palet (en ucuz temaların yanında): Lagoon 340, Grove 350, Hanami 370. Hareketli: Emberfall 520, Borealis 580, Starwell 640. İkisinin üstünde, bugünkü tavanın (650) üstünde: Chrome Veil 760, Iriscape 880. Yazı kontrastı camda AA. Azaltılmış Hareket, Azaltılmış Saydamlık, Artırılmış Kontrast ve Düşük Güç hareketsiz kareye döner. Uygulama gizlenince animasyon durur. Kartlarda “Yeni”. 2.9.182 mağazayı açar; bu temaları satın alamaz ve kuşanamaz, paleti bozulmaz. Masaüstü ve web aynı paleti görür. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.183**. Yalnız iPhone. Sistem Dokunuşları açık kalabilir.
+
+- [ ] Mağaza → Temalar: Lagoon, Grove, Hanami, Emberfall, Borealis, Starwell, Chrome Veil, Iriscape. Her kartta “Yeni” ve fiyat.
+- [ ] Lagoon’u al ve uygula: sohbet, ayarlar ve sekme çubuğu su yeşili cam. Hareket yok.
+- [ ] Borealis: perde yavaş kayar. Starwell: yıldızlar. Iriscape: renk döner, cam kenarı kayar.
+- [ ] Azaltılmış Hareket: perde ve kenar durur, palet kalır.
+- [ ] Masaüstü: aynı temalar uygulanır. Eski temalar (Midnight, Aurora, Phoenix Fire) durur.
+
 ## Cihaz düzeltmeleri · 2.9.182
 
 GIF’e uzun basınca görsel kayboluyordu. Menü bulanıklığın üstünde açılıyor, asıl balon gizleniyor; kalkmış kopya yalnız yazıyı taşıyordu. GIF’in yazısı boş olduğu için o kopya sağda küçük mavi bir kutuydu. Artık görsel de kalkıyor: tepki çubuğu, GIF (köşede GIF etiketi) ve menü. Boş yazı balonu çizilmiyor. Görselin kendisine basılı tutmak da menüyü açar; kısa dokunuş ışık kutusunu açar. Uzun basışın bıraktığı tık bir sonraki açılışı yutmaz. Düzenle yine yalnız yazısı olan mesajda. DM, grup ve sunucu. Masaüstü ve web aynı. App Store’a gönderilmedi.

@@ -36,6 +36,7 @@ import { useGlassShell } from "../layout/glass/GlassShell";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
+import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
 
 /** Short tab labels — same pattern as admin top nav. */
 const CATEGORY_TABS = [
@@ -526,6 +527,9 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                     className="shop-item-preview"
                     data-theme-preview={category === "theme" ? item.theme_key : undefined}
                   >
+                    {GLASS_THEME_SCENE_SKUS.has(item.sku) ? (
+                      <span className="shop-item-new">{t("New")}</span>
+                    ) : null}
                     <ShopItemPreview category={category} item={item} t={t} />
                   </div>
                   <div className="shop-item-body">

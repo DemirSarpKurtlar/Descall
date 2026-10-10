@@ -1,0 +1,211 @@
+/* Scene themes on desktop / web (not the iPhone glass shell).
+   The glass stage is in styles/glass/theme-scenes.css. Shop and
+   settings swatches are shared so both platforms preview the same palette. */
+
+html:not(.glass-ui)[data-theme="lagoon"] body {
+  background:
+    radial-gradient(42% 30% at 18% 82%, rgba(20, 170, 200, 0.42), transparent 70%),
+    radial-gradient(34% 24% at 80% 16%, rgba(40, 110, 190, 0.32), transparent 68%),
+    linear-gradient(180deg, #0A2836, #06141C 58%, #041018);
+}
+html:not(.glass-ui)[data-theme="grove"] body {
+  background:
+    linear-gradient(100deg, transparent 10%, rgba(70, 160, 90, 0.16) 28%, transparent 46%),
+    radial-gradient(36% 28% at 12% 0%, rgba(90, 190, 100, 0.24), transparent 70%),
+    linear-gradient(180deg, #102818, #07140E);
+}
+html:not(.glass-ui)[data-theme="hanami"] body {
+  background:
+    radial-gradient(16% 12% at 24% 28%, rgba(255, 176, 196, 0.55), transparent 70%),
+    radial-gradient(12% 10% at 68% 20%, rgba(255, 140, 170, 0.4), transparent 72%),
+    linear-gradient(180deg, #2C1420, #160910);
+}
+html:not(.glass-ui)[data-theme="emberfall"] body,
+html:not(.glass-ui)[data-theme="borealis"] body,
+html:not(.glass-ui)[data-theme="starwell"] body,
+html:not(.glass-ui)[data-theme="chromeveil"] body,
+html:not(.glass-ui)[data-theme="iriscape"] body {
+  background: transparent;
+}
+html:not(.glass-ui)[data-theme="emberfall"] #root,
+html:not(.glass-ui)[data-theme="borealis"] #root,
+html:not(.glass-ui)[data-theme="starwell"] #root,
+html:not(.glass-ui)[data-theme="chromeveil"] #root,
+html:not(.glass-ui)[data-theme="iriscape"] #root {
+  position: relative;
+  z-index: 1;
+}
+html:not(.glass-ui)[data-theme="emberfall"] body::before,
+html:not(.glass-ui)[data-theme="borealis"] body::before,
+html:not(.glass-ui)[data-theme="starwell"] body::before,
+html:not(.glass-ui)[data-theme="chromeveil"] body::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: 0;
+  pointer-events: none;
+  animation: theme-scene-drift 32s ease-in-out infinite alternate;
+}
+html:not(.glass-ui)[data-theme="iriscape"] body::before {
+  content: "";
+  position: fixed;
+  inset: -18%;
+  z-index: 0;
+  pointer-events: none;
+}
+html:not(.glass-ui)[data-theme="emberfall"] body::before {
+  background:
+    radial-gradient(36% 28% at 30% 70%, rgba(255, 120, 40, 0.38), transparent 70%),
+    radial-gradient(28% 22% at 72% 24%, rgba(255, 70, 20, 0.28), transparent 70%),
+    linear-gradient(180deg, #2A140C, #140C08);
+}
+html:not(.glass-ui)[data-theme="borealis"] body::before {
+  background:
+    linear-gradient(180deg, transparent 8%, rgba(80, 230, 180, 0.28) 28%, transparent 48%),
+    linear-gradient(180deg, transparent 40%, rgba(130, 110, 255, 0.32) 62%, transparent 82%),
+    linear-gradient(180deg, #07141C, #071018);
+}
+html:not(.glass-ui)[data-theme="starwell"] body::before {
+  background:
+    radial-gradient(40% 32% at 30% 40%, rgba(90, 70, 200, 0.45), transparent 70%),
+    radial-gradient(1.4px 1.4px at 18% 22%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 70% 30%, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 46% 68%, #fff, transparent),
+    linear-gradient(180deg, #100C22, #0A0816);
+}
+html:not(.glass-ui)[data-theme="chromeveil"] body::before {
+  background:
+    linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.1) 42%, transparent 58%),
+    linear-gradient(160deg, #1A212C, #0A0C10 42%, #141A24);
+}
+html:not(.glass-ui)[data-theme="iriscape"] body::before {
+  background:
+    conic-gradient(from 20deg, rgba(124, 58, 237, 0.4), rgba(34, 211, 238, 0.22), rgba(244, 114, 182, 0.35), rgba(250, 204, 21, 0.18), rgba(124, 58, 237, 0.4)),
+    linear-gradient(180deg, #16101E, #0C0A12);
+  animation: theme-scene-spin 80s linear infinite;
+}
+
+@keyframes theme-scene-drift {
+  from { transform: translate3d(-2%, -1.5%, 0); }
+  to { transform: translate3d(2%, 1.5%, 0); }
+}
+@keyframes theme-scene-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+html.g-theme-paused body::before {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.glass-ui)[data-theme="emberfall"] body::before,
+  html:not(.glass-ui)[data-theme="borealis"] body::before,
+  html:not(.glass-ui)[data-theme="starwell"] body::before,
+  html:not(.glass-ui)[data-theme="chromeveil"] body::before,
+  html:not(.glass-ui)[data-theme="iriscape"] body::before {
+    animation: none;
+  }
+}
+
+/* Shop + appearance swatches. Animated themes drift inside the card. */
+.shop-theme-swatch.theme-lagoon,
+.us-theme-swatch.theme-lagoon {
+  background: linear-gradient(135deg, #06141c 0%, #0c2430 48%, #0e7c9a 100%);
+}
+.shop-theme-swatch.theme-grove,
+.us-theme-swatch.theme-grove {
+  background: linear-gradient(135deg, #07140e 0%, #163222 48%, #187a42 100%);
+}
+.shop-theme-swatch.theme-hanami,
+.us-theme-swatch.theme-hanami {
+  background: linear-gradient(135deg, #160910 0%, #442430 48%, #c43b6a 100%);
+}
+.shop-theme-swatch.theme-emberfall,
+.us-theme-swatch.theme-emberfall {
+  background: linear-gradient(135deg, #140c08 0%, #422818 48%, #c2410c 100%);
+}
+.shop-theme-swatch.theme-borealis,
+.us-theme-swatch.theme-borealis {
+  background: linear-gradient(135deg, #071018 0%, #0f766e 46%, #5b4bdb 100%);
+}
+.shop-theme-swatch.theme-starwell,
+.us-theme-swatch.theme-starwell {
+  background: linear-gradient(135deg, #0a0816 0%, #2c2456 42%, #6d5ae6 100%);
+}
+.shop-theme-swatch.theme-chromeveil,
+.us-theme-swatch.theme-chromeveil {
+  background: linear-gradient(135deg, #0a0c10 0%, #282e3a 40%, #d5e4f5 100%);
+}
+.shop-theme-swatch.theme-iriscape,
+.us-theme-swatch.theme-iriscape {
+  background: linear-gradient(135deg, #0c0a12 0%, #7c3aed 42%, #22d3ee 70%, #f472b6 100%);
+}
+
+.shop-theme-swatch.theme-emberfall,
+.shop-theme-swatch.theme-borealis,
+.shop-theme-swatch.theme-starwell,
+.shop-theme-swatch.theme-chromeveil,
+.shop-theme-swatch.theme-iriscape,
+.us-theme-swatch.theme-emberfall,
+.us-theme-swatch.theme-borealis,
+.us-theme-swatch.theme-starwell,
+.us-theme-swatch.theme-chromeveil,
+.us-theme-swatch.theme-iriscape {
+  position: relative;
+  overflow: hidden;
+}
+.shop-theme-swatch.theme-emberfall::after,
+.shop-theme-swatch.theme-borealis::after,
+.shop-theme-swatch.theme-starwell::after,
+.shop-theme-swatch.theme-chromeveil::after,
+.shop-theme-swatch.theme-iriscape::after,
+.us-theme-swatch.theme-emberfall::after,
+.us-theme-swatch.theme-borealis::after,
+.us-theme-swatch.theme-starwell::after,
+.us-theme-swatch.theme-chromeveil::after,
+.us-theme-swatch.theme-iriscape::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 48%, transparent 62%);
+  animation: theme-swatch-drift 7s ease-in-out infinite alternate;
+}
+.shop-item-preview {
+  position: relative;
+}
+.shop-item-new {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(10, 12, 18, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+}
+
+@keyframes theme-swatch-drift {
+  from { transform: translate3d(-8%, 0, 0); }
+  to { transform: translate3d(8%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-theme-swatch.theme-emberfall::after,
+  .shop-theme-swatch.theme-borealis::after,
+  .shop-theme-swatch.theme-starwell::after,
+  .shop-theme-swatch.theme-chromeveil::after,
+  .shop-theme-swatch.theme-iriscape::after,
+  .us-theme-swatch.theme-emberfall::after,
+  .us-theme-swatch.theme-borealis::after,
+  .us-theme-swatch.theme-starwell::after,
+  .us-theme-swatch.theme-chromeveil::after,
+  .us-theme-swatch.theme-iriscape::after {
+    animation: none;
+    opacity: 0.35;
+  }
+}

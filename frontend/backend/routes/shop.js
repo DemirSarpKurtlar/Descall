@@ -130,6 +130,15 @@ router.post("/purchase", requireAuth, async (req, res) => {
     if (await shop.userOwnsItem(req.user.id, itemId)) {
       return res.status(409).json({ error: "You already own this item." });
     }
+    if (item.category === "theme") {
+      const { themeEquipAllowed } = require("../lib/glassThemeCatalog");
+      if (!themeEquipAllowed(item.theme_key, req.body?.themeEngine)) {
+        return res.status(409).json({
+          error: "Update Descall to use this theme.",
+          code: "theme_client",
+        });
+      }
+    }
 
     const price = Number(item.price_descoin) || 0;
     let debitResult;
@@ -171,6 +180,16 @@ router.post("/equip", requireAuth, async (req, res) => {
     if (itemId) {
       const owns = await shop.userOwnsItem(req.user.id, itemId);
       if (!owns) return res.status(403).json({ error: "You do not own this item." });
+      if (category === "theme") {
+        const { themeEquipAllowed } = require("../lib/glassThemeCatalog");
+        const item = await shop.getItemById(itemId);
+        if (item && !themeEquipAllowed(item.theme_key, req.body?.themeEngine)) {
+          return res.status(409).json({
+            error: "Update Descall to use this theme.",
+            code: "theme_client",
+          });
+        }
+      }
     }
     await shop.equipItem(req.user.id, category, itemId || null);
 
