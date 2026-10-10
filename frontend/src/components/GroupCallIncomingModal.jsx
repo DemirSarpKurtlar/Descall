@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useT } from "../context/LocaleContext";
+import { hapticImpactLight } from "../lib/fluid/haptics";
 
 /**
  * Floating incoming group call modal — FaceTime-style avatar rings.
@@ -34,21 +35,23 @@ export default function GroupCallIncomingModal({ incomingCall, onAccept, onDecli
           callType={incomingCall.callType}
           isGroup
           subtitle={t("Group call")}
-          onDecline={() =>
+          onDecline={() => {
+            hapticImpactLight();
             onDecline?.(
               incomingCall.groupId,
               incomingCall.fromUser?.id,
               incomingCall.fromUser,
               incomingCall.callType
-            )
-          }
-          onAccept={() =>
+            );
+          }}
+          onAccept={() => {
+            hapticImpactLight();
             onAccept?.(
               incomingCall.groupId,
               incomingCall.callType,
               incomingCall.fromUser
-            )
-          }
+            );
+          }}
         />
       )}
     </AnimatePresence>

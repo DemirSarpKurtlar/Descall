@@ -29,6 +29,8 @@ import VoiceMemberContextMenu from "./servers/VoiceMemberContextMenu";
 import UserProfileModal from "./social/UserProfileModal";
 import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
 import useGlassUi from "../hooks/useGlassUi";
+import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
+import { copyText } from "../lib/copyText";
 
 /*
  * Google Meet-style call overlay
@@ -306,8 +308,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             username={peer?.username}
             user={peer}
             callType={callType}
-            onDecline={() => call.declineIncoming?.()}
-            onAccept={() => call.acceptIncoming?.()}
+            onDecline={() => { hapticImpactLight(); call.declineIncoming?.(); }}
+            onAccept={() => { hapticImpactLight(); call.acceptIncoming?.(); }}
           />
         </AnimatePresence>
       </>
@@ -396,6 +398,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
+              hapticImpactMedium();
               isDm ? call.endCall(peer?.id) : groupCall.leaveCall();
             }}
             style={{
@@ -667,10 +670,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       >
         {mode === "incoming" && isDm ? (
           <>
-            <CircleBtn color="#3ba55d" size={64} onClick={call.acceptIncoming}>
+            <CircleBtn color="#3ba55d" size={64} onClick={() => { hapticImpactLight(); call.acceptIncoming?.(); }}>
               <Phone size={28} />
             </CircleBtn>
-            <CircleBtn color="#ed4245" size={64} onClick={call.declineIncoming}>
+            <CircleBtn color="#ed4245" size={64} onClick={() => { hapticImpactLight(); call.declineIncoming?.(); }}>
               <PhoneOff size={28} />
             </CircleBtn>
           </>
@@ -684,14 +687,14 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                   label: t("Microphone"),
                   devices: (isDm ? call : groupCall)?.audioInputDevices || [],
                   selectedId: (isDm ? call : groupCall)?.selectedAudioInput || "",
-                  onSelect: (deviceId) => (isDm ? call : groupCall)?.setAudioInput?.(deviceId),
+                  onSelect: (deviceId) => { hapticSelection(); (isDm ? call : groupCall)?.setAudioInput?.(deviceId); },
                 },
                 {
                   id: "out",
                   label: (isDm ? call : groupCall)?.audioOutputLabel || t("Headphones"),
                   devices: (isDm ? call : groupCall)?.audioOutputDevices || [],
                   selectedId: (isDm ? call : groupCall)?.selectedAudioOutput || "",
-                  onSelect: (deviceId) => (isDm ? call : groupCall)?.setAudioOutput?.(deviceId),
+                  onSelect: (deviceId) => { hapticSelection(); (isDm ? call : groupCall)?.setAudioOutput?.(deviceId); },
                 },
               ]}
             >
@@ -699,7 +702,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                 className={glass ? `g-cb${muted ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
                 color={muted ? "#ed4245" : "#3c4043"}
-                onClick={isDm ? call.toggleMute : groupCall.toggleMute}
+                onClick={() => { hapticSelection(); (isDm ? call.toggleMute : groupCall.toggleMute)?.(); }}
                 title={muted ? t("Unmute") : t("Mute")}
               >
                 {muted ? <MicOff size={narrowViewport ? 19 : 22} /> : <Mic size={narrowViewport ? 19 : 22} />}
@@ -710,7 +713,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               className={glass ? `g-cb${deafened ? " is-on" : ""}` : undefined}
               size={narrowViewport ? 46 : 52}
               color={deafened ? "#ed4245" : "#3c4043"}
-              onClick={isDm ? call.toggleDeafen : groupCall.toggleDeafen}
+              onClick={() => { hapticSelection(); (isDm ? call.toggleDeafen : groupCall.toggleDeafen)?.(); }}
               title={deafened ? t("Undeafen") : t("Deafen")}
             >
               {deafened ? <HeadphoneOff size={narrowViewport ? 19 : 22} /> : <Headphones size={narrowViewport ? 19 : 22} />}
@@ -724,7 +727,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                   label: t("Camera"),
                   devices: (isDm ? call : groupCall)?.videoInputDevices || [],
                   selectedId: (isDm ? call : groupCall)?.selectedVideoInput || "",
-                  onSelect: (deviceId) => (isDm ? call : groupCall)?.setVideoInput?.(deviceId),
+                  onSelect: (deviceId) => { hapticSelection(); (isDm ? call : groupCall)?.setVideoInput?.(deviceId); },
                 },
               ]}
             >
@@ -732,7 +735,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                 className={glass ? `g-cb${cameraOn ? "" : " is-on"}` : undefined}
                 size={narrowViewport ? 46 : 52}
                 color={cameraOn ? "#3c4043" : "#ed4245"}
-                onClick={isDm ? call.toggleCamera : groupCall.toggleCamera}
+                onClick={() => { hapticSelection(); (isDm ? call.toggleCamera : groupCall.toggleCamera)?.(); }}
                 title={cameraOn ? t("Turn off camera") : t("Turn on camera")}
               >
                 {cameraOn ? <Video size={narrowViewport ? 19 : 22} /> : <VideoOff size={narrowViewport ? 19 : 22} />}
@@ -971,6 +974,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                       icon={cameraOn ? <VideoOff size={16} /> : <Video size={16} />}
                       label={cameraOn ? t("Turn off camera") : t("Turn on camera")}
                       onClick={() => {
+                        hapticSelection();
                         isDm ? call.toggleCamera?.() : groupCall.toggleCamera?.();
                         setShowMoreMenu(false);
                       }}
@@ -979,6 +983,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                       icon={muted ? <Mic size={16} /> : <MicOff size={16} />}
                       label={muted ? t("Unmute") : t("Mute microphone")}
                       onClick={() => {
+                        hapticSelection();
                         isDm ? call.toggleMute?.() : groupCall.toggleMute?.();
                         setShowMoreMenu(false);
                       }}
@@ -999,7 +1004,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                         const info = isDm
                           ? `Call with ${peer?.username}`
                           : t("Group call · {count} participants", { count: groupCall.participants?.length ?? 0 });
-                        navigator.clipboard?.writeText(info).catch(() => {});
+                        copyText(info).catch(() => {});
                         setCopiedInfo(true);
                         setTimeout(() => setCopiedInfo(false), 2000);
                       }}
@@ -1011,6 +1016,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                       danger
                       onClick={() => {
                         setShowMoreMenu(false);
+                        hapticImpactMedium();
                         isDm ? call.endCall?.(peer?.id) : groupCall.leaveCall?.();
                       }}
                     />
@@ -1040,7 +1046,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               className={glass ? "g-cb is-end" : undefined}
               color="#ed4245"
               size={narrowViewport ? 50 : 56}
-              onClick={() => (isDm ? call.endCall(peer?.id) : groupCall.leaveCall())}
+              onClick={() => { hapticImpactMedium(); isDm ? call.endCall(peer?.id) : groupCall.leaveCall(); }}
               title={t("End call")}
             >
               <PhoneOff size={narrowViewport ? 21 : 24} />
@@ -1142,7 +1148,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       onCopyId={() => {
         const id = userMenu?.user?.id;
         if (id == null) return;
-        navigator.clipboard?.writeText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+        copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
         setUserMenu(null);
       }}
       onClose={() => setUserMenu(null)}

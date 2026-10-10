@@ -29,7 +29,7 @@ import { useT } from "../../context/LocaleContext";
 import { formatMessageClock, formatMessageDate, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
 import useMaterialize from "../../hooks/useMaterialize";
-import { hapticLight, primeHaptics } from "../../lib/haptics";
+import { hapticImpactMedium, hapticLight, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
@@ -647,6 +647,7 @@ function MessageBubble({
 
   const togglePin = useCallback(() => {
     if (!message?.id || String(message.id).startsWith("temp-")) return;
+    hapticImpactMedium();
     if (conversationType === "server") {
       if (!canManageMessages) return;
       socket?.emit(isPinned ? "server:channel:message:unpin" : "server:channel:message:pin", {
@@ -901,7 +902,7 @@ function MessageBubble({
           el.addEventListener("pointercancel", up);
           pressTimer.current = setTimeout(() => {
             clear();
-            hapticLight();
+            hapticImpactMedium();
             // The finger is still down. Swallow that release so it cannot
             // activate Edit / Report or the scrim once the menu slides under it.
             swallowOpeningPress();

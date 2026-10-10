@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { hapticImpactMedium, hapticWarning } from "../../lib/fluid/haptics";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Plus, Shield, Trash2, X, Users } from "lucide-react";
@@ -213,6 +214,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
 
   const removeRole = async () => {
     if (!selected || selected.isEveryone || !server?.id) return;
+    hapticWarning();
     if (!window.confirm(t("Delete role {name}?", { name: selected.name }))) return;
     setBusy(true);
     setError("");
@@ -382,6 +384,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
                     className={`server-role-row-wrap${dragRoleId === role.id ? " is-dragging" : ""}${dragOverRoleId === role.id ? " is-drag-over" : ""}`}
                     draggable={!busy && canEditServerRole(server, role)}
                     onDragStart={(e) => {
+                      hapticImpactMedium();
                       setDragRoleId(role.id);
                       e.dataTransfer.effectAllowed = "move";
                       e.dataTransfer.setData("text/plain", role.id);

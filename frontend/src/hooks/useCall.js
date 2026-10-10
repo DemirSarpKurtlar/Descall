@@ -50,6 +50,7 @@ import {
 import { createMicGuard, withCaptureRetry } from "../lib/iosCallMic";
 import { reportDiagnostic } from "../lib/sentry";
 import { createCallSetupTimeline } from "../lib/callSetupTimeline";
+import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 
 function callPlatformTag() {
   if (IOS_NATIVE) return "ios-app";
@@ -332,6 +333,7 @@ export function useCall(socket, callOccupancyRef = null) {
       iceRecoveryTimerRef.current = null;
     }
     negotiateRef.current = null;
+    resetCallHaptic();
     setMode(null);
     setCallAnchorAt(null);
     setCallType(null);
@@ -643,6 +645,7 @@ export function useCall(socket, callOccupancyRef = null) {
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       if (state === "connected") {
+        hapticCallConnected();
         setMode("active");
         modeRef.current = "active";
         setConnectionQuality("good");
@@ -962,6 +965,7 @@ export function useCall(socket, callOccupancyRef = null) {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         setupTimelineRef.current?.watch(pcRef.current);
         await flushIce(pcRef.current);
+        hapticCallConnected();
         setMode("active");
         modeRef.current = "active";
         if (negotiationQueuedRef.current) void negotiateRef.current?.();
@@ -1241,6 +1245,7 @@ export function useCall(socket, callOccupancyRef = null) {
       socketRef.current.emit("call:answer", { toUserId: currentPeer.id, answer: pc.localDescription });
       timeline?.mark("answerSent");
       timeline?.watch(pc);
+      hapticCallConnected();
       setMode("active");
       modeRef.current = "active";
     } catch (err) {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Copy, Check } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
+import { copyText } from "../../lib/copyText";
 
 /**
  * Valorant party code — click to reveal + copy (members only).
@@ -27,7 +28,7 @@ export default function PartyCodeReveal({
     if (!value) return;
     if (!revealed) setRevealed(true);
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {

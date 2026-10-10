@@ -10,6 +10,7 @@ import { isAnalyticsAllowed, markAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
+import { installIosHapticHints } from "./lib/fluid/haptics";
 import { startErrorReporting } from "./lib/sentry";
 
 // Crash/error reporting (prod only, lazy-loaded after first paint, buffers earlier errors).
@@ -21,6 +22,7 @@ try {
   /* first-touch capture is best-effort */
 }
 installAndroidBack();
+installIosHapticHints();
 
 const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
 const hasSession = Boolean(getToken());

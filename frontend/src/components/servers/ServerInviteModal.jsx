@@ -5,6 +5,7 @@ import { Link2, Copy, Check, Trash2, RefreshCw, Globe } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { toPublicShareUrl } from "../../lib/referral";
 import { useToast } from "../../context/ToastContext";
+import { copyText } from "../../lib/copyText";
 import {
   createServerInvite,
   listServerInvites,
@@ -78,7 +79,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
         setLatestUrl(toPublicShareUrl(invite.url));
         setInvites((prev) => [invite, ...prev.filter((i) => i.code !== invite.code)]);
         try {
-          await navigator.clipboard.writeText(toPublicShareUrl(invite.url));
+          await copyText(toPublicShareUrl(invite.url));
           setCopied(true);
           setTimeout(() => setCopied(false), 1600);
           toast(t("Invite copied"), "success");
@@ -95,7 +96,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
 
   const copy = async (text) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
       toast(t("Copied"), "success");

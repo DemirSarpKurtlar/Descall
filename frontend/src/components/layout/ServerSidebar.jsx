@@ -8,6 +8,8 @@ import {
   Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag,
 } from "lucide-react";
 import SwipeRevealRow from "./SwipeRevealRow";
+import { hapticWarning } from "../../lib/fluid/haptics";
+import { copyText } from "../../lib/copyText";
 import CallsView from "../calls/CallsView";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
@@ -293,7 +295,7 @@ export default function ServerSidebar({
       const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
       const { Funnel } = await import("../../site/analytics");
       const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       Funnel.inviteGenerated({ method: "copy_link", username: me.username });
       setAddSuccess(t("Invite link copied"));
       setTimeout(() => setAddSuccess(""), 3000);
@@ -407,7 +409,7 @@ export default function ServerSidebar({
                       const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
                       const { Funnel } = await import("../../site/analytics");
                       const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
-                      await navigator.clipboard.writeText(url);
+                      await copyText(url);
                       Funnel.inviteGenerated({ method: "copy_link", username: me.username });
                       setAddSuccess(t("Invite link copied"));
                       setTimeout(() => setAddSuccess(""), 3000);
@@ -505,7 +507,7 @@ export default function ServerSidebar({
                   const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
                   const { Funnel } = await import("../../site/analytics");
                   const url = toPublicShareUrl(buildFriendInviteUrl(me?.username));
-                  await navigator.clipboard.writeText(url);
+                  await copyText(url);
                   Funnel.inviteGenerated({ method: "empty_state", username: me?.username });
                   setAddSuccess(t("Invite link copied"));
                   setTimeout(() => setAddSuccess(""), 3000);
@@ -1768,6 +1770,9 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
 
 function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = false, onConfirm, onCancel }) {
   const t = useT();
+  useEffect(() => {
+    if (danger) hapticWarning();
+  }, [danger]);
   return createPortal(
     <motion.div
       className="conv-confirm-overlay"

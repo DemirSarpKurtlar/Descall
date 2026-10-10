@@ -15,6 +15,7 @@ import { serverHasPermission } from "../../lib/serverPermissions";
 import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import { hapticImpactLight } from "../../lib/fluid/haptics";
 
 const EMOJI_CATEGORIES = [
   { nameKey: "Smileys", emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"] },
@@ -754,7 +755,7 @@ export default function MessageComposer({
               <div className="attachment-icon"><FileText size={24} /></div>
               <span className="attachment-label">{t("Upload File")}</span>
             </button>
-            <button className="attachment-item" onClick={() => { setShowGiphy(true); setShowAttachmentMenu(false); }}>
+            <button className="attachment-item" onClick={() => { hapticImpactLight(); setShowGiphy(true); setShowAttachmentMenu(false); }}>
               <div className="attachment-icon"><Gift size={24} /></div>
               <span className="attachment-label">{t("Send GIF")}</span>
             </button>
@@ -798,7 +799,10 @@ export default function MessageComposer({
         <motion.button
           ref={attachBtnRef}
           className={`composer-action-btn${glass && showAttachmentMenu ? " is-open" : ""}`}
-          onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+          onClick={() => {
+            if (!showAttachmentMenu) hapticImpactLight();
+            setShowAttachmentMenu(!showAttachmentMenu);
+          }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           title={t("Add Attachment")}
@@ -843,7 +847,10 @@ export default function MessageComposer({
       </div>
 
       <div className="composer-right">
-        <motion.button className="composer-action-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Emoji")}>
+        <motion.button className="composer-action-btn" onClick={() => {
+          if (!showEmojiPicker) hapticImpactLight();
+          setShowEmojiPicker(!showEmojiPicker);
+        }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Emoji")}>
           <Smile size={24} />
         </motion.button>
 

@@ -8,6 +8,8 @@ import {
   ShoppingBag, Mail, Monitor, CheckCircle2, UserX, Sparkles, KeyRound, Smile,
   Trash2, AtSign, Lock,
 } from "lucide-react";
+import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
+import { copyText } from "../../lib/copyText";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import StatusBadge from "../ui/StatusBadge";
@@ -1041,13 +1043,16 @@ const UserPanel = forwardRef(function UserPanel({
           setDisplayName(updated.displayName || updated.username || "");
         }
         setProfileSaved(true);
+        hapticSuccess();
         setTimeout(() => setProfileSaved(false), 2000);
       } else {
         const data = await res.json().catch(() => ({}));
+        hapticError();
         setProfileError(data.error || t("Failed to save profile"));
         setTimeout(() => setProfileError(""), 3000);
       }
     } catch {
+      hapticError();
       setProfileError(t("Network error while saving profile"));
       setTimeout(() => setProfileError(""), 3000);
     } finally {
@@ -1134,7 +1139,7 @@ const UserPanel = forwardRef(function UserPanel({
   const copyUserId = async () => {
     if (!me?.id) return;
     try {
-      await navigator.clipboard.writeText(String(me.id));
+      await copyText(String(me.id));
       setCopiedId(true);
       setTimeout(() => setCopiedId(false), 1600);
     } catch { /* ignore */ }

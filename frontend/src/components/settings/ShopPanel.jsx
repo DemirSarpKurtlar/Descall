@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 import RippleButton from "../ui/RippleButton";
+import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import {
   getShopCatalog,
   getShopInventory,
@@ -229,11 +230,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       setDaily(result);
       if (result?.balance != null) onBalanceChange?.(result.balance);
       if (result?.claimed) {
+        hapticSuccess();
         setNotice(t("Daily DesCoin claimed! +{amount}", { amount: result.credited || 0 }));
       } else if (result?.alreadyClaimed) {
         setNotice(t("Already claimed today — come back tomorrow"));
       }
     } catch (err) {
+      hapticError();
       setNotice(err.message || t("Could not claim daily DesCoin"));
     } finally {
       setClaiming(false);
@@ -343,6 +346,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             ? prev
             : [...prev, { itemId: item.id, item }]
         );
+        hapticSuccess();
         setCelebrateItemId(item.id);
         window.setTimeout(() => {
           setCelebrateItemId((id) => (id === item.id ? null : id));
@@ -350,6 +354,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         await load({ silent: true });
       });
     } catch (err) {
+      hapticError();
       setNotice(err.message || t("Purchase failed. Please try again."));
     } finally {
       setBusyItemId(null);
@@ -364,8 +369,10 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       await preserveShopScroll(async () => {
         await equipShopItem(item.category, isEquipped ? null : item.id);
         await onEquippedChange?.(item.category, isEquipped ? null : item.id);
+        hapticSuccess();
       });
     } catch (err) {
+      hapticError();
       setNotice(err.message || t("Could not update equipped item."));
     } finally {
       setBusyItemId(null);

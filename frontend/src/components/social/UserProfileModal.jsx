@@ -14,6 +14,7 @@ import { getUserValorant } from "../../api/riot";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { isUserAdmin } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import { useLocale } from "../../context/LocaleContext";
@@ -129,6 +130,12 @@ export default function UserProfileModal({
     setFriendError("");
     setMutualFriends([]);
   }, [open, userId, friends, fetchProfile, fetchMutualFriends]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    hapticImpactLight();
+    return undefined;
+  }, [open, userId]);
 
   useEffect(() => {
     if (!open) return;
@@ -250,7 +257,10 @@ export default function UserProfileModal({
                 dragElastic={{ top: 0.04, bottom: 0.55 }}
                 dragMomentum={false}
                 onDragEnd={(_, info) => {
-                  if (info.offset.y > 88 || info.velocity.y > 750) dismissSheet(info.velocity.y);
+                  if (info.offset.y > 88 || info.velocity.y > 750) {
+                  hapticImpactLight();
+                  dismissSheet(info.velocity.y);
+                }
                 }}
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"

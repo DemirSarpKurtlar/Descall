@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { hapticWarning } from "../../lib/fluid/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Crosshair, Plus, Users, Mic, Filter, X, Gamepad2,
@@ -251,6 +252,7 @@ export default function LfgWorkspace({
     if (!selectedId) return;
     const closingAsHost = detail?.isHost;
     if (closingAsHost) {
+      hapticWarning();
       const ok = window.confirm(t("Close this lobby for everyone? Only you (the host) can do this."));
       if (!ok) return;
     }
@@ -759,7 +761,7 @@ function CreateLobbyModal({ meta, ranks, busy, defaultHostRank, defaultRegion, o
                 <button
                   key={role}
                   type="button"
-                  className={form.needRoles.includes(role) ? "active" : ""}
+                  className={`lfg-role-chip${form.needRoles.includes(role) ? " active" : ""}`}
                   onClick={() => toggleRole(role)}
                 >
                   {role}

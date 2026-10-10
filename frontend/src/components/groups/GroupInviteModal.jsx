@@ -6,6 +6,7 @@ import { createGroupInviteLink } from "../../api/groups";
 import { toPublicShareUrl } from "../../lib/referral";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
+import { copyText } from "../../lib/copyText";
 
 const EXPIRY_OPTIONS = [
   { hours: 1, label: "1 hour" },
@@ -70,7 +71,7 @@ export default function GroupInviteModal({ group, open, onClose }) {
     const url = toPublicShareUrl(invite?.url);
     if (!url) return;
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {

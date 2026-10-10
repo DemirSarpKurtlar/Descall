@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { deleteAccount } from "../../api/security";
+import { hapticError, hapticWarning } from "../../lib/fluid/haptics";
 
 /**
  * Settings → Security → Delete account (App Store Guideline 5.1.1(v)).
@@ -14,6 +15,9 @@ export default function DeleteAccountSection({ onDeleted }) {
   const [secret, setSecret] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (open) hapticWarning();
+  }, [open]);
 
   const submit = async (e) => {
     e?.preventDefault?.();
@@ -24,6 +28,7 @@ export default function DeleteAccountSection({ onDeleted }) {
       await deleteAccount({ password: secret, confirmUsername: secret });
       onDeleted?.();
     } catch (err) {
+      hapticError();
       setError(err?.message || t("Could not delete your account. Try again."));
       setBusy(false);
     }

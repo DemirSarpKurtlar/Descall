@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { hapticImpactMedium, hapticWarning } from "../../lib/fluid/haptics";
+import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -459,6 +461,7 @@ export default function ServersSidebar({
   const handleDeleteFolder = async (folder) => {
     if (!folder?.id) return;
     setFolderMenu(null);
+    hapticWarning();
     if (!window.confirm(t("Delete folder \"{name}\"? Servers will stay unfiled.", { name: folder.name }))) {
       return;
     }
@@ -481,6 +484,7 @@ export default function ServersSidebar({
       title={serverListDraggable ? dragReorderTitle : undefined}
       onDragStart={(e) => {
         if (!serverListDraggable) return;
+        hapticImpactMedium();
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", server.id);
         setDragServerId(server.id);
@@ -1477,7 +1481,7 @@ export default function ServersSidebar({
             onCopyId={() => {
               const id = voiceMenu.user?.id;
               if (id == null) return;
-              navigator.clipboard?.writeText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+              copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
               setVoiceMenu(null);
             }}
             onClose={() => setVoiceMenu(null)}
@@ -1991,6 +1995,7 @@ function ChannelRow({
       title={rowDraggable ? dragReorderTitle : undefined}
       onContextMenu={(e) => {
         if (!showMenu) return;
+        hapticImpactMedium();
         e.preventDefault();
         e.stopPropagation();
         setCursorPoint({ x: e.clientX, y: e.clientY });
@@ -2001,6 +2006,7 @@ function ChannelRow({
       }}
       onDragStart={(e) => {
         if (!rowDraggable) return;
+        hapticImpactMedium();
         startChannelDrag(e);
       }}
       onDragOver={(e) => {
@@ -2025,6 +2031,7 @@ function ChannelRow({
           aria-label={t("Hold and drag to reorder")}
           onDragStart={(e) => {
             e.stopPropagation();
+            hapticImpactMedium();
             startChannelDrag(e);
           }}
           onClick={(e) => e.preventDefault()}
@@ -2885,6 +2892,9 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
 
 function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
   const t = useT();
+  useEffect(() => {
+    hapticWarning();
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   if (typeof document === "undefined") return null;
@@ -2939,6 +2949,9 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
 
 function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
   const t = useT();
+  useEffect(() => {
+    hapticWarning();
+  }, []);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

@@ -7,6 +7,7 @@ import { parseAppDate } from "../lib/datetime";
 import { parseVoiceMeta } from "../lib/voiceMessage";
 import notificationService from "../lib/notificationService";
 import { isBlockedByMe } from "../lib/blockedUsers";
+import { hapticError, hapticWarning } from "../lib/fluid/haptics";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
@@ -406,6 +407,10 @@ export function bindServerSocketHandlers(socket, ctx) {
           ),
         };
       });
+    }
+    if (tempId) {
+      if (code === "SLOWMODE" || code === "RULES_REQUIRED") hapticWarning();
+      else hapticError();
     }
     const showOnActiveChannel =
       !channelId || String(activeChannelRef.current?.id || "") === String(channelId);

@@ -10,6 +10,7 @@ import {
   Flag, FlagOff, Archive, ArchiveRestore
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
+import { copyText } from "../../lib/copyText";
 import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
@@ -592,7 +593,7 @@ export default function AdminErrorLogs({ socket }) {
                       </RippleButton>
                       <RippleButton onClick={e => {
                         e.stopPropagation();
-                        navigator.clipboard.writeText(log.stack || log.message);
+                        copyText(log.stack || log.message).catch(() => {});
                       }}>
                         <Copy size={14} />
                       </RippleButton>
@@ -810,7 +811,7 @@ export default function AdminErrorLogs({ socket }) {
               
               <div className="modal-actions">
                 <RippleButton 
-                  onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedLog, null, 2))}
+                  onClick={() => copyText(JSON.stringify(selectedLog, null, 2)).catch(() => {})}
                   className="secondary"
                 >
                   <Copy size={16} />

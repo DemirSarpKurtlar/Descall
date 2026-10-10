@@ -18,6 +18,7 @@ import { Funnel } from "../site/analytics";
 import { initialAuthMode, isCapacitorNativeShell } from "../lib/entryShell";
 import { useGlassUi } from "../hooks/useGlassUi";
 import { usePressFeedbackScope } from "../hooks/usePressFeedback";
+import { hapticError } from "../lib/fluid/haptics";
 import { useMaterialize } from "../hooks/useMaterialize";
 import { createValueAnimator } from "../lib/fluid/animator";
 import { SPRINGS } from "../lib/fluid/springs";
@@ -76,6 +77,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
+  useEffect(() => {
+    if (error || twoFaError) hapticError();
+  }, [error, twoFaError]);
   // Sign in with Apple / Google for an account that doesn't exist yet: the backend
   // answers <provider>_signup_required and the user finishes Terms + date of birth
   // here first. { provider: "apple" | "google", credential }.

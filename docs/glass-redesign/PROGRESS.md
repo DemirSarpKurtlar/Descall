@@ -1,5 +1,23 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.176
+
+iPhone’da dokunuşlar tek bir yerden titrer: `src/lib/fluid/haptics.js`. Web, Electron ve Android sessiz. Sistemin Haptics anahtarı UIKit’te durur; Azaltılmış Hareket animasyonu kısar, onay titreşimini kesmez. Aynı tür 50 ms içinde ikinci kez çalmaz. Kaydırma ve basılı tutulan jest tekrar etmez; eşik bir kez.
+
+Seçim: sekme, çip, filtre, tema, durum, emoji, tepki, anahtar. Hafif: birincil düğme, ek menüsü, emoji seçici, profil sayfası, yanıt eşiği, geri kaydırma, sayfayı aşağı bırakma. Orta: uzun basış menüsü, satır menüsü, sabitleme, sürükleyerek sıralama, aramayı kapatma. Başarı: kendi mesajın, arkadaş kabulü, mağaza alış/günlük ödül, kayıt, kopyalama, arama bağlandı. Uyarı: engelle, sunucudan ayrıl, hesap sil, at, rol sil. Hata: gönderilemeyen mesaj, alış, kayıt, giriş. Gelen mesajda ve listede kaydırırken yok. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.176**. Yalnız iPhone. Ayarlar → Ses ve Dokunuş → Sistem Dokunuşları açık.
+
+- [ ] Sekme değiştir, çip veya tema seç: kısa seçim tiki. Aynı sekmeye tekrar basınca susar.
+- [ ] Mesaj gönder: bir başarı tiki. Gelen mesajda tik yok. Gönderilemezse hata tiki.
+- [ ] Mesaja uzun bas: menüyle birlikte orta tik, basılı tutarken tekrar yok. Yanıt eşiğinde bir hafif tik.
+- [ ] Profil aç: hafif tik. Aşağı sürükleyip bırakınca bir hafif tik daha.
+- [ ] Sessize al / kamerayı kapat: seçim. Aramayı kapat: daha tok. Arama bağlanınca bir başarı.
+- [ ] Engelle, sunucudan ayrıl veya hesabı sil onayı açılınca uyarı tiki.
+- [ ] Masaüstü / tarayıcıda hiç titreşim yok.
+
 ## Cihaz düzeltmeleri · 2.9.175
 
 Demir’in 2.9.174 iPhone testi. DM’de karşı kullanıcının avatarına veya adına dokununca profil iki kez açılıyordu ve tam kart, yüzen sohbet başlığının altında kalıyordu.

@@ -5,6 +5,7 @@ import { Settings2, Camera, ImagePlus, Trash2, X } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";
+import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { serverHasPermission } from "../../lib/serverPermissions";
@@ -157,9 +158,11 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
           welcomeChannelId: welcomeChannelId || null,
         }
       );
+      hapticSuccess();
       toast(t("Saved"), "success");
       onClose?.();
     } catch (err) {
+      hapticError();
       toast(err?.message || t("Something went wrong."), "error");
     } finally {
       setBusy(false);

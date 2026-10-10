@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { hapticWarning } from "../../lib/fluid/haptics";
+import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
@@ -310,7 +312,7 @@ export default function ServerMembersPanel({
   const copyUsername = async (member) => {
     const text = member.username ? `@${member.username}` : member._name;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       toast(t("Copied"), "success");
     } catch {
       toast(t("Something went wrong."), "error");
@@ -437,6 +439,7 @@ export default function ServerMembersPanel({
 
   const kick = async (member) => {
     if (!server?.id) return;
+    hapticWarning();
     if (!window.confirm(t("Kick {name} from this server?", { name: member._name }))) return;
     setBusy(true);
     try {

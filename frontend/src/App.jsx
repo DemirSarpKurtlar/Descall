@@ -70,6 +70,7 @@ import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isNativeIOS } from "./lib/platform";
+import { hapticError, hapticImpactMedium, hapticSuccess } from "./lib/fluid/haptics";
 import { isCapacitorNativeShell } from "./lib/entryShell";
 import BirthDateGate from "./components/auth/BirthDateGate";
 import { isChannelMuted } from "./lib/serverChannelMutes";
@@ -1681,6 +1682,7 @@ export default function App() {
       if (user) applyProfileUpdate(user);
     });
     socket.on("friend:error", ({ message } = {}) => {
+      hapticError();
       setFriendNotice(message || t("Friend action failed."));
       setTimeout(() => setFriendNotice(""), 4000);
       // Restore pending list / friends after a failed accept/decline
@@ -1734,6 +1736,7 @@ export default function App() {
       }
       if (message) {
         toast(message, "error");
+        hapticError();
       }
     });
 
@@ -1947,7 +1950,10 @@ export default function App() {
           };
         });
       }
-      if (message) toast(message, "error");
+      if (message) {
+        toast(message, "error");
+        hapticError();
+      }
     });
 
     socket.on("mention:received", (payload = {}) => {
@@ -3273,6 +3279,7 @@ export default function App() {
   const handleDmPrefAction = useCallback(async (dm, action) => {
     if (!dm?.id) return;
     if (action === "pin") {
+      hapticImpactMedium();
       await persistDmPref(dm.id, { pinned: !dm.pinned });
       return;
     }
@@ -3593,6 +3600,7 @@ export default function App() {
     setFriendRequests((prev) => prev.filter((r) => r.id !== id));
     if (socket?.connected) {
       socket.emit("friend:accept", { fromUserId: id });
+      hapticSuccess();
       return;
     }
     // HTTP fallback when socket is down
@@ -3609,11 +3617,13 @@ export default function App() {
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.error || "Failed to accept");
         setFriendNotice(t("Friend request accepted"));
+        hapticSuccess();
         setTimeout(() => setFriendNotice(""), 3000);
         socketRef.current?.emit("friend:list");
       })
       .catch((err) => {
         setFriendNotice(err.message || t("Friend action failed."));
+        hapticError();
         setTimeout(() => setFriendNotice(""), 4000);
         socketRef.current?.emit("friend:list");
       });
@@ -4638,6 +4648,7 @@ export default function App() {
                   replyTo: replyMeta || undefined,
                 });
               }
+              hapticSuccess();
               setReplyTo(null);
             } else if (activeGroup) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -4707,6 +4718,7 @@ export default function App() {
                   replyTo: replyMeta || undefined,
                 });
               }
+              hapticSuccess();
               setReplyTo(null);
             } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -4762,6 +4774,7 @@ export default function App() {
                   replyTo: replyMeta || undefined,
                 });
               }
+              hapticSuccess();
               setReplyTo(null);
             }
           }}

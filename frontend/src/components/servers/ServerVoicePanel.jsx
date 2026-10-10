@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import {
   HeadphoneOff,
@@ -1112,7 +1113,7 @@ export default function ServerVoicePanel({
         onCopyId={() => {
           const id = memberMenu?.user?.id;
           if (id == null) return;
-          navigator.clipboard?.writeText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+          copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
           setMemberMenu(null);
         }}
         onClose={() => setMemberMenu(null)}

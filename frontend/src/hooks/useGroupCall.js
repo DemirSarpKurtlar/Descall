@@ -23,6 +23,7 @@ import {
 import { preloadIceServers } from "../lib/iceConfig";
 import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
 import { sampleConnectionStats } from "../lib/connectionStats";
+import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
@@ -422,6 +423,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       screenAudioCtxRef.current = null;
     }
 
+    resetCallHaptic();
     setIsInCall(false);
     setIsInitiator(false);
     setCallType(null);
@@ -831,6 +833,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       });
       setNoiseSuppressedTrackEnabled(true);
       
+      hapticCallConnected();
       setIsInCall(true);
       setIsInitiator(true);
       setCallType(type);
@@ -915,6 +918,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       });
       setNoiseSuppressedTrackEnabled(true);
       
+      hapticCallConnected();
       setIsInCall(true);
       setIsInitiator(false);
       setCallType(type);
@@ -2136,6 +2140,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         });
         setNoiseSuppressedTrackEnabled(true);
         
+        hapticCallConnected();
         setIsInCall(true);
         audioManager.play("channelJoin");
         setIsInitiator(false); // We're joining, not initiating
@@ -2477,6 +2482,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       setLocalStream(stream);
       stream.getAudioTracks().forEach((t) => { t.enabled = true; });
       setNoiseSuppressedTrackEnabled(true);
+      hapticCallConnected();
       setIsInCall(true);
       audioManager.stop("incomingCall");
       audioManager.play("channelJoin");

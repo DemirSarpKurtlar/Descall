@@ -4,11 +4,13 @@ import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
+import { hapticSuccess } from "../../lib/fluid/haptics";
 
 async function copyText(text) {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
+      hapticSuccess();
       return true;
     }
   } catch {
@@ -26,6 +28,7 @@ async function copyText(text) {
     ta.setSelectionRange(0, text.length);
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
+    if (ok) hapticSuccess();
     return ok;
   } catch {
     return false;

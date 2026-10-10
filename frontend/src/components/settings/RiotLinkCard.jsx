@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { hapticWarning } from "../../lib/fluid/haptics";
 import { Link2, RefreshCw, Unlink } from "lucide-react";
 import {
   getRiotStatus,
@@ -81,6 +82,7 @@ export default function RiotLinkCard() {
 
   const handleUnlink = async () => {
     if (busy) return;
+    hapticWarning();
     if (!window.confirm(t("Unlink your Valorant account from Descall?"))) return;
     setBusy(true);
     setError("");
