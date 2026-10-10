@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  LIGHTBOX_CLOSE_GUARD_MS,
   MESSAGE_MENU_LONG_PRESS_MS,
+  attachMenuPress,
+  createMediaPressGate,
   liftMediaBox,
   messageMenuOpensOnTap,
   pressToActivate,
@@ -78,5 +81,221 @@ assert.match(chatCss, /html\.glass-ui \.g-lift-media img \{[\s\S]*width: 100%;/)
 assert.match(chatCss, /html\.glass-ui \.g-lift-bub:empty/);
 assert.match(chatCss, /html\.glass-ui \.message-bubble\.menu-open \{\s*visibility: hidden/);
 assert.match(chatCss, /max-height: 240px;/);
+
+const menuSrc = readFileSync(new URL("./glassMessageMenu.js", import.meta.url), "utf8");
+const lightbox = readFileSync(new URL("../components/chat/MessageMediaLightbox.jsx", import.meta.url), "utf8");
+assert.match(menuSrc, /visibilitychange/);
+assert.match(menuSrc, /pointercancel/);
+assert.match(menuSrc, /win\.addEventListener\("scroll", onScroll, \{ capture: true, passive: true \}\)/);
+assert.match(menuSrc, /win\.removeEventListener\("scroll", onScroll, true\)/);
+assert.match(list, /attachMenuPress/);
+assert.match(list, /noteLightbox\(true\)/);
+assert.match(list, /noteLightbox\(false\)/);
+assert.match(list, /pressGate\.current\.accepts\(\)/);
+assert.match(list, /openLightbox\(\)/);
+assert.match(list, /onClose=\{closeLightbox\}/);
+assert.match(lightbox, /onPointerDown=\{seal\}/);
+assert.match(lightbox, /onPointerUp=\{seal\}/);
+assert.match(lightbox, /onTouchEnd=\{seal\}/);
+assert.match(lightbox, /event\.stopPropagation\(\)/);
+
+function makeTarget() {
+  const listeners = [];
+  return {
+    addEventListener(type, fn, capture) {
+      listeners.push({ type, fn, capture: Boolean(capture) });
+    },
+    removeEventListener(type, fn, capture) {
+      const cap = Boolean(capture);
+      const i = listeners.findIndex((l) => l.type === type && l.fn === fn && l.capture === cap);
+      if (i >= 0) listeners.splice(i, 1);
+    },
+    dispatch(type, event) {
+      for (const l of listeners.filter((row) => row.type === type)) l.fn(event);
+    },
+    setAttribute() {},
+    removeAttribute() {},
+  };
+}
+
+function harness() {
+  let now = 10_000;
+  const queue = [];
+  const gate = createMediaPressGate({ now: () => now });
+  const el = makeTarget();
+  const win = makeTarget();
+  const doc = makeTarget();
+  doc.hidden = false;
+  const fired = [];
+  const api = {
+    gate,
+    el,
+    win,
+    doc,
+    fired,
+    get now() { return now; },
+    advance(ms) {
+      now += ms;
+      for (const item of queue) {
+        if (!item.dead && item.at <= now) {
+          item.dead = true;
+          item.fn();
+        }
+      }
+    },
+    press(extra = {}) {
+      return attachMenuPress({
+        gate,
+        event: { clientX: 10, clientY: 10, pointerId: 1, button: 0, type: "pointerdown", ...extra },
+        el,
+        win,
+        doc,
+        delay: MESSAGE_MENU_LONG_PRESS_MS,
+        schedule(fn, delay) {
+          const item = { fn, at: now + delay, dead: false };
+          queue.push(item);
+          return item;
+        },
+        cancelTimer(item) {
+          if (item) item.dead = true;
+        },
+        onFire() { fired.push("menu"); },
+      });
+    },
+  };
+  return api;
+}
+
+{
+  let now = 5_000;
+  const gate = createMediaPressGate({ now: () => now });
+  assert.equal(gate.noteLightbox(false), false);
+  const id = gate.arm();
+  assert.ok(id);
+  assert.equal(gate.armed(id), true);
+  gate.cancel();
+  assert.equal(gate.armed(id), false);
+  const again = gate.arm();
+  assert.equal(gate.armed(again), true);
+  now += MESSAGE_MENU_LONG_PRESS_MS;
+  assert.equal(gate.armed(again), true);
+  assert.equal(gate.noteLightbox(true), true);
+  assert.equal(gate.armed(again), false);
+  assert.equal(gate.arm(), 0);
+  assert.equal(gate.accepts(), false);
+  const closedAt = now;
+  assert.equal(gate.noteLightbox(false), true);
+  assert.equal(gate.arm(), 0);
+  assert.equal(gate.accepts(), false);
+  now = closedAt + LIGHTBOX_CLOSE_GUARD_MS - 1;
+  assert.equal(gate.arm(), 0);
+  gate.noteLightbox(false);
+  now = closedAt + LIGHTBOX_CLOSE_GUARD_MS;
+  const after = gate.arm();
+  assert.ok(after);
+  assert.equal(gate.armed(after), true);
+}
+
+{
+  const h = harness();
+  const session = h.press();
+  assert.ok(session);
+  h.win.dispatch("pointerup", { type: "pointerup", pointerId: 1 });
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, []);
+  assert.equal(h.gate.accepts(), true);
+  h.gate.noteLightbox(true);
+  assert.equal(h.gate.accepts(), false);
+}
+
+{
+  const h = harness();
+  const session = h.press();
+  assert.ok(session);
+  h.win.dispatch("pointerup", { type: "pointerup", pointerId: 7 });
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, ["menu"]);
+}
+
+{
+  const h = harness();
+  h.press();
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS - 1);
+  assert.deepEqual(h.fired, []);
+  h.advance(1);
+  assert.deepEqual(h.fired, ["menu"]);
+}
+
+{
+  const h = harness();
+  const session = h.press();
+  h.gate.noteLightbox(true);
+  session.detach();
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, []);
+  assert.equal(h.press(), null);
+  h.gate.noteLightbox(false);
+  assert.equal(h.press(), null);
+  assert.equal(h.gate.accepts(), false);
+  h.advance(LIGHTBOX_CLOSE_GUARD_MS);
+  const held = h.press();
+  assert.ok(held);
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, ["menu"]);
+}
+
+{
+  const h = harness();
+  h.press();
+  h.win.dispatch("pointercancel", { type: "pointercancel", pointerId: 1 });
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, []);
+}
+
+{
+  const h = harness();
+  h.press();
+  h.win.dispatch("touchend", { type: "touchend" });
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, []);
+}
+
+{
+  const h = harness();
+  h.press();
+  h.win.dispatch("scroll", {});
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, []);
+  assert.ok(h.press());
+}
+
+{
+  const h = harness();
+  h.press();
+  h.doc.hidden = false;
+  h.doc.dispatch("visibilitychange", {});
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS - 1);
+  assert.deepEqual(h.fired, []);
+  h.doc.hidden = true;
+  h.doc.dispatch("visibilitychange", {});
+  h.advance(1);
+  assert.deepEqual(h.fired, []);
+}
+
+{
+  const h = harness();
+  h.press();
+  h.el.dispatch("pointermove", { type: "pointermove", pointerId: 1, clientX: 40, clientY: 10 });
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, []);
+}
+
+{
+  const h = harness();
+  h.press();
+  h.el.dispatch("pointermove", { type: "pointermove", pointerId: 1, clientX: 20, clientY: 10 });
+  h.advance(MESSAGE_MENU_LONG_PRESS_MS);
+  assert.deepEqual(h.fired, ["menu"]);
+}
 
 console.log("glassMessageMenu.selftest ok");

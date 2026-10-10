@@ -36,6 +36,8 @@ import { attachReplySwipe } from "../../lib/messageReplySwipe";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
+  attachMenuPress,
+  createMediaPressGate,
   liftMediaBox,
   messageMenuOpensOnTap,
   pressToActivate,
@@ -623,7 +625,9 @@ function MessageBubble({
   const t = useT();
   const glass = useGlassUi();
   const bubbleRef = useRef(null);
-  const pressTimer = useRef(null);
+  const pressDetach = useRef(null);
+  const pressGate = useRef(null);
+  if (!pressGate.current) pressGate.current = createMediaPressGate();
   const suppressMediaClickUntil = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -814,38 +818,48 @@ function MessageBubble({
     }
   };
 
+  const openLightbox = useCallback(() => {
+    pressDetach.current?.();
+    pressGate.current.noteLightbox(true);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    pressDetach.current?.();
+    pressGate.current.noteLightbox(false);
+    setLightboxOpen(false);
+  }, []);
+
   const beginMenuPress = useCallback((event, { pressed = false, fromMedia = false } = {}) => {
     if (!glass || editing) return;
     if (event.button != null && event.button !== 0) return;
     const el = event.currentTarget;
-    const sx = event.clientX;
-    const sy = event.clientY;
+    if (!el) return;
+    pressDetach.current?.();
+    let detach = () => {};
+    const session = attachMenuPress({
+      gate: pressGate.current,
+      event,
+      el,
+      delay: MESSAGE_MENU_LONG_PRESS_MS,
+      onTeardown: () => {
+        if (pressed) el.removeAttribute("data-pressed");
+        if (pressDetach.current === detach) pressDetach.current = null;
+      },
+      onFire: () => {
+        hapticImpactMedium();
+        swallowOpeningPress();
+        // The opening gesture's click is swallowed on window capture, so the
+        // button handler may never see it. Ignore taps only briefly.
+        if (fromMedia) suppressMediaClickUntil.current = Date.now() + 800;
+        setMenuOpen(true);
+        setPickerOpen(false);
+      },
+    });
+    if (!session) return;
+    detach = session.detach;
+    pressDetach.current = detach;
     if (pressed) el.setAttribute("data-pressed", "");
-    clearTimeout(pressTimer.current);
-    const clear = () => {
-      if (pressed) el.removeAttribute("data-pressed");
-      clearTimeout(pressTimer.current);
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("pointerup", up);
-      el.removeEventListener("pointercancel", up);
-    };
-    const move = (ev) => {
-      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 24) clear();
-    };
-    const up = () => clear();
-    el.addEventListener("pointermove", move);
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", up);
-    pressTimer.current = setTimeout(() => {
-      clear();
-      hapticImpactMedium();
-      swallowOpeningPress();
-      // The opening gesture's click is swallowed on window capture, so the
-      // button handler may never see it. Ignore taps only briefly.
-      if (fromMedia) suppressMediaClickUntil.current = Date.now() + 800;
-      setMenuOpen(true);
-      setPickerOpen(false);
-    }, MESSAGE_MENU_LONG_PRESS_MS);
   }, [glass, editing]);
 
   useEffect(() => {
@@ -865,7 +879,15 @@ function MessageBubble({
     }, 180);
   };
 
-  useEffect(() => () => clearHide(), []);
+  useEffect(() => {
+    pressGate.current.noteLightbox(lightboxOpen);
+    if (lightboxOpen) pressDetach.current?.();
+  }, [lightboxOpen]);
+
+  useEffect(() => () => {
+    clearHide();
+    pressDetach.current?.();
+  }, []);
 
   const triggerReply = useCallback(() => {
     onReply?.({
@@ -1085,7 +1107,8 @@ function MessageBubble({
                     suppressMediaClickUntil.current = 0;
                     return;
                   }
-                  setLightboxOpen(true);
+                  if (!pressGate.current.accepts()) return;
+                  openLightbox();
                 }}
                 aria-label={isGif ? t("Open GIF") : t("Open image")}
               >
@@ -1149,7 +1172,7 @@ function MessageBubble({
             open={lightboxOpen}
             src={mediaUrl}
             alt={isGif ? "GIF" : message.originalName || t("Image")}
-            onClose={() => setLightboxOpen(false)}
+            onClose={closeLightbox}
           />
         )}
 

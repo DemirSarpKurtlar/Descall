@@ -1,5 +1,20 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.187
+
+Fotoğraf veya GIF tam ekran açılıp kapanınca, alttaki mesaj kendiliğinden basılı tutulmuş sayılıyordu. Tepki çubuğu ve Yanıtla / Sabitle / Daha fazla tepki / Sil menüsü, kullanıcı yalnız dokunmuş olsa da fotoğrafın üstünde açılıyordu. Görüntüleyici kapanırken dokunuş balonun uzun basma sayacına düşüyordu; sayaç da parmak kalkınca iptal olmuyordu.
+
+Görüntüleyici açılır açılmaz o sayaç silinir. Kapanıştan sonra kısa bir süre yeni basış kabul edilmez, böylece kapatma dokunuşu alta sızmaz. Menü yalnız aynı parmak balonda eşiğe kadar durursa açılır. Kaydırma, iptal ve sayfa gizlenince sayaç da silinir. Kısa dokunuş görüntüleyiciyi açar. Gerçek basılı tutma menüyü açar. DM, grup ve sunucu aynı balonu kullanır. Masaüstü ve web aynı. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.187**. Yalnız iPhone.
+
+- [ ] Fotoğrafa kısa dokun: tam ekran açılır. × ile kapat: sohbete dönünce tepki menüsü kendiliğinden açılmaz.
+- [ ] GIF için aynısı. Kapatınca Yanıtla / Sabitle / Sil kendiliğinden gelmez.
+- [ ] Fotoğrafa veya GIF’e gerçekten basılı tut: menü açılır, tam ekran açılmaz.
+- [ ] Yazılı fotoğrafta da kısa dokunuş görüntüleyiciyi açar; basılı tutma menüyü açar. DM, grup ve sunucu kanalında dene.
+
 ## Cihaz düzeltmeleri · 2.9.186
 
 Ayarlar açılınca ortada “Sohbetleriniz burada” ve altındaki düğmeler okunuyordu. Telefon listesi ekranı kapatsa da masaüstünün boş sohbet alanı arkada duruyor; saydam tema o yazıyı ayarların arasından gösteriyordu.

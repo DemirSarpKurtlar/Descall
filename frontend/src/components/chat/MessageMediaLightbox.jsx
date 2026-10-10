@@ -32,6 +32,14 @@ export default function MessageMediaLightbox({
 
   if (typeof document === "undefined") return null;
 
+  const seal = (event) => {
+    event.stopPropagation();
+  };
+  const closeFromOverlay = (event) => {
+    seal(event);
+    onClose?.();
+  };
+
   return createPortal(
     <AnimatePresence>
       {open && src ? (
@@ -44,15 +52,20 @@ export default function MessageMediaLightbox({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.16 }}
-          onClick={onClose}
+          onPointerDown={seal}
+          onPointerUp={seal}
+          onTouchStart={seal}
+          onTouchEnd={seal}
+          onClick={closeFromOverlay}
         >
           <button
             type="button"
             className="message-media-lightbox-close"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose?.();
-            }}
+            onPointerDown={seal}
+            onPointerUp={seal}
+            onTouchStart={seal}
+            onTouchEnd={seal}
+            onClick={closeFromOverlay}
             aria-label={t("Close")}
           >
             <X size={22} strokeWidth={2.25} />
@@ -67,7 +80,11 @@ export default function MessageMediaLightbox({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            onClick={(e) => e.stopPropagation()}
+            onPointerDown={seal}
+            onPointerUp={seal}
+            onTouchStart={seal}
+            onTouchEnd={seal}
+            onClick={seal}
             draggable={false}
           />
         </motion.div>
