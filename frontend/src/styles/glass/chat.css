@@ -769,6 +769,7 @@ html.glass-ui .app-root.g-shell .message-group.own .message-content-wrapper {
 }
 
 html.glass-ui .app-root.g-shell .message-bubble {
+  touch-action: pan-y;
   max-width: min(300px, calc(100% - 52px));
   margin-left: 46px !important;
   padding: 9px 13px;

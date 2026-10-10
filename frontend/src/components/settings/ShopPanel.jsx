@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   Award,
@@ -391,6 +392,14 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   };
 
   const activeTabMeta = availableTabs.find((tab) => tab.id === activeCategory) || null;
+  const [chromeSlot, setChromeSlot] = useState(null);
+  useLayoutEffect(() => {
+    if (!glassShell || !isMobile) {
+      setChromeSlot(null);
+      return;
+    }
+    setChromeSlot(document.querySelector(".user-settings.g-shop-open .g-shop-chrome"));
+  }, [glassShell, isMobile, activeCategory]);
   const wallet = (
     <div className="shop-wallet-bar">
       <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
@@ -563,7 +572,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
       <div className="shop-workspace">
         <div className="shop-main">
-          {wallet}
+          {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
           <div className="shop-catalog">
             {lead}
             {catalog}

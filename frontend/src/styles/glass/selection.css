@@ -1,0 +1,22 @@
+/* Long-press on glass must not start iOS text selection, the magnifier
+   callout, or the grey tap flash. Editable fields and the composer keep
+   selection so paste/copy inside them still works. Explicit Kopyala actions
+   use the clipboard and do not need a native selection. */
+
+html.glass-ui,
+html.glass-ui * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.glass-ui input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="image"]):not([type="hidden"]),
+html.glass-ui textarea,
+html.glass-ui select,
+html.glass-ui [contenteditable="true"],
+html.glass-ui [contenteditable=""] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default;
+}

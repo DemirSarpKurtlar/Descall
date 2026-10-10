@@ -152,6 +152,23 @@ function hasTextSelection() {
 
 let safeAreaProbe = null;
 /** Left safe-area inset (landscape notch / Dynamic Island side) — widens the edge band. */
+/** Screen-left band that always belongs to swipe-back (edge width + landscape inset). */
+export function swipeBackEdgeBand() {
+  return SWIPE_BACK_DEFAULTS.edgeWidth + safeAreaLeft();
+}
+
+/**
+ * A reply swipe that has locked calls this while swipe-back may still be
+ * pending on the same finger. Only a not-yet-locked back gesture stands down.
+ * An edge swipe that already owns the page (DRAGGING) is left alone.
+ */
+export function cancelSwipeBackIfPending() {
+  if (machine.state.phase !== PHASE.PENDING) return false;
+  machine.reset();
+  candidate = null;
+  return true;
+}
+
 function safeAreaLeft() {
   try {
     if (!safeAreaProbe || !safeAreaProbe.isConnected) {

@@ -1,5 +1,26 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.172
+
+Demir’in 2.9.171 iPhone testi. Üç düzeltme, yeni özellik yok.
+
+Kaydırarak yanıt ile kenardan geri çakışıyordu. Sol kenar bandı (mevcut 28px, ~20–24pt geri bölgesini kapsar) her zaman geri gider; balonun üstünde kenardan uzakta yatay kaydırma yalnız yanıttır, sayfa oynamaz. Eksen ~10px sonra kilitlenir, bir parmak bir jesti alır. Kendi mesajı sola, başkasınınki sağa yanıtlanır — yön değişmedi; çakışma başkasının sağa kaydırmasının geri jestiyle aynı eksen olmasındandı. Eşik 48px’te tek titreşim. Dikey kaydırma durmuyor.
+
+Mağaza cüzdanı başlığın altında boşluk bırakıyordu; kayan kart başlığı aradan görünüyor, satır sert bir banttı. Hap, ölçülen başlık altına yapışır (Dynamic Island 59–62pt). Başlık ve hap tek yumuşak solmada, içerik ikisinin altından kayar.
+
+Uzun basışta iOS metin seçimi (mavi tutamaç, “Yanıtla” dahil) kapalı. Seçim yalnız yazı alanlarında ve bestecide. Kopyala eylemleri panoyu kullanır. App Store’a gönderilmedi. `mobile-glass.css` duruyor.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.172**. Yalnız iPhone, cam açık.
+
+- [ ] Sohbet (DM, grup, sunucu): sol kenardan sağa kaydırınca yalnız geri git. Sayfa kayar, balon yanıtlamaz.
+- [ ] Başkasının balonunda, kenardan uzakta sağa kaydırınca yalnız yanıt. Sayfa yerinde kalır. Eşikte tek titreşim.
+- [ ] Kendi balonunda sola kaydırınca yanıt. Sağa kaydırmak yanıtlamaz.
+- [ ] Balonu yukarı kaydırınca liste kayar; ne geri ne yanıt tetiklenir.
+- [ ] Uzun basış: menü açılır, mavi seçim tutamacı çıkmaz (menü, balon, liste, başlık). Bestecide metin seçilir.
+- [ ] Mağaza: aşağı kaydırınca DesCoin hapı + “Bannerlar · N” başlığın hemen altında, arada kart başlığı yok, sert bant yok. Kartlar alttan kayıp solar.
+
 ## Carry-over polish · 2.9.171
 
 Stage 7’nin kalan cila turu. Yeni özellik yok. Duyuru rozeti, var olan okunmamış sayacından (`GET /api/announcements/unread/count`); sayaç yoksa rozet çizilmez. Duyuru satırı ikonu kayıtlı `emoji` + `color` alanından; bilinen glif Lucide, diğerleri glif olarak kalır. Mesaj menüsünde “Daha fazla tepki” smile-plus. Arkadaş davetinde altın satır “Sen 100 · onlar 50 DesCoin” (mağaza metni duruyor). Ekle sayfasında Hızlı Ekle / Arkadaş / Grup, kullanıcı alanı ikonu ve “Kullanıcı adıyla arkadaşlık isteği gönder”. Ses üye satırı 30px; kanal “···” camda gizli, menü eylemleri duruyor. Kanal yer tutucusu `#genel'e mesaj yaz…`. Özel durum yer tutucusu kırpılmıyor. Bu turdan sonra Stage 7 mühendisliği, Demir’in cihaz testinde sorun çıkmazsa kapalıdır. App Store’a gönderilmedi. `mobile-glass.css` duruyor. Ölçüler: `docs/glass-redesign/compare/stage7/REPORT.md`.

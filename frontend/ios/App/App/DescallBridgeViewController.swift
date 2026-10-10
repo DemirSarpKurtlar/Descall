@@ -18,6 +18,11 @@ class DescallBridgeViewController: CAPBridgeViewController {
         // would fire a second, unrelated back (history.back() / blank page) on the
         // same gesture — keep it off explicitly so only one mechanism exists.
         webView?.allowsBackForwardNavigationGestures = false
+        // Link preview is a second long-press callout on top of the message menu.
+        // Text selection itself is not a public WKWebView switch that can stay
+        // off for chrome and on for the composer, so the web layer owns that
+        // split (html.glass-ui user-select / touch-callout, plus selectstart).
+        webView?.allowsLinkPreview = false
         showLaunchOverlay()
     }
 

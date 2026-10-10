@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, forwardRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Mic, Headphones, Bell, User, LogOut, Moon, Sun,
@@ -2419,6 +2419,25 @@ const UserPanel = forwardRef(function UserPanel({
     underlayRef: menuPaneRef,
     priority: 30,
   });
+  // Device safe-area changes the header's real height. Pin the wallet to that
+  // measured bottom so a Dynamic Island inset cannot open a gap under it.
+  useLayoutEffect(() => {
+    const main = detailPaneRef.current;
+    if (!glassShell || !isMobile || activeTab !== "shop" || !mobileDetail || !main) return undefined;
+    const header = main.querySelector(".us-main-header");
+    if (!header) return undefined;
+    const apply = () => {
+      const h = Math.round(header.getBoundingClientRect().height);
+      if (h > 0) main.style.setProperty("--g-shop-header-h", `${h}px`);
+    };
+    apply();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(apply) : null;
+    ro?.observe(header);
+    return () => {
+      ro?.disconnect();
+      main.style.removeProperty("--g-shop-header-h");
+    };
+  }, [glassShell, isMobile, activeTab, mobileDetail]);
   useEdgeSwipeBack({
     enabled: isMobile && !mobileDetail,
     onBack: onClose,
@@ -2511,7 +2530,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassProfileEdit ? " g-profile-edit" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -2652,6 +2671,10 @@ const UserPanel = forwardRef(function UserPanel({
             </button>
           )}
         </header>
+
+        {glassShell && isMobile && activeTab === "shop" && mobileDetail ? (
+          <div className="g-shop-chrome" />
+        ) : null}
 
         <div className="us-main-body">
           <AnimatePresence mode="wait">

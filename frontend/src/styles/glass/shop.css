@@ -186,35 +186,78 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-actions button.
   color: var(--g-t1);
 }
 
-/* 21b: pills sit on a soft blur that fades into the list. No hard band. */
-html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-bar {
-  position: sticky !important;
+/* 21b: wallet sits flush under the header. One fade covers the header and the
+   pills and dissolves into the list — the row is not its own opaque band.
+   --g-shop-header-h is the measured header (safe-area included). The fallback
+   matches settings.css: --g-chrome-top + 4px pad + 48px button + 8px pad. */
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open {
+  --g-shop-wallet-h: 46px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .us-main {
+  position: relative;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .us-main-header {
+  position: absolute;
   top: 0;
-  z-index: 8 !important;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  background: transparent !important;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .us-main-scroll {
+  padding-top: calc(var(--g-shop-header-h, calc(var(--g-chrome-top) + 60px)) + var(--g-shop-wallet-h, 46px));
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .g-shop-chrome {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--g-shop-header-h, calc(var(--g-chrome-top) + 60px));
+  z-index: 8;
+  height: var(--g-shop-wallet-h, 46px);
+  pointer-events: none;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .g-shop-chrome .shop-wallet-bar {
+  position: relative !important;
+  top: auto !important;
+  z-index: 1;
   display: flex !important;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 0 -16px 0;
-  padding: 6px 16px 22px;
+  height: 100%;
+  margin: 0 !important;
+  padding: 0 16px !important;
   background: transparent !important;
-  isolation: isolate;
+  box-shadow: none !important;
+  pointer-events: auto;
 }
 
-html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-bar::before {
+/* Fade starts at the top of the pane (through the header) and ends below the pills. */
+html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .g-shop-chrome::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: 0;
-  bottom: 0;
+  top: calc(-1 * var(--g-shop-header-h, calc(var(--g-chrome-top) + 60px)));
+  bottom: -28px;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.88) 0%, rgba(var(--g-edge-rgb, 13, 14, 19), 0.55) 58%, rgba(var(--g-edge-rgb, 13, 14, 19), 0) 100%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-mask: linear-gradient(180deg, #000 0%, #000 52%, transparent 100%);
-  mask: linear-gradient(180deg, #000 0%, #000 52%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--g-edge-rgb, 13, 14, 19), 0.9) 0%,
+    rgba(var(--g-edge-rgb, 13, 14, 19), 0.72) 68%,
+    rgba(var(--g-edge-rgb, 13, 14, 19), 0.28) 86%,
+    rgba(var(--g-edge-rgb, 13, 14, 19), 0) 100%
+  );
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-shop-count {

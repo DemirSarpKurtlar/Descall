@@ -29,7 +29,9 @@ import { useT } from "../../context/LocaleContext";
 import { formatMessageClock, formatMessageDate, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
 import useMaterialize from "../../hooks/useMaterialize";
-import { hapticLight } from "../../lib/haptics";
+import { hapticLight, primeHaptics } from "../../lib/haptics";
+import { attachReplySwipe } from "../../lib/messageReplySwipe";
+import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
   messageMenuOpensOnTap,
@@ -775,6 +777,34 @@ function MessageBubble({
     resetSwipe();
   }, [message, onReply, resetSwipe]);
 
+  const replyLive = useRef({ triggerReply, resetSwipe, isOwn, editing });
+  replyLive.current = { triggerReply, resetSwipe, isOwn, editing };
+  useEffect(() => {
+    if (!glass || mediaOnly) return undefined;
+    const el = bubbleRef.current;
+    if (!el) return undefined;
+    return attachReplySwipe(el, {
+      getDirection: () => (replyLive.current.isOwn ? "left" : "right"),
+      getEdgeWidth: () => swipeBackEdgeBand(),
+      shouldIgnore: (target) => {
+        if (replyLive.current.editing) return true;
+        const node = target?.nodeType === 1 ? target : target?.parentElement;
+        return Boolean(node?.closest?.("a, button, input, textarea, video, .message-reactions"));
+      },
+      onClaim: () => {
+        cancelSwipeBackIfPending();
+        primeHaptics();
+        setSwiping(true);
+      },
+      onMove: (dx) => {
+        x.set(dx);
+      },
+      onHaptic: () => hapticLight(),
+      onReply: () => replyLive.current.triggerReply(),
+      onCancel: () => replyLive.current.resetSwipe(),
+    });
+  }, [glass, mediaOnly, x]);
+
   const emitReact = useCallback((emoji) => {
     if (!message?.id || !conversationType || !conversationId || !emoji) return;
     if (String(message.id).startsWith("temp-")) return;
@@ -823,19 +853,21 @@ function MessageBubble({
           ease: [0.16, 1, 0.3, 1],
         }}
         style={{ x }}
-        drag={mediaOnly ? false : "x"}
+        drag={glass || mediaOnly ? false : "x"}
         dragDirectionLock
         dragSnapToOrigin
         dragConstraints={isOwn ? { left: -72, right: 0 } : { left: 0, right: 72 }}
-        dragElastic={0.18}
-        onDragStart={() => setSwiping(true)}
+        dragElastic={glass ? 0 : 0.18}
+        onDragStart={() => { if (!glass) setSwiping(true); }}
         onDragEnd={(_, info) => {
+          if (glass) return;
           const dx = info.offset.x;
           const shouldReply = (isOwn && dx <= -48) || (!isOwn && dx >= 48);
           // Always snap hint away — cancel / incomplete swipe must not leave the icon stuck
           resetSwipe();
           if (shouldReply) triggerReply();
         }}
+        data-no-swipe-back=""
         className={`message-bubble ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}

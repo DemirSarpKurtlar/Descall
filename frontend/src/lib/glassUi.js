@@ -116,6 +116,8 @@ function setEnabled(next, w) {
   if (next) {
     // Accessibility / power / device-tier classes come from the native bridge.
     import("./glassDisplay.js").then((m) => m.startGlassDisplay?.()).catch(() => {});
+    // Long-press must not start WebKit text selection on chrome or bubbles.
+    import("./glassTextSelection.js").then((m) => m.installGlassTextSelection?.(w)).catch(() => {});
   } else {
     import("./glassDisplay.js").then((m) => m.stopGlassDisplay?.()).catch(() => {});
   }
