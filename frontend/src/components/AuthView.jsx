@@ -11,7 +11,7 @@ import BirthDateInput from "./auth/BirthDateInput";
 import TermsConsent from "./auth/TermsConsent";
 import SocialSignupStep from "./auth/SocialSignupStep";
 import { isSocialSignupRequired } from "../api/auth";
-import { isEligibleBirthDate } from "../lib/age";
+import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
 import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
@@ -85,6 +85,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   // here first. { provider: "apple" | "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
   const [socialSigningUp, setSocialSigningUp] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (mode !== "register" && !socialSignup) return;
+    if (noteUnder13BirthDate(birthDate)) setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+  }, [birthDate, mode, socialSignup, t]);
 
   const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
   const productTagline = t("Connect with friends through voice, video, and messaging");
@@ -102,6 +108,10 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       return;
     }
     if (!termsAccepted || !isEligibleBirthDate(birthDate)) return;
+    if (under13SignupBlocked() || noteUnder13BirthDate(birthDate)) {
+      setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+      return;
+    }
     const trimmedEmail = email.trim();
     const invitedBy = inviteRef || peekInviteRef();
     await onRegister({
@@ -116,6 +126,10 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
 
   const submitSocialSignup = async () => {
     if (!socialSignup || socialSigningUp || !termsAccepted || !isEligibleBirthDate(birthDate)) return;
+    if (under13SignupBlocked() || noteUnder13BirthDate(birthDate)) {
+      setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+      return;
+    }
     setSocialSigningUp(true);
     try {
       const invitedBy = inviteRef || peekInviteRef();
@@ -194,7 +208,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             />
           </div>
 
-          {(twoFaError || error) && <p className="error-message">{twoFaError || error}</p>}
+          {(twoFaError || error || formError) && <p className="error-message">{twoFaError || error || formError}</p>}
 
           <button type="submit" className="auth-submit" disabled={verifying || !code.trim()}>
             {verifying ? <span>{t("Please wait...")}</span> : <span>{t("Verify")}</span>}
@@ -378,7 +392,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           />
         )}
 
-        {error && <p className="error-message">{error}</p>}
+        {(error || formError) && <p className="error-message">{error || formError}</p>}
 
         <button
           type="submit"

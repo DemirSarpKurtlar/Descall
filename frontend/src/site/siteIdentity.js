@@ -28,6 +28,7 @@ export const TRUST_FOOTER_LINKS = [
   { to: "/security", label: "Security" },
   { to: "/privacy", label: "Privacy Policy" },
   { to: "/terms", label: "Terms" },
+  { to: "/copyright", label: "Copyright" },
   { to: "/contact", label: "Contact" },
   { to: "/blog", label: "Blog" },
   { to: "/faq", label: "FAQ" },

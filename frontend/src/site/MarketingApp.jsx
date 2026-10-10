@@ -20,6 +20,7 @@ const FaqPage = lazy(() => import("./pages/FaqPage"));
 const SecurityPage = lazy(() => import("./pages/SecurityPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
+const CopyrightPage = lazy(() => import("./pages/CopyrightPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const WhoOwnsDescallPage = lazy(() => import("./pages/WhoOwnsDescallPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -290,6 +291,7 @@ function MarketingAppSite({
         <Route path="/privacy" element={withLayout(PrivacyPage, openAuth)} />
         <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
         <Route path="/terms" element={withLayout(TermsPage, openAuth)} />
+        <Route path="/copyright" element={withLayout(CopyrightPage, openAuth)} />
         <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
         <Route path="/about" element={withLayout(AboutPage, openAuth)} />
         <Route path="/who-owns-descall" element={withLayout(WhoOwnsDescallPage, openAuth)} />

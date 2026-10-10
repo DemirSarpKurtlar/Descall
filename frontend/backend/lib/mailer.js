@@ -160,4 +160,4 @@ function codeEmailHtml({
 </html>`;
 }
 
-module.exports = { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL };
+module.exports = { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL, escapeHtml };

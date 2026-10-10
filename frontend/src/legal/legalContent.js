@@ -7,12 +7,12 @@
  * Structure: { tr: { title, updated, intro, sections: [{ heading, paragraphs: [...] }] }, en: {...} }
  */
 
-const LAST_UPDATED = "8 Ekim 2026";
-const LAST_UPDATED_EN = "October 8, 2026";
+const LAST_UPDATED = "10 Ekim 2026";
+const LAST_UPDATED_EN = "October 10, 2026";
 // Privacy Policy revised separately (2.9.141: calls are never recorded, full list of
 // third-party services incl. PostHog, GIPHY, LiveKit; AI assistant removed).
-const PRIVACY_LAST_UPDATED = "8 Ekim 2026";
-const PRIVACY_LAST_UPDATED_EN = "October 8, 2026";
+const PRIVACY_LAST_UPDATED = "10 Ekim 2026";
+const PRIVACY_LAST_UPDATED_EN = "October 10, 2026";
 
 export const TERMS_CONTENT = {
   tr: {
@@ -27,6 +27,7 @@ export const TERMS_CONTENT = {
           "Descall'ı kullanabilmek için en az 13 yaşında olmanız gerekir. 13-18 yaş arasındaysanız, Descall'ı yalnızca bir ebeveyn veya yasal vasinizin izniyle ve gözetiminde kullanabilirsiniz; hesap oluşturarak bu iznin size verildiğini beyan edersiniz.",
           "Bu Şartları kabul ederek, (a) bu Şartlarla bağlı kalma hukuki ehliyetine sahip olduğunuzu, (b) verdiğiniz tüm bilgilerin doğru ve güncel olduğunu ve (c) Hizmet'i yürürlükteki tüm yasa ve yönetmeliklere uygun şekilde kullanacağınızı beyan ve taahhüt edersiniz.",
           "Descall, herhangi bir kullanıcının bu yaş ve ehliyet şartlarını karşılamadığına dair makul bir şüphe duyduğunda, ilgili hesabı herhangi bir bildirim yapma zorunluluğu olmadan askıya alma veya kapatma hakkını saklı tutar.",
+          "Hesap sahibinin 13 yaşından küçük olduğunu öğrenirsek hesabı kapatır ve silme işlemini başlatırız. 16 yaşından küçük hesaplar, çerezleri kabul etseler bile analitik veya reklam ölçümüne dahil edilmez.",
         ],
       },
       {
@@ -93,7 +94,7 @@ export const TERMS_CONTENT = {
       {
         heading: "9. Bildirimler, E-posta ve Push Bildirimleri",
         paragraphs: [
-          "Hesap doğrulama, güvenlik uyarıları, arkadaşlık istekleri, hediyeler ve önemli hizmet güncellemeleri gibi işlemsel iletişimler için e-posta ve/veya push bildirimleri (tarayıcı, masaüstü ve mobil) kullanabiliriz. Bu türden işlemsel bildirimler, hesabınızın normal işleyişinin bir parçasıdır ve tamamen kapatılamayabilir.",
+          "Hesap doğrulama, güvenlik uyarıları, arkadaşlık istekleri ve önemli hizmet güncellemeleri gibi işlemsel iletişimler için e-posta ve/veya push bildirimleri (tarayıcı, masaüstü ve mobil) kullanabiliriz. Bu türden işlemsel bildirimler, hesabınızın normal işleyişinin bir parçasıdır ve tamamen kapatılamayabilir.",
           "Cihaz ayarlarınızdan veya uygulama içi bildirim tercihlerinizden isteğe bağlı bildirim türlerini (yeni mesaj, arama, aktivite bildirimleri vb.) açıp kapatabilirsiniz.",
         ],
       },
@@ -110,6 +111,7 @@ export const TERMS_CONTENT = {
           "Descall markası, logosu, arayüz tasarımı, yazılım kodu ve mağazadaki tüm görsel/kozmetik varlıklar (bannerlar, çerçeveler, temalar, rozet ikonları, efektler dahil) Descall'ın veya lisans verenlerinin münhasır mülkiyetindedir ve telif hakkı, marka ve ilgili fikri mülkiyet yasalarıyla korunmaktadır.",
           "Bu Şartlar size Hizmet'i kişisel, ticari olmayan amaçlarla kullanmanız için sınırlı, münhasır olmayan ve devredilemez bir lisans verir. Descall'ın yazılı izni olmadan Hizmet'in herhangi bir bölümünü kopyalayamaz, değiştiremez, dağıtamaz veya türev çalışma oluşturamazsınız.",
           "Kendi oluşturduğunuz içerik (mesajlar, profil bilgileri, yüklediğiniz medya) üzerindeki haklarınızı saklı tutarsınız; ancak bu içeriği Descall'a, Hizmet'i sağlamak amacıyla gerekli ölçüde (depolama, iletim, önizleme oluşturma) kullanma hakkı vermiş olursunuz.",
+          "Telif hakkınızın ihlal edildiğini düşünüyorsanız contact@descall.com adresine bildirim gönderin. Bildirimde şunlar yer almalıdır: (1) korunan eserin tanımı, (2) Descall üzerindeki içeriğin adresi veya bulunmasını sağlayacak ayrıntı, (3) adınız ve iletişim e-postanız, (4) kullanımın yetkisiz olduğuna dair iyi niyetli inancınızı belirten beyan, (5) bildirimin doğru olduğunu ve hak sahibi ya da yetkili olduğunuzu belirten beyan, (6) fiziksel veya elektronik imzanız. İncelememizden sonra ihlal ettiğini gördüğümüz içeriği kaldırır veya erişimi kapatırız. İçeriği paylaşan kişi aynı adrese karşı bildirim gönderebilir; karşı bildirimde iletişim bilgileri, kaldırılan içeriğin tanımı, içeriğin yanlışlıkla kaldırıldığına dair iyi niyetli inanç beyanı ve yaşadığı yerin mahkemelerinin yetkisini kabul ettiğine dair beyan bulunur. Telif hakkını tekrar tekrar ihlal eden hesaplar kapatılabilir. Bir mesajı veya kullanıcıyı uygulama içindeki mesaj menüsünden de bildirebilirsiniz.",
         ],
       },
       {
@@ -176,6 +178,7 @@ export const TERMS_CONTENT = {
           "You must be at least 13 years old to use Descall. If you are between 13 and 18, you may only use Descall with the permission and supervision of a parent or legal guardian; by creating an account, you represent that such permission has been granted.",
           "By accepting these Terms, you represent and warrant that (a) you have the legal capacity to be bound by these Terms, (b) all information you provide is accurate and current, and (c) you will use the Service in compliance with all applicable laws and regulations.",
           "Descall reserves the right to suspend or close any account it reasonably suspects does not meet these age or capacity requirements, without prior notice.",
+          "If we learn that an account holder is under 13, we close the account and start deletion. Accounts under 16 are not included in analytics or advertising measurement, even if they accept cookies.",
         ],
       },
       {
@@ -242,7 +245,7 @@ export const TERMS_CONTENT = {
       {
         heading: "9. Notifications, Email, and Push Notifications",
         paragraphs: [
-          "We may use email and/or push notifications (browser, desktop, and mobile) for transactional communications such as account verification, security alerts, friend requests, gifts, and important service updates. Such transactional notifications are part of the normal operation of your account and may not be fully disabled.",
+          "We may use email and/or push notifications (browser, desktop, and mobile) for transactional communications such as account verification, security alerts, friend requests, and important service updates. Such transactional notifications are part of the normal operation of your account and may not be fully disabled.",
           "You can enable or disable optional notification types (new message, call, activity notifications, etc.) from your device settings or in-app notification preferences.",
         ],
       },
@@ -259,6 +262,7 @@ export const TERMS_CONTENT = {
           "The Descall brand, logo, interface design, software code, and all visual/cosmetic assets in the shop (including banners, frames, themes, badge icons, and effects) are the exclusive property of Descall or its licensors and are protected by copyright, trademark, and related intellectual property laws.",
           "These Terms grant you a limited, non-exclusive, non-transferable license to use the Service for personal, non-commercial purposes. You may not copy, modify, distribute, or create derivative works from any part of the Service without Descall's written permission.",
           "You retain your rights to content you create (messages, profile information, uploaded media); however, by sharing such content you grant Descall the rights necessary to use it solely to the extent required to provide the Service (storage, transmission, generating previews).",
+          "If you believe content on Descall infringes your copyright, email a notice to contact@descall.com. Include: (1) a description of the copyrighted work, (2) the URL or enough detail to find the material on Descall, (3) your name and contact email, (4) a statement that you have a good-faith belief the use is not authorized, (5) a statement that the notice is accurate and that you are the owner or authorized to act, and (6) your physical or electronic signature. We review notices and remove or disable access to material we find infringing. The person who posted the material may send a counter-notice to the same address with their contact details, identification of the removed material, a statement that they have a good-faith belief it was removed by mistake, and their consent to the jurisdiction of the courts where they live. Accounts that repeatedly infringe copyright may be terminated. You can also report a message or a user from the in-app message menu.",
         ],
       },
       {
@@ -323,6 +327,12 @@ export const PRIVACY_CONTENT = {
       "Bu Gizlilik Politikası, Descall'ı (\"biz\", \"bizim\") kullanırken hangi bilgileri topladığımızı, bu bilgileri nasıl kullandığımızı, kimlerle paylaştığımızı ve verileriniz üzerindeki haklarınızı açıklar. Descall'a bir hesap oluşturarak veya Hizmet'i kullanarak, bu politikada açıklanan uygulamaları kabul etmiş olursunuz.",
     sections: [
       {
+        heading: "Veri sorumlusu",
+        paragraphs: [
+          "6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve, uygulanabildiği ölçüde, Avrupa Birliği Genel Veri Koruma Tüzüğü (GDPR) kapsamında veri sorumlusu Demir Sarp Kurtlar'dır. İletişim: contact@descall.com.",
+        ],
+      },
+      {
         heading: "1. Topladığımız Bilgiler",
         paragraphs: [
           "Hesap bilgileri: Kullanıcı adınız, parolanızın güvenli (bcrypt ile) karma (hash) hâli, isteğe bağlı e-posta adresiniz, profil fotoğrafınız ve seçtiğiniz görünen ad gibi hesap oluştururken veya profilinizi düzenlerken sağladığınız bilgiler.",
@@ -331,8 +341,8 @@ export const PRIVACY_CONTENT = {
           "Etkinlik ve DesCoin verileri: DesCoin kazanım sisteminin hile içermeyecek şekilde çalışmasını sağlamak için, sesli sohbette bulunma süreniz, mesaj gönderme sıklığınız ve ekran paylaşımı etkinliğiniz gibi sunucu tarafında doğrulanan etkinlik verileri ile DesCoin bakiyeniz ve işlem geçmişiniz (ledger).",
           "Teknik ve cihaz bilgileri: IP adresi, tarayıcı/işletim sistemi türü, cihaz kimliği, uygulama sürümü, oturum belirteçleri (session token) ve push bildirimleri için cihaz kayıt bilgileri (FCM/Web Push belirteçleri; iOS uygulamasında Apple Push Notification service (APNs) cihaz belirteçleri: mesaj bildirimleri için bildirim belirteci ve gelen aramalar için VoIP belirteci). iOS cihaz belirteçleri ve bildirim dili yalnızca bildirimleri ve gelen aramaları o cihaza iletmek için kullanılır; çıkış yaptığınızda, bildirimleri kapattığınızda veya Apple belirtecin geçersiz olduğunu bildirdiğinde silinir.",
           "Ödeme veya finansal bilgi toplamıyoruz: Descall'da gerçek para ile ödeme alınmaz; tüm mağaza satın alımları DesCoin ile yapılır, bu nedenle kredi kartı veya benzeri finansal bilgi toplanmaz veya saklanmaz.",
-          "Kullanım analitiği: Uygulamanın nasıl kullanıldığını anlamak için PostHog ile uygulama içi olayları (örneğin kayıt, giriş, açılan sayfalar ve özellik kullanımı) ve beklenmeyen hata olaylarını toplarız. Giriş yaptığınızda bu olaylar hesap kimliğiniz, kullanıcı adınız ve (varsa) e-posta adresinizle ilişkilendirilir. Oturum kaydı (ekran/oturum tekrarı) kapalıdır; ekranınız veya yazdıklarınız kaydedilmez. Analitik verileri reklam için kullanılmaz ve satılmaz.",
-          "Yerel depolama ve çerezler: Oturumunuzu sürdürmek, dil ve tema tercihlerinizi hatırlamak ve PostHog analitiği için tarayıcınızın yerel depolama alanını (localStorage) ve birinci taraf çerezleri kullanırız. iOS uygulamasında reklam veya izleme (tracking) araçları kullanılmaz. Yalnızca web sitesinde ve masaüstü uygulamasında, reklamlardan gelen kayıtları ölçmek için Google Ads dönüşüm etiketi (gtag) yüklenebilir ve çerez kullanabilir.",
+          "Kullanım analitiği: Uygulamanın nasıl kullanıldığını anlamak için PostHog ile uygulama içi olayları (örneğin kayıt, giriş, açılan sayfalar ve özellik kullanımı) ve beklenmeyen hata olaylarını toplarız. Giriş yaptığınızda bu olaylar hesap kimliğiniz, kullanıcı adınız ve (varsa) e-posta adresinizle ilişkilendirilir. Oturum kaydı (ekran/oturum tekrarı) kapalıdır; ekranınız veya yazdıklarınız kaydedilmez. PostHog analitiği reklam profili oluşturmak için kullanılmaz ve satılmaz. Web sitesinde ve masaüstü uygulamasında, onayınızdan sonra Google Ads dönüşüm etiketi yalnızca reklamlardan gelen kayıtları ölçer. Bu etiket iOS uygulamasında yüklenmez. Onaydan önce hiçbir reklam veya analitik etiketi yüklenmez. 16 yaşından küçük hesaplarda, onay verseniz bile analitik ve reklam ölçümü kapalıdır.",
+          "Yerel depolama ve çerezler: Oturumunuzu sürdürmek, dil ve tema tercihlerinizi hatırlamak ve PostHog analitiği için tarayıcınızın yerel depolama alanını (localStorage) ve birinci taraf çerezleri kullanırız. iOS uygulamasında reklam veya izleme (tracking) araçları kullanılmaz. Yalnızca web sitesinde ve masaüstü uygulamasında, onayınızdan sonra reklamlardan gelen kayıtları ölçmek için Google Ads dönüşüm etiketi (gtag) yüklenebilir ve çerez kullanabilir.",
         ],
       },
       {
@@ -341,7 +351,7 @@ export const PRIVACY_CONTENT = {
           "Hizmet'i sağlamak: Mesajlaşma, sesli/görüntülü arama, ekran paylaşımı, arkadaşlık, grup yönetimi ve profil kişiselleştirme özelliklerini çalıştırmak için.",
           "Hesap güvenliği: Kimlik doğrulama, 2FA ve e-posta doğrulama kodlarının gönderilmesi, şüpheli oturum tespiti ve yetkisiz erişimin önlenmesi için.",
           "Hile önleme ve bütünlük: DesCoin kazanım sisteminin adil çalışmasını sağlamak, bot/otomasyon kullanımını, çoklu hesapları ve manipülasyonu tespit etmek için etkinlik verilerini analiz ederiz.",
-          "İletişim: Doğrulama kodları, güvenlik uyarıları, arkadaşlık istekleri, hediye bildirimleri ve önemli hizmet güncellemeleri gibi işlemsel bildirimleri e-posta veya push bildirimi olarak göndermek için.",
+          "İletişim: Doğrulama kodları, güvenlik uyarıları, arkadaşlık istekleri ve önemli hizmet güncellemeleri gibi işlemsel bildirimleri e-posta veya push bildirimi olarak göndermek için.",
           "İyileştirme: Hizmet'in performansını, güvenilirliğini ve kullanıcı deneyimini analiz etmek ve geliştirmek için (örneğin bağlantı kalitesi teşhisleri, hata günlükleri).",
           "Kişisel verilerinizi hiçbir şekilde üçüncü taraflara satmıyoruz. Bölüm 4'te açıklanan web sitesi kayıt dönüşümü ölçümü dışında reklam amacıyla paylaşmıyoruz.",
         ],
@@ -349,14 +359,14 @@ export const PRIVACY_CONTENT = {
       {
         heading: "3. İşlemenin Hukuki Dayanağı",
         paragraphs: [
-          "Verilerinizi işlerken şu hukuki dayanaklara güveniriz: (a) hizmet sözleşmesinin ifası için gereklilik (mesajlaşma, arama gibi temel özellikler), (b) hesap güvenliğinin sağlanması ve hile/kötüye kullanımın önlenmesi gibi meşru menfaatlerimiz, (c) hesap oluştururken ve isteğe bağlı özellikleri (örneğin push bildirimleri, Google ile giriş) etkinleştirirken verdiğiniz açık onay ve (d) yasal yükümlülüklere uyum.",
+          "Verilerinizi işlerken şu hukuki dayanaklara güveniriz: (a) hizmet sözleşmesinin ifası için gereklilik (mesajlaşma, arama gibi temel özellikler), (b) hesap güvenliğinin sağlanması ve hile/kötüye kullanımın önlenmesi gibi meşru menfaatlerimiz, (c) hesap oluştururken ve isteğe bağlı özellikleri (örneğin push bildirimleri, Google ile giriş, analitik ve reklam ölçümü, ürün güncellemeleri listesi) etkinleştirirken verdiğiniz açık onay ve (d) yasal yükümlülüklere uyum. Analitik ve reklam çerezleri yalnızca onayınızla işlenir; onayı ayarlardaki Gizlilik bölümünden geri alabilirsiniz.",
         ],
       },
       {
         heading: "4. Bilgilerin Paylaşılması ve Hizmet Sağlayıcılar",
         paragraphs: [
           "Verilerinizi, Hizmet'i işletmemize yardımcı olan ve bizim talimatlarımız doğrultusunda hareket eden güvenilir hizmet sağlayıcılarla (veri işleyicileriyle) paylaşırız: veritabanı, dosya depolama ve kimlik doğrulama için Supabase; işlemsel e-posta gönderimi için Resend; mobil push bildirimleri için Firebase Cloud Messaging (Google); iOS uygulamasında bildirimlerin ve gelen aramaların iletilmesi için Apple Push Notification service (APNs, Apple); sunucu barındırma için Render; web sitesinin barındırılması ve çerez kullanmayan toplu ziyaret istatistikleri (yalnızca web sitesi) için Vercel; sunucu sesli kanallarında ses/görüntü akışlarının iletilmesi için LiveKit ve aramaların bağlantısı için TURN aktarma sunucuları (akışlar yalnızca iletilir, kaydedilmez); ve ürün analitiği için PostHog (AB veri bölgesi). Bu sağlayıcılarla yalnızca Hizmet'i sağlamak için gerekli veriler paylaşılır.",
-          "Kullanmayı seçtiğiniz özelliklere bağlı üçüncü taraflar: GIF aradığınızda arama metniniz ve IP adresiniz doğrudan GIPHY'ye (GIPHY, Inc.) gönderilir; Google ile giriş yaptığınızda Google'dan, Apple ile giriş yaptığınızda Apple'dan yalnızca kimlik doğrulama için gereken bilgiler alınır; bir Valorant hesabı bağlarsanız Riot ID'niz, oyun istatistiklerini getirmek için Riot Games ve HenrikDev API ile paylaşılır. Yalnızca web sitesinde ve masaüstü uygulamasında, reklam kampanyalarından gelen kayıtları ölçmek için Google Ads dönüşüm etiketi (Google) kullanılır; bu etiket iOS uygulamasında yüklenmez.",
+          "Kullanmayı seçtiğiniz özelliklere bağlı üçüncü taraflar: GIF aradığınızda arama metniniz ve IP adresiniz doğrudan GIPHY'ye (GIPHY, Inc.) gönderilir; Google ile giriş yaptığınızda Google'dan, Apple ile giriş yaptığınızda Apple'dan yalnızca kimlik doğrulama için gereken bilgiler alınır; bir Valorant hesabı bağlarsanız Riot ID'niz, oyun istatistiklerini getirmek için Riot Games ve HenrikDev API ile paylaşılır. Yalnızca web sitesinde ve masaüstü uygulamasında, onayınızdan sonra reklam kampanyalarından gelen kayıtları ölçmek için Google Ads dönüşüm etiketi (Google) kullanılır; bu etiket iOS uygulamasında yüklenmez ve onaydan önce yüklenmez.",
           "Çökme ve hata raporları: Uygulama, web sitesi, masaüstü uygulaması veya sunucularımız bir hatayla karşılaştığında, hata izleme sağlayıcımız Sentry'ye (Functional Software, Inc.) teknik bir rapor gönderilir. Rapor; hata mesajını, yığın izini (stack trace), hatanın oluştuğu sayfa veya API adresini ve cihaz, işletim sistemi, tarayıcı ve uygulama sürümü bilgilerini içerir. Raporlar adınızı, e-posta adresinizi, mesaj içeriklerinizi veya IP adresinizi içermeyecek şekilde yapılandırılmıştır; oturum anahtarları (token) rapordan çıkarılır. Bu raporlar Sentry'nin Avrupa Birliği (AB) veri bölgesinde saklanır ve yalnızca hataları bulup düzeltmek için kullanılır.",
           "Gönderdiğiniz mesajlar ve medya, yalnızca seçtiğiniz alıcılara (DM karşı tarafı veya grup üyeleri) gösterilir; Descall çalışanları, yalnızca güvenlik soruşturmaları, kullanıcı şikayetlerinin incelenmesi veya yasal yükümlülüklerin yerine getirilmesi için gerekli olduğunda içeriğe erişebilir.",
           "Yasal bir zorunluluk (mahkeme kararı, yasal talep) olması, haklarımızı korumamız gerekmesi veya kullanıcıların güvenliğini sağlamamız gerektiği durumlar hariç, kişisel verilerinizi kolluk kuvvetleri veya diğer üçüncü taraflarla paylaşmayız.",
@@ -365,7 +375,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "5. Çerezler ve Yerel Depolama",
         paragraphs: [
-          "iOS uygulamasında reklam veya izleme çerezleri ya da araçları kullanılmaz. Web sitesinde ve masaüstü uygulamasında tek reklam aracı, reklamlardan gelen kayıtları ölçen Google Ads dönüşüm etiketidir (bölüm 4). PostHog analitiği birinci taraf çerez ve yerel depolama kullanır. Oturum belirtecinizi, dil tercihinizi, tema ayarlarınızı ve benzeri kullanıcı arayüzü tercihlerini saklamak için tarayıcınızın yerel depolama alanını (localStorage) kullanırız. Bu bilgileri tarayıcı ayarlarınızdan istediğiniz zaman temizleyebilirsiniz; ancak bu, oturumunuzun sonlanmasına neden olabilir.",
+          "iOS uygulamasında reklam veya izleme çerezleri ya da araçları kullanılmaz. Web sitesinde ve masaüstü uygulamasında tek reklam aracı, onayınızdan sonra reklamlardan gelen kayıtları ölçen Google Ads dönüşüm etiketidir (bölüm 4). PostHog analitiği birinci taraf çerez ve yerel depolama kullanır. Oturum belirtecinizi, dil tercihinizi, tema ayarlarınızı ve benzeri kullanıcı arayüzü tercihlerini saklamak için tarayıcınızın yerel depolama alanını (localStorage) kullanırız. Bu bilgileri tarayıcı ayarlarınızdan istediğiniz zaman temizleyebilirsiniz; ancak bu, oturumunuzun sonlanmasına neden olabilir.",
         ],
       },
       {
@@ -379,33 +389,34 @@ export const PRIVACY_CONTENT = {
       {
         heading: "7. Veri Saklama Süresi",
         paragraphs: [
-          "Verilerinizi, hesabınız aktif olduğu sürece ve Hizmet'i sağlamak için gerekli olduğu ölçüde saklarız. Hesabınızı kapattığınızda, mesaj geçmişi, DesCoin bakiyesi ve mağaza envanteri dahil kişisel verileriniz, yasal saklama yükümlülüklerimiz dışında, makul bir süre içinde silinir veya anonimleştirilir.",
+          "Verilerinizi, hesabınız aktif olduğu sürece ve Hizmet'i sağlamak için gerekli olduğu ölçüde saklarız. Hesabınızı kapattığınızda silme talebi kaydedilir; 14 günlük süre sonunda mesaj geçmişi, DesCoin bakiyesi ve mağaza envanteri dahil kişisel verileriniz, yasal saklama yükümlülüklerimiz dışında silinir veya anonimleştirilir. Analitik verileri, onayı geri çekene kadar tutulur. Ürün güncellemeleri listesindeki e-posta, abonelikten çıkana kadar tutulur.",
           "Güvenlik günlükleri ve hile tespiti amacıyla tutulan etkinlik kayıtları, kötüye kullanımın araştırılması amacıyla sınırlı bir süre daha saklanabilir.",
         ],
       },
       {
         heading: "8. Çocukların Gizliliği",
         paragraphs: [
-          "Descall, 13 yaşın altındaki çocuklardan bilerek kişisel veri toplamaz. 13 yaşın altında olduğunuzu öğrenirsek, ilgili hesabı ve verileri derhal sileriz. Bir ebeveyn veya vası olarak, 13 yaşın altındaki bir çocuğun bize kişisel veri sağladığını düşünüyorsanız, lütfen İletişim sayfamız üzerinden bizimle iletişime geçin.",
+          "Descall, 13 yaşın altındaki çocuklardan bilerek kişisel veri toplamaz. Hesap sahibinin 13 yaşından küçük olduğunu öğrenirsek hesabı kullanıma kapatır ve silme işlemini başlatırız (14 günlük silme süresi). 16 yaşından küçük hesaplarda analitik ve reklam ölçümü, onay verilse bile açılmaz. Bir ebeveyn veya vasi olarak, 13 yaşın altındaki bir çocuğun bize kişisel veri sağladığını düşünüyorsanız, contact@descall.com adresinden bize yazın.",
         ],
       },
       {
         heading: "9. Kullanıcı Hakları",
         paragraphs: [
-          "Kişisel verilerinize erişim, bunları düzeltme, silme, işlemeyi kısıtlama veya taşınabilir bir formatta alma haklarına sahipsiniz. Bu hakların çoğunu uygulama içindeki profil ve ayarlar menülerinden doğrudan kullanabilirsiniz (örneğin profil bilgilerinizi düzenleme, hesabınızı silme).",
-          "Yukarıdaki haklarınızı kullanmakta zorluk yaşarsanız veya ek bir talepte bulunmak isterseniz, İletişim sayfamız üzerinden bizimle iletişime geçebilirsiniz; talebinizi makul bir süre içinde değerlendireceğiz.",
+          "KVKK madde 11 kapsamında: kişisel verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme, yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme, eksik veya yanlış işlenmişse düzeltilmesini isteme, silinmesini veya yok edilmesini isteme, düzeltme ve silme işlemlerinin aktarıldığı üçüncü kişilere bildirilmesini isteme, münhasıran otomatik sistemlerle analiz edilmesi sonucu aleyhinize bir sonucun ortaya çıkmasına itiraz etme ve zarara uğramanız hâlinde tazminat talep etme haklarına sahipsiniz.",
+          "GDPR'nin uygulandığı durumlarda ayrıca erişim, düzeltme, silme, işlemenin kısıtlanması, veri taşınabilirliği, itiraz ve onayı geri çekme haklarınız vardır. Bu hakların çoğunu uygulama içindeki profil ve ayarlar menülerinden kullanabilirsiniz (profili düzenleme, hesabı silme, Gizlilik bölümünden analitik tercihini değiştirme).",
+          "Talepleriniz için contact@descall.com adresine yazın; makul bir süre içinde değerlendiririz. KVKK kapsamındaki şikayetlerinizi Kişisel Verileri Koruma Kurulu'na, GDPR kapsamındaki şikayetlerinizi ise ikamet ettiğiniz AB üyesi ülkenin denetim otoritesine iletebilirsiniz.",
         ],
       },
       {
         heading: "10. Uluslararası Veri Transferi",
         paragraphs: [
-          "Hizmet sağlayıcılarımız (Supabase, Resend, Firebase, Apple, Render, Vercel, LiveKit, PostHog, Sentry, GIPHY), verilerinizi kayıtlı olduğunuz ülkeden farklı ülkelerde bulunan sunucularda işleyebilir. Bu durumlarda, verilerinizin yeterli düzeyde korunmasını sağlamak amacıyla ilgili sağlayıcılarla uygun sözleşmesel güvenceler bulunmasını sağlarız.",
+          "Hizmet sağlayıcılarımız (Supabase, Resend, Firebase, Apple, Render, Vercel, LiveKit, PostHog, Sentry, GIPHY, Google Ads), verilerinizi kayıtlı olduğunuz ülkeden farklı ülkelerde bulunan sunucularda işleyebilir. PostHog ve Sentry Avrupa Birliği bölgesinde tutulur. Aktarımda standart sözleşme maddeleri veya yeterlilik kararı gibi güvenceler kullanılır.",
         ],
       },
       {
         heading: "11. Pazarlama İletişimleri",
         paragraphs: [
-          "Descall, izniniz olmadan size pazarlama e-postaları göndermez. Gönderdiğimiz e-postalar; e-posta doğrulama, 2FA kodları, güvenlik uyarıları, hediye/DesCoin bildirimleri gibi hesabınızın işleyişi için gerekli işlemsel iletişimlerle sınırlıdır.",
+          "Descall, izniniz olmadan size pazarlama e-postaları göndermez. Hesap e-postaları doğrulama, 2FA kodları, güvenlik uyarıları ve hesap kapatma gibi işlemsel iletilerle sınırlıdır. Hediye veya DesCoin için pazarlama e-postası göndermeyiz. İsteğe bağlı ürün güncellemeleri listesi çifte onaylıdır; her e-postada abonelikten çıkma bağlantısı bulunur.",
         ],
       },
       {
@@ -417,7 +428,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "13. Bize Ulaşın",
         paragraphs: [
-          "Bu Gizlilik Politikası veya kişisel verilerinizin işlenmesiyle ilgili herhangi bir sorunuz varsa, İletişim sayfamız üzerinden bizimle iletişime geçebilirsiniz.",
+          "Bu Gizlilik Politikası veya kişisel verilerinizin işlenmesiyle ilgili sorularınız için veri sorumlusu Demir Sarp Kurtlar'a contact@descall.com adresinden yazabilirsiniz. KVKK kapsamındaki şikayetler için Kişisel Verileri Koruma Kurulu'na, GDPR kapsamındaki şikayetler için ikamet ettiğiniz AB ülkesinin denetim otoritesine başvurabilirsiniz.",
         ],
       },
     ],
@@ -429,6 +440,12 @@ export const PRIVACY_CONTENT = {
       "This Privacy Policy explains what information we collect when you use Descall (\"we\", \"us\"), how we use it, who we share it with, and what rights you have over your data. By creating an account or using the Service, you agree to the practices described in this policy.",
     sections: [
       {
+        heading: "Data controller",
+        paragraphs: [
+          "For the Turkish Personal Data Protection Law (KVKK, Law No. 6698) and, where it applies, the EU General Data Protection Regulation (GDPR), the data controller is Demir Sarp Kurtlar. Contact: contact@descall.com.",
+        ],
+      },
+      {
         heading: "1. Information We Collect",
         paragraphs: [
           "Account information: Your username, a securely hashed (bcrypt) form of your password, your optional email address, your profile photo, and any display name you choose when creating your account or editing your profile.",
@@ -437,8 +454,8 @@ export const PRIVACY_CONTENT = {
           "Activity and DesCoin data: To ensure the DesCoin earning system operates fairly and without cheating, we collect server-verified activity data such as your time spent actively present in voice chat, your messaging frequency, and your screen-sharing activity, along with your DesCoin balance and transaction history (ledger).",
           "Technical and device information: IP address, browser/operating system type, device identifier, app version, session tokens, and device registration information for push notifications (FCM/Web Push tokens; in the iOS app, Apple Push Notification service (APNs) device tokens: an alert token for message notifications and a VoIP token for incoming calls). iOS device tokens and the notification language are used only to deliver notifications and incoming calls to that device, and are deleted when you log out, turn notifications off, or Apple reports the token as invalid.",
           "We do not collect payment or financial information: Descall does not accept real-money payments; all shop purchases are made with DesCoin, so no credit card or similar financial information is collected or stored.",
-          "Usage analytics: To understand how the app is used, we collect in-app events with PostHog (for example sign-up, login, pages opened, and feature usage) and unexpected error events. When you are signed in, these events are linked to your account ID, username, and (if set) email address. Session recording (screen/session replay) is turned off; your screen and what you type are not recorded. Analytics data is not used for advertising and is never sold.",
-          "Local storage and cookies: We use your browser's local storage (localStorage) and first-party cookies to keep you signed in, remember your language and theme preferences, and for PostHog analytics. The iOS app does not use advertising or tracking tools. On the website and the desktop app only, the Google Ads conversion tag (gtag) may be loaded to measure sign-ups that come from ads, and it may use cookies.",
+          "Usage analytics: To understand how the app is used, we collect in-app events with PostHog (for example sign-up, login, pages opened, and feature usage) and unexpected error events. When you are signed in, these events are linked to your account ID, username, and (if set) email address. Session recording (screen/session replay) is turned off; your screen and what you type are not recorded. PostHog analytics is not used to build advertising profiles and is never sold. On the website and the desktop app, after you accept, the Google Ads conversion tag only measures sign-ups that come from ads. That tag is not loaded in the iOS app. No advertising or analytics tag loads before you accept. Accounts under 16 are excluded from analytics and ad measurement even if they accept.",
+          "Local storage and cookies: We use your browser's local storage (localStorage) and first-party cookies to keep you signed in, remember your language and theme preferences, and for PostHog analytics. The iOS app does not use advertising or tracking tools. On the website and the desktop app only, and only after you accept, the Google Ads conversion tag (gtag) may be loaded to measure sign-ups that come from ads, and it may use cookies.",
         ],
       },
       {
@@ -447,7 +464,7 @@ export const PRIVACY_CONTENT = {
           "To provide the Service: operating messaging, voice/video calling, screen sharing, friends, group management, and profile customization features.",
           "Account security: to authenticate you, deliver 2FA and email verification codes, detect suspicious sessions, and prevent unauthorized access.",
           "Anti-cheat and integrity: we analyze activity data to keep the DesCoin earning system fair and to detect bot/automation use, multi-accounting, and manipulation.",
-          "Communication: to send transactional notifications by email or push, such as verification codes, security alerts, friend requests, gift notifications, and important service updates.",
+          "Communication: to send transactional notifications by email or push, such as verification codes, security alerts, friend requests, and important service updates.",
           "Improvement: to analyze and improve the Service's performance, reliability, and user experience (e.g., connection quality diagnostics, error logs).",
           "We never sell your personal data to third parties. Apart from the website sign-up conversion measurement described in section 4, we do not share it for advertising purposes.",
         ],
@@ -455,14 +472,14 @@ export const PRIVACY_CONTENT = {
       {
         heading: "3. Legal Basis for Processing",
         paragraphs: [
-          "We rely on the following legal bases when processing your data: (a) necessity for the performance of our service agreement (core features like messaging and calling), (b) our legitimate interests in maintaining account security and preventing cheating/abuse, (c) your explicit consent given when creating an account and enabling optional features (e.g., push notifications, Google Sign-In), and (d) compliance with legal obligations.",
+          "We rely on the following legal bases when processing your data: (a) necessity for the performance of our service agreement (core features like messaging and calling), (b) our legitimate interests in maintaining account security and preventing cheating/abuse, (c) your consent when you create an account and when you turn on optional features (push notifications, Google Sign-In, analytics and ad measurement, and the product-update list), and (d) compliance with legal obligations. Analytics and advertising cookies are processed only with your consent, which you can change later in Settings → Privacy.",
         ],
       },
       {
         heading: "4. Sharing of Information and Service Providers",
         paragraphs: [
           "We share your data with trusted service providers (data processors) who help us operate the Service and act under our instructions: Supabase for database, file storage, and authentication; Resend for transactional email delivery; Firebase Cloud Messaging (Google) for mobile push notifications; Apple Push Notification service (APNs, Apple) to deliver notifications and incoming calls in the iOS app; Render for server hosting; Vercel for website hosting and cookieless aggregate visit statistics (website only); LiveKit for routing audio/video streams in server voice channels and TURN relay servers for connecting calls (streams are only relayed, never recorded); and PostHog (EU data region) for product analytics. Only the data necessary to provide the Service is shared with these providers.",
-          "Third parties tied to features you choose to use: when you search for GIFs, your search text and IP address are sent directly to GIPHY (GIPHY, Inc.); when you sign in with Google or Apple, we receive only the information needed for authentication from Google or Apple; if you link a Valorant account, your Riot ID is shared with Riot Games and the HenrikDev API to fetch your game stats. On the website and the desktop app only, the Google Ads conversion tag (Google) is used to measure sign-ups from ad campaigns; it is not loaded in the iOS app.",
+          "Third parties tied to features you choose to use: when you search for GIFs, your search text and IP address are sent directly to GIPHY (GIPHY, Inc.); when you sign in with Google or Apple, we receive only the information needed for authentication from Google or Apple; if you link a Valorant account, your Riot ID is shared with Riot Games and the HenrikDev API to fetch your game stats. On the website and the desktop app only, and only after you accept, the Google Ads conversion tag (Google) is used to measure sign-ups from ad campaigns; it is not loaded in the iOS app and it is not loaded before consent.",
           "Crash and error reports: when the app, the website, the desktop app or our servers run into an error, a technical report is sent to our error-monitoring provider Sentry (Functional Software, Inc.). A report contains the error message, the stack trace, the page or API address where the error happened, and device, operating system, browser and app version details. Reports are configured not to include your name, email address, message contents or IP address, and sign-in tokens are stripped from them. These reports are stored in Sentry's European Union (EU) data region and are used only to find and fix bugs.",
           "Messages and media you send are shown only to your chosen recipients (the other party in a DM or group members); Descall staff may only access content when necessary for security investigations, reviewing user reports, or fulfilling legal obligations.",
           "We do not share your personal data with law enforcement or other third parties except where required by a legal obligation (court order, legal request), where necessary to protect our rights, or where necessary to protect user safety.",
@@ -471,7 +488,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "5. Cookies and Local Storage",
         paragraphs: [
-          "The iOS app does not use advertising or tracking cookies or tools. On the website and the desktop app, the only advertising tool is the Google Ads conversion tag that measures sign-ups from ads (section 4). PostHog analytics uses a first-party cookie and local storage. We use your browser's local storage (localStorage) to store your session token, language preference, theme settings, and similar UI preferences. You may clear this information from your browser settings at any time, though doing so may end your session.",
+          "The iOS app does not use advertising or tracking cookies or tools. On the website and the desktop app, the only advertising tool is the Google Ads conversion tag that measures sign-ups from ads after you accept (section 4). PostHog analytics uses a first-party cookie and local storage. We use your browser's local storage (localStorage) to store your session token, language preference, theme settings, and similar UI preferences. You may clear this information from your browser settings at any time, though doing so may end your session.",
         ],
       },
       {
@@ -485,33 +502,34 @@ export const PRIVACY_CONTENT = {
       {
         heading: "7. Data Retention",
         paragraphs: [
-          "We retain your data for as long as your account is active and as necessary to provide the Service. When you close your account, your personal data — including message history, DesCoin balance, and shop inventory — is deleted or anonymized within a reasonable period, except where we have a legal obligation to retain it.",
+          "We retain your data for as long as your account is active and as necessary to provide the Service. When you close your account, deletion is requested and, after a 14-day period, your personal data — including message history, DesCoin balance, and shop inventory — is deleted or anonymized, except where we have a legal obligation to retain it. Analytics data is kept until you withdraw consent. An email on the product-update list is kept until you unsubscribe.",
           "Security logs and activity records kept for cheat detection purposes may be retained for a limited additional period for the purpose of investigating abuse.",
         ],
       },
       {
         heading: "8. Children's Privacy",
         paragraphs: [
-          "Descall does not knowingly collect personal data from children under 13. If we learn that we have collected data from a child under 13, we will promptly delete the related account and data. If you are a parent or guardian and believe a child under 13 has provided us with personal data, please contact us via our Contact page.",
+          "Descall does not knowingly collect personal data from children under 13. If we learn that an account holder is under 13, we close the account and start deletion (14-day deletion period). Accounts under 16 are not included in analytics or advertising measurement, even if they accept. If you are a parent or guardian and believe a child under 13 has provided us with personal data, email contact@descall.com.",
         ],
       },
       {
         heading: "9. Your Rights",
         paragraphs: [
-          "You have the right to access, correct, delete, restrict processing of, or receive a portable copy of your personal data. You can exercise most of these rights directly from the in-app profile and settings menus (e.g., editing your profile information, deleting your account).",
-          "If you have difficulty exercising the rights above, or wish to make an additional request, you may contact us via our Contact page; we will review your request within a reasonable time.",
+          "Under KVKK Article 11 you may learn whether your personal data is processed, request information if it is, learn the purpose of processing and whether it is used for that purpose, know the third parties it is transferred to in Turkey or abroad, request correction if it is incomplete or inaccurate, request deletion or destruction, request that corrections and deletions be notified to those third parties, object to a result against you that is produced solely by automated analysis, and request compensation if you suffer damage.",
+          "Where the GDPR applies you also have the rights of access, rectification, erasure, restriction, portability, objection, and withdrawal of consent. You can use most of these from the in-app profile and settings (edit your profile, delete your account, change the analytics choice under Privacy).",
+          "Email requests to contact@descall.com. We review them within a reasonable time. You may complain to the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu) under the KVKK, or to the supervisory authority in the EU member state where you live where the GDPR applies.",
         ],
       },
       {
         heading: "10. International Data Transfers",
         paragraphs: [
-          "Our service providers (Supabase, Resend, Firebase, Apple, Render, Vercel, LiveKit, PostHog, Sentry, GIPHY) may process your data on servers located in countries other than the one you reside in. In such cases, we ensure appropriate contractual safeguards are in place with those providers to keep your data adequately protected.",
+          "Our service providers (Supabase, Resend, Firebase, Apple, Render, Vercel, LiveKit, PostHog, Sentry, GIPHY, and Google Ads) may process your data on servers located in countries other than the one you reside in. PostHog and Sentry are kept in the European Union region. Transfers use safeguards such as standard contractual clauses or an adequacy decision.",
         ],
       },
       {
         heading: "11. Marketing Communications",
         paragraphs: [
-          "Descall does not send you marketing emails without your consent. The emails we send are limited to transactional communications necessary for your account to function, such as email verification, 2FA codes, security alerts, and gift/DesCoin notifications.",
+          "Descall does not send you marketing emails without your consent. Account emails are limited to transactional messages such as verification, 2FA codes, security alerts, and account closure. We do not send gift or DesCoin marketing emails. The optional product-update list is double opt-in, and every email includes an unsubscribe link.",
         ],
       },
       {
@@ -523,7 +541,54 @@ export const PRIVACY_CONTENT = {
       {
         heading: "13. Contact Us",
         paragraphs: [
-          "If you have any questions about this Privacy Policy or the processing of your personal data, you may contact us via our Contact page.",
+          "Questions about this Privacy Policy or the processing of your personal data: the data controller is Demir Sarp Kurtlar, contact@descall.com. Complaints under the KVKK go to the Turkish Personal Data Protection Board. Where the GDPR applies, you may complain to the supervisory authority in the EU member state where you live.",
+        ],
+      },
+    ],
+  },
+};
+
+export const COPYRIGHT_CONTENT = {
+  tr: {
+    title: "Telif hakkı bildirimleri",
+    updated: `Son güncelleme: ${LAST_UPDATED}`,
+    intro:
+      "Descall üzerindeki bir içeriğin telif hakkınızı ihlal ettiğini düşünüyorsanız aşağıdaki bildirimi contact@descall.com adresine gönderin. Uygulama içinden bir mesajı veya kullanıcıyı mesaj menüsündeki bildir seçeneğiyle de iletebilirsiniz.",
+    sections: [
+      {
+        heading: "Bildirimde bulunması gerekenler",
+        paragraphs: [
+          "Bildirimde şunlar yer almalıdır: (1) korunan eserin tanımı, (2) Descall üzerindeki içeriğin adresi veya bulunmasını sağlayacak ayrıntı, (3) adınız ve iletişim e-postanız, (4) kullanımın yetkisiz olduğuna dair iyi niyetli inancınızı belirten beyan, (5) bildirimin doğru olduğunu ve hak sahibi ya da yetkili olduğunuzu belirten beyan, (6) fiziksel veya elektronik imzanız.",
+          "İncelememizden sonra ihlal ettiğini gördüğümüz içeriği kaldırır veya erişimi kapatırız.",
+        ],
+      },
+      {
+        heading: "Karşı bildirim",
+        paragraphs: [
+          "İçeriği paylaşan kişi aynı adrese karşı bildirim gönderebilir. Karşı bildirimde iletişim bilgileri, kaldırılan içeriğin tanımı, içeriğin yanlışlıkla kaldırıldığına dair iyi niyetli inanç beyanı ve yaşadığı yerin mahkemelerinin yetkisini kabul ettiğine dair beyan bulunur.",
+          "Telif hakkını tekrar tekrar ihlal eden hesaplar kapatılabilir.",
+        ],
+      },
+    ],
+  },
+  en: {
+    title: "Copyright notices",
+    updated: `Last updated: ${LAST_UPDATED_EN}`,
+    intro:
+      "If you believe content on Descall infringes your copyright, send the notice below to contact@descall.com. You can also report a message or a user from the in-app message menu.",
+    sections: [
+      {
+        heading: "What a notice must include",
+        paragraphs: [
+          "Include: (1) a description of the copyrighted work, (2) the URL or enough detail to find the material on Descall, (3) your name and contact email, (4) a statement that you have a good-faith belief the use is not authorized, (5) a statement that the notice is accurate and that you are the owner or authorized to act, and (6) your physical or electronic signature.",
+          "We review notices and remove or disable access to material we find infringing.",
+        ],
+      },
+      {
+        heading: "Counter-notice",
+        paragraphs: [
+          "The person who posted the material may send a counter-notice to the same address with their contact details, identification of the removed material, a statement that they have a good-faith belief it was removed by mistake, and their consent to the jurisdiction of the courts where they live.",
+          "Accounts that repeatedly infringe copyright may be terminated.",
         ],
       },
     ],

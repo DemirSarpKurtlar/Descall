@@ -597,6 +597,7 @@ router.post("/login", async (req, res) => {
     }
 
     if (await rejectIfBanned(res, user)) return;
+    if (await rejectIfChildAccount(req, res, user)) return;
     await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     if (user.two_factor_enabled && user.email_confirmed_at && user.email) {
@@ -666,7 +667,7 @@ router.post("/2fa/verify-login", async (req, res) => {
     const { data: user, error } = await supabase
       .from("users")
       .select(
-        "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, reauthentication_token, reauthentication_sent_at, is_admin, descoin_balance"
+        "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, reauthentication_token, reauthentication_sent_at, is_admin, descoin_balance, birth_date"
       )
       .eq("id", decoded.sub)
       .maybeSingle();
@@ -692,6 +693,7 @@ router.post("/2fa/verify-login", async (req, res) => {
     }
 
     authCodeAttempts.delete(key);
+    if (await rejectIfChildAccount(req, res, user)) return;
     await supabase
       .from("users")
       .update({ reauthentication_token: null, reauthentication_sent_at: null })
@@ -811,6 +813,7 @@ router.post("/google", async (req, res) => {
     }
 
     if (user && (await rejectIfBanned(res, user))) return;
+    if (user && (await rejectIfChildAccount(req, res, user))) return;
     if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let newBirthDate = null;
@@ -987,6 +990,7 @@ router.post("/apple", async (req, res) => {
     }
 
     if (user && (await rejectIfBanned(res, user))) return;
+    if (user && (await rejectIfChildAccount(req, res, user))) return;
     if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let isNewUser = false;
@@ -1547,10 +1551,24 @@ router.post("/birth-date", requireAuth, async (req, res) => {
     ageGate.forgetBirthDateCache(req.user.id);
     const group = ageGate.ageGroup(age);
     if (group === "child") {
+      let sessionIds = [];
+      try {
+        const result = await accountDeletion.requestDeletion(req.user.id);
+        sessionIds = result?.sessionIds || [];
+        ageGate.noteChildClosure(req.user.id);
+      } catch (closeErr) {
+        console.error("[AUTH] under-13 birth-date closure failed:", closeErr?.message || closeErr);
+      }
+      const ids = new Set([...(sessionIds || []), req.user.sid].filter(Boolean));
+      ids.forEach((sid) => {
+        revokedSessionIds.add(sid);
+        disconnectSocketsForSession(req, req.user.id, sid);
+      });
       return res.status(403).json({
-        error: "You must be at least 13 years old to use Descall.",
+        error: ageGate.CHILD_ACCOUNT_ERROR,
         code: "under_age",
         birthDate,
+        deletionStarted: true,
       });
     }
     return res.json({ birthDate, ageGroup: group });
@@ -1643,6 +1661,29 @@ router.post("/sessions/revoke-others", requireAuth, async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
+
+async function rejectIfChildAccount(req, res, user) {
+  const age = user?.birth_date ? ageGate.ageFromBirthDate(user.birth_date) : null;
+  if (age == null || age >= ageGate.MIN_AGE) return false;
+  let sessionIds = [];
+  try {
+    const result = await accountDeletion.requestDeletion(user.id);
+    sessionIds = result?.sessionIds || [];
+    ageGate.noteChildClosure(user.id);
+  } catch (err) {
+    console.error("[AUTH] under-13 closure failed:", err?.message || err);
+  }
+  for (const sid of sessionIds) {
+    revokedSessionIds.add(sid);
+    disconnectSocketsForSession(req, user.id, sid);
+  }
+  res.status(403).json({
+    error: ageGate.CHILD_ACCOUNT_ERROR,
+    code: "under_age",
+    deletionStarted: true,
+  });
+  return true;
+}
 
 function disconnectSocketsForSession(req, userId, sessionId) {
   try {

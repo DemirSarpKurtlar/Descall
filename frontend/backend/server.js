@@ -222,8 +222,9 @@ function sendHealth(_req, res) {
 app.get("/health", sendHealth);
 app.get("/api/health", sendHealth);
 
-// Public marketing waitlist + consent beacons (no auth)
-const marketingWaitlist = new Map(); // email -> { at, source, path }
+// Public marketing waitlist + consent beacons (no auth).
+// Opt-ins persist when marketing_subscribers exists; a missing table still returns { ok: true }.
+const marketingOptIn = require("./lib/marketingOptIn");
 app.post("/api/marketing/waitlist", async (req, res) => {
   try {
     const email = String(req.body?.email || "")
@@ -234,7 +235,14 @@ app.post("/api/marketing/waitlist", async (req, res) => {
     }
     const source = String(req.body?.source || "unknown").slice(0, 64);
     const pathName = String(req.body?.path || "").slice(0, 128);
-    marketingWaitlist.set(email, { at: new Date().toISOString(), source, path: pathName });
+    const locale = String(req.body?.locale || "en").slice(0, 16);
+    await marketingOptIn.subscribe({
+      email,
+      source,
+      path: pathName,
+      locale,
+      consentText: "Get occasional release notes — no spam, unsubscribe anytime.",
+    });
     // Best-effort notify operator via Resend when configured
     try {
       const { sendEmail } = require("./lib/mailer");
@@ -248,8 +256,23 @@ app.post("/api/marketing/waitlist", async (req, res) => {
     }
     return res.json({ ok: true });
   } catch (e) {
+    if (e?.status === 400) return res.status(400).json({ error: "Invalid email" });
     return res.status(500).json({ error: e.message || "waitlist failed" });
   }
+});
+
+app.get("/api/marketing/confirm", async (req, res) => {
+  const result = await marketingOptIn.confirmByToken(req.query?.token);
+  const copy = marketingOptIn.copyFor(result.locale);
+  const body = result.ok ? copy.pageConfirm : copy.pageGone;
+  res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body));
+});
+
+app.get("/api/marketing/unsubscribe", async (req, res) => {
+  const result = await marketingOptIn.unsubscribeByToken(req.query?.token);
+  const copy = marketingOptIn.copyFor(result.locale);
+  const body = result.ok ? copy.pageUnsub : copy.pageGone;
+  res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body));
 });
 
 app.post("/api/marketing/consent-event", (req, res) => {

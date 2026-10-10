@@ -19,6 +19,8 @@ import { buildMainNavItems } from "./navConfig";
 import { GlassShellContext, GlassTabBar } from "./glass/GlassShell";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
+import CookieConsentBanner from "../../site/CookieConsentBanner";
+import LegalContentModal from "../legal/LegalContentModal";
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
@@ -399,6 +401,8 @@ export default function AppLayout({
     else if (activeGroup && onGroupVoiceCall) onGroupVoiceCall();
   };
 
+  const [consentLegal, setConsentLegal] = useState(null);
+
   return (
     <GlassShellContext.Provider value={glassShellValue}>
     <div
@@ -738,6 +742,12 @@ export default function AppLayout({
           </button>
         </nav>
       )}
+      <CookieConsentBanner variant="app" onOpenPrivacy={() => setConsentLegal("privacy")} />
+      <LegalContentModal
+        open={Boolean(consentLegal)}
+        type={consentLegal || "privacy"}
+        onClose={() => setConsentLegal(null)}
+      />
     </div>
     </GlassShellContext.Provider>
   );

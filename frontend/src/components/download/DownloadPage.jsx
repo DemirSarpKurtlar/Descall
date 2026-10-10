@@ -29,7 +29,7 @@ import { DESKTOP_RELEASE_FALLBACK } from '../../lib/desktopRelease';
 import { useT } from '../../context/LocaleContext';
 import './DownloadPage.css';
 import BirthDateInput from "../auth/BirthDateInput";
-import { isEligibleBirthDate } from "../../lib/age";
+import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../../lib/age";
 
 const GITHUB_REPO = 'DemirSarpKurtlar/Descall';
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
@@ -85,7 +85,12 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
   const [email, setEmail] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [birthDate, setBirthDate] = useState('');
-  const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate));
+  const [deviceBlock, setDeviceBlock] = useState('');
+  const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate) || under13SignupBlocked());
+  useEffect(() => {
+    if (!isRegistering) return;
+    if (noteUnder13BirthDate(birthDate)) setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+  }, [birthDate, isRegistering, t]);
   const [legalModal, setLegalModal] = useState(null);
   const [releaseError, setReleaseError] = useState(null);
   const [downloadLinks, setDownloadLinks] = useState({ windows: null, android: null });
@@ -508,12 +513,16 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             <h2>{isRegistering ? t("Create Account") : t("Welcome Back")}</h2>
             <p>{isRegistering ? t("Join Descall today") : t("Sign in to your account")}</p>
             
-            {authError && <div className="auth-error">{authError}</div>}
+            {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}
 
             <GoogleSignInButton
               disabled={isSubmitting || authLoading || signupBlocked}
               onCredential={async (credential) => {
                 if (signupBlocked) return;
+                if (isRegistering && (under13SignupBlocked() || noteUnder13BirthDate(birthDate))) {
+                  setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+                  return;
+                }
                 setIsSubmitting(true);
                 try {
                   await onGoogleLogin?.(credential, { termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) });
@@ -536,6 +545,10 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             <form onSubmit={async (e) => {
               e.preventDefault();
               if (signupBlocked) return;
+              if (isRegistering && (under13SignupBlocked() || noteUnder13BirthDate(birthDate))) {
+                setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+                return;
+              }
               setIsSubmitting(true);
               try {
                 if (isRegistering) {

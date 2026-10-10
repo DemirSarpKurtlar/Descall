@@ -1,6 +1,12 @@
 const { verifyToken } = require("../config/jwt");
 const { revokedSessionIds, bannedUserIds, banDetailsByUser, usernameById } = require("../runtime/sharedState");
 const { touchLastSeen } = require("../lib/presenceTouch");
+const ageGate = require("../lib/ageGate");
+
+function childCheckExempt(req) {
+  const path = String(req.originalUrl || req.url || req.path || "").split("?")[0];
+  return path.endsWith("/logout") || path.endsWith("/account/delete");
+}
 
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -44,7 +50,17 @@ function requireAuth(req, res, next) {
       sid: decoded.sid || null,
     };
     touchLastSeen(req.user.id).catch(() => {});
-    next();
+    if (childCheckExempt(req)) return next();
+    ageGate.enforceChildClosure(req.user.id).then((block) => {
+      if (!block) return next();
+      const ids = new Set([...(block.sessionIds || []), req.user.sid].filter(Boolean));
+      ids.forEach((sid) => revokedSessionIds.add(sid));
+      return res.status(403).json({
+        error: block.error,
+        code: "under_age",
+        deletionStarted: true,
+      });
+    }).catch(() => next());
   } catch (err) {
     if (err.name === "TokenExpiredError") {
       return res.status(401).json({ error: "Token has expired." });

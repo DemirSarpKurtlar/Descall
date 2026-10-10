@@ -366,6 +366,7 @@ export function seoSiteNavHtml(isTr = false) {
         ${footerItem(h("/contact"), n.contact)}
         ${footerItem(h("/privacy"), n.privacy)}
         ${footerItem(h("/terms"), n.terms)}
+        ${footerItem(h("/copyright"), isTr ? "Telif hakkı" : "Copyright")}
         ${footerItem(isTr ? "/" : "/tr", isTr ? "English" : n.turkish)}
       </ul>
     </section>
@@ -387,6 +388,7 @@ export function noscriptNavHtml(isTr = false) {
         <a href="${isTr ? "/descall-sahibi" : "/who-owns-descall"}">${isTr ? "Descall’ın sahibi kim?" : "Who owns Descall?"}</a>
         <a href="${h("/privacy")}">${n.privacy}</a>
         <a href="${h("/terms")}">${n.terms}</a>
+        <a href="${h("/copyright")}">${isTr ? "Telif hakkı" : "Copyright"}</a>
         <a href="${h("/contact")}">${n.contact}</a>
       </nav>
     </noscript>`;

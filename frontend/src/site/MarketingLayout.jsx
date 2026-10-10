@@ -212,6 +212,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
             <Link to={L("/contact")}>{t("Contact")}</Link>
             <Link to="/privacy">{t("Privacy Policy")}</Link>
             <Link to="/terms">{t("Terms")}</Link>
+            <Link to="/copyright">{t("Copyright")}</Link>
             <a href={SITE_OPERATOR.githubUrl} rel="noopener noreferrer" target="_blank">
               GitHub
             </a>

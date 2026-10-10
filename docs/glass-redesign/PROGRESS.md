@@ -1,5 +1,17 @@
 # Liquid Glass — progress log
 
+## Gizlilik · 2.9.191
+
+Analitik ve reklam etiketleri artık onaydan önce yüklenmez. Reddetmek kabul etmek kadar kolaydır. Seçim Ayarlar → Gizlilik’ten değiştirilir. 16 yaşından küçük hesaplarda analitik kapalı kalır. 13 yaşından küçük doğum tarihi hesabı kapatır ve silmeyi başlatır. iPhone sohbetinde casino oyun sonucu gösterilmez. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.191**. Yalnız iPhone.
+
+- [ ] Uygulamayı aç: alttaki çerez çubuğunda Reddet ve Kabul aynı boyda. Reddet’e basınca çubuk kapanır, bir daha kendiliğinden açılmaz.
+- [ ] Ayarlar → Gizlilik: Gizlilik Politikası ve Hizmet Şartları açılır. Analitik tercihi buradan değişir.
+- [ ] Sohbette blackjack, slot veya yazı tura sonucu görünmez.
+
 ## Cihaz düzeltmeleri · 2.9.187
 
 Fotoğraf veya GIF tam ekran açılıp kapanınca, alttaki mesaj kendiliğinden basılı tutulmuş sayılıyordu. Tepki çubuğu ve Yanıtla / Sabitle / Daha fazla tepki / Sil menüsü, kullanıcı yalnız dokunmuş olsa da fotoğrafın üstünde açılıyordu. Görüntüleyici kapanırken dokunuş balonun uzun basma sayacına düşüyordu; sayaç da parmak kalkınca iptal olmuyordu.

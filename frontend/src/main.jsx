@@ -6,7 +6,7 @@ import { resolveInitialLocale, translate, loadI18nCatalogs } from "./i18n";
 import { isPublicMarketingPath } from "./site/marketingPaths";
 import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken } from "./lib/storage";
-import { isAnalyticsAllowed, markAnalyticsAllowed } from "./site/analyticsGate";
+import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
@@ -45,13 +45,20 @@ const preferMarketingShell = shouldBootMarketingShell({
 });
 
 /**
- * Schedule third-party analytics only after cookie consent (or app idle allow).
+ * Schedule third-party analytics only after an explicit cookie accept.
+ * No idle auto-grant: Reject stays as easy as Accept, including in the signed-in app.
  */
 function scheduleAnalytics({ preferMarketing }) {
   let started = false;
   const start = () => {
+    if (!isAnalyticsAllowed()) {
+      started = false;
+      import("./site/analytics")
+        .then((m) => m.shutdownAnalytics())
+        .catch(() => {});
+      return;
+    }
     if (started) return;
-    if (!isAnalyticsAllowed()) return;
     started = true;
     import("./site/analytics")
       .then((m) => m.initAnalytics())
@@ -59,15 +66,10 @@ function scheduleAnalytics({ preferMarketing }) {
   };
 
   window.addEventListener("descall:analytics-allowed", start);
+  window.addEventListener("descall:cookie-consent", start);
   // Re-check if consent already stored from a prior visit.
   if (isAnalyticsAllowed()) {
     window.setTimeout(start, preferMarketing ? 1500 : 500);
-  } else if (!preferMarketing) {
-    // Authenticated app: allow product analytics after short idle (not marketing).
-    window.setTimeout(() => {
-      markAnalyticsAllowed();
-      start();
-    }, 2500);
   }
 }
 

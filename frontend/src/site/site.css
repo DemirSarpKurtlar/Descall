@@ -721,8 +721,14 @@ body:has(.mkt-consent),
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
+}
+
+.mkt-consent-actions .mkt-btn {
+  min-width: 108px;
+  min-height: 44px;
+  flex: 1 1 108px;
 }
 
 .mkt-consent-privacy {

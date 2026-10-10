@@ -3,7 +3,7 @@
  * Keep in sync with React pages — this is the bot-visible body, not a thin meta stub.
  */
 import { FAQ_ITEMS } from "../faqData.js";
-import { PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
+import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import {
   ALTERNATIVE_HUB_FAQ,
@@ -311,6 +311,9 @@ export function corePageBody(path) {
 
     case "/terms":
       return legalHtml(TERMS_CONTENT.en, isTr);
+
+    case "/copyright":
+      return legalHtml(COPYRIGHT_CONTENT.en, isTr);
 
     case "/discord-alternative":
       return `

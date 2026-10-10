@@ -39,7 +39,7 @@ export default function EmailCapture({ source = "marketing_footer" }) {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
       setStatus("ok");
-      setMessage(t("Thanks — we will email product updates sparingly."));
+      setMessage(t("Check your inbox to confirm. You can unsubscribe any time."));
       setEmail("");
       try {
         localStorage.setItem("descall:waitlist_email", value);

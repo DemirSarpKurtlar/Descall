@@ -1,5 +1,5 @@
 import { Avatar } from "../ui/Avatar";
-import { casinoHiddenOnThisDevice, isCasinoGameCommandName } from "../../lib/casinoCommands";
+import { casinoHiddenOnThisDevice, isCasinoEmbed, isCasinoGameCommandName } from "../../lib/casinoCommands";
 import { displayText } from "../../lib/profanity";
 
 function colorToCss(color) {
@@ -60,6 +60,7 @@ function FieldValue({ value }) {
  */
 export default function SlashCommandEmbed({ embed, type }) {
   if (!embed || typeof embed !== "object") return null;
+  if (casinoHiddenOnThisDevice() && isCasinoEmbed(embed, type)) return null;
 
   const accent = colorToCss(embed.color);
   let fields = Array.isArray(embed.fields) ? embed.fields : [];

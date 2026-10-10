@@ -6,6 +6,7 @@ import {
   Shield, Dice5, Info, HandMetal, X,
 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
+import { casinoHiddenOnThisDevice } from "../../lib/casinoCommands";
 import SlotCabinet from "../games/SlotCabinet";
 import CoinFlipTable from "../games/CoinFlipTable";
 
@@ -421,7 +422,12 @@ function LeaderboardPanel({ content }) {
 
 /* ── Main bubble ──────────────────────────────────────────────── */
 
-export default function GameMessageBubble({
+export default function GameMessageBubble(props) {
+  if (casinoHiddenOnThisDevice()) return null;
+  return <GameMessageBubbleBody {...props} />;
+}
+
+function GameMessageBubbleBody({
   message,
   socket,
   currentUserId,

@@ -269,6 +269,8 @@ export const nested = {
     "profileHint": "Avatar, banner & bio",
     "security": "Security",
     "securityHint": "Email, 2FA, sessions & blocking",
+    "privacy": "Privacy",
+    "privacyHint": "Analytics choice, privacy policy, and terms",
     "appearanceHint": "Theme & look",
     "notificationsHint": "Alerts & sounds",
     "voiceHint": "Devices & mic test",
@@ -3325,6 +3327,23 @@ export const phrases = {
     "Create a server for channels, roles, and voice — or join with an invite.",
   "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.":
     "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.",
+  "This account is closed because the account holder is under 13. Account deletion has started.":
+    "This account is closed because the account holder is under 13. Account deletion has started.",
+  "Your account is closed and deletion has started because you're under 13. If you entered the wrong date, contact us at descall.com/contact.":
+    "Your account is closed and deletion has started because you're under 13. If you entered the wrong date, contact us at descall.com/contact.",
+  "This device can't create an account right now. Try again later.":
+    "This device can't create an account right now. Try again later.",
+  "Analytics are off because this account is under 16.": "Analytics are off because this account is under 16.",
+  "Analytics stay off until you accept. You can change this anytime.":
+    "Analytics stay off until you accept. You can change this anytime.",
+  "Product analytics": "Product analytics",
+  "Not chosen yet": "Not chosen yet",
+  "Accepted": "Accepted",
+  "Rejected": "Rejected",
+  "Terms of Service": "Terms of Service",
+  "Copyright": "Copyright",
+  "Check your inbox to confirm. You can unsubscribe any time.":
+    "Check your inbox to confirm. You can unsubscribe any time.",
 };
 
 const locale = { nested, phrases };

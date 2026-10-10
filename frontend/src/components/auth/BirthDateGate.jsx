@@ -63,7 +63,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
           <div className="age-gate-icon age-gate-icon--warn"><ShieldCheck size={26} /></div>
           <h2 id="age-gate-title">{t("Descall is for ages 13 and up")}</h2>
           <p className="age-gate-text">
-            {t("Your account can't be used because you're under 13. If you entered the wrong date, contact us at descall.com/contact.")}
+            {t("Your account is closed and deletion has started because you're under 13. If you entered the wrong date, contact us at descall.com/contact.")}
           </p>
           <button type="button" className="age-gate-primary" onClick={() => onLogout?.()}>
             <LogOut size={16} />

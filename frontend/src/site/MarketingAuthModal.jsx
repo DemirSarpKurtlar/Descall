@@ -4,7 +4,7 @@ import { useT } from "../context/localeContextInstance";
 import { peekInviteRef } from "../lib/referral";
 import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
-import { isEligibleBirthDate } from "../lib/age";
+import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { isSocialSignupRequired } from "../api/auth";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
 
@@ -50,7 +50,8 @@ function AuthModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [birthDate, setBirthDate] = useState("");
-  const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate));
+  const [deviceBlock, setDeviceBlock] = useState("");
+  const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate) || under13SignupBlocked());
   const [legalModal, setLegalModal] = useState(null);
 
   const [twoFa, setTwoFa] = useState(null);
@@ -60,6 +61,11 @@ function AuthModal({
   // New Google account (also from "Sign in"): the backend created nothing and wants
   // Terms + date of birth first. { provider: "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
+
+  useEffect(() => {
+    if (!isRegistering && !socialSignup) return;
+    if (noteUnder13BirthDate(birthDate)) setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+  }, [birthDate, isRegistering, socialSignup, t]);
 
   useEffect(() => {
     if (!open) {
@@ -104,6 +110,10 @@ function AuthModal({
     e.preventDefault();
     if (isSubmitting || authLoading) return;
     if (signupBlocked) return;
+    if (isRegistering && (under13SignupBlocked() || noteUnder13BirthDate(birthDate))) {
+      setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (isRegistering) {
@@ -146,6 +156,10 @@ function AuthModal({
 
   const submitSocialSignup = async () => {
     if (!socialSignup || isSubmitting || !termsAccepted || !isEligibleBirthDate(birthDate)) return;
+    if (under13SignupBlocked() || noteUnder13BirthDate(birthDate)) {
+      setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+      return;
+    }
     setIsSubmitting(true);
     try {
       await onGoogleLogin?.(socialSignup.credential, withInvite({ termsAccepted: true, birthDate }));
@@ -250,7 +264,7 @@ function AuthModal({
                     {t("Invited by @{username}", { username: inviteRef })}
                   </div>
                 )}
-                {authError && <div className="auth-error">{authError}</div>}
+                {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}
                 <Suspense fallback={null}>
                   <GoogleSignInButton
                   disabled={isSubmitting || authLoading || signupBlocked}

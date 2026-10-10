@@ -1,24 +1,6 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js). Skipped inside the native iOS app: an ads tag there
-         counts as App Store "tracking" and would require an ATT prompt. -->
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      (function () {
-        var cap = window.Capacitor;
-        var nativeIos = !!(cap && typeof cap.getPlatform === "function" && cap.getPlatform() === "ios" &&
-          (typeof cap.isNativePlatform !== "function" || cap.isNativePlatform()));
-        if (nativeIos) return;
-        var s = document.createElement("script");
-        s.async = true;
-        s.src = "https://www.googletagmanager.com/gtag/js?id=AW-18387992694";
-        document.head.appendChild(s);
-        gtag('js', new Date());
-        gtag('config', 'AW-18387992694');
-      })();
-    </script>
     <script>
       /* Mobile boot surface (native Capacitor app + phone/touch web, same rule as
          hooks/useMobile.js; never Electron): the boot splash is the launch-screen

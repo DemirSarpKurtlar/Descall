@@ -297,6 +297,7 @@ Allow: /security
 Allow: /about
 Allow: /privacy
 Allow: /terms
+Allow: /copyright
 Allow: /contact
 Allow: /compare/
 Allow: /discord-alternative

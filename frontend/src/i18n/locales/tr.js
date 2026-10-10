@@ -272,6 +272,8 @@ export const nested = {
     "profileHint": "Avatar, banner ve biyografi",
     "security": "Güvenlik",
     "securityHint": "E-posta, 2FA, oturumlar ve engelleme",
+    "privacy": "Gizlilik",
+    "privacyHint": "Analitik tercihi, gizlilik politikası ve şartlar",
     "appearanceHint": "Tema ve görünüm",
     "notificationsHint": "Uyarılar ve sesler",
     "voiceHint": "Cihazlar ve mikrofon testi",
@@ -3779,6 +3781,23 @@ export const phrases = {
   "Decrease bet": "Bahsi azalt",
   "Increase bet": "Bahsi artır",
   "Audio settings": "Ses ayarları",
+  "This account is closed because the account holder is under 13. Account deletion has started.":
+    "Bu hesap, hesap sahibi 13 yaşından küçük olduğu için kapatıldı. Hesap silme işlemi başlatıldı.",
+  "Your account is closed and deletion has started because you're under 13. If you entered the wrong date, contact us at descall.com/contact.":
+    "13 yaşından küçük olduğun için hesabın kapatıldı ve silme işlemi başlatıldı. Tarihi yanlış girdiysen descall.com/contact adresinden bize yaz.",
+  "This device can't create an account right now. Try again later.":
+    "Bu cihaz şu anda hesap oluşturamıyor. Daha sonra tekrar dene.",
+  "Analytics are off because this account is under 16.": "Bu hesap 16 yaşından küçük olduğu için analitik kapalı.",
+  "Analytics stay off until you accept. You can change this anytime.":
+    "Kabul edene kadar analitik kapalı kalır. Bunu istediğin zaman değiştirebilirsin.",
+  "Product analytics": "Ürün analitiği",
+  "Not chosen yet": "Henüz seçilmedi",
+  "Accepted": "Kabul edildi",
+  "Rejected": "Reddedildi",
+  "Terms of Service": "Hizmet Şartları",
+  "Copyright": "Telif hakkı",
+  "Check your inbox to confirm. You can unsubscribe any time.":
+    "Onaylamak için gelen kutunu kontrol et. İstediğin zaman abonelikten çıkabilirsin.",
   ...TR_INAPP_GAPS,
 };
 

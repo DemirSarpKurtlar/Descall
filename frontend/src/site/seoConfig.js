@@ -289,6 +289,14 @@ export const PUBLIC_ROUTES = [
     priority: "0.5",
   },
   {
+    path: "/copyright",
+    title: "Descall copyright notices",
+    description:
+      "How to send a copyright notice or counter-notice to Descall at contact@descall.com, and how repeat infringement is handled.",
+    changefreq: "yearly",
+    priority: "0.4",
+  },
+  {
     path: "/terms",
     title: "Descall Terms of Service — Age, Acceptable Use & Accounts",
     description:

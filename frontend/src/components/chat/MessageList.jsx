@@ -14,7 +14,7 @@ import GameMessageBubble from "./GameMessageBubble";
 import MessageReactions from "./MessageReactions";
 import MessageContent from "./MessageContent";
 import { displayText } from "../../lib/profanity";
-import { casinoHiddenOnThisDevice } from "../../lib/casinoCommands";
+import { casinoHiddenOnThisDevice, isCasinoChatMessage } from "../../lib/casinoCommands";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import { InviteLinkEmbedList } from "./InviteLinkEmbed";
 import SlashCommandEmbed from "./SlashCommandEmbed";
@@ -319,11 +319,14 @@ export default function MessageList({
         grouped.push({ isActiveBanner: true, banner: msg, id: msg.id });
         return;
       }
+      // Native iOS: casino boards, slash results, and result embeds are not shown.
+      if (casinoHiddenOnThisDevice() && isCasinoChatMessage(msg)) {
+        flush();
+        return;
+      }
       // Game messages render standalone (no grouping)
       if (msg.isGameMessage || msg.type?.startsWith("game_")) {
         flush();
-        // Native iOS app: casino games are not shown.
-        if (casinoHiddenOnThisDevice()) return;
         grouped.push({ isGame: true, gameMsg: msg, id: msg.id });
         return;
       }
@@ -653,6 +656,7 @@ function MessageBubble({
   const reactions = Array.isArray(message.reactions) ? message.reactions : [];
   const reply = message.replyTo || message.reply_to || null;
   const isPinned = Boolean(message.pinnedAt);
+  const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
 
   const togglePin = useCallback(() => {
     if (!message?.id || String(message.id).startsWith("temp-")) return;
@@ -954,6 +958,8 @@ function MessageBubble({
     }
     setPickerOpen(false);
   }, [message?.id, conversationType, conversationId, reactions, currentUserId, socket]);
+
+  if (hideCasino) return null;
 
   return (
     <div className={`message-swipe-wrap ${isOwn ? "own" : ""}${swiping ? " is-swiping" : ""}`}>

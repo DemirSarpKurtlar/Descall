@@ -1,5 +1,6 @@
 const { verifyToken } = require("../config/jwt");
 const { bannedUserIds, banDetailsByUser, revokedSessionIds, usernameById } = require("../runtime/sharedState");
+const ageGate = require("../lib/ageGate");
 
 function socketAuthMiddleware(socket, next) {
   const token = socket.handshake.auth?.token;
@@ -26,13 +27,27 @@ function socketAuthMiddleware(socket, next) {
     if (decoded.sid && revokedSessionIds.has(decoded.sid)) {
       return next(new Error("Authentication failed: session has been signed out."));
     }
-    // After a username change, older tokens still carry the old name; prefer the live one.
-    socket.user = {
-      id: decoded.sub,
-      username: usernameById.get(decoded.sub) || decoded.username,
-      sid: decoded.sid || null,
+    const assign = () => {
+      // After a username change, older tokens still carry the old name; prefer the live one.
+      socket.user = {
+        id: decoded.sub,
+        username: usernameById.get(decoded.sub) || decoded.username,
+        sid: decoded.sid || null,
+      };
     };
-    next();
+    ageGate.enforceChildClosure(decoded.sub).then((block) => {
+      if (block) {
+        const ids = new Set([...(block.sessionIds || []), decoded.sid].filter(Boolean));
+        ids.forEach((sid) => revokedSessionIds.add(sid));
+        return next(new Error("Authentication failed: account closed because the account holder is under 13."));
+      }
+      assign();
+      next();
+    }).catch(() => {
+      assign();
+      next();
+    });
+    return;
   } catch (err) {
     if (err.name === "TokenExpiredError") {
       return next(new Error("Authentication failed: token has expired."));

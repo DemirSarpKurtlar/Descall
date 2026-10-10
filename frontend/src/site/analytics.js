@@ -119,24 +119,50 @@ function googleAdsSignupSendTo() {
   return raw.includes("/") ? raw : `${adsId}/${raw}`;
 }
 
+const CONSENT_DENIED = {
+  ad_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
+  analytics_storage: "denied",
+  functionality_storage: "granted",
+  security_storage: "granted",
+};
+
+const CONSENT_GRANTED = {
+  ad_storage: "granted",
+  ad_user_data: "granted",
+  ad_personalization: "granted",
+  analytics_storage: "granted",
+  functionality_storage: "granted",
+  security_storage: "granted",
+};
+
+function ensureGtagStub() {
+  window.dataLayer = window.dataLayer || [];
+  if (typeof window.gtag !== "function") {
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer.push(arguments);
+    };
+  }
+}
+
 /**
  * Load googletagmanager gtag.js once and `config` each id exactly once.
+ * Consent Mode v2 defaults to denied BEFORE the script tag. This function
+ * only runs after an explicit accept, then updates consent to granted.
  * Safe on SSR (no-op) and when an ad blocker strips the script.
  */
 function ensureGtagConfigs(ids, { anonymizeIpIds } = {}) {
   if (typeof window === "undefined") return;
+  if (!isAnalyticsAllowed()) return;
   if (isNativeIosShell()) return;
   const list = [...new Set((ids || []).map((id) => String(id || "").trim()).filter(Boolean))];
   if (!list.length) return;
 
   try {
-    window.dataLayer = window.dataLayer || [];
-    if (typeof window.gtag !== "function") {
-      window.gtag = function gtag() {
-        // eslint-disable-next-line prefer-rest-params
-        window.dataLayer.push(arguments);
-      };
-    }
+    ensureGtagStub();
+    window.gtag("consent", "default", { ...CONSENT_DENIED, wait_for_update: 500 });
 
     const existing = document.querySelector('script[src*="googletagmanager.com/gtag/js"]');
     if (!existing) {
@@ -145,6 +171,8 @@ function ensureGtagConfigs(ids, { anonymizeIpIds } = {}) {
       s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(list[0])}`;
       document.head.appendChild(s);
     }
+
+    window.gtag("consent", "update", CONSENT_GRANTED);
 
     if (!gtagJsBooted) {
       window.gtag("js", new Date());
@@ -166,13 +194,30 @@ function ensureGtagConfigs(ids, { anonymizeIpIds } = {}) {
   }
 }
 
+/** Stop tags that already booted. Safe to call when nothing was loaded. */
+export function shutdownAnalytics() {
+  pendingEvents.length = 0;
+  try {
+    posthog?.opt_out_capturing?.();
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+      window.gtag("consent", "update", CONSENT_DENIED);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Fire Google Ads Sign-Up conversion only after a confirmed new account.
  * Never throws. Deduped per browser session.
  * send_to: AW-439578855/OLLZCM7ZmuEcEOfhzdEB ("Kaydolma işlemi (2)").
  */
 export function trackGoogleAdsSignUpConversion(properties = {}) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !isAnalyticsAllowed()) return;
   try {
     try {
       if (sessionStorage.getItem(GADS_SIGNUP_SENT_KEY) === "1") return;
@@ -205,15 +250,30 @@ export function trackGoogleAdsSignUpConversion(properties = {}) {
 }
 
 export function initAnalytics() {
-  if (booted || typeof window === "undefined") return;
-  // Stay cold until marketing CTA / engage unlock (or app idle schedule).
-  if (!isAnalyticsAllowed()) return;
+  if (typeof window === "undefined") return;
+  if (!isAnalyticsAllowed()) {
+    shutdownAnalytics();
+    return;
+  }
+  if (booted) {
+    try {
+      posthog?.opt_in_capturing?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (typeof window.gtag === "function") window.gtag("consent", "update", CONSENT_GRANTED);
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
   booted = true;
 
   const phKey = posthogKey();
   if (phKey) {
     loadPosthog().then((ph) => {
-      if (!ph) return;
+      if (!ph || !isAnalyticsAllowed()) return;
       try {
         ph.init(phKey, {
           api_host: posthogHost(),
@@ -223,12 +283,28 @@ export function initAnalytics() {
           capture_pageleave: true,
           capture_exceptions: true,
           persistence: "localStorage+cookie",
+          respect_dnt: true,
+          mask_all_text: true,
+          autocapture: {
+            capture_copied_text: false,
+            element_allowlist: ["a", "button", "form"],
+          },
           // Session replay is never used (web, desktop, iOS): no screen/DOM recording,
           // even if it is switched on in the PostHog project settings.
           disable_session_recording: true,
+          session_recording: {
+            maskAllInputs: true,
+            maskTextSelector: "*",
+          },
           disable_surveys: preferMarketingAnalyticsCold(),
           advanced_disable_feature_flags_on_first_load: false,
           loaded: (instance) => {
+            if (!isAnalyticsAllowed()) {
+              try { instance.opt_out_capturing(); } catch { /* ignore */ }
+              pendingEvents.length = 0;
+              return;
+            }
+            try { instance.opt_in_capturing(); } catch { /* ignore */ }
             posthogReady = true;
             flushPendingEvents();
             // Attach UTM / ref once for session correlation
@@ -340,6 +416,7 @@ export async function beaconConsent(choice) {
 }
 
 export function trackPageView(path) {
+  if (!isAnalyticsAllowed()) return;
   const page = path || (typeof window !== "undefined" ? window.location.pathname + window.location.search : "/");
   try {
     if (posthogReady && posthog) {
@@ -369,7 +446,7 @@ export function trackPageView(path) {
  * @param {Record<string, unknown>} [properties]
  */
 export function trackEvent(event, properties = {}) {
-  if (!event) return;
+  if (!event || !isAnalyticsAllowed()) return;
   try {
     if (posthogReady && posthog) {
       posthog.capture(event, properties);
@@ -389,7 +466,7 @@ export function trackEvent(event, properties = {}) {
 }
 
 export function identifyUser(user) {
-  if (!user?.id) return;
+  if (!user?.id || !isAnalyticsAllowed()) return;
   try {
     const props = {
       username: user.username || undefined,

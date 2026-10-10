@@ -41,6 +41,8 @@ import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
 import { useLocale } from "../../context/LocaleContext";
+import LegalContentModal from "../legal/LegalContentModal";
+import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
 import {
   getNativePushPermission,
   isNativeIosPush,
@@ -158,6 +160,61 @@ function Toggle({ value, onChange, label }) {
   );
 }
 
+function PrivacySettingsSection() {
+  const { t } = useLocale();
+  const [choice, setChoice] = useState(() => getCookieConsent()?.choice || "");
+  const [legal, setLegal] = useState(null);
+  const under16 = analyticsBlockedByAge();
+  const apply = (next) => {
+    setCookieConsent(next);
+    setChoice(next);
+    import("../../site/analytics")
+      .then((m) => {
+        if (isAnalyticsAllowed()) m.initAnalytics();
+        else m.shutdownAnalytics();
+      })
+      .catch(() => {});
+  };
+  return (
+    <div className="us-tab">
+      <section className="us-section">
+        <h3 className="us-section-title">{t("Product analytics")}</h3>
+        <p className="us-muted">
+          {under16
+            ? t("Analytics are off because this account is under 16.")
+            : t("Analytics stay off until you accept. You can change this anytime.")}
+        </p>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button type="button" className="us-btn ghost" disabled={under16} onClick={() => apply("rejected")}>
+            {t("Reject")}
+          </button>
+          <button type="button" className="us-btn" disabled={under16} onClick={() => apply("accepted")}>
+            {t("Accept")}
+          </button>
+        </div>
+        <p className="us-muted" style={{ marginTop: 8 }}>
+          {under16
+            ? t("Analytics are off because this account is under 16.")
+            : choice === "accepted"
+              ? t("Accepted")
+              : choice === "rejected"
+                ? t("Rejected")
+                : t("Not chosen yet")}
+        </p>
+      </section>
+      <section className="us-section" style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+        <button type="button" className="us-btn ghost" onClick={() => setLegal("privacy")}>
+          {t("Privacy Policy")}
+        </button>
+        <button type="button" className="us-btn ghost" onClick={() => setLegal("terms")}>
+          {t("Terms of Service")}
+        </button>
+      </section>
+      <LegalContentModal open={Boolean(legal)} type={legal || "privacy"} onClose={() => setLegal(null)} />
+    </div>
+  );
+}
+
 function SettingRow({ icon: Icon, title, description, children }) {
   return (
     <div className="us-row">
@@ -184,6 +241,7 @@ const NAV_GROUPS_DEF = [
       { id: "overview", labelKey: "settings.myAccount", icon: User, hintKey: "settings.accountHint" },
       { id: "profile", labelKey: "settings.profile", icon: Type, hintKey: "settings.profileHint" },
       { id: "security", labelKey: "settings.security", icon: Shield, hintKey: "settings.securityHint" },
+      { id: "privacy", labelKey: "settings.privacy", icon: Lock, hintKey: "settings.privacyHint" },
     ],
   },
   {
@@ -213,6 +271,7 @@ const TAB_TITLE_KEYS = {
   overview: "settings.myAccount",
   profile: "settings.profile",
   security: "settings.security",
+  privacy: "settings.privacy",
   appearance: "settings.appearance",
   notifications: "settings.notifications",
   language: "settings.language",
@@ -1921,6 +1980,9 @@ const UserPanel = forwardRef(function UserPanel({
             <DeleteAccountSection onDeleted={() => onLogout?.()} />
           </div>
         );
+
+      case "privacy":
+        return <PrivacySettingsSection />;
 
       case "shop":
         return (

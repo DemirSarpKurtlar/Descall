@@ -9,6 +9,8 @@ const supabase = require("../db/supabase");
 const MIN_AGE = 13;
 const ADULT_AGE = 18;
 const MAX_AGE = 120;
+const CHILD_ACCOUNT_ERROR =
+  "This account is closed because the account holder is under 13. Account deletion has started.";
 
 /** Parse "YYYY-MM-DD" into a UTC date string, or null if invalid. */
 function parseBirthDate(raw) {
@@ -73,6 +75,53 @@ function forgetBirthDateCache(userId) {
   birthCache.delete(String(userId));
 }
 
+/** userId -> true once deletion has been requested for an under-13 account this process. */
+const childClosureStarted = new Set();
+
+function noteChildClosure(userId) {
+  if (userId) childClosureStarted.add(String(userId));
+}
+
+/**
+ * When birth_date is known and age is under 13, start account deletion once and
+ * report a block. Unknown birth date is allowed (legacy accounts). A failed
+ * lookup fails open so a database blip does not lock everyone out.
+ * Returns null when the account may continue, or a 403 payload.
+ */
+async function enforceChildClosure(userId) {
+  if (!userId) return null;
+  let birthDate;
+  try {
+    birthDate = await getBirthDate(userId);
+  } catch (err) {
+    console.warn("[age] birth lookup failed:", err?.message || err);
+    return null;
+  }
+  if (!birthDate) return null;
+  const age = ageFromBirthDate(birthDate);
+  if (age == null || age >= MIN_AGE) return null;
+
+  let sessionIds = [];
+  const key = String(userId);
+  if (!childClosureStarted.has(key)) {
+    try {
+      const accountDeletion = require("./accountDeletion");
+      const result = await accountDeletion.requestDeletion(userId);
+      sessionIds = result?.sessionIds || [];
+      childClosureStarted.add(key);
+    } catch (err) {
+      console.error("[age] under-13 closure failed:", err?.message || err);
+    }
+  }
+  return {
+    status: 403,
+    code: "under_age",
+    error: CHILD_ACCOUNT_ERROR,
+    deletionStarted: true,
+    sessionIds,
+  };
+}
+
 async function getBirthDate(userId) {
   const key = String(userId);
   const hit = birthCache.get(key);
@@ -105,10 +154,13 @@ async function casinoAccess(userId) {
 module.exports = {
   MIN_AGE,
   ADULT_AGE,
+  CHILD_ACCOUNT_ERROR,
   parseBirthDate,
   ageFromBirthDate,
   validateBirthDate,
   ageGroup,
   casinoAccess,
   forgetBirthDateCache,
+  noteChildClosure,
+  enforceChildClosure,
 };

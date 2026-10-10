@@ -29,6 +29,7 @@ export const SEO_COMPANY = [
   { to: "/status", label: "Status" },
   { to: "/privacy", label: "Privacy" },
   { to: "/terms", label: "Terms" },
+  { to: "/copyright", label: "Copyright" },
   { to: "/contact", label: "Contact" },
   { to: "/blog", label: "Blog" },
   { to: "/blog/migrate-from-discord-to-descall", label: "Migrate from Discord" },
@@ -54,7 +55,7 @@ export function hubLinksForPath(pathname = "/") {
   if (p.includes("discord") || p === "/alternatives" || p === "/apps-like-discord") {
     return [...SEO_PILLARS, ...SEO_NICHES.slice(0, 5), { to: "/blog", label: "Blog" }];
   }
-  if (["/about", "/security", "/privacy", "/terms", "/contact", "/faq", "/who-owns-descall", "/descall-sahibi"].includes(p)) {
+  if (["/about", "/security", "/privacy", "/terms", "/copyright", "/contact", "/faq", "/who-owns-descall", "/descall-sahibi"].includes(p)) {
     return [...SEO_COMPANY, ...SEO_PILLARS.slice(0, 3)];
   }
   return SEO_DEFAULT_RELATED;
