@@ -295,5 +295,12 @@ export const MARKETING_TR = {
   "You must be at least 13 years old to use Descall.": "Descall'u kullanmak için en az 13 yaşında olmalısın.",
   "Not shown on your profile. Some features, like casino games, are only for users 18 and over.": "Profilinde görünmez. Casino oyunları gibi bazı özellikler yalnızca 18 yaş ve üstü içindir.",
   "Enter a valid date of birth.": "Geçerli bir doğum tarihi gir.",
+  "Copyright": "Telif hakkı",
+  "Check your inbox to confirm. You can unsubscribe any time.":
+    "Onaylamak için gelen kutunu kontrol et. İstediğin zaman abonelikten çıkabilirsin.",
+  "This device can't create an account right now. Try again later.":
+    "Bu cihaz şu anda hesap oluşturamıyor. Daha sonra tekrar dene.",
+  "This account is closed because the account holder is under 13. Account deletion has started.":
+    "Bu hesap, hesap sahibi 13 yaşından küçük olduğu için kapatıldı. Hesap silme işlemi başlatıldı.",
   ...TR_I18N_GAPS,
 };

@@ -1,12 +1,12 @@
 # Liquid Glass — progress log
 
-## Gizlilik · 2.9.191
+## Gizlilik · 2.9.192
 
 Analitik ve reklam etiketleri artık onaydan önce yüklenmez. Reddetmek kabul etmek kadar kolaydır. Seçim Ayarlar → Gizlilik’ten değiştirilir. 16 yaşından küçük hesaplarda analitik kapalı kalır. 13 yaşından küçük doğum tarihi hesabı kapatır ve silmeyi başlatır. iPhone sohbetinde casino oyun sonucu gösterilmez. App Store’a gönderilmedi.
 
 ### TestFlight kontrol listesi (Demir)
 
-Sürüm **2.9.191**. Yalnız iPhone.
+Sürüm **2.9.192**. Yalnız iPhone.
 
 - [ ] Uygulamayı aç: alttaki çerez çubuğunda Reddet ve Kabul aynı boyda. Reddet’e basınca çubuk kapanır, bir daha kendiliğinden açılmaz.
 - [ ] Ayarlar → Gizlilik: Gizlilik Politikası ve Hizmet Şartları açılır. Analitik tercihi buradan değişir.
