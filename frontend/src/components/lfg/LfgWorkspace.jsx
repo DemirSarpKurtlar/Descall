@@ -21,6 +21,7 @@ import { useT } from "../../context/LocaleContext";
 import { useMobile } from "../../hooks/useMobile";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import { useIsNarrowViewport } from "../../lib/useIsNarrowViewport";
+import { useGlassShell } from "../layout/glass/GlassShell";
 
 const FALLBACK_RANKS = [
   "Iron 1", "Iron 2", "Iron 3",
@@ -55,6 +56,7 @@ export default function LfgWorkspace({
   onClose,
 }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const [meta, setMeta] = useState({
     ranks: FALLBACK_RANKS,
     modes: [
@@ -225,12 +227,14 @@ export default function LfgWorkspace({
     }
   };
 
-  const handleJoin = async () => {
-    if (!selectedId) return;
+  const handleJoin = async (lobbyId) => {
+    const id = typeof lobbyId === "string" ? lobbyId : selectedId;
+    if (!id) return;
     setBusy(true);
     setError("");
     try {
-      const res = await joinLfgLobby(selectedId, { myRank: joinRank || filters.myRank });
+      const res = await joinLfgLobby(id, { myRank: joinRank || filters.myRank });
+      setSelectedId(id);
       setDetail(res);
       if (res.group) {
         onGroupCreated?.(res.group);
@@ -375,12 +379,23 @@ export default function LfgWorkspace({
               </button>
             </div>
           ) : (
-            lobbies.map((lobby) => (
-              <button
+            lobbies.map((lobby) => {
+              const CardTag = glassShell ? "div" : "button";
+              return (
+              <CardTag
                 key={lobby.id}
-                type="button"
+                type={glassShell ? undefined : "button"}
+                role={glassShell ? "button" : undefined}
+                tabIndex={glassShell ? 0 : undefined}
                 className={`lfg-lobby-card ${selectedId === lobby.id ? "active" : ""}`}
                 onClick={() => openLobby(lobby.id)}
+                onKeyDown={glassShell ? (e) => {
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openLobby(lobby.id);
+                  }
+                } : undefined}
               >
                 <div className="lfg-lobby-card-top">
                   <span className="lfg-mode">{trLabel(t, modeLabel(meta.modes, lobby.mode))}</span>
@@ -393,14 +408,31 @@ export default function LfgWorkspace({
                   {lobby.rankMin} – {lobby.rankMax}
                 </div>
                 <div className="lfg-lobby-card-meta">
-                  <span>{lobby.hostUsername}</span>
+                  {!glassShell && <span>{lobby.hostUsername}</span>}
                   <span>{trLabel(t, regionLabel(meta.regions, lobby.region))}</span>
                   {lobby.micRequired && <span className="lfg-mic-tag"><Mic size={11} /> {t("Mic")}</span>}
                   {lobby.hasPartyCode && <span className="lfg-code-tag">{t("Code set")}</span>}
                 </div>
                 {lobby.note ? <p className="lfg-lobby-note">{lobby.note}</p> : null}
-              </button>
-            ))
+                {glassShell && (
+                  <div className="lfg-card-foot">
+                    <Avatar name={lobby.hostUsername || "?"} size={28} />
+                    <span className="lfg-card-host">{lobby.hostUsername}</span>
+                    <button
+                      type="button"
+                      className="lfg-join"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleJoin(lobby.id);
+                      }}
+                    >
+                      {t("Join")}
+                    </button>
+                  </div>
+                )}
+              </CardTag>
+              );
+            })
           )}
         </div>
       </aside>

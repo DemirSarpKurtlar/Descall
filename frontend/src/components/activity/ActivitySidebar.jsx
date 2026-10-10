@@ -195,10 +195,13 @@ export default function ActivitySidebar({
                   ) : null}
                 </div>
                 <div className="g-activity-me">
-                  <Avatar name={me?.displayName || me?.username || t("You")} user={me} size={44} />
+                  <span className="g-activity-av">
+                    <Avatar name={me?.displayName || me?.username || t("You")} user={me} size={52} />
+                    <StatusBadge status={myStatus || "online"} />
+                  </span>
                   <div>
                     <strong>{myStatus === "idle" ? t("Idle") : myStatus === "dnd" ? t("Do Not Disturb") : myStatus === "invisible" ? t("Invisible") : t("Online")}</strong>
-                    <span>{me?.customStatus || me?.custom_status || currentActivity?.displayName || t("Online")}</span>
+                    <span className="g-activity-sub">{me?.customStatus || me?.custom_status || currentActivity?.displayName || t("Online")}</span>
                   </div>
                 </div>
                 <button

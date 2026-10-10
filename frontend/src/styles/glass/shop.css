@@ -154,3 +154,39 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-actions button.
   background: rgba(255, 255, 255, 0.08);
   color: var(--g-t1);
 }
+
+/* 21b: wallet + count stay above the scrolling cards. The daily claim scrolls away. */
+html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-bar {
+  position: sticky !important;
+  top: 0;
+  z-index: 8 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -16px 8px;
+  padding: 4px 16px 10px;
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.96) 0%, rgba(var(--g-edge-rgb, 13, 14, 19), 0.88) 70%, rgba(var(--g-edge-rgb, 13, 14, 19), 0) 100%) !important;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .g-shop-count {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--g-t2);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .shop-lead,
+html.glass-ui .user-settings.is-mobile.g-settings .descoin-daily-card,
+html.glass-ui .user-settings.is-mobile.g-settings .descoin-daily-claim,
+html.glass-ui .user-settings.is-mobile.g-settings .shop-item-card {
+  position: relative !important;
+  top: auto !important;
+  z-index: 0 !important;
+}

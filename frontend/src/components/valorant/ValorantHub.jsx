@@ -3,6 +3,7 @@ import { ArrowLeft, Crosshair, Sparkles } from "lucide-react";
 import LfgWorkspace from "../lfg/LfgWorkspace";
 import CompanionAuthPanel from "./CompanionAuthPanel";
 import { useT } from "../../context/LocaleContext";
+import { useGlassShell } from "../layout/glass/GlassShell";
 import {
   getPublicFeatures,
   readStoredValorantTab,
@@ -24,10 +25,14 @@ export default function ValorantHub({
   onJoinVoice,
 }) {
   const t = useT();
+  const glassShell = useGlassShell();
   const features = usePublicFeatures();
   const showCompanion = features.valorantCompanion !== false;
   const showLfg = features.valorantLfg !== false;
   const showTabs = showCompanion && showLfg;
+  /* iOS glass hides Companion. The hub header is the opaque bar the LFG
+     glass rules never reached — drop it and let LfgWorkspace own Back. */
+  const glassLfg = Boolean(glassShell) && !showTabs;
   // Default Companion when both tabs are enabled. sessionStorage can still
   // force LFG/Companion after RSO, but only if that tab is enabled.
   const [tab, setTab] = useState(() => resolveValorantTab(readStoredValorantTab(), getPublicFeatures()) || "companion");
@@ -51,7 +56,8 @@ export default function ValorantHub({
   }, []);
 
   return (
-    <div className="valorant-hub" data-tab={tab}>
+    <div className="valorant-hub" data-tab={tab} data-glass-lfg={glassLfg ? "1" : undefined}>
+      {glassLfg ? null : (
       <header className="valorant-hub-header">
         <div className="valorant-hub-header-left">
           {onClose ? (
@@ -101,6 +107,7 @@ export default function ValorantHub({
         </div>
         ) : null}
       </header>
+      )}
 
       <div className="valorant-hub-body">
         {/* Active-only Companion mount — never leave accordion/card under LFG. */}
@@ -130,12 +137,13 @@ export default function ValorantHub({
           aria-hidden={tab !== "lfg"}
         >
           {/*
-            Do not pass onClose — hub header owns Back to Descall.
-            LfgWorkspace still mounts 1:1 for create/join/party code/Riot rank.
+            Desktop hub header owns Back. On iOS glass the hub header is gone,
+            so LfgWorkspace draws the glass back button.
           */}
           <LfgWorkspace
             me={me}
             socket={socket}
+            onClose={glassLfg ? onClose : undefined}
             onGroupCreated={onGroupCreated}
             onOpenGroup={onOpenGroup}
             onJoinVoice={onJoinVoice}

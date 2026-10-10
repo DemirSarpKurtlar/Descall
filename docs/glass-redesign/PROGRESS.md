@@ -1,5 +1,9 @@
 # Liquid Glass — progress log
 
+## Round 2 audit fixes · 2.9.169
+
+Dimaru’nun 2.9.168 turu. Fotoğraf avatarı grup aramasında 72pt çekirdeğe sığıyor (konuşma halkası merkezde). Uzun basışın parmak kalkışı menüyü (Düzenle / Şikayet / kapat) tetiklemiyor. Oyna: Valorant hub başlığı kalkıyor, cam LFG başlığı, çip filtreler, cam kart, Katıl. Mağaza: yapışkan cüzdan + “Bannerlar · N”, günlük ödül listenin altında kayboluyor. Ek menüsü scrim’i `+` düğmesinin altında. Aktivite durum kartında harf ve durum noktası. Ayarlar: Çıkış Yap listeyle kayıyor, ad 17px, sol üst avatar noktalı. Sohbet üst solması 150px. App Store’a gönderilmedi. `mobile-glass.css` duruyor. Ölçüler: `docs/glass-redesign/compare/stage7/REPORT.md`.
+
 ## Stage 7 audit fixes · 2.9.168
 
 Dimaru’nun 25 ekran denetimindeki zorunlu farklar (ayarlar/profil/oyna/mağaza düz panel, arama kontrol çubuğu, 1:1 karo, mesaj menüsü, sohbet üst solması, aktivite durum kartı, mağaza çipleri, konuşma halkası, ek menüsü, harf avatarları). Ölçüler: `docs/glass-redesign/compare/stage7/REPORT.md` son bölüm. App Store’a gönderilmedi. `mobile-glass.css` duruyor.

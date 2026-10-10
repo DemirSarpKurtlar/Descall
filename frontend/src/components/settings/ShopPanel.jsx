@@ -389,6 +389,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     return null;
   };
 
+  const activeTabMeta = availableTabs.find((tab) => tab.id === activeCategory) || null;
   const wallet = (
     <div className="shop-wallet-bar">
       <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
@@ -396,6 +397,9 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         <span>{balance.toLocaleString()}</span>
         <span className="shop-wallet-label">DesCoin</span>
       </div>
+      {glassShell && isMobile && activeTabMeta ? (
+        <span className="g-shop-count">{t(activeTabMeta.label)} · {visibleItems.length}</span>
+      ) : null}
     </div>
   );
 

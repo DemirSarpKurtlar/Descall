@@ -348,3 +348,38 @@ html.glass-ui .user-settings-shell.g-settings:not(.g-settings-menu) ~ .g-tabbar,
 html.glass-ui .user-settings-shell.g-settings:not(.g-settings-menu) ~ .g-edge-bot {
   display: none !important;
 }
+
+/* Logout scrolls with the list. A flex:1 nav kept the foot pinned over the last row. */
+html.glass-ui .user-settings.is-mobile.g-settings .us-nav {
+  flex: none !important;
+  min-height: auto !important;
+  overflow: visible !important;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-mini-meta strong,
+html.glass-ui .user-settings.is-mobile.g-settings .us-mini-name {
+  font-size: 17px !important;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .g-settings-me {
+  overflow: visible;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .g-settings-me-av {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: block;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .g-settings-me-av .status-badge {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
+  border-width: 2px;
+  right: -1px;
+  bottom: -1px;
+}

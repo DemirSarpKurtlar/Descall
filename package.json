@@ -1,6 +1,6 @@
 {
   "name": "descall-root",
-  "version": "2.9.168",
+  "version": "2.9.169",
   "private": true,
   "scripts": {
     "postinstall": "echo 'Install handled by Render Blueprint'",

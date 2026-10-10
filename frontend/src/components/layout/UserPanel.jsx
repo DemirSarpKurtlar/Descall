@@ -2449,11 +2449,14 @@ const UserPanel = forwardRef(function UserPanel({
                   aria-label={t("Your status")}
                   onClick={() => window.dispatchEvent(new CustomEvent("descall:glass-status-open"))}
                 >
-                  <Avatar
-                    name={me?.username || t("User")}
-                    size={38}
-                    user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-                  />
+                  <span className="g-settings-me-av">
+                    <Avatar
+                      name={me?.username || t("User")}
+                      size={38}
+                      user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
+                    />
+                    <StatusBadge status={myStatus || "online"} />
+                  </span>
                 </button>
               )}
               <h2>{glassShell && isMobile ? t("Settings") : t("settings.title")}</h2>

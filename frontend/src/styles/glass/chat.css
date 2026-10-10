@@ -1149,6 +1149,11 @@ html.glass-ui .g-attach-scrim {
   backdrop-filter: blur(8px) saturate(120%);
 }
 
+html.glass-ui .app-root.g-shell .composer-action-btn.is-open {
+  position: relative;
+  z-index: 85;
+}
+
 html.glass-ui .app-root.g-shell .composer-action-btn.is-open svg {
   transform: rotate(45deg);
   transition: transform 0.18s ease;
@@ -1159,9 +1164,12 @@ html.glass-ui .g-edge-conv {
   top: 0;
   left: 0;
   right: 0;
-  height: calc(var(--g-chrome-top) + 64px);
-  z-index: 40;
+  height: 150px;
+  z-index: 45;
   pointer-events: none;
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.97) 0%, rgba(var(--g-edge-rgb, 13, 14, 19), 0.92) 68%, rgba(var(--g-edge-rgb, 13, 14, 19), 0) 100%) !important;
+  -webkit-mask: linear-gradient(180deg, #000 0%, #000 72%, transparent 100%);
+  mask: linear-gradient(180deg, #000 0%, #000 72%, transparent 100%);
 }
 
 /* ── Long-press message menu (04) ── */

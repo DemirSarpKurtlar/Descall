@@ -394,6 +394,58 @@ html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring {
   z-index: 3;
 }
 
+/* Avatar.jsx paints inline min/max = the call size (96). That beats a 72px
+   width and anchors the photo at the top-left of the core, so the ring
+   (centered on the core) sits ~12px up-left of a photo. Fill the core. */
+html.glass-ui .g-call .participant-tile-avatar-core {
+  display: grid !important;
+  place-items: center !important;
+  overflow: visible !important;
+}
+
+html.glass-ui .g-call .participant-tile-avatar-core > .ui-avatar {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  justify-self: center;
+  align-self: center;
+}
+
+html.glass-ui .g-call .participant-tile-avatar-core > .ui-avatar {
+  position: relative !important;
+}
+
+html.glass-ui .g-call .participant-tile-avatar-core > .ui-avatar .ui-avatar-inner {
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+html.glass-ui .g-call .participant-tile-avatar-core > .ui-avatar .ui-avatar-img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+}
+
+html.glass-ui .g-call .participant-tile-avatar-core > .ui-avatar .ui-avatar-frame-overlay {
+  width: 132% !important;
+  height: 132% !important;
+}
+
 html.glass-ui .g-call .call-control-bar.g-call-ctrl > :first-child {
   justify-self: start;
 }
