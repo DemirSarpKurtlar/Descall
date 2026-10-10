@@ -1,4 +1,5 @@
--- NEEDS APPROVAL — do not apply until Demir says so.
+-- APPLIED 2026-10-10 with Demir's approval. The index is valid and ready
+-- in production. Do not run this statement again.
 -- Run this statement by itself in the Supabase SQL editor.
 -- CREATE INDEX CONCURRENTLY cannot run inside a transaction block, so do not
 -- paste it into a migration runner that wraps the file in BEGIN/COMMIT.

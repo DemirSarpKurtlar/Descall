@@ -64,10 +64,10 @@ Cache work from 2.9.173 (`frontend/src/lib/chatCache.js`, gzip JSON, batched gro
 - Evidence: `sitemap.selftest.cjs` line 26 fails. `robots.txt` allows `/faq`. Pre-existing, called out in the glass handoff.
 - Plan: confirm the marketing route, then add the URL or drop the assertion. Not in this batch.
 
-### P3 — Group-message index left unapplied
+### P3 — Group-message index
 
-- File: `supabase/migrations/20261010_chat_list_indexes.sql` says “NEEDS APPROVAL”.
-- Evidence in that file: EXPLAIN was 0.17 ms / 1.4 ms. The multi-second group list was HTTP fan-out, already batched. The index does not change current latency. Not applied.
+- `idx_group_messages_group_created` from `supabase/migrations/20261010_chat_list_indexes.sql` was applied to production on 2026-10-10 with Demir's approval. It is valid and ready. Do not re-apply.
+- EXPLAIN at the time was 0.17 ms / 1.4 ms. The multi-second group list was HTTP fan-out, already batched. The index does not change that latency.
 
 ### P3 — Supabase performance advisors
 
