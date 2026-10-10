@@ -10,7 +10,7 @@ Pushed to App Store Connect by `.github/workflows/appstore-metadata.yml` (manual
 | `screenshots/iphone69/` | iPhone 6.9" (1320×2868) → `APP_IPHONE_67`, used for both locales |
 | `screenshots/ipad13/` | iPad 13" (2064×2752) → `APP_IPAD_PRO_3GEN_129`, used for both locales |
 
-Inputs: `mode` (`apply` / `verify`), `submit` (default false; true submits for review with manual release), `version` (default = `frontend/package.json`), `wait_build_minutes`.
+Inputs: `mode` (`verify` = read-only report, default; `apply` = write the listing, rename the rejected/editable version, attach the build, replace screenshots, never submits; `submit` = read-only verify, then submit for review with manual release only if verify has no errors or warnings, needs `build`), `version` (default = `frontend/package.json`), `build` (exact build number), `wait_build_minutes`.
 
 Secrets: `ASC_KEY_P8`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_DEMO_USERNAME`, `ASC_DEMO_PASSWORD`, `ASC_DEMO_B_USERNAME`, `ASC_DEMO_B_PASSWORD`, `ASC_REVIEW_PHONE`.
 

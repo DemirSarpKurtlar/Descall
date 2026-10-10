@@ -11,7 +11,11 @@
 # ASC_DEMO_B_USERNAME / ASC_DEMO_B_PASSWORD (account B, in the review notes), ASC_REVIEW_PHONE.
 # GitHub masks secret values in logs; the script additionally never prints them.
 #
-# submit=true submits the version for review (manual release after approval). Default: false.
+# mode=apply   writes the listing (renames the rejected/editable version, attaches the build, replaces
+#               screenshots). Never submits.
+# mode=verify   read-only report (screenshot counts per locale, attached build, review submissions).
+# mode=submit   read-only verify, then submits for review (manual release) only if verify is clean.
+#               Requires the exact build number. Run it only after the owner confirms.
 # App Privacy nutrition labels are not in the API and must be set in the App Store Connect web UI.
 
 name: App Store metadata
@@ -24,14 +28,10 @@ on:
         required: false
         default: ""
       mode:
-        description: "apply = write metadata, verify = read-only report"
+        description: "apply = write metadata (no submit), verify = read-only report, submit = verify then submit for review"
         type: choice
-        options: [apply, verify]
-        default: apply
-      submit:
-        description: "Submit for review after applying (manual release)"
-        type: boolean
-        default: false
+        options: [verify, apply, submit]
+        default: verify
       build:
         description: "Exact build number to attach, e.g. 20261008.2053 (blank = latest VALID build of the version)"
         required: false
@@ -104,7 +104,6 @@ jobs:
           REVIEW_LAST_NAME: "Kurtlar"
           REVIEW_EMAIL: "team@descall.com"
           MODE: ${{ inputs.mode }}
-          SUBMIT: ${{ inputs.submit }}
           WAIT_BUILD: ${{ inputs.wait_build_minutes }}
           BUILD_NUMBER: ${{ inputs.build }}
         run: |
@@ -113,12 +112,14 @@ jobs:
           for v in "$DEMO_A_USERNAME" "$DEMO_A_PASSWORD" "$DEMO_B_USERNAME" "$DEMO_B_PASSWORD" "$REVIEW_PHONE"; do
             [ -n "$v" ] && echo "::add-mask::$v"
           done
-          args=(--mode "${MODE:-apply}" --wait-build-minutes "${WAIT_BUILD:-0}")
+          args=(--mode "${MODE:-verify}" --wait-build-minutes "${WAIT_BUILD:-0}")
           if [ -n "${BUILD_NUMBER}" ]; then
             [[ "$BUILD_NUMBER" =~ ^[0-9.]+$ ]] || { echo "::error::bad build number"; exit 1; }
             args+=(--build "$BUILD_NUMBER")
           fi
-          if [ "${SUBMIT}" = "true" ]; then args+=(--submit); fi
+          if [ "${MODE}" = "submit" ] && [ -z "${BUILD_NUMBER}" ]; then
+            echo "::error::mode=submit needs the exact build number input"; exit 1
+          fi
           python appstore/asc_metadata.py "${args[@]}"
 
       - name: Remove API key

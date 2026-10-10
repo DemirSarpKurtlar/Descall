@@ -4,8 +4,13 @@
 
 Modes:
   apply   create/update the App Store version record and everything below, then verify
-  verify  read-only: print what is currently set (no writes)
-With --submit (apply mode only) it also submits the version for review (manual release).
+          (renames the editable/rejected version to APP_VERSION, attaches the build, replaces
+          screenshots whose checksums differ). Never submits.
+  verify  read-only: print what is currently set (no writes), plus screenshot counts per locale,
+          attached build, banned listing words and review submissions
+  submit  read-only verify first; only if it reports no errors and no warnings, submit the version
+          for review (manual release). Resubmits an UNRESOLVED_ISSUES submission (items marked
+          resolved) or creates/uses a READY_FOR_REVIEW one. Requires --build.
 
 Inputs (env): ASC_KEY_PATH, ASC_KEY_ID, ASC_ISSUER_ID, ASC_APP_ID, APP_VERSION,
   DEMO_A_USERNAME, DEMO_A_PASSWORD, DEMO_B_USERNAME, DEMO_B_PASSWORD, REVIEW_PHONE,
@@ -24,6 +29,8 @@ EDITABLE_VERSION_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJE
                            "INVALID_BINARY", "DEVELOPER_REMOVED_FROM_SALE"}
 SCREENSHOT_SETS = [("iphone69", "APP_IPHONE_67", (1320, 2868)), ("ipad13", "APP_IPAD_PRO_3GEN_129", (2064, 2752))]
 EXCLUDED_TERRITORIES = {"CHN"}  # China mainland
+# Removed / hidden features that must never appear in the live listing text (case-insensitive).
+BANNED_LISTING = ["valorant", "riot", "dimaai", "dima ai", "call recording", "record calls", "arama kayd", "görüşme kayd"]
 
 errors, warnings = [], []
 def log(msg): print(msg, flush=True)
@@ -237,8 +244,13 @@ def md5(path):
 
 
 @step("Screenshots")
-def screenshots(asc, vlocs, apply):
+def screenshots(asc, vlocs, apply, ver=None):
     from PIL import Image
+    if ver:
+        all_locs = {l["attributes"]["locale"]: l for l in asc.get_all(f"/v1/appStoreVersions/{ver['id']}/appStoreVersionLocalizations")}
+        extra = sorted(set(all_locs) - set(vlocs))
+        if extra:
+            warn(f"version has localizations not in metadata.json (screenshots not managed there): {extra}")
     for folder, display_type, size in SCREENSHOT_SETS:
         files = sorted((HERE / "screenshots" / folder).glob("*.png"))
         if not files:
@@ -294,6 +306,17 @@ def screenshots(asc, vlocs, apply):
             asc.req("PATCH", f"/v1/appScreenshotSets/{sset['id']}/relationships/appScreenshots",
                     {"data": [{"type": "appScreenshots", "id": i} for i in ids]})
             log(f"  {locale} {display_type}: uploaded {len(ids)} screenshots (COMPLETE)")
+    # Final per-locale report (always)
+    for locale, loc in vlocs.items():
+        if not loc:
+            continue
+        for s in asc.get_all(f"/v1/appStoreVersionLocalizations/{loc['id']}/appScreenshotSets"):
+            shots = asc.get_all(f"/v1/appScreenshotSets/{s['id']}/appScreenshots")
+            states = sorted({(x["attributes"].get("assetDeliveryState") or {}).get("state") for x in shots})
+            log(f"  report {locale} {s['attributes']['screenshotDisplayType']}: {len(shots)} screenshots, states={states}")
+            managed = {dt for _, dt, _ in SCREENSHOT_SETS}
+            if s["attributes"]["screenshotDisplayType"] in managed and (len(shots) == 0 or states != ["COMPLETE"]):
+                (err if apply else warn)(f"{locale} {s['attributes']['screenshotDisplayType']}: {len(shots)} screenshots, states={states}")
 
 
 @step("App Review information")
@@ -407,7 +430,7 @@ def build(asc, app_id, ver, version, apply, wait_minutes, pin=""):
     if not builds:
         (err if apply else warn)(f"no VALID build {pin or ''} for {version}".replace("  ", " ")); return None
     b = builds[0]
-    log(f"  latest VALID build: {b['attributes']['version']} uploaded {b['attributes'].get('uploadedDate')} "
+    log(f"  latest VALID build: {b['attributes']['version']} id={b['id']} state={b['attributes'].get('processingState')} uploaded {b['attributes'].get('uploadedDate')} "
         f"usesNonExemptEncryption={b['attributes'].get('usesNonExemptEncryption')}")
     if apply:
         if b["attributes"].get("usesNonExemptEncryption") is None:
@@ -415,14 +438,59 @@ def build(asc, app_id, ver, version, apply, wait_minutes, pin=""):
         if not cur or cur["id"] != b["id"]:
             asc.req("PATCH", f"/v1/appStoreVersions/{ver['id']}/relationships/build", rel("builds", b["id"]))
         log(f"  attached build {b['attributes']['version']} to version {version}")
-    elif cur:
-        log(f"  attached build: {cur['attributes'].get('version')}")
+    cur = asc.req("GET", f"/v1/appStoreVersions/{ver['id']}/build", ok=(200,), quiet_codes=(404,))
+    cur = (cur or {}).get("data")
+    if not cur:
+        (err if apply else warn)("no build attached to the version")
+    else:
+        ca = cur["attributes"]
+        log(f"  attached build: {ca.get('version')} id={cur['id']} processingState={ca.get('processingState')} "
+            f"expired={ca.get('expired')} usesNonExemptEncryption={ca.get('usesNonExemptEncryption')}")
+        if ca.get("version") != b["attributes"]["version"]:
+            (err if apply else warn)(f"attached build {ca.get('version')} != expected {b['attributes']['version']}")
+        if ca.get("processingState") != "VALID":
+            (err if apply else warn)(f"attached build is {ca.get('processingState')}")
     return b
 
 
+@step("Review submissions (read-only)")
+def review_submissions(asc, app_id, ver):
+    subs = asc.get_all("/v1/reviewSubmissions", **{"filter[app]": app_id, "filter[platform]": "IOS"})
+    out = []
+    for sub in subs:
+        a = sub["attributes"]
+        items = asc.get_all(f"/v1/reviewSubmissions/{sub['id']}/items", include="appStoreVersion")
+        desc = []
+        for it in items:
+            v = ((it.get("relationships") or {}).get("appStoreVersion") or {}).get("data") or {}
+            desc.append(f"item {it['id']} state={it['attributes'].get('state')} version={v.get('id')}")
+        log(f"  submission {sub['id']} state={a.get('state')} submitted={a.get('submittedDate')} items: {desc or 'none'}")
+        out.append((sub, items))
+    if ver:
+        va = asc.get(f"/v1/appStoreVersions/{ver['id']}")["data"]["attributes"]
+        log(f"  version {va.get('versionString')} appVersionState={va.get('appVersionState')} appStoreState={va.get('appStoreState')}")
+        if any(s[0]["attributes"].get("state") in ("WAITING_FOR_REVIEW", "IN_REVIEW") for s in out):
+            warn("a review submission is already waiting for / in review")
+    return out
+
+
+@step("Listing text check (removed features)")
+def listing_text_check(asc, ver):
+    for l in asc.get_all(f"/v1/appStoreVersions/{ver['id']}/appStoreVersionLocalizations"):
+        at = l["attributes"]
+        for k in ("description", "keywords", "promotionalText", "whatsNew"):
+            low = (at.get(k) or "").lower()
+            hits = [w for w in BANNED_LISTING if w in low]
+            if hits:
+                err(f"{at['locale']} {k} mentions removed features: {hits}")
+    log(f"  checked live description/keywords/promo/What's New for {BANNED_LISTING}")
+
+
 @step("Submit for review")
-def submit(asc, app_id, ver, pin=""):
-    blockers = [e for e in errors]
+def submit(asc, app_id, ver, pin, subs):
+    blockers = list(errors) + list(warnings)
+    if not pin:
+        blockers.append("--build is required for submit")
     cur = asc.req("GET", f"/v1/appStoreVersions/{ver['id']}/build", ok=(200,), quiet_codes=(404,))
     cur = (cur or {}).get("data")
     attached = cur["attributes"].get("version") if cur else None
@@ -432,21 +500,34 @@ def submit(asc, app_id, ver, pin=""):
         blockers.append(f"attached build {attached} != requested {pin}")
     elif cur["attributes"].get("processingState") != "VALID":
         blockers.append(f"attached build {attached} is {cur['attributes'].get('processingState')}")
-    log(f"  preflight: attached build={attached} errors={len(errors)} warnings={len(warnings)}")
     if not os.environ.get("REVIEW_PHONE", "").strip():
         blockers.append("contact phone missing")
-    if not (HERE / "screenshots" / "ipad13").glob("*.png") or not list((HERE / "screenshots" / "ipad13").glob("*.png")):
-        blockers.append("iPad 13-inch screenshots missing")
+    for folder, _, _ in SCREENSHOT_SETS:
+        if not list((HERE / "screenshots" / folder).glob("*.png")):
+            blockers.append(f"{folder} screenshots missing")
+    log(f"  preflight: attached build={attached} errors={len(errors)} warnings={len(warnings)}")
     if blockers:
         raise RuntimeError(f"not submitting, blockers: {blockers}")
-    open_subs = asc.get_all("/v1/reviewSubmissions", **{"filter[app]": app_id, "filter[platform]": "IOS",
-                                                        "filter[state]": "READY_FOR_REVIEW"})
-    sub = open_subs[0] if open_subs else asc.req("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSubmissions",
-                "attributes": {"platform": "IOS"}, "relationships": {"app": rel("apps", app_id)}}})["data"]
-    items = asc.get_all(f"/v1/reviewSubmissions/{sub['id']}/items")
-    if not items:
-        asc.req("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
-                "relationships": {"reviewSubmission": rel("reviewSubmissions", sub["id"]), "appStoreVersion": rel("appStoreVersions", ver["id"])}}})
+    subs = subs or []
+    def has_ver(items):
+        return any((((it.get("relationships") or {}).get("appStoreVersion") or {}).get("data") or {}).get("id") == ver["id"] for it in items)
+    unresolved = [(s, i) for s, i in subs if s["attributes"].get("state") == "UNRESOLVED_ISSUES" and has_ver(i)]
+    ready = [(s, i) for s, i in subs if s["attributes"].get("state") == "READY_FOR_REVIEW"]
+    if unresolved:
+        sub, items = unresolved[0]
+        log(f"  resubmitting UNRESOLVED_ISSUES submission {sub['id']}")
+        for it in items:
+            if it["attributes"].get("state") in ("REJECTED", "UNRESOLVED_ISSUES") or it["attributes"].get("resolved") is False:
+                asc.req("PATCH", f"/v1/reviewSubmissionItems/{it['id']}", {"data": {"type": "reviewSubmissionItems", "id": it["id"],
+                        "attributes": {"resolved": True}}})
+                log(f"  item {it['id']} marked resolved")
+    else:
+        sub, items = ready[0] if ready else (asc.req("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSubmissions",
+                    "attributes": {"platform": "IOS"}, "relationships": {"app": rel("apps", app_id)}}})["data"], [])
+        if not has_ver(items):
+            asc.req("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
+                    "relationships": {"reviewSubmission": rel("reviewSubmissions", sub["id"]), "appStoreVersion": rel("appStoreVersions", ver["id"])}}})
+            log(f"  added version item to submission {sub['id']}")
     asc.req("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {"type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
     sa = asc.get(f"/v1/reviewSubmissions/{sub['id']}")["data"]["attributes"]
     va = asc.get(f"/v1/appStoreVersions/{ver['id']}")["data"]["attributes"]
@@ -484,14 +565,13 @@ def readback(asc, app_id, ver, meta):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["apply", "verify"], default="apply")
-    ap.add_argument("--submit", action="store_true")
+    ap.add_argument("--mode", choices=["apply", "verify", "submit"], default="apply")
     ap.add_argument("--wait-build-minutes", type=int, default=0)
     ap.add_argument("--build", default="", help="exact build number to attach (blank = latest VALID)")
     a = ap.parse_args()
     apply = a.mode == "apply"
     app_id, version = os.environ["ASC_APP_ID"], os.environ["APP_VERSION"]
-    log(f"Descall App Store Connect sync: app {app_id}, version {version}, mode={a.mode}, submit={a.submit}")
+    log(f"Descall App Store Connect sync: app {app_id}, version {version}, mode={a.mode}, build={a.build or 'latest VALID'}")
     meta, age, notes = load_inputs()
     asc = ASC()
     app_record(asc, app_id, meta, apply)
@@ -501,7 +581,7 @@ def main():
     ver = store_version(asc, app_id, version, meta, apply)
     if ver:
         vlocs = version_localizations(asc, ver, meta, apply) or {}
-        screenshots(asc, vlocs, apply)
+        screenshots(asc, vlocs, apply, ver)
         review_detail(asc, ver, notes, apply)
     else:
         (err if apply else warn)(f"no App Store version record for {version}")
@@ -516,10 +596,15 @@ def main():
     except Exception as e:
         err(f"read-back: {e}")
 
-    if a.submit and apply and ver:
-        submit(asc, app_id, ver, a.build.strip())
-    elif a.submit:
-        err("submit requested but mode is not apply or the version is missing")
+    if ver:
+        listing_text_check(asc, ver)
+    subs = review_submissions(asc, app_id, ver)
+
+    if a.mode == "submit":
+        if ver:
+            submit(asc, app_id, ver, a.build.strip(), subs)
+        else:
+            err("submit requested but the version is missing")
 
     log("\n=== Summary")
     log(f"warnings: {len(warnings)}")
