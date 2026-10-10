@@ -216,7 +216,7 @@ export default function UserFeedbackButton({ socket, user }) {
                     <button 
                       onClick={() => !isSubmitting && setIsOpen(false)}
                       disabled={isSubmitting}
-                    >
+                     aria-label={t("Close")}>
                       <X size={20} />
                     </button>
                   </div>
@@ -281,7 +281,7 @@ export default function UserFeedbackButton({ socket, user }) {
                               {attachments.map((file, i) => (
                                 <div key={i} className="attachment-chip">
                                   {file.name}
-                                  <button onClick={() => removeAttachment(i)}>
+                                  <button onClick={() => removeAttachment(i)} aria-label={t("Remove attachment")}>
                                     <X size={12} />
                                   </button>
                                 </div>

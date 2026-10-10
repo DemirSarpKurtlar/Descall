@@ -342,7 +342,7 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
             <Sparkles className="icon" />
             <h2>{t("Voice Effects")}</h2>
           </div>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose} aria-label={t("Close")}>×</button>
         </div>
 
         {error && (

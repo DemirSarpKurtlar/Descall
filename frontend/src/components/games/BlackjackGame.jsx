@@ -156,7 +156,7 @@ export default function BlackjackGame({
               whileTap={{ scale: 0.9 }}
               onClick={() => setBet(Math.max(10, bet - 10))}
               className="bet-btn"
-            >
+             aria-label={t("Decrease bet")}>
               <Minus size={16} />
             </motion.button>
             <span className="bet-amount">{bet.toLocaleString()}</span>
@@ -164,7 +164,7 @@ export default function BlackjackGame({
               whileTap={{ scale: 0.9 }}
               onClick={() => setBet(Math.min(10000, bet + 10))}
               className="bet-btn"
-            >
+             aria-label={t("Increase bet")}>
               <Plus size={16} />
             </motion.button>
           </div>

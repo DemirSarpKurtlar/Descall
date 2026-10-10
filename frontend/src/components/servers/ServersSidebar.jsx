@@ -847,7 +847,7 @@ export default function ServersSidebar({
             <button
               type="button"
               className="icon-btn server-back-btn"
-              title={t("Back to servers")}
+              title={t("Back to servers")} aria-label={t("Back to servers")}
               onClick={() => onBackToList?.()}
             >
               <ArrowLeft size={18} />
@@ -864,7 +864,7 @@ export default function ServersSidebar({
                 <button
                   type="button"
                   className="icon-btn"
-                  title={t("Create channel")}
+                  title={t("Create channel")} aria-label={t("Create channel")}
                   onClick={() => {
                     setMenuOpen(false);
                     setChannelModal({ mode: "create", defaultType: "text" });
@@ -877,7 +877,7 @@ export default function ServersSidebar({
                 <button
                   type="button"
                   className={`icon-btn${channelReorderMode ? " active" : ""}`}
-                  title={t("Reorder channels")}
+                  title={t("Reorder channels")} aria-label={t("Reorder channels")}
                   aria-pressed={channelReorderMode}
                   onClick={() => setChannelReorderMode((v) => !v)}
                 >
@@ -887,7 +887,7 @@ export default function ServersSidebar({
               <button
                 type="button"
                 className="icon-btn g-server-menu-btn"
-                title={t("Server menu")}
+                title={t("Server menu")} aria-label={t("Server menu")}
                 onClick={() => setMenuOpen((v) => !v)}
               >
                 {glassShell ? <ChevronRight size={18} /> : <MoreHorizontal size={18} />}
@@ -1142,7 +1142,7 @@ export default function ServersSidebar({
                             <button
                               type="button"
                               className="icon-btn server-channel-mini-btn"
-                              title={t("Create channel")}
+                              title={t("Create channel")} aria-label={t("Create channel")}
                               onClick={() =>
                                 setChannelModal({ mode: "create", defaultType: "text", parentId: node.id })
                               }
@@ -1154,7 +1154,7 @@ export default function ServersSidebar({
                             <button
                               type="button"
                               className="icon-btn server-channel-mini-btn"
-                              title={t("Channel access")}
+                              title={t("Channel access")} aria-label={t("Channel access")}
                               onClick={() => setChannelAccess(node)}
                             >
                               <Lock size={14} />
@@ -1165,7 +1165,7 @@ export default function ServersSidebar({
                               <button
                                 type="button"
                                 className="icon-btn server-channel-mini-btn"
-                                title={t("Edit category")}
+                                title={t("Edit category")} aria-label={t("Edit category")}
                                 onClick={() => setChannelModal({ mode: "edit", channel: node })}
                               >
                                 <Settings2 size={14} />
@@ -1173,7 +1173,7 @@ export default function ServersSidebar({
                               <button
                                 type="button"
                                 className="icon-btn server-channel-mini-btn"
-                                title={t("Delete category")}
+                                title={t("Delete category")} aria-label={t("Delete category")}
                                 onClick={() => setChannelModal({ mode: "delete", channel: node })}
                               >
                                 <Trash2 size={14} />
@@ -1537,7 +1537,7 @@ export default function ServersSidebar({
               <button
                 type="button"
                 className="icon-btn"
-                title={t("Join Server")}
+                title={t("Join Server")} aria-label={t("Join Server")}
                 onClick={() => setShowJoin(true)}
               >
                 <LogIn size={18} />
@@ -1545,7 +1545,7 @@ export default function ServersSidebar({
               <button
                 type="button"
                 className={`icon-btn${serverListReorderMode ? " active" : ""}`}
-                title={isMobile ? t("Reorder servers") : dragReorderTitle}
+                title={isMobile ? t("Reorder servers") : dragReorderTitle} aria-label={isMobile ? t("Reorder servers") : dragReorderTitle}
                 aria-pressed={serverListReorderMode}
                 onClick={() => setServerListReorderMode((v) => !v)}
               >
@@ -1554,7 +1554,7 @@ export default function ServersSidebar({
               <button
                 type="button"
                 className="icon-btn"
-                title={t("New folder")}
+                title={t("New folder")} aria-label={t("New folder")}
                 onClick={handleCreateFolder}
               >
                 <FolderPlus size={18} />
@@ -1562,7 +1562,7 @@ export default function ServersSidebar({
               <button
                 type="button"
                 className="icon-btn"
-                title={canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned })}
+                title={canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned })} aria-label={canCreate ? t("Create server") : t("Own limit reached ({max})", { max: maxOwned })}
                 disabled={!canCreate}
                 onClick={() => canCreate && setShowCreate(true)}
               >
@@ -1652,7 +1652,7 @@ export default function ServersSidebar({
                       <button
                         type="button"
                         className="icon-btn sm"
-                        title={t("Delete folder")}
+                        title={t("Delete folder")} aria-label={t("Delete folder")}
                         onClick={() => handleDeleteFolder(folder)}
                       >
                         <Trash2 size={12} />
@@ -1866,7 +1866,7 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu })
         <button
           type="button"
           className="icon-btn server-voice-user-more"
-          title="…"
+          title="…" aria-label="…"
           onClick={(e) => {
             e.stopPropagation();
             onContextMenu(e);
@@ -2080,7 +2080,7 @@ function ChannelRow({
             ref={menuBtnRef}
             type="button"
             className="icon-btn server-channel-mini-btn"
-            title={t("Channel settings")}
+            title={t("Channel settings")} aria-label={t("Channel settings")}
             onClick={(e) => {
               e.stopPropagation();
               setCursorPoint(null);

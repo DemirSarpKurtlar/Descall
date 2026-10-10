@@ -52,7 +52,7 @@ export default function SettingsPanelNew({ onClose, me }) {
         {/* Header */}
         <div className="settings-header">
           <h2 className="settings-title">User Settings</h2>
-          <button className="icon-btn" onClick={onClose}>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
         </div>
@@ -214,7 +214,7 @@ function NotificationsSection({ settings, setSettings }) {
           <button 
             className={`toggle-switch ${settings.notifications ? "on" : "off"}`}
             onClick={() => setSettings({ ...settings, notifications: !settings.notifications })}
-          >
+           aria-label="Enable Notifications" aria-pressed={settings.notifications}>
             <div className="toggle-thumb" />
           </button>
         </div>
@@ -227,7 +227,7 @@ function NotificationsSection({ settings, setSettings }) {
           <button 
             className={`toggle-switch ${settings.soundEffects ? "on" : "off"}`}
             onClick={() => setSettings({ ...settings, soundEffects: !settings.soundEffects })}
-          >
+           aria-label="Sound Effects" aria-pressed={settings.soundEffects}>
             <div className="toggle-thumb" />
           </button>
         </div>

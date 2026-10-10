@@ -141,7 +141,7 @@ export default function ActivitySidebar({
               <button
                 type="button"
                 className="icon-btn"
-                title={t("Search")}
+                title={t("Search")} aria-label={t("Search")}
                 onClick={() => searchRef.current?.focus()}
               >
                 <Search size={18} />
@@ -150,7 +150,7 @@ export default function ActivitySidebar({
               <button
                 type="button"
                 className="icon-btn"
-                title={t("Send Feedback")}
+                title={t("Send Feedback")} aria-label={t("Send Feedback")}
                 onClick={() => openFeedbackModal({ type: "suggestion", source: "activity_sidebar" })}
               >
                 <MessageSquarePlus size={18} />
@@ -158,7 +158,7 @@ export default function ActivitySidebar({
               <button
                 type="button"
                 className="icon-btn"
-                title={t("Add friend")}
+                title={t("Add friend")} aria-label={t("Add friend")}
                 onClick={() => onAddFriend?.()}
               >
                 <Plus size={18} />

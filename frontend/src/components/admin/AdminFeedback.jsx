@@ -512,7 +512,7 @@ export default function AdminFeedback({ socket }) {
                     {replyAttachments.map((file, i) => (
                       <div key={i} className="attachment-chip">
                         <span>{file.name}</span>
-                        <button onClick={() => setReplyAttachments(prev => prev.filter((_, idx) => idx !== i))}>
+                        <button onClick={() => setReplyAttachments(prev => prev.filter((_, idx) => idx !== i))} aria-label="Remove attachment">
                           <X size={12} />
                         </button>
                       </div>
@@ -569,7 +569,7 @@ export default function AdminFeedback({ socket }) {
               exit={{ scale: 0.9 }}
               onClick={e => e.stopPropagation()}
             >
-              <button className="modal-close" onClick={() => setImageModal(null)}>
+              <button className="modal-close" onClick={() => setImageModal(null)} aria-label="Close">
                 <X size={24} />
               </button>
               
@@ -582,13 +582,13 @@ export default function AdminFeedback({ socket }) {
                   <button 
                     className="nav-btn prev"
                     onClick={() => setCurrentImageIndex(i => (i - 1 + imageModal.length) % imageModal.length)}
-                  >
+                   aria-label="Previous">
                     <ChevronLeft size={24} />
                   </button>
                   <button 
                     className="nav-btn next"
                     onClick={() => setCurrentImageIndex(i => (i + 1) % imageModal.length)}
-                  >
+                   aria-label="Next">
                     <ChevronRight size={24} />
                   </button>
                   <div className="image-counter">

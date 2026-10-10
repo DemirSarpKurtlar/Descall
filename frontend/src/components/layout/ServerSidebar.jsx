@@ -380,7 +380,7 @@ export default function ServerSidebar({
             <div className="sidebar-actions">
               <button
                 className="icon-btn"
-                title={t("Search")}
+                title={t("Search")} aria-label={t("Search")}
                 onClick={() => {
                   const searchInput = document.querySelector('.search-input');
                   searchInput?.focus();
@@ -390,14 +390,14 @@ export default function ServerSidebar({
               </button>
               <button
                 className="icon-btn"
-                title={t("Announcements")}
+                title={t("Announcements")} aria-label={t("Announcements")}
                 onClick={() => setShowAnnouncements(!showAnnouncements)}
               >
                 <Megaphone size={18} />
               </button>
               <button
                 className="icon-btn"
-                title={t("Send Feedback")}
+                title={t("Send Feedback")} aria-label={t("Send Feedback")}
                 onClick={() => openFeedbackModal({ type: "suggestion", source: "server_sidebar" })}
               >
                 <MessageSquarePlus size={18} />
@@ -405,7 +405,7 @@ export default function ServerSidebar({
               {activeView === "friends" && me?.username && (
                 <button
                   className="icon-btn"
-                  title={t("Copy invite link")}
+                  title={t("Copy invite link")} aria-label={t("Copy invite link")}
                   onClick={async () => {
                     try {
                       const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
@@ -426,7 +426,7 @@ export default function ServerSidebar({
               )}
               <button
                 className="icon-btn"
-                title={t("Add")}
+                title={t("Add")} aria-label={t("Add")}
                 onClick={() => {
                   setShowAddModal(true);
                   setAddTab(activeView === "groups" ? "group" : "friend");
@@ -580,7 +580,7 @@ export default function ServerSidebar({
                 {glassShell ? <div className="g-grabber" aria-hidden="true" /> : null}
                 <div className="add-modal-header">
                   <h3>{t("Create New")}</h3>
-                  <button className="icon-btn" onClick={() => setShowAddModal(false)}><X size={18} /></button>
+                  <button className="icon-btn" onClick={() => setShowAddModal(false)} aria-label={t("Close")}><X size={18} /></button>
                 </div>
 
                 <div className="add-modal-tabs">
@@ -760,7 +760,7 @@ export default function ServerSidebar({
                 >
                   <div className="add-modal-header">
                     <h3>{glassShell ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
-                  <button className="icon-btn" onClick={() => setShowAnnouncements(false)}><X size={18} /></button>
+                  <button className="icon-btn" onClick={() => setShowAnnouncements(false)} aria-label={t("Close")}><X size={18} /></button>
                 </div>
 
                 <div className="announcements-modal-content">
@@ -1528,7 +1528,7 @@ function AddMemberDialog({ group, friends, onClose, onMemberAdded }) {
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-3)"; e.currentTarget.style.color = "var(--text-1)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-          >
+           aria-label={t("Close")}>
             <X size={14} />
           </button>
         </div>

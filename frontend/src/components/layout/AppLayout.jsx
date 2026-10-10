@@ -436,7 +436,7 @@ export default function AppLayout({
               type="button"
               className="app-notif-banner-dismiss"
               onClick={() => setNotifBannerDismissed(true)}
-            >
+             aria-label={t("Close")}>
               <X size={14} />
             </button>
           </motion.div>

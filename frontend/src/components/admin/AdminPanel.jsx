@@ -1036,7 +1036,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                           <button
                             type="button"
-                            title={a.pinned ? t("Unpin") : t("Pin")}
+                            title={a.pinned ? t("Unpin") : t("Pin")} aria-label={a.pinned ? t("Unpin") : t("Pin")}
                             onClick={async () => {
                               try {
                                 const token = localStorage.getItem("descall_token");
@@ -1067,7 +1067,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                           </button>
                           <button
                             type="button"
-                            title={t("Delete")}
+                            title={t("Delete")} aria-label={t("Delete")}
                             onClick={async () => {
                               try {
                                 const token = localStorage.getItem("descall_token");

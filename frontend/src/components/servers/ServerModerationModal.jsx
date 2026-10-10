@@ -218,7 +218,7 @@ export default function ServerModerationModal({
               </label>
             </>
           ) : null}
-          <button type="button" className="icon-btn" onClick={load} title={t("Refresh")}>
+          <button type="button" className="icon-btn" onClick={load} title={t("Refresh")} aria-label={t("Refresh")}>
             <RefreshCw size={14} />
           </button>
         </div>

@@ -228,7 +228,7 @@ export default function PopupWindow({
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
               onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted)'}
-              title={isMaximized ? t("Restore") : t("Maximize")}
+              title={isMaximized ? t("Restore") : t("Maximize")} aria-label={isMaximized ? t("Restore") : t("Maximize")}
             >
               {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             </button>
@@ -247,7 +247,7 @@ export default function PopupWindow({
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger)'}
               onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted)'}
-              title={t("Close")}
+              title={t("Close")} aria-label={t("Close")}
             >
               <X size={16} />
             </button>

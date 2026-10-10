@@ -162,7 +162,7 @@ export default function MessageReactions({
           onClick={() => setShowPicker(!showPicker)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          title={t("Add reaction")}
+          title={t("Add reaction")} aria-label={t("Add reaction")}
         >
           <Smile size={16} />
         </motion.button>
@@ -185,7 +185,7 @@ export default function MessageReactions({
               >
                 <div className="reaction-picker-header">
                   <span>{t("Add Reaction")}</span>
-                  <button className="reaction-picker-close" onClick={() => setShowPicker(false)}>
+                  <button className="reaction-picker-close" onClick={() => setShowPicker(false)} aria-label={t("Close")}>
                     <X size={14} />
                   </button>
                 </div>

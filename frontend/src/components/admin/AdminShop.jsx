@@ -401,7 +401,7 @@ export default function AdminShop() {
               <div className="admin-shop-selected-user">
                 <Avatar name={coinTargetUser.username} size={28} user={coinTargetUser} />
                 <span>{coinTargetUser.username}</span>
-                <button type="button" onClick={() => setCoinTargetUser(null)}>
+                <button type="button" onClick={() => setCoinTargetUser(null)} aria-label={t("Close")}>
                   <XCircle size={14} />
                 </button>
               </div>
@@ -503,7 +503,7 @@ export default function AdminShop() {
               <div className="admin-shop-selected-user">
                 <Avatar name={giftTargetUser.username} size={28} user={giftTargetUser} />
                 <span>{giftTargetUser.username}</span>
-                <button type="button" onClick={() => setGiftTargetUser(null)}>
+                <button type="button" onClick={() => setGiftTargetUser(null)} aria-label={t("Close")}>
                   <XCircle size={14} />
                 </button>
               </div>

@@ -340,7 +340,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
               {t("Create roles, set permissions, and assign them to members.")}
             </p>
           </div>
-          <button type="button" className="icon-btn" onClick={onClose} title={t("Close")}>
+          <button type="button" className="icon-btn" onClick={onClose} title={t("Close")} aria-label={t("Close")}>
             <X size={18} />
           </button>
         </div>

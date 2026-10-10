@@ -423,17 +423,17 @@ export default function VideoConference({
           <button
             className={viewMode === "grid" ? "active" : ""}
             onClick={() => setViewMode("grid")}
-          >
+           aria-label={t("Grid view")}>
             <Grid size={18} />
           </button>
           <button
             className={viewMode === "focus" ? "active" : ""}
             onClick={() => setViewMode("focus")}
-          >
+           aria-label={t("Focus")}>
             <Maximize2 size={18} />
           </button>
           {onMinimize && (
-            <button onClick={onMinimize} title={t("Minimize")}>
+            <button onClick={onMinimize} title={t("Minimize")} aria-label={t("Minimize")}>
               <Minimize2 size={18} />
             </button>
           )}
@@ -737,7 +737,7 @@ export default function VideoConference({
             <button
               className="quality-toggle-btn"
               onClick={() => setShowScreenQuality(!showScreenQuality)}
-              title={t("Screen quality settings")}
+              title={t("Screen quality settings")} aria-label={t("Screen quality settings")}
             >
               <Settings size={14} />
             </button>
@@ -779,7 +779,7 @@ export default function VideoConference({
               <button 
                 className="quality-close-btn"
                 onClick={() => setShowScreenQuality(false)}
-              >
+               aria-label={t("Close")}>
                 <X size={14} />
               </button>
             </div>

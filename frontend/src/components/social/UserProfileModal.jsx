@@ -695,7 +695,7 @@ export default function UserProfileModal({
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-hover)"; e.currentTarget.style.color = "var(--text-0)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface-3)"; e.currentTarget.style.color = "var(--text-1)"; }}
-                    title={t("Send Message")}
+                    title={t("Send Message")} aria-label={t("Send Message")}
                   >
                     <MessageSquare size={16} />
                   </motion.button>

@@ -49,7 +49,7 @@ Cache work from 2.9.173 (`frontend/src/lib/chatCache.js`, gzip JSON, batched gro
 - Area: accessibility, DM/group/server composer (shared by iOS, desktop, web).
 - Symptom: attach, emoji, and voice buttons exposed only `title`.
 - Fix: `aria-label` set to the existing Turkish/English strings. Asserted by `MessageComposer.sendlock.selftest.mjs`.
-- Still open: a full icon-button pass. Many chat controls already have labels. Not every settings/admin icon was checked in a browser this batch.
+- Follow-up (2.9.190): icon-only buttons across the app copy `title` onto `aria-label`, or get a name from the existing translation key (`Close`, `End Call`, `Mute`, …). Switches expose `aria-pressed`. `iconButtonNames.selftest.mjs` fails if a new icon button ships without a name. Buttons that already show text were left alone.
 
 ### P2 — Message lists are not virtualized
 

@@ -1260,7 +1260,7 @@ const UserPanel = forwardRef(function UserPanel({
                 </div>
                 <div className="us-info-row">
                   <span className="us-muted">{t("User ID")}</span>
-                  <button type="button" className="us-copy-btn" onClick={copyUserId} title={t("Copy ID")}>
+                  <button type="button" className="us-copy-btn" onClick={copyUserId} title={t("Copy ID")} aria-label={t("Copy ID")}>
                     <span className="us-info-value mono">{me?.id || "—"}</span>
                     {copiedId ? <Check size={14} /> : <Copy size={14} />}
                   </button>
@@ -1571,7 +1571,7 @@ const UserPanel = forwardRef(function UserPanel({
                           setCustomStatus(splitStatusEmoji(customStatus).text);
                           setStatusEmojiOpen(false);
                         }}
-                      >
+                       aria-label="None">
                         –
                       </button>
                       {STATUS_EMOJIS.map((emoji) => (

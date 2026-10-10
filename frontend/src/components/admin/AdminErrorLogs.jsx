@@ -789,7 +789,7 @@ export default function AdminErrorLogs({ socket }) {
             >
               <div className="modal-header">
                 <h3>{t("Error Details")}</h3>
-                <button onClick={() => setSelectedLog(null)}>
+                <button onClick={() => setSelectedLog(null)} aria-label="Close">
                   <X size={20} />
                 </button>
               </div>

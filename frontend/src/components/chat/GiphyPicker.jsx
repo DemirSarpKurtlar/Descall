@@ -277,7 +277,7 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
                     key={gif.id}
                     type="button"
                     className="giphy-cell"
-                    title={gif.title}
+                    title={gif.title} aria-label={gif.title}
                     onClick={() => handleSelect(gif)}
                   >
                     <img

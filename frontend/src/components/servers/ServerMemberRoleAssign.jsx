@@ -142,7 +142,7 @@ export default function ServerMemberRoleAssign({
             aria-label={t("Search members")}
           />
           {query ? (
-            <button type="button" className="sra-icon-clear" onClick={() => setQuery("")}>
+            <button type="button" className="sra-icon-clear" onClick={() => setQuery("")} aria-label={t("Clear")}>
               <X size={14} />
             </button>
           ) : null}
@@ -413,6 +413,10 @@ export default function ServerMemberRoleAssign({
                             className="sra-remove"
                             disabled={locked || pending}
                             title={
+                              locked
+                                ? t("This member has an equal or higher role.")
+                                : t("Remove role")
+                            } aria-label={
                               locked
                                 ? t("This member has an equal or higher role.")
                                 : t("Remove role")

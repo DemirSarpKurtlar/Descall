@@ -77,21 +77,21 @@ export default function VoiceCallUI({
             <button 
               className="icon-btn"
               onClick={() => setShowParticipants(!showParticipants)}
-              title={t("Participants")}
+              title={t("Participants")} aria-label={t("Participants")}
             >
               <Users size={20} />
             </button>
             <button 
               className="icon-btn"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? t("Exit Fullscreen") : t("Fullscreen")}
+              title={isFullscreen ? t("Exit Fullscreen") : t("Fullscreen")} aria-label={isFullscreen ? t("Exit Fullscreen") : t("Fullscreen")}
             >
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
             <button 
               className="icon-btn"
               onClick={onMinimize}
-              title={t("Minimize")}
+              title={t("Minimize")} aria-label={t("Minimize")}
             >
               <Minimize2 size={20} />
             </button>
@@ -185,7 +185,7 @@ export default function VoiceCallUI({
                   <button 
                     className="icon-btn"
                     onClick={() => setShowParticipants(false)}
-                  >
+                   aria-label={t("Close")}>
                     <X size={16} />
                   </button>
                 </div>
@@ -210,7 +210,7 @@ export default function VoiceCallUI({
             <button 
               className={`control-btn ${isMuted ? "muted" : ""}`}
               onClick={onToggleMute}
-              title={isMuted ? t("Unmute") : t("Mute")}
+              title={isMuted ? t("Unmute") : t("Mute")} aria-label={isMuted ? t("Unmute") : t("Mute")}
             >
               {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
             </button>
@@ -218,7 +218,7 @@ export default function VoiceCallUI({
             <button 
               className={`control-btn ${!isCameraOn ? "off" : ""}`}
               onClick={onToggleCamera}
-              title={isCameraOn ? t("Turn Off Camera") : t("Turn On Camera")}
+              title={isCameraOn ? t("Turn Off Camera") : t("Turn On Camera")} aria-label={isCameraOn ? t("Turn Off Camera") : t("Turn On Camera")}
             >
               {isCameraOn ? <Camera size={24} /> : <CameraOff size={24} />}
             </button>
@@ -226,13 +226,13 @@ export default function VoiceCallUI({
             <button 
               className={`control-btn ${isScreenSharing ? "active" : ""}`}
               onClick={onToggleScreenShare}
-              title={isScreenSharing ? t("Stop Screen Share") : t("Share Screen")}
+              title={isScreenSharing ? t("Stop Screen Share") : t("Share Screen")} aria-label={isScreenSharing ? t("Stop Screen Share") : t("Share Screen")}
             >
               <Monitor size={24} />
             </button>
 
             <div className="volume-control">
-              <button className="icon-btn" onClick={() => setVolume(volume > 0 ? 0 : 100)}>
+              <button className="icon-btn" onClick={() => setVolume(volume > 0 ? 0 : 100)} aria-label={volume > 0 ? t("Mute") : t("Unmute")}>
                 {volume > 0 ? <Volume2 size={20} /> : <VolumeX size={20} />}
               </button>
               <input
@@ -249,7 +249,7 @@ export default function VoiceCallUI({
           <button 
             className="end-call-btn"
             onClick={onEndCall}
-            title={t("End Call")}
+            title={t("End Call")} aria-label={t("End Call")}
           >
             <PhoneOff size={24} />
           </button>
