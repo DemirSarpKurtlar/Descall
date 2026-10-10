@@ -131,15 +131,18 @@ const VoiceTile = memo(function VoiceTile({
 }) {
   const t = useT();
   const videoRef = useRef(null);
+  const [tileEl, setTileEl] = useState(null);
   const cameraStream = tile.cameraStream || null;
   const speakingRaw = useSpeaking(tile.audioStream, {
     muted: Boolean(tile.muted),
     threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
+    observeEl: tileEl,
   });
   // Hold the off-edge so VAD flapping can't blink the speaking state.
-  const speaking = useHeldSpeaking(speakingRaw && !tile.muted);
+  const heldSpeaking = useHeldSpeaking(speakingRaw && !tile.muted);
+  const speaking = tile.muted ? false : heldSpeaking;
   const name = tile.label || "User";
   const showVideo = streamHasLiveVideo(cameraStream);
 
@@ -173,6 +176,7 @@ const VoiceTile = memo(function VoiceTile({
 
   return (
     <article
+      ref={setTileEl}
       className={`server-voice-tile${showVideo ? " has-video" : ""}${speaking ? " is-speaking" : ""}${tile.muted ? " is-muted" : ""}${compact ? " is-compact" : ""}${canExpandShare ? " is-share-target" : ""}${tile.sharing ? " is-screen-share" : ""}`}
       onContextMenu={openMenu}
       onClick={expandShare}

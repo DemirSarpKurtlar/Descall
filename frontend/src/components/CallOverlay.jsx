@@ -17,11 +17,10 @@ import ScreenShareQualityPanel from "./voice/ScreenShareQualityPanel";
 import { screenShareUnavailableOnIos } from "../lib/webrtcScreenShare";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
-import useSpeaking from "../hooks/useSpeaking";
 import useHeldSpeaking from "../hooks/useHeldSpeaking";
 import SpeakingRings from "./voice/SpeakingRings";
 import ParticipantStateIcons from "./voice/ParticipantStateIcons";
-import useAudioLevel from "../hooks/useAudioLevel";
+import useVoiceActivity from "../hooks/useVoiceActivity";
 import { useT } from "../context/LocaleContext";
 import { useToast } from "../context/ToastContext";
 import { DockDeviceSlot } from "./call/DevicePicker";
@@ -1170,8 +1169,19 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
    isSpeaking derived externally; videoRef only for remote video.
    ───────────────────────────────────────────────────────────────── */
 function SpeakingRemoteSlot(props) {
-  const speaking = useSpeaking(props.remoteStream);
-  return <DmRemoteParticipantSlot {...props} isSpeaking={speaking} />;
+  const [tileEl, setTileEl] = useState(null);
+  const { speaking, level } = useVoiceActivity(props.remoteStream, {
+    muted: Boolean(props.isMuted),
+    observeEl: tileEl,
+  });
+  return (
+    <DmRemoteParticipantSlot
+      {...props}
+      isSpeaking={speaking}
+      level={level}
+      onTile={setTileEl}
+    />
+  );
 }
 
 function CallQualityHud({ quality = "unknown", stats = null }) {
@@ -1282,15 +1292,17 @@ function ParticipantTile({
   const t = useT();
   const glass = useGlassUi();
   const elRef = useRef(null);
-  const detected = useSpeaking(stream, {
+  const [tileEl, setTileEl] = useState(null);
+  const { speaking: detected, level } = useVoiceActivity(stream, {
     muted: muted || (isLocal === false && !stream),
     attackMs: 90,
     releaseMs: 220,
+    observeEl: tileEl,
   });
-  const level = useAudioLevel(stream, { muted: muted || !stream });
   // Hold the off-edge (~320ms) so VAD flapping between words never blinks
   // the ring / restarts its animation.
-  const isSpeaking = useHeldSpeaking(Boolean(speakingProp || detected) && !muted);
+  const heldSpeaking = useHeldSpeaking(Boolean(speakingProp || detected) && !muted);
+  const isSpeaking = muted ? false : heldSpeaking;
   const avatarSize = small ? 36 : 96;
   // Frame overlay is ~132% of the avatar — pad the shell so overflow:hidden
   // ancestors (call stage / framer layout) don't clip catalog frames.
@@ -1321,6 +1333,7 @@ function ParticipantTile({
 
   return (
     <div
+      ref={setTileEl}
       className={`participant-tile${small ? " small" : ""}${isSpeaking ? " is-speaking" : ""}${
         showVideo ? "" : " participant-tile--avatar-only"
       }`}
@@ -1363,7 +1376,13 @@ function ParticipantTile({
             <div className="participant-tile-avatar-core" style={{ width: avatarSize, height: avatarSize }}>
               {/* Always mounted — speaking only fades it (no remount / restart). */}
               <SpeakingRings speaking={isSpeaking} level={level} />
-              {glass && isSpeaking ? <span className="g-speak-ring" aria-hidden="true" /> : null}
+              {glass ? (
+                <span
+                  className={`g-speak-ring${isSpeaking ? " is-active" : ""}`}
+                  style={{ "--speak-level": (isSpeaking ? level : 0).toFixed(3) }}
+                  aria-hidden="true"
+                />
+              ) : null}
               <Avatar
                 name={displayName}
                 size={avatarSize}
@@ -1471,16 +1490,11 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
     }
   }, [localStream, isDm, call, groupCall]);
 
-  const localSpeaking = useSpeaking(localStream, {
-    muted: Boolean(isDm ? call?.muted : groupCall?.isMuted),
-  });
-
   return (
     <ParticipantTile
       username={username}
       avatarUrl={avatarUrl}
       user={user}
-      isSpeaking={localSpeaking}
       videoRef={hasVideo ? videoCallbackRef : null}
       hasVideo={hasVideo}
       isLocal

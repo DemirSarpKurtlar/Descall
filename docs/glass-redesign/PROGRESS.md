@@ -1,5 +1,20 @@
 # Liquid Glass — progress log
 
+## Cihaz düzeltmeleri · 2.9.178
+
+Giden 1:1 aramada kendi büyük avatarı sese tepki vermiyordu. iOS, dokunuştan sonra açılan AudioContext’i askıda bırakıyor; CallKit ses oturumu da eski analizörü susturuyordu. Mikrofon yakalama, dokunuşun içinde context’i uyandırır; CallKit `didActivate` grafiği yeniden kurar. Halka ~25 fps, karo ekran dışındayken ve uygulama gizlenince durur. Sessizde halka yok. Azaltılmış Hareket nabız yerine sabit yeşil halka. Camda halka fotoğrafın merkezinde, seviye ile büyür. Aynı grafik grup araması ve sunucu ses odasında da kullanılır. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.178**. Yalnız iPhone. Sistem Dokunuşları açık kalabilir; bu tur ses halkası.
+
+- [ ] Xest gibi birine ara, açılmasını beklemeden konuş: kendi büyük avatarının çevresinde yeşil halka sesine göre nabız atar. Çerçeve ortada kalır.
+- [ ] Sessize alınca halka hemen söner. Tekrar açınca konuşunca geri gelir.
+- [ ] Karşı taraf açınca hem sende hem onda halka çalışır.
+- [ ] Grup araması ve sunucu ses odasında kendi sesin halkayı yakalar.
+- [ ] Azaltılmış Hareket açıkken nabız yok; konuşurken sabit yeşil halka durur.
+- [ ] Masaüstü / tarayıcıda arama ekranı eskisi gibi.
+
 ## Cihaz düzeltmeleri · 2.9.177
 
 iPhone’da dokunuşlar tek bir yerden titrer: `src/lib/fluid/haptics.js`. Web, Electron ve Android sessiz. Sistemin Haptics anahtarı UIKit’te durur; Azaltılmış Hareket animasyonu kısar, onay titreşimini kesmez. Aynı tür 50 ms içinde ikinci kez çalmaz. Kaydırma ve basılı tutulan jest tekrar etmez; eşik bir kez.

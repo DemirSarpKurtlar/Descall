@@ -31,6 +31,7 @@ import {
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
+import { primeVoiceActivity } from "../lib/voiceActivity";
 
 const CAMERA_CONSTRAINTS = {
   audio: false,
@@ -720,6 +721,7 @@ export function useServerVoice(socket) {
 
       setConnecting(true);
       setError("");
+      primeVoiceActivity();
       // Fetch media-config while the microphone starts (cached after the
       // first join) instead of serially after the join emit.
       const mediaConfigPromise = getMediaConfig();

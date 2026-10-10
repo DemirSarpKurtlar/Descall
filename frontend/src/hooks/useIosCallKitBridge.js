@@ -18,6 +18,7 @@ import {
   subscribeCallKitUi,
   getCallKitUiSnapshot,
 } from "../lib/iosCallKitState";
+import { notifyCallAudioSession } from "../lib/voiceActivity";
 
 /**
  * Native iOS only: keeps CallKit in step with the DM call from useCall().
@@ -43,6 +44,8 @@ export function useIosCallKitBridge({ call, socket, meId }) {
       },
       onAudioSessionActivated: () => {
         pulseCallWakeLock();
+        // The speaking-ring graph was built against the pre-CallKit session.
+        notifyCallAudioSession();
         // Microphone capture that started before CallKit took the session is re-acquired.
         callRef.current?.onCallAudioSessionActivated?.();
         const audio = callRef.current?.remoteAudioRef?.current;

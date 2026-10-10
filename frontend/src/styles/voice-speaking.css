@@ -152,6 +152,7 @@
 @media (prefers-reduced-motion: reduce) {
   .speaking-rings > span {
     animation: none;
+    scale: 1;
   }
 }
 

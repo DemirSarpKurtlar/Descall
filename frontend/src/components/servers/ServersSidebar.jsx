@@ -1802,6 +1802,7 @@ function resolveMemberVoiceStream(member, { joinedHere, myUserId, localStream, p
 
 function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu }) {
   const t = useT();
+  const [rowEl, setRowEl] = useState(null);
   const name = resolveDisplayName(member) || member?.username || "User";
   const memberMuted = Boolean(member?.muted || member?.serverMuted);
   const memberDeafened = Boolean(member?.serverDeafened || member?.deafened);
@@ -1810,12 +1811,15 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu })
     threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
+    observeEl: rowEl,
   });
   // Hold the off-edge so VAD flapping can't blink the ring.
-  const speaking = useHeldSpeaking(speakingRaw && !memberMuted);
+  const heldSpeaking = useHeldSpeaking(speakingRaw && !memberMuted);
+  const speaking = memberMuted ? false : heldSpeaking;
   const isPrioritySpeaker = Boolean(speaking && member?.canPrioritySpeaker);
   return (
     <li
+      ref={setRowEl}
       className={`server-voice-user${memberMuted ? " is-muted" : ""}${memberDeafened ? " is-deafened" : ""}${speaking ? " is-speaking" : ""}${isPrioritySpeaker ? " is-priority-speaker" : ""}`}
       title={member?.username || name}
       onContextMenu={onContextMenu}

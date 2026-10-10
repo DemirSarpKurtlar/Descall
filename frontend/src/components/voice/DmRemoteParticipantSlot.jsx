@@ -15,6 +15,7 @@ import { useT } from "../../context/LocaleContext";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import SpeakingRings from "./SpeakingRings";
 import ParticipantStateIcons from "./ParticipantStateIcons";
+import useGlassUi from "../../hooks/useGlassUi";
 
 const PARTICIPANT_EASE = [0.16, 1, 0.3, 1];
 
@@ -135,14 +136,19 @@ export default function DmRemoteParticipantSlot({
   videoRef,
   remoteStream,
   isSpeaking: speakingRaw = false,
+  level = 0,
+  onTile = null,
   isMuted = false,
   isDeafened = false,
   cameraOn = true,
   onContextMenu,
 }) {
   const t = useT();
+  const glass = useGlassUi();
   // Hold the off-edge so VAD flapping can't blink the ring between words.
-  const isSpeaking = useHeldSpeaking(speakingRaw && !isMuted);
+  const heldSpeaking = useHeldSpeaking(speakingRaw && !isMuted);
+  const isSpeaking = isMuted ? false : heldSpeaking;
+  const speakLevel = isSpeaking ? Math.max(0, Math.min(1, Number(level) || 0)) : 0;
   const user = displayPeer;
   const username = resolveDisplayName(displayPeer) || displayPeer?.username || t("User");
 
@@ -183,6 +189,7 @@ export default function DmRemoteParticipantSlot({
       {showParticipant && displayPeer && (
         <motion.div
           key={`participant-${displayPeer.id}`}
+          ref={onTile}
           layout
           variants={enterVariants}
           initial="hidden"
@@ -213,7 +220,14 @@ export default function DmRemoteParticipantSlot({
               >
                 <div className="participant-tile-avatar-core" style={{ width: 96, height: 96 }}>
                   {/* Always mounted — only fades; see SpeakingRings. */}
-                  <SpeakingRings speaking={isSpeaking} />
+                  <SpeakingRings speaking={isSpeaking} level={speakLevel} />
+                  {glass ? (
+                    <span
+                      className={`g-speak-ring${isSpeaking ? " is-active" : ""}`}
+                      style={{ "--speak-level": speakLevel.toFixed(3) }}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                   <Avatar
                     name={username}
                     size={96}

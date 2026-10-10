@@ -28,6 +28,7 @@ import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.
 import speexWasmPath from "@sapphi-red/web-noise-suppressor/speex.wasm?url";
 import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?url";
 import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
+import { primeVoiceActivity } from "./voiceActivity";
 
 const STORAGE_KEY = "descall:noiseSuppressionEnabled";
 
@@ -292,6 +293,9 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
  * Capture mic with optimized constraints and apply suppression when enabled.
  */
 export async function acquireVoiceMicStream(extraConstraints = {}) {
+  // Same turn as the tap, before getUserMedia yields. iOS will not resume
+  // an AudioContext created later from the speaking-ring effect.
+  primeVoiceActivity();
   const base = getVoiceAudioConstraints({
     deviceId: extraConstraints?.audio?.deviceId?.exact || extraConstraints?.deviceId,
   });
@@ -306,6 +310,9 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   };
 
   const raw = await navigator.mediaDevices.getUserMedia(constraints);
+  // Capture can suspend the context (CallKit / route change). Try again now
+  // that the mic exists; didActivate retries if this one is ignored.
+  primeVoiceActivity();
   try {
     raw.getAudioTracks().forEach((t) => {
       try {

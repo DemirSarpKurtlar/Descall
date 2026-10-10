@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { resolveAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { getStaticAvatarFrame, isAnimatedAvatarUrl } from "../../lib/gifAvatar";
 import { avatarEffectClass } from "./Cosmetics";
@@ -43,6 +43,7 @@ export function Avatar({
   const [useBareUrl, setUseBareUrl] = useState(false);
   const [stickySrc, setStickySrc] = useState(null);
   const imgRef = useRef(null);
+  const reduceMotion = useReducedMotion();
 
   const displayName = name || resolveDisplayName(user);
   const letter = (displayName && displayName[0] ? displayName[0] : "?").toUpperCase();
@@ -198,7 +199,9 @@ export function Avatar({
   // avatar subtree (fresh <img>, async decode) and blinked the call tile.
   const speakingCapable = animate === "speaking";
   const Root = speakingCapable || isSpeaking ? motion.div : "div";
-  const motionProps = isSpeaking
+  const motionProps = reduceMotion
+    ? { layout: false, animate: { scale: 1 }, transition: { duration: 0 } }
+    : isSpeaking
     ? {
         layout: false,
         // `null` = start from the current scale (no jump when speech resumes

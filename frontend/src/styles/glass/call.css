@@ -400,17 +400,30 @@ html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring {
   width: calc(100% + 14px) !important;
   height: calc(100% + 14px) !important;
   margin: 0;
-  transform: translate(-50%, -50%) !important;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(calc(1 + var(--speak-level, 0) * 0.08)) !important;
+  transition: opacity 0.16s ease, transform 0.12s linear, box-shadow 0.12s linear;
   border-radius: 50%;
   border: 1.5px solid rgba(48, 209, 88, 0.95);
-  box-shadow: 0 0 0 4px transparent, 0 0 0 5.5px rgba(48, 209, 88, 0.55);
+  box-shadow:
+    0 0 0 4px transparent,
+    0 0 0 5.5px rgba(48, 209, 88, calc(0.28 + var(--speak-level, 0) * 0.55)),
+    0 0 calc(8px + var(--speak-level, 0) * 18px) rgba(48, 209, 88, calc(0.25 + var(--speak-level, 0) * 0.45));
   background: transparent;
   pointer-events: none;
   z-index: 3;
 }
 
-html.glass-ui .g-call-grid.is-group .g-speak-ring {
-  display: none !important;
+html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring.is-active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring,
+  html.glass-ui .g-call .participant-tile-avatar-core > .g-speak-ring.is-active {
+    transform: translate(-50%, -50%) !important;
+    transition: opacity 0.2s linear !important;
+  }
 }
 
 html.glass-ui .g-call-grid.is-group > .participant-tile:nth-child(2) {

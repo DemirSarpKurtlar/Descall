@@ -53,7 +53,8 @@ assert.match(rings, /speaking-rings\$\{speaking \? " is-active" : ""\}/);
 assert.match(voiceCss, /animation-play-state:\s*paused/);
 assert.match(voiceCss, /\.speaking-rings\.is-active > span\s*\{\s*animation-play-state:\s*running/);
 assert.doesNotMatch(dmSlot, /\{isSpeaking && \(\s*<>\s*<span[\s\S]*?speaking-ring/, "DM rings must not mount on speaking");
-assert.match(dmSlot, /<SpeakingRings speaking=\{isSpeaking\} \/>/);
+assert.match(dmSlot, /<SpeakingRings speaking=\{isSpeaking\}/);
+assert.match(dmSlot, /g-speak-ring/);
 assert.match(overlay, /<SpeakingRings speaking=\{isSpeaking\} level=\{level\} \/>/);
 
 // 4. Off-edge hold against VAD flapping everywhere the ring renders.

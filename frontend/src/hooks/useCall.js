@@ -51,6 +51,7 @@ import { createMicGuard, withCaptureRetry } from "../lib/iosCallMic";
 import { reportDiagnostic } from "../lib/sentry";
 import { createCallSetupTimeline } from "../lib/callSetupTimeline";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
+import { notifyCallAudioSession } from "../lib/voiceActivity";
 
 function callPlatformTag() {
   if (IOS_NATIVE) return "ios-app";
@@ -1755,7 +1756,7 @@ export function useCall(socket, callOccupancyRef = null) {
     if (!IOS_NATIVE) return;
     if (mode === "outgoing" || mode === "active") {
       iosRouteActiveRef.current = true;
-      void beginIosCallAudio({ video: callType === "video" });
+      void beginIosCallAudio({ video: callType === "video" }).then(() => notifyCallAudioSession()).catch(() => {});
     } else if (!mode && iosRouteActiveRef.current) {
       iosRouteActiveRef.current = false;
       void endIosCallAudio();
@@ -1764,6 +1765,7 @@ export function useCall(socket, callOccupancyRef = null) {
 
   /** CallKit didActivate (from useIosCallKitBridge). */
   const onCallAudioSessionActivated = useCallback(() => {
+    notifyCallAudioSession();
     micGuardRef.current?.onAudioSessionActivated();
     if (iosRouteActiveRef.current) void beginIosCallAudio({ video: callTypeRef.current === "video" });
   }, []);
