@@ -501,7 +501,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="modal-close" onClick={() => setShowLogin(false)}>
+            <button className="modal-close" onClick={() => setShowLogin(false)} aria-label={t("Close")}>
               <X size={20} />
             </button>
             

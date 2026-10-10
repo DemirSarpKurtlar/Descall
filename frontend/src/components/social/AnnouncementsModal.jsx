@@ -87,7 +87,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                 >
                   <div className="add-modal-header">
                     <h3>{glass ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
-                    <button type="button" className="icon-btn" onClick={() => setOpen(false)}>
+                    <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("Close")}>
                       <X size={18} />
                     </button>
                   </div>
@@ -149,7 +149,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
       <button
         type="button"
         className={className}
-        title={t("Announcements")}
+        title={t("Announcements")} aria-label={t("Announcements")}
         onClick={() => setOpen(true)}
       >
         <Megaphone size={iconSize} />

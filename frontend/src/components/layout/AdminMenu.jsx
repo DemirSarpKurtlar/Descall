@@ -52,7 +52,7 @@ export default function AdminMenu({ onClose, onLogout, me }) {
           <button 
             className="icon-btn"
             onClick={onClose}
-            title="Close"
+            title="Close" aria-label="Close"
           >
             <X size={20} />
           </button>
@@ -235,7 +235,7 @@ function UsersSection() {
                     <button className="table-action" disabled={updating === u.id} onClick={() => toggleRole(u.id, u.role)}>
                       {updating === u.id ? "..." : u.role === "admin" ? "Demote" : "Promote"}
                     </button>
-                    <button className="table-action danger" disabled={updating === u.id} onClick={() => banUser(u.id)}>
+                    <button className="table-action danger" disabled={updating === u.id} onClick={() => banUser(u.id)} aria-label="Ban">
                       <Ban size={14} />
                     </button>
                   </div>
@@ -267,10 +267,10 @@ function ServersSection() {
     <div className="admin-section">
       <h3 className="section-title">Server Settings</h3>
       <p className="section-desc">Configure server-wide options (stored locally)</p>
-      <div className="toggle-row"><span>Registration Open</span><Toggle value={settings.registrationOpen !== false} onChange={(v) => persist("registrationOpen", v)} /></div>
-      <div className="toggle-row"><span>Allow File Uploads</span><Toggle value={settings.fileUploads !== false} onChange={(v) => persist("fileUploads", v)} /></div>
-      <div className="toggle-row"><span>Require Email Verification</span><Toggle value={settings.emailVerify === true} onChange={(v) => persist("emailVerify", v)} /></div>
-      <div className="toggle-row"><span>Maintenance Mode</span><Toggle value={settings.maintenance === true} onChange={(v) => persist("maintenance", v)} /></div>
+      <div className="toggle-row"><span>Registration Open</span><Toggle label="Registration Open" value={settings.registrationOpen !== false} onChange={(v) => persist("registrationOpen", v)} /></div>
+      <div className="toggle-row"><span>Allow File Uploads</span><Toggle label="Allow File Uploads" value={settings.fileUploads !== false} onChange={(v) => persist("fileUploads", v)} /></div>
+      <div className="toggle-row"><span>Require Email Verification</span><Toggle label="Require Email Verification" value={settings.emailVerify === true} onChange={(v) => persist("emailVerify", v)} /></div>
+      <div className="toggle-row"><span>Maintenance Mode</span><Toggle label="Maintenance Mode" value={settings.maintenance === true} onChange={(v) => persist("maintenance", v)} /></div>
     </div>
   );
 }
@@ -321,9 +321,9 @@ function NotificationsSection() {
     <div className="admin-section">
       <h3 className="section-title">Notification Settings</h3>
       <p className="section-desc">Configure admin alerts</p>
-      <div className="toggle-row"><span>New User Alerts</span><Toggle value={settings.newUser !== false} onChange={(v) => persist("newUser", v)} /></div>
-      <div className="toggle-row"><span>Failed Login Alerts</span><Toggle value={settings.failedLogin !== false} onChange={(v) => persist("failedLogin", v)} /></div>
-      <div className="toggle-row"><span>Error Report Alerts</span><Toggle value={settings.errorReports === true} onChange={(v) => persist("errorReports", v)} /></div>
+      <div className="toggle-row"><span>New User Alerts</span><Toggle label="New User Alerts" value={settings.newUser !== false} onChange={(v) => persist("newUser", v)} /></div>
+      <div className="toggle-row"><span>Failed Login Alerts</span><Toggle label="Failed Login Alerts" value={settings.failedLogin !== false} onChange={(v) => persist("failedLogin", v)} /></div>
+      <div className="toggle-row"><span>Error Report Alerts</span><Toggle label="Error Report Alerts" value={settings.errorReports === true} onChange={(v) => persist("errorReports", v)} /></div>
     </div>
   );
 }
@@ -349,23 +349,23 @@ function AppearanceSection() {
               border: accent === c ? "2px solid white" : "2px solid transparent",
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             }}
-          >
+           aria-label={c} aria-pressed={accent === c}>
             {accent === c && <Check size={16} color="white" />}
           </motion.button>
         ))}
       </div>
       <div className="toggle-row" style={{ marginTop: 16 }}>
         <span>Compact Admin UI</span>
-        <Toggle value={localStorage.getItem("descall_admin_compact") === "true"} onChange={(v) => localStorage.setItem("descall_admin_compact", String(v))} />
+        <Toggle label="Compact Admin UI" value={localStorage.getItem("descall_admin_compact") === "true"} onChange={(v) => localStorage.setItem("descall_admin_compact", String(v))} />
       </div>
     </div>
   );
 }
 
 /* Reusable toggle (AdminMenu inline) */
-function Toggle({ value, onChange }) {
+function Toggle({ value, onChange, label }) {
   return (
-    <button className={`toggle-switch ${value ? "active" : ""}`} onClick={() => onChange(!value)} type="button" aria-pressed={value}>
+    <button className={`toggle-switch ${value ? "active" : ""}`} onClick={() => onChange(!value)} type="button" aria-pressed={value} aria-label={label}>
       <div className="toggle-knob" />
     </button>
   );

@@ -1231,7 +1231,7 @@ function MessageBubble({
               <button
                 type="button"
                 className={`hover-bar-btn ${pickerOpen ? "active" : ""}`}
-                title={t("More reactions")}
+                title={t("More reactions")} aria-label={t("More reactions")}
                 onClick={(ev) => {
                   ev.stopPropagation();
                   setPickerOpen((v) => !v);
@@ -1242,7 +1242,7 @@ function MessageBubble({
               <button
                 type="button"
                 className="hover-bar-btn"
-                title={t("Reply")}
+                title={t("Reply")} aria-label={t("Reply")}
                 onClick={(ev) => {
                   ev.stopPropagation();
                   triggerReply();
@@ -1254,7 +1254,7 @@ function MessageBubble({
                 <button
                   type="button"
                   className={`hover-bar-btn ${isPinned ? "active" : ""}`}
-                  title={isPinned ? t("Unpin") : t("Pin")}
+                  title={isPinned ? t("Unpin") : t("Pin")} aria-label={isPinned ? t("Unpin") : t("Pin")}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     togglePin();
@@ -1267,7 +1267,7 @@ function MessageBubble({
                 <button
                   type="button"
                   className="hover-bar-btn"
-                  title={t("Edit")}
+                  title={t("Edit")} aria-label={t("Edit")}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     beginEdit();
@@ -1280,7 +1280,7 @@ function MessageBubble({
                 <button
                   type="button"
                   className="hover-bar-btn danger"
-                  title={t("Delete")}
+                  title={t("Delete")} aria-label={t("Delete")}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     deleteMessage();
@@ -1293,7 +1293,7 @@ function MessageBubble({
                 <button
                   type="button"
                   className="hover-bar-btn"
-                  title={t("report.action")}
+                  title={t("report.action")} aria-label={t("report.action")}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     const author = message.from || {};

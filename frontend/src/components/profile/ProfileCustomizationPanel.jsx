@@ -222,7 +222,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.theme.darkMode ? "on" : ""}`}
                     onClick={() => updateTheme({ darkMode: !customization.theme.darkMode })}
-                  >
+                   aria-label="Dark Mode" aria-pressed={customization.theme.darkMode}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.theme.darkMode ? 24 : 0 }}
@@ -237,7 +237,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.theme.glassEffect ? "on" : ""}`}
                     onClick={() => updateTheme({ glassEffect: !customization.theme.glassEffect })}
-                  >
+                   aria-label="Glass Effect" aria-pressed={customization.theme.glassEffect}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.theme.glassEffect ? 24 : 0 }}
@@ -319,7 +319,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.animations.enabled ? "on" : ""}`}
                     onClick={() => updateAnimations({ enabled: !customization.animations.enabled })}
-                  >
+                   aria-label="Enable Animations" aria-pressed={customization.animations.enabled}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.animations.enabled ? 24 : 0 }}
@@ -350,7 +350,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.animations.soundEffects ? "on" : ""}`}
                     onClick={() => updateAnimations({ soundEffects: !customization.animations.soundEffects })}
-                  >
+                   aria-label="Sound Effects" aria-pressed={customization.animations.soundEffects}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.animations.soundEffects ? 24 : 0 }}
@@ -366,7 +366,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.animations.particleEffects ? "on" : ""}`}
                     onClick={() => updateAnimations({ particleEffects: !customization.animations.particleEffects })}
-                  >
+                   aria-label="Particle Effects" aria-pressed={customization.animations.particleEffects}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.animations.particleEffects ? 24 : 0 }}
@@ -457,7 +457,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.layout.compactMode ? "on" : ""}`}
                     onClick={() => updateLayout({ compactMode: !customization.layout.compactMode })}
-                  >
+                   aria-label="Compact Mode" aria-pressed={customization.layout.compactMode}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.layout.compactMode ? 24 : 0 }}
@@ -603,7 +603,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.profile.showActivity ? "on" : ""}`}
                     onClick={() => updateProfile({ showActivity: !customization.profile.showActivity })}
-                  >
+                   aria-label="Show Activity" aria-pressed={customization.profile.showActivity}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.profile.showActivity ? 24 : 0 }}
@@ -619,7 +619,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.profile.showOnlineStatus ? "on" : ""}`}
                     onClick={() => updateProfile({ showOnlineStatus: !customization.profile.showOnlineStatus })}
-                  >
+                   aria-label="Show Online Status" aria-pressed={customization.profile.showOnlineStatus}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.profile.showOnlineStatus ? 24 : 0 }}
@@ -635,7 +635,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.profile.showUsername ? "on" : ""}`}
                     onClick={() => updateProfile({ showUsername: !customization.profile.showUsername })}
-                  >
+                   aria-label="Show Username" aria-pressed={customization.profile.showUsername}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.profile.showUsername ? 24 : 0 }}
@@ -657,7 +657,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.notifications?.messageNotifications ? "on" : ""}`}
                     onClick={() => updateNotifications({ messageNotifications: !customization.notifications?.messageNotifications })}
-                  >
+                   aria-label="Message Notifications" aria-pressed={!!customization.notifications?.messageNotifications}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.notifications?.messageNotifications ? 24 : 0 }}
@@ -673,7 +673,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.notifications?.callNotifications ? "on" : ""}`}
                     onClick={() => updateNotifications({ callNotifications: !customization.notifications?.callNotifications })}
-                  >
+                   aria-label="Call Notifications" aria-pressed={!!customization.notifications?.callNotifications}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.notifications?.callNotifications ? 24 : 0 }}
@@ -689,7 +689,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.notifications?.groupNotifications ? "on" : ""}`}
                     onClick={() => updateNotifications({ groupNotifications: !customization.notifications?.groupNotifications })}
-                  >
+                   aria-label="Group Notifications" aria-pressed={!!customization.notifications?.groupNotifications}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.notifications?.groupNotifications ? 24 : 0 }}
@@ -705,7 +705,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.notifications?.friendRequestNotifications ? "on" : ""}`}
                     onClick={() => updateNotifications({ friendRequestNotifications: !customization.notifications?.friendRequestNotifications })}
-                  >
+                   aria-label="Friend Request Notifications" aria-pressed={!!customization.notifications?.friendRequestNotifications}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.notifications?.friendRequestNotifications ? 24 : 0 }}
@@ -727,7 +727,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.privacy?.allowMessagesFromNonFriends ? "on" : ""}`}
                     onClick={() => updatePrivacy({ allowMessagesFromNonFriends: !customization.privacy?.allowMessagesFromNonFriends })}
-                  >
+                   aria-label="Allow Messages From Non-Friends" aria-pressed={!!customization.privacy?.allowMessagesFromNonFriends}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.privacy?.allowMessagesFromNonFriends ? 24 : 0 }}
@@ -743,7 +743,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.privacy?.onlineStatusFriendsOnly ? "on" : ""}`}
                     onClick={() => updatePrivacy({ onlineStatusFriendsOnly: !customization.privacy?.onlineStatusFriendsOnly })}
-                  >
+                   aria-label="Show Online Status To Friends Only" aria-pressed={!!customization.privacy?.onlineStatusFriendsOnly}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.privacy?.onlineStatusFriendsOnly ? 24 : 0 }}
@@ -759,7 +759,7 @@ export default function ProfileCustomizationPanel({
                   <button
                     className={`toggle-switch ${customization.privacy?.allowProfileViewing ? "on" : ""}`}
                     onClick={() => updatePrivacy({ allowProfileViewing: !customization.privacy?.allowProfileViewing })}
-                  >
+                   aria-label="Allow Profile Viewing" aria-pressed={!!customization.privacy?.allowProfileViewing}>
                     <motion.div
                       className="toggle-handle"
                       animate={{ x: customization.privacy?.allowProfileViewing ? 24 : 0 }}

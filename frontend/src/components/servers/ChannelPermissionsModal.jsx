@@ -262,7 +262,7 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
               <button
                 type="button"
                 className="icon-btn"
-                title={t("Add override")}
+                title={t("Add override")} aria-label={t("Add override")}
                 onClick={() => setAddOpen((v) => !v)}
               >
                 <UserPlus size={16} />

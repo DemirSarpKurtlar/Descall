@@ -664,7 +664,7 @@ function CreateLobbyModal({ meta, ranks, busy, defaultHostRank, defaultRegion, o
       >
         <header>
           <h3>{t("Create Valorant lobby")}</h3>
-          <button type="button" className="icon-btn" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label={t("Close")}><X size={18} /></button>
         </header>
 
         <div className="lfg-modal-body">

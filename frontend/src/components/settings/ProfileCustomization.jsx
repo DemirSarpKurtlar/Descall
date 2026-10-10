@@ -411,7 +411,7 @@ export default function ProfileCustomization({ me, onUpdate }) {
             <div className="pc-avatar-section">
               <div className="pc-avatar-preview">
                 <Avatar name={profile.displayName || profile.username || "User"} size={96} user={profile} />
-                <button onClick={() => fileInputRef.current?.click()}>
+                <button onClick={() => fileInputRef.current?.click()} aria-label={t("Change photo")}>
                   <Camera size={16} />
                 </button>
                 <input
@@ -501,7 +501,7 @@ export default function ProfileCustomization({ me, onUpdate }) {
                     className={profile.accentColor === color ? "active" : ""}
                     style={{ background: color }}
                     onClick={() => handleChange("accentColor", color)}
-                  />
+                   aria-label={color} aria-pressed={profile.accentColor === color}/>
                 ))}
                 <input
                   type="color"

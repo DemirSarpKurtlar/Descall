@@ -218,7 +218,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
 
             <div className="server-invite-list-head">
               <span>{t("Active invites")}</span>
-              <button type="button" className="icon-btn" onClick={load} title={t("Refresh")}>
+              <button type="button" className="icon-btn" onClick={load} title={t("Refresh")} aria-label={t("Refresh")}>
                 <RefreshCw size={14} />
               </button>
             </div>
@@ -241,10 +241,10 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
                       </span>
                     </div>
                     <div className="server-invite-item-actions">
-                      <button type="button" className="icon-btn" onClick={() => copy(toPublicShareUrl(inv.url) || inv.code)}>
+                      <button type="button" className="icon-btn" onClick={() => copy(toPublicShareUrl(inv.url) || inv.code)} aria-label={t("Copy")}>
                         <Copy size={14} />
                       </button>
-                      <button type="button" className="icon-btn danger" onClick={() => revoke(inv.code)}>
+                      <button type="button" className="icon-btn danger" onClick={() => revoke(inv.code)} aria-label={t("Revoke")}>
                         <Trash2 size={14} />
                       </button>
                     </div>

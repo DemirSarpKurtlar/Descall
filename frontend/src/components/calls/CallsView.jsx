@@ -350,7 +350,7 @@ export default function CallsView({
                     type="button"
                     className="calls-quick-avatar"
                     onClick={() => onOpenChat?.(friend)}
-                    title={t("Open chat with {name}", { name: resolveDisplayName(friend) })}
+                    title={t("Open chat with {name}", { name: resolveDisplayName(friend) })} aria-label={t("Open chat with {name}", { name: resolveDisplayName(friend) })}
                   >
                     <Avatar name={resolveDisplayName(friend)} size={glass ? 44 : compact ? 40 : 48} user={friend} />
                     <StatusBadge status={status || "online"} />
@@ -360,7 +360,7 @@ export default function CallsView({
                     <button
                       type="button"
                       className="calls-icon-btn"
-                      title={t("Voice call")}
+                      title={t("Voice call")} aria-label={t("Voice call")}
                       onClick={() => onStartCall?.(friend, "voice")}
                     >
                       <Phone size={15} />
@@ -368,7 +368,7 @@ export default function CallsView({
                     <button
                       type="button"
                       className="calls-icon-btn is-video"
-                      title={t("Video call")}
+                      title={t("Video call")} aria-label={t("Video call")}
                       onClick={() => onStartCall?.(friend, "video")}
                     >
                       <Video size={15} />
@@ -492,7 +492,7 @@ export default function CallsView({
                       <button
                         type="button"
                         className="calls-icon-btn"
-                        title={isGroup ? t("Start group voice call") : t("Call back")}
+                        title={isGroup ? t("Start group voice call") : t("Call back")} aria-label={isGroup ? t("Start group voice call") : t("Call back")}
                         onClick={() => handleCallBack(call, "voice")}
                       >
                         <Phone size={15} />
@@ -501,7 +501,7 @@ export default function CallsView({
                       <button
                         type="button"
                         className="calls-icon-btn is-video"
-                        title={isGroup ? t("Start group video call") : t("Video call")}
+                        title={isGroup ? t("Start group video call") : t("Video call")} aria-label={isGroup ? t("Start group video call") : t("Video call")}
                         onClick={() => handleCallBack(call, "video")}
                       >
                         <Video size={15} />

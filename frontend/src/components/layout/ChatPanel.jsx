@@ -922,7 +922,7 @@ export default function ChatPanel({
                 {t("Pinned messages")}
                 <span className="members-panel-count">{pinnedMessages.length}</span>
               </h4>
-              <button type="button" className="icon-btn" onClick={() => setShowPinned(false)} title={t("Close")}>
+              <button type="button" className="icon-btn" onClick={() => setShowPinned(false)} title={t("Close")} aria-label={t("Close")}>
                 <X size={16} />
               </button>
             </div>
@@ -949,7 +949,7 @@ export default function ChatPanel({
                       <button
                         type="button"
                         className="icon-btn sm"
-                        title={t("Unpin")}
+                        title={t("Unpin")} aria-label={t("Unpin")}
                         onClick={() => unpinMessage(pm.id)}
                       >
                         <PinOff size={14} />

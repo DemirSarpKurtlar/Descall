@@ -46,7 +46,7 @@ export default function VideoConferenceMobile({
         <span className="vc-mobile-title">
           {callType === "video" ? t("Video Call") : t("Voice Call")}
         </span>
-        <button className="vc-mobile-close" onClick={onClose}>
+        <button className="vc-mobile-close" onClick={onClose} aria-label={t("Close")}>
           ✕
         </button>
       </div>

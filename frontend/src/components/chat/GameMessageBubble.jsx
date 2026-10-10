@@ -288,7 +288,7 @@ function LobbyTable({ credits, onBet, onHelp }) {
           ))}
         </div>
         <div className="bj-bet-slider-row">
-          <button type="button" onClick={() => setBet((b) => Math.max(10, b - 10))}>−</button>
+          <button type="button" onClick={() => setBet((b) => Math.max(10, b - 10))} aria-label={t("Decrease bet")}>−</button>
           <input
             type="range"
             min={10}
@@ -297,7 +297,7 @@ function LobbyTable({ credits, onBet, onHelp }) {
             value={Math.min(bet, Math.max(10, credits || 10))}
             onChange={(e) => setBet(Number(e.target.value))}
           />
-          <button type="button" onClick={() => setBet((b) => Math.min(credits, b + 10))}>+</button>
+          <button type="button" onClick={() => setBet((b) => Math.min(credits, b + 10))} aria-label={t("Increase bet")}>+</button>
         </div>
         <motion.button
           type="button"

@@ -3775,6 +3775,10 @@ export const phrases = {
     "iPhone Ayarlar → Descall → Bildirimler bölümünden açabilirsin.",
   "Allow notifications to get messages while Descall is closed.":
     "Descall kapalıyken mesajları almak için bildirimlere izin ver.",
+  "Grid view": "Izgara görünümü",
+  "Decrease bet": "Bahsi azalt",
+  "Increase bet": "Bahsi artır",
+  "Audio settings": "Ses ayarları",
   ...TR_INAPP_GAPS,
 };
 

@@ -68,7 +68,7 @@ export default function IncomingCallCard({
               className="incoming-call-btn incoming-call-btn--decline"
               whileTap={{ scale: 0.97 }}
               onClick={onDecline}
-              title={t("Decline")}
+              title={t("Decline")} aria-label={t("Decline")}
             >
               <PhoneOff size={28} />
             </motion.button>
@@ -80,7 +80,7 @@ export default function IncomingCallCard({
               className="incoming-call-btn incoming-call-btn--accept"
               whileTap={{ scale: 0.97 }}
               onClick={onAccept}
-              title={t("Accept")}
+              title={t("Accept")} aria-label={t("Accept")}
             >
               <Phone size={28} />
             </motion.button>
@@ -95,7 +95,7 @@ export default function IncomingCallCard({
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.95 }}
           onClick={onDecline}
-          title={t("Decline")}
+          title={t("Decline")} aria-label={t("Decline")}
         >
           <PhoneOff size={22} />
         </motion.button>
@@ -105,7 +105,7 @@ export default function IncomingCallCard({
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.95 }}
           onClick={onAccept}
-          title={t("Accept")}
+          title={t("Accept")} aria-label={t("Accept")}
         >
           <Phone size={22} />
         </motion.button>

@@ -83,7 +83,7 @@ function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectr
           )}
         </div>
         {manualOverride && (
-          <button className="activity-clear-manual-btn" onClick={onClearManual} title={t('Clear manual status')}>
+          <button className="activity-clear-manual-btn" onClick={onClearManual} title={t('Clear manual status')} aria-label={t('Clear manual status')}>
             <X size={16} />
           </button>
         )}
@@ -130,7 +130,7 @@ function ManualStatusModal({ onSet, onClose }) {
             <Edit3 size={18} style={{ color: 'var(--primary)' }} />
             <h3>{t('Set Custom Status')}</h3>
           </div>
-          <button className="icon-btn" onClick={onClose}><X size={18} /></button>
+          <button className="icon-btn" onClick={onClose} aria-label={t("Close")}><X size={18} /></button>
         </div>
 
         <input
@@ -278,7 +278,7 @@ export default function ActivityView({
               <button
                 type="button"
                 className="icon-btn"
-                title={t('Search')}
+                title={t('Search')} aria-label={t('Search')}
                 onClick={() => searchRef.current?.focus()}
               >
                 <Search size={18} />
@@ -287,7 +287,7 @@ export default function ActivityView({
               <button
                 type="button"
                 className="icon-btn"
-                title={t('Send Feedback')}
+                title={t('Send Feedback')} aria-label={t('Send Feedback')}
                 onClick={() => openFeedbackModal({ type: 'suggestion', source: 'activity_view' })}
               >
                 <MessageSquarePlus size={18} />
@@ -295,7 +295,7 @@ export default function ActivityView({
               <button
                 type="button"
                 className="icon-btn"
-                title={t('Add friend')}
+                title={t('Add friend')} aria-label={t('Add friend')}
                 onClick={() => onAddFriend?.()}
               >
                 <Plus size={18} />

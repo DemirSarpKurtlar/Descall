@@ -57,7 +57,7 @@ export default function MessageBubble({
             type="button"
             className="msg-avatar-btn"
             onClick={() => onOpenProfile?.(message)}
-            title={t("Profile")}
+            title={t("Profile")} aria-label={t("Profile")}
           >
             <Avatar
               name={message.from?.displayName || message.displayName || message.username || "?"}

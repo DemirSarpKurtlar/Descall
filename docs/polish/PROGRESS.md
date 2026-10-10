@@ -1,5 +1,22 @@
 # Polish progress
 
+## 2.9.190 — icon buttons have accessible names
+
+Icon-only `<button>` and `<motion.button>` controls now have an accessible name. Where a `title` already existed, the same expression is copied to `aria-label` (including the hand-raise ternary). Close, end-call, mute, grid/focus, bet, and copy/revoke controls use existing translation keys. Four new Turkish strings: Grid view, Decrease bet, Increase bet, Audio settings. Switches in profile customization and the rebuilt settings panel set `aria-label` from the visible row label and `aria-pressed` from the boolean field. The shared admin `Toggle` takes a `label` prop so each row is named, not the last row in the file.
+
+`node frontend/src/lib/iconButtonNames.selftest.mjs` walks the frontend and fails if an icon-only button has neither visible text, a `*Content` row, `aria-label`, nor `aria-labelledby`. `title` alone does not count. Changed JSX parses with esbuild.
+
+Pixels do not change. Glass, desktop, web, and Android stay on the same layout. Legal/consent files (`index.html`, `main.jsx`, `legalContent.js`, `EmailCapture`, age gate) were not edited.
+
+### TestFlight checklist (Demir)
+
+Sürüm **2.9.190**. Görünüm aynı. Ekran okuyucu isimleri.
+
+- [ ] Arama çubuğunda kapat / aramayı bitir / el kaldır düğmeleri VoiceOver’da isimli.
+- [ ] Sohbet mesajı menüsü (yanıtla, sil, tepki) isimli; fotoğrafa uzun basınca menü hâlâ kapanıyor.
+- [ ] Ayarlar anahtarları satır adını okuyor ve açık/kapalı durumu doğru.
+- [ ] Türkçe arayüzde “Bahsi azalt” / “Bahsi artır” ve “Izgara görünümü” duyuluyor.
+
 ## 2.9.189 — sitemap selftest uses the published catalog
 
 `sitemap.selftest.cjs` asserted `/faq` against `staticPages`, which is only the three-page fallback used when the ESM catalog fails to load. The live sitemap (`catalogEntries`, served by `/sitemap-pages.xml` and the child tables) already includes `/faq`. The test now checks that catalog, and checks the fallback stays the three-page list. `node frontend/backend/routes/sitemap.selftest.cjs` passes.

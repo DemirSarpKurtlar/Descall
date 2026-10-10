@@ -413,7 +413,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               cursor: "pointer",
               flexShrink: 0,
             }}
-          >
+           aria-label={t("End Call")}>
             <PhoneOff size={18} />
           </button>
         </motion.div>
@@ -776,7 +776,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               {(screenSharing || showScreenQuality) && (
                 <button
                   type="button"
-                  title={t("Screen quality")}
+                  title={t("Screen quality")} aria-label={t("Screen quality")}
                   onClick={() => {
                     setShowMoreMenu(false);
                     setShowAudioPanel(false);
@@ -827,7 +827,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             {!narrowViewport && (
               <motion.button
                 onClick={toggleHandRaise}
-                title={handRaised ? t("Lower hand") : t("Raise hand")}
+                title={handRaised ? t("Lower hand") : t("Raise hand")} aria-label={handRaised ? t("Lower hand") : t("Raise hand")}
                 animate={handRaised ? { scale: [1, 1.2, 1] } : { scale: 1 }}
                 transition={handRaised ? { repeat: Infinity, duration: 1.6, ease: "easeInOut" } : {}}
                 style={{
@@ -1093,7 +1093,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               <button
                 onClick={() => setShowParticipants(false)}
                 style={{ background: "none", border: "none", color: "#b5bac1", cursor: "pointer" }}
-              >
+               aria-label={t("Close")}>
                 <XIcon size={18} />
               </button>
             </div>
@@ -2161,7 +2161,7 @@ function AudioDevicePanel({ isDm, call, groupCall, onClose, narrow = false }) {
           style={{ background: "none", border: "none", color: "#72767d", cursor: "pointer", padding: 4, borderRadius: 6, display: "flex", alignItems: "center" }}
           onMouseEnter={e => e.currentTarget.style.color = "#e3e5e8"}
           onMouseLeave={e => e.currentTarget.style.color = "#72767d"}
-        >
+         aria-label={t("Close")}>
           <XIcon size={15} />
         </button>
       </div>

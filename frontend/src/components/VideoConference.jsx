@@ -236,7 +236,7 @@ export default function VideoConference({
             borderRadius: '50%', border: 'none', background: 'rgba(242,63,67,0.9)',
             color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
-        >
+         aria-label={t("Close")}>
           <X size={14} />
         </button>
       </motion.div>
@@ -266,15 +266,15 @@ export default function VideoConference({
         </div>
         <div className="vc-view-toggle" style={{ display: 'flex', gap: 8 }}>
           <button className={viewMode === "grid" ? "active" : ""} onClick={() => setViewMode("grid")}
-            style={{ background: viewMode === "grid" ? 'rgba(255,255,255,0.2)' : 'transparent', border: 'none', color: '#fff', padding: 6, borderRadius: 6, cursor: 'pointer' }}>
+            style={{ background: viewMode === "grid" ? 'rgba(255,255,255,0.2)' : 'transparent', border: 'none', color: '#fff', padding: 6, borderRadius: 6, cursor: 'pointer' }} aria-label={t("Grid view")}>
             <Grid size={18} />
           </button>
           <button className={viewMode === "focus" ? "active" : ""} onClick={() => setViewMode("focus")}
-            style={{ background: viewMode === "focus" ? 'rgba(255,255,255,0.2)' : 'transparent', border: 'none', color: '#fff', padding: 6, borderRadius: 6, cursor: 'pointer' }}>
+            style={{ background: viewMode === "focus" ? 'rgba(255,255,255,0.2)' : 'transparent', border: 'none', color: '#fff', padding: 6, borderRadius: 6, cursor: 'pointer' }} aria-label={t("Focus")}>
             <Maximize2 size={18} />
           </button>
           {onMinimize && (
-            <button onClick={onMinimize} title={t("Minimize")}
+            <button onClick={onMinimize} title={t("Minimize")} aria-label={t("Minimize")}
               style={{ 
                 background: 'rgba(255, 255, 255, 0.1)', 
                 border: '1px solid rgba(255, 255, 255, 0.2)', 
@@ -453,7 +453,7 @@ export default function VideoConference({
             {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
           </RippleButton>
           <button onClick={() => setShowAudioSettings(!showAudioSettings)}
-            style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: 4 }}>
+            style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: 4 }} aria-label={t("Audio settings")}>
             <Settings size={14} />
           </button>
           <RippleButton className={`vc-btn${!isCameraOn ? ' danger' : ''}`} onClick={toggleCamera} disabled={callType === "voice" && !isCameraOn}
@@ -470,7 +470,7 @@ export default function VideoConference({
           </RippleButton>
           {!isScreenSharing && (
             <button onClick={() => setShowScreenQuality(!showScreenQuality)}
-              style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: 4 }}>
+              style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: 4 }} aria-label={t("Screen quality")}>
               <Settings size={14} />
             </button>
           )}
@@ -498,7 +498,7 @@ export default function VideoConference({
             }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{t("Screen Quality")}</span>
-              <button onClick={() => setShowScreenQuality(false)} style={{ background: 'none', border: 'none', color: '#aaa', cursor: 'pointer' }}><X size={14} /></button>
+              <button onClick={() => setShowScreenQuality(false)} style={{ background: 'none', border: 'none', color: '#aaa', cursor: 'pointer' }} aria-label={t("Close")}><X size={14} /></button>
             </div>
             <div style={{ marginBottom: 12 }}>
               <label style={{ color: '#aaa', fontSize: 11, marginBottom: 6, display: 'block' }}>{t("Resolution")}</label>
