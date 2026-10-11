@@ -1,0 +1,214 @@
+/* Stage 2 — DM list, open DM, bubbles, composer.
+   Visual only: the grid, scrollports and actions stay as they are. */
+
+html.glass-desktop .sidebar-header {
+  min-height: 60px;
+  padding: 16px 12px 0 18px;
+  border-bottom: none;
+  background: transparent;
+}
+
+html.glass-desktop .sidebar-title {
+  font-family: var(--gd-font);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: -0.026em;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .sidebar-search {
+  margin: 12px 12px 4px;
+}
+
+html.glass-desktop .search-input,
+html.glass-desktop .sidebar-search input {
+  height: 36px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  color: var(--gd-t1);
+  font-family: var(--gd-font);
+}
+
+html.glass-desktop .search-input::placeholder,
+html.glass-desktop .sidebar-search input::placeholder {
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .sidebar-content {
+  background: transparent;
+}
+
+html.glass-desktop button.conv-row {
+  min-height: 60px;
+  margin: 2px 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+}
+
+html.glass-desktop button.conv-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.glass-desktop button.conv-row.active {
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.glass-desktop .conv-row-top .dm-name,
+html.glass-desktop .conv-row-top .group-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .dm-preview,
+html.glass-desktop .conv-row-bottom .group-members {
+  font-size: 13px;
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .main-panel,
+html.glass-desktop .messages-container,
+html.glass-desktop .panel-header,
+html.glass-desktop .header-right,
+html.glass-desktop .composer-container {
+  background: transparent;
+  border: none;
+}
+
+html.glass-desktop .panel-header {
+  gap: 8px;
+  padding: 12px 16px 8px;
+  min-height: 64px;
+}
+
+html.glass-desktop .header-identity {
+  height: 52px;
+  padding: 0 18px 0 6px;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.22);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+html.glass-desktop .header-right {
+  height: 52px;
+  padding: 0 6px;
+  border-radius: 26px;
+  gap: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.22);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+html.glass-desktop .header-right .icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .header-right .icon-btn:hover,
+html.glass-desktop .header-right .icon-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--gd-brand-hi);
+}
+
+html.glass-desktop .header-title {
+  font-family: var(--gd-font);
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .header-subtitle {
+  color: var(--gd-t3);
+  font-size: 12px;
+}
+
+html.glass-desktop .message-day-sep {
+  color: var(--gd-t3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+html.glass-desktop .message-bubble {
+  max-width: min(70%, 560px);
+  padding: 9px 14px;
+  border-radius: 18px;
+  border-top-left-radius: 6px;
+  background: rgba(58, 61, 80, 0.78);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.10);
+  color: var(--gd-t1);
+  font-size: 15px;
+  line-height: 21px;
+}
+
+html.glass-desktop .message-bubble.own {
+  border-top-left-radius: 18px;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 18px;
+  background: rgba(88, 122, 246, 0.26);
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.28);
+}
+
+html.glass-desktop .message-bubble.compact {
+  border-radius: 18px;
+}
+
+html.glass-desktop .composer-container {
+  padding: 8px 20px 16px;
+}
+
+html.glass-desktop .message-composer,
+html.glass-desktop .composer-input-wrapper {
+  background: transparent;
+}
+
+html.glass-desktop .composer-input {
+  min-height: 52px;
+  border: none;
+  border-radius: 26px;
+  padding: 14px 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.22);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  color: var(--gd-t1);
+  font-family: var(--gd-font);
+  font-size: 15px;
+}
+
+html.glass-desktop .composer-input::placeholder {
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .composer-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #0d0e13, 0 0 0 4px #8fa6ff, 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+html.glass-desktop.gd-lite .header-identity,
+html.glass-desktop.gd-lite .header-right,
+html.glass-desktop.gd-lite .composer-input,
+html.glass-desktop.gd-lite .search-input,
+html.glass-desktop.gd-lite .sidebar-search input {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid);
+}
