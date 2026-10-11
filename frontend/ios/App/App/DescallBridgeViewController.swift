@@ -11,6 +11,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
     /// Status-bar content colour. White by default (dark themes); the Liquid
     /// Glass light theme asks for black via DescallDisplay.setStatusBarStyle.
     private var statusBarDarkContent = false
+    private var keyboardObservers: [NSObjectProtocol] = []
 
     override open func viewDidLoad() {
         super.viewDidLoad()
@@ -29,7 +30,52 @@ class DescallBridgeViewController: CAPBridgeViewController {
         // up/down arrows and checkmark) is cleared for every field.
         DescallFormAccessoryBar.hide()
         DispatchQueue.main.async { DescallFormAccessoryBar.hide() }
+        observeKeyboardInset()
         showLaunchOverlay()
+    }
+
+    deinit {
+        keyboardObservers.forEach { NotificationCenter.default.removeObserver($0) }
+    }
+
+    /// WKWebView often leaves the layout viewport full-screen while the keyboard
+    /// covers the composer. Publish the overlap in CSS pixels so the shell can
+    /// sit the text field just above the keys. A web view that already shrank
+    /// reports 0 here, so the inset is not applied twice.
+    private func observeKeyboardInset() {
+        let names: [Notification.Name] = [
+            UIResponder.keyboardWillChangeFrameNotification,
+            UIResponder.keyboardWillShowNotification,
+            UIResponder.keyboardDidShowNotification,
+            UIResponder.keyboardWillHideNotification,
+            UIResponder.keyboardDidHideNotification,
+        ]
+        for name in names {
+            let token = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                self?.publishKeyboardInset(note)
+            }
+            keyboardObservers.append(token)
+        }
+    }
+
+    private func publishKeyboardInset(_ note: Notification) {
+        guard let webView else { return }
+        let overlap = keyboardOverlap(note, webView: webView)
+        let px = Int(overlap.rounded())
+        let js = "window.__descallNativeKeyboard && window.__descallNativeKeyboard(\(px))"
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    private func keyboardOverlap(_ note: Notification, webView: WKWebView) -> CGFloat {
+        if note.name == UIResponder.keyboardWillHideNotification
+            || note.name == UIResponder.keyboardDidHideNotification {
+            return 0
+        }
+        guard let raw = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return 0 }
+        let frame = webView.convert(raw, from: nil)
+        let overlap = webView.bounds.intersection(frame)
+        if overlap.isNull || overlap.isInfinite { return 0 }
+        return min(max(0, overlap.height), webView.bounds.height)
     }
 
     override open func viewDidAppear(_ animated: Bool) {

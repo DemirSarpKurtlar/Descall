@@ -25,30 +25,36 @@ export function mobileViewportBox({
   offsetTop = 0,
   offsetLeft = 0,
   editing = false,
+  nativeInset = 0,
 } = {}) {
   const layoutH = Math.max(0, Math.round(Number(innerHeight) || 0));
   const visibleH = Math.max(0, Math.round(Number(vvHeight) || layoutH));
   const top = Math.max(0, Math.round(Number(offsetTop) || 0));
   const left = Math.max(0, Math.round(Number(offsetLeft) || 0));
   const gap = Math.max(0, layoutH - visibleH - top);
-  const open = editing ? gap >= GAP_EDITING || top >= PAN_EDITING : gap >= GAP_OPEN;
+  // UIKit overlap when WKWebView does not shrink for the keyboard. Already
+  // included in `gap` when the visual viewport did shrink — never add both.
+  const native = Math.max(0, Math.round(Number(nativeInset) || 0));
+  const covered = Math.max(gap, native);
+  const open =
+    covered >= GAP_OPEN || (editing && (covered >= GAP_EDITING || top >= PAN_EDITING));
 
   if (!open) {
     const height = Math.max(visibleH, layoutH);
     return { open: false, top: 0, left: 0, height, kb: 0, gap: 0 };
   }
 
-  const fitted = Math.max(160, layoutH - top);
-  const height = Math.min(visibleH > 0 ? visibleH : fitted, fitted);
+  const extra = Math.max(0, native - gap);
+  const base = Math.min(visibleH > 0 ? visibleH : layoutH, Math.max(160, layoutH - top));
+  const height = Math.max(160, base - extra);
   return {
     open: true,
     top,
     left,
     height,
-    kb: Math.max(gap, top),
-    // Bottom overlap only. A pan (offsetTop) already moves the shell; adding
-    // it again would park the composer in the middle of the chat.
-    gap,
+    kb: Math.max(covered, top),
+    // Lift from the layout bottom. A pan (offsetTop) is not added again.
+    gap: covered,
   };
 }
 
