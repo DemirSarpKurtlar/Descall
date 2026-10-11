@@ -11,12 +11,6 @@ import {
 } from "../../legal/legalView";
 import "../../site/legal-doc.css";
 
-const CONTENT = {
-  privacy: PRIVACY_CONTENT,
-  terms: TERMS_CONTENT,
-  copyright: COPYRIGHT_CONTENT,
-};
-
 function SectionIcon({ index }) {
   const paths = [
     "M12 3l7 3v6c0 4.2-2.8 7.4-7 8.8C7.8 19.4 5 16.2 5 12V6l7-3z",

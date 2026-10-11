@@ -1,4 +1,5 @@
 import React from "react";
+import { clientErrorReportUrl } from "../config/api";
 import { clearToken, clearUser } from "../lib/storage";
 
 function IconRefresh({ size = 14, style }) {
@@ -175,8 +176,7 @@ export default class ErrorBoundary extends React.Component {
         connection: this.getConnectionInfo(),
       };
 
-      const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
-      const response = await fetch(`${API_URL}/api/errors`, {
+      const response = await fetch(clientErrorReportUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(errorData),

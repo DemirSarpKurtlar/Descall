@@ -3,6 +3,7 @@
  * Captures all frontend errors and sends them to admin logs
  */
 
+import { clientErrorReportUrl } from '../config/api';
 import { getToken } from '../lib/storage';
 
 // Error buffer to prevent duplicate errors
@@ -137,8 +138,7 @@ function categorizeError(error) {
  */
 async function sendToBackend(errorData) {
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
-    const response = await fetch(`${API_BASE_URL}/api/errors`, {
+    const response = await fetch(clientErrorReportUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
