@@ -1,0 +1,474 @@
+/* Stage 3 — hover toolbar, reply/edit strips, attachment menu,
+   emoji picker, GIF panel, slash menu, DM/group row menus.
+   Visual only. iOS html.glass-ui is untouched. */
+
+html.glass-desktop .message-hover-bar {
+  height: 44px;
+  padding: 0 6px;
+  gap: 2px;
+  border: none;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+html.glass-desktop .msg-quick-react {
+  gap: 0;
+  padding-right: 4px;
+  margin-right: 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+html.glass-desktop .emoji-chip,
+html.glass-desktop .hover-bar-btn {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 17px;
+  color: var(--gd-t1);
+  font-size: 18px;
+}
+
+html.glass-desktop .emoji-chip:hover,
+html.glass-desktop .hover-bar-btn:hover,
+html.glass-desktop .hover-bar-btn.active {
+  background: rgba(88, 122, 246, 0.22);
+  color: var(--gd-brand-hi);
+}
+
+html.glass-desktop .message-inline-picker {
+  width: 236px;
+  min-width: 236px;
+  padding: 10px 10px 12px;
+  border: none;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+html.glass-desktop .message-inline-picker-head {
+  padding: 0 4px 8px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .message-inline-picker-head button {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .message-inline-picker-grid button {
+  height: 38px;
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+html.glass-desktop .message-inline-picker-grid button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html.glass-desktop .message-reactions,
+html.glass-desktop .msg-reactions {
+  gap: 6px;
+}
+
+html.glass-desktop .reaction-chip,
+html.glass-desktop .reaction-pill {
+  height: 26px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .reaction-chip.mine,
+html.glass-desktop .reaction-pill.mine,
+html.glass-desktop .reaction-chip.active,
+html.glass-desktop .reaction-pill.active {
+  background: rgba(88, 122, 246, 0.28);
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.45);
+}
+
+html.glass-desktop .message-reply-quote {
+  margin: 0 0 6px;
+  padding: 6px 10px;
+  border: none;
+  border-left: 2px solid var(--gd-brand-hi);
+  border-radius: 0 10px 10px 0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.glass-desktop .message-reply-author {
+  color: var(--gd-brand-hi);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html.glass-desktop .message-reply-text {
+  color: var(--gd-t2);
+  font-size: 13px;
+}
+
+html.glass-desktop .message-pinned-badge {
+  color: var(--gd-brand-hi);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+html.glass-desktop .msg-edited {
+  color: var(--gd-t3);
+  font-size: 12px;
+}
+
+html.glass-desktop .message-unread-sep {
+  color: var(--gd-brand-hi);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html.glass-desktop .typing-indicator,
+html.glass-desktop .message-typing {
+  color: var(--gd-t3);
+  font-size: 12.5px;
+}
+
+html.glass-desktop .composer-reply-bar,
+html.glass-desktop .composer-edit-bar,
+html.glass-desktop .composer-attach-preview {
+  height: 48px;
+  margin: 0 0 8px 60px;
+  padding: 0 8px 0 14px;
+  width: auto;
+  flex: 1 0 calc(100% - 60px);
+  border: none;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.22);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .composer-reply-meta strong,
+html.glass-desktop .composer-edit-bar strong,
+html.glass-desktop .composer-attach-meta strong {
+  color: var(--gd-brand-hi);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+html.glass-desktop .composer-reply-meta span,
+html.glass-desktop .composer-attach-meta span {
+  color: var(--gd-t2);
+  font-size: 13px;
+}
+
+html.glass-desktop .composer-reply-clear {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .composer-reply-clear:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .msg-edit-box,
+html.glass-desktop .message-edit-ui {
+  border-radius: 16px;
+}
+
+html.glass-desktop .msg-edit-input,
+html.glass-desktop .message-edit-ui textarea,
+html.glass-desktop .message-edit-ui input {
+  border: none;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--gd-t1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .composer-left .composer-action-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 26px;
+  color: var(--gd-t1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.22);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+html.glass-desktop .composer-left .composer-action-btn.is-open,
+html.glass-desktop .composer-left .composer-action-btn[aria-expanded="true"] {
+  color: var(--gd-brand-hi);
+}
+
+html.glass-desktop .attachment-menu,
+html.glass-desktop .emoji-picker,
+html.glass-desktop .slash-command-menu,
+html.glass-desktop .gd-row-menu {
+  border: none !important;
+  border-radius: 18px !important;
+  padding: 6px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .attachment-menu {
+  min-width: 240px;
+  padding: 8px !important;
+}
+
+html.glass-desktop .attachment-item {
+  height: 48px;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--gd-t1);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+html.glass-desktop .attachment-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .attachment-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--gd-brand);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+html.glass-desktop .attachment-item:nth-child(2) .attachment-icon {
+  background: #30b0c7;
+}
+
+html.glass-desktop .attachment-item:nth-child(3) .attachment-icon {
+  background: #e0508f;
+}
+
+html.glass-desktop .emoji-picker {
+  width: 372px;
+  max-height: 420px;
+  border-radius: 24px !important;
+  padding: 14px 14px 12px !important;
+}
+
+html.glass-desktop .emoji-picker-header {
+  padding: 0 2px 10px;
+  border-bottom: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .emoji-picker-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .emoji-category-name,
+html.glass-desktop .slash-command-header {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gd-t3);
+  background: transparent;
+}
+
+html.glass-desktop .emoji-btn {
+  height: 36px;
+  border-radius: 10px;
+  font-size: 21px;
+}
+
+html.glass-desktop .emoji-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html.glass-desktop .slash-command-item {
+  height: 36px;
+  border-radius: 11px;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .slash-command-item:hover,
+html.glass-desktop .slash-command-item.active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .slash-command-ico {
+  background: rgba(88, 122, 246, 0.22);
+  color: var(--gd-brand-hi);
+}
+
+html.glass-desktop .slash-command-copy span,
+html.glass-desktop .slash-command-label {
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .giphy-overlay {
+  background: rgba(5, 6, 10, 0.28);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+html.glass-desktop .giphy-panel {
+  border: none;
+  border-radius: 26px;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+html.glass-desktop .giphy-header {
+  border-bottom: none;
+  padding: 0 0 12px;
+}
+
+html.glass-desktop .giphy-logo,
+html.glass-desktop .giphy-brand {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--gd-t1);
+  background: none;
+  -webkit-text-fill-color: var(--gd-t1);
+}
+
+html.glass-desktop .giphy-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .giphy-search input {
+  height: 40px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--gd-t1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .giphy-search input:focus {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1.5px rgba(143, 166, 255, 0.85);
+}
+
+html.glass-desktop .giphy-tabs button {
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .giphy-tabs button.active,
+html.glass-desktop .giphy-tabs button:hover {
+  color: var(--gd-t1);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .giphy-cell {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .giphy-footer {
+  color: var(--gd-t3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+html.glass-desktop .gd-row-menu {
+  min-width: 228px !important;
+  overflow: hidden;
+}
+
+html.glass-desktop .gd-row-menu button {
+  height: 36px !important;
+  border-radius: 11px !important;
+  padding: 0 12px !important;
+  font-size: 13.5px !important;
+  letter-spacing: -0.01em;
+  color: var(--gd-t1) !important;
+}
+
+html.glass-desktop .gd-row-menu button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.glass-desktop .gd-row-menu button svg {
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .gd-row-menu button.is-danger,
+html.glass-desktop .gd-row-menu button.is-danger svg {
+  color: #ff6961 !important;
+}
+
+html.glass-desktop .gd-row-menu button.is-danger:hover {
+  background: rgba(255, 69, 58, 0.16) !important;
+}
+
+html.glass-desktop .gd-row-menu > div {
+  height: 0.5px !important;
+  margin: 5px 10px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.glass-desktop.gd-lite .message-hover-bar,
+html.glass-desktop.gd-lite .message-inline-picker,
+html.glass-desktop.gd-lite .composer-reply-bar,
+html.glass-desktop.gd-lite .composer-edit-bar,
+html.glass-desktop.gd-lite .composer-attach-preview,
+html.glass-desktop.gd-lite .composer-left .composer-action-btn,
+html.glass-desktop.gd-lite .attachment-menu,
+html.glass-desktop.gd-lite .emoji-picker,
+html.glass-desktop.gd-lite .slash-command-menu,
+html.glass-desktop.gd-lite .giphy-panel,
+html.glass-desktop.gd-lite .gd-row-menu {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: var(--gd-solid-heavy) !important;
+}

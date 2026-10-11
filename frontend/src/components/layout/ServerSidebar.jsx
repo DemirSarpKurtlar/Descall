@@ -1358,6 +1358,7 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
     <motion.div
       ref={menuRef}
       role="menu"
+      className="gd-row-menu"
       initial={{ opacity: 0, scale: 0.94, y: -4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.94, y: -4 }}
@@ -1432,6 +1433,7 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
       </button>
       <button
         type="button"
+        className="is-danger"
         onClick={() => { onAction?.("close"); onClose(); }}
         style={{ ...itemStyle, color: "var(--danger)" }}
         onMouseEnter={(e) => e.currentTarget.style.background = "var(--danger-soft)"}
@@ -1685,6 +1687,7 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
     <motion.div
       ref={menuRef}
       role="menu"
+      className="gd-row-menu"
       initial={{ opacity: 0, scale: 0.94, y: -4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.94, y: -4 }}
@@ -1752,6 +1755,7 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
       </button>
       <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
       <button
+        className="is-danger"
         onClick={() => { onLeave(); onClose(); }}
         style={{
           width: "100%", display: "flex", alignItems: "center", gap: 10,
