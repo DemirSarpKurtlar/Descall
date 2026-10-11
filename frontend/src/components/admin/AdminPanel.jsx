@@ -26,6 +26,7 @@ import AdminModeration from "./AdminModeration";
 import AdminLivePopup from "./AdminLivePopup";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminPeople from "./AdminPeople";
+import AdminUserDirectory from "./AdminUserDirectory";
 import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import { useLocale } from "../../context/LocaleContext";
@@ -74,6 +75,7 @@ function SystemSwitch({ icon: Icon, tone, label, status, checked, disabled, onCh
 
 const TABS = [
   { id: "overview", label: "admin.overview", icon: LayoutDashboard },
+  { id: "directory", label: "admin.users", icon: Users },
   { id: "analytics", label: "admin.analytics", icon: Activity },
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
@@ -1447,6 +1449,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           <AdminOverview
             onOpenPerson={setDossierUserId}
             onGoto={setTab}
+          />
+        )}
+
+        {tab === "directory" && (
+          <AdminUserDirectory
+            onOpenPerson={(id) => {
+              setDossierUserId(id);
+              setTab("people");
+            }}
           />
         )}
 

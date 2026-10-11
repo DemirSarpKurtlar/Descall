@@ -3592,6 +3592,354 @@ button.overview-kpi:hover {
   }
 }
 
+/* ── User directory ── */
+.user-directory {
+  gap: 14px;
+}
+
+.dir-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dir-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(156, 196, 255, 0.9);
+}
+
+.dir-total {
+  margin: 0;
+  font-size: 48px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 720;
+  color: #f4f6fb;
+}
+
+.user-directory .muted {
+  margin: 8px 0 0;
+}
+
+.dir-stats {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dir-stat {
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 12px 10px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dir-stat span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(244, 246, 251, 0.5);
+}
+
+.dir-stat strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.dir-stat.is-on,
+.dir-stat:hover {
+  border-color: rgba(10, 132, 255, 0.45);
+  background: rgba(10, 132, 255, 0.1);
+}
+
+.dir-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.dir-search {
+  flex: 1 1 240px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(244, 246, 251, 0.55);
+}
+
+.dir-search .admin-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 11px 0;
+  min-width: 0;
+}
+
+.dir-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dir-chip {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 246, 251, 0.78);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.dir-chip.is-on {
+  color: #fff;
+  border-color: rgba(10, 132, 255, 0.55);
+  background: rgba(10, 132, 255, 0.28);
+}
+
+.dir-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: rgba(244, 246, 251, 0.55);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.dir-sort select {
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f4f6fb;
+  padding: 0 10px;
+}
+
+.dir-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dir-list.is-loading {
+  opacity: 0.55;
+}
+
+.dir-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 52px minmax(140px, 1.1fr) minmax(140px, 1fr) minmax(150px, 1.15fr) 128px 128px 18px;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  cursor: pointer;
+}
+
+.dir-row:hover {
+  border-color: rgba(10, 132, 255, 0.35);
+  background: rgba(10, 132, 255, 0.08);
+}
+
+.dir-row.is-skeleton {
+  display: flex;
+  gap: 12px;
+  cursor: default;
+}
+
+.dir-avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.dir-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6b7280;
+  box-shadow: 0 0 0 2px #16171c;
+}
+
+.dir-dot.is-online { background: #30d158; }
+.dir-dot.is-idle { background: #ffd60a; }
+.dir-dot.is-dnd { background: #ff453a; }
+.dir-dot.is-invisible,
+.dir-dot.is-offline { background: #6b7280; }
+
+.dir-id,
+.dir-when {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dir-id strong {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dir-id em,
+.dir-when small,
+.dir-mail {
+  font-style: normal;
+  font-size: 12px;
+  color: rgba(244, 246, 251, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dir-mail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dir-when b {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(244, 246, 251, 0.4);
+}
+
+.dir-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dir-badges i {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: rgba(244, 246, 251, 0.8);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dir-badges i.is-online { color: #30d158; background: rgba(48, 209, 88, 0.14); }
+.dir-badges i.is-idle { color: #ffd60a; background: rgba(255, 214, 10, 0.14); }
+.dir-badges i.is-dnd { color: #ff6961; background: rgba(255, 69, 58, 0.14); }
+.dir-badges i.is-admin { color: #9cc4ff; background: rgba(10, 132, 255, 0.16); }
+.dir-badges i.is-ban,
+.dir-badges i.is-del { color: #ff8a82; background: rgba(255, 69, 58, 0.16); }
+.dir-badges i.is-time { color: #ffd60a; background: rgba(255, 214, 10, 0.14); }
+
+.dir-chevron {
+  color: rgba(244, 246, 251, 0.35);
+}
+
+.dir-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 28px 8px;
+  color: rgba(244, 246, 251, 0.7);
+}
+
+.dir-empty h3 {
+  margin: 0;
+}
+
+.dir-empty p {
+  margin: 0;
+  color: rgba(244, 246, 251, 0.5);
+}
+
+.dir-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(244, 246, 251, 0.62);
+  font-size: 13px;
+}
+
+.dir-pager div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dir-pager em {
+  font-style: normal;
+  min-width: 64px;
+  text-align: center;
+}
+
+.dir-pager button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f6fb;
+  cursor: pointer;
+}
+
+.dir-pager button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 980px) {
+  .dir-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dir-row {
+    grid-template-columns: 52px minmax(0, 1fr) 18px;
+  }
+
+  .dir-mail,
+  .dir-when {
+    display: none;
+  }
+}
+
 
 
 

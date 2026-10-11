@@ -45,6 +45,12 @@ const {
 } = require("../lib/adminOverview");
 const { loadSystemSettings, persistSystemConfig, applySystemConfigToState, publicFeatureFlags } = require("../lib/systemSettings");
 const insights = require("../lib/adminInsightsStore");
+const {
+  parseDirectoryQuery,
+  mapDirectoryUser,
+  loadDirectorySummary,
+  loadDirectoryPage,
+} = require("../lib/adminDirectory");
 
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
@@ -52,6 +58,40 @@ const BCRYPT_ROUNDS = 12;
 router.use(requireAuth, requireAdmin);
 router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
+
+router.get("/directory", async (req, res) => {
+  try {
+    const plan = parseDirectoryQuery(req.query);
+    const io = getIo(req);
+    pruneDeadPresence(state.presence, io);
+    const roster = summarizePresence(state.presence, { io });
+    const onlineIds = (roster.live || []).map((row) => String(row.id));
+    const summary = await loadDirectorySummary(supabase, plan.nowIso);
+    summary.online = roster.connectedCount || 0;
+    const page = await loadDirectoryPage(supabase, plan, onlineIds);
+    const users = (page.rows || []).map((row) =>
+      mapDirectoryUser(row, {
+        presence: getPresenceEntry(state.presence, row.id),
+        live: onlineIds.includes(String(row.id)),
+        bannedMemory: state.bannedUserIds.has(row.id),
+        now: new Date(plan.nowIso),
+      })
+    );
+    const filtered = page.filtered || 0;
+    res.json({
+      summary,
+      users,
+      total: summary.total,
+      filtered,
+      page: plan.page,
+      limit: plan.limit,
+      pages: Math.max(1, Math.ceil(filtered / plan.limit)),
+    });
+  } catch (err) {
+    console.error("[admin] directory error:", err?.message || err);
+    res.status(500).json({ error: "Failed to load the user directory." });
+  }
+});
 
 function getIo(req) {
   return req.app.get("io");
