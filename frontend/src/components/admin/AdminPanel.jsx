@@ -17,6 +17,7 @@ import {
   Coins, DollarSign, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
+import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedback from "./AdminFeedback";
@@ -271,7 +272,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
   const loadAllUsers = useCallback(async () => {
     try {
-      const token = localStorage.getItem("descall_token");
+      const token = getToken();
       console.log("[ADMIN] Loading users, token:", !!token);
       console.log("[ADMIN] API_BASE_URL:", API_BASE_URL);
       
@@ -294,7 +295,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
   const loadAnnouncements = useCallback(async () => {
     try {
-      const token = localStorage.getItem("descall_token");
+      const token = getToken();
       const res = await fetch(`${API_BASE_URL}/api/announcements`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -951,7 +952,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         setAnnouncementSubmitting(true);
                         setAnnouncementError("");
                         try {
-                          const token = localStorage.getItem("descall_token");
+                          const token = getToken();
                           const res = await fetch(`${API_BASE_URL}/api/admin/announcements`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -1039,7 +1040,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                             title={a.pinned ? t("Unpin") : t("Pin")} aria-label={a.pinned ? t("Unpin") : t("Pin")}
                             onClick={async () => {
                               try {
-                                const token = localStorage.getItem("descall_token");
+                                const token = getToken();
                                 const res = await fetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
                                   method: "PATCH",
                                   headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -1070,7 +1071,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                             title={t("Delete")} aria-label={t("Delete")}
                             onClick={async () => {
                               try {
-                                const token = localStorage.getItem("descall_token");
+                                const token = getToken();
                                 const res = await fetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
                                   method: "DELETE",
                                   headers: { Authorization: `Bearer ${token}` },

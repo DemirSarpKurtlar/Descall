@@ -75,7 +75,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
     setError(null);
 
     try {
-      const token = getToken() || localStorage.getItem("descall_token");
+      const token = getToken();
       if (!token) {
         throw new Error(t("Please login to submit feedback"));
       }

@@ -8,6 +8,7 @@ import {
   loadI18nCatalogs,
 } from "../i18n/index.js";
 import { API_BASE_URL } from "../config/api";
+import { getToken } from "../lib/storage";
 import { LocaleContext, useLocale, useT } from "./localeContextInstance";
 
 export function LocaleProvider({ children, meLanguage = null }) {
@@ -48,7 +49,7 @@ export function LocaleProvider({ children, meLanguage = null }) {
     persistLocale(normalized);
 
     try {
-      const token = localStorage.getItem("descall_token");
+      const token = getToken();
       if (token) {
         fetch(`${API_BASE_URL}/api/user/regional`, {
           method: "PUT",

@@ -43,6 +43,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(AppleSignInPlugin())
         bridge?.registerPluginInstance(DescallCallKitPlugin())
         bridge?.registerPluginInstance(DescallDisplayPlugin())
+        bridge?.registerPluginInstance(DescallKeychainPlugin())
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {

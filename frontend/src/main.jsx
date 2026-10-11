@@ -5,7 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { resolveInitialLocale, translate, loadI18nCatalogs } from "./i18n";
 import { isPublicMarketingPath } from "./site/marketingPaths";
 import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
-import { getToken } from "./lib/storage";
+import { getToken, hydrateSecureToken } from "./lib/storage";
 import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
@@ -29,20 +29,10 @@ if (isCapacitorNativeShell()) {
 }
 
 const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
-const hasSession = Boolean(getToken());
 const isElectronDesktop =
   typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
 // Native Capacitor app (iOS/Android) — the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
-// Desktop and the native apps must never hydrate the SEO/marketing shell —
-// logged-out first paint is the app + its own AuthView (login / sign-up).
-// Web marketing paths stay unchanged.
-const preferMarketingShell = shouldBootMarketingShell({
-  pathname: path,
-  hasSession,
-  isElectron: isElectronDesktop,
-  isNativeApp,
-});
 
 /**
  * Schedule third-party analytics only after an explicit cookie accept.
@@ -73,9 +63,7 @@ function scheduleAnalytics({ preferMarketing }) {
   }
 }
 
-scheduleAnalytics({ preferMarketing: preferMarketingShell });
-
-if (!preferMarketingShell) {
+function preloadAppStyles() {
   import("./lib/noiseSuppression")
     .then((m) => m.preloadNoiseSuppression?.())
     .catch(() => {});
@@ -273,6 +261,19 @@ async function bootApp() {
 }
 
 async function boot() {
+  // iOS: copy the Keychain token into memory before any getToken() / render.
+  // Web, Android, and Electron return immediately and keep their existing store.
+  await hydrateSecureToken();
+  const hasSession = Boolean(getToken());
+  const preferMarketingShell = shouldBootMarketingShell({
+    pathname: path,
+    hasSession,
+    isElectron: isElectronDesktop,
+    isNativeApp,
+  });
+  scheduleAnalytics({ preferMarketing: preferMarketingShell });
+  if (!preferMarketingShell) preloadAppStyles();
+
   if (preferMarketingShell) {
     scheduleMarketingHydration(() => {
       import("./site/hydrateMarketing.jsx")
