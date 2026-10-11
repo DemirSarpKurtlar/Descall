@@ -1,6 +1,7 @@
 import React from "react";
 import { clientErrorReportUrl } from "../config/api";
-import { clearToken, clearUser } from "../lib/storage";
+import { boundaryAccount, canSeeErrorDetails, makeSupportCode } from "../lib/errorScreen";
+import "../styles/error-boundary.css";
 
 function IconRefresh({ size = 14, style }) {
   return (
@@ -50,20 +51,31 @@ import { reportReactError } from "../lib/sentry";
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, recovering: false, message: "", stack: "", componentStack: "" };
+    this.state = {
+      hasError: false,
+      recovering: false,
+      message: "",
+      stack: "",
+      componentStack: "",
+      supportCode: "",
+      detailsOpen: false,
+    };
   }
 
   static getDerivedStateFromError(error) {
+    const supportCode = makeSupportCode();
     if (isModuleLoadError(error)) {
       return {
         hasError: false,
         recovering: true,
+        supportCode,
         message: error?.message || t("Unexpected runtime error"),
         stack: error?.stack || "",
       };
     }
     return {
       hasError: true,
+      supportCode,
       message: error?.message || t("Unexpected runtime error"),
       stack: error?.stack || "",
     };
@@ -141,7 +153,7 @@ export default class ErrorBoundary extends React.Component {
       
       const errorData = {
         // Error details
-        message: error?.message || "Unknown error",
+        message: `[${this.state.supportCode || "unknown"}] ${error?.message || "Unknown error"}`,
         name: error?.name || "Error",
         stack: error?.stack || "",
         componentStack: errorInfo?.componentStack || "",
@@ -195,32 +207,11 @@ export default class ErrorBoundary extends React.Component {
   getUserData = () => {
     try {
       const stored = localStorage.getItem("descall_user");
-      if (!stored || stored === "null" || stored === "undefined") {
-        return {
-          id: "anonymous",
-          username: "Anonymous User",
-          email: null,
-          role: "guest",
-          sessionId: null,
-        };
-      }
-      const user = JSON.parse(stored);
-      return {
-        id: user?.id || "anonymous",
-        username: user?.username || "Anonymous User",
-        email: user?.email || null,
-        role: user?.role || "guest",
-        sessionId: user?.sessionId || null,
-      };
+      if (!stored || stored === "null" || stored === "undefined") return boundaryAccount(null);
+      return boundaryAccount(JSON.parse(stored));
     } catch (e) {
       console.error("[ErrorBoundary] Failed to parse user data:", e);
-      return {
-        id: "anonymous",
-        username: "Anonymous User",
-        email: null,
-        role: "guest",
-        sessionId: null,
-      };
+      return boundaryAccount(null);
     }
   };
 
@@ -288,14 +279,18 @@ export default class ErrorBoundary extends React.Component {
     return null;
   };
 
-  handleReset = () => {
-    try {
-      clearUser();
-      clearToken();
-    } catch {
-      // Ignore storage reset failures.
-    }
+  handleRetry = () => {
     window.location.reload();
+  };
+
+  handleHome = () => {
+    // Electron file:// must not navigate to "/" (blank white screen).
+    if (typeof window !== "undefined" && window.electronAPI?.isElectron && window.location.protocol === "file:") {
+      window.location.hash = "#/";
+      window.location.reload();
+      return;
+    }
+    window.location.href = "/";
   };
 
   render() {
@@ -311,273 +306,47 @@ export default class ErrorBoundary extends React.Component {
 
     if (!this.state.hasError) return this.props.children;
 
-    const { error, errorInfo, userData, category, systemInfo, connectionInfo } = this.state;
+    const showDetails = canSeeErrorDetails({
+      dev: import.meta.env.DEV,
+      admin: Boolean(this.state.userData?.isAdmin),
+    });
+    const detailText = [this.state.message, this.state.stack, this.state.componentStack].filter(Boolean).join("\n\n");
 
     return (
-      <main className="auth-shell">
-        <section className="auth-card" style={{ maxWidth: "700px", maxHeight: "85vh", overflow: "auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "20px" }}>
-            <h1 style={{ color: "#ff6b6b", fontSize: "24px", marginBottom: "10px" }}>
-              ⚠️ {t("Descall Error")}
-            </h1>
-            <p style={{ color: "#ccc", fontSize: "14px" }}>
-              {t("UI crashed and recovered safely.")}
+      <main className="crash-screen">
+        <section className="crash-card" role="alert">
+          <p className="crash-kicker">Descall</p>
+          <h1>{t("Something went wrong")}</h1>
+          <p>{t("The page ran into a problem. You can try again, or go back home.")}</p>
+          {this.state.supportCode ? (
+            <p className="crash-code">
+              {t("Error code")}
+              <code>{this.state.supportCode}</code>
             </p>
-          </div>
-
-          {/* Error Type & Category */}
-          <div style={{ 
-            background: "#2a2a2a", 
-            padding: "15px", 
-            borderRadius: "8px",
-            marginBottom: "15px"
-          }}>
-            <h3 style={{ color: "#fff", marginBottom: "10px", fontSize: "16px" }}>
-              {t("Error Details")}
-            </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "13px" }}>
-              <div>
-                <span style={{ color: "#888" }}>{t("Type:")}</span>
-                <span style={{ color: "#ff6b6b", marginLeft: "8px", fontWeight: "bold" }}>
-                  {error?.name || t("Unknown Error")}
-                </span>
-              </div>
-              {category?.type && (
-                <div>
-                  <span style={{ color: "#888" }}>{t("Category:")}</span>
-                  <span style={{ color: "#4ecdc4", marginLeft: "8px" }}>
-                    {category.type}
-                  </span>
-                </div>
-              )}
-              {category?.severity && (
-                <div>
-                  <span style={{ color: "#888" }}>{t("Severity:")}</span>
-                  <span style={{ 
-                    color: category.severity === 'critical' ? '#ff0000' : 
-                           category.severity === 'high' ? '#ff6b6b' : 
-                           category.severity === 'medium' ? '#ffa500' : '#4ecdc4',
-                    marginLeft: "8px",
-                    fontWeight: "bold"
-                  }}>
-                    {category.severity.toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div>
-                <span style={{ color: "#888" }}>{t("Timestamp:")}</span>
-                <span style={{ color: "#fff", marginLeft: "8px" }}>
-                  {new Date().toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          <div style={{ 
-            background: "#1a1a1a", 
-            padding: "15px", 
-            borderRadius: "8px",
-            borderLeft: "4px solid #ff6b6b",
-            marginBottom: "15px"
-          }}>
-            <h4 style={{ color: "#ff6b6b", marginBottom: "8px", fontSize: "14px" }}>
-              {t("Error Message")}
-            </h4>
-            <p style={{ color: "#fff", fontSize: "14px", wordBreak: "break-word" }}>
-              {this.state.message}
-            </p>
-          </div>
-
-          {/* User Information */}
-          {userData && (
-            <div style={{ 
-              background: "#2a2a2a", 
-              padding: "15px", 
-              borderRadius: "8px",
-              marginBottom: "15px"
-            }}>
-              <h3 style={{ color: "#fff", marginBottom: "10px", fontSize: "16px" }}>
-                👤 {t("User Information")}
-              </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "13px" }}>
-                <div>
-                  <span style={{ color: "#888" }}>{t("Username:")}</span>
-                  <span style={{ color: "#fff", marginLeft: "8px" }}>
-                    {userData.username || t("Anonymous")}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: "#888" }}>{t("User ID:")}</span>
-                  <span style={{ color: "#fff", marginLeft: "8px" }}>
-                    {userData.id || "anonymous"}
-                  </span>
-                </div>
-                {userData.email && (
-                  <div>
-                    <span style={{ color: "#888" }}>{t("Email:")}</span>
-                    <span style={{ color: "#fff", marginLeft: "8px" }}>
-                      {userData.email}
-                    </span>
-                  </div>
-                )}
-                {userData.role && (
-                  <div>
-                    <span style={{ color: "#888" }}>{t("Role:")}</span>
-                    <span style={{ color: "#4ecdc4", marginLeft: "8px" }}>
-                      {userData.role}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* System Information */}
-          {systemInfo && (
-            <div style={{ 
-              background: "#2a2a2a", 
-              padding: "15px", 
-              borderRadius: "8px",
-              marginBottom: "15px"
-            }}>
-              <h3 style={{ color: "#fff", marginBottom: "10px", fontSize: "16px" }}>
-                💻 {t("System Information")}
-              </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "13px" }}>
-                <div>
-                  <span style={{ color: "#888" }}>{t("Platform:")}</span>
-                  <span style={{ color: "#fff", marginLeft: "8px" }}>
-                    {systemInfo.platform}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: "#888" }}>{t("Language:")}</span>
-                  <span style={{ color: "#fff", marginLeft: "8px" }}>
-                    {systemInfo.language}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: "#888" }}>{t("Screen:")}</span>
-                  <span style={{ color: "#fff", marginLeft: "8px" }}>
-                    {systemInfo.screenResolution}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: "#888" }}>{t("Timezone:")}</span>
-                  <span style={{ color: "#fff", marginLeft: "8px" }}>
-                    {systemInfo.timezone}
-                  </span>
-                </div>
-              </div>
-              <div style={{ marginTop: "8px", fontSize: "12px" }}>
-                <span style={{ color: "#888" }}>{t("User Agent:")}</span>
-                <span style={{ color: "#aaa", marginLeft: "8px", wordBreak: "break-all" }}>
-                  {systemInfo.userAgent}
-                </span>
-              </div>
-            </div>
-          )}
-          
-          {/* Error Stack */}
-          {this.state.stack && (
-            <div style={{ marginBottom: "15px" }}>
-              <h3 style={{ color: "#fff", marginBottom: "8px", fontSize: "14px" }}>
-                📋 {t("Error Stack:")}
-              </h3>
-              <pre style={{ 
-                background: "#1a1a1a", 
-                color: "#ff6b6b", 
-                padding: "12px", 
-                borderRadius: "6px", 
-                fontSize: "11px",
-                overflow: "auto",
-                maxHeight: "150px",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word"
-              }}>
-                {this.state.stack}
-              </pre>
-            </div>
-          )}
-
-          {/* Component Stack */}
-          {this.state.componentStack && (
-            <div style={{ marginBottom: "15px" }}>
-              <h3 style={{ color: "#fff", marginBottom: "8px", fontSize: "14px" }}>
-                🧩 {t("Component Stack:")}
-              </h3>
-              <pre style={{ 
-                background: "#1a1a1a", 
-                color: "#4ecdc4", 
-                padding: "12px", 
-                borderRadius: "6px", 
-                fontSize: "11px",
-                overflow: "auto",
-                maxHeight: "120px",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word"
-              }}>
-                {this.state.componentStack}
-              </pre>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-            <button 
-              type="button" 
-              onClick={this.handleReset}
-              style={{ 
-                flex: 1,
-                padding: "12px 20px",
-                background: "#4ecdc4",
-                color: "#1a1a1a",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "bold"
-              }}
-            >
-              <IconRefresh size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />{t("Reset & Reload")}
+          ) : null}
+          <div className="crash-actions">
+            <button type="button" className="crash-primary" onClick={this.handleRetry}>
+              <IconRefresh size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
+              {t("Try again now")}
             </button>
-            <button 
-              type="button"
-              onClick={() => {
-                // Electron file:// must not navigate to "/" (blank white screen).
-                if (typeof window !== "undefined" && window.electronAPI?.isElectron) {
-                  if (window.location.protocol === "file:") {
-                    window.location.hash = "#/";
-                    window.location.reload();
-                    return;
-                  }
-                }
-                window.location.href = "/";
-              }}
-              style={{ 
-                flex: 1,
-                padding: "12px 20px",
-                background: "#444",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "14px"
-              }}
-            >
-              <IconHome size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />{t("Go Home")}
+            <button type="button" className="crash-secondary" onClick={this.handleHome}>
+              <IconHome size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
+              {t("Home")}
             </button>
           </div>
-          
-          <p style={{ 
-            marginTop: "15px", 
-            fontSize: "11px", 
-            color: "#666", 
-            textAlign: "center" 
-          }}>
-            {t("This error has been logged. Please contact support if it persists.")}
-          </p>
+          {showDetails ? (
+            <>
+              <button
+                type="button"
+                className="crash-details-toggle"
+                aria-expanded={this.state.detailsOpen}
+                onClick={() => this.setState((state) => ({ detailsOpen: !state.detailsOpen }))}
+              >
+                {this.state.detailsOpen ? t("Hide error details") : t("Show error details")}
+              </button>
+              {this.state.detailsOpen && detailText ? <pre className="crash-details">{detailText}</pre> : null}
+            </>
+          ) : null}
         </section>
       </main>
     );
