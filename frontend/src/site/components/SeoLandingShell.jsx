@@ -86,7 +86,7 @@ export default function SeoLandingShell({
 
       <section className="seo-bottom-cta">
         <h2>{t("Ready to try a lighter Discord alternative?")}</h2>
-        <p>{t("Create a free Descall account — chat, voice, screen share, and Valorant LFG in one place.")}</p>
+        <p>{t("Create a free Descall account — chat, voice, screen share, and LFG in one place.")}</p>
         <div className="mkt-cta-row">
           {primaryCta || (
             <Link to="/register" className="mkt-btn mkt-btn-primary">

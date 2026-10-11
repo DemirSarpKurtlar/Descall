@@ -14,7 +14,7 @@ const OPTIONS = [
   {
     name: "Descall",
     blurb:
-      "Best free Discord alternative for friend groups and Valorant LFG — chat, voice, video, screen share, Windows + Android.",
+      "Best free Discord alternative for friend groups and LFG — chat, voice, video, screen share, Windows + Android.",
     href: "/discord-alternative",
     highlight: true,
   },

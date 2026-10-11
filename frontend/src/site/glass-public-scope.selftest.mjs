@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "glass-public.css"), "utf8");
+const dir = dirname(fileURLToPath(import.meta.url));
+const css = ["glass-public.css", "glass-public-frames.css"].map((name) => readFileSync(join(dir, name), "utf8")).join("\n");
 assert.ok(!/glass-ui|glass-desktop/.test(css), "public glass must not name the app glass classes");
 
 const src = css.replace(/\/\*[\s\S]*?\*\//g, "");

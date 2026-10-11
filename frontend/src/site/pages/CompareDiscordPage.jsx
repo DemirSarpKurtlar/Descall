@@ -47,7 +47,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           <p>
             <strong>Descall</strong>{" "}
             {t(
-              "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG — with free core features."
+              "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and LFG — with free core features."
             )}
           </p>
           <p>
@@ -88,7 +88,7 @@ export default function CompareDiscordPage({ onSignIn }) {
         <ul className="seo-bullets">
           <li>{t("Real servers with roles, channels, and ready-made templates")}</li>
           <li>{t("Friend-group chat and voice without Nitro friction")}</li>
-          <li>{t("Built-in Valorant LFG instead of fragile bot setups")}</li>
+          <li>{t("Built-in LFG instead of fragile bot setups")}</li>
           <li>{t("Screen-share quality controls tuned for calls")}</li>
           <li>{t("Modern UI focused on speed — servers without endless chrome")}</li>
         </ul>

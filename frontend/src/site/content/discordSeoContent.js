@@ -4,10 +4,10 @@ export const COMPARE_ROWS = [
   { feature: "Real-time chat & DMs", descall: "Yes — fast, modern UI", discord: "Yes" },
   { feature: "Servers with channels", descall: "Yes — text, voice, stage + categories", discord: "Yes — mature tree model" },
   { feature: "Roles & permissions", descall: "Yes — role hierarchy + channel overrides", discord: "Yes — deep matrix" },
-  { feature: "Server templates", descall: "Yes — gaming, Valorant, community, study & more", discord: "Limited community templates" },
+  { feature: "Server templates", descall: "Yes — gaming, community, study & more", discord: "Limited community templates" },
   { feature: "Group voice & video", descall: "Yes — WebRTC + TURN", discord: "Yes" },
   { feature: "Screen share quality control", descall: "Yes — presets & restart-safe", discord: "Yes" },
-  { feature: "Valorant LFG / party finder", descall: "Built-in Play tab + Riot link", discord: "Bots / external tools" },
+  { feature: "LFG / party finder", descall: "Built-in Play tab + link", discord: "Bots / external tools" },
   { feature: "Friends, presence & status", descall: "Yes", discord: "Yes" },
   { feature: "Push notifications", descall: "Web / desktop / mobile FCM", discord: "Yes" },
   { feature: "Desktop app", descall: "Windows installer + web + Android", discord: "All major platforms" },
@@ -28,7 +28,7 @@ export const COMPARE_FAQ = [
   },
   {
     q: "Does Descall have servers like Discord?",
-    a: "Yes. Create a server from scratch or pick an advanced template (gaming, Valorant, friends, community, study, streaming). You get categories, text/voice/stage channels, roles, permission overrides, invites, and moderation tools.",
+    a: "Yes. Create a server from scratch or pick an advanced template (gaming, friends, community, study, streaming). You get categories, text/voice/stage channels, roles, permission overrides, invites, and moderation tools.",
   },
   {
     q: "Can Descall replace Discord for friend groups?",
@@ -64,7 +64,7 @@ export const ALTERNATIVE_HUB_FAQ = [
   },
   {
     q: "What is the best free Discord alternative in 2026?",
-    a: "It depends on the job. If you need mega-servers and a huge bot store, Discord still leads. If you want free HD voice, screen share, real servers, and Valorant LFG without a Nitro wall, Descall is a strong free Discord alternative.",
+    a: "It depends on the job. If you need mega-servers and a huge bot store, Discord still leads. If you want free HD voice, screen share, real servers, and LFG without a Nitro wall, Descall is a strong free Discord alternative.",
   },
   {
     q: "Does a Discord alternative need servers like Discord?",
@@ -72,7 +72,7 @@ export const ALTERNATIVE_HUB_FAQ = [
   },
   {
     q: "Is there a Discord alternative with screen share and LFG?",
-    a: "Yes. Descall includes screen share in calls and a dedicated Play tab for Valorant LFG, so squads can queue and hop into voice in one app.",
+    a: "Yes. Descall includes screen share in calls and a dedicated Play tab for LFG, so squads can queue and hop into voice in one app.",
   },
   {
     q: "Can I use this Discord alternative on Windows and Android?",
@@ -96,7 +96,7 @@ export const ALTERNATIVES_FAQ = [
   },
   {
     q: "Are there Discord alternatives for gamers and LFG?",
-    a: "Yes. Look for voice lobbies, screen share, and a party finder. Descall’s Play tab and Valorant server templates are built for that — see the gamers and LFG pages.",
+    a: "Yes. Look for voice lobbies, screen share, and a party finder. Descall’s Play tab and server templates are built for that — see the gamers and LFG pages.",
   },
   {
     q: "Should I keep Discord and also use an alternative?",
@@ -107,7 +107,7 @@ export const ALTERNATIVES_FAQ = [
 export const ALTERNATIVE_PILLARS = [
   {
     title: "Servers ready in minutes",
-    body: "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides — gaming, Valorant, community, study, friends, or streaming.",
+    body: "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides — gaming, community, study, friends, or streaming.",
   },
   {
     title: "Roles, channels & moderation",
@@ -115,7 +115,7 @@ export const ALTERNATIVE_PILLARS = [
   },
   {
     title: "Built for friends & LFG",
-    body: "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG — so squads can queue and hop into server voice in one app.",
+    body: "Descall still prioritizes DMs, presence, and a dedicated Play tab for LFG — so squads can queue and hop into server voice in one app.",
   },
   {
     title: "Calls without the bloat",
@@ -134,15 +134,15 @@ export const ALTERNATIVE_PILLARS = [
 export const GAMER_FAQ = [
   {
     q: "What is the best Discord alternative for gamers in 2026?",
-    a: "If you want chat, servers with voice lobbies, screen share, and built-in Valorant LFG without Nitro, Descall is a strong Discord alternative for gaming friend groups.",
+    a: "If you want chat, servers with voice lobbies, screen share, and built-in LFG without Nitro, Descall is a strong Discord alternative for gaming friend groups.",
   },
   {
     q: "Does Descall have gaming server templates?",
-    a: "Yes. Create a Gaming hub or Valorant / competitive server with LFG channels, clip drops, scrim voice rooms, and staff roles already configured.",
+    a: "Yes. Create a Gaming hub or / competitive server with LFG channels, clip drops, scrim voice rooms, and staff roles already configured.",
   },
   {
-    q: "Does Descall support Valorant LFG?",
-    a: "Yes. The Play tab lets you create and join LFG lobbies, and you can link your Riot ID (Name#TAG) so rank can show on your profile after a successful link.",
+    q: "Does Descall support LFG?",
+    a: "Yes. The Play tab lets you create and join LFG lobbies, and you can link your ID (Name#TAG) so rank can show on your profile after a successful link.",
   },
   {
     q: "Can I screen share while gaming?",
@@ -153,7 +153,7 @@ export const GAMER_FAQ = [
 export const TURKEY_FAQ = [
   {
     q: "Discord alternatifi olarak Descall nedir?",
-    a: "Descall; sohbet, sunucular (roller, kanallar, ses), ses/görüntülü arama, ekran paylaşımı ve Valorant LFG odaklı ücretsiz bir Discord alternatifidir.",
+    a: "Descall; sohbet, sunucular (roller, kanallar, ses), ses/görüntülü arama, ekran paylaşımı ve LFG odaklı ücretsiz bir Discord alternatifidir.",
   },
   {
     q: "Discord muadili ne demek — Descall uygun mu?",
@@ -229,12 +229,12 @@ export const BLOG_POSTS = [
   {
     slug: "best-discord-alternative-for-lfg",
     path: "/blog/best-discord-alternative-for-lfg",
-    title: "Best Discord alternative for Valorant LFG",
+    title: "Best Discord alternative for LFG",
     description:
-      "Why gamers looking for a Discord alternative for LFG choose Descall’s Play tab, party codes, and Riot account link.",
+      "Why gamers looking for a Discord alternative for LFG choose Descall’s Play tab, party codes, and account link.",
     date: "2026-08-11",
     updated: "2026-08-14",
-    tags: ["LFG", "Valorant", "Discord alternative"],
+    tags: ["LFG", "", "Discord alternative"],
   },
   {
     slug: "leave-nitro-keep-voice-chat",
@@ -293,8 +293,8 @@ export const BLOG_FAQ_BY_SLUG = {
   ],
   "best-discord-alternative-for-lfg": [
     {
-      q: "Why use a Discord alternative for Valorant LFG?",
-      a: "Most Discord LFG setups are bots and extra servers. Descall’s Play tab, party codes, and Riot Name#TAG link live in the same app as voice.",
+      q: "Why use a Discord alternative for LFG?",
+      a: "Most Discord LFG setups are bots and extra servers.",
     },
     {
       q: "Do I still need a Discord LFG server?",
@@ -377,7 +377,7 @@ export const BLOG_RELATED = [
   { to: "/compare/discord", label: "Descall vs Discord" },
   { to: "/alternatives", label: "All alternatives" },
   { to: "/apps-like-discord", label: "Apps like Discord" },
-  { to: "/discord-alternative-for-lfg", label: "Valorant LFG" },
+  { to: "/discord-alternative-for-lfg", label: "LFG" },
   { to: "/features", label: "Features — servers & more" },
   { to: "/security", label: "Security & encryption" },
   { to: "/download", label: "Download Descall" },

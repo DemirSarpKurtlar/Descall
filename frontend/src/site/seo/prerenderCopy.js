@@ -7,8 +7,8 @@ import { MARKETING_TR } from "../marketingPhrases.tr.js";
 const EXTRA_TR = {
   "Descall Features — Free Voice, Screen Share & Servers":
     "Descall Özellikleri — Ücretsiz Ses, Ekran Paylaşımı ve Sunucular",
-  "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and Valorant LFG.":
-    "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, Discord tarzı sunucular, roller, şablonlar ve Valorant LFG.",
+  "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG.":
+    "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, Discord tarzı sunucular, roller, şablonlar ve LFG.",
   "Servers & community tools": "Sunucular ve topluluk araçları",
   "Full server structure with categories, text, voice, and stage channels":
     "Kategorili metin, ses ve sahne kanallarıyla tam sunucu yapısı",
@@ -26,8 +26,8 @@ const EXTRA_TR = {
   "Screen share with quality presets for games, VODs, and watch parties":
     "Oyun, VOD ve izleme partileri için kalite hazır ayarlı ekran paylaşımı",
   "Gaming extras": "Oyun ekstraları",
-  "Valorant LFG lobbies, party codes, and Riot Name#TAG linking":
-    "Valorant LFG lobileri, parti kodları ve Riot Name#TAG bağlantısı",
+  "LFG lobbies, party codes, and linking":
+    "LFG lobileri, parti kodları ve bağlantısı",
   "Optional DesCoin cosmetics — core chat and calls stay free":
     "İsteğe bağlı DesCoin kozmetikleri — temel sohbet ve aramalar ücretsiz kalır",
   "Descall vs Discord": "Descall vs Discord",
@@ -49,7 +49,7 @@ const EXTRA_TR = {
   "What you get": "Neler var",
   "Servers, roles, channels, and moderation tools": "Sunucular, roller, kanallar ve moderasyon araçları",
   "Chat, voice, video, and screen share": "Sohbet, ses, görüntü ve ekran paylaşımı",
-  "Valorant LFG and friend presence": "Valorant LFG ve arkadaş durumu",
+  "LFG and friend presence": "LFG ve arkadaş durumu",
   "See features": "Özelliklere bak",
   "About Descall": "Descall Hakkında",
   "Who owns Descall?": "Descall’ın sahibi kim?",
@@ -62,8 +62,8 @@ const EXTRA_TR = {
   "Support": "Destek",
   "Source": "Kaynak",
   "What we build": "Ne inşa ediyoruz",
-  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG — with privacy policies and security docs you can actually read.":
-    "Anlık mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve Valorant LFG — okunabilir gizlilik ve güvenlik dokümanlarıyla.",
+  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG — with privacy policies and security docs you can actually read.":
+    "Anlık mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve LFG — okunabilir gizlilik ve güvenlik dokümanlarıyla.",
   "Last updated": "Son güncelleme",
   "Contact": "İletişim",
   "Contact Descall": "Descall ile iletişim",
@@ -94,7 +94,7 @@ export function navLabels(isTr) {
         features: "Özellikler",
         alternative: "Discord alternatifi",
         alternatives: "Alternatifler",
-        lfg: "Valorant LFG",
+        lfg: "LFG",
         vsDiscord: "Discord karşılaştırması",
         apps: "Discord benzeri uygulamalar",
         blog: "Blog",
@@ -113,7 +113,7 @@ export function navLabels(isTr) {
         features: "Features",
         alternative: "Discord alternative",
         alternatives: "Alternatives",
-        lfg: "Valorant LFG",
+        lfg: "LFG",
         vsDiscord: "vs Discord",
         apps: "Apps like Discord",
         blog: "Blog",
@@ -168,19 +168,19 @@ export function homeHero(isTr) {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
         h1: "Birlikte konuşun",
-        lead: "Arkadaşlar ve ekipler için daha hafif bir yuva — gerçek sunucular, HD aramalar, ekran paylaşımı ve Valorant LFG. Arkadaşlar ve oyuncular için ücretsiz sohbet.",
+        lead: "Arkadaşlar ve ekipler için daha hafif bir yuva — gerçek sunucular, HD aramalar, ekran paylaşımı ve LFG. Arkadaşlar ve oyuncular için ücretsiz sohbet.",
         why: "Ekipler neden geçiyor",
         bullets: [
           "Rol, kanal izni, davet ve moderasyonlu Discord tarzı sunucular",
           "Temel iletişimde Nitro duvarı olmadan HD ses/görüntü ve ekran paylaşımı",
-          "Bot karmaşası olmadan yerleşik Valorant LFG",
+          "Bot karmaşası olmadan yerleşik LFG",
           "Windows masaüstü, Android ve tam web uygulaması",
         ],
         core: "Temel özellikler",
         features: [
           "Sunucular ve kanallar — kategorili metin, ses ve sahne",
           "Roller ve izinler — hiyerarşi, staff odaları, kanal bazlı izin",
-          "Gelişmiş şablonlar — Gaming, Valorant, Friends, Community, Study, Streaming",
+          "Gelişmiş şablonlar — Gaming, Friends, Community, Study, Streaming",
           "Anlık sohbet — DM ve sunucu mesajlaşması",
           "Ses, görüntü ve ekran paylaşımı — kalite hazır ayarlı WebRTC",
         ],
@@ -196,7 +196,7 @@ export function homeHero(isTr) {
             body: "Temel iletişimde Nitro duvarı olmadan ses, görüntü ve ekran paylaşımı",
           },
           {
-            title: "Valorant LFG",
+            title: "LFG",
             body: "Bot karmaşası olmadan yerleşik lobi ve parti kodu",
           },
           {
@@ -215,7 +215,7 @@ export function homeHero(isTr) {
           },
           {
             title: "Gelişmiş şablonlar",
-            body: "Gaming, Valorant, Friends, Community, Study, Streaming",
+            body: "Gaming, Friends, Community, Study, Streaming",
           },
           {
             title: "Anlık sohbet",
@@ -231,19 +231,19 @@ export function homeHero(isTr) {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
         h1: "Talk together",
-        lead: "A lighter home for friends and squads — real servers, HD calls, screen share, and Valorant LFG. Free chat for friends and gamers.",
+        lead: "A lighter home for friends and squads — real servers, HD calls, screen share, and LFG. Free chat for friends and gamers.",
         why: "Why teams switch",
         bullets: [
           "Discord-style servers with roles, channel overrides, invites, and moderation",
           "HD voice/video and screen share without Nitro paywalls on core communication",
-          "Built-in Valorant LFG so squads queue without bot hell",
+          "Built-in LFG so squads queue without bot hell",
           "Windows desktop, Android, and full web app",
         ],
         core: "Core features",
         features: [
           "Servers & channels — text, voice, and stage with categories",
           "Roles & permissions — hierarchy, staff rooms, per-channel allow/deny",
-          "Advanced templates — Gaming, Valorant, Friends, Community, Study, Streaming",
+          "Advanced templates — Gaming, Friends, Community, Study, Streaming",
           "Real-time chat — DMs and server messaging with presence",
           "Voice, video & screen share — WebRTC calls with quality presets",
         ],
@@ -259,7 +259,7 @@ export function homeHero(isTr) {
             body: "Voice, video, and screen share without Nitro paywalls on core communication",
           },
           {
-            title: "Valorant LFG",
+            title: "LFG",
             body: "Built-in lobbies and party codes — no bot hell",
           },
           {
@@ -278,7 +278,7 @@ export function homeHero(isTr) {
           },
           {
             title: "Advanced templates",
-            body: "Gaming, Valorant, Friends, Community, Study, Streaming",
+            body: "Gaming, Friends, Community, Study, Streaming",
           },
           {
             title: "Real-time chat",

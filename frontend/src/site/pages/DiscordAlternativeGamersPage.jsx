@@ -18,7 +18,7 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker={t("For gamers")}
-      title={t("Best Discord alternative for gamers & Valorant LFG")}
+      title={t("Best Discord alternative for gamers & LFG")}
       lead={t(
         "Gamers don’t need another bloated server — they need voice, screen share, and LFG that actually works. Descall is the Discord alternative built around squads, ranks, and queueing together."
       )}
@@ -35,13 +35,13 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
           {t("Download for Windows")}
         </Link>
       }
-      heroExtra={<SeoProductPreview mode="lfg" caption={t("Play tab — Valorant LFG inside Descall")} />}
+      heroExtra={<SeoProductPreview mode="lfg" caption={t("Play tab — LFG inside Descall")} />}
     >
       <section className="seo-section">
         <h2>{t("Why gamers leave Discord for LFG")}</h2>
         <p>
           {t(
-            "Classic Discord LFG means bots, roles, and channel spam. Descall’s Play tab is a first-class Discord alternative for LFG: create a lobby, share a party code, link Riot Name#TAG, and jump to voice with the people who matched you."
+            "Classic Discord LFG means bots, roles, and channel spam."
           )}
         </p>
       </section>
@@ -51,8 +51,8 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
         <ul className="seo-checklist">
           {[
             "Group voice/video with screen share",
-            "Valorant LFG lobbies + party codes",
-            "Riot account link for rank on profile",
+            "LFG lobbies + party codes",
+            "account link for rank on profile",
             "Desktop app for low-friction gaming sessions",
             "Free core — cosmetics optional",
           ].map((item) => (

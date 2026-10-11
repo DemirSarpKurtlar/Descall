@@ -17,7 +17,7 @@ export default function BlogIndexPage() {
       kicker="Blog"
       title={t("Descall blog — Discord alternatives & LFG")}
       lead={t(
-        "Practical guides on Discord alternatives, Valorant LFG, voice chat, and moving friend groups to Descall."
+        "Practical guides on Discord alternatives, LFG, voice chat, and moving friend groups to Descall."
       )}
       jsonLd={[buildBreadcrumbLd(crumbs)]}
     >

@@ -33,7 +33,7 @@ const FEATURES = [
   {
     icon: IconLayers,
     title: "Templates that ship ready",
-    desc: "Gaming, Valorant, Community, Study, Friends, and Streaming templates with roles and staff rooms preconfigured.",
+    desc: "Gaming, Community, Study, Friends, and Streaming templates with roles and staff rooms preconfigured.",
   },
   {
     icon: IconMessage,
@@ -57,8 +57,8 @@ const FEATURES = [
   },
   {
     icon: IconGamepad,
-    title: "Valorant LFG",
-    desc: "Create and join ranked LFG lobbies, share party codes, and link Riot Name#TAG for rank on profile.",
+    title: "LFG",
+    desc: "Create and join ranked LFG lobbies, share party codes.",
     to: "/discord-alternative-for-lfg",
   },
   {

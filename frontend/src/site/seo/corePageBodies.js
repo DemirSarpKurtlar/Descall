@@ -132,7 +132,7 @@ export function corePageBody(path) {
 <main>
   ${brandBlock(isTr)}
   <h1>${escapeHtml(trCopy("Descall Features — Free Voice, Screen Share & Servers", isTr))}</h1>
-  <p>${escapeHtml(trCopy("See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and Valorant LFG.", isTr))}</p>
+  <p>${escapeHtml(trCopy("See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG.", isTr))}</p>
   <h2>${escapeHtml(trCopy("Servers & community tools", isTr))}</h2>
   <ul>
     <li>${escapeHtml(trCopy("Full server structure with categories, text, voice, and stage channels", isTr))}</li>
@@ -148,7 +148,7 @@ export function corePageBody(path) {
   </ul>
   <h2>${escapeHtml(trCopy("Gaming extras", isTr))}</h2>
   <ul>
-    <li>${escapeHtml(trCopy("Valorant LFG lobbies, party codes, and Riot Name#TAG linking", isTr))}</li>
+    <li>${escapeHtml(trCopy("LFG lobbies, party codes, and linking", isTr))}</li>
     <li>${escapeHtml(trCopy("Optional DesCoin cosmetics — core chat and calls stay free", isTr))}</li>
   </ul>
   <p><a href="${h("/download")}">${escapeHtml(n.download)}</a> · <a href="${h("/compare/discord")}">${escapeHtml(trCopy("Descall vs Discord", isTr))}</a></p>
@@ -187,7 +187,7 @@ export function corePageBody(path) {
   <ul>
     <li>${escapeHtml(trCopy("Servers, roles, channels, and moderation tools", isTr))}</li>
     <li>${escapeHtml(trCopy("Chat, voice, video, and screen share", isTr))}</li>
-    <li>${escapeHtml(trCopy("Valorant LFG and friend presence", isTr))}</li>
+    <li>${escapeHtml(trCopy("LFG and friend presence", isTr))}</li>
   </ul>
   <p>Descall is currently in <strong>Beta</strong>. ${escapeHtml(trCopy("Chat, voice, video, and screen share", isTr))}.</p>
   <p><a href="${h("/features")}">${escapeHtml(trCopy("See features", isTr))}</a> · <a href="${h("/faq")}">${escapeHtml(n.faq)}</a></p>
@@ -212,7 +212,7 @@ export function corePageBody(path) {
     <li>${escapeHtml(trCopy("Source", isTr))}: <a href="${SITE_OPERATOR.githubUrl}">GitHub</a></li>
   </ul>
   <h2>${escapeHtml(trCopy("What we build", isTr))}</h2>
-  <p>${escapeHtml(trCopy("Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG — with privacy policies and security docs you can actually read.", isTr))}</p>
+  <p>${escapeHtml(trCopy("Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG — with privacy policies and security docs you can actually read.", isTr))}</p>
   <p>${escapeHtml(trCopy("Last updated", isTr))}: ${escapeHtml(isTr ? SITE_OPERATOR.lastUpdatedLabelTr : SITE_OPERATOR.lastUpdatedLabel)}</p>
   ${navBlock(isTr)}
 </main>`;
@@ -326,21 +326,7 @@ export function corePageBody(path) {
     case "/copyright":
       return legalHtml(isTr ? COPYRIGHT_CONTENT.tr : COPYRIGHT_CONTENT.en, isTr, "copyright");
 
-    case "/discord-alternative":
-      return `
-<main>
-  ${brandBlock(isTr)}
-  <h1>The best free Discord alternative for friends &amp; gamers</h1>
-  <p>A free Discord alternative with real servers, HD voice/video, screen share, and Valorant LFG. Core chat and calls stay free — no Nitro paywall.</p>
-  ${ctaRow("/compare/discord", "Discord vs Descall")}
-  <h2>What you get</h2>
-  <ul>
-    <li>Discord-style servers with roles, channels, and templates</li>
-    <li>Free real-time chat, group voice/video, and screen share</li>
-    <li>Built-in Valorant LFG without bot hell</li>
-    <li>Windows, Android, and full web app</li>
-  </ul>
-  <p><a href="/alternatives">Compare Discord alternatives</a> · <a href="/discord-alternative-turkey">Türkçe</a> · <a href="/download">Download</a></p>
+    case "/discord-alternative": return `\n<main> ${brandBlock(isTr)} <h1>The best free Discord alternative for friends &amp; gamers</h1> <p>A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free — no Nitro paywall.</p> ${ctaRow("/compare/discord", "Discord vs Descall")} <h2>What you get</h2> <ul> <li>Discord-style servers with roles, channels, and templates</li> <li>Free real-time chat, group voice/video, and screen share</li> <li>Built-in LFG without bot hell</li> <li>Windows, Android, and full web app</li> </ul> <p><a href="/alternatives">Compare Discord alternatives</a> · <a href="/discord-alternative-turkey">Türkçe</a> · <a href="/download">Download</a></p>
   ${faqHtml(ALTERNATIVE_HUB_FAQ, isTr)}
   ${navBlock(isTr)}
 </main>`;
@@ -378,8 +364,8 @@ export function corePageBody(path) {
         ? "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı, LFG ve fiyat. Arkadaş grubu için hangisi daha uygun?"
         : "Side-by-side Discord vs Descall: servers, roles, voice, screen share, LFG, mobile, and price. Clear verdict for friend groups vs mega-communities.";
       const verdictDescall = tr
-        ? "Daha hafif bir Discord alternatifi, gerçek sunucular, ses, ekran paylaşımı ve Valorant LFG istiyorsan Descall önde — temel özellikler ücretsiz."
-        : "wins if you want a lighter Discord alternative with real servers, friends voice, screen share, and Valorant LFG — with free core features.";
+        ? "Daha hafif bir Discord alternatifi, gerçek sunucular, ses, ekran paylaşımı ve LFG istiyorsan Descall önde — temel özellikler ücretsiz."
+        : "wins if you want a lighter Discord alternative with real servers, friends voice, screen share, and LFG — with free core features.";
       const verdictDiscord = tr
         ? "Dev bot ekosistemi ve kocaman kamu sunucuları için Discord hâlâ güçlü. Birçok grup ikisini birden kullanır."
         : "still wins for massive bot ecosystems. Many groups run both.";
@@ -398,13 +384,7 @@ export function corePageBody(path) {
 </main>`;
     }
 
-    case "/discord-alternative-turkey":
-      return `
-<main>
-  ${brandBlock(isTr)}
-  <h1>Türkiye için en iyi Discord alternatifi: Descall</h1>
-  <p>Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve Valorant LFG. Türkçe arayüz.</p>
-  ${ctaRow("/download", "Windows / Android indir")}
+    case "/discord-alternative-turkey": return `\n<main> ${brandBlock(isTr)} <h1>Türkiye için en iyi Discord alternatifi: Descall</h1> <p>Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve LFG. Türkçe arayüz.</p> ${ctaRow("/download", "Windows / Android indir")}
   <h2>Neden Türkiye’de Discord alternatifi aranıyor?</h2>
   <p>Nitro baskısı, ağır arayüz ve LFG için bot karmaşası istemeyen gruplar daha hafif bir uygulama arıyor. Descall klan, sınıf ve oyuncu toplulukları için tasarlandı.</p>
   <p><a href="/discord-alternative">English hub</a> · <a href="/alternatives">Alternatives list</a> · <a href="/tr">Türkçe ana sayfa</a></p>

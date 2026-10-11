@@ -2,7 +2,7 @@ export const FAQ_ITEMS = [
   {
     group: "product",
     q: "Is Descall a Discord alternative?",
-    a: "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and Valorant LFG — without Nitro paywalls for core communication.",
+    a: "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and LFG — without Nitro paywalls for core communication.",
   },
   {
     group: "product",
@@ -42,7 +42,7 @@ export const FAQ_ITEMS = [
   {
     group: "servers",
     q: "Do server templates include roles?",
-    a: "Yes. Templates like Gaming, Valorant, Community, Study, Friends, and Streaming ship with ready-made roles (Admin, Moderator, VIP, and more) plus channel permission overrides for staff rooms and announcements.",
+    a: "Yes. Templates like Gaming, Community, Study, Friends, and Streaming ship with ready-made roles (Admin, Moderator, VIP, and more) plus channel permission overrides for staff rooms and announcements.",
   },
   {
     group: "servers",
@@ -51,8 +51,8 @@ export const FAQ_ITEMS = [
   },
   {
     group: "servers",
-    q: "Does Descall support Valorant LFG?",
-    a: "Yes. The Play tab lets you create and join LFG lobbies. Link your Riot ID (Name#TAG) so rank can appear on your profile after a successful lookup.",
+    q: "Does Descall support LFG?",
+    a: "Yes. The Play tab lets you create and join LFG lobbies.",
   },
   {
     group: "download",

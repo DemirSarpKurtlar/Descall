@@ -6,19 +6,19 @@ export const TR_I18N_GAPS = {
   "All features": "Tüm özellikler",
   "Anyone tired of Nitro pressure": "Nitro baskısından bıkan herkes",
   "API / realtime": "API / gerçek zamanlı",
-  "Best Discord alternative for gamers & Valorant LFG":
-    "Oyuncular ve Valorant LFG için en iyi Discord alternatifi",
+  "Best Discord alternative for gamers & LFG":
+    "Oyuncular ve LFG için en iyi Discord alternatifi",
   "Blog: best Discord alternative for LFG": "Blog: LFG için en iyi Discord alternatifi",
   "Broader native client coverage historically":
     "Tarihsel olarak daha geniş yerel istemci kapsamı",
-  "Built-in Valorant LFG instead of fragile bot setups":
-    "Kırılgan bot kurulumları yerine yerleşik Valorant LFG",
+  "Built-in LFG instead of fragile bot setups":
+    "Kırılgan bot kurulumları yerine yerleşik LFG",
   Capability: "Yetenek",
   "Check whether core chat/calls are free or paywalled.":
     "Temel sohbet ve aramaların ücretsiz mi yoksa ücretli mi olduğunu kontrol et.",
   "Checking…": "Kontrol ediliyor…",
-  "Classic Discord LFG means bots, roles, and channel spam. Descall’s Play tab is a first-class Discord alternative for LFG: create a lobby, share a party code, link Riot Name#TAG, and jump to voice with the people who matched you.":
-    "Klasik Discord LFG; bot, rol ve kanal spam’i demektir. Descall’ın Play sekmesi LFG için birinci sınıf bir Discord alternatifidir: lobi oluştur, parti kodu paylaş, Riot Name#TAG bağla ve eşleştiğin kişilerle sese geç.",
+  "Classic Discord LFG means bots, roles, and channel spam.":
+    "Klasik Discord LFG; bot, rol ve kanal spam’i demektir.",
   "Create a free account": "Ücretsiz hesap oluştur",
   "Create account": "Hesap oluştur",
   "Deep dives": "Derinlemesine yazılar",
@@ -59,8 +59,8 @@ export const TR_I18N_GAPS = {
   "Pin the Download link for Windows / Android users.":
     "Windows / Android kullanıcıları için İndir bağlantısını sabitle.",
   Platform: "Platform",
-  "Practical guides on Discord alternatives, Valorant LFG, voice chat, and moving friend groups to Descall.":
-    "Discord alternatifleri, Valorant LFG, sesli sohbet ve arkadaş gruplarını Descall’a taşıma üzerine pratik rehberler.",
+  "Practical guides on Discord alternatives, LFG, voice chat, and moving friend groups to Descall.":
+    "Discord alternatifleri, LFG, sesli sohbet ve arkadaş gruplarını Descall’a taşıma üzerine pratik rehberler.",
   "Product stage": "Ürün aşaması",
   Published: "Yayınlandı",
   "Quick verdict": "Kısa karar",
@@ -91,7 +91,7 @@ export const TR_I18N_GAPS = {
   "Why gamers leave Discord for LFG": "Oyuncular LFG için neden Discord’dan ayrılır",
   "Why people search for a Discord alternative": "İnsanlar neden Discord alternatifi arar",
   "your email": "e-postan",
-  "Valorant account linked": "Valorant hesabı bağlandı",
-  "Valorant link failed": "Valorant bağlantısı başarısız",
-  "Valorant link failed: {reason}": "Valorant bağlantısı başarısız: {reason}",
+  "account linked": "hesabı bağlandı",
+  "link failed": "bağlantısı başarısız",
+  "link failed: {reason}": "bağlantısı başarısız: {reason}",
 };

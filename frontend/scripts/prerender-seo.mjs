@@ -167,7 +167,7 @@ function crawlBody(route) {
   <ul>
     <li>Discord-style servers with roles, channels, and templates</li>
     <li>Free real-time chat, group voice/video, and screen share</li>
-    <li>Built-in Valorant LFG without bot hell</li>
+    <li>Built-in LFG without bot hell</li>
     <li>Windows, Android, and full web app</li>
   </ul>
   ${seoSiteNav(isTr)}

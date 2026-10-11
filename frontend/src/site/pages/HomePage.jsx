@@ -31,7 +31,7 @@ const HIGHLIGHTS = [
   {
     icon: IconLayers,
     title: "Advanced templates",
-    desc: "Gaming, Valorant, friends, community, study & streaming — roles and channels pre-built",
+    desc: "Gaming, friends, community, study & streaming — roles and channels pre-built",
   },
   {
     icon: IconMessage,

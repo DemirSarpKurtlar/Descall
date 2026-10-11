@@ -10,28 +10,38 @@ export default function FaqPage() {
   return (
     <>
       <JsonLd data={buildFaqLd(FAQ_ITEMS)} />
-      <section className="mkt-section" style={{ marginTop: 12 }}>
-        <h1>{t("FAQ")}</h1>
-        <p className="lead">
-          {t("Frequently asked questions about Descall — accounts, desktop download, calls, screen share, and privacy.")}
-        </p>
-        {FAQ_GROUPS.map((group) => (
-          <div className="mkt-faq-group" key={group.id}>
-            <h2>{t(group.title)}</h2>
-            <div className="mkt-faq">
-              {group.items.map((item) => (
-                <details key={item.q}>
-                  <summary>{t(item.q)}</summary>
-                  <p>{t(item.a)}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        ))}
-        <div className="mkt-cta-row" style={{ marginTop: 24 }}>
+      <section className="mkt-faq-layout">
+        <aside className="mkt-faq-nav">
+          <h1>{t("FAQ")}</h1>
+          <p className="lead">
+            {t("Frequently asked questions about Descall — accounts, desktop download, calls, screen share, and privacy.")}
+          </p>
+          <nav className="mkt-faq-jump" aria-label={t("FAQ")}>
+            {FAQ_GROUPS.map((group) => (
+              <a key={group.id} href={`#faq-${group.id}`}>
+                {t(group.title)}
+                <span>{group.items.length}</span>
+              </a>
+            ))}
+          </nav>
           <Link to={href("/contact")} className="mkt-btn mkt-btn-soft">
             {t("Contact")}
           </Link>
+        </aside>
+        <div>
+          {FAQ_GROUPS.map((group) => (
+            <div className="mkt-faq-group" id={`faq-${group.id}`} key={group.id}>
+              <h2>{t(group.title)}</h2>
+              <div className="mkt-faq">
+                {group.items.map((item) => (
+                  <details key={item.q}>
+                    <summary>{t(item.q)}</summary>
+                    <p>{t(item.a)}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </>

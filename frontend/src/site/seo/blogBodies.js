@@ -28,8 +28,8 @@ export const BLOG_BODIES = {
         p: "Most Discord LFG setups depend on bots and role gates. Descall’s Play tab is a productized LFG surface — lobbies, filters, party codes, and voice handoff.",
       },
       {
-        h: "Valorant-ready profiles",
-        p: "Link Riot Name#TAG so rank can appear after a successful lookup. Your LFG card becomes trustworthy without pasting ranks into a channel every night.",
+        h: "-ready profiles",
+        p: "Your LFG card becomes trustworthy without pasting ranks into a channel every night.",
       },
       {
         h: "From lobby to call",
@@ -61,7 +61,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "Descall — best free Discord alternative for friends & LFG",
-        p: "Descall wins for squads that want DMs, groups, WebRTC voice/video, screen share, and built-in Valorant LFG without Nitro. It is not trying to replace every public Discord server.",
+        p: "Descall wins for squads that want DMs, groups, WebRTC voice/video, screen share, and built-in LFG without Nitro. It is not trying to replace every public Discord server.",
       },
       {
         h: "Discord — still the community OS",
@@ -85,7 +85,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "Descall as an app like Discord",
-        p: "Descall covers messaging, calls, screen share, groups, and Valorant LFG in a lighter package — a practical Discord alternative for friends and gamers.",
+        p: "Descall covers messaging, calls, screen share, groups, and LFG in a lighter package — a practical Discord alternative for friends and gamers.",
       },
       {
         h: "Websites like Discord",
@@ -105,7 +105,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "Where Descall competes",
-        p: "Against Discord for friend DMs, group voice, screen share, and Valorant LFG — especially when Nitro fatigue is the trigger phrase in your group chat.",
+        p: "Against Discord for friend DMs, group voice, screen share, and LFG — especially when Nitro fatigue is the trigger phrase in your group chat.",
       },
       {
         h: "Where Descall does not pretend to compete (yet)",
@@ -161,11 +161,11 @@ export const BLOG_BODIES = {
       },
       {
         h: "Day 2 — recreate your server with a template",
-        p: "Pick Gaming, Valorant, Friends, or Community templates so roles and staff rooms appear ready. Invite codes replace Discord’s invite links.",
+        p: "Pick Gaming, Friends, or Community templates so roles and staff rooms appear ready. Invite codes replace Discord’s invite links.",
       },
       {
         h: "Day 3 — move voice habit + LFG",
-        p: "Schedule one voice hangout on Descall. Valorant squads should try the Play tab once so LFG does not pull everyone back to Discord bots.",
+        p: "Schedule one voice hangout on Descall. squads should try the Play tab once so LFG does not pull everyone back to Discord bots.",
       },
       {
         h: "What stays on Discord (honestly)",

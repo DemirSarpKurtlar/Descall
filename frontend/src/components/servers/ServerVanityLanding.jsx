@@ -7,6 +7,7 @@ import { useT } from "../../context/LocaleContext";
 import { ServerIcon } from "./ServerIcon";
 import { SkeletonLine } from "../ui/Skeleton";
 import "../../site/glass-public.css";
+import "../../site/glass-public-frames.css";
 
 /**
  * Landing page for /s/:vanitySlug server vanity URLs.

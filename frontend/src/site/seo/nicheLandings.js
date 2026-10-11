@@ -59,17 +59,17 @@ export const NICHE_LANDINGS = {
 
   "/discord-alternative-for-lfg": {
     path: "/discord-alternative-for-lfg",
-    kicker: "LFG · Valorant",
-    h1: "Discord alternative for LFG — Valorant lobbies without bot hell",
+    kicker: "LFG ·",
+    h1: "Discord alternative for LFG — lobbies without bot hell",
     lead:
-      "Looking for an LFG app that isn’t a fragile Discord bot stack? Descall’s Play tab is a productized LFG surface: create lobbies, share party codes, link Riot Name#TAG, and move to voice with people who matched you.",
+      "Looking for an LFG app that isn’t a fragile Discord bot stack?",
     answerTitle: "Why gamers search for an LFG platform",
     answer:
-      "Classic Discord LFG means roles, bots, and channel spam. An LFG platform should shorten the path from “looking for duo” to “in voice.” Descall is built around that loop for Valorant — not as an afterthought plugin.",
+      "Classic Discord LFG means roles, bots, and channel spam. An LFG platform should shorten the path from “looking for duo” to “in voice.” Descall is built around that loop — not as an afterthought plugin.",
     bullets: [
       "Play tab LFG lobbies with filters",
       "Party codes for fast handoff",
-      "Riot Name#TAG link for rank on profile",
+      "link for rank on profile",
       "Jump into Descall voice with your match",
       "Free core — no Nitro to queue with friends",
     ],
@@ -79,8 +79,8 @@ export const NICHE_LANDINGS = {
         p: "Bots work until they break, get rate-limited, or need a mod team. Descall treats LFG as a first-class product tab. You still get chat and calls in the same Discord alternative — without maintaining a bot zoo.",
       },
       {
-        h: "Valorant-ready profiles",
-        p: "After a successful Riot link, rank can appear on your profile so LFG cards are trustworthy. No more pasting “Immo 2” into a channel every night.",
+        h: "-ready profiles",
+        p: "No more pasting “Immo 2” into a channel every night.",
       },
       {
         h: "From lobby to call",
@@ -90,7 +90,7 @@ export const NICHE_LANDINGS = {
     faq: [
       {
         q: "Is Descall an LFG platform?",
-        a: "Yes. Descall includes a Play tab for Valorant LFG lobbies, party codes, and Riot account linking — plus voice chat in the same app.",
+        a: "Yes. Descall includes a Play tab for LFG lobbies, party codes, and account linking — plus voice chat in the same app.",
       },
       {
         q: "Do I need Discord bots for LFG?",
@@ -224,7 +224,7 @@ export const NICHE_LANDINGS = {
     answer:
       "People saying “apps like Discord” usually want chat + persistent groups + voice. Some also want LFG or screen share. Descall covers that core. It does not try to clone every Discord bot and Stage feature — and that focus is the product.",
     bullets: [
-      "Descall — best for friends, free voice, Valorant LFG",
+      "Descall — best for friends, free voice, LFG",
       "Discord — still best for huge communities & bots",
       "Guilded — structured gaming communities",
       "TeamSpeak / Mumble — voice-first classics",
@@ -271,7 +271,7 @@ export const NICHE_LANDINGS = {
     kicker: "Discord replacement",
     h1: "Discord replacement for friend groups — switch without losing voice",
     lead:
-      "Looking for a Discord replacement, not just another bookmark? Descall replaces Discord for the daily loop: DMs, group chat, free voice/video, screen share, and Valorant LFG — while you keep Discord for the big public servers you still need.",
+      "Looking for a Discord replacement, not just another bookmark? Descall replaces Discord for the daily loop: DMs, group chat, free voice/video, screen share, and LFG — while you keep Discord for the big public servers you still need.",
     answerTitle: "Replacement ≠ clone",
     answer:
       "A good Discord replacement matches your real habits. If your habit is “call friends + queue + share screen,” Descall is a direct replacement. If your habit is “run a 10k-member server with 30 bots,” stay on Discord for that job.",
@@ -279,7 +279,7 @@ export const NICHE_LANDINGS = {
       "Replace nightly voice + DMs on day one",
       "Invite your squad with a group link",
       "Keep core chat/calls free",
-      "Use Play tab if you LFG on Valorant",
+      "Use Play tab if you LFG on",
       "Optionally keep Discord for public communities",
     ],
     sections: [

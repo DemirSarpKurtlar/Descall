@@ -8,6 +8,7 @@ import { isTrPath, withTrPrefix, stripLocalePrefix, TR_MIRROR_PATHS, enPathForHr
 import EmailCapture from "./components/EmailCapture";
 import "./site.css";
 import "./glass-public.css";
+import "./glass-public-frames.css";
 
 function IconMenu() {
   return (
@@ -37,6 +38,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathIsTr = isTrPath(location.pathname);
   const useTrUrls = pathIsTr || locale === "tr";
   const L = (to) => {
@@ -50,6 +52,13 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   useEffect(() => {
     if (isTurkishMarketingPath(location.pathname)) setLocale("tr");
   }, [location.pathname, setLocale]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (locale !== "tr") return;
@@ -131,14 +140,14 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   );
 
   return (
-    <div className="mkt">
+    <div className={`mkt${menuOpen ? " is-menu-open" : ""}`}>
       <div className="mkt-bg" aria-hidden>
         <div className="mkt-orb mkt-orb-a" />
         <div className="mkt-orb mkt-orb-b" />
         <div className="mkt-grid" />
       </div>
 
-      <header className="mkt-header">
+      <header className={`mkt-header${scrolled ? " is-scrolled" : ""}`}>
         <Link to={L("/")} className="mkt-brand">
           <img src={`${import.meta.env.BASE_URL}brand/descall-icon.png`} alt="" width={32} height={32} decoding="async" />
           <span>Descall</span>

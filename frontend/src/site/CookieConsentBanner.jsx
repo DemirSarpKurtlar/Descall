@@ -32,17 +32,30 @@ export default function CookieConsentBanner({ variant = "marketing", onOpenPriva
 
   return createPortal(
     <div className={className} role="dialog" aria-label={t("Cookie preferences")}>
+      {app ? null : (
+        <span className="mkt-consent-icon" aria-hidden="true">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+            <circle cx="9" cy="10" r="1" fill="currentColor" />
+            <circle cx="14" cy="9" r="1" fill="currentColor" />
+            <circle cx="13" cy="14" r="1" fill="currentColor" />
+          </svg>
+        </span>
+      )}
       <p>
-        {t("Optional analytics only. Essentials stay on.")}{" "}
-        {app ? (
-          <button type="button" className="app-consent-privacy" onClick={() => onOpenPrivacy?.()}>
-            {t("Privacy")}
-          </button>
-        ) : (
-          <Link to="/privacy" className="mkt-consent-privacy">
-            {t("Privacy")}
-          </Link>
-        )}
+        {app ? null : <strong>{t("Cookie preferences")}</strong>}
+        <span>
+          {t("Optional analytics only. Essentials stay on.")}{" "}
+          {app ? (
+            <button type="button" className="app-consent-privacy" onClick={() => onOpenPrivacy?.()}>
+              {t("Privacy")}
+            </button>
+          ) : (
+            <Link to="/privacy" className="mkt-consent-privacy">
+              {t("Privacy")}
+            </Link>
+          )}
+        </span>
       </p>
       <div className={app ? "app-consent-actions" : "mkt-consent-actions"}>
         <button

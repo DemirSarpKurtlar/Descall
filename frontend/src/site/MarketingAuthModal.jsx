@@ -195,17 +195,25 @@ function AuthModal({
                 <p>{t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })}</p>
                 {(twoFaError || authError) && <div className="auth-error">{twoFaError || authError}</div>}
                 <form onSubmit={submitCode}>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder={t("Verification code")}
-                    maxLength={8}
-                    autoFocus
-                    required
-                  />
+                  <div className="auth-otp">
+                    <input
+                      className="auth-otp-input"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder={t("Verification code")}
+                      maxLength={8}
+                      autoFocus
+                      required
+                    />
+                    <div className="auth-otp-cells" aria-hidden="true">
+                      {Array.from({ length: 6 }, (_, i) => (
+                        <span key={i} className={code.length === i ? "is-on" : ""}>{code[i] || ""}</span>
+                      ))}
+                    </div>
+                  </div>
                   <button type="submit" disabled={verifying || !code.trim()}>
                     {verifying ? t("Please wait...") : t("Verify")}
                   </button>

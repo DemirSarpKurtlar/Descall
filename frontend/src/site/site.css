@@ -1062,6 +1062,8 @@ body:has(.mkt-consent),
   font-size: 13px;
 }
 
+.auth-otp-cells { display: none; }
+
 .mkt-404 {
   text-align: center;
   padding: 80px 0;

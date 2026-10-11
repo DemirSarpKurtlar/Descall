@@ -42,7 +42,7 @@ export const PUBLIC_ROUTES = [
     path: "/",
     title: "Descall — Voice Chat, Servers & Screen Share",
     description:
-      "HD voice, video, screen share, and Discord-style servers — plus Valorant LFG. Free chat for friends and gamers. Start in the browser or download Windows.",
+      "HD voice, video, screen share, and Discord-style servers — plus LFG. Free chat for friends and gamers. Start in the browser or download Windows.",
     changefreq: "daily",
     priority: "1.0",
   },
@@ -59,7 +59,7 @@ export const PUBLIC_ROUTES = [
     path: "/features",
     title: "Descall Features — Free Voice, Screen Share & Servers",
     description:
-      "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and Valorant LFG. No Nitro wall on talking.",
+      "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG. No Nitro wall on talking.",
     changefreq: "weekly",
     priority: "0.85",
     keywords: "descall features, free voice chat, screen share app",
@@ -68,7 +68,7 @@ export const PUBLIC_ROUTES = [
     path: "/discord-alternative",
     title: "Free Discord Alternative — Voice, Screen Share & LFG",
     description:
-      "A free Discord alternative with real servers, HD voice/video, screen share, and Valorant LFG. Core chat and calls stay free — no Nitro paywall.",
+      "A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free — no Nitro paywall.",
     h1: "The best free Discord alternative for friends & gamers",
     changefreq: "weekly",
     priority: "0.95",
@@ -96,9 +96,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/best-discord-alternative-for-gamers",
-    title: "Best Discord Alternative for Gamers & Valorant LFG | Descall",
+    title: "Best Discord Alternative for Gamers & LFG | Descall",
     description:
-      "Discord alternative for gamers: free voice, screen share, and built-in Valorant LFG so squads queue without Nitro or bot hell.",
+      "Discord alternative for gamers: free voice, screen share, and built-in LFG so squads queue without Nitro or bot hell.",
     changefreq: "weekly",
     priority: "0.9",
     keywords: "discord alternative for gamers, gaming chat alternative, valorant lfg",
@@ -114,9 +114,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/discord-alternative-for-lfg",
-    title: "Discord Alternative for LFG — Valorant Lobbies | Descall",
+    title: "Discord Alternative for LFG — Lobbies | Descall",
     description:
-      "LFG app built into a Discord alternative: Play tab lobbies, party codes, Riot Name#TAG link, then jump straight into voice.",
+      "LFG app built into a Discord alternative: Play tab lobbies, party codes, link, then jump straight into voice.",
     changefreq: "weekly",
     priority: "0.9",
     keywords: "discord alternative for lfg, lfg app, lfg platform, valorant lfg",
@@ -161,7 +161,7 @@ export const PUBLIC_ROUTES = [
     path: "/discord-alternative-turkey",
     title: "Türkiye için Discord Alternatifi — Ücretsiz Sesli Sohbet",
     description:
-      "Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve Valorant LFG. Türkçe arayüz.",
+      "Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve LFG. Türkçe arayüz.",
     changefreq: "weekly",
     priority: "0.9",
     lang: "tr",
@@ -171,7 +171,7 @@ export const PUBLIC_ROUTES = [
     path: "/blog",
     title: "Descall Blog — Discord Alternatives, LFG & Voice Chat Guides",
     description:
-      "Practical guides on Discord alternatives, Discord competitors, Valorant LFG, voice chat, and migrating friend groups to Descall.",
+      "Practical guides on Discord alternatives, Discord competitors, LFG, voice chat, and migrating friend groups to Descall.",
     changefreq: "weekly",
     priority: "0.8",
   },
@@ -186,9 +186,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog/best-discord-alternative-for-lfg",
-    title: "Best Discord Alternative for Valorant LFG | Descall Blog",
+    title: "Best Discord Alternative for LFG | Descall Blog",
     description:
-      "Why gamers choose Descall as a Discord alternative for LFG: Play tab lobbies, party codes, and Riot Name#TAG linking.",
+      "Why gamers choose Descall as a Discord alternative for LFG: Play tab lobbies, party codes, and linking.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
@@ -354,7 +354,7 @@ export const PUBLIC_ROUTES = [
     path: "/tr/features",
     title: "Descall Özellikleri — Ücretsiz Ses ve Ekran Paylaşımı",
     description:
-      "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, sunucular, roller, şablonlar ve Valorant LFG. Konuşmak için abonelik yok.",
+      "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, sunucular, roller, şablonlar ve LFG. Konuşmak için abonelik yok.",
     changefreq: "weekly",
     priority: "0.8",
   },

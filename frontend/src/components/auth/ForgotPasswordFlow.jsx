@@ -129,9 +129,10 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
               : t("Enter the 6-digit code from your email, then choose a new password.")}
           </p>
           {info && <p className="auth-success-hint">{info}</p>}
-          <div className="input-wrapper">
+          <div className="input-wrapper auth-otp">
             <ShieldCheck className="input-icon" size={20} />
             <input
+              className="auth-otp-input"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -142,6 +143,11 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
               autoFocus
               required
             />
+            <div className="auth-otp-cells" aria-hidden="true">
+              {Array.from({ length: 6 }, (_, i) => (
+                <span key={i} className={code.length === i ? "is-on" : ""}>{code[i] || ""}</span>
+              ))}
+            </div>
           </div>
           <div className="input-wrapper">
             <Lock className="input-icon" size={20} />

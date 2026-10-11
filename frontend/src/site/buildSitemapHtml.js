@@ -134,12 +134,12 @@ ${cards}
       position: absolute; border-radius: 50%; filter: blur(72px); opacity: 0.42;
     }
     .orb-a {
-      width: 52vw; height: 52vw; top: -20%; left: 18%;
-      background: rgba(88, 101, 242, 0.38);
+      width: 520px; height: 420px; top: 0; left: 6%;
+      background: rgba(88, 122, 246, 0.46);
     }
     .orb-b {
-      width: 34vw; height: 34vw; right: -10%; bottom: 8%;
-      background: rgba(61, 214, 140, 0.16);
+      width: 480px; height: 360px; right: 0; top: 0;
+      background: rgba(124, 92, 255, 0.24);
     }
     .grid-bg {
       position: absolute; inset: 0;
@@ -185,7 +185,7 @@ ${cards}
     .section {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: 22px;
       padding: 18px 18px 16px;
       margin-bottom: 16px;
       backdrop-filter: blur(16px);

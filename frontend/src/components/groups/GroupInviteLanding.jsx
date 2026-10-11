@@ -6,6 +6,7 @@ import { getToken } from "../../lib/storage";
 import { Avatar } from "../ui/Avatar";
 import { SkeletonLine } from "../ui/Skeleton";
 import "../../site/glass-public.css";
+import "../../site/glass-public-frames.css";
 import { useT } from "../../context/LocaleContext";
 
 /**

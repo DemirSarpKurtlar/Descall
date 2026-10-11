@@ -33,7 +33,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       kicker={t("Discord alternative · 2026")}
       title={t("The best free Discord alternative for friends & gamers")}
       lead={t(
-        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG — without Nitro paywalls for the features you actually use."
+        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in LFG — without Nitro paywalls for the features you actually use."
       )}
       tone="compare"
       faq={faq}
@@ -68,7 +68,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           </li>
           <li>
             <strong>{t("Spin up a server")}</strong>
-            <span>{t("Pick a template (friends, gaming, Valorant) or start empty. Roles and channels ship ready.")}</span>
+            <span>{t("Pick a template (friends, gaming,) or start empty. Roles and channels ship ready.")}</span>
           </li>
           <li>
             <strong>{t("Invite the squad")}</strong>
@@ -86,9 +86,9 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
         <ul className="seo-checklist">
           {[
             "Servers with roles, text & voice channels",
-            "Advanced templates (gaming, Valorant, community…)",
+            "Advanced templates (gaming, community…)",
             "Free chat, voice, video, and screen share",
-            "Valorant LFG in a dedicated Play tab",
+            "LFG in a dedicated Play tab",
             "Windows desktop + web + Android",
             "Cosmetics via DesCoin — core stays free",
           ].map((item) => (
@@ -150,7 +150,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           <article>
             <Gamepad2 size={20} />
             <h3>{t("Gamers & LFG")}</h3>
-            <p>{t("Gaming / Valorant server templates, ranked LFG channels, and the Play tab in one app.")}</p>
+            <p>{t("Gaming server templates, ranked LFG channels, and the Play tab in one app.")}</p>
           </article>
           <article>
             <Monitor size={20} />

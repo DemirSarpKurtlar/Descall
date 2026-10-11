@@ -12,7 +12,7 @@ export const SEO_PILLARS = [
 
 export const SEO_NICHES = [
   { to: "/discord-alternative-for-communities", label: "Communities" },
-  { to: "/discord-alternative-for-lfg", label: "Valorant LFG" },
+  { to: "/discord-alternative-for-lfg", label: "LFG" },
   { to: "/discord-alternative-for-voice-chat", label: "Voice chat" },
   { to: "/discord-alternative-for-friends", label: "Friends" },
   { to: "/best-discord-alternative-for-gamers", label: "Gamers" },
