@@ -1,5 +1,17 @@
 # Polish progress
 
+## 2.9.195 — socket room rejoin once per reconnect
+
+Socket.IO emits Manager `reconnect` and then Socket `connect`. The app was rejoining group and server rooms from both, and the voice hook joined the same server rooms again on `connect`. Room joins now happen from `connect` only. Identical joins in the same 50ms burst are sent once (`emitRoomOnce`). `groups:rejoin` for the full id list is skipped when that list was already sent on this connection, and the key is cleared on disconnect so the next connect sends it again. A newly joined group still emits `groups:rejoin` for that id. Voice `server:voice:join` is unchanged.
+
+### Checklist (Demir)
+
+Sürüm **2.9.195**. Görünüm aynı.
+
+- [ ] Ağ kesilince sohbet geri gelsin. Grup ve sunucu odaları çift mesaj basmasın.
+- [ ] Ses kanalındayken bağlantı kopunca kanala geri düşsün.
+- [ ] Yeni bir gruba katılınca o grubun mesajları gelsin.
+
 ## 2.9.194 — iOS token in the Keychain
 
 `getToken()` stays synchronous. Before the session check and before React render, `main.jsx` awaits `hydrateSecureToken()`, which copies the Keychain item into memory. The first launch after this build writes the existing `localStorage` token into the Keychain and then removes it. If the plugin is missing or does not answer within 1.5s, the token stays in `localStorage` and login still works. Web, Android, and Electron do not use this path. Desktop still uses `safeStorage`.

@@ -4,6 +4,7 @@ import { preloadIceServers } from "../lib/iceConfig";
 import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
+import { emitRoomOnce } from "../lib/socketResubscribe";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
@@ -1360,14 +1361,14 @@ export function useServerVoice(socket) {
     const onConnect = () => {
       const serverId = subscribedServerIdRef.current;
       if (!serverId) return;
-      socket.emit("server:voice:subscribe", { serverId });
-      socket.emit("server:subscribe", { serverId });
+      emitRoomOnce(socket, "server:voice:subscribe", { serverId });
+      emitRoomOnce(socket, "server:subscribe", { serverId });
       const channelId = activeChannelIdRef.current;
       const liveServerId = activeServerIdRef.current;
       if (channelId && liveServerId) {
         socket.emit("server:voice:join", { serverId: liveServerId, channelId });
       } else if (channelId) {
-        socket.emit("server:voice:check", { channelId });
+        emitRoomOnce(socket, "server:voice:check", { channelId });
       }
     };
     socket.on("connect", onConnect);
