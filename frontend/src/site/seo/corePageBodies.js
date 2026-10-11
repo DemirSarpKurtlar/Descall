@@ -4,6 +4,7 @@
  */
 import { FAQ_ITEMS } from "../faqData.js";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
+import { LEGAL_EMAIL, contactCopy, legalSlug, tocLabel } from "../../legal/legalView.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import {
   ALTERNATIVE_HUB_FAQ,
@@ -60,14 +61,22 @@ function faqHtml(items, isTr = false) {
     .join("\n")}`;
 }
 
-function legalHtml(data, isTr = false) {
+function legalHtml(data, isTr = false, type = "privacy") {
+  const locale = isTr ? "tr" : "en";
+  const contact = contactCopy(type, locale);
+  const toc = (data.sections || [])
+    .map((section, index) => {
+      const id = legalSlug(section.heading, index);
+      return `<li><a href="#${id}">${escapeHtml(section.heading)}</a></li>`;
+    })
+    .join("");
   const sections = (data.sections || [])
-    .map(
-      (s) =>
-        `<h2>${escapeHtml(s.heading)}</h2>${(s.paragraphs || [])
-          .map((p) => `<p>${escapeHtml(p)}</p>`)
-          .join("\n")}`
-    )
+    .map((section, index) => {
+      const id = legalSlug(section.heading, index);
+      return `<h2 id="${id}">${escapeHtml(section.heading)}</h2>${(section.paragraphs || [])
+        .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+        .join("\n")}`;
+    })
     .join("\n");
   return `
 <main>
@@ -76,8 +85,10 @@ function legalHtml(data, isTr = false) {
     <h1>${escapeHtml(data.title)}</h1>
     <p><strong>${escapeHtml(data.updated)}</strong></p>
     <p>${escapeHtml(data.intro)}</p>
+    <nav aria-label="${escapeHtml(tocLabel(locale))}"><ol>${toc}</ol></nav>
     ${sections}
-    <p>${escapeHtml(trCopy("Contact", isTr))}: <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></p>
+    <h2>${escapeHtml(contact.heading)}</h2>
+    <p>${escapeHtml(contact.before)} <a href="mailto:${LEGAL_EMAIL}">${LEGAL_EMAIL}</a>${escapeHtml(contact.after)}</p>
   </article>
   ${navBlock(isTr)}
 </main>`;
@@ -307,13 +318,13 @@ export function corePageBody(path) {
 </main>`;
 
     case "/privacy":
-      return legalHtml(PRIVACY_CONTENT.en, isTr);
+      return legalHtml(isTr ? PRIVACY_CONTENT.tr : PRIVACY_CONTENT.en, isTr, "privacy");
 
     case "/terms":
-      return legalHtml(TERMS_CONTENT.en, isTr);
+      return legalHtml(isTr ? TERMS_CONTENT.tr : TERMS_CONTENT.en, isTr, "terms");
 
     case "/copyright":
-      return legalHtml(COPYRIGHT_CONTENT.en, isTr);
+      return legalHtml(isTr ? COPYRIGHT_CONTENT.tr : COPYRIGHT_CONTENT.en, isTr, "copyright");
 
     case "/discord-alternative":
       return `

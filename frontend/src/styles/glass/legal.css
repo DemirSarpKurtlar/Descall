@@ -131,3 +131,61 @@ html.glass-ui.a11y-contrast .legal-modal-backdrop {
   backdrop-filter: none !important;
   background: rgba(0, 0, 0, 0.55);
 }
+
+html.glass-ui .legal-modal-body {
+  padding: 8px 16px 4px;
+}
+
+html.glass-ui .legal-doc,
+html.glass-ui .legal-doc h1,
+html.glass-ui .legal-doc h2 {
+  font-family: var(--g-font);
+}
+
+html.glass-ui .legal-doc h1 {
+  font-size: 28px;
+}
+
+html.glass-ui .legal-doc-intro,
+html.glass-ui .legal-doc-main p,
+html.glass-ui .legal-doc-card em {
+  color: var(--g-t2);
+}
+
+html.glass-ui .legal-doc-card,
+html.glass-ui .legal-doc-rights p,
+html.glass-ui .legal-doc-contact {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.glass-ui .legal-doc-toc {
+  display: none;
+}
+
+html.glass-ui .legal-doc-jump {
+  display: block;
+}
+
+html.glass-ui .legal-doc-layout {
+  display: block;
+  margin-top: 18px;
+}
+
+html.glass-ui .legal-doc-cards {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+}
+
+html.glass-ui .legal-doc-card {
+  flex: 0 0 78%;
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .legal-doc-cards {
+    scroll-snap-type: none;
+  }
+}
