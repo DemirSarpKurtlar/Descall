@@ -1,0 +1,104 @@
+/* Stage 6 — friends list, hover card, profile card.
+   Visual only. Profile cosmetics keep their own backgrounds. */
+
+html.glass-desktop .friend-category {
+  margin-top: 8px;
+}
+
+html.glass-desktop .category-label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .friend-item {
+  min-height: 52px;
+  margin: 2px 8px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .friend-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.glass-desktop .friend-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .friends-quick-add-btn {
+  height: 36px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(88, 122, 246, 0.32);
+  color: #fff;
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.55);
+  font-weight: 650;
+}
+
+html.glass-desktop .user-hover-card {
+  width: 300px;
+  border: none;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .uhc-banner {
+  height: 84px;
+}
+
+html.glass-desktop .uhc-name,
+html.glass-desktop .user-profile-name-row {
+  color: var(--gd-t1);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+html.glass-desktop .uhc-status,
+html.glass-desktop .user-profile-status-line,
+html.glass-desktop .user-profile-handle {
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .user-profile-card {
+  border-radius: 28px !important;
+  border: none !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55) !important;
+  color: var(--gd-t1);
+  overflow: hidden;
+}
+
+html.glass-desktop .user-profile-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gd-t2);
+  border: none;
+}
+
+html.glass-desktop .profile-card-large {
+  border: none;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop.gd-lite .user-hover-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid-heavy);
+}
