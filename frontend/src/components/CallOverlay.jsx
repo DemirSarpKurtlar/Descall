@@ -1042,7 +1042,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             )}
 
             <CircleBtn
-              className={glass ? "g-cb is-end" : undefined}
+              className={glass ? "g-cb is-end" : "is-end"}
               color="#ed4245"
               size={narrowViewport ? 50 : 56}
               onClick={() => { hapticImpactMedium(); isDm ? call.endCall(peer?.id) : groupCall.leaveCall(); }}
@@ -2007,9 +2007,12 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 /* ---------- Sub-components ---------- */
 
 function CircleBtn({ children, color = "#3c4043", size = 52, onClick, title, className }) {
+  const off = String(color).toLowerCase() === "#ed4245" && !String(className || "").includes("is-end");
+  const on = String(color).toLowerCase() === "#3ba55d";
+  const gdClass = ["gd-call-btn", off ? "is-off" : "", on ? "is-on" : "", className].filter(Boolean).join(" ");
   return (
     <button
-      className={className}
+      className={gdClass}
       onClick={onClick}
       title={title}
       style={{
