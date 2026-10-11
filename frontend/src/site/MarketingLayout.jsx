@@ -7,6 +7,7 @@ import { SITE_OPERATOR } from "./siteIdentity";
 import { isTrPath, withTrPrefix, stripLocalePrefix, TR_MIRROR_PATHS, enPathForHreflang, isTurkishMarketingPath, trDestinationForPath } from "./localePaths";
 import EmailCapture from "./components/EmailCapture";
 import "./site.css";
+import "./glass-public.css";
 
 function IconMenu() {
   return (
@@ -197,7 +198,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
           <section className="mkt-footer-col">
             <h2>{t("Explore")}</h2>
             <Link to="/discord-alternative">{t("Discord alternative")}</Link>
-            <Link to="/discord-alternative-for-lfg">{t("Valorant LFG")}</Link>
+            <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>
             <Link to={L("/compare/discord")}>{t("vs Discord")}</Link>
             <Link to="/discord-alternative-turkey">{t("Turkey")}</Link>
             <Link to="/blog">{t("Blog")}</Link>

@@ -6,6 +6,7 @@ import { getToken } from "../../lib/storage";
 import { useT } from "../../context/LocaleContext";
 import { ServerIcon } from "./ServerIcon";
 import { SkeletonLine } from "../ui/Skeleton";
+import "../../site/glass-public.css";
 
 /**
  * Landing page for /s/:vanitySlug server vanity URLs.

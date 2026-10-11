@@ -172,6 +172,15 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             </button>
           </div>
           <p className="mkt-download-panel-meta">{versionLine}</p>
+          {import.meta.env.VITE_APP_STORE_URL ? (
+            <a
+              className="mkt-app-store"
+              href={import.meta.env.VITE_APP_STORE_URL}
+              rel="noopener noreferrer"
+            >
+              {t("Download on the App Store")}
+            </a>
+          ) : null}
         </div>
       </section>
 
@@ -240,7 +249,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             <IconCheck size={16} />
             <span>
               {t("Servers, roles, channels, and")}{" "}
-              <Link to={href("/discord-alternative-for-lfg")}>{t("Valorant LFG")}</Link>
+              <Link to={href("/discord-alternative-for-lfg")}>{t("LFG")}</Link>
             </span>
           </li>
           <li>

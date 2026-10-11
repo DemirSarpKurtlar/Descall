@@ -38,5 +38,7 @@ export const MARKETING_IDENTITY_KEYS = new Set([
   "Descall",
   "Blog",
   "Valorant LFG",
+  "LFG",
+  "Download on the App Store",
   "GitHub",
 ]);

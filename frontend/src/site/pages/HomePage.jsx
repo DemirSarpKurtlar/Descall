@@ -104,7 +104,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
           <div className="mkt-kicker">
             <span className="mkt-header-beta">{t("Beta")}</span>
             {" · "}
-            {t("Voice")} · {t("Servers")} · {t("Valorant LFG")}
+            {t("Voice")} · {t("Servers")} · {t("LFG")}
           </div>
           <h1>{t("Talk together")}</h1>
           <p>
@@ -115,7 +115,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
                   {t(
                     "A lighter home for friends and squads — real servers, HD calls, screen share, and"
                   )}{" "}
-                  <Link to="/discord-alternative-for-lfg">{t("Valorant LFG")}</Link>.
+                  <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>.
                 </>
               )}
           </p>

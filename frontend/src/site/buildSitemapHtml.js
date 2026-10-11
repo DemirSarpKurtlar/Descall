@@ -108,15 +108,15 @@ ${cards}
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0c10;
-      --surface: rgba(30, 31, 34, 0.78);
-      --text: #f2f3f5;
-      --muted: #949ba4;
-      --accent: #8b9cff;
-      --accent-2: #3dd68c;
-      --border: rgba(255,255,255,0.08);
-      --font-display: "Avenir Next", "Segoe UI", sans-serif;
-      --font-body: "Segoe UI", system-ui, sans-serif;
+      --bg: #0d0e13;
+      --surface: rgba(20, 21, 30, 0.72);
+      --text: rgba(255, 255, 255, 0.96);
+      --muted: rgba(235, 238, 255, 0.62);
+      --accent: #8fa6ff;
+      --accent-2: #30d158;
+      --border: rgba(255, 255, 255, 0.1);
+      --font-display: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+      --font-body: -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
     }
     * { box-sizing: border-box; }
     body {

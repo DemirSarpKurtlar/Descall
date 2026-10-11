@@ -70,7 +70,9 @@ function copyFor(locale) {
 }
 
 function pageHtml(title, body) {
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head><body style="font-family:system-ui,sans-serif;padding:32px;max-width:560px;margin:auto"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(body)}</p></body></html>`;
+  const safeTitle = escapeHtml(title);
+  const safeBody = escapeHtml(body);
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title></head><body style="margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#0d0e13;color:rgba(255,255,255,.96);font-family:-apple-system,Inter,system-ui,sans-serif"><main style="width:min(460px,100%);padding:28px 24px;border-radius:28px;background:rgba(20,21,30,.86);box-shadow:0 24px 64px rgba(0,0,0,.45)"><h1 style="margin:0 0 8px;font-size:28px;letter-spacing:-.03em">${safeTitle}</h1><p style="margin:0;color:rgba(235,238,255,.72);line-height:1.5">${safeBody}</p><p style="margin:18px 0 0"><a href="https://descall.com" style="color:#8fa6ff;font-weight:650;text-decoration:none">descall.com</a></p></main></body></html>`;
 }
 
 async function sendConfirmEmail({ email, locale, confirmToken, unsubscribeToken }) {
