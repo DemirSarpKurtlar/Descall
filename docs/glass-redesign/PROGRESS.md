@@ -1,5 +1,17 @@
 # Liquid Glass — progress log
 
+## Profil banner’ı · 2.9.198
+
+Profil düzenlemede “Banner'ı değiştir” mağaza banner’ı takılıyken hiçbir şey yapmıyordu. Açıklama da gizlendiği için düğme boş duruyordu. Dokununca fotoğraf seçici açılır. Kaydedilen görsel mağaza banner’ının önüne geçer ve çubukta görünür. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.198**. Yalnız iPhone.
+
+- [ ] Profil → Banner'ı değiştir: fotoğraf seçici açılır. Mağaza banner’ı takılı olsa da açılır.
+- [ ] Bir fotoğraf kaydet: çubukta o fotoğraf görünür, mor boş şerit kalmaz.
+- [ ] GIF seç: kırpma olmadan banner olur.
+
 ## Gizlilik sayfası · 2.9.197
 
 Ayarlar → Gizlilik artık diğer ayar sayfaları gibi: bölüm başlığı, kart, satır. Analitik tercihi kartın içinde eşit Reddet ve Kabul. Seçili olanın yanında onay işareti. Gizlilik Politikası ve Hizmet Şartları chevron satırı. iPhone’da bunlar cam kart; metin alttan cam sayfa olarak açılır. Masaüstü ve web aynı ayar kartını kullanır, cam sayfa yalnız iPhone’da. App Store’a gönderilmedi.

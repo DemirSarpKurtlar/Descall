@@ -1025,7 +1025,7 @@ const UserPanel = forwardRef(function UserPanel({
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || t("Failed to save profile"));
     keepTextDrafts();
-    applyProfileLocally(
+    return applyProfileLocally(
       data.user || {
         ...me,
         avatarUrl: body.avatarUrl,
@@ -1063,7 +1063,12 @@ const UserPanel = forwardRef(function UserPanel({
       const uploaded = await uploadFile(file);
       const url = uploaded?.url || uploaded?.mediaUrl || null;
       if (!url) throw new Error(t("Upload failed"));
-      await persistProfilePatch({ bannerUrl: url });
+      const saved = await persistProfilePatch({ bannerUrl: url });
+      // A shop banner paints over a custom URL. Unequip it so this upload shows.
+      if (saved?.equippedBanner || me?.equippedBanner) {
+        await equipShopItem("banner", null);
+        applyProfileLocally({ ...(saved || me), equippedBanner: null, bannerUrl: url, banner_url: url });
+      }
       setBannerUrl(url);
     } catch (err) {
       flashProfileError(err?.message || t("Network error during upload"));
@@ -1410,11 +1415,10 @@ const UserPanel = forwardRef(function UserPanel({
                 className={`us-pe-banner${effectiveBannerUrl ? " has-image" : ""}`}
                 style={effectiveBannerUrl ? { backgroundImage: cssUrl(effectiveBannerUrl) } : undefined}
               >
-                <button
-                  type="button"
+                <label
                   className="us-pe-banner-hit"
-                  onClick={() => !bannerUploading && !shopBanner && bannerInputRef.current?.click()}
-                  disabled={bannerUploading || shopBanner}
+                  htmlFor={bannerUploading ? undefined : "descall-profile-banner"}
+                  aria-disabled={bannerUploading || undefined}
                   aria-label={effectiveBannerUrl ? t("Change banner") : t("Add banner")}
                 >
                   {glassShell && isMobile ? (
@@ -1428,7 +1432,7 @@ const UserPanel = forwardRef(function UserPanel({
                       {t("Add banner")}
                     </span>
                   ) : null}
-                </button>
+                </label>
                 {!shopBanner && effectiveBannerUrl && (
                   <div className="us-pe-banner-actions">
                     {bannerUrl && (
@@ -1530,26 +1534,26 @@ const UserPanel = forwardRef(function UserPanel({
                   )}
                 </div>
                 <span className="us-hint">
-                  {shopBanner
-                    ? t("Your shop banner is equipped. Unequip it in the Shop to use your own.")
-                    : t("JPG, PNG, WebP or GIF, up to 8 MB. GIFs stay animated.")}
+                  {t("JPG, PNG, WebP or GIF, up to 8 MB. GIFs stay animated.")}
                 </span>
               </div>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                ref={fileInputRef}
-                className="us-hidden"
-                onChange={handleAvatarUpload}
-              />
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                ref={bannerInputRef}
-                className="us-hidden"
-                onChange={handleBannerPick}
-              />
             </div>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              ref={fileInputRef}
+              className="us-file-proxy"
+              onChange={handleAvatarUpload}
+            />
+            <input
+              id="descall-profile-banner"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              ref={bannerInputRef}
+              className="us-file-proxy"
+              disabled={bannerUploading}
+              onChange={handleBannerPick}
+            />
 
             {profileError && (
               <div className="us-alert danger">

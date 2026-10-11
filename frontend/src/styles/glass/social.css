@@ -1247,7 +1247,13 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(88, 122, 246, 0.85), rgba(124, 92, 255, 0.65)) !important;
+  background-image: linear-gradient(135deg, rgba(88, 122, 246, 0.85), rgba(124, 92, 255, 0.65));
+  background-size: cover;
+  background-position: center;
+}
+
+html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner.has-image {
+  background-color: #12131a;
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-banner-label {
@@ -1260,6 +1266,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-banner-label {
   font-size: 14px;
   font-weight: 650;
   pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner-actions,
