@@ -3,7 +3,9 @@
 
 html.glass-desktop .gd-auth {
   position: relative;
+  height: 100%;
   min-height: 100%;
+  overflow: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -114,6 +116,7 @@ html.glass-desktop .gd-auth .auth-tab {
 }
 
 html.glass-desktop .gd-auth .auth-tab.active {
+  background: transparent;
   color: var(--gd-t1);
 }
 
@@ -155,6 +158,7 @@ html.glass-desktop .gd-auth .auth-forgot-link {
 }
 
 html.glass-desktop .gd-auth .auth-submit {
+  width: 100%;
   height: 48px;
   margin-top: 14px;
   border: 0;

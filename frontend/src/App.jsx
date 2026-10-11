@@ -101,7 +101,7 @@ import {
   valorantPlayVisible,
 } from "./lib/publicFeatures";
 import { applyRemoteGlassFlag } from "./lib/glassUi";
-import { applyRemoteGlassDesktopFlag } from "./lib/glassDesktop";
+import { applyRemoteGlassDesktopFlag, shouldPreviewDesktopAuth, syncGlassDesktop } from "./lib/glassDesktop";
 import { parseAppDate } from "./lib/datetime";
 import AdminPanel from "./components/admin/AdminPanel";
 import ShopGiftPopup from "./components/shop/ShopGiftPopup";
@@ -400,6 +400,9 @@ function mergeReactionsIntoMessages(messages, reactionsByMessageId) {
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  useEffect(() => {
+    syncGlassDesktop();
+  }, [location.pathname, location.search]);
   const requestedRoute = useMemo(() => parseAppRoute(location.pathname), [location.pathname]);
   const requestedRouteRef = useRef(requestedRoute);
   requestedRouteRef.current = requestedRoute;
@@ -4133,7 +4136,17 @@ export default function App() {
     // Electron/native: paint AuthView immediately even if the URL is still
     // /direct or /settings. A <Navigate to="/"> first frame is blank white
     // in HashRouter + file:// (the logout white-screen).
-    if (nativeOrDesktop) {
+    let previewAuth = false;
+    try {
+      previewAuth = shouldPreviewDesktopAuth({
+        pathname: location.pathname,
+        search: location.search,
+        override: window.localStorage?.getItem("descall:glass-desktop"),
+      });
+    } catch {
+      previewAuth = false;
+    }
+    if (nativeOrDesktop || previewAuth) {
       return (
         <>
           <TitleBar />

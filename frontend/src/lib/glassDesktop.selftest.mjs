@@ -4,6 +4,8 @@ import {
   shouldEnableGlassDesktop,
   shouldUseGlassDesktopLite,
   readGlassDesktopQuery,
+  isGlassDesktopSurface,
+  shouldPreviewDesktopAuth,
   nativeShellPlatform,
   initGlassDesktop,
   applyRemoteGlassDesktopFlag,
@@ -29,6 +31,15 @@ assert.equal(shouldEnableGlassDesktop({ isElectron: true, viewportOk: false, ove
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeIos: true, override: "1" }), false, "iPhone never");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeAndroid: true, remoteFlag: true }), false, "Android never");
 assert.equal(shouldEnableGlassDesktop({ ...web, remoteFlag: false }), false, "explicit remote off");
+assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", surfaceOk: false }), false, "marketing pages stay off");
+assert.equal(isGlassDesktopSurface("/"), false, "home is marketing");
+assert.equal(isGlassDesktopSurface("/privacy"), false, "privacy page stays marketing");
+assert.equal(isGlassDesktopSurface("/login"), true, "login is the auth preview");
+assert.equal(isGlassDesktopSurface("/direct"), true, "app routes are in scope");
+assert.equal(shouldPreviewDesktopAuth({ pathname: "/login", search: "?glass-desktop=1" }), true);
+assert.equal(shouldPreviewDesktopAuth({ pathname: "/login", override: "1" }), true);
+assert.equal(shouldPreviewDesktopAuth({ pathname: "/", search: "?glass-desktop=1" }), false);
+assert.equal(shouldPreviewDesktopAuth({ pathname: "/register", search: "?gd=0" }), false);
 
 assert.equal(readGlassDesktopQuery("?glass-desktop=1"), "1");
 assert.equal(readGlassDesktopQuery("?gd=0"), "0");

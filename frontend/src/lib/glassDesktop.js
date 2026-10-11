@@ -16,6 +16,8 @@
  * except the accessibility ones.
  */
 
+import { isPublicMarketingPath } from "../site/marketingPaths.js";
+
 export const GLASS_DESKTOP_CLASS = "glass-desktop";
 export const GLASS_DESKTOP_LITE_CLASS = "gd-lite";
 export const GLASS_DESKTOP_CONTRAST_CLASS = "gd-contrast";
@@ -23,6 +25,29 @@ export const GLASS_DESKTOP_OVERRIDE_KEY = "descall:glass-desktop";
 export const GLASS_DESKTOP_REMOTE_KEY = "descall:glass-desktop-remote";
 export const GLASS_DESKTOP_LITE_KEY = "descall:glass-desktop-lite";
 export const GLASS_DESKTOP_MIN_WIDTH = 960;
+
+const AUTH_PREVIEW_PATHS = new Set(["/login", "/register", "/tr/login", "/tr/register"]);
+
+function normalizePath(pathname) {
+  return String(pathname || "/").replace(/\/+$/, "") || "/";
+}
+
+/**
+ * Marketing pages never get the class. /login and /register are the preview
+ * exception so the app auth screen can be reviewed in a browser.
+ */
+export function isGlassDesktopSurface(pathname) {
+  const path = normalizePath(pathname);
+  if (AUTH_PREVIEW_PATHS.has(path)) return true;
+  return !isPublicMarketingPath(path);
+}
+
+/** Logged-out web: show AuthView instead of the marketing auth modal. */
+export function shouldPreviewDesktopAuth({ pathname, search = "", override = null } = {}) {
+  if (!AUTH_PREVIEW_PATHS.has(normalizePath(pathname))) return false;
+  if (readGlassDesktopQuery(search) === "1") return true;
+  return override === "1";
+}
 
 function currentWindow(win) {
   if (win !== undefined) return win;
@@ -79,11 +104,13 @@ export function shouldEnableGlassDesktop({
   isNativeAndroid = false,
   isElectron = false,
   viewportOk = true,
+  surfaceOk = true,
   buildFlag = true,
   remoteFlag = false,
   override = null,
 } = {}) {
   if (isNativeIos || isNativeAndroid) return false;
+  if (surfaceOk === false) return false;
   if (override === "0" || buildFlag === false) return false;
   if (!isElectron && !viewportOk) return false;
   if (override === "1") return true;
@@ -122,6 +149,7 @@ function snapshotInputs(w, remoteOverride) {
     isNativeAndroid: platform === "android",
     isElectron,
     viewportOk: isElectron || width >= GLASS_DESKTOP_MIN_WIDTH,
+    surfaceOk: isGlassDesktopSurface(w?.location?.pathname),
     buildFlag: readBuildFlag(),
     remoteFlag,
     override: readStorage(w, GLASS_DESKTOP_OVERRIDE_KEY),
@@ -284,6 +312,15 @@ function sampleFrameRate(w) {
     }
   };
   raf.call(w, step);
+}
+
+/** Re-read the URL after a client navigation. Marketing routes drop the class. */
+export function syncGlassDesktop(win) {
+  const w = currentWindow(win);
+  if (!w) return enabled;
+  inputs = snapshotInputs(w);
+  setEnabled(shouldEnableGlassDesktop(inputs), w);
+  return enabled;
 }
 
 /** Call once before first paint (main.jsx bootApp). */
