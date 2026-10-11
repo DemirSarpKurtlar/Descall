@@ -1,5 +1,17 @@
 # Liquid Glass — progress log
 
+## Gizlilik sayfası · 2.9.197
+
+Ayarlar → Gizlilik artık diğer ayar sayfaları gibi: bölüm başlığı, kart, satır. Analitik tercihi kartın içinde eşit Reddet ve Kabul. Seçili olanın yanında onay işareti. Gizlilik Politikası ve Hizmet Şartları chevron satırı. iPhone’da bunlar cam kart; metin alttan cam sayfa olarak açılır. Masaüstü ve web aynı ayar kartını kullanır, cam sayfa yalnız iPhone’da. App Store’a gönderilmedi.
+
+### TestFlight kontrol listesi (Demir)
+
+Sürüm **2.9.197**. Yalnız iPhone.
+
+- [ ] Ayarlar → Gizlilik: kartlı satırlar, Reddet ve Kabul aynı boyda. Seçince onay işareti kalır.
+- [ ] Gizlilik Politikası ve Hizmet Şartları alttan cam sayfa açar. Kapat sayfayı kapatır.
+- [ ] 16 yaş altı hesapta iki düğme de kapalıdır. Analitik açılmaz.
+
 ## Gizlilik · 2.9.192
 
 Analitik ve reklam etiketleri artık onaydan önce yüklenmez. Reddetmek kabul etmek kadar kolaydır. Seçim Ayarlar → Gizlilik’ten değiştirilir. 16 yaşından küçük hesaplarda analitik kapalı kalır. 13 yaşından küçük doğum tarihi hesabı kapatır ve silmeyi başlatır. iPhone sohbetinde casino oyun sonucu gösterilmez. App Store’a gönderilmedi.

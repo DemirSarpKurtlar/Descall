@@ -4,7 +4,7 @@ import {
   X, Mic, Headphones, Bell, User, LogOut, Moon, Sun,
   ChevronRight, ChevronLeft, Palette, Volume2, Camera,
   Type, Upload, Check, MonitorSpeaker, AlertTriangle,
-  Copy, Image as ImageIcon, RefreshCw, Globe, Shield,
+  Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText,
   ShoppingBag, Mail, Monitor, CheckCircle2, UserX, Sparkles, KeyRound, Smile,
   Trash2, AtSign, Lock,
 } from "lucide-react";
@@ -176,40 +176,82 @@ function PrivacySettingsSection() {
       })
       .catch(() => {});
   };
+  const status = choice === "accepted"
+    ? t("Accepted")
+    : choice === "rejected"
+      ? t("Rejected")
+      : t("Not chosen yet");
   return (
-    <div className="us-tab">
+    <div className="us-tab g-privacy">
+      <p className="us-lead">
+        {under16
+          ? t("Analytics are off because this account is under 16.")
+          : t("Analytics stay off until you accept. You can change this anytime.")}
+      </p>
       <section className="us-section">
-        <h3 className="us-section-title">{t("Product analytics")}</h3>
-        <p className="us-muted">
-          {under16
-            ? t("Analytics are off because this account is under 16.")
-            : t("Analytics stay off until you accept. You can change this anytime.")}
-        </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button type="button" className="us-btn ghost" disabled={under16} onClick={() => apply("rejected")}>
-            {t("Reject")}
+        <h4 className="us-section-label">{t("Product analytics")}</h4>
+        <div className="us-card">
+          <div className="us-row">
+            <div className="us-row-text">
+              <span className="us-row-icon" aria-hidden>
+                <Lock size={16} />
+              </span>
+              <div className="us-row-copy">
+                <span className="us-row-title">{t("Product analytics")}</span>
+                <span className="us-row-desc">{status}</span>
+              </div>
+            </div>
+          </div>
+          <div className="g-privacy-actions">
+            <button
+              type="button"
+              className={`us-btn ghost${choice === "rejected" ? " is-on" : ""}`}
+              disabled={under16}
+              aria-pressed={choice === "rejected"}
+              onClick={() => apply("rejected")}
+            >
+              {choice === "rejected" ? <Check size={15} /> : null}
+              {t("Reject")}
+            </button>
+            <button
+              type="button"
+              className={`us-btn primary${choice === "accepted" ? " is-on" : ""}`}
+              disabled={under16}
+              aria-pressed={choice === "accepted"}
+              onClick={() => apply("accepted")}
+            >
+              {choice === "accepted" ? <Check size={15} /> : null}
+              {t("Accept")}
+            </button>
+          </div>
+        </div>
+      </section>
+      <section className="us-section">
+        <h4 className="us-section-label">{t("settings.privacy")}</h4>
+        <div className="us-card stack">
+          <button type="button" className="us-row g-privacy-link" onClick={() => setLegal("privacy")}>
+            <span className="us-row-text">
+              <span className="us-row-icon" aria-hidden>
+                <Shield size={16} />
+              </span>
+              <span className="us-row-copy">
+                <span className="us-row-title">{t("Privacy Policy")}</span>
+              </span>
+            </span>
+            <ChevronRight size={18} className="g-privacy-chevron" />
           </button>
-          <button type="button" className="us-btn" disabled={under16} onClick={() => apply("accepted")}>
-            {t("Accept")}
+          <button type="button" className="us-row g-privacy-link" onClick={() => setLegal("terms")}>
+            <span className="us-row-text">
+              <span className="us-row-icon" aria-hidden>
+                <FileText size={16} />
+              </span>
+              <span className="us-row-copy">
+                <span className="us-row-title">{t("Terms of Service")}</span>
+              </span>
+            </span>
+            <ChevronRight size={18} className="g-privacy-chevron" />
           </button>
         </div>
-        <p className="us-muted" style={{ marginTop: 8 }}>
-          {under16
-            ? t("Analytics are off because this account is under 16.")
-            : choice === "accepted"
-              ? t("Accepted")
-              : choice === "rejected"
-                ? t("Rejected")
-                : t("Not chosen yet")}
-        </p>
-      </section>
-      <section className="us-section" style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-        <button type="button" className="us-btn ghost" onClick={() => setLegal("privacy")}>
-          {t("Privacy Policy")}
-        </button>
-        <button type="button" className="us-btn ghost" onClick={() => setLegal("terms")}>
-          {t("Terms of Service")}
-        </button>
       </section>
       <LegalContentModal open={Boolean(legal)} type={legal || "privacy"} onClose={() => setLegal(null)} />
     </div>

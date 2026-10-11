@@ -1,0 +1,133 @@
+/* Terms and privacy reader on the iPhone glass shell. A bottom sheet.
+   Desktop and web keep the centered card in styles/legal.css. */
+
+html.glass-ui .legal-modal-backdrop {
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 10px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  background: rgba(5, 6, 10, 0.42);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
+}
+
+html.glass-ui .legal-modal-card {
+  width: 100%;
+  max-width: none;
+  max-height: min(82vh, 720px);
+  border: 0;
+  border-radius: var(--g-r-sheet);
+  color: var(--g-t1);
+  font-family: var(--g-font);
+  background:
+    linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
+    var(--g-heavy-base);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  box-shadow: var(--g-shadow-heavy);
+}
+
+html.glass-ui .legal-modal-card,
+html.glass-ui .legal-modal-card * {
+  font-family: var(--g-font);
+}
+
+html.glass-ui .legal-modal-header {
+  gap: 12px;
+  padding: 18px 16px 6px;
+  border-bottom: 0;
+}
+
+html.glass-ui .legal-modal-header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--g-t1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+html.glass-ui .legal-modal-header-text h2 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--g-t1);
+}
+
+html.glass-ui .legal-modal-header-text span {
+  font-size: 13px;
+  color: var(--g-t3);
+}
+
+html.glass-ui .legal-modal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+  background: var(--g-chip-bg);
+  color: var(--g-t1);
+}
+
+html.glass-ui .legal-modal-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--g-t1);
+}
+
+html.glass-ui .legal-modal-body {
+  padding: 8px 18px 16px;
+}
+
+html.glass-ui .legal-modal-intro {
+  margin: 0 0 16px;
+  padding-bottom: 14px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--g-t2);
+}
+
+html.glass-ui .legal-modal-section h3 {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--g-t1);
+}
+
+html.glass-ui .legal-modal-section p {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--g-t2);
+}
+
+html.glass-ui .legal-modal-footer {
+  padding: 4px 16px 16px;
+  border-top: 0;
+}
+
+html.glass-ui .legal-modal-ok-btn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+html.glass-ui .legal-modal-ok-btn:hover {
+  filter: none;
+  background: #fff;
+}
+
+html.glass-ui.a11y-solid .legal-modal-card,
+html.glass-ui.a11y-contrast .legal-modal-card {
+  background: var(--g-solid-heavy) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-ui.a11y-solid .legal-modal-backdrop,
+html.glass-ui.a11y-contrast .legal-modal-backdrop {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.55);
+}
