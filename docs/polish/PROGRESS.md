@@ -1,5 +1,17 @@
 # Polish progress
 
+## 2.9.196 — composer stays above the iPhone keyboard
+
+The keyboard was covering the message field. WKWebView often keeps the page full height while the keys slide over the composer, so the visual-viewport gap stayed 0 and the field never moved. The iOS shell now reports how much of the web view the keyboard covers. The chat shell shortens by that amount and the glass composer sits just above the keys. If the viewport already shrank by the same amount, it is not applied twice. The one-line field also stops iOS from scrolling the typed text out of the capsule.
+
+### Checklist (Demir)
+
+Sürüm **2.9.196**.
+
+- [ ] Sohbette yazmaya başlayınca klavye açılsın ve yazdığın satır klavyenin hemen üstünde görünsün.
+- [ ] Birkaç kelime yaz. Harfler kaybolmasın.
+- [ ] Klavyeyi kapatınca yazı kutusu alta insin, ekranda siyah boşluk kalmasın.
+
 ## 2.9.195 — socket room rejoin once per reconnect
 
 Socket.IO emits Manager `reconnect` and then Socket `connect`. The app was rejoining group and server rooms from both, and the voice hook joined the same server rooms again on `connect`. Room joins now happen from `connect` only. Identical joins in the same 50ms burst are sent once (`emitRoomOnce`). `groups:rejoin` for the full id list is skipped when that list was already sent on this connection, and the key is cleared on disconnect so the next connect sends it again. A newly joined group still emits `groups:rejoin` for that id. Voice `server:voice:join` is unchanged.

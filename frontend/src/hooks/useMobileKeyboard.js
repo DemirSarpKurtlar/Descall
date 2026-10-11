@@ -1,6 +1,26 @@
 import { useEffect } from "react";
 import { isTextEditing, mobileViewportBox } from "../lib/mobileViewport";
 
+/** Points of keyboard covering the web view. 0 on web, Android, and desktop. */
+let nativeKeyboardInset = 0;
+const nativeKeyboardListeners = new Set();
+
+function setNativeKeyboardInset(px) {
+  nativeKeyboardInset = Math.max(0, Math.round(Number(px) || 0));
+  nativeKeyboardListeners.forEach((fn) => {
+    try {
+      fn(nativeKeyboardInset);
+    } catch {
+      /* ignore */
+    }
+  });
+  return nativeKeyboardInset;
+}
+
+if (typeof window !== "undefined") {
+  window.__descallNativeKeyboard = setNativeKeyboardInset;
+}
+
 function resetScroll() {
   try {
     window.scrollTo(0, 0);
@@ -48,6 +68,7 @@ export function useMobileKeyboard(enabled = true) {
         offsetTop: vv?.offsetTop ?? 0,
         offsetLeft: vv?.offsetLeft ?? 0,
         editing: isTextEditing(document.activeElement),
+        nativeInset: nativeKeyboardInset,
       });
       const open = box.open;
 
@@ -131,6 +152,8 @@ export function useMobileKeyboard(enabled = true) {
     };
 
     root.classList.add("mobile-keyboard-lock");
+    const onNativeKeyboard = () => schedule();
+    nativeKeyboardListeners.add(onNativeKeyboard);
     apply();
     const onFocusIn = () => schedule();
     if (vv) {
@@ -155,6 +178,7 @@ export function useMobileKeyboard(enabled = true) {
       window.removeEventListener("focusout", onFocusOut);
       window.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("visibilitychange", schedule);
+      nativeKeyboardListeners.delete(onNativeKeyboard);
       root.classList.remove("mobile-keyboard-lock");
       root.classList.remove("kb-open");
       root.classList.remove("kb-closing");

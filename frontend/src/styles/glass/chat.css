@@ -1132,15 +1132,16 @@ html.glass-ui .app-root.g-shell .composer-input-wrapper {
 
 html.glass-ui .app-root.g-shell .composer-input {
   flex: 1;
-  min-height: 0 !important;
-  height: 40px !important;
-  max-height: 40px !important;
-  padding: 8px 0 !important;
+  min-height: 24px !important;
+  height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 !important;
   margin: 0;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
   color: var(--g-t1);
+  caret-color: var(--g-t1);
   font-size: 16px !important;
   line-height: 24px !important;
   letter-spacing: -0.012em;

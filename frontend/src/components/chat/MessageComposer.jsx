@@ -938,6 +938,10 @@ export default function MessageComposer({
               if (e.target.value) emitTypingStart();
               else emitTypingStop();
             }}
+            onScroll={(e) => {
+              // iOS scrolls the caret inside a one-line field and hides the text.
+              if (e.target.scrollTop) e.target.scrollTop = 0;
+            }}
             onFocus={(e) => {
               if (e.target.scrollTop) e.target.scrollTop = 0;
             }}
