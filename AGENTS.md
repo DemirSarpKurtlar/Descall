@@ -17,7 +17,7 @@
 - Group calls signal with `group:call:incoming` → accept/reject UI is `GroupCallIncomingModal`.
 - Backend delivery uses Socket.IO `user:${userId}` rooms (not presence-map-only). Presence is kept if another tab stays connected.
 - `useGroupCall(socket, currentUserId)` needs the logged-in user id — `socket.user` is **not** set on the client.
-- After loading groups, always emit `groups:rejoin` so members are in group rooms for banners/fallback invites.
+- After loading groups, emit `groups:rejoin` so members are in group rooms for banners/fallback invites. Socket `connect` does the same rejoin. Skip a second emit when that id list was already rejoined on this connection (`lib/socketResubscribe.js`). Do not also rejoin from the Manager `reconnect` event — `connect` already fired. Test: `node frontend/src/lib/socketResubscribe.selftest.mjs`.
 - Group start looks up `group_members` in DB when client `memberIds` is empty.
 - Group screen share defaults to **720p @ ~20fps** with RTP `maxBitrate` / `maintain-framerate` (`src/lib/webrtcScreenShare.js`). Mesh encodes per peer — avoid 1080p+/60fps.
 - **Screen share (DES-10):** desktop `getDisplayMedia` **omits** `displaySurface` by default so the full OS picker (window / entire screen / tab) appears — locking `"browser"` made many users only see the Descall tab. Mobile prefers `monitor` so backgrounding keeps the share alive. Never set `preferCurrentTab`. Soft `ideal` constraints only — hard `max` post-capture can kill DRM tracks.

@@ -38,6 +38,7 @@ import {
   newestCursor,
   peekChatCache,
 } from "./lib/chatCache";
+import { emitRoomOnce, nextGroupRejoin } from "./lib/socketResubscribe";
 import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, setChatPrefetchHandler } from "./lib/chatPrefetch";
 import { createSocket } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
@@ -503,6 +504,7 @@ export default function App() {
   const myIdRef = useRef(null);
   const dmPrefsRef = useRef({});
   const myGroupsRef = useRef([]);
+  const groupRejoinKeyRef = useRef("");
   const myServersRef = useRef([]);
   const friendsRef = useRef([]);
   const friendsFromSocketRef = useRef(false);
@@ -1427,25 +1429,28 @@ export default function App() {
 
     const rejoinGroups = () => {
       const ids = myGroupsRef.current.map((g) => g.id).filter(Boolean);
-      if (ids.length > 0) socket.emit("groups:rejoin", ids);
+      const decision = nextGroupRejoin(ids, groupRejoinKeyRef.current);
+      groupRejoinKeyRef.current = decision.key;
+      if (!decision.emit) return;
+      socket.emit("groups:rejoin", ids);
     };
 
     const rejoinServers = () => {
       const view = activeViewRef.current;
       const server = activeServerRef.current;
       if (view !== "servers" || !server?.id) return;
-      socket.emit("server:subscribe", { serverId: server.id });
-      socket.emit("server:voice:subscribe", { serverId: server.id });
+      emitRoomOnce(socket, "server:subscribe", { serverId: server.id });
+      emitRoomOnce(socket, "server:voice:subscribe", { serverId: server.id });
       const textIds = (server.channels || [])
         .filter((c) => c.type === "text" && c.id)
         .map((c) => c.id);
-      if (textIds.length) socket.emit("server:channels:rejoin", textIds);
+      if (textIds.length) emitRoomOnce(socket, "server:channels:rejoin", textIds);
       const voiceLike = activeChannelRef.current;
       if (
         voiceLike?.id &&
         (voiceLike.type === "voice" || voiceLike.type === "stage")
       ) {
-        socket.emit("server:voice:check", { channelId: voiceLike.id });
+        emitRoomOnce(socket, "server:voice:check", { channelId: voiceLike.id });
       }
     };
 
@@ -1460,6 +1465,7 @@ export default function App() {
     });
 
     socket.on("disconnect", (reason) => {
+      groupRejoinKeyRef.current = "";
       setIsConnected(false);
       setReconnectState(reason === "io client disconnect" ? "idle" : "disconnected");
       if (reason !== "io client disconnect") audioManager.play("disconnect");
@@ -1468,14 +1474,6 @@ export default function App() {
     socket.io.on("reconnect_attempt", (attempt) => {
       setReconnectState("reconnecting");
       setAuthError(`Reconnecting… attempt ${attempt}`);
-    });
-
-    socket.io.on("reconnect", () => {
-      setReconnectState("connected");
-      setAuthError("");
-      emitDmActive(socket, activeDmRef.current?.id ?? null);
-      rejoinGroups();
-      rejoinServers();
     });
 
     socket.io.on("reconnect_failed", () => {
@@ -2780,8 +2778,10 @@ export default function App() {
         return changed ? next : prev;
       });
       const ids = groups.map((g) => g.id).filter(Boolean);
-      if (ids.length > 0 && socketRef.current?.connected) {
-        socketRef.current.emit("groups:rejoin", ids);
+      const decision = nextGroupRejoin(ids, groupRejoinKeyRef.current);
+      if (socketRef.current?.connected) {
+        groupRejoinKeyRef.current = decision.key;
+        if (decision.emit) socketRef.current.emit("groups:rejoin", ids);
       }
     } catch (err) {
       // Keep previous list — a transient API failure should not wipe the sidebar
