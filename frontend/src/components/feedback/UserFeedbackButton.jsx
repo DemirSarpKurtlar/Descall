@@ -94,7 +94,7 @@ export default function UserFeedbackButton({ socket, user }) {
       }
       
       // Submit feedback
-      const submitToken = localStorage.getItem("descall_token");
+      const submitToken = getToken();
       
       const res = await fetch(`${API_BASE_URL}/api/feedback/submit`, {
         method: "POST",

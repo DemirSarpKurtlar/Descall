@@ -1,5 +1,22 @@
 # Polish progress
 
+## 2.9.194 — iOS token in the Keychain
+
+`getToken()` stays synchronous. Before the session check and before React render, `main.jsx` awaits `hydrateSecureToken()`, which copies the Keychain item into memory. The first launch after this build writes the existing `localStorage` token into the Keychain and then removes it. If the plugin is missing or does not answer within 1.5s, the token stays in `localStorage` and login still works. Web, Android, and Electron do not use this path. Desktop still uses `safeStorage`.
+
+Direct `localStorage.getItem("descall_token")` reads in the admin panel, locale save, and feedback submit now go through `getToken()`. The error-boundary reset calls `clearToken()`, which also deletes the Keychain item.
+
+LiveKit on production (`GET /api/webrtc/media-config` on des-call) is off (`sfu: false`, no URL). The CSP `wss://*.livekit.cloud` / `https://*.livekit.cloud` in `vercel.json` and Electron `main.cjs` matches a LiveKit Cloud project host (`wss://<project>.livekit.cloud`). There is no other websocket host to add.
+
+### TestFlight checklist (Demir)
+
+Sürüm **2.9.194**. Web, Android ve masaüstü aynı. Eski iOS (2.9.182) açılmaya devam eder.
+
+- [ ] Güncellemeden sonra iPhone’da oturum açık kalsın; tekrar giriş istemesin.
+- [ ] Çıkış yapınca tekrar giriş iste. Eski oturum geri gelmesin.
+- [ ] Dil değiştirince hesap dili kaydolsun.
+- [ ] Uygulama çökme ekranındaki sıfırlama çıkış yapsın.
+
 ## 2.9.193 — auth and session hardening
 
 Account changes now need the current password (or a code sent to the confirmed email for a social-only account). Changing email stores `pending_email` and does not turn off 2FA or clear `email_confirmed_at`. Password reset emails go only to a confirmed address, and the public forgot/reset responses no longer say whether the account exists. A signed-in password change also requires the current password when the account has one. Old clients that omit it receive a Turkish error.
@@ -8,7 +25,7 @@ Login, register, reset, 2FA, email codes, username checks, Google/Apple, and soc
 
 One-time codes use `crypto.randomInt` and `timingSafeEqual`. Wrong guesses are counted in `auth_code_attempts` for an hour and are not reset when a new code is sent. Sessions are checked against `users.active_sessions` (20s cache) plus the in-memory revoke set. Password reset/change and email change revoke the other sessions, including ones dropped by the 10-session cap. Tokens that already omit a session id stay valid if they were issued before 2026-10-11T12:00:00Z. Newer session-less tokens are rejected. Token lifetime is still 7 days. No refresh-token flow.
 
-`/api/errors` list, resolve, and delete require an admin. The public test routes and `/api/auth/test` are gone. `/debug/*` cannot be enabled in production. Admin role changes require username `admin` or `users.is_super_admin` (set for the admin account only). New passwords must be at least 10 characters and are checked against Have I Been Pwned (fail-open, 2s); set `PASSWORD_HIBP=0` to skip. The signup, reset, and change forms show a Turkish strength meter. Email 2FA stays optional. Authenticator-app 2FA was not added. iOS still keeps the JWT in localStorage; the desktop app stores it with `safeStorage` and loads packaged pages from `descall://app` with `webSecurity` on.
+`/api/errors` list, resolve, and delete require an admin. The public test routes and `/api/auth/test` are gone. `/debug/*` cannot be enabled in production. Admin role changes require username `admin` or `users.is_super_admin` (set for the admin account only). New passwords must be at least 10 characters and are checked against Have I Been Pwned (fail-open, 2s); set `PASSWORD_HIBP=0` to skip. The signup, reset, and change forms show a Turkish strength meter. Email 2FA stays optional. Authenticator-app 2FA was not added. The desktop app stores the JWT with `safeStorage` and loads packaged pages from `descall://app` with `webSecurity` on. iOS Keychain storage shipped in 2.9.194.
 
 Migration `20261011_auth_security.sql` is applied: `pending_email`, `is_super_admin`, and `auth_code_attempts` (RLS on, no anon access).
 

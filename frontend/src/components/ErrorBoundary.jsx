@@ -1,4 +1,5 @@
 import React from "react";
+import { clearToken, clearUser } from "../lib/storage";
 
 function IconRefresh({ size = 14, style }) {
   return (
@@ -289,8 +290,8 @@ export default class ErrorBoundary extends React.Component {
 
   handleReset = () => {
     try {
-      window.localStorage.removeItem("descall_user");
-      window.localStorage.removeItem("descall_token");
+      clearUser();
+      clearToken();
     } catch {
       // Ignore storage reset failures.
     }
