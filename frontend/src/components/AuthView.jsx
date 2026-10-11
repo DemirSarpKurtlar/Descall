@@ -18,6 +18,7 @@ import { captureVisit } from "../lib/attribution";
 import { Funnel } from "../site/analytics";
 import { initialAuthMode, isCapacitorNativeShell } from "../lib/entryShell";
 import { useGlassUi } from "../hooks/useGlassUi";
+import { useGlassDesktop } from "../hooks/useGlassDesktop";
 import { usePressFeedbackScope } from "../hooks/usePressFeedback";
 import { hapticError } from "../lib/fluid/haptics";
 import { useMaterialize } from "../hooks/useMaterialize";
@@ -46,8 +47,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   // Liquid Glass (iPhone app only, 2.9.151): same features and handlers, the
   // approved mockup layout (logo + tagline above a heavy glass card, legal below).
   const glass = useGlassUi();
+  const glassDesktop = useGlassDesktop();
   const glassRootRef = useRef(null);
-  usePressFeedbackScope(glassRootRef, { enabled: glass });
+  usePressFeedbackScope(glassRootRef, { enabled: glass || glassDesktop });
   const card = useMaterialize(true, { appear: true });
 
   useEffect(() => {
@@ -170,7 +172,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       : productTagline;
 
   const isLoginOrRegister = !twoFa && !socialSignup && mode !== "forgot";
-  const showLegalInCard = !glass;
+  const showLegalInCard = !glass && !glassDesktop;
   const legalFooter = (
     <>
       <p className="auth-footer">
@@ -245,22 +247,29 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         <ForgotPasswordFlow onBack={() => setMode("login")} />
       ) : (
       <>
-      <div className={`auth-tabs${glass ? " g-chip g-seg" : ""}`} role={glass ? "tablist" : undefined}>
-        {glass && <SegLens index={mode === "register" ? 1 : 0} />}
+      <div
+        className={`auth-tabs${glass ? " g-chip g-seg" : ""}${glassDesktop ? " gd-seg" : ""}`}
+        role={glass || glassDesktop ? "tablist" : undefined}
+      >
+        {(glass || glassDesktop) && <SegLens index={mode === "register" ? 1 : 0} />}
         <button
           className={`auth-tab ${mode === "login" ? "active" : ""}`}
           onClick={() => setMode("login")}
           type="button"
+          role={glass || glassDesktop ? "tab" : undefined}
+          aria-selected={glass || glassDesktop ? mode === "login" : undefined}
         >
-          {!glass && <MessageCircle size={18} />}
+          {!glass && !glassDesktop && <MessageCircle size={18} />}
           <span>{t("Login")}</span>
         </button>
         <button
           className={`auth-tab ${mode === "register" ? "active" : ""}`}
           onClick={() => setMode("register")}
           type="button"
+          role={glass || glassDesktop ? "tab" : undefined}
+          aria-selected={glass || glassDesktop ? mode === "register" : undefined}
         >
-          {!glass && <UserPlus size={18} />}
+          {!glass && !glassDesktop && <UserPlus size={18} />}
           <span>{t("Register")}</span>
         </button>
       </div>
@@ -416,6 +425,38 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       )}
     </>
   );
+
+  if (glassDesktop) {
+    return (
+      <main ref={glassRootRef} className={`gd-auth${isElectron ? " is-electron" : ""}`}>
+        <div className="gd-auth-glow" aria-hidden="true" />
+        <div className="gd-auth-scroll">
+          <header className="gd-auth-head">
+            <DescallBrand compact className="gd-auth-mark" />
+            <h1 className="gd-auth-title">{t("Descall")}</h1>
+            <p className="gd-auth-tagline">{subtitle}</p>
+          </header>
+          <section className="gd-glass gd-heavy gd-auth-card">
+            {cardBody}
+          </section>
+          {isLoginOrRegister && (
+            <footer className="gd-auth-legal">
+              <p>{t("By continuing, you agree to our Terms of Service")}</p>
+              <p className="gd-auth-links">
+                <button type="button" onClick={() => setLegalModal("terms")}>{t("Terms of Service")}</button>
+                <span className="gd-dot" aria-hidden="true"> · </span>
+                <button type="button" onClick={() => setLegalModal("privacy")}>{t("Privacy Policy")}</button>
+                <span className="gd-dot" aria-hidden="true"> · </span>
+                <span className="gd-auth-copy">© {new Date().getFullYear()} Demir Sarp Kurtlar</span>
+              </p>
+            </footer>
+          )}
+        </div>
+        <LegalContentModal open={legalModal === "terms"} type="terms" onClose={() => setLegalModal(null)} />
+        <LegalContentModal open={legalModal === "privacy"} type="privacy" onClose={() => setLegalModal(null)} />
+      </main>
+    );
+  }
 
   if (glass) {
     return (

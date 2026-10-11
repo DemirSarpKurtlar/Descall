@@ -17,6 +17,8 @@ const DEFAULT_SYSTEM_CONFIG = {
     valorantCompanion: true,
     // iPhone app Liquid Glass UI (2.9.151+): remote kill switch, default on.
     iosGlass: true,
+    // Desktop/web Liquid Glass. Opt-in: missing or false stays off.
+    desktopGlass: false,
   },
   themeForce: null,
   maintenanceMode: false,
@@ -46,6 +48,11 @@ function pickFeatureFlags(input) {
   const src = input && typeof input === "object" ? input : {};
   const out = {};
   for (const key of FEATURE_FLAG_KEYS) {
+    if (key === "desktopGlass") {
+      // Opt-in. Older rows without the key must not restyle desktop and web.
+      out[key] = src[key] === true;
+      continue;
+    }
     // Missing keys stay enabled so older system_settings rows keep working.
     out[key] = src[key] !== false;
   }
@@ -59,6 +66,7 @@ function publicFeatureFlags(input) {
     valorantLfg: flags.valorantLfg,
     valorantCompanion: flags.valorantCompanion,
     iosGlass: flags.iosGlass,
+    desktopGlass: flags.desktopGlass,
   };
 }
 

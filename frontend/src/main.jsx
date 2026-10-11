@@ -208,10 +208,12 @@ async function bootApp() {
       import("./components/IosPwaInstallBanner"),
       import("./styles.css"),
       loadI18nCatalogs(),
-      // Liquid Glass gate (iPhone app only; adds html.glass-ui before first paint).
+      // iPhone Liquid Glass (html.glass-ui) and desktop/web Liquid Glass
+      // (html.glass-desktop, off unless a flag says otherwise).
       isNativeApp
         ? import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {})
         : null,
+      import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
     ]);
 
   const [{ default: AppBootSkeleton }] = await Promise.all([
@@ -267,6 +269,7 @@ async function boot() {
   const hasSession = Boolean(getToken());
   const preferMarketingShell = shouldBootMarketingShell({
     pathname: path,
+    search: typeof window !== "undefined" ? window.location.search || "" : "",
     hasSession,
     isElectron: isElectronDesktop,
     isNativeApp,

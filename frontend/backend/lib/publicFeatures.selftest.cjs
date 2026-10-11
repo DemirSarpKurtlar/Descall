@@ -53,10 +53,11 @@ async function getJson(port, path, headers) {
     const port = server.address().port;
     const features = await getJson(port, "/api/features");
     assert(features.status === 200, "public features status");
-    assert(Object.keys(features.body).sort().join(",") === "iosGlass,valorantCompanion,valorantLfg", "only public keys");
+    assert(Object.keys(features.body).sort().join(",") === "desktopGlass,iosGlass,valorantCompanion,valorantLfg", "only public keys");
     assert(features.body.valorantLfg === false, "persisted ram flags are returned");
     assert(features.body.valorantCompanion === true, "companion stays on");
     assert(features.body.iosGlass === true, "iOS glass kill switch defaults on");
+    assert(features.body.desktopGlass === false, "desktop glass stays off until enabled");
     assert(features.body.voice === undefined && features.body.maintenanceMode === undefined, "no admin config leak");
 
     const blocked = await getJson(port, "/api/lfg/meta");

@@ -4,6 +4,8 @@ export const DEFAULT_PUBLIC_FEATURES = {
   valorantLfg: true,
   valorantCompanion: true,
   iosGlass: true,
+  // Desktop/web Liquid Glass is opt-in until an admin turns it on.
+  desktopGlass: false,
 };
 
 let current = normalizePublicFeatures(DEFAULT_PUBLIC_FEATURES);
@@ -30,6 +32,8 @@ export function normalizePublicFeatures(input) {
     valorantCompanion: src.valorantCompanion !== false && !isNativeIosShell(),
     // Remote kill switch for the iPhone Liquid Glass UI (lib/glassUi.js).
     iosGlass: src.iosGlass !== false,
+    // Desktop/web Liquid Glass (lib/glassDesktop.js). Missing stays off.
+    desktopGlass: src.desktopGlass === true,
   };
 }
 
@@ -47,7 +51,8 @@ export function applyPublicFeatures(input) {
   if (
     next.valorantLfg === current.valorantLfg &&
     next.valorantCompanion === current.valorantCompanion &&
-    next.iosGlass === current.iosGlass
+    next.iosGlass === current.iosGlass &&
+    next.desktopGlass === current.desktopGlass
   ) {
     return current;
   }

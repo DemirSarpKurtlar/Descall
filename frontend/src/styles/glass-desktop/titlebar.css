@@ -1,0 +1,36 @@
+/* Electron title bar. Web has no title bar (TitleBar returns null). */
+
+html.glass-desktop .titlebar {
+  height: var(--gd-tb);
+  background: transparent;
+  border-bottom: none;
+  box-shadow: none;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .titlebar-title,
+html.glass-desktop .titlebar .descall-brand {
+  font-family: var(--gd-font);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .titlebar .descall-brand img,
+html.glass-desktop .titlebar-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+html.glass-desktop .titlebar .win-btn {
+  width: 46px;
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .titlebar .win-btn.close:hover {
+  background: #c42b1c;
+  color: #fff;
+}

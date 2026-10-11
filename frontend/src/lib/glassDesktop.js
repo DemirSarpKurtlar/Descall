@@ -1,0 +1,329 @@
+/**
+ * Desktop + web Liquid Glass gate (Stage 1).
+ *
+ * Separate from the iPhone UI (`html.glass-ui` / publicFeatures.iosGlass).
+ * Native iOS and Android never get `html.glass-desktop`.
+ *
+ * Default is off. Any one of these turns it on:
+ *   1. local override  localStorage "descall:glass-desktop" = "1"
+ *      (also set by ?glass-desktop=1 or ?gd=1, then the param is removed)
+ *   2. remote flag     publicFeatures.desktopGlass === true
+ * "0" on the override or VITE_GLASS_DESKTOP=0 always wins.
+ *
+ * Low-performance mode (`html.gd-lite`) drops backdrop-filter. It turns on for
+ * reduced transparency, forced colors, 4 or fewer CPU cores, a slow frame
+ * sample, or Settings › Görünüm. A manual "off" beats the automatic triggers
+ * except the accessibility ones.
+ */
+
+export const GLASS_DESKTOP_CLASS = "glass-desktop";
+export const GLASS_DESKTOP_LITE_CLASS = "gd-lite";
+export const GLASS_DESKTOP_CONTRAST_CLASS = "gd-contrast";
+export const GLASS_DESKTOP_OVERRIDE_KEY = "descall:glass-desktop";
+export const GLASS_DESKTOP_REMOTE_KEY = "descall:glass-desktop-remote";
+export const GLASS_DESKTOP_LITE_KEY = "descall:glass-desktop-lite";
+export const GLASS_DESKTOP_MIN_WIDTH = 960;
+
+function currentWindow(win) {
+  if (win !== undefined) return win;
+  return typeof window !== "undefined" ? window : null;
+}
+
+function readStorage(w, key) {
+  try {
+    return w?.localStorage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function readBuildFlag() {
+  try {
+    const v = import.meta.env?.VITE_GLASS_DESKTOP;
+    if (v === undefined || v === null || v === "") return true;
+    return !(String(v) === "0" || String(v).toLowerCase() === "false");
+  } catch {
+    return true;
+  }
+}
+
+export function nativeShellPlatform(win) {
+  const w = currentWindow(win);
+  try {
+    const cap = w && w.Capacitor;
+    if (!cap || typeof cap.getPlatform !== "function") return null;
+    if (typeof cap.isNativePlatform === "function" && !cap.isNativePlatform()) return null;
+    const platform = cap.getPlatform();
+    return platform === "ios" || platform === "android" ? platform : null;
+  } catch {
+    return null;
+  }
+}
+
+/** "1" | "0" | null from ?glass-desktop= or ?gd= */
+export function readGlassDesktopQuery(search) {
+  const raw = String(search || "");
+  const q = raw.startsWith("?") ? raw.slice(1) : raw;
+  const params = new URLSearchParams(q);
+  const value = params.get("glass-desktop") ?? params.get("gd");
+  if (value === "1" || value === "0") return value;
+  return null;
+}
+
+/**
+ * Pure on/off decision. Remote defaults to false: missing or non-true stays off.
+ * viewportOk is false on a narrow web window so a phone browser never gets the class.
+ */
+export function shouldEnableGlassDesktop({
+  isNativeIos = false,
+  isNativeAndroid = false,
+  isElectron = false,
+  viewportOk = true,
+  buildFlag = true,
+  remoteFlag = false,
+  override = null,
+} = {}) {
+  if (isNativeIos || isNativeAndroid) return false;
+  if (override === "0" || buildFlag === false) return false;
+  if (!isElectron && !viewportOk) return false;
+  if (override === "1") return true;
+  return remoteFlag === true;
+}
+
+/** Pure low-performance decision. */
+export function shouldUseGlassDesktopLite({
+  reducedTransparency = false,
+  forcedColors = false,
+  contrastMore = false,
+  cores = 8,
+  manual = null,
+  fpsLow = false,
+} = {}) {
+  if (reducedTransparency || forcedColors) return true;
+  if (manual === "1") return true;
+  if (manual === "0") return false;
+  if (fpsLow) return true;
+  const n = Number(cores);
+  if (n > 0 && n <= 4) return true;
+  void contrastMore;
+  return false;
+}
+
+function snapshotInputs(w, remoteOverride) {
+  const platform = nativeShellPlatform(w);
+  const isElectron = Boolean(w?.electronAPI?.isElectron);
+  const width = Number(w?.innerWidth) || 0;
+  const cachedRemote = readStorage(w, GLASS_DESKTOP_REMOTE_KEY);
+  let remoteFlag = false;
+  if (remoteOverride === true || remoteOverride === false) remoteFlag = remoteOverride;
+  else if (cachedRemote === "1") remoteFlag = true;
+  return {
+    isNativeIos: platform === "ios",
+    isNativeAndroid: platform === "android",
+    isElectron,
+    viewportOk: isElectron || width >= GLASS_DESKTOP_MIN_WIDTH,
+    buildFlag: readBuildFlag(),
+    remoteFlag,
+    override: readStorage(w, GLASS_DESKTOP_OVERRIDE_KEY),
+  };
+}
+
+function consumeQueryOverride(w) {
+  let search = "";
+  try {
+    search = w?.location?.search || "";
+  } catch {
+    search = "";
+  }
+  const hit = readGlassDesktopQuery(search);
+  if (hit !== "1" && hit !== "0") return;
+  try {
+    w.localStorage?.setItem(GLASS_DESKTOP_OVERRIDE_KEY, hit);
+  } catch {
+    /* ignore */
+  }
+  try {
+    const url = new URL(w.location.href);
+    url.searchParams.delete("glass-desktop");
+    url.searchParams.delete("gd");
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    w.history?.replaceState?.(w.history.state, "", next);
+  } catch {
+    /* ignore */
+  }
+}
+
+let enabled = false;
+let lite = false;
+let contrast = false;
+let fpsLow = false;
+let inputs = null;
+const listeners = new Set();
+let watching = false;
+
+export function isGlassDesktopEnabled() {
+  return enabled;
+}
+
+export function isGlassDesktopLite() {
+  return lite;
+}
+
+export function subscribeGlassDesktop(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function notify() {
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+function applyClasses(w) {
+  const doc = w?.document?.documentElement;
+  if (!doc?.classList) return;
+  doc.classList.toggle(GLASS_DESKTOP_CLASS, enabled);
+  doc.classList.toggle(GLASS_DESKTOP_LITE_CLASS, enabled && lite);
+  doc.classList.toggle(GLASS_DESKTOP_CONTRAST_CLASS, enabled && contrast);
+}
+
+function readLiteInputs(w) {
+  const match = (query) => {
+    try {
+      return Boolean(w?.matchMedia?.(query)?.matches);
+    } catch {
+      return false;
+    }
+  };
+  return {
+    reducedTransparency: match("(prefers-reduced-transparency: reduce)"),
+    forcedColors: match("(forced-colors: active)"),
+    contrastMore: match("(prefers-contrast: more)"),
+    cores: Number(w?.navigator?.hardwareConcurrency) || 8,
+    manual: readStorage(w, GLASS_DESKTOP_LITE_KEY),
+    fpsLow,
+  };
+}
+
+function refreshPresentation(w) {
+  const env = readLiteInputs(w);
+  contrast = env.contrastMore;
+  const nextLite = enabled && shouldUseGlassDesktopLite(env);
+  const changed = nextLite !== lite;
+  lite = nextLite;
+  applyClasses(w);
+  if (changed) notify();
+}
+
+function setEnabled(next, w) {
+  const changed = next !== enabled;
+  enabled = next;
+  if (!enabled) {
+    lite = false;
+    contrast = false;
+    applyClasses(w);
+  } else {
+    refreshPresentation(w);
+  }
+  if (changed) notify();
+}
+
+function startWatchers(w) {
+  if (watching || !w) return;
+  watching = true;
+  const onEnv = () => {
+    inputs = snapshotInputs(w);
+    setEnabled(shouldEnableGlassDesktop(inputs), w);
+    if (enabled) refreshPresentation(w);
+  };
+  try {
+    w.addEventListener?.("resize", onEnv);
+  } catch {
+    /* ignore */
+  }
+  for (const query of [
+    "(prefers-reduced-transparency: reduce)",
+    "(forced-colors: active)",
+    "(prefers-contrast: more)",
+  ]) {
+    try {
+      w.matchMedia?.(query)?.addEventListener?.("change", onEnv);
+    } catch {
+      /* ignore */
+    }
+  }
+  sampleFrameRate(w);
+}
+
+function sampleFrameRate(w) {
+  const raf = w?.requestAnimationFrame;
+  if (typeof raf !== "function") return;
+  let frames = 0;
+  let last = 0;
+  let acc = 0;
+  const step = (now) => {
+    if (!enabled) return;
+    if (last) {
+      acc += now - last;
+      frames += 1;
+    }
+    last = now;
+    if (frames < 45) {
+      raf.call(w, step);
+      return;
+    }
+    const avg = acc / frames;
+    if (avg > 40) {
+      fpsLow = true;
+      refreshPresentation(w);
+    }
+  };
+  raf.call(w, step);
+}
+
+/** Call once before first paint (main.jsx bootApp). */
+export function initGlassDesktop(win) {
+  const w = currentWindow(win);
+  if (!w) return false;
+  consumeQueryOverride(w);
+  inputs = snapshotInputs(w);
+  setEnabled(shouldEnableGlassDesktop(inputs), w);
+  startWatchers(w);
+  return enabled;
+}
+
+/**
+ * Remote kill switch (publicFeatures.desktopGlass). Cached for the next boot.
+ * Non-booleans are ignored so an older server cannot flip the UI.
+ */
+export function applyRemoteGlassDesktopFlag(value, win) {
+  const w = currentWindow(win);
+  if (!w || typeof value !== "boolean") return enabled;
+  try {
+    w.localStorage?.setItem(GLASS_DESKTOP_REMOTE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  inputs = snapshotInputs(w, value);
+  setEnabled(shouldEnableGlassDesktop(inputs), w);
+  return enabled;
+}
+
+/** Settings › Görünüm. true = force lite, false = force full (a11y still wins). */
+export function setGlassDesktopLiteManual(on, win) {
+  const w = currentWindow(win);
+  if (!w) return lite;
+  try {
+    w.localStorage?.setItem(GLASS_DESKTOP_LITE_KEY, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  if (enabled) refreshPresentation(w);
+  else notify();
+  return lite;
+}

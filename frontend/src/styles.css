@@ -49,6 +49,7 @@
 @import './styles/theme-scenes.css';
 @import './styles/app-consent.css';
 @import './styles/glass/index.css';
+@import './styles/glass-desktop/index.css';
 
 /* ============================================
    OLD CSS REMOVED — Using new modular system

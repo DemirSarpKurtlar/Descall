@@ -1,0 +1,110 @@
+/* Liquid Glass materials. Classes are inert until html.glass-desktop is set. */
+
+html.glass-desktop .gd-glass,
+html.glass-desktop .gd-chip,
+html.glass-desktop .gd-lens {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(22, 24, 36, 0.22);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(190%) brightness(1.06);
+  backdrop-filter: blur(var(--gd-blur)) saturate(190%) brightness(1.06);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop .gd-glass::before,
+html.glass-desktop .gd-chip::before,
+html.glass-desktop .gd-lens::before,
+html.glass-desktop .gd-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.10) 18%,
+    rgba(255, 255, 255, 0.03) 50%,
+    rgba(255, 255, 255, 0.06) 82%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+html.glass-desktop .gd-glass::after,
+html.glass-desktop .gd-lens::after,
+html.glass-desktop .gd-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow:
+    inset 7px 9px 16px -10px rgba(255, 255, 255, 0.30),
+    inset -7px -9px 16px -10px rgba(255, 255, 255, 0.14);
+}
+
+html.glass-desktop .gd-glass > *,
+html.glass-desktop .gd-chip > *,
+html.glass-desktop .gd-lens > *,
+html.glass-desktop .gd-panel > * {
+  position: relative;
+  z-index: 4;
+}
+
+html.glass-desktop .gd-heavy {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+html.glass-desktop .gd-panel {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
+    var(--gd-panel-base);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop .gd-chip {
+  background: rgba(255, 255, 255, 0.10);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop .gd-lens {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.10));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+html.glass-desktop.gd-lite .gd-glass,
+html.glass-desktop.gd-lite .gd-chip,
+html.glass-desktop.gd-lite .gd-lens,
+html.glass-desktop.gd-lite .gd-heavy,
+html.glass-desktop.gd-lite .gd-panel,
+html.glass-desktop.gd-lite .nav-rail,
+html.glass-desktop.gd-lite .sidebar-secondary,
+html.glass-desktop.gd-lite .gd-auth-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid);
+}
+
+html.glass-desktop.gd-lite .gd-heavy,
+html.glass-desktop.gd-lite .gd-auth-card {
+  background: var(--gd-solid-heavy);
+}

@@ -101,6 +101,7 @@ import {
   valorantPlayVisible,
 } from "./lib/publicFeatures";
 import { applyRemoteGlassFlag } from "./lib/glassUi";
+import { applyRemoteGlassDesktopFlag } from "./lib/glassDesktop";
 import { parseAppDate } from "./lib/datetime";
 import AdminPanel from "./components/admin/AdminPanel";
 import ShopGiftPopup from "./components/shop/ShopGiftPopup";
@@ -1304,6 +1305,7 @@ export default function App() {
         if (!cancelled && data) {
           applyPublicFeatures(data);
           applyRemoteGlassFlag(data.iosGlass);
+          applyRemoteGlassDesktopFlag(data.desktopGlass);
         }
       })
       .catch((err) => console.warn("[features] load failed:", err?.message || err));
@@ -2335,6 +2337,7 @@ export default function App() {
     socket.on("features:updated", (payload) => {
       applyPublicFeatures(payload);
       applyRemoteGlassFlag(payload?.iosGlass);
+      applyRemoteGlassDesktopFlag(payload?.desktopGlass);
     });
 
     socket.on("admin:popup", (payload = {}) => {

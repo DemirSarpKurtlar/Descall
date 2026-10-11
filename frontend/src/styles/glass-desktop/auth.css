@@ -1,0 +1,212 @@
+/* Login / register. Geometry from desktop mockup 01 (1440×900):
+   logo 80, title 32, card 432 / r32, segment 42, fields, brand CTA. */
+
+html.glass-desktop .gd-auth {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--gd-t1);
+  font-family: var(--gd-font);
+  background: transparent;
+}
+
+html.glass-desktop .gd-auth-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(28% 34% at 50% 22%, rgba(88, 122, 246, 0.40), transparent 70%);
+}
+
+html.glass-desktop .gd-auth-scroll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 72px 24px 32px;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .gd-auth-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+html.glass-desktop .gd-auth-mark {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 14px 30px rgba(88, 122, 246, 0.45));
+}
+
+html.glass-desktop .gd-auth-mark img,
+html.glass-desktop .gd-auth-mark svg {
+  width: 80px;
+  height: 80px;
+  display: block;
+}
+
+html.glass-desktop .gd-auth-title {
+  margin: 14px 0 0;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+html.glass-desktop .gd-auth-tagline {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .gd-auth-card {
+  width: min(432px, 100%);
+  margin-top: 28px;
+  border-radius: 32px;
+  padding: 20px 20px 22px;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .gd-auth .gd-seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 42px;
+  margin: 0 0 16px;
+  padding: 3px;
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-desktop .gd-auth .g-seg-lens {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.10));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transform: translateX(calc(var(--g-seg-x, 0) * 100%));
+  pointer-events: none;
+}
+
+html.glass-desktop .gd-auth .auth-tab {
+  position: relative;
+  z-index: 1;
+  height: 36px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: var(--gd-t2);
+  font-family: var(--gd-font);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+html.glass-desktop .gd-auth .auth-tab.active {
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .gd-auth .google-signin-wrap,
+html.glass-desktop .gd-auth .google-signin-button {
+  width: 100%;
+}
+
+html.glass-desktop .gd-auth .auth-divider {
+  color: var(--gd-t3);
+  font-size: 12.5px;
+}
+
+html.glass-desktop .gd-auth .input-wrapper {
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.26);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.10);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .gd-auth .input-wrapper input {
+  color: var(--gd-t1);
+  font-family: var(--gd-font);
+  background: transparent;
+}
+
+html.glass-desktop .gd-auth .input-wrapper:focus-within {
+  box-shadow: inset 0 0 0 2px #8FA6FF, inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+html.glass-desktop .gd-auth .auth-forgot-link {
+  color: var(--gd-brand-hi);
+  font-weight: 600;
+  font-size: 13.5px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+html.glass-desktop .gd-auth .auth-submit {
+  height: 48px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(120, 150, 255, 0.95), rgba(80, 112, 240, 0.95));
+  color: #fff;
+  font-family: var(--gd-font);
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(88, 122, 246, 0.45);
+  cursor: pointer;
+}
+
+html.glass-desktop .gd-auth .auth-submit:active {
+  transform: scale(0.97);
+}
+
+html.glass-desktop .gd-auth-legal {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .gd-auth-legal p {
+  margin: 0;
+}
+
+html.glass-desktop .gd-auth-links {
+  margin-top: 6px;
+  color: var(--gd-t2);
+  font-weight: 600;
+}
+
+html.glass-desktop .gd-auth-links button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+html.glass-desktop .gd-auth-links .gd-dot,
+html.glass-desktop .gd-auth-copy {
+  color: var(--gd-t3);
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-desktop .gd-auth .auth-submit:active {
+    transform: none;
+  }
+}

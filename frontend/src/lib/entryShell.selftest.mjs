@@ -28,9 +28,10 @@ assert(!isCapacitorNativeShell(webWin), "plain browser is not native");
 assert(!isCapacitorNativeShell(null), "no window is not native");
 assert(isElectronShell(electronWin) && !isElectronShell(webWin), "electron detection");
 
-const decide = (win, pathname, hasSession = false) =>
+const decide = (win, pathname, hasSession = false, search = "") =>
   shouldBootMarketingShell({
     pathname,
+    search,
     hasSession,
     isElectron: isElectronShell(win),
     isNativeApp: isCapacitorNativeShell(win),
@@ -41,6 +42,9 @@ assert(decide(webWin, "/") === true, "web logged-out / keeps the landing page");
 assert(decide(webWin, "/tr") === true, "web logged-out /tr keeps the landing page");
 assert(decide(webWin, "/download") === true, "web /download stays marketing");
 assert(decide(webWin, "/login") === true, "web /login stays the marketing auth modal");
+assert(decide(webWin, "/login", false, "?glass-desktop=1") === false, "glass preview on /login boots app auth");
+assert(decide(webWin, "/register", false, "?gd=1") === false, "glass preview on /register boots app auth");
+assert(decide(webWin, "/", false, "?glass-desktop=1") === true, "glass preview does not replace the marketing home");
 assert(decide(webWin, "/", true) === false, "web with session boots the app");
 assert(decide(webWin, "/direct") === false, "web app route boots the app");
 

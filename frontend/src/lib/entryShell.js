@@ -44,9 +44,18 @@ export function isCapacitorNativeShell(win) {
  * Only logged-out *web* visitors on a public marketing path get it. Electron and
  * the native apps always boot straight into their own login / sign-up screen.
  */
-export function shouldBootMarketingShell({ pathname = "/", hasSession = false, isElectron = false, isNativeApp = false } = {}) {
+function glassDesktopAuthPreview(pathname, search) {
+  if (!/(?:^|[?&])(?:glass-desktop|gd)=1(?:&|$)/.test(String(search || ""))) return false;
+  const path = String(pathname || "/").replace(/\/+$/, "") || "/";
+  return path === "/login" || path === "/register" || path === "/tr/login" || path === "/tr/register";
+}
+
+export function shouldBootMarketingShell({ pathname = "/", search = "", hasSession = false, isElectron = false, isNativeApp = false } = {}) {
   if (isElectron || isNativeApp) return false;
   if (hasSession) return false;
+  // Stage 1 review: ?glass-desktop=1 on the login routes opens the app auth
+  // screen. Every other marketing page stays the marketing site.
+  if (glassDesktopAuthPreview(pathname, search)) return false;
   return isPublicMarketingPath(pathname);
 }
 

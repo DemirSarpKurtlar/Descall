@@ -40,6 +40,8 @@ import { setUserBlocked } from "../../lib/blockedUsers";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
+import { useGlassDesktop, useGlassDesktopLite } from "../../hooks/useGlassDesktop";
+import { setGlassDesktopLiteManual } from "../../lib/glassDesktop";
 import { useLocale } from "../../context/LocaleContext";
 import LegalContentModal from "../legal/LegalContentModal";
 import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
@@ -345,6 +347,8 @@ const UserPanel = forwardRef(function UserPanel({
 }, ref) {
   const { isMobile } = useMobile();
   const glassShell = useGlassShell();
+  const glassDesktop = useGlassDesktop();
+  const glassDesktopLite = useGlassDesktopLite();
   const { t, locale, setLocale, locales } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -2136,6 +2140,22 @@ const UserPanel = forwardRef(function UserPanel({
                 )}
               </div>
             </section>
+
+            {glassDesktop && (
+              <section className="us-section">
+                <h4 className="us-section-label">{t("Low performance mode")}</h4>
+                <div className="us-row">
+                  <div>
+                    <p className="us-lead">{t("Turns off glass blur so Descall stays smooth on older computers.")}</p>
+                  </div>
+                  <Toggle
+                    value={glassDesktopLite}
+                    label={t("Low performance mode")}
+                    onChange={(on) => setGlassDesktopLiteManual(on)}
+                  />
+                </div>
+              </section>
+            )}
 
             <section className="us-section">
               <h4 className="us-section-label">{t("Accent color")}</h4>

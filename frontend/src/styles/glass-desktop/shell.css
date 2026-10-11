@@ -1,0 +1,91 @@
+/* App chrome: ambient scene, rail, list panel, main well.
+   Inner chat, rows and composers stay on the current UI until later stages. */
+
+html.glass-desktop[data-theme="dark"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 46% at 6% 6%, rgba(88, 122, 246, 0.46), transparent 70%),
+    radial-gradient(34% 40% at 62% 0%, rgba(124, 92, 255, 0.26), transparent 72%),
+    radial-gradient(40% 48% at 100% 30%, rgba(124, 92, 255, 0.30), transparent 70%),
+    radial-gradient(46% 50% at 26% 92%, rgba(88, 122, 246, 0.22), transparent 70%),
+    radial-gradient(36% 44% at 94% 100%, rgba(170, 92, 255, 0.24), transparent 70%),
+    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%);
+}
+
+html.glass-desktop #root {
+  position: relative;
+  z-index: 1;
+}
+
+html.glass-desktop .app-root {
+  background: transparent;
+  padding: var(--gd-gap);
+  gap: var(--gd-gap);
+  box-sizing: border-box;
+}
+
+html.glass-desktop .nav-rail {
+  border: none;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
+    var(--gd-panel-base);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop .nav-rail-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: 0 6px 18px rgba(88, 122, 246, 0.35);
+}
+
+html.glass-desktop .nav-item {
+  border-radius: 16px;
+}
+
+html.glass-desktop .nav-item.active {
+  color: var(--gd-brand-hi);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.10));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+html.glass-desktop .sidebar-secondary {
+  border: none;
+  border-radius: var(--gd-r-panel);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
+    var(--gd-panel-base);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop .app-main-slot {
+  border-radius: var(--gd-r-panel);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+}
+
+html.glass-desktop[data-theme="light"] .app-main-slot {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.38));
+}
+
+html.glass-desktop.gd-contrast .nav-rail,
+html.glass-desktop.gd-contrast .sidebar-secondary,
+html.glass-desktop.gd-contrast .app-main-slot,
+html.glass-desktop.gd-contrast .gd-auth-card {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 18px 48px rgba(0, 0, 0, 0.40);
+}

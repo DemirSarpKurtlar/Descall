@@ -1693,6 +1693,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       disabled={busy}
                       onChange={(enabled) => setFeatureFlag("iosGlass", enabled)}
                     />
+                    <SystemSwitch
+                      icon={Monitor}
+                      tone="glass"
+                      label={t("Desktop Liquid Glass")}
+                      status={system.config?.featureFlags?.desktopGlass === true ? t("On") : t("Off")}
+                      checked={system.config?.featureFlags?.desktopGlass === true}
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("desktopGlass", enabled)}
+                    />
                   </div>
                 </article>
 

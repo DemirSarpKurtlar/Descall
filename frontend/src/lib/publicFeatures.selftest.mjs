@@ -45,6 +45,8 @@ assert(resolveValorantTab("companion", getPublicFeatures()) === null, "hub exits
 
 const legacy = normalizePublicFeatures({ voice: false });
 assert(legacy.valorantLfg && legacy.valorantCompanion, "missing flags default on");
+assert(legacy.desktopGlass === false, "desktop glass stays off until the server says true");
+assert(normalizePublicFeatures({ desktopGlass: true }).desktopGlass === true, "desktop glass on when flagged");
 applyPublicFeatures({});
 assert(getPublicFeatures().valorantLfg === true, "empty payload stays enabled");
 

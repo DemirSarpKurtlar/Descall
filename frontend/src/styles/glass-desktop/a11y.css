@@ -1,0 +1,27 @@
+html.glass-desktop :focus-visible {
+  outline: 2px solid #8FA6FF;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-desktop .nav-item,
+  html.glass-desktop .auth-tab,
+  html.glass-desktop .auth-submit {
+    transition: opacity 120ms linear;
+  }
+}
+
+@media (forced-colors: active) {
+  html.glass-desktop .nav-rail,
+  html.glass-desktop .sidebar-secondary,
+  html.glass-desktop .app-main-slot,
+  html.glass-desktop .gd-auth-card,
+  html.glass-desktop .titlebar {
+    background: Canvas;
+    color: CanvasText;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    border: 1px solid CanvasText;
+  }
+}

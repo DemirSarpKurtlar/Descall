@@ -1,0 +1,39 @@
+/* Desktop + web Liquid Glass tokens (Stage 1).
+   Every rule is under html.glass-desktop. Values match
+   docs/glass-redesign/desktop/src/desktop.css. */
+
+html.glass-desktop {
+  --gd-brand: var(--primary, #587AF6);
+  --gd-brand-hi: #8FA6FF;
+  --gd-deep: #0D0E13;
+  --gd-t1: rgba(255, 255, 255, 0.96);
+  --gd-t2: rgba(235, 238, 255, 0.72);
+  --gd-t3: rgba(235, 238, 255, 0.50);
+  --gd-t4: rgba(235, 238, 255, 0.30);
+  --gd-font: -apple-system, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
+  --gd-tb: 40px;
+  --gd-gap: 8px;
+  --gd-r-panel: 24px;
+  --gd-r-card: 18px;
+  --gd-panel-top: rgba(255, 255, 255, 0.085);
+  --gd-panel-bot: rgba(255, 255, 255, 0.035);
+  --gd-panel-base: rgba(18, 20, 30, 0.40);
+  --gd-heavy-base: rgba(20, 21, 30, 0.62);
+  --gd-blur-panel: 40px;
+  --gd-blur: 26px;
+  --gd-solid: color-mix(in srgb, var(--surface-1, #181a24) 92%, transparent);
+  --gd-solid-heavy: color-mix(in srgb, var(--surface-0, #12131a) 94%, transparent);
+}
+
+html.glass-desktop[data-theme="light"] {
+  --gd-t1: rgba(20, 22, 32, 0.96);
+  --gd-t2: rgba(32, 36, 48, 0.72);
+  --gd-t3: rgba(32, 36, 48, 0.56);
+  --gd-t4: rgba(32, 36, 48, 0.36);
+  --gd-panel-top: rgba(255, 255, 255, 0.55);
+  --gd-panel-bot: rgba(255, 255, 255, 0.28);
+  --gd-panel-base: rgba(255, 255, 255, 0.62);
+  --gd-heavy-base: rgba(255, 255, 255, 0.78);
+  --gd-solid: color-mix(in srgb, var(--surface-1, #f4f5f8) 94%, white);
+  --gd-solid-heavy: color-mix(in srgb, var(--surface-0, #fff) 96%, white);
+}
