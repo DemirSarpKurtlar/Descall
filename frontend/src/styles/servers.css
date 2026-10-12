@@ -3053,6 +3053,16 @@ button.member-row.server-member-row {
   padding: 0 8px 8px;
 }
 
+.server-voice-room-stage:not(.is-sharing) .server-voice-tile {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+}
+
 .server-voice-grid.is-rail .server-voice-tile {
   flex: 0 0 168px;
   width: 168px;

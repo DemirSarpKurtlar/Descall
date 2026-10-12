@@ -993,7 +993,7 @@ export function useCall(socket, callOccupancyRef = null) {
       deafened: peerDeafened,
       requestState,
     } = {}) => {
-      if (!fromUserId || fromUserId !== peerRef.current?.id) return;
+      if (!fromUserId || String(fromUserId) !== String(peerRef.current?.id || "")) return;
       setRemoteMuted(Boolean(peerMuted));
       setRemoteCameraOn(Boolean(peerCameraOn));
       setRemoteDeafened(Boolean(peerDeafened));
@@ -1649,14 +1649,14 @@ export function useCall(socket, callOccupancyRef = null) {
   );
 
   const handleRemoteScreenShareStart = useCallback((fromUserId, announcement) => {
-    if (!fromUserId || fromUserId !== peerRef.current?.id) return;
+    if (!fromUserId || String(fromUserId) !== String(peerRef.current?.id || "")) return;
     if (announcement) noteRemoteScreenAnnouncement(announcement);
     else applyInboundLayout();
     audioManager.play("screenShareStart");
   }, [applyInboundLayout, noteRemoteScreenAnnouncement]);
 
   const handleRemoteScreenShareStop = useCallback((fromUserId) => {
-    if (!fromUserId || fromUserId !== peerRef.current?.id) return;
+    if (!fromUserId || String(fromUserId) !== String(peerRef.current?.id || "")) return;
     audioManager.play("screenShareStop");
     clearRemoteScreen();
   }, [clearRemoteScreen]);

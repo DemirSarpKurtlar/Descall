@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
   Minus, Maximize2, Users, MessageSquare, MoreVertical, Check, X as XIcon,
@@ -36,6 +36,7 @@ import { useGlassDesktop } from "../hooks/useGlassDesktop";
 import { groupMosaicShape } from "../lib/groupMosaic";
 import { dmRingingLabelKey, planCallGrid } from "../lib/callGridLayout";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
+import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../lib/fluid/springs";
 import { copyText } from "../lib/copyText";
 
 /*
@@ -130,6 +131,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const narrowViewport = useIsNarrowViewport(720);
   const glass = useGlassUi();
   const glassDesktop = useGlassDesktop();
+  const reduceMotion = useReducedMotion();
+  const shareEpochRef = useRef(0);
+  const prevShareRef = useRef(false);
   const moreMenuRef = useRef(null);
   const audioPanelRef = useRef(null);
   const screenQualityAnchorRef = useRef(null);
@@ -479,6 +483,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
     })),
   ];
   const anyScreenShare = allScreenSharers.length > 0;
+  if (prevShareRef.current && !anyScreenShare) shareEpochRef.current += 1;
+  prevShareRef.current = anyScreenShare;
+  const returningFromShare = !anyScreenShare && shareEpochRef.current > 0;
+  if (!anyScreenShare && screenExpanded) setScreenExpanded(false);
   const desktopGroupLine = glassDesktop && !isDm
     ? `${formattedDuration ? `${formattedDuration} · ` : ""}${callType === "video" ? t("Video call") : t("Voice call")}`
     : "";
@@ -601,6 +609,17 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
           paddingRight: "env(safe-area-inset-right, 0px)",
         }}
       >
+        <motion.div
+          key={anyScreenShare ? "share" : `grid-${shareEpochRef.current}`}
+          className="call-stage-stack"
+          initial={
+            returningFromShare
+              ? (reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 })
+              : false
+          }
+          animate={{ opacity: 1, scale: 1 }}
+          transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.move)}
+        >
         {anyScreenShare ? (
           <ScreenShareLayout
             allScreenSharers={allScreenSharers}
@@ -645,6 +664,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             onOpenUserMenu={openUserMenu}
           />
         )}
+        </motion.div>
       </div>
 
       {/* ====== BOTTOM CONTROL BAR ====== */}
@@ -1579,10 +1599,8 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
     : "";
 
   return (
-    <motion.div
-      layout
+    <div
       className={`call-participant-grid${glass ? " g-call-grid" : ""}${isDm ? " is-dm" : " is-group"} ${plan.bucket}${plan.ringing ? " is-ringing" : ""}`}
-      transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
       style={{
         flex: 1,
         minHeight: 0,
@@ -1590,7 +1608,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
         width: "100%",
       }}
     >
-      <motion.div layout transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }} style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}>
+      <div style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}>
         <LocalVideoTile
           isDm={isDm}
           call={call}
@@ -1600,23 +1618,19 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
           avatarUrl={localAvatarUrl}
           user={localUser}
         />
-      </motion.div>
+      </div>
 
       {plan.ringing && (
-        <motion.div
+        <div
           key="dm-ringing"
-          layout
-          transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
           style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}
         >
           <CallRingingTile user={call.peer} label={ringLabel} />
-        </motion.div>
+        </div>
       )}
 
       {isDm && dmRemote.showSlot && (
-        <motion.div
-          layout
-          transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
+        <div
           style={{ minWidth: 0, minHeight: 0, position: "relative", overflow: "visible" }}
         >
           <SpeakingRemoteSlot
@@ -1632,11 +1646,11 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             cameraOn={call?.remoteCameraOn}
             onContextMenu={(event) => onOpenUserMenu?.(event, call?.peer, Boolean(call?.remoteScreenSharing))}
           />
-        </motion.div>
+        </div>
       )}
 
       {!isDm && remoteTiles.map((tile) => (
-        <motion.div key={tile.id} layout style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}>
+        <div key={tile.id} style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}>
           <ParticipantTile
             username={tile.username}
             avatarUrl={tile.avatarUrl}
@@ -1651,9 +1665,9 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             connectionQuality={tile.connectionQuality}
             onContextMenu={(event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))}
           />
-        </motion.div>
+        </div>
       ))}
-    </motion.div>
+    </div>
   );
 }
 
@@ -1692,7 +1706,8 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
     if (next.pinnedId !== (pinnedSharerId == null ? null : String(pinnedSharerId))) {
       setPinnedSharerId(next.pinnedId);
     }
-  }, [sharerKey, activeSharerId, pinnedSharerId]);
+    if (!ids.length && shareLayout !== "stage") setShareLayout("stage");
+  }, [sharerKey, activeSharerId, pinnedSharerId, shareLayout]);
 
   const activeSharer = allScreenSharers.find((sharer) => String(sharer.id) === String(activeSharerId))
     ?? allScreenSharers[0];

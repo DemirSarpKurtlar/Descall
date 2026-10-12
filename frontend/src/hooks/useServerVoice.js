@@ -1936,7 +1936,8 @@ export function useServerVoice(socket) {
     const onScreenStopped = ({ channelId, fromUserId } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
       if (String(fromUserId) !== String(myIdRef.current)) audioManager.play("screenShareStop");
-      const peer = pcMapRef.current.get(fromUserId);
+      const peer = pcMapRef.current.get(fromUserId)
+        ?? [...pcMapRef.current].find(([id]) => String(id) === String(fromUserId))?.[1];
       screenAnnouncementsRef.current.delete(String(fromUserId));
       if (peer) {
         peer.inbound = dropScreenEntries(peer.inbound || [], peer.screenAnnouncement);
@@ -1947,7 +1948,7 @@ export function useServerVoice(socket) {
       screenExpectedRef.current.delete(String(fromUserId));
       setParticipants((prev) =>
         prev.map((p) =>
-          p.id === fromUserId ? { ...p, isScreenSharing: false, screenStream: null } : p
+          String(p.id) === String(fromUserId) ? { ...p, isScreenSharing: false, screenStream: null } : p
         )
       );
     };

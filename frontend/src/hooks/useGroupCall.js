@@ -2090,8 +2090,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     };
 
     const onScreenStopped = ({ groupId, fromUserId }) => {
-      if (fromUserId && fromUserId !== myIdRef.current) audioManager.play("screenShareStop");
-      const peerData = pcMapRef.current.get(fromUserId);
+      if (fromUserId && String(fromUserId) !== String(myIdRef.current || "")) {
+        audioManager.play("screenShareStop");
+      }
+      const peerData = pcMapRef.current.get(fromUserId)
+        ?? [...pcMapRef.current].find(([id]) => String(id) === String(fromUserId))?.[1];
       if (peerData) {
         peerData.inbound = dropScreenEntries(peerData.inbound || [], peerData.screenAnnouncement);
         peerData.screenAnnouncement = null;
@@ -2099,7 +2102,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         peerData.screenStream = null;
       }
       setParticipants((prev) => prev.map((p) =>
-        p.id === fromUserId ? { ...p, isScreenSharing: false, screenStream: null } : p
+        String(p.id) === String(fromUserId) ? { ...p, isScreenSharing: false, screenStream: null } : p
       ));
     };
 
