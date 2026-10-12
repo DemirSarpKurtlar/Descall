@@ -29,6 +29,7 @@ import UserProfileModal from "./social/UserProfileModal";
 import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
 import useGlassUi from "../hooks/useGlassUi";
 import { useGlassDesktop } from "../hooks/useGlassDesktop";
+import { groupMosaicShape } from "../lib/groupMosaic";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
 import { copyText } from "../lib/copyText";
 
@@ -1309,6 +1310,7 @@ function ParticipantTile({
   connectionQuality = null,
   handRaised = false,
   onContextMenu,
+  mosaicChip = false,
 }) {
   const t = useT();
   const glass = useGlassUi();
@@ -1426,11 +1428,16 @@ function ParticipantTile({
               <ParticipantStateIcons
                 muted={muted}
                 deafened={deafened}
-                cameraOff={cameraOn === false}
+                cameraOff={!mosaicChip && cameraOn === false}
               />
             </div>
           )}
         </div>
+      )}
+      {mosaicChip && cameraOn === false && (
+        <span className="gd-mosaic-cam" title={t("Camera off")} aria-label={t("Camera off")}>
+          <VideoOff size={14} />
+        </span>
       )}
 
       {!showVideo && glass && !small && (
@@ -1753,6 +1760,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       muted: Boolean(isDm ? call?.muted : groupCall?.isMuted),
       deafened: Boolean(isDm ? call?.deafened : groupCall?.deafened),
       cameraOn: Boolean(isDm ? call?.cameraOn : groupCall?.isCameraOn),
+      handRaised: Boolean(!isDm && groupCall?.isHandRaised),
     },
     ...remoteParticipants.map((p) => ({
       id: p.id,
@@ -1765,6 +1773,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       muted: Boolean(p.isMuted),
       deafened: Boolean(p.isDeafened),
       cameraOn: p.isCameraOn,
+      handRaised: Boolean(p.isHandRaised),
     })),
   ];
 
@@ -1776,9 +1785,88 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
     ? stripTiles.filter((tile) => String(tile.id) !== mosaicSharerId)
     : stripTiles;
 
+  if (mosaic) {
+    const mosaicPeople = [
+      ...visibleStrip.filter((tile) => !tile.isLocal),
+      ...visibleStrip.filter((tile) => tile.isLocal),
+    ];
+    const shape = groupMosaicShape(1 + mosaicPeople.length);
+    return (
+      <div className="gd-mosaic-frame">
+        <div
+          className={`call-screen-share-layout gd-group-mosaic${shape.rows > 4 ? " is-scroll" : ""}`}
+          style={{ "--gd-cols": shape.cols, "--gd-rows": shape.rows }}
+        >
+          <div
+            className="gd-mosaic-cell gd-mosaic-screen"
+            onClick={() => setScreenExpanded((v) => !v)}
+          >
+            <video
+              key={`${activeSharer?.id || "none"}-${aspectKey}`}
+              ref={normalVideoCallbackRef}
+              autoPlay
+              playsInline
+              muted
+            />
+            {!screenStream && (
+              <div className="gd-mosaic-wait">{t("Waiting for screen…")}</div>
+            )}
+            <div className="gd-share-label" onClick={(e) => e.stopPropagation()}>
+              <span className="speaking-dot" />
+              <span className="gd-share-name">{sharerLabel}</span>
+            </div>
+            {screenExpanded && (
+              <div
+                className="gd-mosaic-expand"
+                onClick={(e) => { e.stopPropagation(); setScreenExpanded(false); }}
+              >
+                <video
+                  key={`exp-${activeSharer?.id || "none"}-${aspectKey}`}
+                  ref={expandedVideoCallbackRef}
+                  autoPlay
+                  playsInline
+                  muted
+                />
+              </div>
+            )}
+          </div>
+          {mosaicPeople.map((tile) => {
+            const videoRef = tile.isLocal
+              ? (isDm ? call?.localVideoRef : groupCall?.localVideoRef)
+              : null;
+            return (
+              <div key={tile.id} className="gd-mosaic-cell">
+                <ParticipantTile
+                  username={tile.username}
+                  avatarUrl={tile.avatarUrl}
+                  user={tile.user}
+                  isSpeaking={tile.isSpeaking}
+                  videoRef={tile.hasVideo ? videoRef : null}
+                  stream={tile.stream}
+                  hasVideo={tile.hasVideo}
+                  isLocal={tile.isLocal}
+                  muted={tile.muted}
+                  deafened={tile.deafened}
+                  cameraOn={tile.cameraOn}
+                  handRaised={tile.handRaised}
+                  mosaicChip
+                  onContextMenu={
+                    tile.isLocal
+                      ? undefined
+                      : (event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`call-screen-share-layout${mosaic ? " gd-group-mosaic" : ""}`}
+      className="call-screen-share-layout"
       style={{
         flex: 1,
         display: "flex",

@@ -285,86 +285,107 @@ html.glass-desktop.gd-lite .participant-tile-label {
   background: var(--gd-solid-heavy) !important;
 }
 
-/* Group call: screen-share cell plus the other people in one 3×2 grid. */
+/* Group screen share: one equal cell per person, including the share. */
+html.glass-desktop .gd-mosaic-frame {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
 html.glass-desktop .call-screen-share-layout.gd-group-mosaic {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(var(--gd-cols, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--gd-rows, 2), minmax(0, 1fr));
   gap: 12px;
-  height: 100%;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
+  height: 100%;
   padding: 16px 24px 8px !important;
   overflow: hidden;
+  box-sizing: border-box;
+  align-content: stretch;
+  justify-content: stretch;
 }
 
-html.glass-desktop .call-screen-share-layout.gd-group-mosaic > div:first-child {
+html.glass-desktop .call-screen-share-layout.gd-group-mosaic.is-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  grid-template-rows: none;
+  grid-auto-rows: minmax(132px, 1fr);
+  align-content: start;
+}
+
+html.glass-desktop .gd-mosaic-cell {
+  position: relative;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  border-radius: 18px !important;
+  max-width: 100%;
   overflow: hidden;
+  border-radius: 18px;
+  container-type: size;
+  background:
+    radial-gradient(70% 70% at 50% 40%, rgba(155, 133, 255, 0.22), transparent 70%),
+    linear-gradient(160deg, rgba(56, 60, 92, 0.72), rgba(22, 24, 38, 0.9));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
 }
 
-html.glass-desktop .call-screen-share-layout.gd-group-mosaic > div:first-child video {
-  object-fit: cover !important;
+html.glass-desktop .gd-mosaic-screen {
+  cursor: pointer;
+  background:
+    radial-gradient(70% 70% at 50% 40%, rgba(108, 134, 255, 0.18), transparent 70%),
+    linear-gradient(160deg, rgba(56, 60, 92, 0.72), rgba(22, 24, 38, 0.9));
 }
 
-html.glass-desktop[data-glass-qa-speaking] .call-screen-share-layout.gd-group-mosaic > div:first-child {
-  box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 28px rgba(48, 209, 88, 0.28);
-}
-
-html.glass-desktop .call-screen-share-layout.gd-group-mosaic .gd-share-label {
-  top: auto !important;
-  bottom: 12px;
-  left: 12px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 15px;
-  background: rgba(22, 24, 36, 0.5);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
-}
-
-html.glass-desktop .call-screen-share-layout.gd-group-mosaic .gd-mosaic-chrome {
-  display: none !important;
-}
-
-html.glass-desktop .call-screen-share-layout.gd-group-mosaic .call-screen-share-strip {
-  display: contents;
-  height: auto !important;
-  overflow: visible !important;
-  padding: 0 !important;
-}
-
-html.glass-desktop .call-screen-share-layout.gd-group-mosaic .call-screen-share-strip > div {
-  width: auto !important;
-  height: auto !important;
+html.glass-desktop .gd-mosaic-screen video,
+html.glass-desktop .gd-mosaic-cell > .participant-tile video {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
   min-width: 0;
   min-height: 0;
+  object-fit: cover !important;
+  display: block;
 }
 
-html.glass-desktop .gd-group-mosaic .participant-tile,
-html.glass-desktop .gd-group-mosaic .participant-tile--avatar-only {
+html.glass-desktop .gd-mosaic-cell > .participant-tile,
+html.glass-desktop .gd-mosaic-cell > .participant-tile.participant-tile--avatar-only {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   border: none !important;
   border-radius: 18px !important;
   overflow: hidden !important;
-  background:
-    radial-gradient(70% 70% at 50% 40%, rgba(155, 133, 255, 0.22), transparent 70%),
-    linear-gradient(160deg, rgba(56, 60, 92, 0.72), rgba(22, 24, 38, 0.9)) !important;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-html.glass-desktop .gd-group-mosaic .participant-tile-identity {
+html.glass-desktop[data-glass-qa-speaking] .gd-mosaic-screen,
+html.glass-desktop .gd-mosaic-cell:has(.participant-tile.is-speaking) {
+  box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 28px rgba(48, 209, 88, 0.28);
+}
+
+html.glass-desktop .gd-group-mosaic .gd-share-label,
+html.glass-desktop .gd-group-mosaic .participant-tile-identity,
+html.glass-desktop .gd-group-mosaic .participant-tile-label {
   position: absolute;
-  left: 12px;
+  top: auto !important;
   right: auto;
   bottom: 12px;
-  top: auto;
+  left: 12px;
   z-index: 4;
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   gap: 6px;
+  width: auto;
   max-width: calc(100% - 24px);
   height: 30px;
   margin: 0;
@@ -375,10 +396,108 @@ html.glass-desktop .gd-group-mosaic .participant-tile-identity {
   color: #fff;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1;
+}
+
+html.glass-desktop .gd-group-mosaic .participant-tile-identity-name,
+html.glass-desktop .gd-group-mosaic .participant-tile-name,
+html.glass-desktop .gd-group-mosaic .gd-share-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+html.glass-desktop .gd-group-mosaic .participant-state-icons {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+html.glass-desktop .gd-group-mosaic .gd-mosaic-cam,
+html.glass-desktop .gd-group-mosaic .participant-tile-hand-badge {
+  position: absolute;
+  top: 12px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background: rgba(22, 24, 36, 0.5);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+html.glass-desktop .gd-group-mosaic .gd-mosaic-cam {
+  right: 12px;
+  left: auto;
 }
 
 html.glass-desktop .gd-group-mosaic .participant-tile-hand-badge {
-  top: 12px;
   left: 12px;
-  z-index: 5;
+  right: auto;
+  background: rgba(240, 165, 0, 0.95);
+  color: #1a1204;
+}
+
+html.glass-desktop[data-glass-qa-speaking] .gd-mosaic-screen .speaking-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+html.glass-desktop .gd-group-mosaic .participant-tile-avatar-stack {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html.glass-desktop .gd-group-mosaic .participant-tile-avatar-shell,
+html.glass-desktop .gd-group-mosaic .participant-tile-avatar-core {
+  width: min(96px, 46cqmin) !important;
+  height: min(96px, 46cqmin) !important;
+}
+
+html.glass-desktop .gd-group-mosaic .participant-tile-avatar-core .ui-avatar {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html.glass-desktop .gd-mosaic-wait {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(235, 238, 255, 0.72);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+html.glass-desktop .gd-mosaic-expand {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  cursor: pointer;
+}
+
+html.glass-desktop .gd-mosaic-expand video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (max-width: 1100px) {
+  html.glass-desktop .call-screen-share-layout.gd-group-mosaic {
+    gap: 8px;
+    padding: 10px 12px 6px !important;
+  }
 }

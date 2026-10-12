@@ -1457,7 +1457,7 @@
         }
       ],
       "h1dom": 1,
-      "text": "4 D Gruplar GRUPLAR A Akşam Ekibi 05:17 zeynep: 5 dakika sonra gelirim. A Akşam Ekibi 5 üye Bugün A Ayşe Yılmaz 04:33 Bu akşam rekabetçi? M Mert K. 04:43 Ben varım, mikrofon açık. D Demir Sarp 05:03 /help ✓ Z Zeynep 05:17 5 dakika sonra gelirim. Akşam Ekibi 18:36 · Görüntülü arama Ayşe Yılmaz Demir Sarp M Mert K. E Elif B Burak Ö. S Selin A.",
+      "text": "4 D Gruplar GRUPLAR A Akşam Ekibi 08:05 Ayşe: Parti kodunu attım. A Akşam Ekibi 5 üye Bugün A Ayşe Yılmaz 07:18 Bu akşam rekabetçi? M Mert K. 07:28 Ben varım, mikrofon açık. D Demir Sarp 07:48 /help ✓ Z Zeynep 08:02 5 dakika sonra gelirim. Akşam Ekibi 18:36 · Görüntülü arama Ayşe Yılmaz M Mert K. E Elif B Burak Ö. S Selin A. Demir Sarp",
       "states": {
         "hover": false,
         "reply": false,
@@ -1500,6 +1500,60 @@
         "quick": false,
         "hoverCard": false,
         "profile": false,
+        "mosaic": {
+          "count": 6,
+          "cols": "456px 456px 456px",
+          "stage": {
+            "x": 0,
+            "y": 60,
+            "w": 1440,
+            "h": 744
+          },
+          "cells": [
+            {
+              "x": 24,
+              "y": 76,
+              "w": 456,
+              "h": 354,
+              "name": "Ayşe Yılmaz"
+            },
+            {
+              "x": 492,
+              "y": 76,
+              "w": 456,
+              "h": 354,
+              "name": "M Mert K."
+            },
+            {
+              "x": 960,
+              "y": 76,
+              "w": 456,
+              "h": 354,
+              "name": "E Elif"
+            },
+            {
+              "x": 24,
+              "y": 442,
+              "w": 456,
+              "h": 354,
+              "name": "B Burak Ö."
+            },
+            {
+              "x": 492,
+              "y": 442,
+              "w": 456,
+              "h": 354,
+              "name": "S Selin A."
+            },
+            {
+              "x": 960,
+              "y": 442,
+              "w": 456,
+              "h": 354,
+              "name": "Demir Sarp"
+            }
+          ]
+        },
         "settings": false,
         "toast": 0,
         "shop": 0,
@@ -1525,7 +1579,7 @@
         }
       ],
       "h1dom": 1,
-      "text": "4 D Gruplar GRUPLAR A Akşam Ekibi 05:20 Ayşe: Parti kodunu attım. A Akşam Ekibi 5 üye Bugün A Ayşe Yılmaz 04:33 Bu akşam rekabetçi? M Mert K. 04:43 Ben varım, mikrofon açık. D Demir Sarp 05:03 /help ✓ Z Zeynep 05:17 5 dakika sonra gelirim. Akşam Ekibi 18:36 · Görüntülü arama Ayşe Yılmaz Demir Sarp M Mert K. E Elif B Burak Ö. S Selin A.",
+      "text": "4 D Gruplar GRUPLAR A Akşam Ekibi 08:05 Ayşe: Parti kodunu attım. A Akşam Ekibi 5 üye Bugün A Ayşe Yılmaz 07:18 Bu akşam rekabetçi? M Mert K. 07:28 Ben varım, mikrofon açık. D Demir Sarp 07:48 /help ✓ Z Zeynep 08:02 5 dakika sonra gelirim. Akşam Ekibi 18:36 · Görüntülü arama Ayşe Yılmaz M Mert K. E Elif B Burak Ö. S Selin A. Demir Sarp",
       "states": {
         "hover": false,
         "reply": false,
@@ -1568,6 +1622,60 @@
         "quick": false,
         "hoverCard": false,
         "profile": false,
+        "mosaic": {
+          "count": 6,
+          "cols": "328px 328px 328px",
+          "stage": {
+            "x": 0,
+            "y": 60,
+            "w": 1024,
+            "h": 612
+          },
+          "cells": [
+            {
+              "x": 12,
+              "y": 70,
+              "w": 328,
+              "h": 294,
+              "name": "Ayşe Yılmaz"
+            },
+            {
+              "x": 348,
+              "y": 70,
+              "w": 328,
+              "h": 294,
+              "name": "M Mert K."
+            },
+            {
+              "x": 684,
+              "y": 70,
+              "w": 328,
+              "h": 294,
+              "name": "E Elif"
+            },
+            {
+              "x": 12,
+              "y": 372,
+              "w": 328,
+              "h": 294,
+              "name": "B Burak Ö."
+            },
+            {
+              "x": 348,
+              "y": 372,
+              "w": 328,
+              "h": 294,
+              "name": "S Selin A."
+            },
+            {
+              "x": 684,
+              "y": 372,
+              "w": 328,
+              "h": 294,
+              "name": "Demir Sarp"
+            }
+          ]
+        },
         "settings": false,
         "toast": 0,
         "shop": 0,

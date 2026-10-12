@@ -634,6 +634,19 @@ const FRAMES = [
     await page.waitForFunction(() => document.body.innerText.includes("Bağlandı") || document.querySelector(".server-voice-panel"), { timeout: 8000 }).catch(() => {});
   } },
   { id: "09b-group-call", path: "/groups/grp-aksam?glass-desktop=1", ready: ".message-bubble, .chat-panel", drive: async (page) => {
+    const tileCount = Math.max(2, Number(process.env.GLASS_QA_CALL_N || 6));
+    const roster = [
+      { ...AYSE, screen: true, screenLabel: "Ayşe ekranı", screenColor: "#4a3566", isCameraOn: false },
+      { ...MERT, isMuted: true, isCameraOn: false },
+      { ...ELIF, isHandRaised: true, isCameraOn: false },
+      { ...BURAK, isMuted: true, isDeafened: true, isCameraOn: false },
+      { ...SELIN, isCameraOn: false },
+      { ...ZEYNEP, isCameraOn: false },
+      { ...CAN, isMuted: true, isCameraOn: false },
+      { ...KAAN, isCameraOn: false },
+      { ...DENIZ, isCameraOn: false },
+      { ...ECE, isCameraOn: false },
+    ];
     await page.evaluate((detail) => {
       window.__glassQaScenes = window.__glassQaScenes || [];
       window.__glassQaScenes.push(detail);
@@ -643,15 +656,9 @@ const FRAMES = [
       groupId: GROUP.id,
       callType: "video",
       durationSeconds: 1116,
-      participants: [
-        { ...AYSE, screen: true, screenLabel: "Ayşe ekranı", screenColor: "#4a3566", isCameraOn: false },
-        { ...MERT, isMuted: true, isCameraOn: false },
-        { ...ELIF, isHandRaised: true, isCameraOn: false },
-        { ...BURAK, isMuted: true, isDeafened: true, isCameraOn: false },
-        { ...SELIN, isCameraOn: false },
-      ],
+      participants: roster.slice(0, Math.max(1, tileCount - 1)),
     });
-    await waitFor(page, ".call-overlay-root");
+    await waitFor(page, ".gd-mosaic-cell");
   } },
   { id: "10-incoming-call", path: "/direct/ayse?glass-desktop=1", ready: ".message-bubble", drive: async (page) => {
     await page.evaluate((fromUser) => {
@@ -817,6 +824,26 @@ async function probe(page) {
         quick: !!document.querySelector(".quick-add-card"),
         hoverCard: !!document.querySelector(".user-hover-card"),
         profile: !!document.querySelector(".user-profile-card"),
+        mosaic: (() => {
+          const stage = document.querySelector(".call-screen-share-layout.gd-group-mosaic");
+          const cells = [...document.querySelectorAll(".gd-mosaic-cell")].map((el) => {
+            const r = el.getBoundingClientRect();
+            return {
+              x: Math.round(r.x),
+              y: Math.round(r.y),
+              w: Math.round(r.width),
+              h: Math.round(r.height),
+              name: (el.innerText || "").replace(/\s+/g, " ").trim().slice(0, 40),
+            };
+          });
+          const box = stage ? stage.getBoundingClientRect() : null;
+          return {
+            count: cells.length,
+            cols: stage ? getComputedStyle(stage).gridTemplateColumns : "",
+            stage: box ? { x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.width), h: Math.round(box.height) } : null,
+            cells,
+          };
+        })(),
         settings: !!document.querySelector(".user-settings"),
         toast: document.querySelectorAll(".toast-item").length,
         shop: document.querySelectorAll(".shop-item-card").length,
