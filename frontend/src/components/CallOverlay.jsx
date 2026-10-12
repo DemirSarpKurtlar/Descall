@@ -520,7 +520,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               </div>
             </div>
             {isDm && mode === "active" ? (
-              <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={call?.networkStats} />
+              <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
             ) : null}
             {!isDm ? (
               <button
@@ -567,7 +567,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             {subtitle}{formattedDuration ? ` · ${formattedDuration}` : ""}
           </span>
           {isDm && mode === "active" && (
-            <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={call?.networkStats} />
+            <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, pointerEvents: "auto" }}>
@@ -1185,6 +1185,14 @@ function SpeakingRemoteSlot(props) {
   );
 }
 
+function glassQaNetStats(stats) {
+  if (stats && (stats.rttMs != null || stats.packetLossPct != null || stats.bitrateKbps != null)) return stats;
+  if (import.meta.env.DEV && typeof window !== "undefined" && window.__DESCALL_QA_NET__) {
+    return window.__DESCALL_QA_NET__;
+  }
+  return stats || null;
+}
+
 function CallQualityHud({ quality = "unknown", stats = null }) {
   const t = useT();
   const [showDetails, setShowDetails] = useState(false);
@@ -1547,7 +1555,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
   return (
     <motion.div
       layout
-      className={glass ? `g-call-grid${isDm ? " is-dm" : " is-group"}` : undefined}
+      className={glass ? `g-call-grid${isDm ? " is-dm" : " is-group"}` : `call-participant-grid${isDm ? " is-dm" : " is-group"}`}
       transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
       style={glass ? {
         flex: 1,

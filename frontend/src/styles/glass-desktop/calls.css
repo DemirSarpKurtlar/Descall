@@ -55,6 +55,54 @@ html.glass-desktop .call-tile.is-speaking:not(.participant-tile--avatar-only) {
   box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 32px rgba(48, 209, 88, 0.3) !important;
 }
 
+/* 1:1: remote is the stage, local is a PiP. Group stays a grid. */
+html.glass-desktop .call-participant-grid.is-dm {
+  display: block !important;
+  position: relative !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  padding: 76px 20px 108px !important;
+  gap: 0 !important;
+}
+
+html.glass-desktop .call-participant-grid.is-dm > :nth-child(1) {
+  position: absolute !important;
+  width: 220px !important;
+  height: 140px !important;
+  right: 28px !important;
+  bottom: 116px !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 6;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+html.glass-desktop .call-participant-grid.is-dm > :nth-child(2) {
+  position: absolute !important;
+  inset: 72px 20px 100px 20px !important;
+  width: auto !important;
+  height: auto !important;
+  z-index: 1;
+}
+
+html.glass-desktop .call-participant-grid.is-dm .participant-tile,
+html.glass-desktop .call-participant-grid.is-dm video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html.glass-desktop .call-participant-grid.is-dm > :nth-child(2) .participant-tile {
+  border-radius: 26px;
+}
+
+html.glass-desktop .call-quality-hud {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 html.glass-desktop .participant-tile-label {
   left: 12px;
   right: auto;

@@ -195,7 +195,12 @@ const SHOP_ITEMS = [
   { id: "item-banner-1", name: "Gece Şeridi", description: "Koyu mavi profil şeridi", category: "banner", price_descoin: 400, rarity: "rare", asset_url: svg("Banner", "#2a3f88"), preview_url: svg("Banner", "#2a3f88") },
   { id: "item-banner-2", name: "Mor Pus", description: "Mor geçişli banner", category: "banner", price_descoin: 250, rarity: "common", asset_url: svg("Mor", "#5a3d88"), preview_url: svg("Mor", "#5a3d88") },
   { id: "item-frame-1", name: "Cam Çerçeve", description: "İnce aydınlık çerçeve", category: "avatar_frame", price_descoin: 600, rarity: "epic", asset_url: svg("Çerçeve", "#3d6b8a"), preview_url: svg("Çerçeve", "#3d6b8a") },
+  { id: "item-bg-1", name: "Gece Perdesi", description: "Koyu arka plan", category: "profile_background", price_descoin: 500, rarity: "rare", asset_url: svg("Arka plan", "#243056"), preview_url: svg("Arka plan", "#243056") },
   { id: "item-theme-1", name: "Gece Camı", description: "Koyu cam tema", category: "theme", price_descoin: 900, rarity: "legendary", theme_key: "night-glass" },
+  { id: "item-theme-lagoon", name: "Lagoon", description: "Serin cam", category: "theme", price_descoin: 900, rarity: "rare", theme_key: "lagoon" },
+  { id: "item-theme-ember", name: "Emberfall", description: "Sıcak cam", category: "theme", price_descoin: 2400, rarity: "epic", theme_key: "emberfall" },
+  { id: "item-theme-borealis", name: "Borealis", description: "Kutup ışığı", category: "theme", price_descoin: 1800, rarity: "epic", theme_key: "borealis" },
+  { id: "item-theme-iris", name: "Iriscape", description: "İris cam", category: "theme", price_descoin: 2400, rarity: "legendary", theme_key: "iriscape" },
   { id: "item-badge-1", name: "Gece Kuşu", description: "Profil rozeti", category: "profile_badge", price_descoin: 200, rarity: "common" },
   { id: "item-title-1", name: "Lobici", description: "İsim altı unvan", category: "profile_title", price_descoin: 150, rarity: "common" },
 ];
@@ -227,6 +232,10 @@ const FIXTURE = {
       [CAN.id]: iso(15),
     },
     notifications: [],
+    dmUnreadByPeer: {
+      [CAN.id]: 3,
+      [BURAK.id]: 1,
+    },
   },
   dm: { [AYSE.id]: DM_AYSE },
   group: GROUP,
@@ -587,6 +596,13 @@ const FRAMES = [
       window.dispatchEvent(new CustomEvent("descall:glass-qa", { detail }));
     }, AYSE);
     await waitFor(page, ".call-overlay-root");
+    await page.waitForSelector(".call-participant-grid.is-dm .participant-tile", { timeout: 5000 }).catch(() => {});
+    await page.evaluate(() => {
+      const tiles = [...document.querySelectorAll(".call-participant-grid.is-dm .participant-tile")];
+      (tiles[1] || tiles[0])?.classList.add("is-speaking");
+      document.querySelector(".call-quality-hud")?.click();
+    });
+    await page.waitForFunction(() => /Gecikme|18 ms/.test(document.body.innerText), { timeout: 3000 }).catch(() => {});
   } },
   { id: "09-server-voice", path: "/servers/srv-gece/ch-ses?glass-desktop=1", ready: ".server-voice-panel, .server-voice-room", drive: async (page) => {
     await page.evaluate((detail) => {
@@ -689,7 +705,10 @@ const FRAMES = [
   } },
   { id: "16-activity", path: "/activity?glass-desktop=1", ready: ".activity-view, .activity-view-title" },
   { id: "17-calls", path: "/calls?glass-desktop=1", ready: ".calls-row, .calls-list, .calls-section" },
-  { id: "18-shop", path: "/settings/shop?glass-desktop=1", ready: ".shop-item-card, .shop-grid" },
+  { id: "18-shop", path: "/settings/shop?glass-desktop=1", ready: ".shop-item-card, .shop-grid", drive: async (page) => {
+    await clickLabel(page, "Temalar");
+    await page.waitForFunction(() => /Lagoon|Emberfall|Borealis|Iriscape/.test(document.body.innerText), { timeout: 5000 }).catch(() => {});
+  } },
   { id: "19-status-picker", path: "/direct/ayse?glass-desktop=1", ready: ".rail-user-panel", drive: async (page) => {
     await page.click(".rail-user-panel");
     await waitFor(page, ".status-picker");

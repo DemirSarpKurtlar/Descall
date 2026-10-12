@@ -1,28 +1,39 @@
-/* App chrome: ambient scene, rail, list panel, main well.
-   Inner chat, rows and composers stay on the current UI until later stages. */
+/* App chrome: aurora behind floating glass panels.
+   The color lives on html/body so translucent panels composite over it.
+   A body::before behind #root is invisible to both painting and backdrop-filter. */
 
-html.glass-desktop[data-theme="dark"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+html.glass-desktop,
+html.glass-desktop body,
+html.glass-desktop body.electron-app {
   background:
     radial-gradient(38% 46% at 6% 6%, rgba(88, 122, 246, 0.46), transparent 70%),
     radial-gradient(34% 40% at 62% 0%, rgba(124, 92, 255, 0.26), transparent 72%),
     radial-gradient(40% 48% at 100% 30%, rgba(124, 92, 255, 0.30), transparent 70%),
     radial-gradient(46% 50% at 26% 92%, rgba(88, 122, 246, 0.22), transparent 70%),
     radial-gradient(36% 44% at 94% 100%, rgba(170, 92, 255, 0.24), transparent 70%),
-    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%);
+    radial-gradient(6% 9% at 21% 30%, rgba(143, 166, 255, 0.16), transparent 70%),
+    radial-gradient(8% 12% at 48% 64%, rgba(160, 120, 255, 0.10), transparent 70%),
+    radial-gradient(5% 8% at 80% 18%, rgba(255, 140, 200, 0.08), transparent 70%),
+    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%) !important;
+  background-color: #0d0e13 !important;
 }
 
-html.glass-desktop #root {
-  position: relative;
-  z-index: 1;
+html.glass-desktop[data-theme="light"],
+html.glass-desktop[data-theme="light"] body {
+  background:
+    radial-gradient(40% 46% at 8% 0%, rgba(88, 122, 246, 0.28), transparent 70%),
+    radial-gradient(36% 40% at 100% 18%, rgba(124, 92, 255, 0.18), transparent 72%),
+    linear-gradient(165deg, #eef1fb 0%, #f7f8fc 50%, #e7ebf6 100%) !important;
+}
+
+html.glass-desktop #root,
+html.glass-desktop body.electron-app #root,
+html.glass-desktop .app-root {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 html.glass-desktop .app-root {
-  background: transparent;
   padding: var(--gd-gap);
   gap: var(--gd-gap);
   box-sizing: border-box;
@@ -94,11 +105,97 @@ html.glass-desktop .app-main-slot {
   border-radius: var(--gd-r-panel);
   overflow: hidden;
   background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62));
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+html.glass-desktop .main-panel,
+html.glass-desktop .chat-panel-shell,
+html.glass-desktop .app-main-view,
+html.glass-desktop .messages-container,
+html.glass-desktop .sidebar-inner,
+html.glass-desktop .sidebar-content,
+html.glass-desktop .sidebar-header {
+  background: transparent !important;
+  border-color: transparent;
+}
+
+html.glass-desktop .sidebar-inner {
+  width: 100%;
 }
 
 html.glass-desktop[data-theme="light"] .app-main-slot {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.38));
+}
+
+/* Edge highlight + inner sheen from desktop.css .glass.panel */
+html.glass-desktop .nav-rail,
+html.glass-desktop .sidebar-secondary,
+html.glass-desktop .app-main-slot,
+html.glass-desktop .members-panel {
+  position: relative;
+  isolation: isolate;
+}
+
+html.glass-desktop .nav-rail::before,
+html.glass-desktop .sidebar-secondary::before,
+html.glass-desktop .app-main-slot::before,
+html.glass-desktop .members-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.10) 18%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.06) 82%, rgba(255, 255, 255, 0.18) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+html.glass-desktop .nav-rail::after,
+html.glass-desktop .sidebar-secondary::after,
+html.glass-desktop .app-main-slot::after,
+html.glass-desktop .members-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: inset 10px 12px 24px -16px rgba(255, 255, 255, 0.22), inset -8px -10px 22px -16px rgba(255, 255, 255, 0.10);
+}
+
+html.glass-desktop .nav-rail > *,
+html.glass-desktop .sidebar-secondary > *,
+html.glass-desktop .app-main-slot > *,
+html.glass-desktop .members-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.glass-desktop .app-main-slot:has(.chat-panel-shell.is-members-docked) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  overflow: visible;
+}
+
+html.glass-desktop .app-main-slot:has(.chat-panel-shell.is-members-docked)::before,
+html.glass-desktop .app-main-slot:has(.chat-panel-shell.is-members-docked)::after {
+  content: none;
+}
+
+html.glass-desktop .chat-panel-shell.is-members-docked {
+  gap: var(--gd-gap);
+  background: transparent !important;
+}
+
+html.glass-desktop .chat-panel-shell.is-members-docked > .main-panel {
+  border-radius: var(--gd-r-panel);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62)) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
 html.glass-desktop.gd-contrast .nav-rail,

@@ -17,9 +17,15 @@ function paint(color, label) {
     if (!ctx) return;
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = "600 42px sans-serif";
-    ctx.fillText(label || "", 36, 190);
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    ctx.beginPath();
+    ctx.ellipse(320, 168, 78, 92, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.beginPath();
+    ctx.ellipse(320, 340, 150, 90, 0, Math.PI, 0, true);
+    ctx.fill();
+    void label;
   };
   draw();
   const stream = canvas.captureStream?.(15) || null;
@@ -62,6 +68,12 @@ export function bindDmCallQa(api) {
     api.setMode(mode);
     api.setCallAnchorAt(Date.now() - (detail.elapsedMs || 754000));
     api.setDuration(detail.durationSeconds ?? 754);
+    window.__DESCALL_QA_NET__ = detail.networkStats || {
+      rttMs: 18,
+      jitterMs: 2,
+      packetLossPct: 0,
+      bitrateKbps: 2400,
+    };
     api.setConnectionQuality(detail.quality || "excellent");
     api.setPeerConnectionState("connected");
     api.setRemoteMediaReady(true);

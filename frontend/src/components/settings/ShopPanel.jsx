@@ -33,6 +33,7 @@ import {
 import { useLocale, useT } from "../../context/LocaleContext";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "../layout/glass/GlassShell";
+import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
@@ -312,6 +313,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   }, [items]);
 
   const glassShell = useGlassShell();
+  const glassDesktop = useGlassDesktop();
   const { isMobile } = useMobile();
   const availableTabs = useMemo(
     () => (glassShell && isMobile
@@ -588,6 +590,28 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     </>
   );
 
+  const categoryTabs = !loading && availableTabs.length > 0 ? (
+    <nav className={`shop-category-tabs${glassDesktop ? " is-glass-chips" : ""}`} aria-label={t("Shop categories")}>
+      {availableTabs.map((tab) => {
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            className={`shop-category-tab ${activeCategory === tab.id ? "active" : ""}`}
+            onClick={() => setActiveCategory(tab.id)}
+          >
+            <span className="shop-category-tab-label">
+              {Icon ? <Icon size={14} /> : null}
+              {t(tab.label)}
+            </span>
+            <span className="shop-category-tab-count">{countsByCategory.get(tab.id) || 0}</span>
+          </button>
+        );
+      })}
+    </nav>
+  ) : null;
+
   return (
     <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
       <div className="shop-workspace">
@@ -595,30 +619,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
           <div className="shop-catalog">
             {lead}
+            {glassDesktop ? categoryTabs : null}
             {catalog}
           </div>
         </div>
-        {!loading && availableTabs.length > 0 && (
-          <nav className="shop-category-tabs" aria-label={t("Shop categories")}>
-            {availableTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  className={`shop-category-tab ${activeCategory === tab.id ? "active" : ""}`}
-                  onClick={() => setActiveCategory(tab.id)}
-                >
-                  <span className="shop-category-tab-label">
-                    {Icon ? <Icon size={14} /> : null}
-                    {t(tab.label)}
-                  </span>
-                  <span className="shop-category-tab-count">{countsByCategory.get(tab.id) || 0}</span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
+        {glassDesktop ? null : categoryTabs}
         <ShopProfilePreview me={me} t={t} />
       </div>
     </motion.div>

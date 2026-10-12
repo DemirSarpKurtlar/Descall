@@ -1,15 +1,50 @@
 /* Stage 7 — settings, play, activity, shop, status, toasts, announcements.
    Visual only. Layout, data, and iOS glass stay as they are. */
 
-html.glass-desktop .user-settings.is-desktop,
+html.glass-desktop .user-panel-backdrop {
+  display: none !important;
+}
+
 html.glass-desktop .user-settings-shell.is-desktop {
-  background: transparent;
+  top: 8px !important;
+  right: 8px !important;
+  bottom: 8px !important;
+  left: calc(8px + var(--nav-rail-width) + 8px + var(--sidebar-width) + 8px) !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .app-root[data-view="play"] .user-settings-shell.is-desktop {
+  left: calc(8px + var(--nav-rail-width) + 8px) !important;
+}
+
+html.glass-desktop .user-settings.is-desktop,
+html.glass-desktop .user-settings.is-desktop.is-shop-open {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  border: none !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)),
+    rgba(18, 20, 30, 0.55) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
   color: var(--gd-t1);
 }
 
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
-  background: transparent;
+  width: 232px;
+  background: transparent !important;
   border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 html.glass-desktop .us-nav-group-label {
@@ -41,11 +76,20 @@ html.glass-desktop .user-settings.is-desktop .us-main-header p {
   color: var(--gd-t3);
 }
 
-html.glass-desktop .user-settings.is-desktop .us-main {
+html.glass-desktop .user-settings.is-desktop .us-main,
+html.glass-desktop .user-settings.is-desktop .us-main-scroll,
+html.glass-desktop .user-settings.is-desktop .us-tab,
+html.glass-desktop .user-settings.is-desktop .us-main-header {
   border: none;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.035);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-main-heading h3,
+html.glass-desktop .user-settings.is-shop-open .us-main-heading h3 {
+  font-size: 28px;
+  letter-spacing: -0.035em;
 }
 
 html.glass-desktop .user-settings.is-desktop .us-main-heading,
@@ -211,4 +255,136 @@ html.glass-desktop.gd-lite .conv-confirm-card {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   background: var(--gd-solid-heavy) !important;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-workspace {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 0;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-main,
+html.glass-desktop .user-settings.is-shop-open .shop-catalog {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  grid-column: auto;
+  grid-row: auto;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-profile-stage {
+  display: none;
+}
+
+html.glass-desktop .user-settings.is-shop-open .us-main {
+  position: relative;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-wallet-bar {
+  position: absolute;
+  top: 18px;
+  right: 64px;
+  z-index: 4;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-wallet-pill {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 19px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.45);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  height: auto;
+  width: 100%;
+  overflow: visible;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab {
+  flex: 0 0 auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 13px;
+  border-radius: 16px;
+  border: none;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  color: var(--gd-t2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab.active {
+  color: #fff;
+  background: rgba(88, 122, 246, 0.32);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.55), 0 4px 12px rgba(88, 122, 246, 0.25);
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-count {
+  display: none;
+}
+
+html.glass-desktop .descoin-daily-card,
+html.glass-desktop .user-settings.is-shop-open .invite-card {
+  border: none;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .shop-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+html.glass-desktop .shop-item-card {
+  border: none;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+html.glass-desktop .shop-item-preview,
+html.glass-desktop .shop-item-card[data-category="theme"] .shop-item-preview {
+  min-height: 96px;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px 14px 0 0;
+}
+
+html.glass-desktop .shop-item-name,
+html.glass-desktop .shop-item-price {
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .shop-item-footer .btn-primary,
+html.glass-desktop .shop-item-footer .btn-secondary,
+html.glass-desktop .descoin-daily-claim {
+  height: 32px;
+  border: none;
+  border-radius: 16px;
+  font-weight: 650;
 }
