@@ -258,7 +258,7 @@ html.glass-ui .g-call-grid.is-group .participant-tile-avatar-core > .ui-avatar {
   font-size: 72px !important;
 }
 
-/* Control capsule — equal slots so End sits on the right with 5 or 6 buttons. */
+/* Control capsule — equal slots, End on the right. */
 html.glass-ui .g-call .call-control-bar.g-call-ctrl {
   position: absolute !important;
   left: 12px !important;

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
-  Minus, Maximize2, Users, MessageSquare, Hand, MoreVertical, Check, X as XIcon,
+  Minus, Maximize2, Users, MessageSquare, MoreVertical, Check, X as XIcon,
   Volume2, ChevronUp, ChevronDown, Mic2, SlidersHorizontal,
 } from "lucide-react";
 import { Avatar } from "./ui/Avatar";
@@ -659,7 +659,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
           flexDirection: "row",
           flexWrap: "nowrap",
           alignItems: "center",
-          justifyContent: "space-evenly",
+          justifyContent: "center",
           gap: narrowViewport ? 6 : 14,
           padding: narrowViewport
             ? "12px calc(12px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px))"
@@ -1277,7 +1277,6 @@ function ParticipantTile({
   deafened = false,
   cameraOn = true,
   connectionQuality = null,
-  handRaised = false,
   onContextMenu,
   mosaicChip = false,
 }) {
@@ -1338,11 +1337,6 @@ function ParticipantTile({
             }
       }
     >
-      {handRaised && (
-        <span className="participant-tile-hand-badge" title={t("Hand raised")} aria-label={t("Hand raised")}>
-          <Hand size={14} />
-        </span>
-      )}
       {showVideo ? (
         <video
           ref={setVideoEl}
@@ -1562,7 +1556,6 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
       deafened: Boolean(p.isDeafened),
       cameraOn: p.isCameraOn,
       connectionQuality: p.connectionQuality || null,
-      handRaised: Boolean(p.isHandRaised),
     };
   });
 
@@ -1654,7 +1647,6 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             deafened={tile.deafened}
             cameraOn={tile.cameraOn}
             connectionQuality={tile.connectionQuality}
-            handRaised={tile.handRaised}
             onContextMenu={(event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))}
           />
         </motion.div>
@@ -1775,7 +1767,6 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       muted: Boolean(isDm ? call?.muted : groupCall?.isMuted),
       deafened: Boolean(isDm ? call?.deafened : groupCall?.deafened),
       cameraOn: Boolean(isDm ? call?.cameraOn : groupCall?.isCameraOn),
-      handRaised: Boolean(!isDm && groupCall?.isHandRaised),
     },
     ...remoteParticipants.map((p) => ({
       id: p.id,
@@ -1788,7 +1779,6 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       muted: Boolean(p.isMuted),
       deafened: Boolean(p.isDeafened),
       cameraOn: p.isCameraOn,
-      handRaised: Boolean(p.isHandRaised),
     })),
   ];
 
@@ -1863,7 +1853,6 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                   muted={tile.muted}
                   deafened={tile.deafened}
                   cameraOn={tile.cameraOn}
-                  handRaised={tile.handRaised}
                   mosaicChip
                   onContextMenu={
                     tile.isLocal

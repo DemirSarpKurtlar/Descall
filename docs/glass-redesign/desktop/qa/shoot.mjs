@@ -638,7 +638,7 @@ const FRAMES = [
     const roster = [
       { ...AYSE, screen: true, screenLabel: "Ayşe ekranı", screenColor: "#4a3566", isCameraOn: false },
       { ...MERT, isMuted: true, isCameraOn: false },
-      { ...ELIF, isHandRaised: true, isCameraOn: false },
+      { ...ELIF, isCameraOn: false },
       { ...BURAK, isMuted: true, isDeafened: true, isCameraOn: false },
       { ...SELIN, isCameraOn: false },
       { ...ZEYNEP, isCameraOn: false },

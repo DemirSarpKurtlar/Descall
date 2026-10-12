@@ -397,10 +397,11 @@ html.glass-desktop .gd-group-mosaic .participant-state-icons {
   flex-shrink: 0;
 }
 
-html.glass-desktop .gd-group-mosaic .gd-mosaic-cam,
-html.glass-desktop .gd-group-mosaic .participant-tile-hand-badge {
+html.glass-desktop .gd-group-mosaic .gd-mosaic-cam {
   position: absolute;
   top: 12px;
+  right: 12px;
+  left: auto;
   z-index: 5;
   display: inline-flex;
   align-items: center;
@@ -411,18 +412,6 @@ html.glass-desktop .gd-group-mosaic .participant-tile-hand-badge {
   background: rgba(22, 24, 36, 0.5);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
   color: #fff;
-}
-
-html.glass-desktop .gd-group-mosaic .gd-mosaic-cam {
-  right: 12px;
-  left: auto;
-}
-
-html.glass-desktop .gd-group-mosaic .participant-tile-hand-badge {
-  left: 12px;
-  right: auto;
-  background: rgba(240, 165, 0, 0.95);
-  color: #1a1204;
 }
 
 html.glass-desktop[data-glass-qa-speaking] .gd-mosaic-screen .speaking-dot {

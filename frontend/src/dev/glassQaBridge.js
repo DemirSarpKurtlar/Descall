@@ -139,7 +139,6 @@ export function bindGroupCallQa(api) {
         isCameraOn: !cameraOff,
         isMuted: Boolean(person.isMuted),
         isDeafened: Boolean(person.isDeafened),
-        isHandRaised: Boolean(person.isHandRaised),
         isScreenSharing: Boolean(screen),
         screenStream: screen,
         stream: cameraOff

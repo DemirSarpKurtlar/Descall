@@ -77,7 +77,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const mutedByDeafenRef = useRef(false);
   const acceptCueAtRef = useRef(0);
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [isHandRaised, setIsHandRaised] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [duration, setDuration] = useState(0);
   const [participants, setParticipants] = useState([]);
@@ -482,7 +481,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     deafenedRef.current = false;
     mutedByDeafenRef.current = false;
     setIsCameraOn(false);
-    setIsHandRaised(false);
     setIsScreenSharing(false);
     setParticipants([]);
     setRemoteMediaStates({});
@@ -1193,17 +1191,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       }
       audioManager.play("undeafen");
     }
-  }, []);
-
-  const toggleHandRaise = useCallback(() => {
-    setIsHandRaised((prev) => {
-      const next = !prev;
-      const groupId = activeGroupIdRef.current;
-      if (groupId && socketRef.current?.connected) {
-        socketRef.current.emit("group:call:hand-raise", { groupId, raised: next });
-      }
-      return next;
-    });
   }, []);
 
   const toggleCamera = useCallback(async () => {
@@ -2145,17 +2132,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       if (requestState) emitGroupMediaStateRef.current?.();
     };
 
-    const onHandRaise = ({ groupId, fromUserId, raised }) => {
-      if (!groupId || !fromUserId || fromUserId === myIdRef.current) return;
-      setParticipants((prev) => {
-        const match = prev.find((p) => p.id === fromUserId);
-        if (raised && match) {
-          toast?.(tRuntime("{name} raised their hand", { name: match.username || tRuntime("Someone") }), "info");
-        }
-        return prev.map((p) => (p.id === fromUserId ? { ...p, isHandRaised: Boolean(raised) } : p));
-      });
-    };
-
     const onParticipants = ({ groupId, participants: enrichedList, callType: existingCallType }) => {
       if (!enrichedList?.length) return;
       setParticipants((prev) => {
@@ -2290,7 +2266,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     socket.on("group:screen:started", onScreenStarted);
     socket.on("group:screen:stopped", onScreenStopped);
     socket.on("group:call:media-state", onMediaState);
-    socket.on("group:call:hand-raise", onHandRaise);
     socket.on("group:call:participant-joined", onParticipantJoined);
     socket.on("group:call:started", onCallStarted);
     socket.on("group:call:join-existing", onJoinExisting);
@@ -2314,7 +2289,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       socket.off("group:screen:started", onScreenStarted);
       socket.off("group:screen:stopped", onScreenStopped);
       socket.off("group:call:media-state", onMediaState);
-      socket.off("group:call:hand-raise", onHandRaise);
       socket.off("group:call:participant-joined", onParticipantJoined);
       socket.off("group:call:started", onCallStarted);
       socket.off("group:call:join-existing", onJoinExisting);
@@ -2670,7 +2644,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     isMuted,
     deafened,
     isCameraOn,
-    isHandRaised,
     isScreenSharing,
     duration,
     participants: participantsWithMedia,
@@ -2696,7 +2669,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     toggleMute,
     toggleDeafen,
     toggleCamera,
-    toggleHandRaise,
     startScreenShare,
     stopScreenShare,
     restartScreenShareWithQuality,
