@@ -16,20 +16,37 @@ assert.equal(classifyLiveKitTrack({ kind: "video", source: "screen_share" }), "s
 assert.equal(classifyLiveKitTrack({ kind: "audio", source: "microphone" }), "mic");
 assert.equal(classifyLiveKitTrack({ kind: "video", source: "camera" }), "camera");
 assert.equal(classifyLiveKitTrack({ kind: "audio" }), "mic");
-assert.equal(classifyLiveKitTrack({ kind: "video", screenExpected: true }), "screen");
-assert.equal(classifyLiveKitTrack({ kind: "video", source: "camera", screenExpected: true }), "camera");
+assert.equal(
+  classifyLiveKitTrack({
+    kind: "video",
+    trackName: "descall-screen",
+    announcement: { streamId: "other", videoMid: null, audioMid: null },
+  }),
+  "screen"
+);
+assert.equal(
+  classifyLiveKitTrack({
+    kind: "video",
+    source: "camera",
+    announcement: { streamId: "s", videoMid: "1", audioMid: null },
+    streamId: "s",
+  }),
+  "camera"
+);
+assert.equal(classifyLiveKitTrack({ kind: "video", label: "", source: "" }), "camera");
 
 const live = { getVideoTracks: () => [{ readyState: "live" }] };
 const adopted = adoptLateScreenShare({ id: "u", cameraStream: live, cameraOn: true });
-assert.equal(adopted.screenStream, live);
-assert.equal(adopted.cameraStream, null);
-assert.equal(adopted.cameraOn, false);
+assert.equal(adopted.cameraStream, live);
+assert.equal(adopted.screenStream, undefined);
+assert.equal(adopted.cameraOn, true);
 assert.equal(adopted.isScreenSharing, true);
 const keptCamera = adoptLateScreenShare({ id: "u", cameraStream: live, cameraOn: true, cameraAnnounced: true });
 assert.equal(keptCamera.cameraStream, live);
 assert.equal(keptCamera.screenStream, undefined);
 const keptScreen = adoptLateScreenShare({ id: "u", screenStream: live, cameraStream: { getVideoTracks: () => [{ readyState: "live" }] } });
 assert.equal(keptScreen.screenStream, live);
+assert.equal(keptScreen.cameraStream.getVideoTracks().length, 1);
 
 const video = { kind: "video", readyState: "live" };
 const audio = { kind: "audio", readyState: "live" };
@@ -42,7 +59,7 @@ assert.equal(screenShareStillLive({ getVideoTracks: () => [{ kind: "video", read
 assert.equal(screenShareStillLive(null), false);
 
 const misfiled = { isScreenSharing: true, cameraStream: live, cameraOn: true };
-assert.equal(visibleScreenStream(misfiled), live);
+assert.equal(visibleScreenStream(misfiled), null);
 assert.equal(visibleScreenStream({ isScreenSharing: true, cameraStream: live, cameraAnnounced: true }), null);
 assert.equal(visibleScreenStream({ isScreenSharing: false, cameraStream: live }), null);
 assert.equal(visibleScreenStream({ screenStream: live, cameraStream: { getVideoTracks: () => [{ readyState: "live" }] } }), live);
@@ -83,7 +100,8 @@ assert.equal(stopped.pinnedId, null);
 
 const withAudio = { getVideoTracks: () => [screenVideo], getAudioTracks: () => [tabAudio] };
 const adoptedAudio = adoptLateScreenShare({ cameraStream: withAudio, cameraOn: true });
-assert.equal(adoptedAudio.screenStream, withAudio);
-assert.equal(adoptedAudio.cameraStream, null);
+assert.equal(adoptedAudio.isScreenSharing, true);
+assert.equal(adoptedAudio.cameraStream, withAudio);
+assert.equal(adoptedAudio.screenStream, undefined);
 
 console.log("screenShareTracks.selftest ok");

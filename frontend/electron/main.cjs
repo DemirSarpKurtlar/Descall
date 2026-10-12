@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification } = require('./notificationWindow.cjs');
@@ -963,10 +963,12 @@ function createMainWindow() {
           }
           const screen =
             sources.find((s) => String(s.id || '').startsWith('screen:')) || sources[0];
+          const wantsAudio = request?.audioRequested !== false;
           callback({
             video: screen,
-            // Windows loopback carries system audio with the share when requested.
-            ...(request.enableLocalEcho !== false ? { audio: 'loopback' } : {}),
+            // Loopback is system audio. A video-only retry must not require it,
+            // or a Mac/Windows loopback failure cancels the whole share.
+            ...(wantsAudio ? { audio: 'loopback' } : {}),
           });
         } catch (err) {
           log.error('setDisplayMediaRequestHandler error:', err);
@@ -1544,6 +1546,12 @@ ipcMain.handle('focus-window', () => {
 // Desktop capturer — screen share sources
 ipcMain.handle('get-screen-sources', async () => {
   try {
+    if (process.platform === 'darwin' && systemPreferences?.getMediaAccessStatus) {
+      const access = systemPreferences.getMediaAccessStatus('screen');
+      if (access === 'denied' || access === 'restricted') {
+        log.warn('[ScreenShare] macOS Screen Recording permission is', access);
+      }
+    }
     const sources = await desktopCapturer.getSources({
       types: ['screen', 'window'],
       thumbnailSize: { width: 320, height: 240 },

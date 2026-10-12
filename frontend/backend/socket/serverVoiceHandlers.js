@@ -684,16 +684,19 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
-  socket.on("server:voice:offer", ({ channelId, toUserId, offer } = {}) => {
+  socket.on("server:voice:offer", ({ channelId, toUserId, offer, screen } = {}) => {
     if (!channelId || !toUserId || !offer) return;
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
+    const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
+    const announced = sanitizeScreenAnnouncement(screen);
     io.to(`user:${String(toUserId)}`).emit("server:voice:offer", {
       channelId,
       fromUserId: String(myId),
       fromUser: self.member || resolvePublicUser(socket),
       offer,
+      ...(announced ? { screen: announced } : {}),
     });
   });
 
@@ -719,7 +722,7 @@ function registerServerVoiceHandlers(io, socket) {
     });
   });
 
-  socket.on("server:voice:screen:start", ({ channelId } = {}) => {
+  socket.on("server:voice:screen:start", ({ channelId, screen } = {}) => {
     if (!channelId) return;
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
@@ -737,11 +740,14 @@ function registerServerVoiceHandlers(io, socket) {
       me.isScreenSharing = true;
       setParticipant(call, myId, me);
     }
+    const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
+    const announced = sanitizeScreenAnnouncement(screen);
     socket.to(`server-voice:${channelId}`).emit("server:voice:screen:started", {
       serverId: call.serverId,
       channelId,
       fromUserId: String(myId),
       fromUser: me || { id: String(myId) },
+      ...(announced ? { screen: announced } : {}),
     });
     emitChannelState(io, call.serverId, channelId);
   });

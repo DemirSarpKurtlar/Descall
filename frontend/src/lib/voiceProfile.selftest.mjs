@@ -5,6 +5,7 @@ import {
   jitterBufferTargetSeconds,
   matchPushToTalkEvent,
   opusFmtp,
+  opusOptionsForSenders,
   micRecapturePlan,
   networkQualityTooltipKey,
   shouldRecaptureMic,
@@ -18,6 +19,16 @@ assert.equal(audioBitrateForQuality("good"), 48_000);
 assert.equal(audioBitrateForQuality("fair"), 32_000);
 assert.equal(audioBitrateForQuality("poor"), 24_000);
 assert.equal(audioBitrateForQuality("good", { music: true }), 96_000);
+const voiceOnly = opusOptionsForSenders([{ track: { kind: "audio", contentHint: "speech" } }]);
+assert.equal(voiceOnly.dtx, true);
+assert.equal(voiceOnly.stereo, false);
+const withShare = opusOptionsForSenders([
+  { track: { kind: "audio", contentHint: "speech" } },
+  { track: { kind: "audio", contentHint: "", __descallRole: "screen-audio" } },
+]);
+assert.equal(withShare.dtx, false);
+assert.equal(withShare.stereo, true);
+assert.equal(withShare.maxAverageBitrate, 96_000);
 
 assert.equal(jitterBufferTargetSeconds("good"), 0.05);
 assert.equal(jitterBufferTargetSeconds("fair"), 0.1);

@@ -32,14 +32,14 @@ assert.doesNotMatch(
   /setTimeout\(async \(\) =>[\s\S]*?call:offer/,
   "screen sharing must rely on serialized negotiationneeded instead of a duplicate delayed offer",
 );
-assert.match(source, /receivedVideoTracksRef/);
-assert.match(source, /hasAudio/);
-assert.match(source, /pickAnnouncedScreenTrack/);
+assert.match(source, /addDedicatedSender/);
+assert.match(source, /announcementFromSenders/);
+assert.match(source, /partitionInbound/);
 assert.match(startScreenShare, /negotiateRef\.current\?\.\(\)/);
 assert.doesNotMatch(
   remoteScreenEvents,
   /!hasAudio/,
-  "a share that includes tab audio must still be promoted onto the screen stage",
+  "DM recovery must not steal the newest silent video (that was the camera)",
 );
 assert.match(remoteScreenEvents, /socket\.on\("screen:share-start", onScreenShareStart\)/);
 assert.match(remoteScreenEvents, /socket\.on\("screen:share-stop", onScreenShareStop\)/);

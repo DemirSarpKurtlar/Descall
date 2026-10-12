@@ -2,6 +2,7 @@
  * Screen-share capture + RTP sender tuning for WebRTC mesh calls.
  * DM (1:1) uses a higher-quality profile; group mesh stays conservative.
  */
+import { classifyInboundMedia, guardDisplayCapture, ROLE_SCREEN } from "./screenShareIdentity.js";
 
 export const GROUP_SCREEN_DEFAULT_QUALITY = {
   resolution: "720p",
@@ -383,22 +384,41 @@ export async function captureScreenShareStream(opts = {}) {
           err.name = "AbortError";
           throw err;
         }
-        return await navigator.mediaDevices.getUserMedia(
-          buildElectronDesktopConstraints(sourceId, { width, height, fps })
-        );
+        return await captureElectronDesktop(sourceId, { width, height, fps });
       }
       // Empty sources (macOS Screen Recording denied) — try getDisplayMedia next.
     } catch (err) {
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") throw err;
+      if (err?.code === "SCREEN_SHARE_CAMERA_REFUSED" || err?.code === "SCREEN_SHARE_ROLE_MISMATCH") throw err;
       console.warn("[ScreenShare] Electron desktopCapturer path failed, trying getDisplayMedia:", err);
     }
   }
 
   if (typeof navigator?.mediaDevices?.getDisplayMedia === "function") {
-    return getDisplayMediaStream({ width, height, fps, preferTab });
+    const stream = await getDisplayMediaStream({ width, height, fps, preferTab });
+    return guardDisplayCapture(stream);
   }
 
   throw screenShareUnsupportedError();
+}
+
+/**
+ * desktopCapturer getUserMedia. System-audio constraints fail on some Macs
+ * and used to discard the chosen source, falling through to a capture that
+ * could come back as the camera. Retry video-only for the same source id,
+ * then refuse the result if it is a camera track.
+ */
+async function captureElectronDesktop(sourceId, size) {
+  const withAudio = buildElectronDesktopConstraints(sourceId, size);
+  const videoOnly = { audio: false, video: withAudio.video };
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia(withAudio);
+  } catch (err) {
+    if (err?.name === "NotAllowedError" || err?.name === "AbortError") throw err;
+    stream = await navigator.mediaDevices.getUserMedia(videoOnly);
+  }
+  return guardDisplayCapture(stream);
 }
 
 /**
@@ -662,44 +682,41 @@ export function watchScreenTrackResize(track, onResize) {
 
 /**
  * Decide whether an incoming remote video track is screen share vs camera.
+ * `announcement` (stream id / mids) is the signal. `peerExpectsScreen` alone
+ * is ignored — that used to label the camera as the share.
  */
 export function isRemoteScreenVideoTrack(
   track,
   {
     rawStream = null,
-    peerExpectsScreen = false,
-    mainRemoteStream = null,
-    participantHasCameraVideo = false,
+    streamId = null,
+    mid = null,
+    source = null,
+    trackName = null,
+    announcement = null,
+    displaySurface = null,
   } = {}
 ) {
   if (!track || track.kind !== "video") return false;
-
-  const label = (track.label || "").toLowerCase();
-  const surface = track.getSettings?.().displaySurface;
-  if (
-    peerExpectsScreen ||
-    surface ||
-    label.includes("screen") ||
-    label.includes("display") ||
-    label.includes("window") ||
-    label.includes("tab") ||
-    label.includes("web contents") ||
-    label.includes("desktop") ||
-    label.includes("monitor") ||
-    label.includes("primary")
-  ) {
-    return true;
+  let surface = displaySurface;
+  if (!surface) {
+    try {
+      surface = track.getSettings?.().displaySurface || null;
+    } catch {
+      surface = null;
+    }
   }
-
-  // A camera added mid-call arrives on its own MediaStream. A different id
-  // is not a screen share — that guess hid DM cameras behind the screen stage.
-  if (
-    participantHasCameraVideo &&
-    rawStream &&
-    rawStream.getAudioTracks().length === 0
-  ) {
-    return true;
-  }
-
-  return false;
+  return (
+    classifyInboundMedia({
+      kind: "video",
+      source,
+      trackName,
+      streamId: streamId || rawStream?.id || null,
+      mid,
+      displaySurface: surface,
+      label: track.label || "",
+      announcement,
+      localRole: track.__descallRole || null,
+    }) === ROLE_SCREEN
+  );
 }

@@ -373,9 +373,14 @@ export function tuneOpusSdp(sdp, options = {}) {
 }
 
 export function opusOptionsForSenders(senders) {
-  const music = (senders || []).some(
-    (sender) => sender?.track?.kind === "audio" && sender.track.contentHint === "music"
-  );
+  const music = (senders || []).some((sender) => {
+    const track = sender?.track;
+    if (track?.kind !== "audio") return false;
+    // Screen/tab audio is tagged music (and descall-screen-audio). Voice DTX
+    // and mono on that m-line drop system audio the remote cannot turn back up.
+    if (track.contentHint === "music") return true;
+    return track.__descallRole === "screen-audio";
+  });
   return {
     maxAverageBitrate: audioBitrateForQuality(music ? "excellent" : "good", { music }),
     stereo: music,

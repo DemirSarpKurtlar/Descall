@@ -701,8 +701,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Send offer (for renegotiation or camera toggle)
-  socket.on("group:call:offer", ({ groupId, toUserId, offer, callType }) => {
+  socket.on("group:call:offer", ({ groupId, toUserId, offer, callType, screen }) => {
     if (!groupId || !toUserId || !offer) return;
+    const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
+    const announced = sanitizeScreenAnnouncement(screen);
 
     io.to(`user:${toUserId}`).emit("group:call:offer", {
       groupId,
@@ -710,6 +712,7 @@ function registerGroupHandlers(io, socket, state) {
       fromUser: resolveCallFromUser(socket),
       offer,
       callType,
+      ...(announced ? { screen: announced } : {}),
     });
   });
 
@@ -773,7 +776,7 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Screen share started — persist session
-  socket.on("group:screen:start", ({ groupId }) => {
+  socket.on("group:screen:start", ({ groupId, screen }) => {
     if (!groupId) return;
 
     const activeCall = activeGroupCalls.get(groupId);
@@ -791,7 +794,13 @@ function registerGroupHandlers(io, socket, state) {
         }
       });
 
-    socket.to(`group:${groupId}`).emit("group:screen:started", { groupId, fromUserId: myId });
+    const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
+    const announced = sanitizeScreenAnnouncement(screen);
+    socket.to(`group:${groupId}`).emit("group:screen:started", {
+      groupId,
+      fromUserId: myId,
+      ...(announced ? { screen: announced } : {}),
+    });
   });
 
   // Screen share stopped — close DB session

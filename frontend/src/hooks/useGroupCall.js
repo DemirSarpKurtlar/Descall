@@ -6,7 +6,6 @@ import { getUser } from "../lib/storage";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
-  isRemoteScreenVideoTrack,
   optimizeScreenShareSender,
   optimizeScreenShareTrack,
   resolveScreenCaptureSize,
@@ -17,11 +16,22 @@ import {
   showElectronScreenPicker,
 } from "../lib/webrtcScreenShare";
 import {
+  addDedicatedSender,
+  announcementFromSenders,
+  classifyInboundMedia,
+  collectScreenAudioTrackIds,
+  describeRtcTrackEvent,
+  dropScreenEntries,
+  mergeScreenAnnouncement,
+  partitionInbound,
+  sanitizeScreenAnnouncement,
+  stopDedicatedSender,
+} from "../lib/screenShareIdentity";
+import {
   applyRemoteOffer,
   chainTrackUnmute,
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
-import { pickAnnouncedScreenTrack } from "../lib/screenShareTracks";
 import { preloadIceServers } from "../lib/iceConfig";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain } from "../lib/voiceGain";
@@ -283,8 +293,14 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
             const tracker = adaptiveQualityRef.current.get(userId);
             applyAdaptiveVideoEncoding(videoSender, result.quality, tracker.video);
             applyAdaptiveAudioEncoding(audioSender, result.quality, tracker.audio);
+            const screenAudioIds = collectScreenAudioTrackIds(
+              peerData.inbound,
+              peerData.screenAnnouncement
+            );
             for (const receiver of pc.getReceivers()) {
-              if (receiver.track?.kind === "audio") tuneAudioReceiver(receiver, result.quality);
+              if (receiver.track?.kind !== "audio") continue;
+              if (screenAudioIds.has(receiver.track.id)) continue;
+              tuneAudioReceiver(receiver, result.quality);
             }
           }
           return [userId, result.quality];
@@ -507,7 +523,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     pc.ontrack = (e) => {
       const track = e.track;
-      if (track?.kind === "audio") tuneAudioReceiver(e.receiver);
       // e.streams[0] may be undefined or empty during renegotiation — fall back to wrapping the track.
       const rawStream = e.streams?.[0];
       const incomingStream = (rawStream && rawStream.getTracks().length > 0)
@@ -515,39 +530,24 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         : new MediaStream([track]);
 
       const peerData = pcMapRef.current.get(userId);
-      const peerExpectsScreen = Boolean(peerData?.expectScreenShare);
-      const mainRemoteStream = remoteStreamsRef.current.get(userId) || null;
-      // Snapshot camera flag from last known participant state via main stream video tracks
-      const participantHasCameraVideo = Boolean(
-        mainRemoteStream?.getVideoTracks?.().some((t) => t && t !== track && t.readyState !== "ended")
-      );
-      const isScreenTrack = isRemoteScreenVideoTrack(track, {
-        rawStream: rawStream || null,
-        peerExpectsScreen,
-        mainRemoteStream,
-        participantHasCameraVideo,
-      });
-      // Screen video and its (optional) approved tab/system audio can arrive
-      // in either order — don't only match against `peerData.screenStream`,
-      // which is still unset the first time the audio track shows up before
-      // the video track. Fall back to the same "peer told us a screen share
-      // is starting, and this isn't the peer's long-lived mic stream" signal
-      // `isRemoteScreenVideoTrack` already uses for video.
-      const sharesScreenVideo =
-        Boolean(rawStream) &&
-        Boolean(peerData?.screenStream) &&
-        rawStream.getVideoTracks?.().some((vt) =>
-          peerData.screenStream.getVideoTracks().includes(vt)
+      if (peerData) {
+        const described = describeRtcTrackEvent(e);
+        peerData.inbound = (peerData.inbound || []).filter(
+          (entry) => entry.track && entry.track !== track && entry.track.readyState !== "ended"
         );
-      const isScreenAudioTrack = Boolean(
-        track.kind === "audio" &&
-        rawStream &&
-        (
-          sharesScreenVideo ||
-          peerData?.screenStream?.id === rawStream.id ||
-          (peerExpectsScreen && (!mainRemoteStream || rawStream.id !== mainRemoteStream.id))
-        )
-      );
+        peerData.inbound.push(described);
+      }
+      const role = classifyInboundMedia({
+        kind: track.kind,
+        streamId: rawStream?.id || null,
+        mid: e.transceiver?.mid || null,
+        displaySurface: track.getSettings?.().displaySurface,
+        label: track.label,
+        announcement: peerData?.screenAnnouncement || null,
+      });
+      const isScreenTrack = role === "screen";
+      const isScreenAudioTrack = role === "screen-audio";
+      if (track?.kind === "audio" && !isScreenAudioTrack) tuneAudioReceiver(e.receiver);
 
       if (track.kind === "audio" && !isScreenAudioTrack) {
         // Audio always belongs to the main participant stream
@@ -1068,11 +1068,20 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     try {
       const offer = await peerData.pc.createOffer(opts.iceRestart ? { iceRestart: true } : undefined);
       await commitLocalDescription(peerData.pc, offer);
+      const screen = peerData.screenSender
+        ? announcementFromSenders(
+            peerData.pc,
+            screenStreamRef.current,
+            peerData.screenSender,
+            peerData.screenAudioSender
+          )
+        : null;
       socketRef.current.emit("group:call:offer", {
         groupId: activeGroupId,
         toUserId: userId,
         offer: peerData.pc.localDescription,
         callType: callTypeRef.current || callType || "voice",
+        ...(screen ? { screen } : {}),
       });
     } catch (err) {
       console.error(`[GroupCall] renegotiate failed for ${userId}:`, err);
@@ -1319,7 +1328,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       // Announce BEFORE renegotiation so remotes set expectScreenShare
       // before ontrack fires (avoids mis-classifying / missing the stream).
       if (socketRef.current?.connected) {
-        socketRef.current.emit("group:screen:start", { groupId: activeGroupId });
+        socketRef.current.emit("group:screen:start", {
+          groupId: activeGroupId,
+          screen: sanitizeScreenAnnouncement({ streamId: stream.id }),
+        });
       }
       
       // Always addTrack with the dedicated screen stream for every peer.
@@ -1327,9 +1339,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       // peer would never learn about the screen stream and shows black.
       for (const [userId, peerData] of pcMapRef.current.entries()) {
         try {
-          const sender = peerData.pc.addTrack(screenTrack, stream);
+          const sender = addDedicatedSender(peerData.pc, screenTrack, stream);
           if (screenAudioTrack && !peerData.screenAudioSender) {
-            peerData.screenAudioSender = peerData.pc.addTrack(screenAudioTrack, stream);
+            peerData.screenAudioSender = addDedicatedSender(peerData.pc, screenAudioTrack, stream);
           }
           // Store per-peer so stopScreenShare can removeTrack precisely
           peerData.screenSender = sender;
@@ -1382,13 +1394,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     for (const [userId, peerData] of pcMapRef.current.entries()) {
       try {
         const screenSender = peerData.screenSender;
-        if (!screenSender) continue;
-        peerData.pc.removeTrack(screenSender);
+        const screenAudioSender = peerData.screenAudioSender;
+        if (!screenSender && !screenAudioSender) continue;
+        stopDedicatedSender(peerData.pc, screenSender);
         delete peerData.screenSender;
-        if (peerData.screenAudioSender) {
-          peerData.pc.removeTrack(peerData.screenAudioSender);
-          delete peerData.screenAudioSender;
-        }
+        stopDedicatedSender(peerData.pc, screenAudioSender);
+        delete peerData.screenAudioSender;
 
         await renegotiateWithPeer(userId, peerData);
       } catch (err) {
@@ -1576,11 +1587,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         // participant-joined path already does this; onAccept must match it.
         const screenTrack = screenStreamRef.current?.getVideoTracks()[0];
         if (screenTrack && screenTrack.readyState === "live" && !peerData.screenSender) {
-          const sender = pc.addTrack(screenTrack, screenStreamRef.current);
+          const sender = addDedicatedSender(pc, screenTrack, screenStreamRef.current);
           peerData.screenSender = sender;
           const screenAudioTrack = screenStreamRef.current?.getAudioTracks()[0];
           if (screenAudioTrack && !peerData.screenAudioSender) {
-            peerData.screenAudioSender = pc.addTrack(screenAudioTrack, screenStreamRef.current);
+            peerData.screenAudioSender = addDedicatedSender(pc, screenAudioTrack, screenStreamRef.current);
           }
           const quality = resolveScreenCaptureSize(screenQualityRef.current);
           await optimizeScreenShareSender(sender, {
@@ -1598,11 +1609,15 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           await commitLocalDescription(pc, offer);
           peerData.lastOfferAt = Date.now();
 
+          const screen = peerData.screenSender
+            ? announcementFromSenders(pc, screenStreamRef.current, peerData.screenSender, peerData.screenAudioSender)
+            : null;
           socket.emit("group:call:offer", {
             groupId,
             toUserId: fromUserId,
             offer: pc.localDescription,
             callType: callTypeRef.current || "voice",
+            ...(screen ? { screen } : {}),
           });
         } finally {
           peerData.offering = false;
@@ -1683,11 +1698,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         // If we're currently screen sharing, add the screen track to this new peer
         const screenTrack = screenStreamRef.current?.getVideoTracks()[0];
         if (screenTrack && screenTrack.readyState === "live" && !peerData.screenSender) {
-          const sender = pc.addTrack(screenTrack, screenStreamRef.current);
+          const sender = addDedicatedSender(pc, screenTrack, screenStreamRef.current);
           peerData.screenSender = sender;
           const screenAudioTrack = screenStreamRef.current?.getAudioTracks()[0];
           if (screenAudioTrack && !peerData.screenAudioSender) {
-            peerData.screenAudioSender = pc.addTrack(screenAudioTrack, screenStreamRef.current);
+            peerData.screenAudioSender = addDedicatedSender(pc, screenAudioTrack, screenStreamRef.current);
           }
           const q = resolveScreenCaptureSize(screenQualityRef.current);
           await optimizeScreenShareSender(sender, {
@@ -1722,11 +1737,15 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           await commitLocalDescription(pc, offer);
           peerData.lastOfferAt = Date.now();
 
+          const screen = peerData.screenSender
+            ? announcementFromSenders(pc, screenStreamRef.current, peerData.screenSender, peerData.screenAudioSender)
+            : null;
           socket.emit("group:call:offer", {
             groupId,
             toUserId: fromUserId,
             offer: pc.localDescription,
             callType: callTypeRef.current || "voice",
+            ...(screen ? { screen } : {}),
           });
         } finally {
           peerData.makingOffer = false;
@@ -1766,10 +1785,15 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       }
     };
 
-    const onOffer = async ({ groupId, fromUserId, offer }) => {
+    const onOffer = async ({ groupId, fromUserId, offer, screen }) => {
       if (!fromUserId || !offer) return;
+      const incomingScreen = sanitizeScreenAnnouncement(screen);
       
       const peerData = pcMapRef.current.get(fromUserId);
+      if (peerData && incomingScreen) {
+        peerData.screenAnnouncement = mergeScreenAnnouncement(peerData.screenAnnouncement, incomingScreen);
+        peerData.expectScreenShare = true;
+      }
       if (!peerData) {
         // If we don't have a PC yet, we need to wait for the stream
         const stream = localStreamRef.current;
@@ -1780,7 +1804,13 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         const pc = createPeerConnection({});
         const early = pendingIceByUserRef.current.get(fromUserId) || [];
         pendingIceByUserRef.current.delete(fromUserId);
-        const newPeerData = { pc, pendingIce: [...early], makingOffer: false };
+        const newPeerData = {
+          pc,
+          pendingIce: [...early],
+          makingOffer: false,
+          screenAnnouncement: incomingScreen,
+          expectScreenShare: Boolean(incomingScreen),
+        };
         pcMapRef.current.set(fromUserId, newPeerData);
         
         setupPeerConnection(pc, stream, fromUserId, groupId);
@@ -1789,11 +1819,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         const screenTrack = screenStreamRef.current?.getVideoTracks()[0];
         if (screenTrack && screenTrack.readyState === "live") {
           try {
-            const sender = pc.addTrack(screenTrack, screenStreamRef.current);
+            const sender = addDedicatedSender(pc, screenTrack, screenStreamRef.current);
             newPeerData.screenSender = sender;
             const screenAudioTrack = screenStreamRef.current?.getAudioTracks()[0];
             if (screenAudioTrack) {
-              newPeerData.screenAudioSender = pc.addTrack(screenAudioTrack, screenStreamRef.current);
+              newPeerData.screenAudioSender = addDedicatedSender(pc, screenAudioTrack, screenStreamRef.current);
             }
           } catch (err) {
             console.warn("[GroupCall] attach screen on new PC failed:", err);
@@ -1859,10 +1889,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           if (screenTrack && screenTrack.readyState === "live") {
             if (!peerData.screenSender) {
               try {
-                peerData.screenSender = peerData.pc.addTrack(screenTrack, screenStreamRef.current);
+                peerData.screenSender = addDedicatedSender(peerData.pc, screenTrack, screenStreamRef.current);
                 const screenAudioTrack = screenStreamRef.current?.getAudioTracks()[0];
                 if (screenAudioTrack && !peerData.screenAudioSender) {
-                  peerData.screenAudioSender = peerData.pc.addTrack(screenAudioTrack, screenStreamRef.current);
+                  peerData.screenAudioSender = addDedicatedSender(peerData.pc, screenAudioTrack, screenStreamRef.current);
                 }
               } catch {
                 /* may already exist */
@@ -2023,102 +2053,51 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       });
     };
 
-    const onScreenStarted = ({ groupId, fromUserId }) => {
+    const onScreenStarted = ({ groupId, fromUserId, screen, streamId, videoMid, audioMid }) => {
       if (!fromUserId || fromUserId === myIdRef.current) return;
       audioManager.play("screenShareStart");
       const peerData = pcMapRef.current.get(fromUserId);
-      if (peerData) peerData.expectScreenShare = true;
-
-      // Recover a share that ontrack filed as camera before this event.
-      // Remote labels are empty and a capture with tab audio is not "video-only",
-      // so the old label / extra-m-line gate left the stage on avatars.
-      try {
-        const pc = peerData?.pc;
-        const videos = [];
-        if (pc) {
-          for (const receiver of pc.getReceivers()) {
-            const track = receiver.track;
-            if (track?.kind === "video" && track.readyState !== "ended") videos.push(track);
-          }
+      const announcement = sanitizeScreenAnnouncement(screen || { streamId, videoMid, audioMid });
+      if (peerData) {
+        peerData.expectScreenShare = true;
+        if (announcement) {
+          peerData.screenAnnouncement = mergeScreenAnnouncement(peerData.screenAnnouncement, announcement);
         }
-        const participant = participantsRef.current.find((p) => p.id === fromUserId);
-        const cameraOn = Boolean(participant?.isCameraOn);
-        const cameraTracks = !cameraOn
-          ? []
-          : videos.length > 1
-            ? [videos[0]]
-            : videos;
-        const picked = pickAnnouncedScreenTrack(videos, { cameraTracks });
-        if (picked && peerData?.screenStream?.getVideoTracks?.().includes(picked)) {
-          peerData.expectScreenShare = false;
-        } else if (picked) {
-          const main = remoteStreamsRef.current.get(fromUserId);
-          const mainTracks = main?.getTracks?.() || [];
-          const micAudio = mainTracks.filter((track) => track.kind === "audio").slice(0, 1);
-          const screenAudio = mainTracks.filter(
-            (track) => track.kind === "audio" && !micAudio.includes(track) && track.readyState !== "ended"
-          );
-          if (main) {
-            const drop = new Set([picked, ...screenAudio]);
-            if ([...drop].some((track) => main.getTracks().includes(track))) {
-              for (const track of drop) {
-                try { main.removeTrack(track); } catch { /* ignore */ }
-              }
-              const trimmed = new MediaStream(main.getTracks().filter((track) => track.readyState !== "ended"));
-              remoteStreamsRef.current.set(fromUserId, trimmed);
-            }
-          }
-          const screenMs = new MediaStream([picked, ...screenAudio].filter((track) => track && track.readyState !== "ended"));
-          peerData.screenStream = screenMs;
-          peerData.expectScreenShare = false;
-          const trimmed = remoteStreamsRef.current.get(fromUserId) || null;
-          setParticipants((prev) => {
-            if (fromUserId === myIdRef.current) return prev;
-            const exists = prev.find((p) => p.id === fromUserId);
-            if (exists) {
-              return prev.map((p) =>
-                p.id === fromUserId
-                  ? {
-                      ...p,
-                      screenStream: screenMs,
-                      isScreenSharing: true,
-                      stream: trimmed || (p.stream?.getVideoTracks?.().includes(picked) ? null : p.stream),
-                      hasVideo: cameraOn && Boolean(trimmed?.getVideoTracks?.().some((track) => track.readyState !== "ended")),
-                    }
-                  : p
-              );
-            }
-            const storedUser = peerData?.fromUser;
-            return [
-              ...prev,
-              buildCallParticipant(storedUser, {
-                id: fromUserId,
-                stream: trimmed,
-                screenStream: screenMs,
-                hasVideo: false,
-                hasAudio: false,
-                isScreenSharing: true,
-                username: storedUser?.username || storedUser?.displayName || "Member",
-                avatarUrl: storedUser?.avatar_url || storedUser?.avatarUrl || null,
-              }),
-            ].filter(Boolean);
-          });
-        }
-      } catch (err) {
-        console.warn("[GroupCall] screen recover failed:", err);
       }
-
+      const { screen: screenTracks, main } = partitionInbound(
+        peerData?.inbound || [],
+        peerData?.screenAnnouncement || null
+      );
+      if (screenTracks.length && peerData) {
+        peerData.screenStream = new MediaStream(screenTracks);
+        const mainStream = main.length ? new MediaStream(main) : null;
+        if (mainStream) remoteStreamsRef.current.set(fromUserId, mainStream);
+      }
       setParticipants((prev) =>
-        prev.map((p) =>
-          p.id === fromUserId ? { ...p, isScreenSharing: true } : p
-        )
+        prev.map((p) => {
+          if (p.id !== fromUserId) return p;
+          if (!screenTracks.length) return { ...p, isScreenSharing: true };
+          const mainStream = main.length ? new MediaStream(main) : p.stream;
+          return {
+            ...p,
+            isScreenSharing: true,
+            screenStream: new MediaStream(screenTracks),
+            stream: mainStream,
+            hasVideo: Boolean(mainStream?.getVideoTracks?.().some((track) => track.readyState !== "ended")),
+          };
+        })
       );
     };
 
     const onScreenStopped = ({ groupId, fromUserId }) => {
       if (fromUserId && fromUserId !== myIdRef.current) audioManager.play("screenShareStop");
       const peerData = pcMapRef.current.get(fromUserId);
-      if (peerData) peerData.expectScreenShare = false;
+      if (peerData) {
+        peerData.inbound = dropScreenEntries(peerData.inbound || [], peerData.screenAnnouncement);
+        peerData.screenAnnouncement = null;
+        peerData.expectScreenShare = false;
+        peerData.screenStream = null;
+      }
       setParticipants((prev) => prev.map((p) =>
         p.id === fromUserId ? { ...p, isScreenSharing: false, screenStream: null } : p
       ));

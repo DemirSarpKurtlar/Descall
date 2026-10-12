@@ -31,8 +31,22 @@ import {
   resolveScreenCaptureSize,
   screenBitrateForPeerCount,
   isMobileScreenCapture,
-  isRemoteScreenVideoTrack,
 } from "../lib/webrtcScreenShare";
+import {
+  addDedicatedSender,
+  announcementFromSenders,
+  classifyInboundMedia,
+  collectScreenAudioTrackIds,
+  describeRtcTrackEvent,
+  dropScreenEntries,
+  liveKitCameraPublishOptions,
+  liveKitScreenAudioPublishOptions,
+  liveKitScreenVideoPublishOptions,
+  mergeScreenAnnouncement,
+  partitionInbound,
+  sanitizeScreenAnnouncement,
+  stopDedicatedSender,
+} from "../lib/screenShareIdentity";
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
@@ -90,6 +104,7 @@ export function useServerVoice(socket) {
   const remoteStreamMapRef = useRef(new Map()); // userId -> MediaStream
   const remoteScreenStreamsRef = useRef(new Map());
   const screenExpectedRef = useRef(new Set());
+  const screenAnnouncementsRef = useRef(new Map());
   const participantVolumeRef = useRef(new Map());
   const lastParticipantVolumeRef = useRef(new Map());
   const screenVolumeRef = useRef(new Map());
@@ -206,8 +221,14 @@ export function useServerVoice(socket) {
           );
           if (!audioTrackers.has(userId)) audioTrackers.set(userId, { current: null });
           applyAdaptiveAudioEncoding(audioSender, result.quality, audioTrackers.get(userId));
+          const screenAudioIds = collectScreenAudioTrackIds(
+            peerData.inbound,
+            peerData.screenAnnouncement
+          );
           for (const receiver of pc.getReceivers()) {
-            if (receiver.track?.kind === "audio") tuneAudioReceiver(receiver, result.quality);
+            if (receiver.track?.kind !== "audio") continue;
+            if (screenAudioIds.has(receiver.track.id)) continue;
+            tuneAudioReceiver(receiver, result.quality);
           }
           qualityByUser[String(userId)] = result.quality;
         } catch {
@@ -452,7 +473,10 @@ export function useServerVoice(socket) {
         const role = classifyLiveKitTrack({
           kind: track.kind,
           source,
-          screenExpected: screenExpectedRef.current.has(String(userId)),
+          trackName: publication?.trackName || track?.name || null,
+          displaySurface: mediaTrack.getSettings?.().displaySurface,
+          label: mediaTrack.label,
+          announcement: screenAnnouncementsRef.current.get(String(userId)) || null,
         });
         if (role === "screen") {
           const merged = nextScreenStream(remoteScreenStreamsRef.current.get(userId) || null, mediaTrack);
@@ -477,7 +501,8 @@ export function useServerVoice(socket) {
         const role = classifyLiveKitTrack({
           kind: track.kind,
           source,
-          screenExpected: screenExpectedRef.current.has(String(userId)),
+          trackName: publication?.trackName || track?.name || null,
+          announcement: screenAnnouncementsRef.current.get(String(userId)) || null,
         });
         if (role === "screen") {
           const stream = remoteScreenStreamsRef.current.get(userId) || null;
@@ -656,26 +681,28 @@ export function useServerVoice(socket) {
         const v = ss.getVideoTracks()[0];
         const a = ss.getAudioTracks()[0];
         if (v && peer) {
-          peer.screenSender = pc.addTrack(v, ss);
-          if (a) peer.screenAudioSender = pc.addTrack(a, ss);
+          peer.screenSender = addDedicatedSender(pc, v, ss);
+          if (a) peer.screenAudioSender = addDedicatedSender(pc, a, ss);
         }
       }
       pc.ontrack = (e) => {
         const track = e.track;
-        if (track?.kind === "audio") tuneAudioReceiver(e.receiver);
         const peer = pcMapRef.current.get(userId);
+        const described = describeRtcTrackEvent(e);
+        if (peer) {
+          peer.inbound = (peer.inbound || []).filter(
+            (entry) => entry.track && entry.track !== track && entry.track.readyState !== "ended"
+          );
+          peer.inbound.push(described);
+        }
+        const role = classifyInboundMedia({
+          ...described,
+          announcement: peer?.screenAnnouncement || screenAnnouncementsRef.current.get(String(userId)) || null,
+        });
+        if (role === "mic") tuneAudioReceiver(e.receiver);
         const remote = e.streams?.[0] || new MediaStream([track]);
-        const isScreenVideo =
-          track.kind === "video" &&
-          (Boolean(peer?.expectScreenShare) ||
-            isRemoteScreenVideoTrack(track, {
-              peerExpectsScreen: Boolean(peer?.expectScreenShare),
-            }));
-        const isScreenAudio =
-          track.kind === "audio" &&
-          Boolean(peer?.expectScreenShare) &&
-          Boolean(peer?.micAttached) &&
-          track.id !== peer?.micTrackId;
+        const isScreenVideo = role === "screen";
+        const isScreenAudio = role === "screen-audio";
         if (isScreenVideo || isScreenAudio) {
           if (isScreenVideo && peer) peer.expectScreenShare = false;
           setParticipants((prev) => {
@@ -717,26 +744,6 @@ export function useServerVoice(socket) {
         if (track.kind === "video") {
           setParticipants((prev) => {
             const exists = prev.find((p) => p.id === userId);
-            const asScreen =
-              Boolean(exists?.isScreenSharing) && !screenShareStillLive(exists?.screenStream);
-            if (asScreen) {
-              const existingScreen = exists?.screenStream || null;
-              let screenStream = remote;
-              if (existingScreen) {
-                const kept = existingScreen
-                  .getTracks()
-                  .filter((t) => t.readyState !== "ended" && t.kind !== track.kind);
-                const incoming = remote.getTracks().filter((t) => t.readyState !== "ended");
-                const merged = new MediaStream([...kept, ...incoming]);
-                if (!merged.getTracks().includes(track) && track.readyState !== "ended") {
-                  merged.addTrack(track);
-                }
-                screenStream = merged;
-              }
-              return prev.map((p) =>
-                p.id === userId ? { ...p, screenStream, isScreenSharing: true } : p
-              );
-            }
             if (exists) {
               return prev.map((p) =>
                 p.id === userId ? { ...p, cameraStream: remote, cameraOn: true } : p
@@ -745,10 +752,6 @@ export function useServerVoice(socket) {
             return [...prev, { id: userId, username: "Member", cameraStream: remote, cameraOn: true }];
           });
           return;
-        }
-        if (peer && track.kind === "audio") {
-          peer.micAttached = true;
-          if (!peer.micTrackId) peer.micTrackId = track.id;
         }
         attachRemoteAudio(userId, remote);
       };
@@ -787,10 +790,19 @@ export function useServerVoice(socket) {
       try {
         const offer = await peerData.pc.createOffer();
         await commitLocalDescription(peerData.pc, offer);
+        const screen = peerData.screenSender
+          ? announcementFromSenders(
+              peerData.pc,
+              screenStreamRef.current,
+              peerData.screenSender,
+              peerData.screenAudioSender
+            )
+          : null;
         socket.emit("server:voice:offer", {
           channelId,
           toUserId: userId,
           offer: peerData.pc.localDescription,
+          ...(screen ? { screen } : {}),
         });
       } catch (err) {
         console.warn("[ServerVoice] renegotiate failed:", err);
@@ -817,10 +829,14 @@ export function useServerVoice(socket) {
       try {
         const offer = await pc.createOffer();
         await commitLocalDescription(pc, offer);
+        const screen = peer.screenSender
+          ? announcementFromSenders(pc, screenStreamRef.current, peer.screenSender, peer.screenAudioSender)
+          : null;
         socket.emit("server:voice:offer", {
           channelId,
           toUserId: user.id,
           offer: pc.localDescription,
+          ...(screen ? { screen } : {}),
         });
       } catch (err) {
         console.warn("[ServerVoice] offer failed:", err);
@@ -1151,11 +1167,11 @@ export function useServerVoice(socket) {
     for (const [userId, peerData] of pcMapRef.current.entries()) {
       try {
         if (peerData.screenSender) {
-          peerData.pc.removeTrack(peerData.screenSender);
+          stopDedicatedSender(peerData.pc, peerData.screenSender);
           delete peerData.screenSender;
         }
         if (peerData.screenAudioSender) {
-          peerData.pc.removeTrack(peerData.screenAudioSender);
+          stopDedicatedSender(peerData.pc, peerData.screenAudioSender);
           delete peerData.screenAudioSender;
         }
         await renegotiateWithPeer(userId, peerData);
@@ -1211,17 +1227,25 @@ export function useServerVoice(socket) {
 
       const channelId = activeChannelIdRef.current;
       if (socket?.connected && channelId) {
-        socket.emit("server:voice:screen:start", { channelId });
+        socket.emit("server:voice:screen:start", {
+          channelId,
+          screen: sanitizeScreenAnnouncement({ streamId: stream.id }),
+        });
       }
 
       if (sfuModeRef.current && liveKitRoomRef.current) {
-        const { Track } = await loadLiveKit();
+        const videoOptions = liveKitScreenVideoPublishOptions();
+        const audioOptions = liveKitScreenAudioPublishOptions();
         await liveKitRoomRef.current.localParticipant.publishTrack(screenTrack, {
-          source: Track.Source.ScreenShare,
+          ...videoOptions,
+          source: videoOptions.source,
+          name: videoOptions.name,
         });
         if (screenAudioTrack) {
           await liveKitRoomRef.current.localParticipant.publishTrack(screenAudioTrack, {
-            source: Track.Source.ScreenShareAudio,
+            ...audioOptions,
+            source: audioOptions.source,
+            name: audioOptions.name,
           });
         }
         screenTrack.onended = () => {
@@ -1234,9 +1258,9 @@ export function useServerVoice(socket) {
 
       for (const [userId, peerData] of pcMapRef.current.entries()) {
         try {
-          peerData.screenSender = peerData.pc.addTrack(screenTrack, stream);
+          peerData.screenSender = addDedicatedSender(peerData.pc, screenTrack, stream);
           if (screenAudioTrack) {
-            peerData.screenAudioSender = peerData.pc.addTrack(screenAudioTrack, stream);
+            peerData.screenAudioSender = addDedicatedSender(peerData.pc, screenAudioTrack, stream);
           }
           await optimizeScreenShareSender(peerData.screenSender, {
             maxBitrate,
@@ -1321,9 +1345,10 @@ export function useServerVoice(socket) {
         socket.emit("server:voice:media-state", { channelId, muted: mutedRef.current, cameraOn: true, deafened: deafenedRef.current });
       }
       if (sfuModeRef.current && liveKitRoomRef.current) {
-        const { Track } = await loadLiveKit();
+        const cameraOptions = liveKitCameraPublishOptions();
         await liveKitRoomRef.current.localParticipant.publishTrack(cameraTrack, {
-          source: Track.Source.Camera,
+          source: cameraOptions.source,
+          name: cameraOptions.name,
         });
       } else {
         for (const [userId, peerData] of pcMapRef.current.entries()) {
@@ -1628,18 +1653,24 @@ export function useServerVoice(socket) {
       }
     };
 
-    const onOffer = async ({ channelId, fromUserId, fromUser, offer } = {}) => {
+    const onOffer = async ({ channelId, fromUserId, fromUser, offer, screen } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId || !offer) return;
       if (sfuModeRef.current) return;
       const stream = localStreamRef.current;
       if (!stream) return;
 
+      const incomingScreen = sanitizeScreenAnnouncement(screen);
       let peer = pcMapRef.current.get(fromUserId);
       if (!peer) {
         const pc = createPeerConnection({});
         peer = { pc, pendingIce: [] };
         pcMapRef.current.set(fromUserId, peer);
         setupPc(pc, stream, fromUserId, channelId);
+      }
+      if (incomingScreen) {
+        peer.screenAnnouncement = mergeScreenAnnouncement(peer.screenAnnouncement, incomingScreen);
+        peer.expectScreenShare = true;
+        screenAnnouncementsRef.current.set(String(fromUserId), peer.screenAnnouncement);
       }
       setParticipants((prev) => {
         const base = fromUser || { id: fromUserId };
@@ -1861,12 +1892,26 @@ export function useServerVoice(socket) {
       if (channelId && channelId === activeChannelIdRef.current) cleanupAll();
     };
 
-    const onScreenStarted = ({ channelId, fromUserId, fromUser } = {}) => {
+    const onScreenStarted = ({ channelId, fromUserId, fromUser, screen, streamId, videoMid, audioMid } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
       if (fromUserId === myIdRef.current) return;
       audioManager.play("screenShareStart");
+      const announcement = sanitizeScreenAnnouncement(screen || { streamId, videoMid, audioMid });
+      if (announcement) {
+        screenAnnouncementsRef.current.set(
+          String(fromUserId),
+          mergeScreenAnnouncement(screenAnnouncementsRef.current.get(String(fromUserId)), announcement)
+        );
+      }
       const peer = pcMapRef.current.get(fromUserId);
-      if (peer) peer.expectScreenShare = true;
+      if (peer) {
+        peer.expectScreenShare = true;
+        if (announcement) {
+          peer.screenAnnouncement = mergeScreenAnnouncement(peer.screenAnnouncement, announcement);
+        }
+        const { screen: screenTracks } = partitionInbound(peer.inbound || [], peer.screenAnnouncement);
+        if (screenTracks.length) peer.screenStream = new MediaStream(screenTracks);
+      }
       screenExpectedRef.current.add(String(fromUserId));
       setParticipants((prev) => {
         const uid = String(fromUserId);
@@ -1878,7 +1923,7 @@ export function useServerVoice(socket) {
                   ...fromUser,
                   id: p.id,
                   cameraStream: p.cameraStream,
-                  screenStream: p.screenStream,
+                  screenStream: peer?.screenStream || p.screenStream,
                   cameraAnnounced: p.cameraAnnounced,
                 })
               : p
@@ -1892,7 +1937,13 @@ export function useServerVoice(socket) {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
       if (String(fromUserId) !== String(myIdRef.current)) audioManager.play("screenShareStop");
       const peer = pcMapRef.current.get(fromUserId);
-      if (peer) peer.expectScreenShare = false;
+      screenAnnouncementsRef.current.delete(String(fromUserId));
+      if (peer) {
+        peer.inbound = dropScreenEntries(peer.inbound || [], peer.screenAnnouncement);
+        peer.screenAnnouncement = null;
+        peer.expectScreenShare = false;
+        peer.screenStream = null;
+      }
       screenExpectedRef.current.delete(String(fromUserId));
       setParticipants((prev) =>
         prev.map((p) =>

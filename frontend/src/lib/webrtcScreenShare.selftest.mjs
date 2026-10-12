@@ -25,8 +25,17 @@ assert(
   "displaySurface marks a window capture"
 );
 assert(
-  isRemoteScreenVideoTrack(videoCam, { peerExpectsScreen: true }),
-  "expectScreenShare"
+  !isRemoteScreenVideoTrack(videoCam, {
+    announcement: { streamId: "screen-1", videoMid: "v", audioMid: null },
+  }),
+  "expecting a share does not classify the camera as the screen"
+);
+assert(
+  isRemoteScreenVideoTrack(videoCam, {
+    streamId: "screen-1",
+    announcement: { streamId: "screen-1", videoMid: "v", audioMid: null },
+  }),
+  "signaled stream id marks the display track"
 );
 assert(
   !isRemoteScreenVideoTrack(videoCam, { rawStream: null }),
@@ -56,7 +65,7 @@ const screenMs = {
 assert(
   !isRemoteScreenVideoTrack(videoCam, {
     rawStream: cameraMs,
-    mainRemoteStream: micOnly,
+    announcement: { streamId: "screen", videoMid: "v", audioMid: null },
   }),
   "camera on its own stream is not a screen"
 );

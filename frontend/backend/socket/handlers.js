@@ -1249,7 +1249,7 @@ function registerSocketHandlers(io) {
       emitToUser(io, myId, "notifications:sync", { notifications: getNotifications(myId) });
     });
 
-    socket.on("call:offer", async ({ toUserId, offer, callType, renegotiate } = {}) => {
+    socket.on("call:offer", async ({ toUserId, offer, callType, renegotiate, screen } = {}) => {
       if (typeof toUserId !== "string" || !offer) return;
       const targetId = toUserId.trim();
       if (!targetId) return;
@@ -1285,12 +1285,15 @@ function registerSocketHandlers(io) {
           avatar_url: me.avatar_url || socket.user?.avatar_url || null,
           avatarUrl: me.avatar_url || socket.user?.avatar_url || null,
         };
+      const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
+      const announced = sanitizeScreenAnnouncement(screen);
       emitToUser(io, targetId, "call:offer", {
         fromUser,
         offer,
         callType: callType || "voice",
         callUuid,
         renegotiate: renegotiation,
+        ...(announced ? { screen: announced } : {}),
       });
 
       // Native iOS: PushKit VoIP ring → CallKit. Fresh rings only, never a
@@ -1439,10 +1442,15 @@ function registerSocketHandlers(io) {
       });
     });
 
-    socket.on("screen:share-start", ({ toUserId } = {}) => {
+    socket.on("screen:share-start", ({ toUserId, screen } = {}) => {
       if (typeof toUserId !== "string") return;
       dmScreenSharingUsers.add(myId);
-      emitToUser(io, toUserId, "screen:share-start", { fromUserId: myId });
+      const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
+      const announced = sanitizeScreenAnnouncement(screen);
+      emitToUser(io, toUserId, "screen:share-start", {
+        fromUserId: myId,
+        ...(announced ? { screen: announced } : {}),
+      });
     });
 
     socket.on("screen:share-stop", ({ toUserId } = {}) => {
