@@ -68,6 +68,7 @@ export function bindDmCallQa(api) {
     api.setMode(mode);
     api.setCallAnchorAt(Date.now() - (detail.elapsedMs || 754000));
     api.setDuration(detail.durationSeconds ?? 754);
+    document.documentElement.dataset.glassQaSpeaking = "1";
     window.__DESCALL_QA_NET__ = detail.networkStats || {
       rttMs: 18,
       jitterMs: 2,

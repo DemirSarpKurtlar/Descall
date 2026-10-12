@@ -1219,6 +1219,11 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
   const hasNumbers = stats && (stats.rttMs != null || stats.packetLossPct != null || stats.bitrateKbps != null);
 
   useEffect(() => {
+    if (!import.meta.env.DEV || typeof window === "undefined" || !window.__DESCALL_QA_NET__ || !hasNumbers) return;
+    setShowDetails(true);
+  }, [hasNumbers]);
+
+  useEffect(() => {
     if (!showDetails) return;
     const onOutside = (e) => {
       if (detailsRef.current && !detailsRef.current.contains(e.target)) setShowDetails(false);
@@ -1244,11 +1249,13 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
       <span>{label}</span>
       {showDetails && hasNumbers && (
         <div
+          className="call-quality-details"
           style={{
             position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 30,
-            background: "#1e1f24", border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 10, padding: "10px 12px", minWidth: 168,
-            boxShadow: "0 10px 28px rgba(0,0,0,0.45)", fontSize: 12, color: "#dcddde",
+            background: "rgba(22, 24, 36, 0.72)", border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 16, padding: "10px 12px", minWidth: 180,
+            boxShadow: "0 16px 40px rgba(0,0,0,0.45)", fontSize: 12, color: "#dcddde",
+            backdropFilter: "blur(24px) saturate(180%)",
           }}
           onClick={(e) => e.stopPropagation()}
         >

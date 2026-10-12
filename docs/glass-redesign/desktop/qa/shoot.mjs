@@ -596,13 +596,7 @@ const FRAMES = [
       window.dispatchEvent(new CustomEvent("descall:glass-qa", { detail }));
     }, AYSE);
     await waitFor(page, ".call-overlay-root");
-    await page.waitForSelector(".call-participant-grid.is-dm .participant-tile", { timeout: 5000 }).catch(() => {});
-    await page.evaluate(() => {
-      const tiles = [...document.querySelectorAll(".call-participant-grid.is-dm .participant-tile")];
-      (tiles[1] || tiles[0])?.classList.add("is-speaking");
-      document.querySelector(".call-quality-hud")?.click();
-    });
-    await page.waitForFunction(() => /Gecikme|18 ms/.test(document.body.innerText), { timeout: 3000 }).catch(() => {});
+    await page.waitForFunction(() => /Gecikme|18 ms/.test(document.body.innerText), { timeout: 4000 }).catch(() => {});
   } },
   { id: "09-server-voice", path: "/servers/srv-gece/ch-ses?glass-desktop=1", ready: ".server-voice-panel, .server-voice-room", drive: async (page) => {
     await page.evaluate((detail) => {
