@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="g" x1="5" y1="3" x2="19" y2="21" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#B7C8FF"/><stop offset="1" stop-color="#5C7CFA"/></linearGradient></defs><g fill="url(#g)"><path fill-rule="evenodd" d="M8 4.5h8.5a3.5 3.5 0 0 1 3.5 3.5v5a3.5 3.5 0 0 1-3.5 3.5H12l-4 3.5c-.5.5-1 0-1-.5l.5-3H8a3.5 3.5 0 0 1-3.5-3.5v-5A3.5 3.5 0 0 1 8 4.5zM7.5 8h8.5a1 1 0 0 1 0 2h-8.5a1 1 0 0 1 0-2zm0 3.5h5.5a1 1 0 0 1 0 2h-5.5a1 1 0 0 1 0-2z"/></g>
+</svg>

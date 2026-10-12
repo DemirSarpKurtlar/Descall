@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Settings, Check, Shield } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { STATUS_META } from "../../lib/presence";
@@ -15,6 +15,7 @@ import {
   NAV_ICON_SIZE,
   NAV_ICON_STROKE,
 } from "./navConfig";
+import { RAIL_ACCENT } from "./railIcons";
 import { filterMainNavItems, usePublicFeatures } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
 import useMaterialize from "../../hooks/useMaterialize";
@@ -47,11 +48,13 @@ function RailButton({
   badge = 0,
   onClick,
   dismissToken,
+  accent,
   children,
   ...rest
 }) {
   const btnRef = useRef(null);
   const [tip, setTip] = useState(null);
+  const reduceMotion = useReducedMotion();
 
   const hideTip = () => setTip(null);
 
@@ -112,9 +115,14 @@ function RailButton({
           if (canUseHoverTooltips()) showTip();
         }}
         onBlur={hideTip}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.96 }}
-        transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+        whileHover={reduceMotion ? undefined : { scale: 1.04, y: -1 }}
+        whileTap={reduceMotion ? undefined : { scale: 0.94 }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { type: "spring", stiffness: 640, damping: 38, mass: 0.7 }
+        }
+        style={accent ? { "--rail-accent": accent } : undefined}
         aria-label={badge > 0 ? `${label} ${badge > 99 ? "99+" : badge}` : label}
         aria-current={active ? "page" : undefined}
         data-tooltip={label}
@@ -502,6 +510,7 @@ export default function NavigationRail({
                 dismissToken={activeView}
                 label={item.label}
                 badge={Number(badges[item.id]) || 0}
+                accent={RAIL_ACCENT[item.id]}
                 onClick={() => onViewChange(item.id)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
@@ -520,6 +529,7 @@ export default function NavigationRail({
                 key={item.id}
                 dismissToken={activeView}
                 label={item.label}
+                accent={RAIL_ACCENT[item.id]}
                 onClick={() => handleToolAction(item.action)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />

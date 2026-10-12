@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import NavigationRail from "./NavigationRail";
 import ServerSidebar from "./ServerSidebar";
 import ServersSidebar from "../servers/ServersSidebar";
@@ -15,6 +15,15 @@ import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import { useGlassUi } from "../../hooks/useGlassUi";
 import { buildMainNavItems } from "./navConfig";
+import {
+  RailActivity,
+  RailCalls,
+  RailChat,
+  RailFriends,
+  RailPlay,
+  RailServers,
+  RailSettings,
+} from "./railIcons";
 import { GlassShellContext, GlassTabBar } from "./glass/GlassShell";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
@@ -736,12 +745,12 @@ export default function AppLayout({
         <nav className="mobile-tab-bar" aria-label={t("Primary")}>
           {filterMainNavItems(
             [
-              { id: "chat", icon: MessageSquare, label: t("Chat") },
-              { id: "servers", icon: Server, label: t("Servers") },
-              { id: "friends", icon: Users, label: t("Friends") },
-              { id: "play", icon: Crosshair, label: t("Play") },
-              { id: "calls", icon: Phone, label: t("Calls") },
-              { id: "activity", icon: Activity, label: t("Activity") },
+              { id: "chat", icon: RailChat, label: t("Chat") },
+              { id: "servers", icon: RailServers, label: t("Servers") },
+              { id: "friends", icon: RailFriends, label: t("Friends") },
+              { id: "play", icon: RailPlay, label: t("Play") },
+              { id: "calls", icon: RailCalls, label: t("Calls") },
+              { id: "activity", icon: RailActivity, label: t("Activity") },
             ],
             publicFeatures
           ).map((item) => {
@@ -763,7 +772,7 @@ export default function AppLayout({
             className="mobile-tab"
             onClick={openUserPanel}
           >
-            <Settings size={20} />
+            <RailSettings size={20} />
             <span>{t("You")}</span>
           </button>
         </nav>

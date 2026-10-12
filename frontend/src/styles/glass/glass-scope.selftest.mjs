@@ -79,8 +79,8 @@ assert.match(
 // Glass loads after every legacy sheet. Desktop glass follows it. Auth fields
 // follow desktop glass. Admin liquid glass follows auth fields. The activity
 // card sheet follows admin glass. Conversation rows follow the activity card.
-// The feedback nudge loads last so its centered glass card beats the Electron
-// translateX(-50%) rule.
+// The feedback nudge follows conversation rows. Rail icons load last so the
+// glass tiles beat the legacy active glow and the theme active fills.
 const styles = readFileSync(join(here, "..", "..", "styles.css"), "utf8");
 const imports = [...styles.matchAll(/@import\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
 const glassAt = imports.indexOf("./styles/glass/index.css");
@@ -90,6 +90,7 @@ const adminAt = imports.indexOf("./styles/admin-liquid.css");
 const activityAt = imports.indexOf("./styles/activity-card.css");
 const convAt = imports.indexOf("./styles/conv-rows.css");
 const nudgeAt = imports.indexOf("./styles/feedback-nudge.css");
+const railAt = imports.indexOf("./styles/rail-icons.css");
 assert.ok(glassAt > 0, "glass sheet imported");
 assert.ok(desktopAt > glassAt, "desktop glass follows iphone glass");
 assert.equal(authAt, desktopAt + 1, "auth fields follow desktop glass");
@@ -97,6 +98,7 @@ assert.equal(adminAt, authAt + 1, "admin liquid glass follows auth fields");
 assert.equal(activityAt, adminAt + 1, "activity card follows admin liquid glass");
 assert.equal(convAt, activityAt + 1, "conversation rows follow the activity card");
 assert.equal(nudgeAt, convAt + 1, "feedback nudge follows conversation rows");
-assert.equal(imports[imports.length - 1], "./styles/feedback-nudge.css", "feedback nudge imported last");
+assert.equal(railAt, nudgeAt + 1, "rail icons follow the feedback nudge");
+assert.equal(imports[imports.length - 1], "./styles/rail-icons.css", "rail icons imported last");
 
 console.log(`glass-scope.selftest ok (${count} selectors)`);
