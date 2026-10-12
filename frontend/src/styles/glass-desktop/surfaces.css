@@ -2,13 +2,12 @@
    Visual only. Layout, data, and iOS glass stay as they are. */
 
 html.glass-desktop {
-  --gd-modal-gap: 72px;
   --gd-scrim: rgba(5, 6, 10, 0.5);
   --gd-scrim-blur: blur(24px) saturate(1.25);
 }
 
-/* Full-window dim + blur. The dialog itself is centered with the same gap
-   on every side (--gd-modal-gap), including over the sidebar. */
+/* Full-window dim + blur. The card keeps the pre-glass size (1080×780)
+   and sits in the center of the window. */
 html.glass-desktop .user-panel-backdrop,
 html.glass-desktop .user-settings-shell.is-desktop {
   position: fixed !important;
@@ -21,6 +20,9 @@ html.glass-desktop .user-settings-shell.is-desktop {
   height: auto !important;
   max-height: none !important;
   margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   padding: 0 !important;
   box-sizing: border-box !important;
   background: var(--gd-scrim) !important;
@@ -30,18 +32,18 @@ html.glass-desktop .user-settings-shell.is-desktop {
   color: var(--gd-t1);
 }
 
-html.glass-desktop .user-settings.is-desktop,
-html.glass-desktop .user-settings.is-desktop.is-shop-open {
-  position: absolute !important;
-  top: var(--gd-modal-gap) !important;
-  right: var(--gd-modal-gap) !important;
-  bottom: calc(var(--gd-modal-gap) + var(--electron-bottom-inset, 0px)) !important;
-  left: var(--gd-modal-gap) !important;
-  width: auto !important;
-  height: auto !important;
-  max-width: none !important;
-  max-height: none !important;
-  margin: 0 !important;
+html.glass-desktop .user-settings.is-desktop {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: min(1080px, calc(100vw - 64px)) !important;
+  height: min(780px, calc(100vh - 64px - var(--electron-titlebar-h, 0px))) !important;
+  max-width: 1080px !important;
+  max-height: calc(100vh - 64px - var(--electron-titlebar-h, 0px)) !important;
+  margin: auto !important;
+  flex: 0 0 auto !important;
   border: none !important;
   border-radius: 30px !important;
   overflow: hidden;
@@ -54,6 +56,13 @@ html.glass-desktop .user-settings.is-desktop.is-shop-open {
   color: var(--gd-t1);
 }
 
+html.glass-desktop .user-settings.is-desktop.is-shop-open {
+  width: min(1480px, calc(100vw - 28px)) !important;
+  height: min(960px, calc(100vh - 20px)) !important;
+  max-width: 1480px !important;
+  max-height: min(960px, calc(100vh - 20px)) !important;
+}
+
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
   width: 264px;
   background: rgba(255, 255, 255, 0.035) !important;
@@ -62,10 +71,6 @@ html.glass-desktop .user-settings.is-desktop .us-sidebar {
 }
 
 @media (max-width: 1100px) {
-  html.glass-desktop {
-    --gd-modal-gap: 24px;
-  }
-
   html.glass-desktop .user-settings.is-desktop .us-sidebar {
     width: 200px;
   }
