@@ -21,12 +21,15 @@ import {
 
 const web = { isElectron: false, viewportOk: true };
 
-assert.equal(shouldEnableGlassDesktop(web), false, "web stays off without a flag");
+assert.equal(shouldEnableGlassDesktop(web), true, "web defaults on at desktop width");
 assert.equal(shouldEnableGlassDesktop({ ...web, remoteFlag: true }), true, "remote desktopGlass turns web on");
 assert.equal(shouldEnableGlassDesktop({ ...web, override: "1" }), true, "local override turns web on");
 assert.equal(shouldEnableGlassDesktop({ ...web, remoteFlag: true, override: "0" }), false, "local off wins");
+assert.equal(shouldEnableGlassDesktop({ ...web, buildFlag: false }), false, "build flag kills the default");
 assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", buildFlag: false }), false, "build flag kills it");
-assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", viewportOk: false }), false, "narrow web stays off");
+assert.equal(shouldEnableGlassDesktop({ ...web, viewportOk: false }), false, "narrow web stays off");
+assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", viewportOk: false }), false, "narrow web stays off even with the flag");
+assert.equal(shouldEnableGlassDesktop({ isElectron: true, viewportOk: false }), true, "Electron defaults on without the width gate");
 assert.equal(shouldEnableGlassDesktop({ isElectron: true, viewportOk: false, override: "1" }), true, "Electron ignores the width gate");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeIos: true, override: "1" }), false, "iPhone never");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeAndroid: true, remoteFlag: true }), false, "Android never");
@@ -100,8 +103,12 @@ function fakeWindow({ platform = null, width = 1440, store = {}, search = "" } =
 }
 
 const off = fakeWindow();
-assert.equal(initGlassDesktop(off), false);
-assert.ok(!off._classes.has(GLASS_DESKTOP_CLASS), "class stays off");
+assert.equal(initGlassDesktop(off), true, "desktop web defaults on");
+assert.ok(off._classes.has(GLASS_DESKTOP_CLASS), "class is on without a query");
+
+const killed = fakeWindow({ store: { [GLASS_DESKTOP_OVERRIDE_KEY]: "0" } });
+assert.equal(initGlassDesktop(killed), false);
+assert.ok(!killed._classes.has(GLASS_DESKTOP_CLASS), "local 0 still kills the default");
 
 const qa = fakeWindow({ search: "?glass-desktop=1" });
 assert.equal(initGlassDesktop(qa), true, "query param enables glass");
@@ -115,6 +122,9 @@ assert.ok(!ios._classes.has(GLASS_DESKTOP_CLASS), "iOS app never gets the deskto
 
 const android = fakeWindow({ platform: "android", store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
 assert.equal(initGlassDesktop(android), false);
+
+const cachedOff = fakeWindow({ store: { [GLASS_DESKTOP_REMOTE_KEY]: "0" } });
+assert.equal(initGlassDesktop(cachedOff), false, "cached remote off still kills the default");
 
 const cached = fakeWindow({ store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
 assert.equal(initGlassDesktop(cached), true, "cached remote on is respected");

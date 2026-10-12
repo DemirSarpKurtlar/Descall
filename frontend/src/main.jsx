@@ -204,7 +204,7 @@ async function bootApp() {
       import("./styles.css"),
       loadI18nCatalogs(),
       // iPhone Liquid Glass (html.glass-ui) and desktop/web Liquid Glass
-      // (html.glass-desktop, off unless a flag says otherwise).
+      // (html.glass-desktop, on at desktop width unless a kill switch says otherwise).
       isNativeApp
         ? import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {})
         : null,

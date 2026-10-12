@@ -4,11 +4,16 @@
  * Separate from the iPhone UI (`html.glass-ui` / publicFeatures.iosGlass).
  * Native iOS and Android never get `html.glass-desktop`.
  *
- * Default is off. Any one of these turns it on:
- *   1. local override  localStorage "descall:glass-desktop" = "1"
- *      (also set by ?glass-desktop=1 or ?gd=1, then the param is removed)
- *   2. remote flag     publicFeatures.desktopGlass === true
- * "0" on the override or VITE_GLASS_DESKTOP=0 always wins.
+ * Electron, and web at >= 960px, default on when the remote flag is missing.
+ * These still turn it off:
+ *   1. local override  localStorage "descall:glass-desktop" = "0"
+ *      (also set by ?glass-desktop=0 or ?gd=0, then the param is removed)
+ *   2. remote flag     publicFeatures.desktopGlass === false
+ *      (cached as descall:glass-desktop-remote for the next boot)
+ *   3. build flag      VITE_GLASS_DESKTOP=0
+ * A local "1" (?glass-desktop=1 or ?gd=1) forces it on, still subject to the
+ * native, marketing, and web width gates. The server payload still defaults
+ * desktopGlass to false, so a live /api/features response turns this back off.
  *
  * Low-performance mode (`html.gd-lite`) drops backdrop-filter. It turns on for
  * reduced transparency, forced colors, 4 or fewer CPU cores, a slow frame
@@ -96,7 +101,8 @@ export function readGlassDesktopQuery(search) {
 }
 
 /**
- * Pure on/off decision. Remote defaults to false: missing or non-true stays off.
+ * Pure on/off decision. Electron and web at the desktop width default on.
+ * Remote false, local "0", and VITE_GLASS_DESKTOP=0 still turn it off.
  * viewportOk is false on a narrow web window so a phone browser never gets the class.
  */
 export function shouldEnableGlassDesktop({
@@ -106,7 +112,7 @@ export function shouldEnableGlassDesktop({
   viewportOk = true,
   surfaceOk = true,
   buildFlag = true,
-  remoteFlag = false,
+  remoteFlag = null,
   override = null,
 } = {}) {
   if (isNativeIos || isNativeAndroid) return false;
@@ -114,7 +120,7 @@ export function shouldEnableGlassDesktop({
   if (override === "0" || buildFlag === false) return false;
   if (!isElectron && !viewportOk) return false;
   if (override === "1") return true;
-  return remoteFlag === true;
+  return remoteFlag !== false;
 }
 
 /** Pure low-performance decision. */
@@ -141,8 +147,9 @@ function snapshotInputs(w, remoteOverride) {
   const isElectron = Boolean(w?.electronAPI?.isElectron);
   const width = Number(w?.innerWidth) || 0;
   const cachedRemote = readStorage(w, GLASS_DESKTOP_REMOTE_KEY);
-  let remoteFlag = false;
+  let remoteFlag = null;
   if (remoteOverride === true || remoteOverride === false) remoteFlag = remoteOverride;
+  else if (cachedRemote === "0") remoteFlag = false;
   else if (cachedRemote === "1") remoteFlag = true;
   return {
     isNativeIos: platform === "ios",
