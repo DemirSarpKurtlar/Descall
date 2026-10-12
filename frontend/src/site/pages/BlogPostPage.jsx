@@ -24,9 +24,9 @@ export default function BlogPostPage({ onSignIn }) {
   return (
     <SeoLandingShell
       breadcrumbs={crumbs}
-      kicker={post.tags.join(" · ")}
-      title={post.title}
-      lead={post.description}
+      kicker={post.tags.map((tag) => t(tag)).join(" · ")}
+      title={t(post.title)}
+      lead={t(post.description)}
       faq={faq}
       jsonLd={[
         buildBreadcrumbLd(crumbs),

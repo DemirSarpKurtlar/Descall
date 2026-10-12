@@ -179,11 +179,9 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
                 <span className="mkt-icon is-blue">
                   <IconMonitor size={20} />
                 </span>
-                {selectedPlatform === "windows" ? (
-                  <span className="mkt-download-check" aria-hidden>
-                    <IconCheck size={14} />
-                  </span>
-                ) : null}
+                <span className="mkt-download-check" aria-hidden>
+                  <IconCheck size={14} />
+                </span>
               </span>
               <strong>Windows</strong>
               <span className="mkt-mono">Descall-Setup.exe</span>
@@ -199,11 +197,9 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
                 <span className="mkt-icon is-slate">
                   <IconSmartphone size={20} />
                 </span>
-                {selectedPlatform === "android" ? (
-                  <span className="mkt-download-check" aria-hidden>
-                    <IconCheck size={14} />
-                  </span>
-                ) : null}
+                <span className="mkt-download-check" aria-hidden>
+                  <IconCheck size={14} />
+                </span>
               </span>
               <strong>Android</strong>
               <span className="mkt-mono">Descall-APK.apk</span>

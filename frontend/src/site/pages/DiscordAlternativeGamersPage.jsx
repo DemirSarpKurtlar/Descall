@@ -71,7 +71,7 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
             <Link to="/blog/best-discord-alternative-for-lfg">{t("Blog: best Discord alternative for LFG")}</Link>
           </li>
           <li>
-            <Link to="/compare/discord">Descall vs Discord</Link>
+            <Link to="/compare/discord">{t("Descall vs Discord")}</Link>
           </li>
           <li>
             <Link to="/features">{t("All features")}</Link>

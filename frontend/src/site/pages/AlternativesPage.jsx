@@ -109,7 +109,7 @@ export default function AlternativesPage() {
         <h2>{t("Deep dives")}</h2>
         <ul className="seo-link-list">
           <li>
-            <Link to="/compare/discord">Descall vs Discord</Link>
+            <Link to="/compare/discord">{t("Descall vs Discord")}</Link>
           </li>
           <li>
             <Link to="/best-discord-alternative-for-gamers">{t("Best for gamers")}</Link>
