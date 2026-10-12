@@ -398,17 +398,22 @@ export async function beaconConsent(choice) {
       path: typeof window !== "undefined" ? window.location.pathname : "/",
       at: new Date().toISOString(),
     });
-    const url = `${API_BASE_URL}/api/marketing/consent-event`;
+    // text/plain is a CORS-safelisted type, so the beacon does not preflight.
+    // On descall.com, post same-origin and let Vercel proxy to Render.
+    const host = typeof window !== "undefined" ? window.location.hostname : "";
+    const sameOrigin = host === "descall.com" || host === "www.descall.com";
+    const url = sameOrigin ? "/api/marketing/consent-event" : `${API_BASE_URL}/api/marketing/consent-event`;
     if (navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: "application/json" });
+      const blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
       navigator.sendBeacon(url, blob);
       return;
     }
     fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body: payload,
       keepalive: true,
+      mode: "cors",
     }).catch(() => {});
   } catch {
     /* ignore */

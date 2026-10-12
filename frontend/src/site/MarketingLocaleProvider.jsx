@@ -4,6 +4,7 @@ import { MARKETING_TR } from "./marketingPhrases.tr.js";
 import { applyDocumentLang, readStoredLanguage, writeStoredLanguage } from "../i18n/storage.js";
 import { normalizeLocale, detectDefaultLocale } from "../i18n/detect.js";
 import { resolveMarketingLocale } from "./resolveMarketingLocale.js";
+import { isTurkishMarketingPath } from "./localePaths.js";
 
 const LOCALES = [
   { id: "en", labelKey: "settings.english", nativeLabel: "English" },
@@ -55,6 +56,16 @@ export default function MarketingLocaleProvider({ children }) {
   useEffect(() => {
     applyDocumentLang(locale);
   }, [locale]);
+
+  // A Turkish URL is an explicit locale choice. Remember it so English-canonical
+  // pages (privacy, terms, copyright, login) stay Turkish on the next full load.
+  useEffect(() => {
+    try {
+      if (isTurkishMarketingPath(window.location.pathname)) writeStoredLanguage("tr");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (locale !== "tr") {

@@ -2,11 +2,12 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   absoluteUrl,
-  routeMeta,
+  routeMetaForLocale,
   SITE_NAME,
   DEFAULT_OG_IMAGE,
   DEFAULT_ORIGIN,
 } from "./seoConfig";
+import { useLocale } from "../context/localeContextInstance";
 import {
   isTrPath,
   enPathForHreflang,
@@ -49,13 +50,14 @@ function upsertLink(rel, href, extra = {}) {
  */
 export default function SeoHead({ forceNoindex = false, title, description, path, image }) {
   const location = useLocation();
+  const { locale } = useLocale();
   const rawPath = path || location.pathname || "/";
   const pathname = stripLocalePrefix(rawPath);
-  const meta = routeMeta(rawPath);
+  const meta = routeMetaForLocale(rawPath, locale);
   const pageTitle = title || meta.title;
   const pageDesc = description || meta.description;
   const noindex = forceNoindex || meta.noindex;
-  const tr = isTrPath(rawPath) || meta.lang === "tr";
+  const tr = locale === "tr" || isTrPath(rawPath) || meta.lang === "tr";
   const canonicalPath = tr
     ? rawPath === "/tr" || rawPath === "/tr/"
       ? "/tr"

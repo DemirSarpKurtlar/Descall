@@ -141,6 +141,11 @@ export default function HomePage({ onSignIn, onSignUp }) {
         </div>
         <SeoProductPreview
           mode="chat"
+          frame="tilt"
+          chips
+          priority
+          chipScreen={t("Screen share")}
+          chipVoice={t("Voice · Lobby")}
           caption={t("Descall UI — servers, chat, voice, and LFG in one app")}
         />
       </section>
@@ -182,30 +187,42 @@ export default function HomePage({ onSignIn, onSignUp }) {
       </section>
 
       <section className="mkt-section">
-        <h2>{t("Servers ready to run")}</h2>
-        <p className="lead">
-          {t(
-            "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared."
-          )}
-        </p>
-        <div className="mkt-feature-grid">
-          {SERVER_POINTS.map((item) => (
-            <article key={item.title} className="mkt-feature">
-              <div className="mkt-icon">
-                <item.icon size={20} />
-              </div>
-              <h3>{t(item.title)}</h3>
-              <p>{t(item.desc)}</p>
-            </article>
-          ))}
-        </div>
-        <div className="mkt-cta-row" style={{ marginTop: "1.75rem" }}>
-          <Link to={href("/features")} className="mkt-btn mkt-btn-primary">
-            {t("Explore server features")}
-          </Link>
-          <Link to="/discord-alternative-for-communities" className="mkt-btn mkt-btn-ghost">
-            {t("For communities")}
-          </Link>
+        <div className="mkt-servers-panel">
+          <div>
+            <div className="mkt-eyebrow">{t("Servers")}</div>
+            <h2>{t("Servers ready to run")}</h2>
+            <p className="lead">
+              {t(
+                "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared."
+              )}
+            </p>
+            <div className="mkt-server-points">
+              {SERVER_POINTS.map((item) => (
+                <div key={item.title} className="mkt-server-point">
+                  <div className="mkt-icon">
+                    <item.icon size={18} />
+                  </div>
+                  <div>
+                    <h3>{t(item.title)}</h3>
+                    <p>{t(item.desc)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mkt-cta-row">
+              <Link to={href("/features")} className="mkt-btn mkt-btn-primary">
+                {t("Explore server features")}
+              </Link>
+              <Link to="/discord-alternative-for-communities" className="mkt-btn mkt-btn-ghost">
+                {t("For communities")}
+              </Link>
+            </div>
+          </div>
+          <SeoProductPreview
+            mode="servers"
+            frame="flat"
+            caption={t("Descall UI — servers, chat, voice, and LFG in one app")}
+          />
         </div>
       </section>
 

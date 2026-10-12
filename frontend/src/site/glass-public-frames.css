@@ -518,7 +518,9 @@ body:has(.mkt) .legal-doc-section.is-rights {
 
 .mkt .mkt-download-trust li,
 .mkt .mkt-download-trust a,
+.mkt .mkt-download-trust button,
 .mkt .mkt-download-trust span {
+  width: auto;
   height: 40px;
   padding: 0 16px;
   border-radius: 20px;
@@ -953,9 +955,367 @@ body:has(.mkt) .login-modal :focus-visible {
   }
 }
 
+@media (min-width: 1025px) {
+  .mkt .mkt-nav .mkt-mobile-download,
+  .mkt .mkt-nav .mkt-mobile-language {
+    display: none;
+  }
+}
+
+.mkt .mkt-main {
+  position: relative;
+  z-index: 1;
+}
+
+.mkt .mkt-feature::before,
+.mkt .mkt-feature:nth-child(n)::before,
+.mkt .mkt-card::before,
+.mkt .mkt-download-platform::before,
+.mkt .mkt-servers-panel::before,
+.mkt .mkt-download-panel::before {
+  display: block;
+}
+
+.mkt .seo-product-preview,
+.mkt .seo-product-preview figure {
+  transform: none;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.mkt .seo-device-wrap {
+  position: relative;
+}
+
+.mkt .seo-device-halo {
+  position: absolute;
+  inset: -12% -10%;
+  z-index: -1;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(88, 122, 246, 0.38), transparent 70%);
+  filter: blur(10px);
+}
+
+.mkt .seo-device {
+  border-radius: 30px;
+  padding: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.4);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+.mkt .seo-product-preview.is-tilt .seo-device {
+  transform: perspective(2400px) rotateY(-9deg) rotateX(3deg);
+  transform-origin: left center;
+}
+
+.mkt .seo-device-scr {
+  border-radius: 22px;
+  overflow: hidden;
+  aspect-ratio: 1440 / 900;
+  background: #0d0e13;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+
+.mkt .seo-device-scr img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.mkt .seo-float-chip {
+  position: absolute;
+  z-index: 6;
+  height: 44px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 0 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.96);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(20, 21, 30, 0.62);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+.mkt .seo-float-chip.is-share {
+  right: -10px;
+  top: 12%;
+}
+
+.mkt .seo-float-chip.is-voice {
+  left: -18px;
+  bottom: 22%;
+}
+
+.mkt .seo-float-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.mkt .seo-float-ico.is-blue { background: #3b82f6; }
+.mkt .seo-float-ico.is-green { background: #22c55e; }
+
+.mkt .seo-product-preview figcaption {
+  margin-top: 18px;
+  font-size: 13px;
+  color: rgba(235, 238, 255, 0.5);
+  text-align: center;
+}
+
+.mkt .mkt-servers-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
+  gap: 36px;
+  align-items: center;
+  padding: 40px;
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)),
+    rgba(18, 20, 30, 0.4);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  backdrop-filter: blur(40px) saturate(190%);
+}
+
+.mkt .mkt-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(235, 238, 255, 0.5);
+}
+
+.mkt .mkt-servers-panel h2 {
+  margin-top: 8px;
+}
+
+.mkt .mkt-server-points {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.mkt .mkt-server-point {
+  display: flex;
+  gap: 14px;
+}
+
+.mkt .mkt-server-point h3 {
+  margin: 0;
+  font-size: 16.5px;
+}
+
+.mkt .mkt-server-point p {
+  margin: 3px 0 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: rgba(235, 238, 255, 0.72);
+}
+
+.mkt .mkt-servers-panel .mkt-cta-row {
+  margin-top: 28px;
+}
+
+.mkt .seo-related {
+  margin-top: 72px;
+}
+
+.mkt .seo-related h2 {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(235, 238, 255, 0.5);
+}
+
+.mkt .seo-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mkt .seo-pills li {
+  margin: 0;
+  padding: 0;
+}
+
+.mkt .seo-pills li::before {
+  content: none;
+}
+
+.mkt .seo-pills a,
+.mkt .seo-link-list a {
+  height: 40px;
+  padding: 0 14px 0 16px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 2px 8px rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.96);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mkt .seo-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.mkt .seo-link-list li {
+  margin: 0;
+  padding: 0;
+}
+
+.mkt .seo-link-list li::before {
+  content: none;
+}
+
+.mkt .seo-pill-chevron {
+  color: rgba(235, 238, 255, 0.5);
+}
+
+.mkt .mkt-download-panel {
+  border-radius: 32px;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(20, 21, 30, 0.62);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.mkt .mkt-download-platform {
+  border-radius: 20px;
+  padding: 18px;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+.mkt .mkt-download-platform.is-active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 0 0 0.5px rgba(143, 166, 255, 0.55);
+}
+
+.mkt .mkt-download-platform-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mkt .mkt-download-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(180deg, #8fa6ff, #587af6);
+}
+
+.mkt .mkt-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: rgba(235, 238, 255, 0.5);
+}
+
+.mkt .mkt-download-version {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  color: rgba(235, 238, 255, 0.72);
+}
+
+.mkt .mkt-download-version-src {
+  margin-left: auto;
+  font-size: 13px;
+  color: rgba(235, 238, 255, 0.5);
+}
+
+.mkt .mkt-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3ddc6a;
+  box-shadow: 0 0 0 4px rgba(61, 220, 106, 0.18);
+}
+
+.mkt .mkt-download-panel-cta {
+  width: 100%;
+  height: 50px;
+  margin-top: 14px;
+  border-radius: 25px;
+}
+
+.mkt .mkt-download-trust {
+  justify-content: center;
+  margin-top: 48px;
+}
+
+@media (min-width: 900px) {
+  .mkt .mkt-feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mkt .mkt-feature-grid.is-quad {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .mkt .mkt-servers-panel {
+    grid-template-columns: 1fr;
+    padding: 22px;
+    border-radius: 26px;
+  }
+
+  .mkt .seo-product-preview.is-tilt .seo-device {
+    transform: none;
+  }
+
+  .mkt .seo-float-chip {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mkt .seo-product-preview,
   .mkt .seo-product-preview figure,
+  .mkt .seo-product-preview.is-tilt .seo-device,
   .mkt .mkt-status-card::before {
     transform: none;
     animation: none;

@@ -47,6 +47,10 @@ assert(decide(webWin, "/register", false, "?gd=1") === false, "glass preview on 
 assert(decide(webWin, "/", false, "?glass-desktop=1") === true, "glass preview does not replace the marketing home");
 assert(decide(webWin, "/", true) === false, "web with session boots the app");
 assert(decide(webWin, "/direct") === false, "web app route boots the app");
+assert(decide(webWin, "/missing-public-page") === true, "unknown web paths boot the marketing 404");
+assert(decide(webWin, "/invite/abc") === false, "group invites stay in the app");
+assert(decide(webWin, "/i/abcd") === false, "short invites stay in the app");
+assert(decide(webWin, "/s/myserver") === false, "server vanity stays in the app");
 
 // Native iOS / Android: never the landing — straight to the app's own auth screen.
 for (const path of ["/", "/tr", "/download", "/tr/download", "/features", "/faq", "/login", "/register", "/privacy", "/blog/x"]) {

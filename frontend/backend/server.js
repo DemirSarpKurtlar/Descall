@@ -277,10 +277,47 @@ app.get("/api/marketing/unsubscribe", async (req, res) => {
   res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body));
 });
 
-app.post("/api/marketing/consent-event", (req, res) => {
+function consentPayload(req) {
+  const body = req.body;
+  if (body && typeof body === "object" && !Buffer.isBuffer(body)) return body;
+  if (typeof body === "string" && body.trim()) {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      /* ignore */
+    }
+  }
+  return {};
+}
+
+// text/plain beacons skip the JSON parser. Parse them here, and always echo
+// ACAO for the public site so the browser can record the event.
+const consentText = express.text({ type: ["text/plain", "text/plain;charset=UTF-8"], limit: "4kb" });
+app.options("/api/marketing/consent-event", (req, res) => {
+  const origin = req.get("origin");
+  if (origin && isAllowedOrigin(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "content-type");
+  }
+  return res.status(204).end();
+});
+app.post("/api/marketing/consent-event", (req, res, next) => {
+  const type = String(req.headers["content-type"] || "");
+  if (type.includes("text/plain")) return consentText(req, res, next);
+  return next();
+}, (req, res) => {
   try {
-    const choice = String(req.body?.choice || "").slice(0, 32);
-    const pathName = String(req.body?.path || "").slice(0, 128);
+    const origin = req.get("origin");
+    if (origin && isAllowedOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+    }
+    const payload = consentPayload(req);
+    const choice = String(payload.choice || "").slice(0, 32);
+    const pathName = String(payload.path || "").slice(0, 128);
     if (choice) {
       console.log("[marketing] consent", choice, pathName);
     }

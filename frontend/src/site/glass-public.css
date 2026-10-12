@@ -7,17 +7,34 @@
   --gp-t1: rgba(255, 255, 255, 0.96);
   --gp-t2: rgba(235, 238, 255, 0.72);
   --gp-t3: rgba(235, 238, 255, 0.5);
-  background: #0d0e13;
+  background: #0f1017;
   color: var(--gp-t1);
   font-family: -apple-system, "SF Pro Text", Inter, "Segoe UI Variable", system-ui, sans-serif;
 }
 
+/* Full document height (not the viewport) so the aurora does not stop mid-page. */
 .mkt-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background:
     radial-gradient(520px 420px at 6% 120px, rgba(88, 122, 246, 0.46), transparent 70%),
     radial-gradient(480px 360px at 62% 0, rgba(124, 92, 255, 0.24), transparent 72%),
     radial-gradient(560px 460px at 100% 420px, rgba(124, 92, 255, 0.28), transparent 70%),
     linear-gradient(180deg, #151826 0, #12131b 900px, #0f1017 100%);
+}
+
+.mkt-bg::before {
+  content: "";
+  position: absolute;
+  inset: 900px 0 0 0;
+  background:
+    radial-gradient(520px 420px at 0% 300px, rgba(88, 122, 246, 0.22), transparent 70%),
+    radial-gradient(560px 460px at 96% 800px, rgba(170, 92, 255, 0.2), transparent 70%),
+    radial-gradient(420px 380px at 40% 1250px, rgba(88, 200, 255, 0.1), transparent 70%);
+  background-size: 100% 1500px;
+  background-repeat: repeat-y;
+  pointer-events: none;
 }
 
 .mkt-orb { opacity: 0.35; }
@@ -180,12 +197,62 @@
 .mkt .seo-card,
 .mkt .mkt-download-platform,
 .mkt .mkt-post-card,
-.mkt .blog-card {
+.mkt .blog-card,
+.mkt .mkt-servers-panel,
+.mkt .mkt-download-panel {
+  position: relative;
+  isolation: isolate;
   border: none;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 12px 32px rgba(0, 0, 0, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.55);
+  box-shadow:
+    inset 7px 9px 16px -10px rgba(255, 255, 255, 0.28),
+    inset -7px -9px 16px -10px rgba(255, 255, 255, 0.12),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.28);
   color: var(--gp-t1);
+}
+
+.mkt .mkt-feature::before,
+.mkt .mkt-feature:nth-child(n)::before,
+.mkt .mkt-card::before,
+.mkt .seo-card::before,
+.mkt .mkt-download-platform::before,
+.mkt .mkt-servers-panel::before,
+.mkt .mkt-download-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  padding: 1px;
+  opacity: 1;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0.16) 26%,
+    rgba(255, 255, 255, 0.04) 55%,
+    rgba(255, 255, 255, 0.1) 80%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.mkt .mkt-feature > *,
+.mkt .mkt-card > *,
+.mkt .mkt-download-platform > *,
+.mkt .mkt-servers-panel > *,
+.mkt .mkt-download-panel > * {
+  position: relative;
+  z-index: 4;
 }
 
 .mkt .mkt-feature h3,

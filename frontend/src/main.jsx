@@ -221,9 +221,6 @@ async function bootApp() {
     import("./styles/boot-skeleton.css"),
   ]);
   const RootApp = lazy(() => import("./App.jsx"));
-  const AnalyticsLazy = lazy(() =>
-    import("@vercel/analytics/react").then((m) => ({ default: m.Analytics }))
-  );
 
   ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
@@ -235,13 +232,6 @@ async function bootApp() {
                 <RootApp />
               </Suspense>
               <IosPwaInstallBanner />
-              {/* Vercel Web Analytics only exists on the Vercel-hosted web app; in the
-                  native shell its /_vercel/insights script is a dead local request. */}
-              {!isNativeApp && (
-                <Suspense fallback={null}>
-                  <AnalyticsLazy />
-                </Suspense>
-              )}
             </Router>
           </LocaleProvider>
         </ToastProvider>

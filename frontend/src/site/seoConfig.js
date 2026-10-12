@@ -442,3 +442,66 @@ export function routeMeta(pathname) {
     noindex: true,
   };
 }
+
+const TR_TITLES = {
+  "/privacy": {
+    title: "Descall Gizlilik Politikası",
+    description:
+      "Descall gizlilik politikası: hesap, mesajlar, IP ve arama üst verisi, saklama süreleri ve erişim/silme hakları.",
+  },
+  "/terms": {
+    title: "Descall Hizmet Şartları",
+    description:
+      "Descall web ve masaüstü uygulaması için hizmet şartları: yaş (13+), kabul edilebilir kullanım ve hesaplar.",
+  },
+  "/copyright": {
+    title: "Descall telif hakkı bildirimleri",
+    description:
+      "Descall’a telif bildirimi veya karşı bildirim göndermek için contact@descall.com adresini kullanın.",
+  },
+  "/login": {
+    title: "Giriş yap — Descall",
+    description: "Descall hesabınıza giriş yapın. Sohbet, ses, görüntü ve ekran paylaşımı.",
+  },
+  "/register": {
+    title: "Hesap oluştur — Descall",
+    description: "Ücretsiz Descall hesabı oluşturun. Sohbet, ses, görüntü ve ekran paylaşımı.",
+  },
+  "/status": {
+    title: "Descall hizmet durumu",
+    description: "Descall beta hizmet durumu, API sağlığı ve destek.",
+  },
+  "/blog": {
+    title: "Descall blog — Discord alternatifleri ve LFG",
+    description: "Descall rehberleri: Discord alternatifi, LFG ve sesli sohbet.",
+  },
+  "/alternatives": {
+    title: "Discord alternatifleri — Descall karşılaştırması",
+    description: "Discord alternatiflerini Descall ile karşılaştırın. Ücretsiz ses, sunucular ve ekran paylaşımı.",
+  },
+};
+
+/** Document title follows the active locale, including English-canonical URLs. */
+export function routeMetaForLocale(pathname, locale) {
+  const meta = routeMeta(pathname);
+  if (locale !== "tr") return meta;
+  const clean = (pathname || "/").replace(/\/+$/, "") || "/";
+  const bare = stripLocalePrefix(clean);
+  const override = TR_TITLES[bare] || TR_TITLES[clean];
+  if (override) return { ...meta, ...override, lang: "tr" };
+  if (meta.title === "Page not found — Descall") {
+    return {
+      ...meta,
+      title: "Sayfa bulunamadı — Descall",
+      description: "Bu sayfa Descall’da bulunmuyor.",
+      lang: "tr",
+    };
+  }
+  if (!clean.startsWith("/tr")) {
+    const trHit = PUBLIC_ROUTES.find((r) => r.path === `/tr${bare === "/" ? "" : bare}`);
+    if (trHit) {
+      return { ...meta, title: trHit.title, description: trHit.description || meta.description, lang: "tr" };
+    }
+  }
+  return { ...meta, lang: meta.lang || "tr" };
+}

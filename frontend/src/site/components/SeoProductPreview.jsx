@@ -1,48 +1,64 @@
+import { IconMic, IconMonitor } from "../icons";
+
+const SHOTS = {
+  chat: { src: "brand/previews/02-dm.webp", width: 1440, height: 900 },
+  servers: { src: "brand/previews/06-server.webp", width: 1440, height: 900 },
+  call: { src: "brand/previews/09-server-voice.webp", width: 1440, height: 900 },
+  lfg: { src: "brand/previews/11-friends.webp", width: 1440, height: 900 },
+};
+
 /**
- * Lightweight product UI preview for SEO landings (first-viewport trust).
- * Decorative structure mirrors real Descall surfaces without shipping screenshots yet.
+ * Approved desktop app screenshot inside the public glass device frame.
+ * `frame="flat"` is the servers panel; the home hero tilts and floats chips.
  */
 export default function SeoProductPreview({
   caption = "Descall — chat, voice, and LFG in one lighter app",
   mode = "chat",
+  frame = "tilt",
+  chips = false,
+  priority = false,
+  chipScreen = "Screen share",
+  chipVoice = "Voice · Lobby",
 }) {
-  const kind = ["chat", "call", "lfg", "servers"].includes(mode) ? mode : "chat";
-  const listTitle = kind === "lfg" ? "LFG" : kind === "servers" ? "Channels" : "Friends";
+  const kind = SHOTS[mode] ? mode : "chat";
+  const shot = SHOTS[kind];
+  const src = `${import.meta.env.BASE_URL}${shot.src}`;
+  const tilted = frame !== "flat";
 
   return (
-    <figure className={`seo-product-preview seo-pp-is-${kind}`} aria-label={caption}>
-      <div className="seo-product-preview-frame" role="img" aria-label={caption}>
-        <div className="seo-pp-rail" aria-hidden>
-          <span className={kind === "servers" ? "is-active" : ""} />
-          <span className={kind === "chat" || kind === "lfg" ? "is-active" : ""} />
-          <span className={kind === "call" ? "is-active" : ""} />
-          <span />
-        </div>
-        <div className="seo-pp-list" aria-hidden>
-          <div className="seo-pp-list-title">{listTitle}</div>
-          <div className="seo-pp-row is-online" />
-          <div className="seo-pp-row is-online" />
-          <div className="seo-pp-row" />
-          <div className="seo-pp-row is-online" />
-        </div>
-        <div className="seo-pp-main" aria-hidden>
-          <div className="seo-pp-chat">
-            <div className="seo-pp-bubble" />
-            <div className="seo-pp-bubble is-mine" />
-            <div className="seo-pp-bubble" />
+    <figure className={`seo-product-preview seo-pp-is-${kind}${tilted ? " is-tilt" : " is-flat"}`} aria-label={caption}>
+      <div className="seo-device-wrap">
+        {tilted ? <div className="seo-device-halo" aria-hidden /> : null}
+        <div className="seo-device">
+          <div className="seo-device-scr">
+            <img
+              src={src}
+              alt=""
+              width={shot.width}
+              height={shot.height}
+              decoding="async"
+              loading={priority ? "eager" : "lazy"}
+            />
           </div>
-          <div className="seo-pp-call">
-            <div className="seo-pp-avatar" />
-            <div className="seo-pp-avatar" />
-            <div className="seo-pp-controls">
-              <i />
-              <i />
-              <i className="is-danger" />
+        </div>
+        {chips ? (
+          <>
+            <div className="seo-float-chip is-voice">
+              <span className="seo-float-ico is-green" aria-hidden>
+                <IconMic size={16} />
+              </span>
+              {chipVoice}
             </div>
-          </div>
-        </div>
+            <div className="seo-float-chip is-share">
+              <span className="seo-float-ico is-blue" aria-hidden>
+                <IconMonitor size={16} />
+              </span>
+              {chipScreen}
+            </div>
+          </>
+        ) : null}
       </div>
-      <figcaption>{caption}</figcaption>
+      {caption ? <figcaption>{caption}</figcaption> : null}
     </figure>
   );
 }

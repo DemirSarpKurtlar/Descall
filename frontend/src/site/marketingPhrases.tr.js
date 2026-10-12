@@ -197,6 +197,7 @@ export const MARKETING_TR = {
   "Roles that actually work": "Gerçekten işe yarayan roller",
   "Roles, channels & moderation": "Roller, kanallar ve moderasyon",
   "Screen share": "Ekran paylaşımı",
+  "Voice · Lobby": "Ses · Lobi",
   "Screen share quality": "Ekran paylaşımı kalitesi",
   "Security": "Güvenlik",
   "Security & encryption": "Güvenlik ve şifreleme",

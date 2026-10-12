@@ -162,6 +162,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
               {t("Open the web app")}
             </Link>
           </div>
+          <AppStoreBadge label={t("Download on the App Store")} />
         </div>
 
         <div className="mkt-download-panel">
@@ -174,9 +175,18 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
               className={`mkt-download-platform${selectedPlatform === "windows" ? " is-active" : ""}`}
               onClick={() => setSelectedPlatform("windows")}
             >
-              <IconMonitor size={20} />
+              <span className="mkt-download-platform-top">
+                <span className="mkt-icon">
+                  <IconMonitor size={20} />
+                </span>
+                {selectedPlatform === "windows" ? (
+                  <span className="mkt-download-check" aria-hidden>
+                    <IconCheck size={14} />
+                  </span>
+                ) : null}
+              </span>
               <strong>Windows</strong>
-              <span>Descall-Setup.exe</span>
+              <span className="mkt-mono">Descall-Setup.exe</span>
             </button>
             <button
               type="button"
@@ -185,13 +195,35 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
               className={`mkt-download-platform${selectedPlatform === "android" ? " is-active" : ""}`}
               onClick={() => setSelectedPlatform("android")}
             >
-              <IconSmartphone size={20} />
+              <span className="mkt-download-platform-top">
+                <span className="mkt-icon">
+                  <IconSmartphone size={20} />
+                </span>
+                {selectedPlatform === "android" ? (
+                  <span className="mkt-download-check" aria-hidden>
+                    <IconCheck size={14} />
+                  </span>
+                ) : null}
+              </span>
               <strong>Android</strong>
-              <span>Descall-APK.apk</span>
+              <span className="mkt-mono">Descall-APK.apk</span>
             </button>
           </div>
-          <p className="mkt-download-panel-meta">{versionLine}</p>
-          <AppStoreBadge label={t("Download on the App Store")} />
+          <p className="mkt-download-version">
+            <span className="mkt-pulse" aria-hidden />
+            <span>{versionLine}</span>
+            <span className="mkt-download-version-src">GitHub releases/latest</span>
+          </p>
+          <a
+            className="mkt-btn mkt-btn-primary mkt-download-panel-cta"
+            href={downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={trackDownload}
+          >
+            <IconDownload size={18} />
+            {selectedPlatform === "android" ? t("Download APK") : t("Download for Windows")}
+          </a>
         </div>
       </section>
 
@@ -238,7 +270,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         <p className="lead">
           {t("Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.")}
         </p>
-        <div className="mkt-feature-grid">
+        <div className="mkt-feature-grid is-quad">
           {FEATURES.map((f) => {
             const Icon = f.icon;
             return (
