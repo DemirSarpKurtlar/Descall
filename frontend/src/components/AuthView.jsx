@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, UserPlus, Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
+import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
+import { isNativeIOS } from "../lib/platform";
 import AppleSignInButton from "./auth/AppleSignInButton";
 import ForgotPasswordFlow from "./auth/ForgotPasswordFlow";
 import { useT } from "../context/LocaleContext";
@@ -322,9 +324,11 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         </p>
       )}
 
-      <div className="auth-divider" aria-hidden="true">
-        <span>{t("or")}</span>
-      </div>
+      {(isNativeIOS() || isGoogleSignInOffered()) && (
+        <div className="auth-divider" aria-hidden="true">
+          <span>{t("or")}</span>
+        </div>
+      )}
 
       <form onSubmit={submit} className="auth-form">
         <div className="input-wrapper">

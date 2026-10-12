@@ -2334,6 +2334,8 @@ export const phrases = {
   "Stay signed in": "Stay signed in",
   "Sign in with Google": "Sign in with Google",
   "Continue with Google": "Continue with Google",
+  "Could not load Google sign-in. You can still sign in with your username and password.": "Could not load Google sign-in. You can still sign in with your username and password.",
+  "Google Sign-In unavailable": "Google Sign-In unavailable",
   "Or continue with": "Or continue with",
   "Already have an account?": "Already have an account?",
   "Don't have an account?": "Don't have an account?",

@@ -6,6 +6,7 @@ import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { isSocialSignupRequired } from "../api/auth";
+import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
@@ -280,6 +281,8 @@ function AuthModal({
                   </div>
                 )}
                 {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}
+                {isGoogleSignInOffered() && (
+                  <>
                 <Suspense fallback={null}>
                   <GoogleSignInButton
                   appearance="glass"
@@ -306,6 +309,8 @@ function AuthModal({
                 <div className="mkt-auth-divider" aria-hidden>
                   <span>{t("or")}</span>
                 </div>
+                  </>
+                )}
                 <form onSubmit={submit}>
                   <input
                     value={username}

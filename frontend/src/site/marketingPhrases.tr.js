@@ -220,6 +220,7 @@ export const MARKETING_TR = {
   "Sign in": "Giriş yap",
   "Sign In": "Giriş Yap",
   "Sign in to your account": "Hesabına giriş yap",
+  "Could not load Google sign-in. You can still sign in with your username and password.": "Google ile giriş yüklenemedi. Kullanıcı adı ve şifrenle de giriş yapabilirsin.",
   "Sign in with Google or email — no installer required to try the web app.": "Google veya e-posta ile giriş — web uygulamasını denemek için kurulum gerekmez.",
   "Sitemap": "Site haritası",
   "Source": "Kaynak",

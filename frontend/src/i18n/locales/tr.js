@@ -3036,6 +3036,7 @@ export const phrases = {
   "Already have an account? Sign in": "Zaten hesabın var mı? Giriş yap",
   "Need an account? Register": "Hesabın yok mu? Kayıt ol",
   "Google Sign-In unavailable": "Google ile giriş kullanılamıyor",
+  "Could not load Google sign-in. You can still sign in with your username and password.": "Google ile giriş yüklenemedi. Kullanıcı adı ve şifrenle de giriş yapabilirsin.",
   "Google Sign-In is not configured yet.": "Google ile giriş henüz yapılandırılmadı.",
   "Loading Google…": "Google yükleniyor…",
   "What is Descall?": "Descall nedir?",

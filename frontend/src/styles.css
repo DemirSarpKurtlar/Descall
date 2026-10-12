@@ -54,6 +54,7 @@
 @import './styles/app-consent.css';
 @import './styles/glass/index.css';
 @import './styles/glass-desktop/index.css';
+@import './styles/auth-fields.css';
 
 /* ============================================
    OLD CSS REMOVED — Using new modular system

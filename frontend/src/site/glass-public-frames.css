@@ -1656,3 +1656,60 @@ body:has(.mkt) .login-modal h2 {
     animation: none;
   }
 }
+
+/* Auth fields: one rounded edge. The focus ring is that edge, not a second box. */
+body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]),
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper {
+  border: 0;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+  outline: none;
+}
+
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 8px 0 14px;
+  overflow: hidden;
+}
+
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper .input-icon {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input,
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input:focus,
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input:focus-visible {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 14px 0 44px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  outline-offset: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
+body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper:focus-within {
+  outline: none;
+  outline-offset: 0;
+  border: 0;
+  box-shadow: inset 0 0 0 2px #8fa6ff;
+}

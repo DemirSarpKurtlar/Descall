@@ -76,9 +76,16 @@ assert.match(
   "phone web chrome clears the frame and the Island"
 );
 
-// Loaded once, after every legacy sheet (same specificity rules win by order).
+// Glass loads after every legacy sheet. Desktop glass follows it. Auth fields
+// load last so the single focus ring can beat both, using higher specificity.
 const styles = readFileSync(join(here, "..", "..", "styles.css"), "utf8");
 const imports = [...styles.matchAll(/@import\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
-assert.equal(imports[imports.length - 1], "./styles/glass/index.css", "glass imported last");
+const glassAt = imports.indexOf("./styles/glass/index.css");
+const desktopAt = imports.indexOf("./styles/glass-desktop/index.css");
+const authAt = imports.indexOf("./styles/auth-fields.css");
+assert.ok(glassAt > 0, "glass sheet imported");
+assert.ok(desktopAt > glassAt, "desktop glass follows iphone glass");
+assert.equal(imports[imports.length - 1], "./styles/auth-fields.css", "auth fields imported last");
+assert.equal(authAt, desktopAt + 1, "auth fields follow desktop glass");
 
 console.log(`glass-scope.selftest ok (${count} selectors)`);

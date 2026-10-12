@@ -1,0 +1,179 @@
+/* Auth fields on every platform (Electron, web, Android, iPhone).
+   One rounded glass control. The focus ring is the wrapper's outer edge.
+   The inner input is transparent and borderless, so it cannot draw a second
+   box or a vertical rule after the icon. */
+
+.auth-form .input-wrapper,
+html.glass-desktop .gd-auth .auth-form .input-wrapper,
+html.glass-ui .g-auth .auth-form .input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 48px;
+  padding: 0 8px 0 14px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+  color: #f2f3f5;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper {
+  height: 50px;
+  background: var(--g-field-bg);
+  box-shadow: var(--g-field-shadow);
+  color: var(--g-t1);
+}
+
+html.glass-desktop .gd-auth .auth-form .input-wrapper {
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--gd-t1);
+}
+
+.auth-form .input-wrapper:focus-within,
+html.glass-desktop .gd-auth .auth-form .input-wrapper:focus-within,
+html.glass-ui .g-auth .auth-form .input-wrapper:focus-within {
+  outline: none;
+  outline-offset: 0;
+  border: 0;
+  box-shadow: inset 0 0 0 2px #8fa6ff;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper:focus-within {
+  box-shadow: inset 0 0 0 2px rgba(var(--g-brand-rgb), 0.92);
+}
+
+.auth-form .input-wrapper .input-icon,
+html.glass-desktop .gd-auth .input-wrapper .input-icon,
+html.glass-ui .g-auth .auth-form .input-icon {
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  flex: 0 0 20px;
+  pointer-events: none;
+}
+
+.auth-form .input-wrapper > input,
+.auth-form .input-wrapper > input:hover,
+.auth-form .input-wrapper > input:focus,
+.auth-form .input-wrapper > input:focus-visible,
+html.glass-desktop .gd-auth .input-wrapper > input,
+html.glass-desktop .gd-auth .input-wrapper > input:hover,
+html.glass-desktop .gd-auth .input-wrapper > input:focus,
+html.glass-desktop .gd-auth .input-wrapper > input:focus-visible,
+html.glass-ui .g-auth .auth-form .input-wrapper > input,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:hover,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:focus,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:focus-visible {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0 14px 0 44px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
+  outline: none;
+  outline-offset: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  color: inherit;
+  caret-color: #8fa6ff;
+}
+
+.auth-form .input-wrapper.has-toggle > input,
+.auth-form .input-wrapper.has-toggle > input:focus,
+.auth-form .input-wrapper.has-toggle > input:focus-visible,
+html.glass-desktop .gd-auth .input-wrapper.has-toggle > input,
+html.glass-ui .g-auth .auth-form .input-wrapper.has-toggle > input {
+  padding-right: 48px;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper > input,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:focus,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:focus-visible {
+  caret-color: var(--g-brand-hi);
+  color: var(--g-t1);
+}
+
+.auth-form .input-wrapper > input:-webkit-autofill,
+.auth-form .input-wrapper > input:-webkit-autofill:hover,
+.auth-form .input-wrapper > input:-webkit-autofill:focus,
+.auth-form .input-wrapper > input:-webkit-autofill:focus-visible,
+.auth-form .input-wrapper > input:-webkit-autofill:active,
+html.glass-desktop .gd-auth .input-wrapper > input:-webkit-autofill,
+html.glass-desktop .gd-auth .input-wrapper > input:-webkit-autofill:focus,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:-webkit-autofill,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:-webkit-autofill:hover,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:-webkit-autofill:focus,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:-webkit-autofill:active,
+html.glass-ui .g-auth input:-webkit-autofill,
+html.glass-ui .g-auth input:-webkit-autofill:hover,
+html.glass-ui .g-auth input:-webkit-autofill:focus,
+html.glass-ui .g-auth input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f2f3f5;
+  caret-color: #8fa6ff;
+  border: 0;
+  outline: none;
+  transition: background-color 99999s ease-out 0s;
+  -webkit-box-shadow: 0 0 0 1000px #16181f inset;
+  box-shadow: 0 0 0 1000px #16181f inset;
+}
+
+html.glass-ui .g-auth .auth-form .input-wrapper > input:-webkit-autofill,
+html.glass-ui .g-auth .auth-form .input-wrapper > input:-webkit-autofill:focus,
+html.glass-ui .g-auth input:-webkit-autofill,
+html.glass-ui .g-auth input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--g-t1);
+  caret-color: var(--g-brand-hi);
+}
+
+.auth-form .input-wrapper .auth-password-toggle,
+html.glass-desktop .gd-auth .input-wrapper .auth-password-toggle,
+html.glass-ui .g-auth .auth-form .input-wrapper .auth-password-toggle {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 0 auto;
+  flex: 0 0 auto;
+}
+
+.auth-form .auth-otp-cells {
+  display: none;
+}
+
+/* Marketing and download modals use a bare input as the field. */
+.login-modal form > input:not([type="checkbox"]):not([type="radio"]),
+.login-modal .form-group input:not([type="checkbox"]):not([type="radio"]) {
+  border: 0;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+  outline: none;
+}
+
+.login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
+.login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+.login-modal .form-group input:not([type="checkbox"]):not([type="radio"]):focus,
+.login-modal .form-group input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
+body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+body:has(.mkt) .login-modal input:not([type="checkbox"]):not([type="radio"]):focus,
+body:has(.mkt) .login-modal input:not([type="checkbox"]):not([type="radio"]):focus-visible {
+  outline: none;
+  outline-offset: 0;
+  border: 0;
+  box-shadow: inset 0 0 0 2px #8fa6ff;
+}

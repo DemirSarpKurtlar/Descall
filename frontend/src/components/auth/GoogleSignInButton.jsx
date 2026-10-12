@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getGoogleAuthConfig } from "../../api/auth";
 import { useT } from "../../context/LocaleContext";
-import { isNativeIOS } from "../../lib/platform";
+import { isGoogleSignInOffered } from "../../lib/googleSignInOffer";
 
 const GIS_SRC = "https://accounts.google.com/gsi/client";
 
@@ -13,7 +13,7 @@ function loadGoogleScript() {
   if (existing) {
     return new Promise((resolve, reject) => {
       existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load Google script")));
+      existing.addEventListener("error", () => reject(new Error("google-script")));
       if (window.google?.accounts?.id) resolve();
     });
   }
@@ -24,7 +24,7 @@ function loadGoogleScript() {
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Google script"));
+    script.onerror = () => reject(new Error("google-script"));
     document.head.appendChild(script);
   });
 }
@@ -108,7 +108,12 @@ function GoogleSignInButtonInner({ onCredential, disabled = false, appearance = 
       } catch (err) {
         if (!cancelled) {
           setStatus("unavailable");
-          setError(err.message || t("Google Sign-In unavailable"));
+          const scriptFailed = err?.message === "google-script";
+          setError(
+            scriptFailed
+              ? t("Could not load Google sign-in. You can still sign in with your username and password.")
+              : t("Google Sign-In unavailable")
+          );
         }
       }
     }
@@ -145,8 +150,8 @@ function GoogleSignInButtonInner({ onCredential, disabled = false, appearance = 
   );
 }
 
-/** Google sign-in is web/desktop only; the native iOS app uses Sign in with Apple. */
+/** Web and Android. iOS uses Sign in with Apple. Electron's descall:// origin cannot load GIS. */
 export default function GoogleSignInButton(props) {
-  if (isNativeIOS()) return null;
+  if (!isGoogleSignInOffered()) return null;
   return <GoogleSignInButtonInner {...props} />;
 }

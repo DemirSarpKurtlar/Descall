@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import GoogleSignInButton from '../auth/GoogleSignInButton';
+import { isGoogleSignInOffered } from '../../lib/googleSignInOffer';
 import LegalContentModal from '../legal/LegalContentModal';
 import { fetchLatestDesktopRelease } from '../../lib/githubRelease';
 import { formatReleaseLabel } from '../../lib/releaseVersion';
@@ -515,6 +516,8 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             
             {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}
 
+            {isGoogleSignInOffered() && (
+              <>
             <GoogleSignInButton
               disabled={isSubmitting || authLoading || signupBlocked}
               onCredential={async (credential) => {
@@ -541,6 +544,8 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             <div className="auth-divider" aria-hidden="true">
               <span>{t("or")}</span>
             </div>
+              </>
+            )}
             
             <form onSubmit={async (e) => {
               e.preventDefault();
