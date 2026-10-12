@@ -13,6 +13,7 @@ import { BadgeIcon, NameEffectText, TitleTag } from "../ui/Cosmetics";
 import { getUserValorant } from "../../api/riot";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
+import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { isUserAdmin } from "../../lib/userProfile";
@@ -63,6 +64,7 @@ export default function UserProfileModal({
 }) {
   const t = useT();
   const glassShell = useGlassShell();
+  const glassDesktop = useGlassDesktop();
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
   const dismissV = useRef(0);
@@ -402,6 +404,7 @@ export default function UserProfileModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
+          className="user-profile-scrim"
           style={{
             position: "fixed",
             inset: 0,
@@ -421,6 +424,7 @@ export default function UserProfileModal({
             transition={{ type: "spring", damping: 26, stiffness: 360 }}
             className={[
               "user-profile-card",
+              glassDesktop ? "is-gd" : "",
               profile?.equippedProfileAura?.effect_key
                 ? `cosmetic-profile-aura aura-${profile.equippedProfileAura.effect_key}`
                 : "",
@@ -428,12 +432,13 @@ export default function UserProfileModal({
               .filter(Boolean)
               .join(" ")}
             style={{
-              width: 300,
+              width: glassDesktop ? 560 : 300,
+              maxWidth: glassDesktop ? "calc(100vw - 48px)" : undefined,
               // A purchased profile background shows through everywhere the card
               // isn't otherwise opaque, gently tinted so text stays legible.
               background: equippedBackgroundUrl
                 ? `linear-gradient(180deg, rgba(18,18,24,0.35) 0%, rgba(18,18,24,0.82) 65%, rgba(18,18,24,0.94) 100%), ${cssUrl(equippedBackgroundUrl)} center/cover no-repeat`
-                : "var(--surface-1)",
+                : (glassDesktop ? "transparent" : "var(--surface-1)"),
               boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
               border: "1px solid var(--border-3)",
               position: "relative",
@@ -446,17 +451,17 @@ export default function UserProfileModal({
 
             {/* Banner */}
             <ParallaxBanner
-              height={80}
+              height={glassDesktop ? 150 : 80}
               imageUrl={equippedBannerUrl ? cssUrl(equippedBannerUrl) : null}
               fallbackStyle={{ background: bannerGradient }}
               strength={12}
             />
 
             {/* Avatar overlapping banner */}
-            <div className="user-profile-card-top" style={{ position: "relative", padding: "0 16px" }}>
+            <div className={`user-profile-card-top${glassDesktop ? " is-gd" : ""}`} style={glassDesktop ? undefined : { position: "relative", padding: "0 16px" }}>
               <div
                 className="profile-avatar-shell"
-                style={{
+                style={glassDesktop ? undefined : {
                   position: "absolute",
                   top: -36,
                   left: 16,
@@ -464,15 +469,17 @@ export default function UserProfileModal({
               >
                 <Avatar
                   name={displayName}
-                  size={72}
+                  size={glassDesktop ? 104 : 72}
                   user={profile || { avatarUrl: displayAvatar, username: displayUsername, displayName }}
                 />
                 {/* No presence-flare on the corner dot — its glow skews the avatar ring. */}
                 <StatusBadge status={status} />
               </div>
 
-              {/* Spacer clears avatar + frame/effect overflow (~16% each side). */}
+              {glassDesktop ? null : (
+              /* Spacer clears avatar + frame/effect overflow (~16% each side). */
               <div style={{ height: 56 }} />
+              )}
 
               <div className="user-profile-identity">
                 <div className="user-profile-name-row">
@@ -505,12 +512,61 @@ export default function UserProfileModal({
                     style={{ background: STATUS_COLOR[status] || STATUS_COLOR.offline }}
                   />
                   {statusLabel}
+                  {glassDesktop && valorant?.linked ? <ValorantBadge valorant={valorant} /> : null}
                 </div>
               </div>
 
               {/* Divider */}
-              <div style={{ height: 1, background: "var(--border-2)", margin: "0 -16px 12px" }} />
+              <div className="user-profile-divider" style={{ height: 1, background: "var(--border-2)", margin: "0 -16px 12px" }} />
 
+              {glassDesktop ? (
+                <div className="user-profile-about">
+                  {(profile?.bio) ? (
+                    <div className="user-profile-about-row">
+                      <div className="user-profile-about-label">{t("About me")}</div>
+                      <div>{profile.bio}</div>
+                    </div>
+                  ) : null}
+                  {customStatus ? (
+                    <div className="user-profile-about-row">
+                      <div className="user-profile-about-label">{t("Custom status")}</div>
+                      <div>{customStatus}</div>
+                    </div>
+                  ) : null}
+                  <div className="user-profile-about-split">
+                    {memberSince ? (
+                      <div>
+                        <div className="user-profile-about-label">{t("Member Since")}</div>
+                        <div>{formatMemberSince(memberSince, t, locale)}</div>
+                      </div>
+                    ) : null}
+                    {!isSelf && mutualFriends.length > 0 ? (
+                      <div>
+                        <div className="user-profile-about-label">{t("Mutual Friends")}</div>
+                        <div className="user-profile-mutual">
+                          <div className="user-profile-mutual-faces">
+                            {mutualFriends.slice(0, 3).map((f, i) => (
+                              <span key={f.id} style={{ marginLeft: i === 0 ? 0 : -8, zIndex: 4 - i }}>
+                                <Avatar name={f.username} size={24} user={f} />
+                              </span>
+                            ))}
+                          </div>
+                          <span>
+                            {mutualFriends.length === 1
+                              ? (mutualFriends[0].displayName || mutualFriends[0].username)
+                              : t("{name} and {count} others", {
+                                  name: mutualFriends[0].displayName || mutualFriends[0].username,
+                                  count: mutualFriends.length - 1,
+                                })}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="user-profile-legacy-meta">
               {valorant?.linked && (
                 <div style={{ marginBottom: 14 }}>
                   <div
@@ -615,12 +671,14 @@ export default function UserProfileModal({
                   </div>
                 </div>
               )}
+              </div>
 
               {/* Action buttons (skip for self) */}
               {!isSelf && (
-                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <div className="user-profile-actions" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                   {/* Add / Remove Friend button */}
                   <motion.button
+                    className="user-profile-friend"
                     whileTap={{ scale: 0.96 }}
                     onClick={friendState === "friend" ? handleRemoveFriend : handleAddFriend}
                     disabled={friendLoading || friendState === "sent"}
@@ -677,6 +735,7 @@ export default function UserProfileModal({
 
                   {/* Message button */}
                   <motion.button
+                    className="user-profile-msg"
                     whileTap={{ scale: 0.96 }}
                     onClick={() => { onStartDm?.({ id: userId, username: displayUsername, avatarUrl: displayAvatar }); onClose(); }}
                     style={{
@@ -698,6 +757,7 @@ export default function UserProfileModal({
                     title={t("Send Message")} aria-label={t("Send Message")}
                   >
                     <MessageSquare size={16} />
+                    {glassDesktop ? <span>{t("Send Message")}</span> : null}
                   </motion.button>
                 </div>
               )}

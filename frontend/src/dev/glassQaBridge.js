@@ -5,7 +5,7 @@
  * Nothing here runs unless the page dispatches `descall:glass-qa`.
  */
 
-function paint(color, label) {
+function paint(color, label, kind) {
   const canvas = document.createElement("canvas");
   canvas.width = 640;
   canvas.height = 360;
@@ -17,14 +17,28 @@ function paint(color, label) {
     if (!ctx) return;
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "rgba(255,255,255,0.16)";
-    ctx.beginPath();
-    ctx.ellipse(320, 168, 78, 92, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.beginPath();
-    ctx.ellipse(320, 340, 150, 90, 0, Math.PI, 0, true);
-    ctx.fill();
+    if (kind === "screen") {
+      ctx.fillStyle = "rgba(255,255,255,0.10)";
+      ctx.fillRect(48, 36, 120, 170);
+      ctx.fillStyle = "rgba(0,0,0,0.28)";
+      ctx.fillRect(430, 58, 150, 28);
+      ctx.fillRect(450, 108, 120, 28);
+      ctx.fillStyle = "rgba(216,164,135,0.85)";
+      ctx.beginPath();
+      ctx.ellipse(500, 150, 42, 50, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(0, 280, canvas.width, 80);
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,0.16)";
+      ctx.beginPath();
+      ctx.ellipse(320, 168, 78, 92, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.beginPath();
+      ctx.ellipse(320, 340, 150, 90, 0, Math.PI, 0, true);
+      ctx.fill();
+    }
     void label;
   };
   draw();
@@ -110,16 +124,29 @@ export function bindGroupCallQa(api) {
     api.setIsCameraOn(detail.cameraOn !== false);
     api.setIsMuted(false);
     api.setDuration(detail.durationSeconds ?? 502);
-    const local = paint(detail.localColor || "#3d4e8a", detail.localLabel || "Sen");
+    document.documentElement.dataset.glassQaSpeaking = "1";
+    const local = paint(detail.localColor || "#1f2a44", detail.localLabel || "Sen");
     if (api.localStreamRef) api.localStreamRef.current = local;
     api.setLocalStream(local);
     const people = Array.isArray(detail.participants) ? detail.participants : [];
-    api.setParticipants(people.map((person, index) => ({
-      ...person,
-      isCameraOn: person.isCameraOn !== false,
-      isMuted: Boolean(person.isMuted),
-      stream: person.stream || paint(person.color || ["#5a3d6e", "#2f6b4f", "#6b4a2f"][index % 3], person.displayName || person.username || ""),
-    })));
+    api.setParticipants(people.map((person, index) => {
+      const cameraOff = person.isCameraOn === false;
+      const screen = person.screen
+        ? paint(person.screenColor || "#4a3566", person.screenLabel || "", "screen")
+        : null;
+      return {
+        ...person,
+        isCameraOn: !cameraOff,
+        isMuted: Boolean(person.isMuted),
+        isDeafened: Boolean(person.isDeafened),
+        isHandRaised: Boolean(person.isHandRaised),
+        isScreenSharing: Boolean(screen),
+        screenStream: screen,
+        stream: cameraOff
+          ? null
+          : (person.stream || paint(person.color || ["#5a3d6e", "#2f6b4f", "#6b4a2f"][index % 3], person.displayName || person.username || "")),
+      };
+    }));
   });
 }
 

@@ -28,6 +28,7 @@ import VoiceMemberContextMenu from "./servers/VoiceMemberContextMenu";
 import UserProfileModal from "./social/UserProfileModal";
 import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
 import useGlassUi from "../hooks/useGlassUi";
+import { useGlassDesktop } from "../hooks/useGlassDesktop";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
 import { copyText } from "../lib/copyText";
 
@@ -124,6 +125,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const [copiedInfo, setCopiedInfo] = useState(false);
   const narrowViewport = useIsNarrowViewport(720);
   const glass = useGlassUi();
+  const glassDesktop = useGlassDesktop();
   const moreMenuRef = useRef(null);
   const audioPanelRef = useRef(null);
   const screenQualityAnchorRef = useRef(null);
@@ -480,6 +482,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
     })),
   ];
   const anyScreenShare = allScreenSharers.length > 0;
+  const desktopGroupLine = glassDesktop && !isDm
+    ? `${formattedDuration ? `${formattedDuration} · ` : ""}${callType === "video" ? t("Video call") : t("Voice call")}`
+    : "";
 
   return (
     <>
@@ -557,14 +562,14 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       >
         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 4, minWidth: 0, pointerEvents: "auto" }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>{title}</span>
-          {anyScreenShare && (
+          {anyScreenShare && !desktopGroupLine && (
             <span style={{ background: "#3ba55d", color: "#fff", fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4 }}>
               <Monitor size={12} />
               {t("Presenting")}
             </span>
           )}
           <span style={{ fontSize: 13, color: "#b5bac1" }}>
-            {subtitle}{formattedDuration ? ` · ${formattedDuration}` : ""}
+            {desktopGroupLine || `${subtitle}${formattedDuration ? ` · ${formattedDuration}` : ""}`}
           </span>
           {isDm && mode === "active" && (
             <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
@@ -1641,6 +1646,8 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
    ───────────────────────────────────────────────────────────────── */
 function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded, isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, localUsername, localAvatarUrl, localUser = null, narrow = false, screenShareVolume = 100, onScreenShareVolumeChange, screenVolumes = {}, onScreenVolumeForSharer, onOpenUserMenu }) {
   const t = useT();
+  const glassDesktop = useGlassDesktop();
+  const mosaic = glassDesktop && !isDm;
   const [selectedSharerIndex, setSelectedSharerIndex] = useState(0);
   const [viewerCount] = useState(0);
   // Keep refs to both the normal and expanded video elements so we can set srcObject on each
@@ -1728,7 +1735,9 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
   }, [screenStream, attachStream]);
 
   const sharerLabel = activeSharer
-    ? (activeSharer.isLocal ? t("Your Screen") : t("{name}'s Screen", { name: activeSharer.username }))
+    ? (mosaic
+      ? (activeSharer.isLocal ? localUsername : (activeSharer.username || ""))
+      : (activeSharer.isLocal ? t("Your Screen") : t("{name}'s Screen", { name: activeSharer.username })))
     : "";
 
   // Strip tiles: all participants + local self
@@ -1762,10 +1771,14 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
   const stripH = narrow ? 72 : 110;
   const tileW = narrow ? 112 : 160;
   const tileH = narrow ? 64 : 100;
+  const mosaicSharerId = mosaic && activeSharer && !activeSharer.isLocal ? String(activeSharer.id) : null;
+  const visibleStrip = mosaicSharerId
+    ? stripTiles.filter((tile) => String(tile.id) !== mosaicSharerId)
+    : stripTiles;
 
   return (
     <div
-      className="call-screen-share-layout"
+      className={`call-screen-share-layout${mosaic ? " gd-group-mosaic" : ""}`}
       style={{
         flex: 1,
         display: "flex",
@@ -1826,6 +1839,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 
         {/* Sharer name label — top-left */}
         <div
+          className="gd-share-label"
           style={{
             position: "absolute",
             top: 12,
@@ -1840,7 +1854,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Monitor size={13} color="#3ba55d" />
+          {mosaic ? <span className="speaking-dot" /> : <Monitor size={13} color="#3ba55d" />}
           <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{sharerLabel}</span>
           {viewerCount > 0 && (
             <span style={{ fontSize: 11, color: "#b5bac1", marginLeft: 4 }}>
@@ -1852,6 +1866,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 
         {!activeSharer?.isLocal && (
           <label
+            className="gd-mosaic-chrome"
             style={{
               position: "absolute",
               top: 12,
@@ -1887,6 +1902,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 
         {/* Expand/collapse hint — bottom-center */}
         <div
+          className="gd-mosaic-chrome"
           style={{
             position: "absolute",
             bottom: 10,
@@ -1987,7 +2003,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {stripTiles.map((tile) => {
+        {visibleStrip.map((tile) => {
           const videoRef = tile.isLocal
             ? (isDm ? call?.localVideoRef : groupCall?.localVideoRef)
             : null;
@@ -2005,7 +2021,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                 muted={tile.muted}
                 deafened={tile.deafened}
                 cameraOn={tile.cameraOn}
-                small
+                small={!mosaic}
                 onContextMenu={
                   tile.isLocal
                     ? undefined

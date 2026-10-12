@@ -97,8 +97,152 @@ html.glass-desktop .profile-card-large {
   color: var(--gd-t1);
 }
 
-html.glass-desktop.gd-lite .user-hover-card {
+html.glass-desktop.gd-lite .user-hover-card,
+html.glass-desktop.gd-lite .user-profile-card.is-gd {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: var(--gd-solid-heavy);
+}
+
+html.glass-desktop.gd-lite .user-profile-scrim {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: rgba(5, 6, 10, 0.72) !important;
+}
+
+html.glass-desktop .user-profile-scrim {
+  background: rgba(5, 6, 10, 0.46) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(120%) !important;
+  backdrop-filter: blur(6px) saturate(120%) !important;
+}
+
+html.glass-desktop .user-profile-card.is-gd {
+  width: 560px !important;
+  max-width: calc(100vw - 48px);
+  border-radius: 28px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(22, 24, 36, 0.78) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+}
+
+html.glass-desktop .user-profile-card-top.is-gd {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 0 24px 22px;
+  margin-top: -52px;
+  position: relative;
+}
+
+html.glass-desktop .user-profile-card-top.is-gd .profile-avatar-shell {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  align-self: end;
+}
+
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-actions {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  justify-content: flex-end;
+  margin: 0 0 8px !important;
+}
+
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-identity,
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-about,
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-safety-row {
+  grid-column: 1 / -1;
+}
+
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-divider,
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-legacy-meta {
+  display: none;
+}
+
+html.glass-desktop .user-profile-card.is-gd .user-profile-name-row {
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+html.glass-desktop .user-profile-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+html.glass-desktop .user-profile-actions .user-profile-msg {
+  order: -1;
+  width: auto !important;
+  flex: 0 0 auto !important;
+  height: 36px;
+  padding: 0 14px !important;
+  border-radius: 18px !important;
+  background: var(--gd-brand) !important;
+  color: #fff !important;
+  font-weight: 650;
+}
+
+html.glass-desktop .user-profile-actions .user-profile-friend {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  height: 36px;
+  padding: 0 14px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #7ee2a0 !important;
+}
+
+html.glass-desktop .user-profile-about {
+  margin-top: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+html.glass-desktop .user-profile-about-row,
+html.glass-desktop .user-profile-about-split > div {
+  padding: 14px 16px;
+}
+
+html.glass-desktop .user-profile-about-split {
+  display: flex;
+  gap: 8px;
+}
+
+html.glass-desktop .user-profile-about-split > div {
+  flex: 1;
+  min-width: 0;
+}
+
+html.glass-desktop .user-profile-about-label {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .user-profile-mutual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .user-profile-mutual-faces {
+  display: flex;
+  flex-shrink: 0;
+}
+
+html.glass-desktop .user-profile-safety-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
 }

@@ -68,6 +68,8 @@ const AYSE = user("u-ayse", "ayse", "Ayşe Yılmaz", {
   status: "online",
   bio: "Rank atarım, sonra çay.",
   customStatus: "🎮 Rekabetçi",
+  created_at: "2025-03-14T12:00:00.000Z",
+  createdAt: "2025-03-14T12:00:00.000Z",
   valorant: { riotId: "ayse#TR1", rank: "Diamond 2", rankTier: "Diamond 2", rankRr: 42, region: "eu" },
 });
 const MERT = user("u-mert", "mertk", "Mert K.", { status: "idle", customStatus: "☕ Molada" });
@@ -469,7 +471,23 @@ function install(fixture) {
     if (pathname === "/api/friends/requests" || pathname === "/friends/requests") return json({ requests: fixture.requests });
     if (pathname.startsWith("/api/friends/suggestions")) return json({ suggestions: fixture.suggestions });
     if (pathname === "/api/friends/blocked") return json({ blocked: [] });
-    if (pathname.startsWith("/friends/mutual/")) return json({ mutualFriends: [fixture.users["u-can"], fixture.users["u-mert"]] });
+    if (pathname.startsWith("/friends/mutual/")) return json({ mutualFriends: [fixture.users["u-mert"], fixture.users["u-elif"], fixture.users["u-can"]] });
+    const lfgOne = pathname.match(/^\/(?:api\/)?lfg\/lobbies\/([^/]+)$/);
+    if (lfgOne) {
+      const lobby = fixture.lobbies.find((row) => row.id === decodeURIComponent(lfgOne[1])) || fixture.lobbies[0];
+      return json({
+        lobby: {
+          ...lobby,
+          members: [
+            { userId: "u-ayse", username: "Ayşe Yılmaz", rank: "Diamond 1", role: "Controller" },
+            { userId: "u-demir", username: "Demir Sarp", rank: "Platinum 3", role: "Duelist" },
+            { userId: "u-mert", username: "Mert K.", rank: "Platinum 2", role: "Initiator" },
+          ],
+        },
+        isMember: false,
+        isHost: false,
+      });
+    }
     if (pathname === "/api/dm/previews") return json({ dmPreviewsByPeer: fixture.sync.dmPreviewsByPeer, dmLastActivityByPeer: fixture.sync.dmLastActivityByPeer });
     if (pathname === "/api/dm/prefs") return json({ prefs: [] });
     const dm = pathname.match(/^\/api\/dm\/([^/]+)\/messages/);
@@ -625,7 +643,13 @@ const FRAMES = [
       groupId: GROUP.id,
       callType: "video",
       durationSeconds: 1116,
-      participants: [AYSE, MERT, ZEYNEP].map((u, i) => ({ ...u, color: ["#5a3d6e", "#2f6b4f", "#6b4a2f"][i] })),
+      participants: [
+        { ...AYSE, screen: true, screenLabel: "Ayşe ekranı", screenColor: "#4a3566", isCameraOn: false },
+        { ...MERT, isMuted: true, isCameraOn: false },
+        { ...ELIF, isHandRaised: true, isCameraOn: false },
+        { ...BURAK, isMuted: true, isDeafened: true, isCameraOn: false },
+        { ...SELIN, isCameraOn: false },
+      ],
     });
     await waitFor(page, ".call-overlay-root");
   } },
@@ -695,7 +719,9 @@ const FRAMES = [
   } },
   { id: "15-play-lfg", path: "/play?glass-desktop=1", ready: ".nav-rail", drive: async (page) => {
     await clickLabel(page, "LFG");
-    await page.waitForFunction(() => document.body.innerText.includes("Rekabetçi") || document.body.innerText.includes("Competitive") || document.querySelector(".lfg-lobby-card"), { timeout: 8000 }).catch(() => {});
+    await waitFor(page, ".lfg-lobby-card");
+    await page.click(".lfg-lobby-card");
+    await page.waitForFunction(() => document.body.innerText.includes("Oyuncular") || document.body.innerText.includes("Players") || document.querySelector(".lfg-detail"), { timeout: 8000 }).catch(() => {});
   } },
   { id: "16-activity", path: "/activity?glass-desktop=1", ready: ".activity-view, .activity-view-title" },
   { id: "17-calls", path: "/calls?glass-desktop=1", ready: ".calls-row, .calls-list, .calls-section" },

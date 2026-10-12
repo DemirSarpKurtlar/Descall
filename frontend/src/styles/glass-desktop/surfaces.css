@@ -2,14 +2,17 @@
    Visual only. Layout, data, and iOS glass stay as they are. */
 
 html.glass-desktop .user-panel-backdrop {
-  display: none !important;
+  display: block !important;
+  background: rgba(5, 6, 10, 0.46) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
 }
 
 html.glass-desktop .user-settings-shell.is-desktop {
-  top: 8px !important;
-  right: 8px !important;
-  bottom: 8px !important;
-  left: calc(8px + var(--nav-rail-width) + 8px + var(--sidebar-width) + 8px) !important;
+  top: 68px !important;
+  right: 72px !important;
+  bottom: 28px !important;
+  left: 72px !important;
   width: auto !important;
   height: auto !important;
   padding: 0 !important;
@@ -22,29 +25,56 @@ html.glass-desktop .user-settings-shell.is-desktop {
   color: var(--gd-t1);
 }
 
-html.glass-desktop .app-root[data-view="play"] .user-settings-shell.is-desktop {
-  left: calc(8px + var(--nav-rail-width) + 8px) !important;
-}
-
 html.glass-desktop .user-settings.is-desktop,
 html.glass-desktop .user-settings.is-desktop.is-shop-open {
   width: 100% !important;
   height: 100% !important;
+  max-width: none !important;
   max-height: none !important;
   border: none !important;
-  border-radius: 24px !important;
+  border-radius: 30px !important;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)),
-    rgba(18, 20, 30, 0.55) !important;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(18, 20, 30, 0.72) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
   color: var(--gd-t1);
 }
 
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
-  width: 232px;
-  background: transparent !important;
+  width: 264px;
+  background: rgba(255, 255, 255, 0.035) !important;
   border: none;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 1100px) {
+  html.glass-desktop .user-settings-shell.is-desktop {
+    top: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    left: 16px !important;
+  }
+
+  html.glass-desktop .user-settings.is-desktop .us-sidebar {
+    width: 200px;
+  }
+
+  html.glass-desktop .user-settings.is-shop-open .shop-wallet-bar {
+    position: static !important;
+    align-self: flex-end;
+    margin: 0 8px 8px auto;
+  }
+
+  html.glass-desktop .user-settings.is-shop-open .us-main-header {
+    padding-right: 56px;
+  }
+
+  html.glass-desktop .shop-grid {
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  }
 }
 
 html.glass-desktop .us-nav-group-label {
@@ -223,16 +253,53 @@ html.glass-desktop .app-root[data-view="play"] .valorant-hub {
   color: var(--gd-t1);
 }
 
-html.glass-desktop .lfg-sidebar,
 html.glass-desktop .activity-view-section,
 html.glass-desktop .shop-card,
-html.glass-desktop .lfg-card,
-html.glass-desktop .lfg-lobby-card {
+html.glass-desktop .lfg-card {
   border: none;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
   color: var(--gd-t1);
+}
+
+html.glass-desktop .valorant-hub-header,
+html.glass-desktop .valorant-hub-body,
+html.glass-desktop .valorant-hub-panel {
+  background: transparent !important;
+  border-color: transparent;
+}
+
+html.glass-desktop .lfg-workspace {
+  gap: 10px;
+  padding: 10px 10px 10px 0;
+  background: transparent !important;
+}
+
+html.glass-desktop .lfg-sidebar,
+html.glass-desktop .lfg-main {
+  border: none !important;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045)),
+    rgba(36, 42, 64, 0.55) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+  color: var(--gd-t1);
+  min-height: 0;
+}
+
+html.glass-desktop .lfg-lobby-card {
+  border: none;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .lfg-lobby-card.active,
+html.glass-desktop .lfg-lobby-card:hover {
+  background: rgba(88, 122, 246, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.55);
 }
 
 html.glass-desktop .shop-wallet-bar {
@@ -253,9 +320,18 @@ html.glass-desktop .shop-panel-intro {
 html.glass-desktop.gd-lite .toast-item,
 html.glass-desktop.gd-lite .status-picker,
 html.glass-desktop.gd-lite .status-picker-portal,
-html.glass-desktop.gd-lite .conv-confirm-card {
+html.glass-desktop.gd-lite .conv-confirm-card,
+html.glass-desktop.gd-lite .user-settings.is-desktop,
+html.glass-desktop.gd-lite .user-panel-backdrop,
+html.glass-desktop.gd-lite .lfg-sidebar,
+html.glass-desktop.gd-lite .lfg-main {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+
+html.glass-desktop.gd-lite .user-settings.is-desktop,
+html.glass-desktop.gd-lite .lfg-sidebar,
+html.glass-desktop.gd-lite .lfg-main {
   background: var(--gd-solid-heavy) !important;
 }
 
@@ -285,6 +361,29 @@ html.glass-desktop .user-settings.is-shop-open .shop-profile-stage {
 
 html.glass-desktop .user-settings.is-shop-open .us-main {
   position: relative;
+}
+
+html.glass-desktop .user-settings.is-shop-open .us-main-scroll,
+html.glass-desktop .user-settings.is-shop-open .shop-main {
+  min-height: 0;
+  overflow: hidden;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-catalog {
+  overflow: auto;
+  min-height: 0;
+  padding-bottom: 20px;
+}
+
+html.glass-desktop .user-settings.is-shop-open .shop-catalog > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.glass-desktop .shop-category-block h4 {
+  position: static;
+  margin: 14px 0 10px;
+  clear: both;
 }
 
 html.glass-desktop .user-settings.is-shop-open .shop-wallet-bar {
