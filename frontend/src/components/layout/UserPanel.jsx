@@ -2701,23 +2701,6 @@ const UserPanel = forwardRef(function UserPanel({
         <div className="us-sidebar-top">
           <div className="us-sidebar-brand">
             <div>
-              {glassShell && isMobile && (
-                <button
-                  type="button"
-                  className="g-settings-me"
-                  aria-label={t("Your status")}
-                  onClick={() => window.dispatchEvent(new CustomEvent("descall:glass-status-open"))}
-                >
-                  <span className="g-settings-me-av">
-                    <Avatar
-                      name={me?.username || t("User")}
-                      size={38}
-                      user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-                    />
-                    <StatusBadge status={myStatus || "online"} />
-                  </span>
-                </button>
-              )}
               <h2>{glassShell && isMobile ? t("Settings") : t("settings.title")}</h2>
               <p>{t("Manage your Descall account")}</p>
             </div>
