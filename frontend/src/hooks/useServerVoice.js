@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Room, RoomEvent, Track } from "livekit-client";
 import { preloadIceServers } from "../lib/iceConfig";
+import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
@@ -33,6 +33,12 @@ import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
 import { primeVoiceActivity } from "../lib/voiceActivity";
+
+let liveKitApiPromise = null;
+function loadLiveKit() {
+  if (!liveKitApiPromise) liveKitApiPromise = import("livekit-client");
+  return liveKitApiPromise;
+}
 
 const CAMERA_CONSTRAINTS = {
   audio: false,
@@ -131,6 +137,31 @@ export function useServerVoice(socket) {
   useEffect(() => {
     activeChannelIdRef.current = activeChannelId;
     if (activeChannelId) lastVoiceChannelIdRef.current = activeChannelId;
+  }, [activeChannelId]);
+
+  // wifi ↔ cellular (and coming back online) while a voice channel is open.
+  useEffect(() => {
+    if (!activeChannelId) return undefined;
+    return subscribeNetworkChange(() => {
+      const room = liveKitRoomRef.current;
+      if (room?.engine?.attemptReconnect) {
+        try {
+          room.engine.attemptReconnect();
+        } catch {
+          /* LiveKit also retries from its own connection monitor */
+        }
+        return;
+      }
+      for (const peerData of pcMapRef.current.values()) {
+        const pc = peerData?.pc;
+        if (!pc || pc.connectionState === "closed") continue;
+        try {
+          pc.restartIce();
+        } catch {
+          /* ignore */
+        }
+      }
+    });
   }, [activeChannelId]);
 
   useEffect(() => {
@@ -323,6 +354,7 @@ export function useServerVoice(socket) {
   const connectLiveKitRoom = useCallback(
     async (channelId, tokenData, stream) => {
       if (!tokenData?.enabled || !tokenData?.livekitUrl || !tokenData?.token) return false;
+      const { Room, RoomEvent, Track } = await loadLiveKit();
       const room = new Room({ adaptiveStream: true, dynacast: true });
       room.on(RoomEvent.ParticipantDisconnected, (participant) => {
         cleanupPeer(participant.identity);
@@ -843,6 +875,7 @@ export function useServerVoice(socket) {
       localStreamRef.current = stream;
       setLocalStream(stream);
       if (sfuModeRef.current && liveKitRoomRef.current && track) {
+        const { Track } = await loadLiveKit();
         await liveKitRoomRef.current.localParticipant.publishTrack(track, {
           source: Track.Source.Microphone,
         });
@@ -1063,6 +1096,7 @@ export function useServerVoice(socket) {
       }
 
       if (sfuModeRef.current && liveKitRoomRef.current) {
+        const { Track } = await loadLiveKit();
         await liveKitRoomRef.current.localParticipant.publishTrack(screenTrack, {
           source: Track.Source.ScreenShare,
         });
@@ -1168,6 +1202,7 @@ export function useServerVoice(socket) {
         socket.emit("server:voice:media-state", { channelId, muted: mutedRef.current, cameraOn: true, deafened: deafenedRef.current });
       }
       if (sfuModeRef.current && liveKitRoomRef.current) {
+        const { Track } = await loadLiveKit();
         await liveKitRoomRef.current.localParticipant.publishTrack(cameraTrack, {
           source: Track.Source.Camera,
         });
@@ -1244,6 +1279,7 @@ export function useServerVoice(socket) {
       setNoiseSuppressedTrackEnabled(!mutedRef.current && !serverMutedRef.current);
       newTrack.enabled = !mutedRef.current && !serverMutedRef.current;
       if (sfuModeRef.current && liveKitRoomRef.current) {
+        const { Track } = await loadLiveKit();
         const pubs = liveKitRoomRef.current.localParticipant.audioTrackPublications;
         for (const pub of pubs.values()) {
           if (pub.source === Track.Source.Microphone && pub.track?.replaceTrack) {
@@ -1293,6 +1329,7 @@ export function useServerVoice(socket) {
       cameraStreamRef.current = stream;
       setCameraStream(stream);
       if (sfuModeRef.current && liveKitRoomRef.current) {
+        const { Track } = await loadLiveKit();
         const pubs = liveKitRoomRef.current.localParticipant.videoTrackPublications;
         let replaced = false;
         for (const pub of pubs.values()) {

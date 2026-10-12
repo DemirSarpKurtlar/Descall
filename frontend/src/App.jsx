@@ -35,6 +35,7 @@ import {
   hydrateChatCache,
   schedulePersistChatCache,
   reconcileHistoryWindow,
+  isOptimistic,
   newestCursor,
   peekChatCache,
 } from "./lib/chatCache";
@@ -103,10 +104,7 @@ import {
 import { applyRemoteGlassFlag } from "./lib/glassUi";
 import { applyRemoteGlassDesktopFlag, shouldPreviewDesktopAuth, syncGlassDesktop } from "./lib/glassDesktop";
 import { parseAppDate } from "./lib/datetime";
-import AdminPanel from "./components/admin/AdminPanel";
-import ShopGiftPopup from "./components/shop/ShopGiftPopup";
-import DesCoinGiftPopup from "./components/shop/DesCoinGiftPopup";
-import AdminBroadcastPopup from "./components/admin/AdminBroadcastPopup";
+import { preloadWhenIdle } from "./lib/preloadIdle";
 import TitleBar from "./components/TitleBar";
 import UpdateNotes from "./components/UpdateNotes";
 import ElectronUpdateToast from "./components/ElectronUpdateToast";
@@ -114,12 +112,16 @@ import MessageList from "./components/chat/MessageList";
 import { profanityMaskingActive, setExtraProfanityWords } from "./lib/profanity";
 import { isBlockedByMe, setBlockedUserIds } from "./lib/blockedUsers";
 import MessageComposer from "./components/chat/MessageComposer";
-import CallOverlay from "./components/CallOverlay";
-import GroupCallIncomingModal from "./components/GroupCallIncomingModal";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
+const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
+const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
+const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
+const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
+const CallOverlay = lazy(() => import("./components/CallOverlay"));
+const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
   const ids = new Set(existing.map((m) => m.id));
@@ -526,6 +528,18 @@ export default function App() {
   // Native iOS only (CallKit + VoIP push); a no-op everywhere else.
   useIosCallKitBridge({ call, socket: socketApi, meId: me?.id });
   const groupCall = useGroupCall(socketApi, me?.id, callOccupancyRef);
+  const [callUiReady, setCallUiReady] = useState(false);
+  useEffect(
+    () =>
+      preloadWhenIdle(
+        [
+          () => import("./components/CallOverlay"),
+          () => import("./components/GroupCallIncomingModal"),
+        ],
+        () => setCallUiReady(true)
+      ),
+    []
+  );
   const serverVoice = useServerVoice(socketApi);
   // Electron always-on-top voice overlay — mirrors whichever surface (DM
   // call / group hangout / server voice) is currently active.
@@ -3018,7 +3032,15 @@ export default function App() {
       return next;
     });
     const msgs = channelMessagesById[activeChannel.id];
-    const lastMsg = Array.isArray(msgs) && msgs.length ? msgs[msgs.length - 1] : null;
+    let lastMsg = null;
+    if (Array.isArray(msgs)) {
+      for (let i = msgs.length - 1; i >= 0; i -= 1) {
+        if (msgs[i]?.id && !isOptimistic(msgs[i])) {
+          lastMsg = msgs[i];
+          break;
+        }
+      }
+    }
     markChannelRead(activeServer.id, activeChannel.id, {
       lastReadMessageId: lastMsg?.id || null,
     }).catch((err) => console.warn("[App] mark channel read failed:", err?.message || err));
@@ -4481,33 +4503,41 @@ export default function App() {
           onLogout={handleLogout}
         />
         {(me?.is_admin || me?.username === "admin") && adminOpen && (
-          <AdminPanel socket={socketApi} viewerUsername={me?.username} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
+          <Suspense fallback={null}>
+            <AdminPanel socket={socketApi} viewerUsername={me?.username} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
+          </Suspense>
         )}
 
         {shopGift && (
-          <ShopGiftPopup
-            gift={shopGift}
-            onDismiss={() => setShopGift(null)}
-            onEquipped={async () => {
-              try {
-                const token = getToken();
-                const { user } = await getMe(token);
-                applyProfileUpdate(user);
-              } catch { /* best-effort */ }
-              setShopGift(null);
-            }}
-          />
+          <Suspense fallback={null}>
+            <ShopGiftPopup
+              gift={shopGift}
+              onDismiss={() => setShopGift(null)}
+              onEquipped={async () => {
+                try {
+                  const token = getToken();
+                  const { user } = await getMe(token);
+                  applyProfileUpdate(user);
+                } catch { /* best-effort */ }
+                setShopGift(null);
+              }}
+            />
+          </Suspense>
         )}
 
         {descoinGift && (
-          <DesCoinGiftPopup gift={descoinGift} onDismiss={() => setDescoinGift(null)} />
+          <Suspense fallback={null}>
+            <DesCoinGiftPopup gift={descoinGift} onDismiss={() => setDescoinGift(null)} />
+          </Suspense>
         )}
 
         {adminPopupQueue[0] && (
-          <AdminBroadcastPopup
-            popup={adminPopupQueue[0]}
-            onDismiss={() => setAdminPopupQueue((prev) => prev.slice(1))}
-          />
+          <Suspense fallback={null}>
+            <AdminBroadcastPopup
+              popup={adminPopupQueue[0]}
+              onDismiss={() => setAdminPopupQueue((prev) => prev.slice(1))}
+            />
+          </Suspense>
         )}
 
         {/* NEW MODULAR LAYOUT SYSTEM */}
@@ -5068,13 +5098,17 @@ export default function App() {
             }
           />
         </AppLayout>
-        <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} />
+        {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
+          <Suspense fallback={null}>
+            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} />
+            <GroupCallIncomingModal
+              incomingCall={groupCall?.incomingCall}
+              onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
+              onDecline={(groupId, fromUserId, fromUser, callType) => groupCall?.declineCall(groupId, fromUserId, fromUser, callType)}
+            />
+          </Suspense>
+        ) : null}
         <GlassConfirmHost />
-        <GroupCallIncomingModal
-          incomingCall={groupCall?.incomingCall}
-          onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
-          onDecline={(groupId, fromUserId, fromUser, callType) => groupCall?.declineCall(groupId, fromUserId, fromUser, callType)}
-        />
         {IOS_NATIVE && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />

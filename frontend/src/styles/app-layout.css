@@ -4941,3 +4941,12 @@ body.electron-app .modal-backdrop {
   z-index: 100050 !important;
 }
 
+/* Background tab: stop blur and looping motion. Visible UI is unchanged. */
+html.g-theme-paused *,
+html.g-theme-paused *::before,
+html.g-theme-paused *::after {
+  animation-play-state: paused !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+

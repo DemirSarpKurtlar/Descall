@@ -1,15 +1,14 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X, MessageSquare, Users, Phone, Activity, Settings, Crosshair, Server } from "lucide-react";
 import NavigationRail from "./NavigationRail";
 import ServerSidebar from "./ServerSidebar";
 import ServersSidebar from "../servers/ServersSidebar";
 import ChatPanel from "./ChatPanel";
-import UserPanel from "./UserPanel";
-import ActivitySidebar from "../activity/ActivitySidebar";
+import ErrorBoundary from "../ErrorBoundary";
+import { preloadWhenIdle } from "../../lib/preloadIdle";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
 import QuickFeedbackModal from "../feedback/QuickFeedbackModal";
-import ValorantHub from "../valorant/ValorantHub";
 import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
@@ -21,6 +20,10 @@ import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
 import LegalContentModal from "../legal/LegalContentModal";
+
+const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
+const ValorantHub = lazy(() => import("../valorant/ValorantHub"));
+const UserPanel = lazy(() => import("./UserPanel"));
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
@@ -176,6 +179,16 @@ export default function AppLayout({
     window.addEventListener("descall:open-feedback", onOpenFeedback);
     return () => window.removeEventListener("descall:open-feedback", onOpenFeedback);
   }, []);
+
+  useEffect(
+    () =>
+      preloadWhenIdle([
+        () => import("../activity/ActivitySidebar"),
+        () => import("../valorant/ValorantHub"),
+        () => import("./UserPanel"),
+      ]),
+    []
+  );
 
   const openUserPanel = useCallback(() => {
     setUserPanelOpen(true);
@@ -485,19 +498,23 @@ export default function AppLayout({
         />
 
         {hideDesktopPlaySidebar ? null : activeView === "activity" ? (
-          <ActivitySidebar
-            friends={friends}
-            friendPresence={activity.friendPresence}
-            onlineUsers={onlineUsers}
-            onRefresh={onRefresh}
-            onAddFriend={() => handleAddClick("friend")}
-            onFriendSelect={handleDmSelect}
-            me={me}
-            myStatus={myStatus}
-            history={activity.history}
-            currentActivity={activity.currentActivity}
-            privacy={activity.settings?.privacy}
-          />
+          <Suspense fallback={null}>
+            <ErrorBoundary scope="pane">
+              <ActivitySidebar
+                friends={friends}
+                friendPresence={activity.friendPresence}
+                onlineUsers={onlineUsers}
+                onRefresh={onRefresh}
+                onAddFriend={() => handleAddClick("friend")}
+                onFriendSelect={handleDmSelect}
+                me={me}
+                myStatus={myStatus}
+                history={activity.history}
+                currentActivity={activity.currentActivity}
+                privacy={activity.settings?.privacy}
+              />
+            </ErrorBoundary>
+          </Suspense>
         ) : activeView === "servers" ? (
           <ServersSidebar
             servers={servers}
@@ -594,28 +611,32 @@ export default function AppLayout({
             }
           >
             {activeView === "play" && showPlay ? (
-              <ValorantHub
-                me={me}
-                socket={socket}
-                onClose={closePlay}
-                onGroupCreated={onGroupCreated}
-                onOpenGroup={(group) => {
-                  handleGroupSelect(group);
-                  setActiveView("groups");
-                }}
-                onJoinVoice={(group) => {
-                  handleGroupSelect(group);
-                  setActiveView("groups");
-                  // Defer so activeGroup is set before voice starts
-                  window.setTimeout(() => onGroupVoiceCall?.(), 80);
-                }}
-              />
+              <Suspense fallback={null}>
+                <ErrorBoundary scope="pane">
+                  <ValorantHub
+                    me={me}
+                    socket={socket}
+                    onClose={closePlay}
+                    onGroupCreated={onGroupCreated}
+                    onOpenGroup={(group) => {
+                      handleGroupSelect(group);
+                      setActiveView("groups");
+                    }}
+                    onJoinVoice={(group) => {
+                      handleGroupSelect(group);
+                      setActiveView("groups");
+                      window.setTimeout(() => onGroupVoiceCall?.(), 80);
+                    }}
+                  />
+                </ErrorBoundary>
+              </Suspense>
             ) : null}
             <div
               className={activeView === "play" ? "app-chat-keep hidden" : "app-chat-keep"}
               hidden={activeView === "play"}
               aria-hidden={activeView === "play"}
             >
+              <ErrorBoundary scope="pane">
               <ChatPanel
                 activeView={activeView}
                 activeDmUser={activeDmUser}
@@ -671,6 +692,7 @@ export default function AppLayout({
               >
                 {children}
               </ChatPanel>
+              </ErrorBoundary>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -678,18 +700,22 @@ export default function AppLayout({
 
       <AnimatePresence>
         {userPanelOpen && (
-          <UserPanel
-            key="user-settings-panel"
-            me={me}
-            onClose={closeUserPanel}
-            onLogout={onLogout}
-            onProfileUpdated={onProfileUpdated}
-            myStatus={myStatus}
-            onStatusChange={onStatusChange}
-            initialTab={settingsTab}
-            onTabChange={onSettingsTabChange}
-            activity={activity}
-          />
+          <Suspense fallback={null}>
+            <ErrorBoundary scope="pane">
+              <UserPanel
+                key="user-settings-panel"
+                me={me}
+                onClose={closeUserPanel}
+                onLogout={onLogout}
+                onProfileUpdated={onProfileUpdated}
+                myStatus={myStatus}
+                onStatusChange={onStatusChange}
+                initialTab={settingsTab}
+                onTabChange={onSettingsTabChange}
+                activity={activity}
+              />
+            </ErrorBoundary>
+          </Suspense>
         )}
       </AnimatePresence>
 

@@ -22,6 +22,7 @@ import {
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
 import { preloadIceServers } from "../lib/iceConfig";
+import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
 import { getUser } from "../lib/storage";
 import useConnectionStats from "./useConnectionStats";
@@ -858,7 +859,22 @@ export function useCall(socket, callOccupancyRef = null) {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pageshow", resumeAfterBackground);
     window.addEventListener("focus", resumeAfterBackground);
+    const stopNetwork = subscribeNetworkChange(() => {
+      if (modeRef.current !== "active") return;
+      const pc = pcRef.current;
+      if (!pc || pc.connectionState === "closed") return;
+      iceRestartAttemptedRef.current = true;
+      setPeerConnectionState("reconnecting");
+      setConnectionQuality("poor");
+      try {
+        if (negotiateRef.current) void negotiateRef.current({ iceRestart: true });
+        else pc.restartIce();
+      } catch {
+        /* ignore */
+      }
+    });
     return () => {
+      stopNetwork();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", resumeAfterBackground);
       window.removeEventListener("focus", resumeAfterBackground);

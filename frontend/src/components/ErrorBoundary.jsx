@@ -281,6 +281,17 @@ export default class ErrorBoundary extends React.Component {
   };
 
   handleRetry = () => {
+    if (this.props.scope === "pane") {
+      this.setState({
+        hasError: false,
+        recovering: false,
+        message: "",
+        stack: "",
+        componentStack: "",
+        detailsOpen: false,
+      });
+      return;
+    }
     window.location.reload();
   };
 
@@ -306,9 +317,10 @@ export default class ErrorBoundary extends React.Component {
       admin: Boolean(this.state.userData?.isAdmin),
     });
     const detailText = [this.state.message, this.state.stack, this.state.componentStack].filter(Boolean).join("\n\n");
+    const pane = this.props.scope === "pane";
 
     return (
-      <main className="crash-screen">
+      <main className={pane ? "crash-screen crash-pane" : "crash-screen"}>
         <section className="crash-card" role="alert">
           <p className="crash-kicker">Descall</p>
           <h1>{t("Something went wrong")}</h1>

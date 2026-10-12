@@ -21,7 +21,7 @@ function sortMessages(messages) {
   return [...messages].sort((a, b) => messageTime(a) - messageTime(b));
 }
 
-function isOptimistic(message) {
+export function isOptimistic(message) {
   if (!message) return false;
   if (message.sending || message.failed || message.isGameMessage) return true;
   const id = String(message.id || "");

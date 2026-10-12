@@ -34,6 +34,7 @@ import { trackMessageDelete } from "../../lib/messageDeleteFeedback";
 import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
+import { useOffscreenRows } from "../../hooks/useOffscreenRows";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
@@ -146,6 +147,7 @@ export default function MessageList({
   const glassUi = useGlassUi();
   const messagesEndRef = useRef(null);
   const listRef = useRef(null);
+  useOffscreenRows(listRef, messages?.length || 0);
   const stickToBottomRef = useRef(true);
   const prevLastIdRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);

@@ -70,12 +70,12 @@ assert(
 
 
 assert(
-  /activeView === "play" \? \([\s\S]{0,40}<ValorantHub/.test(layout),
+  /activeView === "play"[\s\S]{0,220}<ValorantHub/.test(layout),
   "ValorantHub must mount only when activeView is play",
 );
 assert(
-  layout.includes('import ValorantHub from "../valorant/ValorantHub"'),
-  "AppLayout must import ValorantHub for the Play slot",
+  layout.includes('const ValorantHub = lazy(() => import("../valorant/ValorantHub"))'),
+  "AppLayout must lazy-load ValorantHub for the Play slot",
 );
 assert(
   !/activeView === "play" \? \([\s\S]{0,40}<LfgWorkspace/.test(layout),

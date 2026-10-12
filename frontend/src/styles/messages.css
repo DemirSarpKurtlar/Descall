@@ -58,6 +58,12 @@
   overflow: visible;
 }
 
+/* Far off the scrollport only. Visible rows stay overflow:visible so avatar frames are not clipped. */
+.message-group.is-offscreen {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+}
+
 .message-group:hover {
   background: var(--surface-1);
 }

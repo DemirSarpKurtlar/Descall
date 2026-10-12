@@ -3,6 +3,7 @@ import audioManager from "../lib/audioManager";
 import notificationService from "../lib/notificationService";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
 import { getUser } from "../lib/storage";
+import { subscribeNetworkChange } from "../lib/networkChange";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   isRemoteScreenVideoTrack,
@@ -192,7 +193,19 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pageshow", resumeAfterBackground);
     window.addEventListener("focus", resumeAfterBackground);
+    const stopNetwork = subscribeNetworkChange(() => {
+      for (const peerData of pcMapRef.current.values()) {
+        const pc = peerData?.pc;
+        if (!pc || pc.connectionState === "closed") continue;
+        try {
+          pc.restartIce();
+        } catch {
+          /* ignore */
+        }
+      }
+    });
     return () => {
+      stopNetwork();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", resumeAfterBackground);
       window.removeEventListener("focus", resumeAfterBackground);

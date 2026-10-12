@@ -1237,8 +1237,11 @@ router.post("/:id/channels/:channelId/read", requireAuth, async (req, res) => {
     const serverId = req.params.id;
     const channelId = req.params.channelId;
     const userId = req.user.id;
-    const lastMessageId = req.body?.lastReadMessageId
-      ? String(req.body.lastReadMessageId)
+    // Optimistic rows use ids like "temp-…". The column is uuid; a non-uuid
+    // used to 500 the read receipt. Keep the timestamp update and drop the id.
+    const rawLastId = req.body?.lastReadMessageId ? String(req.body.lastReadMessageId) : "";
+    const lastMessageId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawLastId)
+      ? rawLastId
       : null;
 
     await assertMemberChannel(serverId, channelId, userId);
@@ -1257,7 +1260,7 @@ router.post("/:id/channels/:channelId/read", requireAuth, async (req, res) => {
     return res.json({ channelId, serverId, lastReadAt: now, unreadCount: 0 });
   } catch (err) {
     const status = err.status || 500;
-    if (status >= 500) console.error("[SERVERS] POST channel read error:", err);
+    if (status >= 500) console.error("[SERVERS] POST channel read error:", err?.message || err);
     return res.status(status).json({ error: err.message || "Failed to mark channel read." });
   }
 });

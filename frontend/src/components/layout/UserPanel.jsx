@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Mic, Headphones, Bell, User, LogOut, Moon, Sun,
@@ -57,7 +57,7 @@ import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import ValorantBadge from "../social/ValorantBadge";
 import AdminBadge from "../social/AdminBadge";
-import ShopPanel from "../settings/ShopPanel";
+const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, BadgeIcon, TitleTag } from "../ui/Cosmetics";
 import {
@@ -378,6 +378,10 @@ const UserPanel = forwardRef(function UserPanel({
   useEffect(() => {
     if (initialTab && TAB_TITLE_KEYS[initialTab]) setActiveTab(initialTab);
   }, [initialTab]);
+
+  useEffect(() => {
+    import("../settings/ShopPanel").catch(() => {});
+  }, []);
 
   /* ── Profile editor ── */
   const [displayName, setDisplayName] = useState(me?.displayName || me?.username || "");
@@ -2063,17 +2067,19 @@ const UserPanel = forwardRef(function UserPanel({
       case "shop":
         return (
           <div className="us-tab">
-            <ShopPanel
-              equipped={equipped}
-              onEquippedChange={handleEquippedChange}
-              balance={me?.descoinBalance || 0}
-              me={me}
-              onBalanceChange={(next) => {
-                if (typeof next === "number" && me) {
-                  onProfileUpdated?.({ ...me, descoinBalance: next });
-                }
-              }}
-            />
+            <Suspense fallback={null}>
+              <ShopPanel
+                equipped={equipped}
+                onEquippedChange={handleEquippedChange}
+                balance={me?.descoinBalance || 0}
+                me={me}
+                onBalanceChange={(next) => {
+                  if (typeof next === "number" && me) {
+                    onProfileUpdated?.({ ...me, descoinBalance: next });
+                  }
+                }}
+              />
+            </Suspense>
           </div>
         );
 

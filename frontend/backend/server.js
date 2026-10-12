@@ -106,9 +106,11 @@ app.set("trust proxy", 1);
 const { canonicalHostMiddleware } = require("./middleware/canonicalHost");
 
 // Middleware
+const compression = require("compression");
 app.use(cors({ origin: corsOrigin, credentials: false }));
 // HTTP→HTTPS, www→apex, Render HTML→descall.com (API paths excluded)
 app.use(canonicalHostMiddleware);
+app.use(compression({ threshold: 1024 }));
 
 app.use(express.json());
 app.use(require("./middleware/gzipJson"));
@@ -371,6 +373,7 @@ const { shouldServeSpaShell } = require("./lib/spaNavigation");
 app.get("*", (req, res, next) => {
   if (!shouldServeSpaShell(req)) return next();
   if (!hasFrontend) return next();
+  res.setHeader("Cache-Control", "no-cache");
   return res.sendFile(indexPath, (err) => {
     if (err) return next();
   });
@@ -1087,12 +1090,24 @@ const API_PREFIXES = [
 
 if (hasFrontend && !isVercel) {
   console.log("[STATIC] Serving frontend from:", distPath);
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    setHeaders(res, filePath) {
+      const hashed = `${path.sep}assets${path.sep}`;
+      if (filePath.includes(hashed)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return;
+      }
+      if (filePath.endsWith(`${path.sep}index.html`) || filePath.endsWith(".html")) {
+        res.setHeader("Cache-Control", "no-cache");
+      }
+    },
+  }));
   app.get("*", (req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
     if (API_PREFIXES.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`))) {
       return next();
     }
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(indexPath);
   });
 } else {

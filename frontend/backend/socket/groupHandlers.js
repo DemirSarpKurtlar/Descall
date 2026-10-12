@@ -599,7 +599,12 @@ function registerGroupHandlers(io, socket, state) {
       if (activeCall.dbCallId) {
         supabase.from("group_call_participants")
           .insert({ call_id: activeCall.dbCallId, user_id: myId })
-          .then(({ error }) => { if (error) console.error("[GroupCall] Participant insert error:", error.message); });
+          .then(({ error }) => {
+            // Accept on a second tab, or accept after join, hits the primary key.
+            if (error && !String(error.message || "").includes("duplicate")) {
+              console.error("[GroupCall] Participant insert error:", error.message);
+            }
+          });
       }
     }
 

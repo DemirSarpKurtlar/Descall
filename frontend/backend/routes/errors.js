@@ -8,24 +8,36 @@ const { requireAdmin } = require("../middleware/requireAdmin");
 console.log("[ERRORS-JS] File loaded! Routes being registered...");
 
 // Store error from frontend
+function clipText(value, max) {
+  if (value == null || value === "") return null;
+  const text = String(value);
+  return text.length > max ? text.slice(0, max) : text;
+}
+
+function safeTimestamp(value) {
+  const date = new Date(value || Date.now());
+  return Number.isFinite(date.getTime()) ? date.toISOString() : new Date().toISOString();
+}
+
 router.post("/", async (req, res) => {
   try {
-    const { message, stack, componentStack, url, userAgent, timestamp, userId, username, severity = "error", source = "frontend" } = req.body;
+    const { stack, componentStack, url, userAgent, timestamp, userId, username, severity = "error", source = "frontend" } = req.body || {};
+    const message = clipText(req.body?.message, 4000) || "Unknown client error";
 
     // Store error in Supabase
     const { data, error } = await supabase
       .from("error_logs")
       .insert({
         message,
-        stack,
-        component_stack: componentStack,
-        url,
-        user_agent: userAgent,
-        user_id: userId || "anonymous",
-        timestamp: timestamp || new Date().toISOString(),
+        stack: clipText(stack, 12000),
+        component_stack: clipText(componentStack, 12000),
+        url: clipText(url, 2000),
+        user_agent: clipText(userAgent, 1000),
+        user_id: clipText(userId, 80) || "anonymous",
+        timestamp: safeTimestamp(timestamp),
         resolved: false,
-        severity,
-        source,
+        severity: clipText(severity, 32) || "error",
+        source: clipText(source, 64) || "frontend",
       })
       .select();
 
@@ -57,7 +69,7 @@ router.post("/", async (req, res) => {
 
     res.json({ success: true, id: data?.[0]?.id });
   } catch (error) {
-    console.error("[Error Log] Failed to log error:", error);
+    console.error("[Error Log] Failed to log error:", error?.message || error);
     res.status(500).json({ error: "Failed to log error" });
   }
 });
