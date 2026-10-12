@@ -1,0 +1,39 @@
+/* Currently-active card. Unscoped so web, desktop, Android, and iOS share it.
+   The section used to paint a second rounded plate with padding 20px 28px 0,
+   so the plate stopped on the card's bottom edge and the radius cut the corners. */
+
+.activity-view-section,
+.activity-view-mobile .activity-view-section,
+html.glass-desktop .activity-view-section {
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.activity-view-section {
+  padding: 16px 28px;
+}
+
+.activity-view-mobile .activity-view-section {
+  padding: 16px;
+}
+
+.activity-current-card,
+html.glass-desktop .activity-current-card,
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-current-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
+    rgba(22, 24, 36, 0.38);
+  border-radius: 18px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 28px rgba(0, 0, 0, 0.16);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  padding: 16px 18px;
+}
