@@ -78,7 +78,8 @@ assert.match(
 
 // Glass loads after every legacy sheet. Desktop glass follows it. Auth fields
 // follow desktop glass. Admin liquid glass follows auth fields. The activity
-// card sheet loads last so the current-activity card beats the section plate.
+// card sheet follows admin glass. Conversation rows load last so list
+// alignment beats the absolute more button.
 const styles = readFileSync(join(here, "..", "..", "styles.css"), "utf8");
 const imports = [...styles.matchAll(/@import\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
 const glassAt = imports.indexOf("./styles/glass/index.css");
@@ -86,11 +87,13 @@ const desktopAt = imports.indexOf("./styles/glass-desktop/index.css");
 const authAt = imports.indexOf("./styles/auth-fields.css");
 const adminAt = imports.indexOf("./styles/admin-liquid.css");
 const activityAt = imports.indexOf("./styles/activity-card.css");
+const convAt = imports.indexOf("./styles/conv-rows.css");
 assert.ok(glassAt > 0, "glass sheet imported");
 assert.ok(desktopAt > glassAt, "desktop glass follows iphone glass");
 assert.equal(authAt, desktopAt + 1, "auth fields follow desktop glass");
 assert.equal(adminAt, authAt + 1, "admin liquid glass follows auth fields");
 assert.equal(activityAt, adminAt + 1, "activity card follows admin liquid glass");
-assert.equal(imports[imports.length - 1], "./styles/activity-card.css", "activity card imported last");
+assert.equal(convAt, activityAt + 1, "conversation rows follow the activity card");
+assert.equal(imports[imports.length - 1], "./styles/conv-rows.css", "conversation rows imported last");
 
 console.log(`glass-scope.selftest ok (${count} selectors)`);

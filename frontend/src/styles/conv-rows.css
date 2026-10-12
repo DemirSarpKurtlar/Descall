@@ -1,0 +1,124 @@
+/* Conversation rows are <button>s, so the browser centers their text.
+   The more control was position:absolute at the row's vertical middle, which
+   sat on top of the time and the pin. Desktop DM and group rows keep the
+   time on the top line and the more button in its own column, centered. */
+
+button.dm-item,
+button.group-item,
+button.conv-row,
+button.server-list-item,
+button.server-channel-row {
+  text-align: start;
+}
+
+.dm-name,
+.group-name,
+.dm-preview,
+.group-members,
+.server-list-name,
+.server-list-sub,
+.server-channel-row > span {
+  text-align: start;
+}
+
+.conv-row-body,
+.dm-info,
+.group-info,
+.server-list-copy {
+  align-items: stretch;
+}
+
+.conv-row-top,
+.conv-row-bottom {
+  justify-content: flex-start;
+}
+
+.conv-row-top .dm-name,
+.conv-row-top .group-name,
+.conv-row-bottom .dm-preview,
+.conv-row-bottom .group-members {
+  text-align: start;
+  margin-right: auto;
+}
+
+.conv-row-flags {
+  margin-left: 8px;
+  gap: 6px;
+}
+
+.conv-group-wrap.is-desktop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  column-gap: 0;
+}
+
+.conv-group-wrap.is-desktop > .dm-item,
+.conv-group-wrap.is-desktop > .group-item,
+.conv-group-wrap.is-desktop > button.conv-row {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  padding-right: 12px !important;
+}
+
+.conv-group-wrap.is-desktop > .conv-more-btn {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  align-self: center;
+  justify-self: center;
+  margin: 0 6px 0 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.conv-group-wrap.is-desktop > .conv-more-btn svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.conv-group-wrap.is-desktop .conv-time {
+  position: static;
+  top: auto;
+  right: auto;
+  transform: none;
+  margin-left: 8px;
+}
+
+.conv-group-wrap.is-desktop .conv-row-top,
+.conv-group-wrap.is-desktop .conv-row-bottom {
+  padding-right: 0;
+}
+
+.server-channel-row-wrap > .server-channel-row-actions {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.server-channel-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.server-channel-row > span:first-of-type {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: start;
+}

@@ -1239,10 +1239,7 @@ function DmRowFront({
       }}
       whileHover={undefined}
       transition={LIST_LAYOUT_TRANSITION}
-      style={{
-        width: "100%",
-        paddingRight: !isMobile ? 40 : undefined,
-      }}
+      style={{ width: "100%" }}
     >
       <DmRowContent
         dm={dm}
@@ -2257,10 +2254,7 @@ function GroupRowFront({
       }}
       whileHover={undefined}
       transition={LIST_LAYOUT_TRANSITION}
-      style={{
-        width: "100%",
-        paddingRight: !isMobile ? 40 : undefined,
-      }}
+      style={{ width: "100%" }}
     >
       <GroupRowContent
         group={group}
