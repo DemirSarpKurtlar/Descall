@@ -429,9 +429,15 @@ html.glass-desktop .user-settings.is-shop-open .shop-catalog > * {
   z-index: 1;
 }
 
+html.glass-desktop .shop-category-block {
+  flex: 0 0 auto;
+  min-height: min-content;
+  overflow: visible;
+}
+
 html.glass-desktop .shop-category-block h4 {
   position: static;
-  margin: 14px 0 10px;
+  margin: 16px 0 12px;
   clear: both;
 }
 
@@ -458,19 +464,33 @@ html.glass-desktop .user-settings.is-shop-open .shop-wallet-pill {
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips {
+  flex: 0 0 auto;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  align-content: flex-start;
   height: auto;
+  min-height: 40px;
   width: 100%;
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   gap: 8px;
-  padding: 0;
-  margin: 0 0 4px;
+  /* Inset so the resting first and last chips sit clear of the edge fade. */
+  padding: 4px 36px 4px 16px;
+  margin: 0;
   border: none;
   border-radius: 0;
   background: transparent;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab {

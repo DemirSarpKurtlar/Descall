@@ -314,6 +314,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   const glassShell = useGlassShell();
   const glassDesktop = useGlassDesktop();
+  const chipRowRef = useRef(null);
   const { isMobile } = useMobile();
   const availableTabs = useMemo(
     () => (glassShell && isMobile
@@ -331,6 +332,22 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       setActiveCategory(availableTabs[0].id);
     }
   }, [availableTabs, activeCategory]);
+
+  useEffect(() => {
+    const row = chipRowRef.current;
+    if (!row || !glassDesktop) return undefined;
+    const onWheel = (event) => {
+      if (row.scrollWidth <= row.clientWidth + 1) return;
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      const max = row.scrollWidth - row.clientWidth;
+      const next = Math.max(0, Math.min(max, row.scrollLeft + event.deltaY));
+      if (next === row.scrollLeft) return;
+      row.scrollLeft = next;
+      event.preventDefault();
+    };
+    row.addEventListener("wheel", onWheel, { passive: false });
+    return () => row.removeEventListener("wheel", onWheel);
+  }, [glassDesktop, availableTabs, loading]);
 
   const visibleItems = useMemo(
     () => (activeCategory ? items.filter((item) => item.category === activeCategory) : []),
@@ -591,7 +608,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   );
 
   const categoryTabs = !loading && availableTabs.length > 0 ? (
-    <nav className={`shop-category-tabs${glassDesktop ? " is-glass-chips" : ""}`} aria-label={t("Shop categories")}>
+    <nav
+      ref={glassDesktop ? chipRowRef : null}
+      className={`shop-category-tabs${glassDesktop ? " is-glass-chips" : ""}`}
+      aria-label={t("Shop categories")}
+    >
       {availableTabs.map((tab) => {
         const Icon = tab.icon;
         return (
