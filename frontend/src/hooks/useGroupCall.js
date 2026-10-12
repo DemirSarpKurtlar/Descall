@@ -21,6 +21,7 @@ import {
   chainTrackUnmute,
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
+import { pickAnnouncedScreenTrack } from "../lib/screenShareTracks";
 import { preloadIceServers } from "../lib/iceConfig";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain } from "../lib/voiceGain";
@@ -2028,73 +2029,80 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       const peerData = pcMapRef.current.get(fromUserId);
       if (peerData) peerData.expectScreenShare = true;
 
-      // Recover tracks that arrived before this event / were misclassified as camera
+      // Recover a share that ontrack filed as camera before this event.
+      // Remote labels are empty and a capture with tab audio is not "video-only",
+      // so the old label / extra-m-line gate left the stage on avatars.
       try {
         const pc = peerData?.pc;
+        const videos = [];
         if (pc) {
           for (const receiver of pc.getReceivers()) {
             const track = receiver.track;
-            if (!track || track.kind !== "video" || track.readyState === "ended") continue;
-            const label = (track.label || "").toLowerCase();
-            const looksLikeScreen =
-              label.includes("screen") ||
-              label.includes("display") ||
-              label.includes("window") ||
-              label.includes("tab") ||
-              label.includes("desktop") ||
-              label.includes("web contents") ||
-              label.includes("monitor") ||
-              label.includes("primary");
-            const main = remoteStreamsRef.current.get(fromUserId);
-            const isExtraVideo = main && !main.getVideoTracks().includes(track);
-            // Only recover tracks that look like screen or are a second video m-line
-            if (!looksLikeScreen && !isExtraVideo) continue;
-
-            const screenMs = new MediaStream([track]);
-            setParticipants((prev) => {
-              if (fromUserId === myIdRef.current) return prev;
-              const exists = prev.find((p) => p.id === fromUserId);
-              if (exists?.screenStream?.getVideoTracks?.()?.[0] === track) {
-                return prev.map((p) =>
-                  p.id === fromUserId ? { ...p, isScreenSharing: true } : p
-                );
-              }
-              if (exists) {
-                // If camera stream was actually the screen (video-only), move it
-                const cam = exists.stream;
-                const camIsVideoOnly =
-                  cam &&
-                  cam.getVideoTracks().length > 0 &&
-                  cam.getAudioTracks().length === 0 &&
-                  cam.getVideoTracks()[0] === track;
-                return prev.map((p) =>
-                  p.id === fromUserId
-                    ? {
-                        ...p,
-                        screenStream: screenMs,
-                        isScreenSharing: true,
-                        stream: camIsVideoOnly ? null : p.stream,
-                        hasVideo: camIsVideoOnly ? false : p.hasVideo,
-                      }
-                    : p
-                );
-              }
-              const storedUser = peerData?.fromUser;
-              return [
-                ...prev,
-                buildCallParticipant(storedUser, {
-                  id: fromUserId,
-                  stream: null,
-                  screenStream: screenMs,
-                  hasVideo: false,
-                  hasAudio: false,
-                  isScreenSharing: true,
-                  username: storedUser?.username || storedUser?.displayName || "Member",
-                  avatarUrl: storedUser?.avatar_url || storedUser?.avatarUrl || null,
-                }),
-              ].filter(Boolean);
-            });
+            if (track?.kind === "video" && track.readyState !== "ended") videos.push(track);
           }
+        }
+        const participant = participantsRef.current.find((p) => p.id === fromUserId);
+        const cameraOn = Boolean(participant?.isCameraOn);
+        const cameraTracks = !cameraOn
+          ? []
+          : videos.length > 1
+            ? [videos[0]]
+            : videos;
+        const picked = pickAnnouncedScreenTrack(videos, { cameraTracks });
+        if (picked && peerData?.screenStream?.getVideoTracks?.().includes(picked)) {
+          peerData.expectScreenShare = false;
+        } else if (picked) {
+          const main = remoteStreamsRef.current.get(fromUserId);
+          const mainTracks = main?.getTracks?.() || [];
+          const micAudio = mainTracks.filter((track) => track.kind === "audio").slice(0, 1);
+          const screenAudio = mainTracks.filter(
+            (track) => track.kind === "audio" && !micAudio.includes(track) && track.readyState !== "ended"
+          );
+          if (main) {
+            const drop = new Set([picked, ...screenAudio]);
+            if ([...drop].some((track) => main.getTracks().includes(track))) {
+              for (const track of drop) {
+                try { main.removeTrack(track); } catch { /* ignore */ }
+              }
+              const trimmed = new MediaStream(main.getTracks().filter((track) => track.readyState !== "ended"));
+              remoteStreamsRef.current.set(fromUserId, trimmed);
+            }
+          }
+          const screenMs = new MediaStream([picked, ...screenAudio].filter((track) => track && track.readyState !== "ended"));
+          peerData.screenStream = screenMs;
+          peerData.expectScreenShare = false;
+          const trimmed = remoteStreamsRef.current.get(fromUserId) || null;
+          setParticipants((prev) => {
+            if (fromUserId === myIdRef.current) return prev;
+            const exists = prev.find((p) => p.id === fromUserId);
+            if (exists) {
+              return prev.map((p) =>
+                p.id === fromUserId
+                  ? {
+                      ...p,
+                      screenStream: screenMs,
+                      isScreenSharing: true,
+                      stream: trimmed || (p.stream?.getVideoTracks?.().includes(picked) ? null : p.stream),
+                      hasVideo: cameraOn && Boolean(trimmed?.getVideoTracks?.().some((track) => track.readyState !== "ended")),
+                    }
+                  : p
+              );
+            }
+            const storedUser = peerData?.fromUser;
+            return [
+              ...prev,
+              buildCallParticipant(storedUser, {
+                id: fromUserId,
+                stream: trimmed,
+                screenStream: screenMs,
+                hasVideo: false,
+                hasAudio: false,
+                isScreenSharing: true,
+                username: storedUser?.username || storedUser?.displayName || "Member",
+                avatarUrl: storedUser?.avatar_url || storedUser?.avatarUrl || null,
+              }),
+            ].filter(Boolean);
+          });
         }
       } catch (err) {
         console.warn("[GroupCall] screen recover failed:", err);

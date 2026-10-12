@@ -26,7 +26,9 @@ import useSpeaking from "../../hooks/useSpeaking";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
-import { visibleScreenStream } from "../../lib/screenShareTracks";
+import { nextShareSelection, visibleScreenStream } from "../../lib/screenShareTracks";
+import { applyPlaybackGain } from "../../lib/voiceGain";
+import ShareFilmstrip from "../voice/ShareFilmstrip";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
@@ -271,8 +273,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, enabled = true, sinkId = 
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
-    const vol = enabled ? Math.max(0, Math.min(1, Number(volume) / 100)) : 0;
-    audioEl.volume = vol;
+    applyPlaybackGain(audioEl, enabled ? Math.max(0, Math.min(200, Number(volume) || 0)) / 100 : 0);
     if (sinkId && typeof audioEl.setSinkId === "function") {
       audioEl.setSinkId(sinkId).catch(() => {});
     }
@@ -352,7 +353,7 @@ function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
             aria-label={t("Screen share volume")}
             type="range"
             min="0"
-            max="100"
+            max="200"
             value={volume}
             onChange={(event) => onVolumeChange?.(Number(event.target.value))}
           />
@@ -372,28 +373,33 @@ function ServerScreenShareStage({
   expandSharerId = null,
 }) {
   const t = useT();
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [activeId, setActiveId] = useState(null);
+  const [pinnedId, setPinnedId] = useState(null);
+  const [shareLayout, setShareLayout] = useState("stage");
   const [expanded, setExpanded] = useState(false);
   const [aspectKey, setAspectKey] = useState("0x0");
-  const prevCountRef = useRef(0);
+  const prevIdsRef = useRef([]);
   const normalVideoRef = useRef(null);
   const expandedVideoRef = useRef(null);
   const sharersRef = useRef(sharers);
   sharersRef.current = sharers;
+  const sharerKey = sharers.map((sharer) => String(sharer.id)).join("|");
 
   useEffect(() => {
-    const n = sharers.length;
-    if (n > prevCountRef.current) {
-      setSelectedIndex(n - 1);
-    } else if (n > 0 && selectedIndex > n - 1) {
-      setSelectedIndex(n - 1);
-    }
-    if (n === 0) setExpanded(false);
-    prevCountRef.current = n;
-  }, [sharers.length, selectedIndex]);
+    const ids = sharerKey ? sharerKey.split("|") : [];
+    const next = nextShareSelection({
+      ids,
+      activeId,
+      pinnedId,
+      previousIds: prevIdsRef.current,
+    });
+    prevIdsRef.current = ids;
+    if (next.activeId !== (activeId == null ? null : String(activeId))) setActiveId(next.activeId);
+    if (next.pinnedId !== (pinnedId == null ? null : String(pinnedId))) setPinnedId(next.pinnedId);
+    if (!ids.length) setExpanded(false);
+  }, [sharerKey, activeId, pinnedId]);
 
-  const safeIndex = sharers.length ? Math.min(Math.max(selectedIndex, 0), sharers.length - 1) : 0;
-  const active = sharers[safeIndex] || null;
+  const active = sharers.find((sharer) => String(sharer.id) === String(activeId)) || sharers[0] || null;
   const screenStream = active?.stream || null;
 
   useEffect(() => {
@@ -451,7 +457,7 @@ function ServerScreenShareStage({
     const list = sharersRef.current || [];
     const index = list.findIndex((item) => String(item.id) === String(expandSharerId));
     if (index < 0) return;
-    setSelectedIndex(index);
+    setActiveId(list[index].id);
     setExpanded(true);
   }, [expandToken, expandSharerId]);
 
@@ -504,7 +510,7 @@ function ServerScreenShareStage({
       />
     ));
 
-  if (sharers.length > 1 && !expanded) {
+  if (shareLayout === "grid" && sharers.length > 1 && !expanded) {
     return (
       <div className="server-voice-screen-stage is-multi">
         {audioSinks}
@@ -517,13 +523,27 @@ function ServerScreenShareStage({
               volume={volumeFor(sharer)}
               onVolumeChange={(value) => onVolumeChange?.(sharer.id, value)}
               onOpen={() => {
-                const index = sharers.findIndex((item) => String(item.id) === String(sharer.id));
-                setSelectedIndex(index < 0 ? 0 : index);
-                setExpanded(true);
+                setActiveId(sharer.id);
+                setShareLayout("stage");
               }}
             />
           ))}
         </div>
+        <ShareFilmstrip
+          sharers={sharers.map((sharer) => ({ ...sharer, label: labelFor(sharer) }))}
+          activeId={active?.id}
+          pinnedId={pinnedId}
+          layout={shareLayout}
+          onSelect={(id) => {
+            setActiveId(id);
+            setShareLayout("stage");
+          }}
+          onTogglePin={(id) => {
+            setPinnedId((current) => (String(current) === String(id) ? null : id));
+            setActiveId(id);
+          }}
+          onToggleLayout={() => setShareLayout("stage")}
+        />
       </div>
     );
   }
@@ -556,7 +576,7 @@ function ServerScreenShareStage({
                 aria-label={t("Screen share volume")}
                 type="range"
                 min="0"
-                max="100"
+                max="200"
                 value={volumeFor(active)}
                 onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
               />
@@ -609,7 +629,7 @@ function ServerScreenShareStage({
               aria-label={t("Screen share volume")}
               type="range"
               min="0"
-              max="100"
+              max="200"
               value={volumeFor(active)}
               onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
             />
@@ -620,24 +640,21 @@ function ServerScreenShareStage({
         <div className="server-voice-screen-hint">{t("Click to expand")}</div>
       </div>
 
-      {sharers.length > 1 && (
-        <div className="server-voice-screen-switcher">
-          <span>{t("Screens:")}</span>
-          {sharers.map((sharer, idx) => (
-            <button
-              key={sharer.id}
-              type="button"
-              className={`server-voice-screen-chip${idx === safeIndex ? " is-active" : ""}`}
-              onClick={() => setSelectedIndex(idx)}
-            >
-              <Monitor size={12} />
-              {sharer.isLocal
-                ? t("Your Screen")
-                : t("{name}'s Screen", { name: sharer.username || "Member" })}
-            </button>
-          ))}
-        </div>
-      )}
+      <ShareFilmstrip
+        sharers={sharers.map((sharer) => ({ ...sharer, label: labelFor(sharer) }))}
+        activeId={active?.id}
+        pinnedId={pinnedId}
+        layout={shareLayout}
+        onSelect={(id) => {
+          setActiveId(id);
+          if (shareLayout === "grid") setShareLayout("stage");
+        }}
+        onTogglePin={(id) => {
+          setPinnedId((current) => (String(current) === String(id) ? null : id));
+          setActiveId(id);
+        }}
+        onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
+      />
     </div>
     {fullscreen}
     </>

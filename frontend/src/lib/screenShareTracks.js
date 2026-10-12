@@ -69,6 +69,71 @@ export function nextScreenStream(existing, track) {
   return stream;
 }
 
+const DISPLAY_LABEL = /screen|display|window|\btab\b|web contents|desktop|monitor|primary/;
+
+/** Remote receivers often have an empty label. displaySurface only exists locally. */
+export function looksLikeDisplayTrack(track) {
+  if (!track || track.kind !== "video") return false;
+  let surface = "";
+  try {
+    surface = track.getSettings?.().displaySurface || "";
+  } catch {
+    surface = "";
+  }
+  if (surface) return true;
+  return DISPLAY_LABEL.test(String(track.label || "").toLowerCase());
+}
+
+/**
+ * Video track that belongs on the screen stage after a share announcement.
+ * Tab/system audio on the same MediaStream must not disqualify it — that
+ * filter hid DM shares whenever Chrome's picker included audio.
+ * A remote track with an empty label is still the share when the camera is off.
+ *
+ * @param {Array<{ kind?: string, readyState?: string, label?: string }>} tracks
+ * @param {{ cameraTracks?: object[] }} [opts]
+ */
+export function pickAnnouncedScreenTrack(tracks, { cameraTracks = [] } = {}) {
+  const videos = (tracks || []).filter(
+    (track) => track && track.kind === "video" && track.readyState !== "ended"
+  );
+  const cameras = new Set((cameraTracks || []).filter(Boolean));
+  const labeled = videos.find((track) => !cameras.has(track) && looksLikeDisplayTrack(track));
+  if (labeled) return labeled;
+  const extras = videos.filter((track) => !cameras.has(track));
+  if (cameras.size === 0) return extras[extras.length - 1] || null;
+  if (videos.length > cameras.size && extras.length) return extras[extras.length - 1];
+  return null;
+}
+
+/** Audio that arrived on the display stream, excluding the call microphone. */
+export function screenAudioAlongside(stream, { micTracks = [] } = {}) {
+  const mic = new Set((micTracks || []).filter(Boolean));
+  return (stream?.getAudioTracks?.() || []).filter(
+    (track) => track && track.readyState !== "ended" && !mic.has(track)
+  );
+}
+
+/**
+ * Which share stays on the main stage.
+ * A new share becomes the stage unless one is pinned. A share that stops
+ * releases the pin and falls back to a share that is still live.
+ */
+export function nextShareSelection({ ids = [], activeId = null, pinnedId = null, previousIds = [] } = {}) {
+  const list = ids.map((id) => String(id));
+  const pin = pinnedId != null && list.includes(String(pinnedId)) ? String(pinnedId) : null;
+  if (pin) return { activeId: pin, pinnedId: pin };
+  const prev = new Set((previousIds || []).map((id) => String(id)));
+  const added = list.filter((id) => !prev.has(id));
+  if (added.length && (previousIds || []).length) {
+    return { activeId: added[added.length - 1], pinnedId: null };
+  }
+  if (activeId != null && list.includes(String(activeId))) {
+    return { activeId: String(activeId), pinnedId: null };
+  }
+  return { activeId: list[list.length - 1] || null, pinnedId: null };
+}
+
 export function screenShareStillLive(stream) {
   if (!stream?.getVideoTracks) return false;
   return stream.getVideoTracks().some((track) => track && track.readyState !== "ended");

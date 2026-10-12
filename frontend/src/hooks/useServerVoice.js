@@ -671,7 +671,11 @@ export function useServerVoice(socket) {
             isRemoteScreenVideoTrack(track, {
               peerExpectsScreen: Boolean(peer?.expectScreenShare),
             }));
-        const isScreenAudio = track.kind === "audio" && Boolean(peer?.expectScreenShare);
+        const isScreenAudio =
+          track.kind === "audio" &&
+          Boolean(peer?.expectScreenShare) &&
+          Boolean(peer?.micAttached) &&
+          track.id !== peer?.micTrackId;
         if (isScreenVideo || isScreenAudio) {
           if (isScreenVideo && peer) peer.expectScreenShare = false;
           setParticipants((prev) => {
@@ -741,6 +745,10 @@ export function useServerVoice(socket) {
             return [...prev, { id: userId, username: "Member", cameraStream: remote, cameraOn: true }];
           });
           return;
+        }
+        if (peer && track.kind === "audio") {
+          peer.micAttached = true;
+          if (!peer.micTrackId) peer.micTrackId = track.id;
         }
         attachRemoteAudio(userId, remote);
       };

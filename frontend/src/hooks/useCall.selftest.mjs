@@ -8,7 +8,7 @@ const startCall = source.slice(source.indexOf("const startCall = useCallback"), 
 assert.match(startCall, /if \(!socketRef\.current\?\.connected\) \{/);
 assert.doesNotMatch(startCall, /if \(!peerId \|\| !socket\) return;/);
 assert.ok(
-  startCall.indexOf("!socketRef.current?.connected") < startCall.indexOf("acquireVoiceMicStream"),
+  startCall.indexOf("!socketRef.current?.connected") < startCall.indexOf("acquireCallMicStream"),
   "startCall must reject a disconnected socket before acquiring media",
 );
 
@@ -34,6 +34,13 @@ assert.doesNotMatch(
 );
 assert.match(source, /receivedVideoTracksRef/);
 assert.match(source, /hasAudio/);
+assert.match(source, /pickAnnouncedScreenTrack/);
+assert.match(startScreenShare, /negotiateRef\.current\?\.\(\)/);
+assert.doesNotMatch(
+  remoteScreenEvents,
+  /!hasAudio/,
+  "a share that includes tab audio must still be promoted onto the screen stage",
+);
 assert.match(remoteScreenEvents, /socket\.on\("screen:share-start", onScreenShareStart\)/);
 assert.match(remoteScreenEvents, /socket\.on\("screen:share-stop", onScreenShareStop\)/);
 assert.match(remoteScreenEvents, /socket\.off\("screen:share-start", onScreenShareStart\)/);

@@ -1290,6 +1290,7 @@ function registerSocketHandlers(io) {
         offer,
         callType: callType || "voice",
         callUuid,
+        renegotiate: renegotiation,
       });
 
       // Native iOS: PushKit VoIP ring → CallKit. Fresh rings only, never a

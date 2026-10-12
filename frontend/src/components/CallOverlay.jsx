@@ -22,6 +22,9 @@ import SpeakingRings from "./voice/SpeakingRings";
 import ParticipantStateIcons from "./voice/ParticipantStateIcons";
 import useVoiceActivity from "../hooks/useVoiceActivity";
 import { networkQualityTooltipKey, participantVolumePercent, readParticipantGain } from "../lib/voiceProfile";
+import { applyPlaybackGain } from "../lib/voiceGain";
+import { nextShareSelection } from "../lib/screenShareTracks";
+import ShareFilmstrip, { ShareGridVideo } from "./voice/ShareFilmstrip";
 import { useT } from "../context/LocaleContext";
 import { useToast } from "../context/ToastContext";
 import { DockDeviceSlot } from "./call/DevicePicker";
@@ -63,8 +66,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
-    const vol = Math.max(0, Math.min(1, Number(volume) / 100));
-    audioEl.volume = vol;
+    applyPlaybackGain(audioEl, Math.max(0, Math.min(200, Number(volume) || 0)) / 100);
     if (sinkId && typeof audioEl.setSinkId === "function") {
       audioEl.setSinkId(sinkId).catch(() => {});
     }
@@ -1662,30 +1664,45 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
   const t = useT();
   const glassDesktop = useGlassDesktop();
   const mosaic = glassDesktop && !isDm;
-  const [selectedSharerIndex, setSelectedSharerIndex] = useState(0);
+  const [activeSharerId, setActiveSharerId] = useState(null);
+  const [pinnedSharerId, setPinnedSharerId] = useState(null);
+  const [shareLayout, setShareLayout] = useState("stage");
   const [viewerCount] = useState(0);
   // Keep refs to both the normal and expanded video elements so we can set srcObject on each
   const normalVideoRef = useRef(null);
   const expandedVideoRef = useRef(null);
-  const prevSharerCountRef = useRef(0);
+  const prevSharerIdsRef = useRef([]);
   const [aspectKey, setAspectKey] = useState("0x0");
+  const sharerKey = allScreenSharers.map((sharer) => String(sharer.id)).join("|");
 
-  // When a new sharer appears (dual screen share), auto-focus the newest one
+  // A new share takes the stage unless one is pinned. A share that stops
+  // releases its pin and falls back to a share that is still live.
   useEffect(() => {
-    const n = allScreenSharers.length;
-    if (n > prevSharerCountRef.current) {
-      setSelectedSharerIndex(n - 1);
-    } else if (n > 0 && selectedSharerIndex > n - 1) {
-      setSelectedSharerIndex(n - 1);
+    const ids = sharerKey ? sharerKey.split("|") : [];
+    const next = nextShareSelection({
+      ids,
+      activeId: activeSharerId,
+      pinnedId: pinnedSharerId,
+      previousIds: prevSharerIdsRef.current,
+    });
+    prevSharerIdsRef.current = ids;
+    if (next.activeId !== (activeSharerId == null ? null : String(activeSharerId))) {
+      setActiveSharerId(next.activeId);
     }
-    prevSharerCountRef.current = n;
-  }, [allScreenSharers.length, selectedSharerIndex]);
+    if (next.pinnedId !== (pinnedSharerId == null ? null : String(pinnedSharerId))) {
+      setPinnedSharerId(next.pinnedId);
+    }
+  }, [sharerKey, activeSharerId, pinnedSharerId]);
 
-  // Clamp index if sharers list shrinks
-  const safeIndex = allScreenSharers.length
-    ? Math.min(Math.max(selectedSharerIndex, 0), allScreenSharers.length - 1)
-    : 0;
-  const activeSharer = allScreenSharers[safeIndex] ?? allScreenSharers[0];
+  const activeSharer = allScreenSharers.find((sharer) => String(sharer.id) === String(activeSharerId))
+    ?? allScreenSharers[0];
+  const filmSharers = allScreenSharers.map((sharer) => ({
+    ...sharer,
+    label: sharer.isLocal ? t("Your Screen") : (sharer.username || ""),
+    stream: sharer.isLocal
+      ? (isDm ? call?.screenStream : groupCall?.screenStream)
+      : sharer.stream,
+  }));
 
   // Derive the stream to display for the active sharer
   const screenStream = activeSharer?.isLocal
@@ -1790,7 +1807,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
     ? stripTiles.filter((tile) => String(tile.id) !== mosaicSharerId)
     : stripTiles;
 
-  if (mosaic) {
+  if (mosaic && shareLayout !== "grid") {
     const mosaicPeople = [
       ...visibleStrip.filter((tile) => !tile.isLocal),
       ...visibleStrip.filter((tile) => tile.isLocal),
@@ -1864,9 +1881,23 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
             );
           })}
         </div>
+        <ShareFilmstrip
+          sharers={filmSharers}
+          activeId={activeSharer?.id}
+          pinnedId={pinnedSharerId}
+          layout={shareLayout}
+          onSelect={(id) => setActiveSharerId(id)}
+          onTogglePin={(id) => {
+            setPinnedSharerId((current) => (String(current) === String(id) ? null : id));
+            setActiveSharerId(id);
+          }}
+          onToggleLayout={() => setShareLayout("grid")}
+        />
       </div>
     );
   }
+
+  const showGrid = shareLayout === "grid" && filmSharers.length > 1;
 
   return (
     <div
@@ -1882,9 +1913,29 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
       }}
     >
       {/* ── Main screen share area ── */}
+      {showGrid ? (
+        <div className={`share-stage-grid is-n${Math.min(filmSharers.length, 6)}`}>
+          {filmSharers.map((sharer) => (
+            <button
+              key={sharer.id}
+              type="button"
+              className={`share-grid-cell${String(sharer.id) === String(activeSharer?.id) ? " is-active" : ""}`}
+              onClick={() => {
+                setActiveSharerId(sharer.id);
+                setShareLayout("stage");
+              }}
+            >
+              <ShareGridVideo stream={sharer.stream} />
+              <span className="share-film-live">{t("Live")}</span>
+              <span className="share-film-name">{sharer.label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div
         style={{
-          flex: "1 1 auto",
+          flex: showGrid ? "0 0 0" : "1 1 auto",
+          display: showGrid ? "none" : "block",
           position: "relative",
           borderRadius: narrow ? 12 : 14,
           overflow: "hidden",
@@ -1979,7 +2030,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
               aria-label={t("Screen share volume")}
               type="range"
               min="0"
-              max="100"
+              max="200"
               value={screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}
               onChange={(event) => {
                 const value = Number(event.target.value);
@@ -2049,36 +2100,21 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
         )}
       </div>
 
-      {/* ── Screen selector (multiple sharers) ── */}
-      {allScreenSharers.length > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "2px 0" }}>
-          <span style={{ fontSize: 12, color: "#72767d", flexShrink: 0 }}>{t("Screens:")}</span>
-          {allScreenSharers.map((sharer, idx) => (
-            <motion.button
-              key={sharer.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedSharerIndex(idx)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "5px 12px",
-                borderRadius: 8,
-                border: "none",
-                background: idx === safeIndex ? "#5865f2" : "rgba(255,255,255,0.08)",
-                color: idx === safeIndex ? "#fff" : "#b5bac1",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "background 0.15s",
-              }}
-            >
-              <Monitor size={12} />
-              {sharer.isLocal ? t("Your Screen") : t("{name}'s Screen", { name: sharer.username })}
-            </motion.button>
-          ))}
-        </div>
-      )}
+      <ShareFilmstrip
+        sharers={filmSharers}
+        activeId={activeSharer?.id}
+        pinnedId={pinnedSharerId}
+        layout={shareLayout}
+        onSelect={(id) => {
+          setActiveSharerId(id);
+          if (shareLayout === "grid") setShareLayout("stage");
+        }}
+        onTogglePin={(id) => {
+          setPinnedSharerId((current) => (String(current) === String(id) ? null : id));
+          setActiveSharerId(id);
+        }}
+        onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
+      />
 
       {/* ── Bottom participant strip ── */}
       <div
