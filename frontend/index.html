@@ -42,6 +42,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Descall" />
     <meta name="theme-color" content="#0b0c10" />
+    <script>
+      /* After the theme-color meta exists: phone web matches the aurora top
+         (--g-base-0) so Safari does not paint a black band under the clock.
+         Native launch screen keeps its own color. */
+      (function () {
+        try {
+          var w = window;
+          var ua = navigator.userAgent || "";
+          if ((w.electronAPI && w.electronAPI.isElectron) || /Electron/i.test(ua)) return;
+          var cap = w.Capacitor;
+          if (cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform()) return;
+          var mobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua) || (w.innerWidth || 0) <= 768;
+          if (!mobile) return;
+          var theme = document.querySelector('meta[name="theme-color"]');
+          if (theme) theme.setAttribute("content", "#151724");
+        } catch (e) {}
+      })();
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />

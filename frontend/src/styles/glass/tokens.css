@@ -74,7 +74,8 @@ html.glass-ui {
 
   /* Geometry (8pt grid; Island-safe chrome) */
   --g-top-gap: 30px;          /* login content below the safe area (mockup y 92 at inset 62) */
-  --g-chrome-top: max(0px, calc(env(safe-area-inset-top, 0px) - 2px)); /* = 60 on a 62pt-inset iPhone; 0 in Safari where the browser chrome already clears the island */
+  /* Native app only (overridden below for phone web). 60px at a 62pt inset. */
+  --g-chrome-top: max(0px, calc(env(safe-area-inset-top, 0px) - 2px));
   --g-bar-bottom: 24px;
   --g-r-card: 22px;
   --g-r-sheet: 38px;
@@ -83,4 +84,16 @@ html.glass-ui {
      Text/Display optical sizes. Same stack as the approved mockup (Inter is
      only the off-Apple fallback the mockup itself was rendered with). */
   --g-font: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+}
+
+/* Phone Safari and the installed web app (not the native shell).
+   --g-safe-top is 0 in the browser — the status bar is outside the layout
+   viewport — and the real inset (~59px) in standalone, under the Island.
+   The 132% shop frame hangs about 6px past the 44px toolbar button. A chrome
+   top of 0 clips that ring on the list's overflow edge; subtracting 2px from
+   a real inset tucks the ring under the Island. 12px of clearance does both. */
+html.glass-ui:not(.native-app) {
+  --g-safe-top: env(safe-area-inset-top, 0px);
+  --g-frame-clear: 12px;
+  --g-chrome-top: calc(var(--g-safe-top) + var(--g-frame-clear));
 }

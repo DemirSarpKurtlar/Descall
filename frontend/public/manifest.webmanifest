@@ -6,8 +6,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0b0c10",
-  "theme_color": "#0b0c10",
+  "background_color": "#151724",
+  "theme_color": "#151724",
   "categories": ["social", "games", "communication"],
   "icons": [
     {

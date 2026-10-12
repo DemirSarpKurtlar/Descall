@@ -17,6 +17,33 @@ html.glass-ui .app-root.g-shell {
   --g-head-top: calc(var(--g-chrome-top) + 162px); /* 222: content under toolbar + title + search */
 }
 
+/* Phone web / Home Screen: the status bar and the home indicator sit on the
+   canvas, outside the list shell. The same aurora has to be there or Safari
+   paints theme-color (#0b0c10) as a hard black band. Native keeps its own
+   launch surface. */
+html.glass-ui:not(.native-app),
+html.glass-ui:not(.native-app) body,
+html.glass-ui:not(.native-app) #root,
+html.glass-ui:not(.native-app) .app-root.g-shell {
+  background-color: var(--g-deep) !important;
+  background-image:
+    radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
+    radial-gradient(55% 34% at 100% 22%, rgba(var(--g-brand2-rgb), var(--g-amb-b)), transparent 70%),
+    radial-gradient(70% 40% at 20% 70%, rgba(var(--g-brand-rgb), var(--g-amb-c)), transparent 70%),
+    radial-gradient(60% 35% at 95% 96%, rgba(var(--g-brand2-rgb), var(--g-amb-d)), transparent 70%),
+    linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+}
+
+html.glass-ui.a11y-solid:not(.native-app),
+html.glass-ui.a11y-solid:not(.native-app) body,
+html.glass-ui.a11y-solid:not(.native-app) #root,
+html.glass-ui.a11y-solid:not(.native-app) .app-root.g-shell {
+  background-image: none !important;
+  background-color: var(--g-deep) !important;
+}
+
 /* ── Root list pages: full-screen, edge-to-edge over the ambient light ── */
 @media (max-width: 768px) {
   html.glass-ui .app-root.g-shell .app-sidebar-shell,
@@ -24,6 +51,7 @@ html.glass-ui .app-root.g-shell {
     width: 100% !important;
     max-width: none !important;
     right: 0;
+    /* Inset lives in --g-chrome-top. Padding here would push the list down twice. */
     padding: 0 !important;
     box-shadow: none !important;
     background-color: var(--g-deep) !important;
@@ -195,6 +223,7 @@ html.glass-ui .g-toolbar {
   align-items: center;
   gap: 8px;
   z-index: 2;
+  overflow: visible;
 }
 
 html.glass-ui .g-toolbar .g-sp {
@@ -214,6 +243,12 @@ html.glass-ui .g-me-btn {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   position: relative;
+  overflow: visible;
+}
+
+html.glass-ui .g-me-av,
+html.glass-ui .g-me-av .ui-avatar {
+  overflow: visible;
 }
 
 /* Blur lives on the plate. The button itself scales on press. */

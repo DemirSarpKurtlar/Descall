@@ -47,7 +47,7 @@ for (const f of files) {
   for (const group of selectors(css)) {
     for (const sel of group.split(",").map((s) => s.trim()).filter(Boolean)) {
       count++;
-      assert.ok(/^html\.glass-ui(?=[\s.[:#>]|$)/.test(sel), `${f}: unscoped selector "${sel}"`);
+      assert.ok(/^html\.glass-ui(?=[\s.[:#:>]|$)/.test(sel), `${f}: unscoped selector "${sel}"`);
     }
   }
   assert.ok(!/@import\s+url\(\s*['"]?https?:/i.test(css), `${f}: no remote imports`);
@@ -70,6 +70,11 @@ for (const exact of [
 ]) {
   assert.ok(tokens.includes(exact), `tokens.css keeps ${exact}`);
 }
+assert.match(
+  tokens,
+  /html\.glass-ui:not\(\.native-app\)[\s\S]*--g-chrome-top: calc\(var\(--g-safe-top\) \+ var\(--g-frame-clear\)\)/,
+  "phone web chrome clears the frame and the Island"
+);
 
 // Loaded once, after every legacy sheet (same specificity rules win by order).
 const styles = readFileSync(join(here, "..", "..", "styles.css"), "utf8");

@@ -31,6 +31,9 @@ import {
 export const GLASS_CLASS = "glass-ui";
 export const GLASS_OVERRIDE_KEY = "descall:glass";
 export const GLASS_REMOTE_KEY = "descall:glass-remote";
+/** Top of the glass aurora (--g-base-0). Safari paints this in the status bar. */
+export const GLASS_THEME_COLOR = "#151724";
+const STOCK_THEME_COLOR = "#0b0c10";
 /** Phones only: the short screen side of every iPhone is < 600 pt, every iPad ≥ 744. */
 export const PHONE_MAX_SHORT_SIDE = 600;
 
@@ -193,11 +196,20 @@ function clearWebGlassFallback(w) {
   doc.classList.remove("glass-lite", "a11y-solid", "a11y-contrast");
 }
 
+/** Status bar / theme-color follows the aurora on phone web. Native launch color stays. */
+export function syncGlassThemeColor(w, enabled) {
+  const meta = w?.document?.querySelector?.('meta[name="theme-color"]');
+  if (!meta || typeof meta.setAttribute !== "function") return;
+  if (isNativeShell(w)) return;
+  meta.setAttribute("content", enabled ? GLASS_THEME_COLOR : STOCK_THEME_COLOR);
+}
+
 function setEnabled(next, w) {
   const doc = w?.document?.documentElement;
   if (doc) doc.classList.toggle(GLASS_CLASS, next);
   if (next && !isNativeIosShell(w)) applyWebGlassFallback(w);
   if (!next) clearWebGlassFallback(w);
+  syncGlassThemeColor(w, Boolean(next));
   if (next === enabled) return;
   enabled = next;
   listeners.forEach((l) => {

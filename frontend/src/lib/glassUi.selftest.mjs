@@ -9,6 +9,7 @@ import {
   GLASS_CLASS,
   GLASS_REMOTE_KEY,
   GLASS_OVERRIDE_KEY,
+  GLASS_THEME_COLOR,
 } from "./glassUi.js";
 import { deviceTier, liteReasons, isJanky, statusBarStyleFor } from "./glassDisplay.js";
 
@@ -101,6 +102,27 @@ assert.ok(phoneWeb._classes.has(GLASS_CLASS));
 phoneWeb._store["descall:glass-desktop-remote"] = "0";
 assert.equal(initGlassUi(phoneWeb), false, "cached desktopGlass kill wins on the next phone-web boot");
 assert.ok(!phoneWeb._classes.has(GLASS_CLASS));
+
+function withThemeMeta(win, color = "#0b0c10") {
+  const meta = {
+    content: color,
+    setAttribute(k, v) {
+      if (k === "content") this.content = v;
+    },
+  };
+  win.document.querySelector = (sel) => (sel === 'meta[name="theme-color"]' ? meta : null);
+  win._meta = meta;
+  return win;
+}
+const themed = withThemeMeta(fakeWindow({ platform: "web", native: false, w: 390, h: 844 }));
+assert.equal(initGlassUi(themed), true);
+assert.equal(themed._meta.content, GLASS_THEME_COLOR, "phone web theme-color matches the aurora top");
+themed._store["descall:glass"] = "0";
+assert.equal(initGlassUi(themed), false);
+assert.equal(themed._meta.content, "#0b0c10", "glass off restores the stock theme-color");
+const nativeTheme = withThemeMeta(fakeWindow({ platform: "ios", native: true }), "#1e1f22");
+assert.equal(initGlassUi(nativeTheme), true);
+assert.equal(nativeTheme._meta.content, "#1e1f22", "native status bar color stays on the launch surface");
 
 // ── Device tier / lite material ──
 assert.equal(deviceTier("iPhone10,3"), "low", "iPhone X (A11)");
