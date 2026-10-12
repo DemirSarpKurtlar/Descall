@@ -292,21 +292,6 @@ export default function ServerSidebar({
     );
   }, [groups, searchQuery]);
 
-  const copyInviteLink = async () => {
-    try {
-      const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
-      const { Funnel } = await import("../../site/analytics");
-      const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
-      await copyText(url);
-      Funnel.inviteGenerated({ method: "copy_link", username: me.username });
-      setAddSuccess(t("Invite link copied"));
-      setTimeout(() => setAddSuccess(""), 3000);
-    } catch {
-      setAddError(t("Could not copy invite link"));
-      setTimeout(() => setAddError(""), 3000);
-    }
-  };
-
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -346,9 +331,6 @@ export default function ServerSidebar({
                     { id: "search", icon: Search, label: t("Search") },
                     { id: "announcements", icon: Megaphone, label: t("Announcements"), badge: announcementUnread > 0 ? announcementUnread : undefined, onClick: () => setShowAnnouncements(!showAnnouncements) },
                     { id: "feedback", icon: MessageSquarePlus, label: t("Send Feedback"), onClick: () => openFeedbackModal({ type: "suggestion", source: "server_sidebar" }) },
-                    ...(activeView === "friends" && me?.username
-                      ? [{ id: "invite", icon: Link2, label: t("Copy invite link"), onClick: copyInviteLink }]
-                      : []),
                   ]
             }
             plus={
@@ -402,28 +384,6 @@ export default function ServerSidebar({
               >
                 <MessageSquarePlus size={18} />
               </button>
-              {activeView === "friends" && me?.username && (
-                <button
-                  className="icon-btn"
-                  title={t("Copy invite link")} aria-label={t("Copy invite link")}
-                  onClick={async () => {
-                    try {
-                      const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
-                      const { Funnel } = await import("../../site/analytics");
-                      const url = toPublicShareUrl(buildFriendInviteUrl(me.username));
-                      await copyText(url);
-                      Funnel.inviteGenerated({ method: "copy_link", username: me.username });
-                      setAddSuccess(t("Invite link copied"));
-                      setTimeout(() => setAddSuccess(""), 3000);
-                    } catch {
-                      setAddError(t("Could not copy invite link"));
-                      setTimeout(() => setAddError(""), 3000);
-                    }
-                  }}
-                >
-                  <Link2 size={18} />
-                </button>
-              )}
               <button
                 className="icon-btn"
                 title={t("Add")} aria-label={t("Add")}

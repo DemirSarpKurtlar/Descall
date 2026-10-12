@@ -755,7 +755,7 @@ button.nav-rail-logo:active {
   color: var(--text-0);
   margin: 0;
   overflow: hidden;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 32px;
   height: 32px;
