@@ -1,0 +1,227 @@
+/* Centered call stage. 1 tile sits in the middle, 2 sit as an equal pair,
+   3+ wrap with the last row centered. Applies on every platform; glass
+   folders only add material. Do not pin a child to a corner. */
+
+.call-participant-grid {
+  display: flex !important;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 8px 24px;
+  box-sizing: border-box;
+  --tile-basis: 320px;
+  --tile-max: min(480px, 100%);
+  --tile-h: clamp(220px, 46vh, 360px);
+}
+
+.call-participant-grid.is-n1 {
+  --tile-basis: 440px;
+  --tile-max: min(520px, 100%);
+  --tile-h: clamp(240px, 52vh, 380px);
+}
+
+.call-participant-grid.is-n2 {
+  --tile-basis: 340px;
+  --tile-max: min(460px, calc(50% - 12px));
+  --tile-h: clamp(240px, 54vh, 400px);
+}
+
+.call-participant-grid.is-n4 {
+  --tile-basis: 42%;
+  --tile-max: calc(50% - 12px);
+  --tile-h: clamp(180px, 36vh, 320px);
+}
+
+.call-participant-grid.is-n6 {
+  --tile-basis: 30%;
+  --tile-max: calc(33.33% - 12px);
+  --tile-h: clamp(160px, 30vh, 260px);
+}
+
+.call-participant-grid.is-n9 {
+  --tile-basis: 22%;
+  --tile-max: calc(25% - 12px);
+  --tile-h: clamp(140px, 24vh, 220px);
+}
+
+.call-participant-grid > * {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  display: flex;
+  flex: 1 1 var(--tile-basis);
+  width: auto !important;
+  max-width: var(--tile-max);
+  height: var(--tile-h) !important;
+  min-width: 0;
+  min-height: 0;
+}
+
+.call-participant-grid > * > * {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.call-participant-grid .participant-tile,
+.call-participant-grid .call-ring-tile {
+  position: relative;
+  border: none;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(154, 168, 255, 0.34), transparent 58%),
+    linear-gradient(168deg, rgba(46, 50, 78, 0.82), rgba(14, 16, 28, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.38);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+}
+
+.call-participant-grid .participant-tile.participant-tile--avatar-only {
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(154, 168, 255, 0.34), transparent 58%),
+    linear-gradient(168deg, rgba(46, 50, 78, 0.82), rgba(14, 16, 28, 0.92));
+  border-radius: 26px;
+  overflow: hidden;
+  border-color: transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.38);
+}
+
+.call-participant-grid .participant-tile::before,
+.call-participant-grid .call-ring-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 32%);
+}
+
+.call-participant-grid .participant-tile.is-speaking {
+  box-shadow:
+    inset 0 0 0 3px rgba(48, 209, 88, 0.95),
+    0 0 28px rgba(48, 209, 88, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.call-participant-grid .participant-tile-identity {
+  position: relative;
+  z-index: 3;
+}
+
+.call-participant-grid .participant-tile-label {
+  z-index: 3;
+}
+
+.call-ring-shell {
+  position: relative;
+  width: 134px;
+  height: 134px;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+
+.call-ring-pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(206, 214, 255, 0.9);
+  box-shadow: 0 0 0 8px rgba(129, 140, 248, 0.14);
+  transform: translate(-50%, -50%);
+  animation: call-ring-pulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+
+.call-ring-pulse.is-late {
+  animation-delay: 1.1s;
+}
+
+.call-ring-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  margin-top: 2px;
+  padding: 0 12px 0 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.call-ring-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c4b5fd;
+  box-shadow: 0 0 8px rgba(196, 181, 253, 0.95);
+  animation: call-ring-dot 1.3s ease-in-out infinite;
+}
+
+@keyframes call-ring-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1.85); opacity: 0; }
+}
+
+@keyframes call-ring-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.82); }
+}
+
+@media (max-width: 720px) {
+  .call-participant-grid {
+    gap: 10px;
+    padding: 4px 10px;
+  }
+
+  .call-participant-grid.is-n1 {
+    --tile-basis: 100%;
+    --tile-max: 100%;
+    --tile-h: clamp(240px, 58vh, 460px);
+  }
+
+  .call-participant-grid.is-n2,
+  .call-participant-grid.is-n4,
+  .call-participant-grid.is-n6,
+  .call-participant-grid.is-n9 {
+    --tile-basis: 46%;
+    --tile-max: calc(50% - 8px);
+    --tile-h: clamp(168px, 38vh, 280px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-ring-pulse,
+  .call-ring-dot {
+    animation: none;
+  }
+
+  .call-ring-pulse {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+}

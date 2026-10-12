@@ -1528,6 +1528,7 @@ export const phrases = {
   "Start a voice or video call from Quick dial, a chat, or a group.": "Start a voice or video call from Quick dial, a chat, or a group.",
   "Search calls": "Search calls",
   "Voice call": "Voice call",
+  "Waiting…": "Waiting…",
   "Video call": "Video call",
   "All": "All",
   "Missed": "Missed",

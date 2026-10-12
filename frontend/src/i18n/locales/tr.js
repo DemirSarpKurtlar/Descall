@@ -2488,6 +2488,7 @@ export const phrases = {
   "Call back": "Geri ara",
   "Call ended — anything to say?": "Arama bitti — bir şey söylemek ister misin?",
   "Calling...": "Aranıyor…",
+  "Waiting…": "Bekleniyor",
   "Click anywhere to exit fullscreen": "Tam ekrandan çıkmak için herhangi bir yere tıkla",
   "Click to expand": "Büyütmek için tıkla",
   "Click to reveal": "Görmek için tıkla",

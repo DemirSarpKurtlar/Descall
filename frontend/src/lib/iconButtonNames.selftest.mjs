@@ -35,8 +35,8 @@ if (!call.includes('aria-label={t("End Call")}')) {
   console.error("CallOverlay end-call button must be named");
   process.exit(1);
 }
-if (!call.includes("aria-label={handRaised ? t(\"Lower hand\") : t(\"Raise hand\")}")) {
-  console.error("CallOverlay hand button must copy its title onto aria-label");
+if (call.includes("t(\"Raise hand\")") || call.includes("t(\"Lower hand\")")) {
+  console.error("CallOverlay must not offer a raise-hand control");
   process.exit(1);
 }
 

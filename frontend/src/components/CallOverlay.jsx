@@ -31,6 +31,7 @@ import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState
 import useGlassUi from "../hooks/useGlassUi";
 import { useGlassDesktop } from "../hooks/useGlassDesktop";
 import { groupMosaicShape } from "../lib/groupMosaic";
+import { dmRingingLabelKey, planCallGrid } from "../lib/callGridLayout";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
 import { copyText } from "../lib/copyText";
 
@@ -103,7 +104,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const [showParticipants, setShowParticipants] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [screenExpanded, setScreenExpanded] = useState(false);
-  const [localHandRaised, setLocalHandRaised] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showAudioPanel, setShowAudioPanel] = useState(false);
   const [showScreenQuality, setShowScreenQuality] = useState(false);
@@ -172,13 +172,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const isGroupActive = groupCall?.isInCall;
   const active = isDmActive || isGroupActive;
   const isDm = isDmActive;
-  // Group calls broadcast hand-raise to every participant over the socket;
-  // DM calls have no one else to notify, so it stays a purely local toggle.
-  const handRaised = isDm ? localHandRaised : Boolean(groupCall?.isHandRaised);
-  const toggleHandRaise = () => {
-    if (isDm) setLocalHandRaised((v) => !v);
-    else groupCall?.toggleHandRaise?.();
-  };
 
   useEffect(() => {
     if (!active) {
@@ -833,31 +826,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             )}
 
             {!narrowViewport && (
-              <motion.button
-                onClick={toggleHandRaise}
-                title={handRaised ? t("Lower hand") : t("Raise hand")} aria-label={handRaised ? t("Lower hand") : t("Raise hand")}
-                animate={handRaised ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                transition={handRaised ? { repeat: Infinity, duration: 1.6, ease: "easeInOut" } : {}}
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: "50%",
-                  background: handRaised ? "#f0a500" : "#3c4043",
-                  border: handRaised ? "2px solid #ffc107" : "2px solid transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                  boxShadow: handRaised ? "0 0 16px rgba(240,165,0,0.5)" : "none",
-                }}
-              >
-                <Hand size={22} />
-              </motion.button>
-            )}
-
-            {!narrowViewport && (
               <div ref={audioPanelRef} style={{ position: "relative", flexShrink: 0 }}>
                 <CircleBtn
                   className={glass ? "g-cb" : undefined}
@@ -890,7 +858,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               <CircleBtn
                 className={glass ? "g-cb" : undefined}
                 size={narrowViewport ? 46 : 52}
-                color={showMoreMenu || (narrowViewport && handRaised) ? "rgba(255,255,255,0.15)" : "#3c4043"}
+                color={showMoreMenu ? "rgba(255,255,255,0.15)" : "#3c4043"}
                 title={t("More options")}
                 onClick={() => {
                   setShowMoreMenu((v) => !v);
@@ -948,14 +916,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                     )}
                     {narrowViewport && (
                       <>
-                        <MoreMenuItem
-                          icon={<Hand size={16} color={handRaised ? "#f0a500" : undefined} />}
-                          label={handRaised ? t("Lower hand") : t("Raise hand")}
-                          onClick={() => {
-                            toggleHandRaise();
-                            setShowMoreMenu(false);
-                          }}
-                        />
                         <MoreMenuItem
                           icon={<Volume2 size={16} />}
                           label={t("Audio devices")}
@@ -1543,6 +1503,41 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
   );
 }
 
+function CallRingingTile({ user, label }) {
+  const t = useT();
+  const displayName = resolveDisplayName(user) || user?.username || t("User");
+  return (
+    <div className="call-ring-tile participant-tile" role="status" aria-label={label}>
+      <div className="participant-tile-avatar-stack">
+        <div className="participant-tile-avatar-shell call-ring-shell">
+          <span className="call-ring-pulse" aria-hidden="true" />
+          <span className="call-ring-pulse is-late" aria-hidden="true" />
+          <div className="participant-tile-avatar-core" style={{ width: 96, height: 96 }}>
+            <Avatar
+              name={displayName}
+              size={96}
+              user={user}
+              imageUrl={resolveAvatarUrl(user)}
+              animate="never"
+            />
+          </div>
+        </div>
+        <div className="participant-tile-identity">
+          <span className="participant-tile-identity-name">
+            <NameEffectText user={user}>{displayName}</NameEffectText>
+            <BadgeIcon user={user} />
+          </span>
+          <AdminBadge user={user} variant="chip" />
+          <span className="call-ring-status">
+            <span className="call-ring-dot" aria-hidden="true" />
+            {label}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
   const t = useT();
   const glass = useGlassUi();
@@ -1574,30 +1569,30 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
   // A call's requested type is not evidence that the peer has a camera track.
   // Screen media is rendered only by ScreenShareLayout, never as a camera tile.
   const dmRemoteHasVideo = streamHasLiveVideo(call?.remoteStream);
-
-  const dmTwoUp = isDm && dmRemote.showSlot;
-  const count = dmTwoUp ? 2 : 1 + remoteTiles.length;
-  const cols = dmTwoUp ? 2 : count === 1 ? 1 : count <= 2 ? 2 : count <= 4 ? 2 : count <= 6 ? 3 : 4;
-  const rows = dmTwoUp ? 1 : Math.ceil(count / cols);
+  const ringing = isDm && mode === "outgoing" && !dmRemote.showSlot && Boolean(call?.peer);
+  const plan = planCallGrid({
+    isDm,
+    remoteSlot: Boolean(isDm && dmRemote.showSlot),
+    remoteCount: isDm ? 0 : remoteTiles.length,
+    ringing,
+  });
+  const ringLabel = plan.ringing
+    ? t(dmRingingLabelKey({
+      connectionQuality: call?.connectionQuality,
+      calleeAnswering: call?.calleeAnswering,
+    }))
+    : "";
 
   return (
     <motion.div
       layout
-      className={glass ? `g-call-grid${isDm ? " is-dm" : " is-group"}` : `call-participant-grid${isDm ? " is-dm" : " is-group"}`}
+      className={`call-participant-grid${glass ? " g-call-grid" : ""}${isDm ? " is-dm" : " is-group"} ${plan.bucket}${plan.ringing ? " is-ringing" : ""}`}
       transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
-      style={glass ? {
+      style={{
         flex: 1,
         minHeight: 0,
         height: "100%",
-        position: "relative",
-      } : {
-        flex: 1,
-        display: "grid",
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gap: 8,
-        padding: "8px 12px",
-        minHeight: 0,
+        width: "100%",
       }}
     >
       <motion.div layout transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }} style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}>
@@ -1611,6 +1606,17 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
           user={localUser}
         />
       </motion.div>
+
+      {plan.ringing && (
+        <motion.div
+          key="dm-ringing"
+          layout
+          transition={{ layout: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
+          style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}
+        >
+          <CallRingingTile user={call.peer} label={ringLabel} />
+        </motion.div>
+      )}
 
       {isDm && dmRemote.showSlot && (
         <motion.div
@@ -2523,7 +2529,7 @@ function GlassCallShot({ kind }) {
         </div>
       </div>
       <div className="call-main-stage" style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <div className={`g-call-grid${group ? " is-group" : " is-dm"}`} style={{ flex: 1, minHeight: 0, height: "100%", position: "relative" }}>
+        <div className={`call-participant-grid g-call-grid${group ? " is-group is-n4" : " is-dm is-n2"}`} style={{ flex: 1, minHeight: 0, height: "100%", width: "100%" }}>
           {tiles.map((tile) => (
             <div key={tile.name} className={`participant-tile participant-tile--avatar-only${tile.speaking ? " is-speaking" : ""}`}>
               {tile.speaking && !group ? (

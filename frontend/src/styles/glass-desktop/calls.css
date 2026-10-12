@@ -55,47 +55,37 @@ html.glass-desktop .call-tile.is-speaking:not(.participant-tile--avatar-only) {
   box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 32px rgba(48, 209, 88, 0.3) !important;
 }
 
-/* 1:1: remote is the stage, local is a PiP. Group stays a grid. */
-html.glass-desktop .call-participant-grid.is-dm {
-  display: block !important;
-  position: relative !important;
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
-  padding: 76px 20px 108px !important;
-  gap: 0 !important;
+/* 1, 2, and 3+ share one centered flex grid (see call-grid.css). */
+html.glass-desktop .call-participant-grid .participant-tile,
+html.glass-desktop .call-participant-grid .call-ring-tile {
+  border-radius: 26px;
+  background:
+    radial-gradient(80% 62% at 50% 0%, rgba(155, 168, 255, 0.3), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.4);
 }
 
-html.glass-desktop .call-participant-grid.is-dm > :nth-child(1) {
-  position: absolute !important;
-  width: 220px !important;
-  height: 140px !important;
-  right: 28px !important;
-  bottom: 116px !important;
-  left: auto !important;
-  top: auto !important;
-  z-index: 6;
-  border-radius: 18px;
+html.glass-desktop .call-participant-grid .participant-tile.participant-tile--avatar-only,
+html.glass-desktop .call-participant-grid .call-ring-tile.participant-tile--avatar-only {
+  background:
+    radial-gradient(80% 62% at 50% 0%, rgba(155, 168, 255, 0.3), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
+    var(--gd-heavy-base);
+  border-radius: 26px;
   overflow: hidden;
 }
 
-html.glass-desktop .call-participant-grid.is-dm > :nth-child(2) {
-  position: absolute !important;
-  inset: 72px 20px 100px 20px !important;
-  width: auto !important;
-  height: auto !important;
-  z-index: 1;
-}
-
-html.glass-desktop .call-participant-grid.is-dm .participant-tile,
-html.glass-desktop .call-participant-grid.is-dm video {
+html.glass-desktop .call-participant-grid .participant-tile,
+html.glass-desktop .call-participant-grid video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-html.glass-desktop .call-participant-grid.is-dm > :nth-child(2) .participant-tile {
-  border-radius: 26px;
 }
 
 html.glass-desktop .call-quality-hud {
@@ -103,19 +93,10 @@ html.glass-desktop .call-quality-hud {
   background: rgba(255, 255, 255, 0.1);
 }
 
-html.glass-desktop[data-glass-qa-speaking] .call-participant-grid.is-dm > :nth-child(2) .participant-tile {
-  position: relative;
-}
-
-html.glass-desktop[data-glass-qa-speaking] .call-participant-grid.is-dm > :nth-child(2) .participant-tile::after,
-html.glass-desktop .call-participant-grid.is-dm > :nth-child(2) .participant-tile.is-speaking::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 6;
-  box-shadow: inset 0 0 0 3px rgba(48, 209, 88, 0.95), 0 0 28px rgba(48, 209, 88, 0.35);
+html.glass-desktop .call-participant-grid .participant-tile.is-speaking {
+  box-shadow:
+    inset 0 0 0 3px rgba(48, 209, 88, 0.95),
+    0 0 28px rgba(48, 209, 88, 0.35) !important;
 }
 
 html.glass-desktop .participant-tile-label {
