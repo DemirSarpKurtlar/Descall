@@ -216,8 +216,10 @@ html.glass-desktop .announcement-meta {
 
 html.glass-desktop .activity-view,
 html.glass-desktop .lfg-workspace,
-html.glass-desktop .shop-panel {
-  background: transparent;
+html.glass-desktop .shop-panel,
+html.glass-desktop .valorant-hub,
+html.glass-desktop .app-root[data-view="play"] .valorant-hub {
+  background: transparent !important;
   color: var(--gd-t1);
 }
 
