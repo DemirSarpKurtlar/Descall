@@ -31,6 +31,7 @@ import { nextShareSelection, visibleScreenStream } from "../../lib/screenShareTr
 import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../../lib/fluid/springs";
 import { applyPlaybackGain } from "../../lib/voiceGain";
 import ShareFilmstrip from "../voice/ShareFilmstrip";
+import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
@@ -349,18 +350,21 @@ function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
         <span>{label}</span>
       </button>
       {!sharer.isLocal && (
-        <label className="server-voice-screen-volume" onClick={(event) => event.stopPropagation()}>
-          <Volume2 size={14} aria-hidden="true" />
-          <input
-            aria-label={t("Screen share volume")}
-            type="range"
-            min="0"
-            max="200"
+        <div
+          className="server-voice-screen-volume g-vol-chip"
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <GlassVolumeSlider
+            compact
+            min={0}
+            max={200}
+            step={1}
             value={volume}
-            onChange={(event) => onVolumeChange?.(Number(event.target.value))}
+            label={t("Screen share volume")}
+            onChange={(next) => onVolumeChange?.(next)}
           />
-          <span>{volume}%</span>
-        </label>
+        </div>
       )}
     </div>
   );
@@ -574,21 +578,21 @@ function ServerScreenShareStage({
             <span>{label}</span>
           </div>
           {!active.isLocal && (
-            <label
-              className="server-voice-screen-volume is-expanded"
+            <div
+              className="server-voice-screen-volume is-expanded g-vol-chip"
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
             >
-              <Volume2 size={14} aria-hidden="true" />
-              <input
-                aria-label={t("Screen share volume")}
-                type="range"
-                min="0"
-                max="200"
+              <GlassVolumeSlider
+                compact
+                min={0}
+                max={200}
+                step={1}
                 value={volumeFor(active)}
-                onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
+                label={t("Screen share volume")}
+                onChange={(next) => onVolumeChange?.(active.id, next)}
               />
-              <span>{volumeFor(active)}%</span>
-            </label>
+            </div>
           )}
           <div className="server-voice-screen-hint is-expanded">
             {t("Click anywhere to exit fullscreen")}
@@ -630,18 +634,21 @@ function ServerScreenShareStage({
         </div>
 
         {!active.isLocal && (
-          <label className="server-voice-screen-volume" onClick={(e) => e.stopPropagation()}>
-            <Volume2 size={14} aria-hidden="true" />
-            <input
-              aria-label={t("Screen share volume")}
-              type="range"
-              min="0"
-              max="200"
+          <div
+            className="server-voice-screen-volume g-vol-chip"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <GlassVolumeSlider
+              compact
+              min={0}
+              max={200}
+              step={1}
               value={volumeFor(active)}
-              onChange={(e) => onVolumeChange?.(active.id, Number(e.target.value))}
+              label={t("Screen share volume")}
+              onChange={(next) => onVolumeChange?.(active.id, next)}
             />
-            <span>{volumeFor(active)}%</span>
-          </label>
+          </div>
         )}
 
         <div className="server-voice-screen-hint">{t("Click to expand")}</div>

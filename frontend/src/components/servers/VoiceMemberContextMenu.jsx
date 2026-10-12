@@ -16,6 +16,7 @@ import {
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
+import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 
 export default function VoiceMemberContextMenu({
   menu,
@@ -67,7 +68,7 @@ export default function VoiceMemberContextMenu({
   const left = Math.min(menu.x || 12, (typeof window !== "undefined" ? window.innerWidth : 400) - 260);
   const top = Math.min(menu.y || 12, (typeof window !== "undefined" ? window.innerHeight : 400) - 420);
   const voiceLevel = Math.max(0, Math.min(200, Number(voiceVolume) || 0));
-  const screenLevel = Math.max(0, Math.min(100, Number(screenVolume) || 0));
+  const screenLevel = Math.max(0, Math.min(200, Number(screenVolume) || 0));
   // Per-listener volume / local mute / screen volume make no sense for yourself.
   const voiceVolumeHandler = isSelf ? null : onVoiceVolume;
   const voiceMuteHandler = isSelf ? null : onToggleVoiceMute;
@@ -94,20 +95,19 @@ export default function VoiceMemberContextMenu({
           {resolveDisplayName(user) || user.username}
         </div>
         {typeof voiceVolumeHandler === "function" && (
-          <label className="server-voice-menu-slider">
-            <span>
-              {t("Volume")}
-              <b>{voiceLevel}%</b>
-            </span>
-            <input
-              aria-label={t("Volume")}
-              type="range"
-              min="0"
-              max="200"
+          <div className="server-voice-menu-slider">
+            <span>{t("Volume")}</span>
+            <GlassVolumeSlider
+              block
+              surface
+              min={0}
+              max={200}
+              step={1}
               value={voiceLevel}
-              onChange={(event) => voiceVolumeHandler(Number(event.target.value))}
+              label={t("Volume")}
+              onChange={voiceVolumeHandler}
             />
-          </label>
+          </div>
         )}
         {typeof voiceMuteHandler === "function" && (
           <button type="button" className="server-dropdown-item" onClick={voiceMuteHandler}>
@@ -116,21 +116,22 @@ export default function VoiceMemberContextMenu({
           </button>
         )}
         {showScreenSlider && typeof onScreenVolume === "function" && (
-          <label className="server-voice-menu-slider">
+          <div className="server-voice-menu-slider">
             <span>
               <Monitor size={13} aria-hidden />
               {t("Screen share volume")}
-              <b>{screenLevel}%</b>
             </span>
-            <input
-              aria-label={t("Screen share volume")}
-              type="range"
-              min="0"
-              max="100"
+            <GlassVolumeSlider
+              block
+              surface
+              min={0}
+              max={200}
+              step={1}
               value={screenLevel}
-              onChange={(event) => onScreenVolume(Number(event.target.value))}
+              label={t("Screen share volume")}
+              onChange={onScreenVolume}
             />
-          </label>
+          </div>
         )}
         {typeof onViewProfile === "function" && (
           <button type="button" className="server-dropdown-item" onClick={onViewProfile}>

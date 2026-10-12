@@ -1,5 +1,12 @@
 /* Screen-share filmstrip — every platform, not scoped to glass-ui. */
 
+.gd-share-volume {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
+}
+
 .share-filmstrip {
   display: flex;
   align-items: stretch;

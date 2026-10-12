@@ -38,6 +38,7 @@ import { dmRingingLabelKey, planCallGrid } from "../lib/callGridLayout";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
 import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../lib/fluid/springs";
 import { copyText } from "../lib/copyText";
+import GlassVolumeSlider from "./ui/GlassVolumeSlider";
 
 /*
  * Google Meet-style call overlay
@@ -2023,39 +2024,25 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
         </div>
 
         {!activeSharer?.isLocal && (
-          <label
-            className="gd-mosaic-chrome"
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "rgba(0,0,0,0.65)",
-              backdropFilter: "blur(6px)",
-              borderRadius: 8,
-              padding: "6px 10px",
-              color: "#fff",
-            }}
+          <div
+            className="gd-share-volume g-vol-chip gd-mosaic-chrome"
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            <Volume2 size={15} aria-hidden="true" />
-            <input
-              aria-label={t("Screen share volume")}
-              type="range"
-              min="0"
-              max="200"
+            <GlassVolumeSlider
+              compact
+              narrow={narrow}
+              min={0}
+              max={200}
+              step={1}
               value={screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}
-              onChange={(event) => {
-                const value = Number(event.target.value);
+              label={t("Screen share volume")}
+              onChange={(value) => {
                 if (activeSharer?.id != null) onScreenVolumeForSharer?.(activeSharer.id, value);
                 onScreenShareVolumeChange?.(value);
               }}
-              style={{ width: narrow ? 78 : 112, accentColor: "#6678ff" }}
             />
-            <span style={{ fontSize: 11, minWidth: 30 }}>{screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}%</span>
-          </label>
+          </div>
         )}
 
         {/* Expand/collapse hint — bottom-center */}

@@ -1399,7 +1399,7 @@ export function useServerVoice(socket) {
 
   const setScreenShareVolume = useCallback((userId, volume) => {
     if (userId == null) return;
-    const next = Math.max(0, Math.min(100, Number(volume)));
+    const next = Math.max(0, Math.min(200, Number(volume)));
     screenVolumeRef.current.set(String(userId), Number.isFinite(next) ? next : 100);
     publishLevelState();
   }, [publishLevelState]);

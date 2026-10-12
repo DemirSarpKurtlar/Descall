@@ -1,0 +1,223 @@
+/* Glass volume slider for calls and menus on every platform. */
+
+.g-vol {
+  --g-vol-thumb: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.g-vol,
+.g-vol * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.g-vol.is-block {
+  display: flex;
+  width: 100%;
+}
+
+.g-vol.is-compact {
+  --g-vol-thumb: 18px;
+  gap: 6px;
+}
+
+.g-vol-icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.g-vol.is-compact .g-vol-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.g-vol-icon:active {
+  transform: scale(0.92);
+}
+
+.g-vol-icon:focus,
+.g-vol-icon:focus-visible,
+.g-vol-slider:focus,
+.g-vol-slider:focus-visible {
+  outline: none;
+}
+
+.g-vol-icon:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.28);
+}
+
+.g-vol-slider {
+  position: relative;
+  flex: 0 0 128px;
+  width: 128px;
+  height: 28px;
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.g-vol.is-compact .g-vol-slider {
+  width: 112px;
+  flex: 0 0 112px;
+}
+
+.g-vol.is-compact.is-narrow .g-vol-slider {
+  width: 84px;
+  flex: 0 0 84px;
+}
+
+.g-vol.is-block .g-vol-slider {
+  width: auto;
+  flex: 1 1 auto;
+}
+
+.g-vol-track {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.28));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.g-vol.is-block .g-vol-track {
+  height: 16px;
+}
+
+.g-vol-slider:focus-visible .g-vol-track {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 0 0 3px rgba(255, 255, 255, 0.26);
+}
+
+.g-vol-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--g-vol-fill, 0px);
+  border-radius: inherit;
+  background: linear-gradient(180deg, #ffffff, #ececf1);
+}
+
+.g-vol-thumb {
+  position: absolute;
+  top: 50%;
+  left: var(--g-vol-thumb-left, 0px);
+  width: var(--g-vol-thumb);
+  height: var(--g-vol-thumb);
+  margin-top: calc(var(--g-vol-thumb) / -2);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.38),
+    0 0 0 0.5px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  pointer-events: none;
+  transition: transform 100ms ease-out;
+}
+
+.g-vol.is-dragging .g-vol-thumb {
+  transform: scale(1.08);
+}
+
+.g-vol-pct {
+  flex: 0 0 auto;
+  min-width: 2.7em;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-align: right;
+  color: inherit;
+}
+
+.g-vol.is-on-surface {
+  color: var(--text-0, #fff);
+}
+
+.g-vol.is-on-surface .g-vol-track {
+  background: color-mix(in srgb, var(--text-0, #fff) 12%, transparent);
+  box-shadow:
+    inset 0 1px 1px color-mix(in srgb, var(--text-0, #fff) 18%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--text-0, #fff) 16%, transparent);
+}
+
+.g-vol.is-on-surface .g-vol-fill,
+.g-vol.is-on-surface .g-vol-thumb {
+  background: var(--text-0, #fff);
+}
+
+.g-vol.is-on-surface .g-vol-icon:focus-visible,
+.g-vol.is-on-surface .g-vol-slider:focus-visible .g-vol-track {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-0, #fff) 24%, transparent);
+}
+
+.g-vol-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px 3px 2px;
+  border-radius: 999px;
+  background: rgba(12, 12, 16, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 28px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .g-vol.is-compact .g-vol-slider {
+    width: 84px;
+    flex: 0 0 84px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-vol-thumb,
+  .g-vol-icon {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .g-vol-track {
+    background: Canvas;
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+
+  .g-vol-fill,
+  .g-vol-thumb {
+    background: CanvasText;
+  }
+}
