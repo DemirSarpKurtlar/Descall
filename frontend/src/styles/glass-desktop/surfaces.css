@@ -163,6 +163,68 @@ html.glass-desktop .user-settings.is-desktop .us-main-header {
   box-shadow: none;
 }
 
+/* Settings pages share one centered column. Shop keeps the wide catalog. */
+html.glass-desktop .user-settings.is-desktop:not(.is-shop-open) .us-main-scroll {
+  padding: 20px 32px 40px;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .user-settings.is-desktop:not(.is-shop-open) .us-page-title {
+  width: min(720px, 100%);
+  margin: 4px auto 20px;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .user-settings.is-desktop:not(.is-shop-open) .us-tab {
+  width: min(720px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  gap: 28px;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--gd-t2);
+}
+
+html.glass-desktop .user-settings.is-desktop .us-section {
+  gap: 14px;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-section-label {
+  margin: 0 2px;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-card.us-form {
+  padding: 18px 20px;
+  gap: 16px;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-row {
+  min-height: 64px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-card > .us-row {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.glass-desktop .user-settings.is-desktop .g-privacy-actions {
+  gap: 14px;
+  padding: 6px 16px 18px;
+}
+
+html.glass-desktop .user-settings.is-desktop .g-privacy-actions .us-btn {
+  min-height: 44px;
+  border-radius: 14px;
+}
+
 html.glass-desktop .user-settings.is-desktop .us-main-heading h3,
 html.glass-desktop .user-settings.is-shop-open .us-main-heading h3 {
   font-size: 28px;

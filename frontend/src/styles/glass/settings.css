@@ -207,6 +207,42 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar {
   padding-bottom: calc(var(--g-bar-bottom, 24px) + 88px);
 }
 
+/* Detail pages use the same inset and column rhythm as desktop settings.
+   The shop catalog keeps its own header clearance. */
+html.glass-ui .user-settings.is-mobile.g-settings:not(.g-shop-open) .us-main-scroll {
+  padding: 20px 24px calc(36px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings:not(.g-shop-open) .us-tab {
+  width: min(640px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-section {
+  gap: 12px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-row {
+  min-height: 64px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .us-card.us-form {
+  padding: 16px 18px;
+  gap: 14px;
+}
+
 html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar-top {
   padding: calc(var(--g-chrome-top) + 4px) 16px 0;
 }
@@ -431,9 +467,9 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-settings-me-av .status-badg
 /* Privacy detail: grouped card, equal choice pills, chevron rows. */
 html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .us-lead {
   margin: 0;
-  padding: 4px 8px 0;
+  padding: 0;
   font-size: 15px;
-  line-height: 20px;
+  line-height: 22px;
   color: var(--g-t3);
 }
 
@@ -442,8 +478,8 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .us-row-icon {
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .us-row {
-  min-height: 52px;
-  padding: 12px 16px;
+  min-height: 64px;
+  padding: 16px 18px;
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .us-row-title {
@@ -460,8 +496,8 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .us-row-desc {
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .g-privacy-actions {
-  gap: 8px;
-  padding: 0 12px 12px;
+  gap: 14px;
+  padding: 6px 16px 18px;
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-privacy .g-privacy-actions .us-btn {
