@@ -58,6 +58,7 @@
 @import './styles/admin-liquid.css';
 @import './styles/activity-card.css';
 @import './styles/conv-rows.css';
+@import './styles/feedback-nudge.css';
 
 /* ============================================
    OLD CSS REMOVED — Using new modular system

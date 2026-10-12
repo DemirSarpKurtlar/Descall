@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { MessageSquarePlus, X } from "lucide-react";
 import {
   FEEDBACK_COOLDOWN,
@@ -20,6 +20,7 @@ import { useT } from "../../context/LocaleContext";
  */
 export default function FeedbackNudgeBanner({ enabled = true }) {
   const t = useT();
+  const reduceMotion = useReducedMotion();
   const [banner, setBanner] = useState(null);
   const hideTimerRef = useRef(null);
   const softTriedRef = useRef(false);
@@ -92,10 +93,14 @@ export default function FeedbackNudgeBanner({ enabled = true }) {
       {banner && (
         <motion.div
           key="feedback-nudge"
-          initial={{ y: -48, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -48, opacity: 0 }}
-          transition={{ type: "spring", damping: 28, stiffness: 380 }}
+          initial={reduceMotion ? { opacity: 0 } : { y: -72, opacity: 0 }}
+          animate={reduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { y: -72, opacity: 0 }}
+          transition={
+            reduceMotion
+              ? { duration: 0.2 }
+              : { type: "spring", stiffness: 380, damping: 26, mass: 0.85 }
+          }
           className="app-feedback-banner"
           role="status"
           aria-live="polite"
