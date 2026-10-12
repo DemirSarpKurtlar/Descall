@@ -1082,7 +1082,7 @@
               try { bootTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz) {}
               bootTr = bootLang.indexOf("tr") === 0 || bootLang.slice(-3) === "-tr" || bootTz === "Europe/Istanbul";
             } catch (eBoot) {}
-            bootLabel.textContent = bootTr ? "Yükleniyor" : "Loading";
+            if (bootTr) bootLabel.textContent = "Yükleniyor";
           }
         }
         var logo = document.getElementById("boot-logo");
