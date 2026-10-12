@@ -503,3 +503,15 @@ html.glass-ui .g-auth-legal .legal-consent-link {
   letter-spacing: -0.012em;
   text-decoration: none;
 }
+
+/* Safari/Chrome autofill paints a yellow plate. Keep the glass field. */
+html.glass-ui .g-auth input:-webkit-autofill,
+html.glass-ui .g-auth input:-webkit-autofill:hover,
+html.glass-ui .g-auth input:-webkit-autofill:focus,
+html.glass-ui .g-auth input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--g-t1);
+  caret-color: var(--g-t1);
+  border-radius: 16px;
+  transition: background-color 99999s ease-out 0s;
+  box-shadow: 0 0 0 1000px rgba(16, 18, 28, 0.94) inset, inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}

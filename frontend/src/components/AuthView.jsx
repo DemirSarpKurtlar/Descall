@@ -295,6 +295,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         }}
       />
       <GoogleSignInButton
+        appearance={glass || glassDesktop ? "glass" : "standard"}
         disabled={loading || needsTerms}
         onCredential={async (credential) => {
           if (needsTerms) return;

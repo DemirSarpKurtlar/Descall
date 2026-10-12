@@ -1,10 +1,30 @@
 import { useEffect } from "react";
 import { useT } from "../../context/localeContextInstance";
+import RouteLoadingScreen from "./RouteLoadingScreen";
 
 /** Set before first paint by index.html (native app + phone/touch web, never Electron). */
 function isMobileBootSurface() {
   try {
     return typeof document !== "undefined" && document.documentElement.classList.contains("boot-mobile");
+  } catch {
+    return false;
+  }
+}
+
+function isNarrowBoot() {
+  try {
+    if (typeof window === "undefined") return false;
+    if (window.electronAPI?.isElectron) return false;
+    const width = window.innerWidth || 0;
+    return width > 0 && width < 960;
+  } catch {
+    return false;
+  }
+}
+
+function isNativeBootSurface() {
+  try {
+    return typeof document !== "undefined" && document.documentElement.classList.contains("native-app");
   } catch {
     return false;
   }
@@ -44,8 +64,19 @@ function MobileBootSplash() {
  * Replaces the empty black #root that made hard navigations look crashed.
  * Desktop web / Electron: skeleton (unchanged). Mobile: launch splash.
  */
+/** Phone web: same aurora screen as the HTML splash, once React is up. */
+function WebBootSplash() {
+  useEffect(() => {
+    const hold = typeof window !== "undefined" ? window.__descallHoldBootSplash : null;
+    return typeof hold === "function" ? hold() : undefined;
+  }, []);
+  return <RouteLoadingScreen />;
+}
+
 export default function AppBootSkeleton(props) {
-  if (isMobileBootSurface()) return <MobileBootSplash />;
+  if (isMobileBootSurface() && isNativeBootSurface()) return <MobileBootSplash />;
+  if (isMobileBootSurface()) return <WebBootSplash />;
+  if (isNarrowBoot()) return <WebBootSplash />;
   return <DesktopBootSkeleton {...props} />;
 }
 

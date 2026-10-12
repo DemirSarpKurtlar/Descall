@@ -203,11 +203,9 @@ async function bootApp() {
       import("./components/IosPwaInstallBanner"),
       import("./styles.css"),
       loadI18nCatalogs(),
-      // iPhone Liquid Glass (html.glass-ui) and desktop/web Liquid Glass
-      // (html.glass-desktop, on at desktop width unless a kill switch says otherwise).
-      isNativeApp
-        ? import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {})
-        : null,
+      // iPhone + mobile web Liquid Glass (html.glass-ui) and desktop Liquid Glass
+      // (html.glass-desktop, on at >=960px unless a kill switch says otherwise).
+      import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {}),
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
     ]);
 

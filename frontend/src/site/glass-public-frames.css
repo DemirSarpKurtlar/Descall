@@ -1128,7 +1128,21 @@ body:has(.mkt) .login-modal :focus-visible {
     max-width: none;
     margin: 0;
     border-radius: 34px 34px 0 0 !important;
-    padding: 14px 18px 34px;
+    box-sizing: border-box;
+    padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body:has(.mkt) .login-modal h2 {
+    padding-right: 0;
+    text-align: center;
+  }
+
+  body:has(.mkt) .login-modal form,
+  body:has(.mkt) .login-modal .google-signin-wrap,
+  body:has(.mkt) .login-modal .mkt-auth-divider {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   body:has(.mkt) .login-modal::before {
@@ -1591,8 +1605,22 @@ body:has(.mkt) .login-modal .mkt-auth-logo {
   display: block;
   width: 56px;
   height: 56px;
+  margin: 8px auto 0;
   border-radius: 17px;
   box-shadow: 0 10px 28px rgba(88, 122, 246, 0.45);
+}
+
+body:has(.mkt) .login-modal input:-webkit-autofill,
+body:has(.mkt) .login-modal input:-webkit-autofill:hover,
+body:has(.mkt) .login-modal input:-webkit-autofill:focus,
+body:has(.mkt) .login-modal input:-webkit-autofill:active {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.96);
+  caret-color: #fff;
+  border-radius: 14px;
+  transition: background-color 99999s ease-out 0s;
+  box-shadow:
+    0 0 0 1000px rgba(22, 24, 34, 0.96) inset,
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
 }
 
 body:has(.mkt) .login-modal h2 {

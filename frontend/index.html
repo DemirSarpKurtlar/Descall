@@ -349,6 +349,60 @@
           animation: none !important;
         }
       }
+      /* Phone web (not the native launch screen): full-bleed glass aurora,
+         the original mark, a short bar, and a visible status line. Native
+         keeps the #1E1F22 launch tile above. */
+      html.boot-mobile:not(.native-app) #boot-splash,
+      html.boot-mobile:not(.native-app) .descall-boot-splash {
+        background:
+          radial-gradient(90% 55% at 50% 16%, rgba(88, 122, 246, 0.42), transparent 62%),
+          radial-gradient(70% 45% at 92% 90%, rgba(62, 207, 142, 0.16), transparent 60%),
+          radial-gradient(60% 40% at 6% 82%, rgba(123, 137, 255, 0.22), transparent 55%),
+          #07080d;
+      }
+      html.boot-mobile:not(.native-app) #boot-splash .boot-mark,
+      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-mark {
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+        background: none;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(88, 101, 242, 0.28);
+        animation: boot-mark-pulse 2.6s ease-in-out infinite;
+      }
+      html.boot-mobile:not(.native-app) #boot-splash .boot-mark img,
+      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-mark img {
+        display: block;
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+      }
+      html.boot-mobile:not(.native-app) #boot-splash .boot-bar,
+      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-bar {
+        position: static;
+        left: auto;
+        top: auto;
+        width: 72px;
+        height: 3px;
+        margin: 2px 0 0;
+        opacity: 1;
+        animation: none;
+      }
+      html.boot-mobile:not(.native-app) #boot-splash .boot-status,
+      html.boot-mobile:not(.native-app) .descall-boot-splash .boot-status {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        color: rgba(235, 238, 255, 0.82);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
       /* Static SEO shell — readable first paint before React hydrate (all niche pages). */
       #seo-static {
         --seo-bg: #0b0c10;
@@ -1018,6 +1072,19 @@
         }
         var el = document.getElementById("boot-splash");
         if (el) el.setAttribute("data-shown-at", String(Date.now()));
+        if (document.documentElement.classList.contains("boot-mobile") && !document.documentElement.classList.contains("native-app")) {
+          var bootLabel = document.getElementById("boot-status");
+          if (bootLabel) {
+            var bootTr = false;
+            try {
+              var bootLang = (localStorage.getItem("descall_language") || navigator.language || "").toLowerCase();
+              var bootTz = "";
+              try { bootTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz) {}
+              bootTr = bootLang.indexOf("tr") === 0 || bootLang.slice(-3) === "-tr" || bootTz === "Europe/Istanbul";
+            } catch (eBoot) {}
+            bootLabel.textContent = bootTr ? "Yükleniyor" : "Loading";
+          }
+        }
         var logo = document.getElementById("boot-logo");
         if (logo && location.protocol === "file:") logo.src = "./brand/descall-icon.png";
 

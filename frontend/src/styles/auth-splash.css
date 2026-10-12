@@ -413,6 +413,57 @@
   justify-content: center;
 }
 
+/* Frosted Google face. The official GIS iframe stays on top at opacity 0 so it still receives the tap. */
+.google-signin-wrap--glass {
+  position: relative;
+  width: 100%;
+  min-height: 48px;
+  margin: 0 0 4px;
+}
+
+.google-signin-glass-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 48px;
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.96);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
+    rgba(20, 22, 32, 0.55);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 10px 28px rgba(0, 0, 0, 0.28);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  pointer-events: none;
+}
+
+.google-signin-glass-face svg {
+  flex-shrink: 0;
+}
+
+.google-signin-button--glass-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  /* Nearly invisible so the frosted face shows, but still hit-tests on iOS Safari. */
+  opacity: 0.01;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.google-signin-button--glass-hit > div,
+.google-signin-button--glass-hit iframe {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+}
+
 .auth-shell .google-signin-wrap,
 .auth-shell .google-signin-button {
   display: flex;

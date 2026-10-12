@@ -282,6 +282,7 @@ function AuthModal({
                 {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}
                 <Suspense fallback={null}>
                   <GoogleSignInButton
+                  appearance="glass"
                   disabled={isSubmitting || authLoading || signupBlocked}
                   onCredential={async (credential) => {
                     if (signupBlocked) return;

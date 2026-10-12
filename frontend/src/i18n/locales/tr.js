@@ -2303,6 +2303,7 @@ export const phrases = {
   "Remember me": "Beni hatırla",
   "Stay signed in": "Oturum açık kalsın",
   "Sign in with Google": "Google ile giriş yap",
+  "Continue with Google": "Google ile devam edin",
   "Or continue with": "Veya şununla devam et",
   "Already have an account?": "Zaten hesabın var mı?",
   "Don't have an account?": "Hesabın yok mu?",

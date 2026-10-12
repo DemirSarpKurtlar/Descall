@@ -101,7 +101,8 @@ assert(/image="LaunchLogo"/.test(launchStoryboard) && /<image name="LaunchLogo" 
 assert(/red="0\.11764705882352941" green="0\.12156862745098039" blue="0\.13333333333333333"/.test(launchStoryboard), "LaunchScreen background must be #1E1F22");
 assert(/firstAttribute="centerX"/.test(launchStoryboard) && /firstAttribute="centerY"/.test(launchStoryboard), "LaunchScreen logo must be centered");
 const bootSkeleton = readFileSync(join(here, "..", "components", "boot", "AppBootSkeleton.jsx"), "utf8");
-assert(/if \(isMobileBootSurface\(\)\) return <MobileBootSplash \/>;/.test(bootSkeleton), "AppBootSkeleton must render the splash on mobile");
+assert(/isMobileBootSurface\(\) && isNativeBootSurface\(\)\) return <MobileBootSplash \/>;/.test(bootSkeleton), "native mobile boot still uses the launch splash");
+assert(/isMobileBootSurface\(\)\) return <WebBootSplash \/>;/.test(bootSkeleton), "phone web boot uses the aurora loader");
 assert(/__descallHoldBootSplash/.test(bootSkeleton) && /descall-boot-splash/.test(bootSkeleton) && /brand\/descall-launch\.png/.test(bootSkeleton), "mobile boot placeholder must hold the HTML splash and draw the same tile");
 const mobileBranch = bootSkeleton.slice(bootSkeleton.indexOf("function MobileBootSplash"), bootSkeleton.indexOf("export default function AppBootSkeleton"));
 assert(mobileBranch && !/Loading Descall|app-boot-skeleton/.test(mobileBranch), "mobile boot placeholder must have no skeleton / English text");

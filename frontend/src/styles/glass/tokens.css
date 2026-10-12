@@ -74,7 +74,7 @@ html.glass-ui {
 
   /* Geometry (8pt grid; Island-safe chrome) */
   --g-top-gap: 30px;          /* login content below the safe area (mockup y 92 at inset 62) */
-  --g-chrome-top: calc(env(safe-area-inset-top, 0px) - 2px); /* = 60 on a 62pt-inset iPhone */
+  --g-chrome-top: max(0px, calc(env(safe-area-inset-top, 0px) - 2px)); /* = 60 on a 62pt-inset iPhone; 0 in Safari where the browser chrome already clears the island */
   --g-bar-bottom: 24px;
   --g-r-card: 22px;
   --g-r-sheet: 38px;

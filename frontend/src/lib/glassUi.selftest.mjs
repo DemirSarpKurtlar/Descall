@@ -16,7 +16,24 @@ const phone = { isNativeIos: true, shortSide: 440 };
 
 // ── Gate: iPhone app only ──
 assert.equal(shouldEnableGlass(phone), true, "iPhone app → glass");
-assert.equal(shouldEnableGlass({ ...phone, isNativeIos: false }), false, "web / Android → never");
+assert.equal(shouldEnableGlass({ ...phone, isNativeIos: false }), false, "web without a viewport stays off");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390 }), true, "phone web defaults on");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 430, viewportShortSide: 430 }), true, "430px web on");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 844, viewportShortSide: 390 }), true, "phone landscape web on");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 800, viewportShortSide: 800 }), false, "desktop window under 960 but not phone-like stays off");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 1024, viewportShortSide: 768 }), false, "desktop width is not glass-ui");
+assert.equal(shouldEnableGlass({ isNativeIos: false, isElectron: true, viewportWidth: 390, viewportShortSide: 390 }), false, "Electron stays on glass-desktop");
+assert.equal(shouldEnableGlass({ isNativeIos: false, isNativeAndroid: true, viewportWidth: 390, viewportShortSide: 390 }), false, "Android app never");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, webRemoteFlag: false }), false, "desktopGlass remote kills phone web");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, webOverride: "0" }), false, "descall:glass-desktop=0 kills phone web");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, override: "0" }), false, "descall:glass=0 kills phone web");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, webBuildFlag: false }), false, "VITE_GLASS_DESKTOP=0 kills phone web");
+assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, buildFlag: false }), false, "VITE_GLASS_UI=0 kills phone web");
+assert.equal(
+  shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, webOverride: "1", webRemoteFlag: false }),
+  true,
+  "local on beats a remote kill on phone web"
+);
 assert.equal(shouldEnableGlass({ ...phone, isElectron: true }), false, "Electron → never");
 assert.equal(shouldEnableGlass({ ...phone, shortSide: 744 }), false, "iPad → not yet (mockups are iPhone)");
 assert.equal(shouldEnableGlass({ ...phone, shortSide: 0 }), false, "unknown screen → off");
@@ -36,10 +53,10 @@ assert.equal(isNativeIosShell({}), false);
 assert.equal(isNativeIosShell(null), false);
 
 // ── init + remote kill switch on a fake window ──
-function fakeWindow({ platform = "ios", w = 440, h = 956, store = {} } = {}) {
+function fakeWindow({ platform = "ios", native = true, w = 440, h = 956, store = {} } = {}) {
   const classes = new Set();
   return {
-    ...capWin(platform),
+    ...capWin(platform, native),
     screen: { width: w, height: h },
     innerWidth: w,
     innerHeight: h,
@@ -49,7 +66,15 @@ function fakeWindow({ platform = "ios", w = 440, h = 956, store = {} } = {}) {
         store[k] = String(v);
       },
     },
-    document: { documentElement: { classList: { toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)), contains: (c) => classes.has(c) } } },
+    document: {
+      documentElement: {
+        classList: {
+          toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)),
+          contains: (c) => classes.has(c),
+          remove: (...names) => names.forEach((c) => classes.delete(c)),
+        },
+      },
+    },
     _classes: classes,
     _store: store,
   };
@@ -70,6 +95,12 @@ assert.equal(initGlassUi(qa), false, "local override off");
 const androidWin = fakeWindow({ platform: "android" });
 assert.equal(initGlassUi(androidWin), false);
 assert.ok(!androidWin._classes.has(GLASS_CLASS), "Android never gets the class");
+const phoneWeb = fakeWindow({ platform: "web", native: false, w: 390, h: 844 });
+assert.equal(initGlassUi(phoneWeb), true, "phone web boots glass-ui");
+assert.ok(phoneWeb._classes.has(GLASS_CLASS));
+phoneWeb._store["descall:glass-desktop-remote"] = "0";
+assert.equal(initGlassUi(phoneWeb), false, "cached desktopGlass kill wins on the next phone-web boot");
+assert.ok(!phoneWeb._classes.has(GLASS_CLASS));
 
 // ── Device tier / lite material ──
 assert.equal(deviceTier("iPhone10,3"), "low", "iPhone X (A11)");

@@ -358,6 +358,10 @@ export function applyRemoteGlassDesktopFlag(value, win) {
   }
   inputs = snapshotInputs(w, value);
   setEnabled(shouldEnableGlassDesktop(inputs), w);
+  // Phone browsers share this kill switch but paint html.glass-ui, not glass-desktop.
+  import("./glassUi.js")
+    .then((m) => m.syncGlassUi?.(w))
+    .catch(() => {});
   return enabled;
 }
 

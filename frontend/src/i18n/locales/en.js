@@ -2307,6 +2307,7 @@ export const phrases = {
   "Remember me": "Remember me",
   "Stay signed in": "Stay signed in",
   "Sign in with Google": "Sign in with Google",
+  "Continue with Google": "Continue with Google",
   "Or continue with": "Or continue with",
   "Already have an account?": "Already have an account?",
   "Don't have an account?": "Don't have an account?",

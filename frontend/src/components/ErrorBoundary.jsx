@@ -45,6 +45,7 @@ function IconHome({ size = 14, style }) {
 }
 
 import { t } from "../i18n/runtime";
+import RouteLoadingScreen from "./boot/RouteLoadingScreen";
 import { isModuleLoadError, recoverFromModuleLoadError } from "../lib/moduleLoadError";
 import { reportReactError } from "../lib/sentry";
 
@@ -295,13 +296,7 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.recovering && !this.state.hasError) {
-      return (
-        <main className="auth-shell">
-          <section className="auth-card" style={{ textAlign: "center" }}>
-            <p style={{ color: "#ccc", fontSize: "14px" }}>{t("Loading")}</p>
-          </section>
-        </main>
-      );
+      return <RouteLoadingScreen label={t("Loading")} />;
     }
 
     if (!this.state.hasError) return this.props.children;
