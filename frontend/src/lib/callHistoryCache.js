@@ -39,21 +39,20 @@ export function formatCallDuration(seconds) {
   return `${m}m ${r.toString().padStart(2, "0")}s`;
 }
 
-export function formatCallWhen(iso) {
+export function formatCallWhen(iso, options = {}) {
   if (!iso) return "";
+  const locale = options.locale || undefined;
+  const yesterdayLabel = options.yesterdayLabel || "Yesterday";
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
+    const time = d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     const now = new Date();
-    if (d.toDateString() === now.toDateString()) {
-      return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-    }
+    if (d.toDateString() === now.toDateString()) return time;
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    if (d.toDateString() === yesterday.toDateString()) {
-      return `Yesterday ${d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
-    }
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    if (d.toDateString() === yesterday.toDateString()) return `${yesterdayLabel} ${time}`;
+    return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
   } catch {
     return "";
   }

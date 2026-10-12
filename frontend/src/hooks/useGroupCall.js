@@ -2546,6 +2546,34 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     await startGroupCall(groupId, "voice", memberIds);
   }, [activeCallBanner, joinActiveCall, startGroupCall]);
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    let stop = () => {};
+    let cancelled = false;
+    import("../dev/glassQaBridge.js")
+      .then((mod) => {
+        if (cancelled) return;
+        stop = mod.bindGroupCallQa({
+          setIsInCall,
+          setActiveGroupId,
+          setCallType,
+          setIsCameraOn,
+          setIsMuted,
+          setDuration,
+          setLocalStream,
+          setParticipants,
+          isInCallRef,
+          activeGroupIdRef,
+          localStreamRef,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
   return {
     isInCall,
     isInitiator,

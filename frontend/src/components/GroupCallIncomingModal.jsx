@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useT } from "../context/LocaleContext";
 import { hapticImpactLight } from "../lib/fluid/haptics";
+import { resolveDisplayName } from "../lib/userProfile";
 
 /**
  * Floating incoming group call modal — FaceTime-style avatar rings.
@@ -30,7 +31,11 @@ export default function GroupCallIncomingModal({ incomingCall, onAccept, onDecli
       {incomingCall && (
         <IncomingCallCard
           key="group-incoming-call"
-          username={incomingCall.fromUser?.username}
+          username={
+            incomingCall.fromUser
+              ? (resolveDisplayName(incomingCall.fromUser) || incomingCall.fromUser.username)
+              : undefined
+          }
           user={incomingCall.fromUser}
           callType={incomingCall.callType}
           isGroup

@@ -1800,6 +1800,44 @@ export function useCall(socket, callOccupancyRef = null) {
   const isCalling = mode === "outgoing";
   const isReceiving = mode === "incoming";
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    let stop = () => {};
+    let cancelled = false;
+    import("../dev/glassQaBridge.js")
+      .then((mod) => {
+        if (cancelled) return;
+        stop = mod.bindDmCallQa({
+          setMode,
+          setPeer,
+          setCallType,
+          setCallAnchorAt,
+          setDuration,
+          setConnectionQuality,
+          setPeerConnectionState,
+          setRemoteMediaReady,
+          setMuted,
+          setCameraOn,
+          setRemoteCameraOn,
+          setRemoteMuted,
+          setScreenSharing,
+          setLocalStream,
+          setRemoteStream,
+          modeRef,
+          peerRef,
+          localStreamRef,
+          remoteStreamRef,
+          localVideoRef,
+          remoteVideoRef,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
   return {
     remoteAudioRef,
     remoteVideoRef,

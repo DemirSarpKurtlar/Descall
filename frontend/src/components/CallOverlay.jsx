@@ -226,8 +226,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
     ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`
     : "";
   const title = isDm
-    ? (glass ? (resolveDisplayName(peer) || peer?.username || t("User")) : (peer?.username || t("User")))
-    : (glass && groupName ? groupName : t("Group Call"));
+    ? (peer ? (resolveDisplayName(peer) || peer.username || t("User")) : t("User"))
+    : (groupName || t("Group Call"));
   const participantCount = (groupCall.participants?.filter((p) => p.id !== me?.id).length ?? 0) + 1;
   const subtitle = isDm
     ? mode === "incoming"
@@ -304,7 +304,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
         <AnimatePresence>
           <IncomingCallCard
             key="dm-incoming-call"
-            username={peer?.username}
+            username={peer ? (resolveDisplayName(peer) || peer.username) : undefined}
             user={peer}
             callType={callType}
             onDecline={() => { hapticImpactLight(); call.declineIncoming?.(); }}
@@ -536,6 +536,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
         </div>
       ) : (
       <div
+        className="call-top-bar"
         style={{
           position: "absolute",
           top: 0,

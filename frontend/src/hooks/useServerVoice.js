@@ -1867,6 +1867,33 @@ export function useServerVoice(socket) {
     return new Map(remoteStreamMapRef.current);
   }, [remoteStreamsVersion]);
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    let stop = () => {};
+    let cancelled = false;
+    import("../dev/glassQaBridge.js")
+      .then((mod) => {
+        if (cancelled) return;
+        stop = mod.bindServerVoiceQa({
+          setActiveChannelId,
+          setActiveServerId,
+          setChannelName,
+          setChannelType,
+          setLiveKitLink,
+          setConnecting,
+          setCanSpeak,
+          setCanStream,
+          setParticipants,
+          activeChannelIdRef,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
   return {
     isInVoice: Boolean(activeChannelId),
     activeChannelId,

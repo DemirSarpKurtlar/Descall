@@ -1,6 +1,26 @@
 /* Stage 5 — DM call, server voice, group call, incoming cards, calls list.
    Visual only. Signaling and controls stay as they are. */
 
+html.glass-desktop .call-top-bar {
+  background: transparent !important;
+  top: 16px !important;
+  left: 20px !important;
+  right: 20px !important;
+  padding: 0 !important;
+}
+
+html.glass-desktop .call-top-bar > div {
+  min-height: 44px;
+  padding: 4px 8px 4px 14px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
 html.glass-desktop .call-overlay-root,
 html.glass-desktop .server-voice-panel,
 html.glass-desktop .voice-call-overlay {
@@ -134,6 +154,23 @@ html.glass-desktop .calls-view {
   color: var(--gd-t1);
 }
 
+html.glass-desktop .calls-hero {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 4px 4px 8px;
+}
+
+html.glass-desktop .calls-hero-copy h1,
+html.glass-desktop .calls-hero-copy h2 {
+  margin: 0 0 4px;
+  font-size: 30px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+html.glass-desktop .calls-hero-copy h1,
 html.glass-desktop .calls-hero-copy h2,
 html.glass-desktop .calls-section-head {
   font-family: var(--gd-font);
@@ -175,6 +212,7 @@ html.glass-desktop .call-quality-hud {
   color: var(--gd-t1);
 }
 
+html.glass-desktop.gd-lite .call-top-bar > div,
 html.glass-desktop.gd-lite .call-control-bar,
 html.glass-desktop.gd-lite .incoming-call-card,
 html.glass-desktop.gd-lite .screen-quality-panel,

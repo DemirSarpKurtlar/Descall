@@ -22,6 +22,8 @@ import {
   formatCallWhen,
 } from "../../lib/callHistoryCache";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { intlLocaleTag } from "../../lib/datetime";
+import { getLocale } from "../../i18n/runtime";
 import { getPresenceStatus } from "../../lib/presence";
 import { useT } from "../../context/LocaleContext";
 import { ConversationListSkeleton } from "../ui/Skeleton";
@@ -312,7 +314,7 @@ export default function CallsView({
       {!compact && !glass && (
         <div className="calls-hero">
           <div className="calls-hero-copy">
-            <h2>{t("Calls")}</h2>
+            <h1>{t("Calls")}</h1>
             <p>{t("Quick-dial friends or jump back into recent DM & group calls.")}</p>
           </div>
           <button
@@ -429,7 +431,12 @@ export default function CallsView({
                 const Icon = glass && call.callType === "video" ? Video : meta.Icon;
                 const TypeIcon = call.callType === "video" ? Video : Phone;
                 const duration = glass ? glassDuration(call.durationSeconds) : formatCallDuration(call.durationSeconds);
-                const when = glass ? glassWhen(call.endedAt || call.createdAt) : formatCallWhen(call.endedAt || call.createdAt);
+                const when = glass
+                  ? glassWhen(call.endedAt || call.createdAt)
+                  : formatCallWhen(call.endedAt || call.createdAt, {
+                      locale: intlLocaleTag(getLocale()),
+                      yesterdayLabel: t("Yesterday"),
+                    });
                 const isGroup = call.kind === "group";
                 const peerStatus = !isGroup
                   ? getPresenceStatus(onlineUsers, call.peer?.id)

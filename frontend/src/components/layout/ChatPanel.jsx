@@ -402,11 +402,13 @@ export default function ChatPanel({
             </div>
           </div>
         )}
-        {/* Header shares one keyed remount — Electron DM→group must not stack rows */}
+        {/* Activity, Friends and Calls paint their own titles. A mounted
+            chat header added a second "Aktivite" h1, and on Friends it
+            fell through to a stray "Descall" h1 the mockup does not have. */}
+        {activeView !== "activity" && activeView !== "friends" && activeView !== "calls" && (
         <div
           className="chat-top-chrome"
           key={headerConversationKey}
-          style={activeView === "activity" ? { display: "none" } : undefined}
         >
         {glassConv ? <div className="g-edge-top g-edge-conv" aria-hidden="true" /> : null}
         <header className={glassConv ? "panel-header g-conv" : "panel-header"}>
@@ -543,6 +545,7 @@ export default function ChatPanel({
       </header>
 
         </div>
+        )}
 
       {showSearch && activeView !== "activity" && (
         <div className="chat-search-bar">

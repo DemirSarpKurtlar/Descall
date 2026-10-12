@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "lucide-react";
 import { Avatar } from "../components/ui/Avatar";
@@ -34,6 +34,17 @@ export function ToastProvider({ children }) {
       }, duration);
     }
   }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    const onQa = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.message) return;
+      push(detail.message, detail.type || "info", detail.meta || null);
+    };
+    window.addEventListener("descall:glass-qa-toast", onQa);
+    return () => window.removeEventListener("descall:glass-qa-toast", onQa);
+  }, [push]);
 
   return (
     <ToastContext.Provider value={{ toast: push }}>

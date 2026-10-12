@@ -42,6 +42,16 @@ function pullDmHistory(socket, withUserId) {
 }
 
 export function createSocket(token, options = {}) {
+  // Dev visual harness only. Vite replaces import.meta.env.DEV with false in
+  // production builds, so this branch (and any call into the page hook) is
+  // removed from the shipped bundle.
+  if (
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    typeof window.__DESCALL_GLASS_QA_SOCKET__ === "function"
+  ) {
+    return window.__DESCALL_GLASS_QA_SOCKET__(token, options);
+  }
   const local = isLocalVite();
   const native = isNativeApp();
   // Native shells: WebSocket first. One handshake instead of polling + upgrade,

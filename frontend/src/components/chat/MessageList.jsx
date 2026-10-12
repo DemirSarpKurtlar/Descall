@@ -26,7 +26,8 @@ import AdminBadge from "../social/AdminBadge";
 import { BadgeIcon, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
-import { formatMessageClock, formatMessageDate, parseAppDate } from "../../lib/datetime";
+import { getLocale } from "../../i18n/runtime";
+import { formatMessageClock, formatMessageDate, intlLocaleTag, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
 import GlassConfirm from "../ui/GlassConfirm";
 import { trackMessageDelete } from "../../lib/messageDeleteFeedback";
@@ -92,7 +93,7 @@ function formatDayLabel(iso, t) {
     const diffDays = Math.round((today - that) / 86400000);
     if (diffDays === 0) return t("Today");
     if (diffDays === 1) return t("Yesterday");
-    return formatMessageDate(date, undefined, { weekday: "short", month: "short", day: "numeric" });
+    return formatMessageDate(date, intlLocaleTag(getLocale()), { weekday: "short", month: "short", day: "numeric" });
   } catch {
     return "";
   }
@@ -1538,9 +1539,10 @@ function formatTimestamp(iso) {
   if (!date) return "";
   try {
     const now = new Date();
+    const loc = intlLocaleTag(getLocale());
     const isToday = date.toDateString() === now.toDateString();
-    if (isToday) return formatMessageClock(date);
-    return formatMessageDate(date, undefined, { month: "short", day: "numeric" });
+    if (isToday) return formatMessageClock(date, loc);
+    return formatMessageDate(date, loc, { month: "short", day: "numeric" });
   } catch {
     return "";
   }

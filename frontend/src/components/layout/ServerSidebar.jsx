@@ -553,6 +553,7 @@ export default function ServerSidebar({
               isMobile={isMobile}
               me={me}
               loading={!friendsLoaded}
+              showInvite={false}
               onQuickAdd={() => { setAddTab("quickadd"); setShowAddModal(true); }}
             />
           )}
@@ -2311,7 +2312,7 @@ function GroupRowFront({
   );
 }
 
-function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, onAcceptFriend, onDeclineFriend, isMobile, onQuickAdd, me, onShareInvite, loading = false }) {
+function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, onAcceptFriend, onDeclineFriend, isMobile, onQuickAdd, me, onShareInvite, loading = false, showInvite = true }) {
   const t = useT();
   const glassShell = useGlassShell();
   const safeFriends = Array.isArray(friends) ? friends : [];
@@ -2469,7 +2470,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
       </button>
 
       <SidebarSectionContent expanded={expanded}>
-            {me?.username && (
+            {showInvite && me?.username && (
               <div style={{ padding: "8px 10px 4px" }}>
                 <InviteCard username={me.username} compact />
               </div>
