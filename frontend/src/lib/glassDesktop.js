@@ -12,8 +12,9 @@
  *      (cached as descall:glass-desktop-remote for the next boot)
  *   3. build flag      VITE_GLASS_DESKTOP=0
  * A local "1" (?glass-desktop=1 or ?gd=1) forces it on, still subject to the
- * native, marketing, and web width gates. The server payload still defaults
- * desktopGlass to false, so a live /api/features response turns this back off.
+ * native, marketing, and web width gates. An explicit remote false is cached
+ * as "0". A failed /api/features request re-reads that cache and does not
+ * write it, so a cached off stays off.
  *
  * Low-performance mode (`html.gd-lite`) drops backdrop-filter. It turns on for
  * reduced transparency, forced colors, 4 or fewer CPU cores, a slow frame
@@ -342,12 +343,14 @@ export function initGlassDesktop(win) {
 }
 
 /**
- * Remote kill switch (publicFeatures.desktopGlass). Cached for the next boot.
- * Non-booleans are ignored so an older server cannot flip the UI.
+ * Remote kill switch (publicFeatures.desktopGlass). A boolean is cached for
+ * the next boot. Anything else (failed request, omitted key) re-reads the
+ * cache and does not write it, so a cached "0" is not replaced by the default.
  */
 export function applyRemoteGlassDesktopFlag(value, win) {
   const w = currentWindow(win);
-  if (!w || typeof value !== "boolean") return enabled;
+  if (!w) return enabled;
+  if (typeof value !== "boolean") return syncGlassDesktop(w);
   try {
     w.localStorage?.setItem(GLASS_DESKTOP_REMOTE_KEY, value ? "1" : "0");
   } catch {

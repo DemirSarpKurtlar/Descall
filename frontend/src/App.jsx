@@ -1303,15 +1303,24 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     fetch(`${API_BASE_URL}/api/features`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data) {
-          applyPublicFeatures(data);
-          applyRemoteGlassFlag(data.iosGlass);
-          applyRemoteGlassDesktopFlag(data.desktopGlass);
-        }
+      .then((res) => {
+        if (!res.ok) throw new Error(`features ${res.status}`);
+        return res.json();
       })
-      .catch((err) => console.warn("[features] load failed:", err?.message || err));
+      .then((data) => {
+        if (cancelled) return;
+        if (!data || typeof data !== "object") {
+          applyRemoteGlassDesktopFlag(undefined);
+          return;
+        }
+        applyPublicFeatures(data);
+        applyRemoteGlassFlag(data.iosGlass);
+        applyRemoteGlassDesktopFlag(data.desktopGlass);
+      })
+      .catch((err) => {
+        if (!cancelled) applyRemoteGlassDesktopFlag(undefined);
+        console.warn("[features] load failed:", err?.message || err);
+      });
     // Native iOS app masks bad words; merge the admin-managed extra words.
     if (profanityMaskingActive()) {
       fetch(`${API_BASE_URL}/api/features/profanity`)

@@ -126,12 +126,32 @@ assert.equal(initGlassDesktop(android), false);
 const cachedOff = fakeWindow({ store: { [GLASS_DESKTOP_REMOTE_KEY]: "0" } });
 assert.equal(initGlassDesktop(cachedOff), false, "cached remote off still kills the default");
 
+const fresh = fakeWindow();
+assert.equal(initGlassDesktop(fresh), true, "a later window can default on");
+assert.equal(applyRemoteGlassDesktopFlag(undefined, cachedOff), false, "failed features read keeps cached remote 0");
+assert.equal(applyRemoteGlassDesktopFlag(null, cachedOff), false, "null features read keeps cached remote 0");
+assert.equal(cachedOff._store[GLASS_DESKTOP_REMOTE_KEY], "0", "failed read does not rewrite the cache");
+assert.ok(!cachedOff._classes.has(GLASS_DESKTOP_CLASS), "failed read does not turn the class on");
+
+const live = fakeWindow();
+assert.equal(initGlassDesktop(live), true);
+live._store[GLASS_DESKTOP_REMOTE_KEY] = "0";
+assert.equal(applyRemoteGlassDesktopFlag(undefined, live), false, "failed read re-applies an out-of-band remote 0");
+assert.equal(live._store[GLASS_DESKTOP_REMOTE_KEY], "0");
+assert.ok(!live._classes.has(GLASS_DESKTOP_CLASS));
+
+const plain = fakeWindow();
+assert.equal(initGlassDesktop(plain), true);
+assert.equal(applyRemoteGlassDesktopFlag(undefined, plain), true, "failed read with no cache keeps the default");
+assert.equal(plain._store[GLASS_DESKTOP_REMOTE_KEY], undefined, "failed read does not invent a remote bit");
+
 const cached = fakeWindow({ store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
 assert.equal(initGlassDesktop(cached), true, "cached remote on is respected");
 assert.equal(applyRemoteGlassDesktopFlag(false, cached), false, "remote kill switch");
 assert.equal(cached._store[GLASS_DESKTOP_REMOTE_KEY], "0");
 assert.ok(!cached._classes.has(GLASS_DESKTOP_CLASS));
-assert.equal(applyRemoteGlassDesktopFlag(undefined, cached), false, "non-boolean is ignored");
+assert.equal(applyRemoteGlassDesktopFlag(undefined, cached), false, "failed read does not clear a remote kill");
+assert.equal(cached._store[GLASS_DESKTOP_REMOTE_KEY], "0");
 
 const forced = fakeWindow({ store: { [GLASS_DESKTOP_OVERRIDE_KEY]: "1", [GLASS_DESKTOP_LITE_KEY]: "1" } });
 assert.equal(initGlassDesktop(forced), true);
