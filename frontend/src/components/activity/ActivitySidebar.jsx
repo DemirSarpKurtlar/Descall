@@ -16,6 +16,7 @@ import { getPresenceStatus, isVisiblyOnline } from "../../lib/presence";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
+import ActivityHistoryRow, { localizeActivityLabel } from "./ActivityHistoryRow";
 import { TYPE_PRIORITY } from "../../lib/processDatabase";
 import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/glass/GlassShell";
 
@@ -61,7 +62,7 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
         {presence ? (
           <span className="activity-presence-status" style={{ color: accentColor }}>
             <span className="activity-presence-icon"><ActivityTypeIcon type={presence.appType} size={14} /></span>
-            {presence.displayName}
+            {localizeActivityLabel(presence.displayName, t)}
           </span>
         ) : (
           <span className="activity-presence-idle">{t("Online")}</span>
@@ -201,7 +202,7 @@ export default function ActivitySidebar({
                   </span>
                   <div>
                     <strong>{myStatus === "idle" ? t("Idle") : myStatus === "dnd" ? t("Do Not Disturb") : myStatus === "invisible" ? t("Invisible") : t("Online")}</strong>
-                    <span className="g-activity-sub">{me?.customStatus || me?.custom_status || currentActivity?.displayName || t("Online")}</span>
+                    <span className="g-activity-sub">{me?.customStatus || me?.custom_status || (currentActivity?.displayName ? localizeActivityLabel(currentActivity.displayName, t) : "") || t("Online")}</span>
                   </div>
                 </div>
                 <button
@@ -226,11 +227,7 @@ export default function ActivitySidebar({
             (history || []).length > 0 ? (
               <div className="activity-history-list">
                 {history.map((entry) => (
-                  <div key={entry.id} className="activity-history-row">
-                    <div className="activity-history-info">
-                      <span className="activity-history-name">{entry.display_name || entry.displayName}</span>
-                    </div>
-                  </div>
+                  <ActivityHistoryRow key={entry.id || entry.started_at} entry={entry} />
                 ))}
               </div>
             ) : (

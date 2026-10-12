@@ -912,6 +912,7 @@ export const phrases = {
   "Your presence and history": "Varlığın ve geçmişin",
   "Set Status": "Durum Ayarla",
   "No activity history yet": "Henüz aktivite geçmişi yok",
+  "Playing {name}": "{name} oynadı",
   "Start using apps and games to see them here": "Burada görmek için uygulama ve oyun kullanmaya başla",
   "No friend activity": "Arkadaş aktivitesi yok",
   "Friends' active sessions will appear here": "Arkadaşlarının aktif oturumları burada görünür",

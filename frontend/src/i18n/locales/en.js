@@ -908,6 +908,7 @@ export const phrases = {
   "Your presence and history": "Your presence and history",
   "Set Status": "Set Status",
   "No activity history yet": "No activity history yet",
+  "Playing {name}": "Playing {name}",
   "Start using apps and games to see them here": "Start using apps and games to see them here",
   "No friend activity": "No friend activity",
   "Friends' active sessions will appear here": "Friends' active sessions will appear here",

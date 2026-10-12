@@ -8,6 +8,12 @@ const router = express.Router();
 
 const VALID_PRIVACY = ['friends', 'only-me', 'hidden'];
 const MAX_HISTORY_ROWS = 200;
+const sessionLib = import('../lib/activitySessions.mjs');
+
+async function groupedHistory(rows) {
+  const { groupActivitySessions } = await sessionLib;
+  return groupActivitySessions(rows || []);
+}
 
 // ─── GET own activity history ─────────────────────────────────────────────────
 router.get('/history', requireAuth, async (req, res) => {
@@ -19,7 +25,7 @@ router.get('/history', requireAuth, async (req, res) => {
     .limit(MAX_HISTORY_ROWS);
 
   if (error) return res.status(500).json({ error: error.message });
-  return res.json({ history: data || [] });
+  return res.json({ history: await groupedHistory(data) });
 });
 
 // ─── GET friend's activity history (privacy-gated) ───────────────────────────
@@ -54,7 +60,7 @@ router.get('/friend/:userId/history', requireAuth, async (req, res) => {
     .limit(50);
 
   if (error) return res.status(500).json({ error: error.message });
-  return res.json({ history: data || [] });
+  return res.json({ history: await groupedHistory(data) });
 });
 
 // ─── GET friend's current presence (privacy-gated) ───────────────────────────
@@ -133,17 +139,52 @@ router.post('/session', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'app_name and started_at are required' });
   }
 
+  const incoming = {
+    app_name: String(app_name).slice(0, 100),
+    app_type: String(app_type || 'app').slice(0, 32),
+    display_name: String(display_name || app_name).slice(0, 120),
+    started_at,
+    ended_at: ended_at || new Date().toISOString(),
+    duration_sec: Number(duration_sec) || 0,
+    is_manual: !!is_manual,
+  };
+
+  // Extend the latest same-game row when this session continues it.
+  // Older fragment rows stay in the table; history reads group them.
+  const { findExtendTarget, mergeSessionFields } = await sessionLib;
+  const { data: recent, error: recentError } = await supabase
+    .from('user_activity_log')
+    .select('id,app_name,app_type,display_name,started_at,ended_at,duration_sec,is_manual')
+    .eq('user_id', req.user.id)
+    .eq('app_name', incoming.app_name)
+    .order('started_at', { ascending: false })
+    .limit(40);
+
+  if (recentError) return res.status(500).json({ error: recentError.message });
+
+  const target = findExtendTarget(recent || [], incoming);
+  if (target) {
+    const merged = mergeSessionFields(target, incoming);
+    const { error: updateError } = await supabase
+      .from('user_activity_log')
+      .update({
+        started_at: merged.started_at,
+        ended_at: merged.ended_at,
+        duration_sec: merged.duration_sec,
+        display_name: merged.display_name,
+      })
+      .eq('id', target.id)
+      .eq('user_id', req.user.id);
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
+    return res.json({ success: true, merged: true });
+  }
+
   const { error: insertError } = await supabase
     .from('user_activity_log')
     .insert({
       user_id: req.user.id,
-      app_name: String(app_name).slice(0, 100),
-      app_type: String(app_type || 'app').slice(0, 32),
-      display_name: String(display_name || app_name).slice(0, 120),
-      started_at,
-      ended_at: ended_at || new Date().toISOString(),
-      duration_sec: Number(duration_sec) || 0,
-      is_manual: !!is_manual,
+      ...incoming,
     });
 
   if (insertError) return res.status(500).json({ error: insertError.message });

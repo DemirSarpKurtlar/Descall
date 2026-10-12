@@ -4625,6 +4625,9 @@ button.header-avatar {
 .activity-history-time {
   font-size: 11px;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .activity-history-duration {

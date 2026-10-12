@@ -10,6 +10,7 @@ import { useT } from '../../context/LocaleContext';
 import { openFeedbackModal } from '../../lib/feedbackNudge';
 import AnnouncementsButton from '../social/AnnouncementsModal';
 import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
+import ActivityHistoryRow, { localizeActivityLabel } from './ActivityHistoryRow';
 import { TYPE_PRIORITY } from '../../lib/processDatabase';
 import { isVisiblyOnline } from '../../lib/presence';
 
@@ -35,14 +36,6 @@ function getPrivacyOptions(t) {
     { value: 'only-me', label: t('Only Me'),            icon: Lock,   desc: t('Shows as "Online" to friends') },
     { value: 'hidden',  label: t('Hidden'),             icon: EyeOff, desc: t('Hidden from activity panel') },
   ];
-}
-
-function formatDuration(seconds) {
-  if (!seconds) return '0m';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
 }
 
 function formatRelativeTime(dateStr, t) {
@@ -74,7 +67,9 @@ function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectr
             {activity ? t('Currently Active') : t('No Activity Detected')}
           </div>
           <div className="activity-current-display" style={{ color: activity ? accentColor : 'var(--text-muted)' }}>
-            {activity?.displayName || (isElectron ? t('Launch a game or app to start tracking') : t('Manual status only in browser'))}
+            {activity?.displayName
+              ? localizeActivityLabel(activity.displayName, t)
+              : (isElectron ? t('Launch a game or app to start tracking') : t('Manual status only in browser'))}
           </div>
           {activity?.startedAt && (
             <div className="activity-current-since">
@@ -176,25 +171,6 @@ function ManualStatusModal({ onSet, onClose }) {
       </motion.div>
     </motion.div>,
     document.body
-  );
-}
-
-function HistoryRow({ entry }) {
-  const t = useT();
-  const accentColor = TYPE_COLOR[entry.app_type] || '#747f8d';
-  return (
-    <div className="activity-history-row">
-      <div className="activity-history-icon" style={{ color: accentColor }}>
-        <ActivityTypeIcon type={entry.app_type} size={18} />
-      </div>
-      <div className="activity-history-info">
-        <span className="activity-history-name">{entry.display_name}</span>
-        <span className="activity-history-time">{formatRelativeTime(entry.started_at, t)}</span>
-      </div>
-      <div className="activity-history-duration">
-        {formatDuration(entry.duration_sec)}
-      </div>
-    </div>
   );
 }
 
@@ -483,7 +459,7 @@ export default function ActivityView({
               {sortedHistory.length > 0 ? (
                 <div className="activity-history-list">
                   {sortedHistory.map(entry => (
-                    <HistoryRow key={entry.id} entry={entry} />
+                    <ActivityHistoryRow key={entry.id} entry={entry} />
                   ))}
                 </div>
               ) : (
@@ -531,7 +507,7 @@ export default function ActivityView({
                         <div className="activity-friend-feed-info">
                           <span className="activity-friend-feed-name">{friend.username}</span>
                           <span className="activity-friend-feed-status" style={{ color: accentColor }}>
-                            {pres.displayName}
+                            {localizeActivityLabel(pres.displayName, t)}
                           </span>
                         </div>
                         <span className="activity-friend-feed-time">

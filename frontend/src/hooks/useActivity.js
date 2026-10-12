@@ -2,6 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { PROCESS_DB, TYPE_PRIORITY, PROCESS_BLOCKLIST } from '../lib/processDatabase';
 import { getToken } from '../lib/storage';
 import { API_BASE_URL } from '../config/api';
+import {
+  closeActivityScan,
+  groupActivitySessions,
+  shouldLogSession,
+  stepActivityScan,
+} from '../../backend/lib/activitySessions.mjs';
 
 const SCAN_INTERVAL_MS    = 10_000;
 const DESCALL_APP_NAME    = 'Descall';
@@ -96,7 +102,7 @@ function isJunkHistoryRow(row) {
 }
 
 function filterHistory(list) {
-  return (list || []).filter((row) => !isJunkHistoryRow(row));
+  return groupActivitySessions((list || []).filter((row) => !isJunkHistoryRow(row)));
 }
 
 /** Resolve the highest-priority detected app from running process names. */
@@ -166,14 +172,16 @@ export function useActivity({ socket, me, friends = [] }) {
   const [history, setHistory]                 = useState([]);
   const [settings, setSettings]               = useState(loadStoredSettings);
 
-  const lastEmittedRef    = useRef(null);
-  const sessionStartRef   = useRef(null);
+  const scanStateRef      = useRef({ active: null, paused: null });
+  const lastDetectedRef   = useRef(null);
+  const manualRef         = useRef(manualOverride);
   const focusStartRef     = useRef(null);
   const focusAccumRef     = useRef(0);
   const manualTimerRef    = useRef(null);
   const scanIntervalRef   = useRef(null);
   const scanAndEmitRef    = useRef(null);
   const clearManualRef    = useRef(null);
+  const logSessionRef     = useRef(null);
   const friendsRef        = useRef(friends);  // always current friends list without triggering re-renders
   useEffect(() => { friendsRef.current = friends; }, [friends]);
 
@@ -264,7 +272,7 @@ export function useActivity({ socket, me, friends = [] }) {
   // ─── Process scanning (Electron only) ──────────────────────────────────────
   const scanAndEmit = useCallback(async () => {
     if (!isElectron || !socket) return;
-    if (manualOverride) return;  // manual override takes precedence
+    if (manualRef.current) return;  // manual override takes precedence
 
     let processList = [];
     try {
@@ -284,30 +292,32 @@ export function useActivity({ socket, me, friends = [] }) {
       if (!['game', 'music', 'browser'].includes(detected.appType) && !settings.show_app_activity) return;
     }
 
-    const newName = detected?.appName ?? null;
-    if (newName === lastEmittedRef.current) return;  // no change, skip emit
+    const step = stepActivityScan(scanStateRef.current, {
+      appName: detected?.appName ?? null,
+      nowMs: Date.now(),
+      meta: detected
+        ? { appType: detected.appType, displayName: detected.displayName }
+        : null,
+    });
+    scanStateRef.current = step.state;
 
-    // Log previous session before switching
-    if (lastEmittedRef.current && sessionStartRef.current) {
-      logSession(lastEmittedRef.current, sessionStartRef.current);
-    }
+    if (shouldLogSession(step.log)) logSessionRef.current?.(step.log);
 
-    lastEmittedRef.current = newName;
-    sessionStartRef.current = detected ? new Date().toISOString() : null;
-
-    if (detected) {
-      setCurrentActivity(detected);
+    if (step.emit === 'update' && detected) {
+      lastDetectedRef.current = detected;
+      const startedAt = step.startedAt;
+      setCurrentActivity({ ...detected, startedAt });
       socket.emit('activity:update', {
         appName:     detected.appName,
         appType:     detected.appType,
         displayName: detected.displayName,
-        startedAt:   sessionStartRef.current,
+        startedAt,
       });
-    } else {
+    } else if (step.emit === 'clear') {
       setCurrentActivity(null);
       socket.emit('activity:clear');
     }
-  }, [socket, manualOverride, settings]);
+  }, [socket, settings]);
 
   // Keep a stable ref so clearManual and onFocus always call the latest version
   useEffect(() => { scanAndEmitRef.current = scanAndEmit; }, [scanAndEmit]);
@@ -328,14 +338,9 @@ export function useActivity({ socket, me, friends = [] }) {
   }, []);  // intentionally empty — scanAndEmitRef.current is always current
 
   // ─── Log a completed session to backend ────────────────────────────────────
-  const logSession = useCallback(async (appName, startedAt) => {
+  const logSession = useCallback(async ({ appName, startedAt, endedAt, durationSec, meta }) => {
     const token = getToken();
-    if (!token || !appName || !startedAt) return;
-
-    const endedAt    = new Date().toISOString();
-    const startMs    = new Date(startedAt).getTime();
-    const durationSec = Math.round((Date.now() - startMs) / 1000);
-    if (durationSec < 30) return;  // ignore sub-30s blips
+    if (!token || !appName || !startedAt || !shouldLogSession({ durationSec })) return;
 
     const entry = Object.values(PROCESS_DB).find(e => e.name === appName);
 
@@ -344,10 +349,10 @@ export function useActivity({ socket, me, friends = [] }) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
         app_name:     appName,
-        app_type:     entry?.type ?? 'app',
-        display_name: buildDisplayName(entry ?? { type: 'app', name: appName }),
+        app_type:     meta?.appType ?? entry?.type ?? 'app',
+        display_name: meta?.displayName || buildDisplayName(entry ?? { type: 'app', name: appName }),
         started_at:   startedAt,
-        ended_at:     endedAt,
+        ended_at:     endedAt || new Date().toISOString(),
         duration_sec: durationSec,
         is_manual:    false,
       }),
@@ -361,6 +366,32 @@ export function useActivity({ socket, me, friends = [] }) {
       const { history: h } = await res.json();
       setHistory(filterHistory(h || []));
     }
+  }, []);
+
+  logSessionRef.current = logSession;
+
+  const flushOpenSession = useCallback((keepalive) => {
+    const closed = closeActivityScan(scanStateRef.current, Date.now());
+    scanStateRef.current = { active: null, paused: null };
+    if (!shouldLogSession(closed.log)) return;
+    const token = getToken();
+    if (!token) return;
+    const { appName, startedAt, endedAt, durationSec, meta } = closed.log;
+    const entry = Object.values(PROCESS_DB).find(e => e.name === appName);
+    fetch(`${API_BASE_URL}/api/activity/session`, {
+      method: 'POST',
+      keepalive: !!keepalive,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        app_name: appName,
+        app_type: meta?.appType ?? entry?.type ?? 'app',
+        display_name: meta?.displayName || buildDisplayName(entry ?? { type: 'app', name: appName }),
+        started_at: startedAt,
+        ended_at: endedAt,
+        duration_sec: durationSec,
+        is_manual: false,
+      }),
+    }).catch(() => {});
   }, []);
 
   // ─── Log Descall focused time on unload ────────────────────────────────────
@@ -394,9 +425,14 @@ export function useActivity({ socket, me, friends = [] }) {
       }).catch(() => {});
     };
 
-    window.addEventListener('beforeunload', flush);
-    return () => window.removeEventListener('beforeunload', flush);
-  }, [settings.show_descall_time]);
+    const flushAll = () => {
+      flush();
+      flushOpenSession(true);
+    };
+
+    window.addEventListener('beforeunload', flushAll);
+    return () => window.removeEventListener('beforeunload', flushAll);
+  }, [settings.show_descall_time, flushOpenSession]);
 
   // ─── Socket event listeners + re-emit own activity on reconnect ─────────────
   useEffect(() => {
@@ -428,7 +464,16 @@ export function useActivity({ socket, me, friends = [] }) {
           expiresIn:   stored.expiresIn ?? null,
         });
       } else {
-        lastEmittedRef.current = null;
+        const active = scanStateRef.current?.active;
+        const detected = lastDetectedRef.current;
+        if (active && detected) {
+          socket.emit('activity:update', {
+            appName: detected.appName,
+            appType: detected.appType,
+            displayName: detected.displayName,
+            startedAt: new Date(active.startedAtMs).toISOString(),
+          });
+        }
         scanAndEmitRef.current?.();
       }
     };
@@ -451,9 +496,11 @@ export function useActivity({ socket, me, friends = [] }) {
   // ─── Manual override ────────────────────────────────────────────────────────
   const setManual = useCallback((displayName, expiresIn) => {
     if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    manualRef.current = { displayName, expiresIn, startedAt: new Date().toISOString() };
+    flushOpenSession(false);
 
-    const startedAt = new Date().toISOString();
-    const override  = { displayName, expiresIn, startedAt };
+    const startedAt = manualRef.current.startedAt;
+    const override  = manualRef.current;
     setManualOverride(override);
     setCurrentActivity({ appName: 'manual', appType: 'manual', displayName, startedAt, icon: '✏️' });
     persistManual(override);
@@ -464,14 +511,14 @@ export function useActivity({ socket, me, friends = [] }) {
       const ms = expiresIn === '1h' ? 3_600_000 : 14_400_000;
       manualTimerRef.current = setTimeout(() => clearManualRef.current?.(), ms);
     }
-  }, [socket]);
+  }, [socket, flushOpenSession]);
 
   const clearManual = useCallback(() => {
     if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    manualRef.current = null;
     setManualOverride(null);
     setCurrentActivity(null);
     persistManual(null);
-    lastEmittedRef.current = null;
     scanAndEmitRef.current?.();
   }, []);
 
