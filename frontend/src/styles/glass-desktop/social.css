@@ -130,6 +130,7 @@ html.glass-desktop .user-profile-card.is-gd {
 html.glass-desktop .user-profile-card-top.is-gd {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-rows: 112px auto;
   column-gap: 12px;
   padding: 0 24px 22px;
   margin-top: -52px;
@@ -141,6 +142,12 @@ html.glass-desktop .user-profile-card-top.is-gd .profile-avatar-shell {
   grid-row: 1;
   position: relative;
   align-self: end;
+  width: 104px;
+  height: 104px;
+}
+
+html.glass-desktop .user-profile-card-top.is-gd .user-profile-identity {
+  margin-top: 12px;
 }
 
 html.glass-desktop .user-profile-card-top.is-gd .user-profile-actions {

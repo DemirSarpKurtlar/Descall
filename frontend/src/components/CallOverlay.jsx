@@ -466,7 +466,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
         .filter((p) => p.isScreenSharing && p.screenStream && p.id !== localId)
         .map((p) => ({
           id: p.id,
-          username: p.username,
+          username: p.displayName || p.display_name || p.username,
           stream: p.screenStream,
           isScreenSharing: true,
         }));
