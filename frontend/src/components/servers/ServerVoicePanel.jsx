@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import {
@@ -27,6 +28,7 @@ import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import { nextShareSelection, visibleScreenStream } from "../../lib/screenShareTracks";
+import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../../lib/fluid/springs";
 import { applyPlaybackGain } from "../../lib/voiceGain";
 import ShareFilmstrip from "../voice/ShareFilmstrip";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
@@ -396,8 +398,13 @@ function ServerScreenShareStage({
     prevIdsRef.current = ids;
     if (next.activeId !== (activeId == null ? null : String(activeId))) setActiveId(next.activeId);
     if (next.pinnedId !== (pinnedId == null ? null : String(pinnedId))) setPinnedId(next.pinnedId);
-    if (!ids.length) setExpanded(false);
-  }, [sharerKey, activeId, pinnedId]);
+    if (!ids.length) {
+      setExpanded(false);
+      if (shareLayout !== "stage") setShareLayout("stage");
+      if (activeId != null) setActiveId(null);
+      if (pinnedId != null) setPinnedId(null);
+    }
+  }, [sharerKey, activeId, pinnedId, shareLayout]);
 
   const active = sharers.find((sharer) => String(sharer.id) === String(activeId)) || sharers[0] || null;
   const screenStream = active?.stream || null;
@@ -847,7 +854,19 @@ export default function ServerVoicePanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [tileFullscreen, closeTileFullscreen]);
 
+  useEffect(() => {
+    if (sharing) return;
+    setScreenExpand({ token: 0, id: null });
+    setTileFullscreen(null);
+  }, [sharing]);
+
   const sharing = screenSharers.length > 0;
+  const reduceMotion = useReducedMotion();
+  const shareEpochRef = useRef(0);
+  const prevSharingRef = useRef(false);
+  if (prevSharingRef.current && !sharing) shareEpochRef.current += 1;
+  prevSharingRef.current = sharing;
+  const returningFromShare = !sharing && shareEpochRef.current > 0;
   const link = serverVoice?.liveKitLink;
   let statusLabel = "";
   let statusTone = "idle";
@@ -939,7 +958,17 @@ export default function ServerVoicePanel({
 
       {serverVoice?.error ? <p className="server-modal-error server-voice-room-error">{t(serverVoice.error)}</p> : null}
 
-      <div className={`server-voice-room-stage${sharing ? " is-sharing" : ""}`}>
+      <motion.div
+        key={sharing ? "share" : `voice-grid-${shareEpochRef.current}`}
+        className={`server-voice-room-stage${sharing ? " is-sharing" : ""}`}
+        initial={
+          returningFromShare
+            ? (reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 })
+            : false
+        }
+        animate={{ opacity: 1, scale: 1 }}
+        transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.move)}
+      >
         {sharing ? (
           <ServerScreenShareStage
             sharers={screenSharers}
@@ -979,7 +1008,7 @@ export default function ServerVoicePanel({
             </p>
           </div>
         )}
-      </div>
+      </motion.div>
 
       <footer className="server-voice-dock">
         {inThis ? (

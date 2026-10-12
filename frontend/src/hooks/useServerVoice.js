@@ -1891,12 +1891,13 @@ export function useServerVoice(socket) {
     const onScreenStopped = ({ channelId, fromUserId } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId) return;
       if (String(fromUserId) !== String(myIdRef.current)) audioManager.play("screenShareStop");
-      const peer = pcMapRef.current.get(fromUserId);
-      if (peer) peer.expectScreenShare = false;
+      for (const [id, peer] of pcMapRef.current) {
+        if (String(id) === String(fromUserId)) peer.expectScreenShare = false;
+      }
       screenExpectedRef.current.delete(String(fromUserId));
       setParticipants((prev) =>
         prev.map((p) =>
-          p.id === fromUserId ? { ...p, isScreenSharing: false, screenStream: null } : p
+          String(p.id) === String(fromUserId) ? { ...p, isScreenSharing: false, screenStream: null } : p
         )
       );
     };

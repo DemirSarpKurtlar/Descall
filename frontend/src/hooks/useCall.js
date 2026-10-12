@@ -1789,6 +1789,22 @@ export function useCall(socket, callOccupancyRef = null) {
     audioManager.play("screenShareStop");
     setRemoteScreenStream(null);
     remoteScreenStreamRef.current = null;
+    // A share that was filed onto the mic stream would keep a video tile
+    // after the stage closes. Drop every video that is not the camera.
+    setRemoteStream((prev) => {
+      if (!prev) return prev;
+      const drop = prev.getVideoTracks().filter(
+        (track) => !remoteCameraTrackIdsRef.current.has(track.id)
+      );
+      if (!drop.length) return prev;
+      drop.forEach((track) => {
+        try { prev.removeTrack(track); } catch { /* ignore */ }
+      });
+      const remaining = prev.getTracks().filter((track) => track.readyState !== "ended");
+      const next = remaining.length ? new MediaStream(remaining) : null;
+      remoteStreamRef.current = next;
+      return next;
+    });
   }, []);
 
   // DM screen events are separate from SDP. The explicit signal is needed to

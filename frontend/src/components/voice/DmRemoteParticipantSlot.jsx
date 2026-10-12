@@ -77,7 +77,6 @@ function ConnectingPlaceholder({ username, user, status }) {
   const shellSize = avatarSize + shellPad * 2;
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, scale: 0.96, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -190,7 +189,6 @@ export default function DmRemoteParticipantSlot({
         <motion.div
           key={`participant-${displayPeer.id}`}
           ref={onTile}
-          layout
           variants={enterVariants}
           initial="hidden"
           animate="visible"
@@ -375,7 +373,6 @@ export default function DmRemoteParticipantSlot({
       {phase === "exiting" && displayPeer && (
         <motion.div
           key={`exiting-${displayPeer.id}`}
-          layout
           initial={{ opacity: 1, scale: 1, y: 0 }}
           animate={{ opacity: 0, scale: 0.96, y: 8 }}
           transition={{ duration: DM_PARTICIPANT_EXIT_MS / 1000, ease: PARTICIPANT_EASE }}

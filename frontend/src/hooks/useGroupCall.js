@@ -2115,13 +2115,19 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       );
     };
 
-    const onScreenStopped = ({ groupId, fromUserId }) => {
-      if (fromUserId && fromUserId !== myIdRef.current) audioManager.play("screenShareStop");
-      const peerData = pcMapRef.current.get(fromUserId);
-      if (peerData) peerData.expectScreenShare = false;
-      setParticipants((prev) => prev.map((p) =>
-        p.id === fromUserId ? { ...p, isScreenSharing: false, screenStream: null } : p
-      ));
+    const onScreenStopped = ({ fromUserId } = {}) => {
+      if (fromUserId && String(fromUserId) !== String(myIdRef.current || "")) {
+        audioManager.play("screenShareStop");
+      }
+      for (const [id, peerData] of pcMapRef.current) {
+        if (String(id) !== String(fromUserId)) continue;
+        peerData.expectScreenShare = false;
+      }
+      setParticipants((prev) => prev.map((p) => (
+        String(p.id) === String(fromUserId)
+          ? { ...p, isScreenSharing: false, screenStream: null }
+          : p
+      )));
     };
 
     const onMediaState = ({ groupId, fromUserId, muted, cameraOn, deafened, requestState }) => {

@@ -57,6 +57,9 @@
   right: auto !important;
   bottom: auto !important;
   left: auto !important;
+  /* A share-strip layout animation must not leave a tile translated
+     into the corner after the share ends. */
+  transform: none !important;
   display: flex;
   flex: 1 1 var(--tile-basis);
   width: auto !important;
@@ -64,6 +67,17 @@
   height: var(--tile-h) !important;
   min-width: 0;
   min-height: 0;
+}
+
+.call-stage-stack {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .call-participant-grid > * > * {
