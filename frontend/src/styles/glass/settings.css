@@ -36,6 +36,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-mini-meta strong {
   flex-wrap: nowrap !important;
   min-width: 0;
   max-width: 100%;
+  overflow: visible;
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-mini-name {
@@ -47,13 +48,16 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-mini-name {
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-mini-profile {
   margin: 8px 12px 12px;
-  padding: 14px;
+  padding: 16px 14px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  overflow: visible;
+  background:
+    linear-gradient(180deg, var(--g-heavy-top), var(--g-heavy-bot)),
+    var(--g-heavy-base);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
   border: 0;
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
+  backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-nav-group-label {
@@ -288,6 +292,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-mini-profile {
   width: 100%;
   box-sizing: border-box;
   align-items: center;
+  overflow: visible;
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-mini-avatar {
@@ -295,6 +300,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-mini-avatar {
   width: 56px;
   height: 56px;
   flex: 0 0 56px;
+  overflow: visible;
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-mini-avatar .status-badge {
@@ -385,6 +391,12 @@ html.glass-ui.a11y-solid .user-settings.is-mobile.g-settings .us-logout {
 
 html.glass-ui.a11y-solid .user-settings.is-mobile.g-settings .us-sidebar-foot {
   background: var(--g-solid-heavy) !important;
+}
+
+html.glass-ui.a11y-solid .user-settings.is-mobile.g-settings .us-mini-profile {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--g-solid);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-main-header {

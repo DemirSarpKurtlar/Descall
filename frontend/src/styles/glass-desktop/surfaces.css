@@ -70,6 +70,36 @@ html.glass-desktop .user-settings.is-desktop .us-sidebar {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+html.glass-desktop .user-settings.is-desktop .us-mini-profile {
+  border: none;
+  border-radius: 18px;
+  overflow: visible;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)),
+    rgba(22, 24, 36, 0.38);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .user-settings.is-desktop .us-mini-profile:hover {
+  border: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.07)),
+    rgba(22, 24, 36, 0.46);
+}
+
+html.glass-desktop .user-settings.is-desktop .us-mini-name,
+html.glass-desktop .user-settings.is-desktop .us-mini-meta strong {
+  color: var(--gd-t1);
+  overflow: visible;
+}
+
+html.glass-desktop .user-settings.is-desktop .us-mini-meta > span {
+  color: var(--gd-t3);
+}
+
 @media (max-width: 1100px) {
   html.glass-desktop .user-settings.is-desktop .us-sidebar {
     width: 200px;
@@ -825,7 +855,8 @@ html.glass-desktop.gd-lite .modal-backdrop,
 html.glass-desktop.gd-lite .lfg-sidebar,
 html.glass-desktop.gd-lite .lfg-main,
 html.glass-desktop.gd-lite .user-settings.is-desktop .us-sidebar-foot,
-html.glass-desktop.gd-lite .user-settings.is-desktop .us-logout {
+html.glass-desktop.gd-lite .user-settings.is-desktop .us-logout,
+html.glass-desktop.gd-lite .user-settings.is-desktop .us-mini-profile {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
