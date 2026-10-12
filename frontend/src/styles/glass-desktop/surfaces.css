@@ -292,9 +292,28 @@ html.glass-desktop .valorant-hub-panel {
   border-color: transparent;
 }
 
+/* LFG columns use the same 8px gutter as the rail and the window edges.
+   The play slot is only a frame when Companion is showing; on LFG it stays
+   clear so the gap between the list and the detail is the aurora gutter. */
+html.glass-desktop .app-root[data-view="play"] > .app-main-slot:has(.valorant-hub-panel-lfg:not([hidden])) {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  overflow: visible;
+}
+
+html.glass-desktop .app-root[data-view="play"] > .app-main-slot:has(.valorant-hub-panel-lfg:not([hidden]))::before,
+html.glass-desktop .app-root[data-view="play"] > .app-main-slot:has(.valorant-hub-panel-lfg:not([hidden]))::after {
+  content: none;
+}
+
 html.glass-desktop .lfg-workspace {
-  gap: 10px;
-  padding: 10px 10px 10px 0;
+  gap: var(--gd-gap);
+  padding: 0;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
   background: transparent !important;
 }
 
@@ -307,7 +326,33 @@ html.glass-desktop .lfg-main {
     rgba(36, 42, 64, 0.55) !important;
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
   color: var(--gd-t1);
+  align-self: stretch;
+  height: auto;
   min-height: 0;
+}
+
+html.glass-desktop .lfg-filters-bar {
+  padding: 0 14px 10px;
+}
+
+html.glass-desktop .lfg-filters {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0;
+}
+
+html.glass-desktop .lfg-filters select,
+html.glass-desktop .lfg-mic-toggle {
+  width: 100%;
+  max-width: 100%;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
+html.glass-desktop .lfg-lobby-list {
+  padding-left: 14px;
+  padding-right: 14px;
 }
 
 html.glass-desktop .lfg-lobby-card {
