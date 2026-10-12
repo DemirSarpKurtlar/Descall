@@ -394,13 +394,16 @@ html.glass-ui .g-cbtn svg { width: 20px; height: 20px; }
 html.glass-ui .g-cbtn:disabled { opacity: 0.5; }
 
 html.glass-ui .g-inline-title {
-  font-size: 17px;
+  flex: 0 0 auto;
+  font-size: clamp(15px, 4.4vw, 17px);
   line-height: normal;
   font-weight: 650;
   letter-spacing: -0.02em;
   margin-right: 8px;
   color: var(--g-t1);
   white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
 }
 
 html.glass-ui .g-large-title {
@@ -410,14 +413,14 @@ html.glass-ui .g-large-title {
   right: 20px;
   margin: 0;
   padding: 0;
-  font-size: 34px;
+  font-size: clamp(22px, 8.6vw, 34px);
   line-height: 40px;
   font-weight: 700;
   letter-spacing: -0.026em;
   color: var(--g-t1);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: unset;
   z-index: 1;
   pointer-events: none;
 }
@@ -549,9 +552,9 @@ html.glass-ui .g-tab.on { color: var(--g-brand-hi); }
 
 html.glass-ui .g-tab-label {
   display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: none;
+  overflow: visible;
+  text-overflow: unset;
 }
 
 html.glass-ui .g-dotb {
@@ -847,7 +850,7 @@ html.glass-ui .g-status-menu .status-picker-btn.ghost {
 
   html.glass-ui .g-tab-label {
     overflow: visible;
-    text-overflow: clip;
+    text-overflow: unset;
   }
 }
 

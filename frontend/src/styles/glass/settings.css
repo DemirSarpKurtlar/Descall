@@ -399,6 +399,10 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-main-header .us-mobile-tit
   top: calc(var(--g-chrome-top) + 16px);
   text-align: center;
   pointer-events: none;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
+  font-size: clamp(13px, 4.2vw, 17px);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-main-header .us-icon-btn {

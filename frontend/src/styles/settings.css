@@ -168,6 +168,9 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-0);
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
 }
 
 .us-sidebar-brand p {
@@ -407,10 +410,14 @@
 .us-main-heading h3,
 .us-mobile-title {
   margin: 0;
-  flex: 1;
-  font-size: 16px;
+  flex: 1 1 auto;
+  min-width: min-content;
+  font-size: clamp(14px, 4.4vw, 16px);
   font-weight: 650;
   color: var(--text-0);
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
 }
 
 .user-settings.is-desktop .us-main-heading {
@@ -475,6 +482,8 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-0);
+  overflow: visible;
+  text-overflow: unset;
 }
 
 /* ── Content primitives ── */

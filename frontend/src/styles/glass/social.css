@@ -546,12 +546,17 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-shell-header {
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-shell-title {
-  font-size: 17px;
+  font-size: clamp(15px, 4.6vw, 17px);
   font-weight: 700;
   letter-spacing: -0.02em;
   height: auto;
   line-height: 22px;
   color: var(--g-t1);
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-shell-meta {

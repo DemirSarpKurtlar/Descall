@@ -736,8 +736,8 @@ button.nav-rail-logo:active {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  flex-wrap: nowrap;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px 4px;
   min-height: 56px;
   padding: 8px 4px 8px 12px;
   border-bottom: 1px solid var(--border-2);
@@ -745,20 +745,22 @@ button.nav-rail-logo:active {
   box-sizing: border-box;
 }
 
+/* Section titles (Arkadaşlar, Sohbetler, …) never ellipsize.
+   min-content keeps the whole word; the action row wraps under it. */
 .sidebar-title {
   flex: 1 1 auto;
   align-self: center;
   max-width: 100%;
-  min-width: 0;
+  min-width: min-content;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-0);
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: unset;
   white-space: nowrap;
-  line-height: 32px;
-  height: 32px;
+  line-height: 1.25;
+  height: auto;
 }
 
 .sidebar-actions {
@@ -4211,7 +4213,7 @@ button.header-avatar {
   align-self: center;
   flex: 1 1 auto;
   gap: 4px;
-  min-width: 0;
+  min-width: min-content;
 }
 
 .activity-view-search {

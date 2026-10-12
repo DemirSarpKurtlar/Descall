@@ -127,14 +127,24 @@ html.glass-desktop .server-shell-header {
   padding: 12px 12px 0 14px;
   border-bottom: none;
   background: transparent;
+  flex-wrap: wrap;
+  container-type: inline-size;
+  container-name: sidebar-header;
 }
 
 html.glass-desktop .server-shell-title {
   font-family: var(--gd-font);
-  font-size: 20px;
+  font-size: clamp(16px, 6.8cqi, 20px);
   font-weight: 700;
   letter-spacing: -0.022em;
   color: var(--gd-t1);
+  min-width: 0;
+  height: auto;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 html.glass-desktop .server-shell-meta {

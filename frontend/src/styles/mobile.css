@@ -585,11 +585,12 @@
     width: var(--sidebar-width);
   }
 
-  /* 240px column: keep the title on the icon row without clipping it. */
+  /* 240px column: shrink the icon row. The title keeps its full word
+     and the actions wrap under it when they no longer fit. */
   .sidebar-header,
   .servers-sidebar .server-shell-header {
     padding: 8px 2px 8px 8px;
-    gap: 2px;
+    gap: 6px 2px;
   }
 
   .sidebar-header .icon-btn,
@@ -600,8 +601,8 @@
 
   .sidebar-title,
   .server-shell-title {
-    height: 28px;
-    line-height: 28px;
+    height: auto;
+    line-height: 1.25;
   }
 
   .sidebar-actions {

@@ -9,8 +9,8 @@
 .servers-sidebar .server-shell-header {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px 4px;
   min-height: 56px;
   padding: 8px 4px 8px 12px;
   border-bottom: 1px solid var(--border-2);
@@ -27,14 +27,16 @@
 
 .server-shell-title {
   margin: 0;
+  min-width: 0;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-0);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: clip;
-  line-height: 32px;
-  height: 32px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  height: auto;
 }
 
 .server-shell-meta {

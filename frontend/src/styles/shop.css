@@ -84,6 +84,10 @@
   margin: 0;
   display: flex;
   align-items: center;
+  min-width: min-content;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
 }
 
 .shop-wallet-pill {

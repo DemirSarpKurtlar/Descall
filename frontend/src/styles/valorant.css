@@ -28,7 +28,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
+  min-width: min-content;
+  flex: 1 1 auto;
 }
 
 .valorant-hub-back {
@@ -61,7 +62,7 @@
 }
 
 .valorant-hub-title {
-  min-width: 0;
+  min-width: min-content;
 }
 
 .valorant-hub-kicker {
@@ -77,6 +78,9 @@
   font-size: 18px;
   letter-spacing: -0.02em;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
 }
 
 .valorant-hub-tabs {
