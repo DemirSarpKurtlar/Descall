@@ -66,7 +66,7 @@ export default function VoiceMemberContextMenu({
   const isStage = currentChannel?.type === "stage";
   const left = Math.min(menu.x || 12, (typeof window !== "undefined" ? window.innerWidth : 400) - 260);
   const top = Math.min(menu.y || 12, (typeof window !== "undefined" ? window.innerHeight : 400) - 420);
-  const voiceLevel = Math.max(0, Math.min(100, Number(voiceVolume) || 0));
+  const voiceLevel = Math.max(0, Math.min(200, Number(voiceVolume) || 0));
   const screenLevel = Math.max(0, Math.min(100, Number(screenVolume) || 0));
   // Per-listener volume / local mute / screen volume make no sense for yourself.
   const voiceVolumeHandler = isSelf ? null : onVoiceVolume;
@@ -103,7 +103,7 @@ export default function VoiceMemberContextMenu({
               aria-label={t("Volume")}
               type="range"
               min="0"
-              max="100"
+              max="200"
               value={voiceLevel}
               onChange={(event) => voiceVolumeHandler(Number(event.target.value))}
             />

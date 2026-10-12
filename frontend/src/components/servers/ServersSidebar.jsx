@@ -61,6 +61,7 @@ import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
 import ImageCropModal from "../ui/ImageCropModal";
 import useSpeaking from "../../hooks/useSpeaking";
+import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isChannelMuted, setChannelMutedAsync } from "../../lib/serverChannelMutes";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
@@ -1471,7 +1472,10 @@ export default function ServersSidebar({
             voiceChannels={(activeServer?.channels || []).filter((c) => c.type === "voice" || c.type === "stage")}
             serverId={activeServer?.id}
             serverVoice={serverVoice}
-            voiceVolume={Math.round(((serverVoice?.participantVolumes?.[String(voiceMenu.user?.id)] ?? 1) * 100))}
+            voiceVolume={participantVolumePercent(
+              serverVoice?.participantVolumes?.[String(voiceMenu.user?.id)],
+              voiceMenu.user?.id
+            )}
             onVoiceVolume={(value) => serverVoice?.setParticipantVolume?.(voiceMenu.user?.id, value / 100)}
             onToggleVoiceMute={() => serverVoice?.toggleParticipantMute?.(voiceMenu.user?.id)}
             showScreenVolume={Boolean(voiceMenu.user?.isScreenSharing || voiceMenu.user?.screenStream)}
@@ -1805,7 +1809,7 @@ function resolveMemberVoiceStream(member, { joinedHere, myUserId, localStream, p
   return member.stream || null;
 }
 
-function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu }) {
+function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = "", onContextMenu }) {
   const t = useT();
   const [rowEl, setRowEl] = useState(null);
   const name = resolveDisplayName(member) || member?.username || "User";
@@ -1813,7 +1817,6 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu })
   const memberDeafened = Boolean(member?.serverDeafened || member?.deafened);
   const speakingRaw = useSpeaking(stream, {
     muted: memberMuted,
-    threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
     observeEl: rowEl,
@@ -1822,11 +1825,12 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, onContextMenu })
   const heldSpeaking = useHeldSpeaking(speakingRaw && !memberMuted);
   const speaking = memberMuted ? false : heldSpeaking;
   const isPrioritySpeaker = Boolean(speaking && member?.canPrioritySpeaker);
+  const qualityKey = networkQualityTooltipKey(linkQuality);
   return (
     <li
       ref={setRowEl}
       className={`server-voice-user${memberMuted ? " is-muted" : ""}${memberDeafened ? " is-deafened" : ""}${speaking ? " is-speaking" : ""}${isPrioritySpeaker ? " is-priority-speaker" : ""}`}
-      title={member?.username || name}
+      title={qualityKey ? t(qualityKey) : (member?.username || name)}
       onContextMenu={onContextMenu}
       onClick={(e) => {
         if (e.detail >= 2) onContextMenu?.(e);
@@ -1885,6 +1889,7 @@ function ChannelRow({
   canManage,
   menuOpen,
   voiceState = null,
+  serverVoice = null,
   joinedHere = false,
   participantStreams = null,
   localStream = null,
@@ -2146,6 +2151,7 @@ function ChannelRow({
                 key={m.id}
                 member={m}
                 stream={stream}
+                linkQuality={joinedHere ? serverVoice?.linkQualityByUser?.[String(m.id)] || "" : ""}
                 onContextMenu={(e) =>
                   onVoiceUserMenu?.(
                     m,

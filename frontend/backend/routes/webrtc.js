@@ -10,6 +10,7 @@ const {
   hasPermission,
   resolveChannelPermissions,
 } = require("../lib/serverPermissions");
+const { expandTurnUrls, liveKitEndpoints } = require("../lib/turnUrls");
 
 const router = express.Router();
 
@@ -18,12 +19,19 @@ const DEFAULT_STUN = [
   { urls: "stun:stun1.l.google.com:19302" },
 ];
 
+function expandIceServers(servers) {
+  return servers.map((server) => {
+    if (!server || server.urls == null) return server;
+    return { ...server, urls: expandTurnUrls(server.urls) };
+  });
+}
+
 function buildIceServersFromEnv() {
   const raw = process.env.ICE_SERVERS_JSON;
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return expandIceServers(parsed);
     } catch (e) {
       console.warn("[webrtc] Invalid ICE_SERVERS_JSON:", e.message);
     }
@@ -36,7 +44,7 @@ function buildIceServersFromEnv() {
 
   if (turnUrl && turnUser && turnPass) {
     servers.push({
-      urls: turnUrl,
+      urls: expandTurnUrls(turnUrl),
       username: turnUser,
       credential: turnPass,
     });
@@ -178,6 +186,7 @@ router.all("/livekit-token", requireAuth, async (req, res) => {
     return res.json({
       enabled: true,
       livekitUrl: process.env.LIVEKIT_URL,
+      livekitUrls: liveKitEndpoints(),
       room,
       token: await token.toJwt(),
       canPublish,

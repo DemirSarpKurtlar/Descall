@@ -21,6 +21,7 @@ import useHeldSpeaking from "../hooks/useHeldSpeaking";
 import SpeakingRings from "./voice/SpeakingRings";
 import ParticipantStateIcons from "./voice/ParticipantStateIcons";
 import useVoiceActivity from "../hooks/useVoiceActivity";
+import { networkQualityTooltipKey, participantVolumePercent, readParticipantGain } from "../lib/voiceProfile";
 import { useT } from "../context/LocaleContext";
 import { useToast } from "../context/ToastContext";
 import { DockDeviceSlot } from "./call/DevicePicker";
@@ -1122,7 +1123,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       canMove={false}
       canMute={false}
       voiceChannels={[]}
-      voiceVolume={userVolumes[String(userMenu?.user?.id)] ?? 100}
+      voiceVolume={participantVolumePercent(
+        Object.prototype.hasOwnProperty.call(userVolumes, String(userMenu?.user?.id))
+          ? userVolumes[String(userMenu?.user?.id)] / 100
+          : readParticipantGain(userMenu?.user?.id),
+        userMenu?.user?.id
+      )}
       onVoiceVolume={(value) => {
         const id = userMenu?.user?.id;
         if (id == null) return;
@@ -1221,6 +1227,9 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
     measuredQuality === "poor" || q === "poor" ? t("Weak") :
     q === "failed" ? t("Failed") :
     t("Link");
+  const qualityTitleKey = networkQualityTooltipKey(
+    q === "failed" || q === "poor" ? q : measuredQuality
+  );
 
   const hasNumbers = stats && (stats.rttMs != null || stats.packetLossPct != null || stats.bitrateKbps != null);
 
@@ -1242,7 +1251,7 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
     <div
       ref={detailsRef}
       className={`call-quality-hud ${q}`}
-      title={t("Connection: {label}", { label })}
+      title={qualityTitleKey ? t(qualityTitleKey) : t("Connection: {label}", { label })}
       onClick={hasNumbers ? () => setShowDetails((v) => !v) : undefined}
       style={{ cursor: hasNumbers ? "pointer" : "default", position: "relative" }}
     >
@@ -1470,8 +1479,8 @@ function ParticipantTile({
           {!isLocal && (connectionQuality === "poor" || connectionQuality === "fair") && (
             <span
               className={`participant-tile-net-badge ${connectionQuality}`}
-              aria-label={t("Weak connection")}
-              title={t("Weak connection")}
+              aria-label={t(networkQualityTooltipKey(connectionQuality) || "Weak connection")}
+              title={t(networkQualityTooltipKey(connectionQuality) || "Weak connection")}
             />
           )}
         </div>

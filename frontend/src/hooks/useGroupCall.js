@@ -22,7 +22,18 @@ import {
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
 import { preloadIceServers } from "../lib/iceConfig";
-import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
+import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
+import { applyPlaybackGain } from "../lib/voiceGain";
+import {
+  clampGain,
+  micRecapturePlan,
+  primeCapturedMic,
+  readLocalMute,
+  readParticipantGain,
+  tuneAudioReceiver,
+  writeLocalMute,
+  writeParticipantGain,
+} from "../lib/voiceProfile";
 import { sampleConnectionStats } from "../lib/connectionStats";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
@@ -33,6 +44,7 @@ import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
@@ -59,7 +71,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(readLocalMute);
   const [deafened, setDeafened] = useState(false);
   const deafenedRef = useRef(false);
   const mutedByDeafenRef = useRef(false);
@@ -271,6 +283,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
             const tracker = adaptiveQualityRef.current.get(userId);
             applyAdaptiveVideoEncoding(videoSender, result.quality, tracker.video);
             applyAdaptiveAudioEncoding(audioSender, result.quality, tracker.audio);
+            for (const receiver of pc.getReceivers()) {
+              if (receiver.track?.kind === "audio") tuneAudioReceiver(receiver, result.quality);
+            }
           }
           return [userId, result.quality];
         })
@@ -353,8 +368,22 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     };
   }, []);
 
-  // Enumerate audio devices on mount
+  const selectedAudioInputRef = useRef("");
+  const setAudioInputRef = useRef(null);
+  const replacingMicRef = useRef(false);
   useEffect(() => {
+    selectedAudioInputRef.current = selectedAudioInput;
+  }, [selectedAudioInput]);
+
+  useEffect(() => {
+    if (!incomingCall) return;
+    preloadIceServers().catch(() => {});
+    preloadNoiseSuppression();
+  }, [incomingCall]);
+
+  // Empty selection follows the system default.
+  useEffect(() => {
+    let previousIds = [];
     const getDevices = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -364,11 +393,16 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         setAudioInputDevices(inputs);
         setAudioOutputDevices(outputs);
         setVideoInputDevices(cameras);
-        if (!selectedAudioInput && inputs.length > 0) {
-          setSelectedAudioInput(inputs[0].deviceId);
-        }
-        if (!selectedAudioOutput && outputs.length > 0) {
-          setSelectedAudioOutput(outputs[0].deviceId);
+        const currentId = localStreamRef.current?.getAudioTracks?.()[0]?.getSettings?.().deviceId || "";
+        const plan = micRecapturePlan({
+          previousIds,
+          inputs,
+          currentDeviceId: currentId,
+          preferredId: selectedAudioInputRef.current,
+        });
+        previousIds = inputs.map((device) => device.deviceId).filter(Boolean);
+        if (isInCallRef.current && localStreamRef.current && plan.reason && !replacingMicRef.current) {
+          void setAudioInputRef.current?.(plan.deviceId);
         }
       } catch (err) {
       }
@@ -443,7 +477,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     setActiveGroupId(null);
     setLocalStream(null);
     setScreenStream(null);
-    setIsMuted(false);
+    setIsMuted(readLocalMute());
     setDeafened(false);
     deafenedRef.current = false;
     mutedByDeafenRef.current = false;
@@ -467,11 +501,14 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     // that matters.
     const peerData = pcMapRef.current.get(userId);
 
-    stream.getTracks().forEach((t) => { t.enabled = true; });
+    stream.getTracks().forEach((t) => {
+      if (t.kind !== "audio") t.enabled = true;
+    });
     attachLocalTracks(pc, stream);
 
     pc.ontrack = (e) => {
       const track = e.track;
+      if (track?.kind === "audio") tuneAudioReceiver(e.receiver);
       // e.streams[0] may be undefined or empty during renegotiation — fall back to wrapping the track.
       const rawStream = e.streams?.[0];
       const incomingStream = (rawStream && rawStream.getTracks().length > 0)
@@ -527,9 +564,16 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           remoteAudioRefs.current.set(userId, audioEl);
         }
         audioEl.srcObject = incomingStream;
-        const storedVolume = participantVolumeRef.current.get(String(userId));
+        let storedVolume = participantVolumeRef.current.get(String(userId));
+        if (storedVolume == null) {
+          const remembered = readParticipantGain(userId);
+          if (remembered != null) {
+            storedVolume = remembered;
+            participantVolumeRef.current.set(String(userId), remembered);
+          }
+        }
         audioEl.muted = deafenedRef.current;
-        audioEl.volume = deafenedRef.current ? 0 : (storedVolume == null ? 1 : storedVolume);
+        applyPlaybackGain(audioEl, deafenedRef.current ? 0 : (storedVolume == null ? 1 : storedVolume));
         audioEl.play().catch(() => {});
         chainTrackUnmute(track, () => {
           audioEl.srcObject = incomingStream;
@@ -840,11 +884,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       localStreamRef.current = stream;
       setLocalStream(stream);
       
-      // Ensure audio track is enabled for voice calls
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = true;
-      });
-      setNoiseSuppressedTrackEnabled(true);
+      const mutedNow = primeCapturedMic(stream);
+      setNoiseSuppressedTrackEnabled(!mutedNow);
+      setIsMuted(mutedNow);
       
       hapticCallConnected();
       setIsInCall(true);
@@ -925,11 +967,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       localStreamRef.current = stream;
       setLocalStream(stream);
       
-      // Ensure audio track is enabled for voice calls
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = true;
-      });
-      setNoiseSuppressedTrackEnabled(true);
+      const mutedNow = primeCapturedMic(stream);
+      setNoiseSuppressedTrackEnabled(!mutedNow);
+      setIsMuted(mutedNow);
       
       hapticCallConnected();
       setIsInCall(true);
@@ -1028,7 +1068,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     peerData.makingOffer = true;
     try {
       const offer = await peerData.pc.createOffer(opts.iceRestart ? { iceRestart: true } : undefined);
-      await peerData.pc.setLocalDescription(offer);
+      await commitLocalDescription(peerData.pc, offer);
       socketRef.current.emit("group:call:offer", {
         groupId: activeGroupId,
         toUserId: userId,
@@ -1093,16 +1133,34 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     return changed ? next : participants;
   }, [participants, remoteMediaStates]);
 
+  const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
+    if (deafenedRef.current && enabled) return;
+    const track = localStreamRef.current?.getAudioTracks()[0];
+    if (!track || track.enabled === enabled) return;
+    track.enabled = enabled;
+    setNoiseSuppressedTrackEnabled(enabled);
+    const nextMuted = !enabled;
+    setIsMuted(nextMuted);
+    if (persist) writeLocalMute(nextMuted);
+    if (!nextMuted) mutedByDeafenRef.current = false;
+    if (sound) audioManager.play(nextMuted ? "mute" : "unmute");
+  }, []);
+  const setMicEnabledRef = useRef(setMicEnabled);
+  setMicEnabledRef.current = setMicEnabled;
+
   const toggleMute = useCallback(() => {
     const track = localStreamRef.current?.getAudioTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      const nextMuted = !track.enabled;
-      setIsMuted(nextMuted);
-      if (!nextMuted) mutedByDeafenRef.current = false;
-      audioManager.play(nextMuted ? "mute" : "unmute");
-      // Published to the room by the media-state effect.
-    }
+    if (!track) return;
+    setMicEnabled(!track.enabled, { persist: true });
+  }, [setMicEnabled]);
+
+  useEffect(() => {
+    const onPtt = (event) => {
+      if (!isInCallRef.current) return;
+      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false });
+    };
+    window.addEventListener("descall:ptt", onPtt);
+    return () => window.removeEventListener("descall:ptt", onPtt);
   }, []);
 
   const toggleDeafen = useCallback(() => {
@@ -1111,16 +1169,17 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     setDeafened(next);
     for (const [userId, el] of remoteAudioRefs.current.entries()) {
       el.muted = next;
-      if (next) el.volume = 0;
+      if (next) applyPlaybackGain(el, 0);
       else {
         const stored = participantVolumeRef.current.get(String(userId));
-        el.volume = stored == null ? 1 : stored;
+        applyPlaybackGain(el, stored == null ? 1 : stored);
       }
     }
     const track = localStreamRef.current?.getAudioTracks()?.[0];
     if (next) {
       if (track?.enabled) {
         track.enabled = false;
+        setNoiseSuppressedTrackEnabled(false);
         setIsMuted(true);
         mutedByDeafenRef.current = true;
       }
@@ -1128,6 +1187,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     } else {
       if (mutedByDeafenRef.current && track) {
         track.enabled = true;
+        setNoiseSuppressedTrackEnabled(true);
         setIsMuted(false);
         mutedByDeafenRef.current = false;
       }
@@ -1547,7 +1607,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         peerData.offering = true;
         try {
           const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
+          await commitLocalDescription(pc, offer);
           peerData.lastOfferAt = Date.now();
 
           socket.emit("group:call:offer", {
@@ -1671,7 +1731,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         peerData.makingOffer = true;
         try {
           const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
+          await commitLocalDescription(pc, offer);
           peerData.lastOfferAt = Date.now();
 
           socket.emit("group:call:offer", {
@@ -1756,7 +1816,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           await pc.setRemoteDescription(new RTCSessionDescription(offer));
           await flushIce(pc, fromUserId);
           const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
+          await commitLocalDescription(pc, answer);
           
           stream.getTracks().forEach(track => {
             track.enabled = true;
@@ -1788,7 +1848,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         }
 
         const answer = await peerData.pc.createAnswer();
-        await peerData.pc.setLocalDescription(answer);
+        await commitLocalDescription(peerData.pc, answer);
         
         localStreamRef.current?.getTracks().forEach(track => {
           track.enabled = true;
@@ -2147,11 +2207,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         localStreamRef.current = stream;
         setLocalStream(stream);
         
-        // Enable audio tracks
-        stream.getAudioTracks().forEach(track => {
-          track.enabled = true;
-        });
-        setNoiseSuppressedTrackEnabled(true);
+        const mutedNow = primeCapturedMic(stream);
+        setNoiseSuppressedTrackEnabled(!mutedNow);
+        setIsMuted(mutedNow);
         
         hapticCallConnected();
         setIsInCall(true);
@@ -2369,38 +2427,52 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
   // Change audio input device
   const setAudioInput = useCallback(async (deviceId) => {
-    setSelectedAudioInput(deviceId);
+    const id = deviceId || "";
+    setSelectedAudioInput(id);
     if (!localStreamRef.current) return;
+    const prevEnabled = localStreamRef.current.getAudioTracks()[0]?.enabled !== false;
+    replacingMicRef.current = true;
     try {
       disposeNoiseSuppressionSession({ stopRaw: true });
       const newStream = await acquireVoiceMicStream({
-        audio: { deviceId: { exact: deviceId } },
+        ...(id ? { audio: { deviceId: { exact: id } } } : {}),
         video: false,
+        applyStoredMute: false,
       });
       const newAudioTrack = newStream.getAudioTracks()[0];
       if (!newAudioTrack) return;
+      newAudioTrack.enabled = prevEnabled;
 
-      // Stop and remove old audio tracks from the local stream first
       const oldAudioTracks = localStreamRef.current.getAudioTracks();
       oldAudioTracks.forEach((t) => {
         t.stop();
         localStreamRef.current.removeTrack(t);
       });
       localStreamRef.current.addTrack(newAudioTrack);
-      setNoiseSuppressedTrackEnabled(true);
+      setNoiseSuppressedTrackEnabled(prevEnabled);
+      newAudioTrack.addEventListener("ended", () => {
+        if (replacingMicRef.current) return;
+        if (localStreamRef.current?.getAudioTracks?.()[0] !== newAudioTrack) return;
+        if (!isInCallRef.current) return;
+        void setAudioInputRef.current?.("");
+      });
 
-      // Replace the track on all active peer senders
       const replacePromises = [];
       pcMapRef.current.forEach((peerData) => {
-        const sender = peerData.pc?.getSenders().find(s => s.track?.kind === 'audio');
+        const sender = peerData.pc?.getSenders().find(
+          (s) => s.track?.kind === "audio" && s !== peerData.screenAudioSender
+        );
         if (sender) replacePromises.push(sender.replaceTrack(newAudioTrack));
       });
       await Promise.all(replacePromises);
 
       setLocalStream(localStreamRef.current);
     } catch (err) {
+    } finally {
+      replacingMicRef.current = false;
     }
   }, []);
+  setAudioInputRef.current = setAudioInput;
 
   // Change audio output device
   const setAudioOutput = useCallback((deviceId) => {
@@ -2456,12 +2528,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const setParticipantVolume = useCallback((userId, volume) => {
     if (userId == null) return;
     const key = String(userId);
-    const next = Math.max(0, Math.min(1, Number(volume)));
-    const safe = Number.isFinite(next) ? next : 1;
+    const safe = clampGain(volume);
     if (safe > 0) lastParticipantVolumeRef.current.set(key, safe);
     participantVolumeRef.current.set(key, safe);
+    writeParticipantGain(userId, safe);
     const el = remoteAudioRefs.current.get(userId) || remoteAudioRefs.current.get(key);
-    if (el) el.volume = safe;
+    if (el) applyPlaybackGain(el, deafenedRef.current ? 0 : safe);
   }, []);
 
   const toggleParticipantMute = useCallback((userId) => {
@@ -2493,8 +2565,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       );
       localStreamRef.current = stream;
       setLocalStream(stream);
-      stream.getAudioTracks().forEach((t) => { t.enabled = true; });
-      setNoiseSuppressedTrackEnabled(true);
+      const mutedNow = primeCapturedMic(stream);
+      setNoiseSuppressedTrackEnabled(!mutedNow);
+      setIsMuted(mutedNow);
       hapticCallConnected();
       setIsInCall(true);
       audioManager.stop("incomingCall");

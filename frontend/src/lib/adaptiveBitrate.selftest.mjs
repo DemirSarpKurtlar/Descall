@@ -65,7 +65,9 @@ await applyAdaptiveVideoEncoding(audioSender, "poor", audioLastApplied);
 assert.equal(audioLastApplied.current, null);
 await applyAdaptiveAudioEncoding(audioSender, "poor", audioLastApplied);
 assert.equal(audioSender._state.encodings[0].maxBitrate, audioPoor.maxBitrate);
-assert.equal(audioLastApplied.current, "poor");
+assert.equal(audioLastApplied.current, "poor:voice");
+assert.equal(getAdaptiveAudioEncodingParams("good", { music: true }).maxBitrate, 96_000);
+assert.equal(getAdaptiveAudioEncodingParams("excellent").maxBitrate, 64_000);
 
 // Null/undefined senders are ignored without throwing.
 await applyAdaptiveVideoEncoding(null, "poor");

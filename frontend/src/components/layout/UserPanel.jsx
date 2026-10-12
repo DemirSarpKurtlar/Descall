@@ -61,11 +61,11 @@ const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, BadgeIcon, TitleTag } from "../ui/Cosmetics";
 import {
-  isNoiseSuppressionEnabled,
-  setNoiseSuppressionEnabled,
   getNoiseSuppressionEngine,
   preloadNoiseSuppression,
+  setNoiseMode,
 } from "../../lib/noiseSuppression";
+import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
 
 /* ─── Helpers ─── */
 const SETTINGS_KEY = "descall_user_settings";
@@ -813,13 +813,30 @@ const UserPanel = forwardRef(function UserPanel({
   const [selectedAudioIn, setSelectedAudioIn] = useState(stored.selectedAudioIn || "");
   const [selectedAudioOut, setSelectedAudioOut] = useState(stored.selectedAudioOut || "");
   const [selectedVideoIn, setSelectedVideoIn] = useState(stored.selectedVideoIn || "");
-  const [noiseSuppressionOn, setNoiseSuppressionOn] = useState(() => isNoiseSuppressionEnabled());
+  const [voiceProfile, setVoiceProfileState] = useState(() => readVoiceProfile());
   const [noiseEngine, setNoiseEngine] = useState(() => getNoiseSuppressionEngine());
   const [micTestLevel, setMicTestLevel] = useState(0);
   const [micTesting, setMicTesting] = useState(false);
+  const [hearYourself, setHearYourself] = useState(false);
   const micAnalyserRef = useRef(null);
   const micStreamRef = useRef(null);
   const micRafRef = useRef(null);
+  const micCtxRef = useRef(null);
+  const electronApp = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+
+  const patchVoice = useCallback((patch) => {
+    if (patch.noiseMode) setNoiseMode(patch.noiseMode);
+    const next = writeVoiceProfile(patch);
+    setVoiceProfileState(next);
+    if (next.noiseMode !== "off") preloadNoiseSuppression();
+    setNoiseEngine(getNoiseSuppressionEngine());
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setVoiceProfileState(readVoiceProfile());
+    window.addEventListener("descall:voice-profile", sync);
+    return () => window.removeEventListener("descall:voice-profile", sync);
+  }, []);
 
   useEffect(() => {
     saveSettings({
@@ -910,13 +927,15 @@ const UserPanel = forwardRef(function UserPanel({
     try {
       const { acquireVoiceMicStream } = await import("../../lib/noiseSuppression");
       const stream = await acquireVoiceMicStream({
-        audio: { deviceId: selectedAudioIn ? { exact: selectedAudioIn } : undefined },
+        ...(selectedAudioIn ? { audio: { deviceId: { exact: selectedAudioIn } } } : {}),
         video: false,
+        applyStoredMute: false,
       });
       micStreamRef.current = stream;
       setMicTesting(true);
       setNoiseEngine(getNoiseSuppressionEngine());
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      micCtxRef.current = audioCtx;
       const src = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 64;
@@ -941,6 +960,8 @@ const UserPanel = forwardRef(function UserPanel({
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
     micAnalyserRef.current = null;
+    try { micCtxRef.current?.close(); } catch { /* ignore */ }
+    micCtxRef.current = null;
     setMicTestLevel(0);
     setMicTesting(false);
     import("../../lib/noiseSuppression")
@@ -951,6 +972,19 @@ const UserPanel = forwardRef(function UserPanel({
   }, []);
 
   useEffect(() => () => stopMicTest(), [stopMicTest]);
+
+  useEffect(() => {
+    const ctx = micCtxRef.current;
+    const analyser = micAnalyserRef.current;
+    if (!micTesting || !hearYourself || !ctx || !analyser) return undefined;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.35;
+    analyser.connect(gain);
+    gain.connect(ctx.destination);
+    return () => {
+      try { gain.disconnect(); } catch { /* ignore */ }
+    };
+  }, [hearYourself, micTesting]);
 
   /* Only probe media devices when the Voice tab is open */
   useEffect(() => {
@@ -2485,18 +2519,24 @@ const UserPanel = forwardRef(function UserPanel({
                     "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available."
                   )}
                 >
-                  <Toggle
-                    value={noiseSuppressionOn}
-                    onChange={(v) => {
-                      setNoiseSuppressionOn(v);
-                      setNoiseSuppressionEnabled(v);
-                      if (v) preloadNoiseSuppression();
-                      setNoiseEngine(getNoiseSuppressionEngine());
-                    }}
-                    label={t("AI noise suppression")}
-                  />
+                  <div className="us-btn-row">
+                    {[
+                      ["off", "Noise: off"],
+                      ["on", "Noise: on"],
+                      ["strong", "Noise: strong"],
+                    ].map(([mode, label]) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={`us-btn ${voiceProfile.noiseMode === mode ? "primary" : "ghost"}`}
+                        onClick={() => patchVoice({ noiseMode: mode })}
+                      >
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
                 </SettingRow>
-                {noiseSuppressionOn ? (
+                {voiceProfile.noiseMode !== "off" ? (
                   <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
                     {t("Active engine")}:{" "}
                     <strong>
@@ -2512,6 +2552,41 @@ const UserPanel = forwardRef(function UserPanel({
                     </strong>
                   </p>
                 ) : null}
+                <SettingRow
+                  icon={Headphones}
+                  title={t("Echo cancellation")}
+                  description={t("Removes echo from speakers. Leave this on unless you are using headphones and the processing sounds hollow.")}
+                >
+                  <Toggle
+                    value={voiceProfile.echoCancellation !== false}
+                    onChange={(value) => patchVoice({ echoCancellation: value })}
+                    label={t("Echo cancellation")}
+                  />
+                </SettingRow>
+                <SettingRow
+                  icon={Volume2}
+                  title={t("Auto gain control")}
+                  description={t("Keeps your volume steady without pumping.")}
+                >
+                  <Toggle
+                    value={voiceProfile.autoGainControl !== false}
+                    onChange={(value) => patchVoice({ autoGainControl: value })}
+                    label={t("Auto gain control")}
+                  />
+                </SettingRow>
+                <label className="us-field">
+                  <span>{t("Input sensitivity")}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={voiceProfile.inputSensitivity}
+                    onChange={(event) => patchVoice({ inputSensitivity: Number(event.target.value) })}
+                  />
+                </label>
+                <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
+                  {t("Raise this if people miss quiet speech. Lower it if background noise lights the ring.")}
+                </p>
               </div>
             </section>
 
@@ -2524,6 +2599,13 @@ const UserPanel = forwardRef(function UserPanel({
                     style={{ width: `${Math.min((micTestLevel * 100) / 255, 100)}%` }}
                   />
                 </div>
+                <SettingRow
+                  icon={Headphones}
+                  title={t("Hear yourself")}
+                  description={t("Plays your mic back while the test is running. Use headphones.")}
+                >
+                  <Toggle value={hearYourself} onChange={setHearYourself} label={t("Hear yourself")} />
+                </SettingRow>
                 <div className="us-btn-row">
                   {!micTesting ? (
                     <button type="button" className="us-btn primary" onClick={startMicTest}>
@@ -2537,6 +2619,38 @@ const UserPanel = forwardRef(function UserPanel({
                 </div>
               </div>
             </section>
+
+            {electronApp ? (
+              <section className="us-section">
+                <h4 className="us-section-label">{t("Push-to-talk")}</h4>
+                <div className="us-card stack">
+                  <SettingRow
+                    icon={Mic}
+                    title={t("Push-to-talk")}
+                    description={t("Hold the key to talk while Descall is focused.")}
+                  >
+                    <Toggle
+                      value={Boolean(voiceProfile.pushToTalk)}
+                      onChange={(value) => patchVoice({ pushToTalk: value })}
+                      label={t("Push-to-talk")}
+                    />
+                  </SettingRow>
+                  {voiceProfile.pushToTalk ? (
+                    <label className="us-field">
+                      <span>{t("Push-to-talk key")}</span>
+                      <select
+                        value={voiceProfile.pttAccelerator}
+                        onChange={(event) => patchVoice({ pttAccelerator: event.target.value })}
+                      >
+                        {PTT_ACCELERATORS.map((item) => (
+                          <option key={item.id} value={item.id}>{item.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
           </div>
         );
 

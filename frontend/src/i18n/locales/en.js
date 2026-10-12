@@ -1786,6 +1786,27 @@ export const phrases = {
   "Connected (private channel)": "Connected (private channel)",
   "Noise suppression": "Noise suppression",
   "AI noise suppression": "AI noise suppression",
+  "Noise: off": "Off",
+  "Noise: on": "On",
+  "Noise: strong": "Strong",
+  "Echo cancellation": "Echo cancellation",
+  "Removes echo from speakers. Leave this on unless you are using headphones and the processing sounds hollow.":
+    "Removes echo from speakers. Leave this on unless you are using headphones and the processing sounds hollow.",
+  "Auto gain control": "Auto gain control",
+  "Keeps your volume steady without pumping.": "Keeps your volume steady without pumping.",
+  "Input sensitivity": "Input sensitivity",
+  "Raise this if people miss quiet speech. Lower it if background noise lights the ring.":
+    "Raise this if people miss quiet speech. Lower it if background noise lights the ring.",
+  "Hear yourself": "Hear yourself",
+  "Plays your mic back while the test is running. Use headphones.":
+    "Plays your mic back while the test is running. Use headphones.",
+  "Push-to-talk": "Push-to-talk",
+  "Hold the key to talk while Descall is focused.": "Hold the key to talk while Descall is focused.",
+  "Push-to-talk key": "Push-to-talk key",
+  "Connection is good": "Connection is good",
+  "Connection is medium. Voice bitrate is reduced.": "Connection is medium. Voice bitrate is reduced.",
+  "Connection is poor. Extra redundancy is on to ride out packet loss.":
+    "Connection is poor. Extra redundancy is on to ride out packet loss.",
   "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available.":
     "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available.",
   "Active engine": "Active engine",

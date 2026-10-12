@@ -29,8 +29,15 @@ import speexWasmPath from "@sapphi-red/web-noise-suppressor/speex.wasm?url";
 import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?url";
 import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
 import { primeVoiceActivity } from "./voiceActivity";
-
-const STORAGE_KEY = "descall:noiseSuppressionEnabled";
+import {
+  agcCompressorSettings,
+  applyStoredMute,
+  captureConstraints,
+  claimVoiceAudioSession,
+  gateSettings,
+  readVoiceProfile,
+  writeVoiceProfile,
+} from "./voiceProfile.js";
 
 /**
  * Native iOS app (Capacitor WKWebView): send the raw microphone track.
@@ -56,36 +63,21 @@ let assetsPromise = null;
 /** @type {null | { rawStream: MediaStream, processedStream: MediaStream, nodes: any[], engine: string }} */
 let activeSession = null;
 
-function readEnabled() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw == null) return true; // default ON
-    return raw === "1" || raw === "true";
-  } catch {
-    return true;
-  }
-}
-
-function writeEnabled(enabled) {
-  try {
-    localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-}
-
 export function isNoiseSuppressionEnabled() {
   if (isNativeIosApp()) return false;
-  return readEnabled();
+  return readVoiceProfile().noiseMode !== "off";
 }
 
 export function setNoiseSuppressionEnabled(enabled) {
-  const next = Boolean(enabled);
-  writeEnabled(next);
+  return setNoiseMode(enabled ? "on" : "off") !== "off";
+}
+
+export function setNoiseMode(mode) {
+  const next = writeVoiceProfile({ noiseMode: mode });
   window.dispatchEvent(
-    new CustomEvent("descall:noise-suppression-changed", { detail: { enabled: next } })
+    new CustomEvent("descall:noise-suppression-changed", { detail: { enabled: next.noiseMode !== "off", mode: next.noiseMode } })
   );
-  return next;
+  return next.noiseMode;
 }
 
 export function getNoiseSuppressionEngine() {
@@ -93,23 +85,7 @@ export function getNoiseSuppressionEngine() {
 }
 
 export function getVoiceAudioConstraints({ deviceId } = {}) {
-  const neuralPreferred = isNoiseSuppressionEnabled();
-  const audio = {
-    echoCancellation: { ideal: true },
-    // When neural NS is on, leave browser NS off to avoid double-processing.
-    noiseSuppression: neuralPreferred ? { ideal: false } : { ideal: true },
-    autoGainControl: { ideal: true },
-    channelCount: { ideal: 1 },
-    sampleRate: { ideal: 48000 },
-    latency: { ideal: 0.01 },
-  };
-  if (deviceId) audio.deviceId = { exact: deviceId };
-  // Chromium extras (ignored by other browsers)
-  audio.googEchoCancellation = true;
-  audio.googAutoGainControl = true;
-  audio.googNoiseSuppression = !neuralPreferred;
-  audio.googHighpassFilter = true;
-  return { audio, video: false };
+  return { audio: captureConstraints(readVoiceProfile(), deviceId), video: false };
 }
 
 async function ensureAssets(ctx) {
@@ -160,18 +136,22 @@ async function ensureContext() {
   return sharedCtx;
 }
 
-function buildDspFallback(ctx) {
+function buildDspFallback(ctx, { agc }) {
   const highpass = ctx.createBiquadFilter();
   highpass.type = "highpass";
   highpass.frequency.value = 80;
   highpass.Q.value = 0.7;
 
-  const compressor = ctx.createDynamicsCompressor();
-  compressor.threshold.value = -28;
-  compressor.knee.value = 18;
-  compressor.ratio.value = 3;
-  compressor.attack.value = 0.003;
-  compressor.release.value = 0.18;
+  let compressor = null;
+  if (agc) {
+    const settings = agcCompressorSettings();
+    compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = settings.threshold;
+    compressor.knee.value = settings.knee;
+    compressor.ratio.value = settings.ratio;
+    compressor.attack.value = settings.attack;
+    compressor.release.value = settings.release;
+  }
 
   return { highpass, compressor, engine: "dsp" };
 }
@@ -193,9 +173,10 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
     return { gtcrnWasm: null, rnnoiseWasm: null, speexWasm: null };
   });
 
+  const prefs = readVoiceProfile();
   const source = ctx.createMediaStreamSource(rawStream);
   const destination = ctx.createMediaStreamDestination();
-  const { highpass, compressor } = buildDspFallback(ctx);
+  const { highpass, compressor } = buildDspFallback(ctx, { agc: prefs.autoGainControl !== false });
 
   /** @type {AudioNode | null} */
   let suppressor = null;
@@ -230,9 +211,7 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
   let gate = null;
   try {
     gate = new NoiseGateWorkletNode(ctx, {
-      openThreshold: -52,
-      closeThreshold: -62,
-      holdMs: 110,
+      ...gateSettings(prefs.noiseMode),
       maxChannels: 1,
     });
   } catch {
@@ -250,8 +229,11 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
     node.connect(gate);
     node = gate;
   }
-  node.connect(compressor);
-  compressor.connect(destination);
+  if (compressor) {
+    node.connect(compressor);
+    node = compressor;
+  }
+  node.connect(destination);
 
   const processedStream = destination.stream;
   // Preserve mute/enable state from raw track
@@ -295,6 +277,7 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
 export async function acquireVoiceMicStream(extraConstraints = {}) {
   // Same turn as the tap, before getUserMedia yields. iOS will not resume
   // an AudioContext created later from the speaking-ring effect.
+  claimVoiceAudioSession();
   primeVoiceActivity();
   const base = getVoiceAudioConstraints({
     deviceId: extraConstraints?.audio?.deviceId?.exact || extraConstraints?.deviceId,
@@ -325,14 +308,16 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
     /* ignore */
   }
 
-  if (!isNoiseSuppressionEnabled()) return raw;
-
-  try {
-    return await wrapStreamWithNoiseSuppression(raw);
-  } catch (err) {
-    console.warn("[NoiseSuppression] Wrap failed, using raw mic:", err?.message || err);
-    return raw;
+  let stream = raw;
+  if (isNoiseSuppressionEnabled()) {
+    try {
+      stream = await wrapStreamWithNoiseSuppression(raw);
+    } catch (err) {
+      console.warn("[NoiseSuppression] Wrap failed, using raw mic:", err?.message || err);
+    }
   }
+  if (extraConstraints.applyStoredMute !== false) applyStoredMute(stream);
+  return stream;
 }
 
 export function disposeNoiseSuppressionSession({ stopRaw = true } = {}) {

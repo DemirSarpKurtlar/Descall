@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { pokeVoiceActivity, subscribeVoiceActivity } from "../lib/voiceActivity";
 import { createSpeakingGate, smoothLevel } from "../lib/voiceActivityMath";
+import { speakingThreshold } from "../lib/voiceProfile";
 
 /**
  * Speaking boolean + 0–1 mic level for one tile.
@@ -11,7 +12,7 @@ export default function useVoiceActivity(
   stream,
   {
     muted = false,
-    threshold = 0.02,
+    threshold,
     onThreshold,
     offThreshold,
     attackMs = 90,
@@ -21,9 +22,16 @@ export default function useVoiceActivity(
 ) {
   const [speaking, setSpeaking] = useState(false);
   const [level, setLevel] = useState(0);
+  const [profileThreshold, setProfileThreshold] = useState(() => speakingThreshold());
   const speakingRef = useRef(false);
   const levelRef = useRef(0);
   const visibleRef = useRef(true);
+
+  useEffect(() => {
+    const sync = () => setProfileThreshold(speakingThreshold());
+    window.addEventListener("descall:voice-profile", sync);
+    return () => window.removeEventListener("descall:voice-profile", sync);
+  }, []);
 
   useEffect(() => {
     if (!observeEl || observeEl.nodeType !== 1 || typeof IntersectionObserver === "undefined") {
@@ -47,8 +55,14 @@ export default function useVoiceActivity(
       setLevel(0);
       return undefined;
     }
+    const gateOn =
+      typeof onThreshold === "number"
+        ? onThreshold
+        : typeof threshold === "number"
+          ? threshold
+          : profileThreshold;
     const gate = createSpeakingGate({
-      onThreshold: typeof onThreshold === "number" ? onThreshold : threshold,
+      onThreshold: gateOn,
       offThreshold,
       attackMs,
       releaseMs,
@@ -73,7 +87,7 @@ export default function useVoiceActivity(
       unsubscribe();
       gate.reset();
     };
-  }, [stream, muted, threshold, onThreshold, offThreshold, attackMs, releaseMs]);
+  }, [stream, muted, threshold, onThreshold, offThreshold, attackMs, releaseMs, profileThreshold]);
 
   return { speaking, level };
 }

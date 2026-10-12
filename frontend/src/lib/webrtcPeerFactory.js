@@ -24,6 +24,7 @@
  */
 
 import { getIceServers } from "./iceConfig";
+import { opusOptionsForSenders, preferVoiceCodecs, tuneAudioReceiver, tuneOpusSdp } from "./voiceProfile.js";
 
 export function createPeerConnection({
   iceServers,
@@ -37,7 +38,10 @@ export function createPeerConnection({
     pc.onicecandidate = (e) => onIceCandidate(e.candidate, e);
   }
   if (onTrack) {
-    pc.ontrack = onTrack;
+    pc.ontrack = (event) => {
+      if (event?.track?.kind === "audio") tuneAudioReceiver(event.receiver);
+      onTrack(event);
+    };
   }
   if (onConnectionStateChange) {
     pc.onconnectionstatechange = () => onConnectionStateChange(pc.connectionState, pc);
@@ -48,7 +52,30 @@ export function createPeerConnection({
 
 export function attachLocalTracks(pc, stream) {
   if (!pc || !stream) return [];
-  return stream.getTracks().map((track) => pc.addTrack(track, stream));
+  const senders = stream.getTracks().map((track) => pc.addTrack(track, stream));
+  try {
+    pc.getTransceivers?.().forEach((transceiver) => {
+      if (transceiver?.sender?.track?.kind === "audio" || transceiver?.receiver?.track?.kind === "audio") {
+        preferVoiceCodecs(transceiver);
+      }
+    });
+  } catch {
+    /* codec preferences are a hint */
+  }
+  return senders;
+}
+
+export async function commitLocalDescription(pc, description) {
+  if (!pc || !description) return;
+  if (!description.sdp) {
+    await pc.setLocalDescription(description);
+    return;
+  }
+  const tuned = {
+    type: description.type,
+    sdp: tuneOpusSdp(description.sdp, opusOptionsForSenders(pc.getSenders?.() || [])),
+  };
+  await pc.setLocalDescription(tuned);
 }
 
 export function safeClosePeer(pc) {

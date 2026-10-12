@@ -23,7 +23,18 @@ import {
 } from "../lib/webrtcNegotiation";
 import { preloadIceServers } from "../lib/iceConfig";
 import { subscribeNetworkChange } from "../lib/networkChange";
-import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
+import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
+import { applyPlaybackGain } from "../lib/voiceGain";
+import {
+  clampGain,
+  micRecapturePlan,
+  primeCapturedMic,
+  readLocalMute,
+  readParticipantGain,
+  tuneAudioReceiver,
+  writeLocalMute,
+  writeParticipantGain,
+} from "../lib/voiceProfile";
 import { getUser } from "../lib/storage";
 import useConnectionStats from "./useConnectionStats";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
@@ -33,6 +44,7 @@ import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
   getVoiceAudioConstraints,
+  preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
@@ -85,7 +97,7 @@ export function useCall(socket, callOccupancyRef = null) {
   const [callAnchorAt, setCallAnchorAt] = useState(null);
   const [callType, setCallType] = useState(null); // null | "voice" | "video"
   const [peer, setPeer] = useState(null);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(readLocalMute);
   const [cameraOn, setCameraOn] = useState(false);
   const [remoteMuted, setRemoteMuted] = useState(false);
   const [remoteCameraOn, setRemoteCameraOn] = useState(null);
@@ -156,6 +168,12 @@ export function useCall(socket, callOccupancyRef = null) {
     preloadIceServers().catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (mode !== "incoming" && mode !== "outgoing") return;
+    preloadIceServers().catch(() => {});
+    preloadNoiseSuppression();
+  }, [mode]);
+
   const pcRef = useRef(null);
   const modeRef = useRef(mode);
   useEffect(() => { modeRef.current = mode; }, [mode]);
@@ -175,6 +193,9 @@ export function useCall(socket, callOccupancyRef = null) {
     );
     applyAdaptiveVideoEncoding(videoSender, networkStats.quality, lastAdaptiveVideoQualityRef);
     applyAdaptiveAudioEncoding(audioSender, networkStats.quality, lastAdaptiveAudioQualityRef);
+    for (const receiver of pc.getReceivers()) {
+      if (receiver.track?.kind === "audio") tuneAudioReceiver(receiver, networkStats.quality);
+    }
   }, [mode, networkStats.quality]);
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
@@ -262,8 +283,18 @@ export function useCall(socket, callOccupancyRef = null) {
   useEffect(() => { socketRef.current = socket; }, [socket]);
   useEffect(() => { callTypeRef.current = callType; }, [callType]);
 
-  // Enumerate audio devices on mount and on device change
+  const selectedAudioInputRef = useRef("");
+  const setAudioInputRef = useRef(null);
+  const replacingMicRef = useRef(false);
   useEffect(() => {
+    selectedAudioInputRef.current = selectedAudioInput;
+  }, [selectedAudioInput]);
+
+  // Enumerate audio devices on mount and on device change. Empty selection
+  // follows the system default; recapture only when the live mic is gone
+  // or a headset appears while that default is in use.
+  useEffect(() => {
+    let previousIds = [];
     const getDevices = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -273,8 +304,18 @@ export function useCall(socket, callOccupancyRef = null) {
         setAudioInputDevices(inputs);
         setAudioOutputDevices(outputs);
         setVideoInputDevices(cameras);
-        if (!selectedAudioInput && inputs.length > 0) setSelectedAudioInput(inputs[0].deviceId);
-        if (!selectedAudioOutput && outputs.length > 0) setSelectedAudioOutput(outputs[0].deviceId);
+        const live = modeRef.current === "active" || modeRef.current === "outgoing";
+        const currentId = localStreamRef.current?.getAudioTracks?.()[0]?.getSettings?.().deviceId || "";
+        const plan = micRecapturePlan({
+          previousIds,
+          inputs,
+          currentDeviceId: currentId,
+          preferredId: selectedAudioInputRef.current,
+        });
+        previousIds = inputs.map((device) => device.deviceId).filter(Boolean);
+        if (live && localStreamRef.current && plan.reason && !replacingMicRef.current) {
+          void setAudioInputRef.current?.(plan.deviceId);
+        }
       } catch (_) {}
     };
     getDevices();
@@ -341,7 +382,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setCallType(null);
     setCallUuid(null);
     setPeer(null);
-    setMuted(false);
+    setMuted(readLocalMute());
     setDeafened(false);
     deafenedRef.current = false;
     mutedByDeafenRef.current = false;
@@ -512,6 +553,7 @@ export function useCall(socket, callOccupancyRef = null) {
 
     pc.ontrack = (e) => {
       const track = e.track;
+      if (track?.kind === "audio") tuneAudioReceiver(e.receiver);
       // Mid-call camera renegotiation may omit e.streams — wrap the track.
       const raw = e.streams?.[0];
       const rs = (raw && raw.getTracks().length > 0) ? raw : new MediaStream([track]);
@@ -594,7 +636,7 @@ export function useCall(socket, callOccupancyRef = null) {
         if (track.kind === "audio" && remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = rs;
           remoteAudioRef.current.muted = deafenedRef.current;
-          remoteAudioRef.current.volume = deafenedRef.current ? 0 : remoteVolumeRef.current;
+          applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : remoteVolumeRef.current);
           remoteAudioRef.current.play().catch(() => {});
         }
         if (track.kind === "video" && remoteVideoRef.current) {
@@ -605,7 +647,7 @@ export function useCall(socket, callOccupancyRef = null) {
         if (remoteAudioRef.current && !remoteAudioRef.current.srcObject) {
           remoteAudioRef.current.srcObject = rs;
           remoteAudioRef.current.muted = deafenedRef.current;
-          remoteAudioRef.current.volume = deafenedRef.current ? 0 : remoteVolumeRef.current;
+          applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : remoteVolumeRef.current);
           remoteAudioRef.current.play().catch(() => {});
         }
         if (remoteVideoRef.current && !remoteVideoRef.current.srcObject && track.kind === "video") {
@@ -749,7 +791,7 @@ export function useCall(socket, callOccupancyRef = null) {
           negotiationQueuedRef.current = true;
           return;
         }
-        await pc.setLocalDescription(offer);
+        await commitLocalDescription(pc, offer);
         negotiateFailures = 0;
         sock.emit("call:offer", {
           toUserId: peerRef.current.id,
@@ -910,7 +952,7 @@ export function useCall(socket, callOccupancyRef = null) {
             return;
           }
           const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
+          await commitLocalDescription(pc, answer);
           socketRef.current?.emit("call:answer", { toUserId: fromUser.id, answer: pc.localDescription });
           await flushIce(pc);
           // Peer upgraded voice → video (camera on): update UI mode
@@ -1152,7 +1194,9 @@ export function useCall(socket, callOccupancyRef = null) {
       setupTimelineRef.current?.mark("gum");
       localStreamRef.current = stream;
       setLocalStream(stream);
-      setNoiseSuppressedTrackEnabled(true);
+      const mutedNow = primeCapturedMic(stream);
+      setNoiseSuppressedTrackEnabled(!mutedNow);
+      setMuted(mutedNow);
       micGuardRef.current?.watchTrack(stream.getAudioTracks()[0]);
 
       // Sync peerRef immediately — unreachable/decline can arrive before React commit
@@ -1177,7 +1221,7 @@ export function useCall(socket, callOccupancyRef = null) {
       setupPeerConnection(pc, stream, true);
 
       const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      await commitLocalDescription(pc, offer);
       // The initial offer already carries every track attached above. The
       // `negotiationneeded` that addTrack queued while dialing must not trigger
       // a second offer/answer right after the callee answers (an extra
@@ -1237,7 +1281,9 @@ export function useCall(socket, callOccupancyRef = null) {
       }
       localStreamRef.current = stream;
       setLocalStream(stream);
-      setNoiseSuppressedTrackEnabled(true);
+      const mutedNow = primeCapturedMic(stream);
+      setNoiseSuppressedTrackEnabled(!mutedNow);
+      setMuted(mutedNow);
       micGuardRef.current?.watchTrack(stream.getAudioTracks()[0]);
       setCallType(type);
       setCameraOn(type === "video");
@@ -1254,7 +1300,7 @@ export function useCall(socket, callOccupancyRef = null) {
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       await flushIce(pc);
       const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
+      await commitLocalDescription(pc, answer);
       if (!socketRef.current?.connected) {
         cleanup();
         return;
@@ -1356,16 +1402,34 @@ export function useCall(socket, callOccupancyRef = null) {
     return () => s.off("connect", onReconnect);
   }, [mediaStateActive, peerIdForMedia, socket, emitLocalMediaState]);
 
+  const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
+    if (deafenedRef.current && enabled) return;
+    const track = localStreamRef.current?.getAudioTracks()[0];
+    if (!track || track.enabled === enabled) return;
+    track.enabled = enabled;
+    setNoiseSuppressedTrackEnabled(enabled);
+    const nextMuted = !enabled;
+    setMuted(nextMuted);
+    if (persist) writeLocalMute(nextMuted);
+    if (!nextMuted) mutedByDeafenRef.current = false;
+    if (sound) audioManager.play(nextMuted ? "mute" : "unmute");
+  }, []);
+  const setMicEnabledRef = useRef(setMicEnabled);
+  setMicEnabledRef.current = setMicEnabled;
+
   const toggleMute = useCallback(() => {
     const track = localStreamRef.current?.getAudioTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      const nextMuted = !track.enabled;
-      setMuted(nextMuted);
-      if (!nextMuted) mutedByDeafenRef.current = false;
-      audioManager.play(nextMuted ? "mute" : "unmute");
-      // Remote tile state is published by the media-state effect below.
-    }
+    if (!track) return;
+    setMicEnabled(!track.enabled, { persist: true });
+  }, [setMicEnabled]);
+
+  useEffect(() => {
+    const onPtt = (event) => {
+      if (modeRef.current !== "active") return;
+      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false });
+    };
+    window.addEventListener("descall:ptt", onPtt);
+    return () => window.removeEventListener("descall:ptt", onPtt);
   }, []);
 
   const toggleDeafen = useCallback(() => {
@@ -1375,12 +1439,13 @@ export function useCall(socket, callOccupancyRef = null) {
     const audio = remoteAudioRef.current;
     if (audio) {
       audio.muted = next;
-      audio.volume = next ? 0 : remoteVolumeRef.current;
+      applyPlaybackGain(audio, next ? 0 : remoteVolumeRef.current);
     }
     const track = localStreamRef.current?.getAudioTracks()?.[0];
     if (next) {
       if (track?.enabled) {
         track.enabled = false;
+        setNoiseSuppressedTrackEnabled(false);
         setMuted(true);
         mutedByDeafenRef.current = true;
       }
@@ -1388,6 +1453,7 @@ export function useCall(socket, callOccupancyRef = null) {
     } else {
       if (mutedByDeafenRef.current && track) {
         track.enabled = true;
+        setNoiseSuppressedTrackEnabled(true);
         setMuted(false);
         mutedByDeafenRef.current = false;
       }
@@ -1682,26 +1748,40 @@ export function useCall(socket, callOccupancyRef = null) {
 
   // Change active microphone mid-call
   const setAudioInput = useCallback(async (deviceId) => {
-    setSelectedAudioInput(deviceId);
+    const id = deviceId || "";
+    setSelectedAudioInput(id);
     if (!localStreamRef.current) return;
+    const prevEnabled = localStreamRef.current.getAudioTracks()[0]?.enabled !== false;
+    replacingMicRef.current = true;
     try {
       disposeNoiseSuppressionSession({ stopRaw: true });
       const newStream = await acquireVoiceMicStream({
-        audio: { deviceId: { exact: deviceId } },
+        ...(id ? { audio: { deviceId: { exact: id } } } : {}),
         video: false,
+        applyStoredMute: false,
       });
       const newTrack = newStream.getAudioTracks()[0];
       if (!newTrack) return;
+      newTrack.enabled = prevEnabled;
       localStreamRef.current.getAudioTracks().forEach(t => { t.stop(); localStreamRef.current.removeTrack(t); });
       localStreamRef.current.addTrack(newTrack);
-      setNoiseSuppressedTrackEnabled(true);
+      setNoiseSuppressedTrackEnabled(prevEnabled);
       if (pcRef.current) {
-        const sender = pcRef.current.getSenders().find(s => s.track?.kind === "audio");
+        const sender = pcRef.current.getSenders().find(s => s.track?.kind === "audio" && s !== screenAudioSenderRef.current);
         if (sender) await sender.replaceTrack(newTrack);
       }
+      newTrack.addEventListener("ended", () => {
+        if (replacingMicRef.current) return;
+        if (localStreamRef.current?.getAudioTracks?.()[0] !== newTrack) return;
+        if (modeRef.current !== "active" && modeRef.current !== "outgoing") return;
+        void setAudioInputRef.current?.("");
+      });
       setLocalStream(localStreamRef.current);
-    } catch (_) {}
+    } catch (_) {} finally {
+      replacingMicRef.current = false;
+    }
   }, []);
+  setAudioInputRef.current = setAudioInput;
 
   // Change active speaker/output mid-call
   const setAudioOutput = useCallback((deviceId) => {
@@ -1746,13 +1826,27 @@ export function useCall(socket, callOccupancyRef = null) {
     }
   }, [cameraOn]);
 
-  const setParticipantVolume = useCallback((_userId, volume) => {
-    const next = Math.max(0, Math.min(1, Number(volume)));
-    const safe = Number.isFinite(next) ? next : 1;
+  const setParticipantVolume = useCallback((userId, volume) => {
+    const safe = clampGain(volume);
     if (safe > 0) lastRemoteVolumeRef.current = safe;
     remoteVolumeRef.current = safe;
-    if (remoteAudioRef.current) remoteAudioRef.current.volume = safe;
+    if (userId != null) writeParticipantGain(userId, safe);
+    if (remoteAudioRef.current) {
+      applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : safe);
+    }
   }, []);
+
+  useEffect(() => {
+    const id = peer?.id;
+    if (id == null) return;
+    const stored = readParticipantGain(id);
+    if (stored == null) return;
+    remoteVolumeRef.current = stored;
+    if (stored > 0) lastRemoteVolumeRef.current = stored;
+    if (remoteAudioRef.current) {
+      applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : stored);
+    }
+  }, [peer?.id]);
 
   const toggleParticipantMute = useCallback((userId) => {
     if (remoteVolumeRef.current > 0.001) setParticipantVolume(userId, 0);

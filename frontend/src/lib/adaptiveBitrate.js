@@ -5,6 +5,8 @@
  * sharpness over resolution scaling.
  */
 
+import { audioBitrateForQuality } from "./voiceProfile.js";
+
 const VIDEO_ENCODING_PROFILES = {
   excellent: { maxBitrate: 2_500_000, scaleResolutionDownBy: 1, maxFramerate: 30 },
   good: { maxBitrate: 1_500_000, scaleResolutionDownBy: 1, maxFramerate: 30 },
@@ -12,19 +14,12 @@ const VIDEO_ENCODING_PROFILES = {
   poor: { maxBitrate: 300_000, scaleResolutionDownBy: 4, maxFramerate: 15 },
 };
 
-const AUDIO_ENCODING_PROFILES = {
-  excellent: { maxBitrate: 64_000 },
-  good: { maxBitrate: 48_000 },
-  fair: { maxBitrate: 32_000 },
-  poor: { maxBitrate: 20_000 },
-};
-
 export function getAdaptiveVideoEncodingParams(quality) {
   return VIDEO_ENCODING_PROFILES[quality] || VIDEO_ENCODING_PROFILES.good;
 }
 
-export function getAdaptiveAudioEncodingParams(quality) {
-  return AUDIO_ENCODING_PROFILES[quality] || AUDIO_ENCODING_PROFILES.good;
+export function getAdaptiveAudioEncodingParams(quality, { music = false } = {}) {
+  return { maxBitrate: audioBitrateForQuality(quality, { music }) };
 }
 
 /**
@@ -56,8 +51,10 @@ export async function applyAdaptiveVideoEncoding(sender, quality, lastAppliedRef
 /** Same idea for the microphone audio sender — trims bitrate under duress. */
 export async function applyAdaptiveAudioEncoding(sender, quality, lastAppliedRef) {
   if (!sender || !sender.track || sender.track.kind !== "audio") return;
-  const profile = getAdaptiveAudioEncodingParams(quality);
-  if (lastAppliedRef && lastAppliedRef.current === quality) return;
+  const music = sender.track.contentHint === "music";
+  const profile = getAdaptiveAudioEncodingParams(quality, { music });
+  const key = `${quality}:${music ? "music" : "voice"}`;
+  if (lastAppliedRef && lastAppliedRef.current === key) return;
   try {
     const params = sender.getParameters();
     if (!params.encodings || params.encodings.length === 0) {
@@ -65,8 +62,10 @@ export async function applyAdaptiveAudioEncoding(sender, quality, lastAppliedRef
     }
     const enc = params.encodings[0];
     enc.maxBitrate = profile.maxBitrate;
+    if (quality === "poor") enc.priority = "low";
+    else enc.priority = "high";
     await sender.setParameters(params);
-    if (lastAppliedRef) lastAppliedRef.current = quality;
+    if (lastAppliedRef) lastAppliedRef.current = key;
   } catch (err) {
     console.warn("[AdaptiveBitrate] audio setParameters failed:", err?.message || err);
   }

@@ -45,6 +45,7 @@ import { createSocket } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
 import { preloadIceServers } from "./lib/iceConfig";
+import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
 import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
@@ -603,6 +604,24 @@ export default function App() {
 
   useEffect(() => {
     preloadIceServers().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      const profile = readVoiceProfile();
+      if (!profile.pushToTalk) return;
+      if (!matchPushToTalkEvent(event, profile.pttAccelerator)) return;
+      event.preventDefault();
+      window.dispatchEvent(
+        new CustomEvent("descall:ptt", { detail: { down: event.type === "keydown" } })
+      );
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKey);
+    };
   }, []);
 
   // Sync account language when user has no explicit local override

@@ -1749,6 +1749,27 @@ export const phrases = {
   "Connected (private channel)": "Bağlı (gizli kanal)",
   "Noise suppression": "Gürültü engelleme",
   "AI noise suppression": "Yapay zekâ gürültü engelleme",
+  "Noise: off": "Kapalı",
+  "Noise: on": "Açık",
+  "Noise: strong": "Güçlü",
+  "Echo cancellation": "Yankı engelleme",
+  "Removes echo from speakers. Leave this on unless you are using headphones and the processing sounds hollow.":
+    "Hoparlör yankısını keser. Kulaklıkta ses oyuk geliyorsa kapat.",
+  "Auto gain control": "Otomatik ses dengeleme",
+  "Keeps your volume steady without pumping.": "Sesini sabit tutar, pompalamaz.",
+  "Input sensitivity": "Giriş hassasiyeti",
+  "Raise this if people miss quiet speech. Lower it if background noise lights the ring.":
+    "Kısık ses kaçıyorsa yükselt. Arka plan halkayı yakıyorsa düşür.",
+  "Hear yourself": "Kendini duy",
+  "Plays your mic back while the test is running. Use headphones.":
+    "Test sırasında mikrofonu sana çalar. Kulaklık kullan.",
+  "Push-to-talk": "Bas-konuş",
+  "Hold the key to talk while Descall is focused.": "Descall öndeyken tuşa basılı tutunca konuşursun.",
+  "Push-to-talk key": "Bas-konuş tuşu",
+  "Connection is good": "Bağlantı iyi",
+  "Connection is medium. Voice bitrate is reduced.": "Bağlantı orta. Ses hızı düşürüldü.",
+  "Connection is poor. Extra redundancy is on to ride out packet loss.":
+    "Bağlantı zayıf. Paket kaybında ses kopmasın diye ek yedekleme açık.",
   "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available.":
     "Grup aramalarında ve sunucu sesinde klavye, fan ve arka plan gürültüsünü temizler. Mümkünse GTCRN / RNNoise kullanır.",
   "Active engine": "Aktif motor",

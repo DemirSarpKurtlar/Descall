@@ -12,6 +12,7 @@
  */
 
 import { getSoundSettings, setSoundSettings } from "./storage";
+import { SOFT_CUE_TYPES, softCueVolume } from "./voiceProfile.js";
 import {
   isKnownSoundPack,
   playSoundPackCue,
@@ -62,10 +63,6 @@ const DEFAULT_SOUNDS = {
 const COOLDOWNS = {
   message: 350,
   notification: 500,
-  userJoin: 220,
-  userLeave: 220,
-  channelJoin: 600,
-  channelLeave: 600,
   disconnect: 1500,
 };
 
@@ -294,8 +291,8 @@ class AudioManager {
     // Check per-type mute
     if (this.settings[type] === false) return false;
 
-    // Check cooldown for non-looping sounds
-    if (COOLDOWNS[type]) {
+    // Soft cues (join, leave, mute) may overlap; a cooldown would cut the next one off.
+    if (COOLDOWNS[type] && !SOFT_CUE_TYPES.has(type)) {
       const now = Date.now();
       const lastPlayed = this.lastPlayed.get(type) || 0;
       if (now - lastPlayed < COOLDOWNS[type]) return false;
@@ -317,7 +314,16 @@ class AudioManager {
       return false;
     }
 
-    const { loop = false, volume } = options;
+    let { loop = false, volume } = options;
+    if (SOFT_CUE_TYPES.has(type)) {
+      const base =
+        volume !== undefined
+          ? volume
+          : this.isBackgrounded
+            ? this.settings.volume * this.settings.backgroundVolume
+            : this.settings.volume;
+      volume = softCueVolume(base);
+    }
 
     if (!this.canPlay(type)) return false;
 

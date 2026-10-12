@@ -1,7 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
 import { subscribeNetworkChange } from "../lib/networkChange";
-import { createPeerConnection, attachLocalTracks, safeClosePeer } from "../lib/webrtcPeerFactory";
+import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
+import { applyPlaybackGain } from "../lib/voiceGain";
+import { sampleConnectionStats } from "../lib/connectionStats";
+import { applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
+import {
+  clampGain,
+  liveKitMicPublishOptions,
+  liveKitRoomOptions,
+  micRecapturePlan,
+  pickFastestLiveKitUrl,
+  primeCapturedMic,
+  readLocalMute,
+  readParticipantGain,
+  tuneAudioReceiver,
+  writeLocalMute,
+  writeParticipantGain,
+} from "../lib/voiceProfile";
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
 import { emitRoomOnce } from "../lib/socketResubscribe";
@@ -20,6 +36,7 @@ import {
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { isVoiceMicError, voiceMicErrorCopy } from "../lib/voiceMicError";
@@ -59,7 +76,8 @@ export function useServerVoice(socket) {
   const [activeServerId, setActiveServerId] = useState(null);
   const [channelName, setChannelName] = useState("");
   const [participants, setParticipants] = useState([]);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(readLocalMute);
+  const [linkQualityByUser, setLinkQualityByUser] = useState({});
   const [connecting, setConnecting] = useState(false);
   const [liveKitLink, setLiveKitLink] = useState("idle");
   const [error, setError] = useState("");
@@ -76,6 +94,9 @@ export function useServerVoice(socket) {
   const lastParticipantVolumeRef = useRef(new Map());
   const screenVolumeRef = useRef(new Map());
   const audioInputIdRef = useRef("");
+  const inputIdsRef = useRef([]);
+  const setAudioInputRef = useRef(null);
+  const replacingMicRef = useRef(false);
   const audioOutputIdRef = useRef("");
   const videoInputIdRef = useRef("");
   const activeChannelIdRef = useRef(null);
@@ -132,6 +153,7 @@ export function useServerVoice(socket) {
 
   useEffect(() => {
     preloadIceServers().catch(() => {});
+    preloadNoiseSuppression();
   }, []);
 
   useEffect(() => {
@@ -162,6 +184,53 @@ export function useServerVoice(socket) {
         }
       }
     });
+  }, [activeChannelId]);
+
+  useEffect(() => {
+    if (!activeChannelId) return undefined;
+    let alive = true;
+    const samples = new Map();
+    const audioTrackers = new Map();
+    const timer = setInterval(async () => {
+      if (!alive || sfuModeRef.current) return;
+      const qualityByUser = {};
+      for (const [userId, peerData] of pcMapRef.current.entries()) {
+        const pc = peerData?.pc;
+        if (!pc || pc.connectionState === "closed") continue;
+        try {
+          const result = await sampleConnectionStats(pc, samples.get(userId) || null);
+          if (!result?.quality || !alive) continue;
+          samples.set(userId, result.sample);
+          const audioSender = pc.getSenders().find(
+            (sender) => sender.track?.kind === "audio" && sender !== peerData.screenAudioSender
+          );
+          if (!audioTrackers.has(userId)) audioTrackers.set(userId, { current: null });
+          applyAdaptiveAudioEncoding(audioSender, result.quality, audioTrackers.get(userId));
+          for (const receiver of pc.getReceivers()) {
+            if (receiver.track?.kind === "audio") tuneAudioReceiver(receiver, result.quality);
+          }
+          qualityByUser[String(userId)] = result.quality;
+        } catch {
+          /* stats can fail while the peer is restarting */
+        }
+      }
+      if (!alive || !Object.keys(qualityByUser).length) return;
+      setLinkQualityByUser((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const [id, quality] of Object.entries(qualityByUser)) {
+          if (next[id] !== quality) {
+            next[id] = quality;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }, 2000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, [activeChannelId]);
 
   useEffect(() => {
@@ -206,7 +275,15 @@ export function useServerVoice(socket) {
   const canPublishVideo = useCallback(() => canPublishVoice() && canStreamRef.current, [canPublishVoice]);
 
   const voiceVolumeFor = useCallback((userId) => {
-    const stored = participantVolumeRef.current.get(String(userId));
+    const key = String(userId);
+    let stored = participantVolumeRef.current.get(key);
+    if (stored == null) {
+      const remembered = readParticipantGain(userId);
+      if (remembered != null) {
+        participantVolumeRef.current.set(key, remembered);
+        stored = remembered;
+      }
+    }
     return stored == null ? 1 : stored;
   }, []);
 
@@ -214,7 +291,7 @@ export function useServerVoice(socket) {
     if (!el) return;
     const earsOff = Boolean(serverDeafenedRef.current || deafenedRef.current);
     el.muted = earsOff;
-    el.volume = earsOff ? 0 : voiceVolumeFor(userId);
+    applyPlaybackGain(el, earsOff ? 0 : voiceVolumeFor(userId));
     const sinkId = audioOutputIdRef.current;
     if (sinkId && typeof el.setSinkId === "function") {
       el.setSinkId(sinkId).catch(() => {});
@@ -355,7 +432,14 @@ export function useServerVoice(socket) {
     async (channelId, tokenData, stream) => {
       if (!tokenData?.enabled || !tokenData?.livekitUrl || !tokenData?.token) return false;
       const { Room, RoomEvent, Track } = await loadLiveKit();
-      const room = new Room({ adaptiveStream: true, dynacast: true });
+      const room = new Room(liveKitRoomOptions());
+      room.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
+        const userId = participant?.identity;
+        if (!userId) return;
+        const next = String(quality || "").toLowerCase();
+        if (!next || next === "unknown") return;
+        setLinkQualityByUser((prev) => (prev[userId] === next ? prev : { ...prev, [userId]: next }));
+      });
       room.on(RoomEvent.ParticipantDisconnected, (participant) => {
         cleanupPeer(participant.identity);
         setParticipants((prev) => prev.filter((p) => p.id !== participant.identity));
@@ -430,14 +514,16 @@ export function useServerVoice(socket) {
         if (liveKitRoomRef.current !== room) return;
         setLiveKitLink("disconnected");
       });
-      await room.connect(tokenData.livekitUrl, tokenData.token);
+      const livekitUrls = tokenData.livekitUrls?.length ? tokenData.livekitUrls : [tokenData.livekitUrl];
+      const livekitUrl = (await pickFastestLiveKitUrl(livekitUrls)) || tokenData.livekitUrl;
+      await room.connect(livekitUrl, tokenData.token);
       liveKitRoomRef.current = room;
       setLiveKitLink("connected");
       sfuModeRef.current = true;
       setMediaMode("sfu");
       const audioTrack = stream?.getAudioTracks?.()[0] || null;
       if (audioTrack && canPublishVoice()) {
-        await room.localParticipant.publishTrack(audioTrack, { source: Track.Source.Microphone });
+        await room.localParticipant.publishTrack(audioTrack, liveKitMicPublishOptions(Track.Source.Microphone));
       }
       return true;
     },
@@ -522,7 +608,8 @@ export function useServerVoice(socket) {
     setActiveServerId(null);
     setChannelName("");
     setParticipants([]);
-    setMuted(false);
+    setMuted(readLocalMute());
+    setLinkQualityByUser({});
     setServerMuted(false);
     serverMutedRef.current = false;
     setServerDeafened(false);
@@ -575,6 +662,7 @@ export function useServerVoice(socket) {
       }
       pc.ontrack = (e) => {
         const track = e.track;
+        if (track?.kind === "audio") tuneAudioReceiver(e.receiver);
         const peer = pcMapRef.current.get(userId);
         const remote = e.streams?.[0] || new MediaStream([track]);
         const isScreenVideo =
@@ -690,7 +778,7 @@ export function useServerVoice(socket) {
       if (!channelId) return;
       try {
         const offer = await peerData.pc.createOffer();
-        await peerData.pc.setLocalDescription(offer);
+        await commitLocalDescription(peerData.pc, offer);
         socket.emit("server:voice:offer", {
           channelId,
           toUserId: userId,
@@ -720,7 +808,7 @@ export function useServerVoice(socket) {
       });
       try {
         const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
+        await commitLocalDescription(pc, offer);
         socket.emit("server:voice:offer", {
           channelId,
           toUserId: user.id,
@@ -770,10 +858,11 @@ export function useServerVoice(socket) {
         }
         localStreamRef.current = stream;
         setLocalStream(stream);
+        const mutedNow = isStage || primeCapturedMic(stream);
         stream.getAudioTracks().forEach((t) => {
-          t.enabled = true;
+          t.enabled = !mutedNow;
         });
-        setNoiseSuppressedTrackEnabled(true);
+        setNoiseSuppressedTrackEnabled(!mutedNow);
         activeChannelIdRef.current = channel.id;
         activeServerIdRef.current = serverId;
         lastVoiceChannelIdRef.current = channel.id;
@@ -791,7 +880,7 @@ export function useServerVoice(socket) {
         setCanRequestToSpeak(isStage);
         setRequestedToSpeak(false);
         setParticipants([]);
-        setMuted(isStage);
+        setMuted(mutedNow);
         socket.emit("server:voice:join", { serverId, channelId: channel.id });
         // Prefer LiveKit SFU whenever media-config reports it. Retry once on
         // transient token/connect failures before optionally falling back to mesh.
@@ -858,6 +947,32 @@ export function useServerVoice(socket) {
     [cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, micConstraints, socket, toast]
   );
 
+  const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
+    if ((deafenedRef.current || serverMutedRef.current) && enabled) return;
+    const track = localStreamRef.current?.getAudioTracks()?.[0];
+    if (!track || track.enabled === enabled) return;
+    track.enabled = enabled;
+    setNoiseSuppressedTrackEnabled(enabled);
+    const nextMuted = !enabled;
+    mutedRef.current = nextMuted;
+    setMuted(nextMuted);
+    if (persist) writeLocalMute(nextMuted);
+    if (!nextMuted) mutedByDeafenRef.current = false;
+    if (sound) audioManager.play(nextMuted ? "mute" : "unmute");
+    const channelId = activeChannelIdRef.current;
+    const s = socketRef.current;
+    if (channelId && s?.connected) {
+      s.emit("server:voice:media-state", {
+        channelId,
+        muted: nextMuted,
+        deafened: deafenedRef.current,
+        cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
+      });
+    }
+  }, []);
+  const setMicEnabledRef = useRef(setMicEnabled);
+  setMicEnabledRef.current = setMicEnabled;
+
   const toggleMute = useCallback(async () => {
     if (serverMutedRef.current) return;
     if (!canPublishVoice()) {
@@ -876,9 +991,10 @@ export function useServerVoice(socket) {
       setLocalStream(stream);
       if (sfuModeRef.current && liveKitRoomRef.current && track) {
         const { Track } = await loadLiveKit();
-        await liveKitRoomRef.current.localParticipant.publishTrack(track, {
-          source: Track.Source.Microphone,
-        });
+        await liveKitRoomRef.current.localParticipant.publishTrack(
+          track,
+          liveKitMicPublishOptions(Track.Source.Microphone)
+        );
       } else if (track) {
         for (const [userId, peerData] of pcMapRef.current.entries()) {
           try {
@@ -891,22 +1007,17 @@ export function useServerVoice(socket) {
       }
     }
     if (!track) return;
-    track.enabled = !track.enabled;
-    const nextMuted = !track.enabled;
-    setNoiseSuppressedTrackEnabled(!nextMuted);
-    setMuted(nextMuted);
-    if (!nextMuted) mutedByDeafenRef.current = false;
-    audioManager.play(nextMuted ? "mute" : "unmute");
-    const channelId = activeChannelIdRef.current;
-    if (channelId && socket?.connected) {
-      socket.emit("server:voice:media-state", {
-        channelId,
-        muted: nextMuted,
-        deafened: deafenedRef.current,
-        cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
-      });
-    }
-  }, [canPublishVoice, micConstraints, renegotiateWithPeer, socket]);
+    setMicEnabled(!track.enabled, { persist: true });
+  }, [canPublishVoice, micConstraints, renegotiateWithPeer, setMicEnabled]);
+
+  useEffect(() => {
+    const onPtt = (event) => {
+      if (!activeChannelIdRef.current || !canPublishVoice()) return;
+      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false });
+    };
+    window.addEventListener("descall:ptt", onPtt);
+    return () => window.removeEventListener("descall:ptt", onPtt);
+  }, []);
 
   const toggleDeafen = useCallback(() => {
     const next = !deafenedRef.current;
@@ -1239,10 +1350,10 @@ export function useServerVoice(socket) {
   const setParticipantVolume = useCallback((userId, volume) => {
     if (userId == null) return;
     const key = String(userId);
-    const next = Math.max(0, Math.min(1, Number(volume)));
-    const safe = Number.isFinite(next) ? next : 1;
+    const safe = clampGain(volume);
     if (safe > 0) lastParticipantVolumeRef.current.set(key, safe);
     participantVolumeRef.current.set(key, safe);
+    writeParticipantGain(userId, safe);
     applyVoiceElement(key, remoteAudioRefs.current.get(userId) || remoteAudioRefs.current.get(key));
     publishLevelState();
   }, [applyVoiceElement, publishLevelState]);
@@ -1266,9 +1377,10 @@ export function useServerVoice(socket) {
     setSelectedAudioInput(id);
     const current = localStreamRef.current;
     if (!current?.getAudioTracks?.().length) return;
+    replacingMicRef.current = true;
     try {
       disposeNoiseSuppressionSession({ stopRaw: true });
-      const fresh = await acquireVoiceMicStream(micConstraints());
+      const fresh = await acquireVoiceMicStream({ ...micConstraints(), applyStoredMute: false });
       const newTrack = fresh.getAudioTracks()[0];
       if (!newTrack) return;
       current.getAudioTracks().forEach((track) => {
@@ -1278,6 +1390,12 @@ export function useServerVoice(socket) {
       current.addTrack(newTrack);
       setNoiseSuppressedTrackEnabled(!mutedRef.current && !serverMutedRef.current);
       newTrack.enabled = !mutedRef.current && !serverMutedRef.current;
+      newTrack.addEventListener("ended", () => {
+        if (replacingMicRef.current) return;
+        if (localStreamRef.current?.getAudioTracks?.()[0] !== newTrack) return;
+        if (!activeChannelIdRef.current) return;
+        void setAudioInputRef.current?.("");
+      });
       if (sfuModeRef.current && liveKitRoomRef.current) {
         const { Track } = await loadLiveKit();
         const pubs = liveKitRoomRef.current.localParticipant.audioTrackPublications;
@@ -1296,8 +1414,11 @@ export function useServerVoice(socket) {
       setLocalStream(current);
     } catch (err) {
       console.warn("[ServerVoice] setAudioInput failed:", err);
+    } finally {
+      replacingMicRef.current = false;
     }
   }, [micConstraints]);
+  setAudioInputRef.current = setAudioInput;
 
   const setAudioOutput = useCallback(async (deviceId) => {
     const id = deviceId || "";
@@ -1358,9 +1479,26 @@ export function useServerVoice(socket) {
   const refreshMediaDevices = useCallback(async () => {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      setAudioInputDevices(devices.filter((device) => device.kind === "audioinput"));
+      const inputs = devices.filter((device) => device.kind === "audioinput");
+      setAudioInputDevices(inputs);
       setAudioOutputDevices(devices.filter((device) => device.kind === "audiooutput"));
       setVideoInputDevices(devices.filter((device) => device.kind === "videoinput"));
+      const currentId = localStreamRef.current?.getAudioTracks?.()[0]?.getSettings?.().deviceId || "";
+      const plan = micRecapturePlan({
+        previousIds: inputIdsRef.current,
+        inputs,
+        currentDeviceId: currentId,
+        preferredId: audioInputIdRef.current,
+      });
+      inputIdsRef.current = inputs.map((device) => device.deviceId).filter(Boolean);
+      if (
+        activeChannelIdRef.current &&
+        localStreamRef.current?.getAudioTracks?.().length &&
+        plan.reason &&
+        !replacingMicRef.current
+      ) {
+        void setAudioInputRef.current?.(plan.deviceId);
+      }
     } catch {
       /* permissions or unsupported enumerateDevices */
     }
@@ -1518,7 +1656,7 @@ export function useServerVoice(socket) {
         await peer.pc.setRemoteDescription(new RTCSessionDescription(offer));
         await flushIce(peer.pc, fromUserId);
         const answer = await peer.pc.createAnswer();
-        await peer.pc.setLocalDescription(answer);
+        await commitLocalDescription(peer.pc, answer);
         socket.emit("server:voice:answer", {
           channelId,
           toUserId: fromUserId,
@@ -1978,6 +2116,7 @@ export function useServerVoice(socket) {
     setAudioOutput,
     setVideoInput,
     participantVolumes,
+    linkQualityByUser,
     screenVolumes,
     setParticipantVolume,
     toggleParticipantMute,

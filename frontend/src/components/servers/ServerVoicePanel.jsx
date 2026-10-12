@@ -25,6 +25,7 @@ import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPe
 import useSpeaking from "../../hooks/useSpeaking";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
+import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import { visibleScreenStream } from "../../lib/screenShareTracks";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
@@ -135,7 +136,6 @@ const VoiceTile = memo(function VoiceTile({
   const cameraStream = tile.cameraStream || null;
   const speakingRaw = useSpeaking(tile.audioStream, {
     muted: Boolean(tile.muted),
-    threshold: 0.014,
     attackMs: 55,
     releaseMs: 260,
     observeEl: tileEl,
@@ -143,6 +143,7 @@ const VoiceTile = memo(function VoiceTile({
   // Hold the off-edge so VAD flapping can't blink the speaking state.
   const heldSpeaking = useHeldSpeaking(speakingRaw && !tile.muted);
   const speaking = tile.muted ? false : heldSpeaking;
+  const qualityKey = networkQualityTooltipKey(tile.linkQuality);
   const name = tile.label || "User";
   const showVideo = streamHasLiveVideo(cameraStream);
 
@@ -178,6 +179,7 @@ const VoiceTile = memo(function VoiceTile({
     <article
       ref={setTileEl}
       className={`server-voice-tile${showVideo ? " has-video" : ""}${speaking ? " is-speaking" : ""}${tile.muted ? " is-muted" : ""}${compact ? " is-compact" : ""}${canExpandShare ? " is-share-target" : ""}${tile.sharing ? " is-screen-share" : ""}`}
+      title={qualityKey ? t(qualityKey) : undefined}
       onContextMenu={openMenu}
       onClick={expandShare}
     >
@@ -213,6 +215,11 @@ const VoiceTile = memo(function VoiceTile({
           {speaking ? (
             <span className="server-voice-flag is-speak" title={t("Speaking")} aria-label={t("Speaking")}>
               <Mic size={13} aria-hidden />
+            </span>
+          ) : null}
+          {qualityKey && qualityKey !== "Connection is good" ? (
+            <span className="server-voice-flag" title={t(qualityKey)} aria-label={t(qualityKey)}>
+              {qualityKey === "Connection is medium. Voice bitrate is reduced." ? t("Fair") : t("Weak")}
             </span>
           ) : null}
           {tile.muted ? (
@@ -768,6 +775,7 @@ export default function ServerVoicePanel({
         muted: Boolean(serverVoice?.muted || serverVoice?.serverMuted),
         deafened: Boolean(serverVoice?.serverDeafened || serverVoice?.deafened),
         sharing: Boolean(serverVoice?.isScreenSharing),
+        linkQuality: serverVoice?.linkQualityByUser?.[meId] || "",
       });
     }
     for (const member of remoteMembers) {
@@ -790,6 +798,7 @@ export default function ServerVoicePanel({
         muted: Boolean(member.muted || member.serverMuted),
         deafened: Boolean(member.serverDeafened || member.deafened),
         sharing: Boolean(member.isScreenSharing || member.screenStream || cameraIsScreen),
+        linkQuality: serverVoice?.linkQualityByUser?.[String(member.id)] || "",
       });
     }
     return list;
@@ -807,6 +816,7 @@ export default function ServerVoicePanel({
     serverVoice?.serverDeafened,
     serverVoice?.deafened,
     serverVoice?.serverMuted,
+    serverVoice?.linkQualityByUser,
     t,
   ]);
   tilesRef.current = tiles;
@@ -1102,7 +1112,10 @@ export default function ServerVoicePanel({
         voiceChannels={voiceChannels}
         serverId={server?.id}
         serverVoice={serverVoice}
-        voiceVolume={Math.round(((serverVoice?.participantVolumes?.[String(memberMenu?.user?.id)] ?? 1) * 100))}
+        voiceVolume={participantVolumePercent(
+          serverVoice?.participantVolumes?.[String(memberMenu?.user?.id)],
+          memberMenu?.user?.id
+        )}
         onVoiceVolume={(value) => serverVoice?.setParticipantVolume?.(memberMenu?.user?.id, value / 100)}
         onToggleVoiceMute={() => serverVoice?.toggleParticipantMute?.(memberMenu?.user?.id)}
         showScreenVolume={Boolean(memberMenu?.sharing || memberMenu?.user?.isScreenSharing || memberMenu?.user?.screenStream)}
