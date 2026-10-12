@@ -1,36 +1,47 @@
 /* Stage 7 — settings, play, activity, shop, status, toasts, announcements.
    Visual only. Layout, data, and iOS glass stay as they are. */
 
-html.glass-desktop .user-panel-backdrop {
-  display: block !important;
-  background: rgba(5, 6, 10, 0.46) !important;
-  -webkit-backdrop-filter: blur(6px) saturate(120%);
-  backdrop-filter: blur(6px) saturate(120%);
+html.glass-desktop {
+  --gd-modal-gap: 72px;
+  --gd-scrim: rgba(5, 6, 10, 0.5);
+  --gd-scrim-blur: blur(24px) saturate(1.25);
 }
 
+/* Full-window dim + blur. The dialog itself is centered with the same gap
+   on every side (--gd-modal-gap), including over the sidebar. */
+html.glass-desktop .user-panel-backdrop,
 html.glass-desktop .user-settings-shell.is-desktop {
-  top: 68px !important;
-  right: 72px !important;
-  bottom: 28px !important;
-  left: 72px !important;
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
   width: auto !important;
   height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
   padding: 0 !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  box-sizing: border-box !important;
+  background: var(--gd-scrim) !important;
+  background-color: var(--gd-scrim) !important;
+  -webkit-backdrop-filter: var(--gd-scrim-blur) !important;
+  backdrop-filter: var(--gd-scrim-blur) !important;
   color: var(--gd-t1);
 }
 
 html.glass-desktop .user-settings.is-desktop,
 html.glass-desktop .user-settings.is-desktop.is-shop-open {
-  width: 100% !important;
-  height: 100% !important;
+  position: absolute !important;
+  top: var(--gd-modal-gap) !important;
+  right: var(--gd-modal-gap) !important;
+  bottom: calc(var(--gd-modal-gap) + var(--electron-bottom-inset, 0px)) !important;
+  left: var(--gd-modal-gap) !important;
+  width: auto !important;
+  height: auto !important;
   max-width: none !important;
   max-height: none !important;
+  margin: 0 !important;
   border: none !important;
   border-radius: 30px !important;
   overflow: hidden;
@@ -51,11 +62,8 @@ html.glass-desktop .user-settings.is-desktop .us-sidebar {
 }
 
 @media (max-width: 1100px) {
-  html.glass-desktop .user-settings-shell.is-desktop {
-    top: 16px !important;
-    right: 16px !important;
-    bottom: 16px !important;
-    left: 16px !important;
+  html.glass-desktop {
+    --gd-modal-gap: 24px;
   }
 
   html.glass-desktop .user-settings.is-desktop .us-sidebar {
@@ -190,10 +198,19 @@ html.glass-desktop .status-picker-item.active {
   background: rgba(255, 255, 255, 0.1);
 }
 
-html.glass-desktop .conv-confirm-overlay {
-  background: rgba(5, 6, 10, 0.46);
-  -webkit-backdrop-filter: blur(6px) saturate(120%);
-  backdrop-filter: blur(6px) saturate(120%);
+html.glass-desktop .conv-confirm-overlay,
+html.glass-desktop .server-modal-overlay,
+html.glass-desktop .add-modal-backdrop,
+html.glass-desktop .feedback-overlay,
+html.glass-desktop .legal-modal-backdrop,
+html.glass-desktop .activity-modal-backdrop,
+html.glass-desktop .invite-modal-overlay,
+html.glass-desktop .giphy-overlay,
+html.glass-desktop .user-profile-scrim,
+html.glass-desktop .modal-backdrop {
+  background: var(--gd-scrim) !important;
+  -webkit-backdrop-filter: var(--gd-scrim-blur) !important;
+  backdrop-filter: var(--gd-scrim-blur) !important;
 }
 
 html.glass-desktop .conv-confirm-card {
@@ -322,7 +339,18 @@ html.glass-desktop.gd-lite .status-picker,
 html.glass-desktop.gd-lite .status-picker-portal,
 html.glass-desktop.gd-lite .conv-confirm-card,
 html.glass-desktop.gd-lite .user-settings.is-desktop,
+html.glass-desktop.gd-lite .user-settings-shell.is-desktop,
 html.glass-desktop.gd-lite .user-panel-backdrop,
+html.glass-desktop.gd-lite .server-modal-overlay,
+html.glass-desktop.gd-lite .add-modal-backdrop,
+html.glass-desktop.gd-lite .feedback-overlay,
+html.glass-desktop.gd-lite .legal-modal-backdrop,
+html.glass-desktop.gd-lite .activity-modal-backdrop,
+html.glass-desktop.gd-lite .conv-confirm-overlay,
+html.glass-desktop.gd-lite .invite-modal-overlay,
+html.glass-desktop.gd-lite .giphy-overlay,
+html.glass-desktop.gd-lite .user-profile-scrim,
+html.glass-desktop.gd-lite .modal-backdrop,
 html.glass-desktop.gd-lite .lfg-sidebar,
 html.glass-desktop.gd-lite .lfg-main {
   -webkit-backdrop-filter: none !important;
@@ -333,6 +361,22 @@ html.glass-desktop.gd-lite .user-settings.is-desktop,
 html.glass-desktop.gd-lite .lfg-sidebar,
 html.glass-desktop.gd-lite .lfg-main {
   background: var(--gd-solid-heavy) !important;
+}
+
+html.glass-desktop.gd-lite .user-settings-shell.is-desktop,
+html.glass-desktop.gd-lite .user-panel-backdrop,
+html.glass-desktop.gd-lite .server-modal-overlay,
+html.glass-desktop.gd-lite .add-modal-backdrop,
+html.glass-desktop.gd-lite .feedback-overlay,
+html.glass-desktop.gd-lite .legal-modal-backdrop,
+html.glass-desktop.gd-lite .activity-modal-backdrop,
+html.glass-desktop.gd-lite .conv-confirm-overlay,
+html.glass-desktop.gd-lite .invite-modal-overlay,
+html.glass-desktop.gd-lite .giphy-overlay,
+html.glass-desktop.gd-lite .user-profile-scrim,
+html.glass-desktop.gd-lite .modal-backdrop {
+  background: rgba(5, 6, 10, 0.72) !important;
+  background-color: rgba(5, 6, 10, 0.72) !important;
 }
 
 html.glass-desktop .user-settings.is-shop-open .shop-workspace {
