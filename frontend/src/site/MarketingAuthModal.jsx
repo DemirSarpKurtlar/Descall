@@ -259,6 +259,13 @@ function AuthModal({
               </>
             ) : (
               <>
+                <img
+                  className="mkt-auth-logo"
+                  src={`${import.meta.env.BASE_URL}brand/descall-icon.png`}
+                  alt=""
+                  width={56}
+                  height={56}
+                />
                 <h2>{isRegistering ? t("Create Account") : t("Welcome Back")}</h2>
                 <p>
                   {isRegistering

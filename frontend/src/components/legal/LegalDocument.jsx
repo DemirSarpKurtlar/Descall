@@ -72,14 +72,14 @@ export default function LegalDocument({ data, type = "privacy", locale = "en", a
 
   return (
     <article className="legal-doc">
-      <header className="legal-doc-hero">
+      <div className="legal-doc-hero">
         <div>
           <p className="legal-doc-kicker">Descall</p>
           <h1 id="legal-doc-title">{data.title}</h1>
           <p className="legal-doc-updated">{data.updated}</p>
         </div>
         {actions}
-      </header>
+      </div>
       <p className="legal-doc-intro">{data.intro}</p>
 
       {cards.length > 0 ? (

@@ -21,6 +21,8 @@ html.glass-desktop {
   --gd-heavy-base: rgba(20, 21, 30, 0.62);
   --gd-blur-panel: 40px;
   --gd-blur: 26px;
+  --nav-rail-width: 72px;
+  --sidebar-width: 296px;
   --gd-solid: color-mix(in srgb, var(--surface-1, #181a24) 92%, transparent);
   --gd-solid-heavy: color-mix(in srgb, var(--surface-0, #12131a) 94%, transparent);
 }

@@ -20,31 +20,37 @@ import { SEO_DEFAULT_RELATED } from "../seoHubLinks";
 const HIGHLIGHTS = [
   {
     icon: IconServer,
+    tone: "blue",
     title: "Servers & channels",
     desc: "Text, voice, and stage channels with categories — a lighter home for real communities",
   },
   {
     icon: IconShield,
+    tone: "violet",
     title: "Roles & permissions",
     desc: "Role hierarchy, staff rooms, and per-channel overrides ready for real communities",
   },
   {
     icon: IconLayers,
+    tone: "teal",
     title: "Advanced templates",
     desc: "Gaming, friends, community, study & streaming — roles and channels pre-built",
   },
   {
     icon: IconMessage,
+    tone: "sky",
     title: "Real-time Chat",
     desc: "DMs that feel instant — typing, replies, and media without a Nitro wall",
   },
   {
     icon: IconMic,
+    tone: "green",
     title: "Voice & video",
     desc: "Crystal-clear group and server calls",
   },
   {
     icon: IconMonitor,
+    tone: "pink",
     title: "Screen share",
     desc: "Share your screen in calls with quality presets",
   },
@@ -53,16 +59,19 @@ const HIGHLIGHTS = [
 const SERVER_POINTS = [
   {
     icon: IconHash,
+    tone: "blue",
     title: "Channels that match the job",
     desc: "Announcements, LFG, clips, VIP lounges, staff ops — topics and slowmode included in templates.",
   },
   {
     icon: IconShield,
+    tone: "violet",
     title: "Roles that actually work",
     desc: "Admin, Moderator, Helper, VIP and more — with kick, ban, timeout, and audit logs.",
   },
   {
     icon: IconMic,
+    tone: "green",
     title: "Voice built into the server",
     desc: "Lobby, scrim, focus, and stage rooms so your crew can hop in without leaving the app.",
   },
@@ -158,7 +167,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
         <div className="mkt-feature-grid">
           {HIGHLIGHTS.map((item) => (
             <article key={item.title} className="mkt-feature">
-              <div className="mkt-icon">
+              <div className={`mkt-icon is-${item.tone}`}>
                 <item.icon size={20} />
               </div>
               <h3>{t(item.title)}</h3>
@@ -199,7 +208,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
             <div className="mkt-server-points">
               {SERVER_POINTS.map((item) => (
                 <div key={item.title} className="mkt-server-point">
-                  <div className="mkt-icon">
+                  <div className={`mkt-icon is-${item.tone}`}>
                     <item.icon size={18} />
                   </div>
                   <div>

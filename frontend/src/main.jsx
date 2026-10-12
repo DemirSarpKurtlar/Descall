@@ -186,12 +186,7 @@ async function bootApp() {
       document.documentElement.classList.add("native-app");
     }
     document.documentElement.setAttribute("data-marketing-ready", "1");
-    const seo = document.getElementById("seo-static");
-    if (seo) {
-      seo.setAttribute("hidden", "");
-      seo.setAttribute("aria-hidden", "true");
-      seo.style.display = "none";
-    }
+    document.getElementById("seo-static")?.remove();
     const consent = document.getElementById("mkt-consent-static");
     if (consent) {
       consent.hidden = true;

@@ -72,6 +72,24 @@ html.glass-desktop .sidebar-secondary {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
+html.glass-desktop .members-panel,
+html.glass-desktop .chat-panel-shell.is-members-docked > .members-panel {
+  flex-basis: 256px;
+  width: 256px;
+}
+
+@media (max-width: 1024px) {
+  html.glass-desktop {
+    --nav-rail-width: 64px;
+    --sidebar-width: 240px;
+  }
+
+  html.glass-desktop .chat-panel-shell.is-members-docked > .members-panel,
+  html.glass-desktop .members-panel {
+    display: none;
+  }
+}
+
 html.glass-desktop .app-main-slot {
   border-radius: var(--gd-r-panel);
   overflow: hidden;

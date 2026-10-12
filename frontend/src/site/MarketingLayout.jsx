@@ -18,6 +18,15 @@ function IconMenu() {
   );
 }
 
+function IconDownload() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 4v11m0 0-4-4m4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconClose() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -166,8 +175,13 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
           <button type="button" className="mkt-btn mkt-btn-primary" onClick={openRegister} aria-label={t("Start free")}>
             {t("Start free")}
           </button>
-          <Link to={L("/download")} className="mkt-btn mkt-btn-soft mkt-header-download">
-            {t("Download")}
+          <Link
+            to={L("/download")}
+            className="mkt-btn mkt-btn-soft mkt-header-download"
+            aria-label={t("Download")}
+            title={t("Download")}
+          >
+            <IconDownload />
           </Link>
           <button
             type="button"
@@ -228,17 +242,27 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
             </a>
           </section>
         </div>
-        <div className="mkt-footer-bottom">
-          <LanguageToggle locale={locale} onSwitch={switchLocale} />
-        </div>
         <EmailCapture source="footer" />
-        <p className="mkt-footer-trust">
-          {t("Status")}: {t("Beta")} · {t("Transport security")}: TLS / DTLS-SRTP ·{" "}
-          <Link to="/status">{t("Live status")}</Link> · <Link to="/security">{t("Security details")}</Link>
-        </p>
-        <p className="mkt-footer-contact">
-          <a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a>
-        </p>
+        <div className="mkt-footer-meta">
+          <LanguageToggle locale={locale} onSwitch={switchLocale} />
+          <div className="mkt-footer-trust">
+            <span className="mkt-trust-chip">
+              {t("Status")}: {t("Beta")}
+            </span>
+            <span className="mkt-trust-chip">
+              {t("Transport security")}: TLS / DTLS-SRTP
+            </span>
+            <Link className="mkt-trust-chip is-link" to="/status">
+              {t("Live status")}
+            </Link>
+            <Link className="mkt-trust-chip is-link" to={L("/security")}>
+              {t("Security details")}
+            </Link>
+          </div>
+          <a className="mkt-footer-contact" href={`mailto:${SITE_OPERATOR.supportEmail}`}>
+            {SITE_OPERATOR.supportEmail}
+          </a>
+        </div>
         <p className="mkt-footer-copy">
           © {SITE_OPERATOR.copyrightYear} {SITE_OPERATOR.operatorName}. {t("Descall is owned by Demir Sarp Kurtlar.")}{" "}
           {t("All rights reserved.")} {t("Last updated")}:{" "}

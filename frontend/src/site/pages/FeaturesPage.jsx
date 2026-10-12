@@ -22,62 +22,74 @@ import { SEO_DEFAULT_RELATED } from "../seoHubLinks";
 const FEATURES = [
   {
     icon: IconServer,
+    tone: "blue",
     title: "Servers & channels",
     desc: "Full server structure with categories, text, voice, and stage channels — topics, slowmode, and NSFW flags included.",
   },
   {
     icon: IconShield,
+    tone: "violet",
     title: "Roles & permissions",
     desc: "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.",
   },
   {
     icon: IconLayers,
+    tone: "teal",
     title: "Templates that ship ready",
     desc: "Gaming, Community, Study, Friends, and Streaming templates with roles and staff rooms preconfigured.",
   },
   {
     icon: IconMessage,
+    tone: "sky",
     title: "Real-time messaging",
     desc: "DMs and server chat with typing indicators, reactions, replies, and media — without Nitro walls on core chat.",
   },
   {
     icon: IconMic,
+    tone: "green",
     title: "Voice chat",
     desc: "WebRTC voice for DMs, groups, and server lobbies with noise controls when you need them.",
   },
   {
     icon: IconVideo,
+    tone: "pink",
     title: "HD video calls",
     desc: "Group video for hangouts, watch parties, and squad briefings — browser or desktop.",
   },
   {
     icon: IconMonitor,
+    tone: "orange",
     title: "Screen share quality",
     desc: "Share games, VODs, or docs with quality presets tuned for smooth capture while you play.",
   },
   {
     icon: IconGamepad,
+    tone: "red",
     title: "LFG",
     desc: "Create and join ranked LFG lobbies, share party codes.",
     to: "/discord-alternative-for-lfg",
   },
   {
     icon: IconUsers,
+    tone: "sky",
     title: "Friends & presence",
     desc: "Friend requests, online presence, and quick invites so your squad can jump into chat or voice.",
   },
   {
     icon: IconHash,
+    tone: "slate",
     title: "Moderation tools",
     desc: "Kick, ban, timeout, audit logs, and community rules for servers that need staff workflows.",
   },
   {
     icon: IconScroll,
+    tone: "blue",
     title: "Desktop & Android",
     desc: "Windows installer plus Android builds — or use the full web app in the browser.",
   },
   {
     icon: IconSparkles,
+    tone: "orange",
     title: "Optional cosmetics",
     desc: "DesCoin cosmetics stay optional. Chat, servers, voice, and screen share remain free.",
   },
@@ -106,7 +118,7 @@ export default function FeaturesPage() {
           {FEATURES.map((f) => {
             const body = (
               <>
-              <div className="mkt-icon">
+              <div className={`mkt-icon is-${f.tone}`}>
                 <f.icon size={20} />
               </div>
               <h2 className="mkt-feature-title">{t(f.title)}</h2>

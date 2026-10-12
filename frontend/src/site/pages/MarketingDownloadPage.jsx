@@ -32,10 +32,10 @@ const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
 const ANDROID_RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 
 const FEATURES = [
-  { icon: IconMessage, title: "Real-time Chat", desc: "Instant messaging with typing indicators" },
-  { icon: IconMic, title: "Voice Messages", desc: "Crystal clear voice recordings" },
-  { icon: IconVideo, title: "Video Calls", desc: "HD video calling with screen share" },
-  { icon: IconUsers, title: "Group Chats", desc: "Create groups with unlimited members" },
+  { icon: IconMessage, tone: "sky", title: "Real-time Chat", desc: "Instant messaging with typing indicators" },
+  { icon: IconMic, tone: "green", title: "Voice Messages", desc: "Crystal clear voice recordings" },
+  { icon: IconVideo, tone: "pink", title: "Video Calls", desc: "HD video calling with screen share" },
+  { icon: IconUsers, tone: "violet", title: "Group Chats", desc: "Create groups with unlimited members" },
 ];
 
 function AppStoreBadge({ label }) {
@@ -176,7 +176,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
               onClick={() => setSelectedPlatform("windows")}
             >
               <span className="mkt-download-platform-top">
-                <span className="mkt-icon">
+                <span className="mkt-icon is-blue">
                   <IconMonitor size={20} />
                 </span>
                 {selectedPlatform === "windows" ? (
@@ -196,7 +196,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
               onClick={() => setSelectedPlatform("android")}
             >
               <span className="mkt-download-platform-top">
-                <span className="mkt-icon">
+                <span className="mkt-icon is-slate">
                   <IconSmartphone size={20} />
                 </span>
                 {selectedPlatform === "android" ? (
@@ -275,7 +275,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             const Icon = f.icon;
             return (
               <article className="mkt-feature" key={f.title}>
-                <div className="mkt-icon">
+                <div className={`mkt-icon is-${f.tone}`}>
                   <Icon size={20} />
                 </div>
                 <h3>{t(f.title)}</h3>

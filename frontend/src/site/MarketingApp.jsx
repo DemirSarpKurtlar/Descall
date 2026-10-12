@@ -36,17 +36,14 @@ const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 /**
- * Hide #seo-static only after the lazy page has committed — keeps crawlable H1
- * visible through the Suspense gap (no blank / "Loading" flash).
+ * Drop the crawler shell once the real page has committed. Leaving it in the
+ * DOM kept a second, often English, h1 ("Talk together" / "Privacy Policy")
+ * on Turkish pages and 404s. No-JS crawlers still receive the prerender.
  */
 function RevealMarketingShell() {
   useLayoutEffect(() => {
     document.documentElement.setAttribute("data-marketing-ready", "1");
-    const seo = document.getElementById("seo-static");
-    if (seo) {
-      seo.setAttribute("hidden", "");
-      seo.setAttribute("aria-hidden", "true");
-    }
+    document.getElementById("seo-static")?.remove();
   }, []);
   return null;
 }
