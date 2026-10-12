@@ -1,0 +1,483 @@
+/* Admin panel liquid glass. Unscoped so it applies on web, desktop, Android, and iOS.
+   Loaded last so it beats app-layout.css and admin-glass.css. */
+
+.admin-shell {
+  padding: 28px;
+  background:
+    radial-gradient(ellipse 72% 48% at 50% -8%, rgba(88, 122, 246, 0.34), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 88% 110%, rgba(143, 166, 255, 0.16), transparent 58%),
+    rgba(8, 10, 16, 0.34);
+  -webkit-backdrop-filter: blur(28px) saturate(165%);
+  backdrop-filter: blur(28px) saturate(165%);
+}
+
+.admin-shell .admin-container {
+  width: min(1180px, 100%);
+  height: min(88vh, 900px);
+  border: 0;
+  border-radius: 28px;
+  color: #f4f6fb;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.1) 32%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(36, 40, 58, 0.46);
+  -webkit-backdrop-filter: blur(40px) saturate(185%);
+  backdrop-filter: blur(40px) saturate(185%);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.admin-shell .admin-top {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 14px 14px 8px;
+  background: transparent;
+  border-bottom: 0;
+}
+
+.admin-shell .admin-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 4px 8px 2px;
+}
+
+.admin-shell .admin-header-content h1,
+.admin-shell .admin-top h1,
+.admin-shell .admin-header-content h2 {
+  margin: 0;
+  font-size: 1.22rem;
+  font-weight: 720;
+  letter-spacing: -0.03em;
+  color: #f7f8fc;
+}
+
+.admin-shell .admin-sub {
+  margin: 2px 0 0;
+  color: rgba(244, 246, 251, 0.62);
+}
+
+.admin-shell .admin-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0;
+  color: #dbe3ff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(143, 166, 255, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+/* The old .admin-close rule is a 36px box with 8px 16px padding, so the X
+   overflows and the sheet's overflow:hidden clips it at the corner. */
+.admin-shell .admin-close {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 6px 16px rgba(0, 0, 0, 0.18);
+  transform: none;
+}
+
+.admin-shell .admin-close svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.admin-shell .admin-close:hover,
+.admin-shell .admin-close:focus-visible {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 69, 58, 0.46), rgba(255, 69, 58, 0.24));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 180, 174, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.18);
+  transform: none;
+  outline: none;
+}
+
+.admin-shell .admin-top .admin-success-banner,
+.admin-shell .admin-top .admin-error-banner {
+  margin: 0 8px;
+}
+
+.admin-shell .admin-tabs {
+  align-self: stretch;
+  width: auto;
+  margin: 2px 18px 12px;
+  padding: 4px;
+  gap: 2px;
+  border: 0;
+  border-bottom: 0;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.admin-shell .admin-tabs button,
+.admin-shell .admin-tab {
+  border: 0;
+  border-radius: 14px;
+  padding: 8px 14px;
+  background: transparent;
+  color: rgba(244, 246, 251, 0.7);
+  box-shadow: none;
+}
+
+.admin-shell .admin-tabs button:hover,
+.admin-shell .admin-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.admin-shell .admin-tabs button.active,
+.admin-shell .admin-tab.active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.12));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.admin-shell .admin-body,
+.admin-shell .admin-section,
+.admin-shell .admin-live,
+.admin-shell .admin-footer {
+  background: transparent;
+}
+
+.admin-shell .admin-body {
+  padding: 6px 22px 28px;
+}
+
+.admin-shell .admin-pre {
+  background: rgba(255, 255, 255, 0.06);
+  color: #d7e4ff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.admin-shell .admin-card,
+.admin-shell .admin-stat-card,
+.admin-shell .activity-stat-card,
+.admin-shell .summary-card,
+.admin-shell .admin-pane,
+.admin-shell .admin-system-card,
+.admin-shell .growth-chart-container,
+.admin-shell .attribution-panel,
+.admin-shell .admin-table-wrap,
+.admin-shell .admin-table-container,
+.admin-shell .admin-user-analytics,
+.admin-shell .mod-card,
+.admin-shell .dir-stat,
+.admin-shell .dir-row,
+.admin-shell .hero-card,
+.admin-shell .admin-feedback-item,
+.admin-shell .admin-shop-gift-card,
+.admin-shell .admin-leaderboard-stat,
+.admin-shell .admin-dm-list,
+.admin-shell .admin-dm-thread,
+.admin-shell .analytics-funnel,
+.admin-user-analytics {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.admin-shell .admin-pane {
+  padding: 20px;
+  border-radius: 18px;
+}
+
+.admin-shell .admin-card.is-accent {
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.28), rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.38);
+}
+
+.admin-shell .admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-shell .admin-card strong {
+  font-size: 1.55rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: #f7f8fc;
+  line-height: 1.1;
+}
+
+.admin-shell .admin-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.admin-shell .admin-credit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.admin-shell .admin-credit-row.is-selected {
+  background: linear-gradient(180deg, rgba(88, 122, 246, 0.34), rgba(88, 122, 246, 0.16));
+  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.55);
+}
+
+.admin-shell .admin-credit-balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.admin-shell .admin-op {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.admin-shell .admin-op.is-add {
+  color: #d8ffe4;
+  background: linear-gradient(180deg, rgba(48, 209, 88, 0.36), rgba(48, 209, 88, 0.16));
+  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.45);
+}
+
+.admin-shell .admin-op.is-remove {
+  color: #ffe4e1;
+  background: linear-gradient(180deg, rgba(255, 69, 58, 0.36), rgba(255, 69, 58, 0.16));
+  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.45);
+}
+
+.admin-shell .admin-system-switch,
+.admin-shell .admin-system-switch.is-off,
+.admin-shell .admin-system-switch.is-on {
+  border: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.admin-shell .admin-system-switch.is-on {
+  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.35);
+}
+
+.admin-shell .admin-system-toggle {
+  border: 0;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.admin-shell .admin-system-toggle.is-on {
+  background: linear-gradient(180deg, #8fa6ff, #587af6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.admin-shell .admin-system-toggle span {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+.admin-shell .admin-system-toggle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 0 3px rgba(143, 166, 255, 0.45);
+}
+
+.admin-shell .admin-input,
+.admin-shell .admin-select,
+.admin-shell .admin-textarea,
+.admin-shell .dir-search,
+.admin-shell .dir-sort select,
+.admin-shell .mod-search .admin-input {
+  border: 0;
+  border-radius: 14px;
+  color: #f4f6fb;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.admin-shell .admin-input:focus,
+.admin-shell .admin-input:focus-visible,
+.admin-shell .admin-select:focus,
+.admin-shell .admin-select:focus-visible,
+.admin-shell .admin-textarea:focus,
+.admin-shell .admin-textarea:focus-visible,
+.admin-shell .dir-sort select:focus,
+.admin-shell .dir-sort select:focus-visible {
+  outline: none;
+  border: 0;
+  box-shadow: inset 0 0 0 2px #8fa6ff;
+}
+
+.admin-shell .dir-search .admin-input,
+.admin-shell .dir-search .admin-input:focus,
+.admin-shell .dir-search .admin-input:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+}
+
+.admin-shell .dir-search:focus-within {
+  box-shadow: inset 0 0 0 2px #8fa6ff;
+}
+
+.admin-shell .admin-table th {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(244, 246, 251, 0.55);
+}
+
+.admin-shell .admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-shell .ripple-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 14px;
+  color: #f7f8fc;
+  font-weight: 650;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+.admin-shell .ripple-btn .ripple-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-shell .ripple-btn.admin-btn-green,
+.admin-shell .admin-btn-green {
+  color: #eafff1 !important;
+  background: linear-gradient(180deg, rgba(48, 209, 88, 0.42), rgba(48, 209, 88, 0.18)) !important;
+  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.42);
+}
+
+.admin-shell .ripple-btn.admin-btn-red,
+.admin-shell .admin-btn-red,
+.admin-shell .ripple-btn.danger {
+  color: #ffe8e6 !important;
+  background: linear-gradient(180deg, rgba(255, 69, 58, 0.42), rgba(255, 69, 58, 0.16)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.4);
+}
+
+.admin-shell .refresh-btn {
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.admin-shell .mod-panel-tab,
+.admin-shell .mod-action-tab,
+.admin-shell .dir-chip,
+.admin-shell .mod-cat-chip,
+.admin-shell .mod-preset {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.admin-shell .mod-panel-tab.active,
+.admin-shell .mod-action-tab.active,
+.admin-shell .dir-chip.is-on,
+.admin-shell .dir-stat.is-on {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.26);
+}
+
+.admin-shell .dir-dot {
+  box-shadow: 0 0 0 2px rgba(16, 18, 28, 0.55);
+}
+
+.admin-shell .admin-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+/* Leftover inline flat surfaces (var(--surface-2) and friends). */
+.admin-shell [style*="var(--surface"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)) !important;
+}
+
+@media (max-width: 800px) {
+  .admin-shell {
+    padding: 12px;
+  }
+
+  .admin-shell .admin-container {
+    height: 100%;
+    border-radius: 22px;
+  }
+
+  .admin-shell .admin-split,
+  .admin-shell .mod-issue-grid,
+  .admin-shell .mod-active-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-shell .admin-body {
+    padding: 4px 14px 20px;
+  }
+}

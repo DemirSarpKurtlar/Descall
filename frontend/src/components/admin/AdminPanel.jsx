@@ -662,7 +662,20 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
         <header className="admin-top">
-          {/* Success/Error Messages */}
+          <div className="admin-top-bar">
+            <div className="admin-header-content">
+              <div className="admin-header-icon">
+                <Shield size={22} strokeWidth={2.1} />
+              </div>
+              <div>
+                <h1>{t("admin.title")}</h1>
+                <p className="admin-sub">{t("admin.subtitle")}</p>
+              </div>
+            </div>
+            <button type="button" className="admin-close" onClick={onClose} aria-label={t("Close")}>
+              <X size={18} strokeWidth={2.4} />
+            </button>
+          </div>
           <AnimatePresence>
             {successMessage && (
               <motion.div
@@ -687,19 +700,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               </motion.div>
             )}
           </AnimatePresence>
-
-        <div className="admin-header-content">
-          <div className="admin-header-icon">
-            <Shield size={32} />
-          </div>
-          <div>
-            <h1>{t("admin.title")}</h1>
-            <p className="admin-sub">{t("admin.subtitle")}</p>
-          </div>
-        </div>
-        <RippleButton type="button" className="admin-close" onClick={onClose}>
-          <X size={20} />
-        </RippleButton>
       </header>
 
       {err && (
@@ -1127,7 +1127,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             {/* Stats Overview */}
             {creditStats && (
               <div className="admin-grid" style={{ marginBottom: 24 }}>
-                <div className="admin-card" style={{ background: "linear-gradient(135deg, #f59e0b22, #d9770622)", borderColor: "#f59e0b44" }}>
+                <div className="admin-card is-accent">
                   <span style={{ color: "#f59e0b" }}>{t("Total Credits in System")}</span>
                   <strong style={{ color: "#f59e0b", fontSize: 24 }}>{(creditStats.totalCredits || 0).toLocaleString()}</strong>
                 </div>
@@ -1147,9 +1147,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             )}
 
             {/* Credit Management Section */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+            <div className="admin-split">
               {/* Search and Manage Users */}
-              <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: 20, border: "1px solid var(--border-2)" }}>
+              <div className="admin-pane">
                 <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
                   <Search size={18} /> {t("Find User")}
                 </h3>
@@ -1172,16 +1172,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       <motion.div
                         key={user.user_id}
                         onClick={() => setSelectedCreditUser(user)}
-                        style={{
-                          padding: "12px 14px",
-                          background: selectedCreditUser?.user_id === user.user_id ? "rgba(102, 120, 255, 0.2)" : "var(--surface-3)",
-                          borderRadius: 10,
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          border: selectedCreditUser?.user_id === user.user_id ? "1px solid #6678ff" : "1px solid transparent",
-                        }}
+                        className={`admin-credit-row${selectedCreditUser?.user_id === user.user_id ? " is-selected" : ""}`}
                         whileHover={{ scale: 1.01 }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1218,22 +1209,14 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               </div>
 
               {/* Credit Operations */}
-              <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: 20, border: "1px solid var(--border-2)" }}>
+              <div className="admin-pane">
                 <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
                   <DollarSign size={18} /> {t("Manage Credits")}
                 </h3>
                 
                 {selectedCreditUser ? (
                   <div>
-                    <div style={{ 
-                      background: "var(--surface-3)", 
-                      padding: "14px 16px", 
-                      borderRadius: 10, 
-                      marginBottom: 16,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between"
-                    }}>
+                    <div className="admin-credit-balance">
                       <div>
                         <div style={{ fontWeight: 600 }}>{selectedCreditUser.username}</div>
                         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("Current Balance")}</div>
@@ -1246,33 +1229,17 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
+                          type="button"
+                          className={`admin-op${creditOperation === "add" ? " is-add" : ""}`}
                           onClick={() => setCreditOperation("add")}
-                          style={{
-                            flex: 1,
-                            padding: "10px",
-                            borderRadius: 8,
-                            border: "none",
-                            cursor: "pointer",
-                            background: creditOperation === "add" ? "#22c55e" : "var(--surface-3)",
-                            color: creditOperation === "add" ? "white" : "var(--text-1)",
-                            fontWeight: 600,
-                          }}
                         >
                           <Plus size={14} style={{ display: "inline", marginRight: 6 }} />
                           {t("Add Credits")}
                         </button>
                         <button
+                          type="button"
+                          className={`admin-op${creditOperation === "remove" ? " is-remove" : ""}`}
                           onClick={() => setCreditOperation("remove")}
-                          style={{
-                            flex: 1,
-                            padding: "10px",
-                            borderRadius: 8,
-                            border: "none",
-                            cursor: "pointer",
-                            background: creditOperation === "remove" ? "#ef4444" : "var(--surface-3)",
-                            color: creditOperation === "remove" ? "white" : "var(--text-1)",
-                            fontWeight: 600,
-                          }}
                         >
                           <Minus size={14} style={{ display: "inline", marginRight: 6 }} />
                           {t("Remove Credits")}
@@ -1326,7 +1293,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             </div>
 
             {/* Recent Game History */}
-            <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: 20, border: "1px solid var(--border-2)" }}>
+            <div className="admin-pane">
               <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
                 <History size={18} /> {t("Recent Game History")}
               </h3>
