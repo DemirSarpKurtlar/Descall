@@ -53,6 +53,38 @@ html.glass-ui.a11y-solid:not(.native-app) .app-root.g-shell {
   background-color: var(--g-deep) !important;
 }
 
+/* The document scrolls. Safari only paints its floating toolbar over real
+   content when html/body are the scroll container — an inner overflow div
+   (and the 100dvh shell lock) leaves the surround solid black. #root stays
+   transparent so the canvas color is html's, which is what Safari samples.
+   Native and the keyboard lock keep the inner scroller. */
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock),
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body {
+  height: auto;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body {
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root.in-conversation),
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root[data-view="play"]) {
+  padding-bottom: 0;
+}
+
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) #root {
+  height: auto;
+  min-height: 100lvh;
+  max-height: none;
+  overflow: visible;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 /* ── Root list pages: full-screen, edge-to-edge over the ambient light ── */
 @media (max-width: 768px) {
   html.glass-ui .app-root.g-shell .app-sidebar-shell,
@@ -63,7 +95,8 @@ html.glass-ui.a11y-solid:not(.native-app) .app-root.g-shell {
     /* Inset lives in --g-chrome-top. Padding here would push the list down twice. */
     padding: 0 !important;
     box-shadow: none !important;
-    background-color: var(--g-deep) !important;
+    /* Solid fallback matches the aurora bottom. --g-deep (#0D0E13) sampled as black. */
+    background-color: var(--g-base-2) !important;
     background-image:
       radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
       radial-gradient(55% 34% at 100% 22%, rgba(var(--g-brand2-rgb), var(--g-amb-b)), transparent 70%),
@@ -143,6 +176,51 @@ html.glass-ui.a11y-solid:not(.native-app) .app-root.g-shell {
   html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header ~ .sidebar-content,
   html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header ~ * .sidebar-content {
     padding-bottom: var(--g-list-bottom) !important;
+  }
+
+  /* List pages: the shell is in the document, not a fixed overflow box, so
+     the page under Safari's toolbar is the list and the aurora. Conversation
+     and Play keep their inner scrollers. The large title stays pinned. */
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100lvh;
+    overflow: visible !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) > .app-main-slot {
+    display: none;
+  }
+
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) .app-sidebar-shell {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100lvh;
+    max-height: none !important;
+    overflow: visible !important;
+    z-index: 1;
+    contain: none;
+  }
+
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) .app-sidebar-shell .sidebar-secondary,
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) .app-sidebar-shell .sidebar-inner,
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) .app-sidebar-shell .activity-sidebar,
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) .g-list-head ~ .sidebar-content,
+  html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) .app-root.is-mobile.g-shell:not(.in-conversation):not([data-view="play"]) .app-sidebar-shell .sidebar-content {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  html.glass-ui:not(.native-app) .app-root.is-mobile.g-shell:not(.in-conversation) .g-list-head {
+    position: fixed;
   }
 }
 

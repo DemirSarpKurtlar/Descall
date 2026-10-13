@@ -234,10 +234,15 @@ export default function AppLayout({
 
   useEffect(() => {
     if (!isMobile || !mobileDrawerOpen) return;
+    // Phone web Liquid Glass: the document is the scroll container so Safari's
+    // floating toolbar composites over the aurora. An inline overflow lock
+    // clips that region to black. Native and the classic drawer keep the lock.
+    const native = document.documentElement.classList.contains("native-app");
+    if (glassShell && !native) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [isMobile, mobileDrawerOpen]);
+  }, [isMobile, mobileDrawerOpen, glassShell]);
 
   useEffect(() => {
     if (!isMobile || !userPanelOpen) return;

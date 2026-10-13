@@ -33,8 +33,10 @@
             document.documentElement.classList.add("boot-mobile");
           }
           /* Phone web only: the canvas has to be the aurora before CSS loads,
-             or Safari/Chrome paint #0b0c10 under the tab bar and behind their toolbars. */
-          if (!nativeApp && (w.innerWidth || 0) > 0 && (w.innerWidth || 0) < 960 && (mobileUa || (w.innerWidth || 0) <= 768)) {
+             or Safari/Chrome paint #0b0c10 under the tab bar and behind their toolbars.
+             innerWidth is often 0 while the head parses on iOS — a phone UA still counts. */
+          var width = w.innerWidth || 0;
+          if (!nativeApp && width < 960 && (mobileUa || (width > 0 && width <= 768))) {
             document.documentElement.classList.add("boot-phone-web");
           }
         } catch (e) {}
@@ -207,6 +209,35 @@
         height: 100dvh;
         min-height: 100dvh;
         overflow: hidden;
+      }
+      /* Phone web, after the shell lock: Safari's floating toolbar samples
+         html/body background-color. A 100dvh overflow:hidden canvas clips that
+         region to black. The document is the scroll container (100lvh, overflow
+         auto) and the solid color is the aurora bottom, not #000 / #0b0c10. */
+      html.boot-phone-web[data-app-shell="1"],
+      html.boot-phone-web[data-app-shell="1"] body {
+        height: auto;
+        min-height: 100lvh;
+        max-height: none;
+        overflow-x: hidden;
+        overflow-y: auto;
+        background-color: #101118;
+        background-image: linear-gradient(170deg, #151724 0%, #17181f 45%, #101118 100%);
+        background-repeat: no-repeat;
+        background-position: center top;
+        background-size: 100% 100lvh;
+      }
+      html.boot-phone-web[data-app-shell="1"] body {
+        box-sizing: border-box;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      html.boot-phone-web[data-app-shell="1"] #root {
+        height: auto;
+        min-height: 100lvh;
+        max-height: none;
+        overflow: visible;
+        background-color: transparent;
+        background-image: none;
       }
       /* Electron: 100dvh plus the title-bar pad clips the bottom of every window.
          Web keeps the dvh rule above. */
