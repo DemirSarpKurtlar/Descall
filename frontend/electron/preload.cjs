@@ -35,6 +35,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Is electron
   isElectron: true,
+
+  // OS transparency switch. The CSS media query is unreliable in Electron
+  // (it can stick on "reduce" and flatten Liquid Glass while Chrome stays frosted).
+  getPrefersReducedTransparency: () => ipcRenderer.sendSync('native-theme:reduced-transparency'),
+  onReducedTransparencyChange: (callback) => {
+    const handler = (_, value) => callback(Boolean(value));
+    ipcRenderer.on('native-theme:reduced-transparency-changed', handler);
+    return () => ipcRenderer.off('native-theme:reduced-transparency-changed', handler);
+  },
   
   // Download
   downloadFile: (url, filename) => ipcRenderer.send('download-file', { url, filename }),

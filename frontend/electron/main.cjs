@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification } = require('./notificationWindow.cjs');
@@ -133,6 +133,32 @@ try {
   app.commandLine.appendSwitch('disable-renderer-backgrounding');
   app.commandLine.appendSwitch('disable-background-timer-throttling');
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  // Linux compositors drop in-page backdrop-filter unless this is set
+  // before ready. Windows stays a normal framed client (see createMainWindow):
+  // a layered transparent window skips the DWM taskbar inset.
+  if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('enable-transparent-visuals');
+  }
+} catch (_) { /* ignore */ }
+
+ipcMain.on('native-theme:reduced-transparency', (event) => {
+  try {
+    event.returnValue = Boolean(nativeTheme.prefersReducedTransparency);
+  } catch (_) {
+    event.returnValue = false;
+  }
+});
+
+try {
+  nativeTheme.on('updated', () => {
+    let value = false;
+    try { value = Boolean(nativeTheme.prefersReducedTransparency); } catch (_) { value = false; }
+    for (const win of BrowserWindow.getAllWindows()) {
+      try {
+        if (!win.isDestroyed()) win.webContents.send('native-theme:reduced-transparency-changed', value);
+      } catch (_) { /* ignore */ }
+    }
+  });
 } catch (_) { /* ignore */ }
 
 // Auto-updater — NSIS Setup installs always track the newest GitHub release.
@@ -846,7 +872,17 @@ function createMainWindow() {
     // titleBarStyle:'hidden' is a macOS caption. On Windows it reserves a native
     // caption inset and the page then paints ~40px past the visible client.
     frame: false,
-    ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' } : {}),
+    // macOS: a transparent window plus vibrancy lets backdrop-filter composite
+    // the same aurora the web shell blurs. The page still paints that aurora
+    // on html/body, so the desktop does not show through the panels.
+    // Windows: do not set transparent or thickFrame:false. Electron 41 only
+    // indents a maximized frameless client out of the taskbar while the window
+    // keeps WS_THICKFRAME (GetClientAreaInsets). A layered transparent window
+    // skips that inset and paints across the taskbar.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hidden', transparent: true, vibrancy: 'under-window', visualEffectState: 'active', backgroundColor: '#00000000' }
+      : { backgroundColor: '#0d0e13' }),
+    ...(process.platform === 'linux' ? { transparent: true, backgroundColor: '#00000000' } : {}),
     // Do not set thickFrame:false. Electron 41 indents a maximized frameless
     // client out of the taskbar only while the window stays maximized AND
     // keeps WS_THICKFRAME (GetClientAreaInsets, GetDwmFrameInsetsInPixels,

@@ -1128,13 +1128,15 @@ function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
       <div className="dm-info conv-row-body">
         <div className="conv-row-top">
           <span className={`dm-name ${unread > 0 ? "unread" : ""}`}>{resolveDisplayName(dm)}</span>
-          <span className="conv-row-flags" aria-hidden>
-            {dm.pinned ? <Pin size={11} /> : null}
-            {dm.muted ? <BellOff size={11} /> : null}
+          <span className="conv-row-meta">
+            {timeLabel ? (
+              <span className={`conv-time ${unread > 0 ? "unread" : ""}`}>{timeLabel}</span>
+            ) : null}
+            <span className="conv-row-flags" aria-hidden>
+              {dm.pinned ? <Pin size={11} /> : null}
+              {dm.muted ? <BellOff size={11} /> : null}
+            </span>
           </span>
-          {timeLabel && (
-            <span className={`conv-time ${unread > 0 ? "unread" : ""}`}>{timeLabel}</span>
-          )}
         </div>
         <div className="conv-row-bottom">
           <span className={`dm-preview ${unread > 0 ? "unread" : ""}${typing ? " is-typing" : ""}`}>
@@ -2148,9 +2150,15 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
       <div className="group-info conv-row-body">
         <div className="conv-row-top">
           <span className={`group-name ${unread > 0 ? "unread" : ""}`}>{group.name}</span>
-          {timeLabel && (
-            <span className={`conv-time ${unread > 0 ? "unread" : ""}`}>{timeLabel}</span>
-          )}
+          <span className="conv-row-meta">
+            {timeLabel ? (
+              <span className={`conv-time ${unread > 0 ? "unread" : ""}`}>{timeLabel}</span>
+            ) : null}
+            <span className="conv-row-flags" aria-hidden>
+              {group.pinned ? <Pin size={11} /> : null}
+              {group.muted ? <BellOff size={11} /> : null}
+            </span>
+          </span>
         </div>
         <div className="conv-row-bottom">
           <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(localizeListPreview(preview, t))}</span>

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   shouldEnableGlassDesktop,
   shouldUseGlassDesktopLite,
+  resolveReducedTransparency,
   readGlassDesktopQuery,
   isGlassDesktopSurface,
   shouldPreviewDesktopAuth,
@@ -49,6 +50,17 @@ assert.equal(readGlassDesktopQuery("?gd=0"), "0");
 assert.equal(readGlassDesktopQuery("?glass=desktop"), null);
 assert.equal(readGlassDesktopQuery(""), null);
 
+assert.equal(resolveReducedTransparency({ media: true }), true, "web trusts the media query");
+assert.equal(
+  resolveReducedTransparency({ isElectron: true, media: true, native: false }),
+  false,
+  "Electron ignores a stuck reduce query when the OS transparency switch is on"
+);
+assert.equal(
+  resolveReducedTransparency({ isElectron: true, media: false, native: true }),
+  true,
+  "Electron follows the OS transparency switch"
+);
 assert.equal(shouldUseGlassDesktopLite({}), false, "a fast machine stays glassy");
 assert.equal(shouldUseGlassDesktopLite({ cores: 4 }), true, "4 cores → lite");
 assert.equal(shouldUseGlassDesktopLite({ cores: 4, manual: "0" }), false, "manual off beats the CPU trigger");

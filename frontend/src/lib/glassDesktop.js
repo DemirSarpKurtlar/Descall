@@ -124,6 +124,18 @@ export function shouldEnableGlassDesktop({
   return remoteFlag !== false;
 }
 
+/**
+ * Electron's `prefers-reduced-transparency` media query does not track the OS
+ * transparency switch (Chromium bug the nativeTheme API was added for). A stuck
+ * `reduce` turns on gd-lite and paints the rail, list, and header as flat
+ * solids while Chrome on the same machine stays frosted. Trust the native
+ * value when Electron provides one.
+ */
+export function resolveReducedTransparency({ isElectron = false, media = false, native = null } = {}) {
+  if (isElectron && typeof native === "boolean") return native;
+  return Boolean(media);
+}
+
 /** Pure low-performance decision. */
 export function shouldUseGlassDesktopLite({
   reducedTransparency = false,
@@ -228,6 +240,17 @@ function applyClasses(w) {
   doc.classList.toggle(GLASS_DESKTOP_CONTRAST_CLASS, enabled && contrast);
 }
 
+function readNativeReducedTransparency(w) {
+  try {
+    const read = w?.electronAPI?.getPrefersReducedTransparency;
+    if (typeof read !== "function") return null;
+    const value = read();
+    return typeof value === "boolean" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 function readLiteInputs(w) {
   const match = (query) => {
     try {
@@ -236,8 +259,13 @@ function readLiteInputs(w) {
       return false;
     }
   };
+  const isElectron = Boolean(w?.electronAPI?.isElectron);
   return {
-    reducedTransparency: match("(prefers-reduced-transparency: reduce)"),
+    reducedTransparency: resolveReducedTransparency({
+      isElectron,
+      media: match("(prefers-reduced-transparency: reduce)"),
+      native: readNativeReducedTransparency(w),
+    }),
     forcedColors: match("(forced-colors: active)"),
     contrastMore: match("(prefers-contrast: more)"),
     cores: Number(w?.navigator?.hardwareConcurrency) || 8,
@@ -279,6 +307,11 @@ function startWatchers(w) {
   };
   try {
     w.addEventListener?.("resize", onEnv);
+  } catch {
+    /* ignore */
+  }
+  try {
+    w.electronAPI?.onReducedTransparencyChange?.(() => onEnv());
   } catch {
     /* ignore */
   }

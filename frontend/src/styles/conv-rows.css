@@ -1,7 +1,8 @@
 /* Conversation rows are <button>s, so the browser centers their text.
-   The more control was position:absolute at the row's vertical middle, which
-   sat on top of the time and the pin. Desktop DM and group rows keep the
-   time on the top line and the more button in its own column, centered. */
+   The more control sits in a reserved slot inside the row, vertically
+   centered. Time and pin share a fixed trailing column so they never
+   overlap that control. The selection pill is the row wrap itself, so
+   its box, radius, and inset match the row on every platform. */
 
 button.dm-item,
 button.group-item,
@@ -46,35 +47,112 @@ button.server-channel-row {
   gap: 6px;
 }
 
+.conv-row-meta {
+  flex: 0 0 52px;
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 2px;
+}
+
+.conv-row-meta .conv-time,
+.conv-row-meta .conv-row-flags {
+  position: static;
+  top: auto;
+  right: auto;
+  margin: 0;
+  transform: none;
+  text-align: end;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+.conv-row-meta .conv-row-flags {
+  min-height: 12px;
+}
+
+.conv-group-wrap.is-desktop,
+.conv-group-wrap.is-swipeable {
+  position: relative;
+  margin: 2px 8px;
+  border-radius: 12px;
+}
+
 .conv-group-wrap.is-desktop {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
-  align-items: center;
-  column-gap: 0;
+  display: block;
+}
+
+.conv-group-wrap.is-desktop > .dm-item,
+.conv-group-wrap.is-desktop > .group-item,
+.conv-group-wrap.is-desktop > button.conv-row,
+html.glass-desktop .conv-group-wrap.is-desktop > button.conv-row,
+html.glass-ui .conv-group-wrap.is-desktop > button.conv-row {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  border-radius: inherit;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .conv-group-wrap.is-desktop > .dm-item,
 .conv-group-wrap.is-desktop > .group-item,
 .conv-group-wrap.is-desktop > button.conv-row {
-  grid-column: 1;
-  grid-row: 1;
-  width: 100%;
-  min-width: 0;
-  padding-right: 12px !important;
+  padding-right: 44px !important;
+  box-sizing: border-box;
+}
+
+.conv-group-wrap.is-desktop:hover,
+.conv-group-wrap.is-swipeable:hover {
+  background: var(--surface-2);
+}
+
+.conv-group-wrap.is-desktop.is-active-row,
+.conv-group-wrap.is-swipeable.is-active-row,
+.conv-group-wrap.is-desktop.is-active-row:hover,
+.conv-group-wrap.is-swipeable.is-active-row:hover {
+  background: var(--surface-3);
+}
+
+html.glass-desktop .conv-group-wrap.is-desktop,
+html.glass-desktop .conv-group-wrap.is-swipeable,
+html.glass-ui .conv-group-wrap.is-desktop,
+html.glass-ui .conv-group-wrap.is-swipeable {
+  border-radius: 14px;
+}
+
+html.glass-desktop .conv-group-wrap.is-desktop:hover,
+html.glass-desktop .conv-group-wrap.is-swipeable:hover,
+html.glass-ui .conv-group-wrap.is-desktop:hover,
+html.glass-ui .conv-group-wrap.is-swipeable:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.glass-desktop .conv-group-wrap.is-desktop.is-active-row,
+html.glass-desktop .conv-group-wrap.is-swipeable.is-active-row,
+html.glass-ui .conv-group-wrap.is-desktop.is-active-row,
+html.glass-ui .conv-group-wrap.is-swipeable.is-active-row,
+html.glass-desktop .conv-group-wrap.is-desktop.is-active-row:hover,
+html.glass-desktop .conv-group-wrap.is-swipeable.is-active-row:hover,
+html.glass-ui .conv-group-wrap.is-desktop.is-active-row:hover,
+html.glass-ui .conv-group-wrap.is-swipeable.is-active-row:hover {
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .conv-group-wrap.is-desktop > .conv-more-btn {
-  grid-column: 2;
-  grid-row: 1;
-  position: relative;
-  top: auto;
-  right: auto;
-  bottom: auto;
+  position: absolute !important;
+  top: 0;
+  bottom: 0;
+  right: 8px;
   left: auto;
-  transform: none;
-  align-self: center;
-  justify-self: center;
-  margin: 0 6px 0 0;
+  transform: none !important;
+  margin: auto 0;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -82,6 +160,7 @@ button.server-channel-row {
   align-items: center;
   justify-content: center;
   line-height: 0;
+  z-index: 2;
 }
 
 .conv-group-wrap.is-desktop > .conv-more-btn svg {
@@ -90,20 +169,78 @@ button.server-channel-row {
   height: 16px;
 }
 
-.conv-group-wrap.is-desktop .conv-time {
-  position: static;
-  top: auto;
-  right: auto;
-  transform: none;
-  margin-left: 8px;
-}
-
 .conv-group-wrap.is-desktop .conv-row-top,
-.conv-group-wrap.is-desktop .conv-row-bottom {
+.conv-group-wrap.is-desktop .conv-row-bottom,
+.conv-group-wrap.is-swipeable .conv-row-top,
+.conv-group-wrap.is-swipeable .conv-row-bottom {
   padding-right: 0;
 }
 
-.server-channel-row-wrap > .server-channel-row-actions {
+/* Server list + channel rows. The channel pill is the name button, stretched
+   across the wrap's first grid row. The ⋯ sits in that same cell, centered
+   on the name row, so a voice-member list below is outside the pill. */
+.server-list-row-wrap > .server-list-item {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+html.glass-desktop .server-list-row-wrap > .server-list-item,
+html.glass-ui .server-list-row-wrap > .server-list-item {
+  border-radius: 14px;
+}
+
+.server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 12px;
+  padding-right: 40px;
+}
+
+.server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row-actions {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  position: relative;
+  z-index: 1;
+  height: 28px;
+  margin: 0 6px 0 0;
+  background: transparent;
+}
+
+.server-channel-row-wrap > .server-voice-user-list {
+  grid-row: 2;
+}
+
+html.glass-desktop .server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row,
+html.glass-ui .server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row {
+  border-radius: 14px;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.glass-desktop .server-channel-row-wrap:not(:has(.server-channel-drag-handle)):hover > .server-channel-row,
+html.glass-ui .server-channel-row-wrap:not(:has(.server-channel-drag-handle)):hover > .server-channel-row,
+html.glass-desktop .server-list-row-wrap:hover > .server-list-item,
+html.glass-ui .server-list-row-wrap:hover > .server-list-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.glass-desktop .server-channel-row-wrap.active:not(:has(.server-channel-drag-handle)) > .server-channel-row,
+html.glass-ui .server-channel-row-wrap.active:not(:has(.server-channel-drag-handle)) > .server-channel-row,
+html.glass-desktop .server-list-row-wrap:has(> .server-list-item.active) > .server-list-item,
+html.glass-ui .server-list-row-wrap:has(> .server-list-item.active) > .server-list-item {
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.10);
+}
+
+.server-channel-row-wrap:has(.server-channel-drag-handle) > .server-channel-row-actions,
+.server-channel-row-wrap:has(.server-channel-drag-handle) > .server-channel-drag-handle {
   align-self: center;
   display: flex;
   align-items: center;

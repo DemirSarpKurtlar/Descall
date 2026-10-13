@@ -891,6 +891,15 @@
         if (window.electronAPI && window.electronAPI.isElectron) {
           document.documentElement.classList.add("electron-app");
           document.body.classList.add("electron-app");
+          // Same default as lib/glassDesktop.js: Electron is Liquid Glass unless
+          // the local kill switch or a cached remote desktopGlass=false says otherwise.
+          // Doing it here paints the aurora on the first stylesheet, not after boot.
+          var glassOff = false;
+          try {
+            glassOff = localStorage.getItem("descall:glass-desktop") === "0"
+              || localStorage.getItem("descall:glass-desktop-remote") === "0";
+          } catch (err) { glassOff = false; }
+          if (!glassOff) document.documentElement.classList.add("glass-desktop");
         }
       } catch (e) {}
     </script>

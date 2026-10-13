@@ -204,3 +204,50 @@ html.glass-desktop.gd-contrast .app-main-slot,
 html.glass-desktop.gd-contrast .gd-auth-card {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 18px 48px rgba(0, 0, 0, 0.40);
 }
+
+/* Electron paints html/body/#root/.app-root with an opaque surface and
+   !important. These beat that so the packaged window uses the same aurora,
+   frosted rail, list, and content panel as desktop web. */
+html.glass-desktop.electron-app,
+html.glass-desktop.electron-app body,
+html.glass-desktop.electron-app body.electron-app {
+  background:
+    radial-gradient(38% 46% at 6% 6%, rgba(88, 122, 246, 0.46), transparent 70%),
+    radial-gradient(34% 40% at 62% 0%, rgba(124, 92, 255, 0.26), transparent 72%),
+    radial-gradient(40% 48% at 100% 30%, rgba(124, 92, 255, 0.30), transparent 70%),
+    radial-gradient(46% 50% at 26% 92%, rgba(88, 122, 246, 0.22), transparent 70%),
+    radial-gradient(36% 44% at 94% 100%, rgba(170, 92, 255, 0.24), transparent 70%),
+    radial-gradient(6% 9% at 21% 30%, rgba(143, 166, 255, 0.16), transparent 70%),
+    radial-gradient(8% 12% at 48% 64%, rgba(160, 120, 255, 0.10), transparent 70%),
+    radial-gradient(5% 8% at 80% 18%, rgba(255, 140, 200, 0.08), transparent 70%),
+    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%) !important;
+  background-color: #0d0e13 !important;
+}
+
+html.glass-desktop.electron-app body.electron-app #root,
+html.glass-desktop.electron-app .app-root,
+html.glass-desktop.electron-app .sidebar-header,
+html.glass-desktop.electron-app .main-panel,
+html.glass-desktop.electron-app .chat-panel-shell,
+html.glass-desktop.electron-app .app-main-view,
+html.glass-desktop.electron-app .messages-container,
+html.glass-desktop.electron-app .sidebar-inner,
+html.glass-desktop.electron-app .sidebar-content {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html.glass-desktop.electron-app:not(.gd-lite) .nav-rail,
+html.glass-desktop.electron-app:not(.gd-lite) .sidebar-secondary {
+  background:
+    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
+    var(--gd-panel-base) !important;
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
+}
+
+html.glass-desktop.electron-app:not(.gd-lite) .app-main-slot {
+  background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62)) !important;
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
+}
