@@ -148,6 +148,9 @@ export default defineConfig({
                 if (id.includes("socket.io")) return "vendor-socket";
                 if (id.includes("posthog")) return "vendor-analytics";
                 if (id.includes("@sapphi-red") || id.includes("rnnoise")) return "vendor-noise";
+                // @phosphor-icons/react contains "/react/", so it would join vendor-react
+                // and ship in the marketing first paint. Keep it with the app shell.
+                if (id.includes("@phosphor-icons")) return "vendor-phosphor";
                 if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
                 if (id.includes("lucide-react")) return "vendor-icons";
               }

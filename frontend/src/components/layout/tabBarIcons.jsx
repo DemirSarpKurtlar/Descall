@@ -1,13 +1,11 @@
-import {
-  ChatCircleDots,
-  GameController,
-  HardDrives,
-  Lightning,
-  Phone,
-  User,
-  UserPlus,
-  UsersThree,
-} from "@phosphor-icons/react";
+import { ChatCircleDots } from "@phosphor-icons/react/dist/csr/ChatCircleDots";
+import { GameController } from "@phosphor-icons/react/dist/csr/GameController";
+import { HardDrives } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { Lightning } from "@phosphor-icons/react/dist/csr/Lightning";
+import { Phone } from "@phosphor-icons/react/dist/csr/Phone";
+import { User } from "@phosphor-icons/react/dist/csr/User";
+import { UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
+import { UsersThree } from "@phosphor-icons/react/dist/csr/UsersThree";
 
 /**
  * Mobile tab glyphs (Phosphor, MIT). The desktop rail uses the same

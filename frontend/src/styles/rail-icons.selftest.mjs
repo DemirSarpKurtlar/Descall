@@ -59,6 +59,14 @@ for (const component of Object.values(phosphor)) {
 }
 assert.match(icons, /weight="regular"/);
 assert.match(icons, /weight="fill"/);
+assert.equal(/from\s+["']@phosphor-icons\/react["']/.test(icons), false, "rail must not import the phosphor barrel");
+const tabs = readFileSync(join(here, "../components/layout/tabBarIcons.jsx"), "utf8");
+assert.equal(/from\s+["']@phosphor-icons\/react["']/.test(tabs), false, "tabs must not import the phosphor barrel");
+assert.match(tabs, /@phosphor-icons\/react\/dist\/csr\/ChatCircleDots/);
+const vite = readFileSync(join(here, "../../vite.config.js"), "utf8");
+const phosphorChunk = vite.indexOf('id.includes("@phosphor-icons")');
+const reactChunk = vite.indexOf('id.includes("/react/")');
+assert.ok(phosphorChunk > 0 && phosphorChunk < reactChunk, "phosphor chunk must be decided before vendor-react");
 assert.match(css, /\.rail-glyph-fill/);
 assert.match(css, /active \.rail-glyph-regular/);
 
