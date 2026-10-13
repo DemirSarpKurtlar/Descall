@@ -31,8 +31,8 @@ import {
 export const GLASS_CLASS = "glass-ui";
 export const GLASS_OVERRIDE_KEY = "descall:glass";
 export const GLASS_REMOTE_KEY = "descall:glass-remote";
-/** Top of the glass aurora (--g-base-0). Safari paints this in the status bar. */
-export const GLASS_THEME_COLOR = "#151724";
+/** Bottom of the glass aurora (--g-base-2). Safari/Chrome paint this behind the toolbar. */
+export const GLASS_THEME_COLOR = "#101118";
 const STOCK_THEME_COLOR = "#0b0c10";
 /** Phones only: the short screen side of every iPhone is < 600 pt, every iPad ≥ 744. */
 export const PHONE_MAX_SHORT_SIDE = 600;

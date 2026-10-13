@@ -32,6 +32,11 @@
           if (nativeApp || mobileUa || (w.innerWidth || 0) <= 768) {
             document.documentElement.classList.add("boot-mobile");
           }
+          /* Phone web only: the canvas has to be the aurora before CSS loads,
+             or Safari/Chrome paint #0b0c10 under the tab bar and behind their toolbars. */
+          if (!nativeApp && (w.innerWidth || 0) > 0 && (w.innerWidth || 0) < 960 && (mobileUa || (w.innerWidth || 0) <= 768)) {
+            document.documentElement.classList.add("boot-phone-web");
+          }
         } catch (e) {}
       })();
     </script>
@@ -43,9 +48,9 @@
     <meta name="apple-mobile-web-app-title" content="Descall" />
     <meta name="theme-color" content="#0b0c10" />
     <script>
-      /* After the theme-color meta exists: phone web matches the aurora top
-         (--g-base-0) so Safari does not paint a black band under the clock.
-         Native launch screen keeps its own color. */
+      /* After the theme-color meta exists: phone web matches the bottom of the
+         aurora (--g-base-2) so Safari and Chrome don't paint a black band
+         behind the toolbar. Native launch screen keeps its own color. */
       (function () {
         try {
           var w = window;
@@ -56,7 +61,7 @@
           var mobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua) || (w.innerWidth || 0) <= 768;
           if (!mobile) return;
           var theme = document.querySelector('meta[name="theme-color"]');
-          if (theme) theme.setAttribute("content", "#151724");
+          if (theme) theme.setAttribute("content", "#101118");
         } catch (e) {}
       })();
     </script>
@@ -179,6 +184,20 @@
         background: #0b0c10;
         overflow-x: hidden;
         overflow-y: auto;
+      }
+      /* Phone web canvas: same aurora as the app, tall enough to run under
+         the floating tab bar and behind the browser toolbar. */
+      html.boot-phone-web,
+      html.boot-phone-web body {
+        background-color: #101118;
+        background-image: linear-gradient(170deg, #151724 0%, #17181f 45%, #101118 100%);
+        background-repeat: no-repeat;
+        background-position: center top;
+        background-size: 100% 100lvh;
+        min-height: 100%;
+        min-height: -webkit-fill-available;
+        min-height: 100dvh;
+        min-height: 100lvh;
       }
       html[data-app-shell="1"],
       html[data-app-shell="1"] body,

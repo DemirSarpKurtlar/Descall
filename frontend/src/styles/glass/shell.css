@@ -17,15 +17,23 @@ html.glass-ui .app-root.g-shell {
   --g-head-top: calc(var(--g-chrome-top) + 162px); /* 222: content under toolbar + title + search */
 }
 
-/* Phone web / Home Screen: the status bar and the home indicator sit on the
-   canvas, outside the list shell. The same aurora has to be there or Safari
-   paints theme-color (#0b0c10) as a hard black band. Native keeps its own
-   launch surface. */
+/* Phone web: one aurora for the whole canvas, including the safe area under
+   the floating tab bar and the strip Safari / Chrome paint behind their
+   toolbars. Sized to the large viewport so a 100dvh shell does not end in a
+   flat black band. Native keeps its own launch surface. */
+html.glass-ui:not(.native-app),
+html.glass-ui:not(.native-app) body {
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  min-height: 100lvh;
+}
+
 html.glass-ui:not(.native-app),
 html.glass-ui:not(.native-app) body,
 html.glass-ui:not(.native-app) #root,
 html.glass-ui:not(.native-app) .app-root.g-shell {
-  background-color: var(--g-deep) !important;
+  background-color: var(--g-base-2) !important;
   background-image:
     radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),
     radial-gradient(55% 34% at 100% 22%, rgba(var(--g-brand2-rgb), var(--g-amb-b)), transparent 70%),
@@ -33,7 +41,8 @@ html.glass-ui:not(.native-app) .app-root.g-shell {
     radial-gradient(60% 35% at 95% 96%, rgba(var(--g-brand2-rgb), var(--g-amb-d)), transparent 70%),
     linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%) !important;
   background-repeat: no-repeat !important;
-  background-size: 100% 100% !important;
+  background-position: center top !important;
+  background-size: 100% 100lvh !important;
 }
 
 html.glass-ui.a11y-solid:not(.native-app),
@@ -61,8 +70,8 @@ html.glass-ui.a11y-solid:not(.native-app) .app-root.g-shell {
       radial-gradient(70% 40% at 20% 70%, rgba(var(--g-brand-rgb), var(--g-amb-c)), transparent 70%),
       radial-gradient(60% 35% at 95% 96%, rgba(var(--g-brand2-rgb), var(--g-amb-d)), transparent 70%),
       linear-gradient(170deg, var(--g-base-0) 0%, var(--g-base-1) 45%, var(--g-base-2) 100%) !important;
-    background-size: 100% 100% !important;
-    background-position: 0 0 !important;
+    background-size: 100% 100lvh !important;
+    background-position: center top !important;
     background-repeat: no-repeat !important;
   }
 
@@ -200,16 +209,19 @@ html.glass-ui .g-head-sub .g-edge-top { height: calc(var(--g-chrome-top) + 124px
 html.glass-ui .g-head-title .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
 html.glass-ui .g-head-inline .g-edge-top { height: calc(var(--g-chrome-top) + 70px); }
 
+/* Feather rows into the bar only. A fade pinned to bottom:0 painted a flat
+   black slab in the safe area under the bar (and behind Safari's toolbar).
+   The bar stays above that, so its blur samples the list and the aurora. */
 html.glass-ui .g-edge-bot {
   position: fixed;
-  bottom: 0;
-  height: 150px;
-  z-index: 315;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  background: linear-gradient(0deg, rgba(var(--g-edge-rgb, 13,14,19), 0.80) 0%, rgba(var(--g-edge-rgb, 13,14,19), 0.35) 55%, rgba(var(--g-edge-rgb, 13,14,19), 0) 100%);
-  -webkit-mask: linear-gradient(0deg, #000 50%, transparent);
-  mask: linear-gradient(0deg, #000 50%, transparent);
+  bottom: calc(var(--g-bar-bottom, 12px) + var(--g-tab-h, 64px) - 18px);
+  height: 56px;
+  z-index: 30;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: linear-gradient(0deg, rgba(var(--g-edge-rgb, 13, 14, 19), 0.22) 0%, rgba(var(--g-edge-rgb, 13, 14, 19), 0) 100%);
+  -webkit-mask: none;
+  mask: none;
 }
 
 /* Toolbar */
@@ -498,6 +510,9 @@ html.glass-ui .g-tabbar {
   display: grid;
   padding: 4px;
   font-family: var(--g-font) !important;
+  /* The shared glass shadow (32px) was filling the safe area under the bar
+     with a flat black slab. Keep a short lift so the aurora stays visible. */
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 html.glass-ui .g-tabbar * {

@@ -116,7 +116,7 @@ function withThemeMeta(win, color = "#0b0c10") {
 }
 const themed = withThemeMeta(fakeWindow({ platform: "web", native: false, w: 390, h: 844 }));
 assert.equal(initGlassUi(themed), true);
-assert.equal(themed._meta.content, GLASS_THEME_COLOR, "phone web theme-color matches the aurora top");
+assert.equal(themed._meta.content, GLASS_THEME_COLOR, "phone web theme-color matches the aurora bottom");
 themed._store["descall:glass"] = "0";
 assert.equal(initGlassUi(themed), false);
 assert.equal(themed._meta.content, "#0b0c10", "glass off restores the stock theme-color");
