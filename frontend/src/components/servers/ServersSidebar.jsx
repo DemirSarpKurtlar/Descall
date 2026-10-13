@@ -85,6 +85,7 @@ import ServerRulesModal from "./ServerRulesModal";
 import ServerSettingsModal from "./ServerSettingsModal";
 import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const TEMPLATE_ICONS = {
   Gamepad2,
@@ -2449,8 +2450,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
                 : t("Off — members can send freely.")}
             </p>
             <label className="server-check-row">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={Boolean(nsfw)}
                 onChange={(e) => setNsfw(e.target.checked)}
               />

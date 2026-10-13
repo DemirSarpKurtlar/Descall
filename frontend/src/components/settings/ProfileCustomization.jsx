@@ -16,6 +16,7 @@ import { setEmail as apiSetEmail, resendEmailCode, verifyEmailCode, enable2fa, d
 import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
 import { useT } from "../../context/LocaleContext";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 /**
  * Profile Customization Panel (15+ features)
@@ -581,12 +582,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.soundEnabled}
                   onChange={(e) => handleChange("soundEnabled", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -615,12 +614,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.desktopNotifications}
                   onChange={(e) => handleChange("desktopNotifications", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -633,12 +630,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.callNotifications}
                   onChange={(e) => handleChange("callNotifications", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -651,12 +646,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.mentionNotifications}
                   onChange={(e) => handleChange("mentionNotifications", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
           </motion.div>
@@ -681,12 +674,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.onlineStatusVisible}
                   onChange={(e) => handleChange("onlineStatusVisible", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -700,12 +691,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.lastSeenVisible}
                   onChange={(e) => handleChange("lastSeenVisible", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -718,12 +707,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.typingIndicatorVisible}
                   onChange={(e) => handleChange("typingIndicatorVisible", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -748,12 +735,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.allowFriendRequests}
                   onChange={(e) => handleChange("allowFriendRequests", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -868,13 +853,11 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={twoFactorOn}
                   disabled={!emailVerified || twoFaBusy}
                   onChange={(e) => handleToggle2fa(e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 
@@ -916,12 +899,10 @@ export default function ProfileCustomization({ me, onUpdate }) {
                 </div>
               </div>
               <label className="pc-switch">
-                <input
-                  type="checkbox"
+                <GlassCheckbox
                   checked={profile.emailNotifications}
                   onChange={(e) => handleChange("emailNotifications", e.target.checked)}
                 />
-                <span className="pc-slider" />
               </label>
             </div>
 

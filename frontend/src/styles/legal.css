@@ -182,13 +182,8 @@
   text-align: left;
 }
 
-.legal-consent input[type="checkbox"] {
-  margin-top: 3px;
-  width: 16px;
-  height: 16px;
+.legal-consent .dc-check {
   flex-shrink: 0;
-  accent-color: var(--primary, #627bff);
-  cursor: pointer;
 }
 
 .legal-consent label {

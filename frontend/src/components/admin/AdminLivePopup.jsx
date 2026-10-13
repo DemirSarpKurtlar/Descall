@@ -6,6 +6,7 @@ import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import AdminBroadcastPopup from "./AdminBroadcastPopup";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const EMOJIS = ["📢", "🚨", "⚠️", "✅", "🎉", "🔧", "🔒", "💬"];
 const DURATIONS = [
@@ -268,16 +269,14 @@ export default function AdminLivePopup() {
           </label>
 
           <label className="admin-live-popup-check">
-            <input
-              type="checkbox"
+            <GlassCheckbox
               checked={draft.requireAck}
               onChange={(event) => patch({ requireAck: event.target.checked })}
             />
             {t("Require acknowledgement (cannot be dismissed until they tap OK)")}
           </label>
           <label className="admin-live-popup-check">
-            <input
-              type="checkbox"
+            <GlassCheckbox
               checked={draft.includeSelf}
               onChange={(event) => patch({ includeSelf: event.target.checked })}
             />

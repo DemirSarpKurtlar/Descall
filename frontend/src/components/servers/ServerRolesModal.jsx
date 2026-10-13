@@ -17,6 +17,7 @@ import {
 import { permissionsToFlagMap, isAssignableServerRole, canEditServerRole, canGrantServerPermission, serverHighestPosition, serverIsOwner } from "../../lib/serverPermissions";
 import ServerMemberRoleAssign from "./ServerMemberRoleAssign";
 import { BlockListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const PRESET_COLORS = [
   0x5865f2, 0x57f287, 0xfee75c, 0xed4245, 0xeb459e, 0xf47b67, 0x3ba55d, 0x3498db, 0x9b59b6, 0x95a5a6,
@@ -491,16 +492,14 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
                   </div>
 
                   <label className="server-check">
-                    <input
-                      type="checkbox"
+                    <GlassCheckbox
                       checked={draft.hoist}
                       onChange={(e) => setDraft((d) => ({ ...d, hoist: e.target.checked }))}
                     />
                     <span>{t("Display role members separately")}</span>
                   </label>
                   <label className="server-check">
-                    <input
-                      type="checkbox"
+                    <GlassCheckbox
                       checked={draft.mentionable}
                       onChange={(e) => setDraft((d) => ({ ...d, mentionable: e.target.checked }))}
                     />
@@ -513,8 +512,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
                       {editableKeys.map((key) => (
                         <li key={key} className="server-perm-row">
                           <label className="server-perm-label">
-                            <input
-                              type="checkbox"
+                            <GlassCheckbox
                               checked={Boolean(draft.flags?.[key])}
                               disabled={!selectedEditable || permLocked(key)}
                               onChange={(e) => {

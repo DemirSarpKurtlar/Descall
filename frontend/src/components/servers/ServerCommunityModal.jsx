@@ -6,6 +6,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";
 import { serverHasPermission } from "../../lib/serverPermissions";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const VERIFICATION_LEVELS = [
   { value: "none", label: "None" },
@@ -102,23 +103,19 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
         <form onSubmit={save}>
           <div className="server-community-options">
             <label className="server-community-option">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={communityEnabled}
                 disabled={!canManage || busy}
                 onChange={(e) => setCommunityEnabled(e.target.checked)}
               />
-              <span className="server-community-option-mark" aria-hidden="true" />
               <span className="server-community-option-label">{t("Enable Community")}</span>
             </label>
             <label className="server-community-option">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={isPublic}
                 disabled={!canManage || busy}
                 onChange={(e) => setIsPublic(e.target.checked)}
               />
-              <span className="server-community-option-mark" aria-hidden="true" />
               <span className="server-community-option-label">{t("List in public discovery")}</span>
             </label>
           </div>

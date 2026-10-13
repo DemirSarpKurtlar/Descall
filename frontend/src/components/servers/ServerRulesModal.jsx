@@ -5,6 +5,7 @@ import { ScrollText } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { acceptServerRules } from "../../api/servers";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 /**
  * Community onboarding rules accept screen.
@@ -69,8 +70,7 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
             ))}
           </div>
           <label className="server-check-row">
-            <input
-              type="checkbox"
+            <GlassCheckbox
               checked={checked}
               disabled={busy}
               onChange={(e) => setChecked(e.target.checked)}

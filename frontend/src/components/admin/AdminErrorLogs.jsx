@@ -15,6 +15,7 @@ import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import { BlockListSkeleton } from "../ui/Skeleton";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const SEVERITIES = [
   { id: "critical", label: "Critical", color: "#f23f43", icon: AlertCircle },
@@ -472,10 +473,9 @@ export default function AdminErrorLogs({ socket }) {
               
               <div className="filter-group checkbox">
                 <label>
-                  <input 
-                    type="checkbox" 
-                    checked={autoScroll} 
-                    onChange={e => setAutoScroll(e.target.checked)} 
+                  <GlassCheckbox 
+                    checked={autoScroll}
+                    onChange={e => setAutoScroll(e.target.checked)}
                   />
                   {t("Auto-scroll")}
                 </label>
@@ -483,10 +483,9 @@ export default function AdminErrorLogs({ socket }) {
               
               <div className="filter-group checkbox">
                 <label>
-                  <input 
-                    type="checkbox" 
-                    checked={viewMode === "compact"} 
-                    onChange={e => setViewMode(e.target.checked ? "compact" : "list")} 
+                  <GlassCheckbox 
+                    checked={viewMode === "compact"}
+                    onChange={e => setViewMode(e.target.checked ? "compact" : "list")}
                   />
                   {t("Compact View")}
                 </label>
@@ -553,12 +552,11 @@ export default function AdminErrorLogs({ socket }) {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="log-header" onClick={() => toggleLogExpand(log.id)}>
-                    <input 
-                      type="checkbox" 
+                    <GlassCheckbox 
                       checked={isSelected}
                       onChange={e => {
-                        e.stopPropagation();
-                        toggleLogSelect(log.id);
+                      e.stopPropagation();
+                      toggleLogSelect(log.id);
                       }}
                     />
                     

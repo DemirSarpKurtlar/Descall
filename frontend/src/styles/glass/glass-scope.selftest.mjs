@@ -93,6 +93,7 @@ const nudgeAt = imports.indexOf("./styles/feedback-nudge.css");
 const railAt = imports.indexOf("./styles/rail-icons.css");
 const lfgSheetAt = imports.indexOf("./styles/lfg-sheet.css");
 const authSheetAt = imports.indexOf("./styles/auth-sheet.css");
+const checkAt = imports.indexOf("./styles/checkbox.css");
 const googleAt = imports.indexOf("./styles/google-signin.css");
 assert.ok(glassAt > 0, "glass sheet imported");
 assert.ok(desktopAt > glassAt, "desktop glass follows iphone glass");
@@ -104,7 +105,8 @@ assert.equal(nudgeAt, convAt + 1, "feedback nudge follows conversation rows");
 assert.equal(railAt, nudgeAt + 1, "rail icons follow the feedback nudge");
 assert.equal(lfgSheetAt, railAt + 1, "lfg sheet follows rail icons");
 assert.equal(authSheetAt, lfgSheetAt + 1, "auth sheet follows the lfg sheet");
-assert.equal(googleAt, authSheetAt + 1, "google sign-in follows the auth sheet");
+assert.equal(checkAt, authSheetAt + 1, "glass checkbox follows the auth sheet");
+assert.equal(googleAt, checkAt + 1, "google sign-in follows the glass checkbox");
 assert.equal(imports[imports.length - 1], "./styles/google-signin.css", "google sign-in imported last");
 
 console.log(`glass-scope.selftest ok (${count} selectors)`);

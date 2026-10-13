@@ -30,6 +30,7 @@ import AdminUserDirectory from "./AdminUserDirectory";
 import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import { useLocale } from "../../context/LocaleContext";
+import GlassCheckbox from "../ui/GlassCheckbox";
 import {
   parseAppDate,
   formatAppDateTime,
@@ -1457,45 +1458,42 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               <div className="security-card">
                 <h3>{t("Access Control")}</h3>
                 <label>
-                  <input 
-                    type="checkbox" 
+                  <GlassCheckbox 
                     checked={system?.config?.registrationEnabled !== false}
                     onChange={(e) => act(async () => {
-                      await adminFetch("/system", {
-                        method: "PATCH",
-                        body: JSON.stringify({ registrationEnabled: e.target.checked }),
-                      });
-                      await loadSystem();
+                    await adminFetch("/system", {
+                    method: "PATCH",
+                    body: JSON.stringify({ registrationEnabled: e.target.checked }),
+                    });
+                    await loadSystem();
                     })}
                   />
                   {t("Allow new user registrations")}
                 </label>
                 
                 <label>
-                  <input 
-                    type="checkbox" 
+                  <GlassCheckbox 
                     checked={system?.config?.dmEnabled !== false}
                     onChange={(e) => act(async () => {
-                      await adminFetch("/system", {
-                        method: "PATCH",
-                        body: JSON.stringify({ dmEnabled: e.target.checked }),
-                      });
-                      await loadSystem();
+                    await adminFetch("/system", {
+                    method: "PATCH",
+                    body: JSON.stringify({ dmEnabled: e.target.checked }),
+                    });
+                    await loadSystem();
                     })}
                   />
                   {t("Enable direct messages")}
                 </label>
                 
                 <label>
-                  <input 
-                    type="checkbox" 
+                  <GlassCheckbox 
                     checked={system?.config?.groupCreationEnabled !== false}
                     onChange={(e) => act(async () => {
-                      await adminFetch("/system", {
-                        method: "PATCH",
-                        body: JSON.stringify({ groupCreationEnabled: e.target.checked }),
-                      });
-                      await loadSystem();
+                    await adminFetch("/system", {
+                    method: "PATCH",
+                    body: JSON.stringify({ groupCreationEnabled: e.target.checked }),
+                    });
+                    await loadSystem();
                     })}
                   />
                   {t("Allow group creation")}

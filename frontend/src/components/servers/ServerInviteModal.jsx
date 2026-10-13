@@ -13,6 +13,7 @@ import {
   updateServer,
 } from "../../api/servers";
 import { BlockListSkeleton } from "../ui/Skeleton";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const AGE_OPTIONS = [
   { value: 60 * 60, labelKey: "1 hour" },
@@ -187,8 +188,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
             </div>
 
             <label className="server-check-row">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={temporary}
                 disabled={busy}
                 onChange={(e) => setTemporary(e.target.checked)}
@@ -261,7 +261,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
           <label className="server-public-toggle">
             <Globe size={16} />
             <span>{t("List in public discovery")}</span>
-            <input type="checkbox" checked={isPublic} disabled={busy} onChange={togglePublic} />
+            <GlassCheckbox checked={isPublic} disabled={busy} onChange={togglePublic} />
           </label>
         )}
 

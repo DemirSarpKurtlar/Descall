@@ -11,6 +11,7 @@
 @import "../styles/design-tokens.css";
 @import "../styles/auth-splash.css";
 @import "../styles/legal.css";
+@import "../styles/checkbox.css";
 @import "./site.css";
 @import "../styles/descall-identity.css";
 @import "../styles/google-signin.css";

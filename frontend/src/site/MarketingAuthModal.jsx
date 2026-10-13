@@ -8,6 +8,7 @@ import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate,
 import { isSocialSignupRequired } from "../api/auth";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
+import GlassCheckbox from "../components/ui/GlassCheckbox";
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
 const ForgotPasswordFlow = lazy(() => import("../components/auth/ForgotPasswordFlow"));
@@ -356,9 +357,8 @@ function AuthModal({
                   )}
                   {isRegistering && (
                     <div className="legal-consent">
-                      <input
+                      <GlassCheckbox
                         id="mkt-auth-terms-checkbox"
-                        type="checkbox"
                         checked={termsAccepted}
                         onChange={(e) => setTermsAccepted(e.target.checked)}
                       />

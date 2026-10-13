@@ -6,6 +6,7 @@ import VoiceEffectsPanel from "./VoiceEffectsPanel";
 import VideoConferenceMobile from "./VideoConferenceMobile";
 import { useT } from "../context/LocaleContext";
 import "./styles/VideoConferenceMobile.css";
+import GlassCheckbox from "./ui/GlassCheckbox";
 
 /**
  * Discord/Google Meet tarzı video conference UI
@@ -905,22 +906,19 @@ export default function VideoConference({
               <div className="quality-toggles">
                 <div className="quality-toggle-item">
                   <label className="toggle-label">
-                    <input type="checkbox" defaultChecked />
-                    <span className="toggle-slider"></span>
+                    <GlassCheckbox defaultChecked />
                     <span className="toggle-text">{t("Show cursor")}</span>
                   </label>
                 </div>
                 <div className="quality-toggle-item">
                   <label className="toggle-label">
-                    <input type="checkbox" defaultChecked />
-                    <span className="toggle-slider"></span>
+                    <GlassCheckbox defaultChecked />
                     <span className="toggle-text">{t("Optimize for motion")}</span>
                   </label>
                 </div>
                 <div className="quality-toggle-item">
                   <label className="toggle-label">
-                    <input type="checkbox" />
-                    <span className="toggle-slider"></span>
+                    <GlassCheckbox />
                     <span className="toggle-text">{t("Hardware acceleration")}</span>
                   </label>
                 </div>

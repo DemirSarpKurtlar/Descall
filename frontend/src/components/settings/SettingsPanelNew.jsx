@@ -5,6 +5,7 @@ import {
   Globe, Lock, Shield, ChevronRight, Save
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 /**
  * COMPLETELY REBUILT SETTINGS PANEL
@@ -318,29 +319,29 @@ function PrivacySection() {
       <div className="settings-group">
         <h4 className="group-title">Direct Messages</h4>
         <label className="settings-row check">
-          <input type="checkbox" checked={settings.allowDms !== false} onChange={(e) => persist("allowDms", e.target.checked)} />
+          <GlassCheckbox checked={settings.allowDms !== false} onChange={(e) => persist("allowDms", e.target.checked)} />
           <span>Allow direct messages from friends</span>
         </label>
         <label className="settings-row check">
-          <input type="checkbox" checked={settings.allowDmsFromEveryone === true} onChange={(e) => persist("allowDmsFromEveryone", e.target.checked)} />
+          <GlassCheckbox checked={settings.allowDmsFromEveryone === true} onChange={(e) => persist("allowDmsFromEveryone", e.target.checked)} />
           <span>Allow direct messages from everyone</span>
         </label>
       </div>
       <div className="settings-group">
         <h4 className="group-title">Profile Visibility</h4>
         <label className="settings-row check">
-          <input type="checkbox" checked={settings.showOnlineStatus !== false} onChange={(e) => persist("showOnlineStatus", e.target.checked)} />
+          <GlassCheckbox checked={settings.showOnlineStatus !== false} onChange={(e) => persist("showOnlineStatus", e.target.checked)} />
           <span>Show online status</span>
         </label>
         <label className="settings-row check">
-          <input type="checkbox" checked={settings.showActivity !== false} onChange={(e) => persist("showActivity", e.target.checked)} />
+          <GlassCheckbox checked={settings.showActivity !== false} onChange={(e) => persist("showActivity", e.target.checked)} />
           <span>Show activity status</span>
         </label>
       </div>
       <div className="settings-group">
         <h4 className="group-title">Friend Requests</h4>
         <label className="settings-row check">
-          <input type="checkbox" checked={settings.allowFriendRequests !== false} onChange={(e) => persist("allowFriendRequests", e.target.checked)} />
+          <GlassCheckbox checked={settings.allowFriendRequests !== false} onChange={(e) => persist("allowFriendRequests", e.target.checked)} />
           <span>Allow friend requests</span>
         </label>
       </div>
@@ -360,18 +361,18 @@ function AdvancedSection() {
       <div className="settings-group">
         <h4 className="group-title">Developer</h4>
         <label className="settings-row check">
-          <input type="checkbox" checked={devMode} onChange={(e) => { setDevMode(e.target.checked); localStorage.setItem("descall_dev_mode", String(e.target.checked)); }} />
+          <GlassCheckbox checked={devMode} onChange={(e) => { setDevMode(e.target.checked); localStorage.setItem("descall_dev_mode", String(e.target.checked)); }} />
           <span>Developer Mode (shows IDs and debug info)</span>
         </label>
       </div>
       <div className="settings-group">
         <h4 className="group-title">Performance</h4>
         <label className="settings-row check">
-          <input type="checkbox" checked={reduceMotion} onChange={(e) => { setReduceMotion(e.target.checked); localStorage.setItem("descall_reduce_motion", String(e.target.checked)); }} />
+          <GlassCheckbox checked={reduceMotion} onChange={(e) => { setReduceMotion(e.target.checked); localStorage.setItem("descall_reduce_motion", String(e.target.checked)); }} />
           <span>Reduce motion (disable animations)</span>
         </label>
         <label className="settings-row check">
-          <input type="checkbox" checked={hardwareAccel} onChange={(e) => { setHardwareAccel(e.target.checked); localStorage.setItem("descall_hw_accel", String(e.target.checked)); }} />
+          <GlassCheckbox checked={hardwareAccel} onChange={(e) => { setHardwareAccel(e.target.checked); localStorage.setItem("descall_hw_accel", String(e.target.checked)); }} />
           <span>Hardware acceleration</span>
         </label>
       </div>

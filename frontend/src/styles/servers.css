@@ -4646,20 +4646,11 @@ button.member-row.server-member-row {
   cursor: not-allowed;
 }
 
-.server-community-option input[type="checkbox"] {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  opacity: 0;
-  transform: translateY(-50%);
-  pointer-events: none;
+.server-community-option .dc-check {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
 }
 
 .server-community-option-mark {

@@ -8,7 +8,7 @@ const css = readFileSync(join(here, "google-signin.css"), "utf8").replace(/\/\*[
 const styles = readFileSync(join(here, "../styles.css"), "utf8");
 const marketing = readFileSync(join(here, "../site/marketing-entry.css"), "utf8");
 
-assert.match(styles, /@import '\.\/styles\/rail-icons\.css';\s*@import '\.\/styles\/google-signin\.css';/);
+assert.match(styles, /@import '\.\/styles\/checkbox\.css';\s*@import '\.\/styles\/google-signin\.css';/);
 assert.match(marketing, /@import "\.\.\/styles\/google-signin\.css";/);
 assert.match(css, /width:\s*100%/);
 assert.match(css, /min-width:\s*0/);

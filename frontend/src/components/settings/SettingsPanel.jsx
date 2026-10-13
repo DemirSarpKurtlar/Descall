@@ -4,6 +4,7 @@ import { User, Volume2, Monitor, Bell, Shield } from "lucide-react";
 import RippleButton from "../ui/RippleButton";
 import ProfileCustomization from "./ProfileCustomization";
 import { getAudioSettings, setGlobalMute, setSoundEnabled, setSoundVolume } from "../../lib/audioManager";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 export default function SettingsPanel({
   onClose,
@@ -179,7 +180,7 @@ export default function SettingsPanel({
             </label>
 
             <label className="settings-row check">
-              <input type="checkbox" checked={reduceMotion} onChange={(e) => setReduceMotion(e.target.checked)} />
+              <GlassCheckbox checked={reduceMotion} onChange={(e) => setReduceMotion(e.target.checked)} />
               <span>Reduce Motion</span>
             </label>
           </section>
@@ -189,8 +190,7 @@ export default function SettingsPanel({
           <section className="settings-section">
             <h4>Sound</h4>
             <label className="settings-row check">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={!soundSettings.globalMute}
                 onChange={(e) => updateSetting("globalMute", !e.target.checked)}
               />
@@ -209,8 +209,7 @@ export default function SettingsPanel({
               />
             </label>
             <label className="settings-row check">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={soundSettings.incomingCall}
                 onChange={(e) => updateSetting("incomingCall", e.target.checked)}
                 disabled={soundSettings.globalMute}
@@ -218,8 +217,7 @@ export default function SettingsPanel({
               <span>Incoming call ringtone</span>
             </label>
             <label className="settings-row check">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={soundSettings.outgoingCall}
                 onChange={(e) => updateSetting("outgoingCall", e.target.checked)}
                 disabled={soundSettings.globalMute}
@@ -227,8 +225,7 @@ export default function SettingsPanel({
               <span>Outgoing call tone</span>
             </label>
             <label className="settings-row check">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={soundSettings.message}
                 onChange={(e) => updateSetting("message", e.target.checked)}
                 disabled={soundSettings.globalMute}
@@ -236,8 +233,7 @@ export default function SettingsPanel({
               <span>Message notifications</span>
             </label>
             <label className="settings-row check">
-              <input
-                type="checkbox"
+              <GlassCheckbox
                 checked={soundSettings.notification}
                 onChange={(e) => updateSetting("notification", e.target.checked)}
                 disabled={soundSettings.globalMute}

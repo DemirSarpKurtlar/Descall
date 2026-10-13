@@ -31,6 +31,7 @@ import { useT } from '../../context/LocaleContext';
 import './DownloadPage.css';
 import BirthDateInput from "../auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../../lib/age";
+import GlassCheckbox from "../ui/GlassCheckbox";
 
 const GITHUB_REPO = 'DemirSarpKurtlar/Descall';
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
@@ -622,9 +623,8 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
               
               {isRegistering && (
                 <div className="legal-consent">
-                  <input
+                  <GlassCheckbox
                     id="dl-auth-terms-checkbox"
-                    type="checkbox"
                     checked={termsAccepted}
                     onChange={(e) => setTermsAccepted(e.target.checked)}
                   />
