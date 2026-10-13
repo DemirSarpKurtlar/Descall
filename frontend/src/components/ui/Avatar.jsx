@@ -4,14 +4,6 @@ import { resolveAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { getStaticAvatarFrame, isAnimatedAvatarUrl } from "../../lib/gifAvatar";
 import { avatarEffectClass } from "./Cosmetics";
 
-const PALETTES = ["#5865f2", "#57f287", "#fee75c", "#eb459e", "#ed4245", "#9b59b6", "#3498db"];
-
-export function hashString(s) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
 function imgIsReady(img) {
   return Boolean(img && img.complete && img.naturalWidth > 0);
 }
@@ -47,7 +39,6 @@ export function Avatar({
 
   const displayName = name || resolveDisplayName(user);
   const letter = (displayName && displayName[0] ? displayName[0] : "?").toUpperCase();
-  const bg = PALETTES[hashString(displayName || "") % PALETTES.length];
 
   const source = useMemo(() => {
     if (user) {
@@ -234,14 +225,7 @@ export function Avatar({
           }}
         />
       )}
-      <div
-        className="ui-avatar-inner"
-        style={{
-          // Always paint the letter palette — never a blank surface-2 hole while
-          // a broken/pending URL sits at opacity 0 (looks like a black circle).
-          background: bg,
-        }}
-      >
+      <div className="ui-avatar-inner">
         {!(showImage && loaded) ? (
           <span className="ui-avatar-letter">{letter}</span>
         ) : null}

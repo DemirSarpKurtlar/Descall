@@ -13,6 +13,7 @@ import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
 import ActivityHistoryRow, { localizeActivityLabel } from './ActivityHistoryRow';
 import { TYPE_PRIORITY } from '../../lib/processDatabase';
 import { isVisiblyOnline } from '../../lib/presence';
+import { Avatar } from '../ui/Avatar';
 
 function typeRank(type) {
   const i = TYPE_PRIORITY.indexOf(type);
@@ -498,11 +499,7 @@ export default function ActivityView({
                         onClick={() => onFriendSelect?.(friend)}
                       >
                         <div className="activity-friend-feed-avatar">
-                          <img
-                            src={friend.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}&background=5865f2&color=fff&size=36`}
-                            alt={friend.username}
-                            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
-                          />
+                          <Avatar name={friend.username} user={friend} size={36} animate="never" />
                         </div>
                         <div className="activity-friend-feed-info">
                           <span className="activity-friend-feed-name">{friend.username}</span>

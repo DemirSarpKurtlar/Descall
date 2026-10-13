@@ -34,6 +34,17 @@ assert(
   /@media \(hover: none\) \{[\s\S]{0,80}\.rail-tooltip \{[\s\S]{0,60}display:\s*none\s*!important/.test(css),
   "touch devices must hide portaled rail tooltips in CSS as a fallback",
 );
+assert(/backdrop-filter:\s*blur\(24px\)/.test(css), "rail tooltip must be frosted glass");
+assert(/rail-tooltip-slot/.test(rail) && /translateY\(-50%\)/.test(css), "vertical centering stays off the motion node");
+assert(/REDUCED_MOTION_FADE/.test(rail), "reduced motion must cross-fade the tooltip");
+assert(/framerSpring\(SPRINGS\.materialize\)/.test(rail), "tooltip enter uses a critically damped spring");
+assert(!/rgba\(16,\s*18,\s*24,\s*0\.94\)/.test(css), "tooltip must not be the old opaque box");
+
+const avatarJs = readFileSync(join(root, "../ui/Avatar.jsx"), "utf8");
+const avatarCss = readFileSync(join(root, "../../styles/avatar.css"), "utf8");
+assert(!/PALETTES/.test(avatarJs), "letter avatars must not hash a color palette");
+assert(!/background:\s*bg/.test(avatarJs), "letter color must come from CSS, not a per-name inline color");
+assert(/#4f72f6/.test(avatarCss) && /\.letter-avatar/.test(avatarCss), "one indigo letter gradient, shared with call tiles");
 
 console.log("NavigationRail.tooltip.selftest.mjs: ok");
 

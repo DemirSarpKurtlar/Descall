@@ -2575,7 +2575,7 @@ function GlassCallShot({ kind }) {
                 <div className="participant-tile-avatar-shell">
                   <div className="participant-tile-avatar-core" style={{ position: "relative" }}>
                     {tile.speaking ? <span className="g-speak-ring" /> : null}
-                    <div className="ui-avatar" style={{ borderRadius: "50%", display: "grid", placeItems: "center", background: tile.letter === "A" ? "linear-gradient(145deg,#ff7a7f,#e5484d)" : tile.letter === "D" ? "linear-gradient(145deg,#7d97ff,#4a68e8)" : tile.letter === "E" ? "linear-gradient(145deg,#ffc15a,#f08c00)" : "linear-gradient(145deg,#9b85ff,#6e4ff0)", color: "#fff", fontWeight: 700 }}><span className="ui-avatar-letter">{tile.letter}</span></div>
+                    <div className="ui-avatar letter-avatar" style={{ borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", fontWeight: 650 }}><span className="ui-avatar-letter">{tile.letter}</span></div>
                   </div>
                 </div>
               </div>

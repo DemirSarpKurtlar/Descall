@@ -19,6 +19,7 @@ import { RAIL_ACCENT } from "./railIcons";
 import { filterMainNavItems, usePublicFeatures } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
 import useMaterialize from "../../hooks/useMaterialize";
+import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 
 const STATUS_OPTIONS = ["online", "idle", "dnd", "invisible"];
 const STATUS_EMOJIS = ["💬", "😀", "🎮", "🎵", "💼", "📚", "☕", "🌙"];
@@ -68,7 +69,7 @@ function RailButton({
     const rect = el.getBoundingClientRect();
     setTip({
       top: rect.top + rect.height / 2,
-      left: rect.right + 12,
+      left: rect.right + 8,
     });
   };
 
@@ -137,16 +138,17 @@ function RailButton({
       {typeof document !== "undefined" &&
         tip &&
         createPortal(
-          <motion.div
-            className="rail-tooltip"
-            role="tooltip"
-            style={{ top: tip.top, left: tip.left }}
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {label}
-          </motion.div>,
+          <div className="rail-tooltip-slot" style={{ top: tip.top, left: tip.left }}>
+            <motion.div
+              className="rail-tooltip"
+              role="tooltip"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, x: -2 }}
+              animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, x: 0 }}
+              transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
+            >
+              {label}
+            </motion.div>
+          </div>,
           document.body
         )}
     </>

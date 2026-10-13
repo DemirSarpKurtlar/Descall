@@ -540,46 +540,94 @@ button.nav-rail-logo:active {
   opacity: 1;
 }
 
-/* Portal tooltip for rail items — never clipped by overflow */
-.rail-tooltip {
+/* Portal tooltip for rail items — never clipped by overflow.
+   The slot owns vertical centering. Framer owns transform on .rail-tooltip. */
+.rail-tooltip-slot {
   position: fixed;
   z-index: 200000;
-  padding: 7px 11px;
-  border-radius: 10px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.rail-tooltip {
+  position: relative;
+  isolation: isolate;
+  padding: 6px 11px;
+  border-radius: 11px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
-    rgba(16, 18, 24, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f2f4ff;
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  line-height: 1.2;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.05) 42%, rgba(255, 255, 255, 0.02)),
+    rgba(20, 22, 34, 0.46);
+  -webkit-backdrop-filter: blur(24px) saturate(1.85);
+  backdrop-filter: blur(24px) saturate(1.85);
+  color: #f5f7ff;
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+  line-height: 1.15;
+  font-optical-sizing: auto;
   white-space: nowrap;
   pointer-events: none;
+  transform-origin: left center;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 10px 28px rgba(0, 0, 0, 0.4);
-  transform: translateY(-50%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.16);
 }
 
 .rail-tooltip::before {
   content: "";
   position: absolute;
-  left: -5px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  background: rgba(16, 18, 24, 0.94);
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  transform: translateY(-50%) rotate(45deg);
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0.16) 20%,
+    rgba(255, 255, 255, 0.04) 48%,
+    rgba(255, 255, 255, 0.08) 78%,
+    rgba(255, 255, 255, 0.32) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .rail-tooltip {
+    background: rgba(22, 24, 36, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+html.a11y-solid .rail-tooltip,
+html.gd-lite .rail-tooltip {
+  background: rgba(22, 24, 36, 0.96);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-contrast: more) {
+  .rail-tooltip {
+    background: rgba(10, 12, 20, 0.98);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+      0 8px 20px rgba(0, 0, 0, 0.4);
+  }
 }
 
 /* Touch: iOS fires mouseenter after tap and never mouseleave. The portal
    tooltip would otherwise linger over LFG after the drawer closes. */
 @media (hover: none) {
   .rail-tooltip {
+    display: none !important;
+  }
+  .rail-tooltip-slot {
     display: none !important;
   }
 }

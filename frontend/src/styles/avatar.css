@@ -24,6 +24,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* One letter color everywhere a photo is missing. Glassy Descall indigo. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(168deg, #a8bcff 0%, #6d8ef8 30%, #4f72f6 62%, #3a58dc 100%);
+}
+
+/* Call tiles and other letter discs that are not the shared Avatar component. */
+.letter-avatar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(168deg, #a8bcff 0%, #6d8ef8 30%, #4f72f6 62%, #3a58dc 100%);
+  color: #fff;
 }
 
 .ui-avatar-letter {
@@ -32,9 +44,11 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-weight: 700;
+  font-family: -apple-system, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
+  font-weight: 650;
   font-size: 0.42em;
   line-height: 1;
+  letter-spacing: -0.03em;
   color: #fff;
   text-transform: uppercase;
   user-select: none;
