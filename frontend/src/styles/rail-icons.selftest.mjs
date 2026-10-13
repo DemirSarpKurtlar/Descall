@@ -41,9 +41,26 @@ for (const file of files) {
     const snapped = Math.abs(n * 2 - Math.round(n * 2)) < 1e-6;
     assert.equal(snapped, true, `${file} off-grid ${n}`);
   }
-  const fragment = svg.match(/d="([^"]{12,48})/)?.[1];
-  if (fragment) assert.ok(icons.includes(fragment), `${file} path missing from railIcons`);
 }
+
+const phosphor = {
+  sohbetler: "ChatCircleDots",
+  gruplar: "UsersThree",
+  sunucular: "HardDrives",
+  oyna: "GameController",
+  arkadaslar: "UserPlus",
+  aktivite: "Lightning",
+  aramalar: "Phone",
+  ekle: "Plus",
+  ayarlar: "GearSix",
+};
+for (const component of Object.values(phosphor)) {
+  assert.match(icons, new RegExp(`\\b${component}\\b`), component);
+}
+assert.match(icons, /weight="regular"/);
+assert.match(icons, /weight="fill"/);
+assert.match(css, /\.rail-glyph-fill/);
+assert.match(css, /active \.rail-glyph-regular/);
 
 assert.match(styles, /@import '\.\/styles\/feedback-nudge\.css';\s*@import '\.\/styles\/rail-icons\.css';/);
 assert.match(css, /fill:\s*#fff/);

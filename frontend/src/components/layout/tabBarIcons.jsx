@@ -10,7 +10,8 @@ import {
 } from "@phosphor-icons/react";
 
 /**
- * Mobile tab glyphs (Phosphor, MIT). Desktop rail icons stay in railIcons.jsx.
+ * Mobile tab glyphs (Phosphor, MIT). The desktop rail uses the same
+ * family from railIcons.jsx.
  * Inactive = regular, active = fill. Both weights are mounted so the drag
  * hook can swap them with the hot class, without a React render.
  */

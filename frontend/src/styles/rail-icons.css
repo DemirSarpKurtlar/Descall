@@ -1,7 +1,8 @@
 /* Rail tiles. Unscoped so web, Electron, Android, and iPad share them.
-   The glyph is a 24px filled path. The tile, active blue, left indicator,
-   and unread badge live here. Framer owns the button transform (hover spring
-   and press), so this sheet never sets transform on .rail-btn. */
+   The glyph is a 24px Phosphor icon: regular when idle, fill when active.
+   The tile, active blue, left indicator, and unread badge live here.
+   Framer owns the button transform (hover spring and press), so this sheet
+   never sets transform on .rail-btn. */
 
 html body .nav-rail .rail-btn {
   width: 44px;
@@ -18,14 +19,35 @@ html body .nav-rail .rail-btn {
 }
 
 html body .nav-rail .rail-btn .rail-glyph {
+  position: relative;
   display: block;
   width: 24px;
   height: 24px;
   overflow: visible;
 }
 
-html body .nav-rail .rail-btn.active .rail-glyph-ink,
-html body .nav-rail .rail-btn.active .rail-glyph-ink * {
+html body .nav-rail .rail-btn .rail-glyph svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+html body .nav-rail .rail-btn .rail-glyph-fill {
+  opacity: 0;
+}
+
+html body .nav-rail .rail-btn.active .rail-glyph-fill {
+  opacity: 1;
+}
+
+html body .nav-rail .rail-btn.active .rail-glyph-regular {
+  opacity: 0;
+}
+
+html body .nav-rail .rail-btn.active .rail-glyph svg {
   fill: #fff;
 }
 
