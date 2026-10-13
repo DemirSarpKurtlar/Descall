@@ -105,6 +105,8 @@ export function readGlassDesktopQuery(search) {
  * Pure on/off decision. Electron and web at the desktop width default on.
  * Remote false, local "0", and VITE_GLASS_DESKTOP=0 still turn it off.
  * viewportOk is false on a narrow web window so a phone browser never gets the class.
+ * Web marketing routes stay off. Electron is the app, including the signed-out
+ * sheet at "/", so logout must not drop the class and fall back to the old panel.
  */
 export function shouldEnableGlassDesktop({
   isNativeIos = false,
@@ -117,7 +119,7 @@ export function shouldEnableGlassDesktop({
   override = null,
 } = {}) {
   if (isNativeIos || isNativeAndroid) return false;
-  if (surfaceOk === false) return false;
+  if (!isElectron && surfaceOk === false) return false;
   if (override === "0" || buildFlag === false) return false;
   if (!isElectron && !viewportOk) return false;
   if (override === "1") return true;

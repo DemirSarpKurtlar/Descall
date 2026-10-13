@@ -2750,6 +2750,8 @@ export default function App() {
     setMyGroups([]);
     setMyServers([]);
     try {
+      // Web "/" is the marketing site. Electron stays on the glass sign-in
+      // sheet at this path (shouldEnableGlassDesktop ignores the marketing gate).
       if (location.pathname !== "/") navigate("/", { replace: true });
     } catch {
       /* ignore */

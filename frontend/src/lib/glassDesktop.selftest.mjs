@@ -31,6 +31,8 @@ assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", buildFlag: false 
 assert.equal(shouldEnableGlassDesktop({ ...web, viewportOk: false }), false, "narrow web stays off");
 assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", viewportOk: false }), false, "narrow web stays off even with the flag");
 assert.equal(shouldEnableGlassDesktop({ isElectron: true, viewportOk: false }), true, "Electron defaults on without the width gate");
+assert.equal(shouldEnableGlassDesktop({ isElectron: true, surfaceOk: false }), true, "Electron logout to / keeps the glass sign-in sheet");
+assert.equal(shouldEnableGlassDesktop({ isElectron: true, surfaceOk: false, override: "0" }), false, "Electron kill switch still wins on /");
 assert.equal(shouldEnableGlassDesktop({ isElectron: true, viewportOk: false, override: "1" }), true, "Electron ignores the width gate");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeIos: true, override: "1" }), false, "iPhone never");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeAndroid: true, remoteFlag: true }), false, "Android never");

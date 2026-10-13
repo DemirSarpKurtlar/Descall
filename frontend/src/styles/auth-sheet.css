@@ -1,0 +1,244 @@
+/* Signed-out sign-in sheet on every platform.
+   The desktop glass file repeats these rules under html.glass-desktop.
+   This copy stays active when that class is off (Android, Electron kill
+   switch, session expiry) so the legacy split panel cannot come back. */
+
+.gd-auth {
+  position: relative;
+  height: 100%;
+  min-height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #f4f6ff;
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+  background:
+    radial-gradient(38% 46% at 6% 6%, rgba(88, 122, 246, 0.46), transparent 70%),
+    radial-gradient(34% 40% at 62% 0%, rgba(124, 92, 255, 0.26), transparent 72%),
+    radial-gradient(40% 48% at 100% 30%, rgba(124, 92, 255, 0.30), transparent 70%),
+    radial-gradient(46% 50% at 26% 92%, rgba(88, 122, 246, 0.22), transparent 70%),
+    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%);
+}
+
+.gd-auth-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(28% 34% at 50% 22%, rgba(88, 122, 246, 0.40), transparent 70%);
+}
+
+.gd-auth-scroll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 72px 24px 32px;
+  box-sizing: border-box;
+}
+
+.gd-auth-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.gd-auth-mark {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 14px 30px rgba(88, 122, 246, 0.45));
+}
+
+.gd-auth-mark img,
+.gd-auth-mark svg {
+  width: 80px;
+  height: 80px;
+  display: block;
+}
+
+.gd-auth-title {
+  margin: 14px 0 0;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.gd-auth-tagline {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 20px;
+  color: rgba(235, 238, 255, 0.72);
+}
+
+.gd-auth-card {
+  position: relative;
+  isolation: isolate;
+  width: min(432px, 100%);
+  margin-top: 28px;
+  border-radius: 32px;
+  padding: 20px 20px 22px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(20, 21, 30, 0.62);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.gd-auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.10) 18%,
+    rgba(255, 255, 255, 0.03) 50%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+.gd-auth .gd-seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 42px;
+  margin: 0 0 16px;
+  padding: 3px;
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+.gd-auth .g-seg-lens {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.10));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transform: translateX(calc(var(--g-seg-x, 0) * 100%));
+  pointer-events: none;
+}
+
+.gd-auth .auth-tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: rgba(235, 238, 255, 0.72);
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.gd-auth .auth-tab.active {
+  background: transparent;
+  color: #f4f6ff;
+}
+
+.gd-auth .google-signin-wrap,
+.gd-auth .google-signin-button {
+  width: 100%;
+}
+
+.gd-auth .auth-divider {
+  color: rgba(235, 238, 255, 0.46);
+  font-size: 12.5px;
+}
+
+.gd-auth .auth-forgot-link {
+  color: #8fa6ff;
+  font-weight: 600;
+  font-size: 13.5px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.gd-auth .auth-submit {
+  width: 100%;
+  height: 48px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(120, 150, 255, 0.95), rgba(80, 112, 240, 0.95));
+  color: #fff;
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(88, 122, 246, 0.45);
+  cursor: pointer;
+}
+
+.gd-auth .auth-submit:active {
+  transform: scale(0.97);
+}
+
+.gd-auth-legal {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: rgba(235, 238, 255, 0.46);
+}
+
+.gd-auth-legal p {
+  margin: 0;
+}
+
+.gd-auth-links {
+  margin-top: 6px;
+  color: rgba(235, 238, 255, 0.72);
+  font-weight: 600;
+}
+
+.gd-auth-links button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.gd-auth-links .gd-dot,
+.gd-auth-copy {
+  color: rgba(235, 238, 255, 0.46);
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gd-auth .auth-submit:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .gd-auth-card {
+    background: rgba(22, 24, 36, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
