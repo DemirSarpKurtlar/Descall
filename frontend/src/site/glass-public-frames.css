@@ -1254,14 +1254,27 @@ body:has(.mkt) .login-modal :focus-visible {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
+/* Sit on the frame edge. The hang is shorter than the 10px bezel, so
+   the chips kiss the border and never cover the screenshot. */
+.mkt .seo-product-preview.is-tilt {
+  overflow: visible;
+  padding: 52px 0 0;
+}
+
+.mkt .seo-float-chip {
+  pointer-events: none;
+}
+
 .mkt .seo-float-chip.is-share {
-  right: -10px;
-  top: 12%;
+  top: 0;
+  right: 28px;
+  transform: translateY(calc(-100% + 8px));
 }
 
 .mkt .seo-float-chip.is-voice {
-  left: -18px;
-  bottom: 22%;
+  left: 16px;
+  bottom: 0;
+  transform: translateY(calc(100% - 8px));
 }
 
 .mkt .seo-float-ico {
@@ -1282,6 +1295,11 @@ body:has(.mkt) .login-modal :focus-visible {
   font-size: 13px;
   color: rgba(235, 238, 255, 0.5);
   text-align: center;
+}
+
+/* Voice chip hangs ~36px under the frame; keep the caption below it. */
+.mkt .seo-product-preview.is-tilt figcaption {
+  margin-top: 56px;
 }
 
 .mkt .mkt-servers-panel {
@@ -1511,10 +1529,6 @@ body:has(.mkt) .login-modal :focus-visible {
 
   .mkt .seo-product-preview.is-tilt .seo-device {
     transform: none;
-  }
-
-  .mkt .seo-float-chip {
-    display: none;
   }
 }
 
