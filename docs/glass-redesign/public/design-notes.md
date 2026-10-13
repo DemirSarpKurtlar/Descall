@@ -117,7 +117,7 @@ public/
   render.mjs              Playwright → <frame>-desktop.png / <frame>-mobile.png (@2x, full page)
   tools/overview.mjs      → overview.png
   data/legal.json, data/seo.json   content dumped from the repo (legalContent.js, discordSeoContent.js, nicheLandings.js)
-  assets/brand, assets/shots       original logo; approved desktop mockups (webp) used as product previews
+  assets/brand, assets/shots       Konsept 2 logo; approved desktop mockups (webp) used as product previews
 ```
 `node src/build-screens.mjs && node render.mjs [frame…] [--desktop|--mobile] && node tools/overview.mjs`
 

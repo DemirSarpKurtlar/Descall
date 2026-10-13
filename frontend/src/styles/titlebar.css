@@ -178,11 +178,21 @@ body.electron-app .electron-update-banner {
 }
 
 .descall-brand-mark,
-.titlebar .descall-brand img {
+.titlebar .descall-brand .descall-brand-mark {
   display: block;
   flex-shrink: 0;
   overflow: hidden;
   object-fit: cover;
+}
+
+.titlebar .descall-brand-lockup {
+  display: block;
+  width: auto;
+  height: 18px;
+  max-width: 112px;
+  border-radius: 0;
+  object-fit: contain;
+  overflow: visible;
 }
 
 .titlebar .descall-brand {

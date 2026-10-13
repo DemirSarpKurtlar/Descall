@@ -45,6 +45,7 @@ html.vp-fixed .site { height: 100vh; }
 .hdr-bar { height: var(--hdr); border-radius: 32px; display: flex; align-items: center; gap: 12px; padding: 0 10px 0 14px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: -0.024em; flex-shrink: 0; }
 .brand img { width: 36px; height: 36px; border-radius: 11px; box-shadow: 0 6px 18px rgba(88,122,246,0.38); }
+.brand img.brand-lockup { width: auto; height: 28px; border-radius: 0; box-shadow: none; object-fit: contain; background: transparent; }
 .beta { height: 20px; padding: 0 8px; border-radius: 10px; display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
   color: var(--brand-hi); background: rgba(88,122,246,0.18); box-shadow: inset 0 0 0 0.5px rgba(143,166,255,0.45); text-transform: uppercase; }
 .navseg { margin-left: 18px; display: flex; gap: 2px; height: 44px; border-radius: 22px; padding: 4px; }
@@ -314,6 +315,7 @@ h3 { font-size: 18px; line-height: 1.3; font-weight: 680; letter-spacing: -0.02e
 .inv-card { width: 460px; border-radius: 36px; padding: 32px 28px 24px; text-align: center; }
 .inv-card .brandrow { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--t2); }
 .inv-card .brandrow img { width: 26px; height: 26px; border-radius: 8px; }
+.inv-card .brandrow img.brand-lockup { width: auto; height: 18px; border-radius: 0; }
 .inv-card h1 { font-size: 24px; font-weight: 720; letter-spacing: -0.026em; margin-top: 18px; line-height: 1.25; }
 .inv-target { margin-top: 22px; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .inv-target strong { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
@@ -357,6 +359,7 @@ h3 { font-size: 18px; line-height: 1.3; font-weight: 680; letter-spacing: -0.02e
   .hdr { padding-top: 10px; }
   .hdr-bar { border-radius: 28px; padding: 0 6px 0 10px; gap: 8px; }
   .brand { font-size: 17px; gap: 8px; } .brand img { width: 32px; height: 32px; border-radius: 10px; }
+  .brand img.brand-lockup { width: auto; height: 24px; border-radius: 0; box-shadow: none; }
   .hdr .lang { display: none; }
   .menu-btn { width: 44px; height: 44px; border-radius: 22px; align-items: center; justify-content: center; }
   .b.lg { height: 52px; width: 100%; }

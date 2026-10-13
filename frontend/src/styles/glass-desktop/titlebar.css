@@ -17,12 +17,21 @@ html.glass-desktop .titlebar .descall-brand {
   color: var(--gd-t1);
 }
 
-html.glass-desktop .titlebar .descall-brand img,
+html.glass-desktop .titlebar .descall-brand .descall-brand-mark,
 html.glass-desktop .titlebar-logo {
   width: 20px;
   height: 20px;
   border-radius: 6px;
   box-shadow: none;
+}
+
+html.glass-desktop .titlebar .descall-brand img.descall-brand-lockup {
+  width: auto;
+  height: 16px;
+  max-width: 108px;
+  border-radius: 0;
+  box-shadow: none;
+  object-fit: contain;
 }
 
 html.glass-desktop .titlebar .win-btn {

@@ -1,6 +1,6 @@
 {
   "name": "descall-electron",
-  "version": "2.10.64",
+  "version": "2.10.65",
   "description": "Descall - Discord-like chat application",
   "main": "main.cjs",
   "author": {
@@ -123,7 +123,8 @@
       ],
       "category": "public.app-category.social-networking",
       "hardenedRuntime": true,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "icon": "icon.icns"
     },
     "dmg": {
       "contents": [

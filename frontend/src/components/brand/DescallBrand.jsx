@@ -1,9 +1,10 @@
-import { brandIconUrl } from "./brandIconUrl";
+import { brandIconUrl, brandLockupUrl } from "./brandIconUrl";
 
 /**
- * Canonical in-app Descall mark (login, titlebar, nav rail).
- * Points at public `brand/descall-icon.png` (= repo-root Descall Icon.png)
- * via BASE_URL so Electron file:// and web both paint it. See brandIconUrl.js.
+ * In-app Descall mark.
+ * Compact (rail, auth): rounded Konsept 2 tile.
+ * Expanded (title bar): horizontal lockup, not an icon plus the word Descall.
+ * BASE_URL keeps Electron file:// and web on the same public files.
  */
 function DescallMark() {
   return (
@@ -19,11 +20,22 @@ function DescallMark() {
   );
 }
 
+function DescallLockup() {
+  return (
+    <img
+      className="descall-brand-lockup"
+      src={brandLockupUrl()}
+      alt="Descall"
+      height={18}
+      draggable={false}
+    />
+  );
+}
+
 export default function DescallBrand({ compact = false, className = "" }) {
   return (
     <span className={`descall-brand ${compact ? "is-compact" : ""} ${className}`.trim()}>
-      <DescallMark />
-      {!compact && <strong>Descall</strong>}
+      {compact ? <DescallMark /> : <DescallLockup />}
     </span>
   );
 }

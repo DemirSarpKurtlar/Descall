@@ -157,9 +157,14 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
       </div>
 
       <header className={`mkt-header${scrolled ? " is-scrolled" : ""}`}>
-        <Link to={L("/")} className="mkt-brand">
-          <img src={`${import.meta.env.BASE_URL}brand/descall-icon.png`} alt="" width={32} height={32} decoding="async" />
-          <span>Descall</span>
+        <Link to={L("/")} className="mkt-brand" aria-label="Descall">
+          <img
+            className="mkt-brand-lockup"
+            src={`${import.meta.env.BASE_URL}brand/descall-lockup.svg`}
+            alt="Descall"
+            height={28}
+            decoding="async"
+          />
           <span className="mkt-header-beta" title={t(SITE_OPERATOR.statusNote)}>
             {t("Beta")}
           </span>
@@ -202,10 +207,18 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
 
       <footer className="mkt-footer">
         <div className="mkt-footer-brand">
-          <img src={`${import.meta.env.BASE_URL}brand/descall-icon.png`} alt="" width={24} height={24} decoding="async" loading="lazy" />
           <div>
-            <strong>Descall</strong>
-            <span className="mkt-footer-beta">{t("Beta")}</span>
+            <div className="mkt-footer-lockup-row">
+              <img
+                className="mkt-brand-lockup"
+                src={`${import.meta.env.BASE_URL}brand/descall-lockup.svg`}
+                alt="Descall"
+                height={22}
+                decoding="async"
+                loading="lazy"
+              />
+              <span className="mkt-footer-beta">{t("Beta")}</span>
+            </div>
             <p className="mkt-footer-operator">
               {SITE_OPERATOR.operatorName} · {SITE_OPERATOR.country}
             </p>

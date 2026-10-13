@@ -159,6 +159,26 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   border-radius: 8px;
 }
 
+.mkt-brand img.mkt-brand-lockup,
+.mkt-footer-brand img.mkt-brand-lockup {
+  width: auto;
+  height: 28px;
+  border-radius: 0;
+  object-fit: contain;
+  box-shadow: none;
+  background: transparent;
+}
+
+.mkt-footer-brand img.mkt-brand-lockup {
+  height: 22px;
+}
+
+.mkt-footer-lockup-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .mkt-nav {
   display: flex;
   gap: 6px;
@@ -1096,6 +1116,12 @@ body:has(.mkt-consent),
   .mkt-brand img {
     width: 27px;
     height: 27px;
+  }
+
+  .mkt-brand img.mkt-brand-lockup {
+    width: auto;
+    height: 24px;
+    border-radius: 0;
   }
 
   .mkt-nav {

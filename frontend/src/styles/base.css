@@ -6,15 +6,24 @@
 @import './design-tokens.css';
 
 .descall-brand { display:inline-flex; align-items:center; gap:9px; color:inherit; }
-.descall-brand-mark,
-.descall-brand img,
-.descall-brand svg {
+.descall-brand-mark {
   width:32px;
   height:32px;
   flex:none;
   display:block;
   border-radius:10px;
   object-fit:cover;
+  transform:none;
+}
+.descall-brand-lockup {
+  height:18px;
+  width:auto;
+  max-width:120px;
+  flex:none;
+  display:block;
+  border-radius:0;
+  object-fit:contain;
+  background:transparent;
   transform:none;
 }
 .descall-brand strong { font:700 1em/1 Inter, sans-serif; letter-spacing:-.03em; }

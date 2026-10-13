@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.10.64",
+  "version": "2.10.65",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -142,6 +142,7 @@
       "category": "public.app-category.social-networking",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
+      "icon": "electron/icon.icns",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "linux": {

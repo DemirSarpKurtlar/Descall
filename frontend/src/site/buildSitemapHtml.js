@@ -104,7 +104,8 @@ ${cards}
   <meta name="description" content="Browse every public Descall page — product, Discord alternative guides, blog, and legal." />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="${xmlEscape(site)}/sitemap.html" />
-  <link rel="icon" href="/icon.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/icon-32.png" type="image/png" sizes="32x32" />
   <style>
     :root {
       color-scheme: dark;
@@ -159,7 +160,7 @@ ${cards}
       color: var(--text); text-decoration: none; font-family: var(--font-display);
       font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em;
     }
-    .brand img { width: 32px; height: 32px; border-radius: 8px; }
+    .brand img { height: 22px; width: auto; border-radius: 0; display: block; }
     .top-links { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
@@ -259,8 +260,7 @@ ${cards}
   <div class="wrap">
     <header class="top">
       <a class="brand" href="${xmlEscape(site)}/">
-        <img src="/icon.png" width="32" height="32" alt="" />
-        <span>Descall</span>
+        <img src="/brand/descall-lockup.svg" height="22" alt="Descall" />
       </a>
       <div class="top-links">
         <a class="chip" href="${xmlEscape(site)}/">Home</a>

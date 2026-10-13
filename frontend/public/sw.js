@@ -20,7 +20,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(payload.title || "Descall", {
     body: payload.body || "",
     icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    badge: "/icon-32.png",
     tag: payload.tag || "descall",
     renotify: true,
     requireInteraction: isCall,

@@ -76,6 +76,20 @@
   box-shadow: 0 6px 18px rgba(88, 122, 246, 0.38);
 }
 
+.mkt .mkt-brand img.mkt-brand-lockup,
+.mkt .mkt-footer-brand img.mkt-brand-lockup {
+  width: auto;
+  height: 28px;
+  border-radius: 0;
+  box-shadow: none;
+  object-fit: contain;
+  background: transparent;
+}
+
+.mkt .mkt-footer-brand img.mkt-brand-lockup {
+  height: 22px;
+}
+
 .mkt .mkt-header-beta,
 .mkt .mkt-footer-beta {
   height: 20px;

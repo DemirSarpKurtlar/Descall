@@ -16,6 +16,7 @@ export function clean(s = "") {
   return s.replace(/\s{2,}/g, " ").replace(/\s+([,.)])/g, "$1");
 }
 export const LOGO = "../../assets/brand/descall-icon.png";
+export const LOCKUP = "../../assets/brand/descall-lockup.svg";
 export const GH = `<svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.7 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.8c.85 0 1.71.12 2.51.35 1.9-1.33 2.74-1.05 2.74-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.8-4.57 5.06.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .26.18.58.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"/></svg>`;
 export const GOOGLE = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.3 14.6 2.3 12 2.3 6.6 2.3 2.3 6.6 2.3 12s4.3 9.7 9.7 9.7c5.6 0 9.3-3.9 9.3-9.5 0-.6-.1-1.1-.2-1.6H12z"/></svg>`;
 const APPLE = `<svg viewBox="0 0 24 24" fill="#fff"><path d="M16.37 1.43c0 1.14-.49 2.27-1.18 3.08-.74.9-1.99 1.57-2.99 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.57-2.27 1.21-2.98.8-.94 2.14-1.64 3.25-1.68.03.13.05.28.05.43zm4.56 15.71c-.03.07-.46 1.58-1.52 3.12-.94 1.34-1.94 2.71-3.43 2.71-1.52 0-1.9-.88-3.63-.88-1.7 0-2.3.91-3.67.91-1.38 0-2.33-1.26-3.43-2.8C4.97 18.38 3.93 15.57 3.93 12.92c0-4.28 2.8-6.55 5.55-6.55 1.45 0 2.68.95 3.6.95.87 0 2.22-1.01 3.9-1.01.61 0 2.89.06 4.37 2.19-.13.09-2.38 1.37-2.38 4.19 0 3.26 2.85 4.42 2.96 4.45z"/></svg>`;
@@ -25,7 +26,7 @@ export const appStore = () => `<a class="asb" title="Download on the App Store">
 export function header(active = "") {
   const nav = [["/features", "Features"], ["/download", "Download"], ["/faq", "FAQ"]];
   return `<header class="hdr"><div class="hdr-bar glass">
-    <a class="brand"><img src="${LOGO}" alt="Descall"/>Descall<span class="beta" title="Descall is an independent beta product.">Beta</span></a>
+    <a class="brand"><img class="brand-lockup" src="${LOCKUP}" alt="Descall"/><span class="beta" title="Descall is an independent beta product.">Beta</span></a>
     <nav class="navseg glass-chip">${nav.map(([to, l]) => `<a class="${active === to ? "lens" : ""}">${l}</a>`).join("")}</nav>
     <span class="sp"></span>
     <div class="lang glass-chip desk" title="Language"><span>TR</span><span class="lens">EN</span></div>
@@ -42,7 +43,7 @@ export function footer({ tr = false } = {}) {
   return `<footer class="foot2"><div class="foot-panel glass panel">
     <div class="foot-top">
       <div class="foot-brand">
-        <a class="brand"><img src="${LOGO}" alt=""/>Descall<span class="beta">Beta</span></a>
+        <a class="brand"><img class="brand-lockup" src="${LOCKUP}" alt="Descall"/><span class="beta">Beta</span></a>
         <p>Demir Sarp Kurtlar · Türkiye</p>
         <div class="wl"><b>${T("Product updates", "Ürün güncellemeleri")}</b><p>${T("Get occasional release notes — no spam, unsubscribe anytime.", "Ara sıra sürüm notları — spam yok, istediğin zaman çık.")}</p>
           <div class="wl-row glass-chip"><span class="ph">you@example.com</span><span class="b tint-brand sm">${T("Notify me", "Haber ver")}</span></div></div>

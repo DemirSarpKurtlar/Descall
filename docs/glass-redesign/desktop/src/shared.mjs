@@ -34,7 +34,7 @@ const winCtl = `<div class="wctl">
   <span title="Büyüt"><svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg></span>
   <span class="close" title="Kapat"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1"/></svg></span>
 </div>`;
-export const titlebar = (ctx = "") => `<div class="titlebar"><div class="brand"><img src="../../assets/brand/descall-icon.png" alt=""/>Descall</div>${ctx ? `<span class="ctx">${ctx}</span>` : ""}${winCtl}</div>`;
+export const titlebar = (ctx = "") => `<div class="titlebar"><div class="brand"><img class="brand-lockup" src="../../assets/brand/descall-lockup.svg" alt="Descall"/></div>${ctx ? `<span class="ctx">${ctx}</span>` : ""}${winCtl}</div>`;
 
 /** Full Electron window. opts.web → no title bar (browser chrome supplied by the web frame). */
 export function win(body, { web = false, narrow = false, ctx = "", bg = `<div class="ambient"></div>`, extraHead = "" } = {}) {
