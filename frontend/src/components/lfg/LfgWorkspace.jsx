@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { confirmAction } from "../../lib/glassConfirm";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -645,25 +645,47 @@ function CreateLobbyModal({ meta, ranks, busy, defaultHostRank, defaultRegion, o
     }));
   };
 
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("lfg-sheet-open");
+    return () => root.classList.remove("lfg-sheet-open");
+  }, []);
+
+  useEffect(() => {
+    const onFocus = (event) => {
+      const field = event.target;
+      if (!(field instanceof HTMLElement) || !field.closest(".lfg-modal-body")) return;
+      window.setTimeout(() => {
+        field.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }, 80);
+    };
+    document.addEventListener("focusin", onFocus);
+    return () => document.removeEventListener("focusin", onFocus);
+  }, []);
+
   return (
     <motion.div
       className="lfg-modal-overlay"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ type: "spring", bounce: 0, duration: 0.28 }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <motion.div
         className="lfg-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lfg-create-title"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.18 }}
+        transition={{ type: "spring", bounce: 0, duration: 0.28 }}
       >
         <header>
-          <h3>{t("Create Valorant lobby")}</h3>
+          <h3 id="lfg-create-title">{t("Create Valorant lobby")}</h3>
           <button type="button" className="icon-btn" onClick={onClose} aria-label={t("Close")}><X size={18} /></button>
         </header>
 
