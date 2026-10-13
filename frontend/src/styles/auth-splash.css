@@ -426,7 +426,13 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  height: 48px;
+  height: auto;
+  min-height: 48px;
+  min-width: 0;
+  padding: 10px 18px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   border-radius: 16px;
   color: rgba(255, 255, 255, 0.96);
   background:
@@ -444,6 +450,14 @@
 
 .google-signin-glass-face svg {
   flex-shrink: 0;
+}
+
+.google-signin-glass-face span {
+  min-width: 0;
+  text-align: center;
+  white-space: normal;
+  overflow: visible;
+  line-height: 1.25;
 }
 
 .google-signin-button--glass-hit {

@@ -1,0 +1,90 @@
+/* Google glass button. Unscoped so the marketing sheet, the app auth
+   sheet, Electron, and native share it. The wrap centers its children, which
+   shrink-wrapped the face onto the label and let the rounded ends clip
+   "Google ile devam edin". The face fills the sheet; the icon and label
+   stay centered and the label wraps instead of truncating. Type size follows
+   the button width (container) and the viewport, so a narrow sheet shrinks
+   the label before it wraps. */
+
+html body .google-signin-wrap.google-signin-wrap--glass {
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: google-signin;
+}
+
+html body .google-signin-wrap--glass .google-signin-glass-face {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  height: auto;
+  padding: 10px 18px;
+  gap: 8px;
+  overflow: visible;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+html body .google-signin-wrap--glass .google-signin-glass-face svg {
+  flex: 0 0 auto;
+}
+
+html body .google-signin-wrap--glass .google-signin-glass-face span {
+  min-width: 0;
+  flex: 0 1 auto;
+  text-align: center;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: break-word;
+}
+
+html body .google-signin-wrap--glass .google-signin-button--glass-hit > div,
+html body .google-signin-wrap--glass .google-signin-button--glass-hit iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 48px !important;
+}
+
+/* Viewport fallback for browsers without container queries. */
+@media (max-width: 420px) {
+  html body .google-signin-wrap--glass .google-signin-glass-face {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 340px) {
+  html body .google-signin-wrap--glass .google-signin-glass-face {
+    font-size: 13px;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+}
+
+/* Button width wins over the viewport: a narrow sheet in a wide window still fits. */
+@container google-signin (max-width: 280px) {
+  html body .google-signin-wrap--glass .google-signin-glass-face {
+    font-size: 14px;
+    gap: 6px;
+    padding: 10px 14px;
+  }
+}
+
+@container google-signin (max-width: 220px) {
+  html body .google-signin-wrap--glass .google-signin-glass-face {
+    font-size: 13px;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+}
