@@ -11,14 +11,13 @@
  *   search   y = chrome + 102 (162), 42 tall
  *   tab bar  floats 24 above the bottom (home indicator 34 − 10), 64 tall, 7 columns
  */
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Plus } from "lucide-react";
 import { Avatar } from "../../ui/Avatar";
 import { STATUS_META } from "../../../lib/presence";
 import { resolveDisplayName } from "../../../lib/userProfile";
-import { createValueAnimator } from "../../../lib/fluid/animator";
-import { SPRINGS } from "../../../lib/fluid/springs";
 import { usePressFeedback } from "../../../hooks/usePressFeedback";
+import { useTabBarDrag } from "../../../hooks/useTabBarDrag";
 import { useT } from "../../../context/LocaleContext";
 
 /** null = glass shell off (render the classic tree). */
@@ -30,14 +29,6 @@ export function useGlassShell() {
 
 /** Opens the (rail-owned) status picker as the mockup-18 glass menu. */
 export const GLASS_STATUS_EVENT = "descall:glass-status-open";
-
-function prefersReducedMotion() {
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
 
 function PressButton({ className = "", children, ...rest }) {
   // Small toolbar controls read as dead at the default 0.97. 0.88 is the
@@ -258,43 +249,33 @@ export function GlassToolbarMenu({ open, onClose, items }) {
 }
 
 /**
- * Floating 7-tab glass bar (same destinations + order as the rail; Play only
- * when the LFG feature is on). The selected-tab lens slides on the `move` spring.
+ * Floating glass tab bar (same destinations + order as the rail; Play only
+ * when the LFG feature is on). A tap still selects instantly. A hold or a
+ * horizontal drag lifts the lens, tracks the finger, and snaps to a tab.
  */
 export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
-  const lensRef = useRef(null);
-  const animRef = useRef(null);
   const activeIndex = Math.max(0, items.findIndex((it) => it.id === activeId));
   const hasActive = items.some((it) => it.id === activeId);
   const n = items.length || 1;
-
-  const animator = useMemo(
-    () =>
-      createValueAnimator(activeIndex, (v) => {
-        const el = lensRef.current;
-        if (el) el.style.transform = `translate3d(${(v * 100).toFixed(3)}%,0,0)`;
-      }, { scale: 0.01 }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-  animRef.current = animator;
-
-  useLayoutEffect(() => {
-    const a = animRef.current;
-    if (!a) return;
-    if (prefersReducedMotion() || !lensRef.current?.dataset.ready) {
-      a.set(activeIndex);
-      if (lensRef.current) lensRef.current.dataset.ready = "1";
-    } else {
-      a.to(activeIndex, { preset: SPRINGS.move });
-    }
-  }, [activeIndex]);
+  const { navRef, lensRef } = useTabBarDrag({
+    count: items.length,
+    activeIndex: hasActive ? activeIndex : 0,
+    enabled: hasActive && items.length > 1,
+    mode: "fraction",
+    hotClass: "on",
+    onCommit: (index) => {
+      const id = items[index]?.id;
+      if (!id || id === activeId) return;
+      onSelect(id);
+    },
+  });
 
   return (
     <nav
+      ref={navRef}
       className="g-tabbar g-glass"
       data-gid="tabbar"
-      style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, "--g-tab-n": n }}
+      style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, "--g-tab-n": n, touchAction: "pan-y" }}
       aria-label="Primary"
     >
       <span
@@ -302,13 +283,14 @@ export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
         className={`g-tab-lens g-lens${hasActive ? "" : " is-hidden"}`}
         aria-hidden="true"
       />
-      {items.map((item) => {
+      {items.map((item, index) => {
         const Icon = item.icon;
         const on = item.id === activeId;
         const badge = Number(badges[item.id]) || 0;
         return (
           <GlassTab
             key={item.id}
+            index={index}
             on={on}
             label={item.label}
             badge={badge}
@@ -322,12 +304,13 @@ export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
   );
 }
 
-function GlassTab({ on, label, badge, onSelect, children }) {
+function GlassTab({ index, on, label, badge, onSelect, children }) {
   const press = usePressFeedback({ scale: 0.92 });
   return (
     <button
       type="button"
       {...press}
+      data-tab-index={index}
       className={`g-tab${on ? " on" : ""}`}
       aria-current={on ? "page" : undefined}
       aria-label={badge > 0 ? `${label} ${badge > 99 ? "99+" : badge}` : label}

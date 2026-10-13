@@ -18,6 +18,12 @@ export function createDragController({
   dimension = 400,
   rubberBand = true,
   decelerationRate = 0.998,
+  /**
+   * "event" hides the whole locking sample (sheets, swipe-back).
+   * "threshold" hides only the 10px hysteresis, so a fast first sample
+   * still moves 1:1 by the distance past the slop (tab-bar pill).
+   */
+  slopMode = "event",
 } = {}) {
   let phase = "idle"; // idle | pending | dragging
   let startMain = 0;
@@ -61,8 +67,16 @@ export function createDragController({
           return { type: "reject", value };
         }
         phase = "dragging";
-        // iOS hides the slop: tracking continues from where the finger is now.
-        startMain = main;
+        if (slopMode === "threshold") {
+          // Hide the hysteresis only. The rest of this sample already tracks.
+          const sign = d < 0 ? -1 : 1;
+          startMain += sign * slop;
+          const raw = grabValue + (main - startMain);
+          value = rubberBand ? rubberbandClamp(raw, min, max, dimension) : clamp(raw, min, max);
+        } else {
+          // Hide the whole locking sample; the next move tracks from here.
+          startMain = main;
+        }
         push(value, t);
         return { type: "lock", value };
       }
@@ -70,6 +84,15 @@ export function createDragController({
       value = rubberBand ? rubberbandClamp(raw, min, max, dimension) : clamp(raw, min, max);
       push(value, t);
       return { type: "drag", value };
+    },
+    /**
+     * Long-press arm: enter dragging without a slop reset, so the next move
+     * still tracks 1:1 from the original grab (tab-bar hold).
+     */
+    arm() {
+      if (phase !== "pending") return false;
+      phase = "dragging";
+      return true;
     },
     /** Finger up. Returns { type: "tap" | "release", value, velocity (units/ms), target }. */
     end({ t } = {}) {

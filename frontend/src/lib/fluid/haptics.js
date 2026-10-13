@@ -1,10 +1,10 @@
 /**
  * iOS haptics (Capacitor → UIKit feedback generators).
  *
- * One helper for the whole app. Web, Electron, Android and the PWA no-op:
- * UIKit generators only exist in the native iOS shell, and they already
- * respect the system Haptics switch. Reduce Motion changes animation, not
- * these taps — a commit still ticks.
+ * One helper for the whole app. `play()` is the native iOS shell only
+ * (UIKit generators already respect the system Haptics switch). Tab-bar
+ * lift and tick also run on the Android shell, and vibrate on mobile web.
+ * Reduce Motion changes animation, not these taps — a commit still ticks.
  *
  * Fire once per causal event. The same kind inside 50ms collapses so a
  * pointerdown and the click it synthesizes cannot double-buzz. Do not call
@@ -15,7 +15,7 @@
  * Selection is a one-shot UISelectionFeedbackGenerator tick (start, change, end
  * queued in order — selectionChanged alone is a no-op until start).
  */
-import { isNativeIOS } from "../platform.js";
+import { isNativeAndroid, isNativeIOS } from "../platform.js";
 import { shouldEmitHaptic } from "./hapticCoalesce.js";
 
 const COALESCE_MS = 50;
@@ -91,6 +91,62 @@ export function hapticImpactLight() {
 /** UIImpact medium — long-press menus, pin, drag start, hang up. */
 export function hapticImpactMedium() {
   play("medium");
+}
+
+function vibrate(ms) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(ms);
+  } catch {
+    /* missing or blocked outside a gesture */
+  }
+}
+
+/** Capacitor haptics on the native shells; a short vibrate on mobile web. */
+function playAnywhere(kind, vibrateMs) {
+  if (isNativeIOS()) {
+    play(kind);
+    return;
+  }
+  if (isNativeAndroid()) {
+    if (!mark(kind)) return;
+    const run = (mod) => {
+      if (!mod?.Haptics) return;
+      try {
+        if (kind === "selection") {
+          mod.Haptics.selectionStart();
+          mod.Haptics.selectionChanged();
+          mod.Haptics.selectionEnd();
+          return;
+        }
+        const style = kind === "medium" ? mod.ImpactStyle.Medium : mod.ImpactStyle.Light;
+        mod.Haptics.impact({ style })?.catch?.(() => {});
+      } catch {
+        /* old shell */
+      }
+    };
+    if (plugin) run(plugin);
+    else {
+      import("@capacitor/haptics")
+        .then((mod) => {
+          plugin = mod;
+          run(mod);
+        })
+        .catch(() => {});
+    }
+    return;
+  }
+  if (!mark(kind)) return;
+  vibrate(vibrateMs);
+}
+
+/** Tab pill lifts off the bar. Medium impact on iOS/Android, a short vibrate on the web. */
+export function hapticTabLift() {
+  playAnywhere("medium", 14);
+}
+
+/** Finger crossed onto another tab. Selection tick; coalesced so a fast flick does not buzz every frame. */
+export function hapticTabTick() {
+  playAnywhere("selection", 8);
 }
 
 /** Capacitor has no Rigid style; medium is that collision. */

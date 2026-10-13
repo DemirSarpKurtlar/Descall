@@ -8,3 +8,12 @@ export function isNativeIOS() {
     return false;
   }
 }
+
+/** True inside the native Capacitor Android app (not Chrome / the PWA). */
+export function isNativeAndroid() {
+  try {
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  } catch {
+    return false;
+  }
+}

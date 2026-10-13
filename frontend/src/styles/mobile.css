@@ -898,6 +898,29 @@
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
     gap: 2px;
     transition: transform 0.15s ease, opacity 0.15s ease;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .mobile-tab-lens {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: var(--nav-active-bg);
+    border: 1px solid var(--nav-active-border);
+    box-shadow: var(--nav-active-shadow);
+    will-change: transform;
+    transform-origin: center center;
+  }
+
+  .mobile-tab-lens.is-lifted {
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, 0.32),
+      var(--nav-active-shadow);
   }
 
   .mobile-tab {
@@ -913,15 +936,27 @@
     font-size: 10px;
     font-weight: 600;
     border-radius: 12px;
+    position: relative;
+    z-index: 1;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-tab.active {
     color: #eef1ff;
-    background: var(--nav-active-bg);
-    border-color: var(--nav-active-border);
-    box-shadow: var(--nav-active-shadow);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-tab {
+      transition: color 200ms ease;
+    }
+
+    .mobile-tab-lens.is-lifted {
+      box-shadow: var(--nav-active-shadow);
+    }
   }
 
   .app-root.is-mobile .composer-container {
@@ -1112,6 +1147,7 @@
 }
 
 .app-root.is-mobile .mobile-tab-bar {
+  display: flex;
   z-index: 280;
 }
 

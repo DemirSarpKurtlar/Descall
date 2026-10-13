@@ -9,11 +9,15 @@
    ============================================ */
 
 @media (max-width: 768px) {
-  /* The bottom tab bar is hidden on mobile (ui-polish.css), but .app-root still
-     reserved 60px + home indicator for it — a dead dark band under the chat.
-     In the app keep only the home-indicator clearance. */
-  html.native-app .app-root.is-mobile {
+  /* Glass floats its own pill and does not reserve a second bar.
+     Android and glass-off phones show the classic tabs, so their inset
+     stays the 60px from mobile.css instead of a dead gap. */
+  html.native-app .app-root.is-mobile.g-shell {
     --mobile-tab-bar-h: 0px;
+  }
+
+  html.native-app .app-root.is-mobile:not(.g-shell)[data-view="activity"] .app-sidebar-shell .sidebar-secondary {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 
   html.native-app .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .sidebar-secondary {

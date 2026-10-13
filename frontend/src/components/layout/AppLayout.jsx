@@ -25,6 +25,7 @@ import {
   RailSettings,
 } from "./railIcons";
 import { GlassShellContext, GlassTabBar } from "./glass/GlassShell";
+import { useTabBarDrag } from "../../hooks/useTabBarDrag";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
@@ -404,6 +405,35 @@ export default function AppLayout({
     () => (glassShell ? filterMainNavItems(buildMainNavItems(t), publicFeatures) : []),
     [glassShell, t, publicFeatures]
   );
+  const classicTabItems = useMemo(() => {
+    if (glassShell) return [];
+    const main = filterMainNavItems(
+      [
+        { id: "chat", icon: RailChat, label: t("Chat") },
+        { id: "servers", icon: RailServers, label: t("Servers") },
+        { id: "friends", icon: RailFriends, label: t("Friends") },
+        { id: "play", icon: RailPlay, label: t("Play") },
+        { id: "calls", icon: RailCalls, label: t("Calls") },
+        { id: "activity", icon: RailActivity, label: t("Activity") },
+      ],
+      publicFeatures
+    );
+    return [...main, { id: "you", icon: RailSettings, label: t("You"), settings: true }];
+  }, [glassShell, publicFeatures, t]);
+  const classicActiveIndex = Math.max(0, classicTabItems.findIndex((item) => item.id === activeView));
+  const { navRef: classicNavRef, lensRef: classicLensRef } = useTabBarDrag({
+    count: classicTabItems.length,
+    activeIndex: classicActiveIndex,
+    enabled: !glassShell && showMobileTabBar && classicTabItems.length > 1,
+    mode: "stride",
+    hotClass: "active",
+    onCommit: (index) => {
+      const item = classicTabItems[index];
+      if (!item) return;
+      if (item.settings) openUserPanel();
+      else if (item.id !== activeView) handleViewChange(item.id);
+    },
+  });
   const pendingFriendCount = Array.isArray(friendRequests) ? friendRequests.length : 0;
   const glassTabBadges = useMemo(
     () => ({ ...navBadges, friends: pendingFriendCount }),
@@ -742,39 +772,25 @@ export default function AppLayout({
         ) : null
       ) : null}
       {!glassShell && showMobileTabBar && (
-        <nav className="mobile-tab-bar" aria-label={t("Primary")}>
-          {filterMainNavItems(
-            [
-              { id: "chat", icon: RailChat, label: t("Chat") },
-              { id: "servers", icon: RailServers, label: t("Servers") },
-              { id: "friends", icon: RailFriends, label: t("Friends") },
-              { id: "play", icon: RailPlay, label: t("Play") },
-              { id: "calls", icon: RailCalls, label: t("Calls") },
-              { id: "activity", icon: RailActivity, label: t("Activity") },
-            ],
-            publicFeatures
-          ).map((item) => {
+        <nav className="mobile-tab-bar" ref={classicNavRef} aria-label={t("Primary")} style={{ touchAction: "pan-y" }}>
+          <span ref={classicLensRef} className="mobile-tab-lens" aria-hidden="true" />
+          {classicTabItems.map((item, index) => {
             const Icon = item.icon;
+            const on = item.settings ? false : activeView === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
-                className={`mobile-tab ${activeView === item.id ? "active" : ""}`}
-                onClick={() => handleViewChange(item.id)}
+                data-tab-index={index}
+                className={`mobile-tab${on ? " active" : ""}`}
+                aria-current={on ? "page" : undefined}
+                onClick={() => (item.settings ? openUserPanel() : handleViewChange(item.id))}
               >
                 <Icon size={20} />
                 <span>{item.label}</span>
               </button>
             );
           })}
-          <button
-            type="button"
-            className="mobile-tab"
-            onClick={openUserPanel}
-          >
-            <RailSettings size={20} />
-            <span>{t("You")}</span>
-          </button>
         </nav>
       )}
       <CookieConsentBanner variant="app" onOpenPrivacy={() => setConsentLegal("privacy")} />
