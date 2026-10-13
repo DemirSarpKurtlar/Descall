@@ -18,6 +18,7 @@ import { STATUS_META } from "../../../lib/presence";
 import { resolveDisplayName } from "../../../lib/userProfile";
 import { usePressFeedback } from "../../../hooks/usePressFeedback";
 import { useTabBarDrag } from "../../../hooks/useTabBarDrag";
+import { TabBarGlyph } from "../tabBarIcons";
 import { useT } from "../../../context/LocaleContext";
 
 /** null = glass shell off (render the classic tree). */
@@ -284,7 +285,6 @@ export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
         aria-hidden="true"
       />
       {items.map((item, index) => {
-        const Icon = item.icon;
         const on = item.id === activeId;
         const badge = Number(badges[item.id]) || 0;
         return (
@@ -296,7 +296,7 @@ export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
             badge={badge}
             onSelect={() => onSelect(item.id)}
           >
-            <Icon size={22} strokeWidth={on ? 2.2 : 1.85} />
+            <TabBarGlyph id={item.id} />
           </GlassTab>
         );
       })}

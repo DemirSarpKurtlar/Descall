@@ -15,15 +15,7 @@ import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import { useGlassUi } from "../../hooks/useGlassUi";
 import { buildMainNavItems } from "./navConfig";
-import {
-  RailActivity,
-  RailCalls,
-  RailChat,
-  RailFriends,
-  RailPlay,
-  RailServers,
-  RailSettings,
-} from "./railIcons";
+import { TabBarGlyph } from "./tabBarIcons";
 import { GlassShellContext, GlassTabBar } from "./glass/GlassShell";
 import { useTabBarDrag } from "../../hooks/useTabBarDrag";
 import { useT } from "../../context/LocaleContext";
@@ -409,16 +401,16 @@ export default function AppLayout({
     if (glassShell) return [];
     const main = filterMainNavItems(
       [
-        { id: "chat", icon: RailChat, label: t("Chat") },
-        { id: "servers", icon: RailServers, label: t("Servers") },
-        { id: "friends", icon: RailFriends, label: t("Friends") },
-        { id: "play", icon: RailPlay, label: t("Play") },
-        { id: "calls", icon: RailCalls, label: t("Calls") },
-        { id: "activity", icon: RailActivity, label: t("Activity") },
+        { id: "chat", label: t("Chat") },
+        { id: "servers", label: t("Servers") },
+        { id: "friends", label: t("Friends") },
+        { id: "play", label: t("Play") },
+        { id: "calls", label: t("Calls") },
+        { id: "activity", label: t("Activity") },
       ],
       publicFeatures
     );
-    return [...main, { id: "you", icon: RailSettings, label: t("You"), settings: true }];
+    return [...main, { id: "you", label: t("You"), settings: true }];
   }, [glassShell, publicFeatures, t]);
   const classicActiveIndex = Math.max(0, classicTabItems.findIndex((item) => item.id === activeView));
   const { navRef: classicNavRef, lensRef: classicLensRef } = useTabBarDrag({
@@ -775,7 +767,6 @@ export default function AppLayout({
         <nav className="mobile-tab-bar" ref={classicNavRef} aria-label={t("Primary")} style={{ touchAction: "pan-y" }}>
           <span ref={classicLensRef} className="mobile-tab-lens" aria-hidden="true" />
           {classicTabItems.map((item, index) => {
-            const Icon = item.icon;
             const on = item.settings ? false : activeView === item.id;
             return (
               <button
@@ -786,7 +777,7 @@ export default function AppLayout({
                 aria-current={on ? "page" : undefined}
                 onClick={() => (item.settings ? openUserPanel() : handleViewChange(item.id))}
               >
-                <Icon size={20} />
+                <TabBarGlyph id={item.id} />
                 <span>{item.label}</span>
               </button>
             );

@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.10.54",
+  "version": "2.10.55",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -53,6 +53,7 @@
     "@capacitor/push-notifications": "^8.1.2",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/outfit": "^5.3.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@sapphi-red/web-noise-suppressor": "^0.4.0",
     "@sentry/react": "10.69.0",
     "@vercel/analytics": "^2.0.1",

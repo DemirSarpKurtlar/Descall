@@ -586,9 +586,14 @@ html.glass-ui .g-tab {
   -webkit-tap-highlight-color: transparent;
 }
 
+html.glass-ui .g-tab .tab-glyph {
+  width: 29px;
+  height: 29px;
+}
+
 html.glass-ui .g-tab svg {
-  width: 22px;
-  height: 22px;
+  width: 29px;
+  height: 29px;
   flex-shrink: 0;
 }
 
@@ -599,12 +604,14 @@ html.glass-ui .g-tab-label {
   max-width: none;
   overflow: visible;
   text-overflow: unset;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
 }
 
 html.glass-ui .g-dotb {
   position: absolute;
-  top: 5px;
-  left: calc(50% + 6px);
+  top: 1px;
+  left: calc(50% + 10px);
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
