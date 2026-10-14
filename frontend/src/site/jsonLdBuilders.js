@@ -1,4 +1,5 @@
 import { absoluteUrl, SITE_NAME } from "./seoConfig.js";
+import { organizationLogoLd } from "./siteIcons.js";
 import { SITE_OPERATOR } from "./siteIdentity.js";
 import {
   APP_ID,
@@ -43,10 +44,7 @@ function organizationNode() {
     legalName: SITE_NAME,
     alternateName: ["Descall App", "Descall Chat"],
     url: absoluteUrl("/"),
-    logo: {
-      "@type": "ImageObject",
-      url: absoluteUrl("/icon-512.png"),
-    },
+    logo: organizationLogoLd(absoluteUrl),
     image: absoluteUrl("/og-default.png"),
     email: SITE_OPERATOR.supportEmail,
     sameAs: [SITE_OPERATOR.githubUrl, SITE_OPERATOR.githubProfileUrl],
@@ -90,6 +88,7 @@ export function buildWebSiteLd() {
     name: SITE_NAME,
     alternateName: ["Descall App", "Descall Chat"],
     url: absoluteUrl("/"),
+    logo: organizationLogoLd(absoluteUrl),
     inLanguage: ["en", "tr"],
     publisher: { "@id": ORG_ID },
     copyrightHolder: { "@id": PERSON_ID },
@@ -225,10 +224,7 @@ export function buildArticleLd({ title, description, path, datePublished, dateMo
       "@id": ORG_ID,
       "@type": "Organization",
       name: SITE_NAME,
-      logo: {
-        "@type": "ImageObject",
-        url: absoluteUrl("/og-default.png"),
-      },
+      logo: organizationLogoLd(absoluteUrl),
     },
     copyrightHolder: { "@id": PERSON_ID },
     image: [absoluteUrl("/og-default.png")],

@@ -101,6 +101,15 @@ Allow: /sitemap.xml
 Allow: /sitemap-pages.xml
 ${childAllows}
 Allow: /sitemap.html
+Allow: /favicon.ico
+Allow: /favicon.svg
+Allow: /favicon-32.png
+Allow: /favicon-48.png
+Allow: /favicon-96.png
+Allow: /favicon-144.png
+Allow: /favicon-192.png
+Allow: /apple-touch-icon.png
+Allow: /manifest.webmanifest
 
 Disallow: /app/
 Disallow: /api/

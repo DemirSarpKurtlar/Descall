@@ -37,6 +37,15 @@ const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo
 const marketingApp = fs.readFileSync(path.join(root, "src/site/MarketingApp.jsx"), "utf8");
 const sitemapJs = fs.readFileSync(path.join(root, "backend/routes/sitemap.js"), "utf8");
 const robotsTxt = fs.readFileSync(path.join(root, "public/robots.txt"), "utf8");
+{
+  const { spawnSync } = await import("node:child_process");
+  const iconCheck = spawnSync(process.execPath, [path.join(root, "src/site/siteIcons.selftest.mjs")], {
+    encoding: "utf8",
+  });
+  if (iconCheck.status !== 0) {
+    fail(iconCheck.stderr || iconCheck.stdout || "siteIcons.selftest failed");
+  }
+}
 const {
   SITEMAP_TABLES,
   allSitemapEntries,
@@ -249,6 +258,11 @@ if (checkDist) {
         continue;
       }
       const html = fs.readFileSync(file, "utf8");
+      if (!html.includes(`favicon-48.png?v=`)) fail(`Favicon links missing in ${rel}`);
+      if (!html.includes(`rel="icon"`)) fail(`No icon link in ${rel}`);
+      if (route.path === "/" && !html.includes("favicon-192.png?v=")) {
+        fail(`Homepage JSON-LD logo missing in ${rel}`);
+      }
       if (!html.includes("<title>")) fail(`No <title> in ${rel}`);
       if (!html.includes('rel="canonical"')) fail(`No canonical in ${rel}`);
       if (!html.includes("<h1")) fail(`No <h1> crawl content in ${rel}`);

@@ -148,11 +148,32 @@
       "destination": "/index.html"
     },
     {
-      "source": "/((?!assets/|robots\\.txt|sitemap\\.xml|sitemap-pages\\.xml|sitemap-core\\.xml|sitemap-niches\\.xml|sitemap-blog\\.xml|sitemap-company\\.xml|sitemap\\.html|sitemap\\.xsl|llms\\.txt|llms-full\\.txt|humans\\.txt|\\.well-known/).*)",
+      "source": "/((?!assets/|favicon\\.ico|favicon\\.svg|favicon-\\d+\\.png|apple-touch-icon\\.png|icon\\.png|icon\\.ico|icon-\\d+\\.png|icon-512-maskable\\.png|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|sitemap-pages\\.xml|sitemap-core\\.xml|sitemap-niches\\.xml|sitemap-blog\\.xml|sitemap-company\\.xml|sitemap\\.html|sitemap\\.xsl|llms\\.txt|llms-full\\.txt|humans\\.txt|\\.well-known/).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/favicon.ico",
+      "headers": [
+        { "key": "Content-Type", "value": "image/x-icon" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/favicon.svg",
+      "headers": [
+        { "key": "Content-Type", "value": "image/svg+xml" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/(favicon-32.png|favicon-48.png|favicon-96.png|favicon-144.png|favicon-192.png|apple-touch-icon.png|icon-16.png|icon-32.png|icon-192.png|icon-512.png|icon-512-maskable.png|icon.png)",
+      "headers": [
+        { "key": "Content-Type", "value": "image/png" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [

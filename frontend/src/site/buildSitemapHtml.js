@@ -3,6 +3,8 @@
  * Designed to match marketing brand atmosphere — not a bare <ul>.
  */
 
+import { faviconLinksHtml } from "./siteIcons.js";
+
 function xmlEscape(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -104,8 +106,7 @@ ${cards}
   <meta name="description" content="Browse every public Descall page — product, Discord alternative guides, blog, and legal." />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="${xmlEscape(site)}/sitemap.html" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="/icon-32.png" type="image/png" sizes="32x32" />
+${faviconLinksHtml("  ")}
   <style>
     :root {
       color-scheme: dark;
