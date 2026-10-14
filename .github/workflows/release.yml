@@ -27,8 +27,11 @@ jobs:
         run: |
           find . -path ./node_modules -prune -o -name "*.js" -print | xargs -n 50 node --check
 
+  selftests:
+    uses: ./.github/workflows/selftests.yml
+
   windows:
-    needs: [web-gate]
+    needs: [web-gate, selftests]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

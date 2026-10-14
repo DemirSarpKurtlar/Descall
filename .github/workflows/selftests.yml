@@ -1,0 +1,36 @@
+# Fast node selftests. Publish and TestFlight call this workflow and wait
+# for it, so a red conv-rows check cannot ship a desktop or iOS build.
+name: Selftests
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  selftests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run release selftests
+        run: |
+          set -euo pipefail
+          node src/styles/conv-rows.selftest.mjs
+          node src/styles/feedback-nudge.selftest.mjs
+          node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
+          node src/lib/casinoCommands.selftest.mjs
+          node backend/socket/casinoIosGate.selftest.cjs
+          node backend/games/BlackjackGame.selftest.js
+          node backend/games/SlotGame.selftest.js
+          node backend/games/CoinFlipGame.selftest.js
+          node backend/lib/corsOrigins.selftest.cjs
