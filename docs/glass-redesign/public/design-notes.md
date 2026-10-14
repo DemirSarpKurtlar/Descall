@@ -5,7 +5,7 @@ Scope: every public route of descall.com (see `feature-inventory-public.md`), **
 (auth modal, sheet, cookie banner, invite/confirm cards) are viewport captures 1440×900 / 390×844. `overview.png` = contact sheet.
 Visual system = the approved desktop/web set (`../desktop/`, `docs/glass-redesign/desktop/`) — `src/public.css` **@imports
 `../../desktop/src/desktop.css` unchanged**, so tokens, the glass material, avatars, chips, toggles, buttons are byte-identical.
-Logo: original `frontend/public/brand/descall-icon.png` (verified identical). Footer: “© 2026 Demir Sarp Kurtlar.”
+Logo: Konsept 2 rounded tile `frontend/public/brand/descall-icon.png` and wordmark `descall-lockup.svg`. Footer: “© 2026 Demir Sarp Kurtlar.”
 Language: EN routes rendered in EN (`/tr/*` mirrors use the same layout with `tr.js` strings — `17-turkey` shows TR copy fitting the layout).
 
 ## 1 · Tokens (shared with the app — do not fork)
