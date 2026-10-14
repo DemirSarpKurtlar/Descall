@@ -30,6 +30,23 @@ require.cache[supabasePath] = {
   exports: fakeSupabase,
 };
 
+function stubModule(rel, exportsObj) {
+  const resolved = require.resolve(rel);
+  require.cache[resolved] = {
+    id: resolved,
+    filename: resolved,
+    loaded: true,
+    exports: exportsObj,
+  };
+}
+
+// The release selftest job does not install node_modules. These modules are
+// only used for push side effects, which this test does not assert.
+const pushNoop = new Proxy({}, { get: () => async () => ({ ok: true }) });
+stubModule("../lib/webPush", pushNoop);
+stubModule("../lib/voipPush", pushNoop);
+stubModule("../lib/fcm", pushNoop);
+
 const { registerSocketHandlers } = require("./handlers");
 const { friends, rateLimitDm } = require("../runtime/sharedState");
 const { resetMessageRequests } = require("../lib/messageRequestStore");
