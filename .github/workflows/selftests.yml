@@ -37,3 +37,4 @@ jobs:
           node backend/lib/messageRequestPolicy.selftest.cjs
           node backend/lib/messageRequestStore.selftest.cjs
           node backend/socket/messageRequests.selftest.cjs
+          node backend/socket/groupCallMembership.selftest.cjs

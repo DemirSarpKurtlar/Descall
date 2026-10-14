@@ -7,6 +7,7 @@ const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernam
 const supabase = require("../db/supabase");
 const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { sendGroupCallPush } = require("../lib/webPush");
+const { assertGroupMember, bothInGroupCall } = require("../lib/groupCallMembership");
 const descoin = require("../lib/descoin");
 const { shouldCreditMessage } = require("../lib/descoinMessageGuard");
 const { toUtcIso } = require("../lib/datetime");
@@ -425,8 +426,9 @@ function registerGroupHandlers(io, socket, state) {
   // yet joined to the group room, app was closed, etc). Reuses the same
   // group:call:banner-update event/shape the live push uses so there's only
   // one code path on the client for "should the banner be showing".
-  socket.on("group:call:check", ({ groupId }) => {
+  socket.on("group:call:check", async ({ groupId }) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
     const activeCall = activeGroupCalls.get(groupId);
     const banner = buildBannerFromCall(groupId, activeCall);
     socket.emit("group:call:banner-update", { groupId, banner });
@@ -436,6 +438,14 @@ function registerGroupHandlers(io, socket, state) {
   socket.on("group:call:start", async ({ groupId, callType, memberIds = [], hangout = false } = {}) => {
     if (!groupId || !callType) {
       appendErrorLog("group:call:start", "Missing required parameters", { groupId, callType }, myId, socket.user?.username);
+      return;
+    }
+    if (!(await assertGroupMember(supabase, groupId, myId))) {
+      socket.emit("group:call:error", {
+        groupId,
+        message: "You are not a member of this group.",
+        code: "not_member",
+      });
       return;
     }
 
@@ -461,26 +471,21 @@ function registerGroupHandlers(io, socket, state) {
     // Ensure initiator receives left/ended/participant events via group room
     socket.join(`group:${groupId}`);
 
-    // Resolve targets: client memberIds, else DB group_members (never rely only on room).
-    let targets = Array.isArray(memberIds)
-      ? [...new Set(memberIds)].filter((id) => id && id !== myId)
-      : [];
-    if (targets.length === 0) {
-      try {
-        const { data: rows, error } = await supabase
-          .from("group_members")
-          .select("user_id")
-          .eq("group_id", groupId);
-        if (error) {
-          console.error("[GroupCall] member lookup failed:", error.message);
-        } else {
-          targets = (rows || [])
-            .map((r) => r.user_id)
-            .filter((id) => id && id !== myId);
-        }
-      } catch (err) {
-        console.error("[GroupCall] member lookup error:", err);
-      }
+    // Ring only people who are actually in the group. Client memberIds can
+    // narrow that list; they cannot add anyone the database does not list.
+    let targets = [];
+    try {
+      const { data: rows, error } = await supabase
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", groupId);
+      if (error) throw error;
+      const members = (rows || []).map((row) => row.user_id).filter((id) => id && id !== myId);
+      const requested = new Set(Array.isArray(memberIds) ? memberIds.filter(Boolean) : []);
+      targets = requested.size ? members.filter((id) => requested.has(id)) : members;
+    } catch (err) {
+      console.error("[GroupCall] member lookup error:", err?.message || err);
+      targets = [];
     }
 
     // Persist call start to DB
@@ -577,17 +582,27 @@ function registerGroupHandlers(io, socket, state) {
     void emitBannerUpdate(io, groupId);
   });
 
-  socket.on("group:call:resume", ({ groupId } = {}) => {
+  socket.on("group:call:resume", async ({ groupId } = {}) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
     resumeParticipantInGroupCall(io, groupId, myId, socket);
   });
 
   // Accept call and send offer
-  socket.on("group:call:accept", ({ groupId, toUserId }) => {
+  socket.on("group:call:accept", async ({ groupId, toUserId }) => {
     if (!groupId || !toUserId) {
       appendErrorLog("group:call:accept", "Missing required parameters", { groupId, toUserId }, myId, socket.user?.username);
       return;
     }
+    if (!(await assertGroupMember(supabase, groupId, myId))) {
+      socket.emit("group:call:error", {
+        groupId,
+        message: "You are not a member of this group.",
+        code: "not_member",
+      });
+      return;
+    }
+    if (!activeGroupCalls.get(groupId)?.participants?.has(toUserId)) return;
 
     // Other tabs/devices of this user should drop their incoming ring.
     socket.to(`user:${myId}`).emit("group:call:answered-elsewhere", { groupId });
@@ -628,8 +643,16 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Join existing call (new handler for joining active calls)
-  socket.on("group:call:join", ({ groupId, callType }) => {
+  socket.on("group:call:join", async ({ groupId, callType }) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) {
+      socket.emit("group:call:error", {
+        groupId,
+        message: "You are not a member of this group.",
+        code: "not_member",
+      });
+      return;
+    }
 
     const activeCall = activeGroupCalls.get(groupId);
     if (!activeCall) {
@@ -679,8 +702,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Send answer
-  socket.on("group:call:answer", ({ groupId, toUserId, answer }) => {
+  socket.on("group:call:answer", async ({ groupId, toUserId, answer }) => {
     if (!groupId || !toUserId || !answer) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!bothInGroupCall(activeGroupCalls, groupId, myId, toUserId)) return;
 
     io.to(`user:${toUserId}`).emit("group:call:answer", {
       groupId,
@@ -690,8 +715,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Send ICE candidate
-  socket.on("group:call:ice", ({ groupId, toUserId, candidate }) => {
+  socket.on("group:call:ice", async ({ groupId, toUserId, candidate }) => {
     if (!groupId || !toUserId || !candidate) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!bothInGroupCall(activeGroupCalls, groupId, myId, toUserId)) return;
 
     io.to(`user:${toUserId}`).emit("group:call:ice", {
       groupId,
@@ -701,8 +728,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Send offer (for renegotiation or camera toggle)
-  socket.on("group:call:offer", ({ groupId, toUserId, offer, callType, screen }) => {
+  socket.on("group:call:offer", async ({ groupId, toUserId, offer, callType, screen }) => {
     if (!groupId || !toUserId || !offer) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!bothInGroupCall(activeGroupCalls, groupId, myId, toUserId)) return;
     const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
     const announced = sanitizeScreenAnnouncement(screen);
 
@@ -717,8 +746,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Decline call
-  socket.on("group:call:decline", ({ groupId, toUserId }) => {
+  socket.on("group:call:decline", async ({ groupId, toUserId }) => {
     if (!groupId || !toUserId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!activeGroupCalls.get(groupId)?.participants?.has(toUserId)) return;
 
     socket.to(`user:${myId}`).emit("group:call:declined-elsewhere", { groupId });
 
@@ -729,8 +760,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Busy signal
-  socket.on("group:call:busy", ({ groupId, toUserId }) => {
+  socket.on("group:call:busy", async ({ groupId, toUserId }) => {
     if (!groupId || !toUserId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!activeGroupCalls.get(groupId)?.participants?.has(toUserId)) return;
 
     io.to(`user:${toUserId}`).emit("group:call:busy", {
       groupId,
@@ -741,12 +774,14 @@ function registerGroupHandlers(io, socket, state) {
   // Leave call
   socket.on("group:call:leave", async ({ groupId }) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
     await removeUserFromGroupCall(io, groupId, myId, socket);
   });
 
   // Force-end call for everyone (initiator only)
   socket.on("group:call:end", async ({ groupId }) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
 
     const activeCall = activeGroupCalls.get(groupId);
     if (!activeCall) {
@@ -760,8 +795,9 @@ function registerGroupHandlers(io, socket, state) {
 
   // Broadcast per-participant UI state. Media tracks can remain live after
   // their sender is disabled, so receivers cannot reliably infer these flags.
-  socket.on("group:call:media-state", ({ groupId, muted, cameraOn, deafened, requestState } = {}) => {
+  socket.on("group:call:media-state", async ({ groupId, muted, cameraOn, deafened, requestState } = {}) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
     const activeCall = activeGroupCalls.get(groupId);
     if (!activeCall?.participants?.has(myId)) return;
     socket.to(`group:${groupId}`).emit("group:call:media-state", {
@@ -776,8 +812,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Screen share started — persist session
-  socket.on("group:screen:start", ({ groupId, screen }) => {
+  socket.on("group:screen:start", async ({ groupId, screen }) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!activeGroupCalls.get(groupId)?.participants?.has(myId)) return;
 
     const activeCall = activeGroupCalls.get(groupId);
     const dbCallId = activeCall?.dbCallId ?? null;
@@ -804,8 +842,10 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Screen share stopped — close DB session
-  socket.on("group:screen:stop", ({ groupId }) => {
+  socket.on("group:screen:stop", async ({ groupId }) => {
     if (!groupId) return;
+    if (!(await assertGroupMember(supabase, groupId, myId))) return;
+    if (!activeGroupCalls.get(groupId)?.participants?.has(myId)) return;
 
     const sessionId = screenShareSessions.get(`${groupId}:${myId}`);
     if (sessionId) {
