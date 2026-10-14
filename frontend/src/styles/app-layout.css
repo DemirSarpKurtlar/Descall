@@ -3917,6 +3917,13 @@ button.header-avatar {
   color: var(--text-0, #f0f0f5);
 }
 
+.feedback-error {
+  margin: 8px 0 0;
+  color: #ffb4b4;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .feedback-success p {
   margin: 0;
   font-size: 13px;

@@ -53,6 +53,7 @@ export default function SocialSignupStep({
         value={birthDate}
         onChange={onBirthDateChange}
         variant={isApp ? "app" : "marketing"}
+        invalid={Boolean(error)}
       />
       <TermsConsent
         id={`${idPrefix}-terms-checkbox`}
@@ -61,9 +62,18 @@ export default function SocialSignupStep({
         onOpenLegal={onOpenLegal}
       />
 
-      {error && (isApp ? <p className="error-message">{error}</p> : <div className="auth-error">{error}</div>)}
+      {error &&
+        (isApp ? (
+          <p id={`${idPrefix}-error`} className="error-message" role="alert">
+            {error}
+          </p>
+        ) : (
+          <div id={`${idPrefix}-error`} className="auth-error" role="alert">
+            {error}
+          </div>
+        ))}
 
-      <button type="submit" className={isApp ? "auth-submit" : undefined} disabled={busy || !ready}>
+      <button type="submit" className={isApp ? "auth-submit" : undefined} disabled={busy || !ready} aria-busy={busy} aria-describedby={error ? `${idPrefix}-error` : undefined}>
         {busy ? <span>{t("Please wait...")}</span> : <span>{t("Create Account")}</span>}
       </button>
 

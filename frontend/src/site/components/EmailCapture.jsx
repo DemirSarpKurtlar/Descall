@@ -73,13 +73,25 @@ export default function EmailCapture({ source = "marketing_footer" }) {
           onChange={(ev) => setEmail(ev.target.value)}
           disabled={status === "loading" || status === "ok"}
           required
+          aria-invalid={status === "error" ? "true" : undefined}
+          aria-describedby={message ? "mkt-waitlist-msg" : undefined}
         />
-        <button type="submit" className="mkt-btn mkt-btn-primary" disabled={status === "loading" || status === "ok"}>
+        <button
+          type="submit"
+          className="mkt-btn mkt-btn-primary"
+          disabled={status === "loading" || status === "ok"}
+          aria-busy={status === "loading"}
+        >
           {status === "loading" ? t("Sending…") : t("Notify me")}
         </button>
       </div>
-      {message ? (
-        <p className={`mkt-waitlist-msg is-${status === "error" ? "error" : "ok"}`} role="status">
+      {status === "ok" ? (
+        <div className="mkt-success mkt-success-inline" role="status">
+          <h2>{t("You’re on the list")}</h2>
+          <p id="mkt-waitlist-msg">{message}</p>
+        </div>
+      ) : message ? (
+        <p id="mkt-waitlist-msg" className="mkt-waitlist-msg is-error" role="alert">
           {message}
         </p>
       ) : null}

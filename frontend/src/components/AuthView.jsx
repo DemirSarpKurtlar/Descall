@@ -197,6 +197,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           <div className="input-wrapper">
             <ShieldCheck className="input-icon" size={20} />
             <input
+              id="auth-2fa-code"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -206,12 +207,18 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
               maxLength={8}
               autoFocus
               required
+              aria-invalid={twoFaError || error || formError ? "true" : undefined}
+              aria-describedby={twoFaError || error || formError ? "auth-2fa-error" : undefined}
             />
           </div>
 
-          {(twoFaError || error || formError) && <p className="error-message">{twoFaError || error || formError}</p>}
+          {(twoFaError || error || formError) && (
+            <p id="auth-2fa-error" className="error-message" role="alert">
+              {twoFaError || error || formError}
+            </p>
+          )}
 
-          <button type="submit" className="auth-submit" disabled={verifying || !code.trim()}>
+          <button type="submit" className="auth-submit" disabled={verifying || !code.trim()} aria-busy={verifying}>
             {verifying ? <span>{t("Please wait...")}</span> : <span>{t("Verify")}</span>}
           </button>
 
@@ -328,6 +335,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         <div className="input-wrapper">
           <User className="input-icon" size={20} />
           <input
+            id="auth-username"
             type="text"
             placeholder={t("Username")}
             value={username}
@@ -335,12 +343,15 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             maxLength={24}
             autoComplete="username"
             required
+            aria-invalid={error || formError ? "true" : undefined}
+            aria-describedby={error || formError ? "auth-form-error" : undefined}
           />
         </div>
 
         <div className="input-wrapper has-toggle">
           <Lock className="input-icon" size={20} />
           <input
+            id="auth-password"
             type={showPassword ? "text" : "password"}
             placeholder={t("Password")}
             value={password}
@@ -348,6 +359,8 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             maxLength={72}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
             required
+            aria-invalid={error || formError ? "true" : undefined}
+            aria-describedby={error || formError ? "auth-form-error" : undefined}
           />
           <button
             type="button"
@@ -402,12 +415,17 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           />
         )}
 
-        {(error || formError) && <p className="error-message">{error || formError}</p>}
+        {(error || formError) && (
+          <p id="auth-form-error" className="error-message" role="alert">
+            {error || formError}
+          </p>
+        )}
 
         <button
           type="submit"
           className="auth-submit"
           disabled={loading || !username.trim() || !password || needsTerms}
+          aria-busy={loading}
         >
           {loading ? (
             <span>{t("Please wait...")}</span>

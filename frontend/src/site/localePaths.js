@@ -39,7 +39,19 @@ export function isTrPath(pathname = "/") {
 }
 
 /** Standalone Turkish URLs that are not /tr/* mirrors. */
-export const TR_CANONICAL_PATHS = ["/descall-sahibi", "/discord-alternative-turkey"];
+export const TR_CANONICAL_PATHS = [
+  "/descall-sahibi",
+  "/discord-alternative-turkey",
+  "/iletisim",
+  "/gizlilik",
+  "/kosullar",
+];
+
+const HREFLANG_PAIRS = [
+  { en: "/contact", tr: "/iletisim" },
+  { en: "/privacy", tr: "/gizlilik" },
+  { en: "/terms", tr: "/kosullar" },
+];
 
 /** True when the URL itself is Turkish — chrome must be TR regardless of stored language. */
 export function isTurkishMarketingPath(pathname = "/") {
@@ -52,8 +64,16 @@ export function isTurkishMarketingPath(pathname = "/") {
  * Where to send the visitor when they select Turkish (or already have locale=tr
  * on an English-canonical URL that has a TR counterpart).
  */
+function cleanPath(pathname = "/") {
+  return String(pathname || "/").split("?")[0].replace(/\/+$/, "") || "/";
+}
+
 export function trDestinationForPath(pathname = "/") {
+  const raw = cleanPath(pathname);
+  if (raw === "/tr/contact") return null;
   const bare = stripLocalePrefix(pathname);
+  const pair = HREFLANG_PAIRS.find((item) => item.en === bare || item.tr === bare);
+  if (pair) return pair.tr;
   if (bare === "/who-owns-descall" || bare === "/descall-sahibi") return "/descall-sahibi";
   if (bare === "/discord-alternative" || bare === "/discord-alternative-turkey") {
     return "/discord-alternative-turkey";
@@ -63,6 +83,10 @@ export function trDestinationForPath(pathname = "/") {
 }
 
 export function enPathForHreflang(pathname = "/") {
+  const raw = cleanPath(pathname);
+  if (raw === "/tr/contact") return "/contact";
+  const pair = HREFLANG_PAIRS.find((item) => item.tr === raw);
+  if (pair) return pair.en;
   const en = stripLocalePrefix(pathname);
   if (en === "/discord-alternative-turkey") return "/discord-alternative";
   if (en === "/descall-sahibi") return "/who-owns-descall";
@@ -70,7 +94,11 @@ export function enPathForHreflang(pathname = "/") {
 }
 
 export function trPathForHreflang(pathname = "/") {
+  const raw = cleanPath(pathname);
+  if (raw === "/tr/contact") return "/tr/contact";
   const en = stripLocalePrefix(pathname);
+  const pair = HREFLANG_PAIRS.find((item) => item.en === en || item.tr === en);
+  if (pair) return pair.tr;
   if (en === "/discord-alternative" || en === "/discord-alternative-turkey") {
     return "/discord-alternative-turkey";
   }

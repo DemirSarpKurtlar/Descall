@@ -43,6 +43,7 @@ export const PUBLIC_ROUTES = [
     title: "Descall — Voice Chat, Servers & Screen Share",
     description:
       "HD voice, video, screen share, and Discord-style servers — plus LFG. Free chat for friends and gamers. Start in the browser or download Windows.",
+    image: "/og-default.png",
     changefreq: "daily",
     priority: "1.0",
   },
@@ -51,6 +52,7 @@ export const PUBLIC_ROUTES = [
     title: "Download Descall for Windows — Free Voice Chat App",
     description:
       "Get the Windows desktop app, Android build, or full web app. Free voice, video, screen share, and servers — install in a minute.",
+    image: "/og-download.png",
     changefreq: "weekly",
     priority: "0.9",
     keywords: "download descall, descall windows, descall android",
@@ -60,6 +62,7 @@ export const PUBLIC_ROUTES = [
     title: "Descall Features — Free Voice, Screen Share & Servers",
     description:
       "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG. No Nitro wall on talking.",
+    image: "/og-features.png",
     changefreq: "weekly",
     priority: "0.85",
     keywords: "descall features, free voice chat, screen share app",
@@ -69,6 +72,7 @@ export const PUBLIC_ROUTES = [
     title: "Free Discord Alternative — Voice, Screen Share & LFG",
     description:
       "A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free — no Nitro paywall.",
+    image: "/og-discord.png",
     h1: "The best free Discord alternative for friends & gamers",
     changefreq: "weekly",
     priority: "0.95",
@@ -162,6 +166,7 @@ export const PUBLIC_ROUTES = [
     title: "Türkiye için Discord Alternatifi — Ücretsiz Sesli Sohbet",
     description:
       "Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve LFG. Türkçe arayüz.",
+    image: "/og-discord.png",
     changefreq: "weekly",
     priority: "0.9",
     lang: "tr",
@@ -283,6 +288,7 @@ export const PUBLIC_ROUTES = [
   {
     path: "/privacy",
     title: "Descall Privacy Policy — GDPR/KVKK data practices",
+    image: "/og-privacy.png",
     description:
       "Descall Privacy Policy: what we collect (account, messages, IP, call metadata), how long we keep it, processors (Supabase, Resend, FCM), and your access/deletion rights.",
     changefreq: "monthly",
@@ -299,6 +305,7 @@ export const PUBLIC_ROUTES = [
   {
     path: "/terms",
     title: "Descall Terms of Service — Age, Acceptable Use & Accounts",
+    image: "/og-terms.png",
     description:
       "Terms of Service for Descall web and desktop apps: age requirements (13+), acceptable use, account suspension, DesCoin cosmetics, and liability limits.",
     changefreq: "monthly",
@@ -307,6 +314,7 @@ export const PUBLIC_ROUTES = [
   {
     path: "/about",
     title: "About Descall — Independent Chat App from Türkiye",
+    image: "/og-about.png",
     description:
       "Descall is owned by Demir Sarp Kurtlar, the founder, owner, and CEO. Independent beta voice-and-chat app from Türkiye. Contact contact@descall.com.",
     changefreq: "monthly",
@@ -339,14 +347,44 @@ export const PUBLIC_ROUTES = [
     title: "Contact Descall Support — Email & Security Reports",
     description:
       "Email contact@descall.com for Descall support, feedback, press, or security reports. Operated by Demir Sarp Kurtlar in Türkiye.",
+    image: "/og-contact.png",
+  },
+  {
+    path: "/iletisim",
+    title: "Descall İletişim — Destek, sahip ve güvenlik",
+    description:
+      "Descall iletişim: contact@descall.com. Sahip ve kurucu Demir Sarp Kurtlar. Destek, geri bildirim ve güvenlik bildirimleri.",
+    lang: "tr",
+    image: "/og-contact.png",
     changefreq: "monthly",
-    priority: "0.5",
+    priority: "0.55",
+  },
+  {
+    path: "/gizlilik",
+    title: "Descall Gizlilik Politikası — KVKK ve veriler",
+    description:
+      "Descall gizlilik politikası Türkçe: hesap, mesajlar, IP ve arama üst verisi, saklama süreleri, erişim ve silme hakları.",
+    lang: "tr",
+    image: "/og-privacy.png",
+    changefreq: "monthly",
+    priority: "0.4",
+  },
+  {
+    path: "/kosullar",
+    title: "Descall Kullanım Koşulları — Yaş, kurallar, hesap",
+    description:
+      "Descall hizmet şartları Türkçe: 13 yaş sınırı, kabul edilebilir kullanım, hesaplar ve iletişim için contact@descall.com.",
+    lang: "tr",
+    image: "/og-terms.png",
+    changefreq: "monthly",
+    priority: "0.4",
   },
   {
     path: "/tr",
     title: "Descall — Sesli Sohbet, Sunucular ve Ekran Paylaşımı",
     description:
       "HD ses, görüntü, ekran paylaşımı ve sunucular. Arkadaş grupları ve oyuncular için ücretsiz sohbet. Tarayıcı veya Windows.",
+    image: "/og-default.png",
     changefreq: "weekly",
     priority: "0.9",
   },
@@ -355,6 +393,7 @@ export const PUBLIC_ROUTES = [
     title: "Descall Özellikleri — Ücretsiz Ses ve Ekran Paylaşımı",
     description:
       "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, sunucular, roller, şablonlar ve LFG. Konuşmak için abonelik yok.",
+    image: "/og-features.png",
     changefreq: "weekly",
     priority: "0.8",
   },
@@ -363,13 +402,15 @@ export const PUBLIC_ROUTES = [
     title: "Descall İndir — Windows için Ücretsiz Sesli Sohbet",
     description:
       "Windows kurucusu, Android APK veya tarayıcı. Ücretsiz ses, görüntü, ekran paylaşımı ve sunucular — bir dakikada kur.",
+    image: "/og-download.png",
     changefreq: "weekly",
     priority: "0.85",
   },
   {
     path: "/tr/faq",
-    title: "Descall SSS — Discord alternatifi soruları (TR)",
-    description: "Descall hakkında sık sorulan sorular: hesap, indirme, arama, LFG, gizlilik.",
+    title: "Descall SSS — Ücretsiz mi, indirme, arama, LFG",
+    description:
+      "Descall sık sorulan sorular: ücretsiz mi, Windows ve Android indirme, sesli arama, ekran paylaşımı, LFG, hesap ve gizlilik.",
     changefreq: "weekly",
     priority: "0.7",
   },
@@ -385,25 +426,27 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr/about",
-    title: "Descall Hakkında (TR)",
+    title: "Descall Hakkında — Türkiye’den bağımsız uygulama",
+    image: "/og-about.png",
     description:
-      "Descall, Demir Sarp Kurtlar tarafından Türkiye’de geliştirilen bağımsız bir beta Discord alternatifidir.",
+      "Descall, Demir Sarp Kurtlar tarafından Türkiye’de geliştirilen bağımsız bir beta uygulamasıdır. Destek: contact@descall.com.",
     changefreq: "monthly",
     priority: "0.55",
   },
   {
     path: "/tr/contact",
-    title: "Descall İletişim (TR)",
+    title: "Descall Destek — Türkçe iletişim sayfası",
+    image: "/og-contact.png",
     description:
-      "Descall destek, geri bildirim ve güvenlik bildirimleri için contact@descall.com adresine yazın.",
+      "Türkçe Descall destek sayfası: geri bildirim, basın ve güvenlik bildirimleri için contact@descall.com. Sahip Demir Sarp Kurtlar.",
     changefreq: "monthly",
     priority: "0.45",
   },
   {
     path: "/tr/security",
-    title: "Descall Güvenlik (TR)",
+    title: "Descall Güvenlik — TLS, hesaplar ve aramalar",
     description:
-      "Descall güvenlik özeti: HTTPS/TLS, WebRTC DTLS/SRTP, hesap koruması ve dürüst sınırlar.",
+      "Descall güvenlik özeti Türkçe: HTTPS/TLS, WebRTC DTLS/SRTP, hesap koruması ve saklanan sohbet için dürüst sınırlar.",
     changefreq: "monthly",
     priority: "0.5",
   },

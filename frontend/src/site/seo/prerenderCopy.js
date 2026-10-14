@@ -296,6 +296,9 @@ export function prefixHref(href, isTr) {
   if (!isTr) return href;
   if (href === "/tr" || href.startsWith("/tr/")) return href;
   if (href === "/") return "/tr";
+  if (href === "/contact" || href === "/iletisim") return "/iletisim";
+  if (href === "/privacy" || href === "/gizlilik") return "/gizlilik";
+  if (href === "/terms" || href === "/kosullar") return "/kosullar";
   if (href === "/who-owns-descall" || href === "/descall-sahibi") return "/descall-sahibi";
   if (href === "/discord-alternative" || href === "/discord-alternative-turkey") {
     return "/discord-alternative-turkey";
@@ -318,7 +321,7 @@ export function cookieBannerHtml(isTr) {
   return `<div id="mkt-consent-static" role="dialog" aria-label="${c.aria}">
       <p>
         ${c.body}
-        <a class="privacy" href="/privacy">${c.privacy}</a>
+        <a class="privacy" href="${isTr ? "/gizlilik" : "/privacy"}">${c.privacy}</a>
       </p>
       <div class="actions">
         <button type="button" class="reject" data-consent="rejected">${c.reject}</button>

@@ -2175,7 +2175,25 @@ body:has(.mkt-consent),
 @media (prefers-reduced-motion: reduce) {
   .mkt-hero,
   .mkt-hero-split,
-  .mkt-section {
+  .mkt-section,
+  .mkt-sticky-cta {
     animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .mkt-hero-split {
+    padding-top: 8px;
+  }
+
+  .mkt-hero-split h1 {
+    font-size: 34px;
+    line-height: 1.05;
+  }
+
+  .mkt-cta-row .mkt-btn {
+    white-space: normal;
+    min-height: 48px;
   }
 }

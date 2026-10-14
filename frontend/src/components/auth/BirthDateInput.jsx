@@ -23,7 +23,7 @@ function daysIn(year, month) {
  * Day / month / year pickers (styled dropdowns, see BirthSelect).
  * Calls onChange("YYYY-MM-DD") when complete and valid, otherwise onChange("").
  */
-export default function BirthDateInput({ value = "", onChange, idPrefix = "birth", variant = "app" }) {
+export default function BirthDateInput({ value = "", onChange, idPrefix = "birth", variant = "app", invalid: invalidProp = false }) {
   const t = useT();
   const initial = useMemo(() => {
     const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -58,7 +58,11 @@ export default function BirthDateInput({ value = "", onChange, idPrefix = "birth
   }, [iso, invalid]);
 
   return (
-    <fieldset className={`birth-input birth-input--${variant}`} aria-describedby={tooYoung ? `${idPrefix}-hint` : undefined}>
+    <fieldset
+      className={`birth-input birth-input--${variant}`}
+      aria-invalid={invalidProp || invalid || tooYoung ? "true" : undefined}
+      aria-describedby={tooYoung ? `${idPrefix}-hint` : undefined}
+    >
       <legend className="birth-input-legend">
         <Cake size={15} aria-hidden="true" />
         <span>{t("Date of birth")}</span>

@@ -68,11 +68,14 @@ for (const file of ["favicon.ico", "favicon.svg", "favicon-48.png", "favicon-96.
 }
 
 const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
-const catchAll = vercel.rewrites.find((rule) => String(rule.destination) === "/index.html" && String(rule.source).includes("favicon"));
-assert(catchAll, "vercel catch-all rewrite");
-assert(catchAll.source.includes("favicon\\.ico"), "rewrite excludes favicon.ico");
-assert(catchAll.source.includes("favicon\\.svg"), "rewrite excludes favicon.svg");
-assert(catchAll.source.includes("favicon-\\\\d+\\\\.png") || catchAll.source.includes("favicon-\\d+\\.png"), "rewrite excludes sized pngs");
+const iconRewrite = vercel.rewrites.find((rule) => /favicon|apple-touch-icon|\/icon/i.test(String(rule.source)));
+assert(!iconRewrite, "vercel rewrites must not send icon URLs to index.html");
+const notFound = fs.readFileSync(path.join(root, "public/404.html"), "utf8");
+assert(notFound.includes("noindex"), "404.html noindex");
+assert(notFound.includes('href="/"'), "404.html home link");
+assert(notFound.includes('href="/download"'), "404.html download link");
+const redirects = fs.readFileSync(path.join(root, "public/_redirects"), "utf8");
+assert(redirects.includes("/* /404.html 404"), "cloudflare 404 rule");
 const icoHeader = vercel.headers.find((rule) => rule.source === "/favicon.ico");
 assert(icoHeader?.headers?.some((h) => h.key === "Content-Type" && h.value === "image/x-icon"), "ico content-type");
 const svgHeader = vercel.headers.find((rule) => rule.source === "/favicon.svg");

@@ -246,9 +246,15 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
             <Link to={L("/about")}>{t("About")}</Link>
             <Link to={locale === "tr" ? "/descall-sahibi" : "/who-owns-descall"}>{t("Who owns Descall?")}</Link>
             <Link to={L("/security")}>{t("Security")}</Link>
-            <Link to={L("/contact")}>{t("Contact")}</Link>
-            <Link to="/privacy">{t("Privacy Policy")}</Link>
-            <Link to="/terms">{t("Terms")}</Link>
+            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/iletisim" : "/contact"}>
+              {t("Contact")}
+            </Link>
+            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/gizlilik" : "/privacy"}>
+              {t("Privacy Policy")}
+            </Link>
+            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/kosullar" : "/terms"}>
+              {t("Terms")}
+            </Link>
             <Link to="/copyright">{t("Copyright")}</Link>
             <a href={SITE_OPERATOR.githubUrl} rel="noopener noreferrer" target="_blank">
               GitHub
@@ -282,6 +288,34 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
           {locale === "tr" ? SITE_OPERATOR.lastUpdatedLabelTr : SITE_OPERATOR.lastUpdatedLabel}.
         </p>
       </footer>
+      <StickyMobileCta onStart={openRegister} downloadTo={L("/download")} />
+    </div>
+  );
+}
+
+function StickyMobileCta({ onStart, downloadTo }) {
+  const t = useT();
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const footer = document.querySelector(".mkt-footer");
+    if (!footer || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHidden(Boolean(entry?.isIntersecting)),
+      { threshold: 0.08 }
+    );
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className={`mkt-sticky-cta${hidden ? " is-hidden" : ""}`} role="region" aria-label={t("Start free")}>
+      <button type="button" className="mkt-btn mkt-btn-primary" onClick={onStart}>
+        {t("Start free")}
+      </button>
+      <Link to={downloadTo} className="mkt-btn mkt-btn-ghost">
+        {t("Download")}
+      </Link>
     </div>
   );
 }

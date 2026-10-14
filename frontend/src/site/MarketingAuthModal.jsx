@@ -195,10 +195,15 @@ function AuthModal({
               <>
                 <h2>{t("Two-Factor Verification")}</h2>
                 <p>{t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })}</p>
-                {(twoFaError || authError) && <div className="auth-error">{twoFaError || authError}</div>}
+                {(twoFaError || authError) && (
+                  <div id="mkt-auth-2fa-error" className="auth-error" role="alert">
+                    {twoFaError || authError}
+                  </div>
+                )}
                 <form onSubmit={submitCode}>
                   <div className="auth-otp">
                     <input
+                      id="mkt-auth-2fa"
                       className="auth-otp-input"
                       type="text"
                       inputMode="numeric"
@@ -209,6 +214,8 @@ function AuthModal({
                       maxLength={8}
                       autoFocus
                       required
+                      aria-invalid={twoFaError || authError ? "true" : undefined}
+                      aria-describedby={twoFaError || authError ? "mkt-auth-2fa-error" : undefined}
                     />
                     <div className="auth-otp-cells" aria-hidden="true">
                       {Array.from({ length: 6 }, (_, i) => (
@@ -216,7 +223,7 @@ function AuthModal({
                       ))}
                     </div>
                   </div>
-                  <button type="submit" disabled={verifying || !code.trim()}>
+                  <button type="submit" disabled={verifying || !code.trim()} aria-busy={verifying}>
                     {verifying ? t("Please wait...") : t("Verify")}
                   </button>
                 </form>
@@ -264,7 +271,7 @@ function AuthModal({
                 <img
                   className="mkt-auth-logo"
                   src={`${import.meta.env.BASE_URL}brand/descall-icon.png`}
-                  alt=""
+                  alt="Descall"
                   width={56}
                   height={56}
                 />
@@ -281,7 +288,11 @@ function AuthModal({
                     {t("Invited by @{username}", { username: inviteRef })}
                   </div>
                 )}
-                {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}
+                {(authError || deviceBlock) && (
+                  <div id="mkt-auth-error" className="auth-error" role="alert">
+                    {authError || deviceBlock}
+                  </div>
+                )}
                 {isGoogleSignInOffered() && (
                   <>
                 <Suspense fallback={null}>
@@ -314,19 +325,25 @@ function AuthModal({
                 )}
                 <form onSubmit={submit}>
                   <input
+                    id="mkt-auth-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder={t("Username")}
                     autoComplete="username"
                     required
+                    aria-invalid={authError || deviceBlock ? "true" : undefined}
+                    aria-describedby={authError || deviceBlock ? "mkt-auth-error" : undefined}
                   />
                   <input
+                    id="mkt-auth-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t("Password")}
                     autoComplete={isRegistering ? "new-password" : "current-password"}
                     required
+                    aria-invalid={authError || deviceBlock ? "true" : undefined}
+                    aria-describedby={authError || deviceBlock ? "mkt-auth-error" : undefined}
                   />
                   {!isRegistering && (
                     <div className="mkt-forgot-row">
@@ -381,8 +398,13 @@ function AuthModal({
                   <button
                     type="submit"
                     disabled={isSubmitting || authLoading || signupBlocked}
+                    aria-busy={isSubmitting || authLoading}
                   >
-                    {isRegistering ? t("Create Account") : t("Sign In")}
+                    {isSubmitting || authLoading
+                      ? t("Please wait...")
+                      : isRegistering
+                        ? t("Create Account")
+                        : t("Sign In")}
                   </button>
                 </form>
                 <button

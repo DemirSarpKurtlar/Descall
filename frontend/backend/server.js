@@ -272,6 +272,37 @@ app.post("/api/marketing/waitlist", async (req, res) => {
   }
 });
 
+app.post("/api/marketing/contact", async (req, res) => {
+  try {
+    const ip = req.ip || req.socket?.remoteAddress || "unknown";
+    if (rejectIfLimited(res, [recordFailure(`contact:${ip}`, { windowMs: 60 * 60 * 1000, max: 6 })])) {
+      return;
+    }
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
+    const name = String(req.body?.name || "").trim().slice(0, 80);
+    const message = String(req.body?.message || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return res.status(400).json({ error: "Invalid email" });
+    }
+    if (message.length < 5 || message.length > 2000) {
+      return res.status(400).json({ error: "Message must be 5–2000 characters" });
+    }
+    const { sendEmail } = require("./lib/mailer");
+    const result = await sendEmail({
+      to: process.env.WAITLIST_NOTIFY_TO || process.env.REPORT_ALERT_EMAIL || "contact@descall.com",
+      replyTo: email,
+      subject: `Descall contact: ${name || email}`.slice(0, 120),
+      text: `Contact form\nName: ${name || "(none)"}\nEmail: ${email}\n\n${message}\n`,
+    });
+    return res.json({ ok: true, delivered: !result?.skipped });
+  } catch (e) {
+    console.error("[marketing] contact failed:", e?.message || e);
+    return res.status(500).json({ error: "Could not send that message." });
+  }
+});
+
 app.get("/api/marketing/confirm", async (req, res) => {
   const result = await marketingOptIn.confirmByToken(req.query?.token);
   const copy = marketingOptIn.copyFor(result.locale);

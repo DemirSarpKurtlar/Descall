@@ -94,21 +94,29 @@ function legalHtml(data, isTr = false, type = "privacy") {
 </main>`;
 }
 
+const TR_BODY_ALIASES = {
+  "/iletisim": "/contact",
+  "/gizlilik": "/privacy",
+  "/kosullar": "/terms",
+};
+
 export function corePageBody(path) {
+  const source = TR_BODY_ALIASES[path] || path;
   const isTr =
-    path === "/tr" ||
-    path === "/tr/" ||
-    path.startsWith("/tr/") ||
-    path === "/discord-alternative-turkey";
+    Boolean(TR_BODY_ALIASES[path]) ||
+    source === "/tr" ||
+    source === "/tr/" ||
+    source.startsWith("/tr/") ||
+    source === "/discord-alternative-turkey";
   const n = navLabels(isTr);
   const h = (p) => prefixHref(p, isTr);
-  const original = path;
+  const original = source;
   const bare =
-    path === "/tr" || path === "/tr/"
+    source === "/tr" || source === "/tr/"
       ? "/"
-      : path.startsWith("/tr/")
-        ? path.slice(3)
-        : path;
+      : source.startsWith("/tr/")
+        ? source.slice(3)
+        : source;
   switch (bare) {
     case "/": {
       const copy = homeHero(isTr);
@@ -303,18 +311,32 @@ export function corePageBody(path) {
 </main>`;
 
     case "/contact":
-      return `
+      return isTr
+        ? `
 <main>
-  ${brandBlock(isTr)}
-  <h1>${escapeHtml(trCopy("Contact Descall", isTr))}</h1>
-  <p>${escapeHtml(trCopy("Support, feedback, press, and security reports.", isTr))}</p>
-  <h2>${escapeHtml(trCopy("Support & feedback", isTr))}</h2>
-  <p>Email the Descall team at <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a>.</p>
-  <h2>${escapeHtml(trCopy("Operator", isTr))}</h2>
-  <p>${escapeHtml(SITE_OPERATOR.operatorName)} · ${escapeHtml(SITE_OPERATOR.country)}</p>
-  <h2>${escapeHtml(trCopy("Security", isTr))}</h2>
-  <p>For security reports, contact us by email and include enough detail to investigate safely.</p>
-  ${navBlock(isTr)}
+  ${brandBlock(true)}
+  <h1>Descall İletişim</h1>
+  <p>Destek, geri bildirim, basın ve güvenlik bildirimleri.</p>
+  <h2>Sahip</h2>
+  <p>${escapeHtml(SITE_OPERATOR.operatorName)}, Descall’ın sahibi ve kurucusudur. ${escapeHtml(SITE_OPERATOR.country)}</p>
+  <h2>Destek e-postası</h2>
+  <p><a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></p>
+  <h2>Güvenlik</h2>
+  <p>Güvenlik bildirimleri için aynı adrese yazın ve inceleyebilmemiz için yeterli ayrıntıyı ekleyin.</p>
+  ${navBlock(true)}
+</main>`
+        : `
+<main>
+  ${brandBlock(false)}
+  <h1>Contact Descall</h1>
+  <p>Support, feedback, press, and security reports.</p>
+  <h2>Owner</h2>
+  <p>${escapeHtml(SITE_OPERATOR.operatorName)} is the owner and founder of Descall. ${escapeHtml(SITE_OPERATOR.country)}</p>
+  <h2>Support email</h2>
+  <p><a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></p>
+  <h2>Security</h2>
+  <p>For security reports, email us and include enough detail to investigate safely.</p>
+  ${navBlock(false)}
 </main>`;
 
     case "/privacy":

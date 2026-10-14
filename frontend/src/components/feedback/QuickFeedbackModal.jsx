@@ -38,6 +38,7 @@ export default function QuickFeedbackModal({
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -46,6 +47,7 @@ export default function QuickFeedbackModal({
     setFeedbackRating(0);
     setFeedbackSending(false);
     setFeedbackSent(false);
+    setFeedbackError("");
   }, [isOpen, initialType]);
 
   const close = () => {
@@ -131,7 +133,10 @@ export default function QuickFeedbackModal({
                 </div>
 
                 <textarea
+                  id="quick-feedback-text"
                   className="feedback-textarea"
+                  aria-invalid={feedbackError ? "true" : undefined}
+                  aria-describedby={feedbackError ? "quick-feedback-error" : undefined}
                   placeholder={
                     feedbackType === "bug"
                       ? t("Describe the bug — what happened and how to reproduce it…")
@@ -145,16 +150,26 @@ export default function QuickFeedbackModal({
                   maxLength={1000}
                 />
                 <div className="feedback-char-count">{feedbackText.length}/1000</div>
+                {feedbackError ? (
+                  <p id="quick-feedback-error" className="feedback-error" role="alert">
+                    {feedbackError}
+                  </p>
+                ) : null}
 
                 <button
                   type="button"
                   className="feedback-submit-btn"
                   disabled={feedbackText.trim().length < 5 || feedbackSending}
+                  aria-busy={feedbackSending}
                   onClick={async () => {
-                    if (feedbackText.trim().length < 5) return;
+                    if (feedbackText.trim().length < 5) {
+                      setFeedbackError(t("Write at least 5 characters."));
+                      return;
+                    }
                     setFeedbackSending(true);
+                    setFeedbackError("");
                     try {
-                      await fetch(`${API_BASE_URL}/api/feedback/submit`, {
+                      const res = await fetch(`${API_BASE_URL}/api/feedback/submit`, {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
@@ -166,12 +181,14 @@ export default function QuickFeedbackModal({
                           message: feedbackText.trim(),
                         }),
                       });
-                    } catch (_) {
-                      /* ignore — still thank the user */
+                      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                      setFeedbackSent(true);
+                      markFeedbackSubmitted();
+                    } catch {
+                      setFeedbackError(t("Could not send feedback. Try again."));
+                    } finally {
+                      setFeedbackSending(false);
                     }
-                    setFeedbackSending(false);
-                    setFeedbackSent(true);
-                    markFeedbackSubmitted();
                   }}
                 >
                   {feedbackSending ? t("Sending…") : t("Submit Feedback")}

@@ -234,7 +234,7 @@ export function Avatar({
             key={identityKey}
             ref={setImgNode}
             src={displaySrc}
-            alt=""
+            alt={loaded ? displayName || "Descall" : ""}
             className="ui-avatar-img"
             loading={eager ? "eager" : "lazy"}
             decoding="async"

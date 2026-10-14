@@ -26,14 +26,14 @@ export default function SeoProductPreview({
   const tilted = frame !== "flat";
 
   return (
-    <figure className={`seo-product-preview seo-pp-is-${kind}${tilted ? " is-tilt" : " is-flat"}`} aria-label={caption}>
+    <figure className={`seo-product-preview seo-pp-is-${kind}${tilted ? " is-tilt" : " is-flat"}`}>
       <div className="seo-device-wrap">
         {tilted ? <div className="seo-device-halo" aria-hidden /> : null}
         <div className="seo-device">
           <div className="seo-device-scr">
             <img
               src={src}
-              alt=""
+              alt={caption}
               width={shot.width}
               height={shot.height}
               decoding="async"

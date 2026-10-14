@@ -326,14 +326,14 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
     `<meta property="og:url" content="${url}" />`,
     `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:site_name" content="Descall" />`,
-    `<meta property="og:image" content="${OG}" />`,
+    `<meta property="og:image" content="${route.image ? `${SITE}${route.image.startsWith("/") ? route.image : `/${route.image}`}` : OG}" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:locale" content="${isTr ? "tr_TR" : "en_US"}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${desc}" />`,
-    `<meta name="twitter:image" content="${OG}" />`,
+    `<meta name="twitter:image" content="${route.image ? `${SITE}${route.image.startsWith("/") ? route.image : `/${route.image}`}` : OG}" />`,
     ldScripts,
   ]
     .filter(Boolean)

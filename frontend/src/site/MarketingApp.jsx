@@ -299,6 +299,9 @@ function MarketingAppSite({
         <Route path="/sahip" element={<Navigate to="/descall-sahibi" replace />} />
         <Route path="/tr/who-owns-descall" element={<Navigate to="/descall-sahibi" replace />} />
         <Route path="/contact" element={withLayout(ContactPage, openAuth)} />
+        <Route path="/iletisim" element={withLayout(ContactPage, openAuth)} />
+        <Route path="/gizlilik" element={withLayout(PrivacyPage, openAuth)} />
+        <Route path="/kosullar" element={withLayout(TermsPage, openAuth)} />
         <Route path="/discord-alternative" element={withLayout(DiscordAlternativePage, openAuth)} />
         {/* TR locale mirrors — same pages, /tr prefix + forced TR locale in layout */}
         <Route path="/tr" element={withLayout(HomePage, openAuth)} />

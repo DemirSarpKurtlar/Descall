@@ -99,58 +99,36 @@
       "source": "/api/:path*",
       "destination": "https://des-call.onrender.com/api/:path*"
     },
-    {
-      "source": "/groups",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/groups/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/servers",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/servers/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/friends",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/friends/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/calls",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/calls/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/login",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/login/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/((?!assets/|favicon\\.ico|favicon\\.svg|favicon-\\d+\\.png|apple-touch-icon\\.png|icon\\.png|icon\\.ico|icon-\\d+\\.png|icon-512-maskable\\.png|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|sitemap-pages\\.xml|sitemap-core\\.xml|sitemap-niches\\.xml|sitemap-blog\\.xml|sitemap-company\\.xml|sitemap\\.html|sitemap\\.xsl|llms\\.txt|llms-full\\.txt|humans\\.txt|\\.well-known/).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/direct", "destination": "/index.html" },
+    { "source": "/direct/:path*", "destination": "/index.html" },
+    { "source": "/groups", "destination": "/index.html" },
+    { "source": "/groups/:path*", "destination": "/index.html" },
+    { "source": "/servers", "destination": "/index.html" },
+    { "source": "/servers/:path*", "destination": "/index.html" },
+    { "source": "/friends", "destination": "/index.html" },
+    { "source": "/friends/:path*", "destination": "/index.html" },
+    { "source": "/calls", "destination": "/index.html" },
+    { "source": "/calls/:path*", "destination": "/index.html" },
+    { "source": "/activity", "destination": "/index.html" },
+    { "source": "/activity/:path*", "destination": "/index.html" },
+    { "source": "/play", "destination": "/index.html" },
+    { "source": "/play/:path*", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/settings/:path*", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/:path*", "destination": "/index.html" },
+    { "source": "/invite", "destination": "/index.html" },
+    { "source": "/invite/:path*", "destination": "/index.html" },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app/:path*", "destination": "/index.html" },
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/login/:path*", "destination": "/index.html" },
+    { "source": "/register", "destination": "/index.html" },
+    { "source": "/register/:path*", "destination": "/index.html" },
+    { "source": "/i", "destination": "/index.html" },
+    { "source": "/i/:path*", "destination": "/index.html" },
+    { "source": "/s", "destination": "/index.html" },
+    { "source": "/s/:path*", "destination": "/index.html" }
   ],
   "headers": [
     {

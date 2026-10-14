@@ -100,6 +100,7 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
           <div className="input-wrapper">
             <Mail className="input-icon" size={20} />
             <input
+              id="forgot-identity"
               type="text"
               autoComplete="username"
               placeholder={t("Username or email")}
@@ -108,10 +109,16 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
               maxLength={254}
               autoFocus
               required
+              aria-invalid={error ? "true" : undefined}
+              aria-describedby={error ? "forgot-identify-error" : undefined}
             />
           </div>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" className="auth-submit" disabled={busy || !usernameOrEmail.trim()}>
+          {error && (
+            <p id="forgot-identify-error" className="error-message" role="alert">
+              {error}
+            </p>
+          )}
+          <button type="submit" className="auth-submit" disabled={busy || !usernameOrEmail.trim()} aria-busy={busy}>
             {busy ? t("Please wait...") : t("Send reset code")}
           </button>
           <button type="button" className="auth-tab auth-back-btn" onClick={onBack}>
@@ -132,6 +139,7 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
           <div className="input-wrapper auth-otp">
             <ShieldCheck className="input-icon" size={20} />
             <input
+              id="forgot-code"
               className="auth-otp-input"
               type="text"
               inputMode="numeric"
@@ -142,6 +150,8 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
               maxLength={6}
               autoFocus
               required
+              aria-invalid={error ? "true" : undefined}
+              aria-describedby={error ? "forgot-reset-error" : undefined}
             />
             <div className="auth-otp-cells" aria-hidden="true">
               {Array.from({ length: 6 }, (_, i) => (
@@ -174,11 +184,16 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
               required
             />
           </div>
-          {error && <p className="error-message">{error}</p>}
+          {error && (
+            <p id="forgot-reset-error" className="error-message" role="alert">
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             className="auth-submit"
             disabled={busy || code.length !== 6 || !newPassword || !confirm}
+            aria-busy={busy}
           >
             {busy ? t("Please wait...") : t("Reset password")}
           </button>
