@@ -10,8 +10,29 @@ const { CoinFlipManager } = require("../games/CoinFlipGame");
 const { parsePayArgs, parseCoinArgs, sideLabel } = require("../games/casinoArgs");
 const supabase = require("../db/supabase");
 const { casinoAccess } = require("../lib/ageGate");
+const {
+  IOS_DENY_TEXT,
+  noteSocketPlatform,
+  forgetSocketPlatform,
+  casinoBlockReason,
+} = require("../lib/casinoPlatformGate");
 
 const AGE_FREE_COMMANDS = new Set(["help", "yardım", "commands", "jb"]);
+
+/**
+ * Native iOS, and any other socket while that iOS session is still connected.
+ * Emits a notice and does not touch credits, hands, or the room.
+ */
+function denyCasinoOnIos(socket, groupId) {
+  const reason = casinoBlockReason(socket);
+  if (!reason) return false;
+  socket.emit("game:notice", {
+    groupId: groupId || null,
+    text: IOS_DENY_TEXT,
+    code: "ios_unavailable",
+  });
+  return true;
+}
 
 async function denyIfNotAllowed(socket, userId, groupId) {
   const access = await casinoAccess(userId);
@@ -245,6 +266,9 @@ function registerGameHandlers(io, socket) {
   const myUsername = socket.user?.username;
   if (!myId) return;
 
+  noteSocketPlatform(socket);
+  socket.on("disconnect", () => forgetSocketPlatform(socket));
+
   socket.on("game:command", async ({ groupId, channelId, command, args } = {}) => {
     const roomId = channelId || groupId;
     if (!roomId || !command) return;
@@ -263,6 +287,7 @@ function registerGameHandlers(io, socket) {
   socket.on("game:action", async ({ groupId, channelId, action } = {}) => {
     const roomId = channelId || groupId;
     if (!roomId || !action) return;
+    if (denyCasinoOnIos(socket, roomId)) return;
     const a = String(action).toLowerCase();
     if (a !== "help" && (await denyIfNotAllowed(socket, myId, roomId))) return;
     const opts = channelId ? { channelId } : {};
@@ -287,6 +312,12 @@ function registerGameHandlers(io, socket) {
   });
 
   socket.on("game:credits", async (callback) => {
+    if (denyCasinoOnIos(socket, null)) {
+      if (typeof callback === "function") {
+        callback({ error: IOS_DENY_TEXT, code: "ios_unavailable" });
+      }
+      return;
+    }
     const row = await getUserCredits(myId);
     if (typeof callback === "function") {
       callback({
@@ -299,6 +330,12 @@ function registerGameHandlers(io, socket) {
   });
 
   socket.on("game:status", ({ groupId } = {}, callback) => {
+    if (denyCasinoOnIos(socket, groupId || null)) {
+      if (typeof callback === "function") {
+        callback({ active: false, game: null, error: IOS_DENY_TEXT, code: "ios_unavailable" });
+      }
+      return;
+    }
     const game = groupId ? GameManager.get(myId, groupId) : null;
     if (typeof callback === "function") {
       callback({
@@ -310,6 +347,10 @@ function registerGameHandlers(io, socket) {
 }
 
 async function handleGameCommand(io, socket, userId, username, groupId, fullCommand, opts = {}) {
+  // Slash commands (/bj, /slot, /pay, …) enter here from group and server
+  // chat. Refuse before age lookup, credit reads, or any deal/spin/transfer.
+  if (denyCasinoOnIos(socket, groupId)) return;
+
   const match = String(fullCommand || "").trim().match(COMMAND_REGEX);
   if (!match) return;
 
@@ -1314,4 +1355,6 @@ module.exports = {
   VALID_COMMANDS,
   MIN_BET,
   MAX_BET,
+  IOS_DENY_TEXT,
+  denyCasinoOnIos,
 };
