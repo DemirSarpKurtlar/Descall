@@ -11,36 +11,6 @@ http://www.descall.com/* https://descall.com/:splat 301!
 https://www.descall.com/* https://descall.com/:splat 301!
 http://descall.com/* https://descall.com/:splat 301!
 
-# Signed-in app routes stay the SPA (200). Everything else that is not a
-# real file is a 404. Cloudflare serves existing files before these rules.
-/direct /index.html 200
-/direct/* /index.html 200
-/groups /index.html 200
-/groups/* /index.html 200
-/servers /index.html 200
-/servers/* /index.html 200
-/friends /index.html 200
-/friends/* /index.html 200
-/calls /index.html 200
-/calls/* /index.html 200
-/activity /index.html 200
-/activity/* /index.html 200
-/play /index.html 200
-/play/* /index.html 200
-/settings /index.html 200
-/settings/* /index.html 200
-/admin /index.html 200
-/admin/* /index.html 200
-/invite /index.html 200
-/invite/* /index.html 200
-/app /index.html 200
-/app/* /index.html 200
-/login /index.html 200
-/login/* /index.html 200
-/register /index.html 200
-/register/* /index.html 200
-/i /index.html 200
-/i/* /index.html 200
-/s /index.html 200
-/s/* /index.html 200
+# App deep links are served by public/_worker.js (a 200 rewrite to /index.html
+# pretty-URL-redirects to / on Cloudflare Pages). Unknown paths use 404.html.
 /* /404.html 404
