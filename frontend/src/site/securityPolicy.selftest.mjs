@@ -29,6 +29,8 @@ assert.ok(PERMISSIONS_POLICY.includes("display-capture=(self)"));
 assert.ok(!PERMISSIONS_POLICY.includes("*"));
 assert.ok(SITE_CSP.includes("frame-ancestors 'none'"));
 assert.ok(SITE_CSP.includes("https://accounts.google.com"));
+assert.ok(SITE_CSP.includes("https://static.cloudflareinsights.com"));
+assert.ok(worker.includes('headers.delete("access-control-allow-origin")'));
 assert.ok(SITE_CSP.includes("wss://des-call.onrender.com"));
 assert.ok(SITE_CSP.includes("https://*.livekit.cloud"));
 assert.equal(headersFile.includes(SITE_CSP), true, "_headers CSP drifted");

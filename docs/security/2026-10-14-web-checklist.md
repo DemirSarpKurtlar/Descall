@@ -20,7 +20,7 @@ Production web is Cloudflare Pages at `https://descall.com`. `frontend/vercel.js
 Set on every Cloudflare Pages response (`frontend/public/_worker.js`, with `frontend/public/_headers` as backup) and on `/(.*)` in `frontend/vercel.json`:
 
 - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
-- `Content-Security-Policy` (enforcing). A headless pass of `/`, `/features`, `/faq`, `/download`, `/login`, `/contact`, and `/security` against the production build reported no violations. `frame-ancestors 'none'`.
+- `Content-Security-Policy` (enforcing). `frame-ancestors 'none'`. `script-src` includes `https://static.cloudflareinsights.com` because Cloudflare injects that beacon on the live zone. A local production-build pass of the public pages had no violations; the live beacon was the only extra host.
 - `X-Frame-Options: DENY`
 - `Permissions-Policy: camera=(self), microphone=(self), display-capture=(self), autoplay=(self)`
 - `X-Content-Type-Options: nosniff`
@@ -38,7 +38,7 @@ Before this release, `https://descall.com` sent only nosniff and referrer-policy
 
 Express and Socket.IO share `frontend/backend/lib/corsOrigins.js`. Allowlist: `https://descall.com`, `https://www.descall.com`, localhost and `127.0.0.1` for dev, and `descall://app` for Electron. `credentials` stays false. There is no wildcard. `ALLOW_ALL_ORIGINS` is ignored, including if it is still set on Render. The string `null` is rejected. Missing `Origin` (curl, non-browser clients) is still allowed.
 
-Before this release, `https://des-call.onrender.com/health` and the Socket.IO handshake reflected `https://evil.example` and `Origin: null`. Re-check after the Render deploy of this commit.
+Before this release, `https://des-call.onrender.com/health` and the Socket.IO handshake reflected `https://evil.example` and `Origin: null`. The homepage asset response also carried `Access-Control-Allow-Origin: *` with no credentials header. The worker now drops that header. The API does not send a wildcard.
 
 ## 6. CSRF
 
