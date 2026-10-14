@@ -79,6 +79,7 @@ assert(redirects.includes("/* /404.html 404"), "cloudflare 404 rule");
 assert(!redirects.includes("/index.html 200"), "cloudflare must not rewrite app routes onto /index.html");
 const worker = fs.readFileSync(path.join(root, "public/_worker.js"), "utf8");
 assert(worker.includes('"/groups"') && worker.includes('"/invite"') && worker.includes("/404.html"), "pages worker serves the app shell and 404");
+assert(worker.includes('readAsset(env, request, "/")'), "pages worker reads the root shell, not the /index.html redirect");
 const icoHeader = vercel.headers.find((rule) => rule.source === "/favicon.ico");
 assert(icoHeader?.headers?.some((h) => h.key === "Content-Type" && h.value === "image/x-icon"), "ico content-type");
 const svgHeader = vercel.headers.find((rule) => rule.source === "/favicon.svg");

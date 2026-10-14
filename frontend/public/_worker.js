@@ -36,8 +36,30 @@ function isSpaPath(pathname) {
   return SPA_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-async function asset(env, url, request) {
-  return env.ASSETS.fetch(new Request(url.toString(), request));
+async function readAsset(env, request, pathname) {
+  const target = new URL(request.url);
+  target.pathname = pathname;
+  target.search = "";
+  let res = await env.ASSETS.fetch(new Request(target.toString(), { method: "GET", redirect: "manual" }));
+  // /index.html and /404.html pretty-redirect (308, empty body) to / and /404.
+  if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get("location");
+    if (loc) {
+      const next = new URL(loc, target);
+      next.search = "";
+      res = await env.ASSETS.fetch(new Request(next.toString(), { method: "GET", redirect: "manual" }));
+    }
+  }
+  return res;
+}
+
+function htmlResponse(source, status, cacheControl) {
+  const headers = new Headers();
+  const type = source.headers.get("content-type") || "text/html; charset=utf-8";
+  headers.set("content-type", type);
+  headers.set("cache-control", cacheControl);
+  headers.set("x-content-type-options", "nosniff");
+  return new Response(source.body, { status, headers });
 }
 
 export default {
@@ -50,27 +72,17 @@ export default {
     }
 
     if (isSpaPath(path)) {
-      const indexUrl = new URL(request.url);
-      indexUrl.pathname = "/index.html";
-      indexUrl.search = "";
-      const shell = await asset(env, indexUrl, request);
-      const headers = new Headers(shell.headers);
-      headers.set("content-type", "text/html; charset=utf-8");
-      headers.set("cache-control", "no-cache");
-      return new Response(shell.body, { status: 200, headers });
+      // Root document is the shared shell. /index.html itself 308s to /.
+      const shell = await readAsset(env, request, "/");
+      return htmlResponse(shell, 200, "no-cache");
     }
 
     const found = await env.ASSETS.fetch(request);
     if (found.status !== 404) return found;
 
-    const notFoundUrl = new URL(request.url);
-    notFoundUrl.pathname = "/404.html";
-    notFoundUrl.search = "";
-    const notFound = await asset(env, notFoundUrl, request);
-    const headers = new Headers(notFound.headers);
-    headers.set("content-type", "text/html; charset=utf-8");
-    headers.set("cache-control", "no-store");
-    headers.set("x-robots-tag", "noindex");
-    return new Response(notFound.body, { status: 404, headers });
+    const notFound = await readAsset(env, request, "/404.html");
+    const response = htmlResponse(notFound, 404, "no-store");
+    response.headers.set("x-robots-tag", "noindex");
+    return response;
   },
 };
