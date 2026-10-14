@@ -75,8 +75,11 @@ export default function AppLayout({
   isInGroupVoiceRoom = false,
   onDismissActiveBanner,
   friendRequests,
+  messageRequests,
   onAcceptFriend,
   onDeclineFriend,
+  onAcceptMessageRequest,
+  onDeclineMessageRequest,
   notifPermission,
   onRequestNotifPermission,
   typingDmUser,
@@ -431,7 +434,8 @@ export default function AppLayout({
       else if (item.id !== activeView) handleViewChange(item.id);
     },
   });
-  const pendingFriendCount = Array.isArray(friendRequests) ? friendRequests.length : 0;
+  const pendingFriendCount = (Array.isArray(friendRequests) ? friendRequests.length : 0)
+    + (Array.isArray(messageRequests) ? messageRequests.length : 0);
   const glassTabBadges = useMemo(
     () => ({ ...navBadges, friends: pendingFriendCount }),
     [navBadges, pendingFriendCount]
@@ -608,8 +612,11 @@ export default function AppLayout({
             onGroupRenamed={onGroupRenamed}
             onRefresh={onRefresh}
             friendRequests={friendRequests}
+            messageRequests={messageRequests}
             onAcceptFriend={onAcceptFriend}
             onDeclineFriend={onDeclineFriend}
+            onAcceptMessageRequest={onAcceptMessageRequest}
+            onDeclineMessageRequest={onDeclineMessageRequest}
             onMobileClose={isMobile ? closeMobileDrawer : undefined}
             isMobile={isMobile}
             dmUnread={dmUnread}

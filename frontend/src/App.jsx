@@ -435,6 +435,7 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  const [messageRequests, setMessageRequests] = useState([]);
   const [dmByUserId, setDmByUserId] = useState({});
   const dmByUserIdRef = useRef({});
   const groupMessagesRef = useRef({});
@@ -1756,6 +1757,54 @@ export default function App() {
       setFriendNotice(to ? t("Request sent to {to}", { to }) : t("Request sent."));
       setTimeout(() => setFriendNotice(""), 3000);
     });
+    socket.on("dm:requests", (list) => {
+      setMessageRequests((Array.isArray(list) ? list : []).map((row) => normalizeUser(row)).filter(Boolean));
+    });
+    socket.on("dm:request:incoming", ({ request } = {}) => {
+      if (!request) return;
+      const normalized = normalizeUser(request);
+      if (!normalized?.id) return;
+      setMessageRequests((prev) => (
+        prev.some((row) => row.id === normalized.id)
+          ? prev.map((row) => (row.id === normalized.id ? { ...row, ...normalized } : row))
+          : [...prev, normalized]
+      ));
+      notificationService.messageRequest({
+        from: normalized.username,
+        fromId: normalized.id,
+        preview: normalized.preview,
+      });
+    });
+    socket.on("dm:request:sent", ({ toUserId, tempId } = {}) => {
+      if (tempId && toUserId) {
+        setDmByUserId((prev) => {
+          const cur = prev[toUserId] ?? [];
+          if (!cur.some((row) => row.id === tempId)) return prev;
+          return { ...prev, [toUserId]: cur.filter((row) => row.id !== tempId) };
+        });
+        setDmPreviews((prev) => {
+          if (!prev[toUserId]) return prev;
+          const next = { ...prev };
+          delete next[toUserId];
+          return next;
+        });
+      }
+      toast(t("Message request sent"), "info");
+    });
+    socket.on("dm:request:accepted", () => {
+      toast(t("Message request accepted"), "success");
+      socket.emit("friend:list");
+    });
+    socket.on("dm:request:declined", () => {
+      toast(t("Message request declined"), "info");
+    });
+    socket.on("dm:request:error", ({ message, fromUserId } = {}) => {
+      if (fromUserId) {
+        setMessageRequests((prev) => prev.filter((row) => row.id !== fromUserId));
+      }
+      if (message) toast(message, "error");
+      socket.emit("dm:request:list");
+    });
 
     socket.on("dm:history", ({ withUserId, messages }) => {
       if (!withUserId) return;
@@ -2738,7 +2787,7 @@ export default function App() {
     setMe(null);
     setSessionChecked(true);
     setActiveTimeout(null);
-    setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]);
+    setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]); setMessageRequests([]);
     friendsFromSocketRef.current = false;
     setFriendsLoaded(false);
     setGroupsLoaded(false);
@@ -3602,8 +3651,8 @@ export default function App() {
         return;
       }
 
-      if (type === "friend-request") {
-        // Open friends list focus is enough, status is already in sidebar
+      if (type === "friend-request" || type === "message-request") {
+        setActiveView("friends");
         return;
       }
     };
@@ -3776,6 +3825,21 @@ export default function App() {
         setTimeout(() => setFriendNotice(""), 4000);
         socketRef.current?.emit("friend:list");
       });
+  };
+
+  const handleAcceptMessageRequest = (fromUserId) => {
+    const id = String(fromUserId || "").trim();
+    if (!id) return;
+    setMessageRequests((prev) => prev.filter((row) => row.id !== id));
+    socketRef.current?.emit("dm:request:accept", { fromUserId: id });
+    hapticSuccess();
+  };
+
+  const handleDeclineMessageRequest = (fromUserId) => {
+    const id = String(fromUserId || "").trim();
+    if (!id) return;
+    setMessageRequests((prev) => prev.filter((row) => row.id !== id));
+    socketRef.current?.emit("dm:request:decline", { fromUserId: id });
   };
 
   const handleDeclineFriend = (fromUserId) => {
@@ -4750,8 +4814,11 @@ export default function App() {
             setActiveGroup((cur) => (cur?.id === groupId ? { ...cur, name: newName } : cur));
           }}
           friendRequests={friendRequests}
+          messageRequests={messageRequests}
           onAcceptFriend={handleAcceptFriend}
           onDeclineFriend={handleDeclineFriend}
+          onAcceptMessageRequest={handleAcceptMessageRequest}
+          onDeclineMessageRequest={handleDeclineMessageRequest}
           replyTo={replyTo}
           onClearReply={() => setReplyTo(null)}
           editingMessage={editingMessage}

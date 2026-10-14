@@ -26,17 +26,27 @@ function matches(row, filters) {
   });
 }
 
-/** Parses Postgrest .or("and(a.eq.1,b.eq.2),and(a.eq.3,b.eq.4)") into OR-of-AND groups (eq only, sufficient for this codebase's usage). */
+/** Parses Postgrest .or() into OR-of-AND groups (eq only).
+ *  and(a.eq.1,b.eq.2),and(a.eq.3,b.eq.4) → two AND groups.
+ *  a.eq.1,b.eq.2 → two single-condition groups (OR). */
 function parseOrExpression(expr) {
   const groups = [];
-  const andBlocks = expr.match(/and\(([^)]*)\)/g) || [expr];
-  for (const block of andBlocks) {
-    const inner = block.startsWith("and(") ? block.slice(4, -1) : block;
-    const conds = inner.split(",").map((cond) => {
-      const [col, op, ...rest] = cond.split(".");
-      return { col, op, val: rest.join(".") };
-    });
-    groups.push(conds);
+  const andBlocks = expr.match(/and\(([^)]*)\)/g);
+  if (andBlocks) {
+    for (const block of andBlocks) {
+      const inner = block.slice(4, -1);
+      const conds = inner.split(",").map((cond) => {
+        const [col, op, ...rest] = cond.split(".");
+        return { col, op, val: rest.join(".") };
+      });
+      groups.push(conds);
+    }
+    return groups;
+  }
+  for (const cond of String(expr).split(",")) {
+    const [col, op, ...rest] = cond.split(".");
+    if (!col || !op) continue;
+    groups.push([{ col, op, val: rest.join(".") }]);
   }
   return groups;
 }

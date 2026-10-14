@@ -62,8 +62,11 @@ export default function ServerSidebar({
   onGroupLeft,
   onGroupRenamed,
   friendRequests,
+  messageRequests,
   onAcceptFriend,
   onDeclineFriend,
+  onAcceptMessageRequest,
+  onDeclineMessageRequest,
   onMobileClose,
   isMobile = false,
   dmUnread = {},
@@ -459,8 +462,11 @@ export default function ServerSidebar({
               onStartCall={onStartCall}
               searchQuery={searchQuery}
               friendRequests={friendRequests}
+              messageRequests={messageRequests}
               onAcceptFriend={onAcceptFriend}
               onDeclineFriend={onDeclineFriend}
+              onAcceptMessageRequest={onAcceptMessageRequest}
+              onDeclineMessageRequest={onDeclineMessageRequest}
               isMobile={isMobile}
               loading={!friendsLoaded}
               me={me}
@@ -508,8 +514,11 @@ export default function ServerSidebar({
                 onMobileClose?.();
               }}
               friendRequests={friendRequests}
+              messageRequests={messageRequests}
               onAcceptFriend={onAcceptFriend}
               onDeclineFriend={onDeclineFriend}
+              onAcceptMessageRequest={onAcceptMessageRequest}
+              onDeclineMessageRequest={onDeclineMessageRequest}
               isMobile={isMobile}
               me={me}
               loading={!friendsLoaded}
@@ -2274,12 +2283,13 @@ function GroupRowFront({
   );
 }
 
-function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, onAcceptFriend, onDeclineFriend, isMobile, onQuickAdd, me, onShareInvite, loading = false, showInvite = true }) {
+function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, messageRequests, onAcceptFriend, onDeclineFriend, onAcceptMessageRequest, onDeclineMessageRequest, isMobile, onQuickAdd, me, onShareInvite, loading = false, showInvite = true }) {
   const t = useT();
   const glassShell = useGlassShell();
   const safeFriends = Array.isArray(friends) ? friends : [];
   const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
   const pendingRequests = Array.isArray(friendRequests) ? friendRequests : [];
+  const pendingMessages = Array.isArray(messageRequests) ? messageRequests : [];
 
   const onlineFriends = safeFriends.filter((f) => isVisiblyOnline(safeOnlineUsers, f.id));
   const offlineFriends = safeFriends.filter((f) => !isVisiblyOnline(safeOnlineUsers, f.id));
@@ -2294,6 +2304,13 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
       return name.includes(q) || handle.includes(q) || custom.includes(q);
     };
     const pendingShown = pendingRequests.filter(matches);
+    const messageShown = pendingMessages.filter((req) => {
+      if (!q) return true;
+      const name = resolveDisplayName(req).toLowerCase();
+      const handle = String(req.username || "").toLowerCase();
+      const preview = String(req.preview || "").toLowerCase();
+      return name.includes(q) || handle.includes(q) || preview.includes(q);
+    });
     const onlineShown = onlineFriends.filter(matches);
     const offlineShown = offlineFriends.filter(matches);
     const friendSub = (friend) => {
@@ -2322,6 +2339,28 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     <Check size={18} />
                   </button>
                   <button type="button" className="g-ib no" title={t("Decline")} aria-label={t("Decline")} onClick={() => onDeclineFriend?.(req.id)}>
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {messageShown.length > 0 && (
+            <div className="friend-category">
+              <div className="g-sect is-pending"><span>{t("Message requests, {count}", { count: messageShown.length })}</span></div>
+              {messageShown.map((req) => (
+                <div key={req.id} className="g-friend-row">
+                  <div className="friend-avatar">
+                    <Avatar name={resolveDisplayName(req)} size={52} user={req} />
+                  </div>
+                  <div className="g-friend-meta">
+                    <span className="friend-name">{resolveDisplayName(req)}</span>
+                    <span className="g-friend-sub is-dim">{req.preview || t("Message request")}</span>
+                  </div>
+                  <button type="button" className="g-ib ok" title={t("Accept")} aria-label={t("Accept message request")} onClick={() => onAcceptMessageRequest?.(req.id)}>
+                    <Check size={18} />
+                  </button>
+                  <button type="button" className="g-ib no" title={t("Decline")} aria-label={t("Decline message request")} onClick={() => onDeclineMessageRequest?.(req.id)}>
                     <X size={18} />
                   </button>
                 </div>
@@ -2378,9 +2417,9 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
               ))}
             </div>
           )}
-          {loading && safeFriends.length === 0 && pendingRequests.length === 0 ? (
+          {loading && safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
             <ConversationListSkeleton count={6} label={t("Loading conversations")} />
-          ) : safeFriends.length === 0 && pendingRequests.length === 0 ? (
+          ) : safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
             <div className="sidebar-empty-friends">
               <strong>{t("No friends yet")}</strong>
               <span>{t("Share your invite link, friends join free and connect with you instantly.")}</span>
@@ -2390,7 +2429,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 </button>
               </div>
             </div>
-          ) : onlineShown.length === 0 && offlineShown.length === 0 && pendingShown.length === 0 ? (
+          ) : onlineShown.length === 0 && offlineShown.length === 0 && pendingShown.length === 0 && messageShown.length === 0 ? (
             <p className="g-friends-empty">{t("No results")}</p>
           ) : null}
         </div>
@@ -2406,13 +2445,13 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
         style={{ position: "relative" }}
       >
         <span className="section-title" style={{ flex: 1, textAlign: "left" }}>{t("FRIENDS")}</span>
-        {pendingRequests.length > 0 && (
+        {(pendingRequests.length + pendingMessages.length) > 0 && (
           <span style={{
             background: "var(--danger)", color: "#fff", fontSize: 10, fontWeight: 700,
             borderRadius: 10, padding: "1px 6px", minWidth: 16, textAlign: "center", lineHeight: "16px",
             marginRight: 6,
           }}>
-            {pendingRequests.length}
+            {pendingRequests.length + pendingMessages.length}
           </span>
         )}
         {onQuickAdd && (
@@ -2501,6 +2540,73 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 ))}
               </div>
             )}
+            {pendingMessages.length > 0 && (
+              <div className="friend-category">
+                <span className="category-label" style={{ color: "var(--warning)" }}>
+                  {t("Message requests, {count}", { count: pendingMessages.length })}
+                </span>
+                {pendingMessages.map((req) => (
+                  <div
+                    key={req.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "6px 8px", borderRadius: 8,
+                      background: "var(--surface-2)", marginBottom: 4,
+                    }}
+                  >
+                    <div className="friend-avatar" style={{ flexShrink: 0 }}>
+                      <Avatar name={req.username} size={32} user={req} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span className="friend-name" style={{ fontSize: 13 }}>{req.username}</span>
+                      {req.preview ? (
+                        <span style={{ display: "block", fontSize: 11, opacity: 0.72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {req.preview}
+                        </span>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      title={t("Accept")}
+                      aria-label={t("Accept message request")}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onAcceptMessageRequest?.(req.id);
+                      }}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8, border: "none",
+                        background: "var(--success-soft)", color: "var(--success)",
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                        touchAction: "manipulation",
+                      }}
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      title={t("Decline")}
+                      aria-label={t("Decline message request")}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDeclineMessageRequest?.(req.id);
+                      }}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8, border: "none",
+                        background: "var(--danger-soft)", color: "var(--danger)",
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                        touchAction: "manipulation",
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {onlineFriends.length > 0 && (
               <div className="friend-category">
@@ -2573,9 +2679,9 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 ))}
               </div>
             )}
-            {loading && safeFriends.length === 0 && pendingRequests.length === 0 ? (
+            {loading && safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
               <ConversationListSkeleton count={6} label={t("Loading conversations")} />
-            ) : safeFriends.length === 0 && pendingRequests.length === 0 ? (
+            ) : safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
               <div className="sidebar-empty-friends">
                 <div className="empty-illustration empty-illu-friends compact" aria-hidden="true">
                   <div className="empty-illu-blob" />

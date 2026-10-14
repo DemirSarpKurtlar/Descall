@@ -34,3 +34,6 @@ jobs:
           node backend/games/SlotGame.selftest.js
           node backend/games/CoinFlipGame.selftest.js
           node backend/lib/corsOrigins.selftest.cjs
+          node backend/lib/messageRequestPolicy.selftest.cjs
+          node backend/lib/messageRequestStore.selftest.cjs
+          node backend/socket/messageRequests.selftest.cjs

@@ -228,6 +228,25 @@ function sendServerMessagePush(userIds, payload = {}) {
   });
 }
 
+/** Message request from someone who is not a friend yet. No message body is stored. */
+function sendMessageRequestPush(userId, payload = {}) {
+  const body = payload.preview
+    ? String(payload.preview).slice(0, 140)
+    : `${payload.from || "Someone"} sent you a message request`;
+  void sendWebPushToUsers([userId], {
+    title: payload.from ? `${payload.from}` : "Message request",
+    body,
+    tag: `dm-request-${payload.fromId || userId}`,
+    data: { type: "message-request", fromId: payload.fromId || null },
+  });
+  return sendIosAlertToUsers([userId], {
+    type: "message-request",
+    fromId: payload.fromId,
+    fromName: payload.from,
+    text: body,
+  });
+}
+
 /** Incoming friend request. */
 function sendFriendRequestPush(userId, payload = {}) {
   return sendIosAlertToUsers([userId], {
@@ -247,4 +266,5 @@ module.exports = {
   sendIosGroupMentionPush,
   sendServerMessagePush,
   sendFriendRequestPush,
+  sendMessageRequestPush,
 };

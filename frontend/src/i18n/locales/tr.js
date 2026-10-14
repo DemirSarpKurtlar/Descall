@@ -2984,6 +2984,16 @@ export const phrases = {
   "📞 Call": "📞 Arama",
   "Descall staff": "Descall yetkilisi",
   "Pending, {count}": "Bekleyen, {count}",
+  "Message requests, {count}": "Mesaj istekleri, {count}",
+  "Message request": "Mesaj isteği",
+  "Message request sent": "Mesaj isteği gönderildi",
+  "Message request accepted": "Mesaj isteği kabul edildi",
+  "Message request declined": "Mesaj isteği reddedildi",
+  "Accept message request": "Mesaj isteğini kabul et",
+  "Decline message request": "Mesaj isteğini reddet",
+  "{from} sent you a message request": "{from} sana bir mesaj isteği gönderdi",
+  "{from}: {preview}": "{from}: {preview}",
+  "You can call this person after they accept your message request.": "Bu kişiyi, mesaj isteğini kabul ettikten sonra arayabilirsin.",
   "Friend request accepted": "Arkadaşlık isteği kabul edildi",
 
   // Public marketing site

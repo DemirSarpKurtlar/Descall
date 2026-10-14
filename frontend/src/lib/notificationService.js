@@ -405,6 +405,18 @@ class NotificationService {
     });
   }
 
+  async messageRequest({ from, fromId, preview }) {
+    if (isDndMuted()) return;
+    await this.show({
+      title: t("Message request"),
+      body: preview
+        ? t("{from}: {preview}", { from, preview })
+        : t("{from} sent you a message request", { from }),
+      tag: `dm-request-${fromId}`,
+      data: { type: "message-request", fromId, from },
+    });
+  }
+
   async friendRequest({ from, fromId }) {
     if (isDndMuted()) return;
     await this.show({

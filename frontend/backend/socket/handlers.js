@@ -72,6 +72,13 @@ const {
 } = require("../lib/dmCallLog");
 const { buildDmCallSummary, callSummaryMessageFields } = require("../lib/callSummary");
 const { isBlockedEitherWay } = require("../lib/blocking");
+const { planDmSend, planCallOffer } = require("../lib/messageRequestPolicy");
+const {
+  upsertMessageRequest,
+  listMessageRequests,
+  deleteMessageRequest,
+  messageRequestPreview,
+} = require("../lib/messageRequestStore");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
 const { touchLastSeen } = require("../lib/presenceTouch");
@@ -617,12 +624,16 @@ function registerSocketHandlers(io) {
           .finally(() => {
             socket.emit("friend:list", getFriendList(myId));
             socket.emit("friend:requests", getPendingList(myId));
+            listMessageRequests(supabase, myId)
+              .then((list) => socket.emit("dm:requests", list))
+              .catch(() => {});
           });
       } catch (emitErr) {
         console.error("[FRIENDS] Boot emit failed:", emitErr);
         socket.emit("connected", { user: me, message: "Socket connected successfully." });
         socket.emit("friend:list", []);
         socket.emit("friend:requests", []);
+        socket.emit("dm:requests", []);
       }
       emitSyncState(io, myId, socket);
       broadcastUsers(io);
@@ -686,6 +697,7 @@ function registerSocketHandlers(io) {
       await ensureCosmeticsCached([...(friends.get(myId) || [])]).catch(() => {});
       socket.emit("friend:list", getFriendList(myId));
       socket.emit("friend:requests", getPendingList(myId));
+      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
     });
 
     socket.on("friend:request", async ({ toUsername } = {}) => {
@@ -887,6 +899,57 @@ function registerSocketHandlers(io) {
       }
     });
 
+    socket.on("dm:request:list", async () => {
+      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+    });
+
+    socket.on("dm:request:accept", async ({ fromUserId } = {}) => {
+      const fromId = String(fromUserId || "").trim();
+      if (!fromId || fromId === myId) {
+        socket.emit("dm:request:error", { message: "Message request not found.", fromUserId: fromId || null });
+        return;
+      }
+      const removed = await deleteMessageRequest(supabase, fromId, myId);
+      if (!removed) {
+        socket.emit("dm:request:error", { message: "Message request not found.", fromUserId: fromId });
+        socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+        return;
+      }
+      if (removed.username) usernameById.set(fromId, removed.username);
+      ensureSet(friends, myId).add(fromId);
+      ensureSet(friends, fromId).add(myId);
+      const saved = await saveFriendshipToDB(fromId, myId);
+      if (!saved) {
+        ensureSet(friends, myId).delete(fromId);
+        ensureSet(friends, fromId).delete(myId);
+        await upsertMessageRequest(supabase, {
+          fromUserId: fromId,
+          toUserId: myId,
+          username: removed.username,
+          avatarUrl: removed.avatarUrl,
+          preview: removed.preview,
+        });
+        socket.emit("dm:request:error", { message: "Could not accept message request.", fromUserId: fromId });
+        socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+        return;
+      }
+      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+      socket.emit("friend:list", getFriendList(myId));
+      socket.emit("friend:accepted", { by: { id: fromId, username: removed.username } });
+      emitToUser(io, fromId, "dm:request:accepted", { byUserId: myId, username: me.username });
+      emitToUser(io, fromId, "friend:list", getFriendList(fromId));
+      emitSyncState(io, myId, socket);
+      emitSyncState(io, fromId);
+    });
+
+    socket.on("dm:request:decline", async ({ fromUserId } = {}) => {
+      const fromId = String(fromUserId || "").trim();
+      if (!fromId) return;
+      await deleteMessageRequest(supabase, fromId, myId);
+      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+      emitToUser(io, fromId, "dm:request:declined", { byUserId: myId });
+    });
+
     socket.on("friend:remove", async ({ friendId } = {}) => {
       if (typeof friendId !== "string") return;
       const a = friends.get(myId);
@@ -975,6 +1038,9 @@ function registerSocketHandlers(io) {
       if (await isBlockedEitherWay(myId, toUserId)) {
         return socket.emit("dm:error", { message: "You can't message this user.", tempId: tempId || null, toUserId });
       }
+      if (typeof toUserId !== "string" || !toUserId || toUserId === myId) {
+        return socket.emit("dm:error", { message: "You can't message this user.", tempId: tempId || null, toUserId });
+      }
       const now = Date.now();
       const last = rateLimitDm.get(myId) || 0;
       if (now - last < systemConfig.dmRateLimitMs) {
@@ -982,6 +1048,37 @@ function registerSocketHandlers(io) {
         return socket.emit("dm:error", { message: "Rate limited.", tempId: tempId || null, toUserId });
       }
       rateLimitDm.set(myId, now);
+      const friendsOk = await isAcceptedFriend(myId, toUserId);
+      if (planDmSend({ friends: friendsOk }) === "request") {
+        const preview = messageRequestPreview({ text, mediaType, mediaUrl });
+        const request = await upsertMessageRequest(supabase, {
+          fromUserId: myId,
+          toUserId,
+          username: me.username,
+          avatarUrl: me.avatar_url || socket.user?.avatar_url || null,
+          preview,
+        });
+        socket.emit("dm:request:sent", { toUserId, tempId: tempId || null, request });
+        emitToUser(io, toUserId, "dm:request:incoming", { request });
+        emitToUser(io, toUserId, "dm:requests", await listMessageRequests(supabase, toUserId));
+        pushNotification(io, toUserId, {
+          type: "message_request",
+          title: "Message request",
+          body: `${me.username || "Someone"} sent you a message request`,
+          meta: { fromUserId: myId },
+        });
+        try {
+          const { sendMessageRequestPush } = require("../lib/webPush");
+          void sendMessageRequestPush(toUserId, {
+            fromId: myId,
+            from: me.username,
+            preview,
+          });
+        } catch (pushErr) {
+          console.warn("[DM request] push skipped:", pushErr?.message || pushErr);
+        }
+        return;
+      }
       socket.data.activeDmPeer = toUserId;
       await ensureCosmeticsCached([myId]).catch(() => {});
       const sender = messageSender(myId, me.username, me.avatar_url || socket.user?.avatar_url);
@@ -1264,9 +1361,19 @@ function registerSocketHandlers(io) {
 
       // Clients since 2.9.133 say whether this is a renegotiation inside a
       // connected call; older clients don't, so fall back to "already active".
+      // A client flag alone must not ring someone who is not a friend.
       const prior = getPendingCall(myId, targetId);
+      const activeRenegotiation = prior?.status === "active";
       const renegotiation =
-        renegotiate === true || (renegotiate === undefined && prior?.status === "active");
+        renegotiate === true || (renegotiate === undefined && activeRenegotiation);
+      const friendsOk = await isAcceptedFriend(myId, targetId);
+      if (planCallOffer({ friends: friendsOk, activeRenegotiation }) === "deny") {
+        return socket.emit("call:error", {
+          message: "You can call this person after they accept your message request.",
+          code: "not_friends",
+          toUserId: targetId,
+        });
+      }
       const { callUuid } = trackOffer({
         callerId: myId,
         calleeId: targetId,
