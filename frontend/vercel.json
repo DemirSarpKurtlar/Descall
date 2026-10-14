@@ -99,57 +99,165 @@
       "source": "/api/:path*",
       "destination": "https://des-call.onrender.com/api/:path*"
     },
-    { "source": "/direct", "destination": "/index.html" },
-    { "source": "/direct/:path*", "destination": "/index.html" },
-    { "source": "/groups", "destination": "/index.html" },
-    { "source": "/groups/:path*", "destination": "/index.html" },
-    { "source": "/servers", "destination": "/index.html" },
-    { "source": "/servers/:path*", "destination": "/index.html" },
-    { "source": "/friends", "destination": "/index.html" },
-    { "source": "/friends/:path*", "destination": "/index.html" },
-    { "source": "/calls", "destination": "/index.html" },
-    { "source": "/calls/:path*", "destination": "/index.html" },
-    { "source": "/activity", "destination": "/index.html" },
-    { "source": "/activity/:path*", "destination": "/index.html" },
-    { "source": "/play", "destination": "/index.html" },
-    { "source": "/play/:path*", "destination": "/index.html" },
-    { "source": "/settings", "destination": "/index.html" },
-    { "source": "/settings/:path*", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/admin/:path*", "destination": "/index.html" },
-    { "source": "/invite", "destination": "/index.html" },
-    { "source": "/invite/:path*", "destination": "/index.html" },
-    { "source": "/app", "destination": "/index.html" },
-    { "source": "/app/:path*", "destination": "/index.html" },
-    { "source": "/login", "destination": "/index.html" },
-    { "source": "/login/:path*", "destination": "/index.html" },
-    { "source": "/register", "destination": "/index.html" },
-    { "source": "/register/:path*", "destination": "/index.html" },
-    { "source": "/i", "destination": "/index.html" },
-    { "source": "/i/:path*", "destination": "/index.html" },
-    { "source": "/s", "destination": "/index.html" },
-    { "source": "/s/:path*", "destination": "/index.html" }
+    {
+      "source": "/direct",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/direct/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/groups",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/groups/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/servers",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/servers/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/friends",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/friends/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calls",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calls/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/activity",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/activity/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/play",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/play/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/invite",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/invite/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/register/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/i",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/i/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/s",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/s/:path*",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/favicon.ico",
       "headers": [
-        { "key": "Content-Type", "value": "image/x-icon" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Content-Type",
+          "value": "image/x-icon"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
       "source": "/favicon.svg",
       "headers": [
-        { "key": "Content-Type", "value": "image/svg+xml" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Content-Type",
+          "value": "image/svg+xml"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
       "source": "/(favicon-32.png|favicon-48.png|favicon-96.png|favicon-144.png|favicon-192.png|apple-touch-icon.png|icon-16.png|icon-32.png|icon-192.png|icon-512.png|icon-512-maskable.png|icon.png)",
       "headers": [
-        { "key": "Content-Type", "value": "image/png" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Content-Type",
+          "value": "image/png"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
@@ -293,14 +401,6 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(self), microphone=(self), display-capture=(self), autoplay=(self)"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
         }
       ]
     },
@@ -308,8 +408,28 @@
       "source": "/(.*)",
       "headers": [
         {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(self), display-capture=(self), autoplay=(self)"
+        },
+        {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://descall.com https://www.descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com https://*.githubusercontent.com; media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.giphy.com https://*.tenor.com; connect-src 'self' https://descall.com https://www.descall.com https://des-call.onrender.com wss://des-call.onrender.com https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu.posthog.com https://*.posthog.com https://o4512220968779776.ingest.de.sentry.io https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://api.github.com https://*.livekit.cloud wss://*.livekit.cloud; frame-src 'self' https://www.googletagmanager.com; worker-src 'self' blob:"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://accounts.google.com https://www.clarity.ms https://*.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://descall.com https://www.descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com https://*.githubusercontent.com https://*.clarity.ms; media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.giphy.com https://*.tenor.com; connect-src 'self' https://descall.com https://www.descall.com https://des-call.onrender.com wss://des-call.onrender.com https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://eu.posthog.com https://*.posthog.com https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://accounts.google.com https://api.github.com https://*.livekit.cloud wss://*.livekit.cloud https://*.clarity.ms; frame-src 'self' https://www.googletagmanager.com https://accounts.google.com; worker-src 'self' blob:"
         }
       ]
     }

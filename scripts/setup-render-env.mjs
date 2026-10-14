@@ -102,7 +102,6 @@ async function main() {
     "VITE_API_BASE_URL=https://des-call.onrender.com",
     "PORT=3000",
     "NODE_VERSION=20",
-    "ALLOW_ALL_ORIGINS=true",
     "",
   ].join("\n");
 

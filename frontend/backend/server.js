@@ -64,34 +64,8 @@ const app = express();
 const httpServer = http.createServer(app);
 
 const isVercel = Boolean(process.env.VERCEL);
-
-const ALLOWED_ORIGINS = new Set([
-  "https://descall.com",
-  "https://www.descall.com",
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:3000",
-  "descall://app",
-]);
-
-function isAllowedOrigin(origin) {
-  if (!origin) return true; // same-origin, curl, Electron file:// / null
-  if (ALLOWED_ORIGINS.has(origin)) return true;
-  try {
-    const u = new URL(origin);
-    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;
-  } catch {
-    /* ignore */
-  }
-  if (String(process.env.ALLOW_ALL_ORIGINS || "").toLowerCase() === "true") return true;
-  return false;
-}
-
-function corsOrigin(origin, cb) {
-  if (isAllowedOrigin(origin)) return cb(null, true);
-  return cb(null, false);
-}
+const { isAllowedOrigin, corsOrigin } = require("./lib/corsOrigins");
+const { securityHeadersMiddleware } = require("./middleware/securityHeaders");
 
 const io = new Server(httpServer, {
   path: isVercel ? "/api/socket.io" : "/socket.io",
@@ -112,6 +86,7 @@ const { canonicalHostMiddleware } = require("./middleware/canonicalHost");
 // Middleware
 const compression = require("compression");
 app.use(cors({ origin: corsOrigin, credentials: false }));
+app.use(securityHeadersMiddleware);
 // HTTP→HTTPS, www→apex, Render HTML→descall.com (API paths excluded)
 app.use(canonicalHostMiddleware);
 app.use(compression({ threshold: 1024 }));

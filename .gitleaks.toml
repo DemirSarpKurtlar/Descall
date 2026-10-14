@@ -1,0 +1,18 @@
+title = "Descall"
+
+[extend]
+useDefault = true
+
+# These paths hold public client identifiers on purpose (PostHog project key,
+# Giphy browser key, IndexNow verification key, VITE_ build vars). They are
+# not server credentials. A separate CI grep still rejects service-role,
+# JWT, Resend, TURN, and private-key material in the same files.
+[allowlist]
+description = "Public browser identifiers, not server secrets"
+paths = [
+  '''(?:^|/)frontend/\.env\.production$''',
+  '''(?:^|/)frontend/src/site/analytics\.js$''',
+  '''(?:^|/)frontend/src/components/chat/GiphyPicker\.jsx$''',
+  '''(?:^|/)frontend/scripts/generate-seo-files\.mjs$''',
+  '''(?:^|/)frontend/scripts/request-indexing\.mjs$''',
+]
