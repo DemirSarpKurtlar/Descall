@@ -39,7 +39,7 @@ export const nested = {
     "companion": "Companion",
     "lfg": "LFG",
     "companionSoon": "Companion coming soon",
-    "companionHint": "Party, missions, loadout, and match history will live here. For now, use the LFG tab — create/join lobbies, party codes, and Riot ID rank work exactly as before.",
+    "companionHint": "Party, missions, loadout, and match history will live here. For now, use the LFG tab, create/join lobbies, party codes, and Riot ID rank work exactly as before.",
     "companionNote": "Adım 6: wallet, owned skins, loadout equip, daily store + bundles.",
     "authLead": "Sign in on the official Riot website (auth.riotgames.com). Descall never asks for or stores your Riot password.",
     "authLoadError": "Failed to load Valorant connection",
@@ -129,9 +129,9 @@ export const nested = {
     "missionsTitle": "Missions & Battle Pass",
     "missionsLead": "Weekly missions, agent contracts, and battle pass progress from your Riot session.",
     "missionsConfigTitle": "Configure RIOT_API_KEY",
-    "missionsNotConfigured": "Set RIOT_API_KEY on Render, then redeploy. Missions light up with your desktop Riot Client tokens — no secrets in the app.",
+    "missionsNotConfigured": "Set RIOT_API_KEY on Render, then redeploy. Missions light up with your desktop Riot Client tokens, no secrets in the app.",
     "missionsOpenCount": "{open}/{total} missions open",
-    "missionsBpLevel": "{name} — level {level}",
+    "missionsBpLevel": "{name}, level {level}",
     "missionsBpFallback": "Battle Pass",
     "missionsBpNone": "No battle pass progress in this session yet.",
     "missionsContractsCount": "{count} agent/event contracts",
@@ -150,7 +150,7 @@ export const nested = {
     "storeTitle": "Store & wallet",
     "storeLead": "VP, Radianite, Kingdom credits, daily market, and featured bundles from your Riot session.",
     "storeConfigTitle": "Configure RIOT_API_KEY",
-    "storeNotConfigured": "Set RIOT_API_KEY on Render, then redeploy. Store and loadout light up with desktop Riot Client tokens — no secrets in the app.",
+    "storeNotConfigured": "Set RIOT_API_KEY on Render, then redeploy. Store and loadout light up with desktop Riot Client tokens, no secrets in the app.",
     "storeWallet": "Wallet",
     "storeItemDaily": "Daily store / market",
     "storeItemBundle": "Current bundle / featured set",
@@ -166,9 +166,9 @@ export const nested = {
     "storeOwnedSkins": "Owned skins ({count})",
     "storeSkinsEmpty": "No owned skins loaded yet.",
     "storeFootnote": "Needs RIOT_API_KEY on Render + live Riot Client tokens on desktop. No Riot password stored.",
-    "storeSoon": "Adım 6 live — wallet, daily store, bundles, owned skins.",
+    "storeSoon": "Adım 6 live, wallet, daily store, bundles, owned skins.",
     "loadoutTitle": "Loadout",
-    "loadoutLead": "Equipped skins, buddies, card, title, and sprays — changes reflect in-game.",
+    "loadoutLead": "Equipped skins, buddies, card, title, and sprays, changes reflect in-game.",
     "loadoutCard": "Player card",
     "loadoutLevel": "Account level {level}",
     "loadoutGuns": "Weapons",
@@ -199,7 +199,7 @@ export const nested = {
   },
 
   "updateNotes": {
-    "stackedTitle": "What's new ({count} updates) — now on {version}",
+    "stackedTitle": "What's new ({count} updates), now on {version}",
     "lead": "Here is everything you missed since your last visit.",
     "gotIt": "Got it",
     "v2936": { "title": "Companion layout", "body": "Play opens Companion first, with a clearer full-width layout." },
@@ -211,10 +211,10 @@ export const nested = {
     "v2942": { "title": "Missions API", "body": "Companion can load missions, contracts, and battle pass progress." },
     "v2943": { "title": "Missions UI", "body": "Missions and Battle Pass show up clearly in Companion." },
     "v2944": { "title": "Companion tabs & Loadout", "body": "Companion now has Party, Friends, Missions, and Loadout tabs. Wallet and store live under Loadout. Update notices are clearer." },
-    "v2945": { "title": "Mobile Companion accordion", "body": "On phones, Companion uses vertical section cards (Party, Friends, Contracts, Loadout, Store) instead of cramped horizontal tabs. Play fills to the bottom — no black band under content." },
-    "v2946": { "title": "Mobile What's New + bottom fill", "body": "What's New works on phones with safe-area padding and a pinned Got it button. Companion and LFG fill to the floating tab bar — no black void under the list." },
-    "v2947": { "title": "LFG tab swap + bottom gap", "body": "Switching to LFG fully hides Companion. Play content meets the mobile tab bar — no leftover dark band under Companion or LFG." },
-    "v2948": { "title": "Centered Roles & popups", "body": "Server Roles (Roller) and other full-page panels open as centered blur modals over the whole window — no more left-docked cards stuck in the sidebar." }
+    "v2945": { "title": "Mobile Companion accordion", "body": "On phones, Companion uses vertical section cards (Party, Friends, Contracts, Loadout, Store) instead of cramped horizontal tabs. Play fills to the bottom, no black band under content." },
+    "v2946": { "title": "Mobile What's New + bottom fill", "body": "What's New works on phones with safe-area padding and a pinned Got it button. Companion and LFG fill to the floating tab bar, no black void under the list." },
+    "v2947": { "title": "LFG tab swap + bottom gap", "body": "Switching to LFG fully hides Companion. Play content meets the mobile tab bar, no leftover dark band under Companion or LFG." },
+    "v2948": { "title": "Centered Roles & popups", "body": "Server Roles (Roller) and other full-page panels open as centered blur modals over the whole window, no more left-docked cards stuck in the sidebar." }
   },
   "updateToast": {
     "kicker": "Desktop update",
@@ -264,7 +264,7 @@ export const nested = {
     "english": "English",
     "turkish": "Turkish",
     "autoDetectHint": "Default is based on your device region (Turkey → Turkish, otherwise English).",
-    "appliesInstantly": "Changes apply instantly across the whole app — including Admin and voice chat.",
+    "appliesInstantly": "Changes apply instantly across the whole app, including Admin and voice chat.",
     "accountHint": "Username, email & status",
     "profileHint": "Avatar, banner & bio",
     "security": "Security",
@@ -327,7 +327,7 @@ export const nested = {
     "subtitle": "System administration & moderation",
     "overview": "Overview",
     "overviewTitle": "Right now",
-    "overviewSubtitle": "Live health, who was last active, who just joined, and what needs a click — not a dump of raw counters.",
+    "overviewSubtitle": "Live health, who was last active, who just joined, and what needs a click, not a dump of raw counters.",
     "overviewLoadError": "Could not load overview.",
     "overviewGatewayError": "The API is restarting after a deploy. Retry in a few seconds.",
     "overviewOnline": "Online now",
@@ -357,7 +357,7 @@ export const nested = {
     "overviewOpenAudit": "Full audit log",
     "overviewAlertMaintenance": "Maintenance mode is on.",
     "overviewAlertFrozen": "Chat is frozen.",
-    "overviewAlertHot": "Someone has 3+ open reports — open their file.",
+    "overviewAlertHot": "Someone has 3+ open reports, open their file.",
     "overviewAlertReports": "Open reports waiting in the inbox.",
     "overviewAlertErrors": "Error rate is elevated this hour.",
     "overviewAlertMemory": "Process memory is high.",
@@ -391,10 +391,10 @@ export const nested = {
     "maintenance": "Maintenance",
     "audit": "Audit",
     "peopleTitle": "User dossier",
-    "peopleSubtitle": "Search a username and open one file — identity, sessions, reports, wallet, and sanctions.",
+    "peopleSubtitle": "Search a username and open one file, identity, sessions, reports, wallet, and sanctions.",
     "peopleSearch": "Search username or display name…",
     "peopleEmptyTitle": "Open a user file",
-    "peopleEmptyBody": "Type a username. You will see who they are, how they joined, live sessions, reports, and DesCoin — then timeout, ban, or freeze the wallet from here.",
+    "peopleEmptyBody": "Type a username. You will see who they are, how they joined, live sessions, reports, and DesCoin, then timeout, ban, or freeze the wallet from here.",
     "directorySubtitle": "Every registered account. Tap a name to open their file.",
     "directorySearch": "Search name, username, or email…",
     "directoryFilterAll": "All",
@@ -423,7 +423,7 @@ export const nested = {
     "reportsLoadError": "Could not load reports.",
     "reportsEmptyTitle": "Inbox is clear",
     "reportsEmptyBody": "When someone reports a profile or a message, it lands here with the evidence.",
-    "reportsAutoOpen": "Three or more open reports on the same person — their dossier is open.",
+    "reportsAutoOpen": "Three or more open reports on the same person, their dossier is open.",
     "openDossier": "Open dossier",
     "dismiss": "Dismiss",
     "reportDismissed": "Report dismissed",
@@ -1287,7 +1287,7 @@ export const phrases = {
   "Turns off glass blur so Descall stays smooth on older computers.": "Turns off glass blur so Descall stays smooth on older computers.",
   "Density": "Density",
   "Message bubbles": "Message bubbles",
-  "Hey — how’s it going?": "Hey — how’s it going?",
+  "Hey, how’s it going?": "Hey, how’s it going?",
   "Pretty good! You?": "Pretty good! You?",
   "Control desktop and browser alerts.": "Control desktop and browser alerts.",
   "Pick the devices used for calls on this browser.": "Pick the devices used for calls on this browser.",
@@ -1472,12 +1472,12 @@ export const phrases = {
   "Game capture (1:1)": "Game capture (1:1)",
   "1080p FHD": "1080p FHD",
   "1440p QHD": "1440p QHD",
-  "Live — changes will restart sharing": "Live — changes will restart sharing",
+  "Live, changes will restart sharing": "Live, changes will restart sharing",
   "Set quality before sharing": "Set quality before sharing",
   "Share with these settings": "Share with these settings",
   "Frame rate": "Frame rate",
   "Resolution": "Resolution",
-  "Smoothest — low bandwidth": "Smoothest — low bandwidth",
+  "Smoothest, low bandwidth": "Smoothest, low bandwidth",
   "Recommended balance": "Recommended balance",
   "Sharp text / UI": "Sharp text / UI",
   "Presentations / slides": "Presentations / slides",
@@ -1502,7 +1502,7 @@ export const phrases = {
   "My rank (filter)": "My rank (filter)",
   "Loading lobbies…": "Loading lobbies…",
   "No open lobbies": "No open lobbies",
-  "Create one and share Descall — voice + party code in one place.": "Create one and share Descall — voice + party code in one place.",
+  "Create one and share Descall, voice + party code in one place.": "Create one and share Descall, voice + party code in one place.",
   "Code set": "Code set",
   "Valorant LFG": "Valorant LFG",
   "Loading lobby…": "Loading lobby…",
@@ -1540,7 +1540,7 @@ export const phrases = {
   "Cancelled": "Cancelled",
   "You've been invited to join a group": "You've been invited to join a group",
   "Loading invite…": "Loading invite…",
-  "Share a link — friends can join this group instantly": "Share a link — friends can join this group instantly",
+  "Share a link, friends can join this group instantly": "Share a link, friends can join this group instantly",
   "Expire after": "Expire after",
   "Invite link": "Invite link",
   "1 hour": "1 hour",
@@ -1582,8 +1582,8 @@ export const phrases = {
   "Mark read": "Mark read",
   "Close chat": "Close chat",
   "Close this chat?": "Close this chat?",
-  "This chat leaves your list. Messages stay — it comes back if they write you.":
-    "This chat leaves your list. Messages stay — it comes back if they write you.",
+  "This chat leaves your list. Messages stay, it comes back if they write you.":
+    "This chat leaves your list. Messages stay, it comes back if they write you.",
   "Could not update this chat.": "Could not update this chat.",
   "Forward": "Forward",
   "Yes": "Yes",
@@ -1667,7 +1667,7 @@ export const phrases = {
   "Your server is where you and your friends hang out. Make yours and start talking.": "Your server is where you and your friends hang out. Make yours and start talking.",
   "Choose a ready-made advanced template, or start from scratch and build everything yourself.": "Choose a ready-made advanced template, or start from scratch and build everything yourself.",
   "Use a template": "Use a template",
-  "Roles, text & voice channels, topics, slowmode, and permission overrides — fully prepared.": "Roles, text & voice channels, topics, slowmode, and permission overrides — fully prepared.",
+  "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.": "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.",
   "Start from scratch": "Start from scratch",
   "Empty server with only @everyone. Add channels and roles yourself.": "Empty server with only @everyone. Add channels and roles yourself.",
   "Pick a template": "Pick a template",
@@ -1691,7 +1691,7 @@ export const phrases = {
   "Scrim rooms": "Scrim rooms",
   "Coach role": "Coach role",
   "Friends hangout": "Friends hangout",
-  "Cozy private group setup — lounge chat, plans, music nights, and always-on voice rooms.": "Cozy private group setup — lounge chat, plans, music nights, and always-on voice rooms.",
+  "Cozy private group setup, lounge chat, plans, music nights, and always-on voice rooms.": "Cozy private group setup, lounge chat, plans, music nights, and always-on voice rooms.",
   "Lounge chat": "Lounge chat",
   "Plans board": "Plans board",
   "Music night": "Music night",
@@ -1741,7 +1741,7 @@ export const phrases = {
   "Network error during upload": "Network error during upload",
   "Create": "Create",
   "No servers yet": "No servers yet",
-  "Create a server to start building channels, roles, and voice — Discord-style.": "Create a server to start building channels, roles, and voice — Discord-style.",
+  "Create a server to start building channels, roles, and voice, Discord-style.": "Create a server to start building channels, roles, and voice, Discord-style.",
   "Owned {owned} / {max}": "Owned {owned} / {max}",
   "Own limit reached ({max})": "Own limit reached ({max})",
   "Failed to reorder servers.": "Failed to reorder servers.",
@@ -1923,7 +1923,7 @@ export const phrases = {
   "In this channel": "In this channel",
   "Nobody here yet": "Nobody here yet",
   "{count} in voice": "{count} in voice",
-  "Join to talk — no ringing, drop in anytime.": "Join to talk — no ringing, drop in anytime.",
+  "Join to talk, no ringing, drop in anytime.": "Join to talk, no ringing, drop in anytime.",
   "the server": "the server",
   "You were kicked from {name}": "You were kicked from {name}",
   "You were banned from {name}": "You were banned from {name}",
@@ -1975,7 +1975,7 @@ export const phrases = {
   "Topic (optional)": "Topic (optional)",
   "What's this channel about?": "What's this channel about?",
   "Categories group channels in the sidebar.": "Categories group channels in the sidebar.",
-  "Text and voice channels only — more types later.": "Text and voice channels only — more types later.",
+  "Text and voice channels only, more types later.": "Text and voice channels only, more types later.",
   "Text Channels": "Text Channels",
   "Delete {name}? Channels inside stay, but leave this category.": "Delete {name}? Channels inside stay, but leave this category.",
   "Delete #{name}? This cannot be undone.": "Delete #{name}? This cannot be undone.",
@@ -2005,7 +2005,7 @@ export const phrases = {
   "Town hall": "Town hall",
   "Save": "Save",
   "Your servers": "Your servers",
-  "Pick a server from the sidebar — or create one to get started.": "Pick a server from the sidebar — or create one to get started.",
+  "Pick a server from the sidebar, or create one to get started.": "Pick a server from the sidebar, or create one to get started.",
   "This will permanently delete {name} for everyone. Type the server name to confirm.": "This will permanently delete {name} for everyone. Type the server name to confirm.",
   "Leaving as owner deletes {name} for everyone. Type the server name to confirm.": "Leaving as owner deletes {name} for everyone. Type the server name to confirm.",
   "Are you sure you want to leave {name}?": "Are you sure you want to leave {name}?",
@@ -2016,9 +2016,9 @@ export const phrases = {
   "No groups yet": "No groups yet",
   "No conversations yet": "No conversations yet",
   "is now online": "is now online",
-  "Purchased — equip it anytime": "Purchased — equip it anytime",
-  "Add a friend to start chatting — messages, voice, and screen share in one place.": "Add a friend to start chatting — messages, voice, and screen share in one place.",
-  "Create a group for friends — chat, call, and share your screen together.": "Create a group for friends — chat, call, and share your screen together.",
+  "Purchased, equip it anytime": "Purchased, equip it anytime",
+  "Add a friend to start chatting, messages, voice, and screen share in one place.": "Add a friend to start chatting, messages, voice, and screen share in one place.",
+  "Create a group for friends, chat, call, and share your screen together.": "Create a group for friends, chat, call, and share your screen together.",
   "Create Group": "Create Group",
   "Group Name": "Group Name",
   "Owner": "Owner",
@@ -2086,12 +2086,12 @@ export const phrases = {
     "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
   "Descall is an independent messaging and voice platform for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.":
     "Descall is an independent messaging and voice platform for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.",
-  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG — with privacy policies and security docs you can actually read.":
-    "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG — with privacy policies and security docs you can actually read.",
-  "How Descall protects your chats and calls — encryption in transit, account security, and honest limits about what we do not claim.":
-    "How Descall protects your chats and calls — encryption in transit, account security, and honest limits about what we do not claim.",
-  "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server — messages are encrypted in transit and stored so your devices can load chat history.":
-    "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server — messages are encrypted in transit and stored so your devices can load chat history.",
+  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG, with privacy policies and security docs you can actually read.":
+    "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG, with privacy policies and security docs you can actually read.",
+  "How Descall protects your chats and calls, encryption in transit, account security, and honest limits about what we do not claim.":
+    "How Descall protects your chats and calls, encryption in transit, account security, and honest limits about what we do not claim.",
+  "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored so your devices can load chat history.":
+    "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored so your devices can load chat history.",
   "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally on their device, that recording is outside Descall's control.":
     "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally on their device, that recording is outside Descall's control.",
   "Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available where configured. Session management lets you revoke devices. Keep credentials private on shared computers.":
@@ -2223,7 +2223,7 @@ export const phrases = {
   "Slowmode is on: {time} between messages": "Slowmode is on: {time} between messages",
   "Slowmode: wait {time}": "Slowmode: wait {time}",
   "Members must wait {time} between messages.": "Members must wait {time} between messages.",
-  "Off — members can send freely.": "Off — members can send freely.",
+  "Off, members can send freely.": "Off, members can send freely.",
   "Freeze Chat": "Freeze Chat",
   "Clear Cache": "Clear Cache",
   "Backup": "Backup",
@@ -2437,7 +2437,7 @@ export const phrases = {
   "Sent": "Sent",
   "Original message": "Original message",
   "Invite People": "Invite People",
-  "Active Now — {count}": "Active Now — {count}",
+  "Active Now, {count}": "Active Now, {count}",
   "{count} online": "{count} online",
   "No friends online": "No friends online",
   "No matches": "No matches",
@@ -2456,15 +2456,15 @@ export const phrases = {
   "1 Hour": "1 Hour",
   "4 Hours": "4 Hours",
   "Until Cleared": "Until Cleared",
-  "Describe the bug — what happened and how to reproduce it…": "Describe the bug — what happened and how to reproduce it…",
+  "Describe the bug, what happened and how to reproduce it…": "Describe the bug, what happened and how to reproduce it…",
   "Tell us what you love about Descall…": "Tell us what you love about Descall…",
   "Share your idea or suggestion…": "Share your idea or suggestion…",
   "Allow notifications for messages, calls, and mentions": "Allow notifications for messages, calls, and mentions",
   "{name} is typing": "{name} is typing",
   "{name1} and {name2} are typing": "{name1} and {name2} are typing",
   "{names} and {count} more are typing": "{names} and {count} more are typing",
-  "Online — {count}": "Online — {count}",
-  "Offline — {count}": "Offline — {count}",
+  "Online, {count}": "Online, {count}",
+  "Offline, {count}": "Offline, {count}",
   "Last seen {time}": "Last seen {time}",
   "Started {time}": "Started {time}",
   "{count}d ago": "{count}d ago",
@@ -2496,7 +2496,7 @@ export const phrases = {
   "< 1s": "< 1s",
   "Almost ready": "Almost ready",
   "Signing in": "Signing in",
-  "Start a hand — /bj 100": "Start a hand — /bj 100",
+  "Start a hand, /bj 100": "Start a hand, /bj 100",
   "Claim free credits once per day": "Claim free credits once per day",
   "Show blackjack commands": "Show blackjack commands",
   "Check your balance": "Check your balance",
@@ -2511,9 +2511,9 @@ export const phrases = {
   "Desktop": "Desktop",
   "Descall for {name}": "Descall for {name}",
   "Web app": "Web app",
-  "Windows 10/11 (64-bit) — desktop installer": "Windows 10/11 (64-bit) — desktop installer",
-  "macOS — use Descall in your browser (no desktop build)": "macOS — use Descall in your browser (no desktop build)",
-  "Linux — use Descall in your browser (no desktop build)": "Linux — use Descall in your browser (no desktop build)",
+  "Windows 10/11 (64-bit), desktop installer": "Windows 10/11 (64-bit), desktop installer",
+  "macOS, use Descall in your browser (no desktop build)": "macOS, use Descall in your browser (no desktop build)",
+  "Linux, use Descall in your browser (no desktop build)": "Linux, use Descall in your browser (no desktop build)",
   "64-bit processor": "64-bit processor",
   "500 MB free space": "500 MB free space",
   "© 2026 Descall. All rights reserved.": "© 2026 Descall. All rights reserved.",
@@ -2526,7 +2526,7 @@ export const phrases = {
   "Active Now": "Active Now",
   "Play a sound when a new message arrives": "Play a sound when a new message arrives",
   "Ring and call connection sounds": "Ring and call connection sounds",
-  "Hey — how's it going?": "Hey — how's it going?",
+  "Hey, how's it going?": "Hey, how's it going?",
   "{count} missed": "{count} missed",
   "{count} people": "{count} people",
   "Allow notifications": "Allow notifications",
@@ -2601,7 +2601,7 @@ export const phrases = {
   "Image": "Image",
   "Open image": "Open image",
   "Open GIF": "Open GIF",
-  "Empty recording — try again.": "Empty recording — try again.",
+  "Empty recording, try again.": "Empty recording, try again.",
   "Recording failed.": "Recording failed.",
   "Microphone access denied.": "Microphone access denied.",
   "Message activity and user interaction statistics": "Message activity and user interaction statistics",
@@ -2743,7 +2743,7 @@ export const phrases = {
   "No members": "No members",
   "📞 Call": "📞 Call",
   "Descall staff": "Descall staff",
-  "Pending — {count}": "Pending — {count}",
+  "Pending, {count}": "Pending, {count}",
   "Friend request accepted": "Friend request accepted",
   "Excellent": "Excellent",
   "Fair": "Fair",
@@ -2767,7 +2767,7 @@ export const phrases = {
   "Verified": "Verified",
   "Email address": "Email address",
   "Verify your email to enable two-factor authentication.": "Verify your email to enable two-factor authentication.",
-  "Verified — used for sign-in codes and account alerts.": "Verified — used for sign-in codes and account alerts.",
+  "Verified, used for sign-in codes and account alerts.": "Verified, used for sign-in codes and account alerts.",
   "you@example.com": "you@example.com",
   "Send code": "Send code",
   "Sending…": "Sending…",
@@ -2789,12 +2789,12 @@ export const phrases = {
   "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.": "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.",
   "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.": "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.",
   "Quick Add": "Quick Add",
-  "People you may know — ranked by mutual friends and shared groups.": "People you may know — ranked by mutual friends and shared groups.",
+  "People you may know, ranked by mutual friends and shared groups.": "People you may know, ranked by mutual friends and shared groups.",
   "Finding people you may know...": "Finding people you may know...",
   "{count} mutual friends": "{count} mutual friends",
   "{count} shared groups": "{count} shared groups",
   "Suggested for you": "Suggested for you",
-  "No suggestions right now — check back after you join a few groups or make some friends.": "No suggestions right now — check back after you join a few groups or make some friends.",
+  "No suggestions right now, check back after you join a few groups or make some friends.": "No suggestions right now, check back after you join a few groups or make some friends.",
   "Failed to load suggestions": "Failed to load suggestions",
   "Email (optional)": "Email (optional)",
   "Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings.": "Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings.",
@@ -2846,9 +2846,9 @@ export const phrases = {
   "This account has no email on file. Contact support@descall.com to recover access.": "This account has no email on file. Contact support@descall.com to recover access.",
   "Shop": "Shop",
   "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.": "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.":
-    "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.",
-  "No items available yet — check back soon!": "No items available yet — check back soon!",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, frames, auras, flares, and more.":
+    "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, frames, auras, flares, and more.",
+  "No items available yet, check back soon!": "No items available yet, check back soon!",
   "Shop categories": "Shop categories",
   "Banners": "Banners",
   "Frames": "Frames",
@@ -2924,8 +2924,8 @@ export const phrases = {
   // DesCoin economy + premium themes
   "Premium Themes": "Premium Themes",
   "Premium Theme": "Premium Theme",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, avatar frames, backgrounds, and premium themes.":
-    "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, avatar frames, backgrounds, and premium themes.",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, avatar frames, backgrounds, and premium themes.":
+    "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, avatar frames, backgrounds, and premium themes.",
   "Your DesCoin balance": "Your DesCoin balance",
   "Not enough DesCoin yet": "Not enough DesCoin yet",
   "Not enough DesCoin": "Not enough DesCoin",
@@ -2945,7 +2945,7 @@ export const phrases = {
   "{name}'s new balance: {balance} DesCoin": "{name}'s new balance: {balance} DesCoin",
   "Failed to update DesCoin balance.": "Failed to update DesCoin balance.",
 
-  // SEO / Discord-alternative marketing (identity map — TR locale carries translations)
+  // SEO / Discord-alternative marketing (identity map, TR locale carries translations)
   "Discord alternative": "Discord alternative",
   "Discord alternatives": "Discord alternatives",
   "vs Discord": "vs Discord",
@@ -2959,22 +2959,22 @@ export const phrases = {
   "Explore features": "Explore features",
   "Frequently asked questions": "Frequently asked questions",
   "Ready to try a lighter Discord alternative?": "Ready to try a lighter Discord alternative?",
-  "Create a free Descall account — chat, voice, screen share, and Valorant LFG in one place.":
-    "Create a free Descall account — chat, voice, screen share, and Valorant LFG in one place.",
-  "The free Discord alternative for friends and gamers — real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.":
-    "The free Discord alternative for friends and gamers — real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.",
+  "Create a free Descall account, chat, voice, screen share, and Valorant LFG in one place.":
+    "Create a free Descall account, chat, voice, screen share, and Valorant LFG in one place.",
+  "The free Discord alternative for friends and gamers, real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.":
+    "The free Discord alternative for friends and gamers, real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.",
   "Why choose this Discord alternative?": "Why choose this Discord alternative?",
-  "Descall keeps the parts you love — chat, calls, screen share — and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.":
-    "Descall keeps the parts you love — chat, calls, screen share — and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.",
-  "Descall vs Discord — quick take": "Descall vs Discord — quick take",
+  "Descall keeps the parts you love, chat, calls, screen share, and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.":
+    "Descall keeps the parts you love, chat, calls, screen share, and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.",
+  "Descall vs Discord, quick take": "Descall vs Discord, quick take",
   "Need mega-servers and bots? Discord still wins. Need free voice, screen share, and Valorant LFG for people you actually know? Descall is the Discord alternative built for that.":
     "Need mega-servers and bots? Discord still wins. Need free voice, screen share, and Valorant LFG for people you actually know? Descall is the Discord alternative built for that.",
   "Full comparison": "Full comparison",
   "Read the blog": "Read the blog",
   "Descall vs Discord": "Descall vs Discord",
   "Features of a modern Discord alternative": "Features of a modern Discord alternative",
-  "Everything friend groups and gamers need day to day — messaging, calls, screen share, LFG — without turning your PC into a second operating system.":
-    "Everything friend groups and gamers need day to day — messaging, calls, screen share, LFG — without turning your PC into a second operating system.",
+  "Everything friend groups and gamers need day to day, messaging, calls, screen share, LFG, without turning your PC into a second operating system.":
+    "Everything friend groups and gamers need day to day, messaging, calls, screen share, LFG, without turning your PC into a second operating system.",
   "Product": "Product",
   "Try Descall": "Try Descall",
   "Try Descall free": "Try Descall free",
@@ -2990,14 +2990,14 @@ export const phrases = {
   "Copy invite link": "Copy invite link",
 
   "Voice Room": "Voice Room",
-  "Drop in anytime — no ringing": "Drop in anytime — no ringing",
+  "Drop in anytime, no ringing": "Drop in anytime, no ringing",
   "People in voice": "People in voice",
   "Join Voice": "Join Voice",
   "Leave": "Leave",
   "Invite friends": "Invite friends",
   "You get 100 DesCoin · they get 50": "You get 100 DesCoin · they get 50",
   "You 100 · they 50 DesCoin": "You 100 · they 50 DesCoin",
-  "Join me on Descall — we both get DesCoin": "Join me on Descall — we both get DesCoin",
+  "Join me on Descall, we both get DesCoin": "Join me on Descall, we both get DesCoin",
   "Copied": "Copied",
   "Copy link": "Copy link",
   "Share": "Share",
@@ -3006,18 +3006,18 @@ export const phrases = {
   "Get started on Descall": "Get started on Descall",
   "{done} of {total} complete": "{done} of {total} complete",
   "Invite a friend": "Invite a friend",
-  "Share your link — you both earn DesCoin when they join.":
-    "Share your link — you both earn DesCoin when they join.",
+  "Share your link, you both earn DesCoin when they join.":
+    "Share your link, you both earn DesCoin when they join.",
   "Add your first friend": "Add your first friend",
   "Quick Add someone you know, or accept an incoming request.":
     "Quick Add someone you know, or accept an incoming request.",
   "Start a voice call": "Start a voice call",
-  "Hop on a free HD call — the moment Descall feels real.":
-    "Hop on a free HD call — the moment Descall feels real.",
+  "Hop on a free HD call, the moment Descall feels real.":
+    "Hop on a free HD call, the moment Descall feels real.",
   "Add": "Add",
   "Call": "Call",
   "You're ready": "You're ready",
-  "Invite, friend, and first call — done.": "Invite, friend, and first call — done.",
+  "Invite, friend, and first call, done.": "Invite, friend, and first call, done.",
   "Daily reward": "Daily reward",
   "Streak": "Streak",
   "Claimed": "Claimed",
@@ -3027,16 +3027,16 @@ export const phrases = {
   "Messages": "Messages",
   "Screenshare": "Screenshare",
   "Daily DesCoin claimed! +{amount}": "Daily DesCoin claimed! +{amount}",
-  "Already claimed today — come back tomorrow": "Already claimed today — come back tomorrow",
+  "Already claimed today, come back tomorrow": "Already claimed today, come back tomorrow",
   "Could not claim daily DesCoin": "Could not claim daily DesCoin",
   "Invite link copied": "Invite link copied",
   "Could not copy invite link": "Could not copy invite link",
-  "Share your invite link — friends join free and connect with you instantly.":
-    "Share your invite link — friends join free and connect with you instantly.",
+  "Share your invite link, friends join free and connect with you instantly.":
+    "Share your invite link, friends join free and connect with you instantly.",
   "Add friend": "Add friend",
   "Invited by @{username}": "Invited by @{username}",
-  "Join {name} on Descall — free chat, voice, and calls.":
-    "Join {name} on Descall — free chat, voice, and calls.",
+  "Join {name} on Descall, free chat, voice, and calls.":
+    "Join {name} on Descall, free chat, voice, and calls.",
   "Fastest path: continue with Google, then you’re in.":
     "Fastest path: continue with Google, then you’re in.",
   "or": "or",
@@ -3134,9 +3134,9 @@ export const phrases = {
   "90 days": "90 days",
   "1 year": "1 year",
   "This device can’t share system/tab audio with screen share.":
-    "This device can’t share system/tab audio with screen share. On mobile browsers, YouTube/app audio usually can’t be captured with screen share — only the video mirror.",
-  "No system/tab audio selected — enable “Share audio” in the picker for sound.":
-    "No system/tab audio selected — enable “Share audio” in the picker for sound.",
+    "This device can’t share system/tab audio with screen share. On mobile browsers, YouTube/app audio usually can’t be captured with screen share, only the video mirror.",
+  "No system/tab audio selected, enable “Share audio” in the picker for sound.":
+    "No system/tab audio selected, enable “Share audio” in the picker for sound.",
   "Screen share ended while Descall was in the background.":
     "Screen share ended while Descall was in the background.",
   "Share your entire screen so switching apps keeps the broadcast alive.":
@@ -3148,7 +3148,7 @@ export const phrases = {
   "Could not start screen share.": "Could not start screen share.",
   "Loudspeaker": "Speaker",
   "Audio output": "Audio output",
-  "Answered on iPhone — waiting for unlock…": "Answered on iPhone — waiting for unlock…",
+  "Answered on iPhone, waiting for unlock…": "Answered on iPhone, waiting for unlock…",
   "They answered on a locked iPhone but couldn't join in time. Try calling again.":
     "They answered on a locked iPhone but couldn't join in time. Try calling again.",
   "getDisplayMedia unsupported": "Screen sharing is not available in this browser.",
@@ -3196,20 +3196,20 @@ export const phrases = {
   "High": "High",
   "Highest": "Highest",
 
-  // Marketing — servers system
-  "A free Discord alternative with real servers — roles, channels, voice, and templates — plus chat, calls, and Valorant LFG.":
-    "A free Discord alternative with real servers — roles, channels, voice, and templates — plus chat, calls, and Valorant LFG.",
-  "A free Discord alternative with real servers — roles, channels, voice, and templates — plus chat, calls, and":
-    "A free Discord alternative with real servers — roles, channels, voice, and templates — plus chat, calls, and",
+  // Marketing, servers system
+  "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and Valorant LFG.":
+    "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and Valorant LFG.",
+  "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and":
+    "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and",
   "Servers, roles, channels, and": "Servers, roles, channels, and",
-  "Servers, chat, and calls in one lighter Discord alternative — built for friends, gamers, and communities.":
-    "Servers, chat, and calls in one lighter Discord alternative — built for friends, gamers, and communities.",
-  "Text, voice, and stage channels with categories — Discord-style structure, lighter feel":
-    "Text, voice, and stage channels with categories — Discord-style structure, lighter feel",
+  "Servers, chat, and calls in one lighter Discord alternative, built for friends, gamers, and communities.":
+    "Servers, chat, and calls in one lighter Discord alternative, built for friends, gamers, and communities.",
+  "Text, voice, and stage channels with categories, Discord-style structure, lighter feel":
+    "Text, voice, and stage channels with categories, Discord-style structure, lighter feel",
   "Role hierarchy, staff rooms, and per-channel overrides ready for real communities":
     "Role hierarchy, staff rooms, and per-channel overrides ready for real communities",
-  "Gaming, Valorant, friends, community, study & streaming — roles and channels pre-built":
-    "Gaming, Valorant, friends, community, study & streaming — roles and channels pre-built",
+  "Gaming, Valorant, friends, community, study & streaming, roles and channels pre-built":
+    "Gaming, Valorant, friends, community, study & streaming, roles and channels pre-built",
   "Instant DMs and server chat with typing indicators": "Instant DMs and server chat with typing indicators",
   "Crystal-clear group and server calls": "Crystal-clear group and server calls",
   "Share your screen in calls with quality presets": "Share your screen in calls with quality presets",
@@ -3217,11 +3217,11 @@ export const phrases = {
   "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared.":
     "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared.",
   "Channels that match the job": "Channels that match the job",
-  "Announcements, LFG, clips, VIP lounges, staff ops — topics and slowmode included in templates.":
-    "Announcements, LFG, clips, VIP lounges, staff ops — topics and slowmode included in templates.",
+  "Announcements, LFG, clips, VIP lounges, staff ops, topics and slowmode included in templates.":
+    "Announcements, LFG, clips, VIP lounges, staff ops, topics and slowmode included in templates.",
   "Roles that actually work": "Roles that actually work",
-  "Admin, Moderator, Helper, VIP and more — with kick, ban, timeout, and audit logs.":
-    "Admin, Moderator, Helper, VIP and more — with kick, ban, timeout, and audit logs.",
+  "Admin, Moderator, Helper, VIP and more, with kick, ban, timeout, and audit logs.":
+    "Admin, Moderator, Helper, VIP and more, with kick, ban, timeout, and audit logs.",
   "Voice built into the server": "Voice built into the server",
   "Lobby, scrim, focus, and stage rooms so your crew can hop in without leaving the app.":
     "Lobby, scrim, focus, and stage rooms so your crew can hop in without leaving the app.",
@@ -3234,50 +3234,50 @@ export const phrases = {
   "Moderation & invites": "Moderation & invites",
   "Channel controls": "Channel controls",
   "Friends & presence": "Friends & presence",
-  "Full server structure with categories, text, voice, and stage channels — topics, slowmode, and NSFW flags included.":
-    "Full server structure with categories, text, voice, and stage channels — topics, slowmode, and NSFW flags included.",
+  "Full server structure with categories, text, voice, and stage channels, topics, slowmode, and NSFW flags included.":
+    "Full server structure with categories, text, voice, and stage channels, topics, slowmode, and NSFW flags included.",
   "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.":
     "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.",
-  "Gaming, Valorant, friends, community, study, and streaming templates — roles and channels ready the moment you create.":
-    "Gaming, Valorant, friends, community, study, and streaming templates — roles and channels ready the moment you create.",
+  "Gaming, Valorant, friends, community, study, and streaming templates, roles and channels ready the moment you create.":
+    "Gaming, Valorant, friends, community, study, and streaming templates, roles and channels ready the moment you create.",
   "Kick, ban, timeout, audit logs, community rules, and invite links so servers stay organized as they grow.":
     "Kick, ban, timeout, audit logs, community rules, and invite links so servers stay organized as they grow.",
-  "DMs and server chat with typing indicators — a Discord alternative that stays focused on people you know.":
-    "DMs and server chat with typing indicators — a Discord alternative that stays focused on people you know.",
+  "DMs and server chat with typing indicators, a Discord alternative that stays focused on people you know.":
+    "DMs and server chat with typing indicators, a Discord alternative that stays focused on people you know.",
   "Crystal-clear WebRTC voice and HD video for squads and server lobbies, without Nitro-gated quality of life.":
     "Crystal-clear WebRTC voice and HD video for squads and server lobbies, without Nitro-gated quality of life.",
-  "Friend list, online status, and invites — jump from DMs into a server voice channel in one flow.":
-    "Friend list, online status, and invites — jump from DMs into a server voice channel in one flow.",
-  "Slowmode, topics, permission overrides, and staff-only channels — the day-to-day tools communities actually use.":
-    "Slowmode, topics, permission overrides, and staff-only channels — the day-to-day tools communities actually use.",
+  "Friend list, online status, and invites, jump from DMs into a server voice channel in one flow.":
+    "Friend list, online status, and invites, jump from DMs into a server voice channel in one flow.",
+  "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.":
+    "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.",
   "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.":
     "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.",
-  "Servers with roles and channels, messaging, calls, screen share, and LFG — everything friend groups and communities need, without turning your PC into a second operating system.":
-    "Servers with roles and channels, messaging, calls, screen share, and LFG — everything friend groups and communities need, without turning your PC into a second operating system.",
-  "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG — without Nitro paywalls for the features you actually use.":
-    "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG — without Nitro paywalls for the features you actually use.",
-  "Descall UI — servers, chat, voice, and LFG in one app": "Descall UI — servers, chat, voice, and LFG in one app",
-  "Discord is powerful — and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.":
-    "Discord is powerful — and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.",
+  "Servers with roles and channels, messaging, calls, screen share, and LFG, everything friend groups and communities need, without turning your PC into a second operating system.":
+    "Servers with roles and channels, messaging, calls, screen share, and LFG, everything friend groups and communities need, without turning your PC into a second operating system.",
+  "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG, without Nitro paywalls for the features you actually use.":
+    "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG, without Nitro paywalls for the features you actually use.",
+  "Descall UI, servers, chat, voice, and LFG in one app": "Descall UI, servers, chat, voice, and LFG in one app",
+  "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.":
+    "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.",
   "Servers with roles, text & voice channels": "Servers with roles, text & voice channels",
   "Advanced templates (gaming, Valorant, community…)": "Advanced templates (gaming, Valorant, community…)",
-  "DMs plus a ready-made friends server — lounge chat, plans, and always-on voice.":
-    "DMs plus a ready-made friends server — lounge chat, plans, and always-on voice.",
+  "DMs plus a ready-made friends server, lounge chat, plans, and always-on voice.":
+    "DMs plus a ready-made friends server, lounge chat, plans, and always-on voice.",
   "Gaming / Valorant server templates, ranked LFG channels, and the Play tab in one app.":
     "Gaming / Valorant server templates, ranked LFG channels, and the Play tab in one app.",
   "Communities & creators": "Communities & creators",
-  "Announcements, support, events, stage, and a full staff ladder — without Nitro pressure.":
-    "Announcements, support, events, stage, and a full staff ladder — without Nitro pressure.",
+  "Announcements, support, events, stage, and a full staff ladder, without Nitro pressure.":
+    "Announcements, support, events, stage, and a full staff ladder, without Nitro pressure.",
   "Keep premium cosmetics optional. Servers, chat, and calls stay free.":
     "Keep premium cosmetics optional. Servers, chat, and calls stay free.",
   "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, LFG, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026.":
     "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, LFG, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026.",
-  "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG — with free core features.":
-    "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG — with free core features.",
+  "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG, with free core features.":
+    "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG, with free core features.",
   "still wins for massive bot ecosystems and the widest platform matrix. Many groups run both: Discord for huge public communities with bots, Descall for the squad server and nightly calls.":
     "still wins for massive bot ecosystems and the widest platform matrix. Many groups run both: Discord for huge public communities with bots, Descall for the squad server and nightly calls.",
   "Real servers with roles, channels, and ready-made templates": "Real servers with roles, channels, and ready-made templates",
-  "Modern UI focused on speed — servers without endless chrome": "Modern UI focused on speed — servers without endless chrome",
+  "Modern UI focused on speed, servers without endless chrome": "Modern UI focused on speed, servers without endless chrome",
   "Massive bot / integration ecosystem": "Massive bot / integration ecosystem",
   "Huge public communities with decades of ecosystem tooling": "Huge public communities with decades of ecosystem tooling",
   "Create a Descall server from a template (or start from scratch) and invite your core squad.":
@@ -3287,18 +3287,18 @@ export const phrases = {
   "Keep Discord only for bot-heavy communities you still need.":
     "Keep Discord only for bot-heavy communities you still need.",
   "Real-time chat & DMs": "Real-time chat & DMs",
-  "Yes — fast, modern UI": "Yes — fast, modern UI",
+  "Yes, fast, modern UI": "Yes, fast, modern UI",
   "Servers with channels": "Servers with channels",
-  "Yes — text, voice, stage + categories": "Yes — text, voice, stage + categories",
-  "Yes — mature tree model": "Yes — mature tree model",
-  "Yes — role hierarchy + channel overrides": "Yes — role hierarchy + channel overrides",
-  "Yes — deep matrix": "Yes — deep matrix",
+  "Yes, text, voice, stage + categories": "Yes, text, voice, stage + categories",
+  "Yes, mature tree model": "Yes, mature tree model",
+  "Yes, role hierarchy + channel overrides": "Yes, role hierarchy + channel overrides",
+  "Yes, deep matrix": "Yes, deep matrix",
   "Server templates": "Server templates",
-  "Yes — gaming, Valorant, community, study & more": "Yes — gaming, Valorant, community, study & more",
+  "Yes, gaming, Valorant, community, study & more": "Yes, gaming, Valorant, community, study & more",
   "Limited community templates": "Limited community templates",
-  "Yes — WebRTC + TURN": "Yes — WebRTC + TURN",
+  "Yes, WebRTC + TURN": "Yes, WebRTC + TURN",
   "Screen share quality control": "Screen share quality control",
-  "Yes — presets & restart-safe": "Yes — presets & restart-safe",
+  "Yes, presets & restart-safe": "Yes, presets & restart-safe",
   "Valorant LFG / party finder": "Valorant LFG / party finder",
   "Built-in Play tab + Riot link": "Built-in Play tab + Riot link",
   "Bots / external tools": "Bots / external tools",
@@ -3330,20 +3330,20 @@ export const phrases = {
   "Friends, servers, LFG, lightweight calls": "Friends, servers, LFG, lightweight calls",
   "Huge communities + ecosystem": "Huge communities + ecosystem",
   "Servers ready in minutes": "Servers ready in minutes",
-  "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides — gaming, Valorant, community, study, friends, or streaming.":
-    "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides — gaming, Valorant, community, study, friends, or streaming.",
+  "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides, gaming, Valorant, community, study, friends, or streaming.":
+    "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides, gaming, Valorant, community, study, friends, or streaming.",
   "Roles, channels & moderation": "Roles, channels & moderation",
   "Discord-style roles and channel overrides, plus kick, ban, timeout, audit logs, and invites. Run a private hangout or a public-ready community without bot hell for the basics.":
     "Discord-style roles and channel overrides, plus kick, ban, timeout, audit logs, and invites. Run a private hangout or a public-ready community without bot hell for the basics.",
   "Built for friends & LFG": "Built for friends & LFG",
-  "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG — so squads can queue and hop into server voice in one app.":
-    "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG — so squads can queue and hop into server voice in one app.",
+  "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG, so squads can queue and hop into server voice in one app.":
+    "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG, so squads can queue and hop into server voice in one app.",
   "Calls without the bloat": "Calls without the bloat",
   "WebRTC voice/video with TURN support, incoming call UX, PiP, and screen-share quality controls. A lighter Discord alternative when you want clean calls inside servers or DMs.":
     "WebRTC voice/video with TURN support, incoming call UX, PiP, and screen-share quality controls. A lighter Discord alternative when you want clean calls inside servers or DMs.",
   "Free core, optional cosmetics": "Free core, optional cosmetics",
-  "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin — not a Nitro-style lock on talking to friends.":
-    "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin — not a Nitro-style lock on talking to friends.",
+  "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin, not a Nitro-style lock on talking to friends.":
+    "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin, not a Nitro-style lock on talking to friends.",
   "Desktop + web + Android": "Desktop + web + Android",
   "Install on Windows, open the web app anywhere, or use Android. A practical Discord alternative if your group mixes desktop gaming with mobile chat.":
     "Install on Windows, open the web app anywhere, or use Android. A practical Discord alternative if your group mixes desktop gaming with mobile chat.",
@@ -3352,37 +3352,37 @@ export const phrases = {
   "together": "together",
   "Reject": "Reject",
   "Optional analytics only. Essentials stay on.": "Optional analytics only. Essentials stay on.",
-  "A lighter home for friends and squads — real servers, HD calls, screen share, and":
-    "A lighter home for friends and squads — real servers, HD calls, screen share, and",
-  "Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.":
-    "Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.",
+  "A lighter home for friends and squads, real servers, HD calls, screen share, and":
+    "A lighter home for friends and squads, real servers, HD calls, screen share, and",
+  "Servers, chat, calls, and screen share in one quieter app, built for friends, gamers, and communities.":
+    "Servers, chat, calls, and screen share in one quieter app, built for friends, gamers, and communities.",
   "Servers ready to run": "Servers ready to run",
-  "Text, voice, and stage channels with categories — a lighter home for real communities":
-    "Text, voice, and stage channels with categories — a lighter home for real communities",
-  "DMs that feel instant — typing, replies, and media without a Nitro wall":
-    "DMs that feel instant — typing, replies, and media without a Nitro wall",
+  "Text, voice, and stage channels with categories, a lighter home for real communities":
+    "Text, voice, and stage channels with categories, a lighter home for real communities",
+  "DMs that feel instant, typing, replies, and media without a Nitro wall":
+    "DMs that feel instant, typing, replies, and media without a Nitro wall",
   "Servers & LFG": "Servers & LFG",
   "Download & accounts": "Download & accounts",
   "Support": "Support",
   "Switch in three steps": "Switch in three steps",
-  "Sign in with Google or email — no installer required to try the web app.":
-    "Sign in with Google or email — no installer required to try the web app.",
+  "Sign in with Google or email, no installer required to try the web app.":
+    "Sign in with Google or email, no installer required to try the web app.",
   "Spin up a server": "Spin up a server",
   "Pick a template (friends, gaming, Valorant) or start empty. Roles and channels ship ready.":
     "Pick a template (friends, gaming, Valorant) or start empty. Roles and channels ship ready.",
   "Invite the squad": "Invite the squad",
   "Share a link, hop into voice, and keep Discord only if you still need the giant bot stack.":
     "Share a link, hop into voice, and keep Discord only if you still need the giant bot stack.",
-  "Play tab — Valorant LFG inside Descall": "Play tab — Valorant LFG inside Descall",
+  "Play tab, Valorant LFG inside Descall": "Play tab, Valorant LFG inside Descall",
   "Your chats live here": "Your chats live here",
   "Open the menu to pick a friend or start a new conversation": "Open the menu to pick a friend or start a new conversation",
-  "Pick a friend, start a DM, or create a group — Descall keeps it light.":
-    "Pick a friend, start a DM, or create a group — Descall keeps it light.",
+  "Pick a friend, start a DM, or create a group, Descall keeps it light.":
+    "Pick a friend, start a DM, or create a group, Descall keeps it light.",
   "Pick a home": "Pick a home",
   "Servers hold channels, roles, and voice rooms. Create one or join with an invite.":
     "Servers hold channels, roles, and voice rooms. Create one or join with an invite.",
-  "Create a server for channels, roles, and voice — or join with an invite.":
-    "Create a server for channels, roles, and voice — or join with an invite.",
+  "Create a server for channels, roles, and voice, or join with an invite.":
+    "Create a server for channels, roles, and voice, or join with an invite.",
   "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.":
     "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.",
   "This account is closed because the account holder is under 13. Account deletion has started.":

@@ -255,7 +255,7 @@ export default function ChatPanel({
     }
   }, [activeDmUser, activeGroup, activeView, activeServer]);
 
-  // One conversation identity at a time — never stack DM + group chrome.
+  // One conversation identity at a time, never stack DM + group chrome.
   // The header remounts under chat-top-chrome (keyed) so Electron DM→group
   // never leaves a stuck header node. Group voice rings members; it is not a room.
   const headerGroup = activeGroup || null;
@@ -367,7 +367,7 @@ export default function ChatPanel({
     }
     return {
       title: t("Your chats live here"),
-      body: t("Pick a friend, start a DM, or create a group — Descall keeps it light."),
+      body: t("Pick a friend, start a DM, or create a group, Descall keeps it light."),
       primary: { label: t("Start a chat"), action: () => onAddClick?.("friend"), icon: UserPlus },
       secondary: { label: t("Create group"), action: () => onAddClick?.("group"), icon: Plus },
       icon: MessageSquare,
@@ -592,7 +592,7 @@ export default function ChatPanel({
         )}
       </AnimatePresence>
 
-      {/* Activity view fills the full panel — rendered outside messages-container to avoid double-scroll */}
+      {/* Activity view fills the full panel, rendered outside messages-container to avoid double-scroll */}
       {activeView === "activity" ? (
         <ActivityView
           me={activity?.me}
@@ -657,7 +657,7 @@ export default function ChatPanel({
           </h2>
           <p>
             {!activeServer
-              ? t("Pick a server from the sidebar — or create one to get started.")
+              ? t("Pick a server from the sidebar, or create one to get started.")
               : t("Select a channel from the sidebar to get started.")}
           </p>
           {activeChannel?.topic ? (
@@ -688,7 +688,7 @@ export default function ChatPanel({
       </div>
       )}
 
-      {/* Typing + composer only on real chat surfaces — never under Activity */}
+      {/* Typing + composer only on real chat surfaces, never under Activity */}
       {activeView !== "activity" && showComposer && (
         <>
           <AnimatePresence>
@@ -869,7 +869,7 @@ export default function ChatPanel({
                       {online.length > 0 && (
                         <section className="members-section">
                           <h5 className="members-section-label">
-                            {t("Online — {count}", { count: online.length })}
+                            {t("Online, {count}", { count: online.length })}
                           </h5>
                           <div className="members-section-list">{online.map(renderRow)}</div>
                         </section>
@@ -877,7 +877,7 @@ export default function ChatPanel({
                       {offline.length > 0 && (
                         <section className="members-section">
                           <h5 className="members-section-label">
-                            {t("Offline — {count}", { count: offline.length })}
+                            {t("Offline, {count}", { count: offline.length })}
                           </h5>
                           <div className="members-section-list">{offline.map(renderRow)}</div>
                         </section>

@@ -1,6 +1,6 @@
 /**
  * Client-side Valorant session helpers.
- * Primary: Riot Sign-On (auth.riotgames.com) — Electron BrowserWindow or web redirect.
+ * Primary: Riot Sign-On (auth.riotgames.com), Electron BrowserWindow or web redirect.
  * Secondary (Electron only): local Riot Client lockfile → safeStorage.
  * Never accepts or stores Riot passwords.
  */
@@ -75,7 +75,7 @@ export async function localDisconnect() {
   return window.electronAPI.valorantLocalDisconnect();
 }
 
-/** Adım 4 — local Riot friends + presence (Electron lockfile chat API). */
+/** Adım 4, local Riot friends + presence (Electron lockfile chat API). */
 export function hasLocalFriendsApi() {
   return Boolean(window.electronAPI?.valorantLocalFriends);
 }

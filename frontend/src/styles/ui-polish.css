@@ -1,5 +1,5 @@
 /* ============================================
-   Visual polish — toasts, reactions, toolbar,
+   Visual polish, toasts, reactions, toolbar,
    speaking, empty states, call chrome, quality
    ============================================ */
 
@@ -431,7 +431,7 @@
 }
 
 /* Video tiles: a static green border that transitions in/out (0.22s, see
-   above). No pulsing animation on the tile itself — adding/removing an
+   above). No pulsing animation on the tile itself, adding/removing an
    `animation` on every VAD flip snapped the glow off for a frame, and on
    avatar-only tiles it fought the one-shot join animation (black blink).
    Avatar-only tiles draw speaking with <SpeakingRings> instead. */
@@ -521,7 +521,7 @@
 
 .status-picker-portal {
   position: fixed;
-  /* top/left set inline from avatar rect — never clipped by nav-rail */
+  /* top/left set inline from avatar rect, never clipped by nav-rail */
 }
 
 .status-picker-header {
@@ -897,7 +897,7 @@
   height: 100%;
 }
 
-/* Voice / camera-off: no rectangular card chrome — just the round avatar */
+/* Voice / camera-off: no rectangular card chrome, just the round avatar */
 .participant-tile--avatar-only {
   background: transparent;
   border-color: transparent;
@@ -1816,7 +1816,7 @@
   align-content: start;
 }
 
-/* Padding-bottom square cells — more reliable than aspect-ratio on <button> */
+/* Padding-bottom square cells, more reliable than aspect-ratio on <button> */
 .giphy-cell {
   position: relative;
   display: block;

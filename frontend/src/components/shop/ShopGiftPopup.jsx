@@ -44,7 +44,7 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
       setEquipped(true);
       onEquipped?.(item);
     } catch (_) {
-      // best-effort — user can equip later from the Shop tab
+      // best-effort, user can equip later from the Shop tab
     } finally {
       setEquipping(false);
     }

@@ -52,7 +52,7 @@ assert(decide(webWin, "/invite/abc") === false, "group invites stay in the app")
 assert(decide(webWin, "/i/abcd") === false, "short invites stay in the app");
 assert(decide(webWin, "/s/myserver") === false, "server vanity stays in the app");
 
-// Native iOS / Android: never the landing — straight to the app's own auth screen.
+// Native iOS / Android: never the landing, straight to the app's own auth screen.
 for (const path of ["/", "/tr", "/download", "/tr/download", "/features", "/faq", "/login", "/register", "/privacy", "/blog/x"]) {
   assert(decide(iosWin, path) === false, `iOS ${path} must not boot marketing`);
   assert(decide(androidWin, path) === false, `Android ${path} must not boot marketing`);

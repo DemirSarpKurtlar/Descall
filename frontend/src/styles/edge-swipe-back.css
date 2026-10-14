@@ -1,8 +1,8 @@
 /* ============================================
    Edge swipe-back (hooks/useEdgeSwipeBack.js)
    Layers created only while a swipe is running: dim over the previous
-   screen, a soft shadow on the moving page's left edge, and — where the
-   previous screen is not mounted — a skeleton placeholder of it.
+   screen, a soft shadow on the moving page's left edge, and, where the
+   previous screen is not mounted, a skeleton placeholder of it.
    Everything animates with transform / opacity only.
    ============================================ */
 
@@ -38,7 +38,7 @@ html.edge-swipe-active body {
   -webkit-touch-callout: none;
 }
 
-/* Settings: the menu is display:none while a section is open — show it
+/* Settings: the menu is display:none while a section is open, show it
    underneath the section during the swipe, in the same place it lays out
    (inside the safe area, never under the Dynamic Island). */
 .user-settings.is-mobile .us-sidebar.hidden.edge-swipe-underlay {

@@ -1,5 +1,5 @@
 /**
- * Soft feedback reminder scheduling — localStorage backed.
+ * Soft feedback reminder scheduling, localStorage backed.
  * Designed to stay useful without nagging.
  */
 
@@ -37,12 +37,12 @@ function getCopy(key) {
     },
     after_call: {
       title: t("How was the call?"),
-      body: t("If audio/video quality or anything else was off — tell us. 30 seconds is enough."),
+      body: t("If audio/video quality or anything else was off, tell us. 30 seconds is enough."),
       cta: t("Give feedback"),
       type: "bug",
     },
     after_call_good: {
-      title: t("Call ended — anything to say?"),
+      title: t("Call ended | anything to say?"),
       body: t("Suggestion, request, or bug… all help."),
       cta: t("Open feedback"),
       type: "suggestion",
@@ -116,12 +116,12 @@ function canShowNow(state, { ignoreSoftCooldown = false } = {}) {
 export function evaluateSoftNudge() {
   const state = readState();
   if (!canShowNow(state)) return { show: false, payload: null };
-  // First soft nudge only after user has been around a bit — caller should also gate on session age
+  // First soft nudge only after user has been around a bit, caller should also gate on session age
   return { show: true, payload: { trigger: "soft", ...getCopy("soft") } };
 }
 
 /**
- * Call ended — may show sooner than soft cooldown, but still respects submit/dismiss cooldowns
+ * Call ended, may show sooner than soft cooldown, but still respects submit/dismiss cooldowns
  * and its own 14-day call cooldown. Requires callDurationMs ≥ 45s.
  */
 export function evaluateAfterCallNudge(callDurationMs = 0) {

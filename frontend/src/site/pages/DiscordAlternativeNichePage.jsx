@@ -26,7 +26,7 @@ export default function DiscordAlternativeNichePage({ onSignIn }) {
   const crumbs = [
     { label: "Home", to: "/" },
     { label: "Discord alternative", to: "/discord-alternative" },
-    { label: page.h1.split("—")[0].trim(), to: page.path },
+    { label: page.h1.split(" | ")[0].trim(), to: page.path },
   ];
 
   return (

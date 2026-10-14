@@ -34,7 +34,7 @@ function resolveLocale() {
 }
 
 /**
- * Slim locale provider for public marketing pages — no 120KB+ phrase catalogs on first paint.
+ * Slim locale provider for public marketing pages, no 120KB+ phrase catalogs on first paint.
  * English source strings pass through; TR uses the curated marketing subset, then the full
  * catalog once it lazy-loads so SEO/FAQ bodies are not stuck in English.
  */

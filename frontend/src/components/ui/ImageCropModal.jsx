@@ -12,7 +12,7 @@ import "./ImageCropModal.css";
  * Shared image crop / zoom modal for avatars and server icons.
  *
  * @param {object} props
- * @param {string} props.imageSrc — data URL or blob URL
+ * @param {string} props.imageSrc, data URL or blob URL
  * @param {number} [props.aspect=1]
  * @param {'round'|'rect'} [props.cropShape='round']
  * @param {string} [props.title]

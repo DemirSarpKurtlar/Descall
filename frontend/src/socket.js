@@ -78,7 +78,7 @@ export function createSocket(token, options = {}) {
     tryAllTransports: true,
   };
   // Render (and local Express) mount Socket.IO at /socket.io.
-  // Do not use /api/socket.io — that was the Vercel Fluid rewrite.
+  // Do not use /api/socket.io, that was the Vercel Fluid rewrite.
   if (!local) {
     opts.path = "/socket.io";
   }
@@ -97,7 +97,7 @@ export function createSocket(token, options = {}) {
   // back with a dead / zombie socket. Dispose via socket.resumeWatchdog.
   socket.resumeWatchdog = installSocketResumeWatchdog(socket);
   // App loads servers/groups inside the `connected` handler. Don't wait for the
-  // live socket — fire that handler as soon as listeners are registered.
+  // live socket, fire that handler as soon as listeners are registered.
   setTimeout(() => {
     if (typeof socket.emitEvent === "function") {
       socket.emitEvent(["connected", {}]);

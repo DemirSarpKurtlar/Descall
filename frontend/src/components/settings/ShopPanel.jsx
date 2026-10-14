@@ -39,7 +39,7 @@ import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
 import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
 
-/** Short tab labels — same pattern as admin top nav. */
+/** Short tab labels, same pattern as admin top nav. */
 const CATEGORY_TABS = [
   { id: "banner", label: "Banners", icon: Image },
   { id: "avatar_frame", label: "Frames", icon: CircleDot },
@@ -196,7 +196,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   const load = useCallback(async ({ silent = false } = {}) => {
     // Full loading flash unmounts the grid and resets .us-main-scroll to top.
-    // Only show it on the first open — refresh after buy/equip stays silent.
+    // Only show it on the first open, refresh after buy/equip stays silent.
     if (!silent) setLoading(true);
     if (!silent) setCatalogError("");
     const [catalogRes, inventoryRes, dailyRes] = await Promise.allSettled([
@@ -236,7 +236,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         hapticSuccess();
         setNotice(t("Daily DesCoin claimed! +{amount}", { amount: result.credited || 0 }));
       } else if (result?.alreadyClaimed) {
-        setNotice(t("Already claimed today — come back tomorrow"));
+        setNotice(t("Already claimed today, come back tomorrow"));
       }
     } catch (err) {
       hapticError();
@@ -253,7 +253,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   useEffect(() => {
     if (!activeCategory || !IMAGE_ASSET_CATEGORIES.has(activeCategory)) return;
     if (loadedAssetCategories.current.has(activeCategory)) return;
-    // The catalog already carries image URLs (backend 2.9.148+) — no second request.
+    // The catalog already carries image URLs (backend 2.9.148+), no second request.
     const inCategory = itemsRef.current.filter((item) => item.category === activeCategory);
     if (inCategory.length && inCategory.every((item) => item.asset_url || item.preview_url)) {
       loadedAssetCategories.current.add(activeCategory);
@@ -452,7 +452,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const lead = (
     <div className="shop-lead">
       <p className="shop-panel-intro">
-        {t("Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.")}
+        {t("Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, frames, auras, flares, and more.")}
       </p>
 
       <div className="descoin-retention-row">
@@ -530,7 +530,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           </RippleButton>
         </div>
       ) : items.length === 0 ? (
-        <p className="shop-empty-state">{t("No items available yet — check back soon!")}</p>
+        <p className="shop-empty-state">{t("No items available yet, check back soon!")}</p>
       ) : (
         <div className="shop-category-block">
           <h4>{t(CATEGORY_HEADING[activeCategory] || activeCategory)}</h4>
@@ -549,7 +549,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                   key={item.id}
                 >
                   {celebrateItemId === item.id && (
-                    <div className="shop-celebrate-banner">{t("Purchased — equip it anytime")}</div>
+                    <div className="shop-celebrate-banner">{t("Purchased, equip it anytime")}</div>
                   )}
                   <div
                     className="shop-item-preview"

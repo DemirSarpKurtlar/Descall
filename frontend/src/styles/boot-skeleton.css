@@ -8,7 +8,7 @@
     radial-gradient(120% 80% at 50% -10%, rgba(88, 101, 242, 0.18), transparent 55%),
     #0b0c10;
   color: #f2f3f5;
-  font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
   overflow: hidden;
 }
 
@@ -162,7 +162,7 @@
     radial-gradient(60% 40% at 6% 82%, rgba(123, 137, 255, 0.22), transparent 55%),
     #07080d;
   color: rgba(235, 238, 255, 0.86);
-  font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
 }
 
 .route-loading__aurora {

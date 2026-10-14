@@ -3,7 +3,7 @@
  *
  * Always mounted: speaking only flips `.is-active`, which fades the whole
  * layer with an opacity transition and resumes (never restarts) the ring
- * keyframes. Keyframes only scale — no opacity / border dips — and start and
+ * keyframes. Keyframes only scale, no opacity / border dips, and start and
  * end on the same frame, so loops, VAD flapping and re-renders can never
  * paint an empty / black ring frame.
  *

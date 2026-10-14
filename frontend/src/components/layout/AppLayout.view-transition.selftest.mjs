@@ -99,7 +99,7 @@ assert(
 
 assert(
   !/if \(view === "calls" \|\| view === "activity" \|\| view === "friends"\)[\s\S]{0,180}onDmSelect\?\.\(null\)/.test(layout),
-  "handleViewChange must not call onDmSelect(null) — that navigates to /direct and races the tab path",
+  "handleViewChange must not call onDmSelect(null), that navigates to /direct and races the tab path",
 );
 assert(
   !/if \(view === "servers"\)[\s\S]{0,120}onDmSelect\?\.\(null\)/.test(layout),

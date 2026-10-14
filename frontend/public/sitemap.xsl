@@ -23,7 +23,7 @@
             padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); }
           table { width:100%; border-collapse:collapse; background:rgba(30,31,34,.9); border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden; }
           th, td { text-align:left; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.06); font-size:14px; }
-          th { color:#b5bac1; font-weight:600; background:#17181c; font-family:Outfit,sans-serif; }
+          th { color:#b5bac1; font-weight:600; background:#17181c; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif; }
           a { color:#8b9cff; text-decoration:none; word-break:break-all; }
           a:hover { text-decoration:underline; }
           .meta { font-size:12px; color:#949ba4; white-space:nowrap; }

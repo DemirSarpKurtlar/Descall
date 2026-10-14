@@ -7,7 +7,7 @@ export async function loadImage(src) {
     const img = new Image();
     img.addEventListener("load", () => resolve(img));
     img.addEventListener("error", (err) => reject(err));
-    // Same-origin / blob / data URLs — avoid CORS taint when possible
+    // Same-origin / blob / data URLs, avoid CORS taint when possible
     if (typeof src === "string" && /^https?:/i.test(src)) {
       img.crossOrigin = "anonymous";
     }

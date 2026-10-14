@@ -12,7 +12,7 @@ const SHOTS = {
  * `frame="flat"` is the servers panel; the home hero tilts and floats chips.
  */
 export default function SeoProductPreview({
-  caption = "Descall — chat, voice, and LFG in one lighter app",
+  caption = "Descall chat, with servers and a voice channel in the same window",
   mode = "chat",
   frame = "tilt",
   chips = false,

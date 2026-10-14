@@ -5,7 +5,7 @@ import pkg from "../../package.json";
 
 /**
  * User-facing release notes (EN keys; TR via locale files).
- * Keep copy simple — no internal/Demir notes, no emoji spam.
+ * Keep copy simple, no internal/Demir notes, no emoji spam.
  * Every new semver should add an entry here.
  */
 export const UPDATE_NOTES = [

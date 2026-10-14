@@ -35,7 +35,7 @@ export default function ValorantBadge({ valorant, compact = false }) {
 
   // Note: this full variant is only ever rendered underneath a "Valorant"
   // section heading (profile card / settings link card), so it doesn't
-  // repeat the "V Valorant" label itself here — that duplication used to
+  // repeat the "V Valorant" label itself here, that duplication used to
   // make the section look cluttered/redundant.
   return (
     <div className="val-badge">

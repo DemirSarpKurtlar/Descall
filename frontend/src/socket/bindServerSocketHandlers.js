@@ -305,7 +305,7 @@ export function bindServerSocketHandlers(socket, ctx) {
       username: sender?.username || "Unknown",
       displayName: sender?.displayName || null,
       avatarUrl: sender?.avatarUrl,
-      // Prefer rich embed UI — keep content only as fallback when no embed.
+      // Prefer rich embed UI, keep content only as fallback when no embed.
       text: voice.isVoice ? "" : hasEmbed ? "" : (message.content || ""),
       timestamp: parseAppDate(message.created_at)?.toISOString() || new Date().toISOString(),
       mediaUrl: message.media_url,
@@ -510,7 +510,7 @@ export function bindServerSocketHandlers(socket, ctx) {
         action === "ban"
           ? t("You were banned from {name}", { name })
           : t("You were kicked from {name}", { name });
-      toast(reason ? `${base} — ${reason}` : base, "error");
+      toast(reason ? `${base}, ${reason}` : base, "error");
       return;
     }
 

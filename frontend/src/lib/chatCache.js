@@ -1,6 +1,6 @@
 /**
  * Persistent chat snapshot (IndexedDB) plus the pure merge rules for
- * stale-while-revalidate. Display masking stays in the renderer — stored
+ * stale-while-revalidate. Display masking stays in the renderer, stored
  * text is the same string the server sent.
  */
 
@@ -233,7 +233,7 @@ export function schedulePersistChatCache(userId, state, delayMs = 250) {
   persistTimers.set(key, timer);
 }
 
-/** Test hook — drop the in-memory mirror between cases. */
+/** Test hook, drop the in-memory mirror between cases. */
 export function resetChatCacheMemory() {
   memory.clear();
   for (const timer of persistTimers.values()) clearTimeout(timer);

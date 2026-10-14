@@ -45,7 +45,7 @@ export async function getStaticAvatarFrame(url) {
         img = await loadImage(url, { crossOrigin: "anonymous" });
       } catch {
         // Retry without CORS so we at least know the image exists;
-        // canvas export will fail if tainted — handled below.
+        // canvas export will fail if tainted, handled below.
         img = await loadImage(url);
       }
 
@@ -62,7 +62,7 @@ export async function getStaticAvatarFrame(url) {
         staticFrameCache.set(key, dataUrl);
         return dataUrl;
       } catch {
-        // Tainted canvas — cannot freeze GIF client-side.
+        // Tainted canvas, cannot freeze GIF client-side.
         staticFrameCache.set(key, null);
         return null;
       }

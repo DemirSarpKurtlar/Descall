@@ -1,5 +1,5 @@
 /* ============================================
-   COSMETICS SHOP — catalog, inventory, gifting
+   COSMETICS SHOP, catalog, inventory, gifting
    ============================================ */
 
 .shop-panel {
@@ -270,7 +270,7 @@
   50% { filter: brightness(1.18) saturate(1.15); }
 }
 
-/* Vertical category list — every tab stays visible, no tab scroller. */
+/* Vertical category list, every tab stays visible, no tab scroller. */
 .shop-category-tabs {
   grid-column: 1;
   grid-row: 1 / -1;
@@ -1010,7 +1010,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   font-weight: 700;
 }
 
-/* DesCoin gift popup — same shell as the item gift popup, coin amount hero */
+/* DesCoin gift popup, same shell as the item gift popup, coin amount hero */
 .descoin-gift-icon {
   background: linear-gradient(135deg, #f6d365, #fda085);
 }

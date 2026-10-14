@@ -229,7 +229,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [activityLastUpdated, setActivityLastUpdated] = useState(null);
   const [activitySubTab, setActivitySubTab] = useState("registrations"); // "registrations" | "online"
 
-  // Member pulse — recently active + newly joined (durable last_seen)
+  // Member pulse, recently active + newly joined (durable last_seen)
   const [newlyJoinedMembers, setNewlyJoinedMembers] = useState([]);
   const [recentlyActiveMembers, setRecentlyActiveMembers] = useState([]);
   const [memberPulseLoading, setMemberPulseLoading] = useState(false);

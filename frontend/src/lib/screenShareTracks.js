@@ -93,7 +93,7 @@ export function looksLikeDisplayTrack(track) {
 
 /**
  * Video track that belongs on the screen stage after a share announcement.
- * Tab/system audio on the same MediaStream must not disqualify it — that
+ * Tab/system audio on the same MediaStream must not disqualify it, that
  * filter hid DM shares whenever Chrome's picker included audio.
  * A remote track with an empty label is still the share when the camera is off.
  *

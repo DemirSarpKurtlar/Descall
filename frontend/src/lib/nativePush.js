@@ -168,7 +168,7 @@ function ensureListeners() {
   });
 
   PushNotifications.addListener("pushNotificationReceived", (notification) => {
-    // Foreground delivery — route into in-app handlers when it's a call.
+    // Foreground delivery, route into in-app handlers when it's a call.
     const data = notification?.data || {};
     if (data.type === "call" || data.type === "group-call") {
       dispatchNotificationAction({ ...data, action: data.action || "open" });

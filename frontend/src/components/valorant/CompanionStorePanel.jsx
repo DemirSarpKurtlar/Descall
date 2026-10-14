@@ -6,7 +6,7 @@ import { SkeletonLine } from "../ui/Skeleton";
 import CompanionSkinDetail from "./CompanionSkinDetail";
 
 /**
- * Adım 6 — wallet + daily offers + owned skins.
+ * Adım 6, wallet + daily offers + owned skins.
  * Opens real Riot skin media (displayIcon / levels / chromas streamedVideo) on item click.
  */
 export default function CompanionStorePanel({ linked, identity }) {

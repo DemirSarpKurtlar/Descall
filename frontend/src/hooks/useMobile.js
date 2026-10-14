@@ -23,7 +23,7 @@ function readTouchSupported() {
 
 export function useMobile() {
   // Sync initial state so the first paint (e.g. User Settings open) already
-  // knows we're on mobile — otherwise framer-motion skips enter animation.
+  // knows we're on mobile, otherwise framer-motion skips enter animation.
   const [isMobile, setIsMobile] = useState(readIsMobile);
   const [isPortrait, setIsPortrait] = useState(readIsPortrait);
   const [touchSupported, setTouchSupported] = useState(readTouchSupported);

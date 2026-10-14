@@ -1,12 +1,12 @@
 /* ============================================
-   Liquid Glass — materials (2.9.151, Stage 1)
+   Liquid Glass, materials (2.9.151, Stage 1)
    Ported 1:1 from the approved mockup (final/src/glass.css): light-tint glass
    + specular rim (::before) + inner refraction (::after); material weight =
    hierarchy (heavy sheet > glass > chip > lens).
 
    Performance rule (uygulama-plani.md §2.3): real backdrop-filter only where
    content moves underneath (chrome, sheets, menus). Static cards over the
-   ambient use .g-static (same look, no blur — blurring a smooth gradient is
+   ambient use .g-static (same look, no blur, blurring a smooth gradient is
    visually identical and costs nothing).
    ============================================ */
 
@@ -41,7 +41,7 @@ html.glass-ui .g-static {
   box-shadow: var(--g-shadow);
 }
 
-/* Specular rim — light catching the edge (mask ring, 1px). */
+/* Specular rim, light catching the edge (mask ring, 1px). */
 html.glass-ui .g-glass::before,
 html.glass-ui .g-chip::before,
 html.glass-ui .g-lens::before,

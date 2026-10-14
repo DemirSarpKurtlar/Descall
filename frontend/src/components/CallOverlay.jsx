@@ -238,9 +238,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       ? t("Incoming call...")
       : mode === "outgoing"
       ? (call?.calleeAnswering
-          ? t("Answered on iPhone — waiting for unlock…")
+          ? t("Answered on iPhone, waiting for unlock…")
           : call?.connectionQuality === "failed"
-          ? t("User may be offline — waiting…")
+          ? t("User may be offline, waiting…")
           : t("Calling..."))
       : call?.peerConnectionState === "reconnecting"
       ? t("Reconnecting…")
@@ -428,7 +428,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   /* ---------- Fullscreen Meet-style overlay ---------- */
   const hasLocalVideo = cameraOn && (isDm ? call?.localStream : groupCall?.localStream);
 
-  // Build unified participant list — remote only (local is rendered as a dedicated tile)
+  // Build unified participant list, remote only (local is rendered as a dedicated tile)
   const localId = me?.id;
   const remoteParticipants = isDm
     ? (call?.peer && call?.mode === "active"
@@ -449,7 +449,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
         : [])
     : (groupCall?.participants ?? []).filter((p) => p.id !== localId);
 
-  // All screen sharers: remote peers sharing only (exclude local — handled separately by screenSharing flag)
+  // All screen sharers: remote peers sharing only (exclude local, handled separately by screenSharing flag)
   // Prefer the explicit remoteScreenSharing flag, but also recover when a
   // live screen stream is present without the socket signal (merge regression
   // / late signaling) so tab audio still mounts on the dedicated <audio>.
@@ -597,7 +597,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          // visible — catalog avatar frames extend past the tile (~132%)
+          // visible, catalog avatar frames extend past the tile (~132%)
           overflow: "visible",
           minHeight: 0,
           paddingTop: narrowViewport
@@ -1161,7 +1161,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   ParticipantTile — one rectangle in the grid or strip
+   ParticipantTile, one rectangle in the grid or strip
    isSpeaking derived externally; videoRef only for remote video.
    ───────────────────────────────────────────────────────────────── */
 function SpeakingRemoteSlot(props) {
@@ -1318,7 +1318,7 @@ function ParticipantTile({
   const heldSpeaking = useHeldSpeaking(Boolean(speakingProp || detected) && !muted);
   const isSpeaking = muted ? false : heldSpeaking;
   const avatarSize = small ? 36 : 96;
-  // Frame overlay is ~132% of the avatar — pad the shell so overflow:hidden
+  // Frame overlay is ~132% of the avatar, pad the shell so overflow:hidden
   // ancestors (call stage / framer layout) don't clip catalog frames.
   const shellPad = small ? 6 : Math.round(avatarSize * 0.2);
   const shellSize = avatarSize + shellPad * 2;
@@ -1383,7 +1383,7 @@ function ParticipantTile({
             style={{ width: shellSize, height: shellSize }}
           >
             <div className="participant-tile-avatar-core" style={{ width: avatarSize, height: avatarSize }}>
-              {/* Always mounted — speaking only fades it (no remount / restart). */}
+              {/* Always mounted, speaking only fades it (no remount / restart). */}
               <SpeakingRings speaking={isSpeaking} level={level} />
               {glass ? (
                 <span
@@ -1400,7 +1400,7 @@ function ParticipantTile({
                 animate="speaking"
                 isSpeaking={isSpeaking}
               />
-              {/* No presence-flare here — flare glow skews the avatar ring on call tiles. */}
+              {/* No presence-flare here, flare glow skews the avatar ring on call tiles. */}
               <StatusBadge status={presenceStatus} />
             </div>
           </div>
@@ -1478,7 +1478,7 @@ function ParticipantTile({
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   ParticipantGrid — adaptive grid layout when no screen share
+   ParticipantGrid, adaptive grid layout when no screen share
    ───────────────────────────────────────────────────────────────── */
 function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, user = null }) {
   const localStream = isDm ? call?.localStream : groupCall?.localStream;
@@ -1673,7 +1673,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   ScreenShareLayout — selected screen large on top, strip below
+   ScreenShareLayout, selected screen large on top, strip below
    ───────────────────────────────────────────────────────────────── */
 function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded, isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, localUsername, localAvatarUrl, localUser = null, narrow = false, screenShareVolume = 100, onScreenShareVolumeChange, screenVolumes = {}, onScreenVolumeForSharer, onOpenUserMenu }) {
   const t = useT();
@@ -1738,7 +1738,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 
   const attachStream = useCallback((el, stream) => {
     if (!el) return;
-    // Video elements are always muted — dedicated <audio> owns screen sound
+    // Video elements are always muted, dedicated <audio> owns screen sound
     // (avoids mid-call autoplay blocks that silently drop tab/system audio).
     el.muted = true;
     if (!stream) {
@@ -1775,7 +1775,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
     if (el) attachStream(el, screenStream);
   }, [screenStream, attachStream]);
 
-  // Callback ref for expanded video — fires immediately when the element mounts
+  // Callback ref for expanded video, fires immediately when the element mounts
   const expandedVideoCallbackRef = useCallback((el) => {
     expandedVideoRef.current = el;
     if (el) attachStream(el, screenStream);
@@ -1973,7 +1973,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
             height: "100%",
             objectFit: "contain",
             display: "block",
-            // Promote to compositor layer — reduces paint jank on remote screen share
+            // Promote to compositor layer, reduces paint jank on remote screen share
             transform: "translateZ(0)",
             willChange: "contents",
           }}
@@ -1996,7 +1996,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
           </div>
         )}
 
-        {/* Sharer name label — top-left */}
+        {/* Sharer name label, top-left */}
         <div
           className="gd-share-label"
           style={{
@@ -2045,7 +2045,7 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
           </div>
         )}
 
-        {/* Expand/collapse hint — bottom-center */}
+        {/* Expand/collapse hint, bottom-center */}
         <div
           className="gd-mosaic-chrome"
           style={{
@@ -2242,7 +2242,7 @@ function PersonRow({ name, avatarUrl, isHost }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   AudioDevicePanel — floating panel for mic/speaker selection
+   AudioDevicePanel, floating panel for mic/speaker selection
    ───────────────────────────────────────────────────────────────── */
 function AudioDevicePanel({ isDm, call, groupCall, onClose, narrow = false }) {
   const t = useT();

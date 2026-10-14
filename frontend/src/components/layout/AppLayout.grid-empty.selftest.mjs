@@ -29,7 +29,7 @@ assert(
 
 assert(
   !/\.app-root\s*>\s*\*:not\(\.app-notif-banner\):not\(\.app-feedback-banner\)\s*\{/.test(css),
-  "blanket .app-root > * { grid-row:1 } must stay gone — it re-boxes the sidebar shell",
+  "blanket .app-root > * { grid-row:1 } must stay gone, it re-boxes the sidebar shell",
 );
 
 assert(

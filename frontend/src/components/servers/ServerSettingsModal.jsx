@@ -74,7 +74,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
   const openPicker = (kind) => {
     if (!canManage || busy || uploading) return;
     const ref = kind === "icon" ? iconRef : bannerRef;
-    // Must stay synchronous — deferred clicks break the file dialog on iOS.
+    // Must stay synchronous, deferred clicks break the file dialog on iOS.
     ref.current?.click();
   };
 
@@ -115,7 +115,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
       setCropSrc("");
       setCropKind(null);
       toast(
-        cropKind === "icon" ? t("Icon ready — tap Save to apply.") : t("Banner ready — tap Save to apply."),
+        cropKind === "icon" ? t("Icon ready, tap Save to apply.") : t("Banner ready, tap Save to apply."),
         "success"
       );
     } catch (err) {

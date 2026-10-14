@@ -7,7 +7,7 @@
  * system-back zone). A touch that starts there is navigation only.
  * A horizontal drag that starts on a bubble outside that band is reply only.
  *
- * Own messages reply to the left, others to the right — the directions the
+ * Own messages reply to the left, others to the right, the directions the
  * bubble drag already used. The conflict was the shared rightward axis on
  * other people's bubbles, not which way a reply goes.
  *

@@ -13,7 +13,7 @@ const Router =
     : BrowserRouter;
 
 /**
- * Isolated marketing React tree — no Toast/motion, no full i18n catalogs,
+ * Isolated marketing React tree, no Toast/motion, no full i18n catalogs,
  * no authenticated App/LiveKit. Analytics only after cookie consent.
  */
 export async function hydrateMarketing() {

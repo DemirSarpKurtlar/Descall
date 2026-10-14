@@ -139,7 +139,7 @@ export default function QuickFeedbackModal({
                   aria-describedby={feedbackError ? "quick-feedback-error" : undefined}
                   placeholder={
                     feedbackType === "bug"
-                      ? t("Describe the bug — what happened and how to reproduce it…")
+                      ? t("Describe the bug, what happened and how to reproduce it…")
                       : feedbackType === "praise"
                         ? t("Tell us what you love about Descall…")
                         : t("Share your idea or suggestion…")

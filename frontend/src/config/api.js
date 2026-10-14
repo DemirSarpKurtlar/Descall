@@ -9,7 +9,7 @@
 const PRODUCTION_URL = "https://des-call.onrender.com";
 // Retired hosts that must never be used (old and suspended Render services)
 const DEAD_API_HOSTS = ["descall-qzkg.onrender.com", "descall-nru2.onrender.com"];
-// SPA / marketing hosts — the page origin is not the API origin.
+// SPA / marketing hosts, the page origin is not the API origin.
 const SPA_HOSTS = ["descall.com", "www.descall.com", "descall.vercel.app"];
 
 function isDeadApiUrl(url) {
@@ -111,7 +111,7 @@ function hostIsSpa(hostname) {
 
 export function resolveApiUrl(overrides) {
   const view = runtimeView(overrides);
-  // Desktop app always uses Render production — never Vercel /api.
+  // Desktop app always uses Render production, never Vercel /api.
   if (view.electron) {
     return PRODUCTION_URL;
   }
@@ -121,7 +121,7 @@ export function resolveApiUrl(overrides) {
     return envApiUrl(view.meta) || "http://localhost:3000";
   }
 
-  // 1. Vite environment variable (build-time) — Vercel should set
+  // 1. Vite environment variable (build-time), Vercel should set
   //    VITE_API_BASE_URL=https://des-call.onrender.com
   const fromEnv = envApiUrl(view.meta);
   if (fromEnv) return fromEnv;

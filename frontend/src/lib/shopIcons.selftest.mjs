@@ -1,6 +1,6 @@
 /**
  * Run: node frontend/src/lib/shopIcons.selftest.mjs
- * Note: JSX module — assert via source scan (no JSX transform in plain node).
+ * Note: JSX module, assert via source scan (no JSX transform in plain node).
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

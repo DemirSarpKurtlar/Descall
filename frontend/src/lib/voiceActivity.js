@@ -10,7 +10,7 @@
  *
  * Reads are throttled to VOICE_SAMPLE_MS and skipped while every subscriber
  * is off-screen or the document is hidden. A zero-gain sink is connected only
- * on the native iOS app — Safari will not pull analyser samples unless the
+ * on the native iOS app, Safari will not pull analyser samples unless the
  * graph reaches the destination, and gain 0 keeps the mic out of the speaker.
  */
 

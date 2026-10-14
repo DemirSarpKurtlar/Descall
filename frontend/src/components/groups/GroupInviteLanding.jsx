@@ -10,7 +10,7 @@ import "../../site/glass-public-frames.css";
 import { useT } from "../../context/LocaleContext";
 
 /**
- * Discord-style invite landing — shown for /invite/:code
+ * Discord-style invite landing, shown for /invite/:code
  */
 export default function GroupInviteLanding({
   code,

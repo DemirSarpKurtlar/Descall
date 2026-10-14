@@ -10,7 +10,7 @@ function Chevron() {
   );
 }
 
-/** Cluster-aware internal linking — glass chips, not a bullet list. */
+/** Cluster-aware internal linking, glass chips, not a bullet list. */
 export default function SeoRelatedLinks({ title = "Keep exploring", links = [] }) {
   const t = useT();
   const href = useMarketingHref();

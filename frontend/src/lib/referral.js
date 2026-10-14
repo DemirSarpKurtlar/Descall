@@ -76,7 +76,7 @@ export function publicAppOrigin(origin) {
     : String(origin);
   const trimmed = String(raw || "").replace(/\/$/, "");
   if (!trimmed || trimmed === "null" || trimmed === "undefined") return PUBLIC_SITE_ORIGIN;
-  // file://, electron, custom schemes — never copy those. Real http(s) web origins stay.
+  // file://, electron, custom schemes, never copy those. Real http(s) web origins stay.
   if (!/^https?:\/\//i.test(trimmed)) return PUBLIC_SITE_ORIGIN;
   return trimmed;
 }

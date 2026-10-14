@@ -1,11 +1,11 @@
 /* ============================================
-   DESCALL v2.0 — COMPLETELY REBUILT MESSAGE SYSTEM
+   DESCALL v2.0, COMPLETELY REBUILT MESSAGE SYSTEM
    Discord-style message display
    NO OLD LAYOUT REMNANTS
    ============================================ */
 
 /* ─── Message List ─── */
-/* Height:auto, do NOT flex:1 — .messages-container is the only scrollport. */
+/* Height:auto, do NOT flex:1, .messages-container is the only scrollport. */
 .message-list {
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@
   display: flex;
   align-items: center;
   /* Wide enough to clear an equipped avatar frame (132% overlay) and,
-     especially, an avatar effect ring — effect-pulse's box-shadow alone
+     especially, an avatar effect ring, effect-pulse's box-shadow alone
      animates out to a 10px spread on top of the effect layer's own -8px
      inset, so at its peak it reaches ~18px past the avatar's edge. A
      narrower gap let the name/badges visually run into the glow during
@@ -182,7 +182,7 @@
   margin-right: 0;
 }
 
-/* Media stays inside the bubble — definite pixel width so intrinsic GIF
+/* Media stays inside the bubble, definite pixel width so intrinsic GIF
    sizes cannot stretch the bubble across the chat column. */
 .message-bubble.has-media {
   width: 280px;

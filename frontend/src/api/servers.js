@@ -57,7 +57,7 @@ export function getServer(serverId) {
   return serversRequest(`/api/servers/${serverId}`);
 }
 
-/** Owner delete — confirmName must match server name. */
+/** Owner delete, confirmName must match server name. */
 export function deleteServer(serverId, confirmName) {
   return serversRequest(`/api/servers/${serverId}`, {
     method: "DELETE",

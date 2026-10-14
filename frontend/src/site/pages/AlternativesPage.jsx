@@ -14,7 +14,7 @@ const OPTIONS = [
   {
     name: "Descall",
     blurb:
-      "Best free Discord alternative for friend groups and LFG — chat, voice, video, screen share, Windows + Android.",
+      "Best free Discord alternative for friend groups and LFG, chat, voice, video, screen share, Windows + Android.",
     href: "/discord-alternative",
     highlight: true,
   },
@@ -60,9 +60,9 @@ export default function AlternativesPage() {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker={t("Discord alternatives · 2026")}
-      title={t("Discord alternatives compared — pick by what you actually need")}
+      title={t("Discord alternatives compared, pick by what you actually need")}
       lead={t(
-        "Searching for Discord alternatives? Most lists recycle the same voice apps. Here’s a clearer take — and why Descall wins for friends, LFG, and free core chat/calls."
+        "Searching for Discord alternatives? Most lists recycle the same voice apps. Here’s a clearer take, and why Descall wins for friends, LFG, and free core chat/calls."
       )}
       faq={ALTERNATIVES_FAQ}
       jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(ALTERNATIVES_FAQ)]}
@@ -87,7 +87,7 @@ export default function AlternativesPage() {
         <ol className="seo-steps">
           <li>{t("List must-have features (voice, screen share, LFG, mobile).")}</li>
           <li>{t("Check whether core chat/calls are free or paywalled.")}</li>
-          <li>{t("Try a week with your actual friend group — not a demo account.")}</li>
+          <li>{t("Try a week with your actual friend group, not a demo account.")}</li>
           <li>{t("Keep Discord only if you still need giant community servers.")}</li>
         </ol>
       </section>

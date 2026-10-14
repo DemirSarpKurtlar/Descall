@@ -144,7 +144,7 @@
   display: none !important;
 }
 
-/* Nested LFG fills the hub body — not an absolute overlay of its own. */
+/* Nested LFG fills the hub body, not an absolute overlay of its own. */
 .valorant-hub-panel-lfg > .lfg-workspace {
   flex: 1 1 0;
   min-height: 0;
@@ -435,7 +435,7 @@
 
   .valorant-companion-placeholder,
   .valorant-companion {
-    /* Bottom clearance owned by mobile.css (tab bar 60px + safe-area) — do not
+    /* Bottom clearance owned by mobile.css (tab bar 60px + safe-area), do not
        add a second safe-area pad here or a black band appears under accordion/LFG. */
     padding: 16px 12px 16px;
     align-items: stretch;
@@ -851,7 +851,7 @@
 }
 
 
-/* Adım 5 — missions / contracts / BP */
+/* Adım 5, missions / contracts / BP */
 .valorant-missions {
   grid-column: 1 / -1;
   width: 100%;
@@ -1185,7 +1185,7 @@
   display: none !important;
 }
 
-/* ── Mobile Valpaw-like accordion (charcoal — not green) ── */
+/* ── Mobile Valpaw-like accordion (charcoal, not green) ── */
 .valorant-companion-accordion {
   display: flex;
   flex-direction: column;
@@ -1264,7 +1264,7 @@
   display: none !important;
 }
 
-/* Nested panel cards already have their own chrome — tighten when inside accordion */
+/* Nested panel cards already have their own chrome, tighten when inside accordion */
 .valorant-companion-section-body > .valorant-party,
 .valorant-companion-section-body > .valorant-friends,
 .valorant-companion-section-body > .valorant-missions,

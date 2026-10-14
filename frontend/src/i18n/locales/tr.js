@@ -42,7 +42,7 @@ export const nested = {
     "companion": "Companion",
     "lfg": "LFG",
     "companionSoon": "Companion yakında",
-    "companionHint": "Parti, görevler, loadout ve maç geçmişi burada olacak. Şimdilik LFG sekmesini kullan — lobi oluştur/katıl, parti kodu ve Riot ID rank eskisi gibi çalışır.",
+    "companionHint": "Parti, görevler, loadout ve maç geçmişi burada olacak. Şimdilik LFG sekmesini kullan, lobi oluştur/katıl, parti kodu ve Riot ID rank eskisi gibi çalışır.",
     "companionNote": "Adım 6: cüzdan, sahip olunan skinler, loadout değiştirme, günlük store + bundle.",
     "authLead": "Resmi Riot sitesinde (auth.riotgames.com) oturum aç. Descall Riot şifreni asla sormaz ve saklamaz.",
     "authLoadError": "Valorant bağlantısı yüklenemedi",
@@ -132,9 +132,9 @@ export const nested = {
     "missionsTitle": "Görevler ve Battle Pass",
     "missionsLead": "Riot oturumundan haftalık görevler, ajan kontratları ve battle pass ilerlemesi.",
     "missionsConfigTitle": "RIOT_API_KEY yapılandır",
-    "missionsNotConfigured": "Render'da RIOT_API_KEY ayarla ve yeniden deploy et. Görevler masaüstü Riot Client token'larıyla açılır — uygulamada gizli anahtar yok.",
+    "missionsNotConfigured": "Render'da RIOT_API_KEY ayarla ve yeniden deploy et. Görevler masaüstü Riot Client token'larıyla açılır, uygulamada gizli anahtar yok.",
     "missionsOpenCount": "{open}/{total} görev açık",
-    "missionsBpLevel": "{name} — seviye {level}",
+    "missionsBpLevel": "{name}, seviye {level}",
     "missionsBpFallback": "Battle Pass",
     "missionsBpNone": "Bu oturumda henüz battle pass ilerlemesi yok.",
     "missionsContractsCount": "{count} ajan/etkinlik kontratı",
@@ -153,7 +153,7 @@ export const nested = {
     "storeTitle": "Store ve cüzdan",
     "storeLead": "Riot oturumundan VP, Radianite, Kingdom kredisi, günlük market ve featured bundle'lar.",
     "storeConfigTitle": "RIOT_API_KEY yapılandır",
-    "storeNotConfigured": "Render'da RIOT_API_KEY ayarla ve yeniden deploy et. Store ve loadout masaüstü Riot Client token'larıyla açılır — uygulamada gizli anahtar yok.",
+    "storeNotConfigured": "Render'da RIOT_API_KEY ayarla ve yeniden deploy et. Store ve loadout masaüstü Riot Client token'larıyla açılır, uygulamada gizli anahtar yok.",
     "storeWallet": "Cüzdan",
     "storeItemDaily": "Günlük store / market",
     "storeItemBundle": "Güncel bundle / featured set",
@@ -169,9 +169,9 @@ export const nested = {
     "storeOwnedSkins": "Sahip olunan skinler ({count})",
     "storeSkinsEmpty": "Henüz skin yüklenmedi.",
     "storeFootnote": "Render'da RIOT_API_KEY + masaüstünde canlı Riot Client token gerekir. Riot şifresi saklanmaz.",
-    "storeSoon": "Adım 6 canlı — cüzdan, günlük store, bundle, sahip olunan skinler.",
+    "storeSoon": "Adım 6 canlı, cüzdan, günlük store, bundle, sahip olunan skinler.",
     "loadoutTitle": "Loadout",
-    "loadoutLead": "Kuşanılmış skin, buddy, kart, unvan ve spray'ler — değişiklikler oyuna yansır.",
+    "loadoutLead": "Kuşanılmış skin, buddy, kart, unvan ve spray'ler, değişiklikler oyuna yansır.",
     "loadoutCard": "Oyuncu kartı",
     "loadoutLevel": "Hesap seviyesi {level}",
     "loadoutGuns": "Silahlar",
@@ -202,7 +202,7 @@ export const nested = {
   },
 
   "updateNotes": {
-    "stackedTitle": "Yenilikler ({count} güncelleme) — şimdi {version}",
+    "stackedTitle": "Yenilikler ({count} güncelleme), şimdi {version}",
     "lead": "Son ziyaretinden beri kaçırdığın her şey burada.",
     "gotIt": "Tamam",
     "v2936": { "title": "Companion düzeni", "body": "Play önce Companion’ı açar; daha net tam genişlik düzen." },
@@ -214,10 +214,10 @@ export const nested = {
     "v2942": { "title": "Görev API", "body": "Companion görevleri, kontratları ve battle pass ilerlemesini yükleyebilir." },
     "v2943": { "title": "Görev arayüzü", "body": "Görevler ve Battle Pass Companion’da net görünür." },
     "v2944": { "title": "Companion sekmeleri ve Loadout", "body": "Companion’da Parti, Arkadaşlar, Görevler ve Loadout sekmeleri var. Cüzdan ve store Loadout altında. Güncelleme bildirimleri daha net." },
-    "v2945": { "title": "Mobil Companion akordeon", "body": "Telefonda Companion dikey bölüm kartları kullanır (Parti, Arkadaşlar, Sözleşmeler, Yükleme, Dükkan) — yatay sekmeler taşmaz. Play alta kadar dolar; siyah boş bant yok." },
-    "v2946": { "title": "Mobil Neler yeni + alt dolgu", "body": "Neler yeni telefonda güvenli alan ve sabit Tamam ile çalışır. Companion ve LFG yüzen sekme çubuğuna kadar dolar — listenin altında siyah boşluk yok." },
-    "v2947": { "title": "LFG sekme değişimi + alt boşluk", "body": "LFG’ye geçince Companion tamamen gizlenir. Play içeriği mobil sekme çubuğuna kadar gelir — Companion/LFG altında koyu bant kalmaz." },
-    "v2948": { "title": "Ortalanmış Roller ve pencereler", "body": "Sunucu Roller paneli ve diğer tam ekran paneller artık tüm pencerenin ortasında bulanık arka planlı modal olarak açılır — kenara yapışık kart kalmaz." }
+    "v2945": { "title": "Mobil Companion akordeon", "body": "Telefonda Companion dikey bölüm kartları kullanır (Parti, Arkadaşlar, Sözleşmeler, Yükleme, Dükkan), yatay sekmeler taşmaz. Play alta kadar dolar; siyah boş bant yok." },
+    "v2946": { "title": "Mobil Neler yeni + alt dolgu", "body": "Neler yeni telefonda güvenli alan ve sabit Tamam ile çalışır. Companion ve LFG yüzen sekme çubuğuna kadar dolar, listenin altında siyah boşluk yok." },
+    "v2947": { "title": "LFG sekme değişimi + alt boşluk", "body": "LFG’ye geçince Companion tamamen gizlenir. Play içeriği mobil sekme çubuğuna kadar gelir, Companion/LFG altında koyu bant kalmaz." },
+    "v2948": { "title": "Ortalanmış Roller ve pencereler", "body": "Sunucu Roller paneli ve diğer tam ekran paneller artık tüm pencerenin ortasında bulanık arka planlı modal olarak açılır, kenara yapışık kart kalmaz." }
   },
   "updateToast": {
     "kicker": "Masaüstü güncelleme",
@@ -330,7 +330,7 @@ export const nested = {
     "subtitle": "Sistem yönetimi ve moderasyon",
     "overview": "Genel Bakış",
     "overviewTitle": "Şu an",
-    "overviewSubtitle": "Canlı sağlık, son aktif olanlar, yeni kayıtlar ve neye tıklaman gerektiği — ham sayaç dökümü değil.",
+    "overviewSubtitle": "Canlı sağlık, son aktif olanlar, yeni kayıtlar ve neye tıklaman gerektiği, ham sayaç dökümü değil.",
     "overviewLoadError": "Genel bakış yüklenemedi.",
     "overviewGatewayError": "API deploy sonrası yeniden başlıyor. Birkaç saniye sonra yenile.",
     "overviewOnline": "Şu an çevrimiçi",
@@ -348,7 +348,7 @@ export const nested = {
     "overviewJoined": "Yeni katılanlar",
     "overviewJoinedHint": "En son kayıt olanlar sırayla. İsme tıklayınca dosya açılır.",
     "overviewActive": "Son aktif olanlar",
-    "overviewActiveHint": "Kalıcı son görülme — yalnızca bağlı soketler değil. Çevrimiçi olanlar üstte, sonra İstanbul saatiyle.",
+    "overviewActiveHint": "Kalıcı son görülme, yalnızca bağlı soketler değil. Çevrimiçi olanlar üstte, sonra İstanbul saatiyle.",
     "overviewNoActive": "Henüz son aktivite yok.",
     "overviewActiveAll": "Tümü",
     "overviewActiveOnline": "Çevrimiçi",
@@ -360,7 +360,7 @@ export const nested = {
     "overviewOpenAudit": "Tam denetim kaydı",
     "overviewAlertMaintenance": "Bakım modu açık.",
     "overviewAlertFrozen": "Sohbet donduruldu.",
-    "overviewAlertHot": "Birinde 3+ açık rapor var — dosyasını aç.",
+    "overviewAlertHot": "Birinde 3+ açık rapor var, dosyasını aç.",
     "overviewAlertReports": "Kutuda bekleyen açık raporlar var.",
     "overviewAlertErrors": "Bu saatte hata sayısı yüksek.",
     "overviewAlertMemory": "İşlem belleği yüksek.",
@@ -397,7 +397,7 @@ export const nested = {
     "peopleSubtitle": "Kullanıcı adı ara, tek sayfada kim olduklarını, oturumlarını, raporları, cüzdanı ve yaptırımları gör.",
     "peopleSearch": "Kullanıcı adı veya görünür isim ara…",
     "peopleEmptyTitle": "Bir dosya aç",
-    "peopleEmptyBody": "Bir kullanıcı adı yaz. Kim olduklarını, nasıl katıldıklarını, açık oturumları, raporları ve DesCoin’i görürsün — timeout, ban veya cüzdan dondurma aynı yerden.",
+    "peopleEmptyBody": "Bir kullanıcı adı yaz. Kim olduklarını, nasıl katıldıklarını, açık oturumları, raporları ve DesCoin’i görürsün, timeout, ban veya cüzdan dondurma aynı yerden.",
     "directorySubtitle": "Kayıtlı her hesap. İsme dokununca dosyası açılır.",
     "directorySearch": "İsim, kullanıcı adı veya e-posta ara…",
     "directoryFilterAll": "Tümü",
@@ -426,7 +426,7 @@ export const nested = {
     "reportsLoadError": "Raporlar yüklenemedi.",
     "reportsEmptyTitle": "Kutu boş",
     "reportsEmptyBody": "Biri bir profili veya mesajı şikayet edince kanıtıyla birlikte buraya düşer.",
-    "reportsAutoOpen": "Aynı kişiye 3 veya daha fazla açık rapor var — dosyası açıldı.",
+    "reportsAutoOpen": "Aynı kişiye 3 veya daha fazla açık rapor var, dosyası açıldı.",
     "openDossier": "Dosyayı aç",
     "dismiss": "Reddet",
     "reportDismissed": "Rapor reddedildi",
@@ -1291,7 +1291,7 @@ export const phrases = {
   "Turns off glass blur so Descall stays smooth on older computers.": "Cam bulanıklığını kapatır. Eski bilgisayarlarda Descall daha akıcı çalışır.",
   "Density": "Yoğunluk",
   "Message bubbles": "Mesaj balonları",
-  "Hey — how’s it going?": "Selam — nasıl gidiyor?",
+  "Hey, how’s it going?": "Selam, nasıl gidiyor?",
   "Pretty good! You?": "İyidir! Sen?",
   "Control desktop and browser alerts.": "Masaüstü ve tarayıcı uyarılarını yönet.",
   "Pick the devices used for calls on this browser.": "Bu tarayıcıda aramalar için kullanılacak cihazları seç.",
@@ -1465,7 +1465,7 @@ export const phrases = {
   "My rank (filter)": "Rankım (filtre)",
   "Loading lobbies…": "Lobiler yükleniyor…",
   "No open lobbies": "Açık lobi yok",
-  "Create one and share Descall — voice + party code in one place.": "Bir tane oluştur ve Descall’ı paylaş — ses + parti kodu tek yerde.",
+  "Create one and share Descall, voice + party code in one place.": "Bir tane oluştur ve Descall’ı paylaş, ses + parti kodu tek yerde.",
   "Code set": "Kod ayarlı",
   "Valorant LFG": "Valorant LFG",
   "Loading lobby…": "Lobi yükleniyor…",
@@ -1502,7 +1502,7 @@ export const phrases = {
   "Cancelled": "İptal edildi",
   "You've been invited to join a group": "Bir gruba davet edildin",
   "Loading invite…": "Davet yükleniyor…",
-  "Share a link — friends can join this group instantly": "Bir bağlantı paylaş — arkadaşlar gruba anında katılabilir",
+  "Share a link, friends can join this group instantly": "Bir bağlantı paylaş, arkadaşlar gruba anında katılabilir",
   "Expire after": "Sonra süresi dolsun",
   "Invite link": "Davet bağlantısı",
   "1 hour": "1 saat",
@@ -1544,7 +1544,7 @@ export const phrases = {
   "Mark read": "Okundu",
   "Close chat": "Sohbeti kapat",
   "Close this chat?": "Bu sohbeti kapatmak istiyor musun?",
-  "This chat leaves your list. Messages stay — it comes back if they write you.":
+  "This chat leaves your list. Messages stay, it comes back if they write you.":
     "Sohbet listeden kalkar. Mesajlar durur; karşı taraf yazarsa tekrar görünür.",
   "Could not update this chat.": "Sohbet güncellenemedi.",
   "Forward": "İlet",
@@ -1629,7 +1629,7 @@ export const phrases = {
   "Your server is where you and your friends hang out. Make yours and start talking.": "Sunucun, sen ve arkadaşlarının takıldığı yer. Kendininkini oluştur ve konuşmaya başla.",
   "Choose a ready-made advanced template, or start from scratch and build everything yourself.": "Hazır gelişmiş bir şablon seç veya sıfırdan kurup her şeyi kendin oluştur.",
   "Use a template": "Şablon kullan",
-  "Roles, text & voice channels, topics, slowmode, and permission overrides — fully prepared.": "Roller, yazı & ses kanalları, konular, yavaş mod ve izin override’ları — tamamen hazır.",
+  "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.": "Roller, yazı & ses kanalları, konular, yavaş mod ve izin override’ları, tamamen hazır.",
   "Start from scratch": "Sıfırdan başla",
   "Empty server with only @everyone. Add channels and roles yourself.": "Yalnızca @everyone olan boş sunucu. Kanalları ve rolleri sen ekle.",
   "Pick a template": "Şablon seç",
@@ -1653,7 +1653,7 @@ export const phrases = {
   "Scrim rooms": "Scrim odaları",
   "Coach role": "Coach rolü",
   "Friends hangout": "Arkadaş takılması",
-  "Cozy private group setup — lounge chat, plans, music nights, and always-on voice rooms.": "Samimi özel grup — lounge sohbet, planlar, müzik geceleri ve sürekli açık ses odaları.",
+  "Cozy private group setup, lounge chat, plans, music nights, and always-on voice rooms.": "Samimi özel grup, lounge sohbet, planlar, müzik geceleri ve sürekli açık ses odaları.",
   "Lounge chat": "Lounge sohbet",
   "Plans board": "Plan panosu",
   "Music night": "Müzik gecesi",
@@ -1703,7 +1703,7 @@ export const phrases = {
   "Network error during upload": "Yükleme sırasında ağ hatası",
   "Create": "Oluştur",
   "No servers yet": "Henüz sunucu yok",
-  "Create a server to start building channels, roles, and voice — Discord-style.": "Kanallar, roller ve ses için bir sunucu oluştur — Discord tarzı.",
+  "Create a server to start building channels, roles, and voice, Discord-style.": "Kanallar, roller ve ses için bir sunucu oluştur, Discord tarzı.",
   "Owned {owned} / {max}": "Sahip olunan {owned} / {max}",
   "Own limit reached ({max})": "Sahiplik limiti doldu ({max})",
   "Failed to reorder servers.": "Sunucular yeniden sıralanamadı.",
@@ -1885,7 +1885,7 @@ export const phrases = {
   "In this channel": "Bu kanalda",
   "Nobody here yet": "Henüz kimse yok",
   "{count} in voice": "Seste {count} kişi",
-  "Join to talk — no ringing, drop in anytime.": "Konuşmak için katıl — zil yok, istediğin zaman gir.",
+  "Join to talk, no ringing, drop in anytime.": "Konuşmak için katıl, zil yok, istediğin zaman gir.",
   "the server": "sunucu",
   "You were kicked from {name}": "{name} sunucusundan atıldın",
   "You were banned from {name}": "{name} sunucusundan yasaklandın",
@@ -1937,7 +1937,7 @@ export const phrases = {
   "Topic (optional)": "Konu (opsiyonel)",
   "What's this channel about?": "Bu kanal ne hakkında?",
   "Categories group channels in the sidebar.": "Kategoriler kenar çubuğunda kanalları gruplar.",
-  "Text and voice channels only — more types later.": "Şimdilik yalnızca yazı ve ses kanalları — diğer türler sonra.",
+  "Text and voice channels only, more types later.": "Şimdilik yalnızca yazı ve ses kanalları, diğer türler sonra.",
   "Text Channels": "Yazı Kanalları",
   "Delete {name}? Channels inside stay, but leave this category.": "{name} silinsin mi? İçindeki kanallar kalır, kategoriden çıkar.",
   "Delete #{name}? This cannot be undone.": "#{name} silinsin mi? Bu geri alınamaz.",
@@ -1967,7 +1967,7 @@ export const phrases = {
   "Town hall": "Toplantı",
   "Save": "Kaydet",
   "Your servers": "Sunucuların",
-  "Pick a server from the sidebar — or create one to get started.": "Kenar çubuğundan bir sunucu seç — veya başlamak için bir tane oluştur.",
+  "Pick a server from the sidebar, or create one to get started.": "Kenar çubuğundan bir sunucu seç, veya başlamak için bir tane oluştur.",
   "This will permanently delete {name} for everyone. Type the server name to confirm.": "Bu, {name} sunucusunu herkes için kalıcı olarak siler. Onaylamak için sunucu adını yaz.",
   "Leaving as owner deletes {name} for everyone. Type the server name to confirm.": "Sahip olarak ayrılmak {name} sunucusunu herkes için siler. Onaylamak için sunucu adını yaz.",
   "Are you sure you want to leave {name}?": "{name} sunucusundan ayrılmak istediğine emin misin?",
@@ -2052,13 +2052,13 @@ export const phrases = {
   "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.":
     "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses ücretsizdir; gerçek topluluklarla büyüyoruz.",
   "Descall is an independent messaging and voice platform for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.":
-    "Descall; arkadaşlar, oyun ekipleri ve küçük topluluklar için Discord tarzı sunucular isteyen bağımsız bir mesajlaşma ve ses platformudur — temel sohbet ve aramalarda Nitro duvarı yoktur.",
-  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG — with privacy policies and security docs you can actually read.":
-    "Gerçek zamanlı mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve Valorant LFG — okunabilir gizlilik ve güvenlik dokümanlarıyla.",
-  "How Descall protects your chats and calls — encryption in transit, account security, and honest limits about what we do not claim.":
-    "Descall sohbet ve aramaları nasıl korur — aktarımda şifreleme, hesap güvenliği ve iddia etmediğimiz konular hakkında dürüst sınırlar.",
-  "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server — messages are encrypted in transit and stored so your devices can load chat history.":
-    "Web ve API trafiği HTTPS/TLS kullanır. Gerçek zamanlı medya, görüşme kurulduğunda peer'lar arasında WebRTC DTLS/SRTP kullanır. Descall, sunucuda saklanan tüm mesaj geçmişi için varsayılan uçtan uca şifreleme iddiasında bulunmaz — mesajlar aktarımda şifrelenir ve cihazlarınızın geçmişi yükleyebilmesi için saklanır.",
+    "Descall; arkadaşlar, oyun ekipleri ve küçük topluluklar için Discord tarzı sunucular isteyen bağımsız bir mesajlaşma ve ses platformudur, temel sohbet ve aramalarda Nitro duvarı yoktur.",
+  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG, with privacy policies and security docs you can actually read.":
+    "Gerçek zamanlı mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve Valorant LFG, okunabilir gizlilik ve güvenlik dokümanlarıyla.",
+  "How Descall protects your chats and calls, encryption in transit, account security, and honest limits about what we do not claim.":
+    "Descall sohbet ve aramaları nasıl korur, aktarımda şifreleme, hesap güvenliği ve iddia etmediğimiz konular hakkında dürüst sınırlar.",
+  "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored so your devices can load chat history.":
+    "Web ve API trafiği HTTPS/TLS kullanır. Gerçek zamanlı medya, görüşme kurulduğunda peer'lar arasında WebRTC DTLS/SRTP kullanır. Descall, sunucuda saklanan tüm mesaj geçmişi için varsayılan uçtan uca şifreleme iddiasında bulunmaz, mesajlar aktarımda şifrelenir ve cihazlarınızın geçmişi yükleyebilmesi için saklanır.",
   "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally on their device, that recording is outside Descall's control.":
     "Arama medyası WebRTC güvenliği (DTLS/SRTP) ile iletilir. Descall arama sesini, görüntüsünü veya ekran paylaşımlarını hiçbir zaman kaydetmez veya saklamaz. Bir katılımcı kendi cihazında kayıt alırsa bu Descall'ın kontrolü dışındadır.",
   "Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available where configured. Session management lets you revoke devices. Keep credentials private on shared computers.":
@@ -2186,7 +2186,7 @@ export const phrases = {
   "Slowmode is on: {time} between messages": "Yavaş mod açık: mesajlar arasında {time}",
   "Slowmode: wait {time}": "Yavaş mod: {time} bekle",
   "Members must wait {time} between messages.": "Üyeler mesajlar arasında {time} beklemeli.",
-  "Off — members can send freely.": "Kapalı — üyeler serbestçe yazabilir.",
+  "Off, members can send freely.": "Kapalı, üyeler serbestçe yazabilir.",
   "Freeze Chat": "Sohbeti Dondur",
   "Clear Cache": "Önbelleği Temizle",
   "Backup": "Yedekle",
@@ -2445,10 +2445,10 @@ export const phrases = {
   "Sending...": "Gönderiliyor...",
   "Creating...": "Oluşturuluyor...",
   "No conversations yet": "Henüz sohbet yok",
-  "Add a friend to start chatting — messages, voice, and screen share in one place.": "Sohbet etmek için bir arkadaş ekle — mesajlar, ses ve ekran paylaşımı tek yerde.",
-  "Create a group for friends — chat, call, and share your screen together.": "Arkadaşların için bir grup oluştur — sohbet et, ara ve ekranını birlikte paylaşın.",
+  "Add a friend to start chatting, messages, voice, and screen share in one place.": "Sohbet etmek için bir arkadaş ekle, mesajlar, ses ve ekran paylaşımı tek yerde.",
+  "Create a group for friends, chat, call, and share your screen together.": "Arkadaşların için bir grup oluştur, sohbet et, ara ve ekranını birlikte paylaşın.",
   "is now online": "şimdi çevrimiçi",
-  "Purchased — equip it anytime": "Satın alındı — istediğin zaman kuşan",
+  "Purchased, equip it anytime": "Satın alındı, istediğin zaman kuşan",
   "No friends to add": "Eklenecek arkadaş yok",
   "No friends to add. Add friends first.": "Eklenecek arkadaş yok. Önce arkadaş ekleyin.",
   "Sign in to use web app": "Web uygulamasını kullanmak için giriş yapın",
@@ -2459,7 +2459,7 @@ export const phrases = {
   "The ultimate chat application for your desktop. Fast, secure, and beautifully designed.": "Masaüstünüz için nihai sohbet uygulaması. Hızlı, güvenli ve özenle tasarlanmış.",
   "{from} mentioned you": "{from} senden bahsetti",
   "{from} is calling": "{from} arıyor",
-  "{groupName} — Group Call": "{groupName} — Grup Araması",
+  "{groupName}, Group Call": "{groupName}, Grup Araması",
   "{from} started a group call": "{from} grup araması başlattı",
   "Missed Call": "Cevapsız Arama",
   "{from} made a video call": "{from} görüntülü aradı",
@@ -2487,9 +2487,9 @@ export const phrases = {
   "Bet:": "Bahis:",
   "Blackjack (A+10) pays 3:2": "Blackjack (A+10) 3:2 öder",
   "BLACKJACK!": "BLACKJACK!",
-  "Browse stacks, join the Descall voice lobby, then reveal the Valorant party code. Everything stays inside Descall — not a separate site.": "Takım ara, Descall ses lobisine katıl, ardından Valorant parti kodunu aç. Hepsi Descall içinde — ayrı bir site yok.",
+  "Browse stacks, join the Descall voice lobby, then reveal the Valorant party code. Everything stays inside Descall, not a separate site.": "Takım ara, Descall ses lobisine katıl, ardından Valorant parti kodunu aç. Hepsi Descall içinde, ayrı bir site yok.",
   "Call back": "Geri ara",
-  "Call ended — anything to say?": "Arama bitti — bir şey söylemek ister misin?",
+  "Call ended, anything to say?": "Arama bitti, bir şey söylemek ister misin?",
   "Calling...": "Aranıyor…",
   "Waiting…": "Bekleniyor",
   "Click anywhere to exit fullscreen": "Tam ekrandan çıkmak için herhangi bir yere tıkla",
@@ -2540,7 +2540,7 @@ export const phrases = {
   "Group · Started": "Grup · Başlatıldı",
   "Hide Rules": "Kuralları Gizle",
   "How was the call?": "Görüşme nasıldı?",
-  "If audio/video quality or anything else was off — tell us. 30 seconds is enough.": "Ses/görüntü kalitesi veya bir sorun olduysa bize yaz — 30 saniye yeter.",
+  "If audio/video quality or anything else was off, tell us. 30 seconds is enough.": "Ses/görüntü kalitesi veya bir sorun olduysa bize yaz, 30 saniye yeter.",
   "In a group call ({count} people), high resolution/FPS can cause lag. 720p / 20 FPS is recommended.": "Grup aramasında ({count} kişi) yüksek çözünürlük/FPS takılmaya yol açabilir. 720p / 20 FPS önerilir.",
   "Incoming call...": "Gelen arama…",
   "Incoming video call": "Gelen görüntülü arama",
@@ -2553,7 +2553,7 @@ export const phrases = {
   "Link": "Bağlantı",
   "Link & fetch rank": "Bağla ve rank getir",
   "Link failed": "Bağlama başarısız",
-  "Live — changes will restart sharing": "Canlı — değişiklik paylaşımı yeniden başlatır",
+  "Live, changes will restart sharing": "Canlı, değişiklik paylaşımı yeniden başlatır",
   "Lobby": "Lobi",
   "Looking for (max)": "Aranan (maks)",
   "Looking for (min)": "Aranan (min)",
@@ -2619,7 +2619,7 @@ export const phrases = {
   "Game capture (1:1)": "Oyun yakalama (1:1)",
   "1080p FHD": "1080p FHD",
   "1440p QHD": "1440p QHD",
-  "Select a conversation — or start a new one": "Bir sohbet seç — veya yeni bir tane başlat",
+  "Select a conversation, or start a new one": "Bir sohbet seç, veya yeni bir tane başlat",
   "Select Category": "Kategori Seç",
   "Send a short note to help us improve Descall.": "Descall’ı geliştirmemize yardımcı olmak için kısa bir not gönder.",
   "Send feedback": "Geri bildirim gönder",
@@ -2633,7 +2633,7 @@ export const phrases = {
   "Show participants": "Katılımcıları göster",
   "Show Rules": "Kuralları Göster",
   "Smooth motion": "Akıcı hareket",
-  "Smoothest — low bandwidth": "En akıcı — düşük bant",
+  "Smoothest, low bandwidth": "En akıcı, düşük bant",
   "Someone": "Birisi",
   "Start group video call": "Grup görüntülü araması başlat",
   "Start group voice call": "Grup sesli araması başlat",
@@ -2643,15 +2643,15 @@ export const phrases = {
   "Submitting...": "Gönderiliyor...",
   "Suggestion, request, or bug… all help.": "Öneri, istek veya hata… hepsi işimize yarar.",
   "to look up live ranks.": "canlı rank bakması için gerekli.",
-  "Try to reach 21 — but don’t go over!": "21'e ulaşmaya çalış ama geçme!",
+  "Try to reach 21, but don’t go over!": "21'e ulaşmaya çalış ama geçme!",
   "Turn Off Camera": "Kamerayı Kapat",
   "Turn off camera": "Kamerayı kapat",
   "Turn On Camera": "Kamerayı Aç",
   "Turn on camera": "Kamerayı aç",
   "Unlink failed": "Bağlantı kaldırılamadı",
   "Unlink your Valorant account from Descall?": "Valorant hesabının Descall bağlantısını kaldırmak istiyor musun?",
-  "User may be offline — waiting…": "Kullanıcı çevrimdışı olabilir — bekleniyor…",
-  "Valorant party code (optional — can add later)": "Valorant parti kodu (isteğe bağlı — sonra eklenebilir)",
+  "User may be offline, waiting…": "Kullanıcı çevrimdışı olabilir, bekleniyor…",
+  "Valorant party code (optional, can add later)": "Valorant parti kodu (isteğe bağlı, sonra eklenebilir)",
   "Waiting for screen…": "Ekran bekleniyor…",
   "We are (players already)": "Biz (mevcut oyuncu)",
   "Welcome to Descall": "Descall'a hoş geldin",
@@ -2690,7 +2690,7 @@ export const phrases = {
   "Sent": "Gönderildi",
   "Original message": "Orijinal mesaj",
   "Invite People": "İnsanları Davet Et",
-  "Active Now — {count}": "Şu an aktif — {count}",
+  "Active Now, {count}": "Şu an aktif, {count}",
   "No friends online": "Çevrimiçi arkadaş yok",
   "No matches": "Eşleşme yok",
   "Try a different name": "Farklı bir isim dene",
@@ -2707,15 +2707,15 @@ export const phrases = {
   "1 Hour": "1 Saat",
   "4 Hours": "4 Saat",
   "Until Cleared": "Temizlenene kadar",
-  "Describe the bug — what happened and how to reproduce it…": "Hatayı anlat — ne oldu ve nasıl tekrarlanır…",
+  "Describe the bug, what happened and how to reproduce it…": "Hatayı anlat, ne oldu ve nasıl tekrarlanır…",
   "Tell us what you love about Descall…": "Descall hakkında neleri sevdiğini anlat…",
   "Share your idea or suggestion…": "Fikrini veya önerini paylaş…",
   "Allow notifications for messages, calls, and mentions": "Mesaj, arama ve mention bildirimleri almak için izin verin",
   "{name} is typing": "{name} yazıyor",
   "{name1} and {name2} are typing": "{name1} ve {name2} yazıyor",
   "{names} and {count} more are typing": "{names} ve {count} kişi daha yazıyor",
-  "Online — {count}": "Çevrimiçi — {count}",
-  "Offline — {count}": "Çevrimdışı — {count}",
+  "Online, {count}": "Çevrimiçi, {count}",
+  "Offline, {count}": "Çevrimdışı, {count}",
   "Last seen {time}": "Son görülme {time}",
   "Started {time}": "Başlangıç {time}",
   "{count}d ago": "{count}g önce",
@@ -2745,7 +2745,7 @@ export const phrases = {
   "< 1s": "< 1sn",
   "Almost ready": "Neredeyse hazır",
   "Signing in": "Giriş yapılıyor",
-  "Start a hand — /bj 100": "El başlat — /bj 100",
+  "Start a hand, /bj 100": "El başlat, /bj 100",
   "Claim free credits once per day": "Günde bir kez ücretsiz kredi al",
   "Show blackjack commands": "Blackjack komutlarını göster",
   "Check your balance": "Bakiyeni kontrol et",
@@ -2760,9 +2760,9 @@ export const phrases = {
   "Desktop": "Masaüstü",
   "Descall for {name}": "{name} için Descall",
   "Web app": "Web uygulaması",
-  "Windows 10/11 (64-bit) — desktop installer": "Windows 10/11 (64-bit) — masaüstü kurulum",
-  "macOS — use Descall in your browser (no desktop build)": "macOS — Descall’ı tarayıcıda kullan (masaüstü sürüm yok)",
-  "Linux — use Descall in your browser (no desktop build)": "Linux — Descall’ı tarayıcıda kullan (masaüstü sürüm yok)",
+  "Windows 10/11 (64-bit), desktop installer": "Windows 10/11 (64-bit), masaüstü kurulum",
+  "macOS, use Descall in your browser (no desktop build)": "macOS, Descall’ı tarayıcıda kullan (masaüstü sürüm yok)",
+  "Linux, use Descall in your browser (no desktop build)": "Linux, Descall’ı tarayıcıda kullan (masaüstü sürüm yok)",
   "64-bit processor": "64-bit işlemci",
   "500 MB free space": "500 MB boş alan",
   "© 2026 Descall. All rights reserved.": "© 2026 Descall. Tüm hakları saklıdır.",
@@ -2773,7 +2773,7 @@ export const phrases = {
   "The quick brown fox jumps over the lazy dog": "Hızlı kahverengi tilki tembel köpeğin üstünden atlar",
   "Looks good with your theme": "Temanla iyi duruyor",
   "Active Now": "Şu an aktif",
-  "Hey — how's it going?": "Selam — nasıl gidiyor?",
+  "Hey, how's it going?": "Selam, nasıl gidiyor?",
   "Allow notifications": "Bildirimlere izin ver",
   "Message, call and mention alerts need permission.": "Mesaj, arama ve bahsetme uyarıları için izin gerekir.",
   "By {author}": "{author} tarafından",
@@ -2842,7 +2842,7 @@ export const phrases = {
   "Image": "Görsel",
   "Open image": "Görseli aç",
   "Open GIF": "GIF'i aç",
-  "Empty recording — try again.": "Boş kayıt — tekrar dene.",
+  "Empty recording, try again.": "Boş kayıt, tekrar dene.",
   "Recording failed.": "Kayıt başarısız.",
   "Microphone access denied.": "Mikrofon erişimi reddedildi.",
   "Message activity and user interaction statistics": "Mesaj aktivitesi ve kullanıcı etkileşim istatistikleri",
@@ -2983,7 +2983,7 @@ export const phrases = {
   "No members": "Üye yok",
   "📞 Call": "📞 Arama",
   "Descall staff": "Descall yetkilisi",
-  "Pending — {count}": "Bekleyen — {count}",
+  "Pending, {count}": "Bekleyen, {count}",
   "Friend request accepted": "Arkadaşlık isteği kabul edildi",
 
   // Public marketing site
@@ -3009,10 +3009,10 @@ export const phrases = {
   "Create groups with unlimited members": "Sınırsız üyeli gruplar oluştur",
   "Share a window or browser tab in calls": "Aramalarda bir pencereyi veya tarayıcı sekmesini paylaş",
   "Your conversations are encrypted and secure": "Sohbetlerin şifrelenir ve korunur",
-  "Frequently asked questions about Descall — accounts, desktop download, calls, screen share, and privacy.": "Descall hakkında sık sorulan sorular — hesaplar, masaüstü indirme, aramalar, ekran paylaşımı ve gizlilik.",
+  "Frequently asked questions about Descall, accounts, desktop download, calls, screen share, and privacy.": "Descall hakkında sık sorulan sorular, hesaplar, masaüstü indirme, aramalar, ekran paylaşımı ve gizlilik.",
   "This page does not exist on Descall.": "Bu sayfa Descall’da bulunmuyor.",
   "Descall is building a fast, modern place to chat and call with friends and groups.": "Descall, arkadaşların ve gruplarınla sohbet edip arayabileceğin hızlı ve modern bir alan oluşturuyor.",
-  "How Descall protects your chats and calls — encryption in transit, account security, and responsible practices.": "Descall’ın sohbetlerini ve aramalarını nasıl koruduğu — aktarım şifrelemesi, hesap güvenliği ve sorumlu uygulamalar.",
+  "How Descall protects your chats and calls, encryption in transit, account security, and responsible practices.": "Descall’ın sohbetlerini ve aramalarını nasıl koruduğu, aktarım şifrelemesi, hesap güvenliği ve sorumlu uygulamalar.",
   "Transport encryption": "Aktarım şifrelemesi",
   "Accounts": "Hesaplar",
   "Responsible use": "Sorumlu kullanım",
@@ -3027,7 +3027,7 @@ export const phrases = {
   "Acceptance": "Kabul",
   "Acceptable use": "Kabul edilebilir kullanım",
   "Availability": "Kullanılabilirlik",
-  "Get in touch with the Descall team — support, feedback, and press.": "Descall ekibiyle iletişime geç — destek, geri bildirim ve basın.",
+  "Get in touch with the Descall team, support, feedback, and press.": "Descall ekibiyle iletişime geç, destek, geri bildirim ve basın.",
   "Support & feedback": "Destek ve geri bildirim",
   "Open an issue or discussion on GitHub:": "GitHub’da bir sorun veya tartışma aç:",
   "Report suspected vulnerabilities privately via GitHub security advisories when available, or mark issues clearly as security-related.": "Şüpheli güvenlik açıklarını mümkünse GitHub güvenlik bildirimiyle özel olarak ilet veya sorunları açıkça güvenlik ile ilgili olarak işaretle.",
@@ -3062,8 +3062,8 @@ export const phrases = {
   "Do not abuse the service, harass others, distribute illegal content, attempt unauthorized access, or interfere with infrastructure. We may suspend accounts that violate these rules.": "Hizmeti kötüye kullanma, başkalarını taciz etme, yasa dışı içerik dağıtma, yetkisiz erişime kalkışma veya altyapıya müdahale etme. Bu kuralları ihlal eden hesapları askıya alabiliriz.",
   "Descall is provided as-is. Features may change. We aim for high availability but do not guarantee uninterrupted service.": "Descall olduğu gibi sunulur. Özellikler değişebilir. Yüksek kullanılabilirlik hedefleriz ancak kesintisiz hizmeti garanti etmeyiz.",
   "Questions about these Terms can be sent via the Contact page.": "Bu Şartlarla ilgili sorularını İletişim sayfasından iletebilirsin.",
-  "We focus on real-time messaging, group voice/video, screen share, and a polished desktop experience — without turning private chats into SEO landings.": "Özel sohbetleri SEO açılış sayfasına dönüştürmeden; gerçek zamanlı mesajlaşma, grup sesli/görüntülü arama, ekran paylaşımı ve özenli masaüstü deneyimine odaklanıyoruz.",
-  "Compare Descall and Discord for chat, voice, video, and screen share — a lighter alternative for friends and groups.": "Sohbet, ses, video ve ekran paylaşımı için Descall ile Discord’u karşılaştır — arkadaşlar ve gruplar için daha hafif bir alternatif.",
+  "We focus on real-time messaging, group voice/video, screen share, and a polished desktop experience, without turning private chats into SEO landings.": "Özel sohbetleri SEO açılış sayfasına dönüştürmeden; gerçek zamanlı mesajlaşma, grup sesli/görüntülü arama, ekran paylaşımı ve özenli masaüstü deneyimine odaklanıyoruz.",
+  "Compare Descall and Discord for chat, voice, video, and screen share, a lighter alternative for friends and groups.": "Sohbet, ses, video ve ekran paylaşımı için Descall ile Discord’u karşılaştır, arkadaşlar ve gruplar için daha hafif bir alternatif.",
   "Real-time chat": "Gerçek zamanlı sohbet",
   "Group voice & video": "Grup sesli ve görüntülü",
   "Yes": "Evet",
@@ -3094,7 +3094,7 @@ export const phrases = {
   "Blocked users": "Engellenen kullanıcılar",
   "Email address": "E-posta adresi",
   "Verify your email to enable two-factor authentication.": "İki adımlı doğrulamayı etkinleştirmek için e-postanı doğrula.",
-  "Verified — used for sign-in codes and account alerts.": "Doğrulandı — giriş kodları ve hesap uyarıları için kullanılır.",
+  "Verified, used for sign-in codes and account alerts.": "Doğrulandı, giriş kodları ve hesap uyarıları için kullanılır.",
   "you@example.com": "sen@ornek.com",
   "Send code": "Kod gönder",
   "Verifying…": "Doğrulanıyor…",
@@ -3124,12 +3124,12 @@ export const phrases = {
   "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.": "Bu Apple Kimliğine bağlı bir Descall hesabı henüz yok. Hesap oluşturmak için doğum tarihini gir ve Koşulları kabul et.",
   "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.": "Bu Google hesabına bağlı bir Descall hesabı henüz yok. Hesap oluşturmak için doğum tarihini gir ve Koşulları kabul et.",
   "Quick Add": "Hızlı Ekle",
-  "People you may know — ranked by mutual friends and shared groups.": "Tanıyor olabileceğin kişiler — ortak arkadaş ve ortak grup sayısına göre sıralandı.",
+  "People you may know, ranked by mutual friends and shared groups.": "Tanıyor olabileceğin kişiler, ortak arkadaş ve ortak grup sayısına göre sıralandı.",
   "Finding people you may know...": "Tanıdığın kişiler aranıyor...",
   "{count} mutual friends": "{count} ortak arkadaş",
   "{count} shared groups": "{count} ortak grup",
   "Suggested for you": "Senin için önerildi",
-  "No suggestions right now — check back after you join a few groups or make some friends.": "Şu anda öneri yok — birkaç gruba katıldıktan veya birkaç arkadaş edindikten sonra tekrar kontrol et.",
+  "No suggestions right now, check back after you join a few groups or make some friends.": "Şu anda öneri yok, birkaç gruba katıldıktan veya birkaç arkadaş edindikten sonra tekrar kontrol et.",
   "Failed to load suggestions": "Öneriler yüklenemedi",
   "Email (optional)": "E-posta (opsiyonel)",
   "Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings.": "E-posta eklemek hesap kurtarma, giriş kodları ve iki adımlı doğrulamayı açar. Dilersen daha sonra Ayarlar'dan da ekleyebilirsin.",
@@ -3168,9 +3168,9 @@ export const phrases = {
   "This account has no email on file. Contact support@descall.com to recover access.": "Bu hesapta kayıtlı e-posta yok. Erişimi kurtarmak için support@descall.com adresine yazın.",
   "Shop": "Mağaza",
   "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.": "Diğerlerinin seni nasıl gördüğünü kişiselleştirmek için banner, avatar çerçevesi ve profil arkaplanı satın al.",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, frames, auras, flares, and more.":
-    "Aramalarda konuşarak, mesajlaşarak ve ekran paylaşarak DesCoin kazan — sonra banner, çerçeve, aura, flare ve daha fazlasına harca.",
-  "No items available yet — check back soon!": "Henüz ürün yok — yakında tekrar kontrol et!",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, frames, auras, flares, and more.":
+    "Aramalarda konuşarak, mesajlaşarak ve ekran paylaşarak DesCoin kazan, sonra banner, çerçeve, aura, flare ve daha fazlasına harca.",
+  "No items available yet, check back soon!": "Henüz ürün yok, yakında tekrar kontrol et!",
   "Shop categories": "Mağaza kategorileri",
   "Banners": "Bannerlar",
   "Frames": "Çerçeveler",
@@ -3246,7 +3246,7 @@ export const phrases = {
   // DesCoin economy + premium themes
   "Premium Themes": "Premium Temalar",
   "Premium Theme": "Premium Tema",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen — then spend it on banners, avatar frames, backgrounds, and premium themes.": "Görüşmelerde konuşarak, mesajlaşarak ve ekranını paylaşarak DesCoin kazan — sonra bunları banner, avatar çerçevesi, arkaplan ve premium temalar için harca.",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, avatar frames, backgrounds, and premium themes.": "Görüşmelerde konuşarak, mesajlaşarak ve ekranını paylaşarak DesCoin kazan, sonra bunları banner, avatar çerçevesi, arkaplan ve premium temalar için harca.",
   "Your DesCoin balance": "DesCoin bakiyen",
   "Not enough DesCoin yet": "Henüz yeterli DesCoin yok",
   "Not enough DesCoin": "Yeterli DesCoin yok",
@@ -3280,22 +3280,22 @@ export const phrases = {
   "Explore features": "Özellikleri keşfet",
   "Frequently asked questions": "Sık sorulan sorular",
   "Ready to try a lighter Discord alternative?": "Daha hafif bir Discord alternatifini denemeye hazır mısın?",
-  "Create a free Descall account — chat, voice, screen share, and Valorant LFG in one place.":
-    "Ücretsiz bir Descall hesabı oluştur — sohbet, ses, ekran paylaşımı ve Valorant LFG tek yerde.",
-  "The free Discord alternative for friends and gamers — real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.":
-    "Arkadaşlar ve oyuncular için ücretsiz Discord alternatifi — gerçek zamanlı sohbet, HD ses & görüntü, ekran paylaşımı ve Nitro duvarı olmadan Valorant LFG.",
+  "Create a free Descall account, chat, voice, screen share, and Valorant LFG in one place.":
+    "Ücretsiz bir Descall hesabı oluştur, sohbet, ses, ekran paylaşımı ve Valorant LFG tek yerde.",
+  "The free Discord alternative for friends and gamers, real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.":
+    "Arkadaşlar ve oyuncular için ücretsiz Discord alternatifi, gerçek zamanlı sohbet, HD ses & görüntü, ekran paylaşımı ve Nitro duvarı olmadan Valorant LFG.",
   "Why choose this Discord alternative?": "Neden bu Discord alternatifini seçmelisin?",
-  "Descall keeps the parts you love — chat, calls, screen share — and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.":
-    "Descall sevdiğin kısımları korur — sohbet, aramalar, ekran paylaşımı — ve şişkinliği atar. Daha hafif bir günlük deneyim isteyen arkadaş grupları ve oyun ekipleri için.",
-  "Descall vs Discord — quick take": "Descall vs Discord — kısa özet",
+  "Descall keeps the parts you love, chat, calls, screen share, and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.":
+    "Descall sevdiğin kısımları korur, sohbet, aramalar, ekran paylaşımı, ve şişkinliği atar. Daha hafif bir günlük deneyim isteyen arkadaş grupları ve oyun ekipleri için.",
+  "Descall vs Discord, quick take": "Descall vs Discord, kısa özet",
   "Need mega-servers and bots? Discord still wins. Need free voice, screen share, and Valorant LFG for people you actually know? Descall is the Discord alternative built for that.":
     "Dev sunucular ve botlar mı lazım? Discord hâlâ önde. Gerçekten tanıdığın insanlarla ücretsiz ses, ekran paylaşımı ve Valorant LFG mi istiyorsun? Descall bunun için tasarlandı.",
   "Full comparison": "Tam karşılaştırma",
   "Read the blog": "Blogu oku",
   "Descall vs Discord": "Descall vs Discord",
   "Features of a modern Discord alternative": "Modern bir Discord alternatifinin özellikleri",
-  "Everything friend groups and gamers need day to day — messaging, calls, screen share, LFG — without turning your PC into a second operating system.":
-    "Arkadaş grupları ve oyuncuların her gün ihtiyacı olan her şey — mesajlaşma, aramalar, ekran paylaşımı, LFG — bilgisayarını ikinci bir işletim sistemine çevirmeden.",
+  "Everything friend groups and gamers need day to day, messaging, calls, screen share, LFG, without turning your PC into a second operating system.":
+    "Arkadaş grupları ve oyuncuların her gün ihtiyacı olan her şey, mesajlaşma, aramalar, ekran paylaşımı, LFG, bilgisayarını ikinci bir işletim sistemine çevirmeden.",
   "Product": "Ürün",
   "Try Descall": "Descall’ı dene",
   "Try Descall free": "Descall’ı ücretsiz dene",
@@ -3313,14 +3313,14 @@ export const phrases = {
   "Copy invite link": "Davet linkini kopyala",
 
   "Voice Room": "Ses Odası",
-  "Drop in anytime — no ringing": "İstediğin zaman katıl — çalma yok",
+  "Drop in anytime, no ringing": "İstediğin zaman katıl, çalma yok",
   "People in voice": "Seste olanlar",
   "Join Voice": "Sese Katıl",
   "Leave": "Ayrıl",
   "Invite friends": "Arkadaş davet et",
   "You get 100 DesCoin · they get 50": "Sen 100 DesCoin · onlar 50 kazanır",
   "You 100 · they 50 DesCoin": "Sen 100 · onlar 50 DesCoin",
-  "Join me on Descall — we both get DesCoin": "Descall'a katıl — ikimiz de DesCoin kazanırız",
+  "Join me on Descall, we both get DesCoin": "Descall'a katıl, ikimiz de DesCoin kazanırız",
   "Copied": "Kopyalandı",
   "Copy link": "Linki kopyala",
   "Share": "Paylaş",
@@ -3329,18 +3329,18 @@ export const phrases = {
   "Get started on Descall": "Descall’da ilk adımlar",
   "{done} of {total} complete": "{done} / {total} tamam",
   "Invite a friend": "Bir arkadaş davet et",
-  "Share your link — you both earn DesCoin when they join.":
-    "Linkini paylaş — katıldıklarında ikiniz de DesCoin kazanırsınız.",
+  "Share your link, you both earn DesCoin when they join.":
+    "Linkini paylaş, katıldıklarında ikiniz de DesCoin kazanırsınız.",
   "Add your first friend": "İlk arkadaşını ekle",
   "Quick Add someone you know, or accept an incoming request.":
     "Tanıdığını Hızlı Ekle, ya da gelen isteği kabul et.",
   "Start a voice call": "Sesli arama başlat",
-  "Hop on a free HD call — the moment Descall feels real.":
-    "Ücretsiz HD aramaya geç — Descall’ın hissi burada başlar.",
+  "Hop on a free HD call, the moment Descall feels real.":
+    "Ücretsiz HD aramaya geç, Descall’ın hissi burada başlar.",
   "Add": "Ekle",
   "Call": "Ara",
   "You're ready": "Hazırsın",
-  "Invite, friend, and first call — done.": "Davet, arkadaş ve ilk arama — tamam.",
+  "Invite, friend, and first call, done.": "Davet, arkadaş ve ilk arama, tamam.",
   "Daily reward": "Günlük ödül",
   "Streak": "Seri",
   "Claimed": "Alındı",
@@ -3350,16 +3350,16 @@ export const phrases = {
   "Messages": "Mesaj",
   "Screenshare": "Ekran paylaşımı",
   "Daily DesCoin claimed! +{amount}": "Günlük DesCoin alındı! +{amount}",
-  "Already claimed today — come back tomorrow": "Bugün zaten aldın — yarın gel",
+  "Already claimed today, come back tomorrow": "Bugün zaten aldın, yarın gel",
   "Could not claim daily DesCoin": "Günlük DesCoin alınamadı",
   "Invite link copied": "Davet linki kopyalandı",
   "Could not copy invite link": "Davet linki kopyalanamadı",
-  "Share your invite link — friends join free and connect with you instantly.":
-    "Davet linkini paylaş — arkadaşların ücretsiz katılır ve anında bağlanırsınız.",
+  "Share your invite link, friends join free and connect with you instantly.":
+    "Davet linkini paylaş, arkadaşların ücretsiz katılır ve anında bağlanırsınız.",
   "Add friend": "Arkadaş ekle",
   "Invited by @{username}": "@{username} tarafından davet edildin",
-  "Join {name} on Descall — free chat, voice, and calls.":
-    "{name} ile Descall’da buluş — ücretsiz sohbet, ses ve arama.",
+  "Join {name} on Descall, free chat, voice, and calls.":
+    "{name} ile Descall’da buluş, ücretsiz sohbet, ses ve arama.",
   "Fastest path: continue with Google, then you’re in.":
     "En hızlı yol: Google ile devam et, hemen içeri gir.",
   "or": "veya",
@@ -3457,9 +3457,9 @@ export const phrases = {
   "90 days": "90 gün",
   "1 year": "1 yıl",
   "This device can’t share system/tab audio with screen share.":
-    "Bu tarayıcıda ekran paylaşımına sistem/sekme sesi eklenemiyor. Mobil web’de YouTube/uygulama sesi genelde yakalanmaz — sadece görüntü gider. Mikrofon zaten arama sesinden duyulur.",
-  "No system/tab audio selected — enable “Share audio” in the picker for sound.":
-    "Sistem/sekme sesi seçilmedi — ses için seçicide “Sesi paylaş”ı aç.",
+    "Bu tarayıcıda ekran paylaşımına sistem/sekme sesi eklenemiyor. Mobil web’de YouTube/uygulama sesi genelde yakalanmaz, sadece görüntü gider. Mikrofon zaten arama sesinden duyulur.",
+  "No system/tab audio selected, enable “Share audio” in the picker for sound.":
+    "Sistem/sekme sesi seçilmedi, ses için seçicide “Sesi paylaş”ı aç.",
   "Screen share ended while Descall was in the background.":
     "Descall arka plandayken ekran paylaşımı sonlandı.",
   "Share your entire screen so switching apps keeps the broadcast alive.":
@@ -3471,7 +3471,7 @@ export const phrases = {
   "Could not start screen share.": "Ekran paylaşımı başlatılamadı.",
   "Loudspeaker": "Hoparlör",
   "Audio output": "Ses çıkışı",
-  "Answered on iPhone — waiting for unlock…": "iPhone'da yanıtlandı — kilidin açılması bekleniyor…",
+  "Answered on iPhone, waiting for unlock…": "iPhone'da yanıtlandı, kilidin açılması bekleniyor…",
   "They answered on a locked iPhone but couldn't join in time. Try calling again.":
     "Kilitli iPhone'da yanıtladı ama zamanında katılamadı. Tekrar aramayı dene.",
   "getDisplayMedia unsupported": "Bu tarayıcıda ekran paylaşımı kullanılamıyor.",
@@ -3519,20 +3519,20 @@ export const phrases = {
   "High": "Yüksek",
   "Highest": "En yüksek",
 
-  // Marketing — servers system
-  "A free Discord alternative with real servers — roles, channels, voice, and templates — plus chat, calls, and Valorant LFG.":
-    "Gerçek sunucularla (roller, kanallar, ses ve şablonlar) ücretsiz bir Discord alternatifi — artı sohbet, aramalar ve Valorant LFG.",
-  "A free Discord alternative with real servers — roles, channels, voice, and templates — plus chat, calls, and":
-    "Gerçek sunucularla (roller, kanallar, ses ve şablonlar) ücretsiz bir Discord alternatifi — artı sohbet, aramalar ve",
+  // Marketing, servers system
+  "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and Valorant LFG.":
+    "Gerçek sunucularla (roller, kanallar, ses ve şablonlar) ücretsiz bir Discord alternatifi, artı sohbet, aramalar ve Valorant LFG.",
+  "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and":
+    "Gerçek sunucularla (roller, kanallar, ses ve şablonlar) ücretsiz bir Discord alternatifi, artı sohbet, aramalar ve",
   "Servers, roles, channels, and": "Sunucular, roller, kanallar ve",
-  "Servers, chat, and calls in one lighter Discord alternative — built for friends, gamers, and communities.":
-    "Daha hafif bir Discord alternatifinde sunucular, sohbet ve aramalar — arkadaşlar, oyuncular ve topluluklar için.",
-  "Text, voice, and stage channels with categories — Discord-style structure, lighter feel":
-    "Kategorilerle yazı, ses ve stage kanalları — Discord tarzı yapı, daha hafif his",
+  "Servers, chat, and calls in one lighter Discord alternative, built for friends, gamers, and communities.":
+    "Daha hafif bir Discord alternatifinde sunucular, sohbet ve aramalar, arkadaşlar, oyuncular ve topluluklar için.",
+  "Text, voice, and stage channels with categories, Discord-style structure, lighter feel":
+    "Kategorilerle yazı, ses ve stage kanalları, Discord tarzı yapı, daha hafif his",
   "Role hierarchy, staff rooms, and per-channel overrides ready for real communities":
     "Gerçek topluluklar için rol hiyerarşisi, staff odaları ve kanal override’ları",
-  "Gaming, Valorant, friends, community, study & streaming — roles and channels pre-built":
-    "Oyun, Valorant, arkadaş, topluluk, ders ve yayın — roller ve kanallar hazır",
+  "Gaming, Valorant, friends, community, study & streaming, roles and channels pre-built":
+    "Oyun, Valorant, arkadaş, topluluk, ders ve yayın, roller ve kanallar hazır",
   "Instant DMs and server chat with typing indicators": "Yazıyor göstergeli anlık DM ve sunucu sohbeti",
   "Crystal-clear group and server calls": "Berrak grup ve sunucu aramaları",
   "Share your screen in calls with quality presets": "Aramalarda kalite önayarlarıyla ekran paylaş",
@@ -3540,14 +3540,14 @@ export const phrases = {
   "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared.":
     "Sıfırdan sunucu kur veya gelişmiş şablon seç. Roller, yazı & ses kanalları ve izin override’ları tamamen hazır gelir.",
   "Channels that match the job": "İşe uygun kanallar",
-  "Announcements, LFG, clips, VIP lounges, staff ops — topics and slowmode included in templates.":
-    "Duyurular, LFG, klipler, VIP lounge, staff — şablonlarda konu ve yavaş mod dahil.",
+  "Announcements, LFG, clips, VIP lounges, staff ops, topics and slowmode included in templates.":
+    "Duyurular, LFG, klipler, VIP lounge, staff, şablonlarda konu ve yavaş mod dahil.",
   "Roles that actually work": "Gerçekten işe yarayan roller",
-  "Admin, Moderator, Helper, VIP and more — with kick, ban, timeout, and audit logs.":
-    "Admin, Moderator, Helper, VIP ve daha fazlası — kick, ban, timeout ve denetim kayıtlarıyla.",
+  "Admin, Moderator, Helper, VIP and more, with kick, ban, timeout, and audit logs.":
+    "Admin, Moderator, Helper, VIP ve daha fazlası, kick, ban, timeout ve denetim kayıtlarıyla.",
   "Voice built into the server": "Sunucuya entegre ses",
   "Lobby, scrim, focus, and stage rooms so your crew can hop in without leaving the app.":
-    "Lobi, scrim, odak ve stage odaları — ekibin uygulamadan çıkmadan katılır.",
+    "Lobi, scrim, odak ve stage odaları, ekibin uygulamadan çıkmadan katılır.",
   "See all features": "Tüm özellikleri gör",
   "Explore server features": "Sunucu özelliklerini keşfet",
   "For communities": "Topluluklar için",
@@ -3557,50 +3557,50 @@ export const phrases = {
   "Moderation & invites": "Moderasyon ve davetler",
   "Channel controls": "Kanal kontrolleri",
   "Friends & presence": "Arkadaşlar ve çevrimiçi durum",
-  "Full server structure with categories, text, voice, and stage channels — topics, slowmode, and NSFW flags included.":
-    "Kategoriler, yazı, ses ve stage kanallarıyla tam sunucu yapısı — konu, yavaş mod ve NSFW dahil.",
+  "Full server structure with categories, text, voice, and stage channels, topics, slowmode, and NSFW flags included.":
+    "Kategoriler, yazı, ses ve stage kanallarıyla tam sunucu yapısı, konu, yavaş mod ve NSFW dahil.",
   "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.":
     "Hoist/mention’lı rol hiyerarşisi; staff, duyuru ve VIP için kanal allow/deny override’ları.",
-  "Gaming, Valorant, friends, community, study, and streaming templates — roles and channels ready the moment you create.":
-    "Oyun, Valorant, arkadaş, topluluk, ders ve yayın şablonları — oluşturur oluşturmaz hazır roller ve kanallar.",
+  "Gaming, Valorant, friends, community, study, and streaming templates, roles and channels ready the moment you create.":
+    "Oyun, Valorant, arkadaş, topluluk, ders ve yayın şablonları, oluşturur oluşturmaz hazır roller ve kanallar.",
   "Kick, ban, timeout, audit logs, community rules, and invite links so servers stay organized as they grow.":
-    "Kick, ban, timeout, denetim kayıtları, topluluk kuralları ve davet linkleri — sunucu büyürken düzenli kalsın.",
-  "DMs and server chat with typing indicators — a Discord alternative that stays focused on people you know.":
-    "Yazıyor göstergeli DM ve sunucu sohbeti — tanıdığın insanlara odaklı Discord alternatifi.",
+    "Kick, ban, timeout, denetim kayıtları, topluluk kuralları ve davet linkleri, sunucu büyürken düzenli kalsın.",
+  "DMs and server chat with typing indicators, a Discord alternative that stays focused on people you know.":
+    "Yazıyor göstergeli DM ve sunucu sohbeti, tanıdığın insanlara odaklı Discord alternatifi.",
   "Crystal-clear WebRTC voice and HD video for squads and server lobbies, without Nitro-gated quality of life.":
-    "Squad ve sunucu lobileri için berrak WebRTC ses ve HD görüntü — Nitro duvarı olmadan.",
-  "Friend list, online status, and invites — jump from DMs into a server voice channel in one flow.":
-    "Arkadaş listesi, çevrimiçi durum ve davetler — DM’den sunucu ses kanalına tek akışta.",
-  "Slowmode, topics, permission overrides, and staff-only channels — the day-to-day tools communities actually use.":
-    "Yavaş mod, konular, izin override’ları ve staff kanalları — toplulukların gerçekten kullandığı araçlar.",
+    "Squad ve sunucu lobileri için berrak WebRTC ses ve HD görüntü, Nitro duvarı olmadan.",
+  "Friend list, online status, and invites, jump from DMs into a server voice channel in one flow.":
+    "Arkadaş listesi, çevrimiçi durum ve davetler, DM’den sunucu ses kanalına tek akışta.",
+  "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.":
+    "Yavaş mod, konular, izin override’ları ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
   "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.":
     "DesCoin ile temalar, çerçeveler ve efektler. Temel sohbet, sunucu ve aramalar sonsuza kadar ücretsiz.",
-  "Servers with roles and channels, messaging, calls, screen share, and LFG — everything friend groups and communities need, without turning your PC into a second operating system.":
-    "Rollü ve kanallı sunucular, mesajlaşma, aramalar, ekran paylaşımı ve LFG — bilgisayarını ikinci işletim sistemine çevirmeden.",
-  "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG — without Nitro paywalls for the features you actually use.":
-    "Descall; gerçek sunucular (roller, kanallar, şablonlar), anlık sohbet, berrak ses/görüntü, ekran paylaşımı ve yerleşik Valorant LFG sunan ücretsiz bir Discord alternatifidir — Nitro duvarı olmadan.",
-  "Descall UI — servers, chat, voice, and LFG in one app": "Descall arayüzü — sunucular, sohbet, ses ve LFG tek uygulamada",
-  "Discord is powerful — and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.":
-    "Discord güçlü — ve ağır. Arkadaş grupları ve topluluklar daha hafif bir Discord alternatifi ister: rollü kanallı gerçek sunucular, daha az Nitro baskısı, hızlı aramalar ve bot labirenti olmadan LFG. Descall bunun için.",
+  "Servers with roles and channels, messaging, calls, screen share, and LFG, everything friend groups and communities need, without turning your PC into a second operating system.":
+    "Rollü ve kanallı sunucular, mesajlaşma, aramalar, ekran paylaşımı ve LFG, bilgisayarını ikinci işletim sistemine çevirmeden.",
+  "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG, without Nitro paywalls for the features you actually use.":
+    "Descall; gerçek sunucular (roller, kanallar, şablonlar), anlık sohbet, berrak ses/görüntü, ekran paylaşımı ve yerleşik Valorant LFG sunan ücretsiz bir Discord alternatifidir, Nitro duvarı olmadan.",
+  "Descall UI, servers, chat, voice, and LFG in one app": "Descall arayüzü, sunucular, sohbet, ses ve LFG tek uygulamada",
+  "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.":
+    "Discord güçlü, ve ağır. Arkadaş grupları ve topluluklar daha hafif bir Discord alternatifi ister: rollü kanallı gerçek sunucular, daha az Nitro baskısı, hızlı aramalar ve bot labirenti olmadan LFG. Descall bunun için.",
   "Servers with roles, text & voice channels": "Rollü yazı ve ses kanallı sunucular",
   "Advanced templates (gaming, Valorant, community…)": "Gelişmiş şablonlar (oyun, Valorant, topluluk…)",
-  "DMs plus a ready-made friends server — lounge chat, plans, and always-on voice.":
-    "DM’ler artı hazır arkadaş sunucusu — lounge sohbet, planlar ve sürekli açık ses.",
+  "DMs plus a ready-made friends server, lounge chat, plans, and always-on voice.":
+    "DM’ler artı hazır arkadaş sunucusu, lounge sohbet, planlar ve sürekli açık ses.",
   "Gaming / Valorant server templates, ranked LFG channels, and the Play tab in one app.":
     "Oyun / Valorant sunucu şablonları, ranked LFG kanalları ve Play sekmesi tek uygulamada.",
   "Communities & creators": "Topluluklar ve içerik üreticileri",
-  "Announcements, support, events, stage, and a full staff ladder — without Nitro pressure.":
-    "Duyurular, destek, etkinlikler, stage ve tam staff hiyerarşisi — Nitro baskısı olmadan.",
+  "Announcements, support, events, stage, and a full staff ladder, without Nitro pressure.":
+    "Duyurular, destek, etkinlikler, stage ve tam staff hiyerarşisi, Nitro baskısı olmadan.",
   "Keep premium cosmetics optional. Servers, chat, and calls stay free.":
     "Premium kozmetikleri isteğe bağlı tut. Sunucu, sohbet ve aramalar ücretsiz kalır.",
   "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, LFG, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026.":
     "Sunucular, roller, kanallar, sohbet, ses, video, ekran paylaşımı, LFG, masaüstü uygulamalar ve fiyat için dürüst Descall vs Discord karşılaştırması.",
-  "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG — with free core features.":
-    "gerçek sunucular (roller, kanallar, şablonlar), arkadaş sesi, ekran paylaşımı ve Valorant LFG isteyenler için — temel özellikler ücretsiz.",
+  "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG, with free core features.":
+    "gerçek sunucular (roller, kanallar, şablonlar), arkadaş sesi, ekran paylaşımı ve Valorant LFG isteyenler için, temel özellikler ücretsiz.",
   "still wins for massive bot ecosystems and the widest platform matrix. Many groups run both: Discord for huge public communities with bots, Descall for the squad server and nightly calls.":
     "dev bot ekosistemleri ve en geniş platform matrisi için hâlâ önde. Birçok grup ikisini birden kullanır: botlu büyük kamu sunucuları için Discord, squad sunucusu ve gece aramaları için Descall.",
   "Real servers with roles, channels, and ready-made templates": "Rollü, kanallı ve hazır şablonlu gerçek sunucular",
-  "Modern UI focused on speed — servers without endless chrome": "Hıza odaklı modern arayüz — gereksiz chrome’suz sunucular",
+  "Modern UI focused on speed, servers without endless chrome": "Hıza odaklı modern arayüz, gereksiz chrome’suz sunucular",
   "Massive bot / integration ecosystem": "Dev bot / entegrasyon ekosistemi",
   "Huge public communities with decades of ecosystem tooling": "Onlarca yıllık araçlarla dev kamu toplulukları",
   "Create a Descall server from a template (or start from scratch) and invite your core squad.":
@@ -3610,18 +3610,18 @@ export const phrases = {
   "Keep Discord only for bot-heavy communities you still need.":
     "Discord’u yalnızca hâlâ ihtiyaç duyduğun bot ağırlıklı topluluklar için tut.",
   "Real-time chat & DMs": "Gerçek zamanlı sohbet ve DM’ler",
-  "Yes — fast, modern UI": "Evet — hızlı, modern arayüz",
+  "Yes, fast, modern UI": "Evet, hızlı, modern arayüz",
   "Servers with channels": "Kanallı sunucular",
-  "Yes — text, voice, stage + categories": "Evet — yazı, ses, stage + kategoriler",
-  "Yes — mature tree model": "Evet — olgun ağaç modeli",
-  "Yes — role hierarchy + channel overrides": "Evet — rol hiyerarşisi + kanal override",
-  "Yes — deep matrix": "Evet — derin matris",
+  "Yes, text, voice, stage + categories": "Evet, yazı, ses, stage + kategoriler",
+  "Yes, mature tree model": "Evet, olgun ağaç modeli",
+  "Yes, role hierarchy + channel overrides": "Evet, rol hiyerarşisi + kanal override",
+  "Yes, deep matrix": "Evet, derin matris",
   "Server templates": "Sunucu şablonları",
-  "Yes — gaming, Valorant, community, study & more": "Evet — oyun, Valorant, topluluk, ders ve daha fazlası",
+  "Yes, gaming, Valorant, community, study & more": "Evet, oyun, Valorant, topluluk, ders ve daha fazlası",
   "Limited community templates": "Sınırlı topluluk şablonları",
-  "Yes — WebRTC + TURN": "Evet — WebRTC + TURN",
+  "Yes, WebRTC + TURN": "Evet, WebRTC + TURN",
   "Screen share quality control": "Ekran paylaşımı kalite kontrolü",
-  "Yes — presets & restart-safe": "Evet — önayarlar ve yeniden başlatmaya dayanıklı",
+  "Yes, presets & restart-safe": "Evet, önayarlar ve yeniden başlatmaya dayanıklı",
   "Valorant LFG / party finder": "Valorant LFG / parti bulucu",
   "Built-in Play tab + Riot link": "Yerleşik Play sekmesi + Riot bağlantısı",
   "Bots / external tools": "Botlar / harici araçlar",
@@ -3653,20 +3653,20 @@ export const phrases = {
   "Friends, servers, LFG, lightweight calls": "Arkadaşlar, sunucular, LFG, hafif aramalar",
   "Huge communities + ecosystem": "Dev topluluklar + ekosistem",
   "Servers ready in minutes": "Dakikalar içinde hazır sunucular",
-  "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides — gaming, Valorant, community, study, friends, or streaming.":
-    "Sıfırdan başla veya roller, yazı & ses kanalları, konular, yavaş mod ve staff izinleriyle dolu bir şablon seç — oyun, Valorant, topluluk, ders, arkadaş veya yayın.",
+  "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides, gaming, Valorant, community, study, friends, or streaming.":
+    "Sıfırdan başla veya roller, yazı & ses kanalları, konular, yavaş mod ve staff izinleriyle dolu bir şablon seç, oyun, Valorant, topluluk, ders, arkadaş veya yayın.",
   "Roles, channels & moderation": "Roller, kanallar ve moderasyon",
   "Discord-style roles and channel overrides, plus kick, ban, timeout, audit logs, and invites. Run a private hangout or a public-ready community without bot hell for the basics.":
     "Discord tarzı roller ve kanal override’ları; kick, ban, timeout, denetim kayıtları ve davetler. Temel ihtiyaçlar için bot cehennemi olmadan özel takılma veya topluluk.",
   "Built for friends & LFG": "Arkadaşlar ve LFG için",
-  "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG — so squads can queue and hop into server voice in one app.":
-    "Descall hâlâ DM, çevrimiçi durum ve Valorant LFG için Play sekmesine öncelik verir — squad’lar tek uygulamada queue’ya girip sunucu sesine geçer.",
+  "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG, so squads can queue and hop into server voice in one app.":
+    "Descall hâlâ DM, çevrimiçi durum ve Valorant LFG için Play sekmesine öncelik verir, squad’lar tek uygulamada queue’ya girip sunucu sesine geçer.",
   "Calls without the bloat": "Şişkinlik olmadan aramalar",
   "WebRTC voice/video with TURN support, incoming call UX, PiP, and screen-share quality controls. A lighter Discord alternative when you want clean calls inside servers or DMs.":
     "TURN destekli WebRTC ses/görüntü, gelen arama UX’i, PiP ve ekran paylaşımı kalite kontrolleri. Sunucu veya DM’de temiz arama isteyenler için daha hafif Discord alternatifi.",
   "Free core, optional cosmetics": "Ücretsiz çekirdek, isteğe bağlı kozmetik",
-  "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin — not a Nitro-style lock on talking to friends.":
-    "Sohbet, sunucu ve aramalar ücretsiz. Mağaza DesCoin ile kozmetik (tema, çerçeve, efekt) — arkadaşlarla konuşmayı kilitleyen Nitro tarzı değil.",
+  "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin, not a Nitro-style lock on talking to friends.":
+    "Sohbet, sunucu ve aramalar ücretsiz. Mağaza DesCoin ile kozmetik (tema, çerçeve, efekt), arkadaşlarla konuşmayı kilitleyen Nitro tarzı değil.",
   "Desktop + web + Android": "Masaüstü + web + Android",
   "Install on Windows, open the web app anywhere, or use Android. A practical Discord alternative if your group mixes desktop gaming with mobile chat.":
     "Windows’a kur, web’i her yerden aç veya Android kullan. Masaüstü oyun + mobil sohbet karışık gruplar için pratik Discord alternatifi.",
@@ -3675,47 +3675,47 @@ export const phrases = {
   "together": "konuşun",
   "Reject": "Reddet",
   "Optional analytics only. Essentials stay on.": "İsteğe bağlı analitik. Zorunlu çerezler açık kalır.",
-  "A lighter home for friends and squads — real servers, HD calls, screen share, and":
-    "Arkadaşlar ve ekipler için daha hafif bir yuva — gerçek sunucular, HD aramalar, ekran paylaşımı ve",
-  "Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.":
-    "Sunucular, sohbet, aramalar ve ekran paylaşımı tek, daha sakin bir uygulamada — arkadaşlar, oyuncular ve topluluklar için.",
+  "A lighter home for friends and squads, real servers, HD calls, screen share, and":
+    "Arkadaşlar ve ekipler için daha hafif bir yuva, gerçek sunucular, HD aramalar, ekran paylaşımı ve",
+  "Servers, chat, calls, and screen share in one quieter app, built for friends, gamers, and communities.":
+    "Sunucular, sohbet, aramalar ve ekran paylaşımı tek, daha sakin bir uygulamada, arkadaşlar, oyuncular ve topluluklar için.",
   "Servers ready to run": "Hazır sunucular",
-  "Text, voice, and stage channels with categories — a lighter home for real communities":
-    "Kategorili metin, ses ve sahne kanalları — gerçek topluluklar için daha hafif bir yuva",
-  "DMs that feel instant — typing, replies, and media without a Nitro wall":
-    "Anında hissettiren DM’ler — Nitro duvarı olmadan yazıyor göstergesi, yanıt ve medya",
+  "Text, voice, and stage channels with categories, a lighter home for real communities":
+    "Kategorili metin, ses ve sahne kanalları, gerçek topluluklar için daha hafif bir yuva",
+  "DMs that feel instant, typing, replies, and media without a Nitro wall":
+    "Anında hissettiren DM’ler, Nitro duvarı olmadan yazıyor göstergesi, yanıt ve medya",
   "Servers & LFG": "Sunucular ve LFG",
   "Download & accounts": "İndirme ve hesaplar",
   "Support": "Destek",
   "Switch in three steps": "Üç adımda geçiş",
-  "Sign in with Google or email — no installer required to try the web app.":
-    "Google veya e-posta ile giriş — web uygulamasını denemek için kurulum gerekmez.",
+  "Sign in with Google or email, no installer required to try the web app.":
+    "Google veya e-posta ile giriş, web uygulamasını denemek için kurulum gerekmez.",
   "Spin up a server": "Bir sunucu açın",
   "Pick a template (friends, gaming, Valorant) or start empty. Roles and channels ship ready.":
     "Şablon seçin (arkadaşlar, oyun, Valorant) veya boş başlayın. Roller ve kanallar hazır gelir.",
   "Invite the squad": "Ekibi davet edin",
   "Share a link, hop into voice, and keep Discord only if you still need the giant bot stack.":
     "Bağlantı paylaşın, sese geçin; dev bot yığınına hâlâ ihtiyacınız varsa Discord’u tutun.",
-  "Play tab — Valorant LFG inside Descall": "Play sekmesi — Descall içinde Valorant LFG",
+  "Play tab, Valorant LFG inside Descall": "Play sekmesi, Descall içinde Valorant LFG",
   "Your chats live here": "Sohbetleriniz burada",
   "Open the menu to pick a friend or start a new conversation": "Arkadaş seçmek veya yeni sohbet başlatmak için menüyü açın",
-  "Pick a friend, start a DM, or create a group — Descall keeps it light.":
-    "Bir arkadaş seçin, DM başlatın veya grup oluşturun — Descall hafif tutar.",
+  "Pick a friend, start a DM, or create a group, Descall keeps it light.":
+    "Bir arkadaş seçin, DM başlatın veya grup oluşturun, Descall hafif tutar.",
   "Pick a home": "Bir yuva seçin",
   "Servers hold channels, roles, and voice rooms. Create one or join with an invite.":
     "Sunucular kanal, rol ve ses odalarını barındırır. Bir tane oluşturun veya davetle katılın.",
-  "Create a server for channels, roles, and voice — or join with an invite.":
-    "Kanallar, roller ve ses için bir sunucu oluşturun — veya davetle katılın.",
+  "Create a server for channels, roles, and voice, or join with an invite.":
+    "Kanallar, roller ve ses için bir sunucu oluşturun, veya davetle katılın.",
   "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.":
     "Descall; DM, gerçek sunucular, WebRTC ses/görüntü, ekran paylaşımı, Windows masaüstü, Android ve tarayıcı uygulaması olan modern bir mesajlaşma uygulamasıdır.",
 
   "Is Descall a Discord alternative?": "Descall bir Discord alternatifi mi?",
-  "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and Valorant LFG — without Nitro paywalls for core communication.":
-    "Evet. Descall; sohbet, sunucular (roller, kanallar, ses), grup görüntülü arama, ekran paylaşımı ve Valorant LFG için ücretsiz bir Discord alternatifidir — temel iletişimde Nitro duvarı yok.",
+  "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and Valorant LFG, without Nitro paywalls for core communication.":
+    "Evet. Descall; sohbet, sunucular (roller, kanallar, ses), grup görüntülü arama, ekran paylaşımı ve Valorant LFG için ücretsiz bir Discord alternatifidir, temel iletişimde Nitro duvarı yok.",
   "Is Descall free?": "Descall ücretsiz mi?",
   "Yes. Chat, servers, voice, video, and screen share are free. Optional cosmetics use DesCoin and never gate core messaging or calls.":
     "Evet. Sohbet, sunucular, ses, görüntü ve ekran paylaşımı ücretsiz. İsteğe bağlı kozmetikler DesCoin kullanır ve temel mesajlaşma veya aramaları kilitlemez.",
-  "Descall vs Discord — who should switch?": "Descall mi Discord mu — kim geçmeli?",
+  "Descall vs Discord, who should switch?": "Descall mi Discord mu, kim geçmeli?",
   "Friend groups, gaming squads, and small-to-mid communities that need servers, roles, voice, screen share, and LFG often prefer Descall as a lighter Discord alternative. Keep Discord if you still rely on huge bot ecosystems.":
     "Sunucu, rol, ses, ekran paylaşımı ve LFG isteyen arkadaş grupları, oyuncu ekipleri ve orta ölçekli topluluklar Descall’ı daha hafif bir Discord alternatifi olarak tercih eder. Hâlâ dev bot ekosistemine bağlıysan Discord’u tut.",
   "Does Descall have servers like Discord?": "Descall’da Discord gibi sunucu var mı?",
@@ -3743,32 +3743,32 @@ export const phrases = {
   "Use the Contact page, in-app feedback, or open an issue on the Descall GitHub repository.":
     "İletişim sayfasını, uygulama içi geri bildirimi kullan veya Descall GitHub’da issue aç.",
 
-  "Full server structure with categories, text, voice, and stage channels — topics, slowmode, and NSFW flags included.":
-    "Kategorili metin, ses ve sahne kanalları — konu, yavaş mod ve NSFW bayrakları dahil tam sunucu yapısı.",
+  "Full server structure with categories, text, voice, and stage channels, topics, slowmode, and NSFW flags included.":
+    "Kategorili metin, ses ve sahne kanalları, konu, yavaş mod ve NSFW bayrakları dahil tam sunucu yapısı.",
   "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.":
     "Hoist/mention’lı rol hiyerarşisi ve staff, duyuru, VIP odaları için kanal bazlı izinler.",
   "Templates that ship ready": "Hazır gelen şablonlar",
   "Gaming, Valorant, Community, Study, Friends, and Streaming templates with roles and staff rooms preconfigured.":
     "Rolleri ve staff odaları hazır Gaming, Valorant, Community, Study, Friends ve Streaming şablonları.",
   "Real-time messaging": "Anlık mesajlaşma",
-  "DMs and server chat with typing indicators, reactions, replies, and media — without Nitro walls on core chat.":
-    "Yazıyor göstergesi, tepki, yanıt ve medyalı DM ve sunucu sohbeti — temel sohbette Nitro duvarı yok.",
+  "DMs and server chat with typing indicators, reactions, replies, and media, without Nitro walls on core chat.":
+    "Yazıyor göstergesi, tepki, yanıt ve medyalı DM ve sunucu sohbeti, temel sohbette Nitro duvarı yok.",
   "HD video calls": "HD görüntülü arama",
-  "Group video for hangouts, watch parties, and squad briefings — browser or desktop.":
-    "Takılmak, izleme partisi ve ekip brifingi için grup görüntülü — tarayıcı veya masaüstü.",
+  "Group video for hangouts, watch parties, and squad briefings, browser or desktop.":
+    "Takılmak, izleme partisi ve ekip brifingi için grup görüntülü, tarayıcı veya masaüstü.",
   "Share games, VODs, or docs with quality presets tuned for smooth capture while you play.":
     "Oynarken akıcı yakalama için kalite hazır ayarlarıyla oyun, VOD veya belge paylaş.",
   "Create and join ranked LFG lobbies, share party codes, and link Riot Name#TAG for rank on profile.":
     "Ranked LFG lobisi aç/katıl, parti kodu paylaş, profil rank’i için Riot Name#TAG bağla.",
   "Friends & presence": "Arkadaşlar ve durum",
   "Friend requests, online presence, and quick invites so your squad can jump into chat or voice.":
-    "Arkadaşlık isteği, çevrimiçi durum ve hızlı davet — ekibin sohbet veya sese atlar.",
+    "Arkadaşlık isteği, çevrimiçi durum ve hızlı davet, ekibin sohbet veya sese atlar.",
   "Moderation tools": "Moderasyon araçları",
   "Kick, ban, timeout, audit logs, and community rules for servers that need staff workflows.":
     "Staff işi olan sunucular için kick, ban, timeout, denetim kaydı ve topluluk kuralları.",
   "Desktop & Android": "Masaüstü ve Android",
-  "Windows installer plus Android builds — or use the full web app in the browser.":
-    "Windows kurucusu ve Android derlemeleri — veya tarayıcıdaki tam web uygulaması.",
+  "Windows installer plus Android builds, or use the full web app in the browser.":
+    "Windows kurucusu ve Android derlemeleri, veya tarayıcıdaki tam web uygulaması.",
   "Optional cosmetics": "İsteğe bağlı kozmetik",
   "DesCoin cosmetics stay optional. Chat, servers, voice, and screen share remain free.":
     "DesCoin kozmetikleri isteğe bağlı kalır. Sohbet, sunucu, ses ve ekran paylaşımı ücretsizdir.",

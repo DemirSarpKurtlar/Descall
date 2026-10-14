@@ -31,7 +31,7 @@ if (isCapacitorNativeShell()) {
 const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
 const isElectronDesktop =
   typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
-// Native Capacitor app (iOS/Android) — the landing page is web-only.
+// Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
 
 /**
@@ -117,12 +117,12 @@ try {
 
 const bootLocale = resolveInitialLocale();
 const statusEl = document.getElementById("boot-status");
-// Keep status for screen readers only — splash UI is logo + thin bar (no STARTING wall).
+// Keep status for screen readers only, splash UI is logo + thin bar (no STARTING wall).
 if (statusEl) statusEl.textContent = translate(bootLocale, "Loading");
 
 /**
  * Progressive marketing hydration: paint #seo-static first (LCP / crawlers),
- * then swap to the real MarketingLayout nav — never leave humans stuck on the
+ * then swap to the real MarketingLayout nav, never leave humans stuck on the
  * crawler text shell (looks like a broken menu).
  */
 function scheduleMarketingHydration(run) {
@@ -144,7 +144,7 @@ function scheduleMarketingHydration(run) {
   const onEngage = (e) => {
     const t = e?.target;
     if (!t || typeof t.closest !== "function") return;
-    // Native SEO <a href> stays MPA — full navigation, no client hydrate required.
+    // Native SEO <a href> stays MPA, full navigation, no client hydrate required.
     if (t.closest("#seo-static a[href]")) return;
     // Explicit hydrate hooks in prerender shell / CTAs (Start free, Sign in, …).
     if (t.closest("[data-hydrate], [data-auth], button, [role='button']")) start();
@@ -174,7 +174,7 @@ function scheduleMarketingHydration(run) {
 
 async function bootApp() {
   // Authenticated (or non-marketing) boot: never leave prerendered marketing HTML
-  // visible above the React app — that stacks Privacy / Valorant LFG links over /play.
+  // visible above the React app, that stacks Privacy / Valorant LFG links over /play.
   try {
     document.documentElement.setAttribute("data-react-ready", "1");
     document.documentElement.setAttribute("data-app-shell", "1");
@@ -234,7 +234,7 @@ async function bootApp() {
 
   window.setTimeout(() => clearModuleLoadRecovery(), 4000);
 
-  // Hand off to the real shell/skeleton ASAP — do not wait for getMe / sessionChecked.
+  // Hand off to the real shell/skeleton ASAP, do not wait for getMe / sessionChecked.
   // Brand flash ~0.45s, hard cap ~1.8s so hard refresh never sticks on the splash.
   try {
     requestAnimationFrame(() => {
@@ -296,7 +296,7 @@ boot().catch((err) => {
     .catch(() => {});
 });
 
-// Absolute failsafe — splash must never exceed ~2s even if React boot stalls.
+// Absolute failsafe, splash must never exceed ~2s even if React boot stalls.
 window.setTimeout(() => {
   try {
     window.__descallDismissBootSplash?.({ minMs: 0, maxMs: 0 });

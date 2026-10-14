@@ -18,8 +18,8 @@ export default function AboutPage() {
         ]}
       />
       <section className="mkt-section mkt-prose" style={{ marginTop: 12 }}>
-        <p className="mkt-beta-badge" role="status">
-          {t("Beta")} — {t(SITE_OPERATOR.statusNote)}
+        <p role="status">
+          {t("Beta")}. {t(SITE_OPERATOR.statusNote)}
         </p>
         <h1>{t("About Descall")}</h1>
         <p className="lead ownership-answer">
@@ -67,7 +67,7 @@ export default function AboutPage() {
         <h2>{t("What we build")}</h2>
         <p>
           {t(
-            "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG — with privacy policies and security docs you can actually read."
+            "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG, with privacy policies and security docs you can actually read."
           )}
         </p>
         <p>

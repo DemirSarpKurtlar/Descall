@@ -9,7 +9,7 @@ import {
 
 /**
  * Wire hook for the Adım 6 Companion store / wallet / owned skins panel.
- * Does not own full UI — polls status + wallet + offers when enabled + linked.
+ * Does not own full UI, polls status + wallet + offers when enabled + linked.
  *
  * @param {{ enabled?: boolean, region?: string, puuid?: string, pollMs?: number }} opts
  */

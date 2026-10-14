@@ -25,7 +25,7 @@ function prefersReducedMotion() {
  *   - optional light haptic on press (only where it earns its place)
  *
  * Usage: const press = usePressFeedback(); <button {...press} /> (spread the returned handlers + ref).
- * The click / submit itself is untouched — this is visual only.
+ * The click / submit itself is untouched, this is visual only.
  */
 export function usePressFeedback({ disabled = false, haptic = false, scale = PRESSED_SCALE } = {}) {
   const elRef = useRef(null);
@@ -120,7 +120,7 @@ const SCOPE_SELECTOR = "[data-press], button, a[href], [role='button'], [role='t
 
 /**
  * Delegated press feedback for every pressable inside a container (glass
- * screens retrofit whole subtrees — sub-flows like Forgot password, social
+ * screens retrofit whole subtrees, sub-flows like Forgot password, social
  * sign-up and legal links get the same instant response without touching
  * each component). Opt out with data-press="off". Same physics as
  * usePressFeedback; one spring per element, created lazily.

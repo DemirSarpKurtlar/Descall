@@ -244,7 +244,7 @@ export function useActivity({ socket, me, friends = [] }) {
 
     // Merge: live socket updates (prev) win over REST snapshot
     setFriendPresence(prev => ({ ...snapshot, ...prev }));
-  }, []);  // stable — uses friendsRef
+  }, []);  // stable, uses friendsRef
 
   useEffect(() => {
     if (friends.length) hydratePresence();
@@ -284,7 +284,7 @@ export function useActivity({ socket, me, friends = [] }) {
     // Filter per user settings
     if (detected) {
       if (detected.appType === 'browser' && !settings.show_browser) {
-        // treat as no detection — don't return early, fall through to emit clear
+        // treat as no detection, don't return early, fall through to emit clear
         return;
       }
       if (detected.appType === 'game' && !settings.show_game_activity) return;
@@ -335,7 +335,7 @@ export function useActivity({ socket, me, friends = [] }) {
       window.removeEventListener('focus', onFocus);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);  // intentionally empty — scanAndEmitRef.current is always current
+  }, []);  // intentionally empty, scanAndEmitRef.current is always current
 
   // ─── Log a completed session to backend ────────────────────────────────────
   const logSession = useCallback(async ({ appName, startedAt, endedAt, durationSec, meta }) => {
@@ -410,7 +410,7 @@ export function useActivity({ socket, me, friends = [] }) {
       if (!token) return;
 
       // fetch with keepalive is reliable on unload AND supports Authorization headers
-      // (sendBeacon cannot send auth headers — intentionally avoided)
+      // (sendBeacon cannot send auth headers, intentionally avoided)
       fetch(`${API_BASE_URL}/api/activity/session`, {
         method: 'POST',
         keepalive: true,

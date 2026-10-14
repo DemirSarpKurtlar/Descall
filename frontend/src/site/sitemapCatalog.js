@@ -1,5 +1,5 @@
 /**
- * Shared sitemap catalog — single source for Vercel static + Render API.
+ * Shared sitemap catalog, single source for Vercel static + Render API.
  * Splits indexable PUBLIC_ROUTES into crawlable child sitemap tables.
  */
 
@@ -18,7 +18,7 @@ export const SITEMAP_TABLES = [
     id: "core",
     file: "sitemap-core.xml",
     title: "Product & conversion",
-    description: "Home, download, features, FAQ — primary conversion surfaces.",
+    description: "Home, download, features, FAQ, primary conversion surfaces.",
   },
   {
     id: "niches",

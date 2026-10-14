@@ -179,7 +179,7 @@ export function reportReactError(error, errorInfo) {
 /**
  * Report a non-error diagnostic (warning level), e.g. the iOS call microphone
  * sending silence. `context` must not contain personal data (no names, ids,
- * device names) — only states, counters and enum-like strings.
+ * device names), only states, counters and enum-like strings.
  */
 export function reportDiagnostic(message, context = {}) {
   if (!isErrorReportingEnabled() || !message) return;

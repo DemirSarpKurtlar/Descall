@@ -55,7 +55,6 @@ export default function WhoOwnsDescallPage() {
         ]}
       />
       <article className="mkt-section mkt-prose" style={{ marginTop: 12 }}>
-        <p className="mkt-kicker">{tr ? "Resmi sahiplik" : "Official ownership"}</p>
         <h1>{tr ? "Descall’ın sahibi kim?" : "Who owns Descall?"}</h1>
         <p className="lead ownership-answer">
           <strong className="ownership-name">{OWNER_NAME}</strong>

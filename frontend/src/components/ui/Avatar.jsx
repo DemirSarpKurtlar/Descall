@@ -65,11 +65,11 @@ export function Avatar({
   }, [animated, animate, hovered, isSpeaking]);
 
   const identityKey = String(user?.id || user?.userId || "") + "|" + String(resolvedUrl || imageUrl || "");
-  // stickySrc is only valid for the identity that produced it — never paint
+  // stickySrc is only valid for the identity that produced it, never paint
   // peer A's bitmap while React is committing peer B (DM switch).
   const stickyIdentityRef = useRef(null);
 
-  // Always keep a concrete src when avatar URL is known — never letter-only "loading gap".
+  // Always keep a concrete src when avatar URL is known, never letter-only "loading gap".
   // Never reuse another user's stickySrc.
   const displaySrc = useMemo(() => {
     const stickyOk = stickyIdentityRef.current === identityKey ? stickySrc : null;
@@ -279,7 +279,7 @@ export function Avatar({
           draggable={false}
           aria-hidden
           style={{
-            // Explicit px size — never fall back to the SVG intrinsic 256×256.
+            // Explicit px size, never fall back to the SVG intrinsic 256×256.
             width: Math.round(size * 1.32),
             height: Math.round(size * 1.32),
           }}

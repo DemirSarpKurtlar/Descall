@@ -8,7 +8,7 @@ import { registerGlassConfirm } from "../../lib/glassConfirm";
 /**
  * iPhone Liquid Glass alert (UIAlertController layout, heavy glass material).
  * Scrim tap does nothing. Warning haptic on mount when `danger` is set.
- * Desktop never mounts this — callers keep their existing dialogs.
+ * Desktop never mounts this, callers keep their existing dialogs.
  */
 export default function GlassConfirm({
   title,

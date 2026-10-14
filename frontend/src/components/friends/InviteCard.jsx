@@ -72,7 +72,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
         const base = { title: "Descall", url };
         const withText = {
           ...base,
-          text: t("Join me on Descall — we both get DesCoin"),
+          text: t("Join me on Descall, we both get DesCoin"),
         };
         // iOS / some WebViews reject { text + url }; pick a payload canShare accepts.
         let data = base;
@@ -92,7 +92,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
           }
           return;
         } catch (err) {
-          // User dismissed the sheet — do not fall through to copy.
+          // User dismissed the sheet, do not fall through to copy.
           if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
         }
       }
@@ -145,7 +145,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
         </div>
         <div className="g-invite-copy">
           <strong>{t("Invite friends")}</strong>
-          <span>{t("Join me on Descall — we both get DesCoin")}</span>
+          <span>{t("Join me on Descall, we both get DesCoin")}</span>
           <em>{t("You 100 · they 50 DesCoin")}</em>
         </div>
         <button type="button" className="g-invite-btn" onClick={copy}>

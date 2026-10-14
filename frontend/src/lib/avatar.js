@@ -1,4 +1,4 @@
-/** @deprecated Import from ./userProfile.js — kept for backward compatibility */
+/** @deprecated Import from ./userProfile.js, kept for backward compatibility */
 export {
   resolveAvatarUrl,
   resolveDisplayName,

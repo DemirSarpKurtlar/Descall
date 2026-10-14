@@ -6,7 +6,7 @@ import { speakingThreshold } from "../lib/voiceProfile";
 /**
  * Speaking boolean + 0–1 mic level for one tile.
  * `observeEl` pauses the analyser while that node is off-screen.
- * `muted` (user mute, or no stream) forces silence — no ring.
+ * `muted` (user mute, or no stream) forces silence, no ring.
  */
 export default function useVoiceActivity(
   stream,

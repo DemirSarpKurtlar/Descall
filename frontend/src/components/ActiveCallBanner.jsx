@@ -5,7 +5,7 @@ import { Avatar } from "./ui/Avatar";
 import { useT } from "../context/LocaleContext";
 
 /**
- * Ongoing call bubble — same shape as CallSummaryBubble but green/live.
+ * Ongoing call bubble, same shape as CallSummaryBubble but green/live.
  */
 export default function ActiveCallBanner({ banner, onJoin, onDismiss }) {
   const t = useT();
@@ -57,7 +57,7 @@ export default function ActiveCallBanner({ banner, onJoin, onDismiss }) {
             <div className="call-banner-meta">
               <span className="call-banner-live">{durationLabel}</span>
               {banner.unreachable ? (
-                <span>{t("User may be offline — waiting…")}</span>
+                <span>{t("User may be offline, waiting…")}</span>
               ) : banner.ringing ? (
                 <span>{banner.incoming ? t("Incoming call...") : t("Calling...")}</span>
               ) : (

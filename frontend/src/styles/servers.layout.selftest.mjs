@@ -10,7 +10,7 @@ const mobile = readFileSync(join(root, "mobile.css"), "utf8");
 const stylesIndex = readFileSync(join(root, "../styles.css"), "utf8");
 
 const threeCol = /\.app-root\[data-view="servers"\]\s*\{[\s\S]*?grid-template-columns:\s*var\(--nav-rail-width\)\s+var\(--sidebar-width\)\s+minmax\(0,\s*1fr\)/;
-assert(threeCol.test(appLayout), "app-layout servers view must be rail | sidebar | minmax(0,1fr) — no empty 72px icon track");
+assert(threeCol.test(appLayout), "app-layout servers view must be rail | sidebar | minmax(0,1fr), no empty 72px icon track");
 assert(threeCol.test(servers), "servers.css must keep the same 3-column grid with minmax(0,1fr)");
 assert(threeCol.test(mobile), "tablet mobile.css servers view must not reserve an empty 72px column");
 assert(

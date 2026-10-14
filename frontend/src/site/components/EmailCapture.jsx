@@ -60,7 +60,7 @@ export default function EmailCapture({ source = "marketing_footer" }) {
     <form className="mkt-waitlist" onSubmit={submit} noValidate>
       <label htmlFor="mkt-waitlist-email">{t("Product updates")}</label>
       <p className="mkt-waitlist-hint">
-        {t("Get occasional release notes — no spam, unsubscribe anytime.")}
+        {t("Get occasional release notes, no spam, unsubscribe anytime.")}
       </p>
       <div className="mkt-waitlist-row">
         <input

@@ -306,10 +306,10 @@ export default function MessageList({
         grouped.push({ isUnreadSep: true, id: `unread-${index}` });
       }
 
-      // Call summary and active call bubbles break grouping — render standalone
+      // Call summary and active call bubbles break grouping, render standalone
       // Also recover legacy rows that were stored/rendered as raw JSON text.
       // DM rows are tagged type "call_summary" with the numbers in the JSON
-      // text — always merge it in (see lib/callSummary.js).
+      // text, always merge it in (see lib/callSummary.js).
       const summaryMsg = resolveCallSummary(msg) || msg;
 
       if (summaryMsg.type === "call_summary") {
@@ -999,7 +999,7 @@ function MessageBubble({
           if (glass) return;
           const dx = info.offset.x;
           const shouldReply = (isOwn && dx <= -48) || (!isOwn && dx >= 48);
-          // Always snap hint away — cancel / incomplete swipe must not leave the icon stuck
+          // Always snap hint away, cancel / incomplete swipe must not leave the icon stuck
           resetSwipe();
           if (shouldReply) triggerReply();
         }}

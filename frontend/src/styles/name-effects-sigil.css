@@ -1,6 +1,6 @@
 /* Sigil name effects. Each rule is its own material.
    Glyphs stay inline-block. Motion is background, filter, or a custom
-   property — never transform, which parent motion already owns.
+   property, never transform, which parent motion already owns.
    Stops are wide enough to read at a 14–22px display name. */
 
 .cosmetic-name-effect.effect-sigil-damascus {

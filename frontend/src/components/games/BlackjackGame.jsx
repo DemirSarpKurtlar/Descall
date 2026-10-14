@@ -146,7 +146,7 @@ export default function BlackjackGame({
           animate={{ y: 0, opacity: 1 }}
         >
           <h3>🎰 {t("Blackjack")}</h3>
-          <p className="bj-subtitle">{t("Try to reach 21 — but don’t go over!")}</p>
+          <p className="bj-subtitle">{t("Try to reach 21, but don’t go over!")}</p>
         </motion.div>
 
         <div className="bet-selector">

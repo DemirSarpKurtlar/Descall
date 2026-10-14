@@ -29,7 +29,7 @@ export default function VoiceRoomBar({
           <span>
             {active
               ? t("{count} people", { count })
-              : t("Drop in anytime — no ringing")}
+              : t("Drop in anytime, no ringing")}
           </span>
         </div>
       </div>

@@ -542,7 +542,7 @@ export default function ServersSidebar({
   );
 
   /**
-   * Right-click on a server row — same actions the row/header offer
+   * Right-click on a server row, same actions the row/header offer
    * (open, folder placement, leave/delete), at the pointer.
    */
   const renderServerRowMenu = () => {
@@ -622,7 +622,7 @@ export default function ServersSidebar({
     );
   };
 
-  /** Right-click on a folder header — mirrors its hover-only buttons. */
+  /** Right-click on a folder header, mirrors its hover-only buttons. */
   const renderFolderMenu = () => {
     if (!folderMenu?.folder) return null;
     const folder = folderMenu.folder;
@@ -657,7 +657,7 @@ export default function ServersSidebar({
     );
   };
 
-  /** Right-click on a category row — mirrors its hover-only action buttons. */
+  /** Right-click on a category row, mirrors its hover-only action buttons. */
   const renderCategoryMenu = () => {
     if (!catMenu?.node) return null;
     const node = catMenu.node;
@@ -726,7 +726,7 @@ export default function ServersSidebar({
   };
 
   /**
-   * Leave/delete confirmation — reachable from the in-server header menu and
+   * Leave/delete confirmation, reachable from the in-server header menu and
    * from a right-click on a server row in the list view.
    */
   const renderLeaveDeleteConfirm = () => (
@@ -1498,7 +1498,7 @@ export default function ServersSidebar({
           />
         )}
 
-        {/* Must live in the in-server tree — early return above skips the list-view inputs. */}
+        {/* Must live in the in-server tree, early return above skips the list-view inputs. */}
         <AnimatePresence>
           {serverIconCropSrc ? (
             <ImageCropModal
@@ -1595,7 +1595,7 @@ export default function ServersSidebar({
             <div className="server-empty-state">
               <Server size={36} strokeWidth={1.5} />
               <h3>{t("No servers yet")}</h3>
-              <p>{t("Create a server for channels, roles, and voice — or join with an invite.")}</p>
+              <p>{t("Create a server for channels, roles, and voice, or join with an invite.")}</p>
               <button
                 type="button"
                 className="server-primary-btn"
@@ -2447,7 +2447,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
                           ? `${Math.round(Number(slowmodeSeconds) / 60)}m`
                           : `${Number(slowmodeSeconds)}s`,
                   })
-                : t("Off — members can send freely.")}
+                : t("Off, members can send freely.")}
             </p>
             <label className="server-check-row">
               <GlassCheckbox
@@ -2725,7 +2725,7 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
                 <span className="server-create-path-body">
                   <strong>{t("Use a template")}</strong>
                   <span>
-                    {t("Roles, text & voice channels, topics, slowmode, and permission overrides — fully prepared.")}
+                    {t("Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.")}
                   </span>
                 </span>
               </button>

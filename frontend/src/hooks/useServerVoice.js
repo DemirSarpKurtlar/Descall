@@ -1066,7 +1066,7 @@ export function useServerVoice(socket) {
       }
       audioManager.play("undeafen");
     }
-    // Always publish — remote tiles show the headphones-off badge even when
+    // Always publish, remote tiles show the headphones-off badge even when
     // the mic was already muted before deafening.
     const channelId = activeChannelIdRef.current;
     if (channelId && socket?.connected) {
@@ -1206,7 +1206,7 @@ export function useServerVoice(socket) {
         width,
         height,
         fps: frameRate,
-        // Full OS picker on desktop (window / screen / tab) — DES-10.
+        // Full OS picker on desktop (window / screen / tab), DES-10.
         preferTab: false,
         pickSource: showElectronScreenPicker,
       });
@@ -1563,7 +1563,7 @@ export function useServerVoice(socket) {
     [socket]
   );
 
-  // Re-subscribe after reconnect — rooms are cleared server-side on disconnect.
+  // Re-subscribe after reconnect, rooms are cleared server-side on disconnect.
   useEffect(() => {
     if (!socket) return undefined;
     const onConnect = () => {
@@ -1636,7 +1636,7 @@ export function useServerVoice(socket) {
       if (!channelId || channelId !== activeChannelIdRef.current || !user?.id) return;
       if (user.id === myIdRef.current) return;
       audioManager.play("userJoin");
-      // We are already in the room — offer to the new joiner
+      // We are already in the room, offer to the new joiner
       offerToPeer(user, channelId);
     };
 
@@ -1722,7 +1722,7 @@ export function useServerVoice(socket) {
       if (!channelId || channelId !== activeChannelIdRef.current || !fromUserId || !candidate) return;
       const peer = pcMapRef.current.get(fromUserId);
       if (!peer) {
-        // Early ICE — stash when PC appears via offer/answer path isn't ready
+        // Early ICE, stash when PC appears via offer/answer path isn't ready
         return;
       }
       if (!peer.pc.remoteDescription) {
@@ -1873,7 +1873,7 @@ export function useServerVoice(socket) {
           })
         );
       }
-      // Join-time permission failures happen after optimistic local join — always
+      // Join-time permission failures happen after optimistic local join, always
       // roll back so the UI doesn't look "in voice" while the server rejected us.
       if (isJoinContext && (code === "MISSING_PERMISSION" || code === "NOT_MEMBER")) {
         cleanupAll();

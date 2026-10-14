@@ -1,7 +1,7 @@
 /* ============================================
-   DESCALL v2.0 — COMPLETELY REBUILT UI SYSTEM
+   DESCALL v2.0, COMPLETELY REBUILT UI SYSTEM
    Discord-inspired design
-   NO OLD UI REMNANTS — FULL REBUILD
+   NO OLD UI REMNANTS, FULL REBUILD
    ============================================ */
 
 @import './styles/design-tokens.css';
@@ -12,9 +12,6 @@
 @import '@fontsource/inter/latin-ext-600.css';
 @import '@fontsource/inter/latin-700.css';
 @import '@fontsource/inter/latin-ext-700.css';
-@import '@fontsource/outfit/latin-600.css';
-@import '@fontsource/outfit/latin-700.css';
-@import '@fontsource/outfit/latin-800.css';
 @import './styles/base.css';
 @import './styles/app-layout.css';
 @import './styles/messages.css';
@@ -66,5 +63,5 @@
 @import './styles/google-signin.css';
 
 /* ============================================
-   OLD CSS REMOVED — Using new modular system
+   OLD CSS REMOVED, Using new modular system
    ============================================ */

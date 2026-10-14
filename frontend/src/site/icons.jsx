@@ -1,4 +1,4 @@
-/** Tiny inline SVG icons for marketing pages — avoids lucide vendor chunk. */
+/** Tiny inline SVG icons for marketing pages, avoids lucide vendor chunk. */
 function base(props) {
   const { size = 20, ...rest } = props;
   return {

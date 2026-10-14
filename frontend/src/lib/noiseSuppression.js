@@ -43,7 +43,7 @@ import {
  * Native iOS app (Capacitor WKWebView): send the raw microphone track.
  * The WebAudio pipeline's output track comes from an AudioContext, which iOS
  * suspends/interrupts when the call audio session changes (CallKit
- * activation, route changes) — the call then "connects" but sends silence.
+ * activation, route changes), the call then "connects" but sends silence.
  * iOS' own voice processing (echo cancellation + noise suppression) is on.
  * Global check so this module doesn't pull in @capacitor/core.
  */

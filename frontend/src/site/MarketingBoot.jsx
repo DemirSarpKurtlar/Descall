@@ -10,7 +10,7 @@ import {
 import { setToken, setUser } from "../lib/storage";
 
 /**
- * Lightweight marketing shell — avoids importing the authenticated App/LiveKit tree
+ * Lightweight marketing shell, avoids importing the authenticated App/LiveKit tree
  * until the visitor actually signs in.
  */
 export default function MarketingBoot() {
@@ -19,7 +19,7 @@ export default function MarketingBoot() {
 
   useEffect(() => {
     // Mark React as alive (cookie banner / consent padding) but keep #seo-static
-    // visible until the lazy route page commits — otherwise H1 disappears into a
+    // visible until the lazy route page commits, otherwise H1 disappears into a
     // blank Suspense gap (users reported this as a "Loading" flash on / & /features).
     document.documentElement.setAttribute("data-react-ready", "1");
     try {

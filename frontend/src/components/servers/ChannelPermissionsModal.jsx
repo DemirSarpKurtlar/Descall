@@ -46,7 +46,7 @@ function stateFromOverride(override, key) {
 }
 
 /**
- * Channel access menu — role/member allow/deny/inherit overrides.
+ * Channel access menu, role/member allow/deny/inherit overrides.
  */
 export default function ChannelPermissionsModal({ server, channel, onClose }) {
   const t = useT();

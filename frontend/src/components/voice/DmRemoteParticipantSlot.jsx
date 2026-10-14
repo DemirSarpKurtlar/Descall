@@ -217,7 +217,7 @@ export default function DmRemoteParticipantSlot({
                 style={{ width: 96 + 38, height: 96 + 38, position: "relative" }}
               >
                 <div className="participant-tile-avatar-core" style={{ width: 96, height: 96 }}>
-                  {/* Always mounted — only fades; see SpeakingRings. */}
+                  {/* Always mounted, only fades; see SpeakingRings. */}
                   <SpeakingRings speaking={isSpeaking} level={speakLevel} />
                   {glass ? (
                     <span

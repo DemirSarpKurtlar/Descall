@@ -98,7 +98,7 @@ export function useMobileKeyboard(enabled = true) {
       if (open !== lastOpen) {
         lastOpen = open;
         if (!open) {
-          // Keyboard closed — clear any iOS focus-scroll residue after the slide.
+          // Keyboard closed, clear any iOS focus-scroll residue after the slide.
           resetScroll();
           window.setTimeout(resetScroll, 40);
           window.setTimeout(resetScroll, KB_CLOSE_ANIM_MS);
@@ -137,7 +137,7 @@ export function useMobileKeyboard(enabled = true) {
 
     const onFocusOut = () => {
       // Blur path: wait for visualViewport to settle, then let apply() clear
-      // kb-open — do not yank the class early (that snaps the composer).
+      // kb-open, do not yank the class early (that snaps the composer).
       window.setTimeout(schedule, 40);
       window.setTimeout(schedule, 120);
       window.setTimeout(() => {

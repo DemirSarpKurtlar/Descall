@@ -1,5 +1,5 @@
 /**
- * Extended Applications Database — 500+ NEW desktop PC apps with unique emojis
+ * Extended Applications Database, 500+ NEW desktop PC apps with unique emojis
  * Merged into PROCESS_DB via spread operator.
  */
 

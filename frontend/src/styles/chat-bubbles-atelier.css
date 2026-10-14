@@ -1,4 +1,4 @@
-/* Atelier chat bubbles — one rule per effect_key.
+/* Atelier chat bubbles, one rule per effect_key.
    Backgrounds stay inside the bubble. Motion uses custom properties,
    background-position, or box-shadow so the bubble box itself never
    translates (Framer Motion owns transform on .message-bubble). */

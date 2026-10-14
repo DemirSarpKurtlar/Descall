@@ -14,7 +14,7 @@ export default function FaqPage() {
         <aside className="mkt-faq-nav">
           <h1>{t("FAQ")}</h1>
           <p className="lead">
-            {t("Frequently asked questions about Descall — accounts, desktop download, calls, screen share, and privacy.")}
+            {t("Accounts, the Windows and Android downloads, calls, screen share, and what we store.")}
           </p>
           <nav className="mkt-faq-jump" aria-label={t("FAQ")}>
             {FAQ_GROUPS.map((group) => (

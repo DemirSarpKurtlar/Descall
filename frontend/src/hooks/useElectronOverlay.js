@@ -18,8 +18,8 @@ function applyAudioMute(mutedEls, shouldMute) {
 
 /**
  * Drives the Electron always-on-top voice overlay (mini HUD) from whichever
- * voice surface is currently active — DM call, group hangout, or server
- * voice channel — and relays overlay button clicks back into the existing
+ * voice surface is currently active, DM call, group hangout, or server
+ * voice channel, and relays overlay button clicks back into the existing
  * mute/leave handlers for that surface. No-ops entirely outside Electron.
  *
  * "Deafen" has no server-side concept yet, so it's implemented locally by

@@ -248,7 +248,7 @@ export default function ActivitySidebar({
           {(!glassShell || segment === "friends") && active.length > 0 && (
             <div className="activity-sidebar-section">
               <div className="activity-sidebar-label">
-                {t("Active Now — {count}", { count: active.length })}
+                {t("Active Now, {count}", { count: active.length })}
               </div>
               <AnimatePresence initial={false}>
                 {active.map(({ friend, presence }) => (
@@ -267,7 +267,7 @@ export default function ActivitySidebar({
           {(!glassShell || segment === "friends") && idle.length > 0 && (
             <div className="activity-sidebar-section" style={{ marginTop: active.length ? 12 : 0 }}>
               <div className="activity-sidebar-label">
-                {t("Online — {count}", { count: idle.length })}
+                {t("Online, {count}", { count: idle.length })}
               </div>
               <AnimatePresence initial={false}>
                 {idle.map(({ friend }) => (

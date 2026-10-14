@@ -11,7 +11,7 @@ export const verifyEmailCode = (code) => authedRequest("/api/auth/email/verify",
 export const enable2fa = () => authedRequest("/api/auth/2fa/enable", { method: "POST" });
 export const disable2fa = (password) => authedRequest("/api/auth/2fa/disable", { method: "POST", body: { password } });
 
-// Password reset (authenticated — Settings)
+// Password reset (authenticated, Settings)
 export const requestPasswordResetCode = () =>
   authedRequest("/api/auth/password/request", { method: "POST" });
 export const confirmPasswordResetCode = (code, newPassword, currentPassword) =>
@@ -29,6 +29,6 @@ export const revokeOtherSessions = () => authedRequest("/api/auth/sessions/revok
 export const deleteAccount = ({ password, confirmUsername } = {}) =>
   authedRequest("/api/auth/account/delete", { method: "POST", body: { password, confirmUsername } });
 
-// Age gate — set date of birth once (older accounts / Google sign-ups)
+// Age gate, set date of birth once (older accounts / Google sign-ups)
 export const setBirthDate = (birthDate) =>
   authedRequest("/api/auth/birth-date", { method: "POST", body: { birthDate } });

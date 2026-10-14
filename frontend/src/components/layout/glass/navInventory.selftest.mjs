@@ -35,7 +35,7 @@ match(layout, /\.\.\.navBadges/, "tab badges reuse the rail badges");
 
 /* 2. Rail tool actions: exactly add + settings (a new rail tool must get a glass equivalent here). */
 const toolActions = [...navConfig.matchAll(/action: "([a-z]+)"/g)].map((m) => m[1]);
-assert.deepEqual(toolActions, ["add", "settings"], "rail tool actions changed — add the glass equivalent and update this test");
+assert.deepEqual(toolActions, ["add", "settings"], "rail tool actions changed, add the glass equivalent and update this test");
 // add → every glass list header has a + that opens the same add flow
 match(sidebar, /plus=\{[\s\S]*?setShowAddModal\(true\)/, "Chats/Groups/Friends + opens the add modal");
 match(activity, /plus=\{\{ icon: UserPlus, label: t\("Add friend"\), onClick: \(\) => onAddFriend\?\.\(\) \}\}/, "Activity + adds a friend");

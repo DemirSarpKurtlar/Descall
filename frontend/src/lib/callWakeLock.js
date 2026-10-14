@@ -27,7 +27,7 @@ let silentOsc = null;
 let silentHtmlAudio = null;
 let nativeKeepAliveActive = false;
 
-/** Tiny WAV (near-silent) — HTMLAudioElement survives iOS Safari background better than AudioContext alone. */
+/** Tiny WAV (near-silent), HTMLAudioElement survives iOS Safari background better than AudioContext alone. */
 const SILENT_WAV_DATA_URI =
   "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==";
 
@@ -52,7 +52,7 @@ function setMediaSessionActive(title, artist) {
     });
     navigator.mediaSession.playbackState = "playing";
   } catch {
-    /* not supported / not allowed — ignore */
+    /* not supported / not allowed, ignore */
   }
 }
 
@@ -81,7 +81,7 @@ function startSilentHtmlAudioKeepalive() {
     audio.volume = 0.01;
     audio.setAttribute("playsinline", "true");
     audio.setAttribute("webkit-playsinline", "true");
-    // Keep element in DOM — some mobile browsers pause detached media.
+    // Keep element in DOM, some mobile browsers pause detached media.
     audio.style.cssText = "position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;";
     document.body?.appendChild(audio);
     silentHtmlAudio = audio;
@@ -118,7 +118,7 @@ function startSilentAudioKeepalive() {
     silentCtx = new AC();
     silentOsc = silentCtx.createOscillator();
     silentGain = silentCtx.createGain();
-    // Near-silent — enough for the media pipeline, inaudible in practice.
+    // Near-silent, enough for the media pipeline, inaudible in practice.
     silentGain.gain.value = 0.0001;
     silentOsc.frequency.value = 20;
     silentOsc.connect(silentGain);

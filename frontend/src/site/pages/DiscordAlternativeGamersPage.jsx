@@ -20,7 +20,7 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
       kicker={t("For gamers")}
       title={t("Best Discord alternative for gamers & LFG")}
       lead={t(
-        "Gamers don’t need another bloated server — they need voice, screen share, and LFG that actually works. Descall is the Discord alternative built around squads, ranks, and queueing together."
+        "Gamers don’t need another bloated server, they need voice, screen share, and LFG that actually works. Descall is the Discord alternative built around squads, ranks, and queueing together."
       )}
       tone="lfg"
       faq={GAMER_FAQ}
@@ -35,7 +35,7 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
           {t("Download for Windows")}
         </Link>
       }
-      heroExtra={<SeoProductPreview mode="lfg" caption={t("Play tab — LFG inside Descall")} />}
+      heroExtra={<SeoProductPreview mode="lfg" caption={t("Play tab, LFG inside Descall")} />}
     >
       <section className="seo-section">
         <h2>{t("Why gamers leave Discord for LFG")}</h2>
@@ -54,7 +54,7 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
             "LFG lobbies + party codes",
             "account link for rank on profile",
             "Desktop app for low-friction gaming sessions",
-            "Free core — cosmetics optional",
+            "Free core, cosmetics optional",
           ].map((item) => (
             <li key={item}>
               <Check size={16} aria-hidden />

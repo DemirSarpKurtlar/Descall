@@ -1,5 +1,5 @@
 /**
- * Descall SEO keyword strategy — maps search demand → target pages.
+ * Descall SEO keyword strategy, maps search demand → target pages.
  * Used for planning, internal linking, and seo-validate checks.
  * Do NOT stuff these into page body copy.
  */

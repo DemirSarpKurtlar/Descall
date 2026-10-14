@@ -76,7 +76,7 @@ function hexToColor(hex) {
 }
 
 /**
- * Owner roles manager — list / create / edit / delete + member assign.
+ * Owner roles manager, list / create / edit / delete + member assign.
  */
 export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
   const t = useT();
@@ -520,7 +520,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
                                 setDraft((d) => {
                                   const next = { ...(d.flags || {}) };
                                   if (key === "ADMINISTRATOR") {
-                                    // Admin is a master switch — mirror Discord's "all permissions".
+                                    // Admin is a master switch, mirror Discord's "all permissions".
                                     for (const k of editableKeys) next[k] = checked;
                                   } else {
                                     next[key] = checked;

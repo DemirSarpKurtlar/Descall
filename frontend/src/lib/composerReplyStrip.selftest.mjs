@@ -1,5 +1,5 @@
 // Glass reply preview is a strip above the composer capsule (device bug, 2.9.174).
-// Edit stays inline in the bubble — it does not use this bar.
+// Edit stays inline in the bubble, it does not use this bar.
 // Run: node frontend/src/lib/composerReplyStrip.selftest.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

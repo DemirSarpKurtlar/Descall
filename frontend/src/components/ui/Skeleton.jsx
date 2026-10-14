@@ -98,7 +98,7 @@ export function MessageSkeleton({ count = 6 }) {
 }
 
 /**
- * Sidebar DM / group conversation-row placeholders — same shimmer language
+ * Sidebar DM / group conversation-row placeholders, same shimmer language
  * as MessageSkeleton, sized like `.conv-row` / `.dm-item`.
  */
 export function ConversationListSkeleton({ count = 6, label }) {
@@ -126,7 +126,7 @@ export function ConversationListSkeleton({ count = 6, label }) {
 }
 
 /**
- * Servers list placeholders — same shimmer as ConversationListSkeleton,
+ * Servers list placeholders, same shimmer as ConversationListSkeleton,
  * sized like `.server-list-item` (40×40 squircle icon + name/subtitle).
  */
 export function ServerListSkeleton({ count = 6, label }) {

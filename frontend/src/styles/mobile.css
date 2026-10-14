@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL — Responsive mobile (desktop UI adapted)
+   DESCALL, Responsive mobile (desktop UI adapted)
    Same components, drawer layout on small screens
    ============================================ */
 
@@ -120,7 +120,7 @@
    * Activity (mobile): full-width page = nav rail + Activity sidebar.
    *
    * iOS Safari does not reliably resolve height:100% / flex-stretch when the
-   * chat panel is display:none — the glass rail shrinks to its content and
+   * chat panel is display:none, the glass rail shrinks to its content and
    * leaves a purple void under the avatar. Pin shell + rail with fixed/absolute
    * edges (same idea as the mobile drawer on Friends/Chat).
    */
@@ -153,7 +153,7 @@
   }
 
   .app-root.is-mobile[data-view="activity"] .app-sidebar-shell .nav-rail {
-    /* Edge-pin — do not rely on % height (broken on iOS when chat is hidden). */
+    /* Edge-pin, do not rely on % height (broken on iOS when chat is hidden). */
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -258,7 +258,7 @@
   }
 
   /* Fill viewport edge-to-edge. Tab-bar clearance belongs on SCROLL areas only
-     — outer padding-bottom left a dead black band under LFG/Companion. */
+    , outer padding-bottom left a dead black band under LFG/Companion. */
   .app-root.is-mobile[data-view="play"] .valorant-hub,
   .app-root.is-mobile[data-view="play"] .lfg-workspace {
     position: absolute !important;
@@ -297,7 +297,7 @@
     flex: 1 1 0;
   }
 
-  /* Tab-bar clearance ONLY on scroll containers — never on hub-panel wrappers
+  /* Tab-bar clearance ONLY on scroll containers, never on hub-panel wrappers
      (double padding left a black void under Companion/LFG). */
   .app-root.is-mobile[data-view="play"] .valorant-hub-body,
   .app-root.is-mobile[data-view="play"] .valorant-hub-panel {
@@ -347,7 +347,7 @@
     flex-shrink: 0;
   }
 
-  /* Main chat panel full width — prefer visual viewport height when set */
+  /* Main chat panel full width, prefer visual viewport height when set */
   .main-panel {
     min-width: 0;
     width: 100%;
@@ -432,7 +432,7 @@
     min-height: 44px;
   }
 
-  /* User / settings panels — above drawer + notif banner */
+  /* User / settings panels, above drawer + notif banner */
   .user-panel-backdrop {
     z-index: 100000 !important;
   }
@@ -826,7 +826,7 @@
   }
 }
 
-/* Mobile bottom tab bar — original edge-to-edge place, glass finish */
+/* Mobile bottom tab bar, original edge-to-edge place, glass finish */
 @media (max-width: 768px) {
   /* iOS pans the page to chase a focused composer and leaves that pan in
      place after the keyboard closes (black band, chat stuck low). Lock the
@@ -1020,7 +1020,7 @@
   .app-root.is-mobile[data-view="play"] {
     height: var(--vv-height, 100dvh) !important;
     max-height: var(--vv-height, 100dvh) !important;
-    /* Never min-height:100dvh — that exceeds visualViewport and leaves a black band. */
+    /* Never min-height:100dvh, that exceeds visualViewport and leaves a black band. */
     min-height: 0 !important;
   }
 }
@@ -1033,7 +1033,7 @@
   background-image: none !important;
 }
 
-/* Outer shells never pad for the tab bar — only scrollable inners do. */
+/* Outer shells never pad for the tab bar, only scrollable inners do. */
 .app-root.is-mobile[data-view="play"] .valorant-hub,
 .app-root.is-mobile[data-view="play"] .lfg-workspace,
 .app-root.is-mobile[data-view="play"] > .app-main-slot {
@@ -1042,7 +1042,7 @@
 
 /*
  * Flex-fill chain: hub → body → ACTIVE panel → companion/LFG.
- * CRITICAL: never force display:flex on [hidden]/is-hidden — that overrode
+ * CRITICAL: never force display:flex on [hidden]/is-hidden, that overrode
  * valorant.css hide and left Companion accordion under LFG (~half-height + dark band).
  */
 .app-root.is-mobile[data-view="play"] .valorant-hub-body,
@@ -1060,7 +1060,7 @@
   box-sizing: border-box;
 }
 
-/* Win over any display:flex !important — inactive hub panel must fully unmount from layout. */
+/* Win over any display:flex !important, inactive hub panel must fully unmount from layout. */
 .app-root.is-mobile[data-view="play"] .valorant-hub-panel.is-hidden,
 .app-root.is-mobile[data-view="play"] .valorant-hub-panel[hidden] {
   display: none !important;
@@ -1092,7 +1092,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--surface-0, #111214) !important;
-  /* Tab-bar clearance only — matches measured .mobile-tab-bar height (border-box 60px). */
+  /* Tab-bar clearance only, matches measured .mobile-tab-bar height (border-box 60px). */
   padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px)) !important;
   box-sizing: border-box !important;
 }
@@ -1133,7 +1133,7 @@
   background: var(--surface-0, #111214) !important;
 }
 
-/* Seal under fixed tab bar — same token as measured tab height (no 56/67 drift). */
+/* Seal under fixed tab bar, same token as measured tab height (no 56/67 drift). */
 .app-root.is-mobile[data-view="play"]::after {
   content: "";
   position: fixed;
@@ -1189,7 +1189,7 @@
   letter-spacing: -0.045em;
 }
 
-/* iOS Safari auto-zooms focused inputs under 16px — keep editables at 16px.
+/* iOS Safari auto-zooms focused inputs under 16px, keep editables at 16px.
    Do not attach document touch listeners or rewrite the viewport meta here;
    that caused black screens / keyboard jitter on iPhone (2.9.109–2.9.113). */
 html {
@@ -1258,7 +1258,7 @@ html {
 }
 
 /* iPhone SE / mini class widths: five header actions + back + avatar leave
-   too little room for the name — tighten the action buttons (still ≥34pt). */
+   too little room for the name, tighten the action buttons (still ≥34pt). */
 @media (max-width: 430px) {
   .panel-header .header-right {
     gap: 0;

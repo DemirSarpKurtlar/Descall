@@ -1,4 +1,4 @@
-/* Descall staff / admin badge — warm amber (not purple) */
+/* Descall staff / admin badge, warm amber (not purple) */
 
 .dsc-admin-badge {
   --admin-fg: #f5d07a;
@@ -45,7 +45,7 @@
   font-size: 9.5px;
 }
 
-/* Profile modal / hover card — match title-tag pill geometry */
+/* Profile modal / hover card, match title-tag pill geometry */
 .dsc-admin-badge--chip {
   height: 22px;
   padding: 0 8px 0 6px;

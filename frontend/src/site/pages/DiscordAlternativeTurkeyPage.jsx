@@ -18,7 +18,7 @@ export default function DiscordAlternativeTurkeyPage({ onSignIn, onSignUp }) {
       breadcrumbs={crumbs}
       kicker="Türkiye · Discord alternatifi"
       title="Türkiye için en iyi Discord alternatifi: Descall"
-      lead="Discord alternatifi arayan Türk oyuncu ve arkadaş grupları için Descall: gerçek sunucular (roller, kanallar, şablonlar), ücretsiz sohbet, sesli/görüntülü arama, ekran paylaşımı ve LFG — Nitro zorunluluğu olmadan."
+      lead="Discord alternatifi arayan Türk oyuncu ve arkadaş grupları için Descall: gerçek sunucular (roller, kanallar, şablonlar), ücretsiz sohbet, sesli/görüntülü arama, ekran paylaşımı ve LFG, Nitro zorunluluğu olmadan."
       faq={TURKEY_FAQ}
       jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(TURKEY_FAQ), buildDiscordAlternativeAppLd()]}
       primaryCta={
@@ -37,7 +37,7 @@ export default function DiscordAlternativeTurkeyPage({ onSignIn, onSignUp }) {
         <p>
           Birçok ekip Discord’u seviyor ama Nitro baskısı, ağır arayüz ve LFG için bot karmaşası istemiyor.
           Descall, Türkçe arayüz seçeneği, hazır sunucu şablonları ve oyuncu odaklı Play sekmesiyle daha hafif bir Discord alternatifi sunar.
-          Özellikle 5–100 kişilik klanlar, okul grupları ve oyun partileri için roller + kanallar + ses odası ister — bot labirenti olmadan.
+          Özellikle 5–100 kişilik klanlar, okul grupları ve oyun partileri için roller + kanallar + ses odası ister, bot labirenti olmadan.
         </p>
       </section>
 
@@ -51,7 +51,7 @@ export default function DiscordAlternativeTurkeyPage({ onSignIn, onSignUp }) {
           <li>Sesli / görüntülü arama + ekran paylaşımı</li>
           <li>LFG lobileri ve parti kodları</li>
           <li>Windows masaüstü, web ve Android</li>
-          <li>Ücretsiz temel özellikler — kozmetikler DesCoin ile isteğe bağlı</li>
+          <li>Ücretsiz temel özellikler, kozmetikler DesCoin ile isteğe bağlı</li>
         </ul>
       </section>
 
@@ -63,7 +63,7 @@ export default function DiscordAlternativeTurkeyPage({ onSignIn, onSignUp }) {
         </p>
         <p>
           Discord benzeri uygulamalar veya bir Discord muadili arıyorsan önce işe bak: sadece mesaj mı, yoksa ses + ekran paylaşımı + sunucu mu?
-          Descall ikinci grup içindir — klan, sınıf ve oyun partileri için Türkçe arayüzlü, ücretsiz bir Discord alternatifi.
+          Descall ikinci grup içindir, klan, sınıf ve oyun partileri için Türkçe arayüzlü, ücretsiz bir Discord alternatifi.
         </p>
         <p>
           Hemen denemek için{" "}

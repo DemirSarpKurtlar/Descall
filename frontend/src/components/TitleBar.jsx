@@ -5,7 +5,7 @@ import DescallBrand from "./brand/DescallBrand";
 import { ELECTRON_TITLEBAR_H, electronContentBox } from "../lib/electronViewport";
 
 /**
- * Frameless Electron title bar — always mounted while the desktop app runs.
+ * Frameless Electron title bar, always mounted while the desktop app runs.
  * Adds `body.electron-app` so layout offsets below this bar (no overlap).
  */
 export default function TitleBar() {

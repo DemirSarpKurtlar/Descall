@@ -2,7 +2,7 @@
  * Glass volume slider math (apple-design.md §2, §5, §9).
  *
  * The thumb travels inside the track so its right edge is flush with the
- * track at max. The fill always extends to that same edge — there is no
+ * track at max. The fill always extends to that same edge, there is no
  * gap between the fill and the thumb, and no leftover notch at 100%.
  * Inside the track the pointer and the thumb move 1:1. Past either end
  * the thumb rubber-bands and the committed value stays clamped.
@@ -38,8 +38,8 @@ export function volumeFraction(value, min, max) {
 
 /**
  * Speaker glyph. 0 is mute. On a percent-point slider (span > 1), 1–50 is
- * low and anything louder — including unity at 100, even if the slider
- * boosts past it — is high. Fractional 0–1 ranges map onto that same scale.
+ * low and anything louder, including unity at 100, even if the slider
+ * boosts past it, is high. Fractional 0–1 ranges map onto that same scale.
  */
 export function volumeIconTier(value, min, max) {
   if (!(Number(value) > Math.min(min, max))) return "mute";
@@ -62,7 +62,7 @@ export function nextMuteValue(value, min, max, remembered, step = 1) {
 
 /**
  * Pixel geometry. `fraction` may leave 0..1 while rubber-banding.
- * At fraction 1 the fill width equals the track — no gap on the right.
+ * At fraction 1 the fill width equals the track, no gap on the right.
  * At every fraction the fill ends on the thumb's right edge.
  */
 export function fillAndThumbPx(fraction, trackWidth, thumb) {

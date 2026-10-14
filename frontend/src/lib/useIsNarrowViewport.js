@@ -43,7 +43,7 @@ export function callPopoverStyle({ narrow, desktop = {} } = {}) {
       overflowX: "hidden",
       WebkitOverflowScrolling: "touch",
       zIndex: 10050,
-      // framer-motion may set transform — neutralize horizontal centering
+      // framer-motion may set transform, neutralize horizontal centering
       transform: "none",
       ...desktop.mobileOverrides,
     };

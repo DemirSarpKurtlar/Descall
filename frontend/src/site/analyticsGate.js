@@ -102,7 +102,7 @@ export function clearAnalyticsAllowed() {
   if (typeof window !== "undefined") window.__descallAnalyticsAllowed = false;
 }
 
-/** Product CTA / auth intent — does NOT grant analytics by itself (consent does). */
+/** Product CTA / auth intent, does NOT grant analytics by itself (consent does). */
 export function signalMarketingEngage(detail = {}) {
   try {
     window.dispatchEvent(new CustomEvent("descall:marketing-engage", { detail }));

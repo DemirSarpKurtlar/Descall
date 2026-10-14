@@ -25,7 +25,7 @@ export function getAdaptiveAudioEncodingParams(quality, { music = false } = {}) 
 /**
  * Apply the encoding profile for `quality` to an RTCRtpSender carrying a
  * camera video track. No-ops when nothing changed to avoid spamming
- * setParameters() (which is not free — some browsers reset stats on call).
+ * setParameters() (which is not free, some browsers reset stats on call).
  */
 export async function applyAdaptiveVideoEncoding(sender, quality, lastAppliedRef) {
   if (!sender || !sender.track || sender.track.kind !== "video") return;
@@ -48,7 +48,7 @@ export async function applyAdaptiveVideoEncoding(sender, quality, lastAppliedRef
   }
 }
 
-/** Same idea for the microphone audio sender — trims bitrate under duress. */
+/** Same idea for the microphone audio sender, trims bitrate under duress. */
 export async function applyAdaptiveAudioEncoding(sender, quality, lastAppliedRef) {
   if (!sender || !sender.track || sender.track.kind !== "audio") return;
   const music = sender.track.contentHint === "music";

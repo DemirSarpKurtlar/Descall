@@ -7,9 +7,9 @@ export const TR_INAPP_GAPS = {
   "AFK voice channel": "AFK ses kanalı",
   "Age-restricted (NSFW) channel": "Yaş kısıtlı (NSFW) kanal",
   "All actions": "Tüm işlemler",
-  "Android 10+ — signed APK": "Android 10+ — imzalı APK",
+  "Android 10+, signed APK": "Android 10+, imzalı APK",
   "Badge emoji (e.g. 👑)": "Rozet emojisi (ör. 👑)",
-  "Banner ready — tap Save to apply.": "Banner hazır — uygulamak için Kaydet’e dokun.",
+  "Banner ready, tap Save to apply.": "Banner hazır, uygulamak için Kaydet’e dokun.",
   "Call connection unavailable. Please wait and try again.":
     "Arama bağlantısı yok. Lütfen bekleyip tekrar dene.",
   "Camera off": "Kamera kapalı",
@@ -31,14 +31,14 @@ export const TR_INAPP_GAPS = {
   "Filter by action": "İşleme göre filtrele",
   group: "grup",
   "Hey there!": "Selam!",
-  "Icon ready — tap Save to apply.": "Simge hazır — uygulamak için Kaydet’e dokun.",
+  "Icon ready, tap Save to apply.": "Simge hazır, uygulamak için Kaydet’e dokun.",
   "Image must be 8 MB or smaller.": "Görsel 8 MB veya daha küçük olmalı.",
   "Install the Descall desktop app to share game and app activity automatically.":
     "Oyun ve uygulama etkinliğini otomatik paylaşmak için Descall masaüstü uygulamasını kur.",
   "Invalid duration": "Geçersiz süre",
   "Member timed out": "Üyeye timeout uygulandı",
-  "Message to recipient (optional — shown in their popup)":
-    "Alıcıya mesaj (isteğe bağlı — pencerelerinde görünür)",
+  "Message to recipient (optional, shown in their popup)":
+    "Alıcıya mesaj (isteğe bağlı, pencerelerinde görünür)",
   Moderate: "Moderasyon",
   "Move to folder": "Klasöre taşı",
   "my-server": "sunucum",

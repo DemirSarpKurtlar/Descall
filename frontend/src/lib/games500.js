@@ -1,5 +1,5 @@
 /**
- * Extended Game Database — 500+ NEW popular games with unique emojis
+ * Extended Game Database, 500+ NEW popular games with unique emojis
  * Merged into PROCESS_DB via spread operator.
  */
 

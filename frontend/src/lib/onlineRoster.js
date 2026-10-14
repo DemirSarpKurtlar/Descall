@@ -8,7 +8,7 @@ export function isRosterOnlineStatus(status) {
  * Friends who entered the online roster since the previous snapshot.
  *
  * The first `users:update` after connect is everyone already online. That
- * snapshot only establishes a baseline — it must not toast or notify.
+ * snapshot only establishes a baseline, it must not toast or notify.
  */
 export function friendsWhoJustCameOnline({
   previous,

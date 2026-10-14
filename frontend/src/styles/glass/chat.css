@@ -1,5 +1,5 @@
 /* ============================================
-   Liquid Glass — chats, DMs, groups (2.9.155, Stage 3)
+   Liquid Glass, chats, DMs, groups (2.9.155, Stage 3)
    Mockups 02, 02b, 03, 04, 05, 16. Geometry from final/src/glass.css.
    Scoped under html.glass-ui so every other platform is unchanged.
    ============================================ */
@@ -1228,7 +1228,7 @@ html.glass-ui.kb-open .app-root.g-shell .message-composer:has(.composer-reply-ba
   bottom: calc(var(--kb-gap, 0px) + 132px);
 }
 
-/* Attach sheet (05) — only the three existing actions. */
+/* Attach sheet (05), only the three existing actions. */
 html.glass-ui .app-root.g-shell .attachment-menu {
   position: fixed;
   left: 12px;

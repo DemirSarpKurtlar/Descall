@@ -547,8 +547,8 @@ export default function NavigationRail({
           ref={avatarBtnRef}
           className="rail-user-panel"
           onClick={() => setStatusOpen((v) => !v)}
-          title={`${t(statusKey === "dnd" ? "Do Not Disturb" : STATUS_META[statusKey]?.label || "Online")} — ${t("change status")}`}
-          aria-label={`${resolveDisplayName(railUser || me) || t("You")} — ${t("change status")}`}
+          title={`${t(statusKey === "dnd" ? "Do Not Disturb" : STATUS_META[statusKey]?.label || "Online")}, ${t("change status")}`}
+          aria-label={`${resolveDisplayName(railUser || me) || t("You")}, ${t("change status")}`}
           aria-haspopup="menu"
           aria-expanded={statusOpen}
         >

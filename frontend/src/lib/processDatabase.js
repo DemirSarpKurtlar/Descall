@@ -1,6 +1,6 @@
 /**
  * Descall Process Detection Database
- * 1500+ curated entries — add new entries without touching detection logic.
+ * 1500+ curated entries, add new entries without touching detection logic.
  *
  * Schema per entry:
  *   key  : exact .exe filename, lowercase

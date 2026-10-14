@@ -30,7 +30,7 @@ import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/spri
 const CHECK_SPRING = Object.freeze({ dampingRatio: 0.75, response: 0.28 });
 
 export const SCREEN_RESOLUTION_PRESETS = [
-  { value: "480p", label: "480p", desc: "854×480", hintKey: "Smoothest — low bandwidth" },
+  { value: "480p", label: "480p", desc: "854×480", hintKey: "Smoothest, low bandwidth" },
   { value: "720p", label: "720p HD", desc: "1280×720", hintKey: "Recommended balance" },
   { value: "1080p", label: "1080p FHD", desc: "1920×1080", hintKey: "Sharp text / UI" },
   { value: "1440p", label: "1440p QHD", desc: "2560×1440", hintKey: "Ultra clarity (1:1)" },
@@ -111,7 +111,7 @@ function nearestIndex(options, value) {
 }
 
 /**
- * Advanced screen-share quality picker — presets + resolution / FPS / content mode.
+ * Advanced screen-share quality picker, presets + resolution / FPS / content mode.
  */
 export default function ScreenShareQualityPanel({
   open,
@@ -309,7 +309,7 @@ export default function ScreenShareQualityPanel({
                   <h2 className="ssq-title">{t("Screen share quality")}</h2>
                   <p className="ssq-sub">
                     {isScreenSharing
-                      ? t("Live — changes will restart sharing")
+                      ? t("Live, changes will restart sharing")
                       : t("Choose a preset or fine-tune below")}
                   </p>
                 </div>

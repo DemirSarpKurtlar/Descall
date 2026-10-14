@@ -15,7 +15,7 @@ export default function BlogIndexPage() {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker="Blog"
-      title={t("Descall blog — Discord alternatives & LFG")}
+      title={t("Descall blog, Discord alternatives & LFG")}
       lead={t(
         "Practical guides on Discord alternatives, LFG, voice chat, and moving friend groups to Descall."
       )}

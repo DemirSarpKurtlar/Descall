@@ -165,7 +165,7 @@ export default function MessageComposer({
 
   useEffect(() => {
     // Autofocus on mobile opens the iOS keyboard and often leaves the shell
-    // stuck elevated after dismiss — only autofocus desktop / large screens.
+    // stuck elevated after dismiss, only autofocus desktop / large screens.
     const isNarrow = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
     if (isNarrow) return;
     inputRef.current?.focus();
@@ -175,7 +175,7 @@ export default function MessageComposer({
     const el = inputRef.current;
     if (!el) return undefined;
     const onBlur = () => {
-      // After keyboard dismiss animation (~280ms) — avoid mid-slide scroll jumps.
+      // After keyboard dismiss animation (~280ms), avoid mid-slide scroll jumps.
       window.setTimeout(() => {
         try {
           window.scrollTo(0, 0);
@@ -519,7 +519,7 @@ export default function MessageComposer({
         }
         const blob = new Blob(audioChunksRef.current, { type: actualMime });
         if (!blob.size) {
-          setUploadError(t("Empty recording — try again."));
+          setUploadError(t("Empty recording, try again."));
           setTimeout(() => setUploadError(""), 4000);
           return;
         }

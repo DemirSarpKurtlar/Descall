@@ -1,5 +1,5 @@
 /* ============================================
-   Liquid Glass — navigation shell (2.9.154, Stage 2)
+   Liquid Glass, navigation shell (2.9.154, Stage 2)
    Floating 7-tab glass bar, large-title list headers with a glass toolbar
    (me-btn · bgroup · +), scroll-under edge masks, mockup-18 status menu.
    Geometry is the approved mockup (final/src/glass.css, 440×956) with the
@@ -54,7 +54,7 @@ html.glass-ui.a11y-solid:not(.native-app) .app-root.g-shell {
 }
 
 /* The document scrolls. Safari only paints its floating toolbar over real
-   content when html/body are the scroll container — an inner overflow div
+   content when html/body are the scroll container, an inner overflow div
    (and the 100dvh shell lock) leaves the surround solid black. #root stays
    transparent so the canvas color is html's, which is what Safari samples.
    Native and the keyboard lock keep the inner scroller. */
@@ -984,7 +984,7 @@ html.glass-ui .g-status-menu .status-picker-btn.ghost {
   border: 0;
 }
 
-/* Narrow iPhones (mini / SE / 390pt): 7 columns of ~49pt — keep every label
+/* Narrow iPhones (mini / SE / 390pt): 7 columns of ~49pt, keep every label
    whole (iOS never truncates tab titles) by tightening type a touch. */
 @media (max-width: 400px) {
   html.glass-ui .g-tab {

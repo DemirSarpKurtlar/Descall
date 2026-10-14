@@ -1,5 +1,5 @@
 /* ============================================
-   Liquid Glass — friends, servers, profile (Stage 5)
+   Liquid Glass, friends, servers, profile (Stage 5)
    Mockups 09, 10, 11, 12, 13, 14, 14b. Geometry from final/src/glass.css.
    Every selector is under html.glass-ui (glass-scope.selftest).
    ============================================ */
@@ -1350,7 +1350,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-field textarea {
   border: 0;
 }
 
-/* Feedback sheet — same heavy glass as the add / announcements sheets.
+/* Feedback sheet, same heavy glass as the add / announcements sheets.
    The card stays in normal flow: a position:fixed sheet inside this
    backdrop-filter scrim collapses on iOS. */
 html.glass-ui .feedback-overlay {

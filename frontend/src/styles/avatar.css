@@ -1,4 +1,4 @@
-/* Avatar stack — keep photo, effect ring, and frame perfectly concentric */
+/* Avatar stack, keep photo, effect ring, and frame perfectly concentric */
 
 .ui-avatar {
   position: relative;
@@ -63,7 +63,7 @@
 }
 
 /* Frame sits in a square larger than the avatar (~132%).
-   IMPORTANT: <img> is a replaced element — inset + width/height:auto uses the
+   IMPORTANT: <img> is a replaced element, inset + width/height:auto uses the
    SVG's intrinsic size (often 256px), which blows the ring up over the whole
    profile card. Always set an explicit width/height relative to .ui-avatar. */
 .ui-avatar-frame-overlay {
@@ -99,7 +99,7 @@
 }
 
 .profile-avatar-shell {
-  /* No padding box — padding made the cutout ring feel off-center vs effects.
+  /* No padding box, padding made the cutout ring feel off-center vs effects.
      Use an even outline ring instead so avatar/effect/frame share one center. */
   padding: 0;
   border-radius: 50%;

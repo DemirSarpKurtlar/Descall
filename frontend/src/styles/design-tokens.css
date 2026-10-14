@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL v2.0 — COMPLETELY REBUILT DESIGN TOKENS
+   DESCALL v2.0, COMPLETELY REBUILT DESIGN TOKENS
    Discord-inspired premium design system
    NO OLD UI REMNANTS
    ============================================ */
@@ -8,7 +8,7 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* 🎨 Core Palette — Descall azure + signal teal (not Discord blurple) */
+  /* 🎨 Core Palette, Descall azure + signal teal (not Discord blurple) */
   --primary: #4F7CFF;
   --primary-2: #3B63E6;
   --primary-3: #2F52C9;
@@ -24,7 +24,7 @@
   --danger: #DA373C;
   --danger-soft: rgba(218, 55, 60, 0.12);
 
-  /* 🏗️ Surface Colors — Premium dark gray theme */
+  /* 🏗️ Surface Colors, Premium dark gray theme */
   --surface-0: #111214;
   --surface-1: #1E1F22;
   --surface-2: #2B2D31;
@@ -54,7 +54,7 @@
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.56);
   --shadow-glow-primary: 0 0 16px rgba(79, 124, 255, 0.28);
 
-  /* 📐 Spacing — Modern spacing scale */
+  /* 📐 Spacing, Modern spacing scale */
   --space-0: 0px;
   --space-1: 2px;
   --space-2: 4px;
@@ -80,9 +80,9 @@
   --radius-full: 9999px;
 
   /* 🔠 Typography */
-  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
   --font-code: "JetBrains Mono", "Consolas", "Courier New", monospace;
-  --font-heading: "Outfit", "Inter", system-ui, "Segoe UI", sans-serif;
+  --font-heading: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
 
   --chat-font-size: 14px;
 
@@ -105,7 +105,7 @@
   --line-normal: 1.4;
   --line-relaxed: 1.6;
 
-  /* 📦 Sizing — Discord-inspired dimensions */
+  /* 📦 Sizing, Discord-inspired dimensions */
   --nav-rail-width: 76px;
   --sidebar-width: 280px;
   --sidebar-collapsed: 0px;
@@ -132,7 +132,7 @@
   --nav-active-border: rgba(170, 190, 255, 0.42);
   --nav-active-glow: drop-shadow(0 0 8px rgba(140, 165, 255, 0.65));
 
-  /* ✨ Transitions — Smooth animations */
+  /* ✨ Transitions, Smooth animations */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: 100ms var(--ease-out);
@@ -170,8 +170,8 @@
   --text-0: #060607;
   --text-1: #2E3338;
   --text-2: #4E5058;
-  --text-3: #6D6F78;
-  --text-muted: #80848E;
+  --text-3: #61636B;
+  --text-muted: #60636B;
   --text-link: #006CE7;
 
   --border-0: rgba(0, 0, 0, 0.0);
@@ -213,7 +213,7 @@
 }
 
 /* ============================================
-   PREMIUM THEMES — purchasable with DesCoin
+   PREMIUM THEMES, purchasable with DesCoin
    Each keeps the dark-mode text/spacing scale and
    only re-tints the primary accent + surfaces.
    ============================================ */
@@ -1481,7 +1481,7 @@
 
 
 /* ============================================
-   SCENE THEMES (2.9.183) — Lagoon, Grove, Hanami are still palettes.
+   SCENE THEMES (2.9.183), Lagoon, Grove, Hanami are still palettes.
    Emberfall, Borealis and Starwell drift. Chrome Veil and Iriscape
    add a second moving layer and an edge sheen. Glass scenes live in
    theme-scenes.css / glass/theme-scenes.css.

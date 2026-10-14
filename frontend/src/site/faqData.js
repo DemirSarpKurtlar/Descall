@@ -2,7 +2,7 @@ export const FAQ_ITEMS = [
   {
     group: "product",
     q: "Is Descall a Discord alternative?",
-    a: "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and LFG — without Nitro paywalls for core communication.",
+    a: "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and LFG, without Nitro paywalls for core communication.",
   },
   {
     group: "product",
@@ -16,7 +16,7 @@ export const FAQ_ITEMS = [
   },
   {
     group: "product",
-    q: "Descall vs Discord — who should switch?",
+    q: "Descall vs Discord, who should switch?",
     a: "Friend groups, gaming squads, and small-to-mid communities that need servers, roles, voice, screen share, and LFG often prefer Descall as a lighter Discord alternative. Keep Discord if you still rely on huge bot ecosystems.",
   },
   {

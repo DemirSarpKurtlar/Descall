@@ -1,5 +1,5 @@
 // An unquoted CSS url() token cannot contain '"', "'", "(", ")", whitespace,
-// or control characters — if it does, the whole url() (and often the entire
+// or control characters, if it does, the whole url() (and often the entire
 // declaration) is silently dropped by the browser. Inline SVG data URIs
 // (e.g. shop cosmetics: banners, avatar frames, profile backgrounds) are
 // full of literal double quotes from their own markup attributes, so any

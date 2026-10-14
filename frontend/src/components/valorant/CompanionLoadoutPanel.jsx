@@ -6,7 +6,7 @@ import { SkeletonLine } from "../ui/Skeleton";
 import CompanionSkinDetail from "./CompanionSkinDetail";
 
 /**
- * Adım 6 — equipped loadout + real Riot skin media on gun click.
+ * Adım 6, equipped loadout + real Riot skin media on gun click.
  * Keep useValorantLoadout as the data source (backend API contract).
  */
 export default function CompanionLoadoutPanel({ linked, identity }) {

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
 /**
- * Soft banner parallax — moves the background layer with pointer offset.
+ * Soft banner parallax, moves the background layer with pointer offset.
  * Falls back to a static fill when no image URL is provided.
  */
 export default function ParallaxBanner({

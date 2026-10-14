@@ -33,7 +33,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       kicker={t("Discord alternative · 2026")}
       title={t("The best free Discord alternative for friends & gamers")}
       lead={t(
-        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in LFG — without Nitro paywalls for the features you actually use."
+        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in LFG, without Nitro paywalls for the features you actually use."
       )}
       tone="compare"
       faq={faq}
@@ -55,7 +55,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       heroExtra={
         <SeoProductPreview
           mode="servers"
-          caption={t("Descall UI — servers, chat, voice, and LFG in one app")}
+          caption={t("Descall UI, servers, chat, voice, and LFG in one app")}
         />
       }
     >
@@ -64,7 +64,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
         <ol className="seo-switch-steps">
           <li>
             <strong>{t("Create a free account")}</strong>
-            <span>{t("Sign in with Google or email — no installer required to try the web app.")}</span>
+            <span>{t("Sign in with Google or email, no installer required to try the web app.")}</span>
           </li>
           <li>
             <strong>{t("Spin up a server")}</strong>
@@ -80,7 +80,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
         <h2>{t("Why people search for a Discord alternative")}</h2>
         <p>
           {t(
-            "Discord is powerful — and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that."
+            "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that."
           )}
         </p>
         <ul className="seo-checklist">
@@ -90,7 +90,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
             "Free chat, voice, video, and screen share",
             "LFG in a dedicated Play tab",
             "Windows desktop + web + Android",
-            "Cosmetics via DesCoin — core stays free",
+            "Cosmetics via DesCoin, core stays free",
           ].map((item) => (
             <li key={item}>
               <Check size={16} aria-hidden />
@@ -145,7 +145,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           <article>
             <Users size={20} />
             <h3>{t("Friend groups")}</h3>
-            <p>{t("DMs plus a ready-made friends server — lounge chat, plans, and always-on voice.")}</p>
+            <p>{t("DMs plus a ready-made friends server, lounge chat, plans, and always-on voice.")}</p>
           </article>
           <article>
             <Gamepad2 size={20} />
@@ -155,7 +155,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           <article>
             <Monitor size={20} />
             <h3>{t("Communities & creators")}</h3>
-            <p>{t("Announcements, support, events, stage, and a full staff ladder — without Nitro pressure.")}</p>
+            <p>{t("Announcements, support, events, stage, and a full staff ladder, without Nitro pressure.")}</p>
           </article>
           <article>
             <Zap size={20} />
@@ -168,7 +168,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       <SeoRelatedLinks
         title="Related Discord alternative guides"
         links={[
-          { to: "/alternatives", label: "All Discord alternatives — hub" },
+          { to: "/alternatives", label: "All Discord alternatives, hub" },
           { to: "/apps-like-discord", label: "Apps like Discord" },
           { to: "/discord-replacement", label: "Discord replacement" },
           { to: "/best-discord-alternative-for-gamers", label: "Best Discord alternative for gamers" },

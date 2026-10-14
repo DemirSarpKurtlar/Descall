@@ -1,7 +1,7 @@
 /**
  * Small, reusable renderers for equipped profile-customization cosmetics
  * (name effects, badges, and title tags). Fed the same enriched `user`
- * object already used for avatars — degrades to plain text/nothing when a
+ * object already used for avatars, degrades to plain text/nothing when a
  * slot isn't equipped, so callers can use these unconditionally.
  */
 import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";

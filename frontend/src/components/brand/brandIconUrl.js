@@ -14,7 +14,7 @@
  * → broken-image mountain in titlebar, nav rail, and AuthView.
  *
  * `import.meta.env.BASE_URL` is replaced at build time (`"/"` web, `"./"`
- * Electron). Keep these plain templates — wrapping `import.meta` in
+ * Electron). Keep these plain templates, wrapping `import.meta` in
  * `typeof` checks breaks Vite's IIFE rewrite.
  */
 function brandFile(name) {

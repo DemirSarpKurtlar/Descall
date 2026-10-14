@@ -23,7 +23,7 @@ export function smoothLevel(prev, target) {
 /**
  * Live mic/remote track the analyser is allowed to read.
  * A disabled track is a user mute (stay silent). A muted-but-enabled track is
- * WebKit holding capture until the audio session is up — the caller waits.
+ * WebKit holding capture until the audio session is up, the caller waits.
  */
 export function classifyAudioTracks(tracks) {
   const list = (Array.isArray(tracks) ? tracks : []).filter(

@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL v2.0 — COMPLETELY REBUILT APP LAYOUT
+   DESCALL v2.0, COMPLETELY REBUILT APP LAYOUT
    Discord-inspired grid system
    NO OLD LAYOUT REMNANTS
    ============================================ */
@@ -120,7 +120,7 @@
   }
 }
 
-/* Desktop: sidebar shell must NOT become a grid item — its children
+/* Desktop: sidebar shell must NOT become a grid item, its children
    (.nav-rail + .sidebar-secondary) need to occupy columns 1 and 2.
    Never set grid-* on .app-sidebar-shell or display:contents is defeated
    and the DM empty-state/"Sohbet başlat" panel piles over the nav rail
@@ -168,7 +168,7 @@
   grid-row: 1;
 }
 
-/* Empty-state belongs only to the main chat column — never the rail. */
+/* Empty-state belongs only to the main chat column, never the rail. */
 .app-main-slot .empty-state,
 .main-panel > .messages-container > .empty-state {
   position: relative;
@@ -181,14 +181,14 @@
 
 /* 4-column layout for servers view */
 .app-root[data-view="servers"] {
-  /* No empty 72px icon-rail track — ServersSidebar is the only list column. */
+  /* No empty 72px icon-rail track, ServersSidebar is the only list column. */
   grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
 }
 
 /* Play / LFG: rail + full workspace (no list sidebar column).
    Default app-root is 3 columns (rail | sidebar | main). Without this,
    a full-page workspace is placed in --sidebar-width (~280px) and an inner 220px
-   column leaves the chat pane ~60px — text stacks letter-by-letter. */
+   column leaves the chat pane ~60px, text stacks letter-by-letter. */
 .app-root[data-view="play"] {
   grid-template-columns: var(--nav-rail-width) 1fr;
 }
@@ -267,7 +267,7 @@
   display: none !important;
 }
 
-/* ─── Navigation Rail (Leftmost) — premium glass ─── */
+/* ─── Navigation Rail (Leftmost), premium glass ─── */
 .nav-rail {
   width: var(--nav-rail-width);
   height: 100%;
@@ -453,7 +453,7 @@ button.nav-rail-logo:active {
   position: relative;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
-  /* Disable clipped CSS tooltips — rail uses portal tooltips instead */
+  /* Disable clipped CSS tooltips, rail uses portal tooltips instead */
   --tooltip-disabled: 1;
 }
 
@@ -540,7 +540,7 @@ button.nav-rail-logo:active {
   opacity: 1;
 }
 
-/* Portal tooltip for rail items — never clipped by overflow.
+/* Portal tooltip for rail items, never clipped by overflow.
    The slot owns vertical centering. Framer owns transform on .rail-tooltip. */
 .rail-tooltip-slot {
   position: fixed;
@@ -1004,7 +1004,7 @@ html.gd-lite .rail-tooltip {
 }
 
 .conv-row {
-  /* was will-change:transform — kept Framer layout ghosts across the chat header */
+  /* was will-change:transform, kept Framer layout ghosts across the chat header */
 }
 
 .conv-row-body {
@@ -1034,7 +1034,7 @@ html.gd-lite .rail-tooltip {
   white-space: nowrap;
 }
 
-/* DM list: show the full name — wrap onto a second line instead of "…" */
+/* DM list: show the full name, wrap onto a second line instead of "…" */
 .conv-row-top .dm-name {
   overflow: visible;
   text-overflow: clip;
@@ -1459,7 +1459,7 @@ html.gd-lite .rail-tooltip {
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  /* Force charcoal — never pitch #000 behind messages */
+  /* Force charcoal, never pitch #000 behind messages */
   background: var(--surface-0, #111214);
 }
 
@@ -1576,7 +1576,7 @@ button.header-avatar {
   white-space: nowrap;
 }
 
-/* DM header: show the whole name — wrap onto a second line instead of "…" */
+/* DM header: show the whole name, wrap onto a second line instead of "…" */
 .header-title-block.is-dm {
   flex: 1 1 auto;
   gap: 1px;
@@ -1643,7 +1643,7 @@ button.header-avatar {
   background: var(--surface-0, #111214);
 }
 
-/* Height:auto — do NOT flex:1 fill the pane. Nested flex:1 + overflow-y:auto
+/* Height:auto, do NOT flex:1 fill the pane. Nested flex:1 + overflow-y:auto
    on .message-list made the inner list the clip box while the outer scrollport
    had nothing to scroll, so wheel/trackpad did nothing. One scrollport only. */
 .message-list {
@@ -1754,7 +1754,7 @@ button.header-avatar {
   background: var(--surface-0, #111214);
   flex: 0 0 auto;
   flex-shrink: 0;
-  /* Flex pin — sticky left a black strip under the composer on Electron */
+  /* Flex pin, sticky left a black strip under the composer on Electron */
   margin-top: auto;
   margin-bottom: 0;
   position: relative;
@@ -3396,7 +3396,6 @@ button.header-avatar {
   background: var(--surface-2);
   border-radius: 8px;
   margin-bottom: 8px;
-  border-left: 3px solid var(--primary);
 }
 
 .announcement-title {
@@ -3720,7 +3719,7 @@ button.header-avatar {
 }
 
 @media (max-width: 520px) {
-  /* Keep centered like desktop / Friends — do not pin to the bottom edge. */
+  /* Keep centered like desktop / Friends, do not pin to the bottom edge. */
   .feedback-overlay {
     padding: 16px;
     align-items: center;
@@ -4175,7 +4174,10 @@ button.header-avatar {
 }
 
 .activity-empty-cta:hover {
-  opacity: 0.92;
+  filter: brightness(1.08);
+}
+.activity-empty-cta:active {
+  transform: scale(0.97);
 }
 
 .activity-empty-cta:active {
@@ -4558,7 +4560,10 @@ button.header-avatar {
 }
 
 .activity-set-status-btn:hover {
-  opacity: 0.9;
+  filter: brightness(1.08);
+}
+.activity-set-status-btn:active {
+  transform: scale(0.97);
 }
 
 .activity-set-status-btn:active {
@@ -4902,7 +4907,10 @@ button.header-avatar {
 }
 
 .activity-modal-submit:not(:disabled):hover {
-  opacity: 0.9;
+  filter: brightness(1.08);
+}
+.activity-modal-submit:not(:disabled):active {
+  transform: scale(0.97);
 }
 
 /* Admin Button Variants for Casino/Credits */

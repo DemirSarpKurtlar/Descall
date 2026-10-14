@@ -134,7 +134,7 @@ export default function ServerSidebar({
         const count = await loadUnreadAnnouncementCount(API_BASE_URL, getToken());
         if (!cancelled && count != null && count > 0) setAnnouncementUnread(count);
       } catch {
-        /* no count in this response — leave the badge off */
+        /* no count in this response, leave the badge off */
       }
     })();
     return () => {
@@ -205,7 +205,7 @@ export default function ServerSidebar({
         });
       });
     }
-    // Optimistic — friend:request:sent / friend:error confirm or roll this back.
+    // Optimistic, friend:request:sent / friend:error confirm or roll this back.
     setSentUsernames((prev) => new Set(prev).add(username));
   };
 
@@ -482,7 +482,7 @@ export default function ServerSidebar({
             />
           )}
 
-          {/* Canonical Calls UI lives in ChatPanel — sidebar only offers contacts. */}
+          {/* Canonical Calls UI lives in ChatPanel, sidebar only offers contacts. */}
           {activeView === "calls" && glassShell ? (
             <CallsView
               me={me}
@@ -519,7 +519,7 @@ export default function ServerSidebar({
           )}
         </div>
 
-        {/* Add Friend / Create Group Modal — portal to body (sidebar contain traps fixed) */}
+        {/* Add Friend / Create Group Modal, portal to body (sidebar contain traps fixed) */}
         {createPortal(
         <AnimatePresence>
           {showAddModal && (
@@ -560,7 +560,7 @@ export default function ServerSidebar({
                   {addTab === "quickadd" && (
                     <div className="quick-add-panel">
                       <p className="quick-add-intro">
-                        {t("People you may know — ranked by mutual friends and shared groups.")}
+                        {t("People you may know, ranked by mutual friends and shared groups.")}
                       </p>
                       {suggestionsLoading ? (
                         <div className="quick-add-loading">
@@ -577,7 +577,7 @@ export default function ServerSidebar({
                       ) : suggestions.length === 0 ? (
                         <div className="quick-add-empty">
                           <UsersRound size={28} style={{ opacity: 0.5 }} />
-                          <span>{t("No suggestions right now — check back after you join a few groups or make some friends.")}</span>
+                          <span>{t("No suggestions right now, check back after you join a few groups or make some friends.")}</span>
                         </div>
                       ) : (
                         <div className="quick-add-list">
@@ -700,7 +700,7 @@ export default function ServerSidebar({
         document.body
         )}
 
-        {/* Announcements Modal — portal to body */}
+        {/* Announcements Modal, portal to body */}
         {createPortal(
         <AnimatePresence>
           {showAnnouncements && (
@@ -979,7 +979,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
                 <div className="empty-illu-blob secondary" />
               </div>
               <strong>{t("No conversations yet")}</strong>
-              <span>{t("Add a friend to start chatting — messages, voice, and screen share in one place.")}</span>
+              <span>{t("Add a friend to start chatting, messages, voice, and screen share in one place.")}</span>
               {onAddFriend && (
                 <div className="sidebar-empty-friends-actions">
                   <button type="button" className="mkt-btn mkt-btn-soft" onClick={onAddFriend}>
@@ -1090,7 +1090,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
         {confirmClose && (
           <ConfirmDialog
             title={t("Close this chat?")}
-            message={t("This chat leaves your list. Messages stay — it comes back if they write you.")}
+            message={t("This chat leaves your list. Messages stay, it comes back if they write you.")}
             confirmLabel={t("Close chat")}
             danger
             onConfirm={confirmCloseChat}
@@ -1971,7 +1971,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                     <div className="empty-illu-blob secondary" />
                   </div>
                   <strong>{t("No groups yet")}</strong>
-                  <span>{t("Create a group for friends — chat, call, and share your screen together.")}</span>
+                  <span>{t("Create a group for friends, chat, call, and share your screen together.")}</span>
                   {onCreateGroup && (
                     <div className="sidebar-empty-friends-actions">
                       <button type="button" className="mkt-btn mkt-btn-soft" onClick={onCreateGroup}>
@@ -2308,7 +2308,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
           {me?.username ? <InviteCard username={me.username} compact /> : null}
           {pendingShown.length > 0 && (
             <div className="friend-category">
-              <div className="g-sect is-pending"><span>{t("Pending — {count}", { count: pendingShown.length })}</span></div>
+              <div className="g-sect is-pending"><span>{t("Pending, {count}", { count: pendingShown.length })}</span></div>
               {pendingShown.map((req) => (
                 <div key={req.id} className="g-friend-row">
                   <div className="friend-avatar">
@@ -2330,7 +2330,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
           )}
           {onlineShown.length > 0 && (
             <div className="friend-category">
-              <div className="g-sect"><span>{t("Online — {count}", { count: onlineShown.length })}</span></div>
+              <div className="g-sect"><span>{t("Online, {count}", { count: onlineShown.length })}</span></div>
               {onlineShown.map((friend) => (
                 <div key={friend.id} className="g-friend-row">
                   <button type="button" className="g-friend-main" onClick={() => onFriendSelect?.(friend)}>
@@ -2358,7 +2358,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
           )}
           {offlineShown.length > 0 && (
             <div className="friend-category">
-              <div className="g-sect"><span>{t("Offline — {count}", { count: offlineShown.length })}</span></div>
+              <div className="g-sect"><span>{t("Offline, {count}", { count: offlineShown.length })}</span></div>
               {offlineShown.map((friend) => (
                 <div key={friend.id} className="g-friend-row">
                   <button type="button" className="g-friend-main" onClick={() => onFriendSelect?.(friend)}>
@@ -2383,7 +2383,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
           ) : safeFriends.length === 0 && pendingRequests.length === 0 ? (
             <div className="sidebar-empty-friends">
               <strong>{t("No friends yet")}</strong>
-              <span>{t("Share your invite link — friends join free and connect with you instantly.")}</span>
+              <span>{t("Share your invite link, friends join free and connect with you instantly.")}</span>
               <div className="sidebar-empty-friends-actions">
                 <button type="button" className="mkt-btn mkt-btn-soft" onClick={onQuickAdd}>
                   {t("Add friend")}
@@ -2440,7 +2440,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
             {pendingRequests.length > 0 && (
               <div className="friend-category">
                 <span className="category-label" style={{ color: "var(--warning)" }}>
-                  {t("Pending — {count}", { count: pendingRequests.length })}
+                  {t("Pending, {count}", { count: pendingRequests.length })}
                 </span>
                 {pendingRequests.map((req) => (
                   <div
@@ -2504,7 +2504,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
 
             {onlineFriends.length > 0 && (
               <div className="friend-category">
-                <span className="category-label">{t("Online — {count}", { count: onlineFriends.length })}</span>
+                <span className="category-label">{t("Online, {count}", { count: onlineFriends.length })}</span>
                 {onlineFriends.map((friend) => (
                   <motion.button
                     key={friend.id}
@@ -2541,7 +2541,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
 
             {offlineFriends.length > 0 && (
               <div className="friend-category">
-                <span className="category-label">{t("Offline — {count}", { count: offlineFriends.length })}</span>
+                <span className="category-label">{t("Offline, {count}", { count: offlineFriends.length })}</span>
                 {offlineFriends.map((friend) => (
                   <motion.button
                     key={friend.id}
@@ -2582,7 +2582,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                   <div className="empty-illu-blob secondary" />
                 </div>
                 <strong>{t("No friends yet")}</strong>
-                <span>{t("Share your invite link — friends join free and connect with you instantly.")}</span>
+                <span>{t("Share your invite link, friends join free and connect with you instantly.")}</span>
                 <div className="sidebar-empty-friends-actions">
                   <button type="button" className="mkt-btn mkt-btn-soft" onClick={onQuickAdd}>
                     {t("Add friend")}

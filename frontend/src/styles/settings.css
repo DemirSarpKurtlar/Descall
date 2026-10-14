@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL — User Settings (live UserPanel)
+   DESCALL, User Settings (live UserPanel)
    Desktop: sidebar + detail modal
    Mobile: menu → detail drill-down
    ============================================ */
@@ -602,7 +602,7 @@
   box-shadow: 0 0 0 3px var(--success-soft);
 }
 
-/* Hero — balanced profile card: banner, 84px avatar overlapping the seam with an
+/* Hero, balanced profile card: banner, 84px avatar overlapping the seam with an
    even ring, edit button top-right, name + @handle directly under the avatar.
    Tapping the avatar opens the same picker/crop flow as the Profile tab. */
 .us-hero {
@@ -1728,7 +1728,7 @@ button.us-row.g-privacy-link:hover {
   padding: 14px 16px;
 }
 
-/* Mobile settings — thumb-friendly nav */
+/* Mobile settings, thumb-friendly nav */
 .user-settings.is-mobile .us-nav-item {
   min-height: 48px;
   padding-top: 12px;

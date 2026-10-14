@@ -5,7 +5,7 @@ import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
 
 /**
- * FaceTime-style incoming call card — large avatar + ripple rings.
+ * FaceTime-style incoming call card, large avatar + ripple rings.
  * Replaces the old icon-only / small-avatar banners.
  */
 export default function IncomingCallCard({

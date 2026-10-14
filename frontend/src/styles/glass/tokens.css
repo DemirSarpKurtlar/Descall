@@ -1,5 +1,5 @@
 /* ============================================
-   Liquid Glass — design tokens (2.9.151, Stage 1)
+   Liquid Glass, design tokens (2.9.151, Stage 1)
    iPhone app only: every rule is scoped under html.glass-ui (set by
    lib/glassUi.js), so web / Electron / Android / iPad never see it.
 
@@ -87,8 +87,8 @@ html.glass-ui {
 }
 
 /* Phone Safari and the installed web app (not the native shell).
-   --g-safe-top is 0 in the browser — the status bar is outside the layout
-   viewport — and the real inset (~59px) in standalone, under the Island.
+   --g-safe-top is 0 in the browser, the status bar is outside the layout
+   viewport, and the real inset (~59px) in standalone, under the Island.
    The 132% shop frame hangs about 6px past the 44px toolbar button. A chrome
    top of 0 clips that ring on the list's overflow edge; subtracting 2px from
    a real inset tucks the ring under the Island. 12px of clearance does both. */

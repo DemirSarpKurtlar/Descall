@@ -543,7 +543,7 @@ function GameMessageBubbleBody({
       gameData.status === "finished" ||
       gameData.status === "dealing");
 
-  // Lobby only when explicitly requested / no live hand — never replace a live board
+  // Lobby only when explicitly requested / no live hand, never replace a live board
   if (type === "game_lobby" || !isBoard) {
     return (
       <LobbyTable

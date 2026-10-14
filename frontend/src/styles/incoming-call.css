@@ -1,7 +1,7 @@
 /* FaceTime-style incoming call card */
 
 .incoming-call-card {
-  /* Center with left/right + margin — NOT transform:translateX(-50%).
+  /* Center with left/right + margin, NOT transform:translateX(-50%).
      Framer Motion owns `transform` for y/scale and would overwrite CSS translateX,
      pushing the card off-screen (especially on mobile). */
   position: fixed;

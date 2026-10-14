@@ -11,14 +11,14 @@ export default function SecurityPage() {
         <h1>{t("Security at Descall")}</h1>
         <p className="lead">
           {t(
-            "How Descall protects your chats and calls — encryption in transit, account security, and honest limits about what we do not claim."
+            "How Descall protects your chats and calls, encryption in transit, account security, and honest limits about what we do not claim."
           )}
         </p>
 
         <h2>{t("Transport encryption (not default E2E)")}</h2>
         <p>
           {t(
-            "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server — messages are encrypted in transit and stored so your devices can load chat history."
+            "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored so your devices can load chat history."
           )}
         </p>
 

@@ -5,14 +5,14 @@
  * wiring up local tracks, and closing peers with slightly different (and
  * sometimes missing) guards. This module centralizes those primitives so the
  * three mesh hooks (`useCall`, `useGroupCall`, `useServerVoice`) share one
- * implementation. It intentionally stays low-level — callers keep owning
+ * implementation. It intentionally stays low-level, callers keep owning
  * `ontrack` / negotiation logic, which differs enough per call type that
  * folding it in here would just move complexity, not remove it.
  *
  * Exports:
  * - createPeerConnection({ iceServers, onIceCandidate, onTrack, onConnectionStateChange })
  *     Builds an RTCPeerConnection, defaulting `iceServers` to getIceServers().
- *     Any of the handler callbacks are optional — pass none and wire the
+ *     Any of the handler callbacks are optional, pass none and wire the
  *     usual `pc.onicecandidate` / `pc.ontrack` / etc. yourself afterward.
  * - attachLocalTracks(pc, stream)
  *     Adds every track of `stream` to `pc` via addTrack(track, stream).
@@ -83,7 +83,7 @@ export function safeClosePeer(pc) {
   try {
     pc.close();
   } catch {
-    /* already closed / never fully opened — nothing to do */
+    /* already closed / never fully opened, nothing to do */
   }
 }
 
@@ -96,7 +96,7 @@ export function replaceSenderTrack(pc, kind, track) {
 }
 
 /**
- * Dev-only smoke test — exercises the factory against a real RTCPeerConnection
+ * Dev-only smoke test, exercises the factory against a real RTCPeerConnection
  * when available (browser/jsdom), otherwise no-ops. Not wired into any test
  * runner; call manually from a console if you want a quick sanity check:
  *   import { __selfTest } from "./webrtcPeerFactory"; __selfTest();

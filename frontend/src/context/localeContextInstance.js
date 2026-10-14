@@ -1,5 +1,5 @@
 /**
- * Shared LocaleContext instance — avoid importing full i18n catalogs via LocaleContext.jsx
+ * Shared LocaleContext instance, avoid importing full i18n catalogs via LocaleContext.jsx
  * from the marketing entry graph.
  */
 import { createContext, useContext } from "react";

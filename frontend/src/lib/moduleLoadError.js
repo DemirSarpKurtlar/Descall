@@ -22,7 +22,7 @@ export function recoverFromModuleLoadError() {
     if (sessionStorage.getItem(RELOAD_KEY) === "1") return false;
     sessionStorage.setItem(RELOAD_KEY, "1");
   } catch {
-    /* private mode — still try a single reload */
+    /* private mode, still try a single reload */
   }
   try {
     window.location.reload();

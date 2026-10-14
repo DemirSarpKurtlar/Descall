@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL — Admin Panel (premium redesign)
+   DESCALL, Admin Panel (premium redesign)
    ============================================ */
 
 .admin-shell {
@@ -1889,7 +1889,7 @@
   max-height: 420px;
 }
 
-/* In-flow banner inside .main-panel — must not overlay .panel-header */
+/* In-flow banner inside .main-panel, must not overlay .panel-header */
 .timeout-banner {
   position: relative;
   z-index: 2;

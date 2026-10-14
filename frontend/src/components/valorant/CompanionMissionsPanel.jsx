@@ -4,7 +4,7 @@ import { useT } from "../../context/LocaleContext";
 import { SkeletonLine } from "../ui/Skeleton";
 
 /**
- * Adım 5 — missions / contracts / Battle Pass Companion panel.
+ * Adım 5, missions / contracts / Battle Pass Companion panel.
  * Keep useValorantMissions as the data source (backend API contract).
  */
 export default function CompanionMissionsPanel({ linked, identity }) {

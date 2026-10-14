@@ -1,6 +1,6 @@
 :root {
-  --mkt-font-display: "Outfit", "Inter", system-ui, "Segoe UI", sans-serif;
-  --mkt-font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mkt-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
+  --mkt-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
 }
 
 .mkt {
@@ -12,8 +12,8 @@
   --mkt-accent: #8eacff;
   --mkt-accent-2: #2ad4b8;
   --mkt-border: rgba(255, 255, 255, 0.12);
-  --mkt-font-display: "Outfit", "Inter", system-ui, "Segoe UI", sans-serif;
-  --mkt-font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mkt-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
+  --mkt-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
   position: relative;
   min-height: 100vh;
   width: 100%;
@@ -33,7 +33,7 @@
   box-sizing: border-box;
 }
 
-/* Marketing React shell — never inherit app overflow:hidden / 100% height lock. */
+/* Marketing React shell, never inherit app overflow:hidden / 100% height lock. */
 html:has(.mkt):not([data-app-shell="1"]),
 html:has(.mkt):not([data-app-shell="1"]) body {
   height: auto !important;
@@ -91,11 +91,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(64px);
-  opacity: 0.45;
-  animation: mkt-drift 12s ease-in-out infinite alternate;
+  display: none;
 }
 
 .mkt-orb-a {
@@ -116,13 +112,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at 50% 20%, #000 20%, transparent 70%);
+  display: none;
 }
 
 @keyframes mkt-drift {
@@ -259,13 +249,16 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-btn:hover {
-  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.mkt-btn:active {
+  transform: scale(0.97);
 }
 
 .mkt-btn-primary {
-  background: linear-gradient(135deg, #4f7cff, #6ea0ff);
+  background: #587af6;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(79, 124, 255, 0.28);
 }
 
 .mkt-btn-ghost {
@@ -330,7 +323,6 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   gap: 36px;
   align-items: center;
   padding: 36px 0 48px;
-  animation: mkt-rise 0.7s ease both;
 }
 
 .mkt-hero-split .seo-product-preview {
@@ -359,7 +351,6 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   padding: 48px 0 56px;
   text-align: left;
   max-width: 720px;
-  animation: mkt-rise 0.7s ease both;
 }
 
 .mkt-nowrap {
@@ -389,10 +380,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-hero h1 .mkt-brand-word {
-  background: linear-gradient(120deg, #fff 20%, #aab4ff 70%, #7b89ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: inherit;
 }
 
 .mkt-hero p {
@@ -411,7 +399,6 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 
 .mkt-section {
   margin-top: 48px;
-  animation: mkt-rise 0.8s ease both;
 }
 
 .mkt-section h2 {
@@ -462,16 +449,8 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-feature::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--mkt-accent), var(--mkt-accent-2));
-  opacity: 0.9;
+  display: none;
 }
-
-.mkt-feature:nth-child(3n)::before { background: var(--mkt-accent-2); }
-.mkt-feature:nth-child(3n+2)::before { background: #c9a46a; }
 
 a.mkt-feature-link {
   display: block;
@@ -481,8 +460,7 @@ a.mkt-feature-link {
 }
 
 .mkt-feature:hover {
-  transform: translateY(-3px);
-  border-color: rgba(123, 137, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .mkt-feature h3,
@@ -513,14 +491,9 @@ a.mkt-feature-link {
   color: var(--mkt-accent);
 }
 
-.mkt-feature:nth-child(3n) .mkt-icon {
-  background: rgba(42, 212, 184, 0.16);
-  color: var(--mkt-accent-2);
-}
-
-.mkt-feature:nth-child(3n+2) .mkt-icon {
-  background: rgba(201, 164, 106, 0.16);
-  color: #e0c48a;
+.mkt-feature:nth-child(n) .mkt-icon {
+  background: rgba(88, 122, 246, 0.16);
+  color: #d5defc;
 }
 
 .mkt-faq details {
@@ -784,7 +757,7 @@ body:has(.mkt-consent),
   line-height: 1.55;
 }
 
-/* Auth modal — must stay in site.css (marketing entry). Without these rules the
+/* Auth modal, must stay in site.css (marketing entry). Without these rules the
    overlay is position:static and Sign In / Google render under the footer. */
 .login-modal-overlay {
   position: fixed !important;
@@ -800,7 +773,7 @@ body:has(.mkt-consent),
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   overflow-y: auto;
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif;
 }
 
 .login-modal {
@@ -822,7 +795,7 @@ body:has(.mkt-consent),
 .login-modal button,
 .login-modal textarea,
 .login-modal select {
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif;
 }
 
 .login-modal h2 {
@@ -962,7 +935,7 @@ body:has(.mkt-consent),
   box-shadow: 0 0 0 3px rgba(123, 137, 255, 0.18);
 }
 
-/* Direct child only — the submit button. Without the ">" this also matched
+/* Direct child only, the submit button. Without the ">" this also matched
    the inline "Terms of Service"/"Privacy Policy" <button> links nested
    inside the terms checkbox label, turning them into big gradient pill
    buttons that wrapped awkwardly instead of reading as plain inline text. */
@@ -971,7 +944,7 @@ body:has(.mkt-consent),
   border: 0;
   border-radius: 11px;
   color: #fff;
-  background: linear-gradient(135deg, #5865f2, #7b89ff);
+  background: #587af6;
   font-family: var(--mkt-font-body);
   font-size: 15px;
   font-weight: 700;
@@ -1053,7 +1026,7 @@ body:has(.mkt-consent),
   font-size: 14px;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(180deg, #6d78f5, #5865f2);
+  background: #587af6;
 }
 
 .login-modal .forgot-password-flow .auth-submit:disabled {
@@ -1189,7 +1162,7 @@ body:has(.mkt-consent),
     padding: 11px;
     border-radius: 9px;
     color: #fff;
-    background: linear-gradient(135deg, #5865f2, #7b89ff);
+    background: #587af6;
     font-size: 13px;
     font-weight: 700;
     text-decoration: none;
@@ -1567,9 +1540,9 @@ body:has(.mkt-consent),
 
 .seo-verdict {
   padding: 16px 18px;
-  border-left: 3px solid var(--mkt-accent);
-  border-radius: 0 12px 12px 0;
-  background: rgba(88, 101, 242, 0.1);
+  border: 1px solid var(--mkt-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--mkt-text);
   line-height: 1.55;
 }
@@ -1710,7 +1683,7 @@ body:has(.mkt-consent),
   margin-top: 8px;
 }
 
-/* Product UI preview — first-viewport trust signal for SEO landings */
+/* Product UI preview, first-viewport trust signal for SEO landings */
 .seo-product-preview {
   margin: 22px 0 0;
   max-width: 720px;
@@ -1818,7 +1791,7 @@ body:has(.mkt-consent),
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #7b89ff, #23a55a);
+  background: #587af6;
 }
 
 .seo-pp-controls {
@@ -2176,9 +2149,16 @@ body:has(.mkt-consent),
   .mkt-hero,
   .mkt-hero-split,
   .mkt-section,
-  .mkt-sticky-cta {
+  .mkt-sticky-cta,
+  .mkt .mkt-btn,
+  .mkt-btn {
     animation: none;
     transition: none;
+  }
+
+  .mkt .mkt-btn:active,
+  .mkt-btn:active {
+    transform: none;
   }
 }
 

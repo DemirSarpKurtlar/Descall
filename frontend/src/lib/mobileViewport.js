@@ -17,7 +17,7 @@ function isTextEditing(active) {
  *
  * While typing, follow the visual viewport so the composer stays above the
  * keyboard. After dismiss, ignore a leftover pan and use the full layout
- * height — iOS otherwise leaves the page shifted down on a black band.
+ * height, iOS otherwise leaves the page shifted down on a black band.
  */
 export function mobileViewportBox({
   innerHeight,
@@ -33,7 +33,7 @@ export function mobileViewportBox({
   const left = Math.max(0, Math.round(Number(offsetLeft) || 0));
   const gap = Math.max(0, layoutH - visibleH - top);
   // UIKit overlap when WKWebView does not shrink for the keyboard. Already
-  // included in `gap` when the visual viewport did shrink — never add both.
+  // included in `gap` when the visual viewport did shrink, never add both.
   const native = Math.max(0, Math.round(Number(nativeInset) || 0));
   const covered = Math.max(gap, native);
   const open =

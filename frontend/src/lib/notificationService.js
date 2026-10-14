@@ -52,7 +52,7 @@ class NotificationService {
     // so a burst across DM/group/server never swallows a different chat)
     this._lastByTag = new Map();
     this.pendingNotifications = [];
-    // tag → timeout id — prevents duplicate notifications for the same event
+    // tag → timeout id, prevents duplicate notifications for the same event
     this._activeByTag = new Map();
     // tag → { notification, data } for page Notification handles.
     // requireInteraction call cards never time out; without the handle nothing
@@ -76,7 +76,7 @@ class NotificationService {
       if (Notification.permission === 'granted') {
         this.hasPermission = true;
       }
-      // Don't auto-request on init — let requestPermission() be called explicitly
+      // Don't auto-request on init, let requestPermission() be called explicitly
       // so the browser doesn't block the prompt (requires user gesture in some browsers)
     }
 
@@ -147,7 +147,7 @@ class NotificationService {
     try {
       if (incomingTicket && !incomingShowStillCurrent(this._incomingGate, incomingTicket)) return;
 
-      // Rate limit per tag — skip non-call repeats of the same chat during cooldown
+      // Rate limit per tag, skip non-call repeats of the same chat during cooldown
       const now = Date.now();
       const lastForTag = this._lastByTag.get(tag) || 0;
       if (!requireInteraction && now - lastForTag < COOLDOWN_MS) return;
@@ -384,7 +384,7 @@ class NotificationService {
     const incomingTicket = beginIncomingShow(this._incomingGate, "group", groupId);
     const tag = groupId ? `group-call-${groupId}` : `group-call-${groupName || "Grup"}`;
     await this.show({
-      title: `📞 ${t("{groupName} — Group Call", { groupName })}`,
+      title: `📞 ${t("{groupName} | Group Call", { groupName })}`,
       body: t("{from} started a group call", { from }),
       tag,
       requireInteraction: true,

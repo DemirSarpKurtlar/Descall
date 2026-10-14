@@ -6,7 +6,7 @@ import { SITE_OPERATOR } from "../siteIdentity";
 import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
 
 /**
- * Public status / trust page — factual Beta note + live API health probe.
+ * Public status / trust page, factual Beta note + live API health probe.
  * No fabricated uptime percentages.
  */
 export default function StatusPage() {
@@ -64,7 +64,6 @@ export default function StatusPage() {
           </span>
         ))}
       </nav>
-      <p className="mkt-kicker">{t("Status")}</p>
       <h1>{t("Descall service status")}</h1>
       <p className="mkt-lead">
         {t(SITE_OPERATOR.statusNote)} {t("Last updated")}: {SITE_OPERATOR.lastUpdatedLabel}.
@@ -77,7 +76,7 @@ export default function StatusPage() {
           {api.state === "ok" && t("Operational")}
           {api.state === "degraded" && t("Degraded")}
           {api.state === "unreachable" && t("Unreachable from this browser")}
-          {api.detail ? ` — ${api.detail}` : ""}
+          {api.detail ? `, ${api.detail}` : ""}
         </span>
       </div>
 

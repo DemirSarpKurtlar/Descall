@@ -1,5 +1,5 @@
 /**
- * Catalog sound packs — premium MP3 ringtone / notification families.
+ * Catalog sound packs, premium MP3 ringtone / notification families.
  * Assets live in /public/sounds/packs/{effect_key}/
  *   incoming-call.mp3 | outgoing-call.mp3 | notification.mp3 | message.mp3
  *

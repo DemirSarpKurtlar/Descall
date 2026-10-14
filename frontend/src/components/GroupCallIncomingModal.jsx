@@ -6,7 +6,7 @@ import { hapticImpactLight } from "../lib/fluid/haptics";
 import { resolveDisplayName } from "../lib/userProfile";
 
 /**
- * Floating incoming group call modal — FaceTime-style avatar rings.
+ * Floating incoming group call modal, FaceTime-style avatar rings.
  */
 export default function GroupCallIncomingModal({ incomingCall, onAccept, onDecline }) {
   const t = useT();

@@ -119,8 +119,8 @@ function hexToRgba(hex, alpha) {
 // A purchased premium theme fully re-tints `--primary` (and every other
 // token) via its `[data-theme="…"]` CSS block. The custom "Accent Color"
 // swatch picker used to set these same properties as an *inline* style on
-// <html>, which — because inline styles always beat stylesheet rules,
-// regardless of selector specificity — permanently pinned every theme's
+// <html>, which, because inline styles always beat stylesheet rules,
+// regardless of selector specificity, permanently pinned every theme's
 // accent back to the default/custom color and made premium themes look
 // broken. When a premium theme is equipped we now clear the inline accent
 // overrides instead of (re)applying them, so the theme's own CSS wins.
@@ -697,7 +697,7 @@ const UserPanel = forwardRef(function UserPanel({
       const ownedIds = new Set((inventory || []).map((i) => i.itemId));
       setOwnedThemes((items || []).filter((i) => i.category === "theme" && ownedIds.has(i.id)));
     } catch {
-      /* best-effort — Appearance tab still works with Dark/Light only */
+      /* best-effort, Appearance tab still works with Dark/Light only */
     }
   }, []);
 
@@ -706,7 +706,7 @@ const UserPanel = forwardRef(function UserPanel({
   }, [loadOwnedThemes]);
 
   // A theme bought in the Shop tab must show up here without requiring a
-  // full settings reopen — refresh the owned list whenever this tab is
+  // full settings reopen, refresh the owned list whenever this tab is
   // opened, not just once on the panel's very first mount.
   useEffect(() => {
     if (activeTab === "appearance") loadOwnedThemes();
@@ -714,7 +714,7 @@ const UserPanel = forwardRef(function UserPanel({
 
   const handleEquippedChange = useCallback(() => {
     // Re-fetch /auth/me so the resolved item (name, asset_url) is available
-    // app-wide immediately — nav rail, message avatars, profile modal, etc.
+    // app-wide immediately, nav rail, message avatars, profile modal, etc.
     // Also refresh the Appearance tab's owned-themes list, since a Shop-tab
     // purchase/equip must show up there without needing a full reopen.
     // Callers await this so their "busy" state (and any imperative
@@ -910,7 +910,7 @@ const UserPanel = forwardRef(function UserPanel({
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           stream.getTracks().forEach((t) => t.stop());
         } catch {
-          /* permission denied or no input device — still enumerate */
+          /* permission denied or no input device, still enumerate */
         }
       }
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -1268,7 +1268,7 @@ const UserPanel = forwardRef(function UserPanel({
       return;
     }
     setProfileError("");
-    // Animated GIFs keep animation — skip crop. Still images open crop/zoom.
+    // Animated GIFs keep animation, skip crop. Still images open crop/zoom.
     if (file.type === "image/gif") {
       await persistAvatarFile(file);
       return;
@@ -1447,7 +1447,7 @@ const UserPanel = forwardRef(function UserPanel({
           <div className="us-tab us-profile-tab">
             <p className="us-lead">{t("Update how others see you across Descall.")}</p>
 
-            {/* Live profile card — tap the banner or the photo to change them.
+            {/* Live profile card, tap the banner or the photo to change them.
                 Photo & banner save immediately (same crop flow as Hesabım). */}
             <div className="us-pe-card">
               {glassShell && isMobile && (
@@ -1795,7 +1795,7 @@ const UserPanel = forwardRef(function UserPanel({
                   title={t("Email address")}
                   description={
                     emailVerified
-                      ? t("Verified — used for sign-in codes and account alerts.")
+                      ? t("Verified, used for sign-in codes and account alerts.")
                       : t("Verify your email to enable two-factor authentication.")
                   }
                 >
@@ -2272,7 +2272,7 @@ const UserPanel = forwardRef(function UserPanel({
                 ))}
               </div>
               <div className={`us-bubble-preview bubble-${bubbleStyle}`}>
-                <div className="us-bubble-demo other">{t("Hey — how’s it going?")}</div>
+                <div className="us-bubble-demo other">{t("Hey, how’s it going?")}</div>
                 <div className="us-bubble-demo own">{t("Pretty good! You?")}</div>
               </div>
             </section>
@@ -2724,7 +2724,7 @@ const UserPanel = forwardRef(function UserPanel({
     getUnderlay: settingsUnderlay,
     // Same dim as the sheet backdrop so the hand-over is seamless.
     dimOpacity: 0.45,
-    // AnimatePresence plays the sheet exit after close — keep it hidden until it unmounts.
+    // AnimatePresence plays the sheet exit after close, keep it hidden until it unmounts.
     persistUntilUnmount: true,
     priority: 20,
   });

@@ -26,7 +26,7 @@ const READY_POLL_MS = 250;
 const READY_POLL_TRIES = 20;
 const MUTE_GRACE_MS = 700;
 // First seconds of a call: sample every second and act on two silent samples
-// (~2–3 s) — an interrupted capture produces digital silence (energy frozen),
+// (~2–3 s), an interrupted capture produces digital silence (energy frozen),
 // which a real microphone never does, so this doesn't trip on a quiet room.
 const STATS_START_MS = 1_000;
 const STATS_START_WINDOW_MS = 15_000;

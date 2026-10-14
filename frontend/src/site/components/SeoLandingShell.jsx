@@ -15,11 +15,10 @@ function Chevron() {
 
 /**
  * Premium long-form SEO landing shell: breadcrumbs, H1, lead, sections, FAQ, CTA.
- * No framer-motion — keeps niche landings off the motion vendor chunk until needed elsewhere.
+ * No framer-motion, keeps niche landings off the motion vendor chunk until needed elsewhere.
  */
 export default function SeoLandingShell({
   breadcrumbs = [],
-  kicker,
   title,
   lead,
   children,
@@ -56,7 +55,6 @@ export default function SeoLandingShell({
       )}
 
       <header className="seo-hero">
-        {kicker && <div className="mkt-kicker">{kicker}</div>}
         <h1>{title}</h1>
         {lead && <p className="seo-lead">{lead}</p>}
         {(primaryCta || secondaryCta) && (
@@ -86,7 +84,7 @@ export default function SeoLandingShell({
 
       <section className="seo-bottom-cta">
         <h2>{t("Ready to try a lighter Discord alternative?")}</h2>
-        <p>{t("Create a free Descall account — chat, voice, screen share, and LFG in one place.")}</p>
+        <p>{t("Create a free account. Chat, voice, screen share, and LFG stay on the same account.")}</p>
         <div className="mkt-cta-row">
           {primaryCta || (
             <Link to="/register" className="mkt-btn mkt-btn-primary">

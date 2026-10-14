@@ -1,5 +1,5 @@
 /* ============================================
-   Liquid Glass — calls (Stage 4)
+   Liquid Glass, calls (Stage 4)
    Screens 06 / 07 / 08 / 19. iPhone only (html.glass-ui).
    Real blur: header capsule + control bar. Tiles are flat gradients.
    During a call, html.g-in-call drops blur to the glass-lite budget.
@@ -258,7 +258,7 @@ html.glass-ui .g-call-grid.is-group .participant-tile-avatar-core > .ui-avatar {
   font-size: 72px !important;
 }
 
-/* Control capsule — equal slots, End on the right. */
+/* Control capsule, equal slots, End on the right. */
 html.glass-ui .g-call .call-control-bar.g-call-ctrl {
   position: absolute !important;
   left: 12px !important;

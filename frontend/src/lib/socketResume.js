@@ -6,7 +6,7 @@
  * dropped it (missed pongs) or the TCP path is gone. Socket.IO only notices
  * when its ping timer (pingInterval + pingTimeout = 45 s) fires, and a socket
  * that did notice may be sitting in a reconnect backoff (up to 30 s). Anything
- * emitted in the meantime (call:resume-pending, call:answer) is lost — that is
+ * emitted in the meantime (call:resume-pending, call:answer) is lost, that is
  * what made "unlock → open Descall → join the call" take 10 s+.
  *
  * On foreground we therefore:
@@ -93,7 +93,7 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
     }
     // disconnect() + connect() drops the dead engine and resets the backoff,
     // so the new handshake starts right away. socket.active must be restored
-    // by connect() — the caller still owns this socket.
+    // by connect(), the caller still owns this socket.
     socket.disconnect();
     socket.connect();
   }
@@ -160,7 +160,7 @@ export function installSocketResumeWatchdog(socket, opts = {}) {
   const onOnline = () => onForeground("online");
 
   // Capture on window so this runs before document-level visibility handlers
-  // (e.g. the CallKit bridge's resume request) — they then see the real state.
+  // (e.g. the CallKit bridge's resume request), they then see the real state.
   window.addEventListener("visibilitychange", onVisibility, true);
   document.addEventListener("resume", onResume); // Capacitor native resume
   window.addEventListener("online", onOnline);

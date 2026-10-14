@@ -47,7 +47,7 @@ export async function getValorantMe({ accessToken, entitlementToken, region } = 
   return parse(res);
 }
 
-/** Persist public identity only — no tokens. */
+/** Persist public identity only, no tokens. */
 export async function linkValorantSession(body) {
   const res = await fetch(`${BASE}/session/link`, {
     method: "POST",
@@ -65,7 +65,7 @@ export async function disconnectValorantSession() {
   return parse(res);
 }
 
-/** Adım 3 — party / queue (needs live Riot tokens in headers when available). */
+/** Adım 3, party / queue (needs live Riot tokens in headers when available). */
 async function partyFetch(path, { method = "GET", body, accessToken, entitlementToken, region, puuid } = {}) {
   const extra = riotTokenHeaders({ accessToken, entitlementToken });
   const q = new URLSearchParams();
@@ -148,14 +148,14 @@ export function setValorantPartyAccessibility(accessibility, tokens = {}) {
   });
 }
 
-/* ─── Adım 6 — wallet / inventory / loadout / daily store ─── */
+/* ─── Adım 6, wallet / inventory / loadout / daily store ─── */
 
 export async function getValorantStoreStatus() {
   const res = await fetch(`${BASE}/store/status`, { headers: getHeaders() });
   return parse(res);
 }
 
-/** GET /api/valorant/wallet — VP / Radianite / Kingdom */
+/** GET /api/valorant/wallet, VP / Radianite / Kingdom */
 export function getValorantWallet(tokens = {}) {
   return partyFetch("/wallet", { method: "GET", ...tokens });
 }
@@ -165,7 +165,7 @@ export function getValorantOwnedSkins(tokens = {}) {
   return partyFetch("/inventory/skins", { method: "GET", ...tokens });
 }
 
-/** GET /api/valorant/skins/:uuid — catalog media (levels/chromas + streamedVideo); no Riot tokens required */
+/** GET /api/valorant/skins/:uuid, catalog media (levels/chromas + streamedVideo); no Riot tokens required */
 export async function getValorantSkinDetail(uuid) {
   const res = await fetch(`${BASE}/skins/${encodeURIComponent(uuid)}`, {
     headers: getHeaders(),
@@ -179,7 +179,7 @@ export function getValorantLoadout(tokens = {}) {
 }
 
 /**
- * PUT /api/valorant/loadout — equip guns/sprays/identity (reflects in-game).
+ * PUT /api/valorant/loadout, equip guns/sprays/identity (reflects in-game).
  * @param {object} patch { guns?, sprays?, identity?, incognito?, raw? }
  */
 export function putValorantLoadout(patch, tokens = {}) {
@@ -207,7 +207,7 @@ export function patchValorantLoadout(patch, tokens = {}) {
   });
 }
 
-/** GET /api/valorant/store/offers — daily skins + featured bundles */
+/** GET /api/valorant/store/offers, daily skins + featured bundles */
 export function getValorantStoreOffers(tokens = {}) {
   return partyFetch("/store/offers", { method: "GET", ...tokens });
 }
@@ -216,7 +216,7 @@ export function getValorantStorefront(tokens = {}) {
   return partyFetch("/store/storefront", { method: "GET", ...tokens });
 }
 
-/* ─── Adım 4 — friends / presence (API + Electron hooks for the Companion panel) ─── */
+/* ─── Adım 4, friends / presence (API + Electron hooks for the Companion panel) ─── */
 
 export async function getValorantFriendsStatus() {
   const res = await fetch(`${BASE}/friends/status`, { headers: getHeaders() });
@@ -253,7 +253,7 @@ export function inviteValorantFriendToParty(riotIdOrParts, tokens = {}) {
   });
 }
 
-/* ─── Adım 5 — missions / contracts / battle pass ─── */
+/* ─── Adım 5, missions / contracts / battle pass ─── */
 
 export async function getValorantMissionsStatus() {
   const res = await fetch(`${BASE}/missions/status`, { headers: getHeaders() });
@@ -276,7 +276,7 @@ export function getValorantBattlePass(tokens = {}) {
   return partyFetch("/battlepass", { method: "GET", ...tokens });
 }
 
-/** POST /api/valorant/contracts/activate — body: { contractId } */
+/** POST /api/valorant/contracts/activate, body: { contractId } */
 export function activateValorantContract(contractId, tokens = {}) {
   return partyFetch("/contracts/activate", {
     method: "POST",

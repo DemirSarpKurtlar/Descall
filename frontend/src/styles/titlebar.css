@@ -141,7 +141,7 @@ body.electron-app .server-icon-bar {
   max-height: 100% !important;
   min-height: 0 !important;
 }
-/* Do NOT set height on .app-sidebar-shell — desktop uses display:contents so
+/* Do NOT set height on .app-sidebar-shell, desktop uses display:contents so
    nav+sidebar participate in the app-root grid. Height here re-boxes the shell. */
 
 /* Fullscreen overlays stay under the titlebar so window controls remain usable */
@@ -154,7 +154,7 @@ body.electron-app [data-call-overlay="true"] {
 }
 
 body.electron-app .user-settings-shell.is-desktop {
-  /* inset shorthand: top right bottom left — never set inset:auto after edges */
+  /* inset shorthand: top right bottom left, never set inset:auto after edges */
   inset: var(--electron-titlebar-h, 36px) 0 0 0 !important;
   width: auto !important;
   height: auto !important;
@@ -243,7 +243,7 @@ body.electron-app .app-chat-keep[hidden],
 
 /* Shells fill #root. #root is already the visible box under the title bar
    and above any taskbar overlap, so 100vh here would stick out the bottom
-   and clip the rail user icon. Do not switch these to height:auto — a grid
+   and clip the rail user icon. Do not switch these to height:auto, a grid
    row with an indefinite height collapses and lifts the icon off the bottom. */
 body.electron-app .app-root,
 body.electron-app .nav-rail,

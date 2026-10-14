@@ -329,7 +329,7 @@ function LanguageToggle({ locale, onSwitch }) {
         className={locale === "tr" ? "is-active" : ""}
         onClick={() => onSwitch("tr")}
         aria-pressed={locale === "tr"}
-        aria-label="TR — Türkçe"
+        aria-label="TR, Türkçe"
       >
         TR
       </button>
@@ -338,7 +338,7 @@ function LanguageToggle({ locale, onSwitch }) {
         className={locale === "en" ? "is-active" : ""}
         onClick={() => onSwitch("en")}
         aria-pressed={locale === "en"}
-        aria-label="EN — English"
+        aria-label="EN, English"
       >
         EN
       </button>

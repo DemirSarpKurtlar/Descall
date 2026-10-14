@@ -781,7 +781,7 @@ export default function ProfileCustomization({ me, onUpdate }) {
                   <span>{t("Email address")}</span>
                   <small>
                     {emailVerified
-                      ? t("Verified — used for sign-in codes and account alerts.")
+                      ? t("Verified, used for sign-in codes and account alerts.")
                       : t("Verify your email to enable two-factor authentication.")}
                   </small>
                 </div>

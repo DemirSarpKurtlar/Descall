@@ -18,7 +18,7 @@ function assert(condition, message) {
 
 assert(hub.includes('import LfgWorkspace from "../lfg/LfgWorkspace"'), "hub must mount existing LFG");
 assert(hub.includes("<LfgWorkspace"), "hub must render LfgWorkspace");
-assert(!hub.includes("onClose={onClose}"), "hub must own Back — do not pass onClose into LFG");
+assert(!hub.includes("onClose={onClose}"), "hub must own Back, do not pass onClose into LFG");
 assert(hub.includes("resolveValorantTab"), "tab resolves against feature flags");
 assert(hub.includes('|| "companion"'), "default tab must be Companion");
 assert(hub.includes('role="tablist"'), "hub tabs must be accessible");
@@ -220,13 +220,13 @@ assert(
 );
 
 
-/* v2.9.46 — Companion + LFG bottom fill (no height:100% / double pad void) */
+/* v2.9.46, Companion + LFG bottom fill (no height:100% / double pad void) */
 assert(css.includes("is-mobile-accordion"), "mobile accordion styles present");
 assert(!/is-mobile-accordion \{[\s\S]{0,140}height:\s*100%/.test(css), "accordion must not force height 100% (void)");
 assert(mobileCss.includes("lfg-sidebar") && mobileCss.includes("valorant-companion.is-mobile-accordion"), "mobile.css fills companion + LFG");
 assert(mobileCss.includes("Never min-height:100dvh") || mobileCss.includes("min-height: 0 !important"), "play root avoids min-height 100dvh void");
 
-/* v2.9.47 — LFG hides Companion; gap/pad matches measured tab bar */
+/* v2.9.47, LFG hides Companion; gap/pad matches measured tab bar */
 assert(hub.includes('tab === "companion"'), "Companion panel mounts only when active");
 assert(hub.includes("<CompanionAuthPanel"), "Companion still mounts on companion tab");
 assert(hub.includes("<LfgWorkspace"), "LFG stays mounted for lobby state");

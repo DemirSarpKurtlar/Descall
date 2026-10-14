@@ -1,7 +1,7 @@
 /**
  * Full text of the Terms of Service and Privacy Policy, in Turkish and
  * English. Rendered by LegalContentModal (registration flow) and by the
- * marketing site's /terms and /privacy pages — this file is the single
+ * marketing site's /terms and /privacy pages, this file is the single
  * source of truth so both surfaces always show the exact same text.
  *
  * Structure: { tr: { title, updated, intro, sections: [{ heading, paragraphs: [...] }] }, en: {...} }
@@ -269,7 +269,7 @@ export const TERMS_CONTENT = {
         heading: "12. Account Suspension and Termination",
         paragraphs: [
           "We reserve the right to suspend or permanently close your account without prior notice if we determine that you have violated these Terms, community rules, or applicable law. Depending on the severity, a warning may be issued first, but this is not guaranteed in every case.",
-          "You may close your account at any time from the settings menu or by contacting us. Upon account closure, related data — including your DesCoin balance, purchased digital items, and message history — is deleted or anonymized in accordance with our applicable data retention policy; this action is irreversible and does not give rise to any right of compensation.",
+          "You may close your account at any time from the settings menu or by contacting us. Upon account closure, related data, including your DesCoin balance, purchased digital items, and message history, is deleted or anonymized in accordance with our applicable data retention policy; this action is irreversible and does not give rise to any right of compensation.",
           "The provisions of this section survive termination alongside other provisions that by their nature should survive (intellectual property, limitation of liability, indemnification, dispute resolution).",
         ],
       },
@@ -502,7 +502,7 @@ export const PRIVACY_CONTENT = {
       {
         heading: "7. Data Retention",
         paragraphs: [
-          "We retain your data for as long as your account is active and as necessary to provide the Service. When you close your account, deletion is requested and, after a 14-day period, your personal data — including message history, DesCoin balance, and shop inventory — is deleted or anonymized, except where we have a legal obligation to retain it. Analytics data is kept until you withdraw consent. An email on the product-update list is kept until you unsubscribe.",
+          "We retain your data for as long as your account is active and as necessary to provide the Service. When you close your account, deletion is requested and, after a 14-day period, your personal data, including message history, DesCoin balance, and shop inventory, is deleted or anonymized, except where we have a legal obligation to retain it. Analytics data is kept until you withdraw consent. An email on the product-update list is kept until you unsubscribe.",
           "Security logs and activity records kept for cheat detection purposes may be retained for a limited additional period for the purpose of investigating abuse.",
         ],
       },

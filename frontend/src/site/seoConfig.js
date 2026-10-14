@@ -5,7 +5,7 @@ import { stripLocalePrefix } from "./localePaths.js";
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
 export const DEFAULT_ORIGIN = "https://descall.com";
-// PNG — Instagram/Facebook rasterize SVG poorly (dark smudge next to wordmark).
+// PNG, Instagram/Facebook rasterize SVG poorly (dark smudge next to wordmark).
 export const DEFAULT_OG_IMAGE = "/og-default.png";
 export const SUPPORTED_LOCALES = ["en", "tr"];
 
@@ -24,7 +24,7 @@ export function siteOrigin() {
 
 /**
  * Canonical public origin for SEO (canonical, OG, JSON-LD, hreflang).
- * Always descall.com — never preview/onrender hosts — so Google consolidates signals.
+ * Always descall.com, never preview/onrender hosts, so Google consolidates signals.
  */
 export function canonicalOrigin() {
   return DEFAULT_ORIGIN;
@@ -40,18 +40,18 @@ export function absoluteUrl(path = "/") {
 export const PUBLIC_ROUTES = [
   {
     path: "/",
-    title: "Descall — Voice Chat, Servers & Screen Share",
+    title: "Descall | Voice Chat, Servers & Screen Share",
     description:
-      "HD voice, video, screen share, and Discord-style servers — plus LFG. Free chat for friends and gamers. Start in the browser or download Windows.",
+      "HD voice, video, screen share, and Discord-style servers, plus LFG. Free chat for friends and gamers. Start in the browser or download Windows.",
     image: "/og-default.png",
     changefreq: "daily",
     priority: "1.0",
   },
   {
     path: "/download",
-    title: "Download Descall for Windows — Free Voice Chat App",
+    title: "Download Descall for Windows | Free Voice Chat App",
     description:
-      "Get the Windows desktop app, Android build, or full web app. Free voice, video, screen share, and servers — install in a minute.",
+      "Get the Windows desktop app, Android build, or full web app. Free voice, video, screen share, and servers, install in a minute.",
     image: "/og-download.png",
     changefreq: "weekly",
     priority: "0.9",
@@ -59,7 +59,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/features",
-    title: "Descall Features — Free Voice, Screen Share & Servers",
+    title: "Descall Features | Free Voice, Screen Share & Servers",
     description:
       "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG. No Nitro wall on talking.",
     image: "/og-features.png",
@@ -69,9 +69,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/discord-alternative",
-    title: "Free Discord Alternative — Voice, Screen Share & LFG",
+    title: "Free Discord Alternative | Voice, Screen Share & LFG",
     description:
-      "A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free — no Nitro paywall.",
+      "A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free, no Nitro paywall.",
     image: "/og-discord.png",
     h1: "The best free Discord alternative for friends & gamers",
     changefreq: "weekly",
@@ -80,20 +80,20 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/alternatives",
-    title: "Discord Alternatives Compared — Free Voice & Servers",
+    title: "Discord Alternatives Compared | Free Voice & Servers",
     description:
       "Honest 2026 comparison of Discord alternatives: Descall, Discord, Guilded, TeamSpeak, Telegram. Free voice, screen share, and friend-group servers.",
-    h1: "Discord alternatives compared — pick by what you actually need",
+    h1: "Discord alternatives compared | pick by what you actually need",
     changefreq: "weekly",
     priority: "0.9",
     keywords: "discord alternatives, apps like discord, best discord alternatives 2026",
   },
   {
     path: "/compare/discord",
-    title: "Discord vs Descall (2026) — Which Should You Use?",
+    title: "Discord vs Descall (2026) | Which Should You Use?",
     description:
       "Side-by-side Discord vs Descall: servers, roles, voice, screen share, LFG, mobile, and price. Clear verdict for friend groups vs mega-communities.",
-    h1: "Discord vs Descall — which fits your group in 2026?",
+    h1: "Discord vs Descall | which fits your group in 2026?",
     changefreq: "weekly",
     priority: "0.95",
     keywords: "discord vs descall, descall vs discord",
@@ -118,7 +118,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/discord-alternative-for-lfg",
-    title: "Discord Alternative for LFG — Lobbies | Descall",
+    title: "Discord Alternative for LFG | Lobbies | Descall",
     description:
       "LFG app built into a Discord alternative: Play tab lobbies, party codes, link, then jump straight into voice.",
     changefreq: "weekly",
@@ -127,7 +127,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/discord-alternative-for-voice-chat",
-    title: "Voice Chat Alternative to Discord — Free Calls | Descall",
+    title: "Voice Chat Alternative to Discord | Free Calls | Descall",
     description:
       "Free voice chat alternative to Discord with WebRTC calls, screen share quality presets, and no Nitro paywall on talking to friends.",
     changefreq: "weekly",
@@ -136,16 +136,16 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/discord-alternative-for-friends",
-    title: "Discord Alternative for Friends — DMs, Groups & Voice",
+    title: "Discord Alternative for Friends | DMs, Groups & Voice",
     description:
-      "Discord alternative for friends: DMs, groups, presence, and free voice/video. Skip server admin — keep the people you actually call.",
+      "Discord alternative for friends: DMs, groups, presence, and free voice/video. Skip server admin, keep the people you actually call.",
     changefreq: "weekly",
     priority: "0.88",
     keywords: "discord alternative for friends, group chat alternative to discord",
   },
   {
     path: "/apps-like-discord",
-    title: "Apps Like Discord (2026) — Websites & Platforms Compared",
+    title: "Apps Like Discord (2026) | Websites & Platforms Compared",
     description:
       "Looking for apps like Discord, websites like Discord, or platforms like Discord? Compare options and see when Descall is the better free pick.",
     changefreq: "weekly",
@@ -156,14 +156,14 @@ export const PUBLIC_ROUTES = [
     path: "/discord-replacement",
     title: "Discord Replacement for Friend Groups | Switch to Descall",
     description:
-      "Need a Discord replacement for nightly voice and DMs? Migrate your friend group to Descall in two weeks — keep Discord only for mega-servers.",
+      "Need a Discord replacement for nightly voice and DMs? Migrate your friend group to Descall in two weeks, keep Discord only for mega-servers.",
     changefreq: "weekly",
     priority: "0.88",
     keywords: "discord replacement, alternative to discord, switch from discord",
   },
   {
     path: "/discord-alternative-turkey",
-    title: "Türkiye için Discord Alternatifi — Ücretsiz Sesli Sohbet",
+    title: "Türkiye için Discord Alternatifi | Ücretsiz Sesli Sohbet",
     description:
       "Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve LFG. Türkçe arayüz.",
     image: "/og-discord.png",
@@ -174,7 +174,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog",
-    title: "Descall Blog — Discord Alternatives, LFG & Voice Chat Guides",
+    title: "Descall Blog | Discord Alternatives, LFG & Voice Chat Guides",
     description:
       "Practical guides on Discord alternatives, Discord competitors, LFG, voice chat, and migrating friend groups to Descall.",
     changefreq: "weekly",
@@ -182,9 +182,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog/discord-vs-descall",
-    title: "Discord vs Descall (2026) — Which Should Your Group Use?",
+    title: "Discord vs Descall (2026) | Which Should Your Group Use?",
     description:
-      "Honest Discord vs Descall comparison for chat, voice, screen share, LFG, and pricing — when a lighter Discord alternative wins.",
+      "Honest Discord vs Descall comparison for chat, voice, screen share, LFG, and pricing, when a lighter Discord alternative wins.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
@@ -200,7 +200,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog/leave-nitro-keep-voice-chat",
-    title: "Leave Nitro. Keep Voice Chat. — Migration Guide",
+    title: "Leave Nitro. Keep Voice Chat. | Migration Guide",
     description:
       "Move your friend group off Discord Nitro habits to a free Discord alternative with voice, video, and screen share.",
     changefreq: "monthly",
@@ -209,34 +209,34 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog/best-discord-alternatives-2026",
-    title: "Best Discord Alternatives in 2026 — Honest Shortlist",
+    title: "Best Discord Alternatives in 2026 | Honest Shortlist",
     description:
-      "Best Discord alternatives in 2026 for friends, voice, and LFG — how Descall, Discord, Guilded, and others actually compare.",
+      "Best Discord alternatives in 2026 for friends, voice, and LFG, how Descall, Discord, Guilded, and others actually compare.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
   },
   {
     path: "/blog/apps-like-discord",
-    title: "Apps Like Discord — What to Use Instead in 2026",
+    title: "Apps Like Discord | What to Use Instead in 2026",
     description:
-      "Apps like Discord explained by job-to-be-done: friend voice, communities, or pure voice servers — and where Descall fits.",
+      "Apps like Discord explained by job-to-be-done: friend voice, communities, or pure voice servers, and where Descall fits.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
   },
   {
     path: "/blog/discord-competitors",
-    title: "Discord Competitors in 2026 — Who Actually Competes",
+    title: "Discord Competitors in 2026 | Who Actually Competes",
     description:
-      "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics — plus where Descall competes honestly.",
+      "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics, plus where Descall competes honestly.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
   },
   {
     path: "/blog/discord-alternative-for-communities-guide",
-    title: "Discord Alternative for Communities — Practical Guide",
+    title: "Discord Alternative for Communities | Practical Guide",
     description:
       "How small communities pick a Discord alternative: groups, invites, voice hangouts, and when to stay on Discord.",
     changefreq: "monthly",
@@ -245,7 +245,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog/voice-chat-alternative-to-discord",
-    title: "Voice Chat Alternative to Discord — Free Calls Guide",
+    title: "Voice Chat Alternative to Discord | Free Calls Guide",
     description:
       "Looking for a voice chat alternative to Discord? How Descall handles free WebRTC calls, screen share, and gaming nights.",
     changefreq: "monthly",
@@ -254,7 +254,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog/migrate-from-discord-to-descall",
-    title: "Migrate from Discord to Descall — practical checklist",
+    title: "Migrate from Discord to Descall | practical checklist",
     description:
       "Step-by-step migration from Discord to Descall: invite friends, recreate servers with templates, move LFG, and keep voice nights free.",
     changefreq: "monthly",
@@ -263,7 +263,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/faq",
-    title: "Descall FAQ — Is It Free? Voice, Screen Share & Apps",
+    title: "Descall FAQ | Is It Free? Voice, Screen Share & Apps",
     description:
       "Quick answers: is Descall free, how calls and screen share work, Windows/Android download, LFG, accounts, and privacy.",
     changefreq: "weekly",
@@ -271,15 +271,15 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/security",
-    title: "Descall Security — TLS, WebRTC DTLS/SRTP & Accounts",
+    title: "Descall Security | TLS, WebRTC DTLS/SRTP & Accounts",
     description:
-      "Descall security: HTTPS/TLS for web, WebRTC DTLS/SRTP for calls, bcrypt passwords, and honest limits — no default E2E claim for stored chat history.",
+      "Descall security: HTTPS/TLS for web, WebRTC DTLS/SRTP for calls, bcrypt passwords, and honest limits, no default E2E claim for stored chat history.",
     changefreq: "monthly",
     priority: "0.6",
   },
   {
     path: "/status",
-    title: "Descall Status — Beta service & API health",
+    title: "Descall Status | Beta service & API health",
     description:
       "Descall public status: Beta product stage, API health probe, transport security, and how to reach support.",
     changefreq: "daily",
@@ -287,7 +287,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/privacy",
-    title: "Descall Privacy Policy — GDPR/KVKK data practices",
+    title: "Descall Privacy Policy | GDPR/KVKK data practices",
     image: "/og-privacy.png",
     description:
       "Descall Privacy Policy: what we collect (account, messages, IP, call metadata), how long we keep it, processors (Supabase, Resend, FCM), and your access/deletion rights.",
@@ -304,7 +304,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/terms",
-    title: "Descall Terms of Service — Age, Acceptable Use & Accounts",
+    title: "Descall Terms of Service | Age, Acceptable Use & Accounts",
     image: "/og-terms.png",
     description:
       "Terms of Service for Descall web and desktop apps: age requirements (13+), acceptable use, account suspension, DesCoin cosmetics, and liability limits.",
@@ -313,7 +313,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/about",
-    title: "About Descall — Independent Chat App from Türkiye",
+    title: "About Descall | Independent Chat App from Türkiye",
     image: "/og-about.png",
     description:
       "Descall is owned by Demir Sarp Kurtlar, the founder, owner, and CEO. Independent beta voice-and-chat app from Türkiye. Contact contact@descall.com.",
@@ -323,7 +323,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/who-owns-descall",
-    title: "Who owns Descall? Demir Sarp Kurtlar — Founder, Owner & CEO",
+    title: "Who owns Descall? Demir Sarp Kurtlar | Founder, Owner & CEO",
     description:
       "Descall is owned by Demir Sarp Kurtlar. He is the founder, owner, and CEO of Descall. Exact spelling: Demir Sarp Kurtlar.",
     h1: "Who owns Descall?",
@@ -333,7 +333,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/descall-sahibi",
-    title: "Descall’ın sahibi kim? Demir Sarp Kurtlar — Kurucu, sahip ve CEO",
+    title: "Descall’ın sahibi kim? Demir Sarp Kurtlar | Kurucu, sahip ve CEO",
     description:
       "Descall’ın sahibi Demir Sarp Kurtlar’dır. Demir Sarp Kurtlar, Descall’ın kurucusu, sahibi ve CEO’sudur.",
     h1: "Descall’ın sahibi kim?",
@@ -344,14 +344,14 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/contact",
-    title: "Contact Descall Support — Email & Security Reports",
+    title: "Contact Descall Support | Email & Security Reports",
     description:
       "Email contact@descall.com for Descall support, feedback, press, or security reports. Operated by Demir Sarp Kurtlar in Türkiye.",
     image: "/og-contact.png",
   },
   {
     path: "/iletisim",
-    title: "Descall İletişim — Destek, sahip ve güvenlik",
+    title: "Descall İletişim | Destek, sahip ve güvenlik",
     description:
       "Descall iletişim: contact@descall.com. Sahip ve kurucu Demir Sarp Kurtlar. Destek, geri bildirim ve güvenlik bildirimleri.",
     lang: "tr",
@@ -361,7 +361,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/gizlilik",
-    title: "Descall Gizlilik Politikası — KVKK ve veriler",
+    title: "Descall Gizlilik Politikası | KVKK ve veriler",
     description:
       "Descall gizlilik politikası Türkçe: hesap, mesajlar, IP ve arama üst verisi, saklama süreleri, erişim ve silme hakları.",
     lang: "tr",
@@ -371,7 +371,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/kosullar",
-    title: "Descall Kullanım Koşulları — Yaş, kurallar, hesap",
+    title: "Descall Kullanım Koşulları | Yaş, kurallar, hesap",
     description:
       "Descall hizmet şartları Türkçe: 13 yaş sınırı, kabul edilebilir kullanım, hesaplar ve iletişim için contact@descall.com.",
     lang: "tr",
@@ -381,7 +381,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr",
-    title: "Descall — Sesli Sohbet, Sunucular ve Ekran Paylaşımı",
+    title: "Descall | Sesli Sohbet, Sunucular ve Ekran Paylaşımı",
     description:
       "HD ses, görüntü, ekran paylaşımı ve sunucular. Arkadaş grupları ve oyuncular için ücretsiz sohbet. Tarayıcı veya Windows.",
     image: "/og-default.png",
@@ -390,7 +390,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr/features",
-    title: "Descall Özellikleri — Ücretsiz Ses ve Ekran Paylaşımı",
+    title: "Descall Özellikleri | Ücretsiz Ses ve Ekran Paylaşımı",
     description:
       "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, sunucular, roller, şablonlar ve LFG. Konuşmak için abonelik yok.",
     image: "/og-features.png",
@@ -399,16 +399,16 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr/download",
-    title: "Descall İndir — Windows için Ücretsiz Sesli Sohbet",
+    title: "Descall İndir | Windows için Ücretsiz Sesli Sohbet",
     description:
-      "Windows kurucusu, Android APK veya tarayıcı. Ücretsiz ses, görüntü, ekran paylaşımı ve sunucular — bir dakikada kur.",
+      "Windows kurucusu, Android APK veya tarayıcı. Ücretsiz ses, görüntü, ekran paylaşımı ve sunucular, bir dakikada kur.",
     image: "/og-download.png",
     changefreq: "weekly",
     priority: "0.85",
   },
   {
     path: "/tr/faq",
-    title: "Descall SSS — Ücretsiz mi, indirme, arama, LFG",
+    title: "Descall SSS | Ücretsiz mi, indirme, arama, LFG",
     description:
       "Descall sık sorulan sorular: ücretsiz mi, Windows ve Android indirme, sesli arama, ekran paylaşımı, LFG, hesap ve gizlilik.",
     changefreq: "weekly",
@@ -419,14 +419,14 @@ export const PUBLIC_ROUTES = [
     title: "Discord mu Descall mı? 2026 Karşılaştırması",
     description:
       "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı, LFG ve fiyat. Arkadaş grubu için hangisi daha uygun?",
-    h1: "Discord mu Descall mı — 2026 karşılaştırması",
+    h1: "Discord mu Descall mı | 2026 karşılaştırması",
     changefreq: "weekly",
     priority: "0.9",
     keywords: "descall vs discord, discord alternatifi karşılaştırma",
   },
   {
     path: "/tr/about",
-    title: "Descall Hakkında — Türkiye’den bağımsız uygulama",
+    title: "Descall Hakkında | Türkiye’den bağımsız uygulama",
     image: "/og-about.png",
     description:
       "Descall, Demir Sarp Kurtlar tarafından Türkiye’de geliştirilen bağımsız bir beta uygulamasıdır. Destek: contact@descall.com.",
@@ -435,7 +435,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr/contact",
-    title: "Descall Destek — Türkçe iletişim sayfası",
+    title: "Descall Destek | Türkçe iletişim sayfası",
     image: "/og-contact.png",
     description:
       "Türkçe Descall destek sayfası: geri bildirim, basın ve güvenlik bildirimleri için contact@descall.com. Sahip Demir Sarp Kurtlar.",
@@ -444,7 +444,7 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr/security",
-    title: "Descall Güvenlik — TLS, hesaplar ve aramalar",
+    title: "Descall Güvenlik | TLS, hesaplar ve aramalar",
     description:
       "Descall güvenlik özeti Türkçe: HTTPS/TLS, WebRTC DTLS/SRTP, hesap koruması ve saklanan sohbet için dürüst sınırlar.",
     changefreq: "monthly",
@@ -461,11 +461,11 @@ export function routeMeta(pathname) {
     const enHit = PUBLIC_ROUTES.find((r) => r.path === stripped);
     if (enHit) return { ...enHit, noindex: false };
   }
-  // Auth deep-links — crawlable entry should be marketing pages, not thin auth URLs
+  // Auth deep-links, crawlable entry should be marketing pages, not thin auth URLs
   if (clean === "/register" || clean === "/login") {
     return {
       path: clean,
-      title: clean === "/register" ? "Create account — Descall" : "Sign in — Descall",
+      title: clean === "/register" ? "Create account | Descall" : "Sign in | Descall",
       description: "Create a free Descall account for chat, voice, video, and screen share.",
       noindex: true,
     };
@@ -480,7 +480,7 @@ export function routeMeta(pathname) {
   }
   return {
     path: clean,
-    title: "Page not found — Descall",
+    title: "Page not found | Descall",
     description: "This page does not exist on Descall.",
     noindex: true,
   };
@@ -503,11 +503,11 @@ const TR_TITLES = {
       "Descall’a telif bildirimi veya karşı bildirim göndermek için contact@descall.com adresini kullanın.",
   },
   "/login": {
-    title: "Giriş yap — Descall",
+    title: "Giriş yap | Descall",
     description: "Descall hesabınıza giriş yapın. Sohbet, ses, görüntü ve ekran paylaşımı.",
   },
   "/register": {
-    title: "Hesap oluştur — Descall",
+    title: "Hesap oluştur | Descall",
     description: "Ücretsiz Descall hesabı oluşturun. Sohbet, ses, görüntü ve ekran paylaşımı.",
   },
   "/status": {
@@ -515,11 +515,11 @@ const TR_TITLES = {
     description: "Descall beta hizmet durumu, API sağlığı ve destek.",
   },
   "/blog": {
-    title: "Descall blog — Discord alternatifleri ve LFG",
+    title: "Descall blog | Discord alternatifleri ve LFG",
     description: "Descall rehberleri: Discord alternatifi, LFG ve sesli sohbet.",
   },
   "/alternatives": {
-    title: "Discord alternatifleri — Descall karşılaştırması",
+    title: "Discord alternatifleri | Descall karşılaştırması",
     description: "Discord alternatiflerini Descall ile karşılaştırın. Ücretsiz ses, sunucular ve ekran paylaşımı.",
   },
 };
@@ -532,10 +532,10 @@ export function routeMetaForLocale(pathname, locale) {
   const bare = stripLocalePrefix(clean);
   const override = TR_TITLES[bare] || TR_TITLES[clean];
   if (override) return { ...meta, ...override, lang: "tr" };
-  if (meta.title === "Page not found — Descall") {
+  if (meta.title === "Page not found, Descall") {
     return {
       ...meta,
-      title: "Sayfa bulunamadı — Descall",
+      title: "Sayfa bulunamadı | Descall",
       description: "Bu sayfa Descall’da bulunmuyor.",
       lang: "tr",
     };

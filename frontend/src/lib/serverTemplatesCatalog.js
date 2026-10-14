@@ -6,7 +6,7 @@
 export const BLANK_TEMPLATE = {
   id: "blank",
   name: "Start from scratch",
-  description: "Empty server with only @everyone — build channels and roles yourself.",
+  description: "Empty server with only @everyone, build channels and roles yourself.",
   accent: "#94a3b8",
   icon: "Sparkles",
   highlights: ["No channels", "@everyone only", "Full control"],
@@ -44,7 +44,7 @@ export const SERVER_TEMPLATES = [
     id: "friends",
     name: "Friends hangout",
     description:
-      "Cozy private group setup — lounge chat, plans, music nights, and always-on voice rooms.",
+      "Cozy private group setup, lounge chat, plans, music nights, and always-on voice rooms.",
     accent: "#a78bfa",
     icon: "Users",
     highlights: ["Lounge chat", "Plans board", "Music night", "Always-on VC"],

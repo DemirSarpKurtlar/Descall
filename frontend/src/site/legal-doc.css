@@ -2,7 +2,7 @@
 
 .legal-doc {
   color: #e8edf6;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif;
 }
 
 .legal-doc-hero {
@@ -23,7 +23,7 @@
 
 .legal-doc h1 {
   margin: 0;
-  font-family: Outfit, Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
   font-size: clamp(28px, 4vw, 40px);
   line-height: 1.1;
   letter-spacing: -0.035em;
@@ -185,7 +185,7 @@
   align-items: center;
   gap: 10px;
   margin: 0 0 10px;
-  font-family: Outfit, Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
   font-size: 22px;
   line-height: 1.25;
   letter-spacing: -0.03em;

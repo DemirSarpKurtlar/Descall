@@ -1,4 +1,4 @@
-/* Stage 7 — settings, play, activity, shop, status, toasts, announcements.
+/* Stage 7, settings, play, activity, shop, status, toasts, announcements.
    Visual only. Layout, data, and iOS glass stay as they are. */
 
 html.glass-desktop {
@@ -375,7 +375,7 @@ html.glass-desktop .conv-confirm-btn.danger {
   background: rgba(255, 69, 58, 0.14);
 }
 
-/* Create / announcements / feedback sheets — same heavy glass as confirm
+/* Create / announcements / feedback sheets, same heavy glass as confirm
    and server settings. The scrim blur above already covers the backdrops. */
 html.glass-desktop .add-modal,
 html.glass-desktop .feedback-modal {

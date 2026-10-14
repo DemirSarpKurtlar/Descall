@@ -1,6 +1,6 @@
 /**
  * Rich crawlable HTML bodies for core marketing pages (used by prerender-seo.mjs).
- * Keep in sync with React pages — this is the bot-visible body, not a thin meta stub.
+ * Keep in sync with React pages, this is the bot-visible body, not a thin meta stub.
  */
 import { FAQ_ITEMS } from "../faqData.js";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
@@ -123,14 +123,16 @@ export function corePageBody(path) {
       return `
 <main>
   ${brandBlock(isTr)}
-  <p class="seo-kicker"><span class="seo-brand-beta">Beta</span> ${escapeHtml(copy.statusNote)}</p>
   <h1>${escapeHtml(copy.h1)}</h1>
   <p class="seo-lead">${escapeHtml(copy.lead)}</p>
   ${heroCtaHtml(isTr)}
-  <h2>${escapeHtml(copy.why)}</h2>
-  ${cardGrid(copy.whyCards)}
-  <h2>${escapeHtml(copy.core)}</h2>
-  ${cardGrid(copy.featureCards)}
+  <h2>${escapeHtml(copy.voiceTitle)}</h2>
+  <p>${escapeHtml(copy.voiceBody)}</p>
+  <h2>${escapeHtml(copy.serversTitle)}</h2>
+  <p>${escapeHtml(copy.serversBody)}</p>
+  <ul>
+    ${copy.serversPoints.map((item) => `<li>${escapeHtml(item)}</li>`).join("\n    ")}
+  </ul>
   ${navBlock(isTr)}
 </main>`;
     }
@@ -139,7 +141,7 @@ export function corePageBody(path) {
       return `
 <main>
   ${brandBlock(isTr)}
-  <h1>${escapeHtml(trCopy("Descall Features — Free Voice, Screen Share & Servers", isTr))}</h1>
+  <h1>${escapeHtml(trCopy("Descall Features, Free Voice, Screen Share & Servers", isTr))}</h1>
   <p>${escapeHtml(trCopy("See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG.", isTr))}</p>
   <h2>${escapeHtml(trCopy("Servers & community tools", isTr))}</h2>
   <ul>
@@ -157,7 +159,7 @@ export function corePageBody(path) {
   <h2>${escapeHtml(trCopy("Gaming extras", isTr))}</h2>
   <ul>
     <li>${escapeHtml(trCopy("LFG lobbies, party codes, and linking", isTr))}</li>
-    <li>${escapeHtml(trCopy("Optional DesCoin cosmetics — core chat and calls stay free", isTr))}</li>
+    <li>${escapeHtml(trCopy("Optional DesCoin cosmetics, core chat and calls stay free", isTr))}</li>
   </ul>
   <p><a href="${h("/download")}">${escapeHtml(n.download)}</a> · <a href="${h("/compare/discord")}">${escapeHtml(trCopy("Descall vs Discord", isTr))}</a></p>
   ${navBlock(isTr)}
@@ -183,13 +185,13 @@ export function corePageBody(path) {
       return `
 <main>
   ${brandBlock(isTr)}
-  <h1>${escapeHtml(trCopy("Download Descall for Windows — Free Voice Chat App", isTr))}</h1>
+  <h1>${escapeHtml(trCopy("Download Descall for Windows, Free Voice Chat App", isTr))}</h1>
   <p>${escapeHtml(trCopy("Get the Windows desktop app, Android builds, or the full web app in your browser.", isTr))}</p>
   <h2>${escapeHtml(trCopy("Platforms", isTr))}</h2>
   <ul>
     <li>${escapeHtml(trCopy("Windows installer for the native desktop client", isTr))}</li>
     <li>${escapeHtml(trCopy("Android APK builds for mobile", isTr))}</li>
-    <li>${escapeHtml(trCopy("Full-featured web app at descall.com — no install required", isTr))}</li>
+    <li>${escapeHtml(trCopy("Full-featured web app at descall.com, no install required", isTr))}</li>
   </ul>
   <h2>${escapeHtml(trCopy("What you get", isTr))}</h2>
   <ul>
@@ -220,7 +222,7 @@ export function corePageBody(path) {
     <li>${escapeHtml(trCopy("Source", isTr))}: <a href="${SITE_OPERATOR.githubUrl}">GitHub</a></li>
   </ul>
   <h2>${escapeHtml(trCopy("What we build", isTr))}</h2>
-  <p>${escapeHtml(trCopy("Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG — with privacy policies and security docs you can actually read.", isTr))}</p>
+  <p>${escapeHtml(trCopy("Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG, with privacy policies and security docs you can actually read.", isTr))}</p>
   <p>${escapeHtml(trCopy("Last updated", isTr))}: ${escapeHtml(isTr ? SITE_OPERATOR.lastUpdatedLabelTr : SITE_OPERATOR.lastUpdatedLabel)}</p>
   ${navBlock(isTr)}
 </main>`;
@@ -238,7 +240,7 @@ export function corePageBody(path) {
     <li>Owner / founder / CEO: Demir Sarp Kurtlar</li>
     <li>Exact spelling: Demir Sarp Kurtlar</li>
     <li>Based in: ${escapeHtml(SITE_OPERATOR.country)}</li>
-    <li>Independent: yes — not owned by Discord, Google, OpenAI, or another parent company</li>
+    <li>Independent: yes, not owned by Discord, Google, OpenAI, or another parent company</li>
     <li>GitHub: <a href="${SITE_OPERATOR.githubProfileUrl}">${SITE_OPERATOR.githubProfileUrl.replace("https://", "")}</a></li>
     <li>Contact: <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></li>
   </ul>
@@ -263,7 +265,7 @@ export function corePageBody(path) {
     <li>Sahip / kurucu / CEO: Demir Sarp Kurtlar</li>
     <li>Yazım: Demir Sarp Kurtlar</li>
     <li>Ülke: ${escapeHtml(SITE_OPERATOR.country)}</li>
-    <li>Bağımsız: evet — Discord, Google, OpenAI veya başka bir ana şirkete ait değil</li>
+    <li>Bağımsız: evet, Discord, Google, OpenAI veya başka bir ana şirkete ait değil</li>
     <li>GitHub: <a href="${SITE_OPERATOR.githubProfileUrl}">${SITE_OPERATOR.githubProfileUrl.replace("https://", "")}</a></li>
     <li>İletişim: <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></li>
   </ul>
@@ -280,9 +282,9 @@ export function corePageBody(path) {
 <main>
   ${brandBlock(isTr)}
   <h1>${escapeHtml(trCopy("Security at Descall", isTr))}</h1>
-  <p>${escapeHtml(trCopy("How Descall protects chats and calls — encryption in transit, account security, and honest limits.", isTr))}</p>
+  <p>${escapeHtml(trCopy("How Descall protects chats and calls, encryption in transit, account security, and honest limits.", isTr))}</p>
   <h2>Transport encryption (not default E2E)</h2>
-  <p>Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server — messages are encrypted in transit and stored to deliver chat history to your devices.</p>
+  <p>Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored to deliver chat history to your devices.</p>
   <h2>Voice &amp; video</h2>
   <p>Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally, that is outside Descall's control.</p>
   <h2>${escapeHtml(trCopy("Accounts", isTr))}</h2>
@@ -348,7 +350,7 @@ export function corePageBody(path) {
     case "/copyright":
       return legalHtml(isTr ? COPYRIGHT_CONTENT.tr : COPYRIGHT_CONTENT.en, isTr, "copyright");
 
-    case "/discord-alternative": return `\n<main> ${brandBlock(isTr)} <h1>The best free Discord alternative for friends &amp; gamers</h1> <p>A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free — no Nitro paywall.</p> ${ctaRow("/compare/discord", "Discord vs Descall")} <h2>What you get</h2> <ul> <li>Discord-style servers with roles, channels, and templates</li> <li>Free real-time chat, group voice/video, and screen share</li> <li>Built-in LFG without bot hell</li> <li>Windows, Android, and full web app</li> </ul> <p><a href="/alternatives">Compare Discord alternatives</a> · <a href="/discord-alternative-turkey">Türkçe</a> · <a href="/download">Download</a></p>
+    case "/discord-alternative": return `\n<main> ${brandBlock(isTr)} <h1>The best free Discord alternative for friends &amp; gamers</h1> <p>A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free, no Nitro paywall.</p> ${ctaRow("/compare/discord", "Discord vs Descall")} <h2>What you get</h2> <ul> <li>Discord-style servers with roles, channels, and templates</li> <li>Free real-time chat, group voice/video, and screen share</li> <li>Built-in LFG without bot hell</li> <li>Windows, Android, and full web app</li> </ul> <p><a href="/alternatives">Compare Discord alternatives</a> · <a href="/discord-alternative-turkey">Türkçe</a> · <a href="/download">Download</a></p>
   ${faqHtml(ALTERNATIVE_HUB_FAQ, isTr)}
   ${navBlock(isTr)}
 </main>`;
@@ -357,7 +359,7 @@ export function corePageBody(path) {
       return `
 <main>
   ${brandBlock(isTr)}
-  <h1>Discord alternatives compared — pick by what you actually need</h1>
+  <h1>Discord alternatives compared, pick by what you actually need</h1>
   <p>Honest 2026 comparison of Discord alternatives: Descall, Discord, Guilded, TeamSpeak, Telegram. Free voice, screen share, and friend-group servers.</p>
   ${ctaRow("/discord-alternative", "Why Descall")}
   <h2>How to choose</h2>
@@ -369,9 +371,9 @@ export function corePageBody(path) {
   </ol>
   <h2>Shortlist</h2>
   <ul>
-    <li><a href="/discord-alternative">Descall</a> — free Discord alternative for friends, servers, and LFG</li>
-    <li><a href="/compare/discord">Discord</a> — still strongest for bots and huge publics</li>
-    <li>Guilded, TeamSpeak/Mumble, Telegram — fit narrower jobs</li>
+    <li><a href="/discord-alternative">Descall</a>, free Discord alternative for friends, servers, and LFG</li>
+    <li><a href="/compare/discord">Discord</a>, still strongest for bots and huge publics</li>
+    <li>Guilded, TeamSpeak/Mumble, Telegram, fit narrower jobs</li>
   </ul>
   ${faqHtml(ALTERNATIVES_FAQ, isTr)}
   ${navBlock(isTr)}
@@ -380,14 +382,14 @@ export function corePageBody(path) {
     case "/compare/discord": {
       const tr = original.startsWith("/tr");
       const h1 = tr
-        ? "Discord mu Descall mı — 2026 karşılaştırması"
-        : "Discord vs Descall — which fits your group in 2026?";
+        ? "Discord mu Descall mı, 2026 karşılaştırması"
+        : "Discord vs Descall, which fits your group in 2026?";
       const lead = tr
         ? "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı, LFG ve fiyat. Arkadaş grubu için hangisi daha uygun?"
         : "Side-by-side Discord vs Descall: servers, roles, voice, screen share, LFG, mobile, and price. Clear verdict for friend groups vs mega-communities.";
       const verdictDescall = tr
-        ? "Daha hafif bir Discord alternatifi, gerçek sunucular, ses, ekran paylaşımı ve LFG istiyorsan Descall önde — temel özellikler ücretsiz."
-        : "wins if you want a lighter Discord alternative with real servers, friends voice, screen share, and LFG — with free core features.";
+        ? "Daha hafif bir Discord alternatifi, gerçek sunucular, ses, ekran paylaşımı ve LFG istiyorsan Descall önde, temel özellikler ücretsiz."
+        : "wins if you want a lighter Discord alternative with real servers, friends voice, screen share, and LFG, with free core features.";
       const verdictDiscord = tr
         ? "Dev bot ekosistemi ve kocaman kamu sunucuları için Discord hâlâ güçlü. Birçok grup ikisini birden kullanır."
         : "still wins for massive bot ecosystems. Many groups run both.";

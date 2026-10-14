@@ -1,12 +1,12 @@
 /** Shared long-form SEO content for Discord-alternative landings (EN source of truth). */
 
 export const COMPARE_ROWS = [
-  { feature: "Real-time chat & DMs", descall: "Yes — fast, modern UI", discord: "Yes" },
-  { feature: "Servers with channels", descall: "Yes — text, voice, stage + categories", discord: "Yes — mature tree model" },
-  { feature: "Roles & permissions", descall: "Yes — role hierarchy + channel overrides", discord: "Yes — deep matrix" },
-  { feature: "Server templates", descall: "Yes — gaming, community, study & more", discord: "Limited community templates" },
-  { feature: "Group voice & video", descall: "Yes — WebRTC + TURN", discord: "Yes" },
-  { feature: "Screen share quality control", descall: "Yes — presets & restart-safe", discord: "Yes" },
+  { feature: "Real-time chat & DMs", descall: "Yes, fast, modern UI", discord: "Yes" },
+  { feature: "Servers with channels", descall: "Yes, text, voice, stage + categories", discord: "Yes, mature tree model" },
+  { feature: "Roles & permissions", descall: "Yes, role hierarchy + channel overrides", discord: "Yes, deep matrix" },
+  { feature: "Server templates", descall: "Yes, gaming, community, study & more", discord: "Limited community templates" },
+  { feature: "Group voice & video", descall: "Yes, WebRTC + TURN", discord: "Yes" },
+  { feature: "Screen share quality control", descall: "Yes, presets & restart-safe", discord: "Yes" },
   { feature: "LFG / party finder", descall: "Built-in Play tab + link", discord: "Bots / external tools" },
   { feature: "Friends, presence & status", descall: "Yes", discord: "Yes" },
   { feature: "Push notifications", descall: "Web / desktop / mobile FCM", discord: "Yes" },
@@ -24,7 +24,7 @@ export const COMPARE_ROWS = [
 export const COMPARE_FAQ = [
   {
     q: "Is Descall a Discord alternative?",
-    a: "Yes. Descall is a free Discord alternative with real-time chat, servers (roles, channels, voice), group video, screen share, and gamer-focused LFG — without Nitro paywalls for core features.",
+    a: "Yes. Descall is a free Discord alternative with real-time chat, servers (roles, channels, voice), group video, screen share, and gamer-focused LFG, without Nitro paywalls for core features.",
   },
   {
     q: "Does Descall have servers like Discord?",
@@ -48,19 +48,19 @@ export const COMPARE_FAQ = [
   },
   {
     q: "Is Descall free?",
-    a: "Yes. Messaging, servers, voice, video, and screen share are free. Optional cosmetics use DesCoin — they do not gate core communication.",
+    a: "Yes. Messaging, servers, voice, video, and screen share are free. Optional cosmetics use DesCoin, they do not gate core communication.",
   },
   {
     q: "Does Descall support end-to-end encrypted messages?",
-    a: "Descall encrypts traffic in transit (TLS / secure WebRTC). It does not currently market full E2E message encryption like a sealed messenger — we stay accurate about that.",
+    a: "Descall encrypts traffic in transit (TLS / secure WebRTC). It does not currently market full E2E message encryption like a sealed messenger, we stay accurate about that.",
   },
 ];
 
-/** Unique FAQ for /discord-alternative — do not reuse COMPARE_FAQ (duplicate FAQ schema). */
+/** Unique FAQ for /discord-alternative, do not reuse COMPARE_FAQ (duplicate FAQ schema). */
 export const ALTERNATIVE_HUB_FAQ = [
   {
     q: "What is a Discord alternative?",
-    a: "A Discord alternative is an app that covers the same jobs — chat, servers, voice, video, and screen share — without copying Discord’s UI or Nitro model. Descall is built as a lighter free option for friends, gamers, and small communities.",
+    a: "A Discord alternative is an app that covers the same jobs, chat, servers, voice, video, and screen share, without copying Discord’s UI or Nitro model. Descall is built as a lighter free option for friends, gamers, and small communities.",
   },
   {
     q: "What is the best free Discord alternative in 2026?",
@@ -68,7 +68,7 @@ export const ALTERNATIVE_HUB_FAQ = [
   },
   {
     q: "Does a Discord alternative need servers like Discord?",
-    a: "Not always — some apps are DM-only. Descall includes Discord-style servers (roles, channels, templates) plus DMs, so friend groups can keep structure without running a second tool.",
+    a: "Not always, some apps are DM-only. Descall includes Discord-style servers (roles, channels, templates) plus DMs, so friend groups can keep structure without running a second tool.",
   },
   {
     q: "Is there a Discord alternative with screen share and LFG?",
@@ -80,7 +80,7 @@ export const ALTERNATIVE_HUB_FAQ = [
   },
 ];
 
-/** Unique FAQ for /alternatives — comparison intent, not a clone of the vs-Discord page. */
+/** Unique FAQ for /alternatives, comparison intent, not a clone of the vs-Discord page. */
 export const ALTERNATIVES_FAQ = [
   {
     q: "What are the best Discord alternatives in 2026?",
@@ -91,12 +91,12 @@ export const ALTERNATIVES_FAQ = [
     a: "Descall keeps messaging, servers, voice, video, and screen share free. Optional cosmetics never lock talking to friends. Always check whether a listed “free” app paywalls calls.",
   },
   {
-    q: "Discord alternative vs Discord clone — what’s the difference?",
+    q: "Discord alternative vs Discord clone, what’s the difference?",
     a: "A clone copies Discord’s server UI. An alternative solves the same jobs with a different product. Descall is an alternative: servers and calls exist, but the app stays lighter and LFG is built in.",
   },
   {
     q: "Are there Discord alternatives for gamers and LFG?",
-    a: "Yes. Look for voice lobbies, screen share, and a party finder. Descall’s Play tab and server templates are built for that — see the gamers and LFG pages.",
+    a: "Yes. Look for voice lobbies, screen share, and a party finder. Descall’s Play tab and server templates are built for that, see the gamers and LFG pages.",
   },
   {
     q: "Should I keep Discord and also use an alternative?",
@@ -107,7 +107,7 @@ export const ALTERNATIVES_FAQ = [
 export const ALTERNATIVE_PILLARS = [
   {
     title: "Servers ready in minutes",
-    body: "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides — gaming, community, study, friends, or streaming.",
+    body: "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides, gaming, community, study, friends, or streaming.",
   },
   {
     title: "Roles, channels & moderation",
@@ -115,7 +115,7 @@ export const ALTERNATIVE_PILLARS = [
   },
   {
     title: "Built for friends & LFG",
-    body: "Descall still prioritizes DMs, presence, and a dedicated Play tab for LFG — so squads can queue and hop into server voice in one app.",
+    body: "Descall still prioritizes DMs, presence, and a dedicated Play tab for LFG, so squads can queue and hop into server voice in one app.",
   },
   {
     title: "Calls without the bloat",
@@ -123,7 +123,7 @@ export const ALTERNATIVE_PILLARS = [
   },
   {
     title: "Free core, optional cosmetics",
-    body: "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin — not a Nitro-style lock on talking to friends.",
+    body: "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin, not a Nitro-style lock on talking to friends.",
   },
   {
     title: "Desktop + web + Android",
@@ -146,7 +146,7 @@ export const GAMER_FAQ = [
   },
   {
     q: "Can I screen share while gaming?",
-    a: "Yes. Use Descall voice/video calls with screen share quality presets — useful for reviewing VODs, showing loadouts, or watching together.",
+    a: "Yes. Use Descall voice/video calls with screen share quality presets, useful for reviewing VODs, showing loadouts, or watching together.",
   },
 ];
 
@@ -156,7 +156,7 @@ export const TURKEY_FAQ = [
     a: "Descall; sohbet, sunucular (roller, kanallar, ses), ses/görüntülü arama, ekran paylaşımı ve LFG odaklı ücretsiz bir Discord alternatifidir.",
   },
   {
-    q: "Discord muadili ne demek — Descall uygun mu?",
+    q: "Discord muadili ne demek, Descall uygun mu?",
     a: "Discord muadili, aynı işi (sohbet, ses, sunucu) gören başka bir uygulamadır. Descall, Nitro zorunluluğu olmadan ses, ekran paylaşımı ve sunucu seven gruplar için bir Discord muadilidir.",
   },
   {
@@ -172,7 +172,7 @@ export const TURKEY_FAQ = [
     a: "Evet. Sıfırdan veya hazır şablonlarla sunucu kurabilirsin: yazı/ses kanalları, roller, izinler, davetler ve moderasyon araçları hazır gelir.",
   },
   {
-    q: "Türkiye’den Discord alternatifi arıyorum — Descall uygun mu?",
+    q: "Türkiye’den Discord alternatifi arıyorum, Descall uygun mu?",
     a: "Evet. Türkçe arayüz desteği, web + Windows istemcisi, Android ve sunucu sistemiyle Descall, Türkiye’deki oyuncu grupları için pratik bir Discord alternatifidir.",
   },
   {
@@ -191,7 +191,7 @@ export const BLOG_POSTS = [
     path: "/blog/discord-vs-descall",
     title: "Discord vs Descall: which should your group use in 2026?",
     description:
-      "An honest Discord vs Descall comparison for chat, servers, roles, voice, screen share, LFG, and pricing — when a lighter Discord alternative wins.",
+      "An honest Discord vs Descall comparison for chat, servers, roles, voice, screen share, LFG, and pricing, when a lighter Discord alternative wins.",
     date: "2026-08-11",
     updated: "2026-08-14",
     tags: ["Discord alternative", "Comparison"],
@@ -199,9 +199,9 @@ export const BLOG_POSTS = [
   {
     slug: "best-discord-alternatives-2026",
     path: "/blog/best-discord-alternatives-2026",
-    title: "Best Discord alternatives in 2026 — honest shortlist",
+    title: "Best Discord alternatives in 2026 | honest shortlist",
     description:
-      "Best Discord alternatives in 2026 for friends, servers, voice, and LFG — how Descall, Discord, Guilded, and others actually compare.",
+      "Best Discord alternatives in 2026 for friends, servers, voice, and LFG, how Descall, Discord, Guilded, and others actually compare.",
     date: "2026-08-11",
     updated: "2026-08-14",
     tags: ["Discord alternatives", "Roundup"],
@@ -209,9 +209,9 @@ export const BLOG_POSTS = [
   {
     slug: "apps-like-discord",
     path: "/blog/apps-like-discord",
-    title: "Apps like Discord — what to use instead in 2026",
+    title: "Apps like Discord | what to use instead in 2026",
     description:
-      "Apps like Discord explained by job-to-be-done: friend voice, community servers, or pure voice rooms — and where Descall fits.",
+      "Apps like Discord explained by job-to-be-done: friend voice, community servers, or pure voice rooms, and where Descall fits.",
     date: "2026-08-11",
     updated: "2026-08-14",
     tags: ["Apps like Discord", "Comparison"],
@@ -219,9 +219,9 @@ export const BLOG_POSTS = [
   {
     slug: "discord-competitors",
     path: "/blog/discord-competitors",
-    title: "Discord competitors in 2026 — who actually competes",
+    title: "Discord competitors in 2026 | who actually competes",
     description:
-      "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics — plus where Descall competes honestly.",
+      "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics, plus where Descall competes honestly.",
     date: "2026-08-11",
     updated: "2026-08-14",
     tags: ["Discord competitors", "Market"],
@@ -249,7 +249,7 @@ export const BLOG_POSTS = [
   {
     slug: "discord-alternative-for-communities-guide",
     path: "/blog/discord-alternative-for-communities-guide",
-    title: "Discord alternative for communities — practical guide",
+    title: "Discord alternative for communities | practical guide",
     description:
       "How small communities pick a Discord alternative: servers, roles, invites, voice hangouts, and when to stay on Discord.",
     date: "2026-08-11",
@@ -259,7 +259,7 @@ export const BLOG_POSTS = [
   {
     slug: "voice-chat-alternative-to-discord",
     path: "/blog/voice-chat-alternative-to-discord",
-    title: "Voice chat alternative to Discord — free calls guide",
+    title: "Voice chat alternative to Discord | free calls guide",
     description:
       "Looking for a voice chat alternative to Discord? How Descall handles free WebRTC calls, server voice, screen share, and gaming nights.",
     date: "2026-08-11",
@@ -269,7 +269,7 @@ export const BLOG_POSTS = [
   {
     slug: "migrate-from-discord-to-descall",
     path: "/blog/migrate-from-discord-to-descall",
-    title: "Migrate from Discord to Descall — practical checklist",
+    title: "Migrate from Discord to Descall | practical checklist",
     description:
       "Step-by-step migration from Discord to Descall: invite friends, recreate servers with templates, move LFG, and keep voice nights free.",
     date: "2026-08-14",
@@ -279,7 +279,7 @@ export const BLOG_POSTS = [
 
 ];
 
-/** Per-post FAQ — unique questions so blog pages do not clone COMPARE_FAQ schema. */
+/** Per-post FAQ, unique questions so blog pages do not clone COMPARE_FAQ schema. */
 export const BLOG_FAQ_BY_SLUG = {
   "discord-vs-descall": [
     {
@@ -288,7 +288,7 @@ export const BLOG_FAQ_BY_SLUG = {
     },
     {
       q: "Is this Discord vs Descall comparison sponsored?",
-      a: "No. Descall makes the product, and the article states where Discord still wins — bots, giant communities, and broader historic client coverage.",
+      a: "No. Descall makes the product, and the article states where Discord still wins, bots, giant communities, and broader historic client coverage.",
     },
   ],
   "best-discord-alternative-for-lfg": [
@@ -334,7 +334,7 @@ export const BLOG_FAQ_BY_SLUG = {
   "discord-competitors": [
     {
       q: "Who actually competes with Discord in 2026?",
-      a: "Lighter friend apps, gaming suites, and classic voice tools. Descall competes on free calls, servers, and LFG — not on Discord’s bot catalog.",
+      a: "Lighter friend apps, gaming suites, and classic voice tools. Descall competes on free calls, servers, and LFG, not on Discord’s bot catalog.",
     },
     {
       q: "Is every chat app a Discord competitor?",
@@ -344,7 +344,7 @@ export const BLOG_FAQ_BY_SLUG = {
   "discord-alternative-for-communities-guide": [
     {
       q: "Can a small community leave Discord?",
-      a: "Yes if you need roles, channels, invites, and voice hangouts — not a giant bot list. Descall templates cover that setup.",
+      a: "Yes if you need roles, channels, invites, and voice hangouts, not a giant bot list. Descall templates cover that setup.",
     },
     {
       q: "When should a community stay on Discord?",
@@ -378,7 +378,7 @@ export const BLOG_RELATED = [
   { to: "/alternatives", label: "All alternatives" },
   { to: "/apps-like-discord", label: "Apps like Discord" },
   { to: "/discord-alternative-for-lfg", label: "LFG" },
-  { to: "/features", label: "Features — servers & more" },
+  { to: "/features", label: "Features, servers & more" },
   { to: "/security", label: "Security & encryption" },
   { to: "/download", label: "Download Descall" },
   { to: "/faq", label: "FAQ" },

@@ -53,7 +53,7 @@ const HREFLANG_PAIRS = [
   { en: "/terms", tr: "/kosullar" },
 ];
 
-/** True when the URL itself is Turkish — chrome must be TR regardless of stored language. */
+/** True when the URL itself is Turkish, chrome must be TR regardless of stored language. */
 export function isTurkishMarketingPath(pathname = "/") {
   if (isTrPath(pathname)) return true;
   const bare = stripLocalePrefix(pathname);

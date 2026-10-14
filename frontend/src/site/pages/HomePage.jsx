@@ -1,14 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  IconMessage,
-  IconMic,
-  IconMonitor,
-  IconServer,
-  IconShield,
-  IconLayers,
-  IconHash,
-} from "../icons";
 import { useLocale } from "../../context/localeContextInstance";
 import { Funnel, getFeatureFlag, getFeatureFlagPayload } from "../analytics";
 import { useMarketingHref } from "../useMarketingHref";
@@ -16,66 +7,6 @@ import JsonLd, { buildEntityGraphLd } from "../JsonLd";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { SEO_DEFAULT_RELATED } from "../seoHubLinks";
-
-const HIGHLIGHTS = [
-  {
-    icon: IconServer,
-    tone: "blue",
-    title: "Servers & channels",
-    desc: "Text, voice, and stage channels with categories — a lighter home for real communities",
-  },
-  {
-    icon: IconShield,
-    tone: "violet",
-    title: "Roles & permissions",
-    desc: "Role hierarchy, staff rooms, and per-channel overrides ready for real communities",
-  },
-  {
-    icon: IconLayers,
-    tone: "teal",
-    title: "Advanced templates",
-    desc: "Gaming, friends, community, study & streaming — roles and channels pre-built",
-  },
-  {
-    icon: IconMessage,
-    tone: "sky",
-    title: "Real-time Chat",
-    desc: "DMs that feel instant — typing, replies, and media without a Nitro wall",
-  },
-  {
-    icon: IconMic,
-    tone: "green",
-    title: "Voice & video",
-    desc: "Crystal-clear group and server calls",
-  },
-  {
-    icon: IconMonitor,
-    tone: "pink",
-    title: "Screen share",
-    desc: "Share your screen in calls with quality presets",
-  },
-];
-
-const SERVER_POINTS = [
-  {
-    icon: IconHash,
-    tone: "blue",
-    title: "Channels that match the job",
-    desc: "Announcements, LFG, clips, VIP lounges, staff ops — topics and slowmode included in templates.",
-  },
-  {
-    icon: IconShield,
-    tone: "violet",
-    title: "Roles that actually work",
-    desc: "Admin, Moderator, Helper, VIP and more — with kick, ban, timeout, and audit logs.",
-  },
-  {
-    icon: IconMic,
-    tone: "green",
-    title: "Voice built into the server",
-    desc: "Lobby, scrim, focus, and stage rooms so your crew can hop in without leaving the app.",
-  },
-];
 
 export default function HomePage({ onSignIn, onSignUp }) {
   const { t, locale } = useLocale();
@@ -110,11 +41,6 @@ export default function HomePage({ onSignIn, onSignUp }) {
       <JsonLd data={[buildEntityGraphLd()]} />
       <section className="mkt-hero-split">
         <div className="mkt-hero-copy">
-          <div className="mkt-kicker">
-            <span className="mkt-header-beta">{t("Beta")}</span>
-            {" · "}
-            {t("Voice")} · {t("Servers")} · {t("LFG")}
-          </div>
           <h1>{t("Talk together")}</h1>
           <p>
             {useExperimentCopy && heroPayload.sub
@@ -122,9 +48,11 @@ export default function HomePage({ onSignIn, onSignUp }) {
               : (
                 <>
                   {t(
-                    "A lighter home for friends and squads — real servers, HD calls, screen share, and"
+                    "Group voice, video, and screen share. Servers with text and voice channels, plus"
                   )}{" "}
-                  <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>.
+                  <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>
+                  {" "}
+                  {t("when you need a team.")}
                 </>
               )}
           </p>
@@ -155,70 +83,54 @@ export default function HomePage({ onSignIn, onSignUp }) {
           priority
           chipScreen={t("Screen share")}
           chipVoice={t("Voice · Lobby")}
-          caption={t("Descall UI — servers, chat, voice, and LFG in one app")}
+          caption={t("Descall chat, with servers and a voice channel in the same window")}
         />
       </section>
 
-      <section className="mkt-section">
-        <h2>{t("Why Choose Descall?")}</h2>
-        <p className="lead">
-          {t("Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.")}
-        </p>
-        <div className="mkt-feature-grid">
-          {HIGHLIGHTS.map((item) => (
-            <article key={item.title} className="mkt-feature">
-              <div className={`mkt-icon is-${item.tone}`}>
-                <item.icon size={20} />
-              </div>
-              <h3>{t(item.title)}</h3>
-              <p>{t(item.desc)}</p>
-            </article>
-          ))}
-        </div>
-        <div className="mkt-cta-row" style={{ marginTop: "1.75rem" }}>
-          <button
-            type="button"
-            className="mkt-btn mkt-btn-primary"
-            onClick={() => {
-              trackCta("mid_page", "start_free");
-              openRegister?.({ mode: "register", source: "home_mid" });
-            }}
-          >
-            {t("Create free account")}
-          </button>
-          <Link to={href("/compare/discord")} className="mkt-btn mkt-btn-ghost">
-            {t("Compare with Discord")}
-          </Link>
-          <Link to={href("/features")} className="mkt-btn mkt-btn-soft">
-            {t("See all features")}
-          </Link>
+      <section className="mkt-shot-row">
+        <SeoProductPreview
+          mode="call"
+          frame="flat"
+          caption={t("A server voice channel with the people already in the call")}
+        />
+        <div className="mkt-shot-copy">
+          <h2>{t("Voice next to the chat")}</h2>
+          <p>
+            {t("Join a voice channel from the server list. Share your screen at 720p. Windows, Android, and the browser use one account.")}
+          </p>
+          <div className="mkt-cta-row" style={{ marginTop: 24 }}>
+            <button
+              type="button"
+              className="mkt-btn mkt-btn-primary"
+              onClick={() => {
+                trackCta("mid_page", "start_free");
+                openRegister?.({ mode: "register", source: "home_mid" });
+              }}
+            >
+              {t("Create free account")}
+            </button>
+            <Link to={href("/compare/discord")} className="mkt-btn mkt-btn-ghost">
+              {t("Compare with Discord")}
+            </Link>
+          </div>
         </div>
       </section>
 
       <section className="mkt-section">
         <div className="mkt-servers-panel">
           <div>
-            <div className="mkt-eyebrow">{t("Servers")}</div>
-            <h2>{t("Servers ready to run")}</h2>
+            <h2>{t("Servers with roles and channels")}</h2>
             <p className="lead">
               {t(
-                "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared."
+                "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member."
               )}
             </p>
-            <div className="mkt-server-points">
-              {SERVER_POINTS.map((item) => (
-                <div key={item.title} className="mkt-server-point">
-                  <div className={`mkt-icon is-${item.tone}`}>
-                    <item.icon size={18} />
-                  </div>
-                  <div>
-                    <h3>{t(item.title)}</h3>
-                    <p>{t(item.desc)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mkt-cta-row">
+            <ul className="mkt-plain-list">
+              <li>{t("Announcements, LFG, and staff channels are already in the templates.")}</li>
+              <li>{t("Staff can kick, ban, timeout, and read an audit log.")}</li>
+              <li>{t("Voice channels sit beside the text channels.")}</li>
+            </ul>
+            <div className="mkt-cta-row" style={{ marginTop: 24 }}>
               <Link to={href("/features")} className="mkt-btn mkt-btn-primary">
                 {t("Explore server features")}
               </Link>
@@ -230,7 +142,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
           <SeoProductPreview
             mode="servers"
             frame="flat"
-            caption={t("Descall UI — servers, chat, voice, and LFG in one app")}
+            caption={t("Server list with text and voice channels")}
           />
         </div>
       </section>

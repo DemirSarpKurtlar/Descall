@@ -5,8 +5,8 @@ import { MARKETING_TR } from "../marketingPhrases.tr.js";
 
 /** Extra TR strings for prerender bodies that are not always in the slim catalog. */
 const EXTRA_TR = {
-  "Descall Features — Free Voice, Screen Share & Servers":
-    "Descall Özellikleri — Ücretsiz Ses, Ekran Paylaşımı ve Sunucular",
+  "Descall Features, Free Voice, Screen Share & Servers":
+    "Descall Özellikleri, Ücretsiz Ses, Ekran Paylaşımı ve Sunucular",
   "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG.":
     "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, Discord tarzı sunucular, roller, şablonlar ve LFG.",
   "Servers & community tools": "Sunucular ve topluluk araçları",
@@ -28,24 +28,24 @@ const EXTRA_TR = {
   "Gaming extras": "Oyun ekstraları",
   "LFG lobbies, party codes, and linking":
     "LFG lobileri, parti kodları ve bağlantısı",
-  "Optional DesCoin cosmetics — core chat and calls stay free":
-    "İsteğe bağlı DesCoin kozmetikleri — temel sohbet ve aramalar ücretsiz kalır",
+  "Optional DesCoin cosmetics, core chat and calls stay free":
+    "İsteğe bağlı DesCoin kozmetikleri, temel sohbet ve aramalar ücretsiz kalır",
   "Descall vs Discord": "Descall vs Discord",
-  "Descall FAQ — Free Discord Alternative": "Descall SSS — Ücretsiz Discord Alternatifi",
+  "Descall FAQ, Free Discord Alternative": "Descall SSS, Ücretsiz Discord Alternatifi",
   "Frequently asked questions about Descall": "Descall hakkında sıkça sorulan sorular",
   "Answers about accounts, servers, desktop download, calls, screen share, and privacy.":
     "Hesaplar, sunucular, masaüstü indirme, aramalar, ekran paylaşımı ve gizlilik hakkında yanıtlar.",
   "Contact support": "Destek ile iletişim",
   "Download Descall": "Descall’ı indir",
-  "Download Descall for Windows — Free Voice Chat App":
-    "Windows için Descall indir — Ücretsiz sesli sohbet",
+  "Download Descall for Windows, Free Voice Chat App":
+    "Windows için Descall indir, Ücretsiz sesli sohbet",
   "Get the Windows desktop app, Android builds, or the full web app in your browser.":
     "Windows masaüstü uygulamasını, Android derlemelerini veya tarayıcıdaki tam web uygulamasını alın.",
   "Platforms": "Platformlar",
   "Windows installer for the native desktop client": "Yerel masaüstü istemcisi için Windows kurucusu",
   "Android APK builds for mobile": "Mobil için Android APK derlemeleri",
-  "Full-featured web app at descall.com — no install required":
-    "descall.com’da tam özellikli web uygulaması — kurulum gerekmez",
+  "Full-featured web app at descall.com, no install required":
+    "descall.com’da tam özellikli web uygulaması, kurulum gerekmez",
   "What you get": "Neler var",
   "Servers, roles, channels, and moderation tools": "Sunucular, roller, kanallar ve moderasyon araçları",
   "Chat, voice, video, and screen share": "Sohbet, ses, görüntü ve ekran paylaşımı",
@@ -54,7 +54,7 @@ const EXTRA_TR = {
   "About Descall": "Descall Hakkında",
   "Who owns Descall?": "Descall’ın sahibi kim?",
   "Descall is an independent messaging and voice platform built for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.":
-    "Descall; arkadaşlar, oyun ekipleri ve küçük topluluklar için Discord tarzı sunucular isteyen bağımsız bir mesajlaşma ve ses platformudur — temel sohbet ve aramalarda Nitro duvarı yoktur.",
+    "Descall; arkadaşlar, oyun ekipleri ve küçük topluluklar için Discord tarzı sunucular isteyen bağımsız bir mesajlaşma ve ses platformudur, temel sohbet ve aramalarda Nitro duvarı yoktur.",
   "Operator": "İşletmeci",
   "Owner / founder / CEO": "Sahip / kurucu / CEO",
   "Product": "Ürün",
@@ -62,8 +62,8 @@ const EXTRA_TR = {
   "Support": "Destek",
   "Source": "Kaynak",
   "What we build": "Ne inşa ediyoruz",
-  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG — with privacy policies and security docs you can actually read.":
-    "Anlık mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve LFG — okunabilir gizlilik ve güvenlik dokümanlarıyla.",
+  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG, with privacy policies and security docs you can actually read.":
+    "Anlık mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve LFG, okunabilir gizlilik ve güvenlik dokümanlarıyla.",
   "Last updated": "Son güncelleme",
   "Contact": "İletişim",
   "Contact Descall": "Descall ile iletişim",
@@ -71,8 +71,8 @@ const EXTRA_TR = {
   "Support & feedback": "Destek ve geri bildirim",
   "Security": "Güvenlik",
   "Security at Descall": "Descall’da güvenlik",
-  "How Descall protects chats and calls — encryption in transit, account security, and honest limits.":
-    "Descall sohbet ve aramaları nasıl korur — aktarımda şifreleme, hesap güvenliği ve dürüst sınırlar.",
+  "How Descall protects chats and calls, encryption in transit, account security, and honest limits.":
+    "Descall sohbet ve aramaları nasıl korur, aktarımda şifreleme, hesap güvenliği ve dürüst sınırlar.",
   "Report an issue": "Sorun bildir",
   "FAQ": "SSS",
   "Open the web app": "Web uygulamasını aç",
@@ -168,7 +168,16 @@ export function homeHero(isTr) {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
         h1: "Birlikte konuşun",
-        lead: "Arkadaşlar ve ekipler için daha hafif bir yuva — gerçek sunucular, HD aramalar, ekran paylaşımı ve LFG. Arkadaşlar ve oyuncular için ücretsiz sohbet.",
+        lead: "Grup sesi, görüntü ve ekran paylaşımı. Metin ve ses kanallı sunucular, ekip gerektiğinde LFG.",
+        voiceTitle: "Sohbetin yanında ses",
+        voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. Windows, Android ve tarayıcı aynı hesabı kullanır.",
+        serversTitle: "Rol ve kanallı sunucular",
+        serversBody: "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Admin, Moderator, Member rolleri vardır.",
+        serversPoints: [
+          "Duyuru, LFG ve staff kanalları şablonlarda hazırdır.",
+          "Staff kick, ban, timeout uygulayabilir ve denetim kaydını okuyabilir.",
+          "Ses kanalları metin kanallarının yanındadır.",
+        ],
         why: "Ekipler neden geçiyor",
         bullets: [
           "Rol, kanal izni, davet ve moderasyonlu Discord tarzı sunucular",
@@ -178,11 +187,11 @@ export function homeHero(isTr) {
         ],
         core: "Temel özellikler",
         features: [
-          "Sunucular ve kanallar — kategorili metin, ses ve sahne",
-          "Roller ve izinler — hiyerarşi, staff odaları, kanal bazlı izin",
-          "Gelişmiş şablonlar — Gaming, Friends, Community, Study, Streaming",
-          "Anlık sohbet — DM ve sunucu mesajlaşması",
-          "Ses, görüntü ve ekran paylaşımı — kalite hazır ayarlı WebRTC",
+          "Sunucular ve kanallar, kategorili metin, ses ve sahne",
+          "Roller ve izinler, hiyerarşi, staff odaları, kanal bazlı izin",
+          "Gelişmiş şablonlar, Gaming, Friends, Community, Study, Streaming",
+          "Anlık sohbet, DM ve sunucu mesajlaşması",
+          "Ses, görüntü ve ekran paylaşımı, kalite hazır ayarlı WebRTC",
         ],
         downloadDescall: "Descall’ı indir",
         exploreFeatures: "Özellikleri keşfet",
@@ -231,7 +240,16 @@ export function homeHero(isTr) {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
         h1: "Talk together",
-        lead: "A lighter home for friends and squads — real servers, HD calls, screen share, and LFG. Free chat for friends and gamers.",
+        lead: "Group voice, video, and screen share. Servers with text and voice channels, plus LFG when you need a team.",
+        voiceTitle: "Voice next to the chat",
+        voiceBody: "Join a voice channel from the server list. Share your screen at 720p. Windows, Android, and the browser use one account.",
+        serversTitle: "Servers with roles and channels",
+        serversBody: "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member.",
+        serversPoints: [
+          "Announcements, LFG, and staff channels are already in the templates.",
+          "Staff can kick, ban, timeout, and read an audit log.",
+          "Voice channels sit beside the text channels.",
+        ],
         why: "Why teams switch",
         bullets: [
           "Discord-style servers with roles, channel overrides, invites, and moderation",
@@ -241,11 +259,11 @@ export function homeHero(isTr) {
         ],
         core: "Core features",
         features: [
-          "Servers & channels — text, voice, and stage with categories",
-          "Roles & permissions — hierarchy, staff rooms, per-channel allow/deny",
-          "Advanced templates — Gaming, Friends, Community, Study, Streaming",
-          "Real-time chat — DMs and server messaging with presence",
-          "Voice, video & screen share — WebRTC calls with quality presets",
+          "Servers & channels, text, voice, and stage with categories",
+          "Roles & permissions, hierarchy, staff rooms, per-channel allow/deny",
+          "Advanced templates, Gaming, Friends, Community, Study, Streaming",
+          "Real-time chat, DMs and server messaging with presence",
+          "Voice, video & screen share, WebRTC calls with quality presets",
         ],
         downloadDescall: "Download Descall",
         exploreFeatures: "Explore features",
@@ -260,7 +278,7 @@ export function homeHero(isTr) {
           },
           {
             title: "LFG",
-            body: "Built-in lobbies and party codes — no bot hell",
+            body: "Built-in lobbies and party codes, no bot hell",
           },
           {
             title: "Every device",

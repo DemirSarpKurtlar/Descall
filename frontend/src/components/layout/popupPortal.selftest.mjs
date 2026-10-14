@@ -1,7 +1,7 @@
 /**
  * Run: node frontend/src/components/layout/popupPortal.selftest.mjs
  * Ensures full-page panels (Roles/Roller, Feedback/Geri Bildirim, settings-adjacent overlays, Add Friend, etc.)
- * portal to document.body and keep centered blur scrims — never trapped by sidebar contain.
+ * portal to document.body and keep centered blur scrims, never trapped by sidebar contain.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join as pathJoin } from "node:path";

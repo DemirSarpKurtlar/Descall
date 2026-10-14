@@ -2,7 +2,7 @@ import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
 import { withReadRetry } from "./transportRetry";
 
-/** Authenticated JSON request helper — shared by the security/blocking/shop API modules. */
+/** Authenticated JSON request helper, shared by the security/blocking/shop API modules. */
 export async function authedRequest(path, { method = "GET", body, signal } = {}) {
   const token = getToken();
   const send = () =>

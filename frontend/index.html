@@ -34,7 +34,7 @@
           }
           /* Phone web only: the canvas has to be the aurora before CSS loads,
              or Safari/Chrome paint #0b0c10 under the tab bar and behind their toolbars.
-             innerWidth is often 0 while the head parses on iOS — a phone UA still counts. */
+             innerWidth is often 0 while the head parses on iOS, a phone UA still counts. */
           var width = w.innerWidth || 0;
           if (!nativeApp && width < 960 && (mobileUa || (width > 0 && width <= 768))) {
             document.documentElement.classList.add("boot-phone-web");
@@ -77,8 +77,8 @@
     <link rel="icon" href="/favicon.svg?v=2.10.68" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2.10.68" type="image/png" sizes="180x180" />
     <link rel="manifest" href="/manifest.webmanifest?v=2.10.68" />
-    <title>Descall — Voice Chat, Servers &amp; Screen Share</title>
-    <meta name="description" content="HD voice, video, screen share, and Discord-style servers — plus Valorant LFG. Free chat for friends and gamers. Start in the browser or download Windows." />
+    <title>Descall | Voice Chat, Servers &amp; Screen Share</title>
+    <meta name="description" content="HD voice, video, screen share, and Discord-style servers, plus Valorant LFG. Free chat for friends and gamers. Start in the browser or download Windows." />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
     <meta name="author" content="Demir Sarp Kurtlar" />
     <meta name="citation_author" content="Demir Sarp Kurtlar" />
@@ -90,18 +90,18 @@
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Descall" />
-    <meta property="og:title" content="Descall — Voice Chat, Servers &amp; Screen Share" />
-    <meta property="og:description" content="HD voice, video, screen share, and Discord-style servers — plus Valorant LFG. Free chat for friends and gamers." />
+    <meta property="og:title" content="Descall | Voice Chat, Servers &amp; Screen Share" />
+    <meta property="og:description" content="HD voice, video, screen share, and Discord-style servers, plus Valorant LFG. Free chat for friends and gamers." />
     <meta property="og:url" content="https://descall.com/" />
     <meta property="og:image" content="https://descall.com/og-default.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Descall — Free Discord alternative" />
+    <meta property="og:image:alt" content="Descall, Free Discord alternative" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Descall — Voice Chat &amp; Screen Share" />
-    <meta name="twitter:description" content="HD voice, servers, screen share, and Valorant LFG — free core chat and calls." />
+    <meta name="twitter:title" content="Descall | Voice Chat &amp; Screen Share" />
+    <meta name="twitter:description" content="HD voice, servers, screen share, and Valorant LFG, free core chat and calls." />
     <meta name="twitter:image" content="https://descall.com/og-default.png" />
     <!-- Available before JavaScript executes so Google can resolve the site name. -->
     <script type="application/ld+json">
@@ -182,7 +182,7 @@
         } catch (e) {}
       })();
     </script>
-    <!-- Fonts self-host via marketing-entry.css / app styles — avoid Google Fonts RTT on first paint. -->
+    <!-- Fonts self-host via marketing-entry.css / app styles, avoid Google Fonts RTT on first paint. -->
     <script>
       /* Hide cookie banner before paint when a prior decision exists (no layout flash). */
       (function () {
@@ -194,7 +194,7 @@
       })();
     </script>
     <style>
-      /* Critical first paint — marketing must stay scrollable; only the authenticated
+      /* Critical first paint, marketing must stay scrollable; only the authenticated
          app shell locks html/body (data-app-shell). Locking overflow by default after
          data-react-ready broke every hydrated marketing page (esp. /download). */
       html, body {
@@ -222,7 +222,7 @@
       html[data-app-shell="1"] body,
       html[data-app-shell="1"] #root {
         /* 100% collapses to 0 on iOS Safari after the fixed splash is removed,
-           and overflow:hidden then clips the app — a solid black screen. */
+           and overflow:hidden then clips the app, a solid black screen. */
         height: 100dvh;
         min-height: 100dvh;
         overflow: hidden;
@@ -283,7 +283,7 @@
           radial-gradient(70% 50% at 0% 80%, rgba(88, 101, 242, 0.12), transparent 45%),
           #0b0c10;
         color: #f2f3f5;
-        font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif !important;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif !important;
         transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
       }
       /* Native app: continue the launch screen (app-icon tile on #1E1F22, same
@@ -488,7 +488,7 @@
         font-weight: 600;
         letter-spacing: -0.01em;
       }
-      /* Static SEO shell — readable first paint before React hydrate (all niche pages). */
+      /* Static SEO shell, readable first paint before React hydrate (all niche pages). */
       #seo-static {
         --seo-bg: #0b0c10;
         --seo-text: #f2f3f5;
@@ -517,7 +517,7 @@
         margin: 0 0 1.35rem;
         text-decoration: none;
         color: var(--seo-text);
-        font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
         font-weight: 700;
         font-size: 1.15rem;
         letter-spacing: -0.02em;
@@ -542,7 +542,7 @@
         padding: 0.15rem 0.45rem;
       }
       #seo-static h1 {
-        font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
         font-size: clamp(1.65rem, 5.5vw, 2.35rem);
         font-weight: 700;
         letter-spacing: -0.03em;
@@ -551,7 +551,7 @@
         color: #f4f6f8;
       }
       #seo-static h2 {
-        font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
         font-size: 1.2rem;
         font-weight: 650;
         letter-spacing: -0.02em;
@@ -576,7 +576,7 @@
         text-decoration: none;
       }
       #seo-static a:hover { text-decoration: underline; text-underline-offset: 2px; }
-      /* Primary CTAs — never style mid-nav Download as a purple chip inside the link cloud */
+      /* Primary CTAs, never style mid-nav Download as a purple chip inside the link cloud */
       #seo-static .seo-cta-row {
         display: flex;
         flex-wrap: wrap;
@@ -647,7 +647,7 @@
       #seo-static .seo-card h3 {
         margin: 0 0 0.35rem;
         font-size: 1rem;
-        font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
       }
       #seo-static .seo-card p {
         margin: 0;
@@ -893,7 +893,7 @@
         100% { transform: translateX(280%); }
       }
       .boot-status {
-        /* Logo + thin bar only — avoid a long "STARTING" text wall on hard nav. */
+        /* Logo + thin bar only, avoid a long "STARTING" text wall on hard nav. */
         position: absolute;
         width: 1px;
         height: 1px;
@@ -1152,7 +1152,7 @@
       </div>
     </div>
     <script>
-      /* Boot splash only — prerender strips this with #boot-splash. */
+      /* Boot splash only, prerender strips this with #boot-splash. */
       (function () {
         // Mobile: the app-shell safety net (above) injects a fallback splash
         // before this markup is parsed; keep only this one so the held splash
@@ -1296,7 +1296,7 @@
           try { window.__descallDismissBootSplash({ minMs: 0, maxMs: 0 }); } catch (e) {}
         }, 1800);
         // Prerendered marketing HTML: keep #seo-static visible and skip the splash
-        // overlay — but NEVER strip it for authenticated/app-shell boots. Hard nav to
+        // overlay, but NEVER strip it for authenticated/app-shell boots. Hard nav to
         // /calls|/direct with a token used to remove the splash while seo children still
         // existed (hidden), leaving a multi-second empty black #root.
         var seo = document.getElementById("seo-static");
@@ -1307,7 +1307,7 @@
       })();
     </script>
     <script>
-      /* Marketing shell: consent + hydrate hooks — must survive prerender splash strip. */
+      /* Marketing shell: consent + hydrate hooks, must survive prerender splash strip. */
       (function () {
         document.addEventListener(
           "click",
@@ -1377,7 +1377,7 @@
               var link = document.createElement("link");
               link.rel = "prefetch";
               link.as = "script";
-              // Vite hashed name unknown here — event listener in main.jsx handles real prefetch.
+              // Vite hashed name unknown here, event listener in main.jsx handles real prefetch.
               window.dispatchEvent(new CustomEvent("descall:prefetch-hydrate"));
             } catch (e3) {}
           },

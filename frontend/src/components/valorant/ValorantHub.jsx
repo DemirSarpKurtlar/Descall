@@ -12,7 +12,7 @@ import {
 } from "../../lib/publicFeatures";
 
 /**
- * Valorant hub — Play rail slot shell.
+ * Valorant hub, Play rail slot shell.
  * Tabs: Companion (Adım 2 Riot auth) + LFG (existing LfgWorkspace 1:1).
  * Companion mounts only when active. LFG stays mounted (lobby) but hard-hides off-tab.
  */
@@ -31,7 +31,7 @@ export default function ValorantHub({
   const showLfg = features.valorantLfg !== false;
   const showTabs = showCompanion && showLfg;
   /* iOS glass hides Companion. The hub header is the opaque bar the LFG
-     glass rules never reached — drop it and let LfgWorkspace own Back. */
+     glass rules never reached, drop it and let LfgWorkspace own Back. */
   const glassLfg = Boolean(glassShell) && !showTabs;
   // Default Companion when both tabs are enabled. sessionStorage can still
   // force LFG/Companion after RSO, but only if that tab is enabled.
@@ -110,7 +110,7 @@ export default function ValorantHub({
       )}
 
       <div className="valorant-hub-body">
-        {/* Active-only Companion mount — never leave accordion/card under LFG. */}
+        {/* Active-only Companion mount, never leave accordion/card under LFG. */}
         {showCompanion && tab === "companion" ? (
           <div
             id="valorant-panel-companion"

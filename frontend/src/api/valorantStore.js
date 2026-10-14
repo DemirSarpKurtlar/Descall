@@ -1,5 +1,5 @@
 /**
- * Adım 6 barrel — wallet / store / loadout for the Companion panels.
+ * Adım 6 barrel, wallet / store / loadout for the Companion panels.
  */
 export {
   getValorantStoreStatus,

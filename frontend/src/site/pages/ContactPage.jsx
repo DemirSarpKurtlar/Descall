@@ -72,7 +72,7 @@ export default function ContactPage() {
   return (
     <section className="mkt-section mkt-prose mkt-contact">
       <h1>{t("Contact")}</h1>
-      <p className="lead">{t("Get in touch with the Descall team — support, feedback, and press.")}</p>
+      <p className="lead">{t("Get in touch with the Descall team, support, feedback, and press.")}</p>
       <h2>{t("Owner")}</h2>
       <p className="mkt-contact-owner">
         {SITE_OPERATOR.operatorName}

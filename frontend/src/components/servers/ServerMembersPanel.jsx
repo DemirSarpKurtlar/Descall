@@ -267,7 +267,7 @@ export default function ServerMembersPanel({
       if (onlineList.length) {
         sections.push({
           key: "online",
-          label: t("Online — {count}", { count: onlineList.length }),
+          label: t("Online, {count}", { count: onlineList.length }),
           members: onlineList,
         });
       }
@@ -285,7 +285,7 @@ export default function ServerMembersPanel({
       if (noHoist.length) {
         sections.push({
           key: "online-no-hoist",
-          label: t("Online — {count}", { count: noHoist.length }),
+          label: t("Online, {count}", { count: noHoist.length }),
           members: noHoist,
         });
       }
@@ -559,7 +559,7 @@ export default function ServerMembersPanel({
             {memberSections.offline.length > 0 && (
               <section className="members-section">
                 <h5 className="members-section-label">
-                  {t("Offline — {count}", { count: memberSections.offline.length })}
+                  {t("Offline, {count}", { count: memberSections.offline.length })}
                 </h5>
                 <div className="members-section-list">{memberSections.offline.map(renderRow)}</div>
               </section>

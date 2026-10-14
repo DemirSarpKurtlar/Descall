@@ -13,7 +13,7 @@ import {
 import { useT } from "../../context/LocaleContext";
 
 /**
- * Top banner (same vibe as notification permission) — auto-hides after 10s.
+ * Top banner (same vibe as notification permission), auto-hides after 10s.
  * Listens for:
  *  - soft session nudge (once after ~8 min in-app, then cooldown)
  *  - custom event `descall:feedback-nudge` { trigger, callDurationMs }
@@ -48,7 +48,7 @@ export default function FeedbackNudgeBanner({ enabled = true }) {
       setBanner(payload);
       clearHideTimer();
       hideTimerRef.current = setTimeout(() => {
-        // Soft auto-dismiss — counts as a light dismiss so we don't spam,
+        // Soft auto-dismiss, counts as a light dismiss so we don't spam,
         // but uses shorter path via lastShownAt already set.
         visibleRef.current = false;
         setBanner(null);

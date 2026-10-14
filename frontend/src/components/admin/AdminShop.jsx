@@ -28,7 +28,7 @@ const CATEGORIES = [
 ];
 
 // Categories that render from a small piece of metadata instead of an
-// image/SVG asset — the admin form skips the asset URL field for these.
+// image/SVG asset, the admin form skips the asset URL field for these.
 const METADATA_ONLY_CATEGORIES = new Set([
   "profile_badge",
   "profile_title",
@@ -330,7 +330,7 @@ export default function AdminShop() {
     setCoinSending(true);
     setCoinNotice("");
     try {
-      // A message only makes sense on a positive grant — it rides along as
+      // A message only makes sense on a positive grant, it rides along as
       // a celebratory popup for the recipient, just like gifting an item.
       const message = sign > 0 ? coinMessage.trim() || null : null;
       const res = await grantDesCoin(coinTargetUser.id, parsed * sign, coinReason.trim() || null, message);
@@ -460,7 +460,7 @@ export default function AdminShop() {
           </div>
 
           <div className="admin-shop-gift-field admin-shop-gift-field-wide">
-            <label>{t("Message to recipient (optional — shown in their popup)")}</label>
+            <label>{t("Message to recipient (optional, shown in their popup)")}</label>
             <textarea
               className="admin-textarea"
               rows={2}

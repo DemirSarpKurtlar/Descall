@@ -4,7 +4,7 @@
  * One helper for the whole app. `play()` is the native iOS shell only
  * (UIKit generators already respect the system Haptics switch). Tab-bar
  * lift and tick also run on the Android shell, and vibrate on mobile web.
- * Reduce Motion changes animation, not these taps — a commit still ticks.
+ * Reduce Motion changes animation, not these taps, a commit still ticks.
  *
  * Fire once per causal event. The same kind inside 50ms collapses so a
  * pointerdown and the click it synthesizes cannot double-buzz. Do not call
@@ -13,7 +13,7 @@
  *
  * Capacitor 8 exposes Light / Medium / Heavy. Rigid is Medium.
  * Selection is a one-shot UISelectionFeedbackGenerator tick (start, change, end
- * queued in order — selectionChanged alone is a no-op until start).
+ * queued in order, selectionChanged alone is a no-op until start).
  */
 import { isNativeAndroid, isNativeIOS } from "../platform.js";
 import { shouldEmitHaptic } from "./hapticCoalesce.js";
@@ -78,17 +78,17 @@ function play(kind) {
   else primeHaptics().then(run);
 }
 
-/** UISelectionFeedback — tabs, chips, toggles, pickers, emoji, reactions. */
+/** UISelectionFeedback, tabs, chips, toggles, pickers, emoji, reactions. */
 export function hapticSelection() {
   play("selection");
 }
 
-/** UIImpact light — primary presses, sheets, threshold commits. */
+/** UIImpact light, primary presses, sheets, threshold commits. */
 export function hapticImpactLight() {
   play("light");
 }
 
-/** UIImpact medium — long-press menus, pin, drag start, hang up. */
+/** UIImpact medium, long-press menus, pin, drag start, hang up. */
 export function hapticImpactMedium() {
   play("medium");
 }

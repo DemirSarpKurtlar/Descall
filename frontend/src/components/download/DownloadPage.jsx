@@ -37,7 +37,7 @@ const GITHUB_REPO = 'DemirSarpKurtlar/Descall';
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
 // The Android asset filename is version-suffixed per release
 // (Descall-APK-vX.Y.Z.apk), so there is no stable "latest" direct-download
-// URL — the real link always comes from the live GitHub release asset list.
+// URL, the real link always comes from the live GitHub release asset list.
 const ANDROID_RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 
 const FEATURE_DEFS = [
@@ -106,7 +106,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
       published_at: data.publishedAt,
       html_url: data.htmlUrl,
     });
-    // Never offer Portable builds — only the NSIS Setup installer
+    // Never offer Portable builds, only the NSIS Setup installer
     const winUrl =
       data.windowsDownloadUrl && !/portable/i.test(data.windowsDownloadUrl)
         ? data.windowsDownloadUrl
@@ -126,7 +126,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
       const data = await fetchLatestDesktopRelease();
       applyRelease(data);
     } catch (error) {
-      // GitHub API often 403s (rate limit) on shared hosts — still offer Setup fallback
+      // GitHub API often 403s (rate limit) on shared hosts, still offer Setup fallback
       applyRelease(DESKTOP_RELEASE_FALLBACK, {
         softError: null,
       });
@@ -347,10 +347,10 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
                 <div className="req-item">
                   <CheckCircle2 size={16} />
                   <span>
-                    {selectedPlatform === 'windows' && t("Windows 10/11 (64-bit) — desktop installer")}
-                    {selectedPlatform === 'android' && t("Android 10+ — signed APK")}
-                    {selectedPlatform === 'mac' && t("macOS — use Descall in your browser (no desktop build)")}
-                    {selectedPlatform === 'linux' && t("Linux — use Descall in your browser (no desktop build)")}
+                    {selectedPlatform === 'windows' && t("Windows 10/11 (64-bit), desktop installer")}
+                    {selectedPlatform === 'android' && t("Android 10+, signed APK")}
+                    {selectedPlatform === 'mac' && t("macOS, use Descall in your browser (no desktop build)")}
+                    {selectedPlatform === 'linux' && t("Linux, use Descall in your browser (no desktop build)")}
                   </span>
                 </div>
                 <div className="req-item">

@@ -1,7 +1,7 @@
 /* ─── Servers view (Steps 2–3) ─── */
 
 /* 3-column layout: nav rail + channel/server sidebar + flexible chat.
-   The old 72px "icon rail" track was never filled — it left a large empty gap. */
+   The old 72px "icon rail" track was never filled, it left a large empty gap. */
 .app-root[data-view="servers"] {
   grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
 }
@@ -1770,7 +1770,7 @@
   min-height: 0;
 }
 
-/* Inline role chips (members tab — primary mobile UX) */
+/* Inline role chips (members tab, primary mobile UX) */
 .server-role-chip {
   display: inline-flex;
   align-items: center;
@@ -3904,7 +3904,7 @@ button.member-row.server-member-row {
   padding: 1px 7px;
 }
 
-/* Nested under voice channels — Discord-like avatar rows under the channel */
+/* Nested under voice channels, Discord-like avatar rows under the channel */
 .server-voice-user-list {
   list-style: none;
   margin: 0 0 4px;
@@ -3966,7 +3966,7 @@ button.member-row.server-member-row {
   overflow: visible !important;
   max-width: none !important;
   white-space: normal !important;
-  /* Colours are constant (green) — only opacity fades. Fading the border
+  /* Colours are constant (green), only opacity fades. Fading the border
      to transparent at the same time made the ring flash dark on release. */
   border-color: #23a559;
   box-shadow:
@@ -3993,7 +3993,7 @@ button.member-row.server-member-row {
   animation-play-state: running;
 }
 
-/* Scale only — opacity is owned by the fade above. Start == end frame. */
+/* Scale only, opacity is owned by the fade above. Start == end frame. */
 @keyframes server-voice-speak-ring {
   0%,
   100% {
@@ -4053,7 +4053,7 @@ button.member-row.server-member-row {
   font-weight: 700;
 }
 
-/* Speaking ring must target the circular .ui-avatar-inner — .ui-avatar is a
+/* Speaking ring must target the circular .ui-avatar-inner, .ui-avatar is a
    square stacking context (frames overflow), so box-shadow there looks square. */
 .server-voice-user .ui-avatar-inner,
 .server-voice-member .ui-avatar-inner {

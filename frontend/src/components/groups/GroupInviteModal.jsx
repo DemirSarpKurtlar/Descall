@@ -105,7 +105,7 @@ export default function GroupInviteModal({ group, open, onClose }) {
           <header className="invite-modal-header">
             <div>
               <h2>{t("Invite people")}</h2>
-              <p>{t("Share a link — friends can join this group instantly")}</p>
+              <p>{t("Share a link, friends can join this group instantly")}</p>
             </div>
             <button type="button" className="invite-modal-close" onClick={onClose} aria-label={t("Close")}>
               <X size={18} />

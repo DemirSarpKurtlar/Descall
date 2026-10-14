@@ -136,7 +136,7 @@ export function layerFrame(x, width, options = SWIPE_BACK_DEFAULTS, reduceMotion
   const parallax = options.parallax ?? SWIPE_BACK_DEFAULTS.parallax;
   const dim = options.dimOpacity ?? SWIPE_BACK_DEFAULTS.dimOpacity;
   if (reduceMotion) {
-    // Reduced motion: nothing slides — the current screen fades over the previous one.
+    // Reduced motion: nothing slides, the current screen fades over the previous one.
     return {
       progress: p,
       surfaceX: 0,
@@ -210,7 +210,7 @@ export function createSwipeBackMachine(options = SWIPE_BACK_DEFAULTS) {
           state = idleState();
           return { type: "abort", reason: lock, x: 0 };
         }
-        // Start from 0 instead of jumping by the slop distance — iOS hides the slop.
+        // Start from 0 instead of jumping by the slop distance, iOS hides the slop.
         state.phase = PHASE.DRAGGING;
         state.startX = x;
         state.startY = y;

@@ -5,7 +5,7 @@ import { useT } from "../../context/LocaleContext";
 
 /**
  * Skin / market detail via GET /api/valorant/skins/:uuid.
- * Uses real Riot CDN streamedVideo only — never invents placeholder mp4s.
+ * Uses real Riot CDN streamedVideo only, never invents placeholder mp4s.
  * Photo shown when video URL is missing.
  */
 export default function CompanionSkinDetail({ skinUuid, fallbackName, fallbackIcon, onClose }) {

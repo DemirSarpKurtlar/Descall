@@ -29,7 +29,7 @@ import CompanionStorePanel from "./CompanionStorePanel";
 import CompanionLoadoutPanel from "./CompanionLoadoutPanel";
 
 /**
- * Adım 2 — Riot auth for Companion tab.
+ * Adım 2, Riot auth for Companion tab.
  * Primary: Riot Sign-On (auth.riotgames.com) in browser / Electron BrowserWindow.
  * Secondary (Electron only): local Riot Client lockfile shortcut.
  */
@@ -142,7 +142,7 @@ export default function CompanionAuthPanel() {
     };
   }, [refresh, t]);
 
-  // Web OAuth return (?riot_link=) — App.jsx toasts; we refresh if query present.
+  // Web OAuth return (?riot_link=), App.jsx toasts; we refresh if query present.
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search || "");
@@ -505,7 +505,7 @@ export default function CompanionAuthPanel() {
               hidden={subtab !== "loadout"}
               aria-hidden={subtab !== "loadout"}
             >
-              {/* Adım 6 — wallet/store + loadout live under Loadout (desktop) */}
+              {/* Adım 6, wallet/store + loadout live under Loadout (desktop) */}
               <CompanionStorePanel linked={connected} identity={identity} />
               <CompanionLoadoutPanel linked={connected} identity={identity} />
             </div>

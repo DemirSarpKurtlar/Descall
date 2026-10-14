@@ -65,7 +65,7 @@ export default function ServerMemberRoleAssign({
         return hay.includes(q);
       })
       .sort((a, b) => {
-        // Manageable members first, then name — avoids defaulting to a locked owner row.
+        // Manageable members first, then name, avoids defaulting to a locked owner row.
         const am = canManageMember(a) ? 0 : 1;
         const bm = canManageMember(b) ? 0 : 1;
         if (am !== bm) return am - bm;

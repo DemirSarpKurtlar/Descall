@@ -1,7 +1,7 @@
 /**
  * Spring presets in Apple's two designer parameters (apple-design.md §4):
- *   dampingRatio — 1.0 = critically damped (default), < 1 bounces
- *   response     — seconds to (roughly) reach the target; not a duration
+ *   dampingRatio, 1.0 = critically damped (default), < 1 bounces
+ *   response    , seconds to (roughly) reach the target; not a duration
  *
  * Bounce (ζ ≈ 0.8) is reserved for motion that a gesture threw (flick, sheet).
  */

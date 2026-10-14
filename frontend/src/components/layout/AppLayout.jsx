@@ -37,7 +37,7 @@ function mainViewId(activeView) {
 }
 
 /**
- * Single shared layout — desktop grid, mobile drawer adaptation.
+ * Single shared layout, desktop grid, mobile drawer adaptation.
  */
 export default function AppLayout({
   children,
@@ -199,7 +199,7 @@ export default function AppLayout({
 
   const closeUserPanel = useCallback(() => {
     setUserPanelOpen(false);
-    // Play / Activity are full-page surfaces — never reopen the chat drawer over them.
+    // Play / Activity are full-page surfaces, never reopen the chat drawer over them.
     if (
       isMobile &&
       activeView !== "play" &&
@@ -294,7 +294,7 @@ export default function AppLayout({
 
   const handleViewChange = useCallback((view) => {
     // Parent onActiveViewChange owns the URL. Do NOT call onDmSelect(null) /
-    // onGroupSelect(null) / onServerBack here — those navigate to /direct,
+    // onGroupSelect(null) / onServerBack here, those navigate to /direct,
     // /groups, or /servers and race the destination path (first click looks
     // like a no-op; second click finally sticks).
     setActiveView(view);
@@ -351,14 +351,14 @@ export default function AppLayout({
     enabled: mobileNavHidden && !userPanelOpen && activeView !== "activity" && (isPlayPage || inConversation),
     onBack: isPlayPage ? closePlay : handleMobileBack,
     surfaceRef: mainSlotRef,
-    // The list drawer is the real previous screen of a conversation — it slides
+    // The list drawer is the real previous screen of a conversation, it slides
     // in live underneath. Play has no list mounted under it → skeleton placeholder.
     underlayRef: isPlayPage ? null : sidebarShellRef,
     placeholder: isPlayPage,
     priority: 10,
   });
   // Root tabs have no previous page: an edge drag is fully inert there (no
-  // rubber-band, no navigation) — same as iOS root views (2.9.151).
+  // rubber-band, no navigation), same as iOS root views (2.9.151).
   // On a narrow conversation surface the fixed banner sits directly over the
   // DM header, stealing profile/voice-call taps. Offer it once the user leaves
   // the conversation instead.
@@ -378,7 +378,7 @@ export default function AppLayout({
     setAddTab(nextTab);
     setShowAddModal(true);
     // Activity replaces ServerSidebar (where the Add Friend modal lives).
-    // Switch to Friends so the modal can mount — otherwise the CTA is a no-op.
+    // Switch to Friends so the modal can mount, otherwise the CTA is a no-op.
     if (activeView === "activity") {
       setActiveView("friends");
       if (isMobile) setMobileDrawerOpen(true);
@@ -496,7 +496,7 @@ export default function AppLayout({
         )}
       </AnimatePresence>
 
-      {/* Soft feedback reminder — top banner, auto-hides in 10s */}
+      {/* Soft feedback reminder, top banner, auto-hides in 10s */}
       {me && !showNotifBanner && <FeedbackNudgeBanner enabled />}
       <QuickFeedbackModal isOpen={showFeedbackModal} initialType={feedbackInitialType} onClose={() => setShowFeedbackModal(false)} />
 

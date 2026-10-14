@@ -689,7 +689,7 @@
     flex: none;
     min-height: 44px;
   }
-  /* Empty state: top-aligned — vertical centering left a huge dead zone under the CTA */
+  /* Empty state: top-aligned, vertical centering left a huge dead zone under the CTA */
   .lfg-lobby-list {
     padding: 0 12px 12px;
     -webkit-overflow-scrolling: touch;

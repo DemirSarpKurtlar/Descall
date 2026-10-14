@@ -472,7 +472,7 @@ export default function UserProfileModal({
                   size={glassDesktop ? 104 : 72}
                   user={profile || { avatarUrl: displayAvatar, username: displayUsername, displayName }}
                 />
-                {/* No presence-flare on the corner dot — its glow skews the avatar ring. */}
+                {/* No presence-flare on the corner dot, its glow skews the avatar ring. */}
                 <StatusBadge status={status} />
               </div>
 

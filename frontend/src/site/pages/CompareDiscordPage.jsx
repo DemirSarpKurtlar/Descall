@@ -19,7 +19,7 @@ export default function CompareDiscordPage({ onSignIn }) {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker="Descall vs Discord"
-      title={t("Discord vs Descall — which fits your group in 2026?")}
+      title={t("Discord vs Descall, which fits your group in 2026?")}
       lead={t(
         "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, LFG, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026."
       )}
@@ -39,7 +39,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           {t("Discord alternative overview")}
         </Link>
       }
-      heroExtra={<SeoProductPreview caption={t("Descall vs Discord — product preview")} />}
+      heroExtra={<SeoProductPreview caption={t("Descall vs Discord, product preview")} />}
     >
       <section className="seo-section">
         <h2>{t("Quick verdict")}</h2>
@@ -47,7 +47,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           <p>
             <strong>Descall</strong>{" "}
             {t(
-              "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and LFG — with free core features."
+              "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and LFG, with free core features."
             )}
           </p>
           <p>
@@ -90,7 +90,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           <li>{t("Friend-group chat and voice without Nitro friction")}</li>
           <li>{t("Built-in LFG instead of fragile bot setups")}</li>
           <li>{t("Screen-share quality controls tuned for calls")}</li>
-          <li>{t("Modern UI focused on speed — servers without endless chrome")}</li>
+          <li>{t("Modern UI focused on speed, servers without endless chrome")}</li>
         </ul>
       </section>
 

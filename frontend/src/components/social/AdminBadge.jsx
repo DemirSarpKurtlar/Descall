@@ -4,7 +4,7 @@ import { isUserAdmin } from "../../lib/userProfile";
 import "./AdminBadge.css";
 
 /**
- * Polished staff/admin badge — inline (chat), chip (profile/hover), mark (avatar corner).
+ * Polished staff/admin badge, inline (chat), chip (profile/hover), mark (avatar corner).
  */
 export default function AdminBadge({
   user,

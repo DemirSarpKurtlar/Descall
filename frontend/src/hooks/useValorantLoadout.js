@@ -97,7 +97,7 @@ export default function useValorantLoadout(opts = {}) {
   }, [refresh, enabled, pollMs]);
 
   /**
-   * Equip patch — merges into current Riot loadout and PUTs (reflects in-game).
+   * Equip patch, merges into current Riot loadout and PUTs (reflects in-game).
    * @param {{ guns?: object[], sprays?: object[], identity?: object, incognito?: boolean, raw?: object }} patch
    */
   const equip = useCallback(

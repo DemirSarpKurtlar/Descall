@@ -124,11 +124,11 @@ export function useCall(socket, callOccupancyRef = null) {
   const [callUuid, setCallUuid] = useState(null);
   // Caller side: the callee answered on a locked iPhone and is unlocking.
   const [calleeAnswering, setCalleeAnswering] = useState(false);
-  // "incoming" | "outgoing" — native iOS: only incoming calls use CallKit audio.
+  // "incoming" | "outgoing", native iOS: only incoming calls use CallKit audio.
   const callDirectionRef = useRef(null);
 
   // Keep the screen awake / tab exempt from background throttling for as
-  // long as a call is ringing or active — screen lock and aggressive tab
+  // long as a call is ringing or active, screen lock and aggressive tab
   // suspension are common causes of calls silently dropping on mobile.
   useEffect(() => {
     if (mode) {
@@ -450,7 +450,7 @@ export function useCall(socket, callOccupancyRef = null) {
     const prev = prevCallModeRef.current;
     prevCallModeRef.current = mode;
     if (mode === "incoming") {
-      // Native iOS: CallKit is already ringing — never ring twice.
+      // Native iOS: CallKit is already ringing, never ring twice.
       if (!callKitOwnsIncomingRing()) audioManager.play("incomingCall", { loop: true });
     } else if (mode === "outgoing") {
       audioManager.play("outgoingCall", { loop: true });
@@ -637,7 +637,7 @@ export function useCall(socket, callOccupancyRef = null) {
           pc.restartIce();
         }
       } catch {
-        /* ignore — UI already shows reconnecting */
+        /* ignore, UI already shows reconnecting */
       }
     };
 
@@ -736,7 +736,7 @@ export function useCall(socket, callOccupancyRef = null) {
       }
     };
     negotiateRef.current = negotiate;
-    // Skip while dialing — startCall already sends the initial offer; a
+    // Skip while dialing, startCall already sends the initial offer; a
     // renegotiation request remains queued until the connection is stable.
     pc.onnegotiationneeded = () => {
       // Screen publish sends one explicit offer. A second automatic offer
@@ -753,7 +753,7 @@ export function useCall(socket, callOccupancyRef = null) {
   }, [applyInboundLayout, markRemoteMediaReady, rememberInbound]);
 
   // When returning from background (mobile home / app switcher), resume
-  // remote audio and recover ICE — never hang up just because we left.
+  // remote audio and recover ICE, never hang up just because we left.
   // Also surface screen-share death that Safari/Chrome caused while hidden.
   useEffect(() => {
     if (mode !== "active") return undefined;
@@ -911,7 +911,7 @@ export function useCall(socket, callOccupancyRef = null) {
         return;
       }
 
-      // Busy with another call — do not steal the UI
+      // Busy with another call, do not steal the UI
       if (modeRef.current === "active" || modeRef.current === "outgoing" || modeRef.current === "incoming") {
         socket.emit("call:decline", { toUserId: fromUser.id });
         return;
@@ -999,7 +999,7 @@ export function useCall(socket, callOccupancyRef = null) {
       setRemoteDeafened(Boolean(peerDeafened));
       if (peerCameraOn) applyInboundLayout();
       // The peer just connected / reconnected and has no idea about our
-      // mute / deafen / camera state yet — answer once (never with a request).
+      // mute / deafen / camera state yet, answer once (never with a request).
       if (requestState) emitLocalMediaStateRef.current?.();
     };
 
@@ -1012,7 +1012,7 @@ export function useCall(socket, callOccupancyRef = null) {
     };
 
     // Another tab/device of this user already answered or declined. Stop the
-    // local ring only — that device already told the caller.
+    // local ring only, that device already told the caller.
     const onHandledElsewhere = ({ fromUserId } = {}) => {
       if (modeRef.current !== "incoming") return;
       const peerId = peerRef.current?.id;
@@ -1109,7 +1109,7 @@ export function useCall(socket, callOccupancyRef = null) {
       return;
     }
     if (modeRef.current === "outgoing" || modeRef.current === "active" || modeRef.current === "incoming") {
-      console.warn("[Call] startCall ignored — already in a call:", modeRef.current);
+      console.warn("[Call] startCall ignored, already in a call:", modeRef.current);
       return;
     }
     try {
@@ -1125,7 +1125,7 @@ export function useCall(socket, callOccupancyRef = null) {
       setMuted(mutedNow);
       micGuardRef.current?.watchTrack(stream.getAudioTracks()[0]);
 
-      // Sync peerRef immediately — unreachable/decline can arrive before React commit
+      // Sync peerRef immediately, unreachable/decline can arrive before React commit
       const peerObj = { ...friend, id: peerId };
       peerRef.current = peerObj;
       setPeer(peerObj);
@@ -1188,7 +1188,7 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     const offer = incomingOfferRef.current;
     const type = incomingCallTypeRef.current || "voice";
-    // Use peerRef — Electron Accept IPC can fire with a stale React `peer` closure
+    // Use peerRef, Electron Accept IPC can fire with a stale React `peer` closure
     const currentPeer = peerRef.current || peer;
     if (!currentPeer?.id || !offer || !socketRef.current?.connected) return;
     if (modeRef.current !== "incoming" && modeRef.current !== "idle") {
@@ -1269,7 +1269,7 @@ export function useCall(socket, callOccupancyRef = null) {
     cleanup();
   }, [peer, cleanup]);
 
-  // Electron notification Accept / Decline — refs avoid stale closures from mount-once effect
+  // Electron notification Accept / Decline, refs avoid stale closures from mount-once effect
   const acceptIncomingRef = useRef(acceptIncoming);
   const declineIncomingRef = useRef(declineIncoming);
   useEffect(() => { acceptIncomingRef.current = acceptIncoming; }, [acceptIncoming]);
@@ -1278,7 +1278,7 @@ export function useCall(socket, callOccupancyRef = null) {
   useEffect(() => {
     if (!window.electronAPI?.onCallAccept) return;
     const unsubAccept = window.electronAPI.onCallAccept(() => {
-      // Only handle DM incoming ring — group hook owns group-call accepts
+      // Only handle DM incoming ring, group hook owns group-call accepts
       if (modeRef.current !== "incoming") return;
       acceptIncomingRef.current?.();
     });
@@ -1294,7 +1294,7 @@ export function useCall(socket, callOccupancyRef = null) {
 
   // Remote participants render our mic / headphones / camera badges from
   // this presentation-only signal. One effect publishes every change (toggle
-  // buttons, CallKit mute, deafen-implied mute) with fresh values — the old
+  // buttons, CallKit mute, deafen-implied mute) with fresh values, the old
   // per-toggle emits captured a stale `cameraOn` and never sent deafen.
   const localMediaStateRef = useRef({ muted: false, cameraOn: false, deafened: false });
   localMediaStateRef.current = { muted: Boolean(muted), cameraOn: Boolean(cameraOn), deafened: Boolean(deafened) };
@@ -1498,7 +1498,7 @@ export function useCall(socket, callOccupancyRef = null) {
         width,
         height,
         fps,
-        // Full OS picker on desktop (window / screen / tab) — DES-10.
+        // Full OS picker on desktop (window / screen / tab), DES-10.
         preferTab: false,
         pickSource: showElectronScreenPicker,
       });
@@ -1528,7 +1528,7 @@ export function useCall(socket, callOccupancyRef = null) {
           tRuntime(
             isMobileScreenCapture()
               ? "This device can’t share system/tab audio with screen share."
-              : "No system/tab audio selected — enable “Share audio” in the picker for sound."
+              : "No system/tab audio selected, enable “Share audio” in the picker for sound."
           ),
           "info"
         );
@@ -1578,7 +1578,7 @@ export function useCall(socket, callOccupancyRef = null) {
       screenTrack.onended = () => {
         // Browser ends display tracks when the app backgrounds or the user
         // leaves a tab-only capture. Don't treat that as a deliberate stop
-        // while hidden — clean up, then toast when they return.
+        // while hidden, clean up, then toast when they return.
         if (intentionalScreenStopRef.current) {
           intentionalScreenStopRef.current = false;
           return;

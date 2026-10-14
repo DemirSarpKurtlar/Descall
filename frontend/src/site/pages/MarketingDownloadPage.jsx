@@ -4,18 +4,14 @@ import {
   IconDownload,
   IconMonitor,
   IconSmartphone,
-  IconSparkles,
   IconShield,
   IconGlobe,
-  IconMessage,
-  IconMic,
-  IconVideo,
-  IconUsers,
   IconCheck,
   IconGithub,
   IconStar,
   IconZap,
 } from "../icons";
+import SeoProductPreview from "../components/SeoProductPreview";
 import { fetchLatestDesktopRelease } from "../../lib/githubRelease";
 import { formatReleaseLabel } from "../../lib/releaseVersion";
 import { DESKTOP_RELEASE_FALLBACK } from "../../lib/desktopRelease";
@@ -30,13 +26,6 @@ import { useMarketingHref } from "../useMarketingHref";
 const GITHUB_REPO = "DemirSarpKurtlar/Descall";
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
 const ANDROID_RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-
-const FEATURES = [
-  { icon: IconMessage, tone: "sky", title: "Real-time Chat", desc: "Instant messaging with typing indicators" },
-  { icon: IconMic, tone: "green", title: "Voice Messages", desc: "Crystal clear voice recordings" },
-  { icon: IconVideo, tone: "pink", title: "Video Calls", desc: "HD video calling with screen share" },
-  { icon: IconUsers, tone: "violet", title: "Group Chats", desc: "Create groups with unlimited members" },
-];
 
 function AppStoreBadge({ label }) {
   const url = import.meta.env.VITE_APP_STORE_URL;
@@ -63,7 +52,7 @@ const crumbs = [
 ];
 
 /**
- * Marketing download page — same mkt-* chrome as Home / Features.
+ * Marketing download page, same mkt-* chrome as Home / Features.
  */
 export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
   const t = useT();
@@ -134,15 +123,9 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
 
       <section className="mkt-hero-split mkt-download-hero">
         <div className="mkt-hero-copy">
-          <div className="mkt-kicker">
-            <IconSparkles size={14} />
-            {t("Download")}
-            {" · "}
-            {versionLine}
-          </div>
           <h1>{t("Download Descall")}</h1>
           <p>
-            {t("Windows installer plus Android builds — or use the full web app in the browser.")}
+            {t("Windows installer and the Android APK. The browser app is the same account, with no install.")}
           </p>
           <div className="mkt-cta-row">
             <a
@@ -261,25 +244,15 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </li>
       </ul>
 
-      <section className="mkt-section">
-        <h2>{t("Why Choose Descall?")}</h2>
-        <p className="lead">
-          {t("Servers, chat, calls, and screen share in one quieter app — built for friends, gamers, and communities.")}
-        </p>
-        <div className="mkt-feature-grid is-quad">
-          {FEATURES.map((f) => {
-            const Icon = f.icon;
-            return (
-              <article className="mkt-feature" key={f.title}>
-                <div className={`mkt-icon is-${f.tone}`}>
-                  <Icon size={20} />
-                </div>
-                <h3>{t(f.title)}</h3>
-                <p>{t(f.desc)}</p>
-              </article>
-            );
-          })}
-        </div>
+      <section className="mkt-shot-row">
+        <SeoProductPreview
+          mode="chat"
+          frame="flat"
+          caption={t("The download and the website show the same servers and chats")}
+        />
+        <div className="mkt-shot-copy">
+        <h2>{t("What you get")}</h2>
+        <p className="lead">{versionLine}</p>
         <ul className="seo-checklist mkt-download-checklist">
           <li>
             <IconCheck size={16} /> {t("No Nitro paywall on core chat & calls")}
@@ -310,6 +283,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
           <Link to={href("/features")} className="mkt-btn mkt-btn-soft">
             {t("See all features")}
           </Link>
+        </div>
         </div>
       </section>
 

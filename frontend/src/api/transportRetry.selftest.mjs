@@ -1,4 +1,4 @@
-// node src/api/transportRetry.selftest.mjs — one retry after a transport failure, reads only.
+// node src/api/transportRetry.selftest.mjs, one retry after a transport failure, reads only.
 import { isTransportError, withReadRetry } from "./transportRetry.js";
 
 function assert(cond, msg) {

@@ -15,7 +15,7 @@ let catalogsReady = false;
 let loadPromise = null;
 
 /**
- * Load full EN/TR catalogs. Marketing entry must NOT call this — use slim phrases instead.
+ * Load full EN/TR catalogs. Marketing entry must NOT call this, use slim phrases instead.
  */
 export function loadI18nCatalogs() {
   if (catalogsReady) return Promise.resolve();

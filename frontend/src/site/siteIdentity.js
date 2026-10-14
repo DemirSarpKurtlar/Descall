@@ -1,6 +1,6 @@
 /**
  * Shared public-facing operator / trust identity for marketing pages + prerender.
- * Keep copy factual — no fabricated reviews or fake legal entities.
+ * Keep copy factual, no fabricated reviews or fake legal entities.
  */
 export const SITE_OPERATOR = {
   productName: "Descall",

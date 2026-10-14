@@ -112,7 +112,7 @@ export function findBlockingOverlay(surface, doc = typeof document !== "undefine
   const candidates = doc.querySelectorAll(SWIPE_BACK_BLOCKERS);
   for (const el of candidates) {
     if (el.matches(NON_BLOCKING)) continue;
-    // The settings sheet itself is a dialog — it only blocks screens beneath it.
+    // The settings sheet itself is a dialog, it only blocks screens beneath it.
     if (surface && el.contains(surface)) continue;
     if (isVisible(el)) return el;
   }
@@ -154,7 +154,7 @@ function hasTextSelection() {
 }
 
 let safeAreaProbe = null;
-/** Left safe-area inset (landscape notch / Dynamic Island side) — widens the edge band. */
+/** Left safe-area inset (landscape notch / Dynamic Island side), widens the edge band. */
 /** Screen-left band that always belongs to swipe-back (edge width + landscape inset). */
 export function swipeBackEdgeBand() {
   return SWIPE_BACK_DEFAULTS.edgeWidth + safeAreaLeft();
@@ -397,7 +397,7 @@ function teardown(s, { keepSurfaceHidden = false } = {}) {
   if (s.placeholder) {
     const ph = s.placeholder;
     if (s.finishing && ph.isConnected) {
-      // The real previous screen is mounted underneath now — crossfade to it.
+      // The real previous screen is mounted underneath now, crossfade to it.
       ph.style.transition = `opacity ${FADE_MS}ms ease`;
       requestAnimationFrame(() => {
         ph.style.opacity = "0";
@@ -435,7 +435,7 @@ function isIdentityTransform(value) {
 
 /**
  * True once the previous screen sits where our layer left it (x = 0, visible)
- * on its own — i.e. the back navigation has committed. Probed by dropping the
+ * on its own, i.e. the back navigation has committed. Probed by dropping the
  * inline overrides for one synchronous style read (no paint in between).
  */
 function underlaySettled(s) {
@@ -496,7 +496,7 @@ function finish(s, decision) {
   whenSettled(s, () => {
     if (session === s) session = null;
     if (props.persistUntilUnmount) {
-      // The surface plays an exit animation (AnimatePresence) — keep it hidden until it unmounts.
+      // The surface plays an exit animation (AnimatePresence), keep it hidden until it unmounts.
       teardown(s, { keepSurfaceHidden: true });
       const started = performance.now();
       const wait = () => {
@@ -595,7 +595,7 @@ function onTouchStart(event) {
     candidate = { entry: session.entry, surface: session.surface, touchId: touch.identifier };
     return;
   }
-  if (session) return; // finishing — ignore until the back navigation lands
+  if (session) return; // finishing, ignore until the back navigation lands
 
   const picked = pickEntry();
   if (!picked) {

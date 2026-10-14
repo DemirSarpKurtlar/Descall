@@ -1,7 +1,7 @@
 /**
  * Run: node frontend/src/lib/edgeSwipeBack.selftest.mjs
  * Edge swipe-back gesture state machine: zones, direction lock, thresholds,
- * velocity, springs, disabled states — plus the wiring that keeps exactly one
+ * velocity, springs, disabled states, plus the wiring that keeps exactly one
  * back mechanism on iOS.
  */
 import assert from "node:assert/strict";
@@ -287,7 +287,7 @@ function run(spring, maxMs = 2000) {
 }
 {
   // Velocity handed off as-is: a commit released while drifting slightly back
-  // first continues backwards, then turns — no velocity discontinuity.
+  // first continues backwards, then turns, no velocity discontinuity.
   const s = createSpring({ from: 300, to: W, velocity: -0.6, response: 300, min: 0, max: W });
   const first = s.step(1);
   assert.ok(first < 300, "keeps the finger's direction for the first instant");

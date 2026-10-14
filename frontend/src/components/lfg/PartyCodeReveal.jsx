@@ -4,7 +4,7 @@ import { useT } from "../../context/LocaleContext";
 import { copyText } from "../../lib/copyText";
 
 /**
- * Valorant party code — click to reveal + copy (members only).
+ * Valorant party code, click to reveal + copy (members only).
  */
 export default function PartyCodeReveal({
   code,

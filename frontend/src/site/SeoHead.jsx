@@ -111,7 +111,7 @@ export default function SeoHead({ forceNoindex = false, title, description, path
     upsertMeta("property", "og:image:type", "image/png");
     upsertMeta("property", "og:image:width", "1200");
     upsertMeta("property", "og:image:height", "630");
-    upsertMeta("property", "og:image:alt", `${SITE_NAME} — Discord alternative`);
+    upsertMeta("property", "og:image:alt", `${SITE_NAME}, Discord alternative`);
     // Hint for clients that understand webp (not all social crawlers).
     upsertMeta("property", "og:image:secure_url", ogImage);
     let preload = document.head.querySelector('link[rel="preload"][data-og-webp="1"]');

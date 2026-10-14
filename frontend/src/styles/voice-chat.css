@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL v2.0 — Voice Chat & Call UI
+   DESCALL v2.0, Voice Chat & Call UI
    Video Conference | Call Overlay | Minimized
    ============================================ */
 
@@ -355,7 +355,7 @@
   box-sizing: border-box;
 }
 
-/* Call overlay bottom bar — always a single horizontal row */
+/* Call overlay bottom bar, always a single horizontal row */
 .call-control-bar {
   display: flex !important;
   flex-direction: row !important;

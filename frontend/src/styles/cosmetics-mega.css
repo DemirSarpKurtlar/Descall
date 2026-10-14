@@ -1,5 +1,5 @@
 /* ============================================================================
-   Mega catalog cosmetics — expanded name/avatar/bubble effects plus the
+   Mega catalog cosmetics, expanded name/avatar/bubble effects plus the
    new presence_flare, profile_aura categories introduced with the 4× catalog.
    ============================================================================ */
 
@@ -133,7 +133,7 @@
 }
 .cosmetic-avatar-effect.effect-petal::after { animation-delay: -2s; background: #c4b5fd; }
 .cosmetic-avatar-effect.effect-hex {
-  /* Keep circular — hexagonal clip looked tilted/crooked on round avatars */
+  /* Keep circular, hexagonal clip looked tilted/crooked on round avatars */
   border: 2px solid rgba(167, 243, 208, 0.7);
   border-radius: 50%;
   animation: cosmetic-frost-shimmer 2s ease-in-out infinite;
@@ -185,7 +185,7 @@
 }
 .cosmetic-avatar-effect.effect-holoring {
   background: conic-gradient(from 90deg, #ff00cc, #4fd8ff, #a3e635, #ff00cc);
-  /* Even 4px ring — single-pixel masks looked thicker on bright gradient stops */
+  /* Even 4px ring, single-pixel masks looked thicker on bright gradient stops */
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 2px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 2px));
   transform-origin: 50% 50%;
@@ -224,7 +224,7 @@
 
 /* ── Presence flares (status badge cosmetics) ──────────────────────────── */
 
-/* Do NOT set position here — StatusBadge relies on position:absolute on
+/* Do NOT set position here, StatusBadge relies on position:absolute on
    .status-badge. Overriding to relative pulled the dot into normal flow
    next to the avatar and stretched it into a tall green oval. */
 .cosmetic-presence-flare {

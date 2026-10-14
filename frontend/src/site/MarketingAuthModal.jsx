@@ -279,7 +279,7 @@ function AuthModal({
                 <p>
                   {isRegistering
                     ? inviteRef
-                      ? t("Join {name} on Descall — free chat, voice, and calls.", { name: inviteRef })
+                      ? t("Join {name} on Descall, free chat, voice, and calls.", { name: inviteRef })
                       : t("Join Descall today")
                     : t("Sign in to your account")}
                 </p>

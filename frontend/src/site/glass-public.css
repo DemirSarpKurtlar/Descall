@@ -4,9 +4,9 @@
 .mkt {
   --gp-brand: #587af6;
   --gp-brand-hi: #8fa6ff;
-  --gp-t1: rgba(255, 255, 255, 0.96);
-  --gp-t2: rgba(235, 238, 255, 0.72);
-  --gp-t3: rgba(235, 238, 255, 0.5);
+  --gp-t1: #f4f6fb;
+  --gp-t2: #d5dbe8;
+  --gp-t3: #b7c0d4;
   background: #0f1017;
   color: var(--gp-t1);
   font-family: -apple-system, "SF Pro Text", Inter, "Segoe UI Variable", system-ui, sans-serif;
@@ -17,31 +17,16 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    radial-gradient(520px 420px at 6% 120px, rgba(88, 122, 246, 0.46), transparent 70%),
-    radial-gradient(480px 360px at 62% 0, rgba(124, 92, 255, 0.24), transparent 72%),
-    radial-gradient(560px 460px at 100% 420px, rgba(124, 92, 255, 0.28), transparent 70%),
-    linear-gradient(180deg, #151826 0, #12131b 900px, #0f1017 100%);
+  background: #0d0e13;
 }
 
 .mkt-bg::before {
-  content: "";
-  position: absolute;
-  inset: 900px 0 0 0;
-  background:
-    radial-gradient(520px 420px at 0% 300px, rgba(88, 122, 246, 0.22), transparent 70%),
-    radial-gradient(560px 460px at 96% 800px, rgba(170, 92, 255, 0.2), transparent 70%),
-    radial-gradient(420px 380px at 40% 1250px, rgba(88, 200, 255, 0.1), transparent 70%);
-  background-size: 100% 1500px;
-  background-repeat: repeat-y;
-  pointer-events: none;
+  display: none;
 }
 
-.mkt-orb { opacity: 0.35; }
+.mkt-orb,
 .mkt-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: linear-gradient(180deg, #000, transparent 900px);
+  display: none;
 }
 
 .mkt .mkt-header {
@@ -161,13 +146,24 @@
   font-size: 15px;
   font-weight: 650;
   letter-spacing: -0.012em;
+  transition: transform 160ms cubic-bezier(0.2, 0, 0, 1), filter 160ms ease, background 160ms ease;
+}
+
+.mkt .mkt-btn:hover {
+  transform: none;
+  filter: brightness(1.08);
+}
+
+.mkt .mkt-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.96);
 }
 
 .mkt .mkt-btn-primary {
-  background: linear-gradient(180deg, #8fa6ff, #587af6);
+  background: #587af6;
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 8px 20px rgba(88, 122, 246, 0.35);
+  box-shadow: none;
 }
 
 .mkt .mkt-btn-ghost {
@@ -191,10 +187,8 @@
   line-height: 1;
   font-weight: 750;
   letter-spacing: -0.045em;
-  background: linear-gradient(180deg, #fff 30%, #b9c6ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  background: none;
+  color: #f7f8fb;
 }
 
 .mkt .mkt-hero p,

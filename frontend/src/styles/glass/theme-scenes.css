@@ -11,7 +11,7 @@ html.glass-ui .g-theme-stage {
    fixed UI (list is position:fixed, z-index 300). A fixed stage at z-index 0
    whose child spins was promoted over that list on iOS; absolute + z-index -1
    stays behind it. Do not set position/transform/contain on the sidebar or
-   the main slot — that drops the list under the stage and traps the composer. */
+   the main slot, that drops the list under the stage and traps the composer. */
 html.glass-ui[data-theme="lagoon"] .app-root.g-shell,
 html.glass-ui[data-theme="grove"] .app-root.g-shell,
 html.glass-ui[data-theme="hanami"] .app-root.g-shell,

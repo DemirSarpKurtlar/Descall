@@ -57,7 +57,7 @@ export function GlassMeButton({ className = "" }) {
     <PressButton
       className={`g-me-btn g-glass ${className}`.trim()}
       data-gid="toolbar-avatar"
-      aria-label={`${name} — ${t("change status")}`}
+      aria-label={`${name}, ${t("change status")}`}
       aria-haspopup="menu"
       onClick={() => {
         try {

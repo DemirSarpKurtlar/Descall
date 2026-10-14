@@ -8,7 +8,7 @@ import { SPRINGS, physicsSpring } from "./springs.js";
  *   so retargeting mid-flight never jumps and never hits a velocity "brick wall".
  * - `set()` follows a finger 1:1 (and records velocity for the release handoff).
  * - Frames are display-synced (requestAnimationFrame) and written straight to the
- *   DOM through `onUpdate` — no React render per frame.
+ *   DOM through `onUpdate`, no React render per frame.
  *
  * `scale` = rough magnitude of the value (px → 1, scale/opacity → 0.001) so the
  * spring knows when it is "at rest".

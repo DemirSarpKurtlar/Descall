@@ -88,13 +88,13 @@ export function screenShareUnavailableOnIos() {
  *
  * Mobile: prefer the entire screen (`monitor`). Sharing only the Descall tab
  * (or preferCurrentTab) ends the moment the user switches to YouTube/Safari
- * home — the common “arka plana alınca ekran yansıması koptu” failure.
+ * home, the common “arka plana alınca ekran yansıması koptu” failure.
  *
  * Desktop: omit `displaySurface` by default so Chromium/Edge show the full
  * OS picker (window / entire screen / tab). DES-10: locking `browser` made
  * many users only see the Descall tab. Pass `preferTab: true` only when you
  * explicitly want tab-first (e.g. tab audio UX experiments).
- * Never lock preferCurrentTab — that also dies on background/tab switch.
+ * Never lock preferCurrentTab, that also dies on background/tab switch.
  */
 export function buildDisplayMediaConstraints({ width, height, fps, preferTab } = {}) {
   const mobile = isMobileCapture();
@@ -202,7 +202,7 @@ export async function getDisplayMediaStream(opts = {}) {
 }
 
 /**
- * Electron source picker (inline overlay — no CSS dependency).
+ * Electron source picker (inline overlay, no CSS dependency).
  * @returns {Promise<string|null>} source id or null if cancelled
  */
 export function showElectronScreenPicker(sources = []) {
@@ -369,7 +369,7 @@ export function showElectronScreenPicker(sources = []) {
 /**
  * Unified screen capture for DM / group / server voice.
  * Electron → desktopCapturer picker; web → getDisplayMedia with soft fallbacks.
- * Multiple participants may call this concurrently — there is no single-sharer lock.
+ * Multiple participants may call this concurrently, there is no single-sharer lock.
  */
 export async function captureScreenShareStream(opts = {}) {
   const { width, height, fps, preferTab, pickSource = showElectronScreenPicker } = opts;
@@ -386,7 +386,7 @@ export async function captureScreenShareStream(opts = {}) {
         }
         return await captureElectronDesktop(sourceId, { width, height, fps });
       }
-      // Empty sources (macOS Screen Recording denied) — try getDisplayMedia next.
+      // Empty sources (macOS Screen Recording denied), try getDisplayMedia next.
     } catch (err) {
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") throw err;
       if (err?.code === "SCREEN_SHARE_CAMERA_REFUSED" || err?.code === "SCREEN_SHARE_ROLE_MISMATCH") throw err;
@@ -456,7 +456,7 @@ export function buildElectronDesktopConstraints(sourceId, { width, height, fps }
 
 /**
  * Prefer real display/tab/system audio on the screen stream.
- * Do NOT mix the call microphone in as a fallback — that doubles voice and
+ * Do NOT mix the call microphone in as a fallback, that doubles voice and
  * still fails to carry “yayın sesi” (YouTube/game audio), especially on mobile
  * Safari/Chrome where system audio simply isn’t capturable.
  *
@@ -593,7 +593,7 @@ export async function optimizeScreenShareSender(
       : null;
     void transceiver;
     if (typeof RTCRtpSender !== "undefined" && sender.track) {
-      // Find transceiver via peer connection is caller responsibility — see preferScreenCodecs
+      // Find transceiver via peer connection is caller responsibility, see preferScreenCodecs
     }
   } catch {
     /* ignore */
@@ -683,7 +683,7 @@ export function watchScreenTrackResize(track, onResize) {
 /**
  * Decide whether an incoming remote video track is screen share vs camera.
  * `announcement` (stream id / mids) is the signal. `peerExpectsScreen` alone
- * is ignored — that used to label the camera as the share.
+ * is ignored, that used to label the camera as the share.
  */
 export function isRemoteScreenVideoTrack(
   track,

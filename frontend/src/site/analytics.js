@@ -2,11 +2,11 @@
  * Unified analytics: PostHog (primary funnel) + Google Ads / optional GA4 / Clarity.
  *
  * Env (Vite build-time):
- *   VITE_PUBLIC_POSTHOG_KEY  — project API key (phc_…)
- *   VITE_PUBLIC_POSTHOG_HOST — e.g. https://eu.i.posthog.com
+ *   VITE_PUBLIC_POSTHOG_KEY , project API key (phc_…)
+ *   VITE_PUBLIC_POSTHOG_HOST, e.g. https://eu.i.posthog.com
  *   VITE_GA_MEASUREMENT_ID
- *   VITE_GOOGLE_ADS_ID                 — defaults to AW-439578855
- *   VITE_GOOGLE_ADS_SIGNUP_LABEL       — overrides default Kaydolma label
+ *   VITE_GOOGLE_ADS_ID                , defaults to AW-439578855
+ *   VITE_GOOGLE_ADS_SIGNUP_LABEL      , overrides default Kaydolma label
  *                                      (label only or full AW-…/label send_to)
  *   VITE_CLARITY_ID
  *
@@ -43,7 +43,7 @@ function preferMarketingAnalyticsCold() {
   }
 }
 
-/** Lazily loaded PostHog SDK — keep marketing entry free of the ~80KB vendor chunk. */
+/** Lazily loaded PostHog SDK, keep marketing entry free of the ~80KB vendor chunk. */
 let posthog = null;
 let posthogLoadPromise = null;
 
@@ -83,7 +83,7 @@ function flushPendingEvents() {
   }
 }
 
-/** Descall EU project — public `phc_` key (not a secret). */
+/** Descall EU project, public `phc_` key (not a secret). */
 const DESCALL_POSTHOG_KEY = "phc_ztiuFNjFuPcfrCV6ANXunnYaZh4yH99ZhxFZf2cryacQ";
 const DESCALL_POSTHOG_HOST = "https://eu.i.posthog.com";
 /** Google Ads account tag (public). */
@@ -222,7 +222,7 @@ export function trackGoogleAdsSignUpConversion(properties = {}) {
     try {
       if (sessionStorage.getItem(GADS_SIGNUP_SENT_KEY) === "1") return;
     } catch {
-      /* private mode — continue; still fire once this page load */
+      /* private mode, continue; still fire once this page load */
     }
 
     const adsId = googleAdsId();
@@ -358,7 +358,7 @@ export function initAnalytics() {
     })(window, document, "clarity", "script", clarityId);
   }
 
-  // Real-user monitoring (LCP/INP/CLS) — only after consent.
+  // Real-user monitoring (LCP/INP/CLS), only after consent.
   captureWebVitals();
 }
 
@@ -387,7 +387,7 @@ export function captureWebVitals() {
 }
 
 /**
- * First-party consent beacon — works for Accept and Reject (no PostHog required).
+ * First-party consent beacon, works for Accept and Reject (no PostHog required).
  * Uses API_BASE_URL from config; failures are silent.
  */
 export async function beaconConsent(choice) {
@@ -527,7 +527,7 @@ export function getFeatureFlagPayload(key, fallback = null) {
   }
 }
 
-/** Named funnel helpers — keep event names stable for PostHog insights. */
+/** Named funnel helpers, keep event names stable for PostHog insights. */
 export const Funnel = {
   landingView: (props) => trackEvent("landing_view", props),
   ctaClick: (props) => trackEvent("cta_click", props),
@@ -560,7 +560,7 @@ export const Funnel = {
   inviteGenerated: (props) => trackEvent("invite_generated", props),
   inviteLanding: (props) => trackEvent("invite_landing", props),
   inviteRegisterComplete: (props) => trackEvent("invite_register_complete", props),
-  /** Cookie banner decision — also beaconConsent for reject visibility. */
+  /** Cookie banner decision, also beaconConsent for reject visibility. */
   consentDecision: (props) => {
     const choice = props?.choice || "unknown";
     trackEvent("cookie_consent", props);

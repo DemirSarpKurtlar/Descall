@@ -160,7 +160,7 @@ export default function UserFeedbackButton({ socket, user }) {
         <span>{t("Feedback")}</span>
       </motion.button>
 
-      {/* Feedback Modal — portal to body (sidebar contain traps fixed) */}
+      {/* Feedback Modal, portal to body (sidebar contain traps fixed) */}
       {typeof document !== "undefined" && createPortal(
       <AnimatePresence>
         {isOpen && (

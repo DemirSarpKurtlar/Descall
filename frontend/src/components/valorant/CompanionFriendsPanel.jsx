@@ -43,9 +43,9 @@ function presenceMeta(friend) {
 }
 
 /**
- * Adım 4 — Companion friends / presence / requests / online party invite.
+ * Adım 4, Companion friends / presence / requests / online party invite.
  * Wired exactly to useValorantFriends + /friends/party-invite contract.
- * No mock list — desktop + Riot Client required for live data.
+ * No mock list, desktop + Riot Client required for live data.
  */
 export default function CompanionFriendsPanel({ linked = false, identity = null }) {
   const t = useT();

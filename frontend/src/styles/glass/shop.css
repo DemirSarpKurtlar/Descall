@@ -1,4 +1,4 @@
-/* Liquid Glass — shop (Stage 6). Mockups 21 and 21b.
+/* Liquid Glass, shop (Stage 6). Mockups 21 and 21b.
    Static cards, no per-row blur. Scoped under html.glass-ui. */
 
 html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-pill {
@@ -187,7 +187,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-actions button.
 }
 
 /* 21b: wallet sits flush under the header. One fade covers the header and the
-   pills and dissolves into the list — the row is not its own opaque band.
+   pills and dissolves into the list, the row is not its own opaque band.
    --g-shop-header-h is the measured header (safe-area included). The fallback
    matches settings.css: --g-chrome-top + 4px pad + 48px button + 8px pad. */
 html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open {

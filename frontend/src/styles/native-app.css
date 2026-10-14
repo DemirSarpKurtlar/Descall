@@ -1,11 +1,11 @@
 /* ============================================
-   Native iOS/Android app (Capacitor) only — html.native-app is set before
+   Native iOS/Android app (Capacitor) only, html.native-app is set before
    first paint by index.html / main.jsx. Web and Electron never get it.
 
    The WebView runs edge-to-edge (contentInset: never + viewport-fit=cover).
    Safe-area regions (status bar / Dynamic Island, home indicator) must show
-   the app's own surfaces — not the near-black .app-root behind a transparent
-   padding band — while interactive content stays inside the safe area.
+   the app's own surfaces, not the near-black .app-root behind a transparent
+   padding band, while interactive content stays inside the safe area.
    ============================================ */
 
 @media (max-width: 768px) {

@@ -32,7 +32,7 @@ assert.equal(overlay.gap, 336);
 assert.equal(overlay.height, 508);
 assert.equal(overlay.top, 0);
 
-// Viewport already shrank by the same amount — do not lift twice.
+// Viewport already shrank by the same amount, do not lift twice.
 const both = mobileViewportBox({
   innerHeight: 844,
   vvHeight: 508,

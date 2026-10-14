@@ -211,7 +211,7 @@ function clearInvitePath() {
 function writeInvitePath(code) {
   try {
     if (!code) return;
-    // Root query form — required because Vite builds with base "./" and
+    // Root query form, required because Vite builds with base "./" and
     // deep paths like /invite/:code break relative JS/CSS asset loading.
     const next = `/?invite=${encodeURIComponent(code)}`;
     if (`${window.location.pathname}${window.location.search}` !== next) {
@@ -518,7 +518,7 @@ export default function App() {
   const myStatusRef = useRef(myStatus);
   const transportFallbackStepRef = useRef(0);
   const prevOnlineUsersRef = useRef([]);
-  /** First roster after connect is people already online — never toast that. */
+  /** First roster after connect is people already online, never toast that. */
   const onlineRosterReadyRef = useRef(false);
   const typingDmTimeoutRef = useRef(null);
   const typingGroupTimeoutsRef = useRef(new Map());
@@ -542,7 +542,7 @@ export default function App() {
     []
   );
   const serverVoice = useServerVoice(socketApi);
-  // Electron always-on-top voice overlay — mirrors whichever surface (DM
+  // Electron always-on-top voice overlay, mirrors whichever surface (DM
   // call / group hangout / server voice) is currently active.
   useElectronOverlay({ call, groupCall, serverVoice });
   useElectronVoiceBusy({ call, groupCall, serverVoice });
@@ -1006,8 +1006,8 @@ export default function App() {
   // choice) to the document as soon as we know it. Previously the only
   // place that ever set data-theme from the equipped theme lived inside
   // the Settings/Appearance panel's own effect, so a fresh login or page
-  // reload kept showing the default dark theme — looking exactly like
-  // nothing was equipped — until the user happened to open Settings,
+  // reload kept showing the default dark theme, looking exactly like
+  // nothing was equipped, until the user happened to open Settings,
   // which is what actually corrected it. Themes were never really lost;
   // they just weren't applied until something coincidentally mounted the
   // one component watching for them.
@@ -1254,7 +1254,7 @@ export default function App() {
             setMe(null);
             if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
           } else {
-            // Network / API blip on hard refresh — keep token and retry once.
+            // Network / API blip on hard refresh, keep token and retry once.
             try {
               await new Promise((r) => setTimeout(r, 700));
               const again = await getMe(token);
@@ -1269,7 +1269,7 @@ export default function App() {
                 clearUser();
                 setMe(null);
               }
-              // else keep token; user can refresh — avoid dumping an app deep-link → marketing
+              // else keep token; user can refresh, avoid dumping an app deep-link → marketing
               if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
             }
           }
@@ -1445,7 +1445,7 @@ export default function App() {
 
   const verifyBackendEndpoint = async () => {
     try {
-      // Any HTTP response means the URL resolves — Render may return 503 during cold start.
+      // Any HTTP response means the URL resolves, Render may return 503 during cold start.
       // Only a network-level failure (fetch throws) means the URL is wrong.
       await fetch(`${API_BASE_URL}/health`, { method: "GET" });
       return true;
@@ -1554,11 +1554,11 @@ export default function App() {
 
     socket.on("connected", (payload) => {
       if (payload?.user) {
-        // Merge — never let a thin socket payload wipe displayName / bio / banner.
+        // Merge, never let a thin socket payload wipe displayName / bio / banner.
         commitSessionUser({ ...(getUser() || me || {}), ...payload.user });
       }
       fetchGroupsRef.current?.();
-      // Refresh on connect — session bootstrap / handleRefresh already load via REST.
+      // Refresh on connect, session bootstrap / handleRefresh already load via REST.
       fetchServersRef.current?.();
     });
 
@@ -1698,7 +1698,7 @@ export default function App() {
       friendsFromSocketRef.current = true;
       setFriends(normalized);
       setFriendsLoaded(true);
-      // Server now attaches lastMessage/lastActivity from dmHistory — seed list previews.
+      // Server now attaches lastMessage/lastActivity from dmHistory, seed list previews.
       setDmPreviews((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -1769,7 +1769,7 @@ export default function App() {
         messages,
         t,
       );
-      // Switching DMs races in-flight history — only the active peer owns chrome.
+      // Switching DMs races in-flight history, only the active peer owns chrome.
       if (activeDmRef.current?.id !== withUserId) return;
       setMessagesLoading(false);
       setDmHasMore((normalized?.length ?? 0) >= 50);
@@ -1930,7 +1930,7 @@ export default function App() {
       const trimmedContent = (message.content || "").trim();
       const isGameCommand = Boolean(message.isGameCommand) || isCasinoSlash(trimmedContent);
 
-      // Never insert /bj etc. as chat rows — casino UI uses game:* events
+      // Never insert /bj etc. as chat rows, casino UI uses game:* events
       if (isGameCommand) {
         if (tempId || message.id) {
           setGroupMessagesById((prev) => {
@@ -2289,7 +2289,7 @@ export default function App() {
         return;
       }
 
-      // DM: conversationId is "a::b" — update the peer bucket
+      // DM: conversationId is "a::b", update the peer bucket
       const selfId = myIdRef.current;
       let peerId = null;
       if (typeof conversationId === "string" && conversationId.includes("::")) {
@@ -2455,7 +2455,7 @@ export default function App() {
     serverSocketUnbindRef.current = unbindServerSocketHandlers;
 
     socket.on("system:kick", (payload = {}) => {
-      const detail = [payload.message, payload.reason].filter(Boolean).join(" — ");
+      const detail = [payload.message, payload.reason].filter(Boolean).join(", ");
       const prefix = payload.action === "ban" ? t("You are banned") : t("Removed by moderator");
       setAuthError(detail ? `${prefix}: ${detail}` : prefix);
       clearToken();
@@ -2503,7 +2503,7 @@ export default function App() {
       } else {
         parts.push(t("Permanent"));
       }
-      return parts.filter(Boolean).join(" — ");
+      return parts.filter(Boolean).join(", ");
     }
     return error?.message || t("Something went wrong");
   };
@@ -2773,7 +2773,7 @@ export default function App() {
       ]);
       const list = Array.isArray(listRes?.friends) ? listRes.friends : [];
       const requests = Array.isArray(reqRes?.requests) ? reqRes.requests : [];
-      // Socket payload includes presence + DM previews — don't clobber it.
+      // Socket payload includes presence + DM previews, don't clobber it.
       if (!friendsFromSocketRef.current) {
         setFriends(list.map((u) => normalizeUser(u)));
         listCommitRef.current.friends = true;
@@ -2782,7 +2782,7 @@ export default function App() {
       setFriendRequests(requests.map((u) => normalizeUser(u)));
     } catch (err) {
       console.error("[friends] REST bootstrap failed", err);
-      // Don't mark loaded on auth failure — socket friend:list may still arrive.
+      // Don't mark loaded on auth failure, socket friend:list may still arrive.
       const msg = String(err?.message || "");
       const authFail = /authorization|token|401|unauthorized/i.test(msg);
       if (!friendsFromSocketRef.current && !authFail) {
@@ -2834,7 +2834,7 @@ export default function App() {
         if (decision.emit) socketRef.current.emit("groups:rejoin", ids);
       }
     } catch (err) {
-      // Keep previous list — a transient API failure should not wipe the sidebar
+      // Keep previous list, a transient API failure should not wipe the sidebar
       console.error("[groups] fetch failed", err);
     } finally {
       listCommitRef.current.groups = true;
@@ -2886,7 +2886,7 @@ export default function App() {
   const handleRefresh = useCallback(() => {
     const s = socketRef.current;
 
-    // Always refresh durable lists over REST — works even if socket is down.
+    // Always refresh durable lists over REST, works even if socket is down.
     fetchGroups();
     fetchFriends();
     fetchServers();
@@ -2899,7 +2899,7 @@ export default function App() {
 
     if (!s?.connected) return;
 
-    // Friends & global state (socket — presence + DM previews)
+    // Friends & global state (socket, presence + DM previews)
     s.emit("friend:list");
     s.emit("sync:state");
 
@@ -3069,7 +3069,7 @@ export default function App() {
 
   // Sync the "ongoing call" banner for whichever group is currently open.
   // The live push (group:call:banner-update) only reaches clients that were
-  // already connected and viewing that group when it fired — this catches
+  // already connected and viewing that group when it fired, this catches
   // everyone else (just opened the group, reconnected, missed the push).
   useEffect(() => {
     groupCall.setViewingGroupId(activeGroup?.id || null);
@@ -3225,7 +3225,7 @@ export default function App() {
   useEffect(() => {
     if (!me?.id || !sessionChecked) return;
 
-    // Fresh signups land on Friends with invite CTA — better than an empty DM list.
+    // Fresh signups land on Friends with invite CTA, better than an empty DM list.
     // Skip when a group invite deep-link is pending.
     try {
       const justRegistered = sessionStorage.getItem("descall:justRegistered") === "1";
@@ -3319,7 +3319,7 @@ export default function App() {
         setActiveServer(server);
       }
       // Always re-fetch so VIEW_CHANNEL filtering is current. Do not open a
-      // channel from the thin list payload — that can briefly show a private channel.
+      // channel from the thin list payload, that can briefly show a private channel.
       // Only the latest selection may commit; a slower response for A must not
       // replace the channel the user already moved to.
       const token = ++serverDetailEpochRef.current;
@@ -3603,7 +3603,7 @@ export default function App() {
       }
 
       if (type === "friend-request") {
-        // Open friends list focus is enough — status is already in sidebar
+        // Open friends list focus is enough, status is already in sidebar
         return;
       }
     };
@@ -3667,7 +3667,7 @@ export default function App() {
         navigator.serviceWorker.removeEventListener("message", onSwMessage);
       }
     };
-    // handleOpenDm closes over dmUnread/dmByUserId — rebind when those change
+    // handleOpenDm closes over dmUnread/dmByUserId, rebind when those change
   }, [dmUnread, dmByUserId]);
 
   // Native push taps that arrived before sign-in finished (cold start from a
@@ -3745,7 +3745,7 @@ export default function App() {
     const id = String(fromUserId || "").trim();
     if (!id) return;
     const socket = socketRef.current;
-    // Optimistic remove — restored via friend:error → friend:list if it fails
+    // Optimistic remove, restored via friend:error → friend:list if it fails
     setFriendRequests((prev) => prev.filter((r) => r.id !== id));
     if (socket?.connected) {
       socket.emit("friend:accept", { fromUserId: id });
@@ -3960,7 +3960,7 @@ export default function App() {
   }, [me?.id, friendsLoaded, groupsLoaded, serversLoaded, sortedDms, sortedGroups, myServers]);
 
   // HTML boot splash covers first paint only. Dismiss as soon as App mounts
-  // (skeleton is already painted) — never wait for getMe / sessionChecked
+  // (skeleton is already painted), never wait for getMe / sessionChecked
   // (that caused an 8–10s "STARTING" wall on hard nav).
   useEffect(() => {
     try {
@@ -4139,7 +4139,7 @@ export default function App() {
   if (serverVanitySlug && !(serverVanityAuthOpen && !me)) {
     return (
       <>
-        <SeoHead forceNoindex title="Server invite — Descall" description="Join a Descall server" />
+        <SeoHead forceNoindex title="Server invite, Descall" description="Join a Descall server" />
         <TitleBar />
         <ServerVanityLanding
           slug={serverVanitySlug}
@@ -4156,7 +4156,7 @@ export default function App() {
   if (inviteCode && !(inviteAuthOpen && !me)) {
     return (
       <>
-        <SeoHead forceNoindex title="Group invite — Descall" description="Join a Descall group" />
+        <SeoHead forceNoindex title="Group invite, Descall" description="Join a Descall group" />
         <TitleBar />
         <GroupInviteLanding
           code={inviteCode}
@@ -4175,7 +4175,7 @@ export default function App() {
       typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
     const nativeOrDesktop = Capacitor.isNativePlatform() || isElectronDesktop;
     // Token still present on an app deep-link (e.g. /play): never dump to
-    // marketing — keep the boot skeleton. Hard refresh used to Navigate → "/"
+    // marketing, keep the boot skeleton. Hard refresh used to Navigate → "/"
     // while descall_token remained, which looked like a session drop.
     if (getToken() && isAuthenticatedAppPath(location.pathname)) {
       return (
@@ -4288,7 +4288,7 @@ export default function App() {
       setOwnedServerCount(ownedCount ?? ((ownedServerCount || 0) + 1));
       if (maxOwned) setMaxOwnedServers(maxOwned);
       setActiveServer(server);
-      // Stay on server shell (channel list) — don't jump into a channel view.
+      // Stay on server shell (channel list), don't jump into a channel view.
       setActiveChannel(null);
       setActiveView("servers");
       const nextPath = serverPath(server);
@@ -4363,7 +4363,7 @@ export default function App() {
     setActiveDmUser(null);
     setActiveGroup(null);
     setActiveServer(server);
-    // Enter server shell only — channel opens when the user taps one (mobile UX).
+    // Enter server shell only, channel opens when the user taps one (mobile UX).
     setActiveChannel(null);
     setActiveView("servers");
     const nextPath = serverPath(server);
@@ -4510,7 +4510,7 @@ export default function App() {
 
   return (
     <>
-    {/* Authenticated app shell — never index private UI */}
+    {/* Authenticated app shell, never index private UI */}
     <SeoHead forceNoindex title="Descall" description="Descall app" path="/app" />
     <TitleBar />
     <UpdateNotes />
@@ -4583,7 +4583,7 @@ export default function App() {
             }
             setActiveView(view);
 
-            // Single navigate owner — clear conversation state here without
+            // Single navigate owner, clear conversation state here without
             // calling onDmSelect(null)/onGroupSelect(null)/onServerBack, which
             // would navigate to /direct|/groups|/servers and race this path.
             if (view === "play") {
@@ -4878,7 +4878,7 @@ export default function App() {
                 timestamp: new Date().toISOString(),
                 sending: true,
               };
-              // Don't flash "/bj 100" as a chat row — casino board arrives via game:*
+              // Don't flash "/bj 100" as a chat row, casino board arrives via game:*
               if (!isCasinoCmd) {
                 setGroupMessagesById((prev) => ({
                   ...prev,

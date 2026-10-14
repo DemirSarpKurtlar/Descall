@@ -4,7 +4,7 @@ import Modal from "./ui/Modal";
 import { getVoiceBusy, subscribeVoiceBusy } from "../lib/voiceBusy";
 
 /**
- * Premium charcoal desktop update toast — no emoji spam, clear status/progress,
+ * Premium charcoal desktop update toast, no emoji spam, clear status/progress,
  * does not steal focus (render-only; Electron showsInactive for OS notifs).
  */
 export default function ElectronUpdateToast() {

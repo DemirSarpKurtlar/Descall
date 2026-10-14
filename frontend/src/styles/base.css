@@ -1,5 +1,5 @@
 /* ============================================
-   DESCALL v2.0 — Base & Reset
+   DESCALL v2.0, Base & Reset
    Modern Discord-inspired design system
    ============================================ */
 
@@ -107,7 +107,7 @@ a {
 }
 a:hover { text-decoration: underline; }
 
-/* 🔘 Buttons — Discord Style */
+/* 🔘 Buttons, Discord Style */
 button {
   font: inherit;
   cursor: pointer;
@@ -284,7 +284,7 @@ select {
   box-shadow: var(--shadow-md);
 }
 
-/* Rail buttons use a portal tooltip — hide the clipped CSS one */
+/* Rail buttons use a portal tooltip, hide the clipped CSS one */
 .rail-btn[data-tooltip]:hover::after,
 .rail-btn[data-tooltip]::after {
   content: none !important;

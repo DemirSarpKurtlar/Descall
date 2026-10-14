@@ -307,7 +307,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, enabled = true, sinkId = 
 }
 
 /**
- * Multi-sharer screen stage — same UX as group/DM CallOverlay:
+ * Multi-sharer screen stage, same UX as group/DM CallOverlay:
  * switch screens, volume, click-to-fullscreen.
  */
 function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
@@ -1011,7 +1011,7 @@ export default function ServerVoicePanel({
             <p>
               {isStage
                 ? t("Join as audience, then request to speak.")
-                : t("Join to talk — no ringing, drop in anytime.")}
+                : t("Join to talk, no ringing, drop in anytime.")}
             </p>
           </div>
         )}

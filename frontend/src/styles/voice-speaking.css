@@ -9,7 +9,7 @@
      painted a black frame where the avatar + rings were.
    - Speaking only fades the ring layer (opacity transition) and resumes /
      pauses its keyframes; it never mounts, unmounts or restarts anything.
-   - Keyframes only scale and start/end on the same frame — no opacity or
+   - Keyframes only scale and start/end on the same frame, no opacity or
      border-colour dips, so a loop boundary is invisible. */
 
 .participant-tile--avatar-only.is-speaking {
@@ -57,7 +57,7 @@
   animation-name: speakingRingsGlow;
 }
 
-/* Outer ring — sits on the avatar shell edge. */
+/* Outer ring, sits on the avatar shell edge. */
 .speaking-rings-ring.ring-a {
   inset: -19px;
   border: 2px solid #23a55a;

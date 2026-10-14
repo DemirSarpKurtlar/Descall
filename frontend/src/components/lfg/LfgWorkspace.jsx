@@ -378,7 +378,7 @@ export default function LfgWorkspace({
             <div className="lfg-empty">
               <Crosshair size={28} />
               <strong>{t("No open lobbies")}</strong>
-              <span>{t("Create one and share Descall — voice + party code in one place.")}</span>
+              <span>{t("Create one and share Descall, voice + party code in one place.")}</span>
               <button type="button" className="lfg-btn primary" onClick={() => setShowCreate(true)}>
                 {t("Create lobby")}
               </button>
@@ -460,7 +460,7 @@ export default function LfgWorkspace({
             <Gamepad2 size={40} />
             <h3>{t("Valorant LFG")}</h3>
             <p>
-              {t("Browse stacks, join the Descall voice lobby, then reveal the Valorant party code. Everything stays inside Descall — not a separate site.")}
+              {t("Browse stacks, join the Descall voice lobby, then reveal the Valorant party code. Everything stays inside Descall, not a separate site.")}
             </p>
           </div>
         ) : detailLoading || !detail?.lobby ? (
@@ -760,7 +760,7 @@ function CreateLobbyModal({ meta, ranks, busy, defaultHostRank, defaultRegion, o
           </div>
 
           <label className="lfg-full">
-            {t("Valorant party code (optional — can add later)")}
+            {t("Valorant party code (optional, can add later)")}
             <input
               value={form.partyCode}
               onChange={(e) => setForm({ ...form, partyCode: e.target.value })}
