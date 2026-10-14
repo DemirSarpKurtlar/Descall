@@ -12,7 +12,7 @@ import {
   PERMISSIONS_POLICY,
   SITE_CSP,
   canonicalRedirect,
-} from "../../public/_worker.js";
+} from "../../public/security-policy.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const headerTitle = CSP_HEADER.split("-").map((part) => part[0].toUpperCase() + part.slice(1)).join("-");
@@ -44,6 +44,8 @@ assert.ok(catchAll.headers.some((h) => h.key === "X-Frame-Options" && h.value ==
 assert.ok(catchAll.headers.some((h) => h.key === "Strict-Transport-Security" && h.value === HSTS));
 assert.equal(vercel.headers.some((rule) => rule.headers.some((h) => h.value?.includes("frame-ancestors 'self'"))), false);
 
+assert.deepEqual(worker.match(/^export .+/gm), ["export default {"]);
+assert.ok(worker.includes('from "./security-policy.js"'));
 assert.ok(worker.includes('"/groups"') && worker.includes('"/invite"') && worker.includes("/404.html"));
 assert.ok(worker.includes('readAsset(env, request, "/")'));
 assert.ok(api.includes("frame-ancestors 'none'"));

@@ -17,7 +17,7 @@ Production web is Cloudflare Pages at `https://descall.com`. `frontend/vercel.js
 
 ## 3. Security headers
 
-Set on every Cloudflare Pages response (`frontend/public/_worker.js`, with `frontend/public/_headers` as backup) and on `/(.*)` in `frontend/vercel.json`:
+Set on every Cloudflare Pages response (`frontend/public/_worker.js`, header values in `frontend/public/security-policy.js`, with `frontend/public/_headers` as backup) and on `/(.*)` in `frontend/vercel.json`. The worker file only default-exports. Pages treats any other export as a second handler, and a string export fails the deploy.
 
 - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
 - `Content-Security-Policy` (enforcing). `frame-ancestors 'none'`. `script-src` includes `https://static.cloudflareinsights.com` because Cloudflare injects that beacon on the live zone. A local production-build pass of the public pages had no violations; the live beacon was the only extra host.
