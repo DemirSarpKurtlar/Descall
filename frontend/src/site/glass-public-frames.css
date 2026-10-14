@@ -735,7 +735,7 @@ body:has(.mkt) .auth-otp .auth-otp-input {
   margin-top: 16px;
   border: none;
   border-radius: 26px;
-  background: #587af6;
+  background: #3b63e6;
   color: #fff;
   font-weight: 650;
 }
@@ -1451,7 +1451,7 @@ body:has(.mkt) .login-modal :focus-visible {
   align-items: center;
   justify-content: center;
   color: #fff;
-  background: #587af6;
+  background: #3b63e6;
 }
 
 .mkt .mkt-mono {

@@ -257,7 +257,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-btn-primary {
-  background: #587af6;
+  background: #3b63e6;
   color: #fff;
 }
 
@@ -944,7 +944,7 @@ body:has(.mkt-consent),
   border: 0;
   border-radius: 11px;
   color: #fff;
-  background: #587af6;
+  background: #3b63e6;
   font-family: var(--mkt-font-body);
   font-size: 15px;
   font-weight: 700;
@@ -1026,7 +1026,7 @@ body:has(.mkt-consent),
   font-size: 14px;
   cursor: pointer;
   color: #fff;
-  background: #587af6;
+  background: #3b63e6;
 }
 
 .login-modal .forgot-password-flow .auth-submit:disabled {
@@ -1162,7 +1162,7 @@ body:has(.mkt-consent),
     padding: 11px;
     border-radius: 9px;
     color: #fff;
-    background: #587af6;
+    background: #3b63e6;
     font-size: 13px;
     font-weight: 700;
     text-decoration: none;
