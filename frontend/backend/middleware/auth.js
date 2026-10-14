@@ -25,6 +25,12 @@ async function requireAuth(req, res, next) {
     }
     const session = await sessionAllowed(decoded);
     if (!session.ok) {
+      if (session.code === "SESSION_CHECK_FAILED") {
+        return res.status(503).json({
+          error: "Could not verify your session. Try again.",
+          code: "SESSION_CHECK_FAILED",
+        });
+      }
       return res.status(401).json({
         error: "Session has been signed out.",
         code: session.code || "SESSION_REVOKED",

@@ -66,7 +66,7 @@ async function sessionAllowed(decoded) {
     return decideSession(decoded, { activeIds: ids });
   } catch (err) {
     console.error("[session] active session lookup failed:", err?.message || err);
-    return { ok: true, degraded: true };
+    return { ok: false, code: "SESSION_CHECK_FAILED" };
   }
 }
 

@@ -63,8 +63,7 @@ function socketAuthMiddleware(socket, next) {
         });
       })
       .catch(() => {
-        assign();
-        next();
+        next(new Error("Authentication failed: session check failed."));
       });
     return;
   } catch (err) {

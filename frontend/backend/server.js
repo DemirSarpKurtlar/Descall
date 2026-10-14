@@ -45,6 +45,10 @@ const { sendFeedbackEmail } = require("./lib/feedbackEmail");
 
 // Inline feedback - no external file needed
 const { requireAuth } = require("./middleware/auth");
+const { requireAdmin } = require("./middleware/requireAdmin");
+const { debugRoutesEnabled } = require("./lib/debugGate");
+const { claimWaitlistNotify } = require("./lib/waitlistNotify");
+const { recordFailure, rejectIfLimited } = require("./lib/rateLimit");
 const supabase = require("./db/supabase");
 
 // Socket
@@ -168,11 +172,9 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Hard-off in production. ENABLE_DEBUG_ROUTES must not reopen /debug/*.
-const debugRoutesEnabled = process.env.NODE_ENV !== "production";
-
-// TEMP DEBUG: list all tables in public schema
-if (debugRoutesEnabled) app.get("/debug/tables", async (_req, res) => {
+// Off unless ENABLE_DEBUG_ROUTES=true. NODE_ENV alone must not expose table peeks.
+// Admin JWT required even then.
+if (debugRoutesEnabled()) app.get("/debug/tables", requireAuth, requireAdmin, async (_req, res) => {
   try {
     const { data, error } = await supabase
       .from("information_schema.tables")
@@ -190,7 +192,7 @@ if (debugRoutesEnabled) app.get("/debug/tables", async (_req, res) => {
 });
 
 // TEMP DEBUG: show first 5 rows of any table
-if (debugRoutesEnabled) app.get("/debug/peek/:tableName", async (req, res) => {
+if (debugRoutesEnabled()) app.get("/debug/peek/:tableName", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from(req.params.tableName)
@@ -230,6 +232,10 @@ app.get("/api/health", sendHealth);
 const marketingOptIn = require("./lib/marketingOptIn");
 app.post("/api/marketing/waitlist", async (req, res) => {
   try {
+    const ip = req.ip || req.socket?.remoteAddress || "unknown";
+    if (rejectIfLimited(res, [recordFailure(`waitlist:${ip}`, { windowMs: 60 * 60 * 1000, max: 8 })])) {
+      return;
+    }
     const email = String(req.body?.email || "")
       .trim()
       .toLowerCase();
@@ -246,16 +252,17 @@ app.post("/api/marketing/waitlist", async (req, res) => {
       locale,
       consentText: "Get occasional release notes — no spam, unsubscribe anytime.",
     });
-    // Best-effort notify operator via Resend when configured
-    try {
-      const { sendEmail } = require("./lib/mailer");
-      await sendEmail({
-        to: process.env.WAITLIST_NOTIFY_TO || "contact@descall.com",
-        subject: `Descall waitlist: ${email}`,
-        text: `New waitlist signup\nEmail: ${email}\nSource: ${source}\nPath: ${pathName}\n`,
-      }).catch(() => {});
-    } catch {
-      /* mailer optional */
+    if (claimWaitlistNotify(email)) {
+      try {
+        const { sendEmail } = require("./lib/mailer");
+        await sendEmail({
+          to: process.env.WAITLIST_NOTIFY_TO || "contact@descall.com",
+          subject: `Descall waitlist: ${email}`,
+          text: `New waitlist signup\nEmail: ${email}\nSource: ${source}\nPath: ${pathName}\n`,
+        }).catch(() => {});
+      } catch {
+        /* mailer optional */
+      }
     }
     return res.json({ ok: true });
   } catch (e) {
@@ -679,11 +686,12 @@ app.put("/api/user/notifications", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
-    return res.json({ success: true, user: data });
+    if (error) return res.status(500).json({ success: false, error: "Could not save notification settings." });
+
+    return res.json({ success: true, user: toPublicUser(data) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    console.error("[user] notifications update failed:", err?.message || err);
+    return res.status(500).json({ success: false, error: "Could not save notification settings." });
   }
 });
 
@@ -707,11 +715,12 @@ app.put("/api/user/privacy", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
-    return res.json({ success: true, user: data });
+    if (error) return res.status(500).json({ success: false, error: "Could not save privacy settings." });
+
+    return res.json({ success: true, user: toPublicUser(data) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    console.error("[user] privacy update failed:", err?.message || err);
+    return res.status(500).json({ success: false, error: "Could not save privacy settings." });
   }
 });
 
@@ -731,11 +740,12 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
-    return res.json({ success: true, user: data });
+    if (error) return res.status(500).json({ success: false, error: "Could not save regional settings." });
+
+    return res.json({ success: true, user: toPublicUser(data) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    console.error("[user] regional update failed:", err?.message || err);
+    return res.status(500).json({ success: false, error: "Could not save regional settings." });
   }
 });
 

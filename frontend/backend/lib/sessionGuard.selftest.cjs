@@ -22,4 +22,21 @@ assert(!missing.ok && missing.code === "SESSION_REVOKED", "sid missing from acti
 const present = decideSession({ sub: "u", sid: "live", iat: after }, { activeIds: ["live"] });
 assert(present.ok, "sid still in active sessions is allowed");
 
-console.log("sessionGuard.selftest.cjs: ok");
+const supabase = require("../db/supabase");
+const { sessionAllowed } = require("./sessionGuard");
+supabase.from = () => ({
+  select() { return this; },
+  eq() { return this; },
+  maybeSingle: async () => {
+    throw new Error("db down");
+  },
+});
+
+(async () => {
+  const failed = await sessionAllowed({ sub: "u", sid: "sid-1", iat: after });
+  assert(!failed.ok && failed.code === "SESSION_CHECK_FAILED", "lookup failure is closed");
+  console.log("sessionGuard.selftest.cjs: ok");
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

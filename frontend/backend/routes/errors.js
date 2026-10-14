@@ -4,6 +4,9 @@ const supabase = require("../db/supabase");
 const state = require("../runtime/sharedState");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin } = require("../middleware/requireAdmin");
+const { verifyToken } = require("../config/jwt");
+const { sessionAllowed } = require("../lib/sessionGuard");
+const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
 
 console.log("[ERRORS-JS] File loaded! Routes being registered...");
 
@@ -19,9 +22,36 @@ function safeTimestamp(value) {
   return Number.isFinite(date.getTime()) ? date.toISOString() : new Date().toISOString();
 }
 
-router.post("/", async (req, res) => {
+function clientIp(req) {
+  return req.ip || req.socket?.remoteAddress || "unknown";
+}
+
+async function authenticatedReporter(req) {
+  const header = req.headers.authorization || "";
+  if (!header.startsWith("Bearer ")) return null;
   try {
-    const { stack, componentStack, url, userAgent, timestamp, userId, username, severity = "error", source = "frontend" } = req.body || {};
+    const decoded = verifyToken(header.slice(7));
+    if (!decoded || decoded.pending2fa) return null;
+    const session = await sessionAllowed(decoded);
+    if (!session.ok) return null;
+    return {
+      id: decoded.sub,
+      username: decoded.username || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+router.post("/", async (req, res) => {
+  if (rejectIfLimited(res, [recordFailure(`client-error:${clientIp(req)}`, { windowMs: 10 * 60 * 1000, max: 30 })])) {
+    return;
+  }
+  try {
+    const { stack, componentStack, url, userAgent, timestamp, severity = "error", source = "frontend" } = req.body || {};
+    const reporter = await authenticatedReporter(req);
+    const userId = reporter?.id ? clipText(reporter.id, 80) : "anonymous";
+    const username = reporter?.username ? clipText(reporter.username, 80) : null;
     const message = clipText(req.body?.message, 4000) || "Unknown client error";
 
     // Store error in Supabase
