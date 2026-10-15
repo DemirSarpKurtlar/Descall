@@ -208,7 +208,7 @@
   padding: 0 8px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .server-list-row-wrap {
@@ -266,8 +266,8 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 12px;
+  padding: 12px 18px;
   border: none;
   border-radius: 10px;
   background: transparent;
@@ -441,7 +441,7 @@
   background: transparent;
   color: var(--text-2);
   font-size: 14px;
-  padding: 7px 10px;
+  padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
@@ -472,7 +472,7 @@
 .server-channel-row-wrap {
   position: relative;
   width: calc(100% - 16px);
-  margin: 1px 8px;
+  margin: 4px 8px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;

@@ -104,7 +104,7 @@ html.glass-ui .app-root.g-shell button.group-item.conv-row {
   display: flex !important;
   align-items: center;
   gap: 12px;
-  padding: 10px 8px !important;
+  padding: 12px 18px !important;
   min-height: 76px;
   border: 0 !important;
   border-radius: 18px !important;

@@ -15,8 +15,8 @@ html.glass-desktop .category-label {
 
 html.glass-desktop .friend-item {
   min-height: 52px;
-  margin: 2px 8px;
-  padding: 6px 10px;
+  margin: 4px 8px;
+  padding: 10px 18px;
   border-radius: 14px;
   background: transparent;
   color: var(--gd-t1);

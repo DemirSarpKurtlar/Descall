@@ -123,7 +123,7 @@ html.glass-ui .g-friend-row {
   align-items: center;
   gap: 12px;
   min-height: 76px;
-  padding: 10px 8px;
+  padding: 12px 18px;
   border-radius: 18px;
   color: var(--g-t1);
 }
@@ -630,7 +630,7 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-channel-row {
   align-items: center;
   gap: 8px;
   min-height: 38px;
-  padding: 6px 10px;
+  padding: 10px 18px;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 500;
@@ -708,6 +708,7 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-step-hint {
 
 html.glass-ui .app-root.g-shell .servers-sidebar .server-list-item {
   min-height: 64px;
+  padding: 12px 18px;
   border-radius: 16px;
   background: transparent;
 }

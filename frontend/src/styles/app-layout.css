@@ -951,7 +951,7 @@ html.gd-lite .rail-tooltip {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 10px;
+  padding: 12px 18px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -1000,7 +1000,7 @@ html.gd-lite .rail-tooltip {
 .conv-list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
 }
 
 .conv-row {
@@ -1306,7 +1306,7 @@ html.gd-lite .rail-tooltip {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 10px;
+  padding: 12px 18px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -1383,7 +1383,7 @@ html.gd-lite .rail-tooltip {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 5px 10px;
+  padding: 10px 18px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -3161,8 +3161,8 @@ button.header-avatar {
 .member-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 8px;
+  gap: 12px;
+  padding: 10px 18px;
   border-radius: 8px;
   margin: 0;
   transition: background 0.12s ease, opacity 0.12s ease;

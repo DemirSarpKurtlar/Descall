@@ -79,7 +79,7 @@ button.server-channel-row {
 .conv-group-wrap.is-desktop,
 .conv-group-wrap.is-swipeable {
   position: relative;
-  margin: 2px 8px;
+  margin: 4px 8px;
   border-radius: 12px;
 }
 
