@@ -42,6 +42,10 @@ jobs:
         shell: pwsh
         env:
           ELECTRON_BUILD: "1"
+          # NSIS extracts app-64.7z with nsis7z. 7-Zip's default BCJ2 filter is
+          # not reliably decoded there, which drops or corrupts Descall.exe and
+          # ffmpeg.dll (0xc000007b). BCJ is the filter that extractor can read.
+          ELECTRON_BUILDER_7Z_FILTER: BCJ
           # Optional Authenticode cert (PFX, base64 or path). Empty secrets must
           # not be forwarded: electron-builder treats a blank CSC_LINK as a
           # signing failure. The certificate subject (CN) must be Descall so it
@@ -84,7 +88,7 @@ jobs:
         working-directory: frontend
         run: |
           $ErrorActionPreference = "Stop"
-          node electron/peArch.cjs --dir release/win-unpacked --expect 34404 --require Descall.exe,ffmpeg.dll,vcruntime140.dll
+          node electron/peArch.cjs --dir release/win-unpacked --expect 34404 --require Descall.exe,ffmpeg.dll
           function Invoke-Smoke([string]$Exe) {
             $env:DESCALL_SMOKE = "1"
             $proc = Start-Process -FilePath $Exe -ArgumentList "--descall-smoke" -PassThru

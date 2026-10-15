@@ -78,8 +78,7 @@ if (require.main === module) {
   }
   const { rows, errors } = assertArch(dir, expect, required);
   const vcr = rows.find((row) => row.name.toLowerCase() === "vcruntime140.dll");
-  console.log(`[pe-arch] ${rows.length} native images, vcruntime140=${vcr ? machineName(vcr.machine) : "missing"}`);
-  if (!vcr) errors.push("missing vcruntime140.dll (Electron must ship the VC++ runtime next to Descall.exe)");
+  console.log(`[pe-arch] ${rows.length} native images, vcruntime140=${vcr ? machineName(vcr.machine) : "not bundled"}`);
   if (errors.length) {
     for (const err of errors) console.error(`[pe-arch] ${err}`);
     process.exit(1);

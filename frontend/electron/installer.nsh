@@ -94,7 +94,8 @@ FunctionEnd
   DetailPrint "Installing Descall..."
 
   ; Descall.exe and ffmpeg.dll must both be x64 (machine 0x8664 = 34404).
-  ; A mismatch is the 0xc000007b dialog. Abort instead of launching it.
+  ; Electron 41 does not ship vcruntime140.dll; only reject it when it is present
+  ; and not x64. A mismatch is the 0xc000007b dialog. Abort instead of launching.
   StrCpy $0 "$PLUGINSDIR\descall-pe.ps1"
   FileOpen $1 $0 w
   FileWrite $1 "$$ErrorActionPreference='Stop'$\r$\n"
@@ -113,7 +114,8 @@ FunctionEnd
   FileWrite $1 "$$exe=M '$INSTDIR\${APP_EXECUTABLE_FILENAME}'$\r$\n"
   FileWrite $1 "$$ff=M '$INSTDIR\ffmpeg.dll'$\r$\n"
   FileWrite $1 "$$vc=M '$INSTDIR\vcruntime140.dll'$\r$\n"
-  FileWrite $1 "if ($$exe -ne 34404 -or $$ff -ne 34404 -or $$vc -ne 34404) { exit 1 }$\r$\n"
+  FileWrite $1 "if ($$exe -ne 34404 -or $$ff -ne 34404) { exit 1 }$\r$\n"
+  FileWrite $1 "if ($$vc -ne 0 -and $$vc -ne 34404) { exit 1 }$\r$\n"
   FileWrite $1 "exit 0$\r$\n"
   FileClose $1
   nsExec::Exec `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$0"`
