@@ -20,6 +20,15 @@
  * reduced transparency, forced colors, 4 or fewer CPU cores, a slow frame
  * sample, or Settings › Görünüm. A manual "off" beats the automatic triggers
  * except the accessibility ones.
+ *
+ * Electron must not take that path from signals Chrome ignores. The
+ * `prefers-reduced-transparency` media query sticks on `reduce` inside
+ * Electron, and `nativeTheme.prefersReducedTransparency` is the Windows DWM
+ * "Transparency effects" switch — neither one turns off in-page blur in
+ * Chrome, so honoring them paints the rail and list as flat solids while the
+ * website stays frosted. A frame sample taken while the window is still
+ * hidden (`show: false` at boot) is the same trap: background rAF gaps latch
+ * `gd-lite` for the rest of the session.
  */
 
 import { isPublicMarketingPath } from "../site/marketingPaths.js";
@@ -127,15 +136,28 @@ export function shouldEnableGlassDesktop({
 }
 
 /**
- * Electron's `prefers-reduced-transparency` media query does not track the OS
- * transparency switch (Chromium bug the nativeTheme API was added for). A stuck
- * `reduce` turns on gd-lite and paints the rail, list, and header as flat
- * solids while Chrome on the same machine stays frosted. Trust the native
- * value when Electron provides one.
+ * Web follows `prefers-reduced-transparency`. Electron must not.
+ * Its media query sticks on `reduce`, and the native value is the OS DWM
+ * acrylic switch, which Chrome does not apply to in-page backdrop-filter.
+ * Either signal adds `gd-lite` and the shell becomes opaque while the site
+ * stays frosted. Forced colors and Settings › Görünüm still drop blur.
  */
 export function resolveReducedTransparency({ isElectron = false, media = false, native = null } = {}) {
-  if (isElectron && typeof native === "boolean") return native;
+  if (isElectron) {
+    void native;
+    return false;
+  }
   return Boolean(media);
+}
+
+/**
+ * Hidden-window and stalled frames are not a slow GPU. Electron boots with
+ * the window hidden, and those rAF gaps are hundreds of milliseconds.
+ */
+export function shouldCountGlassFrame({ hidden = false, deltaMs = 0 } = {}) {
+  if (hidden) return false;
+  const dt = Number(deltaMs);
+  return dt > 0 && dt < 100;
 }
 
 /** Pure low-performance decision. */
@@ -339,10 +361,16 @@ function sampleFrameRate(w) {
   let acc = 0;
   const step = (now) => {
     if (!enabled) return;
-    if (last) {
-      acc += now - last;
-      frames += 1;
+    const hidden = Boolean(w.document?.hidden);
+    const deltaMs = last ? now - last : 0;
+    if (!shouldCountGlassFrame({ hidden, deltaMs })) {
+      // Drop the baseline across a hide so the next visible frame is not a stall.
+      last = hidden ? 0 : now;
+      raf.call(w, step);
+      return;
     }
+    acc += deltaMs;
+    frames += 1;
     last = now;
     if (frames < 45) {
       raf.call(w, step);

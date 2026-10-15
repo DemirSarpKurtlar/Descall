@@ -5001,12 +5001,13 @@ body.electron-app .modal-backdrop {
   z-index: 100050 !important;
 }
 
-/* Background tab: stop blur and looping motion. Visible UI is unchanged. */
+/* Background tab: pause looping motion only. Leave backdrop blur alone.
+   Electron's page-visibility bit sticks on hidden for a frameless window the
+   user can still see, and clearing the filter here flattened every glass
+   surface while the website stayed frosted. */
 html.g-theme-paused *,
 html.g-theme-paused *::before,
 html.g-theme-paused *::after {
   animation-play-state: paused !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
 }
 

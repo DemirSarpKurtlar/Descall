@@ -1,9 +1,13 @@
 // Desktop/web Liquid Glass gate. Run: node src/lib/glassDesktop.selftest.mjs
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   shouldEnableGlassDesktop,
   shouldUseGlassDesktopLite,
   resolveReducedTransparency,
+  shouldCountGlassFrame,
   readGlassDesktopQuery,
   isGlassDesktopSurface,
   shouldPreviewDesktopAuth,
@@ -56,13 +60,25 @@ assert.equal(resolveReducedTransparency({ media: true }), true, "web trusts the 
 assert.equal(
   resolveReducedTransparency({ isElectron: true, media: true, native: false }),
   false,
-  "Electron ignores a stuck reduce query when the OS transparency switch is on"
+  "Electron ignores a stuck reduce query"
 );
 assert.equal(
   resolveReducedTransparency({ isElectron: true, media: false, native: true }),
-  true,
-  "Electron follows the OS transparency switch"
+  false,
+  "Windows DWM transparency off must not flatten in-page glass"
 );
+assert.equal(
+  resolveReducedTransparency({ isElectron: true, media: true, native: true }),
+  false,
+  "Electron does not drop blur when both transparency signals say reduce"
+);
+assert.equal(shouldCountGlassFrame({ hidden: true, deltaMs: 16 }), false, "hidden frames do not count");
+assert.equal(shouldCountGlassFrame({ hidden: false, deltaMs: 800 }), false, "a stall is not a slow GPU");
+assert.equal(shouldCountGlassFrame({ hidden: false, deltaMs: 16 }), true, "a visible frame counts");
+assert.equal(shouldCountGlassFrame({ hidden: false, deltaMs: 0 }), false, "the first timestamp is a baseline");
+const main = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../electron/main.cjs"), "utf8");
+assert.match(main, /disable-features',\s*'CalculateNativeWinOcclusion'/);
+assert.match(main, /Frameless windows are often marked occluded/);
 assert.equal(shouldUseGlassDesktopLite({}), false, "a fast machine stays glassy");
 assert.equal(shouldUseGlassDesktopLite({ cores: 4 }), true, "4 cores → lite");
 assert.equal(shouldUseGlassDesktopLite({ cores: 4, manual: "0" }), false, "manual off beats the CPU trigger");

@@ -56,6 +56,41 @@ html.glass-desktop .nav-item.active {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
+/* Rail tiles. rail-icons.css paints these with opaque --g-solid / --surface-2,
+   which blocks the theme even when the column behind them is frosted.
+   Higher specificity than `html body .nav-rail .rail-btn`, shared by web and Electron. */
+html.glass-desktop body .nav-rail .rail-btn {
+  border-color: var(--gd-hair);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
+    var(--gd-glass-fill);
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+}
+
+html.glass-desktop body .nav-rail .rail-btn:hover:not(.active) {
+  border-color: color-mix(in srgb, var(--rail-accent, var(--gd-brand)) 55%, var(--gd-hair));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
+    var(--gd-glass-fill);
+  background-color: transparent;
+}
+
+/* Group letter tiles use an inline --primary-soft wash. On an opaque panel
+   that wash is a flat dark square. Same frost as the list, on web and Electron. */
+html.glass-desktop .group-icon {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08)),
+    var(--gd-glass-fill) !important;
+  color: var(--gd-t1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 0.5px var(--gd-hair);
+  -webkit-backdrop-filter: blur(16px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(16px) saturate(var(--gd-saturate));
+}
+
 html.glass-desktop .sidebar-secondary {
   border: none;
   border-radius: var(--gd-r-panel);
@@ -241,8 +276,7 @@ html.glass-desktop.electron-app .sidebar-search input,
 html.glass-desktop.electron-app .composer-input,
 html.glass-desktop.electron-app .composer-left .composer-action-btn,
 html.glass-desktop.electron-app .sidebar-actions::before,
-html.glass-desktop.electron-app .titlebar,
-html.glass-desktop.electron-app .conv-more-btn {
+html.glass-desktop.electron-app .titlebar {
   background: var(--gd-glass-fill) !important;
   background-color: transparent !important;
   -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate)) !important;

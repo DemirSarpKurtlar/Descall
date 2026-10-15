@@ -141,6 +141,12 @@ try {
   app.commandLine.appendSwitch('disable-renderer-backgrounding');
   app.commandLine.appendSwitch('disable-background-timer-throttling');
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  // Frameless windows are often marked occluded, so document.hidden stays
+  // true while the user is looking at the app. Chromium then skips
+  // backdrop-filter entirely and the glass shell paints as flat dark.
+  // Chrome on the same page does not do this. Do not set transparent:true
+  // on Windows — a layered window skips the DWM taskbar inset.
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
   // Linux compositors drop in-page backdrop-filter unless this is set
   // before ready. Windows stays a normal framed client (see createMainWindow):
   // a layered transparent window skips the DWM taskbar inset.
