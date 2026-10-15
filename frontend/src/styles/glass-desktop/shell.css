@@ -4,26 +4,12 @@
 
 html.glass-desktop,
 html.glass-desktop body,
-html.glass-desktop body.electron-app {
-  background:
-    radial-gradient(38% 46% at 6% 6%, rgba(88, 122, 246, 0.46), transparent 70%),
-    radial-gradient(34% 40% at 62% 0%, rgba(124, 92, 255, 0.26), transparent 72%),
-    radial-gradient(40% 48% at 100% 30%, rgba(124, 92, 255, 0.30), transparent 70%),
-    radial-gradient(46% 50% at 26% 92%, rgba(88, 122, 246, 0.22), transparent 70%),
-    radial-gradient(36% 44% at 94% 100%, rgba(170, 92, 255, 0.24), transparent 70%),
-    radial-gradient(6% 9% at 21% 30%, rgba(143, 166, 255, 0.16), transparent 70%),
-    radial-gradient(8% 12% at 48% 64%, rgba(160, 120, 255, 0.10), transparent 70%),
-    radial-gradient(5% 8% at 80% 18%, rgba(255, 140, 200, 0.08), transparent 70%),
-    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%) !important;
-  background-color: #0d0e13 !important;
-}
-
-html.glass-desktop[data-theme="light"],
-html.glass-desktop[data-theme="light"] body {
-  background:
-    radial-gradient(40% 46% at 8% 0%, rgba(88, 122, 246, 0.28), transparent 70%),
-    radial-gradient(36% 40% at 100% 18%, rgba(124, 92, 255, 0.18), transparent 72%),
-    linear-gradient(165deg, #eef1fb 0%, #f7f8fc 50%, #e7ebf6 100%) !important;
+html.glass-desktop body.electron-app,
+html.glass-desktop.electron-app,
+html.glass-desktop.electron-app body,
+html.glass-desktop.electron-app body.electron-app {
+  background: var(--gd-aurora) !important;
+  background-color: var(--gd-aurora-base-1) !important;
 }
 
 html.glass-desktop #root,
@@ -43,11 +29,9 @@ html.glass-desktop .nav-rail {
   border: none;
   border-radius: 26px;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
-    var(--gd-panel-base);
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
@@ -58,7 +42,7 @@ html.glass-desktop .nav-rail-logo {
   padding: 0;
   background: transparent;
   border: none;
-  box-shadow: 0 6px 18px rgba(88, 122, 246, 0.35);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--gd-brand) 35%, transparent);
 }
 
 html.glass-desktop .nav-item {
@@ -75,11 +59,9 @@ html.glass-desktop .sidebar-secondary {
   border: none;
   border-radius: var(--gd-r-panel);
   overflow: hidden;
-  background:
-    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
-    var(--gd-panel-base);
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
@@ -104,27 +86,40 @@ html.glass-desktop .chat-panel-shell.is-members-docked > .members-panel {
 html.glass-desktop .app-main-slot {
   border-radius: var(--gd-r-panel);
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62));
+  background: var(--gd-main-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
-html.glass-desktop .main-panel,
 html.glass-desktop .chat-panel-shell,
 html.glass-desktop .app-main-view,
 html.glass-desktop .messages-container,
 html.glass-desktop .sidebar-inner,
 html.glass-desktop .sidebar-content,
-html.glass-desktop .sidebar-header {
+html.glass-desktop .sidebar-header,
+html.glass-desktop .panel-header {
   background: transparent !important;
+  background-color: transparent !important;
   border-color: transparent;
+}
+
+/* List, rail, and the main panel share one frost. A transparent main
+   panel was showing the navy body while the list painted the theme slab. */
+html.glass-desktop .main-panel {
+  background: var(--gd-glass-fill) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
 }
 
 html.glass-desktop .sidebar-inner {
   width: 100%;
 }
 
-html.glass-desktop[data-theme="light"] .app-main-slot {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.38));
+html.glass-desktop[data-theme="light"] .app-main-slot,
+html.glass-desktop[data-theme="light"] .chat-panel-shell.is-members-docked > .main-panel {
+  background: var(--gd-main-fill);
 }
 
 /* Edge highlight + inner sheen from desktop.css .glass.panel */
@@ -194,7 +189,9 @@ html.glass-desktop .chat-panel-shell.is-members-docked {
 html.glass-desktop .chat-panel-shell.is-members-docked > .main-panel {
   border-radius: var(--gd-r-panel);
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62)) !important;
+  background: var(--gd-main-fill) !important;
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
@@ -211,43 +208,33 @@ html.glass-desktop.gd-contrast .gd-auth-card {
 html.glass-desktop.electron-app,
 html.glass-desktop.electron-app body,
 html.glass-desktop.electron-app body.electron-app {
-  background:
-    radial-gradient(38% 46% at 6% 6%, rgba(88, 122, 246, 0.46), transparent 70%),
-    radial-gradient(34% 40% at 62% 0%, rgba(124, 92, 255, 0.26), transparent 72%),
-    radial-gradient(40% 48% at 100% 30%, rgba(124, 92, 255, 0.30), transparent 70%),
-    radial-gradient(46% 50% at 26% 92%, rgba(88, 122, 246, 0.22), transparent 70%),
-    radial-gradient(36% 44% at 94% 100%, rgba(170, 92, 255, 0.24), transparent 70%),
-    radial-gradient(6% 9% at 21% 30%, rgba(143, 166, 255, 0.16), transparent 70%),
-    radial-gradient(8% 12% at 48% 64%, rgba(160, 120, 255, 0.10), transparent 70%),
-    radial-gradient(5% 8% at 80% 18%, rgba(255, 140, 200, 0.08), transparent 70%),
-    linear-gradient(165deg, #151826 0%, #16171f 45%, #0f1017 100%) !important;
-  background-color: #0d0e13 !important;
+  background: var(--gd-aurora) !important;
+  background-color: var(--gd-aurora-base-1) !important;
 }
 
 html.glass-desktop.electron-app body.electron-app #root,
 html.glass-desktop.electron-app .app-root,
 html.glass-desktop.electron-app .sidebar-header,
-html.glass-desktop.electron-app .main-panel,
 html.glass-desktop.electron-app .chat-panel-shell,
 html.glass-desktop.electron-app .app-main-view,
 html.glass-desktop.electron-app .messages-container,
 html.glass-desktop.electron-app .sidebar-inner,
-html.glass-desktop.electron-app .sidebar-content {
+html.glass-desktop.electron-app .sidebar-content,
+html.glass-desktop.electron-app .panel-header {
   background: transparent !important;
   background-color: transparent !important;
 }
 
 html.glass-desktop.electron-app:not(.gd-lite) .nav-rail,
-html.glass-desktop.electron-app:not(.gd-lite) .sidebar-secondary {
-  background:
-    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
-    var(--gd-panel-base) !important;
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
-}
-
-html.glass-desktop.electron-app:not(.gd-lite) .app-main-slot {
-  background: linear-gradient(180deg, rgba(12, 13, 19, 0.50), rgba(10, 11, 16, 0.62)) !important;
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%) !important;
+html.glass-desktop.electron-app:not(.gd-lite) .sidebar-secondary,
+html.glass-desktop.electron-app:not(.gd-lite) .app-main-slot,
+html.glass-desktop.electron-app:not(.gd-lite) .main-panel,
+html.glass-desktop.electron-app:not(.gd-lite) .chat-panel-shell.is-members-docked > .main-panel,
+html.glass-desktop.electron-app:not(.gd-lite) .members-panel,
+html.glass-desktop.electron-app:not(.gd-lite) .header-identity,
+html.glass-desktop.electron-app:not(.gd-lite) .header-right {
+  background: var(--gd-glass-fill) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate)) !important;
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate)) !important;
 }

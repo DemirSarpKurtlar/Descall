@@ -30,6 +30,7 @@ import {
   setServerFolder,
 } from "./api/servers";
 import { syncChannelMutesFromServer } from "./lib/serverChannelMutes";
+import { applyDocumentTheme } from "./lib/themeDocument";
 import { applyDmListPrefs, prefsMapFromList, mergePrefIntoMap, applyLocalPrefPatch } from "./lib/dmConversationPrefs";
 import {
   hydrateChatCache,
@@ -1031,12 +1032,13 @@ export default function App() {
       const nextTheme = themeKey || (settings.darkMode === false ? "light" : "dark");
       const root = document.documentElement;
       const prev = root.getAttribute("data-theme");
+      /* Settings is not mounted on the chat screen, so this is the path
+         that actually applies an equipped theme. Clearing the inline accent
+         here is what lets the theme color reach buttons and letter avatars. */
+      applyDocumentTheme(root, nextTheme, { accentColor: settings.accentColor });
       if (prev !== nextTheme) {
         root.classList.add("theme-crossfade");
-        root.setAttribute("data-theme", nextTheme);
         window.setTimeout(() => root.classList.remove("theme-crossfade"), 320);
-      } else {
-        root.setAttribute("data-theme", nextTheme);
       }
     } catch {
       if (themeKey) document.documentElement.setAttribute("data-theme", themeKey);

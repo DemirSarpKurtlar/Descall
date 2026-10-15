@@ -11,7 +11,7 @@ html body .nav-rail .rail-btn {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
-    rgba(16, 18, 28, 0.62);
+    var(--gd-panel-base, rgba(16, 18, 28, 0.62));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     0 6px 14px rgba(0, 0, 0, 0.22);
@@ -52,14 +52,14 @@ html body .nav-rail .rail-btn.active .rail-glyph svg {
 }
 
 html body .nav-rail .rail-btn:hover:not(.active) {
-  border-color: color-mix(in srgb, var(--rail-accent, #8aa0ff) 55%, rgba(255, 255, 255, 0.2));
+  border-color: color-mix(in srgb, var(--rail-accent, var(--primary)) 55%, rgba(255, 255, 255, 0.2));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06)),
     rgba(16, 18, 28, 0.7);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 8px 16px rgba(0, 0, 0, 0.28),
-    0 0 12px color-mix(in srgb, var(--rail-accent, #8aa0ff) 42%, transparent);
+    0 0 12px color-mix(in srgb, var(--rail-accent, var(--primary)) 42%, transparent);
 }
 
 html body .nav-rail .rail-btn:hover .rail-btn-inner,
@@ -71,11 +71,11 @@ html body .nav-rail .rail-btn.active svg {
 }
 
 html body .nav-rail .rail-btn.active {
-  background: linear-gradient(180deg, #8eabff 0%, #4f72f6 58%, #3c5de8 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary, #4f7cff) 70%, white), var(--primary, #4f7cff));
   border-color: rgba(255, 255, 255, 0.32);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 8px 16px rgba(62, 98, 236, 0.36);
+    0 8px 16px color-mix(in srgb, var(--primary, #4f7cff) 36%, transparent);
 }
 
 html body .nav-rail .rail-btn.active::before {
@@ -87,8 +87,8 @@ html body .nav-rail .rail-btn.active::before {
   height: 16px;
   margin: 0;
   border-radius: 3px;
-  background: #8eabff;
-  box-shadow: 0 0 8px rgba(126, 160, 255, 0.55);
+  background: var(--text-link, var(--primary));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 55%, transparent);
   transform: translateY(-50%);
   animation: none;
 }
@@ -113,7 +113,7 @@ html body .nav-rail .rail-btn:focus-visible {
   outline: none;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 0 2px rgba(142, 171, 255, 0.85);
+    0 0 0 2px color-mix(in srgb, var(--primary) 85%, transparent);
 }
 
 /* Phone tab bars keep the same shapes and follow the tab color. */

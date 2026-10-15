@@ -1059,9 +1059,18 @@ html.glass-ui .g-profile-actions button {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 0 14px;
   font-size: 15px;
   font-weight: 650;
+  line-height: 1;
   cursor: pointer;
+}
+
+html.glass-ui .g-profile-actions button svg,
+html.glass-ui .g-profile-safety button svg,
+html.glass-ui .g-profile-safety .user-profile-report-btn svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 html.glass-ui .g-profile-actions .is-brand {
@@ -1142,7 +1151,8 @@ html.glass-ui .g-profile-safety button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
+  padding: 0 12px;
   color: #ff6961;
   background: rgba(255, 255, 255, 0.09);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);

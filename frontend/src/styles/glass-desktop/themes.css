@@ -1,0 +1,93 @@
+/* Theme washes for desktop and web glass.
+   Accent themes (Crimson, Ocean, …) inherit --gd-aurora from tokens.css,
+   which mixes that theme's --primary and --surface. Scene themes paint
+   their own stage so the frost is tinted by the scene, including Iriscape.
+   iPhone html.glass-ui is not targeted here. */
+
+html.glass-desktop[data-theme="lagoon"] {
+  --gd-aurora:
+    radial-gradient(42% 30% at 18% 82%, rgba(20, 170, 200, 0.55), transparent 70%),
+    radial-gradient(34% 24% at 80% 16%, rgba(40, 110, 190, 0.42), transparent 68%),
+    linear-gradient(180deg, #0A2836, #06141C 58%, #041018);
+  --gd-aurora-base-1: #06141C;
+}
+
+html.glass-desktop[data-theme="grove"] {
+  --gd-aurora:
+    linear-gradient(100deg, transparent 10%, rgba(70, 160, 90, 0.28) 28%, transparent 46%),
+    radial-gradient(36% 28% at 12% 0%, rgba(90, 190, 100, 0.36), transparent 70%),
+    linear-gradient(180deg, #102818, #07140E);
+  --gd-aurora-base-1: #07140E;
+}
+
+html.glass-desktop[data-theme="hanami"] {
+  --gd-aurora:
+    radial-gradient(16% 12% at 24% 28%, rgba(255, 176, 196, 0.62), transparent 70%),
+    radial-gradient(12% 10% at 68% 20%, rgba(255, 140, 170, 0.46), transparent 72%),
+    radial-gradient(14% 11% at 46% 72%, rgba(255, 186, 206, 0.36), transparent 70%),
+    linear-gradient(180deg, #2C1420, #160910);
+  --gd-aurora-base-1: #160910;
+}
+
+html.glass-desktop[data-theme="emberfall"] {
+  --gd-aurora:
+    radial-gradient(36% 28% at 30% 70%, rgba(255, 120, 40, 0.48), transparent 70%),
+    radial-gradient(28% 22% at 72% 24%, rgba(255, 70, 20, 0.36), transparent 70%),
+    linear-gradient(180deg, #2A140C, #140C08);
+  --gd-aurora-base-1: #140C08;
+}
+
+html.glass-desktop[data-theme="borealis"] {
+  --gd-aurora:
+    linear-gradient(180deg, transparent 8%, rgba(80, 230, 180, 0.38) 28%, transparent 48%),
+    linear-gradient(180deg, transparent 40%, rgba(130, 110, 255, 0.40) 62%, transparent 82%),
+    linear-gradient(180deg, #07141C, #071018);
+  --gd-aurora-base-1: #071018;
+  --gd-saturate: 210%;
+}
+
+html.glass-desktop[data-theme="starwell"] {
+  --gd-aurora:
+    radial-gradient(40% 32% at 30% 40%, rgba(90, 70, 200, 0.55), transparent 70%),
+    radial-gradient(1.4px 1.4px at 18% 22%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 70% 30%, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 46% 68%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 82% 74%, #fff, transparent),
+    linear-gradient(180deg, #100C22, #0A0816);
+  --gd-aurora-base-1: #0A0816;
+}
+
+html.glass-desktop[data-theme="chromeveil"] {
+  --gd-aurora:
+    linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.16) 42%, transparent 58%),
+    linear-gradient(160deg, #1A212C, #0A0C10 42%, #141A24);
+  --gd-aurora-base-1: #0A0C10;
+}
+
+html.glass-desktop[data-theme="iriscape"] {
+  --gd-aurora:
+    conic-gradient(from 210deg at 50% 45%, rgba(124, 58, 237, 0.55), rgba(34, 211, 238, 0.38), rgba(244, 114, 182, 0.5), rgba(250, 204, 21, 0.32), rgba(124, 58, 237, 0.55)),
+    linear-gradient(180deg, #16101E, #0C0A12);
+  --gd-aurora-base-1: #0C0A12;
+  --gd-panel-tint: color-mix(in srgb, #f472b6 26%, transparent);
+  --gd-saturate: 220%;
+  --gd-blur-panel: 34px;
+}
+
+/* The spinning iris sits above the static wash and behind the panels.
+   theme-scenes.css already pauses this for reduced motion. */
+html.glass-desktop[data-theme="iriscape"] body::before {
+  content: "";
+  position: fixed;
+  inset: -22%;
+  z-index: 0;
+  pointer-events: none;
+  background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.55), rgba(34, 211, 238, 0.34), rgba(244, 114, 182, 0.5), rgba(250, 204, 21, 0.3), rgba(124, 58, 237, 0.55));
+  animation: theme-scene-spin 80s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-desktop[data-theme="iriscape"] body::before {
+    animation: none;
+  }
+}

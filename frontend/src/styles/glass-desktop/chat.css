@@ -39,9 +39,7 @@ html.glass-desktop .sidebar-actions::before {
   left: 0;
   width: calc(100% - 36px);
   border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.42);
+  background: var(--gd-glass-fill);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
   pointer-events: none;
 }
@@ -80,8 +78,8 @@ html.glass-desktop .sidebar-actions .icon-btn:last-child {
   margin-left: 4px;
   border-radius: 16px;
   color: #fff !important;
-  background: linear-gradient(180deg, rgba(120, 150, 255, 0.95), rgba(80, 112, 240, 0.95)) !important;
-  box-shadow: 0 8px 22px rgba(88, 122, 246, 0.45);
+  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand)) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--gd-brand) 45%, transparent);
 }
 
 html.glass-desktop .sidebar-content .section-header {
@@ -128,7 +126,9 @@ html.glass-desktop .sidebar-search input {
   height: 36px;
   border: none;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.10);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(16px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(16px) saturate(var(--gd-saturate));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
   color: var(--gd-t1);
   font-family: var(--gd-font);
@@ -171,8 +171,36 @@ html.glass-desktop .conv-row .dm-avatar .ui-avatar {
   height: 40px;
 }
 
-html.glass-desktop .conv-row .ui-avatar-inner {
+html.glass-desktop .conv-row .ui-avatar-inner,
+html.glass-desktop .letter-avatar,
+html.glass-desktop .ui-avatar-inner {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -8px 14px rgba(0, 0, 0, 0.18);
+}
+
+html.glass-desktop .conv-more-btn {
+  background: color-mix(in srgb, var(--gd-brand) 22%, transparent) !important;
+  color: var(--gd-t1);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand-hi) 45%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(14px) saturate(var(--gd-saturate));
+}
+
+html.glass-desktop .empty-cta.primary,
+html.glass-desktop .sidebar-actions .icon-btn:last-child,
+html.glass-desktop .composer-send-btn {
+  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+html.glass-desktop .empty-icon-wrap {
+  background: var(--gd-glass-fill) !important;
+  color: var(--gd-brand) !important;
+  border: none;
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand-hi) 40%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(16px) saturate(var(--gd-saturate));
 }
 
 html.glass-desktop .conv-time {
@@ -237,11 +265,9 @@ html.glass-desktop .header-identity {
   height: 52px;
   padding: 0 18px 0 6px;
   border-radius: 26px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.22);
-  -webkit-backdrop-filter: blur(26px) saturate(190%);
-  backdrop-filter: blur(26px) saturate(190%);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(26px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(26px) saturate(var(--gd-saturate));
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
 }
 
@@ -250,11 +276,9 @@ html.glass-desktop .header-right {
   padding: 0 6px;
   border-radius: 26px;
   gap: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.22);
-  -webkit-backdrop-filter: blur(26px) saturate(190%);
-  backdrop-filter: blur(26px) saturate(190%);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(26px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(26px) saturate(var(--gd-saturate));
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
 }
 
@@ -295,7 +319,7 @@ html.glass-desktop .message-bubble {
   padding: 9px 14px;
   border-radius: 18px;
   border-top-left-radius: 6px;
-  background: rgba(58, 61, 80, 0.78);
+  background: color-mix(in srgb, var(--surface-2, #2b2d31) 72%, transparent);
   box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.10);
   color: var(--gd-t1);
   font-size: 15px;
@@ -306,8 +330,8 @@ html.glass-desktop .message-bubble.own {
   border-top-left-radius: 18px;
   border-top-right-radius: 6px;
   border-bottom-right-radius: 18px;
-  background: rgba(88, 122, 246, 0.26);
-  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.28);
+  background: color-mix(in srgb, var(--gd-brand) 28%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand-hi) 40%, transparent);
 }
 
 html.glass-desktop .message-bubble.compact {
@@ -342,9 +366,7 @@ html.glass-desktop .composer-left .composer-action-btn {
   height: 52px;
   border-radius: 26px;
   color: var(--gd-t1);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)),
-    rgba(22, 24, 36, 0.55) !important;
+  background: var(--gd-glass-fill) !important;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28), inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
 }
 
@@ -375,9 +397,9 @@ html.glass-desktop .composer-send-btn {
   width: 40px;
   height: 40px;
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(120, 150, 255, 0.95), rgba(80, 112, 240, 0.95)) !important;
+  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand)) !important;
   color: #fff !important;
-  box-shadow: 0 8px 18px rgba(88, 122, 246, 0.4);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--gd-brand) 40%, transparent);
 }
 
 html.glass-desktop .composer-input {
@@ -386,9 +408,7 @@ html.glass-desktop .composer-input {
   border: none !important;
   border-radius: 26px !important;
   padding: 14px 132px 14px 20px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.38) !important;
+  background: var(--gd-glass-fill) !important;
   -webkit-backdrop-filter: blur(26px) saturate(190%);
   backdrop-filter: blur(26px) saturate(190%);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
@@ -403,7 +423,7 @@ html.glass-desktop .composer-input::placeholder {
 
 html.glass-desktop .composer-input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px #0d0e13, 0 0 0 4px #8fa6ff, 0 12px 32px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 0 2px var(--gd-aurora-base-1), 0 0 0 4px var(--gd-brand-hi), 0 12px 32px rgba(0, 0, 0, 0.28);
 }
 
 html.glass-desktop.gd-lite .header-identity,

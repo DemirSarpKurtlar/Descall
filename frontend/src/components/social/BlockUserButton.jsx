@@ -34,7 +34,7 @@ export default function BlockUserButton({ userId, username, className = "user-pr
         }}
       >
         <Ban size={iconSize} />
-        {compact ? null : <> {label}</>}
+        {compact ? null : <span>{label}</span>}
       </button>
       {error && !compact ? (
         <p className="auth-field-hint" role="alert" style={{ color: "var(--danger)" }}>{error}</p>

@@ -18,6 +18,8 @@ import {
   Type,
   Wallpaper,
   Zap,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 import RippleButton from "../ui/RippleButton";
@@ -34,6 +36,7 @@ import { useLocale, useT } from "../../context/LocaleContext";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
+import { useShopChipScroll } from "../../hooks/useShopChipScroll";
 import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
@@ -314,7 +317,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   const glassShell = useGlassShell();
   const glassDesktop = useGlassDesktop();
-  const chipRowRef = useRef(null);
   const { isMobile } = useMobile();
   const availableTabs = useMemo(
     () => (glassShell && isMobile
@@ -322,6 +324,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       : CATEGORY_TABS.filter((tab) => countsByCategory.has(tab.id))),
     [countsByCategory, glassShell, isMobile]
   );
+  const chips = useShopChipScroll({
+    activeId: activeCategory,
+    onActivate: setActiveCategory,
+    ready: !loading && availableTabs.length > 0,
+  });
 
   useEffect(() => {
     if (!availableTabs.length) {
@@ -332,22 +339,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       setActiveCategory(availableTabs[0].id);
     }
   }, [availableTabs, activeCategory]);
-
-  useEffect(() => {
-    const row = chipRowRef.current;
-    if (!row || !glassDesktop) return undefined;
-    const onWheel = (event) => {
-      if (row.scrollWidth <= row.clientWidth + 1) return;
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-      const max = row.scrollWidth - row.clientWidth;
-      const next = Math.max(0, Math.min(max, row.scrollLeft + event.deltaY));
-      if (next === row.scrollLeft) return;
-      row.scrollLeft = next;
-      event.preventDefault();
-    };
-    row.addEventListener("wheel", onWheel, { passive: false });
-    return () => row.removeEventListener("wheel", onWheel);
-  }, [glassDesktop, availableTabs, loading]);
 
   const visibleItems = useMemo(
     () => (activeCategory ? items.filter((item) => item.category === activeCategory) : []),
@@ -608,29 +599,64 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   );
 
   const categoryTabs = !loading && availableTabs.length > 0 ? (
-    <nav
-      ref={glassDesktop ? chipRowRef : null}
-      className={`shop-category-tabs${glassDesktop ? " is-glass-chips" : ""}`}
-      aria-label={t("Shop categories")}
-    >
-      {availableTabs.map((tab) => {
-        const Icon = tab.icon;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            className={`shop-category-tab ${activeCategory === tab.id ? "active" : ""}`}
-            onClick={() => setActiveCategory(tab.id)}
-          >
-            <span className="shop-category-tab-label">
-              {Icon ? <Icon size={14} /> : null}
-              {t(tab.label)}
-            </span>
-            <span className="shop-category-tab-count">{countsByCategory.get(tab.id) || 0}</span>
-          </button>
-        );
-      })}
-    </nav>
+    <div className="shop-chip-rail">
+      <button
+        type="button"
+        className="shop-chip-arrow is-prev"
+        aria-label={t("Previous")}
+        hidden={!chips.edges.left}
+        onClick={() => chips.scrollByPage(-1)}
+      >
+        <ChevronLeft size={16} />
+      </button>
+      <div
+        ref={chips.viewportRef}
+        className={[
+          "shop-chip-viewport",
+          "shop-category-tabs",
+          glassDesktop ? "is-glass-chips" : "",
+          chips.edges.left ? "is-fade-left" : "",
+          chips.edges.right ? "is-fade-right" : "",
+        ].filter(Boolean).join(" ")}
+        role="tablist"
+        tabIndex={0}
+        aria-label={t("Shop categories")}
+        onKeyDown={chips.onKeyDown}
+      >
+        <div className="shop-chip-track" ref={chips.trackRef}>
+          {availableTabs.map((tab) => {
+            const Icon = tab.icon;
+            const selected = activeCategory === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                data-tab-id={tab.id}
+                aria-selected={selected}
+                className={`shop-category-tab ${selected ? "active" : ""}`}
+                onClick={() => setActiveCategory(tab.id)}
+              >
+                <span className="shop-category-tab-label">
+                  {Icon ? <Icon size={14} /> : null}
+                  {t(tab.label)}
+                </span>
+                <span className="shop-category-tab-count">{countsByCategory.get(tab.id) || 0}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <button
+        type="button"
+        className="shop-chip-arrow is-next"
+        aria-label={t("Next")}
+        hidden={!chips.edges.right}
+        onClick={() => chips.scrollByPage(1)}
+      >
+        <ChevronRight size={16} />
+      </button>
+    </div>
   ) : null;
 
   return (
@@ -640,11 +666,10 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
           <div className="shop-catalog">
             {lead}
-            {glassDesktop ? categoryTabs : null}
+            {categoryTabs}
             {catalog}
           </div>
         </div>
-        {glassDesktop ? null : categoryTabs}
         <ShopProfilePreview me={me} t={t} />
       </div>
     </motion.div>

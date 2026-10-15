@@ -24,17 +24,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* One letter color everywhere a photo is missing. Glassy Descall indigo. */
+  /* Letter discs follow the active theme accent, with a glass highlight. */
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 62%),
-    linear-gradient(168deg, #a8bcff 0%, #6d8ef8 30%, #4f72f6 62%, #3a58dc 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0) 64%),
+    linear-gradient(168deg, color-mix(in srgb, var(--primary, #4f7cff) 72%, white), var(--primary, #4f7cff));
 }
 
 /* Call tiles and other letter discs that are not the shared Avatar component. */
 .letter-avatar {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 62%),
-    linear-gradient(168deg, #a8bcff 0%, #6d8ef8 30%, #4f72f6 62%, #3a58dc 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0) 64%),
+    linear-gradient(168deg, color-mix(in srgb, var(--primary, #4f7cff) 72%, white), var(--primary, #4f7cff));
   color: #fff;
 }
 
@@ -193,6 +193,19 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-profile-msg,
+.user-profile-friend,
+.user-profile-report-btn {
+  gap: 7px;
+}
+
+.user-profile-msg svg,
+.user-profile-friend svg,
+.user-profile-report-btn svg {
+  display: block;
   flex-shrink: 0;
 }
 

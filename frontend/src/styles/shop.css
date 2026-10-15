@@ -14,7 +14,7 @@
 
 .shop-workspace {
   display: grid;
-  grid-template-columns: minmax(168px, 220px) minmax(0, 1fr) minmax(240px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
   /* One definite row. An `auto` row lets the reward cards size the grid and
      leaves the category grid a short clipped strip. */
   grid-template-rows: minmax(0, 1fr);
@@ -28,7 +28,7 @@
 }
 
 .shop-main {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   display: flex;
   flex-direction: column;
@@ -1194,7 +1194,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
 
 /* Live profile column shown while the shop is open */
 .shop-profile-stage {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 1 / -1;
   min-width: 0;
   min-height: 0;
@@ -1409,22 +1409,145 @@ html[data-bubble="minimal"] .shop-live-bubble {
 
 @media (max-width: 1100px) {
   .user-settings.is-desktop.is-shop-open .shop-workspace {
-    grid-template-columns: 168px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
   }
 
   .user-settings.is-desktop.is-shop-open .shop-main {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .user-settings.is-desktop.is-shop-open .shop-category-tabs {
+    grid-column: 1;
     grid-row: 1;
   }
 
   .user-settings.is-desktop.is-shop-open .shop-profile-stage {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 2;
     max-height: 200px;
+  }
+}
+
+/* Category chips: drag, swipe, and arrows. The track moves with a transform
+   so a grab can rubber-band past either end. */
+.shop-chip-rail {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.shop-chip-rail .shop-category-tabs {
+  display: block;
+  height: auto;
+  min-height: 40px;
+  overflow: hidden;
+  grid-column: auto;
+  grid-row: auto;
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  touch-action: pan-y;
+}
+
+.shop-chip-track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  padding: 2px 4px;
+  will-change: transform;
+}
+
+.shop-chip-track .shop-category-tab {
+  flex: 0 0 auto;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+}
+
+.shop-chip-viewport.is-fade-left {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px);
+  mask-image: linear-gradient(90deg, transparent, #000 18px);
+}
+
+.shop-chip-viewport.is-fade-right {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+}
+
+.shop-chip-viewport.is-fade-left.is-fade-right {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 22px), transparent);
+}
+
+.shop-chip-viewport.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.shop-chip-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-0, #fff);
+  cursor: pointer;
+  background: var(--surface-2, #2b2d31);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 100%),
+    color-mix(in srgb, var(--surface-2, #2b2d31) 42%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+.shop-chip-arrow.is-prev { left: 2px; }
+.shop-chip-arrow.is-next { right: 2px; }
+
+.shop-chip-arrow[hidden] {
+  display: none;
+}
+
+html.glass-lite .shop-chip-arrow,
+html.gd-lite .shop-chip-arrow {
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .shop-chip-arrow,
+  html.glass-lite .shop-chip-arrow,
+  html.gd-lite .shop-chip-arrow {
+    background: var(--surface-2, #2b2d31);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));
+  }
+}
+
+html.a11y-solid .shop-chip-arrow {
+  background: var(--surface-2, #2b2d31);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-chip-arrow,
+  .shop-chip-track {
+    transition: none;
+    animation: none;
   }
 }

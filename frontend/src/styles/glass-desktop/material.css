@@ -5,11 +5,9 @@ html.glass-desktop .gd-chip,
 html.glass-desktop .gd-lens {
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.06) 100%),
-    rgba(22, 24, 36, 0.22);
-  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(190%) brightness(1.06);
-  backdrop-filter: blur(var(--gd-blur)) saturate(190%) brightness(1.06);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate)) brightness(1.06);
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate)) brightness(1.06);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.22);
 }
 
@@ -71,11 +69,9 @@ html.glass-desktop .gd-heavy {
 html.glass-desktop .gd-panel {
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
-    var(--gd-panel-base);
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
@@ -98,10 +94,11 @@ html.glass-desktop.gd-lite .gd-heavy,
 html.glass-desktop.gd-lite .gd-panel,
 html.glass-desktop.gd-lite .nav-rail,
 html.glass-desktop.gd-lite .sidebar-secondary,
+html.glass-desktop.gd-lite .main-panel,
 html.glass-desktop.gd-lite .gd-auth-card {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: var(--gd-solid);
+  background: var(--gd-solid) !important;
 }
 
 html.glass-desktop.gd-lite .gd-heavy,

@@ -9,6 +9,7 @@ import {
   Trash2, AtSign, Lock,
 } from "lucide-react";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
+import { applyDocumentTheme, applyInlineAccent, clearInlineAccent } from "../../lib/themeDocument";
 import { copyText } from "../../lib/copyText";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
@@ -107,15 +108,6 @@ function splitStatusEmoji(value) {
   return { emoji, text: emoji ? raw.slice(emoji.length).replace(/^\s+/, "") : raw };
 }
 
-function hexToRgba(hex, alpha) {
-  const h = String(hex || "").replace("#", "");
-  if (h.length !== 6) return `rgba(88, 101, 242, ${alpha})`;
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 // A purchased premium theme fully re-tints `--primary` (and every other
 // token) via its `[data-theme="…"]` CSS block. The custom "Accent Color"
 // swatch picker used to set these same properties as an *inline* style on
@@ -126,17 +118,8 @@ function hexToRgba(hex, alpha) {
 // overrides instead of (re)applying them, so the theme's own CSS wins.
 export function applyAppearanceSettings({ accentColor, chatFontSize, uiDensity, bubbleStyle, premiumTheme } = {}) {
   const root = document.documentElement;
-  const ACCENT_PROPS = ["--primary", "--primary-2", "--primary-soft", "--primary-glow", "--shadow-glow-primary", "--accent"];
-  if (accentColor && !premiumTheme) {
-    root.style.setProperty("--primary", accentColor);
-    root.style.setProperty("--primary-2", accentColor);
-    root.style.setProperty("--primary-soft", hexToRgba(accentColor, 0.12));
-    root.style.setProperty("--primary-glow", hexToRgba(accentColor, 0.35));
-    root.style.setProperty("--shadow-glow-primary", `0 0 16px ${hexToRgba(accentColor, 0.24)}`);
-    root.style.setProperty("--accent", accentColor);
-  } else {
-    ACCENT_PROPS.forEach((prop) => root.style.removeProperty(prop));
-  }
+  if (accentColor && !premiumTheme) applyInlineAccent(root, accentColor);
+  else clearInlineAccent(root);
   if (chatFontSize) {
     root.style.setProperty("--chat-font-size", `${chatFontSize}px`);
   }
@@ -729,14 +712,15 @@ const UserPanel = forwardRef(function UserPanel({
   const applyThemeWithCrossfade = useCallback((nextTheme) => {
     const root = document.documentElement;
     const prev = root.getAttribute("data-theme");
+    /* Catalog themes own --primary. Passing the stored accent here still
+       clears it; only dark/light keep an inline accent. Settings is not
+       always mounted, so App.jsx applies the same helper on login. */
+    applyDocumentTheme(root, nextTheme, { accentColor });
     if (prev !== nextTheme) {
       root.classList.add("theme-crossfade");
-      root.setAttribute("data-theme", nextTheme);
       window.setTimeout(() => root.classList.remove("theme-crossfade"), 320);
-    } else {
-      root.setAttribute("data-theme", nextTheme);
     }
-  }, []);
+  }, [accentColor]);
 
   useEffect(() => {
     applyThemeWithCrossfade(equippedThemeKey || (darkMode ? "dark" : "light"));

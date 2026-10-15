@@ -38,9 +38,12 @@ jobs:
           node src/styles/list-card-padding.selftest.mjs
           node src/styles/call-glass.selftest.mjs
           node src/lib/profileModalState.selftest.mjs
+          node src/lib/shopChipScroll.selftest.mjs
           node src/site/siteIcons.selftest.mjs
           node src/styles/feedback-nudge.selftest.mjs
           node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
+          node src/styles/glass-desktop/themeTint.selftest.mjs
+          node src/lib/themeDocument.selftest.mjs
           node src/lib/casinoCommands.selftest.mjs
           node backend/socket/casinoIosGate.selftest.cjs
           node backend/games/BlackjackGame.selftest.js

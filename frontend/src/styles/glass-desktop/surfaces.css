@@ -2,8 +2,8 @@
    Visual only. Layout, data, and iOS glass stay as they are. */
 
 html.glass-desktop {
-  --gd-scrim: rgba(5, 6, 10, 0.5);
-  --gd-scrim-blur: blur(24px) saturate(1.25);
+  --gd-scrim: color-mix(in srgb, var(--surface-0, #111214) 46%, transparent);
+  --gd-scrim-blur: blur(24px) saturate(1.4);
 }
 
 /* Full-window dim + blur. The card keeps the pre-glass size (1080×780)
@@ -47,11 +47,9 @@ html.glass-desktop .user-settings.is-desktop {
   border: none !important;
   border-radius: 30px !important;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
-    rgba(18, 20, 30, 0.72) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  backdrop-filter: blur(40px) saturate(180%);
+  background: var(--gd-card-fill) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(40px) saturate(var(--gd-saturate));
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
   color: var(--gd-t1);
 }
@@ -65,7 +63,7 @@ html.glass-desktop .user-settings.is-desktop.is-shop-open {
 
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
   width: 264px;
-  background: rgba(255, 255, 255, 0.035) !important;
+  background: color-mix(in srgb, var(--gd-panel-tint) 55%, transparent) !important;
   border: none;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -76,7 +74,7 @@ html.glass-desktop .user-settings.is-desktop .us-mini-profile {
   overflow: visible;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)),
-    rgba(22, 24, 36, 0.38);
+    color-mix(in srgb, var(--surface-1, #1e1f22) 38%, transparent);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
   -webkit-backdrop-filter: blur(22px) saturate(1.6);
   backdrop-filter: blur(22px) saturate(1.6);
@@ -87,7 +85,7 @@ html.glass-desktop .user-settings.is-desktop .us-mini-profile:hover {
   border: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.07)),
-    rgba(22, 24, 36, 0.46);
+    color-mix(in srgb, var(--surface-1, #1e1f22) 46%, transparent);
 }
 
 html.glass-desktop .user-settings.is-desktop .us-mini-name,
@@ -139,9 +137,27 @@ html.glass-desktop .us-nav-item:hover {
 }
 
 html.glass-desktop .us-nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--gd-brand) 18%, rgba(255, 255, 255, 0.08));
   color: var(--gd-t1);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand) 35%, transparent);
+}
+
+html.glass-desktop .us-theme-card {
+  background: var(--gd-card-fill) !important;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--gd-t1);
+  -webkit-backdrop-filter: blur(18px) saturate(var(--gd-saturate));
+  backdrop-filter: blur(18px) saturate(var(--gd-saturate));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+html.glass-desktop .us-theme-card.selected {
+  border-color: var(--gd-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gd-brand) 28%, transparent), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+}
+
+html.glass-desktop .us-theme-swatch {
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.28), inset 0 12px 18px rgba(255, 255, 255, 0.16);
 }
 
 /* Logout footer was an opaque --surface-0 slab. Keep it a frosted strip,
@@ -526,7 +542,7 @@ html.glass-desktop .add-modal-input:focus,
 html.glass-desktop .feedback-textarea:focus {
   border: none;
   outline: none;
-  box-shadow: inset 0 0 0 2px #8fa6ff, inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 2px var(--gd-brand-hi), inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 html.glass-desktop .add-modal-btn,
@@ -539,19 +555,19 @@ html.glass-desktop .feedback-close-btn {
   padding: 0 16px;
   border: none;
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(120, 150, 255, 0.95), rgba(80, 112, 240, 0.95));
+  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand));
   color: #fff;
   font-family: var(--gd-font);
   font-size: 15px;
   font-weight: 700;
-  box-shadow: 0 8px 22px rgba(88, 122, 246, 0.45);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--gd-brand) 45%, transparent);
 }
 
 html.glass-desktop .add-modal-btn:hover:not(:disabled),
 html.glass-desktop .feedback-submit-btn:hover:not(:disabled),
 html.glass-desktop .feedback-close-btn:hover {
   filter: brightness(1.06);
-  background: linear-gradient(180deg, rgba(120, 150, 255, 0.95), rgba(80, 112, 240, 0.95));
+  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand));
   transform: none;
 }
 
@@ -563,8 +579,8 @@ html.glass-desktop .add-modal .group-member-option {
 }
 
 html.glass-desktop .add-modal .group-member-option.selected {
-  background-color: rgba(88, 122, 246, 0.22) !important;
-  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.45);
+  background-color: color-mix(in srgb, var(--gd-brand) 22%, transparent) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gd-brand-hi) 45%, transparent);
 }
 
 html.glass-desktop .add-modal .quick-add-card {
@@ -675,8 +691,8 @@ html.glass-desktop .feedback-priority-btn:hover {
 html.glass-desktop .feedback-cat-btn.is-active,
 html.glass-desktop .feedback-priority-btn.is-active {
   border: none;
-  background: rgba(88, 122, 246, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.55);
+  background: color-mix(in srgb, var(--gd-brand) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gd-brand-hi) 55%, transparent);
   color: var(--gd-t1);
 }
 
@@ -813,8 +829,8 @@ html.glass-desktop .lfg-lobby-card {
 
 html.glass-desktop .lfg-lobby-card.active,
 html.glass-desktop .lfg-lobby-card:hover {
-  background: rgba(88, 122, 246, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.55);
+  background: color-mix(in srgb, var(--gd-brand) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gd-brand-hi) 55%, transparent);
 }
 
 html.glass-desktop .shop-wallet-bar {
@@ -822,7 +838,7 @@ html.glass-desktop .shop-wallet-bar {
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.22);
+    color-mix(in srgb, var(--surface-1, #1e1f22) 22%, transparent);
   color: var(--gd-t1);
 }
 
@@ -959,32 +975,22 @@ html.glass-desktop .user-settings.is-shop-open .shop-wallet-pill {
   border-radius: 19px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.45);
+    color-mix(in srgb, var(--surface-1, #1e1f22) 45%, transparent);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
-html.glass-desktop .shop-category-tabs.is-glass-chips {
+html.glass-desktop .shop-chip-rail .shop-category-tabs.is-glass-chips {
   flex: 0 0 auto;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
   height: auto;
   min-height: 40px;
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  gap: 8px;
-  /* Inset so the resting first and last chips sit clear of the edge fade. */
-  padding: 4px 36px 4px 16px;
+  overflow: hidden;
   margin: 0;
   border: none;
   border-radius: 0;
   background: transparent;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+  padding: 2px 0;
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips::-webkit-scrollbar {
@@ -1009,9 +1015,9 @@ html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab {
 
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab.active {
   color: #fff;
-  background: rgba(88, 122, 246, 0.32);
+  background: color-mix(in srgb, var(--gd-brand) 32%, transparent);
   border-color: transparent;
-  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.55), 0 4px 12px rgba(88, 122, 246, 0.25);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand-hi) 55%, transparent), 0 4px 12px color-mix(in srgb, var(--gd-brand) 25%, transparent);
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-count {

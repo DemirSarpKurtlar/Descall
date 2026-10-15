@@ -2,11 +2,9 @@
    Visual only. Positions and actions stay as they are. */
 
 html.glass-desktop .members-panel {
-  background:
-    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
-    var(--gd-panel-base);
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(190%);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
   border: none;
   border-radius: var(--gd-r-panel);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
@@ -98,7 +96,7 @@ html.glass-desktop .call-banner-card {
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    rgba(22, 24, 36, 0.28);
+    color-mix(in srgb, var(--surface-1, #1e1f22) 28%, transparent);
   -webkit-backdrop-filter: blur(26px) saturate(190%);
   backdrop-filter: blur(26px) saturate(190%);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
@@ -242,7 +240,7 @@ html.glass-desktop .server-dropdown-item.is-leave:hover {
 }
 
 html.glass-desktop .server-dropdown-item.is-active {
-  background: rgba(88, 122, 246, 0.22);
+  background: color-mix(in srgb, var(--gd-brand) 22%, transparent);
 }
 
 html.glass-desktop .server-dropdown-section-label,

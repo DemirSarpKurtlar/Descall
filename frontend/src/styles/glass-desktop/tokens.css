@@ -4,7 +4,9 @@
 
 html.glass-desktop {
   --gd-brand: var(--primary, #587AF6);
-  --gd-brand-hi: #8FA6FF;
+  --gd-brand-2: var(--primary-2, #3B63E6);
+  --gd-brand-hi: var(--text-link, #8FA6FF);
+  --gd-brand-top: color-mix(in srgb, var(--gd-brand) 72%, white);
   --gd-deep: #0D0E13;
   --gd-t1: rgba(255, 255, 255, 0.96);
   --gd-t2: rgba(235, 238, 255, 0.72);
@@ -15,12 +17,39 @@ html.glass-desktop {
   --gd-gap: 8px;
   --gd-r-panel: 24px;
   --gd-r-card: 18px;
-  --gd-panel-top: rgba(255, 255, 255, 0.085);
-  --gd-panel-bot: rgba(255, 255, 255, 0.035);
-  --gd-panel-base: rgba(18, 20, 30, 0.40);
-  --gd-heavy-base: rgba(20, 21, 30, 0.62);
+  --gd-panel-top: rgba(255, 255, 255, 0.16);
+  --gd-panel-bot: rgba(255, 255, 255, 0.05);
+  /* One frost for every chrome surface. Accent tint only — never an opaque --surface slab. */
+  --gd-panel-base: color-mix(in srgb, var(--gd-brand) 14%, transparent);
+  --gd-panel-tint: color-mix(in srgb, var(--gd-brand) 28%, transparent);
+  --gd-main-base: var(--gd-panel-base);
+  --gd-card-base: color-mix(in srgb, var(--gd-brand) 18%, transparent);
+  --gd-heavy-base: color-mix(in srgb, var(--gd-brand) 20%, transparent);
+  --gd-aurora-a: color-mix(in srgb, var(--gd-brand) 48%, transparent);
+  --gd-aurora-b: color-mix(in srgb, var(--gd-brand-2) 32%, transparent);
+  --gd-aurora-c: color-mix(in srgb, var(--gd-brand) 22%, transparent);
+  --gd-aurora-base-0: color-mix(in srgb, var(--surface-0, #111214) 74%, var(--gd-brand));
+  --gd-aurora-base-1: var(--surface-0, #111214);
+  --gd-aurora-base-2: color-mix(in srgb, var(--surface-0, #111214) 82%, black);
+  --gd-aurora:
+    radial-gradient(38% 46% at 6% 6%, var(--gd-aurora-a), transparent 70%),
+    radial-gradient(34% 40% at 62% 0%, var(--gd-aurora-b), transparent 72%),
+    radial-gradient(40% 48% at 100% 30%, var(--gd-aurora-b), transparent 70%),
+    radial-gradient(46% 50% at 26% 92%, var(--gd-aurora-c), transparent 70%),
+    radial-gradient(36% 44% at 94% 100%, var(--gd-aurora-b), transparent 70%),
+    linear-gradient(165deg, var(--gd-aurora-base-0) 0%, var(--gd-aurora-base-1) 46%, var(--gd-aurora-base-2) 100%);
+  --gd-glass-fill:
+    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
+    linear-gradient(165deg, var(--gd-panel-tint), transparent 72%),
+    var(--gd-panel-base);
+  --gd-main-fill: var(--gd-glass-fill);
+  --gd-card-fill:
+    linear-gradient(180deg, var(--gd-panel-top), var(--gd-panel-bot)),
+    linear-gradient(165deg, var(--gd-panel-tint), transparent 70%),
+    var(--gd-card-base);
   --gd-blur-panel: 40px;
   --gd-blur: 26px;
+  --gd-saturate: 190%;
   --nav-rail-width: 72px;
   --sidebar-width: 296px;
   --gd-solid: color-mix(in srgb, var(--surface-1, #181a24) 92%, transparent);
@@ -32,10 +61,16 @@ html.glass-desktop[data-theme="light"] {
   --gd-t2: rgba(32, 36, 48, 0.72);
   --gd-t3: rgba(32, 36, 48, 0.56);
   --gd-t4: rgba(32, 36, 48, 0.36);
-  --gd-panel-top: rgba(255, 255, 255, 0.55);
-  --gd-panel-bot: rgba(255, 255, 255, 0.28);
-  --gd-panel-base: rgba(255, 255, 255, 0.62);
-  --gd-heavy-base: rgba(255, 255, 255, 0.78);
+  --gd-panel-top: rgba(255, 255, 255, 0.62);
+  --gd-panel-bot: rgba(255, 255, 255, 0.34);
+  --gd-panel-base: color-mix(in srgb, white 58%, transparent);
+  --gd-panel-tint: color-mix(in srgb, var(--gd-brand) 16%, transparent);
+  --gd-main-base: color-mix(in srgb, white 46%, transparent);
+  --gd-card-base: color-mix(in srgb, white 68%, transparent);
+  --gd-heavy-base: color-mix(in srgb, white 78%, transparent);
+  --gd-aurora-base-0: color-mix(in srgb, #eef1fb 78%, var(--gd-brand));
+  --gd-aurora-base-1: #f7f8fc;
+  --gd-aurora-base-2: #e7ebf6;
   --gd-solid: color-mix(in srgb, var(--surface-1, #f4f5f8) 94%, white);
   --gd-solid-heavy: color-mix(in srgb, var(--surface-0, #fff) 96%, white);
 }

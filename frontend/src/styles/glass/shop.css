@@ -65,19 +65,20 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-catalog {
 
 html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-bar { order: 1; }
 html.glass-ui .user-settings.is-mobile.g-settings .shop-lead { order: 2; }
+html.glass-ui .user-settings.is-mobile.g-settings .shop-chip-rail,
 html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tabs { order: 3; }
 html.glass-ui .user-settings.is-mobile.g-settings .shop-category-block,
 html.glass-ui .user-settings.is-mobile.g-settings .shop-load-error,
 html.glass-ui .user-settings.is-mobile.g-settings .shop-empty-state { order: 4; }
 
-html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tabs {
+html.glass-ui .user-settings.is-mobile.g-settings .shop-chip-rail .shop-category-tabs {
   flex-direction: row;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow: hidden;
   height: auto;
   width: 100%;
   gap: 8px;
-  padding: 0 0 4px;
+  padding: 0;
   margin: 0;
   border: 0;
   background: transparent;

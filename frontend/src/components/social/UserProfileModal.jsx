@@ -401,7 +401,8 @@ function UserProfileModal({
                           onClose();
                         }}
                       >
-                        <MessageSquare size={16} /> {t("Send Message")}
+                        <MessageSquare size={16} />
+                        <span>{t("Send Message")}</span>
                       </button>
                       <button
                         type="button"
@@ -410,7 +411,7 @@ function UserProfileModal({
                         onClick={friendState === "friend" ? handleRemoveFriend : handleAddFriend}
                       >
                         {friendState === "friend" ? <UserMinus size={16} /> : friendState === "sent" ? <Check size={16} /> : <UserPlus size={16} />}
-                        {friendState === "friend" ? t("Friends") : friendState === "sent" ? t("Sent") : t("Add Friend")}
+                        <span>{friendState === "friend" ? t("Friends") : friendState === "sent" ? t("Sent") : t("Add Friend")}</span>
                       </button>
                     </div>
                   )}
@@ -449,7 +450,8 @@ function UserProfileModal({
                         }}
                       />
                       <button type="button" className="user-profile-report-btn" onClick={() => setReportFor(userId)}>
-                        <Flag size={13} /> {t("report.action")}
+                        <Flag size={13} />
+                        <span>{t("report.action")}</span>
                       </button>
                     </div>
                   )}
@@ -800,11 +802,11 @@ function UserProfileModal({
                     }}
                   >
                     {friendState === "friend" ? (
-                      <><UserMinus size={15} /> {friendLoading ? t("Removing…") : t("Friends")}</>
+                      <><UserMinus size={15} /><span>{friendLoading ? t("Removing…") : t("Friends")}</span></>
                     ) : friendState === "sent" ? (
-                      <><Check size={15} /> {t("Sent")}</>
+                      <><Check size={15} /><span>{t("Sent")}</span></>
                     ) : (
-                      <><UserPlus size={15} /> {friendLoading ? t("Sending…") : t("Add Friend")}</>
+                      <><UserPlus size={15} /><span>{friendLoading ? t("Sending…") : t("Add Friend")}</span></>
                     )}
                   </motion.button>
 
@@ -819,6 +821,7 @@ function UserProfileModal({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      gap: 7,
                       padding: "9px",
                       borderRadius: 8,
                       border: "none",
@@ -851,7 +854,8 @@ function UserProfileModal({
                     className="user-profile-report-btn"
                     onClick={() => setReportFor(userId)}
                   >
-                    <Flag size={13} /> {t("report.action")}
+                    <Flag size={13} />
+                    <span>{t("report.action")}</span>
                   </button>
                 </div>
               )}
