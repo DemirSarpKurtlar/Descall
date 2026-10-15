@@ -2,6 +2,26 @@
 <html lang="en">
   <head>
     <script>
+      /* Paint the equipped theme before the bundle. A late data-theme write
+         flashes the default dark window, rail, and accent. Catalog themes
+         own --primary; only dark/light keep a stored accent. */
+      (function () {
+        try {
+          var raw = localStorage.getItem("descall_user_settings") || localStorage.getItem("descall_settings") || "{}";
+          var settings = JSON.parse(raw);
+          var theme = settings.premiumThemeKey || (settings.darkMode === false ? "light" : "dark");
+          if (theme) document.documentElement.setAttribute("data-theme", theme);
+          var accent = settings.accentColor;
+          if (accent && !settings.premiumThemeKey && /^#[0-9A-Fa-f]{6}$/.test(String(accent))) {
+            var root = document.documentElement.style;
+            root.setProperty("--primary", accent);
+            root.setProperty("--primary-2", accent);
+            root.setProperty("--accent", accent);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       /* Mobile boot surface (native Capacitor app + phone/touch web, same rule as
          hooks/useMobile.js; never Electron): the boot splash is the launch-screen
          look (Descall logo on #393C4D, no text) and React's boot placeholder keeps

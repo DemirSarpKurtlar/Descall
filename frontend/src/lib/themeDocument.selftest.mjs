@@ -24,5 +24,8 @@ assert.equal(themeAccentAction("dark", ""), "clear");
 assert.match(app, /applyDocumentTheme\(root, nextTheme, \{ accentColor: settings\.accentColor \}\)/);
 assert.match(panel, /applyDocumentTheme\(root, nextTheme, \{ accentColor \}\)/);
 assert.match(main, /applyDocumentTheme\(document\.documentElement, theme, \{ accentColor \}\)/);
+const html = readFileSync(join(here, "../../index.html"), "utf8");
+assert.match(html, /premiumThemeKey \|\| \(settings\.darkMode === false \? "light" : "dark"\)/);
+assert.match(html, /!settings\.premiumThemeKey && \/\^#\[0-9A-Fa-f\]\{6\}\$\//);
 
 console.log("themeDocument.selftest ok");

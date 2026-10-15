@@ -555,7 +555,7 @@ html.glass-desktop .feedback-close-btn {
   padding: 0 16px;
   border: none;
   border-radius: 22px;
-  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand));
+  background: var(--gd-cta);
   color: #fff;
   font-family: var(--gd-font);
   font-size: 15px;
@@ -567,7 +567,7 @@ html.glass-desktop .add-modal-btn:hover:not(:disabled),
 html.glass-desktop .feedback-submit-btn:hover:not(:disabled),
 html.glass-desktop .feedback-close-btn:hover {
   filter: brightness(1.06);
-  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand));
+  background: var(--gd-cta);
   transform: none;
 }
 

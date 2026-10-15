@@ -163,7 +163,7 @@ html.glass-desktop .gd-auth .auth-submit {
   margin-top: 14px;
   border: 0;
   border-radius: 24px;
-  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand));
+  background: var(--gd-cta);
   color: #fff;
   font-family: var(--gd-font);
   font-size: 16px;

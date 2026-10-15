@@ -2641,7 +2641,7 @@ html[data-bubble="minimal"] .message-bubble {
 }
 .empty-illu-blob.secondary {
   inset: 22%;
-  background: radial-gradient(circle at 70% 60%, rgba(35, 165, 90, 0.18), transparent 70%);
+  background: radial-gradient(circle at 70% 60%, var(--primary-soft), transparent 70%);
   animation-delay: -3s;
 }
 .empty-illustration .empty-icon-wrap {

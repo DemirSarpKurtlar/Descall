@@ -23,6 +23,7 @@ html.glass-desktop .app-root {
   padding: var(--gd-gap);
   gap: var(--gd-gap);
   box-sizing: border-box;
+  color: var(--g-t1);
 }
 
 html.glass-desktop .nav-rail {

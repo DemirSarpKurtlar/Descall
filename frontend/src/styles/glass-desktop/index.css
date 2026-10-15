@@ -1,6 +1,7 @@
 /* Desktop + web Liquid Glass (html.glass-desktop only, lib/glassDesktop.js).
    iPhone html.glass-ui and Android are untouched. */
 @import "./tokens.css";
+@import "./palette.css";
 @import "./material.css";
 @import "./shell.css";
 @import "./chat.css";

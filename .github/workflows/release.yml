@@ -156,4 +156,9 @@ jobs:
             echo "No Windows setup artifacts" >&2
             exit 1
           fi
-          gh release create "${GITHUB_REF_NAME}" "${assets[@]}" --generate-notes
+          notes="docs/release-notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$notes" ]; then
+            gh release create "${GITHUB_REF_NAME}" "${assets[@]}" --notes-file "$notes"
+          else
+            gh release create "${GITHUB_REF_NAME}" "${assets[@]}" --generate-notes
+          fi

@@ -11,19 +11,28 @@ const shell = readFileSync(join(here, "shell.css"), "utf8");
 const themes = readFileSync(join(here, "themes.css"), "utf8");
 const surfaces = readFileSync(join(here, "surfaces.css"), "utf8");
 const design = readFileSync(join(here, "../design-tokens.css"), "utf8");
+const palette = readFileSync(join(here, "palette.css"), "utf8");
+const ios = readFileSync(join(here, "../glass/themes.css"), "utf8");
 
-assert.match(tokens, /--gd-brand:\s*var\(--primary/);
-assert.match(tokens, /--gd-panel-base:\s*color-mix\(in srgb, var\(--gd-brand\)/);
-assert.match(tokens, /--gd-panel-tint:\s*color-mix\(in srgb, var\(--gd-brand\)/);
+assert.match(tokens, /--gd-brand:\s*var\(--g-brand\)/);
+assert.match(tokens, /--gd-t1:\s*var\(--g-t1\)/);
+assert.match(tokens, /--gd-glass-fill:[\s\S]*var\(--g-tint-top\)[\s\S]*var\(--g-tint-base\)/);
 assert.match(tokens, /--gd-main-fill:\s*var\(--gd-glass-fill\)/);
-assert.equal(/--gd-panel-base:\s*color-mix\(in srgb, var\(--surface-1/.test(tokens), false);
-assert.match(tokens, /--gd-aurora:[\s\S]*var\(--gd-aurora-a\)/);
-assert.match(tokens, /--gd-glass-fill:/);
-assert.match(tokens, /--gd-main-fill:/);
-assert.match(tokens, /--gd-card-fill:/);
-assert.match(tokens, /html\.glass-desktop\[data-theme="light"\][\s\S]*--gd-t1:\s*rgba\(20, 22, 32/);
-assert.match(tokens, /html\.glass-desktop\[data-theme="light"\][\s\S]*--gd-aurora-base-1:\s*#f7f8fc/);
+assert.match(tokens, /--gd-aurora:[\s\S]*var\(--g-brand-rgb\)[\s\S]*var\(--g-amb-a\)/);
+assert.match(tokens, /--gd-cta:\s*linear-gradient\(180deg, var\(--g-cta-top\), var\(--g-cta-bot\)\)/);
+assert.match(tokens, /--g-brand: #587AF6/);
 assert.match(tokens, /--gd-deep:\s*#0D0E13/);
+assert.equal(/--gd-panel-base:\s*color-mix\(in srgb, var\(--surface-1/.test(tokens), false);
+
+function blockBody(css, scope, name) {
+  const re = new RegExp(`${scope.replace(".", "\\.")}\\[data-theme="${name}"\\] \\{([\\s\\S]*?)\\n\\}`);
+  const hit = re.exec(css);
+  assert.ok(hit, `${scope} ${name}`);
+  return hit[1].trim();
+}
+for (const name of ["light", "emerald", "crimson", "ocean", "midnight", "iriscape"]) {
+  assert.equal(blockBody(palette, "html.glass-desktop", name), blockBody(ios, "html.glass-ui", name), name);
+}
 
 assert.equal(shell.includes("rgba(88, 122, 246"), false, "shell aurora must not hardcode the default blue");
 assert.equal(shell.includes("#151826"), false, "shell aurora must not hardcode the default dark base");

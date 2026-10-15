@@ -1,89 +1,91 @@
-/* Theme washes for desktop and web glass.
-   Accent themes (Crimson, Ocean, …) inherit --gd-aurora from tokens.css,
-   which mixes that theme's --primary and --surface. Scene themes paint
-   their own stage so the frost is tinted by the scene, including Iriscape.
-   iPhone html.glass-ui is not targeted here. */
+/* Scene stages for desktop and web. Washes and material knobs match
+   src/styles/glass/theme-scenes.css. Accent themes keep the generated
+   palette; these eight replace only the window image (--g-scene). */
 
 html.glass-desktop[data-theme="lagoon"] {
-  --gd-aurora:
-    radial-gradient(42% 30% at 18% 82%, rgba(20, 170, 200, 0.55), transparent 70%),
-    radial-gradient(34% 24% at 80% 16%, rgba(40, 110, 190, 0.42), transparent 68%),
-    linear-gradient(180deg, #0A2836, #06141C 58%, #041018);
+  --g-blur: 28px; --g-saturate: 200%; --g-brightness: 1.05;
+  --g-amb-a: 0.48; --g-amb-b: 0.22; --g-amb-c: 0.16; --g-amb-d: 0.2;
+  --g-scene:
+    radial-gradient(42% 30% at 18% 82%, rgba(20, 170, 200, 0.42), transparent 70%),
+    radial-gradient(34% 24% at 80% 16%, rgba(40, 110, 190, 0.32), transparent 68%),
+    linear-gradient(180deg, #0A2836 0%, #06141C 58%, #041018 100%);
   --gd-aurora-base-1: #06141C;
 }
 
 html.glass-desktop[data-theme="grove"] {
-  --gd-aurora:
-    linear-gradient(100deg, transparent 10%, rgba(70, 160, 90, 0.28) 28%, transparent 46%),
-    radial-gradient(36% 28% at 12% 0%, rgba(90, 190, 100, 0.36), transparent 70%),
-    linear-gradient(180deg, #102818, #07140E);
+  --g-blur: 26px; --g-saturate: 185%; --g-brightness: 1.04;
+  --g-amb-a: 0.36; --g-amb-b: 0.2; --g-amb-c: 0.14; --g-amb-d: 0.18;
+  --g-scene:
+    linear-gradient(100deg, transparent 10%, rgba(70, 160, 90, 0.16) 28%, transparent 46%),
+    linear-gradient(80deg, transparent 50%, rgba(40, 130, 70, 0.14) 70%, transparent 88%),
+    radial-gradient(36% 28% at 12% 0%, rgba(90, 190, 100, 0.24), transparent 70%),
+    linear-gradient(180deg, #102818 0%, #07140E 100%);
   --gd-aurora-base-1: #07140E;
 }
 
 html.glass-desktop[data-theme="hanami"] {
-  --gd-aurora:
-    radial-gradient(16% 12% at 24% 28%, rgba(255, 176, 196, 0.62), transparent 70%),
-    radial-gradient(12% 10% at 68% 20%, rgba(255, 140, 170, 0.46), transparent 72%),
-    radial-gradient(14% 11% at 46% 72%, rgba(255, 186, 206, 0.36), transparent 70%),
-    linear-gradient(180deg, #2C1420, #160910);
+  --g-blur: 30px; --g-saturate: 175%; --g-brightness: 1.05;
+  --g-amb-a: 0.34; --g-amb-b: 0.22; --g-amb-c: 0.12; --g-amb-d: 0.2;
+  --g-scene:
+    radial-gradient(16% 12% at 24% 28%, rgba(255, 176, 196, 0.55), transparent 70%),
+    radial-gradient(12% 10% at 68% 20%, rgba(255, 140, 170, 0.4), transparent 72%),
+    radial-gradient(14% 11% at 46% 72%, rgba(255, 186, 206, 0.32), transparent 70%),
+    radial-gradient(10% 8% at 82% 64%, rgba(255, 160, 186, 0.28), transparent 70%),
+    linear-gradient(180deg, #2C1420 0%, #160910 100%);
   --gd-aurora-base-1: #160910;
 }
 
 html.glass-desktop[data-theme="emberfall"] {
-  --gd-aurora:
-    radial-gradient(36% 28% at 30% 70%, rgba(255, 120, 40, 0.48), transparent 70%),
-    radial-gradient(28% 22% at 72% 24%, rgba(255, 70, 20, 0.36), transparent 70%),
-    linear-gradient(180deg, #2A140C, #140C08);
+  --g-blur: 24px; --g-saturate: 170%; --g-brightness: 1.06;
+  --g-amb-a: 0.4; --g-amb-b: 0.26; --g-amb-c: 0.14; --g-amb-d: 0.22;
+  --g-scene: linear-gradient(180deg, #2A140C 0%, #140C08 55%, #0C0806 100%);
   --gd-aurora-base-1: #140C08;
 }
 
 html.glass-desktop[data-theme="borealis"] {
-  --gd-aurora:
-    linear-gradient(180deg, transparent 8%, rgba(80, 230, 180, 0.38) 28%, transparent 48%),
-    linear-gradient(180deg, transparent 40%, rgba(130, 110, 255, 0.40) 62%, transparent 82%),
-    linear-gradient(180deg, #07141C, #071018);
+  --g-blur: 32px; --g-saturate: 210%; --g-brightness: 1.06;
+  --g-amb-a: 0.46; --g-amb-b: 0.32; --g-amb-c: 0.16; --g-amb-d: 0.24;
+  --g-scene:
+    linear-gradient(180deg, transparent 8%, rgba(80, 230, 180, 0.28) 28%, transparent 48%),
+    linear-gradient(180deg, transparent 40%, rgba(130, 110, 255, 0.32) 62%, transparent 82%),
+    linear-gradient(180deg, #07141C 0%, #071018 100%);
   --gd-aurora-base-1: #071018;
-  --gd-saturate: 210%;
 }
 
 html.glass-desktop[data-theme="starwell"] {
-  --gd-aurora:
-    radial-gradient(40% 32% at 30% 40%, rgba(90, 70, 200, 0.55), transparent 70%),
-    radial-gradient(1.4px 1.4px at 18% 22%, #fff, transparent),
-    radial-gradient(1.2px 1.2px at 70% 30%, #fff, transparent),
-    radial-gradient(1.4px 1.4px at 46% 68%, #fff, transparent),
-    radial-gradient(1.2px 1.2px at 82% 74%, #fff, transparent),
-    linear-gradient(180deg, #100C22, #0A0816);
+  --g-blur: 30px; --g-saturate: 195%; --g-brightness: 1.05;
+  --g-amb-a: 0.4; --g-amb-b: 0.28; --g-amb-c: 0.14; --g-amb-d: 0.22;
+  --g-scene:
+    radial-gradient(40% 32% at 30% 40%, rgba(90, 70, 200, 0.45), transparent 70%),
+    radial-gradient(32% 28% at 74% 62%, rgba(40, 120, 220, 0.28), transparent 70%),
+    linear-gradient(180deg, #100C22 0%, #0A0816 100%);
   --gd-aurora-base-1: #0A0816;
 }
 
 html.glass-desktop[data-theme="chromeveil"] {
-  --gd-aurora:
-    linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.16) 42%, transparent 58%),
-    linear-gradient(160deg, #1A212C, #0A0C10 42%, #141A24);
+  --g-blur: 22px; --g-saturate: 150%; --g-brightness: 1.08;
+  --g-amb-a: 0.22; --g-amb-b: 0.16; --g-amb-c: 0.1; --g-amb-d: 0.14;
+  --g-scene: linear-gradient(160deg, #1A212C 0%, #0A0C10 42%, #141A24 100%);
   --gd-aurora-base-1: #0A0C10;
 }
 
 html.glass-desktop[data-theme="iriscape"] {
-  --gd-aurora:
-    conic-gradient(from 210deg at 50% 45%, rgba(124, 58, 237, 0.55), rgba(34, 211, 238, 0.38), rgba(244, 114, 182, 0.5), rgba(250, 204, 21, 0.32), rgba(124, 58, 237, 0.55)),
-    linear-gradient(180deg, #16101E, #0C0A12);
+  --g-blur: 34px; --g-saturate: 220%; --g-brightness: 1.07;
+  --g-amb-a: 0.42; --g-amb-b: 0.34; --g-amb-c: 0.18; --g-amb-d: 0.26;
+  --g-scene: linear-gradient(180deg, #16101E 0%, #0C0A12 100%);
   --gd-aurora-base-1: #0C0A12;
-  --gd-panel-tint: color-mix(in srgb, #f472b6 26%, transparent);
-  --gd-saturate: 220%;
-  --gd-blur-panel: 34px;
 }
 
-/* The spinning iris sits above the static wash and behind the panels.
-   theme-scenes.css already pauses this for reduced motion. */
+/* Iris wheel, same conic as the iPhone drift layer, behind the panels. */
 html.glass-desktop[data-theme="iriscape"] body::before {
   content: "";
   position: fixed;
-  inset: -22%;
+  inset: -35%;
   z-index: 0;
   pointer-events: none;
-  background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.55), rgba(34, 211, 238, 0.34), rgba(244, 114, 182, 0.5), rgba(250, 204, 21, 0.3), rgba(124, 58, 237, 0.55));
-  animation: theme-scene-spin 80s linear infinite;
+  background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.45), rgba(34, 211, 238, 0.28), rgba(244, 114, 182, 0.4), rgba(250, 204, 21, 0.22), rgba(124, 58, 237, 0.45));
+  opacity: 0.5;
+  animation: theme-scene-spin 72s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

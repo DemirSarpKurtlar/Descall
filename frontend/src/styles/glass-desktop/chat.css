@@ -78,7 +78,7 @@ html.glass-desktop .sidebar-actions .icon-btn:last-child {
   margin-left: 4px;
   border-radius: 16px;
   color: #fff !important;
-  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand)) !important;
+  background: var(--gd-cta) !important;
   box-shadow: 0 8px 22px color-mix(in srgb, var(--gd-brand) 45%, transparent);
 }
 
@@ -189,9 +189,16 @@ html.glass-desktop .conv-more-btn {
 html.glass-desktop .empty-cta.primary,
 html.glass-desktop .sidebar-actions .icon-btn:last-child,
 html.glass-desktop .composer-send-btn {
-  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand)) !important;
-  color: #fff !important;
+  background: var(--gd-cta) !important;
+  color: var(--g-on-brand) !important;
   border-color: transparent !important;
+}
+
+html.glass-desktop .empty-cta:not(.primary) {
+  background: var(--gd-glass-fill) !important;
+  color: var(--g-t1) !important;
+  border-color: transparent !important;
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-brand) 45%, transparent);
 }
 
 html.glass-desktop .empty-icon-wrap {
@@ -397,7 +404,7 @@ html.glass-desktop .composer-send-btn {
   width: 40px;
   height: 40px;
   border-radius: 20px;
-  background: linear-gradient(180deg, var(--gd-brand-top), var(--gd-brand)) !important;
+  background: var(--gd-cta) !important;
   color: #fff !important;
   box-shadow: 0 8px 18px color-mix(in srgb, var(--gd-brand) 40%, transparent);
 }
