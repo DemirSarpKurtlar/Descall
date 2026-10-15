@@ -40,16 +40,14 @@ Function DescallWaitUntilClosed
     nsExec::ExecToStack `$SYSDIR\cmd.exe /c tasklist /FI "IMAGENAME eq ${PRODUCT_FILENAME}.exe" /FO csv | find /I "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Pop $R7
-    ${if} $R6 != 0
-      Goto descallAppStopped
-    ${endIf}
+    StrCmp $R6 0 descallStillOpen descallAppStopped
+  descallStillOpen:
     nsExec::Exec `$SYSDIR\taskkill.exe /f /im "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Sleep 400
     IntOp $R5 $R5 + 1
-    ${if} $R5 < 25
-      Goto descallWaitApp
-    ${endIf}
+    IntCmp $R5 25 descallGiveUp descallWaitApp descallGiveUp
+  descallGiveUp:
     MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Descall is still open. Close it, then retry the update." /SD IDCANCEL IDRETRY descallWaitApp
     Quit
   descallAppStopped:
@@ -64,16 +62,14 @@ Function un.DescallWaitUntilClosed
     nsExec::ExecToStack `$SYSDIR\cmd.exe /c tasklist /FI "IMAGENAME eq ${PRODUCT_FILENAME}.exe" /FO csv | find /I "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Pop $R7
-    ${if} $R6 != 0
-      Goto un.descallAppStopped
-    ${endIf}
+    StrCmp $R6 0 un.descallStillOpen un.descallAppStopped
+  un.descallStillOpen:
     nsExec::Exec `$SYSDIR\taskkill.exe /f /im "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Sleep 400
     IntOp $R5 $R5 + 1
-    ${if} $R5 < 25
-      Goto un.descallWaitApp
-    ${endIf}
+    IntCmp $R5 25 un.descallGiveUp un.descallWaitApp un.descallGiveUp
+  un.descallGiveUp:
     MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Descall is still open. Close it, then retry the update." /SD IDCANCEL IDRETRY un.descallWaitApp
     Quit
   un.descallAppStopped:
