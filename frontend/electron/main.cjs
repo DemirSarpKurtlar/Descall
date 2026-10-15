@@ -973,6 +973,7 @@ function createMainWindow() {
       title: 'Descall',
       body: 'Descall arka planda çalışmaya devam ediyor. Simge durumundan geri açabilirsin.',
       type: 'default',
+      appIcon: true,
       duration: 5000,
     });
   });
@@ -1473,6 +1474,7 @@ autoUpdater.on('update-downloaded', (info) => {
       ? `v${info.version} indirildi. Sesli sohbet bitene kadar kurulmayacak.`
       : `v${info.version} indirildi. Arka planda sessizce kurulacak.`,
     type: 'default',
+    appIcon: true,
     duration: 8000,
     // Do not show()/focus() — notification must not steal the window.
   });
@@ -1497,12 +1499,16 @@ function showAppNotification({ title, options = {} } = {}) {
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;
+  const APP_KINDS = new Set(['friend-online', 'announcement']);
+  const appIcon = !avatarUrl && (!data?.type || APP_KINDS.has(data.type));
 
   const win = showNotificationWindow({
     title: title || 'Descall',
     body: body || '',
     type: notifType,
     avatarUrl: avatarUrl || null,
+    appIcon,
+    from: data?.from || data?.username || null,
     duration,
     onClick: () => {
       showMainWindow();

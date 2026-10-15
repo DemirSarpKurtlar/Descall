@@ -30,6 +30,7 @@ jobs:
           node electron/updateRecover.selftest.mjs
           node electron/main.trayUpdater.selftest.mjs
           node electron/splash.selftest.mjs
+          node electron/notificationCard.selftest.mjs
           node src/api/transportRetry.selftest.mjs
           node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs
