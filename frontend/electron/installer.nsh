@@ -37,13 +37,13 @@
 Function DescallWaitUntilClosed
   StrCpy $R5 0
   descallWaitApp:
-    nsExec::ExecToStack `"$SYSDIR\cmd.exe" /c "tasklist /FI $\"IMAGENAME eq ${APP_EXECUTABLE_FILENAME}$\" /FO csv | find /I $\"${APP_EXECUTABLE_FILENAME}$\""`
+    nsExec::ExecToStack `$SYSDIR\cmd.exe /c tasklist /FI "IMAGENAME eq ${PRODUCT_FILENAME}.exe" /FO csv | find /I "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Pop $R7
     ${if} $R6 != 0
       Goto descallAppStopped
     ${endIf}
-    nsExec::Exec `"$SYSDIR\taskkill.exe" /f /im "${APP_EXECUTABLE_FILENAME}"`
+    nsExec::Exec `$SYSDIR\taskkill.exe /f /im "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Sleep 400
     IntOp $R5 $R5 + 1
@@ -61,13 +61,13 @@ FunctionEnd
 Function un.DescallWaitUntilClosed
   StrCpy $R5 0
   un.descallWaitApp:
-    nsExec::ExecToStack `"$SYSDIR\cmd.exe" /c "tasklist /FI $\"IMAGENAME eq ${APP_EXECUTABLE_FILENAME}$\" /FO csv | find /I $\"${APP_EXECUTABLE_FILENAME}$\""`
+    nsExec::ExecToStack `$SYSDIR\cmd.exe /c tasklist /FI "IMAGENAME eq ${PRODUCT_FILENAME}.exe" /FO csv | find /I "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Pop $R7
     ${if} $R6 != 0
       Goto un.descallAppStopped
     ${endIf}
-    nsExec::Exec `"$SYSDIR\taskkill.exe" /f /im "${APP_EXECUTABLE_FILENAME}"`
+    nsExec::Exec `$SYSDIR\taskkill.exe /f /im "${PRODUCT_FILENAME}.exe"`
     Pop $R6
     Sleep 400
     IntOp $R5 $R5 + 1
@@ -111,7 +111,7 @@ FunctionEnd
   FileWrite $1 "  if ($$b[$$pe] -ne 80 -or $$b[$$pe+1] -ne 69) { return 0 }$\r$\n"
   FileWrite $1 "  return [BitConverter]::ToUInt16($$b,$$pe+4)$\r$\n"
   FileWrite $1 "}$\r$\n"
-  FileWrite $1 "$$exe=M '$INSTDIR\${APP_EXECUTABLE_FILENAME}'$\r$\n"
+  FileWrite $1 "$$exe=M '$INSTDIR\${PRODUCT_FILENAME}.exe'$\r$\n"
   FileWrite $1 "$$ff=M '$INSTDIR\ffmpeg.dll'$\r$\n"
   FileWrite $1 "$$vc=M '$INSTDIR\vcruntime140.dll'$\r$\n"
   FileWrite $1 "if ($$exe -ne 34404 -or $$ff -ne 34404) { exit 1 }$\r$\n"
