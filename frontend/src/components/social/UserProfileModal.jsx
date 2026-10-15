@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
 import { X, UserPlus, MessageSquare, Check, UserMinus, Flag } from "lucide-react";
@@ -17,10 +17,19 @@ import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { isUserAdmin } from "../../lib/userProfile";
+import {
+  acceptProfilePayload,
+  friendStateFor,
+  memberSinceIso,
+  ownedList,
+  ownedValue,
+  sameUserId,
+  seedProfile,
+  visibleProfile,
+} from "../../lib/profileModalState";
 import { cssUrl } from "../../lib/cssUrl";
 import { useLocale } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
-import { SkeletonLine } from "../ui/Skeleton";
 import ReportUserModal from "./ReportUserModal";
 import BlockUserButton from "./BlockUserButton";
 
@@ -49,13 +58,23 @@ function generateBannerGradient(username) {
 
 const STATUS_COLOR = { online: "#23a55a", offline: "#80848e", idle: "#f0b232", dnd: "#f23f43" };
 
-export default function UserProfileModal({
+function ProfileGlassSkeleton({ label }) {
+  return (
+    <div className="profile-glass-skeleton-block" aria-busy="true" aria-label={label}>
+      <span className="profile-glass-skeleton" style={{ width: "34%", height: 10 }} />
+      <span className="profile-glass-skeleton" style={{ width: "54%", height: 14 }} />
+    </div>
+  );
+}
+
+function UserProfileModal({
   open,
   onClose,
   userId,
   username,
   displayName: displayNameProp,
   avatarUrl,
+  createdAt: createdAtProp,
   me,
   friends = [],
   onlineUsers = [],
@@ -70,68 +89,93 @@ export default function UserProfileModal({
   const dismissV = useRef(0);
   const { locale } = useLocale();
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [friendState, setFriendState] = useState("none"); // "none" | "friend" | "sent"
+  const [settledFor, setSettledFor] = useState(null);
+  const [friendOverride, setFriendOverride] = useState(null);
   const [friendLoading, setFriendLoading] = useState(false);
-  const [friendError, setFriendError] = useState("");
-  const [mutualFriends, setMutualFriends] = useState([]);
-  const [valorant, setValorant] = useState(null);
-  const [reportOpen, setReportOpen] = useState(false);
+  const [friendError, setFriendError] = useState({ userId: null, message: "" });
+  const [mutualState, setMutualState] = useState({ forId: null, list: [] });
+  const [valorantState, setValorantState] = useState({ forId: null, value: null });
+  const [reportFor, setReportFor] = useState(null);
 
-  const isSelf = me?.id === userId;
+  const isSelf = sameUserId(me?.id, userId);
   const status = getPresenceStatus(onlineUsers, userId);
-
-  const fetchProfile = useCallback(async () => {
-    if (!userId || !open) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) throw new Error("Not found");
-      const data = await res.json();
-      setProfile(data.user);
-      setValorant(data.user?.valorant || null);
-      if (!data.user?.valorant) {
-        try {
-          const v = await getUserValorant(userId);
-          setValorant(v.valorant || null);
-        } catch {
-          /* optional */
-        }
-      }
-    } catch {
-      setProfile(null);
-      setValorant(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, open]);
-
-  const fetchMutualFriends = useCallback(async () => {
-    if (!username || isSelf) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/friends/mutual/${encodeURIComponent(username)}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setMutualFriends(data.mutualFriends || []);
-    } catch {
-      setMutualFriends([]);
-    }
-  }, [username, isSelf]);
+  const friendState = friendStateFor(userId, friends, friendOverride);
+  const friendErrorText = sameUserId(friendError.userId, userId) ? friendError.message : "";
+  const reportOpen = sameUserId(reportFor, userId);
 
   useEffect(() => {
-    if (!open) return;
-    fetchProfile();
-    fetchMutualFriends();
+    if (!open || !userId) return undefined;
+    const ctrl = new AbortController();
+    const requestedId = userId;
+    let active = true;
+    setSettledFor((current) => (sameUserId(current, requestedId) ? current : null));
 
-    const alreadyFriend = friends.some((f) => f.id === userId);
-    setFriendState(alreadyFriend ? "friend" : "none");
-    setFriendError("");
-    setMutualFriends([]);
-  }, [open, userId, friends, fetchProfile, fetchMutualFriends]);
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/users/${requestedId}`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+          signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error("Not found");
+        const data = await res.json();
+        if (!active) return;
+        const accepted = acceptProfilePayload(requestedId, data.user);
+        if (!accepted) return;
+        setProfile(accepted);
+        setValorantState({ forId: requestedId, value: accepted.valorant || null });
+        if (!accepted.valorant) {
+          try {
+            const extra = await getUserValorant(requestedId, { signal: ctrl.signal });
+            if (!active) return;
+            setValorantState({ forId: requestedId, value: extra.valorant || null });
+          } catch (err) {
+            if (err?.name === "AbortError") return;
+          }
+        }
+      } catch (err) {
+        if (err?.name === "AbortError" || !active) return;
+        setProfile(null);
+        setValorantState({ forId: requestedId, value: null });
+      } finally {
+        if (active) setSettledFor(requestedId);
+      }
+    })();
+
+    return () => {
+      active = false;
+      ctrl.abort();
+    };
+  }, [open, userId]);
+
+  useEffect(() => {
+    if (!open || !userId || !username || isSelf) return undefined;
+    const ctrl = new AbortController();
+    const requestedId = userId;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/friends/mutual/${encodeURIComponent(username)}`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+          signal: ctrl.signal,
+        });
+        if (!active) return;
+        if (!res.ok) {
+          setMutualState({ forId: requestedId, list: [] });
+          return;
+        }
+        const data = await res.json();
+        if (!active) return;
+        setMutualState({ forId: requestedId, list: data.mutualFriends || [] });
+      } catch (err) {
+        if (err?.name === "AbortError" || !active) return;
+        setMutualState({ forId: requestedId, list: [] });
+      }
+    })();
+    return () => {
+      active = false;
+      ctrl.abort();
+    };
+  }, [open, userId, username, isSelf]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -146,10 +190,21 @@ export default function UserProfileModal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  const noteFriendError = (forId, message) => {
+    setFriendError({ userId: forId, message });
+    if (!message) return;
+    setTimeout(() => {
+      setFriendError((prev) => (
+        sameUserId(prev.userId, forId) ? { userId: forId, message: "" } : prev
+      ));
+    }, 3000);
+  };
+
   const handleAddFriend = async () => {
     if (friendLoading || friendState !== "none") return;
+    const forId = userId;
     setFriendLoading(true);
-    setFriendError("");
+    noteFriendError(forId, "");
     try {
       const res = await fetch(`${API_BASE_URL}/friends/request`, {
         method: "POST",
@@ -157,15 +212,14 @@ export default function UserProfileModal({
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
         },
-        body: JSON.stringify({ username: profile?.username || username }),
+        body: JSON.stringify({ username: fetched?.username || username }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed to send request");
-      setFriendState("sent");
+      setFriendOverride({ userId: forId, state: "sent" });
       onFriendSent?.();
     } catch (err) {
-      setFriendError(err.message);
-      setTimeout(() => setFriendError(""), 3000);
+      noteFriendError(forId, err.message);
     } finally {
       setFriendLoading(false);
     }
@@ -173,8 +227,9 @@ export default function UserProfileModal({
 
   const handleRemoveFriend = async () => {
     if (friendLoading || friendState !== "friend") return;
+    const forId = userId;
     setFriendLoading(true);
-    setFriendError("");
+    noteFriendError(forId, "");
     try {
       const res = await fetch(`${API_BASE_URL}/friends/remove`, {
         method: "POST",
@@ -182,27 +237,44 @@ export default function UserProfileModal({
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
         },
-        body: JSON.stringify({ friendId: userId }),
+        body: JSON.stringify({ friendId: forId }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed to remove friend");
-      setFriendState("none");
+      setFriendOverride({ userId: forId, state: "none" });
       onFriendSent?.();
     } catch (err) {
-      setFriendError(err.message);
-      setTimeout(() => setFriendError(""), 3000);
+      noteFriendError(forId, err.message);
     } finally {
       setFriendLoading(false);
     }
   };
 
-  const displayUsername = profile?.username || username || t("Unknown");
+  const fetched = visibleProfile(profile, userId, null);
+  const known = (friends || []).find((f) => f && sameUserId(f.id, userId)) || null;
+  const seed = seedProfile({
+    userId,
+    username: username || known?.username,
+    displayName: displayNameProp || known?.displayName || known?.display_name,
+    avatarUrl: avatarUrl ?? known?.avatarUrl ?? known?.avatar_url ?? null,
+    createdAt: createdAtProp || known?.createdAt || known?.created_at || null,
+  });
+  const viewUser = visibleProfile(profile, userId, seed);
+  const pending = Boolean(open && userId && !sameUserId(settledFor, userId));
+  const valorant = ownedValue(valorantState.forId, userId, valorantState.value);
+  const mutualFriends = ownedList(mutualState.forId, userId, mutualState.list);
+  const memberSince = memberSinceIso(userId, [fetched, seed, known]);
+  const customStatus = fetched?.customStatus || fetched?.custom_status || (sameUserId(known?.id, userId) ? (known?.customStatus || known?.custom_status) : "") || "";
+  const showMemberSkeleton = pending && !memberSince;
+  const showMutualSkeleton = pending && !isSelf;
+
+  const displayUsername = viewUser?.username || username || t("Unknown");
   const displayName =
-    profile?.displayName || profile?.display_name || displayNameProp || displayUsername;
-  const displayAvatar = profile?.avatarUrl ?? avatarUrl ?? null;
-  const equippedBannerUrl = profile?.equippedBanner?.asset_url || profile?.bannerUrl || profile?.banner_url || null;
-  const equippedBackgroundUrl = profile?.equippedBackground?.asset_url || null;
-  const bannerGradient = generateBannerGradient(displayUsername);
+    viewUser?.displayName || viewUser?.display_name || displayNameProp || displayUsername;
+  const displayAvatar = viewUser?.avatarUrl ?? avatarUrl ?? null;
+  const equippedBannerUrl = fetched?.equippedBanner?.asset_url || fetched?.bannerUrl || fetched?.banner_url || null;
+  const equippedBackgroundUrl = fetched?.equippedBackground?.asset_url || null;
+  const bannerGradient = generateBannerGradient(username || displayUsername);
   const statusLabel = {
     online: t("Online"),
     offline: t("Offline"),
@@ -210,9 +282,6 @@ export default function UserProfileModal({
     dnd: t("Do Not Disturb"),
   }[status] || t("Offline");
   const statusClass = status === "online" ? "is-on" : status === "idle" ? "is-idle" : status === "dnd" ? "is-dnd" : "is-off";
-  const known = friends.find((f) => f && (f.id === userId || f.username === username)) || null;
-  const customStatus = profile?.customStatus || profile?.custom_status || known?.customStatus || known?.custom_status || "";
-  const memberSince = profile?.createdAt || profile?.created_at || known?.createdAt || known?.created_at || null;
 
   if (glassShell) {
     const dismissSheet = (velocity = 0) => {
@@ -232,6 +301,7 @@ export default function UserProfileModal({
               onClick={() => dismissSheet(0)}
             >
               <motion.div
+                key={userId || "profile"}
                 className="g-profile-sheet g-glass g-heavy"
                 custom={dismissV.current}
                 variants={{
@@ -275,11 +345,11 @@ export default function UserProfileModal({
                     if (event.target.closest("button, a, input, textarea")) return;
                     dragControls.start(event);
                   }}
-                  style={{
-                    backgroundImage: equippedBannerUrl ? cssUrl(equippedBannerUrl) : undefined,
+                  style={equippedBannerUrl ? {
+                    backgroundImage: cssUrl(equippedBannerUrl),
                     backgroundSize: "cover",
                     backgroundPosition: "center",
-                  }}
+                  } : { background: bannerGradient }}
                 >
                   <div className="g-profile-grabber" aria-hidden="true" />
                   <button
@@ -295,31 +365,32 @@ export default function UserProfileModal({
                 <div className="g-profile-body">
                   <div className="g-profile-avatar">
                     <Avatar
+                      key={userId || "profile"}
                       name={displayName}
                       size={88}
-                      user={profile || { avatarUrl: displayAvatar, username: displayUsername, displayName }}
+                      user={viewUser}
                     />
                     <StatusBadge status={status} />
                   </div>
                   <div className="g-profile-name">
                     <span className="g-profile-name-text">
-                      <NameEffectText user={profile}>{displayName}</NameEffectText>
+                      <NameEffectText user={fetched}>{displayName}</NameEffectText>
                     </span>
-                    <BadgeIcon user={profile} />
-                    <TitleTag user={profile} />
+                    <BadgeIcon user={fetched} />
+                    <TitleTag user={fetched} />
                   </div>
                   <div className="g-profile-handle">
                     @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
                   </div>
-                  {(isUserAdmin(profile || { username: displayUsername }) || valorant?.linked) && (
+                  {(isUserAdmin(viewUser) || valorant?.linked) && (
                     <div className="g-profile-chips">
-                      {isUserAdmin(profile || { username: displayUsername }) && (
-                        <AdminBadge user={profile || { username: displayUsername, is_admin: true }} variant="chip" />
+                      {isUserAdmin(viewUser) && (
+                        <AdminBadge user={viewUser} variant="chip" />
                       )}
                       {valorant?.linked ? <ValorantBadge valorant={valorant} /> : null}
                     </div>
                   )}
-                  {profile?.bio ? <p className="g-profile-bio">{profile.bio}</p> : null}
+                  {fetched?.bio ? <p className="g-profile-bio">{fetched.bio}</p> : null}
                   {!isSelf && (
                     <div className="g-profile-actions">
                       <button
@@ -344,13 +415,17 @@ export default function UserProfileModal({
                     </div>
                   )}
                   <div className="g-profile-group">
-                    {memberSince ? (
+                    {showMemberSkeleton ? (
+                      <ProfileGlassSkeleton label={t("Loading…")} />
+                    ) : memberSince ? (
                       <div className="g-profile-grow">
                         <b>{t("Member Since")}</b>
                         <span>{formatMemberSince(memberSince, t, locale)}</span>
                       </div>
                     ) : null}
-                    {!isSelf ? (
+                    {showMutualSkeleton ? (
+                      <ProfileGlassSkeleton label={t("Loading…")} />
+                    ) : !isSelf && mutualFriends.length > 0 ? (
                       <div className="g-profile-grow">
                         <b>{t("Mutual Friends")}</b>
                         <span>{mutualFriends.length}</span>
@@ -363,17 +438,17 @@ export default function UserProfileModal({
                       </div>
                     ) : null}
                   </div>
-                  {friendError ? <p className="g-profile-bio">{friendError}</p> : null}
+                  {friendErrorText ? <p className="g-profile-bio">{friendErrorText}</p> : null}
                   {!isSelf && (
                     <div className="g-profile-safety">
                       <BlockUserButton
                         userId={userId}
                         username={displayUsername}
                         onChange={(nowBlocked) => {
-                          if (nowBlocked) setFriendState("none");
+                          if (nowBlocked) setFriendOverride({ userId, state: "none" });
                         }}
                       />
-                      <button type="button" className="user-profile-report-btn" onClick={() => setReportOpen(true)}>
+                      <button type="button" className="user-profile-report-btn" onClick={() => setReportFor(userId)}>
                         <Flag size={13} /> {t("report.action")}
                       </button>
                     </div>
@@ -385,7 +460,7 @@ export default function UserProfileModal({
         </AnimatePresence>
         <ReportUserModal
           open={open && reportOpen}
-          onClose={() => setReportOpen(false)}
+          onClose={() => setReportFor(null)}
           targetId={userId}
           targetUsername={displayUsername}
           contextType="profile"
@@ -418,6 +493,7 @@ export default function UserProfileModal({
           onClick={onClose}
         >
           <motion.div
+            key={userId || "profile"}
             initial={{ scale: 0.88, opacity: 0, y: 24 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 16 }}
@@ -425,8 +501,8 @@ export default function UserProfileModal({
             className={[
               "user-profile-card",
               glassDesktop ? "is-gd" : "",
-              profile?.equippedProfileAura?.effect_key
-                ? `cosmetic-profile-aura aura-${profile.equippedProfileAura.effect_key}`
+              fetched?.equippedProfileAura?.effect_key
+                ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}`
                 : "",
             ]
               .filter(Boolean)
@@ -468,9 +544,10 @@ export default function UserProfileModal({
                 }}
               >
                 <Avatar
+                  key={userId || "profile"}
                   name={displayName}
                   size={glassDesktop ? 104 : 72}
-                  user={profile || { avatarUrl: displayAvatar, username: displayUsername, displayName }}
+                  user={viewUser}
                 />
                 {/* No presence-flare on the corner dot, its glow skews the avatar ring. */}
                 <StatusBadge status={status} />
@@ -483,23 +560,19 @@ export default function UserProfileModal({
 
               <div className="user-profile-identity">
                 <div className="user-profile-name-row">
-                  <NameEffectText user={profile}>{displayName}</NameEffectText>
-                  <BadgeIcon user={profile} />
+                  <NameEffectText user={fetched}>{displayName}</NameEffectText>
+                  <BadgeIcon user={fetched} />
                 </div>
                 {displayName !== displayUsername && (
                   <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
                     @{displayUsername}
                   </div>
                 )}
-                {(profile?.equippedTitle?.title_text ||
-                  isUserAdmin(profile || { username: displayUsername })) && (
+                {(fetched?.equippedTitle?.title_text || isUserAdmin(viewUser)) && (
                   <div className="user-profile-badges">
-                    <TitleTag user={profile} />
-                    {isUserAdmin(profile || { username: displayUsername }) && (
-                      <AdminBadge
-                        user={profile || { username: displayUsername, is_admin: true }}
-                        variant="chip"
-                      />
+                    <TitleTag user={fetched} />
+                    {isUserAdmin(viewUser) && (
+                      <AdminBadge user={viewUser} variant="chip" />
                     )}
                   </div>
                 )}
@@ -521,10 +594,10 @@ export default function UserProfileModal({
 
               {glassDesktop ? (
                 <div className="user-profile-about">
-                  {(profile?.bio) ? (
+                  {fetched?.bio ? (
                     <div className="user-profile-about-row">
                       <div className="user-profile-about-label">{t("About me")}</div>
-                      <div>{profile.bio}</div>
+                      <div>{fetched.bio}</div>
                     </div>
                   ) : null}
                   {customStatus ? (
@@ -534,13 +607,17 @@ export default function UserProfileModal({
                     </div>
                   ) : null}
                   <div className="user-profile-about-split">
-                    {memberSince ? (
+                    {showMemberSkeleton ? (
+                      <ProfileGlassSkeleton label={t("Loading…")} />
+                    ) : memberSince ? (
                       <div>
                         <div className="user-profile-about-label">{t("Member Since")}</div>
                         <div>{formatMemberSince(memberSince, t, locale)}</div>
                       </div>
                     ) : null}
-                    {!isSelf && mutualFriends.length > 0 ? (
+                    {showMutualSkeleton ? (
+                      <ProfileGlassSkeleton label={t("Loading…")} />
+                    ) : !isSelf && mutualFriends.length > 0 ? (
                       <div>
                         <div className="user-profile-about-label">{t("Mutual Friends")}</div>
                         <div className="user-profile-mutual">
@@ -586,12 +663,8 @@ export default function UserProfileModal({
               )}
 
               {/* Member since */}
-              {loading ? (
-                <div style={{ marginBottom: 16 }} aria-busy="true" aria-label={t("Loading…")}>
-                  <SkeletonLine width="32%" height={10} />
-                  <div style={{ height: 8 }} />
-                  <SkeletonLine width="48%" height={12} />
-                </div>
+              {showMemberSkeleton ? (
+                <ProfileGlassSkeleton label={t("Loading…")} />
               ) : memberSince ? (
                 <div style={{ marginBottom: 14 }}>
                   <div
@@ -613,7 +686,9 @@ export default function UserProfileModal({
               ) : null}
 
               {/* Mutual friends */}
-              {!isSelf && mutualFriends.length > 0 && (
+              {showMutualSkeleton ? (
+                <ProfileGlassSkeleton label={t("Loading…")} />
+              ) : !isSelf && mutualFriends.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
                   <div
                     style={{
@@ -768,13 +843,13 @@ export default function UserProfileModal({
                     userId={userId}
                     username={displayUsername}
                     onChange={(nowBlocked) => {
-                      if (nowBlocked) setFriendState("none");
+                      if (nowBlocked) setFriendOverride({ userId, state: "none" });
                     }}
                   />
                   <button
                     type="button"
                     className="user-profile-report-btn"
-                    onClick={() => setReportOpen(true)}
+                    onClick={() => setReportFor(userId)}
                   >
                     <Flag size={13} /> {t("report.action")}
                   </button>
@@ -782,7 +857,7 @@ export default function UserProfileModal({
               )}
 
               {/* Friend error */}
-              {friendError && (
+              {friendErrorText && (
                 <div
                   style={{
                     marginBottom: 12,
@@ -794,7 +869,7 @@ export default function UserProfileModal({
                     fontWeight: 500,
                   }}
                 >
-                  {friendError}
+                  {friendErrorText}
                 </div>
               )}
             </div>
@@ -803,11 +878,25 @@ export default function UserProfileModal({
       )}
       <ReportUserModal
         open={open && reportOpen}
-        onClose={() => setReportOpen(false)}
+        onClose={() => setReportFor(null)}
         targetId={userId}
         targetUsername={displayUsername}
         contextType="profile"
       />
     </AnimatePresence>
+  );
+}
+
+export default function ProfileModalHost(props) {
+  const latched = useRef(null);
+  if (props.userId) latched.current = props;
+  const active = props.userId ? props : (latched.current || props);
+  return (
+    <UserProfileModal
+      key={active.userId || "closed"}
+      {...active}
+      open={Boolean(props.open && props.userId)}
+      onClose={props.onClose}
+    />
   );
 }

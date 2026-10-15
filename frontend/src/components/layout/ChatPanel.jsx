@@ -752,6 +752,7 @@ export default function ChatPanel({
       username={profileTarget?.username}
       displayName={profileTarget?.displayName || profileTarget?.display_name}
       avatarUrl={profileTarget?.avatarUrl || profileTarget?.avatar_url}
+      createdAt={profileTarget?.createdAt || profileTarget?.created_at || null}
       me={me}
       friends={friends}
       onlineUsers={onlineUsers}

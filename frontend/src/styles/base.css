@@ -583,6 +583,60 @@ select {
   }
 }
 
+/* Profile modal placeholder while the clicked user's details are in flight. */
+.profile-glass-skeleton-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.profile-glass-skeleton {
+  display: block;
+  border-radius: 10px;
+  background: var(--border-1);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.22) 50%, rgba(255, 255, 255, 0.05) 100%),
+    color-mix(in srgb, var(--surface-3) 42%, transparent);
+  background-size: 200% 100%, auto;
+  animation: shimmer 1.5s infinite;
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+
+html.glass-lite .profile-glass-skeleton,
+html.gd-lite .profile-glass-skeleton {
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .profile-glass-skeleton,
+  html.glass-lite .profile-glass-skeleton,
+  html.gd-lite .profile-glass-skeleton {
+    background: var(--border-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}
+
+html.a11y-solid .profile-glass-skeleton {
+  background: var(--border-1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-glass-skeleton {
+    animation: none;
+  }
+}
+
 .message-day-sep,
 .message-unread-sep {
   display: flex;

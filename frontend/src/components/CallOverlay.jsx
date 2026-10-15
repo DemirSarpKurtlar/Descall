@@ -1153,7 +1153,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       onClose={() => setProfileUser(null)}
       userId={profileUser?.id}
       username={profileUser?.username}
+      displayName={profileUser?.displayName || profileUser?.display_name || profileUser?.username}
       avatarUrl={profileUser?.avatarUrl || profileUser?.avatar_url}
+      createdAt={profileUser?.createdAt || profileUser?.created_at || null}
       me={me}
     />
     </>

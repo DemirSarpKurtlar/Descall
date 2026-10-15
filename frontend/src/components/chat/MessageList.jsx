@@ -589,7 +589,9 @@ export default function MessageList({
         onClose={() => setProfileTarget(null)}
         userId={profileTarget?.id}
         username={profileTarget?.username}
+        displayName={profileTarget ? resolveDisplayName(profileTarget) : undefined}
         avatarUrl={pickAvatarUrl(profileTarget)}
+        createdAt={profileTarget?.createdAt || profileTarget?.created_at || null}
         me={me}
         friends={friends}
         onlineUsers={onlineUsers}
