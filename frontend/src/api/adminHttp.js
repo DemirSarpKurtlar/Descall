@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
-import { isRetryableAdminError, sleep } from "./adminHttpRetry";
+import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
 
 function makeHttpError(status, body) {
   const err = new Error(body?.error || body?.message || `HTTP ${status}`);
@@ -21,40 +21,28 @@ async function adminFetchOnce(path, options = {}) {
     headers["Content-Type"] = "application/json";
   }
 
+  const method = String(options.method || "GET").toUpperCase();
   let res;
   try {
-    res = await fetch(url, { ...options, headers });
+    res = await withReadRetry(
+      () => fetch(url, { ...options, headers }),
+      { method, signal: options.signal },
+    );
   } catch (err) {
-    const msg = String(err?.message || "");
-    if (/failed to fetch|networkerror|load failed/i.test(msg)) {
-      const wrapped = new Error("Admin API unreachable. Check connection and try again.");
-      wrapped.status = 0;
-      throw wrapped;
-    }
+    if (isTransportError(err)) throw transientFailureError(0);
     throw err;
   }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (isTransientHttpStatus(res.status)) throw transientFailureError(res.status);
     throw makeHttpError(res.status, body);
   }
   return body;
 }
 
 export async function adminFetch(path, options = {}) {
-  const method = String(options.method || "GET").toUpperCase();
-  const retries = method === "GET" || method === "HEAD" ? 1 : 0;
-  let lastErr;
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      return await adminFetchOnce(path, options);
-    } catch (err) {
-      lastErr = err;
-      if (attempt >= retries || !isRetryableAdminError(err)) throw err;
-      await sleep(800);
-    }
-  }
-  throw lastErr;
+  return adminFetchOnce(path, options);
 }
 
 export { isRetryableAdminError, isTransientAdminStatus } from "./adminHttpRetry";

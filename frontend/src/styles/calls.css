@@ -234,6 +234,13 @@
   min-width: 0;
 }
 
+.calls-stale-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
 .calls-error {
   padding: 10px 12px;
   border-radius: 10px;

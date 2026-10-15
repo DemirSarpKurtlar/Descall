@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone,
@@ -149,15 +149,18 @@ export default function CallsView({
     else setLocalQuery(value);
   };
   const [calls, setCalls] = useState(() => loadCachedCalls(meId));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => loadCachedCalls(meId).length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const inflight = useRef(false);
 
   const refresh = useCallback(async ({ soft = false } = {}) => {
-    if (!meId) return;
+    if (!meId || inflight.current) return;
+    inflight.current = true;
+    const quiet = soft || loadCachedCalls(meId).length > 0;
     if (soft) setRefreshing(true);
-    else setLoading(true);
-    setError("");
+    else if (!quiet) setLoading(true);
     try {
       const res = await fetchCallHistory({ limit: 60 });
       const list = Array.isArray(res?.calls) ? res.calls : [];
@@ -190,19 +193,29 @@ export default function CallsView({
       });
       setCalls(enriched);
       saveCachedCalls(meId, enriched);
+      setError("");
+      setNotice("");
     } catch (err) {
-      setError(err?.message || t("Could not load call history"));
-      // Keep in-memory list on fetch failure; only fall back to disk cache if empty
+      const transient = err?.code === "transient" || err?.status === 0 || /load failed|failed to fetch|networkerror|bağlantı gecikti|connection is slow/i.test(String(err?.message || ""));
+      if (transient) setNotice(t("The connection is slow. Saved data is still here. Retrying."));
+      else setError(err?.message || t("Could not load call history"));
       setCalls((prev) => (Array.isArray(prev) && prev.length > 0 ? prev : loadCachedCalls(meId)));
     } finally {
+      inflight.current = false;
       setLoading(false);
       setRefreshing(false);
     }
-  }, [meId, friends, groups]);
+  }, [meId, friends, groups, t]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const id = setInterval(() => refresh({ soft: true }), 8000);
+    return () => clearInterval(id);
+  }, [notice, refresh]);
 
   useEffect(() => {
     if (!socket || !meId) return;
@@ -413,7 +426,8 @@ export default function CallsView({
           </div>
         </div>}
 
-        {error && <div className="calls-error">{error}</div>}
+        {notice ? <p className="calls-stale-note">{notice}</p> : null}
+        {error && !notice ? <div className="calls-error">{error}</div> : null}
 
         {loading ? (
           <ConversationListSkeleton count={6} label={t("Loading call history…")} />

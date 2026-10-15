@@ -34,7 +34,23 @@ services:
     plan: free
     branch: main
     autoDeployTrigger: commit
+    # Paid instances keep the old process until GET /health is healthy.
+    # This service is on the free instance type, which cannot overlap
+    # processes, so frontend-only commits must not restart it at all.
     healthCheckPath: /health
+    maxShutdownDelaySeconds: 120
+    buildFilter:
+      paths:
+        - frontend/backend/**
+        - render.yaml
+      ignoredPaths:
+        - docs/**
+        - frontend/src/**
+        - frontend/public/**
+        - frontend/ios/**
+        - frontend/electron/**
+        - appstore/**
+        - .github/**
     aptPackages:
       - ffmpeg
     buildCommand: cd frontend && npm install --include=dev && npm run build:prod && cd backend && npm install
@@ -97,7 +113,23 @@ services:
     plan: free
     branch: staging
     autoDeployTrigger: commit
+    # Paid instances keep the old process until GET /health is healthy.
+    # This service is on the free instance type, which cannot overlap
+    # processes, so frontend-only commits must not restart it at all.
     healthCheckPath: /health
+    maxShutdownDelaySeconds: 120
+    buildFilter:
+      paths:
+        - frontend/backend/**
+        - render.yaml
+      ignoredPaths:
+        - docs/**
+        - frontend/src/**
+        - frontend/public/**
+        - frontend/ios/**
+        - frontend/electron/**
+        - appstore/**
+        - .github/**
     aptPackages:
       - ffmpeg
     buildCommand: cd frontend && npm install --include=dev && npm run build:prod && cd backend && npm install

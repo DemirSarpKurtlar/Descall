@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config/api";
+import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
 
 function httpLocaleMessage(tr, en) {
   const lang =
@@ -20,15 +21,19 @@ export async function httpRequest(path, options = {}) {
   }
 
   const url = `${API_BASE_URL}${path}`;
+  const method = options.method || "GET";
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
-    });
+    const response = await withReadRetry(
+      () => fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        },
+      }),
+      { method, signal: options.signal },
+    );
 
     let body = {};
     try {
@@ -40,6 +45,7 @@ export async function httpRequest(path, options = {}) {
     }
 
     if (!response.ok) {
+      if (isTransientHttpStatus(response.status)) throw transientFailureError(response.status);
       const err = new Error(body.error || body.message || `HTTP ${response.status}`);
       err.status = response.status;
       err.code = body.code || null;
@@ -50,17 +56,11 @@ export async function httpRequest(path, options = {}) {
 
     return body;
   } catch (networkError) {
-    if (networkError?.code || networkError?.ban || networkError?.status) {
-      throw networkError;
-    }
-    if (networkError.message?.includes("Failed to fetch") || networkError.message?.includes("NetworkError")) {
-      throw new Error(
-        httpLocaleMessage(
-          "Sunucuya bağlanılamıyor. İnternet bağlantınızı kontrol edin.",
-          "Could not reach the server. Check your internet connection.",
-        ),
-      );
-    }
+    if (networkError?.code === "transient") throw networkError;
+    if (networkError?.ban) throw networkError;
+    if (isTransportError(networkError)) throw transientFailureError(0);
+    if (networkError?.status && !isTransientHttpStatus(networkError.status)) throw networkError;
+    if (isTransientHttpStatus(networkError?.status)) throw transientFailureError(networkError.status);
     throw new Error(
       networkError.message || httpLocaleMessage("Bağlantı hatası", "Connection error"),
     );

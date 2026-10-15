@@ -329,7 +329,7 @@ export const nested = {
     "overviewTitle": "Right now",
     "overviewSubtitle": "Live health, who was last active, who just joined, and what needs a click, not a dump of raw counters.",
     "overviewLoadError": "Could not load overview.",
-    "overviewGatewayError": "The API is restarting after a deploy. Retry in a few seconds.",
+    "overviewGatewayError": "The connection is slow. Retrying.",
     "overviewOnline": "Online now",
     "overviewReports": "Open reports",
     "overviewReportTargets": "{count} people",

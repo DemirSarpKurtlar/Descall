@@ -7,7 +7,7 @@ export function isTransientAdminStatus(status) {
 export function isRetryableAdminError(err) {
   if (isTransientAdminStatus(err?.status)) return true;
   const msg = String(err?.message || "");
-  return /unreachable|failed to fetch|networkerror|load failed|HTTP 502|HTTP 503|HTTP 504/i.test(msg);
+  return err?.code === "transient" || /unreachable|failed to fetch|networkerror|load failed|bağlantı gecikti|connection is slow|HTTP 502|HTTP 503|HTTP 504/i.test(msg);
 }
 
 export function sleep(ms) {

@@ -25,6 +25,8 @@ jobs:
       - name: Run release selftests
         run: |
           set -euo pipefail
+          node src/api/transportRetry.selftest.mjs
+          node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs
           node src/styles/conv-rows.selftest.mjs
           node src/styles/feedback-nudge.selftest.mjs

@@ -1156,6 +1156,13 @@
   border: 1px solid rgba(255, 69, 58, 0.22);
 }
 
+.admin-stale-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted, rgba(235, 238, 255, 0.62));
+}
+
 .muted {
   color: rgba(244, 246, 251, 0.45);
   font-size: 0.82rem;

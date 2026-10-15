@@ -109,9 +109,9 @@ function alertCopy(id, t) {
 
 function overviewErrorMessage(err, t) {
   const msg = String(err?.message || "");
-  if (err?.status === 404 || msg === "Not found") return t("admin.overviewLoadError");
-  if (isRetryableAdminError(err)) return t("admin.overviewGatewayError");
-  return msg || t("admin.overviewLoadError");
+  if (err?.status === 404 || msg === "Not found") return { text: t("admin.overviewLoadError"), quiet: false };
+  if (isRetryableAdminError(err) || err?.code === "transient") return { text: t("admin.overviewGatewayError"), quiet: true };
+  return { text: msg || t("admin.overviewLoadError"), quiet: false };
 }
 
 function overviewShortcutsCopy(locale) {
@@ -140,12 +140,12 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [quietError, setQuietError] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const shortcuts = overviewShortcutsCopy(locale);
 
   const load = useCallback(async () => {
-    setError("");
     try {
       const [overview, analytics, pulse] = await Promise.all([
         adminFetch("/overview").catch((err) => err),
@@ -158,21 +158,35 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
       if (payload && (overviewOk || overviewHasPeople(payload) || Number(payload?.product?.signupsToday) || Number(payload?.live?.connected))) {
         setData(payload);
         setUpdatedAt(new Date());
+        setError("");
+        setQuietError(false);
         return;
       }
       if (overviewErr && typeof overviewErr === "object" && overviewErr.message) {
+        const mapped = overviewErrorMessage(overviewErr, t);
+        if (mapped.quiet) {
+          setError(mapped.text);
+          setQuietError(true);
+          return;
+        }
         const fallback = await loadLegacyOverview();
         if (fallback) {
           setData(mergeOverviewWithDb(fallback, analytics, pulse));
           setUpdatedAt(new Date());
+          setError("");
+          setQuietError(false);
           return;
         }
-        setError(overviewErrorMessage(overviewErr, t));
+        setError(mapped.text);
+        setQuietError(mapped.quiet);
         return;
       }
       setError(t("admin.overviewLoadError"));
+      setQuietError(false);
     } catch (err) {
-      setError(overviewErrorMessage(err, t));
+      const mapped = overviewErrorMessage(err, t);
+      setError(mapped.text);
+      setQuietError(mapped.quiet);
     } finally {
       setLoading(false);
     }
@@ -231,10 +245,14 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
       </div>
 
       {error ? (
-        <div className="admin-error-banner">
-          <AlertTriangle size={16} />
-          <span>{error}</span>
-        </div>
+        quietError ? (
+          <p className="admin-stale-note">{error}</p>
+        ) : (
+          <div className="admin-error-banner">
+            <AlertTriangle size={16} />
+            <span>{error}</span>
+          </div>
+        )
       ) : null}
 
       {loading && !data ? (

@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
-import { withReadRetry } from "./transportRetry";
+import { isTransientHttpStatus, transientFailureError, withReadRetry } from "./transportRetry";
 
 /** Authenticated JSON request helper, shared by the security/blocking/shop API modules. */
 export async function authedRequest(path, { method = "GET", body, signal } = {}) {
@@ -19,6 +19,7 @@ export async function authedRequest(path, { method = "GET", body, signal } = {})
   const res = await withReadRetry(send, { method, signal });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (isTransientHttpStatus(res.status)) throw transientFailureError(res.status);
     const err = new Error(data?.error || data?.message || `Request failed (${res.status})`);
     err.status = res.status;
     if (data?.code) err.code = data.code;
