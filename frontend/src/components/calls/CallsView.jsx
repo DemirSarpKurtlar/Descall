@@ -60,19 +60,6 @@ function statusMeta(call) {
   return { label: "Outgoing", Icon: PhoneOutgoing, tone: "ok" };
 }
 
-function glassWhen(iso) {
-  if (!iso) return "";
-  const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return "";
-  const min = Math.round((Date.now() - then) / 60000);
-  if (min < 1) return "1 dk";
-  if (min < 60) return `${min} dk`;
-  const hours = Math.round(min / 60);
-  if (hours < 24) return `${hours} sa`;
-  if (hours < 48) return "Dün";
-  return `${Math.round(hours / 24)}g`;
-}
-
 function glassDuration(seconds) {
   const s = Math.max(0, Number(seconds) || 0);
   if (s <= 0) return "";
@@ -445,12 +432,11 @@ export default function CallsView({
                 const Icon = glass && call.callType === "video" ? Video : meta.Icon;
                 const TypeIcon = call.callType === "video" ? Video : Phone;
                 const duration = glass ? glassDuration(call.durationSeconds) : formatCallDuration(call.durationSeconds);
-                const when = glass
-                  ? glassWhen(call.endedAt || call.createdAt)
-                  : formatCallWhen(call.endedAt || call.createdAt, {
-                      locale: intlLocaleTag(getLocale()),
-                      yesterdayLabel: t("Yesterday"),
-                    });
+                const when = formatCallWhen(call.endedAt || call.createdAt, {
+                  locale: intlLocaleTag(getLocale()),
+                  todayLabel: t("Today"),
+                  yesterdayLabel: t("Yesterday"),
+                });
                 const isGroup = call.kind === "group";
                 const peerStatus = !isGroup
                   ? getPresenceStatus(onlineUsers, call.peer?.id)

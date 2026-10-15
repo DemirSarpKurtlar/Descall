@@ -1,5 +1,7 @@
 import { Video, Phone, Users, Clock } from "lucide-react";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
+import { formatCallWhen } from "../../lib/callHistoryCache";
+import { intlLocaleTag } from "../../lib/datetime";
 import {
   formatSummaryDuration,
   summaryDurationSeconds,
@@ -11,6 +13,7 @@ import {
  */
 export default function CallSummaryBubble({ summary }) {
   const t = useT();
+  const { locale } = useLocale();
   if (!summary) return null;
 
   const isVideo = summary.callType === "video";
@@ -26,9 +29,11 @@ export default function CallSummaryBubble({ summary }) {
           ? t("Cancelled")
           : null;
 
-  const timeLabel = summary.endedAt
-    ? new Date(summary.endedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-    : "";
+  const timeLabel = formatCallWhen(summary.endedAt, {
+    locale: intlLocaleTag(locale),
+    todayLabel: t("Today"),
+    yesterdayLabel: t("Yesterday"),
+  });
 
   return (
     <div className="call-summary-wrap">

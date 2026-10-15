@@ -25,6 +25,7 @@ jobs:
       - name: Run release selftests
         run: |
           set -euo pipefail
+          node src/lib/callHistoryCache.selftest.mjs
           node src/api/transportRetry.selftest.mjs
           node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs
