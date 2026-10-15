@@ -5,27 +5,32 @@
  * FAVICON_VERSION is an icon revision, not the app version. Bump it only when
  * the mark artwork changes so Google keeps one stable favicon URL.
  */
-export const FAVICON_VERSION = "2.10.68";
+export const FAVICON_VERSION = "concept2";
 
 export const FAVICON_FILES = [
-  { file: "favicon.ico", type: "image/x-icon" },
+  { file: "favicon.ico", type: "image/x-icon", ico: [16, 32, 48] },
   { file: "favicon.svg", type: "image/svg+xml" },
   { file: "favicon-32.png", type: "image/png", size: 32 },
   { file: "favicon-48.png", type: "image/png", size: 48 },
   { file: "favicon-96.png", type: "image/png", size: 96 },
   { file: "favicon-144.png", type: "image/png", size: 144 },
   { file: "favicon-192.png", type: "image/png", size: 192 },
+  { file: "favicon-512.png", type: "image/png", size: 512 },
   { file: "apple-touch-icon.png", type: "image/png", size: 180 },
 ];
 
-/** Raster sizes Google can use (multiples of 48) plus the tab-sized 32. */
+/**
+ * Google Search uses the first square icon whose size is a multiple of 48.
+ * That file is listed first. /favicon.ico stays the stable multi-size
+ * (16/32/48) URL browsers and Googlebot request directly.
+ */
 export const FAVICON_LINK_SPECS = [
-  { rel: "icon", href: "/favicon.ico", type: "image/x-icon", sizes: "48x48" },
-  { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
   { rel: "icon", href: "/favicon-48.png", type: "image/png", sizes: "48x48" },
   { rel: "icon", href: "/favicon-96.png", type: "image/png", sizes: "96x96" },
   { rel: "icon", href: "/favicon-144.png", type: "image/png", sizes: "144x144" },
   { rel: "icon", href: "/favicon-192.png", type: "image/png", sizes: "192x192" },
+  { rel: "icon", href: "/favicon.ico", type: "image/x-icon", sizes: "16x16 32x32 48x48" },
+  { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
   { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
   { rel: "apple-touch-icon", href: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" },
 ];
@@ -48,14 +53,14 @@ export function faviconLinksHtml(indent = "") {
   return lines.join("\n");
 }
 
-/** Square Konsept 2 mark. Google's organization logo needs ≥112px. */
+/** Square Konsept 2 mark. Google's organization logo needs ≥112px; we ship 512. */
 export function organizationLogoLd(absoluteUrl) {
-  const url = absoluteUrl(withFaviconVersion("/favicon-192.png"));
+  const url = absoluteUrl(withFaviconVersion("/favicon-512.png"));
   return {
     "@type": "ImageObject",
     url,
     contentUrl: url,
-    width: 192,
-    height: 192,
+    width: 512,
+    height: 512,
   };
 }

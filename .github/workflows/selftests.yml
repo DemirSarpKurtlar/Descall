@@ -36,6 +36,7 @@ jobs:
           node src/styles/rail-icons.selftest.mjs
           node src/styles/conv-rows.selftest.mjs
           node src/styles/list-card-padding.selftest.mjs
+          node src/site/siteIcons.selftest.mjs
           node src/styles/feedback-nudge.selftest.mjs
           node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
           node src/lib/casinoCommands.selftest.mjs

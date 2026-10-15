@@ -108,6 +108,8 @@ Allow: /favicon-48.png
 Allow: /favicon-96.png
 Allow: /favicon-144.png
 Allow: /favicon-192.png
+Allow: /favicon-512.png
+Allow: /icon-512.png
 Allow: /apple-touch-icon.png
 Allow: /manifest.webmanifest
 

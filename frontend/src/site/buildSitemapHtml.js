@@ -106,6 +106,11 @@ ${cards}
   <meta name="description" content="Browse every public Descall page, product, Discord alternative guides, blog, and legal." />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="${xmlEscape(site)}/sitemap.html" />
+  <meta property="og:image" content="${xmlEscape(site)}/og-default.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Descall" />
 ${faviconLinksHtml("  ")}
   <style>
     :root {
