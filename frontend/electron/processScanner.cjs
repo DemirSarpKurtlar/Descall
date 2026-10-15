@@ -1,6 +1,6 @@
 'use strict';
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { ipcMain } = require('electron');
 
 // Inlined minimal blocklist for main process (renderer has full version)
@@ -29,22 +29,30 @@ const BLOCKLIST = new Set([
  * filtered against the system blocklist.
  */
 function getRawProcessList() {
+  if (process.platform !== 'win32') return Promise.resolve([]);
   return new Promise((resolve) => {
-    // /fo csv = CSV format, /nh = no header row
-    exec('tasklist /fo csv /nh', { timeout: 8000, windowsHide: true }, (err, stdout) => {
-      if (err) return resolve([]);
-      const names = new Set();
-      for (const line of stdout.split('\n')) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        // CSV format: "process.exe","pid","session","num","mem"
-        const match = trimmed.match(/^"([^"]+)"/);
-        if (!match) continue;
-        const name = match[1].toLowerCase();
-        if (!BLOCKLIST.has(name)) names.add(name);
-      }
-      resolve([...names]);
-    });
+    // execFile, not exec: no cmd.exe shell and no pipe to find.exe.
+    // A shell pipe such as `tasklist | find /I "Descall.exe"` opens a
+    // visible Windows Terminal window. windowsHide covers tasklist itself.
+    execFile(
+      'tasklist.exe',
+      ['/FO', 'CSV', '/NH'],
+      { timeout: 8000, windowsHide: true },
+      (err, stdout) => {
+        if (err || !stdout) return resolve([]);
+        const names = new Set();
+        for (const line of String(stdout).split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          // CSV format: "process.exe","pid","session","num","mem"
+          const match = trimmed.match(/^"([^"]+)"/);
+          if (!match) continue;
+          const name = match[1].toLowerCase();
+          if (!BLOCKLIST.has(name)) names.add(name);
+        }
+        resolve([...names]);
+      },
+    );
   });
 }
 

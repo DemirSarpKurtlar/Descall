@@ -32,18 +32,85 @@
 ; QuitAndInstall used to start NSIS while Descall.exe still had ffmpeg.dll
 ; mapped. A stale or half-written DLL is Windows 0xc000007b. Wait until the
 ; image is gone, then let the file copy run.
+;
+; Do not shell out to cmd.exe, tasklist, or find.exe. A pipe such as
+; `tasklist | find /I "Descall.exe"` opens a visible Windows Terminal window
+; (title: find /I "Descall.exe") on every retry. Toolhelp32 is in-process.
 ; un. functions are only legal in the uninstaller compile.
+
+!macro Descall_ImageRunning _ID
+  ; $R0 = image name. Sets $R1 to 1 when that image is running. Preserves $R5.
+  Push $R5
+  Push $R6
+  StrCpy $R1 0
+  System::Call 'kernel32::CreateToolhelp32Snapshot(i 2, i 0) i.r2'
+  IntCmp $R2 0 descall_ir_exit_${_ID}
+  IntCmp $R2 -1 descall_ir_exit_${_ID}
+  System::Alloc 1024
+  Pop $R3
+  System::Call '*$R3(i 556)'
+  System::Call 'kernel32::Process32FirstW(i r2, i r3) i.r4'
+  StrCmp $R4 0 descall_ir_close_${_ID}
+  descall_ir_loop_${_ID}:
+    System::Call '*$R3(i,i,i.r6,i,i,i,i,i,i,&w256.r5)'
+    StrCmp $R5 $R0 descall_ir_yes_${_ID} descall_ir_next_${_ID}
+  descall_ir_yes_${_ID}:
+    StrCpy $R1 1
+    Goto descall_ir_close_${_ID}
+  descall_ir_next_${_ID}:
+    System::Call 'kernel32::Process32NextW(i r2, i r3) i.r4'
+    StrCmp $R4 0 descall_ir_close_${_ID} descall_ir_loop_${_ID}
+  descall_ir_close_${_ID}:
+    System::Free $R3
+    System::Call 'kernel32::CloseHandle(i r2)'
+  descall_ir_exit_${_ID}:
+    Pop $R6
+    Pop $R5
+!macroend
+
+!macro Descall_KillImage _ID
+  ; Terminate every ${PRODUCT_FILENAME}.exe. Preserves $R5.
+  Push $R5
+  Push $R6
+  Push $R7
+  System::Call 'kernel32::CreateToolhelp32Snapshot(i 2, i 0) i.r2'
+  IntCmp $R2 0 descall_ki_exit_${_ID}
+  IntCmp $R2 -1 descall_ki_exit_${_ID}
+  System::Alloc 1024
+  Pop $R3
+  System::Call '*$R3(i 556)'
+  System::Call 'kernel32::Process32FirstW(i r2, i r3) i.r4'
+  StrCmp $R4 0 descall_ki_close_${_ID}
+  descall_ki_loop_${_ID}:
+    System::Call '*$R3(i,i,i.r6,i,i,i,i,i,i,&w256.r5)'
+    StrCmp $R5 "${PRODUCT_FILENAME}.exe" descall_ki_term_${_ID} descall_ki_next_${_ID}
+  descall_ki_term_${_ID}:
+    ; PROCESS_TERMINATE = 0x0001. A denied open is skipped.
+    System::Call 'kernel32::OpenProcess(i 1, i 0, i r6) i.r7'
+    IntCmp $R7 0 descall_ki_next_${_ID}
+    System::Call 'kernel32::TerminateProcess(i r7, i 1) i.r4'
+    System::Call 'kernel32::CloseHandle(i r7)'
+  descall_ki_next_${_ID}:
+    System::Call 'kernel32::Process32NextW(i r2, i r3) i.r4'
+    StrCmp $R4 0 descall_ki_close_${_ID} descall_ki_loop_${_ID}
+  descall_ki_close_${_ID}:
+    System::Free $R3
+    System::Call 'kernel32::CloseHandle(i r2)'
+  descall_ki_exit_${_ID}:
+    Pop $R7
+    Pop $R6
+    Pop $R5
+!macroend
+
 !ifndef BUILD_UNINSTALLER
 Function DescallWaitUntilClosed
   StrCpy $R5 0
   descallWaitApp:
-    nsExec::ExecToStack `$SYSDIR\cmd.exe /c tasklist /FI "IMAGENAME eq ${PRODUCT_FILENAME}.exe" /FO csv | find /I "${PRODUCT_FILENAME}.exe"`
-    Pop $R6
-    Pop $R7
-    StrCmp $R6 0 descallStillOpen descallAppStopped
+    StrCpy $R0 "${PRODUCT_FILENAME}.exe"
+    !insertmacro Descall_ImageRunning Inst
+    StrCmp $R1 1 descallStillOpen descallAppStopped
   descallStillOpen:
-    nsExec::Exec `$SYSDIR\taskkill.exe /f /im "${PRODUCT_FILENAME}.exe"`
-    Pop $R6
+    !insertmacro Descall_KillImage Inst
     Sleep 400
     IntOp $R5 $R5 + 1
     IntCmp $R5 25 descallGiveUp descallWaitApp descallGiveUp
@@ -59,13 +126,11 @@ FunctionEnd
 Function un.DescallWaitUntilClosed
   StrCpy $R5 0
   un.descallWaitApp:
-    nsExec::ExecToStack `$SYSDIR\cmd.exe /c tasklist /FI "IMAGENAME eq ${PRODUCT_FILENAME}.exe" /FO csv | find /I "${PRODUCT_FILENAME}.exe"`
-    Pop $R6
-    Pop $R7
-    StrCmp $R6 0 un.descallStillOpen un.descallAppStopped
+    StrCpy $R0 "${PRODUCT_FILENAME}.exe"
+    !insertmacro Descall_ImageRunning Un
+    StrCmp $R1 1 un.descallStillOpen un.descallAppStopped
   un.descallStillOpen:
-    nsExec::Exec `$SYSDIR\taskkill.exe /f /im "${PRODUCT_FILENAME}.exe"`
-    Pop $R6
+    !insertmacro Descall_KillImage Un
     Sleep 400
     IntOp $R5 $R5 + 1
     IntCmp $R5 25 un.descallGiveUp un.descallWaitApp un.descallGiveUp
@@ -114,8 +179,9 @@ FunctionEnd
   FileWrite $1 "if ($$vc -ne 0 -and $$vc -ne 34404) { exit 1 }$\r$\n"
   FileWrite $1 "exit 0$\r$\n"
   FileClose $1
-  nsExec::Exec `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$0"`
+  nsExec::ExecToStack `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "$0"`
   Pop $0
+  Pop $1
   ${if} $0 != 0
     MessageBox MB_OK|MB_ICONSTOP "Descall could not finish the update because a program file is damaged or the wrong architecture (0xc000007b). Download a fresh installer."
     ExecShell "open" "https://github.com/DemirSarpKurtlar/Descall/releases/latest/download/Descall-Setup.exe"
