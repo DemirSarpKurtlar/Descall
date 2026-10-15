@@ -2,10 +2,12 @@
 
 html.glass-desktop .titlebar {
   height: var(--gd-tb);
-  background: transparent;
-  border-bottom: none;
+  background: var(--gd-glass-fill);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.16);
   box-shadow: none;
   color: var(--gd-t1);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
 }
 
 html.glass-desktop .titlebar-title,

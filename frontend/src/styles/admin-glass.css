@@ -700,12 +700,12 @@
   text-decoration: underline;
 }
 
-.empty-state.compact {
+.admin-shell .empty-state.compact {
   padding: 18px 8px;
   text-align: left;
 }
 
-.empty-state.compact p {
+.admin-shell .empty-state.compact p {
   margin: 0;
   color: rgba(244, 246, 251, 0.5);
   font-size: 0.85rem;
@@ -889,7 +889,7 @@
   color: #30d158;
 }
 
-.empty-state {
+.admin-shell .empty-state {
   text-align: center;
   padding: 48px 20px;
   color: rgba(244, 246, 251, 0.45);

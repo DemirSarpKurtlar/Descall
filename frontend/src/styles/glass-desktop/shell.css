@@ -226,16 +226,33 @@ html.glass-desktop.electron-app .panel-header {
   background-color: transparent !important;
 }
 
-html.glass-desktop.electron-app:not(.gd-lite) .nav-rail,
-html.glass-desktop.electron-app:not(.gd-lite) .sidebar-secondary,
-html.glass-desktop.electron-app:not(.gd-lite) .app-main-slot,
-html.glass-desktop.electron-app:not(.gd-lite) .main-panel,
-html.glass-desktop.electron-app:not(.gd-lite) .chat-panel-shell.is-members-docked > .main-panel,
-html.glass-desktop.electron-app:not(.gd-lite) .members-panel,
-html.glass-desktop.electron-app:not(.gd-lite) .header-identity,
-html.glass-desktop.electron-app:not(.gd-lite) .header-right {
+/* Includes gd-lite. A solid fallback painted the list, header pills, search
+   field and main pane as flat grey while the theme sat behind them. */
+html.glass-desktop.electron-app .nav-rail,
+html.glass-desktop.electron-app .sidebar-secondary,
+html.glass-desktop.electron-app .app-main-slot,
+html.glass-desktop.electron-app .main-panel,
+html.glass-desktop.electron-app .chat-panel-shell.is-members-docked > .main-panel,
+html.glass-desktop.electron-app .members-panel,
+html.glass-desktop.electron-app .header-identity,
+html.glass-desktop.electron-app .header-right,
+html.glass-desktop.electron-app .search-input,
+html.glass-desktop.electron-app .sidebar-search input,
+html.glass-desktop.electron-app .composer-input,
+html.glass-desktop.electron-app .composer-left .composer-action-btn,
+html.glass-desktop.electron-app .sidebar-actions::before,
+html.glass-desktop.electron-app .titlebar,
+html.glass-desktop.electron-app .conv-more-btn {
   background: var(--gd-glass-fill) !important;
   background-color: transparent !important;
   -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate)) !important;
   backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate)) !important;
+}
+
+html.glass-desktop.electron-app .messages-container > .empty-state,
+html.glass-desktop.electron-app .main-panel > .empty-state {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
