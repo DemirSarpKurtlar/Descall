@@ -26,6 +26,9 @@ jobs:
         run: |
           set -euo pipefail
           node src/lib/callHistoryCache.selftest.mjs
+          node electron/peArch.selftest.mjs
+          node electron/updateRecover.selftest.mjs
+          node electron/main.trayUpdater.selftest.mjs
           node src/api/transportRetry.selftest.mjs
           node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs

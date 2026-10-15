@@ -13,8 +13,16 @@ const {
   createDeferralState,
 } = require('./updateDeferral.cjs');
 const log = require('electron-log');
+const { launchUpdateAfterExit } = require('./updateRecover.cjs');
 const path = require('path');
 const fs = require('fs');
+
+const smokeLaunch = process.env.DESCALL_SMOKE === '1' || process.argv.includes('--descall-smoke');
+if (smokeLaunch) {
+  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('disable-gpu');
+  app.disableHardwareAcceleration();
+}
 const {
   cleanOldDescallSetups,
   isDescallSetupDownloadUrl,
@@ -169,7 +177,10 @@ try {
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 autoUpdater.autoDownload = true;
-autoUpdater.autoInstallOnAppQuit = true;
+// Do not let electron-updater spawn NSIS from inside this process. The
+// recovery launcher starts the installer only after Descall.exe has exited,
+// so ffmpeg.dll is not replaced while it is still mapped (0xc000007b).
+autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.allowPrerelease = false;
 autoUpdater.allowDowngrade = false;
 // Full Setup download is more reliable than delta/blockmap across jumps
@@ -221,6 +232,8 @@ function resolveAppIcon() {
 
 let updateReady = false;
 let updateVersion = null;
+let downloadedInstallerPath = null;
+let downloadedInstallerSize = null;
 let updateCheckTimer = null;
 let updateRetryTimer = null;
 let installTimer = null;
@@ -259,25 +272,44 @@ function pruneOldSetupDownloads(reason, keepVersion) {
   }
 }
 
+function startUpdateInstall(reason, { forceRun } = {}) {
+  const installerPath = downloadedInstallerPath || autoUpdater.downloadedUpdateHelper?.file || null;
+  if (process.platform !== 'win32') {
+    autoUpdater.quitAndInstall(true, true);
+    return true;
+  }
+  launchUpdateAfterExit({
+    installerPath,
+    expectedSize: downloadedInstallerSize,
+    bootOkPath: path.join(app.getPath('userData'), 'boot-ok'),
+    version: updateVersion || app.getVersion(),
+    forceRun: Boolean(forceRun),
+    productExe: 'Descall.exe',
+    log,
+  });
+  log.info(`[updater] ${reason}: installer staged, waiting for this process to exit`);
+  return true;
+}
+
 function applyDownloadedUpdate(reason = 'auto', { allowDuringCall = false } = {}) {
   if (installStarted) return true;
   if (!updateReady || !app.isPackaged) return false;
   // Last line of defense for every automatic path, including anything that
   // used to install immediately. Explicit confirm and the pre-window splash
-  // gate opt in. Normal quit still installs via autoInstallOnAppQuit.
+  // gate opt in. A normal quit installs from before-quit, after DLLs unmap.
   if (!allowDuringCall && isBusyWithLiveSession()) {
-    log.info(`[updater] quitAndInstall blocked — voice session active (${reason})`);
+    log.info(`[updater] install blocked — voice session active (${reason})`);
     return false;
   }
-  log.info(`[updater] quitAndInstall (${reason}) → v${updateVersion || '?'}`);
+  log.info(`[updater] install (${reason}) → v${updateVersion || '?'}`);
   installStarted = true;
   isQuitting = true;
   try {
-    // isSilent=true → NSIS /S replaces old install; isForceRunAfter=true relaunches
-    autoUpdater.quitAndInstall(true, true);
+    startUpdateInstall(reason, { forceRun: true });
+    app.quit();
     return true;
   } catch (err) {
-    log.error('[updater] quitAndInstall failed:', err?.message || err);
+    log.error('[updater] install failed:', err?.message || err);
     installStarted = false;
     isQuitting = false;
     return false;
@@ -474,7 +506,8 @@ function scheduleSilentInstall() {
 /**
  * Tray "Güncelle ve Çık" and the in-app Restart button. A live call is not
  * cut silently — the renderer shows a confirm dialog. Quitting the app
- * without this prompt still applies the update (autoInstallOnAppQuit).
+ * without this prompt still applies the update from before-quit, after this
+ * process has exited. Windows does not spawn NSIS from inside the app.
  */
 function requestExplicitInstall(reason) {
   if (!updateReady) {
@@ -1215,8 +1248,8 @@ function createTray() {
       click: () => {
         if (updateReady) {
           // In a voice chat this asks before cutting the call. Otherwise it
-          // installs. A plain quit (no staged update) still just quits, and
-          // autoInstallOnAppQuit covers a real app quit.
+          // installs. A plain quit with a staged update installs from before-quit
+          // after this process releases Descall.exe and ffmpeg.dll.
           const result = requestExplicitInstall('tray');
           if (result?.needsConfirm) return;
           if (result?.installing) return;
@@ -1248,6 +1281,19 @@ function createTray() {
 
 // App events
 app.whenReady().then(async () => {
+  try {
+    const bootDir = app.getPath('userData');
+    fs.mkdirSync(bootDir, { recursive: true });
+    fs.writeFileSync(path.join(bootDir, 'boot-ok'), String(app.getVersion()), 'utf8');
+  } catch (err) {
+    log.warn('[boot] boot-ok write failed:', err?.message || err);
+  }
+  if (smokeLaunch) {
+    log.info('[smoke] process started, exiting');
+    app.exit(0);
+    return;
+  }
+
   registerDescallProtocol();
   // Enable startup on first run (packaged only)
   if (isPackaged && !app.getLoginItemSettings().openAtLogin) {
@@ -1294,8 +1340,15 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
-  // autoInstallOnAppQuit=true applies a downloaded update during this quit
   destroyOverlayWindow();
+  if (!updateReady || installStarted || !app.isPackaged) return;
+  try {
+    installStarted = true;
+    startUpdateInstall('quit', { forceRun: false });
+  } catch (err) {
+    installStarted = false;
+    log.error('[updater] quit install failed:', err?.message || err);
+  }
 });
 
 // Auto-updater events
@@ -1376,6 +1429,10 @@ autoUpdater.on('update-downloaded', (info) => {
   log.info('[updater] Update downloaded:', info.version);
   updateReady = true;
   updateVersion = info.version;
+  downloadedInstallerPath = info?.downloadedFile || autoUpdater.downloadedUpdateHelper?.file || null;
+  const files = Array.isArray(info?.files) ? info.files : [];
+  const exeFile = files.find((file) => String(file?.url || "").toLowerCase().endsWith(".exe")) || files[0];
+  downloadedInstallerSize = Number(exeFile?.size) || null;
   pruneOldSetupDownloads('update-downloaded', info.version);
 
   if (prelaunchActive) {

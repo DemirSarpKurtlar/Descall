@@ -1,6 +1,6 @@
 {
   "name": "descall-electron",
-  "version": "2.10.84",
+  "version": "2.10.85",
   "description": "Descall - Discord-like chat application",
   "main": "main.cjs",
   "author": {
@@ -78,8 +78,7 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "ia32"
+            "x64"
           ]
         }
       ],

@@ -66,6 +66,8 @@ jobs:
             Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
             Write-Host "No WIN_CSC_LINK secret. Building unsigned. File properties still name Descall; SmartScreen stays Unknown publisher until a trusted cert is configured."
           }
+          npx --yes @electron/rebuild@3.7.2 -f -a x64
+          if ($LASTEXITCODE -ne 0) { throw "electron-rebuild failed with $LASTEXITCODE" }
           npx electron-builder --win --publish=never
       - name: Copy stable latest setup name
         shell: pwsh
@@ -77,6 +79,43 @@ jobs:
           if (-not $exe) { throw "No Descall-Setup-*.exe was produced" }
           Copy-Item -LiteralPath $exe.FullName -Destination (Join-Path $exe.DirectoryName "Descall-Setup.exe") -Force
           Write-Host "Copied $($exe.Name) -> Descall-Setup.exe"
+      - name: Smoke test packaged exe and an in-place update
+        shell: pwsh
+        working-directory: frontend
+        run: |
+          $ErrorActionPreference = "Stop"
+          node electron/peArch.cjs --dir release/win-unpacked --expect 34404 --require Descall.exe,ffmpeg.dll,vcruntime140.dll
+          function Invoke-Smoke([string]$Exe) {
+            $env:DESCALL_SMOKE = "1"
+            $proc = Start-Process -FilePath $Exe -ArgumentList "--descall-smoke" -PassThru
+            if (-not $proc.WaitForExit(45000)) {
+              try { Stop-Process -Id $proc.Id -Force } catch {}
+              throw "Descall.exe did not exit within 45s ($Exe). A 0xc000007b crash never reaches the smoke flag."
+            }
+            if ($proc.ExitCode -ne 0) { throw "Descall.exe smoke exit code $($proc.ExitCode) ($Exe)" }
+            Write-Host "smoke ok $Exe"
+          }
+          Invoke-Smoke (Join-Path (Get-Location) "release\win-unpacked\Descall.exe")
+          $setup = Get-ChildItem -File release\Descall-Setup-*.exe |
+            Where-Object { $_.Name -ne "Descall-Setup.exe" } |
+            Select-Object -First 1
+          if (-not $setup) { throw "No versioned setup exe" }
+          $dest = Join-Path $env:TEMP ("descall-smoke-" + [guid]::NewGuid().ToString("n"))
+          New-Item -ItemType Directory -Path $dest | Out-Null
+          cmd /c "`"$($setup.FullName)`" /S /D=$dest"
+          if (-not (Test-Path (Join-Path $dest "Descall.exe"))) { throw "Silent install did not write Descall.exe" }
+          if (-not (Test-Path (Join-Path $dest "ffmpeg.dll"))) { throw "Silent install did not write ffmpeg.dll" }
+          Invoke-Smoke (Join-Path $dest "Descall.exe")
+          $ffmpeg = Join-Path $dest "ffmpeg.dll"
+          $before = (Get-FileHash -Algorithm SHA256 $ffmpeg).Hash
+          [IO.File]::WriteAllBytes($ffmpeg, [byte[]](0x4D, 0x5A, 0x00, 0x00))
+          cmd /c "`"$($setup.FullName)`" /S --updated /D=$dest"
+          if (-not $?) { throw "in-place update installer failed" }
+          $after = (Get-FileHash -Algorithm SHA256 $ffmpeg).Hash
+          if ($after -ne $before) { throw "update left a damaged ffmpeg.dll in place" }
+          Invoke-Smoke (Join-Path $dest "Descall.exe")
+          Get-Process Descall -ErrorAction SilentlyContinue | Stop-Process -Force
+          Write-Host "windows smoke and update-from-previous ok"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-setup

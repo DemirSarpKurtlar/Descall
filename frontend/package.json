@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.10.84",
+  "version": "2.10.85",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -182,6 +182,7 @@
     "portable": {
       "artifactName": "Descall-Portable-${version}.exe"
     },
+    "npmRebuild": true,
     "asar": true,
     "asarUnpack": [],
     "compression": "maximum",

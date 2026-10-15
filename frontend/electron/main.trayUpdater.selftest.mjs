@@ -66,7 +66,8 @@ assert(main.includes("ipcMain.on('window:minimize'"), "title bar minimize IPC mu
 assert(/UPDATE_CHECK_INTERVAL_MS\s*=\s*5 \* 60 \* 1000/.test(main), "update checks must run on a 5 minute interval");
 assert(main.includes("setInterval(() => checkForAppUpdates('interval-5m')"), "the interval poller must be armed while the app is open");
 assert(main.includes("autoUpdater.autoDownload = true"), "updates must download automatically");
-assert(main.includes("autoUpdater.autoInstallOnAppQuit = true"), "a staged update must also apply on quit");
+assert(main.includes("autoUpdater.autoInstallOnAppQuit = false"), "NSIS must not start while this process still has DLLs mapped");
+assert(main.includes("startUpdateInstall('quit'"), "a normal quit must still install after the process exits");
 const installer = main.slice(main.indexOf("function installQuietly"), main.indexOf("function checkForAppUpdates"));
 assert(installer.includes("isBusyWithLiveSession()"), "a quiet install must never interrupt a live call");
 assert(main.includes("isAppInBackground()"), "a quiet install must still know when the window is backgrounded");
@@ -74,7 +75,9 @@ assert(installer.includes("setStartInBackground(true, mode)"), "the post-install
 assert(installer.includes("queueSilentInstallRetry()"), "a deferred install must retry instead of being dropped");
 assert(installer.includes("decideUpdateInstall"), "quiet install timing must use the deferral decision");
 assert(installer.includes("again.action"), "install must be re-checked immediately before it runs");
-assert(main.includes("autoUpdater.quitAndInstall(true, true)"), "install must be silent + force-run-after");
+assert(main.includes("launchUpdateAfterExit"), "windows install must wait until Descall.exe exits, then relaunch");
+assert(main.includes("autoUpdater.quitAndInstall(true, true)"), "non-windows install stays silent and relaunches");
+assert(main.includes('process.platform !== \'win32\''), "the in-process installer is not used on Windows");
 assert(main.includes("voice:set-busy"), "renderer must be able to report voice-busy");
 assert(main.includes("render-process-gone"), "voice-busy must reset if the renderer crashes");
 assert(main.includes("did-finish-load"), "voice-busy must reset if the renderer reloads");
