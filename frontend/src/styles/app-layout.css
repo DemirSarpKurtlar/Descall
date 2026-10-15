@@ -1027,25 +1027,14 @@ html.gd-lite .rail-tooltip {
 
 .conv-row-top .dm-name,
 .conv-row-top .group-name {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* DM list: show the full name, wrap onto a second line instead of "…" */
-.conv-row-top .dm-name {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  line-height: 1.25;
-}
-
-.dm-item .conv-row-top {
-  align-items: flex-start;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .conv-row-bottom .dm-preview,

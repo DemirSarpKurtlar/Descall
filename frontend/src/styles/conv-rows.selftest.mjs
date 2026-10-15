@@ -21,4 +21,16 @@ assert.match(css, /align-self:\s*center/);
 assert.doesNotMatch(sidebar, /paddingRight: !isMobile \? 40/);
 assert.equal(css.includes("html.glass-ui"), false);
 
+const layout = readFileSync(join(here, "app-layout.css"), "utf8");
+const desktopChat = readFileSync(join(here, "glass-desktop/chat.css"), "utf8");
+assert.match(
+  layout,
+  /\.conv-row-top \.dm-name,\s*\.conv-row-top \.group-name\s*\{[^}]*white-space:\s*nowrap;[^}]*overflow-wrap:\s*normal/
+);
+assert.doesNotMatch(layout, /DM list: show the full name/);
+assert.match(
+  desktopChat,
+  /html\.glass-desktop \.conv-row-top \.dm-name,\s*html\.glass-desktop \.conv-row-top \.group-name\s*\{[^}]*min-width:\s*0;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/
+);
+
 console.log("conv-rows.selftest ok");

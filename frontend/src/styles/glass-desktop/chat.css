@@ -198,6 +198,14 @@ html.glass-desktop .conv-unread-badge {
 
 html.glass-desktop .conv-row-top .dm-name,
 html.glass-desktop .conv-row-top .group-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.014em;

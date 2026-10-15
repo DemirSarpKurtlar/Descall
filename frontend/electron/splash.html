@@ -6,11 +6,9 @@
   <title>Descall</title>
   <style>
     :root {
-      --bg: #1e1f22;
-      --text: #f2f3f5;
-      --muted: #b5bac1;
-      --track: #2b2d31;
-      --fill: #5865f2;
+      --ink: rgba(255, 255, 255, 0.96);
+      --muted: rgba(235, 238, 255, 0.62);
+      --quiet: rgba(235, 238, 255, 0.42);
     }
     * { box-sizing: border-box; }
     html, body {
@@ -19,122 +17,164 @@
       height: 100%;
       overflow: hidden;
       background: transparent;
-      font-family: "Segoe UI", "gg sans", "Helvetica Neue", Arial, sans-serif;
-      color: var(--text);
+      color: var(--ink);
+      font-family: -apple-system, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
       user-select: none;
       -webkit-user-select: none;
     }
-    .frame {
+    .stage {
       width: 100%;
       height: 100%;
-      background: var(--bg);
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+    .glass {
+      width: 100%;
+      height: 100%;
+      border-radius: 28px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 28px 32px 24px;
       position: relative;
+      padding: 36px 32px 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+        rgba(16, 18, 28, 0.46);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+      box-shadow:
+        0 28px 70px rgba(0, 0, 0, 0.38),
+        0 2px 8px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
     }
     .logo-wrap {
-      width: 112px;
-      height: 112px;
-      border-radius: 28px;
-      background: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 22px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-      position: relative;
-      overflow: hidden;
+      width: 104px;
+      height: 104px;
+      border-radius: 26px;
+      margin-bottom: 28px;
+      transform: scale(0.86);
+      opacity: 0;
+      filter: blur(10px);
+      will-change: transform, opacity, filter;
     }
     .logo-wrap img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
       display: block;
+      object-fit: cover;
       border-radius: inherit;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.28);
     }
-    .logo-wrap::before {
-      content: "";
-      position: absolute;
-      inset: -8px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      border-top-color: rgba(255, 255, 255, 0.55);
-      border-right-color: rgba(255, 255, 255, 0.15);
-      animation: spin 1.1s linear infinite;
-      opacity: 0;
-    }
-    .frame.is-busy .logo-wrap::before { opacity: 1; }
-    .logo {
-      font-size: 42px;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      color: #fff;
-      line-height: 1;
-    }
-    .status {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      text-align: center;
-      min-height: 22px;
-      margin-bottom: 14px;
-    }
-    .bar {
-      width: 220px;
-      height: 6px;
+    .loader {
+      width: 148px;
+      height: 4px;
       border-radius: 999px;
-      background: var(--track);
+      background: rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
       overflow: hidden;
-      opacity: 0;
-      transition: opacity 0.15s ease;
     }
-    .frame.has-progress .bar { opacity: 1; }
-    .bar > i {
+    .loader > i {
       display: block;
       height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #5865f2, #7289da);
+      width: 42%;
       border-radius: inherit;
-      transition: width 0.12s linear;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+      transform: translateX(-130%);
+      animation: glide 1.2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
     }
-    .detail {
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--muted);
+    .glass.has-progress .loader > i {
+      animation: none;
+      transform: none;
+      width: 0%;
+      background: rgba(255, 255, 255, 0.92);
+      transition: width 180ms linear;
+    }
+    .status {
+      margin: 14px 0 0;
       min-height: 16px;
+      max-width: 100%;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+      color: var(--muted);
       text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+    .status:empty { visibility: hidden; }
     .version {
       position: absolute;
-      bottom: 12px;
+      left: 0;
+      right: 0;
+      bottom: 16px;
+      margin: 0;
+      text-align: center;
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.35);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--quiet);
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes glide {
+      from { transform: translateX(-130%); }
+      to { transform: translateX(280%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .logo-wrap {
+        transform: none;
+        opacity: 1;
+        filter: none;
+      }
+      .loader > i {
+        animation: none;
+        transform: none;
+        width: 38%;
+        background: rgba(255, 255, 255, 0.85);
+      }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .glass {
+        background: #161820;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+    }
+    @media (prefers-contrast: more) {
+      .glass {
+        background: #0c0e14;
+        box-shadow: inset 0 0 0 1px #fff, 0 18px 40px rgba(0, 0, 0, 0.45);
+      }
+      .status, .version { color: #fff; }
     }
   </style>
 </head>
 <body>
-  <div class="frame is-busy" id="frame">
-    <div class="logo-wrap"><img src="descall-icon.png" alt="Descall" /></div>
-    <div class="status" id="status">Checking for updates…</div>
-    <div class="bar"><i id="fill"></i></div>
-    <div class="detail" id="detail"></div>
-    <div class="version" id="version"></div>
+  <div class="stage">
+    <div class="glass is-busy" id="frame">
+      <div class="logo-wrap" id="logo">
+        <img src="descall-icon.png" alt="" />
+      </div>
+      <div class="loader" role="progressbar" aria-label="Loading" aria-busy="true"><i id="fill"></i></div>
+      <p class="status" id="status"></p>
+      <p class="version" id="version"></p>
+    </div>
   </div>
   <script>
     const frame = document.getElementById("frame");
     const statusEl = document.getElementById("status");
-    const detailEl = document.getElementById("detail");
     const fillEl = document.getElementById("fill");
     const versionEl = document.getElementById("version");
+    const logo = document.getElementById("logo");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function isQuietStatus(text) {
+      return /^starting descall/i.test(String(text || "").trim());
+    }
 
     window.__splashSetVersion = (v) => {
       versionEl.textContent = v ? ("v" + String(v).replace(/^v/, "")) : "";
@@ -142,15 +182,49 @@
 
     window.__splashUpdate = (payload = {}) => {
       const { status, detail, percent, busy = true, showProgress = false } = payload;
-      if (typeof status === "string") statusEl.textContent = status;
-      if (typeof detail === "string") detailEl.textContent = detail;
+      const parts = [];
+      if (typeof status === "string" && status && !isQuietStatus(status)) parts.push(status);
+      if (typeof detail === "string" && detail) parts.push(detail);
+      statusEl.textContent = parts.join(" · ");
       frame.classList.toggle("is-busy", Boolean(busy));
       frame.classList.toggle("has-progress", Boolean(showProgress));
+      const bar = frame.querySelector(".loader");
+      if (bar) bar.setAttribute("aria-busy", busy ? "true" : "false");
       if (typeof percent === "number" && Number.isFinite(percent)) {
         const p = Math.max(0, Math.min(100, percent));
         fillEl.style.width = p.toFixed(1) + "%";
+        if (bar) bar.setAttribute("aria-valuenow", String(Math.round(p)));
       }
     };
+
+    if (!reduceMotion) {
+      let scale = 0.86;
+      let velocity = 0;
+      let opacity = 0;
+      const target = 1;
+      const omega = (2 * Math.PI) / 0.36;
+      let last = performance.now();
+      const step = (now) => {
+        const dt = Math.min(0.032, (now - last) / 1000);
+        last = now;
+        const accel = -(omega * omega) * (scale - target) - (2 * omega) * velocity;
+        velocity += accel * dt;
+        scale += velocity * dt;
+        opacity = Math.min(1, opacity + dt / 0.2);
+        const blur = Math.max(0, (target - scale) / (target - 0.86) * 10);
+        logo.style.transform = "scale(" + scale.toFixed(4) + ")";
+        logo.style.opacity = opacity.toFixed(3);
+        logo.style.filter = blur > 0.25 ? "blur(" + blur.toFixed(2) + "px)" : "none";
+        if (Math.abs(target - scale) > 0.0015 || Math.abs(velocity) > 0.02) {
+          requestAnimationFrame(step);
+        } else {
+          logo.style.transform = "scale(1)";
+          logo.style.opacity = "1";
+          logo.style.filter = "none";
+        }
+      };
+      requestAnimationFrame(step);
+    }
   </script>
 </body>
 </html>

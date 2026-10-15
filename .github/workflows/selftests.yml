@@ -29,6 +29,7 @@ jobs:
           node electron/peArch.selftest.mjs
           node electron/updateRecover.selftest.mjs
           node electron/main.trayUpdater.selftest.mjs
+          node electron/splash.selftest.mjs
           node src/api/transportRetry.selftest.mjs
           node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs

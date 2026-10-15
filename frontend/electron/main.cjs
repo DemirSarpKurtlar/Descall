@@ -672,13 +672,16 @@ function showMainWindow() {
 
 // Discord-like update / boot splash (blocks main window until ready)
 function createSplashWindow() {
-  splashWindow = new BrowserWindow({
+  const splashOptions = {
     icon: resolveAppIcon(),
-    width: 340,
-    height: 280,
+    width: 400,
+    height: 460,
     frame: false,
     alwaysOnTop: true,
     transparent: true,
+    backgroundColor: '#00000000',
+    roundedCorners: true,
+    hasShadow: true,
     resizable: false,
     maximizable: false,
     minimizable: false,
@@ -689,13 +692,20 @@ function createSplashWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-  });
+  };
+  if (process.platform === 'win32') {
+    splashOptions.backgroundMaterial = 'acrylic';
+  } else if (process.platform === 'darwin') {
+    splashOptions.vibrancy = 'under-window';
+    splashOptions.visualEffectState = 'followWindow';
+  }
+  splashWindow = new BrowserWindow(splashOptions);
 
   const splashPath = path.join(__dirname, 'splash.html');
   const ready = splashWindow.loadFile(splashPath).catch((err) => {
     log.warn('[splash] loadFile failed, using inline fallback:', err?.message);
     return splashWindow.loadURL(`data:text/html,${encodeURIComponent(
-      `<!doctype html><html><body style="margin:0;background:#1e1f22;color:#fff;font-family:Segoe UI,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Checking for updates…</body></html>`
+      '<!doctype html><html><body style="margin:0;background:transparent;height:100vh"></body></html>'
     )}`);
   });
 
