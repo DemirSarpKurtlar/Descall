@@ -37,7 +37,7 @@ export default function CallSummaryBubble({ summary }) {
 
   return (
     <div className="call-summary-wrap">
-      <div className="call-summary-card">
+      <div className={`call-summary-card${summary.status === "missed" ? " is-missed" : ""}`}>
         <div className="call-summary-icon">
           {isVideo ? <Video size={22} /> : <Phone size={22} />}
         </div>

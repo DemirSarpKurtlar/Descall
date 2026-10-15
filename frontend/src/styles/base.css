@@ -615,6 +615,46 @@ select {
   white-space: nowrap;
 }
 
+.message-day-sep span {
+  border-color: transparent;
+  background: var(--surface-2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
+    color-mix(in srgb, var(--surface-2) 40%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+html.glass-lite .message-day-sep span,
+html.gd-lite .message-day-sep span {
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .message-day-sep span,
+  html.glass-lite .message-day-sep span,
+  html.gd-lite .message-day-sep span {
+    background: var(--surface-2);
+    border-color: var(--border-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}
+
+html.a11y-solid .message-day-sep span {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .message-unread-sep span {
   color: #c5ccff;
   background: rgba(88, 101, 242, 0.16);

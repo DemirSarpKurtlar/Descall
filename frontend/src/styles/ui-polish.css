@@ -809,6 +809,23 @@
   color: var(--text-1);
 }
 
+/* Ended-call history card: Liquid Glass on web, Electron, and iOS.
+   The solid background is the fallback when color-mix is unavailable. */
+.call-summary-card {
+  isolation: isolate;
+  background: var(--surface-2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%),
+    color-mix(in srgb, var(--surface-2) 42%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid transparent;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
 .call-banner-card {
   border-color: color-mix(in srgb, var(--success) 40%, transparent);
 }
@@ -873,12 +890,87 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--surface-3);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--text-muted);
+  color: var(--text-0);
+  background: var(--surface-3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 100%),
+    color-mix(in srgb, var(--surface-3) 35%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  backdrop-filter: blur(14px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.call-summary-card.is-missed .call-summary-icon {
+  color: #ff453a;
+  background:
+    linear-gradient(180deg, rgba(255, 69, 58, 0.38) 0%, rgba(255, 69, 58, 0.14) 100%),
+    color-mix(in srgb, #ff453a 16%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 196, 190, 0.62),
+    inset 0 0 0 0.5px rgba(255, 69, 58, 0.48),
+    0 6px 16px rgba(255, 69, 58, 0.18);
+}
+
+html.glass-lite .call-summary-card,
+html.gd-lite .call-summary-card {
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
+}
+
+html.glass-lite .call-summary-icon,
+html.gd-lite .call-summary-icon {
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .call-summary-card,
+  .call-summary-icon,
+  html.glass-lite .call-summary-card,
+  html.gd-lite .call-summary-card,
+  html.glass-lite .call-summary-icon,
+  html.gd-lite .call-summary-icon {
+    background: var(--surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: inset 0 0 0 1px var(--border-2);
+  }
+
+  .call-summary-card.is-missed .call-summary-icon {
+    background: color-mix(in srgb, #ff453a 22%, var(--surface-2));
+    color: #ff453a;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #ff453a 55%, var(--border-2));
+  }
+}
+
+html.a11y-solid .call-summary-card,
+html.a11y-solid .call-summary-icon {
+  background: var(--surface-2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--border-2);
+}
+
+html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
+  background: color-mix(in srgb, #ff453a 22%, var(--surface-2));
+  color: #ff453a;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ff453a 55%, var(--border-2));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-summary-card,
+  .call-summary-icon,
+  .message-day-sep span {
+    transition: none;
+    animation: none;
+  }
 }
 
 .participant-tile {
