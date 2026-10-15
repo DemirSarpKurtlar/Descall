@@ -12,7 +12,7 @@
  *   tab bar  floats 24 above the bottom (home indicator 34 − 10), 64 tall, 7 columns
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Search, Plus } from "lucide-react";
+import { MagnifyingGlass as Search, Plus } from "../phosphorInline.jsx";
 import { Avatar } from "../../ui/Avatar";
 import { STATUS_META } from "../../../lib/presence";
 import { resolveDisplayName } from "../../../lib/userProfile";
@@ -129,7 +129,8 @@ export function GlassListHeader({
         <div className="g-sp" />
         {inlineTitle ? <div className="g-inline-title">{title}</div> : null}
         {buttons.length > 0 ? (
-          <div className="g-bgroup g-glass" data-gid="toolbar-bgroup">
+          <div className="g-bgroup" data-gid="toolbar-bgroup">
+            <span className="g-bgroup-plate g-glass" aria-hidden="true" />
             {buttons.map((b) => {
               const Icon = b.icon;
               const isSearch = b.id === "search";

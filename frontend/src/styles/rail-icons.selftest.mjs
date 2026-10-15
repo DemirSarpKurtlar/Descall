@@ -59,10 +59,15 @@ for (const component of Object.values(phosphor)) {
 }
 assert.match(icons, /weight="regular"/);
 assert.match(icons, /weight="fill"/);
-assert.equal(/from\s+["']@phosphor-icons\/react["']/.test(icons), false, "rail must not import the phosphor barrel");
+assert.equal(/@phosphor-icons/.test(icons), false, "rail glyphs are inlined, not fetched from the phosphor package");
+assert.match(icons, /phosphorInline\.jsx/);
 const tabs = readFileSync(join(here, "../components/layout/tabBarIcons.jsx"), "utf8");
-assert.equal(/from\s+["']@phosphor-icons\/react["']/.test(tabs), false, "tabs must not import the phosphor barrel");
-assert.match(tabs, /@phosphor-icons\/react\/dist\/csr\/ChatCircleDots/);
+assert.equal(/@phosphor-icons/.test(tabs), false, "tab glyphs are inlined, not fetched from the phosphor package");
+assert.match(tabs, /phosphorInline\.jsx/);
+const inline = readFileSync(join(here, "../components/layout/phosphorInline.jsx"), "utf8");
+assert.match(inline, /viewBox: "0 0 256 256"/);
+assert.match(inline, /fill: "currentColor"/);
+assert.equal(/@phosphor-icons|lucide-react|@font-face|fonts\.google/.test(inline), false);
 const vite = readFileSync(join(here, "../../vite.config.js"), "utf8");
 const phosphorChunk = vite.indexOf('id.includes("@phosphor-icons")');
 const reactChunk = vite.indexOf('id.includes("/react/")');
@@ -79,5 +84,20 @@ assert.match(rail, /useReducedMotion/);
 assert.match(rail, /stiffness:\s*640/);
 assert.equal(icons.includes("feGaussianBlur"), false);
 assert.equal(icons.includes("descall-icon.png"), false);
+
+const shell = readFileSync(join(here, "../components/layout/glass/GlassShell.jsx"), "utf8");
+const sidebar = readFileSync(join(here, "../components/layout/ServerSidebar.jsx"), "utf8");
+const shellCss = readFileSync(join(here, "glass/shell.css"), "utf8");
+assert.match(shell, /phosphorInline\.jsx/);
+assert.match(sidebar, /phosphorInline\.jsx/);
+assert.equal(/from "lucide-react"/.test(shell), false, "toolbar shell must not wait on the lucide chunk");
+assert.match(shell, /g-bgroup-plate g-glass/);
+assert.equal(/className="g-bgroup g-glass"/.test(shell), false, "toolbar blur must not wrap the glyphs");
+assert.match(shellCss, /\.g-bgroup-plate/);
+assert.match(shellCss, /display:\s*block/);
+for (const name of ["MagnifyingGlass", "Megaphone", "Chat", "Plus", "ChatCircleDots", "User"]) {
+  assert.match(inline, new RegExp(`"${name}": \\{\\s*"regular": "[^"]{20,}"`), name);
+  assert.match(inline, new RegExp(`"fill": "[^"]{20,}"`), `${name} fill`);
+}
 
 console.log("rail-icons.selftest ok");

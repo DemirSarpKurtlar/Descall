@@ -2,11 +2,12 @@ import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Plus, Settings, Hash, Phone, MessageSquare,
-  ChevronDown, Bell, UserPlus, X, User, Users, Megaphone,
-  MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, MessageSquarePlus, Star, ChevronDown as ChevronDownIcon,
+  Settings, Hash, Phone, MessageSquare,
+  ChevronDown, Bell, UserPlus, X, User, Users,
+  MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Star, ChevronDown as ChevronDownIcon,
   Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag,
 } from "lucide-react";
+import { MagnifyingGlass as Search, Megaphone, Chat as MessageSquarePlus, Plus } from "./phosphorInline.jsx";
 import SwipeRevealRow from "./SwipeRevealRow";
 import { hapticWarning } from "../../lib/fluid/haptics";
 import GlassConfirm from "../ui/GlassConfirm";

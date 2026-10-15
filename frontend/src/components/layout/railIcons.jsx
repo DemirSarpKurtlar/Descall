@@ -1,12 +1,14 @@
-import { ChatCircleDots } from "@phosphor-icons/react/dist/csr/ChatCircleDots";
-import { GameController } from "@phosphor-icons/react/dist/csr/GameController";
-import { GearSix } from "@phosphor-icons/react/dist/csr/GearSix";
-import { HardDrives } from "@phosphor-icons/react/dist/csr/HardDrives";
-import { Lightning } from "@phosphor-icons/react/dist/csr/Lightning";
-import { Phone } from "@phosphor-icons/react/dist/csr/Phone";
-import { Plus } from "@phosphor-icons/react/dist/csr/Plus";
-import { UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
-import { UsersThree } from "@phosphor-icons/react/dist/csr/UsersThree";
+import {
+  ChatCircleDots,
+  GameController,
+  GearSix,
+  HardDrives,
+  Lightning,
+  Phone,
+  Plus,
+  UserPlus,
+  UsersThree,
+} from "./phosphorInline.jsx";
 
 /**
  * Desktop / iPad / Electron rail glyphs (Phosphor, MIT).

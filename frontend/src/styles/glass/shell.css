@@ -411,6 +411,7 @@ html.glass-ui .g-me-av .g-st.status-invisible,
 html.glass-ui .g-me-av .g-st.status-offline { background: var(--g-off); }
 
 html.glass-ui .g-bgroup {
+  position: relative;
   height: 44px;
   border-radius: 22px;
   display: inline-flex;
@@ -419,6 +420,20 @@ html.glass-ui .g-bgroup {
   padding: 0 4px;
   flex-shrink: 0;
   margin: 0;
+}
+
+/* Blur sits on the plate. The glyphs are siblings, so WebKit paints them
+   on the first frame instead of leaving empty toolbar buttons. */
+html.glass-ui .g-bgroup-plate {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+}
+
+html.glass-ui .g-bgroup > .g-bgroup-btn {
+  z-index: 1;
 }
 
 html.glass-ui .g-bgroup-btn {
@@ -438,7 +453,12 @@ html.glass-ui .g-bgroup-btn {
   -webkit-tap-highlight-color: transparent;
 }
 
-html.glass-ui .g-bgroup-btn svg { width: 20px; height: 20px; }
+html.glass-ui .g-bgroup-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  flex: none;
+}
 html.glass-ui .g-bgroup-btn.danger { color: #ff6961; }
 html.glass-ui .g-bgroup-btn.on { color: var(--g-brand-hi); }
 
@@ -480,7 +500,7 @@ html.glass-ui .g-cbtn {
 }
 
 html.glass-ui .g-cbtn.g-tint-brand { color: var(--g-on-brand); }
-html.glass-ui .g-cbtn svg { width: 20px; height: 20px; }
+html.glass-ui .g-cbtn svg { width: 20px; height: 20px; display: block; flex: none; }
 html.glass-ui .g-cbtn:disabled { opacity: 0.5; }
 
 html.glass-ui .g-inline-title {
@@ -550,8 +570,9 @@ html.glass-ui .g-head-has-sub .g-searchbar { top: calc(var(--g-chrome-top) + 122
 html.glass-ui .g-searchbar > svg {
   width: 18px;
   height: 18px;
+  display: block;
+  flex: none;
   color: var(--g-t2);
-  flex-shrink: 0;
 }
 
 html.glass-ui .g-searchbar .g-search-input {
