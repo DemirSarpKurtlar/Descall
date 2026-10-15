@@ -64,9 +64,18 @@ for (const key of ["lagoon", "grove", "hanami", "emberfall", "borealis", "starwe
   assert.match(themes, new RegExp(`html\\.glass-desktop\\[data-theme="${key}"\\]`));
   assert.match(design, new RegExp(`\\[data-theme="${key}"\\]`));
 }
-assert.match(themes, /conic-gradient/);
-assert.match(themes, /theme-scene-spin/);
-assert.match(themes, /prefers-reduced-motion:\s*reduce/);
+assert.match(themes, /radial-gradient\(90% 80% at 12% 18%, rgba\(124, 58, 237, 0\.55\), transparent 64%\)/);
+assert.match(themes, /rgba\(34, 211, 238, 0\.42\)/);
+assert.match(themes, /rgba\(244, 114, 182, 0\.5\)/);
+assert.match(themes, /rgba\(250, 204, 21, 0\.3\)/);
+assert.equal(themes.includes("conic-gradient"), false, "iriscape must not use a conic wheel");
+assert.equal(themes.includes("body::before"), false, "the iris is the window background, not a spinning layer");
+const iosScenes = readFileSync(join(here, "../glass/theme-scenes.css"), "utf8");
+assert.match(iosScenes, /radial-gradient\(90% 80% at 12% 18%, rgba\(124, 58, 237, 0\.55\), transparent 64%\)/);
+assert.equal(/iriscape"\] \.g-theme-drift \{[^}]*conic-gradient/.test(iosScenes), false);
+const classic = readFileSync(join(here, "../theme-scenes.css"), "utf8");
+assert.match(classic, /radial-gradient\(90% 80% at 12% 18%, rgba\(124, 58, 237, 0\.55\), transparent 64%\)/);
+assert.equal(/data-theme="iriscape"\] body::before/.test(classic), false);
 
 assert.match(surfaces, /html\.glass-desktop \.us-theme-card[\s\S]*var\(--gd-card-fill\)/);
 assert.match(surfaces, /html\.glass-desktop \.user-settings\.is-desktop \{[\s\S]*var\(--gd-card-fill\)/);

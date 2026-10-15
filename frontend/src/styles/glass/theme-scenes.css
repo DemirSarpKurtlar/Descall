@@ -351,10 +351,13 @@ html.glass-ui[data-theme="iriscape"] .g-theme-wash {
 }
 html.glass-ui[data-theme="iriscape"] .g-theme-drift {
   display: block;
-  inset: -35%;
-  background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.45), rgba(34, 211, 238, 0.28), rgba(244, 114, 182, 0.4), rgba(250, 204, 21, 0.22), rgba(124, 58, 237, 0.45));
-  opacity: 0.5;
-  animation: g-theme-spin 72s linear infinite;
+  inset: -20%;
+  background:
+    radial-gradient(90% 80% at 12% 18%, rgba(124, 58, 237, 0.55), transparent 64%),
+    radial-gradient(80% 72% at 90% 10%, rgba(34, 211, 238, 0.42), transparent 66%),
+    radial-gradient(86% 76% at 82% 90%, rgba(244, 114, 182, 0.5), transparent 64%),
+    radial-gradient(72% 64% at 16% 88%, rgba(250, 204, 21, 0.3), transparent 68%);
+  animation: g-theme-drift 72s ease-in-out infinite alternate;
 }
 html.glass-ui[data-theme="iriscape"] .g-theme-sheen {
   background: linear-gradient(90deg, transparent, rgba(255, 210, 250, 0.35), rgba(180, 255, 255, 0.28), transparent);
@@ -389,10 +392,6 @@ html.glass-ui[data-theme="iriscape"] .g-chip::before {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(420%, 0, 0); }
 }
-@keyframes g-theme-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 @keyframes g-theme-rim {
   from { background-position: 0% 40%; }
   to { background-position: 100% 60%; }
@@ -422,7 +421,7 @@ html.glass-ui.g-theme-paused .g-chip::before {
     transform: none;
   }
   html.glass-ui[data-theme="iriscape"] .g-theme-drift {
-    transform: rotate(18deg);
+    transform: none;
   }
 }
 

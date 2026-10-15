@@ -23,9 +23,16 @@ html:not(.glass-ui)[data-theme="hanami"] body {
 html:not(.glass-ui)[data-theme="emberfall"] body,
 html:not(.glass-ui)[data-theme="borealis"] body,
 html:not(.glass-ui)[data-theme="starwell"] body,
-html:not(.glass-ui)[data-theme="chromeveil"] body,
-html:not(.glass-ui)[data-theme="iriscape"] body {
+html:not(.glass-ui)[data-theme="chromeveil"] body {
   background: transparent;
+}
+html:not(.glass-ui)[data-theme="iriscape"] body {
+  background:
+    radial-gradient(90% 80% at 12% 18%, rgba(124, 58, 237, 0.55), transparent 64%),
+    radial-gradient(80% 72% at 90% 10%, rgba(34, 211, 238, 0.42), transparent 66%),
+    radial-gradient(86% 76% at 82% 90%, rgba(244, 114, 182, 0.5), transparent 64%),
+    radial-gradient(72% 64% at 16% 88%, rgba(250, 204, 21, 0.3), transparent 68%),
+    linear-gradient(165deg, #1a1028, #120c1c 46%, #0c0a12);
 }
 html:not(.glass-ui)[data-theme="emberfall"] #root,
 html:not(.glass-ui)[data-theme="borealis"] #root,
@@ -45,13 +52,6 @@ html:not(.glass-ui)[data-theme="chromeveil"] body::before {
   z-index: 0;
   pointer-events: none;
   animation: theme-scene-drift 32s ease-in-out infinite alternate;
-}
-html:not(.glass-ui)[data-theme="iriscape"] body::before {
-  content: "";
-  position: fixed;
-  inset: -18%;
-  z-index: 0;
-  pointer-events: none;
 }
 html:not(.glass-ui)[data-theme="emberfall"] body::before {
   background:
@@ -78,22 +78,10 @@ html:not(.glass-ui)[data-theme="chromeveil"] body::before {
     linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.1) 42%, transparent 58%),
     linear-gradient(160deg, #1A212C, #0A0C10 42%, #141A24);
 }
-html:not(.glass-ui)[data-theme="iriscape"] body::before {
-  background:
-    conic-gradient(from 20deg, rgba(124, 58, 237, 0.4), rgba(34, 211, 238, 0.22), rgba(244, 114, 182, 0.35), rgba(250, 204, 21, 0.18), rgba(124, 58, 237, 0.4)),
-    linear-gradient(180deg, #16101E, #0C0A12);
-  animation: theme-scene-spin 80s linear infinite;
-}
-
 @keyframes theme-scene-drift {
   from { transform: translate3d(-2%, -1.5%, 0); }
   to { transform: translate3d(2%, 1.5%, 0); }
 }
-@keyframes theme-scene-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 html.g-theme-paused body::before {
   animation-play-state: paused;
 }
@@ -102,8 +90,7 @@ html.g-theme-paused body::before {
   html:not(.glass-ui)[data-theme="emberfall"] body::before,
   html:not(.glass-ui)[data-theme="borealis"] body::before,
   html:not(.glass-ui)[data-theme="starwell"] body::before,
-  html:not(.glass-ui)[data-theme="chromeveil"] body::before,
-  html:not(.glass-ui)[data-theme="iriscape"] body::before {
+  html:not(.glass-ui)[data-theme="chromeveil"] body::before {
     animation: none;
   }
 }

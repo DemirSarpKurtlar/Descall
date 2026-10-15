@@ -72,24 +72,14 @@ html.glass-desktop[data-theme="chromeveil"] {
 html.glass-desktop[data-theme="iriscape"] {
   --g-blur: 34px; --g-saturate: 220%; --g-brightness: 1.07;
   --g-amb-a: 0.42; --g-amb-b: 0.34; --g-amb-c: 0.18; --g-amb-d: 0.26;
-  --g-scene: linear-gradient(180deg, #16101E 0%, #0C0A12 100%);
+  /* Soft iris. A spinning conic leaves a hard center and, once rotated,
+     straight edges where the box no longer covers the window. These radials
+     are the same colors as the iPhone drift and stay seamless on resize. */
+  --g-scene:
+    radial-gradient(90% 80% at 12% 18%, rgba(124, 58, 237, 0.55), transparent 64%),
+    radial-gradient(80% 72% at 90% 10%, rgba(34, 211, 238, 0.42), transparent 66%),
+    radial-gradient(86% 76% at 82% 90%, rgba(244, 114, 182, 0.5), transparent 64%),
+    radial-gradient(72% 64% at 16% 88%, rgba(250, 204, 21, 0.3), transparent 68%),
+    linear-gradient(165deg, #1a1028 0%, #120c1c 46%, #0c0a12 100%);
   --gd-aurora-base-1: #0C0A12;
-}
-
-/* Iris wheel, same conic as the iPhone drift layer, behind the panels. */
-html.glass-desktop[data-theme="iriscape"] body::before {
-  content: "";
-  position: fixed;
-  inset: -35%;
-  z-index: 0;
-  pointer-events: none;
-  background: conic-gradient(from 20deg, rgba(124, 58, 237, 0.45), rgba(34, 211, 238, 0.28), rgba(244, 114, 182, 0.4), rgba(250, 204, 21, 0.22), rgba(124, 58, 237, 0.45));
-  opacity: 0.5;
-  animation: theme-scene-spin 72s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.glass-desktop[data-theme="iriscape"] body::before {
-    animation: none;
-  }
 }
