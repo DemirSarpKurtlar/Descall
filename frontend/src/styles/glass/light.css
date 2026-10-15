@@ -1,0 +1,46 @@
+/* Açık (light) scheme for the iPhone glass UI.
+   Dark mockup rules stay; these only run when data-theme is light. */
+
+html.glass-ui[data-theme="light"] {
+  color-scheme: light;
+}
+
+html.glass-ui[data-theme="light"] .user-settings-shell.g-settings,
+html.glass-ui[data-theme="light"] .g-alert-scrim {
+  background: color-mix(in srgb, var(--g-deep) 50%, transparent);
+}
+
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-nav-group,
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-card,
+html.glass-ui[data-theme="light"] .g-menu {
+  background: var(--g-chip-bg);
+  box-shadow: inset 0 0 0 0.5px var(--g-hair);
+  color: var(--g-t1);
+}
+
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-nav-item + .us-nav-item {
+  box-shadow: inset 0 0.5px 0 var(--g-hair);
+}
+
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-nav-group-label,
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-section-label,
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-nav-hint {
+  color: var(--g-t2);
+}
+
+html.glass-ui[data-theme="light"] .g-mi.on {
+  background: var(--g-fill);
+}
+
+html.glass-ui[data-theme="light"] .g-msep {
+  background: var(--g-hair);
+}
+
+html.glass-ui[data-theme="light"] .g-dotb {
+  box-shadow: 0 0 0 2px var(--g-base-1);
+}
+
+html.glass-ui[data-theme="light"] .g-tabbar,
+html.glass-ui[data-theme="light"] .g-glass.g-heavy {
+  box-shadow: var(--g-shadow-heavy), inset 0 0 0 0.5px var(--g-hair);
+}

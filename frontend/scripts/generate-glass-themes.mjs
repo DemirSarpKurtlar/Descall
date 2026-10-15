@@ -68,10 +68,11 @@ export function themeBlock(t, scope = "html.glass-ui") {
   --g-base-1: ${hex(mix(s0, s1, 0.5))};
   --g-base-2: ${hex(mix(s0, [0, 0, 0], 0.03))};
   --g-amb-a: 0.22; --g-amb-b: 0.16; --g-amb-c: 0.10; --g-amb-d: 0.14; --g-glow: 0.26;
-  --g-t1: rgba(10,12,22,0.92); --g-t2: rgba(30,34,52,0.68); --g-t3: rgba(30,34,52,0.48); --g-t4: rgba(30,34,52,0.30);
-  --g-tint-top: rgba(255,255,255,0.72); --g-tint-bot: rgba(255,255,255,0.50); --g-tint-base: rgba(255,255,255,0.30);
-  --g-heavy-top: rgba(255,255,255,0.80); --g-heavy-bot: rgba(255,255,255,0.62); --g-heavy-base: rgba(255,255,255,0.55);
-  --g-chip-bg: rgba(255,255,255,0.55); --g-lens-top: rgba(255,255,255,0.95); --g-lens-bot: rgba(255,255,255,0.80);
+  /* Ink is dark enough for WCAG AA on the white frost (t3 ≈ 5.8:1 on #FBFBFC). */
+  --g-t1: rgba(10,12,22,0.94); --g-t2: rgba(22,26,42,0.82); --g-t3: rgba(28,32,48,0.70); --g-t4: rgba(28,32,48,0.52);
+  --g-tint-top: rgba(255,255,255,0.88); --g-tint-bot: rgba(255,255,255,0.74); --g-tint-base: rgba(255,255,255,0.80);
+  --g-heavy-top: rgba(255,255,255,0.94); --g-heavy-bot: rgba(255,255,255,0.84); --g-heavy-base: rgba(255,255,255,0.88);
+  --g-chip-bg: rgba(255,255,255,0.74); --g-lens-top: rgba(255,255,255,0.96); --g-lens-bot: rgba(255,255,255,0.86);
   --g-shadow: 0 12px 32px rgba(20,30,60,0.14), 0 2px 6px rgba(20,30,60,0.10);
   --g-shadow-heavy: 0 24px 64px rgba(20,30,60,0.20), 0 4px 14px rgba(20,30,60,0.10);
   --g-rim-a: rgba(255,255,255,0.95); --g-rim-b: rgba(255,255,255,0.40); --g-rim-c: rgba(255,255,255,0.10); --g-rim-d: rgba(255,255,255,0.30); --g-rim-e: rgba(255,255,255,0.70);

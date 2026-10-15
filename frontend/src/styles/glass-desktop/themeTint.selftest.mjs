@@ -22,6 +22,10 @@ assert.match(tokens, /--gd-aurora:[\s\S]*var\(--g-brand-rgb\)[\s\S]*var\(--g-amb
 assert.match(tokens, /--gd-cta:\s*linear-gradient\(180deg, var\(--g-cta-top\), var\(--g-cta-bot\)\)/);
 assert.match(tokens, /--g-brand: #587AF6/);
 assert.match(tokens, /--gd-deep:\s*#0D0E13/);
+assert.match(tokens, /--gd-heavy-base:\s*var\(--g-heavy-base\)/);
+assert.match(tokens, /--gd-panel-tint:\s*var\(--g-tint-base\)/);
+assert.match(tokens, /--gd-panel-base:\s*var\(--g-solid\)/);
+assert.match(tokens, /--gd-hair:\s*var\(--g-hair\)/);
 assert.equal(/--gd-panel-base:\s*color-mix\(in srgb, var\(--surface-1/.test(tokens), false);
 
 function blockBody(css, scope, name) {
@@ -67,6 +71,18 @@ assert.match(themes, /prefers-reduced-motion:\s*reduce/);
 assert.match(surfaces, /html\.glass-desktop \.us-theme-card[\s\S]*var\(--gd-card-fill\)/);
 assert.match(surfaces, /html\.glass-desktop \.user-settings\.is-desktop \{[\s\S]*var\(--gd-card-fill\)/);
 assert.match(surfaces, /--gd-scrim:\s*color-mix\(in srgb, var\(--surface-0/);
+assert.match(palette, /--g-t3: rgba\(28,32,48,0\.70\)/);
+assert.match(palette, /--g-tint-base: rgba\(255,255,255,0\.80\)/);
+assert.match(palette, /--g-heavy-base: rgba\(255,255,255,0\.88\)/);
+const light = readFileSync(join(here, "light.css"), "utf8");
+assert.match(light, /html\.glass-desktop\[data-theme="light"\]/);
+assert.match(light, /--gd-scrim:\s*color-mix\(in srgb, var\(--g-deep\)/);
+const settings = readFileSync(join(here, "../settings.css"), "utf8");
+assert.equal(settings.includes("background: #1a1b1e"), false);
+assert.equal(settings.includes("rgba(20, 22, 26, 0.4)"), false);
+const iosLight = readFileSync(join(here, "../glass/light.css"), "utf8");
+assert.match(iosLight, /html\.glass-ui\[data-theme="light"\]/);
+assert.match(iosLight, /var\(--g-chip-bg\)/);
 
 const themeNames = [...design.matchAll(/\[data-theme="([\w-]+)"\]/g)].map((m) => m[1]);
 assert.ok(themeNames.includes("crimson") && themeNames.includes("light") && themeNames.includes("iriscape"));

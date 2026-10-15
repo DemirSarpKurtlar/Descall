@@ -50,7 +50,7 @@ html.glass-desktop .user-settings.is-desktop {
   background: var(--gd-card-fill) !important;
   -webkit-backdrop-filter: blur(40px) saturate(var(--gd-saturate));
   backdrop-filter: blur(40px) saturate(var(--gd-saturate));
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
+  box-shadow: var(--gd-shadow-heavy), inset 0 0 0 0.5px var(--gd-hair) !important;
   color: var(--gd-t1);
 }
 
@@ -63,9 +63,9 @@ html.glass-desktop .user-settings.is-desktop.is-shop-open {
 
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
   width: 264px;
-  background: color-mix(in srgb, var(--gd-panel-tint) 55%, transparent) !important;
+  background: var(--gd-glass-fill) !important;
   border: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid var(--gd-hair);
 }
 
 html.glass-desktop .user-settings.is-desktop .us-mini-profile {
@@ -132,19 +132,19 @@ html.glass-desktop .us-nav-item {
 }
 
 html.glass-desktop .us-nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--gd-fill);
   color: var(--gd-t1);
 }
 
 html.glass-desktop .us-nav-item.active {
-  background: color-mix(in srgb, var(--gd-brand) 18%, rgba(255, 255, 255, 0.08));
+  background: color-mix(in srgb, var(--gd-brand) 16%, var(--gd-fill));
   color: var(--gd-t1);
   box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand) 35%, transparent);
 }
 
 html.glass-desktop .us-theme-card {
   background: var(--gd-card-fill) !important;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--gd-hair);
   color: var(--gd-t1);
   -webkit-backdrop-filter: blur(18px) saturate(var(--gd-saturate));
   backdrop-filter: blur(18px) saturate(var(--gd-saturate));
@@ -291,8 +291,8 @@ html.glass-desktop .us-row,
 html.glass-desktop .settings-row,
 html.glass-desktop .us-card {
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  background: var(--gd-fill);
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair);
   color: var(--gd-t1);
 }
 
@@ -513,10 +513,10 @@ html.glass-desktop .feedback-textarea {
   width: 100%;
   border: none;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.26);
+  background: var(--gd-field-bg);
   color: var(--gd-t1);
   font-family: var(--gd-font);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--gd-field-shadow);
   box-sizing: border-box;
 }
 

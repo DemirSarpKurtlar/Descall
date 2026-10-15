@@ -1,0 +1,118 @@
+/* Açık (light) scheme. Dark themes keep the default materials.
+   White frost, dark ink, ink hairlines, and accent buttons. */
+
+html.glass-desktop[data-theme="light"] {
+  --gd-scrim: color-mix(in srgb, var(--g-deep) 58%, transparent);
+  color-scheme: light;
+}
+
+html.glass-desktop[data-theme="light"] .user-panel-backdrop,
+html.glass-desktop[data-theme="light"] .user-settings-shell.is-desktop,
+html.glass-desktop[data-theme="light"] .conv-confirm-overlay,
+html.glass-desktop[data-theme="light"] .server-modal-overlay,
+html.glass-desktop[data-theme="light"] .add-modal-backdrop,
+html.glass-desktop[data-theme="light"] .feedback-overlay,
+html.glass-desktop[data-theme="light"] .legal-modal-backdrop,
+html.glass-desktop[data-theme="light"] .activity-modal-backdrop,
+html.glass-desktop[data-theme="light"] .invite-modal-overlay,
+html.glass-desktop[data-theme="light"] .giphy-overlay,
+html.glass-desktop[data-theme="light"] .user-profile-scrim,
+html.glass-desktop[data-theme="light"] .modal-backdrop {
+  background: var(--gd-scrim) !important;
+  background-color: transparent !important;
+}
+
+html.glass-desktop[data-theme="light"] .user-settings.is-desktop,
+html.glass-desktop[data-theme="light"] .user-settings.is-desktop .us-sidebar,
+html.glass-desktop[data-theme="light"] .toast-item,
+html.glass-desktop[data-theme="light"] .status-picker,
+html.glass-desktop[data-theme="light"] .status-picker-portal,
+html.glass-desktop[data-theme="light"] .conv-confirm-card,
+html.glass-desktop[data-theme="light"] .add-modal,
+html.glass-desktop[data-theme="light"] .feedback-modal,
+html.glass-desktop[data-theme="light"] .message-hover-bar,
+html.glass-desktop[data-theme="light"] .message-inline-picker {
+  color: var(--g-t1);
+  box-shadow: var(--g-shadow-heavy), inset 0 0 0 0.5px var(--g-hair);
+}
+
+html.glass-desktop[data-theme="light"] .us-sidebar-brand h2,
+html.glass-desktop[data-theme="light"] .us-page-title,
+html.glass-desktop[data-theme="light"] .us-main-heading h3,
+html.glass-desktop[data-theme="light"] .us-nav-item,
+html.glass-desktop[data-theme="light"] .us-theme-card,
+html.glass-desktop[data-theme="light"] .us-row,
+html.glass-desktop[data-theme="light"] .activity-view-title {
+  color: var(--g-t1);
+}
+
+html.glass-desktop[data-theme="light"] .us-sidebar-brand p,
+html.glass-desktop[data-theme="light"] .us-nav-group-label,
+html.glass-desktop[data-theme="light"] .us-section-label,
+html.glass-desktop[data-theme="light"] .us-lead,
+html.glass-desktop[data-theme="light"] .us-nav-hint,
+html.glass-desktop[data-theme="light"] .user-settings.is-desktop .us-main-header p,
+html.glass-desktop[data-theme="light"] .us-mini-meta > span {
+  color: var(--g-t2);
+}
+
+html.glass-desktop[data-theme="light"] .us-nav-ico,
+html.glass-desktop[data-theme="light"] .us-icon-btn,
+html.glass-desktop[data-theme="light"] .header-right .icon-btn,
+html.glass-desktop[data-theme="light"] .sidebar-actions .icon-btn {
+  color: var(--g-t1);
+}
+
+html.glass-desktop[data-theme="light"] .sidebar-actions .icon-btn:last-child,
+html.glass-desktop[data-theme="light"] .composer-send-btn,
+html.glass-desktop[data-theme="light"] .empty-cta.primary,
+html.glass-desktop[data-theme="light"] .add-modal-btn,
+html.glass-desktop[data-theme="light"] .conv-confirm-btn.primary {
+  color: var(--g-on-brand) !important;
+}
+
+html.glass-desktop[data-theme="light"] .us-nav-item:hover,
+html.glass-desktop[data-theme="light"] .header-right .icon-btn:hover,
+html.glass-desktop[data-theme="light"] .status-picker-item:hover,
+html.glass-desktop[data-theme="light"] .status-picker-item.active,
+html.glass-desktop[data-theme="light"] .hover-bar-btn:hover {
+  background: var(--g-fill);
+}
+
+html.glass-desktop[data-theme="light"] .us-nav-item.active {
+  background: color-mix(in srgb, var(--g-brand) 16%, white);
+  color: var(--g-brand-hi);
+}
+
+html.glass-desktop[data-theme="light"] .us-theme-card {
+  background: var(--g-solid-heavy) !important;
+  border-color: var(--g-hair);
+}
+
+html.glass-desktop[data-theme="light"] .us-theme-card.selected {
+  border-color: var(--g-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-brand) 28%, transparent);
+}
+
+html.glass-desktop[data-theme="light"] .nav-rail,
+html.glass-desktop[data-theme="light"] .sidebar-secondary,
+html.glass-desktop[data-theme="light"] .main-panel,
+html.glass-desktop[data-theme="light"] .app-main-slot,
+html.glass-desktop[data-theme="light"] .members-panel {
+  box-shadow: var(--g-shadow), inset 0 0 0 0.5px var(--g-hair);
+}
+
+html.glass-desktop[data-theme="light"] .app-notif-banner,
+html.glass-desktop[data-theme="light"] .electron-update-toast,
+html.glass-desktop[data-theme="light"] .user-profile-card.is-gd {
+  background: var(--g-solid-heavy);
+  color: var(--g-t1);
+  border: 0.5px solid var(--g-hair);
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-desktop.gd-lite[data-theme="light"] .user-profile-scrim,
+html.glass-desktop.gd-lite[data-theme="light"] .user-settings.is-desktop {
+  background: var(--g-solid) !important;
+  color: var(--g-t1);
+}

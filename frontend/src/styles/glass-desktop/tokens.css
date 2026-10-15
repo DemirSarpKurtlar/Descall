@@ -35,6 +35,12 @@ html.glass-desktop {
   --g-cta-bot: rgba(80,112,240,0.95);
   --g-solid: #1B1C24;
   --g-solid-heavy: #16171E;
+  --g-hair: rgba(255,255,255,0.16);
+  --g-fill: rgba(255,255,255,0.09);
+  --g-field-bg: rgba(0,0,0,0.26);
+  --g-field-shadow: inset 0 1px 2px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(255,255,255,0.1);
+  --g-shadow: 0 12px 32px rgba(0,0,0,0.34), 0 2px 6px rgba(0,0,0,0.22);
+  --g-shadow-heavy: 0 24px 64px rgba(0,0,0,0.55), 0 4px 14px rgba(0,0,0,0.3);
 
   --gd-brand: var(--g-brand);
   --gd-brand-2: rgb(var(--g-brand2-rgb));
@@ -74,4 +80,13 @@ html.glass-desktop {
   --sidebar-width: 296px;
   --gd-solid: var(--g-solid);
   --gd-solid-heavy: var(--g-solid-heavy);
+  --gd-heavy-base: var(--g-heavy-base);
+  --gd-panel-tint: var(--g-tint-base);
+  --gd-panel-base: var(--g-solid);
+  --gd-hair: var(--g-hair);
+  --gd-fill: var(--g-fill);
+  --gd-field-bg: var(--g-field-bg);
+  --gd-field-shadow: var(--g-field-shadow);
+  --gd-shadow: var(--g-shadow);
+  --gd-shadow-heavy: var(--g-shadow-heavy);
 }

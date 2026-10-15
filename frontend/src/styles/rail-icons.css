@@ -8,14 +8,14 @@ html body .nav-rail .rail-btn {
   width: 44px;
   height: 44px;
   border-radius: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--border-3, rgba(255, 255, 255, 0.14));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
-    var(--gd-panel-base, rgba(16, 18, 28, 0.62));
+    var(--gd-panel-base, var(--surface-1));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     0 6px 14px rgba(0, 0, 0, 0.22);
-  color: #fff;
+  color: var(--text-0);
 }
 
 html body .nav-rail .rail-btn .rail-glyph {
@@ -52,10 +52,10 @@ html body .nav-rail .rail-btn.active .rail-glyph svg {
 }
 
 html body .nav-rail .rail-btn:hover:not(.active) {
-  border-color: color-mix(in srgb, var(--rail-accent, var(--primary)) 55%, rgba(255, 255, 255, 0.2));
+  border-color: color-mix(in srgb, var(--rail-accent, var(--primary)) 55%, var(--border-3));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06)),
-    rgba(16, 18, 28, 0.7);
+    var(--surface-2);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 8px 16px rgba(0, 0, 0, 0.28),
@@ -71,6 +71,7 @@ html body .nav-rail .rail-btn.active svg {
 }
 
 html body .nav-rail .rail-btn.active {
+  color: var(--g-on-brand, #fff);
   background: var(--gd-cta, linear-gradient(180deg, color-mix(in srgb, var(--primary, #4f7cff) 70%, white), var(--primary, #4f7cff)));
   border-color: rgba(255, 255, 255, 0.32);
   box-shadow:
@@ -106,7 +107,7 @@ html body .nav-rail .rail-unread-pip {
   font-weight: 700;
   line-height: 18px;
   letter-spacing: -0.03em;
-  box-shadow: 0 0 0 2px #12141c;
+  box-shadow: 0 0 0 2px var(--surface-0, #12141c);
 }
 
 html body .nav-rail .rail-btn:focus-visible {
