@@ -320,25 +320,33 @@ html.glass-desktop .panel-header {
   min-height: 64px;
 }
 
-html.glass-desktop .header-identity {
+/* Identity and icon pills. Fill plus an inset hairline only.
+   A backdrop-filter or drop shadow here is what Windows Electron paints
+   as a square behind the icon pill, and as a full-width header band when
+   .panel-header / .chat-top-chrome is still a backdrop root. */
+html.glass-desktop .header-identity,
+html.glass-desktop .header-right {
   height: 52px;
-  padding: 0 18px 0 6px;
   border-radius: 26px;
   background: var(--gd-glass-fill);
-  -webkit-backdrop-filter: blur(26px) saturate(var(--gd-saturate));
-  backdrop-filter: blur(26px) saturate(var(--gd-saturate));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+  contain: none !important;
+  isolation: auto !important;
+}
+
+html.glass-desktop .header-identity {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 18px 0 6px;
 }
 
 html.glass-desktop .header-right {
-  height: 52px;
   padding: 0 6px;
-  border-radius: 26px;
   gap: 0;
-  background: var(--gd-glass-fill);
-  -webkit-backdrop-filter: blur(26px) saturate(var(--gd-saturate));
-  backdrop-filter: blur(26px) saturate(var(--gd-saturate));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
 }
 
 html.glass-desktop .header-right .icon-btn {

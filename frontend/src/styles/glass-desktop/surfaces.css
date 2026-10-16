@@ -1085,10 +1085,13 @@ html.glass-desktop .descoin-daily-claim {
   font-weight: 650;
 }
 
-/* Tab headers stay empty. Pills (title, icon cluster, search) carry the glass.
-   Paint containment on the sidebar (app-layout.css) is a backdrop root, and a
-   backdrop-filter on a pill then paints a hard rectangle the size of that
-   root. The panel already blurs; the pills are fill only. */
+/* Tab headers stay empty. Pills (title, icon cluster, peer, actions) carry
+   the glass. Paint containment on a header (app-layout.css) is a backdrop
+   root, and a backdrop-filter on a pill then paints a hard rectangle the
+   size of that root. The panel already blurs; the pills are fill only.
+   Every app-chrome header wrapper is in this list: list, conversation
+   (DM, group, and server channel share .panel-header), activity, members,
+   settings, play, and the legacy call header. */
 html.glass-desktop .sidebar-secondary,
 html.glass-desktop .sidebar-inner {
   contain: none !important;
@@ -1099,9 +1102,19 @@ html.glass-desktop .sidebar-header,
 html.glass-desktop .sidebar-actions,
 html.glass-desktop .server-shell-header,
 html.glass-desktop .lfg-sidebar-header,
+html.glass-desktop .lfg-detail-header,
 html.glass-desktop .activity-view-toolbar,
+html.glass-desktop .activity-view-header,
+html.glass-desktop .activity-view-header-left,
+html.glass-desktop .activity-view-header-actions,
 html.glass-desktop .members-panel-header,
-html.glass-desktop .user-settings .us-main-header {
+html.glass-desktop .user-settings .us-main-header,
+html.glass-desktop .chat-top-chrome,
+html.glass-desktop .panel-header,
+html.glass-desktop .header-left,
+html.glass-desktop .valorant-hub-header,
+html.glass-desktop .valorant-hub-header-left,
+html.glass-desktop .voice-call-header {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
@@ -1110,9 +1123,53 @@ html.glass-desktop .user-settings .us-main-header {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   filter: none !important;
-  isolation: auto;
-  contain: none;
+  isolation: auto !important;
+  contain: none !important;
   container-type: normal;
+  overflow: visible;
+}
+
+/* No painted pseudo on the wrappers. .sidebar-actions::before is the
+   list icon pill and is intentionally not here. */
+html.glass-desktop .sidebar-header::before,
+html.glass-desktop .sidebar-header::after,
+html.glass-desktop .sidebar-actions::after,
+html.glass-desktop .server-shell-header::before,
+html.glass-desktop .server-shell-header::after,
+html.glass-desktop .lfg-sidebar-header::before,
+html.glass-desktop .lfg-sidebar-header::after,
+html.glass-desktop .lfg-detail-header::before,
+html.glass-desktop .lfg-detail-header::after,
+html.glass-desktop .activity-view-toolbar::before,
+html.glass-desktop .activity-view-toolbar::after,
+html.glass-desktop .activity-view-header::before,
+html.glass-desktop .activity-view-header::after,
+html.glass-desktop .activity-view-header-left::before,
+html.glass-desktop .activity-view-header-left::after,
+html.glass-desktop .activity-view-header-actions::before,
+html.glass-desktop .activity-view-header-actions::after,
+html.glass-desktop .members-panel-header::before,
+html.glass-desktop .members-panel-header::after,
+html.glass-desktop .user-settings .us-main-header::before,
+html.glass-desktop .user-settings .us-main-header::after,
+html.glass-desktop .chat-top-chrome::before,
+html.glass-desktop .chat-top-chrome::after,
+html.glass-desktop .panel-header::before,
+html.glass-desktop .panel-header::after,
+html.glass-desktop .header-left::before,
+html.glass-desktop .header-left::after,
+html.glass-desktop .valorant-hub-header::before,
+html.glass-desktop .valorant-hub-header::after,
+html.glass-desktop .valorant-hub-header-left::before,
+html.glass-desktop .valorant-hub-header-left::after,
+html.glass-desktop .voice-call-header::before,
+html.glass-desktop .voice-call-header::after {
+  content: none !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 html.glass-desktop .lfg-sidebar-header h2 {
@@ -1136,15 +1193,18 @@ html.glass-desktop .user-settings.is-desktop .us-main-header .us-icon-btn {
   border-radius: 18px;
   background: var(--gd-glass-fill);
   color: var(--gd-t1);
-  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
-  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  filter: none;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
 html.glass-desktop.gd-lite .sidebar-header .sidebar-title:not(.server-shell-title),
 html.glass-desktop.gd-lite .lfg-sidebar-header h2,
 html.glass-desktop.gd-lite .user-settings.is-desktop .us-main-header .us-icon-btn,
-html.glass-desktop.gd-lite .sidebar-actions::before {
+html.glass-desktop.gd-lite .sidebar-actions::before,
+html.glass-desktop.gd-lite .header-identity,
+html.glass-desktop.gd-lite .header-right {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   background: var(--gd-solid);
