@@ -194,17 +194,27 @@ html.glass-desktop button.conv-row {
   border: none;
 }
 
-html.glass-desktop button.conv-row:hover {
-  background: rgba(255, 255, 255, 0.05);
+html.glass-desktop button.conv-row,
+html.glass-desktop .dm-item,
+html.glass-desktop .group-item {
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.glass-desktop button.conv-row:hover,
+html.glass-desktop .dm-item:hover,
+html.glass-desktop .group-item:hover {
+  background-color: var(--gd-row-hover);
 }
 
 html.glass-desktop button.conv-row {
   gap: 12px;
 }
 
-html.glass-desktop button.conv-row.active {
-  background: rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+html.glass-desktop button.conv-row.active,
+html.glass-desktop .dm-item.active,
+html.glass-desktop .group-item.active {
+  background-color: var(--gd-row-active);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-t1) 10%, transparent);
 }
 
 html.glass-desktop .conv-row .ui-avatar,
@@ -340,7 +350,7 @@ html.glass-desktop .header-right .icon-btn {
 
 html.glass-desktop .header-right .icon-btn:hover,
 html.glass-desktop .header-right .icon-btn.active {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--gd-chip-hover);
   color: var(--gd-brand-hi);
 }
 
@@ -361,6 +371,28 @@ html.glass-desktop .message-day-sep {
   color: var(--gd-t3);
   font-size: 12px;
   font-weight: 600;
+}
+
+/* Row hover is a 5% theme-ink wash with rounded corners.
+   Transition the longhand only: animating the background shorthand
+   into a color-mix stays transparent in Chromium.
+   No backdrop-filter: Windows Electron paints that as a square slab. */
+html.glass-desktop .message-group {
+  border-radius: 12px;
+  background-color: transparent;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.glass-desktop .message-group:hover {
+  background-color: var(--gd-row-hover);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-t1) 8%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.glass-desktop .message-file:hover {
+  background: var(--gd-row-active);
 }
 
 html.glass-desktop .message-bubble {

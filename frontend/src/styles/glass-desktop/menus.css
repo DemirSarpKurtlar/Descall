@@ -79,7 +79,7 @@ html.glass-desktop .message-inline-picker-grid button {
 }
 
 html.glass-desktop .message-inline-picker-grid button:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--gd-chip-hover);
 }
 
 html.glass-desktop .message-reactions,
@@ -93,9 +93,17 @@ html.glass-desktop .reaction-pill {
   padding: 0 8px;
   border: none;
   border-radius: 13px;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--gd-chip);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-t1) 12%, transparent);
   color: var(--gd-t1);
+}
+
+html.glass-desktop .reaction-chip:hover,
+html.glass-desktop .reaction-pill:hover,
+html.glass-desktop .reaction-add-btn:hover {
+  background: var(--gd-chip-hover);
+  border-color: transparent;
 }
 
 html.glass-desktop .reaction-chip.mine,
@@ -112,7 +120,11 @@ html.glass-desktop .message-reply-quote {
   border: none;
   border-left: 2px solid var(--gd-brand-hi);
   border-radius: 0 10px 10px 0;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--gd-row-hover);
+}
+
+html.glass-desktop .message-reply-quote:hover {
+  background: var(--gd-row-active);
 }
 
 html.glass-desktop .message-reply-author {
@@ -160,11 +172,11 @@ html.glass-desktop .composer-attach-preview {
   border: none;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    color-mix(in srgb, var(--surface-1, #1e1f22) 22%, transparent);
+    linear-gradient(180deg, color-mix(in srgb, var(--g-t1) 13%, transparent), color-mix(in srgb, var(--g-t1) 6%, transparent)),
+    var(--g-tint-base);
   -webkit-backdrop-filter: blur(26px) saturate(190%);
   backdrop-filter: blur(26px) saturate(190%);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--g-shadow);
   color: var(--gd-t2);
 }
 
@@ -186,12 +198,12 @@ html.glass-desktop .composer-reply-clear {
   width: 30px;
   height: 30px;
   border-radius: 15px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--gd-chip);
   color: var(--gd-t2);
 }
 
 html.glass-desktop .composer-reply-clear:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--gd-chip-hover);
   color: var(--gd-t1);
 }
 
@@ -205,9 +217,9 @@ html.glass-desktop .message-edit-ui textarea,
 html.glass-desktop .message-edit-ui input {
   border: none;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.26);
+  background: var(--gd-field-bg);
   color: var(--gd-t1);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--gd-field-shadow);
 }
 
 html.glass-desktop .composer-left .composer-action-btn {
@@ -216,8 +228,8 @@ html.glass-desktop .composer-left .composer-action-btn {
   border-radius: 26px;
   color: var(--gd-t1);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
-    color-mix(in srgb, var(--surface-1, #1e1f22) 22%, transparent);
+    linear-gradient(180deg, color-mix(in srgb, var(--g-t1) 13%, transparent), color-mix(in srgb, var(--g-t1) 6%, transparent)),
+    var(--g-tint-base);
   -webkit-backdrop-filter: blur(26px) saturate(190%);
   backdrop-filter: blur(26px) saturate(190%);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
@@ -260,7 +272,7 @@ html.glass-desktop .attachment-item {
 }
 
 html.glass-desktop .attachment-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gd-chip-hover);
 }
 
 html.glass-desktop .attachment-icon {
@@ -321,7 +333,7 @@ html.glass-desktop .emoji-btn {
 }
 
 html.glass-desktop .emoji-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--gd-chip-hover);
 }
 
 html.glass-desktop .slash-command-item {
@@ -332,7 +344,7 @@ html.glass-desktop .slash-command-item {
 
 html.glass-desktop .slash-command-item:hover,
 html.glass-desktop .slash-command-item.active {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gd-chip-hover);
 }
 
 html.glass-desktop .slash-command-ico {
@@ -406,7 +418,7 @@ html.glass-desktop .giphy-tabs button {
 html.glass-desktop .giphy-tabs button.active,
 html.glass-desktop .giphy-tabs button:hover {
   color: var(--gd-t1);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gd-chip-hover);
 }
 
 html.glass-desktop .giphy-cell {
@@ -435,7 +447,7 @@ html.glass-desktop .gd-row-menu button {
 }
 
 html.glass-desktop .gd-row-menu button:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: var(--gd-chip-hover) !important;
 }
 
 html.glass-desktop .gd-row-menu button svg {
