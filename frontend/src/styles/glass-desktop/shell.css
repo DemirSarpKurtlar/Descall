@@ -252,6 +252,8 @@ html.glass-desktop.electron-app body.electron-app #root,
 html.glass-desktop.electron-app .app-root,
 html.glass-desktop.electron-app .sidebar-header,
 html.glass-desktop.electron-app .chat-panel-shell,
+html.glass-desktop.electron-app .chat-top-chrome,
+html.glass-desktop.electron-app .header-left,
 html.glass-desktop.electron-app .app-main-view,
 html.glass-desktop.electron-app .messages-container,
 html.glass-desktop.electron-app .sidebar-inner,
@@ -263,17 +265,16 @@ html.glass-desktop.electron-app .panel-header {
 
 /* Lite Electron only. A normal window uses the shared website rules:
    panels at --gd-blur-panel, search at 16px, the title bar at --gd-blur.
-   Header pills stay a rounded fill with no backdrop-filter. gd-lite paints
-   --gd-solid and clears the filter, which turned this chrome flat grey, so
-   the frost is forced back on the panels and the title bar. */
+   Header pills stay a rounded fill with no backdrop-filter. Putting the
+   conversation pills in this list painted the DM header as a square band.
+   gd-lite paints --gd-solid and clears the filter, which turned the panels
+   flat grey, so the frost is forced back on the panels and the title bar. */
 html.glass-desktop.electron-app.gd-lite .nav-rail,
 html.glass-desktop.electron-app.gd-lite .sidebar-secondary,
 html.glass-desktop.electron-app.gd-lite .app-main-slot,
 html.glass-desktop.electron-app.gd-lite .main-panel,
 html.glass-desktop.electron-app.gd-lite .chat-panel-shell.is-members-docked > .main-panel,
 html.glass-desktop.electron-app.gd-lite .members-panel,
-html.glass-desktop.electron-app.gd-lite .header-identity,
-html.glass-desktop.electron-app.gd-lite .header-right,
 html.glass-desktop.electron-app.gd-lite .search-input,
 html.glass-desktop.electron-app.gd-lite .sidebar-search input,
 html.glass-desktop.electron-app.gd-lite .composer-input,

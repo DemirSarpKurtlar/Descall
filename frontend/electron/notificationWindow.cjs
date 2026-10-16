@@ -7,6 +7,7 @@ const os = require('os');
 const {
   NOTIF_WIDTH,
   NOTIF_HEIGHT,
+  SHADOW_PAD,
   buildNotificationHtml,
   cardHeightFor,
 } = require('./notificationCard.cjs');
@@ -29,15 +30,22 @@ function getAnchorWorkArea() {
   return display.workArea;
 }
 
+function windowOrigin(area, cardY) {
+  return {
+    x: Math.round(area.x + area.width - NOTIF_WIDTH - NOTIF_MARGIN - SHADOW_PAD),
+    y: Math.round(cardY - SHADOW_PAD),
+  };
+}
+
 function repositionAll() {
   const area = getAnchorWorkArea();
-  let y = area.y + NOTIF_MARGIN;
+  let cardY = area.y + NOTIF_MARGIN;
   activeNotifications.forEach((entry) => {
     const { win, height } = entry;
     if (!win || win.isDestroyed()) return;
-    const x = area.x + area.width - NOTIF_WIDTH - NOTIF_MARGIN;
-    win.setPosition(Math.round(x), Math.round(y), true);
-    y += height + NOTIF_MARGIN;
+    const { x, y } = windowOrigin(area, cardY);
+    win.setPosition(x, y, true);
+    cardY += height + NOTIF_MARGIN;
   });
 }
 
@@ -63,19 +71,22 @@ function showNotificationWindow({
   const winHeight = cardHeightFor(type);
   const area = getAnchorWorkArea();
   const stackOffset = activeNotifications.reduce((sum, entry) => sum + entry.height + NOTIF_MARGIN, 0);
-  const x = area.x + area.width - NOTIF_WIDTH - NOTIF_MARGIN;
-  const y = area.y + NOTIF_MARGIN + stackOffset;
+  const cardY = area.y + NOTIF_MARGIN + stackOffset;
+  const { x, y } = windowOrigin(area, cardY);
 
+  // Same contract as the splash: the OS must not paint a square behind the
+  // rounded card. Window material and the OS shadow are that square.
   const winOptions = {
-    width: NOTIF_WIDTH,
-    height: winHeight,
+    width: NOTIF_WIDTH + SHADOW_PAD * 2,
+    height: winHeight + SHADOW_PAD * 2,
     x,
     y,
     frame: false,
+    thickFrame: false,
     transparent: true,
     backgroundColor: '#00000000',
     roundedCorners: true,
-    hasShadow: true,
+    hasShadow: false,
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
@@ -88,14 +99,10 @@ function showNotificationWindow({
       preload: path.join(__dirname, 'notifPreload.cjs'),
     },
   };
-  if (process.platform === 'win32') {
-    winOptions.backgroundMaterial = 'acrylic';
-  } else if (process.platform === 'darwin') {
-    winOptions.vibrancy = 'under-window';
-    winOptions.visualEffectState = 'followWindow';
-  }
 
   const win = new BrowserWindow(winOptions);
+  try { win.setBackgroundColor('#00000000'); } catch (_) { /* ignore */ }
+  try { win.setHasShadow(false); } catch (_) { /* ignore */ }
 
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setAlwaysOnTop(true, 'screen-saver');

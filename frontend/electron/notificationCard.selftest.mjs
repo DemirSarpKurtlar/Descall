@@ -84,11 +84,28 @@ const gallery = buildNotificationGallery([
 assert.match(gallery, /class="mark app"/);
 assert.match(gallery, /--accent:#ffd60a/);
 
-assert.match(windowSrc, /backgroundMaterial = 'acrylic'/);
-assert.match(windowSrc, /vibrancy = 'under-window'/);
-assert.match(windowSrc, /roundedCorners: true/);
-assert.match(windowSrc, /transparent: true/);
-assert.match(windowSrc, /hasShadow: true/);
+assert.match(windowSrc, /frame:\s*false/);
+assert.match(windowSrc, /thickFrame:\s*false/);
+assert.match(windowSrc, /transparent:\s*true/);
+assert.match(windowSrc, /backgroundColor:\s*'#00000000'/);
+assert.match(windowSrc, /roundedCorners:\s*true/);
+assert.match(windowSrc, /hasShadow:\s*false/);
+assert.match(windowSrc, /setBackgroundColor\('#00000000'\)/);
+assert.match(windowSrc, /setHasShadow\(false\)/);
+assert.doesNotMatch(windowSrc, /backgroundMaterial/);
+assert.doesNotMatch(windowSrc, /vibrancy/);
+assert.doesNotMatch(windowSrc, /acrylic/);
+assert.match(system, /class="stage"/);
+assert.match(system, /background:\s*transparent !important/);
+assert.match(system, /background-color:\s*transparent !important/);
+
+const overlay = readFileSync(join(here, "overlayWindow.cjs"), "utf8");
+const overlayWin = overlay.slice(overlay.indexOf("overlayWin = new BrowserWindow"), overlay.indexOf("overlayWin.setAlwaysOnTop"));
+assert.match(overlayWin, /transparent:\s*true/);
+assert.match(overlayWin, /backgroundColor:\s*'#00000000'/);
+assert.match(overlayWin, /hasShadow:\s*false/);
+assert.match(overlayWin, /thickFrame:\s*false/);
+assert.match(overlay, /background:transparent/);
 assert.match(windowSrc, /notif:pause/);
 assert.match(windowSrc, /notif:resume/);
 assert.doesNotMatch(windowSrc, /border-left/);
