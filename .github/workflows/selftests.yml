@@ -43,6 +43,8 @@ jobs:
           node src/lib/shopChipScroll.selftest.mjs
           node src/site/siteIcons.selftest.mjs
           node src/styles/feedback-nudge.selftest.mjs
+          node src/styles/glass-desktop/headerBand.selftest.mjs
+          node src/styles/headerTitle.selftest.mjs
           node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
           node src/styles/glass-desktop/themeTint.selftest.mjs
           node src/styles/glass/glass-scope.selftest.mjs

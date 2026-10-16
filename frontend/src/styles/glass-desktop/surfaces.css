@@ -1066,3 +1066,57 @@ html.glass-desktop .descoin-daily-claim {
   border-radius: 16px;
   font-weight: 650;
 }
+
+/* Tab headers stay empty. Pills (title, icon cluster, search) carry the glass.
+   A backdrop or container on the header paints a square strip with a hard edge. */
+html.glass-desktop .sidebar-header,
+html.glass-desktop .server-shell-header,
+html.glass-desktop .lfg-sidebar-header,
+html.glass-desktop .activity-view-toolbar,
+html.glass-desktop .members-panel-header,
+html.glass-desktop .user-settings .us-main-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+  isolation: auto;
+  contain: none;
+  container-type: normal;
+}
+
+html.glass-desktop .lfg-sidebar-header h2 {
+  width: fit-content;
+  height: 36px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 18px;
+  line-height: 36px;
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop .user-settings.is-desktop .us-main-header .us-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--gd-glass-fill);
+  color: var(--gd-t1);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+html.glass-desktop.gd-lite .sidebar-header .sidebar-title:not(.server-shell-title),
+html.glass-desktop.gd-lite .lfg-sidebar-header h2,
+html.glass-desktop.gd-lite .user-settings.is-desktop .us-main-header .us-icon-btn,
+html.glass-desktop.gd-lite .sidebar-actions::before {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: var(--gd-solid);
+}

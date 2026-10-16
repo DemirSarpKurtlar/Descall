@@ -1,6 +1,9 @@
 /* Stage 2, DM list, open DM, bubbles, composer.
    Visual only: the grid, scrollports and actions stay as they are. */
 
+/* The header must not be its own backdrop root. container-type / contain /
+   backdrop-filter on this box paints a square frosted strip behind the
+   title and action pills. The query container lives on .sidebar-inner. */
 html.glass-desktop .sidebar-header {
   position: relative;
   align-items: center;
@@ -8,8 +11,21 @@ html.glass-desktop .sidebar-header {
   row-gap: 6px;
   min-height: 60px;
   padding: 12px 10px 12px 16px;
+  border: none;
   border-bottom: none;
   background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none;
+  isolation: auto;
+  contain: none;
+  container-type: normal;
+}
+
+html.glass-desktop .sidebar-inner {
   container-type: inline-size;
   container-name: sidebar-header;
 }
@@ -24,9 +40,11 @@ html.glass-desktop .sidebar-actions {
   border-radius: 0;
   padding: 0;
   gap: 0;
-  margin-left: 4px;
+  margin-left: auto;
   background: transparent;
   box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* Pill sits behind every control except the trailing + so the title cannot slide under it. */
@@ -40,6 +58,8 @@ html.glass-desktop .sidebar-actions::before {
   width: calc(100% - 36px);
   border-radius: 18px;
   background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
   pointer-events: none;
 }
@@ -115,6 +135,21 @@ html.glass-desktop .sidebar-title {
   font-weight: 700;
   letter-spacing: -0.026em;
   color: var(--gd-t1);
+}
+
+/* Hug the word. A flex-grow title would stretch a fill into another slab. */
+html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {
+  flex: 0 1 auto;
+  width: fit-content;
+  align-self: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  line-height: 36px;
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
 }
 
 html.glass-desktop .sidebar-search {
@@ -437,7 +472,14 @@ html.glass-desktop.gd-lite .header-identity,
 html.glass-desktop.gd-lite .header-right,
 html.glass-desktop.gd-lite .composer-input,
 html.glass-desktop.gd-lite .search-input,
-html.glass-desktop.gd-lite .sidebar-search input {
+html.glass-desktop.gd-lite .sidebar-search input,
+html.glass-desktop.gd-lite .sidebar-header .sidebar-title:not(.server-shell-title) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid);
+}
+
+html.glass-desktop.gd-lite .sidebar-actions::before {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: var(--gd-solid);

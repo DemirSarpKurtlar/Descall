@@ -130,11 +130,18 @@ html.glass-desktop .call-banner-dismiss {
 html.glass-desktop .server-shell-header {
   min-height: 60px;
   padding: 12px 12px 0 14px;
+  border: none;
   border-bottom: none;
-  background: transparent;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   flex-wrap: wrap;
-  container-type: inline-size;
-  container-name: sidebar-header;
+  isolation: auto;
+  contain: none;
+  container-type: normal;
 }
 
 html.glass-desktop .server-shell-title {

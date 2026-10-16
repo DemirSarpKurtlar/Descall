@@ -31,8 +31,11 @@ const glassTitle = block(glassChat, "html.glass-desktop .sidebar-title {");
 assert.equal(glassTitle.includes("text-overflow: ellipsis"), false, "glass sidebar title ellipsizes");
 assert.match(glassTitle, /min-width:\s*min-content/);
 assert.match(glassTitle, /clamp\(18px,\s*8\.9cqi,\s*24px\)/);
-assert.match(block(glassChat, "html.glass-desktop .sidebar-header {"), /flex-wrap:\s*wrap/);
-assert.match(block(glassChat, "html.glass-desktop .sidebar-header {"), /container-type:\s*inline-size/);
+const glassHeader = block(glassChat, "html.glass-desktop .sidebar-header {");
+assert.match(glassHeader, /flex-wrap:\s*wrap/);
+assert.equal(/container-type:\s*inline-size/.test(glassHeader), false, "header is a query container");
+assert.match(glassHeader, /backdrop-filter:\s*none/);
+assert.match(block(glassChat, "html.glass-desktop .sidebar-inner {"), /container-type:\s*inline-size/);
 
 const shell = css("glass/shell.css");
 const large = block(shell, "html.glass-ui .g-large-title {");
