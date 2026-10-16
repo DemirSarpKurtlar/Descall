@@ -360,6 +360,24 @@ html.glass-desktop .modal-backdrop {
   backdrop-filter: var(--gd-scrim-blur) !important;
 }
 
+/* The title bar covers the top of the window. Flex-centered sheets use the
+   area under it, or the card sits half a title bar too low. */
+html.glass-desktop.electron-app .user-panel-backdrop,
+html.glass-desktop.electron-app .user-settings-shell.is-desktop,
+html.glass-desktop.electron-app .conv-confirm-overlay,
+html.glass-desktop.electron-app .server-modal-overlay,
+html.glass-desktop.electron-app .add-modal-backdrop,
+html.glass-desktop.electron-app .feedback-overlay,
+html.glass-desktop.electron-app .legal-modal-backdrop,
+html.glass-desktop.electron-app .activity-modal-backdrop,
+html.glass-desktop.electron-app .invite-modal-overlay,
+html.glass-desktop.electron-app .g-alert-scrim,
+html.glass-desktop.electron-app .modal-backdrop,
+html.glass-desktop.electron-app .giphy-overlay {
+  box-sizing: border-box;
+  padding-top: calc(24px + var(--electron-titlebar-h, 0px)) !important;
+}
+
 html.glass-desktop .conv-confirm-card {
   border: none;
   border-radius: 28px;
