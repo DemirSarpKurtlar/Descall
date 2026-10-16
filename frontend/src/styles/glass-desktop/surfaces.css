@@ -1068,8 +1068,17 @@ html.glass-desktop .descoin-daily-claim {
 }
 
 /* Tab headers stay empty. Pills (title, icon cluster, search) carry the glass.
-   A backdrop or container on the header paints a square strip with a hard edge. */
+   Paint containment on the sidebar (app-layout.css) is a backdrop root, and a
+   backdrop-filter on a pill then paints a hard rectangle the size of that
+   root. The panel already blurs; the pills are fill only. */
+html.glass-desktop .sidebar-secondary,
+html.glass-desktop .sidebar-inner {
+  contain: none !important;
+  isolation: auto !important;
+}
+
 html.glass-desktop .sidebar-header,
+html.glass-desktop .sidebar-actions,
 html.glass-desktop .server-shell-header,
 html.glass-desktop .lfg-sidebar-header,
 html.glass-desktop .activity-view-toolbar,
@@ -1094,11 +1103,13 @@ html.glass-desktop .lfg-sidebar-header h2 {
   margin: 0;
   padding: 0 14px;
   border-radius: 18px;
+  overflow: hidden;
   line-height: 36px;
   background: var(--gd-glass-fill);
-  -webkit-backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
-  backdrop-filter: blur(var(--gd-blur)) saturate(var(--gd-saturate));
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 8px 20px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  filter: none;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
 html.glass-desktop .user-settings.is-desktop .us-main-header .us-icon-btn {

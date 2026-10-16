@@ -262,9 +262,10 @@ html.glass-desktop.electron-app .panel-header {
 }
 
 /* Lite Electron only. A normal window uses the shared website rules:
-   panels at --gd-blur-panel, search at 16px, header pills and the title
-   bar at --gd-blur. gd-lite paints --gd-solid and clears the filter, which
-   turned this chrome flat grey, so the frost is forced back here. */
+   panels at --gd-blur-panel, search at 16px, the title bar at --gd-blur.
+   Header pills stay a rounded fill with no backdrop-filter. gd-lite paints
+   --gd-solid and clears the filter, which turned this chrome flat grey, so
+   the frost is forced back on the panels and the title bar. */
 html.glass-desktop.electron-app.gd-lite .nav-rail,
 html.glass-desktop.electron-app.gd-lite .sidebar-secondary,
 html.glass-desktop.electron-app.gd-lite .app-main-slot,
@@ -277,7 +278,6 @@ html.glass-desktop.electron-app.gd-lite .search-input,
 html.glass-desktop.electron-app.gd-lite .sidebar-search input,
 html.glass-desktop.electron-app.gd-lite .composer-input,
 html.glass-desktop.electron-app.gd-lite .composer-left .composer-action-btn,
-html.glass-desktop.electron-app.gd-lite .sidebar-actions::before,
 html.glass-desktop.electron-app.gd-lite .titlebar {
   background: var(--gd-glass-fill) !important;
   background-color: transparent !important;

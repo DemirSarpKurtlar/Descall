@@ -26,8 +26,11 @@ assert.match(header, /background:\s*transparent/);
 assert.equal(/container-type:\s*inline-size/.test(header), false);
 assert.match(block(chat, "html.glass-desktop .sidebar-inner {"), /container-type:\s*inline-size/);
 assert.match(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {"), /border-radius:\s*18px/);
+assert.match(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {"), /backdrop-filter:\s*none/);
+assert.equal(/backdrop-filter:\s*blur/.test(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {")), false);
 assert.match(block(chat, "html.glass-desktop .sidebar-actions::before {"), /border-radius:\s*18px/);
-assert.match(block(chat, "html.glass-desktop .sidebar-actions::before {"), /backdrop-filter:/);
+assert.match(block(chat, "html.glass-desktop .sidebar-actions::before {"), /backdrop-filter:\s*none/);
+assert.match(block(chat, "html.glass-desktop .sidebar-actions {"), /backdrop-filter:\s*none/);
 
 const community = css("community.css");
 const server = block(community, "html.glass-desktop .server-shell-header {");
@@ -35,6 +38,12 @@ assert.match(server, /backdrop-filter:\s*none/);
 assert.equal(/container-type:\s*inline-size/.test(server), false);
 
 const surfaces = css("surfaces.css");
+const shell = css("shell.css");
+assert.match(surfaces, /html\.glass-desktop \.sidebar-secondary,\s*html\.glass-desktop \.sidebar-inner \{[^}]*contain:\s*none !important/);
+const liteAt = shell.indexOf("html.glass-desktop.electron-app.gd-lite .nav-rail");
+assert.notEqual(liteAt, -1);
+const liteSelectors = shell.slice(liteAt, shell.indexOf("{", liteAt));
+assert.equal(liteSelectors.includes("sidebar-actions"), false);
 const slab = block(surfaces, "html.glass-desktop .lfg-sidebar-header,");
 assert.match(slab, /backdrop-filter:\s*none/);
 assert.match(slab, /container-type:\s*normal/);
