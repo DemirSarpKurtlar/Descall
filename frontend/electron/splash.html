@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,8 +7,8 @@
   <style>
     :root {
       --ink: rgba(255, 255, 255, 0.96);
-      --muted: rgba(235, 238, 255, 0.62);
-      --quiet: rgba(235, 238, 255, 0.42);
+      --muted: rgba(235, 238, 255, 0.72);
+      --quiet: rgba(235, 238, 255, 0.46);
     }
     * { box-sizing: border-box; }
     html, body {
@@ -16,7 +16,8 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: transparent;
+      background: transparent !important;
+      background-color: transparent !important;
       color: var(--ink);
       font-family: -apple-system, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
       user-select: none;
@@ -28,28 +29,44 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 28px;
+      padding: 44px 40px 48px;
+      background: transparent;
     }
     .glass {
       width: 100%;
       height: 100%;
-      border-radius: 28px;
+      border-radius: 32px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
-      padding: 36px 32px 28px;
+      isolation: isolate;
+      overflow: hidden;
+      padding: 36px 28px 40px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
-        rgba(16, 18, 28, 0.46);
-      -webkit-backdrop-filter: blur(40px) saturate(180%);
-      backdrop-filter: blur(40px) saturate(180%);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
+        rgba(22, 24, 36, 0.62);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
+      backdrop-filter: blur(40px) saturate(190%);
       box-shadow:
-        0 28px 70px rgba(0, 0, 0, 0.38),
+        0 22px 48px rgba(0, 0, 0, 0.42),
         0 2px 8px rgba(0, 0, 0, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.42),
-        inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+        inset 0 1px 0 rgba(255, 255, 255, 0.48),
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+    }
+    .glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      pointer-events: none;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08) 28%, rgba(255, 255, 255, 0.02) 55%, rgba(255, 255, 255, 0.16));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
     }
     .logo-wrap {
       width: 104px;
@@ -65,9 +82,9 @@
       width: 100%;
       height: 100%;
       display: block;
-      object-fit: cover;
-      border-radius: inherit;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      object-fit: contain;
+      background: transparent;
+      filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.38));
     }
     .loader {
       width: 148px;
@@ -94,18 +111,15 @@
       transition: width 180ms linear;
     }
     .status {
-      margin: 14px 0 0;
-      min-height: 16px;
+      margin: 16px 0 0;
+      min-height: 18px;
       max-width: 100%;
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
-      line-height: 1.3;
+      font-size: 13px;
+      font-weight: 560;
+      letter-spacing: -0.01em;
+      line-height: 1.35;
       color: var(--muted);
       text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     .status:empty { visibility: hidden; }
     .version {
@@ -144,6 +158,14 @@
         backdrop-filter: none;
       }
     }
+    /* Screenshot harness only. The packaged window loads this file with no query. */
+    html.is-preview,
+    html.is-preview body {
+      background:
+        radial-gradient(80% 60% at 20% 10%, rgba(120, 90, 220, 0.55), transparent 60%),
+        radial-gradient(70% 50% at 90% 90%, rgba(40, 90, 160, 0.45), transparent 55%),
+        #1b2030 !important;
+    }
     @media (prefers-contrast: more) {
       .glass {
         background: #0c0e14;
@@ -157,10 +179,11 @@
   <div class="stage">
     <div class="glass is-busy" id="frame">
       <div class="logo-wrap" id="logo">
+        <!-- Konsept 2 mark, same file as frontend/public/brand/descall-icon.png -->
         <img src="descall-icon.png" alt="" />
       </div>
-      <div class="loader" role="progressbar" aria-label="Loading" aria-busy="true"><i id="fill"></i></div>
-      <p class="status" id="status"></p>
+      <div class="loader" role="progressbar" aria-label="Yükleniyor" aria-busy="true"><i id="fill"></i></div>
+      <p class="status" id="status">Güncellemeler denetleniyor…</p>
       <p class="version" id="version"></p>
     </div>
   </div>
@@ -197,7 +220,17 @@
       }
     };
 
-    if (!reduceMotion) {
+    const previewDesktop = new URLSearchParams(location.search).get("preview") === "desktop";
+    if (previewDesktop) {
+      document.documentElement.classList.add("is-preview");
+      window.__splashSetVersion("2.10.101");
+      window.__splashUpdate({ status: "Güncellemeler denetleniyor…", busy: true, showProgress: false });
+      logo.style.opacity = "1";
+      logo.style.transform = "scale(1)";
+      logo.style.filter = "none";
+    }
+
+    if (!reduceMotion && !previewDesktop) {
       let scale = 0.86;
       let velocity = 0;
       let opacity = 0;

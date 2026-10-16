@@ -676,18 +676,30 @@ function showMainWindow() {
 }
 
 
-// Discord-like update / boot splash (blocks main window until ready)
+const SPLASH_TR = {
+  checking: 'Güncellemeler denetleniyor…',
+  starting: 'Descall başlatılıyor…',
+  installing: 'Güncelleme yükleniyor…',
+  downloading: 'Güncelleme indiriliyor…',
+  upToDate: 'Güncel',
+  checkFailed: 'Güncellemeler denetlenemedi',
+};
+
+// Discord-like update / boot splash (blocks main window until ready).
+// The window itself is empty. Acrylic, vibrancy, and the OS shadow paint a
+// square grey frame around the card on Windows 11. Only the HTML card is glass.
 function createSplashWindow() {
   const splashOptions = {
     icon: resolveAppIcon(),
-    width: 400,
-    height: 460,
+    width: 420,
+    height: 500,
     frame: false,
+    thickFrame: false,
     alwaysOnTop: true,
     transparent: true,
     backgroundColor: '#00000000',
     roundedCorners: true,
-    hasShadow: true,
+    hasShadow: false,
     resizable: false,
     maximizable: false,
     minimizable: false,
@@ -699,13 +711,9 @@ function createSplashWindow() {
       contextIsolation: true,
     },
   };
-  if (process.platform === 'win32') {
-    splashOptions.backgroundMaterial = 'acrylic';
-  } else if (process.platform === 'darwin') {
-    splashOptions.vibrancy = 'under-window';
-    splashOptions.visualEffectState = 'followWindow';
-  }
   splashWindow = new BrowserWindow(splashOptions);
+  try { splashWindow.setBackgroundColor('#00000000'); } catch (_) { /* ignore */ }
+  try { splashWindow.setHasShadow(false); } catch (_) { /* ignore */ }
 
   const splashPath = path.join(__dirname, 'splash.html');
   const ready = splashWindow.loadFile(splashPath).catch((err) => {
@@ -738,7 +746,7 @@ function openMainApp() {
   if (mainLaunchStarted) return;
   mainLaunchStarted = true;
   prelaunchActive = false;
-  updateSplash({ status: 'Starting Descall…', detail: '', busy: true, showProgress: false });
+  updateSplash({ status: SPLASH_TR.starting, detail: '', busy: true, showProgress: false });
   createMainWindow();
   createTray();
 }
@@ -756,7 +764,7 @@ async function runPrelaunchUpdateGate() {
 
   prelaunchActive = true;
   updateSplash({
-    status: 'Checking for updates…',
+    status: SPLASH_TR.checking,
     detail: '',
     busy: true,
     showProgress: false,
@@ -794,7 +802,7 @@ async function runPrelaunchUpdateGate() {
 
   if (outcome?.type === 'update-downloaded') {
     updateSplash({
-      status: 'Installing update…',
+      status: SPLASH_TR.installing,
       detail: outcome.version ? `v${outcome.version}` : '',
       busy: true,
       showProgress: true,
@@ -819,7 +827,7 @@ async function runPrelaunchUpdateGate() {
 
     if (downloadOutcome?.type === 'update-downloaded') {
       updateSplash({
-        status: 'Installing update…',
+        status: SPLASH_TR.installing,
         detail: downloadOutcome.version ? `v${downloadOutcome.version}` : '',
         busy: true,
         showProgress: true,
@@ -1373,7 +1381,7 @@ autoUpdater.on('checking-for-update', () => {
   log.info('[updater] Checking for update...');
   if (prelaunchActive) {
     updateSplash({
-      status: 'Checking for updates…',
+      status: SPLASH_TR.checking,
       detail: '',
       busy: true,
       showProgress: false,
@@ -1386,7 +1394,7 @@ autoUpdater.on('update-available', (info) => {
   updateVersion = info.version || updateVersion;
   if (prelaunchActive) {
     updateSplash({
-      status: 'Downloading update…',
+      status: SPLASH_TR.downloading,
       detail: info.version ? `v${info.version}` : '',
       busy: true,
       showProgress: true,
@@ -1402,7 +1410,7 @@ autoUpdater.on('update-not-available', (info) => {
   log.info('[updater] Already up-to-date:', info.version);
   if (prelaunchActive) {
     updateSplash({
-      status: 'Up to date',
+      status: SPLASH_TR.upToDate,
       detail: info.version ? `v${info.version}` : '',
       busy: true,
       showProgress: false,
@@ -1415,8 +1423,8 @@ autoUpdater.on('error', (err) => {
   log.error('[updater] Error:', err?.message ?? err);
   if (prelaunchActive) {
     updateSplash({
-      status: 'Couldn’t check for updates',
-      detail: 'Starting Descall…',
+      status: SPLASH_TR.checkFailed,
+      detail: SPLASH_TR.starting,
       busy: true,
       showProgress: false,
     });
@@ -1431,7 +1439,7 @@ autoUpdater.on('download-progress', ({ percent, bytesPerSecond, transferred, tot
   if (prelaunchActive) {
     const mb = total > 0 ? `${(transferred / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB` : '';
     updateSplash({
-      status: 'Downloading update…',
+      status: SPLASH_TR.downloading,
       detail: mb,
       busy: true,
       showProgress: true,
@@ -1454,7 +1462,7 @@ autoUpdater.on('update-downloaded', (info) => {
 
   if (prelaunchActive) {
     updateSplash({
-      status: 'Installing update…',
+      status: SPLASH_TR.installing,
       detail: info.version ? `v${info.version}` : '',
       busy: true,
       showProgress: true,

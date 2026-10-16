@@ -47,6 +47,7 @@
       "setupDownloadsCleanup.cjs",
       "preload.cjs",
       "splash.html",
+      "descall-icon.png",
       "notificationWindow.cjs",
       "notifPreload.cjs",
       "processScanner.cjs",
