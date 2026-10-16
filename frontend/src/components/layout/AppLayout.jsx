@@ -287,13 +287,18 @@ export default function AppLayout({
 
   const handleStartCall = useCallback((user, type = "voice") => {
     if (!user?.id) return;
+    // Header calls are already inside this DM. The Calls tab (and the
+    // friends voice button) are not, so open the same conversation first.
+    // Otherwise the stage mounts over whichever view is current.
+    handleOpenChatFromCalls(user);
     onStartCall?.(user, type);
-  }, [onStartCall]);
+  }, [handleOpenChatFromCalls, onStartCall]);
 
   const handleStartGroupCallFromCalls = useCallback((group, type = "voice") => {
     if (!group?.id) return;
+    handleOpenGroupFromCalls(group);
     onStartGroupCallFromCalls?.(group, type);
-  }, [onStartGroupCallFromCalls]);
+  }, [handleOpenGroupFromCalls, onStartGroupCallFromCalls]);
 
   const handleViewChange = useCallback((view) => {
     // Parent onActiveViewChange owns the URL. Do NOT call onDmSelect(null) /

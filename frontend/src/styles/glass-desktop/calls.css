@@ -21,13 +21,21 @@ html.glass-desktop .call-top-bar > div {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
+/* Own surface for the call. --gd-aurora-base-0/2 were never defined, so the
+   shorthand was invalid at computed-value time and the !important declaration
+   resolved to the initial transparent background. The DM transcript, date
+   pill, and call-history cards then showed through the tiles, and the
+   control bar sat on the composer. Color and image are separate longhands
+   so a bad image stop cannot drop the fill. --g-base-* exist on every theme. */
 html.glass-desktop .call-overlay-root,
 html.glass-desktop .server-voice-panel,
 html.glass-desktop .voice-call-overlay {
-  background:
+  background-color: var(--g-base-1) !important;
+  background-image:
     radial-gradient(50% 50% at 50% 35%, color-mix(in srgb, var(--gd-brand) 28%, transparent), transparent 70%),
     radial-gradient(40% 40% at 85% 90%, color-mix(in srgb, var(--gd-brand-2) 24%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--gd-aurora-base-0), var(--gd-aurora-base-2)) !important;
+    linear-gradient(180deg, var(--g-base-0), var(--g-base-2)) !important;
+  background-repeat: no-repeat !important;
   color: var(--gd-t1);
 }
 
