@@ -99,5 +99,9 @@ for (const name of ["MagnifyingGlass", "Megaphone", "Chat", "Plus", "ChatCircleD
   assert.match(inline, new RegExp(`"${name}": \\{\\s*"regular": "[^"]{20,}"`), name);
   assert.match(inline, new RegExp(`"fill": "[^"]{20,}"`), `${name} fill`);
 }
+const hardFill = inline.match(/"HardDrives":\s*\{[\s\S]*?"fill":\s*"([^"]+)"/);
+assert.ok(hardFill, "HardDrives fill path");
+assert.match(hardFill[1], /M208,40H48/, "upper drive");
+assert.match(hardFill[1], /M208,136H48/, "lower drive stays in the active tab glyph");
 
 console.log("rail-icons.selftest ok");

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Activity, AlertTriangle, Bell, Clock, Flag, FolderSearch, History, Megaphone,
@@ -107,11 +107,36 @@ function alertCopy(id, t) {
   return map[id] || id;
 }
 
-function overviewErrorMessage(err, t) {
+const OVERVIEW_CACHE_KEY = "descall:admin-overview";
+
+function readOverviewCache() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OVERVIEW_CACHE_KEY) || "");
+    if (!parsed?.data?.live) return null;
+    const at = parsed.at ? new Date(parsed.at) : null;
+    return { data: parsed.data, at: at && !Number.isNaN(at.getTime()) ? at : null };
+  } catch {
+    return null;
+  }
+}
+
+function writeOverviewCache(data) {
+  try {
+    localStorage.setItem(OVERVIEW_CACHE_KEY, JSON.stringify({ at: new Date().toISOString(), data }));
+  } catch {
+    /* private mode */
+  }
+}
+
+function overviewErrorMessage(err, t, hasData) {
   const msg = String(err?.message || "");
-  if (err?.status === 404 || msg === "Not found") return { text: t("admin.overviewLoadError"), quiet: false };
-  if (isRetryableAdminError(err) || err?.code === "transient") return { text: t("admin.overviewGatewayError"), quiet: true };
-  return { text: msg || t("admin.overviewLoadError"), quiet: false };
+  if (err?.status === 404 || msg === "Not found") return t("admin.overviewLoadError");
+  if (isRetryableAdminError(err) || err?.code === "transient") {
+    // The transport string says saved numbers are still on screen. Use it
+    // only when a previous payload is actually visible.
+    return hasData ? (msg || t("admin.overviewGatewayError")) : t("admin.overviewGatewayError");
+  }
+  return msg || t("admin.overviewLoadError");
 }
 
 function overviewShortcutsCopy(locale) {
@@ -137,56 +162,48 @@ async function loadLegacyOverview() {
 
 export default function AdminOverview({ onOpenPerson, onGoto }) {
   const { t, locale } = useLocale();
-  const [data, setData] = useState(null);
+  const cached = useMemo(() => readOverviewCache(), []);
+  const [data, setData] = useState(cached?.data || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [quietError, setQuietError] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState(null);
+  const [updatedAt, setUpdatedAt] = useState(cached?.at || null);
+  const dataRef = useRef(cached?.data || null);
+  dataRef.current = data;
   const [activeFilter, setActiveFilter] = useState("all");
   const shortcuts = overviewShortcutsCopy(locale);
 
   const load = useCallback(async () => {
     try {
-      const [overview, analytics, pulse] = await Promise.all([
+      const [overview, pulse] = await Promise.all([
         adminFetch("/overview").catch((err) => err),
-        adminFetch("/analytics").catch(() => null),
         adminFetch("/member-pulse?limit=20").catch(() => null),
       ]);
       const overviewOk = Boolean(overview?.live);
       const overviewErr = overviewOk ? null : overview;
-      const payload = mergeOverviewWithDb(overviewOk ? overview : null, analytics, pulse);
+      const payload = mergeOverviewWithDb(overviewOk ? overview : null, null, pulse);
       if (payload && (overviewOk || overviewHasPeople(payload) || Number(payload?.product?.signupsToday) || Number(payload?.live?.connected))) {
         setData(payload);
         setUpdatedAt(new Date());
+        writeOverviewCache(payload);
         setError("");
-        setQuietError(false);
         return;
       }
       if (overviewErr && typeof overviewErr === "object" && overviewErr.message) {
-        const mapped = overviewErrorMessage(overviewErr, t);
-        if (mapped.quiet) {
-          setError(mapped.text);
-          setQuietError(true);
-          return;
-        }
         const fallback = await loadLegacyOverview();
         if (fallback) {
-          setData(mergeOverviewWithDb(fallback, analytics, pulse));
+          const merged = mergeOverviewWithDb(fallback, null, pulse);
+          setData(merged);
           setUpdatedAt(new Date());
+          writeOverviewCache(merged);
           setError("");
-          setQuietError(false);
           return;
         }
-        setError(mapped.text);
-        setQuietError(mapped.quiet);
+        setError(overviewErrorMessage(overviewErr, t, Boolean(dataRef.current)));
         return;
       }
       setError(t("admin.overviewLoadError"));
-      setQuietError(false);
     } catch (err) {
-      const mapped = overviewErrorMessage(err, t);
-      setError(mapped.text);
-      setQuietError(mapped.quiet);
+      setError(overviewErrorMessage(err, t, Boolean(dataRef.current)));
     } finally {
       setLoading(false);
     }
@@ -233,10 +250,12 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
           <p className="muted">{t("admin.overviewSubtitle")}</p>
         </div>
         <div className="overview-head-meta">
-          <span className="last-updated">
-            <Clock size={14} />
-            {updatedAt ? formatAppDateTime(updatedAt.toISOString(), locale) : t("Never")}
-          </span>
+          {updatedAt ? (
+            <span className="last-updated">
+              <Clock size={14} />
+              {formatAppDateTime(updatedAt.toISOString(), locale)}
+            </span>
+          ) : null}
           <RippleButton type="button" onClick={() => { setLoading(true); load(); }} disabled={loading} className="refresh-btn">
             <RefreshCw size={16} className={loading ? "spin" : ""} />
             {t("common.refresh")}
@@ -245,17 +264,17 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
       </div>
 
       {error ? (
-        quietError ? (
+        data ? (
           <p className="admin-stale-note">{error}</p>
         ) : (
-          <div className="admin-error-banner">
+          <div className="admin-error-banner" role="alert">
             <AlertTriangle size={16} />
             <span>{error}</span>
           </div>
         )
       ) : null}
 
-      {loading && !data ? (
+      {!data ? (
         <div className="overview-kpis" aria-busy="true">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="overview-kpi">
@@ -282,7 +301,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
         </div>
       ) : null}
 
-      <div className="overview-kpis">
+      {data ? <div className="overview-kpis">
         <motion.button type="button" className="overview-kpi" onClick={() => onGoto?.("people")} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <span><Users size={14} /> {t("admin.overviewOnline")}</span>
           <strong>{live.connected || 0}</strong>
@@ -316,8 +335,9 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
           <strong>{system.uptime?.label || "\u2014"}</strong>
           <small>{system.rssMb ? `${system.rssMb} MB` : ""}</small>
         </motion.div>
-      </div>
+      </div> : null}
 
+      {data ? <>
       <div className="overview-split">
         <section className="overview-panel overview-panel-roster">
           <header>
@@ -409,6 +429,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
           </div>
         </section>
       </div>
+      </> : null}
     </section>
   );
 }

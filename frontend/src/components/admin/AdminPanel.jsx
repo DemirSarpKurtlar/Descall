@@ -578,15 +578,10 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   }, [socket, loadStats, loadMemberPulse, loadReportSummary]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        setErr("");
-        await loadStats();
-        await loadReportSummary();
-      } catch (e) {
-        setErr(e.message);
-      }
-    })();
+    // Overview owns its own banner. A failed background stats read must not
+    // paint a second "bağlantı gecikti" line above the tabs.
+    loadStats().catch(() => {});
+    loadReportSummary().catch(() => {});
   }, [loadStats, loadReportSummary]);
 
   useEffect(() => {

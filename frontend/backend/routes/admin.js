@@ -207,10 +207,25 @@ router.get("/analytics", async (_req, res) => {
     const usersSelect =
       "id, created_at, signup_at, last_seen, auth_method, first_touch_source, first_touch_medium, first_touch_campaign, first_touch_term, first_touch_gclid, signup_device, signup_country, first_app_opened_at, first_action_at, first_message_at";
     const [usersRes, visitsRes, startedRes] = await Promise.all([
-      supabase.from("users").select(usersSelect),
-      supabase.from("analytics_visitor_days").select("visitor_key, day, first_touch_source, has_gclid, country, device").gte("day", since),
-      supabase.from("analytics_events").select("id, visitor_key, occurred_at").eq("event", "signup_started").gte("occurred_at", since),
+      withTimeout(
+        supabase.from("users").select(usersSelect),
+        8000,
+        { data: [], error: { message: "timeout" } }
+      ),
+      withTimeout(
+        supabase.from("analytics_visitor_days").select("visitor_key, day, first_touch_source, has_gclid, country, device").gte("day", since),
+        8000,
+        { data: [], error: { message: "timeout" } }
+      ),
+      withTimeout(
+        supabase.from("analytics_events").select("id, visitor_key, occurred_at").eq("event", "signup_started").gte("occurred_at", since),
+        8000,
+        { data: [], error: { message: "timeout" } }
+      ),
     ]);
+    if (usersRes?.error?.message === "timeout") {
+      return res.status(503).json({ error: "Analitik zaman aşımına uğradı. Yeniden deneyin." });
+    }
 
     if (usersRes.error && isMissingColumnError(usersRes.error)) {
       return res.json({ unavailable: true, totalSignups: 0 });

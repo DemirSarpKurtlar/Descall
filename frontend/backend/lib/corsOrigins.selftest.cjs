@@ -16,10 +16,16 @@ const allow = [
   "http://localhost:4173",
   "https://localhost:5173",
   "descall://app",
+  "descall://localhost",
+  "Descall://localhost",
+  "capacitor://localhost",
+  "ionic://localhost",
 ];
 const deny = [
   "null",
   "https://evil.example",
+  "descall://evil.example",
+  "capacitor://evil.example",
   "https://descall.com.evil.example",
   "http://localhost.evil.example",
   "https://notdescall.com",
