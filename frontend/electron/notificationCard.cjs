@@ -6,6 +6,9 @@ const path = require('path');
 const NOTIF_WIDTH = 360;
 const NOTIF_HEIGHT = 116;
 const NOTIF_HEIGHT_CALL = 168;
+// Room around the card so its soft shadow paints inside the transparent
+// window. The OS window itself must stay empty at the corners.
+const SHADOW_PAD = 28;
 
 const ACCENT = {
   call: '#30d158',
@@ -72,7 +75,8 @@ function notificationCss() {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: transparent;
+      background: transparent !important;
+      background-color: transparent !important;
       color: rgba(255, 255, 255, 0.96);
       font-family: -apple-system, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
       user-select: none;
@@ -85,6 +89,12 @@ function notificationCss() {
       align-items: flex-end;
       gap: 14px;
       padding: 36px 28px;
+    }
+    .stage {
+      width: 100%;
+      height: 100%;
+      padding: ${SHADOW_PAD}px;
+      background: transparent;
     }
     .card {
       --accent: ${ACCENT.default};
@@ -385,8 +395,9 @@ function buildNotificationHtml({
     mark,
     accent,
   });
+  const shell = preview ? inner : `<div class="stage">${inner}</div>`;
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${notificationCss()}</style></head>
-    <body class="${preview ? 'preview' : ''}">${inner}${motionScript()}</body></html>`;
+    <body class="${preview ? 'preview' : ''}">${shell}${motionScript()}</body></html>`;
 }
 
 function buildNotificationGallery(items) {
@@ -414,6 +425,7 @@ module.exports = {
   NOTIF_WIDTH,
   NOTIF_HEIGHT,
   NOTIF_HEIGHT_CALL,
+  SHADOW_PAD,
   ACCENT,
   appIconSrc,
   initialOf,

@@ -121,7 +121,11 @@ function ensureOverlayWindow() {
     x,
     y,
     frame: false,
+    thickFrame: false,
     transparent: true,
+    backgroundColor: '#00000000',
+    roundedCorners: true,
+    hasShadow: false,
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
@@ -140,6 +144,8 @@ function ensureOverlayWindow() {
   try {
     overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   } catch (_) { /* ignore */ }
+  try { overlayWin.setBackgroundColor('#00000000'); } catch (_) { /* ignore */ }
+  try { overlayWin.setHasShadow(false); } catch (_) { /* ignore */ }
   overlayWin.setAlwaysOnTop(true, 'screen-saver');
 
   overlayFile = path.join(os.tmpdir(), `descall-overlay-${Date.now()}.html`);
