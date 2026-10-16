@@ -8,6 +8,7 @@ import {
   Maximize2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, AlertCircle
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
+import { confirmAction } from "../../lib/glassConfirm";
 import RippleButton from "../ui/RippleButton";
 import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
@@ -141,7 +142,11 @@ export default function AdminFeedback({ socket }) {
   };
 
   const deleteFeedback = async (id) => {
-    if (!confirm(t("Delete this feedback permanently?"))) return;
+    if (!(await confirmAction({
+      message: t("Delete this feedback permanently?"),
+      confirmLabel: t("Delete"),
+      cancelLabel: t("Cancel"),
+    }))) return;
     try {
       await adminFetch(`/feedback/${id}`, { method: "DELETE" });
       setFeedbacks(prev => prev.filter(f => f.id !== id));

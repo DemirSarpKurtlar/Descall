@@ -1,0 +1,268 @@
+/* In-app confirm and report sheets. These rules are not under html.glass-ui
+   so Electron, web, and Android get the same frost as the iPhone alert.
+   Theme tokens (--g-*) come from glass-desktop or glass-ui when those
+   classes are on <html>. Fallbacks keep a dark glass card otherwise. */
+
+.g-alert-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--g-deep, #0d0e13) 46%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.g-alert {
+  width: min(420px, calc(100vw - 48px));
+  max-width: 420px;
+  border-radius: 28px;
+  overflow: hidden;
+  color: var(--g-t1, #f4f6fb);
+  font-family: var(--g-font, var(--gd-font, inherit));
+  text-align: center;
+  background:
+    linear-gradient(180deg, var(--g-heavy-top, rgba(255, 255, 255, 0.12)), var(--g-heavy-bot, rgba(255, 255, 255, 0.05))),
+    linear-gradient(var(--g-heavy-base, rgba(20, 21, 30, 0.72)), var(--g-heavy-base, rgba(20, 21, 30, 0.72)));
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  backdrop-filter: blur(40px) saturate(190%);
+  box-shadow:
+    var(--g-shadow-heavy, 0 24px 64px rgba(0, 0, 0, 0.55)),
+    inset 0 0 0 0.5px var(--g-hair, rgba(255, 255, 255, 0.16));
+}
+
+.g-alert-copy {
+  padding: 20px 16px 16px;
+}
+
+.g-alert-copy h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--g-t1, #f4f6fb);
+}
+
+.g-alert-copy p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--g-t2, rgba(235, 238, 255, 0.72));
+}
+
+.g-alert-error {
+  color: var(--g-red, #ff453a) !important;
+  font-size: 12px !important;
+}
+
+.g-alert-extra {
+  padding: 0 16px 14px;
+}
+
+.g-alert-extra label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--g-t3, rgba(235, 238, 255, 0.46));
+  text-align: center;
+}
+
+.g-alert-extra input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border-radius: 12px;
+  border: 0;
+  background: var(--g-field-bg, rgba(0, 0, 0, 0.28));
+  box-shadow: var(--g-field-shadow, inset 0 0 0 0.5px rgba(255, 255, 255, 0.16));
+  color: var(--g-t1, #f4f6fb);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.2;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.g-alert-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.g-alert-actions.is-stacked {
+  flex-direction: column;
+}
+
+.g-alert-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  border: 0;
+  border-radius: 22px;
+  background: var(--g-chip-bg, rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 0 0 0.5px var(--g-hair, rgba(255, 255, 255, 0.16));
+  color: var(--g-t1, #f4f6fb);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  min-height: 44px;
+  padding: 12px 8px;
+  cursor: pointer;
+  flex: 1 1 0;
+  min-width: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  transition: none;
+}
+
+.g-alert-btn.is-cancel {
+  font-weight: 600;
+}
+
+.g-alert-btn.is-action {
+  font-weight: 600;
+  color: var(--g-brand, #587af6);
+  background: color-mix(in srgb, var(--g-brand, #587af6) 22%, transparent);
+}
+
+.g-alert-btn.is-danger {
+  font-weight: 600;
+  color: var(--g-red, #ff453a);
+  background: color-mix(in srgb, var(--g-red, #ff453a) 22%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-red, #ff453a) 45%, transparent);
+}
+
+.g-alert-btn:active,
+.g-alert-btn[data-pressed="true"] {
+  filter: brightness(1.12);
+  transition: none;
+}
+
+.g-alert-btn:disabled {
+  opacity: 0.4;
+}
+
+.g-alert-btn:disabled:active {
+  filter: none;
+}
+
+/* Report sheet. Later than avatar.css so the flat grey card does not win. */
+.report-modal-overlay {
+  background: color-mix(in srgb, var(--g-deep, #0d0e13) 46%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.report-modal {
+  border: none;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, var(--g-heavy-top, rgba(255, 255, 255, 0.12)), var(--g-heavy-bot, rgba(255, 255, 255, 0.05))),
+    linear-gradient(var(--g-heavy-base, rgba(20, 21, 30, 0.72)), var(--g-heavy-base, rgba(20, 21, 30, 0.72)));
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  backdrop-filter: blur(40px) saturate(190%);
+  box-shadow:
+    var(--g-shadow-heavy, 0 24px 64px rgba(0, 0, 0, 0.55)),
+    inset 0 0 0 0.5px var(--g-hair, rgba(255, 255, 255, 0.16));
+  color: var(--g-t1, #f4f6fb);
+}
+
+.report-modal-head h2,
+.report-modal-head p,
+.report-modal-snippet,
+.report-modal-note {
+  color: var(--g-t2, rgba(235, 238, 255, 0.72));
+}
+
+.report-modal-head h2 {
+  color: var(--g-t1, #f4f6fb);
+}
+
+.report-modal-close,
+.report-reason-chip,
+.report-btn.ghost {
+  border: 0;
+  background: var(--g-chip-bg, rgba(255, 255, 255, 0.1));
+  color: var(--g-t1, #f4f6fb);
+  box-shadow: inset 0 0 0 0.5px var(--g-hair, rgba(255, 255, 255, 0.16));
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+.report-modal-close {
+  border-radius: 10px;
+}
+
+.report-reason-chip {
+  border-radius: 999px;
+}
+
+.report-reason-chip.active {
+  background: color-mix(in srgb, var(--g-brand, #587af6) 28%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-brand, #587af6) 55%, transparent);
+  color: var(--g-brand-hi, var(--g-brand, #8fa6ff));
+}
+
+.report-modal-snippet,
+.report-modal-note textarea {
+  border: 0;
+  border-radius: 14px;
+  background: var(--g-field-bg, rgba(0, 0, 0, 0.26));
+  box-shadow: var(--g-field-shadow, inset 0 0 0 0.5px rgba(255, 255, 255, 0.12));
+  color: var(--g-t1, #f4f6fb);
+}
+
+.report-btn {
+  border-radius: 22px;
+  min-height: 40px;
+}
+
+.report-btn.danger {
+  background: color-mix(in srgb, var(--g-red, #ff453a) 22%, transparent);
+  color: var(--g-red, #ff453a);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-red, #ff453a) 45%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+.report-reason-chip:active,
+.report-btn:active,
+.report-modal-close:active,
+.report-reason-chip[data-pressed="true"],
+.report-btn[data-pressed="true"],
+.report-modal-close[data-pressed="true"] {
+  filter: brightness(1.12);
+}
+
+html.glass-desktop.gd-lite .g-alert,
+html.glass-desktop.gd-lite .g-alert-btn,
+html.glass-desktop.gd-lite .report-modal,
+html.glass-desktop.gd-lite .report-reason-chip,
+html.glass-desktop.gd-lite .report-btn,
+html.glass-ui.glass-lite .g-alert,
+html.glass-ui.glass-lite .g-alert-btn,
+html.glass-ui.glass-lite .report-modal,
+html.glass-ui.a11y-solid .g-alert,
+html.glass-ui.a11y-solid .report-modal {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.glass-desktop.gd-lite .g-alert,
+html.glass-desktop.gd-lite .report-modal,
+html.glass-ui.glass-lite .g-alert,
+html.glass-ui.glass-lite .report-modal,
+html.glass-ui.a11y-solid .g-alert,
+html.glass-ui.a11y-solid .report-modal {
+  background: var(--g-solid-heavy, var(--gd-solid-heavy, #16171e));
+}

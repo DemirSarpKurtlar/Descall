@@ -10,6 +10,7 @@ import {
   Flag, FlagOff, Archive, ArchiveRestore
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
+import { confirmAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";
 import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
@@ -190,7 +191,11 @@ export default function AdminErrorLogs({ socket }) {
   };
 
   const deleteSelected = async () => {
-    if (!confirm(t("Delete {count} selected logs?", { count: selectedLogs.size }))) return;
+    if (!(await confirmAction({
+      message: t("Delete {count} selected logs?", { count: selectedLogs.size }),
+      confirmLabel: t("Delete"),
+      cancelLabel: t("Cancel"),
+    }))) return;
     try {
       await adminFetch("/errors/bulk-delete", {
         method: "POST",
@@ -204,7 +209,12 @@ export default function AdminErrorLogs({ socket }) {
   };
 
   const archiveOld = async (days = 7) => {
-    if (!confirm(t("Archive all logs older than {days} days?", { days }))) return;
+    if (!(await confirmAction({
+      message: t("Archive all logs older than {days} days?", { days }),
+      confirmLabel: t("OK"),
+      cancelLabel: t("Cancel"),
+      danger: false,
+    }))) return;
     try {
       await adminFetch("/errors/archive", { method: "POST", body: { days } });
       loadLogs();

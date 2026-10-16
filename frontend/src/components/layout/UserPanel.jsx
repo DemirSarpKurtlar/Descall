@@ -38,6 +38,7 @@ import {
 } from "../../api/security";
 import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
+import { confirmAction } from "../../lib/glassConfirm";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
@@ -1266,9 +1267,15 @@ const UserPanel = forwardRef(function UserPanel({
     }
   };
 
-  const handleLogoutClick = () => {
-    // Native window.confirm was unreliable under the full-screen settings overlay
-    // (and blocked UIBot/automation), so logout immediately end-to-end.
+  const handleLogoutClick = async () => {
+    const ok = await confirmAction({
+      title: t("Log out"),
+      message: t("Log out of Descall on this device?"),
+      confirmLabel: t("Log out"),
+      cancelLabel: t("Cancel"),
+      danger: true,
+    });
+    if (!ok) return;
     onLogout?.();
   };
 

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Flag, X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { REPORT_REASONS, submitUserReport } from "../../api/reports";
+import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import { usePressFeedbackScope } from "../../hooks/usePressFeedback";
 
 export default function ReportUserModal({
   open,
@@ -16,6 +18,9 @@ export default function ReportUserModal({
   occurredAt = null,
 }) {
   const t = useT();
+  const reduce = useReducedMotion();
+  const cardRef = useRef(null);
+  usePressFeedbackScope(cardRef, { enabled: open });
   const [reason, setReason] = useState("harassment");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -75,14 +80,15 @@ export default function ReportUserModal({
           onClick={onClose}
         >
           <motion.div
+            ref={cardRef}
             className="report-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-modal-title"
-            initial={{ scale: 0.94, opacity: 0, y: 16 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.96, opacity: 0, y: 8 }}
-            transition={{ type: "spring", damping: 26, stiffness: 360 }}
+            initial={reduce ? { opacity: 0 } : { scale: 1.04, opacity: 0 }}
+            animate={reduce ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+            exit={reduce ? { opacity: 0 } : { scale: 0.98, opacity: 0 }}
+            transition={reduce ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
             onClick={(e) => e.stopPropagation()}
           >
             <header className="report-modal-head">

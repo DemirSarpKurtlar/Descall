@@ -756,20 +756,16 @@ function MessageBubble({
       scope = `dm:${toUserId}`;
       socket?.emit("dm:message:delete", { messageId: message.id, toUserId });
     }
-    if (glass) trackMessageDelete(message.id, scope);
+    trackMessageDelete(message.id, scope);
     setMenuOpen(false);
-  }, [message?.id, conversationType, conversationId, currentUserId, socket, serverId, glass]);
+  }, [message?.id, conversationType, conversationId, currentUserId, socket, serverId]);
 
   const deleteMessage = useCallback(() => {
     if (!message?.id || String(message.id).startsWith("temp-")) return;
-    if (glass) {
-      setMenuOpen(false);
-      setPickerOpen(false);
-      setConfirmDelete(true);
-      return;
-    }
-    emitDelete();
-  }, [message?.id, glass, emitDelete]);
+    setMenuOpen(false);
+    setPickerOpen(false);
+    setConfirmDelete(true);
+  }, [message?.id]);
 
   const canDelete = isOwn || (conversationType === "server" && canManageMessages);
   const canEdit = isOwn && Boolean(String(message.text || "").trim());

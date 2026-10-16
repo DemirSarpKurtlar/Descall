@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { confirmAction, splitConfirmCopy } from "./glassConfirm.js";
+import { confirmAction, promptAction, registerGlassConfirm, splitConfirmCopy } from "./glassConfirm.js";
 import {
   _resetMessageDeleteFeedback,
   resolveMessageDeleted,
@@ -27,8 +27,12 @@ assert.match(split.message, /^They won't/);
 const seen = [];
 globalThis.window = {
   confirm(text) {
-    seen.push(text);
+    seen.push(["confirm", text]);
     return false;
+  },
+  prompt(text, value) {
+    seen.push(["prompt", text, value]);
+    return value;
   },
 };
 const cancelled = await confirmAction({
@@ -37,11 +41,35 @@ const cancelled = await confirmAction({
   cancelLabel: "Cancel",
 });
 assert.equal(cancelled, false);
-assert.equal(seen[0], "Delete folder \"Ops\"? Servers will stay unfiled.");
+assert.deepEqual(seen[0], ["confirm", "Delete folder \"Ops\"? Servers will stay unfiled."]);
 
 globalThis.window.confirm = () => true;
 const accepted = await confirmAction({ message: "Unlink?", confirmLabel: "Unlink", danger: false });
 assert.equal(accepted, true);
+
+const prompted = await promptAction({ title: "Folder name", defaultValue: "Ops" });
+assert.equal(prompted, "Ops");
+
+const hostCalls = [];
+const unregister = registerGlassConfirm(async (options) => {
+  hostCalls.push(options);
+  return options.input ? "glass-typed" : false;
+});
+const hosted = await confirmAction({
+  message: "Block Ada? They won't be able to message you.",
+  confirmLabel: "Block",
+  cancelLabel: "Cancel",
+});
+assert.equal(hosted, false);
+assert.equal(hostCalls[0].title, "Block Ada?");
+assert.equal(hostCalls[0].confirmLabel, "Block");
+assert.equal(hostCalls[0].input, null);
+const hostedPrompt = await promptAction({ title: "Folder name", defaultValue: "Ops", confirmLabel: "Create" });
+assert.equal(hostedPrompt, "glass-typed");
+assert.equal(hostCalls[1].input.defaultValue, "Ops");
+unregister();
+const after = await confirmAction({ message: "Still native?", confirmLabel: "OK", cancelLabel: "Cancel", danger: false });
+assert.equal(after, true);
 
 _resetMessageDeleteFeedback();
 assert.equal(resolveMessageDeleted("missing"), false);
@@ -78,8 +106,8 @@ assert.match(alert, /Alerts do not dismiss from the scrim/);
 assert.match(alert, /role="alertdialog"/);
 
 const css = src("styles/glass/alert.css");
-assert.match(css, /width: min\(300px/);
-assert.match(css, /max-width: 300px/);
+assert.match(css, /width: min\(420px/);
+assert.match(css, /max-width: 420px/);
 assert.match(css, /\.g-alert-btn\.is-cancel[\s\S]*font-weight: 600/);
 assert.match(css, /\.g-alert-btn\.is-danger[\s\S]*color: var\(--g-red\)/);
 assert.match(css, /\.g-alert-btn:active/);
@@ -88,7 +116,7 @@ assert.match(src("hooks/useEdgeSwipeBack.js"), /\.g-alert-scrim/);
 
 const sidebar = src("components/layout/ServerSidebar.jsx");
 assert.match(sidebar, /<GlassConfirm/);
-assert.match(sidebar, /if \(danger && !glass\) hapticWarning/);
+assert.doesNotMatch(sidebar, /window\.confirm/);
 
 for (const rel of [
   "components/servers/ServersSidebar.jsx",
@@ -103,8 +131,13 @@ for (const rel of [
   assert.match(file, /GlassConfirm|confirmAction/, rel);
 }
 
-assert.match(src("components/layout/AdminMenu.jsx"), /window\.confirm/);
-assert.match(src("components/settings/SettingsPanelNew.jsx"), /window\.confirm/);
+assert.match(src("components/layout/AdminMenu.jsx"), /confirmAction/);
+assert.doesNotMatch(src("components/layout/AdminMenu.jsx"), /window\.confirm/);
+assert.match(src("components/settings/SettingsPanelNew.jsx"), /confirmAction/);
+assert.doesNotMatch(src("components/settings/SettingsPanelNew.jsx"), /window\.confirm/);
+assert.match(src("styles/glass-dialogs.css"), /\.report-reason-chip\.active/);
+assert.match(src("styles/glass-dialogs.css"), /\.g-alert-btn\.is-danger/);
+assert.match(src("lib/blockedUsers.js"), /confirmAction/);
 
 const messages = src("components/chat/MessageList.jsx");
 assert.match(messages, /title=\{t\("Delete message"\)\}/);

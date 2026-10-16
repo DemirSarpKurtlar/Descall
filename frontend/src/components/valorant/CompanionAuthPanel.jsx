@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, Link2, LogOut, MonitorSmartphone, RefreshCw, Unplug } from "lucide-react";
 import { useMobile } from "../../hooks/useMobile";
+import { confirmAction } from "../../lib/glassConfirm";
 import {
   disconnectValorantSession,
   getValorantMe,
@@ -245,7 +246,11 @@ export default function CompanionAuthPanel() {
 
   const handleDisconnect = async () => {
     if (busy) return;
-    if (!window.confirm(t("valorantHub.disconnectConfirm"))) return;
+    if (!(await confirmAction({
+      message: t("valorantHub.disconnectConfirm"),
+      confirmLabel: t("valorantHub.disconnect"),
+      cancelLabel: t("Cancel"),
+    }))) return;
     setBusy(true);
     setError("");
     try {

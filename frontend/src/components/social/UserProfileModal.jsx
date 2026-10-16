@@ -32,6 +32,7 @@ import { useLocale } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
 import ReportUserModal from "./ReportUserModal";
 import BlockUserButton from "./BlockUserButton";
+import { confirmAction } from "../../lib/glassConfirm";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -227,6 +228,14 @@ function UserProfileModal({
 
   const handleRemoveFriend = async () => {
     if (friendLoading || friendState !== "friend") return;
+    const ok = await confirmAction({
+      title: t("Remove Friend"),
+      message: t("Remove {username} from your friends?", { username: displayUsername }),
+      confirmLabel: t("Remove Friend"),
+      cancelLabel: t("Cancel"),
+      danger: true,
+    });
+    if (!ok) return;
     const forId = userId;
     setFriendLoading(true);
     noteFriendError(forId, "");

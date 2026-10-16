@@ -49,6 +49,7 @@
 @import './styles/edge-swipe-back.css';
 @import './styles/theme-scenes.css';
 @import './styles/app-consent.css';
+@import './styles/glass-dialogs.css';
 @import './styles/glass/index.css';
 @import './styles/glass-desktop/index.css';
 @import './styles/auth-fields.css';

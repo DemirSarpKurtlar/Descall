@@ -1,11 +1,9 @@
 /**
- * Imperative confirm for call sites that use window.confirm today.
- *
- * On the iPhone Liquid Glass UI this asks the shared GlassConfirm host
- * (mounted from App). Everywhere else it stays window.confirm, so desktop,
- * web and Android keep their current dialogs and copy.
+ * Imperative confirm and prompt. The shared GlassConfirm host (mounted from
+ * App) paints the in-app glass dialog on Electron, web, iOS, and Android.
+ * window.confirm / window.prompt remain only when that host is not mounted
+ * (tests, or a paint before App).
  */
-import { isGlassUiEnabled } from "./glassUi.js";
 import { hapticWarning } from "./fluid/haptics.js";
 
 let present = null;
@@ -33,10 +31,22 @@ export function splitConfirmCopy(text) {
   return { title: s, message: "" };
 }
 
+function presentCopy({ title, message, confirmLabel, cancelLabel, danger, input }) {
+  const split = !title && message ? splitConfirmCopy(message) : null;
+  return {
+    title: split ? split.title : title || message,
+    message: split ? split.message : title ? message : "",
+    confirmLabel,
+    cancelLabel,
+    danger,
+    input: input || null,
+  };
+}
+
 /**
  * @returns {Promise<boolean>} true when the person confirms.
- * Glass path: the host fires the warning haptic. Desktop path: warning haptic
- * for danger, then window.confirm with the original text.
+ * The host fires the warning haptic. Without a host, danger still haptics
+ * and the platform confirm is used.
  */
 export async function confirmAction({
   title = "",
@@ -46,15 +56,8 @@ export async function confirmAction({
   danger = true,
 } = {}) {
   const desktopText = [title, message].filter(Boolean).join("\n\n");
-  if (isGlassUiEnabled() && typeof present === "function") {
-    const split = !title && message ? splitConfirmCopy(message) : null;
-    const answer = await present({
-      title: split ? split.title : title || message,
-      message: split ? split.message : title ? message : "",
-      confirmLabel,
-      cancelLabel,
-      danger,
-    });
+  if (typeof present === "function") {
+    const answer = await present(presentCopy({ title, message, confirmLabel, cancelLabel, danger }));
     return Boolean(answer);
   }
   if (danger) hapticWarning();
@@ -66,4 +69,40 @@ export async function confirmAction({
     /* no confirm available: continue */
   }
   return true;
+}
+
+/**
+ * @returns {Promise<string|null>} the typed text, or null when cancelled.
+ * Empty string is a confirm with no text (same as window.prompt).
+ */
+export async function promptAction({
+  title = "",
+  message = "",
+  confirmLabel = "OK",
+  cancelLabel = "Cancel",
+  defaultValue = "",
+  placeholder = "",
+  danger = false,
+} = {}) {
+  const desktopText = [title, message].filter(Boolean).join("\n\n");
+  if (typeof present === "function") {
+    const value = await present(presentCopy({
+      title,
+      message,
+      confirmLabel,
+      cancelLabel,
+      danger,
+      input: { defaultValue: defaultValue ?? "", placeholder },
+    }));
+    if (value == null) return null;
+    return String(value);
+  }
+  try {
+    if (typeof window !== "undefined" && typeof window.prompt === "function") {
+      return window.prompt(desktopText, defaultValue ?? "");
+    }
+  } catch {
+    /* no prompt available */
+  }
+  return null;
 }

@@ -17,8 +17,8 @@ html.glass-ui .g-alert-scrim {
 }
 
 html.glass-ui .g-alert {
-  width: min(300px, calc(100vw - 48px));
-  max-width: 300px;
+  width: min(420px, calc(100vw - 48px));
+  max-width: 420px;
   border-radius: 28px;
   overflow: hidden;
   color: var(--g-t1);
@@ -87,7 +87,8 @@ html.glass-ui .g-alert-extra input {
 
 html.glass-ui .g-alert-actions {
   display: flex;
-  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  gap: 8px;
+  padding: 0 16px 16px;
 }
 
 html.glass-ui .g-alert-actions.is-stacked {
@@ -99,11 +100,12 @@ html.glass-ui .g-alert-btn {
   -webkit-appearance: none;
   margin: 0;
   border: 0;
-  border-radius: 0;
-  background: transparent;
+  border-radius: 22px;
+  background: var(--g-chip-bg);
+  box-shadow: inset 0 0 0 0.5px var(--g-hair);
   color: var(--g-t1);
   font-family: var(--g-font);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -112,8 +114,9 @@ html.glass-ui .g-alert-btn {
   cursor: pointer;
   flex: 1 1 0;
   min-width: 0;
-  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
   transition: none;
 }
 
@@ -124,23 +127,19 @@ html.glass-ui .g-alert-btn.is-cancel {
 html.glass-ui .g-alert-btn.is-action {
   font-weight: 600;
   color: var(--g-brand);
+  background: color-mix(in srgb, var(--g-brand) 22%, transparent);
 }
 
 html.glass-ui .g-alert-btn.is-danger {
   font-weight: 600;
   color: var(--g-red);
+  background: color-mix(in srgb, var(--g-red) 22%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-red) 45%, transparent);
 }
 
-html.glass-ui .g-alert-actions:not(.is-stacked) .g-alert-btn + .g-alert-btn {
-  border-left: 1px solid rgba(255, 255, 255, 0.28);
-}
-
-html.glass-ui .g-alert-actions.is-stacked .g-alert-btn + .g-alert-btn {
-  border-top: 1px solid rgba(255, 255, 255, 0.28);
-}
-
-html.glass-ui .g-alert-btn:active {
-  background: rgba(255, 255, 255, 0.14);
+html.glass-ui .g-alert-btn:active,
+html.glass-ui .g-alert-btn[data-pressed="true"] {
+  filter: brightness(1.12);
   transition: none;
 }
 

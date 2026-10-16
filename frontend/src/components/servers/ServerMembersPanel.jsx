@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { confirmAction } from "../../lib/glassConfirm";
+import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "lucide-react";
@@ -381,7 +381,12 @@ export default function ServerMembersPanel({
 
   const timeoutMember = async (member, durationSeconds) => {
     if (!server?.id) return;
-    const reason = window.prompt(t("Reason (optional)"), "");
+    const reason = await promptAction({
+      title: t("Reason (optional)"),
+      confirmLabel: t("OK"),
+      cancelLabel: t("Cancel"),
+      placeholder: t("Reason (optional)"),
+    });
     if (reason === null) return;
     setBusy(true);
     try {
@@ -406,7 +411,12 @@ export default function ServerMembersPanel({
   };
 
   const timeoutCustom = async (member) => {
-    const raw = window.prompt(t("Timeout duration in seconds (1–2419200)"), "300");
+    const raw = await promptAction({
+      title: t("Timeout duration in seconds (1–2419200)"),
+      confirmLabel: t("OK"),
+      cancelLabel: t("Cancel"),
+      defaultValue: "300",
+    });
     if (raw === null) return;
     const seconds = Math.max(1, Math.min(2419200, Math.floor(Number(raw) || 0)));
     if (!seconds) {
@@ -460,10 +470,12 @@ export default function ServerMembersPanel({
 
   const ban = async (member) => {
     if (!server?.id) return;
-    const reason = window.prompt(
-      t("Ban {name} from this server? Optional reason:", { name: member._name }),
-      ""
-    );
+    const reason = await promptAction({
+      message: t("Ban {name} from this server? Optional reason:", { name: member._name }),
+      confirmLabel: t("Ban"),
+      cancelLabel: t("Cancel"),
+      danger: true,
+    });
     if (reason === null) return;
     setBusy(true);
     try {

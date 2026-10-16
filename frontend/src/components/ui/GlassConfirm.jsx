@@ -4,12 +4,28 @@ import { motion, useReducedMotion } from "framer-motion";
 import { hapticWarning } from "../../lib/fluid/haptics";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { registerGlassConfirm } from "../../lib/glassConfirm";
+import usePressFeedback from "../../hooks/usePressFeedback";
 
 /**
- * iPhone Liquid Glass alert (UIAlertController layout, heavy glass material).
+ * Liquid Glass confirm. Frosted scrim, glass card, glass buttons.
  * Scrim tap does nothing. Warning haptic on mount when `danger` is set.
- * Desktop never mounts this, callers keep their existing dialogs.
+ * The same dialog is used on Electron, web, iOS, and Android.
  */
+function AlertButton({ className, onClick, disabled, children }) {
+  const press = usePressFeedback({ disabled });
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={onClick}
+      disabled={disabled}
+      {...press}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function GlassConfirm({
   title,
   message,
@@ -19,11 +35,13 @@ export default function GlassConfirm({
   busy = false,
   error = "",
   confirmDisabled = false,
+  input = null,
   onConfirm,
   onCancel,
   children,
 }) {
   const reduce = useReducedMotion();
+  const [draft, setDraft] = useState(input?.defaultValue ?? "");
   useEffect(() => {
     if (danger) hapticWarning();
   }, [danger]);
@@ -46,24 +64,18 @@ export default function GlassConfirm({
   const cardAnimate = reduce ? { opacity: 1 } : { opacity: 1, scale: 1 };
 
   const cancelBtn = (
-    <button
-      type="button"
-      className="g-alert-btn is-cancel"
-      onClick={onCancel}
-      disabled={busy}
-    >
+    <AlertButton className="g-alert-btn is-cancel" onClick={onCancel} disabled={busy}>
       {cancelLabel}
-    </button>
+    </AlertButton>
   );
   const confirmBtn = (
-    <button
-      type="button"
+    <AlertButton
       className={`g-alert-btn${danger ? " is-danger" : " is-action"}`}
-      onClick={onConfirm}
+      onClick={() => onConfirm?.(input ? draft : undefined)}
       disabled={busy || confirmDisabled}
     >
       {confirmLabel}
-    </button>
+    </AlertButton>
   );
 
   if (typeof document === "undefined") return null;
@@ -94,6 +106,24 @@ export default function GlassConfirm({
           {message ? <p id="g-alert-body">{message}</p> : null}
           {error ? <p className="g-alert-error" role="alert">{error}</p> : null}
         </div>
+        {input ? (
+          <div className="g-alert-extra">
+            {input.label ? <label htmlFor="g-alert-input">{input.label}</label> : null}
+            <input
+              id="g-alert-input"
+              value={draft}
+              placeholder={input.placeholder || ""}
+              autoFocus
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !busy && !confirmDisabled) {
+                  e.preventDefault();
+                  onConfirm?.(draft);
+                }
+              }}
+            />
+          </div>
+        ) : null}
         {children ? <div className="g-alert-extra">{children}</div> : null}
         <div className={`g-alert-actions${stacked ? " is-stacked" : ""}`}>
           {stacked ? (
@@ -146,8 +176,9 @@ export function GlassConfirmHost() {
       confirmLabel={o.confirmLabel}
       cancelLabel={o.cancelLabel}
       danger={o.danger !== false}
-      onConfirm={() => finish(true)}
-      onCancel={() => finish(false)}
+      input={o.input}
+      onConfirm={(value) => finish(o.input ? String(value ?? "") : true)}
+      onCancel={() => finish(o.input ? null : false)}
     />
   );
 }

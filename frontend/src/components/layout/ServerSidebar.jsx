@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { MagnifyingGlass as Search, Megaphone, Chat as MessageSquarePlus, Plus } from "./phosphorInline.jsx";
 import SwipeRevealRow from "./SwipeRevealRow";
-import { hapticWarning } from "../../lib/fluid/haptics";
 import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import CallsView from "../calls/CallsView";
@@ -1746,59 +1745,16 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
 
 function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = false, onConfirm, onCancel }) {
   const t = useT();
-  const glass = useGlassUi();
-  useEffect(() => {
-    if (danger && !glass) hapticWarning();
-  }, [danger, glass]);
-  if (glass) {
-    return (
-      <GlassConfirm
-        title={title}
-        message={message}
-        confirmLabel={confirmLabel}
-        cancelLabel={t("Cancel")}
-        danger={danger}
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />
-    );
-  }
-  return createPortal(
-    <motion.div
-      className="conv-confirm-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onCancel}
-    >
-      <motion.div
-        className="conv-confirm-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="conv-confirm-title"
-        initial={{ scale: 0.92, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.92, opacity: 0 }}
-        transition={{ type: "spring", damping: 22, stiffness: 320 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 id="conv-confirm-title">{title}</h3>
-        <p>{message}</p>
-        <div className="conv-confirm-actions">
-          <button type="button" className="conv-confirm-btn" onClick={onCancel}>
-            {t("Cancel")}
-          </button>
-          <button
-            type="button"
-            className={`conv-confirm-btn primary${danger ? " danger" : ""}`}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+  return (
+    <GlassConfirm
+      title={title}
+      message={message}
+      confirmLabel={confirmLabel}
+      cancelLabel={t("Cancel")}
+      danger={danger}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
   );
 }
 

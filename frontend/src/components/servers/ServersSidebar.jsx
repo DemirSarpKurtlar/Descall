@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { hapticImpactMedium, hapticWarning } from "../../lib/fluid/haptics";
-import { confirmAction } from "../../lib/glassConfirm";
+import { hapticImpactMedium } from "../../lib/fluid/haptics";
+import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import GlassConfirm from "../ui/GlassConfirm";
-import useGlassUi from "../../hooks/useGlassUi";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -435,7 +434,12 @@ export default function ServersSidebar({
   };
 
   const handleCreateFolder = async () => {
-    const name = window.prompt(t("Folder name"));
+    const name = await promptAction({
+      title: t("Folder name"),
+      confirmLabel: t("Create"),
+      cancelLabel: t("Cancel"),
+      placeholder: t("Folder name"),
+    });
     if (!name?.trim()) return;
     try {
       const { folder } = await createServerFolder(name.trim());
@@ -2496,7 +2500,6 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
 
 function ConfirmDeleteChannelDialog({ channel, onConfirm, onCancel }) {
   const t = useT();
-  const glass = useGlassUi();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isCategory = channel.type === "category";
@@ -2515,69 +2518,18 @@ function ConfirmDeleteChannelDialog({ channel, onConfirm, onCancel }) {
     }
   };
   if (typeof document === "undefined") return null;
-  if (glass) {
-    return (
-      <GlassConfirm
-        title={title}
-        message={message}
-        confirmLabel={busy ? t("Please wait...") : title}
-        cancelLabel={t("Cancel")}
-        danger
-        busy={busy}
-        error={error}
-        onConfirm={confirm}
-        onCancel={onCancel}
-      />
-    );
-  }
-
-  return createPortal(
-    <motion.div
-      className="server-modal-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onCancel}
-    >
-      <motion.div
-        className="server-modal"
-        initial={{ scale: 0.94, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.94, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3>{isCategory ? t("Delete category") : t("Delete channel")}</h3>
-        <p className="server-modal-lead">
-          {isCategory
-            ? t("Delete {name}? Channels inside stay, but leave this category.", { name: channel.name })
-            : t("Delete #{name}? This cannot be undone.", { name: channel.name })}
-        </p>
-        {error && <p className="server-modal-error">{error}</p>}
-        <div className="server-modal-actions">
-          <button type="button" className="server-ghost-btn" onClick={onCancel} disabled={busy}>
-            {t("Cancel")}
-          </button>
-          <button
-            type="button"
-            className="server-danger-btn"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                await onConfirm();
-              } catch (err) {
-                setError(err?.message || t("Something went wrong."));
-                setBusy(false);
-              }
-            }}
-          >
-            {busy ? t("Please wait...") : isCategory ? t("Delete category") : t("Delete channel")}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+  return (
+    <GlassConfirm
+      title={title}
+      message={message}
+      confirmLabel={busy ? t("Please wait...") : title}
+      cancelLabel={t("Cancel")}
+      danger
+      busy={busy}
+      error={error}
+      onConfirm={confirm}
+      onCancel={onCancel}
+    />
   );
 }
 
@@ -2937,10 +2889,6 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
 
 function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
   const t = useT();
-  const glass = useGlassUi();
-  useEffect(() => {
-    if (!glass) hapticWarning();
-  }, [glass]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const confirm = async () => {
@@ -2954,76 +2902,23 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
     }
   };
   if (typeof document === "undefined") return null;
-  if (glass) {
-    return (
-      <GlassConfirm
-        title={t("Leave server")}
-        message={t("Are you sure you want to leave {name}?", { name: serverName })}
-        confirmLabel={busy ? t("Please wait...") : t("Leave server")}
-        cancelLabel={t("Cancel")}
-        danger
-        busy={busy}
-        error={error}
-        onConfirm={confirm}
-        onCancel={onCancel}
-      />
-    );
-  }
-
-  return createPortal(
-    <motion.div
-      className="server-modal-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onCancel}
-    >
-      <motion.div
-        className="server-modal"
-        initial={{ scale: 0.94, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.94, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3>{t("Leave server")}</h3>
-        <p className="server-modal-lead">
-          {t("Are you sure you want to leave {name}?", { name: serverName })}
-        </p>
-        {error && <p className="server-modal-error">{error}</p>}
-        <div className="server-modal-actions">
-          <button type="button" className="server-ghost-btn" onClick={onCancel} disabled={busy}>
-            {t("Cancel")}
-          </button>
-          <button
-            type="button"
-            className="server-danger-btn"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                await onConfirm();
-              } catch (err) {
-                setError(err?.message || t("Something went wrong."));
-                setBusy(false);
-              }
-            }}
-          >
-            {busy ? t("Please wait...") : t("Leave server")}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+  return (
+    <GlassConfirm
+      title={t("Leave server")}
+      message={t("Are you sure you want to leave {name}?", { name: serverName })}
+      confirmLabel={busy ? t("Please wait...") : t("Leave server")}
+      cancelLabel={t("Cancel")}
+      danger
+      busy={busy}
+      error={error}
+      onConfirm={confirm}
+      onCancel={onCancel}
+    />
   );
 }
 
 function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
   const t = useT();
-  const glass = useGlassUi();
-  useEffect(() => {
-    if (!glass) hapticWarning();
-  }, [glass]);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -3051,84 +2946,28 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
   };
 
   if (typeof document === "undefined") return null;
-  if (glass) {
-    return (
-      <GlassConfirm
-        title={title}
-        message={message}
-        confirmLabel={busy ? t("Please wait...") : title}
-        cancelLabel={t("Cancel")}
-        danger
-        busy={busy}
-        error={error}
-        confirmDisabled={!match}
-        onConfirm={confirm}
-        onCancel={onCancel}
-      >
-        <label>
-          <span>{t("Server name")}</span>
-          <input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={serverName}
-            autoFocus
-          />
-        </label>
-      </GlassConfirm>
-    );
-  }
-
-  return createPortal(
-    <motion.div
-      className="server-modal-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onCancel}
+  return (
+    <GlassConfirm
+      title={title}
+      message={message}
+      confirmLabel={busy ? t("Please wait...") : title}
+      cancelLabel={t("Cancel")}
+      danger
+      busy={busy}
+      error={error}
+      confirmDisabled={!match}
+      onConfirm={confirm}
+      onCancel={onCancel}
     >
-      <motion.div
-        className="server-modal"
-        initial={{ scale: 0.94, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.94, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3>{title}</h3>
-        <p className="server-modal-lead">{message}</p>
-        <label className="server-field">
-          <span>{t("Server name")}</span>
-          <input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={serverName}
-            autoFocus
-          />
-        </label>
-        {error && <p className="server-modal-error">{error}</p>}
-        <div className="server-modal-actions">
-          <button type="button" className="server-ghost-btn" onClick={onCancel} disabled={busy}>
-            {t("Cancel")}
-          </button>
-          <button
-            type="button"
-            className="server-danger-btn"
-            disabled={!match || busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                await onConfirm(value.trim());
-              } catch (err) {
-                setError(err?.message || t("Something went wrong."));
-                setBusy(false);
-              }
-            }}
-          >
-            {busy ? t("Please wait...") : mode === "delete" ? t("Delete server") : t("Leave server")}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+      <label>
+        <span>{t("Server name")}</span>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={serverName}
+          autoFocus
+        />
+      </label>
+    </GlassConfirm>
   );
 }

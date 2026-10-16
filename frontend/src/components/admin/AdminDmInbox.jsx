@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, RefreshCw, Search, Trash2, Download, MessageCircle } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
+import { confirmAction } from "../../lib/glassConfirm";
 import RippleButton from "../ui/RippleButton";
 import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
@@ -85,7 +86,11 @@ export default function AdminDmInbox() {
   };
 
   const deleteThread = async (key) => {
-    if (!window.confirm(t("admin.deleteThreadConfirm"))) return;
+    if (!(await confirmAction({
+      message: t("admin.deleteThreadConfirm"),
+      confirmLabel: t("Delete"),
+      cancelLabel: t("Cancel"),
+    }))) return;
     try {
       await adminFetch(`/dm/${encodeURIComponent(key)}`, { method: "DELETE" });
       if (activeKey === key) {
@@ -100,7 +105,11 @@ export default function AdminDmInbox() {
 
   const deleteMessage = async (msgId) => {
     if (!activeKey || !msgId) return;
-    if (!window.confirm(t("admin.deleteMessageConfirm"))) return;
+    if (!(await confirmAction({
+      message: t("admin.deleteMessageConfirm"),
+      confirmLabel: t("Delete"),
+      cancelLabel: t("Cancel"),
+    }))) return;
     try {
       await adminFetch(`/dm/${encodeURIComponent(activeKey)}/messages/${encodeURIComponent(msgId)}`, {
         method: "DELETE",

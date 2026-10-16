@@ -17,6 +17,7 @@ import {
   Coins, DollarSign, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
+import { confirmAction } from "../../lib/glassConfirm";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
@@ -1603,7 +1604,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                   className="danger"
                   onClick={() =>
                     act(async () => {
-                      if (!window.confirm(t("Restart Node process?\n\nAll connections will be lost."))) return;
+                      if (!(await confirmAction({
+                        message: t("Restart Node process?\n\nAll connections will be lost."),
+                        confirmLabel: t("Restart Server"),
+                        cancelLabel: t("Cancel"),
+                      }))) return;
                       await adminFetch("/restart", { method: "POST" });
                     })
                   }
@@ -1812,7 +1817,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                     className="danger"
                     onClick={() =>
                       act(async () => {
-                        if (!window.confirm(t("Restart Node process?"))) return;
+                        if (!(await confirmAction({
+                          message: t("Restart Node process?"),
+                          confirmLabel: t("Restart Server"),
+                          cancelLabel: t("Cancel"),
+                        }))) return;
                         await adminFetch("/restart", { method: "POST", body: JSON.stringify({}) });
                       })
                     }

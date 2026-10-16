@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import { confirmAction } from "../../lib/glassConfirm";
+import { useT } from "../../context/LocaleContext";
 
 /**
  * COMPLETELY REBUILT SETTINGS PANEL
@@ -350,6 +352,7 @@ function PrivacySection() {
 }
 
 function AdvancedSection() {
+  const t = useT();
   const [devMode, setDevMode] = useState(() => localStorage.getItem("descall_dev_mode") === "true");
   const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem("descall_reduce_motion") === "true");
   const [hardwareAccel, setHardwareAccel] = useState(() => localStorage.getItem("descall_hw_accel") !== "false");
@@ -378,8 +381,12 @@ function AdvancedSection() {
       </div>
       <div className="settings-group">
         <h4 className="group-title">Data</h4>
-        <motion.button className="settings-action-btn secondary" whileTap={{ scale: 0.97 }} onClick={() => {
-          if (window.confirm("Clear all local settings?")) { localStorage.clear(); window.location.reload(); }
+        <motion.button className="settings-action-btn secondary" whileTap={{ scale: 0.97 }} onClick={async () => {
+          if (await confirmAction({
+            message: t("Clear all local settings?"),
+            confirmLabel: t("Clear"),
+            cancelLabel: t("Cancel"),
+          })) { localStorage.clear(); window.location.reload(); }
         }}>
           Clear All Local Data
         </motion.button>

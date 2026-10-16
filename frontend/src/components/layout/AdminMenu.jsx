@@ -7,6 +7,8 @@ import {
   ChevronRight, Check, AlertTriangle, RefreshCw, Ban, Trash2
 } from "lucide-react";
 import { getToken } from "../../lib/storage";
+import { confirmAction } from "../../lib/glassConfirm";
+import { useT } from "../../context/LocaleContext";
 import { API_BASE_URL } from "../../config/api";
 import { SkeletonLine, ConversationListSkeleton } from "../ui/Skeleton";
 
@@ -182,6 +184,7 @@ function OverviewSection() {
 }
 
 function UsersSection() {
+  const t = useT();
   const { data, loading, error, refresh } = useAdminApi("/api/admin/users");
   const [updating, setUpdating] = useState("");
   const users = Array.isArray(data) ? data : [];
@@ -202,7 +205,11 @@ function UsersSection() {
   };
 
   const banUser = async (id) => {
-    if (!window.confirm("Ban this user?")) return;
+    if (!(await confirmAction({
+      message: t("Ban this user?"),
+      confirmLabel: t("Ban"),
+      cancelLabel: t("Cancel"),
+    }))) return;
     setUpdating(id);
     try {
       const token = getToken();
