@@ -14,6 +14,13 @@ const {
 } = require('./updateDeferral.cjs');
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
+const {
+  AUTOSTART_ARGS,
+  decideColdStart,
+  isFreshRelaunchMarker,
+  loginItemSettings,
+  UPDATER_RELAUNCH_MAX_AGE_MS,
+} = require('./launchVisibility.cjs');
 const path = require('path');
 const fs = require('fs');
 
@@ -427,11 +434,13 @@ function installQuietly(reason) {
     if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) mode = 'minimized';
   } catch (_) { /* ignore */ }
   const previousBackground = startInBackgroundMode();
+  setUpdaterRelaunch(true);
   setStartInBackground(true, mode);
   const installed = applyDownloadedUpdate(reason);
   if (!installed) {
     // A call slipped in, or quitAndInstall threw. Don't leave the next
     // launch stuck in the tray because of an install that never happened.
+    setUpdaterRelaunch(false);
     if (previousBackground) setStartInBackground(true, previousBackground);
     else setStartInBackground(false);
   }
@@ -631,9 +640,11 @@ let tray = null;
 let rebuildTrayMenu = null;
 let isQuitting = false;
 
-// Persist "running in background" so an updater relaunch stays in the tray
-// instead of stealing focus after quitAndInstall / NSIS /S restart.
+// Persist "running in background" for a quiet updater relaunch only.
+// A manual shortcut launch ignores this file (see decideColdStart). It must
+// not hide the next Start-menu / desktop / taskbar launch after a tray quit.
 const BG_FLAG = () => path.join(app.getPath('userData'), 'start-in-background');
+const RELAUNCH_FLAG = () => path.join(app.getPath('userData'), 'updater-relaunch');
 function setStartInBackground(on, mode = 'hidden') {
   try {
     if (on) fs.writeFileSync(BG_FLAG(), mode === 'minimized' ? 'minimized' : 'hidden');
@@ -650,8 +661,83 @@ function startInBackgroundMode() {
     return null;
   }
 }
-function shouldStartInBackground() {
-  return Boolean(startInBackgroundMode());
+function setUpdaterRelaunch(on) {
+  try {
+    if (on) fs.writeFileSync(RELAUNCH_FLAG(), '1');
+    else if (fs.existsSync(RELAUNCH_FLAG())) fs.unlinkSync(RELAUNCH_FLAG());
+  } catch {}
+}
+
+/** Read-and-delete. A stale marker must not hide a later manual launch. */
+function consumeUpdaterRelaunch() {
+  try {
+    if (!fs.existsSync(RELAUNCH_FLAG())) return false;
+    const mtime = fs.statSync(RELAUNCH_FLAG()).mtimeMs;
+    try { fs.unlinkSync(RELAUNCH_FLAG()); } catch {}
+    return isFreshRelaunchMarker(mtime, Date.now(), UPDATER_RELAUNCH_MAX_AGE_MS);
+  } catch {
+    return false;
+  }
+}
+
+let coldStartDecision = null;
+/** Set when a second process arrives before the window exists (still on splash). */
+let userRequestedShow = false;
+
+function resolveColdStart() {
+  if (coldStartDecision) return coldStartDecision;
+  let login = {};
+  try {
+    login = app.getLoginItemSettings({ args: AUTOSTART_ARGS }) || {};
+  } catch (_) { /* before ready, or the platform has no login-item API */ }
+  coldStartDecision = decideColdStart({
+    argv: process.argv,
+    wasOpenedAtLogin: Boolean(login.wasOpenedAtLogin),
+    wasOpenedAsHidden: Boolean(login.wasOpenedAsHidden),
+    backgroundMode: startInBackgroundMode(),
+    updaterRelaunch: consumeUpdaterRelaunch(),
+  });
+  log.info(`[boot] cold start ${coldStartDecision.reason} → ${coldStartDecision.action}`);
+  return coldStartDecision;
+}
+
+function readOpenAtLogin() {
+  try {
+    const settings = app.getLoginItemSettings({ args: AUTOSTART_ARGS }) || {};
+    if (process.platform === 'win32') {
+      return Boolean(settings.executableWillLaunchAtLogin || settings.openAtLogin);
+    }
+    return Boolean(settings.openAtLogin);
+  } catch (_) {
+    return false;
+  }
+}
+
+function syncLoginItem(openAtLogin) {
+  try {
+    app.setLoginItemSettings(loginItemSettings(openAtLogin));
+  } catch (err) {
+    log.warn('[boot] login item update failed:', err?.message || err);
+  }
+}
+
+/**
+ * First packaged run turns auto-start on. An older Run key that is already
+ * enabled but lacks --hidden/--autostart is rewritten so boot stays hidden
+ * and a shortcut launch does not.
+ */
+function ensureAutostartLoginItem() {
+  if (!isPackaged) return;
+  let settings = {};
+  try {
+    settings = app.getLoginItemSettings({ args: AUTOSTART_ARGS }) || {};
+  } catch (_) {
+    return;
+  }
+  const enabled = process.platform === 'win32'
+    ? Boolean(settings.executableWillLaunchAtLogin || settings.openAtLogin)
+    : Boolean(settings.openAtLogin);
+  if (!enabled || !settings.openAtLogin) syncLoginItem(true);
 }
 
 
@@ -730,9 +816,9 @@ function createSplashWindow() {
         true
       ).catch(() => {});
     } catch (_) { /* ignore */ }
-    if (shouldStartInBackground()) {
-      // Updater relaunch after close-to-tray: keep splash hidden.
-      log.info('[boot] start-in-background — splash stays hidden');
+    const launch = resolveColdStart();
+    if (!userRequestedShow && !launch.showSplash) {
+      log.info(`[boot] ${launch.reason} — splash stays hidden`);
       return;
     }
     splashWindow.show();
@@ -1155,19 +1241,18 @@ function createMainWindow() {
       try { splashWindow.close(); } catch (_) { /* ignore */ }
       splashWindow = null;
     }
-    const bgMode = startInBackgroundMode();
-    if (bgMode === 'hidden') {
-      // Was closed to the tray (incl. a quiet update relaunch): stay hidden,
-      // no window flash and no focus steal.
-      log.info('[boot] start-in-background (tray) — window stays hidden');
-      try { mainWindow.setSkipTaskbar(true); } catch (_) { /* ignore */ }
-    } else if (bgMode === 'minimized') {
-      log.info('[boot] start-in-background (minimized) — showInactive then minimize');
+    const launch = resolveColdStart();
+    if (userRequestedShow || launch.action === 'show') {
+      // Manual shortcut, taskbar, or Start menu: show and focus after splash.
+      showMainWindow();
+    } else if (launch.action === 'minimize') {
+      log.info('[boot] updater relaunch (minimized) — showInactive then minimize');
       try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
       mainWindow.showInactive();
       mainWindow.minimize();
     } else {
-      showMainWindow();
+      log.info(`[boot] ${launch.reason} — window stays hidden`);
+      try { mainWindow.setSkipTaskbar(true); } catch (_) { /* ignore */ }
     }
 
     // Background polling only after the Discord-style prelaunch gate
@@ -1261,9 +1346,9 @@ function createTray() {
     {
       label: 'Windows ile Başlat',
       type: 'checkbox',
-      checked: app.getLoginItemSettings().openAtLogin,
+      checked: readOpenAtLogin(),
       click: (item) => {
-        app.setLoginItemSettings({ openAtLogin: item.checked });
+        syncLoginItem(item.checked);
         tray.setContextMenu(buildMenu());
       },
     },
@@ -1320,10 +1405,7 @@ app.whenReady().then(async () => {
   }
 
   registerDescallProtocol();
-  // Enable startup on first run (packaged only)
-  if (isPackaged && !app.getLoginItemSettings().openAtLogin) {
-    app.setLoginItemSettings({ openAtLogin: true });
-  }
+  ensureAutostartLoginItem();
 
   try {
     bindSessionSetupDownloadCleanup({ session: session.defaultSession, app, log });
@@ -1731,9 +1813,19 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // User clicked the shortcut on purpose — restore + focus, leave background.
-    showMainWindow();
+  app.on('second-instance', () => {
+    // Shortcut, taskbar, or Start menu while a tray instance is already up.
+    userRequestedShow = true;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      showMainWindow();
+      return;
+    }
+    try {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.show();
+        splashWindow.center();
+      }
+    } catch (_) { /* splash not up yet — ready-to-show will honor userRequestedShow */ }
   });
 }
 

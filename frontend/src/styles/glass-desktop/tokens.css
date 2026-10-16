@@ -85,6 +85,12 @@ html.glass-desktop {
   --gd-panel-base: var(--g-solid);
   --gd-hair: var(--g-hair);
   --gd-fill: var(--g-fill);
+  /* Chat hover wash. --g-t1 is white ink on dark themes and dark ink on
+     light, so 5% / 9% stays a tint on dark, light, Iriscape, and crimson. */
+  --gd-row-hover: color-mix(in srgb, var(--g-t1) 5%, transparent);
+  --gd-row-active: color-mix(in srgb, var(--g-t1) 9%, transparent);
+  --gd-chip: color-mix(in srgb, var(--g-t1) 8%, transparent);
+  --gd-chip-hover: color-mix(in srgb, var(--g-t1) 12%, transparent);
   --gd-field-bg: var(--g-field-bg);
   --gd-field-shadow: var(--g-field-shadow);
   --gd-shadow: var(--g-shadow);

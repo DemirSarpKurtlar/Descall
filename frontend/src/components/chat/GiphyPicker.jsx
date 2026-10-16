@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, TrendingUp, Loader2 } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
+import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 
 const GIPHY_API_KEY = "dtgxSdCkeVkjYcEeEpSYlqP4mmv4LQgi";
 const GIPHY_API_URL = "https://api.giphy.com/v1/gifs";
@@ -11,6 +12,10 @@ const GIPHY_API_URL = "https://api.giphy.com/v1/gifs";
 export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef }) {
   const t = useT();
   const glass = useGlassUi();
+  const desktopGlass = useGlassDesktop();
+  /* iPhone keeps the bottom sheet. Desktop glass centres in the viewport;
+     the attach-button anchor is what shoved the card left and down. */
+  const centered = glass || desktopGlass;
   const [searchQuery, setSearchQuery] = useState("");
   const [searchArmed, setSearchArmed] = useState(false);
   const searchArmedRef = useRef(false);
@@ -86,7 +91,7 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
   }, [isOpen, fetchTrending, glass]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen || centered) return undefined;
     const place = () => {
       const anchor = anchorRef?.current;
       const width = Math.min(420, window.innerWidth - 24);
@@ -107,7 +112,7 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [isOpen, anchorRef]);
+  }, [isOpen, anchorRef, centered]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -164,14 +169,14 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
             className={`giphy-panel${glass ? " g-giphy" : ""}`}
             role="dialog"
             aria-label={t("GIF picker")}
-            style={glass ? undefined : {
+            style={centered ? undefined : {
               bottom: panelPos.bottom,
               left: panelPos.left,
               width: panelPos.width,
             }}
-            initial={glass ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.97 }}
-            animate={glass ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-            exit={glass ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.97 }}
+            initial={centered ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.97 }}
+            animate={centered ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={centered ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.97 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={(e) => e.stopPropagation()}
           >
