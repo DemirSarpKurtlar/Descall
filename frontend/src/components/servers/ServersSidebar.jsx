@@ -275,6 +275,10 @@ export default function ServersSidebar({
       toast(t("Icon must be 8 MB or smaller."), "error");
       return;
     }
+    if (file.type === "image/gif") {
+      await saveServerIconCrop(file);
+      return;
+    }
     try {
       setServerIconCropSrc(await readFileAsDataUrl(file));
     } catch {
@@ -2574,8 +2578,12 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
       return;
     }
     setError("");
+    // Animated GIF icons upload as-is so they keep animating (same as profile photos).
+    if (file.type === "image/gif") {
+      await onCropIconConfirm(file);
+      return;
+    }
     try {
-      // Still crop GIFs to a square icon (server icons are static).
       const dataUrl = await readFileAsDataUrl(file);
       setIconCropSrc(dataUrl);
     } catch {

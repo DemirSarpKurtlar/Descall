@@ -29,7 +29,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState("");
-  const [cropKind, setCropKind] = useState(null); // 'icon' | 'banner'
+  const [cropKindState, setCropKind] = useState(null); // 'icon' | 'banner'
   const iconRef = useRef(null);
   const bannerRef = useRef(null);
 
@@ -91,6 +91,11 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
       toast(t("Image must be 8 MB or smaller."), "error");
       return;
     }
+    // Animated GIF icons upload as-is so they keep animating (same as profile photos).
+    if (kind === "icon" && file.type === "image/gif") {
+      await onCropConfirm(file, "icon");
+      return;
+    }
     try {
       setCropKind(kind);
       setCropSrc(await readFileAsDataUrl(file));
@@ -99,7 +104,8 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
     }
   };
 
-  const onCropConfirm = async (file) => {
+  const onCropConfirm = async (file, kindOverride) => {
+    const cropKind = kindOverride || cropKindState;
     if (!file || !cropKind) {
       setCropSrc("");
       setCropKind(null);
@@ -416,15 +422,15 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
       <AnimatePresence>
         {cropSrc ? (
           <ImageCropModal
-            key={`server-settings-${cropKind}-crop`}
+            key={`server-settings-${cropKindState}-crop`}
             imageSrc={cropSrc}
-            aspect={cropKind === "banner" ? 16 / 9 : 1}
+            aspect={cropKindState === "banner" ? 16 / 9 : 1}
             cropShape="rect"
-            title={cropKind === "banner" ? t("Adjust banner") : t("Adjust server icon")}
+            title={cropKindState === "banner" ? t("Adjust banner") : t("Adjust server icon")}
             confirmLabel={uploading ? t("Please wait...") : t("Use photo")}
             outputMimeType="image/jpeg"
-            outputFileName={cropKind === "banner" ? "server-banner.jpg" : "server-icon.jpg"}
-            maxOutputSize={cropKind === "banner" ? 1280 : 512}
+            outputFileName={cropKindState === "banner" ? "server-banner.jpg" : "server-icon.jpg"}
+            maxOutputSize={cropKindState === "banner" ? 1280 : 512}
             onCancel={() => {
               if (!uploading) {
                 setCropSrc("");

@@ -1,4 +1,5 @@
 import { SkeletonImage } from "../ui/Skeleton";
+import { useHoverGif } from "../../lib/useHoverGif";
 
 function serverInitials(name) {
   return String(name || "?")
@@ -19,10 +20,13 @@ export function ServerIcon({
   className = "server-list-icon",
   fallbackClassName = "server-list-icon-fallback",
   fallback = null,
+  animate = false,
   ...rest
 }) {
   const label = name || server?.name || "?";
-  const src = iconUrl ?? server?.iconUrl;
+  const rawSrc = iconUrl ?? server?.iconUrl;
+  // GIF server icons behave like profile avatars: first frame, animate on hover.
+  const { src, hoverProps } = useHoverGif(rawSrc || null, { forceAnimate: Boolean(animate) });
   const fallbackNode =
     fallback ?? (
       <div className={`${className} ${fallbackClassName}`.trim()}>
@@ -37,6 +41,8 @@ export function ServerIcon({
       className={className}
       fallback={fallbackNode}
       {...rest}
+      onMouseEnter={(e) => { hoverProps.onMouseEnter(); rest.onMouseEnter?.(e); }}
+      onMouseLeave={(e) => { hoverProps.onMouseLeave(); rest.onMouseLeave?.(e); }}
     />
   );
 }

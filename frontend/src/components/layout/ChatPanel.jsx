@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
   Search, MessageSquare, X, ChevronDown, ChevronRight, Menu, ChevronLeft,
-  UserPlus, Plus, Crown, Pin, PinOff, Timer
+  UserPlus, Plus, Crown, Pin, PinOff, Timer, ImagePlus
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
@@ -28,6 +28,9 @@ import ServerMembersPanel from "../servers/ServerMembersPanel";
 import ServerVoicePanel from "../servers/ServerVoicePanel";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useGlassUi from "../../hooks/useGlassUi";
+import GroupIcon from "../groups/GroupIcon";
+import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
+import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 
 function glassGroupInitials(name) {
@@ -37,6 +40,7 @@ function glassGroupInitials(name) {
 }
 
 export default function ChatPanel({
+  onGroupAvatarChanged,
   activeView,
   activeDmUser,
   activeGroup,
@@ -94,6 +98,7 @@ export default function ChatPanel({
   const [showMembers, setShowMembers] = useState(false);
   const [showPinned, setShowPinned] = useState(false);
   const pinButtonRef = useRef(null);
+  const groupPhoto = useGroupPhotoChanger({ onUpdated: onGroupAvatarChanged });
   const reduceMotion = useReducedMotion();
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [profileTarget, setProfileTarget] = useState(null);
@@ -446,12 +451,22 @@ export default function ChatPanel({
                 <StatusBadge status={getPresenceStatus(onlineUsers, headerDm.id)} />
               </button>
             ) : headerGroup ? (
-              <div className="header-icon" aria-hidden={!headerGroup.icon}>
-                {headerGroup.icon ? (
-                  <img src={headerGroup.icon} alt="" />
-                ) : (
-                  <span>{glass && headerGroup ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}</span>
-                )}
+              <div
+                className={`header-icon is-clickable${groupAvatarUrl(headerGroup) ? " has-group-photo" : ""}`}
+                role="button"
+                tabIndex={0}
+                title={t("Change Group Photo")}
+                aria-label={t("Change Group Photo")}
+                onClick={() => groupPhoto.pick(headerGroup)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); groupPhoto.pick(headerGroup); } }}
+              >
+                <GroupIcon
+                  group={headerGroup}
+                  size={40}
+                  radius={12}
+                  className="header-group-photo"
+                  initials={glass ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}
+                />
               </div>
             ) : glassHash ? (
               <div className="header-icon g-hash" aria-hidden="true">
@@ -885,6 +900,32 @@ export default function ChatPanel({
                       </button>
                     </div>
                     <div className="members-panel-scroll">
+                      {activeGroup ? (
+                        <section className="group-photo-card" aria-label={t("Group photo")}>
+                          <button
+                            type="button"
+                            className="group-photo-card-icon"
+                            onClick={() => groupPhoto.pick(activeGroup)}
+                            title={t("Change Group Photo")}
+                            aria-label={t("Change Group Photo")}
+                            disabled={groupPhoto.busyId === activeGroup.id}
+                          >
+                            <GroupIcon group={activeGroup} size={72} radius={22} />
+                            <span className="group-photo-card-badge" aria-hidden="true"><ImagePlus size={13} /></span>
+                          </button>
+                          <div className="group-photo-card-name">{activeGroup.name}</div>
+                          <div className="group-photo-card-actions">
+                            <button type="button" className="group-photo-card-btn" onClick={() => groupPhoto.pick(activeGroup)} disabled={groupPhoto.busyId === activeGroup.id}>
+                              {t("Change Group Photo")}
+                            </button>
+                            {groupAvatarUrl(activeGroup) ? (
+                              <button type="button" className="group-photo-card-btn is-danger" onClick={() => groupPhoto.remove(activeGroup)} disabled={groupPhoto.busyId === activeGroup.id}>
+                                {t("Remove")}
+                              </button>
+                            ) : null}
+                          </div>
+                        </section>
+                      ) : null}
                       {online.length > 0 && (
                         <section className="members-section">
                           <h5 className="members-section-label">
@@ -925,6 +966,7 @@ export default function ChatPanel({
       renderText={(pm) => displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
       onUnpin={unpinMessage}
     />
+    {groupPhoto.element}
     </div>
   );
 }

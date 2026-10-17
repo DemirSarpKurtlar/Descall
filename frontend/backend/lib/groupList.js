@@ -85,6 +85,7 @@ function assembleGroupList({ memberships, groups, memberRows, users, lastRows })
     const last = lastByGroup.get(group.id) || null;
     return {
       ...group,
+      avatarUrl: group.avatar_url || null,
       memberCount: groupMembers.length,
       memberIds,
       members,
