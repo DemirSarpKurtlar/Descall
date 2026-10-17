@@ -56,6 +56,11 @@ jobs:
           node src/lib/themeDocument.selftest.mjs
           node src/lib/casinoCommands.selftest.mjs
           node backend/socket/casinoIosGate.selftest.cjs
+          node backend/lib/casinoRoomAccess.selftest.cjs
+          node backend/socket/casinoChatTarget.selftest.cjs
+          node backend/lib/dmSlashCommands.selftest.cjs
+          node src/lib/slashCommands.selftest.mjs
+          node src/lib/coinTossMotion.selftest.mjs
           node backend/games/BlackjackGame.selftest.js
           node backend/games/SlotGame.selftest.js
           node backend/games/CoinFlipGame.selftest.js

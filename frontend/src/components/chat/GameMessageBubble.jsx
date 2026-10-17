@@ -449,29 +449,27 @@ function GameMessageBubbleBody({
   }, [socket, gameData?.id, gameData?.status]);
 
   const targetChannelId = message.channelId || null;
-  const targetGroupId = groupId || message.groupId || targetChannelId;
+  const targetDmUserId = message.dmUserId || null;
+  const targetGroupId = targetDmUserId ? null : groupId || message.groupId || targetChannelId;
+  // Exactly one chat target per event: DM peer, server channel, or group.
+  const target = targetDmUserId
+    ? { dmUserId: targetDmUserId }
+    : targetChannelId
+      ? { channelId: targetChannelId }
+      : { groupId: targetGroupId };
+  const hasTarget = Boolean(targetDmUserId || targetGroupId);
 
   const emitCommand = (command, args) => {
-    if (!socket?.connected || !targetGroupId) return;
+    if (!socket?.connected || !hasTarget) return;
     setBusy(true);
-    socket.emit("game:command", {
-      groupId: targetChannelId ? undefined : targetGroupId,
-      channelId: targetChannelId || undefined,
-      command,
-      args,
-    });
+    socket.emit("game:command", { ...target, command, args });
     setTimeout(() => setBusy(false), 400);
   };
 
   const emitAction = (action) => {
-    if (!socket?.connected || !targetGroupId) return;
+    if (!socket?.connected || !hasTarget) return;
     setBusy(true);
-    socket.emit("game:action", {
-      groupId: targetChannelId ? undefined : targetGroupId,
-      channelId: targetChannelId || undefined,
-      action,
-      gameId: gameData?.id,
-    });
+    socket.emit("game:action", { ...target, action, gameId: gameData?.id });
     setTimeout(() => setBusy(false), 400);
   };
 
@@ -530,7 +528,9 @@ function GameMessageBubbleBody({
         isMine={ownsRound}
         busy={busy}
         onCall={(side) => emitAction(side === "heads" ? "call:heads" : "call:tails")}
-        onAgain={() => emitCommand("cf", String(gameData.bet || 100))}
+        onAgain={(side) =>
+          emitCommand("cf", `${gameData.bet || 100}${side === "heads" ? " yazı" : side === "tails" ? " tura" : ""}`)
+        }
       />
     );
   }

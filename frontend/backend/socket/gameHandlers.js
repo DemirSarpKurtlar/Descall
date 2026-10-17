@@ -16,6 +16,8 @@ const {
   forgetSocketPlatform,
   casinoBlockReason,
 } = require("../lib/casinoPlatformGate");
+const { AsyncLocalStorage } = require("async_hooks");
+const { resolveCasinoTarget, dmRoomId } = require("../lib/casinoRoomAccess");
 
 const AGE_FREE_COMMANDS = new Set(["help", "yardım", "commands", "jb"]);
 
@@ -196,7 +198,7 @@ async function saveGameHistory(userId, groupId, instance) {
   try {
     const opts = currentEmitRoom();
     const payload = instance.toHistoryPayload();
-    // Server text channels reuse roomId as channelId — omit FK group_id there
+    // Only real groups carry the group_id FK; channels and DMs omit it.
     const row = {
       user_id: userId,
       game_type: "blackjack",
@@ -206,7 +208,7 @@ async function saveGameHistory(userId, groupId, instance) {
       player_hand: payload.player_hand,
       dealer_hand: payload.dealer_hand,
     };
-    if (!opts.channelId && groupId) {
+    if (isGroupTarget(opts) && groupId) {
       row.group_id = groupId;
     }
     const { error } = await supabase.from("game_history").insert(row);
@@ -216,49 +218,80 @@ async function saveGameHistory(userId, groupId, instance) {
   }
 }
 
-/** Stack so server-channel games can reuse group emit helpers. */
-const emitRoomStack = [];
-function pushEmitRoom(opts) {
-  emitRoomStack.push(opts || {});
-}
-function popEmitRoom() {
-  emitRoomStack.pop();
-}
+/**
+ * Per-request chat target. Each command / action runs inside its own async
+ * context, so concurrent games in a group, a server channel and a DM can never
+ * pick up each other's room across awaits (the old module-level stack could).
+ */
+const chatTarget = new AsyncLocalStorage();
 function currentEmitRoom() {
-  return emitRoomStack[emitRoomStack.length - 1] || {};
+  return chatTarget.getStore() || {};
+}
+function runInChatTarget(target, fn) {
+  return chatTarget.run(target || {}, fn);
+}
+function isGroupTarget(target) {
+  return target.kind ? target.kind === "group" : !target.channelId;
+}
+
+function broadcastGame(io, socket, events, groupId, message) {
+  const target = currentEmitRoom();
+  if (target.kind === "dm") {
+    const payload = {
+      groupId: null,
+      channelId: null,
+      serverId: null,
+      dmUserIds: target.dmUserIds,
+      message,
+    };
+    // Both participants' sockets (every tab) join user:<id> on connect.
+    const rooms = target.dmUserIds.map((id) => `user:${id}`);
+    for (const event of events) io.to(rooms).emit(event, payload);
+    return;
+  }
+  const channelId = target.channelId || null;
+  const roomId = channelId || groupId;
+  const payload = {
+    groupId: roomId,
+    channelId,
+    serverId: target.serverId || null,
+    message,
+  };
+  const room = channelId ? `server-channel:${channelId}` : `group:${groupId}`;
+  for (const event of events) {
+    socket.emit(event, payload);
+    socket.to(room).emit(event, payload);
+  }
 }
 
 function emitToGroup(io, socket, groupId, message) {
-  const opts = currentEmitRoom();
-  const channelId = opts.channelId || null;
-  const roomId = channelId || groupId;
-  const payload = {
-    groupId: roomId,
-    channelId: channelId || null,
-    serverId: opts.serverId || null,
-    message,
-  };
-  const room = channelId ? `server-channel:${channelId}` : `group:${groupId}`;
-  socket.emit("game:message", payload);
-  socket.to(room).emit("game:message", payload);
+  broadcastGame(io, socket, ["game:message"], groupId, message);
 }
 
 function emitGameUpdate(io, socket, groupId, message) {
-  const opts = currentEmitRoom();
-  const channelId = opts.channelId || null;
-  const roomId = channelId || groupId;
-  const payload = {
-    groupId: roomId,
-    channelId: channelId || null,
-    serverId: opts.serverId || null,
-    message,
-  };
-  const room = channelId ? `server-channel:${channelId}` : `group:${groupId}`;
   // Emit both: game:update (in-place) + game:message (first paint / older clients)
-  socket.emit("game:update", payload);
-  socket.to(room).emit("game:update", payload);
-  socket.emit("game:message", payload);
-  socket.to(room).emit("game:message", payload);
+  broadcastGame(io, socket, ["game:update", "game:message"], groupId, message);
+}
+
+/** Resolve + authorize the chat a game event targets. Emits a notice on refusal. */
+async function authorizeTarget(socket, userId, { groupId, channelId, dmUserId, target } = {}) {
+  if (target && target.kind && target.roomId) return target;
+  const res = await resolveCasinoTarget({
+    userId,
+    groupId: channelId || dmUserId ? null : groupId,
+    channelId,
+    dmUserId,
+  });
+  if (!res.ok) {
+    socket.emit("game:notice", {
+      groupId: groupId || channelId || null,
+      dmUserId: dmUserId || null,
+      text: res.text,
+      code: res.code,
+    });
+    return null;
+  }
+  return res.target;
 }
 
 function registerGameHandlers(io, socket) {
@@ -269,30 +302,24 @@ function registerGameHandlers(io, socket) {
   noteSocketPlatform(socket);
   socket.on("disconnect", () => forgetSocketPlatform(socket));
 
-  socket.on("game:command", async ({ groupId, channelId, command, args } = {}) => {
-    const roomId = channelId || groupId;
-    if (!roomId || !command) return;
+  socket.on("game:command", async ({ groupId, channelId, dmUserId, command, args } = {}) => {
+    if (!command || (!groupId && !channelId && !dmUserId)) return;
     const full = `/${command}${args != null && args !== "" ? ` ${args}` : ""}`.trim();
-    await handleGameCommand(
-      io,
-      socket,
-      myId,
-      myUsername,
-      roomId,
-      full,
-      channelId ? { channelId } : {}
-    );
+    await handleGameCommand(io, socket, myId, myUsername, channelId || groupId || null, full, {
+      channelId: channelId || null,
+      dmUserId: dmUserId || null,
+    });
   });
 
-  socket.on("game:action", async ({ groupId, channelId, action } = {}) => {
-    const roomId = channelId || groupId;
-    if (!roomId || !action) return;
-    if (denyCasinoOnIos(socket, roomId)) return;
+  socket.on("game:action", async ({ groupId, channelId, dmUserId, action } = {}) => {
+    if (!action || (!groupId && !channelId && !dmUserId)) return;
+    if (denyCasinoOnIos(socket, channelId || groupId || null)) return;
+    const target = await authorizeTarget(socket, myId, { groupId, channelId, dmUserId });
+    if (!target) return;
+    const roomId = target.roomId;
     const a = String(action).toLowerCase();
     if (a !== "help" && (await denyIfNotAllowed(socket, myId, roomId))) return;
-    const opts = channelId ? { channelId } : {};
-    pushEmitRoom(opts);
-    try {
+    await runInChatTarget(target, async () => {
       if (a === "help") {
         await handleHelp(io, socket, myId, roomId);
         return;
@@ -306,9 +333,7 @@ function registerGameHandlers(io, socket) {
         return;
       }
       await handleBlackjackAction(io, socket, myId, myUsername, roomId, a);
-    } finally {
-      popEmitRoom();
-    }
+    });
   });
 
   socket.on("game:credits", async (callback) => {
@@ -329,14 +354,16 @@ function registerGameHandlers(io, socket) {
     }
   });
 
-  socket.on("game:status", ({ groupId } = {}, callback) => {
+  socket.on("game:status", ({ groupId, channelId, dmUserId } = {}, callback) => {
     if (denyCasinoOnIos(socket, groupId || null)) {
       if (typeof callback === "function") {
         callback({ active: false, game: null, error: IOS_DENY_TEXT, code: "ios_unavailable" });
       }
       return;
     }
-    const game = groupId ? GameManager.get(myId, groupId) : null;
+    // Read-only: only ever returns the caller's own hand.
+    const key = dmUserId ? dmRoomId(myId, dmUserId) : channelId || groupId;
+    const game = key ? GameManager.get(myId, key) : null;
     if (typeof callback === "function") {
       callback({
         active: Boolean(game && game.status !== "finished"),
@@ -346,21 +373,31 @@ function registerGameHandlers(io, socket) {
   });
 }
 
-async function handleGameCommand(io, socket, userId, username, groupId, fullCommand, opts = {}) {
-  // Slash commands (/bj, /slot, /pay, …) enter here from group and server
-  // chat. Refuse before age lookup, credit reads, or any deal/spin/transfer.
-  if (denyCasinoOnIos(socket, groupId)) return;
+async function handleGameCommand(io, socket, userId, username, roomArg, fullCommand, opts = {}) {
+  // Slash commands (/bj, /slot, /pay, …) enter here from group, server channel
+  // and DM chat. Refuse before membership, age lookup, credit reads, or any
+  // deal/spin/transfer.
+  if (denyCasinoOnIos(socket, roomArg)) return;
 
   const match = String(fullCommand || "").trim().match(COMMAND_REGEX);
   if (!match) return;
+
+  // Every command is authorized against the chat it targets.
+  const target = await authorizeTarget(socket, userId, {
+    groupId: roomArg,
+    channelId: opts.channelId || null,
+    dmUserId: opts.dmUserId || null,
+    target: opts.target || null,
+  });
+  if (!target) return;
+  const groupId = target.roomId;
 
   const command = match[1].toLowerCase();
   const arg = match[2];
   if (VALID_COMMANDS.has(command) && !AGE_FREE_COMMANDS.has(command)) {
     if (await denyIfNotAllowed(socket, userId, groupId)) return;
   }
-  pushEmitRoom(opts);
-  try {
+  await runInChatTarget(target, async () => {
   switch (command) {
     case "bj":
     case "blackjack":
@@ -423,9 +460,7 @@ async function handleGameCommand(io, socket, userId, username, groupId, fullComm
       if (VALID_COMMANDS.has(command)) break;
       await handleHelp(io, socket, userId, groupId, command);
   }
-  } finally {
-    popEmitRoom();
-  }
+  });
 }
 
 async function handleBlackjackStart(io, socket, userId, username, groupId, betArg) {
@@ -921,7 +956,7 @@ async function saveRound(userId, groupId, { gameType, bet, result, winAmount, pl
       player_hand: player || null,
       dealer_hand: dealer || null,
     };
-    if (!opts.channelId && groupId) row.group_id = groupId;
+    if (isGroupTarget(opts) && groupId) row.group_id = groupId;
     const { error } = await supabase.from("game_history").insert(row);
     if (error) console.error("[Game] saveRound:", error.message || error);
   } catch (err) {
@@ -1357,4 +1392,6 @@ module.exports = {
   MAX_BET,
   IOS_DENY_TEXT,
   denyCasinoOnIos,
+  currentEmitRoom,
+  runInChatTarget,
 };
