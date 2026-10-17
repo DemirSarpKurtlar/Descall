@@ -67,10 +67,17 @@ export function getIosAudioRouteSnapshot() {
   return state;
 }
 
-/** A DM call is ringing out / active: video → speaker, voice → receiver (unless a headset is connected). */
-export async function beginIosCallAudio({ video = false } = {}) {
+const owners = new Set();
+
+/**
+ * A call is ringing out or active. Output is the loudspeaker unless wired
+ * headphones or Bluetooth are connected. `owner` lets a DM and a group call
+ * share the route without one ending the other's session.
+ */
+export async function beginIosCallAudio({ video = false, owner = "dm" } = {}) {
   if (!IOS_NATIVE) return;
   ensureTap();
+  owners.add(owner);
   begun = true;
   try {
     await initIosCallKit();
@@ -80,8 +87,10 @@ export async function beginIosCallAudio({ video = false } = {}) {
   }
 }
 
-export async function endIosCallAudio() {
-  if (!IOS_NATIVE || !begun) return;
+export async function endIosCallAudio(owner = "dm") {
+  if (!IOS_NATIVE) return;
+  owners.delete(owner);
+  if (owners.size || !begun) return;
   begun = false;
   setState(EMPTY);
   try {

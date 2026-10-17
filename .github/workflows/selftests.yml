@@ -48,6 +48,7 @@ jobs:
           node src/styles/glass-desktop/messageHover.selftest.mjs
           node src/styles/glass-desktop/giphyCenter.selftest.mjs
           node src/styles/glass-desktop/callStage.selftest.mjs
+          node src/lib/iosCallAudio.selftest.mjs
           node src/styles/headerTitle.selftest.mjs
           node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
           node src/styles/glass-desktop/themeTint.selftest.mjs

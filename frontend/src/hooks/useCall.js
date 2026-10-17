@@ -1801,10 +1801,10 @@ export function useCall(socket, callOccupancyRef = null) {
     if (!IOS_NATIVE) return;
     if (mode === "outgoing" || mode === "active") {
       iosRouteActiveRef.current = true;
-      void beginIosCallAudio({ video: callType === "video" }).then(() => notifyCallAudioSession()).catch(() => {});
+      void beginIosCallAudio({ video: callType === "video", owner: "dm" }).then(() => notifyCallAudioSession()).catch(() => {});
     } else if (!mode && iosRouteActiveRef.current) {
       iosRouteActiveRef.current = false;
-      void endIosCallAudio();
+      void endIosCallAudio("dm");
     }
   }, [mode, callType]);
 
@@ -1812,7 +1812,7 @@ export function useCall(socket, callOccupancyRef = null) {
   const onCallAudioSessionActivated = useCallback(() => {
     notifyCallAudioSession();
     micGuardRef.current?.onAudioSessionActivated();
-    if (iosRouteActiveRef.current) void beginIosCallAudio({ video: callTypeRef.current === "video" });
+    if (iosRouteActiveRef.current) void beginIosCallAudio({ video: callTypeRef.current === "video", owner: "dm" });
   }, []);
 
   /** Re-acquire the microphone (native iOS recovery; no-op elsewhere). */

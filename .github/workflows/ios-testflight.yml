@@ -282,6 +282,19 @@ jobs:
               time.sleep(30)
           PY
 
+      - name: Assign build to internal group Descall Ekip
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          MODE: assign-internal
+          GROUP_NAME: Descall Ekip
+        run: |
+          set -euo pipefail
+          # Internal TestFlight only. Does not submit for beta review or App Store review.
+          python3 -m venv "$RUNNER_TEMP/ascvenv"
+          "$RUNNER_TEMP/ascvenv/bin/pip" install --quiet pyjwt cryptography requests
+          "$RUNNER_TEMP/ascvenv/bin/python" appstore/asc_beta_tester.py
+
       - name: Collect logs on failure
         if: failure()
         run: |

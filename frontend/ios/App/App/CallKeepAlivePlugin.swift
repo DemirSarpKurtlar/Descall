@@ -23,6 +23,16 @@ public class CallKeepAlivePlugin: CAPPlugin, CAPBridgedPlugin {
 
     private var sessionActive = false
 
+    /// Wired headphones, Bluetooth, car, AirPlay, USB — leave those alone.
+    private static func hasExternalAudio(_ session: AVAudioSession) -> Bool {
+        let externalOut: [AVAudioSession.Port] = [
+            .headphones, .bluetoothHFP, .bluetoothA2DP, .bluetoothLE, .carAudio, .airPlay, .usbAudio,
+        ]
+        if session.currentRoute.outputs.contains(where: { externalOut.contains($0.portType) }) { return true }
+        let externalIn: [AVAudioSession.Port] = [.headsetMic, .bluetoothHFP, .bluetoothLE, .usbAudio, .carAudio]
+        return session.availableInputs?.contains { externalIn.contains($0.portType) } ?? false
+    }
+
     @objc func start(_ call: CAPPluginCall) {
         // preserveCategory (DM calls): when WebKit's getUserMedia already put the
         // session in .playAndRecord, leave its category/mode alone — re-setting it
@@ -32,15 +42,19 @@ public class CallKeepAlivePlugin: CAPPlugin, CAPBridgedPlugin {
             let session = AVAudioSession.sharedInstance()
             do {
                 if !(preserveCategory && session.category == .playAndRecord) {
-                    // DM calls route receiver/speaker themselves (DescallAudioRouter);
-                    // .defaultToSpeaker would make "iPhone" (receiver) impossible to pick.
+                    // playAndRecord + voiceChat + loudspeaker. Re-setting the
+                    // category while WebKit is already capturing (preserveCategory)
+                    // tears the audio unit down, so that path only overrides the port.
                     try session.setCategory(
                         .playAndRecord,
                         mode: .voiceChat,
-                        options: preserveCategory ? [.allowBluetooth] : [.allowBluetooth, .defaultToSpeaker]
+                        options: [.allowBluetooth, .defaultToSpeaker]
                     )
                 }
                 try session.setActive(true)
+                if !Self.hasExternalAudio(session) {
+                    try session.overrideOutputAudioPort(.speaker)
+                }
                 self.sessionActive = true
                 call.resolve()
             } catch {
