@@ -671,26 +671,12 @@ extension DescallCallManager: CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        // CallKit activated the shared session at call priority. If WebKit was
-        // already capturing (answered while the app was open) that capture is
-        // interrupted and its track goes silent. If the app was killed, this
-        // fires before the web view exists: JS must recapture after getUserMedia
-        // (iosCallMic "callkit-before-capture"). Either way, re-apply the
-        // loudspeaker — WebKit reconfigures the shared session and would
-        // otherwise leave voice calls on the receiver. Do not setCategory
-        // while a capture is already in .playAndRecord (that silences the mic).
-        if audioSession.category != .playAndRecord {
-            let video = calls.values.contains { $0.video }
-            do {
-                try audioSession.setCategory(
-                    .playAndRecord,
-                    mode: video ? .videoChat : .voiceChat,
-                    options: [.allowBluetooth, .defaultToSpeaker]
-                )
-            } catch {
-                NSLog("[DescallCallKit] didActivate category failed: \(error.localizedDescription)")
-            }
-        }
+        // CallKit activated the shared session at call priority. Category was
+        // set in prepareAudioSessionIfIdle, before fulfill. Do not setCategory
+        // again here: WebKit may already be capturing, and changing it tears
+        // the audio unit down. The loudspeaker port is applied by the router
+        // without touching the category. JS recaptures the mic only after ICE
+        // is connected (iosCallMic), so the call does not stay on "Bağlanıyor…".
         let outputs = audioSession.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
         NSLog("[DescallCallKit] didActivate category=\(audioSession.category.rawValue) mode=\(audioSession.mode.rawValue) outputs=\(outputs)")
         callKitAudioActive = true
@@ -744,6 +730,9 @@ final class DescallAudioRouter: NSObject {
     private var speakerArmed = false
     /// In-call menu picked a route; don't snap that back to the loudspeaker.
     private var userPicked = false
+    /// One delayed speaker retry. Immediate retries while ICE is checking
+    /// fight WebKit and the call stays on "Bağlanıyor…".
+    private var followUp: DispatchWorkItem?
 
     private override init() {
         super.init()
@@ -844,6 +833,8 @@ final class DescallAudioRouter: NSObject {
         userPicked = false
         pending?.cancel()
         pending = nil
+        followUp?.cancel()
+        followUp = nil
         choice = .system
         selfChangeUntil = Date().addingTimeInterval(0.8)
         try? session.overrideOutputAudioPort(.none)
@@ -984,7 +975,12 @@ final class DescallAudioRouter: NSObject {
             if !self.active {
                 // Answered before JS began the route (killed / locked). Keep
                 // the loudspeaker; a headset that just connected wins.
+                // Don't stack overrides on our own route change.
                 if reason == .newDeviceAvailable || self.prefersExternalRoute() { return }
+                if ours {
+                    self.scheduleSpeakerFollowUp()
+                    return
+                }
                 if !self.currentOutputs().contains(.builtInSpeaker) {
                     self.forceBuiltInSpeaker()
                 }
@@ -1002,14 +998,17 @@ final class DescallAudioRouter: NSObject {
                 self.assertsLeft = Self.maxAssertsPerChoice
                 self.apply()
             default:
-                if !ours && self.prefersExternalRoute() {
+                if ours {
+                    // Re-applying here fights WebKit in a loop while ICE is
+                    // checking, and the call stays on "Bağlanıyor…".
+                    self.scheduleSpeakerFollowUp()
+                } else if self.prefersExternalRoute() {
                     self.choice = .system
                     self.assertsLeft = Self.maxAssertsPerChoice
                     self.apply()
                 } else if !self.matchesChoice() && self.assertsLeft > 0 {
-                    // WebKit reconfigured the session (capture start): re-assert.
-                    // A receiver reset is not adopted — calls stay on the loudspeaker
-                    // unless the in-call menu picked the earpiece (userPicked).
+                    // A later receiver reset (not our own override) is corrected
+                    // once. The in-call menu can still pick the earpiece.
                     self.assertsLeft -= 1
                     self.apply()
                 }
@@ -1018,6 +1017,27 @@ final class DescallAudioRouter: NSObject {
         }
         pending = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.settleDelay, execute: work)
+    }
+
+    /// One speaker retry after ICE has had a chance to finish. Not a loop.
+    private func scheduleSpeakerFollowUp() {
+        guard followUp == nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.followUp = nil
+            guard self.active || self.speakerArmed else { return }
+            guard !self.userPicked, !self.prefersExternalRoute(), !self.matchesChoice() else { return }
+            guard self.assertsLeft > 0 else { return }
+            self.assertsLeft -= 1
+            if self.active {
+                self.apply()
+                self.emitState()
+            } else {
+                self.forceBuiltInSpeaker()
+            }
+        }
+        followUp = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
     }
 
     // MARK: State for JS
