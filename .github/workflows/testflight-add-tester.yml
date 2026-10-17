@@ -8,8 +8,13 @@ on:
       email:
         description: "Tester email"
         required: true
+      mode:
+        description: "external = add to external group; invite-user = App Store Connect user invite (MARKETING); add-internal = add accepted user to internal group"
+        type: choice
+        options: [external, invite-user, add-internal]
+        default: external
       group:
-        description: "External beta group name (blank = the external group with most testers)"
+        description: "External beta group name (blank = external group with most testers; add-internal default Descall Ekip)"
         required: false
         default: ""
       assign_build:
@@ -38,6 +43,7 @@ jobs:
           TESTER_EMAIL: ${{ inputs.email }}
           GROUP_NAME: ${{ inputs.group }}
           ASSIGN_BUILD: ${{ inputs.assign_build }}
+          MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
           umask 077
