@@ -77,6 +77,64 @@ if MODE == "invite-user":
     print(f"RESULT invitation id={j['data']['id']} roles={a.get('roles')} expires={a.get('expirationDate')} allAppsVisible={a.get('allAppsVisible')}")
     sys.exit(0)
 
+if MODE in ("inspect", "inspect-fix"):
+    gname = GROUP_NAME or "Descall Ekip"
+    q = requests.utils.quote(EMAIL)
+    users = call("GET", f"/v1/users?filter[username]={q}&limit=5")["data"]
+    for u in users:
+        a = u["attributes"]
+        print(f"User: id={u['id']} roles={a.get('roles')} allAppsVisible={a.get('allAppsVisible')} provisioning={a.get('provisioningAllowed')}")
+    print(f"Pending invitations: {len(call('GET', f'/v1/userInvitations?filter[email]={q}&limit=5')['data'])}")
+    grp = [g for g in all_pages(f"/v1/apps/{APP_ID}/betaGroups?limit=200") if g["attributes"]["name"] == gname]
+    if not grp:
+        print(f"::error::group '{gname}' not found"); sys.exit(2)
+    G = grp[0]; GID = G["id"]
+    print(f"Group '{gname}' attrs: " + str({k: G['attributes'].get(k) for k in ('isInternalGroup', 'hasAccessToAllBuilds', 'feedbackEnabled', 'createdDate')}))
+    gb = call("GET", f"/v1/betaGroups/{GID}/builds?limit=200")
+    gbs = sorted(gb["data"], key=lambda b: b["attributes"]["uploadedDate"], reverse=True)
+    for b in gbs[:5]:
+        a = b["attributes"]
+        print(f"Group build {a['version']} state={a.get('processingState')} expired={a.get('expired')} uploaded={a.get('uploadedDate')} expires={a.get('expirationDate')}")
+    print(f"Group build count: {len(gbs)}; has 20261016.2036: {any(b['attributes']['version']=='20261016.2036' for b in gbs)}")
+    testers = call("GET", f"/v1/betaTesters?filter[email]={q}&limit=5&include=betaGroups,apps")
+    inc = testers.get("included", [])
+    for t in testers["data"]:
+        a = t["attributes"]
+        tg = [g["id"] for g in t["relationships"].get("betaGroups", {}).get("data") or []]
+        ta = [x["id"] for x in t["relationships"].get("apps", {}).get("data") or []]
+        print(f"Tester id={t['id']} state={a.get('state')} inviteType={a.get('inviteType')} appDevices={a.get('appDevices')} "
+              f"groups={[i['attributes'].get('name') for i in inc if i['type']=='betaGroups' and i['id'] in tg]} apps={ta}")
+    if not testers["data"]:
+        print("No betaTester record for this email")
+    tid = testers["data"][0]["id"] if testers["data"] else None
+    if tid:
+        try:
+            tb = all_pages(f"/v1/betaTesters/{tid}/relationships/builds?limit=200")
+            print(f"Tester individually-assigned builds: {len(tb)}")
+        except requests.HTTPError:
+            pass
+        in_group = tid in {x["id"] for x in all_pages(f"/v1/betaGroups/{GID}/betaTesters?limit=200")}
+        print(f"Tester in '{gname}' (group side): {in_group}")
+    if MODE == "inspect-fix":
+        if not tid:
+            j = call("POST", "/v1/betaTesters", json={"data": {"type": "betaTesters",
+                "attributes": {"email": EMAIL, "firstName": "cnrbsk11", "lastName": "Tester"},
+                "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": GID}]}}}})
+            print(f"FIX created tester {j['data']['id']} in group")
+        elif not in_group:
+            call("POST", f"/v1/betaGroups/{GID}/relationships/betaTesters", json={"data": [{"type": "betaTesters", "id": tid}]})
+            print("FIX added tester to group")
+        else:
+            st = testers["data"][0]["attributes"].get("state")
+            if st in (None, "INVITED", "NOT_INVITED"):
+                call("POST", "/v1/betaTesterInvitations", json={"data": {"type": "betaTesterInvitations",
+                    "relationships": {"betaTester": {"data": {"type": "betaTesters", "id": tid}},
+                                      "app": {"data": {"type": "apps", "id": APP_ID}}}}})
+                print(f"FIX resent TestFlight invitation (state was {st})")
+            else:
+                print(f"No fix needed (state={st})")
+    sys.exit(0)
+
 if MODE == "add-internal":
     users, invites = find_user_and_invites()
     gname = GROUP_NAME or "Descall Ekip"

@@ -11,7 +11,7 @@ on:
       mode:
         description: "external = add to external group; invite-user = App Store Connect user invite (MARKETING); add-internal = add accepted user to internal group"
         type: choice
-        options: [external, invite-user, add-internal]
+        options: [external, invite-user, add-internal, inspect, inspect-fix]
         default: external
       group:
         description: "External beta group name (blank = external group with most testers; add-internal default Descall Ekip)"
