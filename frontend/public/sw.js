@@ -7,14 +7,18 @@ self.addEventListener("push", (event) => {
   }
 
   const type = payload.type || "";
+  if (type === "call-ring-ended") {
+    event.waitUntil(handleRingEnded(payload));
+    return;
+  }
   const isCall = type === "call" || type === "group-call";
   const actions = isCall
     ? [
-        { action: "answer", title: type === "group-call" ? "Join" : "Answer" },
-        { action: "decline", title: "Decline" },
+        { action: "answer", title: type === "group-call" ? "Katıl" : "Yanıtla" },
+        { action: "decline", title: "Reddet" },
       ]
     : type === "dm" || type === "mention"
-      ? [{ action: "open", title: "Open" }]
+      ? [{ action: "open", title: "Aç" }]
       : [];
 
   event.waitUntil(self.registration.showNotification(payload.title || "Descall", {
@@ -36,9 +40,84 @@ self.addEventListener("push", (event) => {
       serverId: payload.serverId || null,
       channelId: payload.channelId || null,
       callType: payload.callType || null,
+      callUuid: payload.callUuid || null,
     },
   }));
 });
+
+/** Answered / declined elsewhere: the result card closes itself after this. */
+const RING_RESULT_VISIBLE_MS = 4000;
+
+/**
+ * The DM ring is over on the server (answered / declined on another device,
+ * caller cancelled, missed). Close every ringing card from that caller,
+ * tell open tabs to stop their ringtone + in-page card, and show a quiet
+ * replacement with the same tag (a push must always show a notification).
+ */
+async function handleRingEnded(payload) {
+  const fromId = payload.fromId || null;
+  const tag = payload.tag || (fromId ? `call-${fromId}` : "incoming-call");
+  const outcome = String(payload.outcome || "cancelled");
+  try {
+    const shown = await self.registration.getNotifications();
+    for (const n of shown) {
+      const d = n.data || {};
+      const sameCaller = d.type === "call" && (!fromId || !d.fromId || d.fromId === fromId);
+      if (n.tag === tag || sameCaller) {
+        try { n.close(); } catch { /* ignore */ }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  let focusedClient = false;
+  try {
+    const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+    focusedClient = windows.some((c) => c.focused);
+    for (const client of windows) {
+      client.postMessage({
+        type: "descall:call-ring-ended",
+        fromUserId: fromId,
+        callUuid: payload.callUuid || null,
+        reason: outcome,
+      });
+    }
+  } catch {
+    /* ignore */
+  }
+  const missed = outcome === "missed" || outcome === "cancelled";
+  await self.registration.showNotification(payload.title || "Descall", {
+    body: payload.body || "",
+    icon: "/favicon-192.png?v=concept2",
+    badge: "/favicon-32.png?v=concept2",
+    tag,
+    renotify: false,
+    silent: true,
+    requireInteraction: false,
+    data: {
+      deepLink: payload.deepLink || "/",
+      type: missed ? "missed-call" : "call-ring-ended",
+      action: "open",
+      fromId,
+      conversationId: fromId,
+      outcome,
+    },
+  });
+  if (!missed) {
+    // A focused Descall tab is (almost always) the device that answered:
+    // "answered on another device" would be wrong there, so the replacement
+    // only satisfies the show-a-notification rule and is closed at once.
+    if (!focusedClient) await new Promise((resolve) => setTimeout(resolve, RING_RESULT_VISIBLE_MS));
+    try {
+      const again = await self.registration.getNotifications({ tag });
+      for (const n of again) {
+        if ((n.data || {}).type === "call-ring-ended") n.close();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 // Page asks us to drop an incoming-call push once the ring is over
 // (accepted, declined, cancelled, ended, missed, answered on another device).

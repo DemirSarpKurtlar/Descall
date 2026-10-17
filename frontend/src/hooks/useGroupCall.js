@@ -4,6 +4,7 @@ import notificationService from "../lib/notificationService";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
 import { getUser } from "../lib/storage";
 import { subscribeNetworkChange } from "../lib/networkChange";
+import { createCallRecovery } from "../lib/callConnectionMachine";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   optimizeScreenShareSender,
@@ -220,13 +221,14 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     window.addEventListener("pageshow", resumeAfterBackground);
     window.addEventListener("focus", resumeAfterBackground);
     const stopNetwork = subscribeNetworkChange(() => {
+      // Wi-Fi ↔ cellular: every peer's candidate pair is gone; restart now
+      // through each peer's recovery machine (offer + backoff + socket wait).
       for (const peerData of pcMapRef.current.values()) {
         const pc = peerData?.pc;
         if (!pc || pc.connectionState === "closed") continue;
-        try {
-          pc.restartIce();
-        } catch {
-          /* ignore */
+        if (peerData.recovery) peerData.recovery.networkChanged();
+        else {
+          try { pc.restartIce(); } catch { /* ignore */ }
         }
       }
     });
@@ -367,6 +369,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       
       // Close all peer connections
       pcMapRef.current.forEach(peerData => {
+        peerData.recovery?.dispose();
         safeClosePeer(peerData.pc);
       });
       pcMapRef.current.clear();
@@ -445,7 +448,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     }
     setDuration(0);
 
-    pcMapRef.current.forEach((peerData, userId) => {
+    pcMapRef.current.forEach((peerData) => {
+      peerData.recovery?.dispose();
       safeClosePeer(peerData.pc);
     });
     pcMapRef.current.clear();
@@ -772,83 +776,89 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       }
     };
 
-    // Hard-remove a peer only after it's been unrecoverable for a while —
-    // a transient network blip (WiFi/cell handoff, brief packet loss, NAT
-    // rebind) commonly recovers within a few seconds and previously caused
-    // that person to suddenly vanish from the call ("bir anda atıyor") with
-    // no attempt to reconnect first.
-    const clearPeerCleanupTimer = () => {
-      if (peerData.cleanupTimer) {
-        clearTimeout(peerData.cleanupTimer);
-        peerData.cleanupTimer = null;
-      }
+    // Link recovery per peer (lib/callConnectionMachine.js). A peer with a
+    // broken link keeps its tile — marked "reconnecting" (dim + spinner) —
+    // while ICE restarts with backoff. The tile is removed only when the
+    // server says the person left (group:call:left) or after the give-up
+    // window, instead of the old 6 s / 12 s local removal that made people
+    // vanish on a short Wi-Fi ↔ cellular handoff ("bir anda atıyor").
+    const setPeerLinkState = (state) => {
+      setParticipants((prev) => {
+        let changed = false;
+        const next = prev.map((p) => {
+          if (p.id !== userId || p.connectionState === state) return p;
+          changed = true;
+          return { ...p, connectionState: state };
+        });
+        return changed ? next : prev;
+      });
     };
-    const schedulePeerCleanup = (delayMs) => {
-      clearPeerCleanupTimer();
-      peerData.cleanupTimer = setTimeout(() => {
+    const removePeerLocally = () => {
+      const current = pcMapRef.current.get(userId);
+      if (!current || current.pc !== pc) return; // peer already replaced/removed
+      current.recovery?.dispose();
+      pcMapRef.current.delete(userId);
+      remoteStreamsRef.current.delete(userId);
+      const audioEl = remoteAudioRefs.current.get(userId);
+      if (audioEl) {
+        try { audioEl.pause(); audioEl.srcObject = null; audioEl.remove(); } catch { /* ignore */ }
+        remoteAudioRefs.current.delete(userId);
+      }
+      try { pc.close(); } catch { /* ignore */ }
+      setParticipants((prev) => prev.filter((p) => p.id !== userId));
+    };
+    peerData?.recovery?.dispose();
+    const recovery = createCallRecovery({
+      polite: isPolitePeer(myIdRef.current, userId),
+      restart: () => {
         const current = pcMapRef.current.get(userId);
-        if (!current || current.pc !== pc) return; // peer already replaced/removed
-        const stillBad = ["failed", "disconnected", "closed"].includes(pc.connectionState);
-        if (!stillBad) return;
-        pcMapRef.current.delete(userId);
-        remoteStreamsRef.current.delete(userId);
-        const audioEl = remoteAudioRefs.current.get(userId);
-        if (audioEl) {
-          try { audioEl.pause(); audioEl.srcObject = null; audioEl.remove(); } catch { /* ignore */ }
-          remoteAudioRefs.current.delete(userId);
+        if (!current || current.pc !== pc || pc.connectionState === "closed") return;
+        renegotiateWithPeerRef.current?.(userId, current, { iceRestart: true })?.catch?.(() => {});
+      },
+      onStatus: (status) => {
+        if (status === "reconnecting" || status === "lost") setPeerLinkState("reconnecting");
+        else if (status === "connected") setPeerLinkState("connected");
+        if (status === "lost") audioManager.play("disconnect");
+      },
+      onLost: () => removePeerLocally(),
+    });
+    recovery.socketChanged(Boolean(socketRef.current?.connected));
+    if (peerData) peerData.recovery = recovery;
+
+    const onPcState = () => {
+      if (pc.connectionState === "closed") {
+        recovery.dispose();
+        const current = pcMapRef.current.get(userId);
+        if (current && current.pc === pc) {
+          pcMapRef.current.delete(userId);
+          remoteStreamsRef.current.delete(userId);
+          setParticipants((prev) => prev.filter((p) => p.id !== userId));
         }
-        try { pc.close(); } catch { /* ignore */ }
-        setParticipants((prev) => prev.filter((p) => p.id !== userId));
-      }, delayMs);
-    };
-
-    // One ICE-restart attempt per failure episode, resets once the peer
-    // reconnects so a later, separate drop can also be recovered from.
-    const attemptIceRestart = () => {
-      if (peerData.iceRestartAttempted) return;
-      peerData.iceRestartAttempted = true;
-      renegotiateWithPeerRef.current?.(userId, peerData, { iceRestart: true })?.catch?.(() => {});
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      const ice = pc.iceConnectionState;
-      if (ice === "connected" || ice === "completed") {
-        peerData.iceRestartAttempted = false;
-        clearPeerCleanupTimer();
-      } else if (ice === "disconnected") {
-        // Give the browser a few seconds to self-heal before intervening —
-        // most brief drops resolve on their own without a full restart.
-        schedulePeerCleanup(6000);
-        setTimeout(() => {
-          if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
-            attemptIceRestart();
-          }
-        }, 3000);
-      } else if (ice === "failed") {
-        attemptIceRestart();
-        // Restart needs a moment to succeed before we give up on this peer.
-        schedulePeerCleanup(12000);
+        return;
       }
+      recovery.update({ connectionState: pc.connectionState, iceConnectionState: pc.iceConnectionState });
     };
-
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "connected") {
-        peerData.iceRestartAttempted = false;
-        clearPeerCleanupTimer();
-      } else if (pc.connectionState === "disconnected") {
-        // Handled by oniceconnectionstatechange, which fires for the same
-        // underlying condition and already schedules a bounded cleanup.
-      } else if (pc.connectionState === "failed") {
-        audioManager.play("disconnect");
-        schedulePeerCleanup(12000);
-      } else if (pc.connectionState === "closed") {
-        clearPeerCleanupTimer();
-        pcMapRef.current.delete(userId);
-        remoteStreamsRef.current.delete(userId);
-        setParticipants((prev) => prev.filter((p) => p.id !== userId));
-      }
-    };
+    pc.oniceconnectionstatechange = onPcState;
+    pc.onconnectionstatechange = onPcState;
   }, []);
+
+  // Signaling up/down and network changes drive every peer's recovery.
+  useEffect(() => {
+    if (!isInCall || !socket) return undefined;
+    const each = (fn) => {
+      for (const peerData of pcMapRef.current.values()) {
+        try { fn(peerData.recovery); } catch { /* ignore */ }
+      }
+    };
+    const onUp = () => each((r) => r?.socketChanged(true));
+    const onDown = () => each((r) => r?.socketChanged(false));
+    socket.on("connect", onUp);
+    socket.on("disconnect", onDown);
+    return () => {
+      socket.off("connect", onUp);
+      socket.off("disconnect", onDown);
+    };
+  }, [isInCall, socket]);
 
   const flushIce = async (pc, userId) => {
     const peerData = pcMapRef.current.get(userId);
@@ -1950,6 +1960,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       audioManager.play("userLeave");
 
       const peerData = pcMapRef.current.get(userId);
+      peerData?.recovery?.dispose();
       safeClosePeer(peerData?.pc);
       pcMapRef.current.delete(userId);
       pendingIceByUserRef.current.delete(userId);
@@ -2034,6 +2045,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     const onDeclined = ({ groupId, fromUserId, fromUser }) => {
       if (fromUserId) audioManager.play("callReject");
       const peerData = pcMapRef.current.get(fromUserId);
+      peerData?.recovery?.dispose();
       safeClosePeer(peerData?.pc);
       pcMapRef.current.delete(fromUserId);
       remoteStreamsRef.current.delete(fromUserId);

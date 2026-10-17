@@ -64,3 +64,15 @@ jobs:
           node backend/lib/messageRequestStore.selftest.cjs
           node backend/socket/messageRequests.selftest.cjs
           node backend/socket/groupCallMembership.selftest.cjs
+          node backend/lib/callRingFanout.selftest.cjs
+          node backend/lib/turnCredentials.selftest.cjs
+          node src/lib/callConnectionMachine.selftest.mjs
+          node src/lib/callTileState.selftest.mjs
+          node src/lib/speakingDetection.selftest.mjs
+          node src/lib/webCallRingSync.selftest.mjs
+          node src/lib/iosCallKitEndedElsewhere.selftest.mjs
+          node electron/notificationCallCard.selftest.mjs
+          node src/lib/voiceActivity.selftest.mjs
+          node src/lib/voiceProfile.selftest.mjs
+          node src/components/voice/speakingIndicator.selftest.mjs
+          node src/lib/callGridReturn.selftest.mjs

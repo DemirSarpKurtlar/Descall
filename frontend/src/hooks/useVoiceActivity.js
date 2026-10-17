@@ -18,6 +18,7 @@ export default function useVoiceActivity(
     attackMs = 90,
     releaseMs = 220,
     observeEl = null,
+    levelProbe = null,
   } = {}
 ) {
   const [speaking, setSpeaking] = useState(false);
@@ -26,6 +27,9 @@ export default function useVoiceActivity(
   const speakingRef = useRef(false);
   const levelRef = useRef(0);
   const visibleRef = useRef(true);
+  // Latest probe without re-subscribing every render.
+  const probeRef = useRef(levelProbe);
+  probeRef.current = levelProbe;
 
   useEffect(() => {
     const sync = () => setProfileThreshold(speakingThreshold());
@@ -69,6 +73,7 @@ export default function useVoiceActivity(
     });
     const unsubscribe = subscribeVoiceActivity(stream, {
       hidden: () => !visibleRef.current,
+      levelProbe: () => (typeof probeRef.current === "function" ? probeRef.current() : null),
       onRms: (rms, now) => {
         const nextSpeaking = gate.push(rms, now);
         const target = nextSpeaking ? Math.min(1, rms * 4) : 0;

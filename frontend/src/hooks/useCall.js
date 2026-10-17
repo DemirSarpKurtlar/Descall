@@ -77,6 +77,16 @@ import { reportDiagnostic } from "../lib/sentry";
 import { createCallSetupTimeline } from "../lib/callSetupTimeline";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { notifyCallAudioSession } from "../lib/voiceActivity";
+import { createCallRecovery } from "../lib/callConnectionMachine";
+import {
+  INCOMING_RING_TIMEOUT_MS,
+  createRingChannel,
+  ringEventMatches,
+} from "../lib/callRingSync";
+import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLevel";
+
+/** Hang-up → overlay gone. The UI plays the leave transition inside this window. */
+export const CALL_ENDING_MS = 1100;
 
 function callPlatformTag() {
   if (IOS_NATIVE) return "ios-app";
@@ -124,6 +134,9 @@ export function useCall(socket, callOccupancyRef = null) {
   const [callUuid, setCallUuid] = useState(null);
   // Caller side: the callee answered on a locked iPhone and is unlocking.
   const [calleeAnswering, setCalleeAnswering] = useState(false);
+  // Hang-up transition: { reason, at } while the overlay plays the leave
+  // animation (media is already stopped), null otherwise.
+  const [ending, setEnding] = useState(null);
   // "incoming" | "outgoing", native iOS: only incoming calls use CallKit audio.
   const callDirectionRef = useRef(null);
 
@@ -259,6 +272,14 @@ export function useCall(socket, callOccupancyRef = null) {
   const iceRestartAttemptedRef = useRef(false);
   const iceRecoveryTimerRef = useRef(null);
   const negotiateRef = useRef(null);
+  // Link recovery (lib/callConnectionMachine.js) for the current pc.
+  const recoveryRef = useRef(null);
+  // An ICE restart that could not be offered yet (socket down / not stable).
+  const iceRestartQueuedRef = useRef(false);
+  // Server-reported presence of the peer's sockets during a connected call.
+  const peerOnlineRef = useRef(true);
+  const endCallRef = useRef(null);
+  const localLevelProbeRef = useRef(null);
   // Tap → audio timeline, logged once per call (lib/callSetupTimeline.js).
   const setupTimelineRef = useRef(null);
   if (!setupTimelineRef.current) {
@@ -346,6 +367,13 @@ export function useCall(socket, callOccupancyRef = null) {
   const cleanup = useCallback(() => {
     setupTimelineRef.current?.end();
     micGuardRef.current?.reset();
+    recoveryRef.current?.dispose();
+    recoveryRef.current = null;
+    iceRestartQueuedRef.current = false;
+    peerOnlineRef.current = true;
+    localLevelProbeRef.current?.stop();
+    localLevelProbeRef.current = null;
+    setEnding(null);
     callDirectionRef.current = null;
     setCalleeAnswering(false);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -424,26 +452,51 @@ export function useCall(socket, callOccupancyRef = null) {
     audioManager.stop("outgoingCall");
   }, []);
 
-  const gracefulEnd = useCallback(() => {
+  /**
+   * End a connected call with the leave transition: media stops NOW (pc
+   * closed, mic released, remote audio muted) but the overlay stays for
+   * CALL_ENDING_MS so the leaver's tile can fade/scale out, the remaining
+   * tile springs into place and "Arama sona erdi" fades in — instead of the
+   * old 320 ms cut that left the leaver's rectangle alone and then vanished.
+   */
+  const gracefulEnd = useCallback((reason = "ended") => {
     if (modeRef.current === "active") {
-      setPeerConnectionState("disconnected");
-      setRemoteMediaReady(false);
-      setPeer(null);
-      if (cleanupTimerRef.current) clearTimeout(cleanupTimerRef.current);
+      if (cleanupTimerRef.current) return; // already ending
+      recoveryRef.current?.dispose();
+      recoveryRef.current = null;
+      if (pcRef.current) {
+        safeClosePeer(pcRef.current);
+        pcRef.current = null;
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      disposeNoiseSuppressionSession({ stopRaw: true });
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      const audio = remoteAudioRef.current;
+      if (audio) {
+        try { audio.muted = true; audio.srcObject = null; } catch { /* ignore */ }
+      }
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+      setEnding({ reason: typeof reason === "string" ? reason : "ended", at: Date.now() });
+      setPeerConnectionState("ended");
       cleanupTimerRef.current = setTimeout(() => {
         cleanupTimerRef.current = null;
         cleanup();
-      }, 320);
+      }, CALL_ENDING_MS);
       return;
     }
     cleanup();
   }, [cleanup]);
 
   useEffect(() => {
-    if (mode !== "active") return;
+    if (mode !== "active" || ending) return;
     timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [mode]);
+  }, [mode, ending]);
 
   // Handle call sounds based on mode
   useEffect(() => {
@@ -596,92 +649,92 @@ export function useCall(socket, callOccupancyRef = null) {
       }
     };
 
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      if (state === "connected") {
+    // One recovery machine per pc (lib/callConnectionMachine.js): a single
+    // link state from both pc states, debounced UI status, ICE restarts with
+    // backoff (never a teardown), restart held until the socket is back.
+    recoveryRef.current?.dispose();
+    const recovery = createCallRecovery({
+      polite: isPolitePeer(getUser()?.id || null, peerRef.current?.id || null),
+      restart: () => {
+        if (pcRef.current !== pc || pc.connectionState === "closed") return;
+        iceRestartQueuedRef.current = true;
+        if (negotiateRef.current) void negotiateRef.current({ iceRestart: true });
+        else {
+          try { pc.restartIce(); } catch { /* next backoff step */ }
+        }
+      },
+      onStatus: (status) => {
+        if (pcRef.current !== pc) return;
+        if (status === "connected") {
+          setPeerConnectionState("connected");
+          setConnectionQuality("good");
+        } else if (status === "reconnecting") {
+          setPeerConnectionState("reconnecting");
+          setConnectionQuality("poor");
+        } else if (status === "connecting") {
+          setPeerConnectionState("connecting");
+          setConnectionQuality("connecting");
+        } else if (status === "lost") {
+          setPeerConnectionState("disconnected");
+          setConnectionQuality("failed");
+          audioManager.play("disconnect");
+        }
+      },
+      onLost: () => {
+        if (pcRef.current !== pc || modeRef.current !== "active") return;
+        toastRef.current?.(tRuntime("Connection lost. The call has ended."), "error");
+        endCallRef.current?.(undefined, "lost");
+      },
+    });
+    recovery.setPeerOnline(peerOnlineRef.current);
+    recovery.socketChanged(Boolean(socketRef.current?.connected));
+    recoveryRef.current = recovery;
+
+    const onPcState = () => {
+      if (pcRef.current !== pc && pcRef.current) return;
+      const conn = pc.connectionState;
+      const ice = pc.iceConnectionState;
+      if (ice === "connected" || ice === "completed") setupTimelineRef.current?.mark("ice");
+      if (conn === "connected" && modeRef.current !== "active") {
         hapticCallConnected();
         setMode("active");
         modeRef.current = "active";
-        setConnectionQuality("good");
-        setPeerConnectionState("connected");
+      }
+      if (conn === "connected" || ice === "connected" || ice === "completed") {
         iceRestartAttemptedRef.current = false;
-        if (iceRecoveryTimerRef.current) {
-          clearTimeout(iceRecoveryTimerRef.current);
-          iceRecoveryTimerRef.current = null;
-        }
-      } else if (state === "connecting") {
-        setPeerConnectionState("connecting");
-        setConnectionQuality("connecting");
-      } else if (state === "disconnected") {
-        setPeerConnectionState("reconnecting");
-        setConnectionQuality("poor");
-      } else if (state === "failed") {
-        setPeerConnectionState("disconnected");
-        setConnectionQuality("failed");
-        audioManager.play("disconnect");
-      } else if (state === "closed") {
-        setPeerConnectionState("disconnected");
+        iceRestartQueuedRef.current = false;
       }
+      recovery.update({ connectionState: conn, iceConnectionState: ice });
     };
-
-    const attemptIceRecovery = () => {
-      if (modeRef.current !== "active") return;
-      if (iceRestartAttemptedRef.current) return;
-      iceRestartAttemptedRef.current = true;
-      setPeerConnectionState("reconnecting");
-      setConnectionQuality("poor");
-      try {
-        if (negotiateRef.current) {
-          void negotiateRef.current({ iceRestart: true });
-        } else {
-          pc.restartIce();
-        }
-      } catch {
-        /* ignore, UI already shows reconnecting */
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      const ice = pc.iceConnectionState;
-      if (ice === "connected" || ice === "completed") {
-        setupTimelineRef.current?.mark("ice");
-        setConnectionQuality("good");
-        setPeerConnectionState("connected");
-        iceRestartAttemptedRef.current = false;
-        if (iceRecoveryTimerRef.current) {
-          clearTimeout(iceRecoveryTimerRef.current);
-          iceRecoveryTimerRef.current = null;
-        }
-      } else if (ice === "checking") {
-        setPeerConnectionState("connecting");
-        setConnectionQuality("connecting");
-      } else if (ice === "disconnected") {
-        // Brief drops often self-heal; if still broken after a short wait,
-        // renegotiate with iceRestart (group-call parity). Do NOT hang up.
-        setPeerConnectionState("reconnecting");
-        setConnectionQuality("poor");
-        if (iceRecoveryTimerRef.current) clearTimeout(iceRecoveryTimerRef.current);
-        iceRecoveryTimerRef.current = setTimeout(() => {
-          iceRecoveryTimerRef.current = null;
-          if (!pcRef.current || pcRef.current !== pc) return;
-          const still = pc.iceConnectionState;
-          if (still === "disconnected" || still === "failed") {
-            attemptIceRecovery();
-          }
-        }, 2500);
-      } else if (ice === "failed") {
-        attemptIceRecovery();
-        setPeerConnectionState("reconnecting");
-        setConnectionQuality("poor");
-      }
-    };
+    pc.onconnectionstatechange = onPcState;
+    pc.oniceconnectionstatechange = onPcState;
 
     // A single serialized offer path for camera/screen changes. This mirrors
     // group-call peer behavior and avoids a second, delayed screen offer
     // racing the browser's negotiationneeded event.
     let negotiateFailures = 0;
+    let offerWatchdog = null;
+    let staleOffer = false;
     const negotiate = async (opts = {}) => {
       const sock = socketRef.current;
+      if (opts.iceRestart) iceRestartQueuedRef.current = true;
+      // An offer whose answer never came back (lost while the socket was
+      // down) would hold signaling in have-local-offer forever and block
+      // every later restart: roll it back before trying again.
+      if (
+        (iceRestartQueuedRef.current || staleOffer) &&
+        !makingOfferRef.current &&
+        pc.signalingState === "have-local-offer" &&
+        modeRef.current === "active" &&
+        sock?.connected
+      ) {
+        try {
+          await pc.setLocalDescription({ type: "rollback" });
+        } catch {
+          /* not rollback-able; the browser will reject the next offer too */
+        }
+        staleOffer = false;
+      }
       // Early returns must not touch makingOfferRef. A nested call used to
       // clear that lock from `finally` and send a second camera offer that
       // collided, so the remote peer never attached the video.
@@ -695,8 +748,9 @@ export function useCall(socket, callOccupancyRef = null) {
       }
       negotiationQueuedRef.current = false;
       makingOfferRef.current = true;
+      const withIceRestart = Boolean(opts.iceRestart || iceRestartQueuedRef.current);
       try {
-        const offer = await pc.createOffer(opts.iceRestart ? { iceRestart: true } : undefined);
+        const offer = await pc.createOffer(withIceRestart ? { iceRestart: true } : undefined);
         if (pc.signalingState !== "stable") {
           negotiationQueuedRef.current = true;
           return;
@@ -718,6 +772,18 @@ export function useCall(socket, callOccupancyRef = null) {
           renegotiate: true,
           ...(screen ? { screen } : {}),
         });
+        if (withIceRestart) iceRestartQueuedRef.current = false;
+        if (offerWatchdog) clearTimeout(offerWatchdog);
+        offerWatchdog = setTimeout(() => {
+          offerWatchdog = null;
+          if (pcRef.current !== pc || pc.signalingState !== "have-local-offer") return;
+          // No answer in time (lost on a dead socket): roll it back and offer
+          // again — with an ICE restart if the link is not healthy.
+          staleOffer = true;
+          negotiationQueuedRef.current = true;
+          const restart = withIceRestart || pc.connectionState !== "connected";
+          void negotiate(restart ? { iceRestart: true } : {});
+        }, 8000);
       } catch (err) {
         negotiateFailures += 1;
         negotiationQueuedRef.current = negotiateFailures < 3;
@@ -799,16 +865,8 @@ export function useCall(socket, callOccupancyRef = null) {
         conn === "disconnected" ||
         conn === "failed";
       if (!unhealthy) return;
-      iceRestartAttemptedRef.current = false;
-      setPeerConnectionState("reconnecting");
-      setConnectionQuality("poor");
-      try {
-        if (negotiateRef.current) void negotiateRef.current({ iceRestart: true });
-        else pc.restartIce();
-        iceRestartAttemptedRef.current = true;
-      } catch {
-        /* ignore */
-      }
+      // Back from the background with a broken link: restart now, not after a backoff step.
+      recoveryRef.current?.networkChanged();
     };
 
     const onVisibility = () => {
@@ -827,15 +885,8 @@ export function useCall(socket, callOccupancyRef = null) {
       if (modeRef.current !== "active") return;
       const pc = pcRef.current;
       if (!pc || pc.connectionState === "closed") return;
-      iceRestartAttemptedRef.current = true;
-      setPeerConnectionState("reconnecting");
-      setConnectionQuality("poor");
-      try {
-        if (negotiateRef.current) void negotiateRef.current({ iceRestart: true });
-        else pc.restartIce();
-      } catch {
-        /* ignore */
-      }
+      // Wi-Fi ↔ cellular: the selected candidate pair is gone; restart now.
+      recoveryRef.current?.networkChanged();
     });
     return () => {
       stopNetwork();
@@ -844,6 +895,102 @@ export function useCall(socket, callOccupancyRef = null) {
       window.removeEventListener("focus", resumeAfterBackground);
     };
   }, [mode, toast]);
+
+  /**
+   * Stop the incoming ring on THIS device only (ringtone, desktop / Electron
+   * / service-worker notification, in-page card). Returns the peer whose
+   * ring stopped, or null when the event was for another ring.
+   */
+  const stopRingLocally = useCallback((event = {}) => {
+    const current = {
+      mode: modeRef.current,
+      peerId: peerRef.current?.id,
+      callUuid: callUuidRef.current,
+    };
+    if (!ringEventMatches(current, event)) return null;
+    const stoppedPeer = peerRef.current;
+    audioManager.stop("incomingCall");
+    notificationService.dismissIncomingCall({ kind: "dm", fromId: stoppedPeer?.id || event.fromUserId || null });
+    cleanup();
+    return stoppedPeer || { id: event.fromUserId };
+  }, [cleanup]);
+  const stopRingLocallyRef = useRef(stopRingLocally);
+  stopRingLocallyRef.current = stopRingLocally;
+  const callUuidRef = useRef(null);
+  useEffect(() => { callUuidRef.current = callUuid; }, [callUuid]);
+
+  // Other tabs of this browser profile: accept / decline here stops their
+  // ring instantly, even when their socket is throttled (BroadcastChannel).
+  const ringChannelRef = useRef(null);
+  useEffect(() => {
+    const channel = createRingChannel((msg) => {
+      if (msg.type !== "handled") return;
+      stopRingLocallyRef.current?.({ fromUserId: msg.fromUserId, callUuid: msg.callUuid });
+    });
+    ringChannelRef.current = channel;
+    // The service worker got a call-ring-ended Web Push (this tab's socket
+    // may be asleep in the background): stop ringing here too.
+    const sw = typeof navigator !== "undefined" ? navigator.serviceWorker : null;
+    const onSwMessage = (event) => {
+      const data = event?.data;
+      if (!data || data.type !== "descall:call-ring-ended") return;
+      stopRingLocallyRef.current?.({ fromUserId: data.fromUserId, callUuid: data.callUuid });
+    };
+    try { sw?.addEventListener?.("message", onSwMessage); } catch { /* ignore */ }
+    return () => {
+      channel.close();
+      if (ringChannelRef.current === channel) ringChannelRef.current = null;
+      try { sw?.removeEventListener?.("message", onSwMessage); } catch { /* ignore */ }
+    };
+  }, []);
+
+  // While ringing: ask the server whether the ring is still on after every
+  // reconnect (the ring-ended event may have been missed while this socket
+  // was asleep), and never ring longer than INCOMING_RING_TIMEOUT_MS.
+  useEffect(() => {
+    if (mode !== "incoming" || !socket) return undefined;
+    const ask = () => {
+      const fromUserId = peerRef.current?.id;
+      if (!fromUserId || !socket.connected) return;
+      socket.emit("call:ring-status", { fromUserId, callUuid: callUuidRef.current || null });
+    };
+    socket.on("connect", ask);
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") ask();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+    const timer = setTimeout(() => {
+      if (modeRef.current !== "incoming") return;
+      const missedFrom = peerRef.current;
+      const ringType = incomingCallTypeRef.current || "voice";
+      stopRingLocallyRef.current?.({ fromUserId: missedFrom?.id, callUuid: callUuidRef.current });
+      if (missedFrom?.username) {
+        void notificationService.missedCall({ from: missedFrom.username, fromId: missedFrom.id || null, type: ringType });
+      }
+    }, INCOMING_RING_TIMEOUT_MS);
+    return () => {
+      socket.off("connect", ask);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
+      clearTimeout(timer);
+    };
+  }, [mode, socket]);
+
+  // Signaling health for the link recovery machine while connected.
+  useEffect(() => {
+    if (mode !== "active" || !socket) return undefined;
+    const onUp = () => {
+      recoveryRef.current?.socketChanged(true);
+      if (negotiationQueuedRef.current || iceRestartQueuedRef.current) void negotiateRef.current?.();
+    };
+    const onDown = () => recoveryRef.current?.socketChanged(false);
+    socket.on("connect", onUp);
+    socket.on("disconnect", onDown);
+    recoveryRef.current?.socketChanged(Boolean(socket.connected));
+    return () => {
+      socket.off("connect", onUp);
+      socket.off("disconnect", onDown);
+    };
+  }, [mode, socket]);
 
   useEffect(() => {
     if (!socket) return;
@@ -934,9 +1081,10 @@ export function useCall(socket, callOccupancyRef = null) {
       incomingNotifFromIdRef.current = fromUser.id;
       if (!callKitOwnsIncomingRing()) {
         notificationService.incomingCall({
-          from: fromUser.username,
+          from: fromUser.displayName || fromUser.display_name || fromUser.username,
           fromId: fromUser.id,
           type: incomingType || "voice",
+          avatarUrl: fromUser.avatarUrl || fromUser.avatar_url || null,
         });
       }
     };
@@ -970,6 +1118,9 @@ export function useCall(socket, callOccupancyRef = null) {
 
     const onEnded = ({ fromUserId, reason } = {}) => {
       if (!fromUserId || peerRef.current?.id === fromUserId) {
+        if (reason === "no_answer" && modeRef.current === "outgoing") {
+          toastRef.current?.(tRuntime("No answer"), "info");
+        }
         if (reason === "callee_unavailable" && modeRef.current === "outgoing") {
           // Answered on a locked iPhone but never got to join (native timeout).
           toastRef.current?.(
@@ -982,7 +1133,7 @@ export function useCall(socket, callOccupancyRef = null) {
           else if (modeRef.current === "active") audioManager.play("userLeave");
         }
         suppressRemoteEndCueRef.current = false;
-        gracefulEnd();
+        gracefulEnd("remote");
       }
     };
 
@@ -1013,12 +1164,36 @@ export function useCall(socket, callOccupancyRef = null) {
 
     // Another tab/device of this user already answered or declined. Stop the
     // local ring only, that device already told the caller.
-    const onHandledElsewhere = ({ fromUserId } = {}) => {
-      if (modeRef.current !== "incoming") return;
-      const peerId = peerRef.current?.id;
-      if (fromUserId && peerId && fromUserId !== peerId) return;
-      audioManager.stop("incomingCall");
-      gracefulEnd();
+    const onHandledElsewhere = ({ fromUserId, callUuid: endedUuid } = {}) => {
+      stopRingLocallyRef.current?.({ fromUserId, callUuid: endedUuid });
+    };
+
+    // Server fan-out (lib/callRingFanout.js): the ring is over for every
+    // device of mine — answered / declined elsewhere, cancelled, missed.
+    const onRingEnded = ({ fromUserId, callUuid: endedUuid, reason } = {}) => {
+      const ringType = incomingCallTypeRef.current || "voice";
+      const stopped = stopRingLocallyRef.current?.({ fromUserId, callUuid: endedUuid });
+      if (stopped && reason === "answered_elsewhere") {
+        toastRef.current?.(tRuntime("The call was answered on another device."), "info");
+      } else if (stopped && reason === "declined_elsewhere") {
+        toastRef.current?.(tRuntime("The call was declined on another device."), "info");
+      }
+      if (stopped && reason === "missed") {
+        const from = stopped.username || stopped.displayName || "";
+        if (from) void notificationService.missedCall({ from, fromId: stopped.id || fromUserId || null, type: ringType });
+      }
+    };
+
+    // Answer to call:ring-status after this socket reconnected mid-ring.
+    const onRingStatus = ({ fromUserId, callUuid: askedUuid, state } = {}) => {
+      if (state === "ringing") return;
+      stopRingLocallyRef.current?.({ fromUserId, callUuid: askedUuid });
+    };
+
+    const onPeerPresence = ({ peerId, online } = {}) => {
+      if (!peerId || String(peerId) !== String(peerRef.current?.id || "")) return;
+      peerOnlineRef.current = Boolean(online);
+      recoveryRef.current?.setPeerOnline(Boolean(online));
     };
 
     const onProfileUpdated = ({ user } = {}) => {
@@ -1061,6 +1236,9 @@ export function useCall(socket, callOccupancyRef = null) {
     socket.on('call:cancelled', onCancelled);
     socket.on('call:answered-elsewhere', onHandledElsewhere);
     socket.on('call:declined-elsewhere', onHandledElsewhere);
+    socket.on('call:ring-ended', onRingEnded);
+    socket.on('call:ring-status:result', onRingStatus);
+    socket.on('call:peer-presence', onPeerPresence);
     socket.on('call:unreachable', onUnreachable);
     socket.on('call:callee-answering', onCalleeAnswering);
     socket.on('call:media-state', onMediaState);
@@ -1076,6 +1254,9 @@ export function useCall(socket, callOccupancyRef = null) {
       socket.off('call:cancelled', onCancelled);
       socket.off("call:answered-elsewhere", onHandledElsewhere);
       socket.off("call:declined-elsewhere", onHandledElsewhere);
+      socket.off('call:ring-ended', onRingEnded);
+      socket.off('call:ring-status:result', onRingStatus);
+      socket.off('call:peer-presence', onPeerPresence);
       socket.off('call:unreachable', onUnreachable);
       socket.off('call:callee-answering', onCalleeAnswering);
       socket.off('call:media-state', onMediaState);
@@ -1232,6 +1413,7 @@ export function useCall(socket, callOccupancyRef = null) {
         return;
       }
       socketRef.current.emit("call:answer", { toUserId: currentPeer.id, answer: pc.localDescription });
+      ringChannelRef.current?.post("handled", { fromUserId: currentPeer.id, callUuid: callUuidRef.current || null });
       timeline?.mark("answerSent");
       timeline?.watch(pc);
       hapticCallConnected();
@@ -1243,7 +1425,7 @@ export function useCall(socket, callOccupancyRef = null) {
     }
   }, [peer, cleanup, setupPeerConnection, toast, acquireCallMicStream]);
 
-  const endCall = useCallback((toUserId) => {
+  const endCall = useCallback((toUserId, reason = "local") => {
     const targetId = toUserId ?? peerRef.current?.id;
     const sock = socketRef.current;
     suppressRemoteEndCueRef.current = true;
@@ -1257,8 +1439,9 @@ export function useCall(socket, callOccupancyRef = null) {
         sock.emit('call:end', { toUserId: targetId });
       }
     }
-    gracefulEnd();
+    gracefulEnd(reason);
   }, [gracefulEnd]);
+  endCallRef.current = endCall;
 
   const declineIncoming = useCallback(() => {
     audioManager.play("callReject");
@@ -1266,6 +1449,8 @@ export function useCall(socket, callOccupancyRef = null) {
     if (targetId && socketRef.current?.connected) {
       socketRef.current.emit('call:decline', { toUserId: targetId });
     }
+    ringChannelRef.current?.post("handled", { fromUserId: targetId || null, callUuid: callUuidRef.current || null });
+    notificationService.dismissIncomingCall({ kind: "dm", fromId: targetId || null });
     cleanup();
   }, [peer, cleanup]);
 
@@ -1335,8 +1520,10 @@ export function useCall(socket, callOccupancyRef = null) {
       if (screen) {
         socketRef.current?.emit("screen:share-start", { toUserId: peerRef.current.id, screen });
       }
-      negotiationQueuedRef.current = true;
-      void negotiateRef.current?.();
+      // A blind renegotiation on every reconnect raced the peer's own one
+      // (both sides reconnect after a server restart → glare). Only offer when
+      // something is actually queued; the recovery machine handles ICE.
+      if (negotiationQueuedRef.current || iceRestartQueuedRef.current) void negotiateRef.current?.();
     };
     s.on("connect", onReconnect);
     return () => s.off("connect", onReconnect);
@@ -1883,12 +2070,36 @@ export function useCall(socket, callOccupancyRef = null) {
     };
   }, []);
 
+  // Speaking rings read RTP audio levels too (lib/rtpAudioLevel.js): they
+  // need no AudioContext, so they work while WebKit/Chromium keeps the
+  // context suspended or interrupted, and they follow replaced tracks.
+  const getRemoteAudioLevel = useCallback(() => readRemoteAudioLevel(pcRef.current, {
+    excludeTrackIds: collectScreenAudioTrackIds(inboundMediaRef.current, remoteScreenAnnouncementRef.current),
+  }), []);
+  useEffect(() => {
+    if (mode !== "active" || ending) return undefined;
+    const probe = createLocalLevelProbe({
+      getPc: () => pcRef.current,
+      excludeSender: () => screenAudioSenderRef.current,
+    });
+    localLevelProbeRef.current = probe;
+    probe.start();
+    return () => {
+      probe.stop();
+      if (localLevelProbeRef.current === probe) localLevelProbeRef.current = null;
+    };
+  }, [mode, ending]);
+  const getLocalAudioLevel = useCallback(() => localLevelProbeRef.current?.read() ?? null, []);
+
   return {
     remoteAudioRef,
     remoteVideoRef,
     localVideoRef,
     screenVideoRef,
     mode,
+    ending,
+    getRemoteAudioLevel,
+    getLocalAudioLevel,
     callAnchorAt,
     callType,
     callUuid,

@@ -239,3 +239,104 @@
     transform: translate(-50%, -50%) scale(1.12);
   }
 }
+
+/* ── Reconnecting tile (same element, calm overlay) ───────────────────────
+   The tile underneath stays mounted: video keeps its last frame, the avatar
+   keeps its ring position. Only a dim + soft blur and a small spinner. */
+.participant-tile.is-reconnecting > :not(.call-reconnect-overlay) {
+  filter: saturate(0.6) brightness(0.62) blur(2px);
+  transition: filter 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.participant-tile > :not(.call-reconnect-overlay) {
+  transition: filter 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.call-reconnect-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+  border-radius: inherit;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.call-reconnect-label {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(20, 22, 28, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+.call-reconnect-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  animation: callReconnectSpin 0.9s linear infinite;
+}
+@keyframes callReconnectSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── "Arama sona erdi" pill (hang-up transition) ───────────────────────── */
+.call-ended-pill {
+  position: absolute;
+  left: 50%;
+  bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+  translate: -50% 0;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: rgba(28, 30, 38, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.call-ended-pill-duration {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-reconnect-spinner { animation-duration: 2.4s; }
+  .participant-tile.is-reconnecting > :not(.call-reconnect-overlay) { filter: brightness(0.62); }
+}
+
+/* Join / leave re-flow: when a tile leaves, the remaining ones grow into the
+   space with a soft, critically-damped-looking curve (no framer projection
+   on grid cells — see .call-participant-grid > *). */
+.call-participant-grid > * {
+  transition:
+    flex-basis 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.call-tile-cell-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .call-participant-grid > * { transition: none; }
+}

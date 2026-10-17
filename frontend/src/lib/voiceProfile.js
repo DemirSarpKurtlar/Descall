@@ -104,10 +104,15 @@ export function clampSensitivity(value) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-/** Higher sensitivity opens the speaking gate on quieter speech. */
+/**
+ * Higher sensitivity opens the speaking gate on quieter speech.
+ * Default (45) ≈ 0.030 RMS: normal speech on a laptop / phone mic after AGC
+ * sits around 0.03–0.15, so the old 0.046 default missed quiet talkers and
+ * made the ring flicker on and off mid-sentence.
+ */
 export function speakingThreshold(sensitivity = readVoiceProfile().inputSensitivity) {
   const s = clampSensitivity(sensitivity);
-  return 0.072 - (s / 100) * 0.058;
+  return 0.045 - (s / 100) * 0.034;
 }
 
 export function audioBitrateForQuality(quality, { music = false } = {}) {

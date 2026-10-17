@@ -78,6 +78,10 @@ final class DescallCallManager: NSObject {
     private var ringTimers: [UUID: DispatchWorkItem] = [:]
     private var joinTimers: [UUID: DispatchWorkItem] = [:]
     private var queuedEvents: [[String: Any]] = []
+    /// Rings that already ended here (end push, timeout, user action): a late
+    /// ring push for one of them is reported-then-ended, never rung again.
+    private var recentlyEnded: [UUID: Date] = [:]
+    private static let recentlyEndedTTL: TimeInterval = 180
     private var jsReady = false
     private weak var sink: DescallCallEventSink?
     /// Between provider(_:didActivate:) and didDeactivate (diagnostics).
@@ -215,10 +219,93 @@ final class DescallCallManager: NSObject {
         return info
     }
 
+    private func noteEnded(_ uuid: UUID) {
+        let now = Date()
+        recentlyEnded[uuid] = now
+        recentlyEnded = recentlyEnded.filter { now.timeIntervalSince($0.value) < Self.recentlyEndedTTL }
+    }
+
+    private func endedRecently(_ uuid: UUID) -> Bool {
+        guard let at = recentlyEnded[uuid] else { return false }
+        return Date().timeIntervalSince(at) < Self.recentlyEndedTTL
+    }
+
+    static func endReason(_ raw: String) -> CXCallEndedReason {
+        switch raw {
+        case "answeredElsewhere": return .answeredElsewhere
+        case "declinedElsewhere": return .declinedElsewhere
+        case "unanswered": return .unanswered
+        case "failed": return .failed
+        default: return .remoteEnded
+        }
+    }
+
+    /// VoIP "call-end" push (backend lib/callRingFanout.js): the ring was
+    /// answered or declined on another device (e.g. Descall on Windows), the
+    /// caller hung up, or nobody answered. This is the only channel that
+    /// reaches a locked / suspended / killed iPhone, whose web layer and
+    /// socket are not running, so without it CallKit kept saying "arıyor".
+    ///
+    /// iOS requires a CallKit report for every VoIP push:
+    ///  - known ringing call → reportNewIncomingCall with the same UUID (CallKit
+    ///    answers callUUIDAlreadyExists, which counts) and then
+    ///    reportCall(endedAt:reason:) with .answeredElsewhere / .declinedElsewhere
+    ///    / .remoteEnded / .unanswered;
+    ///  - a call this phone answered itself → left alone (that answer is the
+    ///    reason the other devices stop);
+    ///  - unknown UUID (app relaunched after the ring) → report, then end at once.
+    fileprivate func handleCallEndPush(_ payload: [AnyHashable: Any], completion: @escaping () -> Void) {
+        let rawUuid = Self.string(payload["callUuid"])
+        let reason = Self.endReason(Self.string(payload["reason"]))
+        guard let provider = provider, let uuid = UUID(uuidString: rawUuid) else {
+            // Nothing to identify: still satisfy PushKit with a throwaway call.
+            reportAndEndPlaceholder(UUID(), payload: payload, reason: reason, completion: completion)
+            return
+        }
+        if let info = calls[uuid] {
+            provider.reportNewIncomingCall(with: uuid, update: makeUpdate(info)) { [weak self] _ in
+                DispatchQueue.main.async {
+                    defer { completion() }
+                    guard let self = self, let current = self.calls[uuid] else { return }
+                    if current.answered || current.outgoing { return }
+                    self.reportEnded(uuid, reason: reason)
+                    var data = current.dictionary
+                    data["reason"] = Self.string(payload["reason"])
+                    self.emit("endedElsewhere", data)
+                }
+            }
+            return
+        }
+        reportAndEndPlaceholder(uuid, payload: payload, reason: reason, completion: completion)
+    }
+
+    private func reportAndEndPlaceholder(_ uuid: UUID, payload: [AnyHashable: Any], reason: CXCallEndedReason,
+                                         completion: @escaping () -> Void) {
+        guard let provider = provider else {
+            completion()
+            return
+        }
+        noteEnded(uuid)
+        var info = Self.parse(payload)
+        info = CallInfo(uuid: uuid, callerId: info.callerId, callerName: info.callerName,
+                        video: false, conversationId: info.conversationId, outgoing: false)
+        provider.reportNewIncomingCall(with: uuid, update: makeUpdate(info)) { _ in
+            DispatchQueue.main.async {
+                provider.reportCall(with: uuid, endedAt: Date(), reason: reason)
+                completion()
+            }
+        }
+    }
+
     fileprivate func handleIncomingVoipPush(_ payload: [AnyHashable: Any], completion: @escaping () -> Void) {
         let info = Self.parse(payload)
         guard let provider = provider else {
             completion()
+            return
+        }
+        if calls[info.uuid] == nil && endedRecently(info.uuid) {
+            // The end push (or a local end) beat this ring: never ring a dead call.
+            reportAndEndPlaceholder(info.uuid, payload: payload, reason: .remoteEnded, completion: completion)
             return
         }
         let alreadyKnown = calls[info.uuid] != nil
@@ -278,6 +365,7 @@ final class DescallCallManager: NSObject {
             guard let self = self, let info = self.calls[uuid], !info.answered else { return }
             self.ringTimers.removeValue(forKey: uuid)
             self.calls.removeValue(forKey: uuid)
+            self.noteEnded(uuid)
             self.provider?.reportCall(with: uuid, endedAt: Date(), reason: .unanswered)
             self.emit("ringTimeout", info.dictionary)
         }
@@ -564,6 +652,7 @@ final class DescallCallManager: NSObject {
         cancelRingTimeout(uuid)
         finishAwaitingJoin(uuid)
         calls.removeValue(forKey: uuid)
+        noteEnded(uuid)
         provider?.reportCall(with: uuid, endedAt: Date(), reason: reason)
     }
 
@@ -595,6 +684,11 @@ extension DescallCallManager: PKPushRegistryDelegate {
                       completion: @escaping () -> Void) {
         guard type == .voIP else {
             completion()
+            return
+        }
+        let kind = Self.string(payload.dictionaryPayload["type"])
+        if kind == "call-end" {
+            handleCallEndPush(payload.dictionaryPayload, completion: completion)
             return
         }
         handleIncomingVoipPush(payload.dictionaryPayload, completion: completion)
@@ -645,6 +739,7 @@ extension DescallCallManager: CXProviderDelegate {
         cancelRingTimeout(uuid)
         finishAwaitingJoin(uuid)
         let info = calls.removeValue(forKey: uuid)
+        noteEnded(uuid)
         let fromJs = jsInitiated.remove("end:\(uuid.uuidString)") != nil
         if !fromJs {
             emit("end", info?.dictionary ?? ["uuid": uuid.uuidString.lowercased()])

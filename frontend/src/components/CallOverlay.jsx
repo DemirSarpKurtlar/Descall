@@ -37,6 +37,13 @@ import { groupMosaicShape } from "../lib/groupMosaic";
 import { dmRingingLabelKey, planCallGrid } from "../lib/callGridLayout";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
 import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../lib/fluid/springs";
+import {
+  CALL_END_FADE_AT_MS,
+  CALL_END_PILL_DELAY_MS,
+  groupTileTroubled,
+  tileMotion,
+} from "../lib/callTileState";
+import { ReconnectOverlay } from "./voice/DmRemoteParticipantSlot";
 import { copyText } from "../lib/copyText";
 import GlassVolumeSlider from "./ui/GlassVolumeSlider";
 
@@ -167,13 +174,27 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const incomingShownByCallKit = callKitUi.enabled && !callKitUi.fallback;
 
   // Auto-decline unanswered DM incoming calls (match group modal)
+  // No local auto-decline here: a 30 s decline from one device used to end
+  // the ring on every device (as "declined") while the server still had
+  // 15 s left. The server times the ring out (call:ring-ended "missed") and
+  // useCall has its own local guard that only stops THIS device's ringing.
+
+  // Hang-up transition (useCall.ending): leaver's tile exits, then the
+  // "Arama sona erdi" pill, then the whole overlay fades out.
+  const endingAt = call?.ending?.at || 0;
+  const [endStage, setEndStage] = useState(0); // 0 none · 1 pill · 2 fading
   useEffect(() => {
-    if (call?.mode !== "incoming") return;
-    const timer = setTimeout(() => {
-      call.declineIncoming?.();
-    }, 30_000);
-    return () => clearTimeout(timer);
-  }, [call?.mode, call?.peer?.id]);
+    if (!endingAt) {
+      setEndStage(0);
+      return undefined;
+    }
+    const t1 = setTimeout(() => setEndStage(1), CALL_END_PILL_DELAY_MS);
+    const t2 = setTimeout(() => setEndStage(2), CALL_END_FADE_AT_MS);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [endingAt]);
 
   const isDmActive = call?.mode !== null && call?.mode !== undefined;
   const isGroupActive = groupCall?.isInCall;
@@ -242,6 +263,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
           : call?.connectionQuality === "failed"
           ? t("User may be offline, waiting…")
           : t("Calling..."))
+      : call?.ending
+      ? t("Call ended")
       : call?.peerConnectionState === "reconnecting"
       ? t("Reconnecting…")
       : call?.peerConnectionState === "connecting" || (call?.mode === "active" && !call?.remoteMediaReady)
@@ -500,12 +523,17 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
       data-call-overlay="true"
       className={`call-overlay-root ${callOverlayClass}${glass ? ` g-call${isDm ? " is-dm" : " is-group"}` : ""}`.trim()}
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{ opacity: endStage === 2 ? 0 : 1 }}
       exit={{ opacity: 0 }}
+      transition={endStage === 2
+        ? { type: "tween", duration: reduceMotion ? 0.2 : 0.42, ease: [0.4, 0, 0.2, 1] }
+        : undefined}
+      aria-busy={endStage ? "true" : undefined}
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 9998,
+        pointerEvents: endingAt ? "none" : undefined,
         ...(callOverlayKey ? {} : { background: "#0f1115" }),
         display: "flex",
         flexDirection: "column",
@@ -665,6 +693,23 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             onOpenUserMenu={openUserMenu}
           />
         )}
+        <AnimatePresence>
+          {endStage >= 1 ? (
+            <motion.div
+              key="call-ended-pill"
+              className="call-ended-pill"
+              role="status"
+              aria-live="polite"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92, y: 6 }}
+              animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
+            >
+              {t("Call ended")}
+              {formattedDuration ? <span className="call-ended-pill-duration">{formattedDuration}</span> : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
         </motion.div>
       </div>
 
@@ -1171,6 +1216,7 @@ function SpeakingRemoteSlot(props) {
   const { speaking, level } = useVoiceActivity(props.remoteStream, {
     muted: Boolean(props.isMuted),
     observeEl: tileEl,
+    levelProbe: props.levelProbe,
   });
   return (
     <DmRemoteParticipantSlot
@@ -1304,6 +1350,8 @@ function ParticipantTile({
   connectionQuality = null,
   onContextMenu,
   mosaicChip = false,
+  reconnecting = false,
+  levelProbe = null,
 }) {
   const t = useT();
   const glass = useGlassUi();
@@ -1314,6 +1362,7 @@ function ParticipantTile({
     attackMs: 90,
     releaseMs: 220,
     observeEl: tileEl,
+    levelProbe,
   });
   // Hold the off-edge (~320ms) so VAD flapping between words never blinks
   // the ring / restarts its animation.
@@ -1350,9 +1399,9 @@ function ParticipantTile({
   return (
     <div
       ref={setTileEl}
-      className={`participant-tile${small ? " small" : ""}${isSpeaking ? " is-speaking" : ""}${
+      className={`participant-tile${small ? " small" : ""}${isSpeaking && !reconnecting ? " is-speaking" : ""}${
         showVideo ? "" : " participant-tile--avatar-only"
-      }`}
+      }${reconnecting ? " is-reconnecting" : ""}`}
       onContextMenu={
         isLocal
           ? undefined
@@ -1475,6 +1524,7 @@ function ParticipantTile({
           />
         </div>
       )}
+      {isLocal ? null : <ReconnectOverlay show={reconnecting} />}
     </div>
   );
 }
@@ -1482,7 +1532,7 @@ function ParticipantTile({
 /* ─────────────────────────────────────────────────────────────────
    ParticipantGrid, adaptive grid layout when no screen share
    ───────────────────────────────────────────────────────────────── */
-function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, user = null }) {
+function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, user = null, levelProbe = null }) {
   const localStream = isDm ? call?.localStream : groupCall?.localStream;
 
   const videoCallbackRef = useCallback((el) => {
@@ -1518,6 +1568,7 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
       muted={Boolean(isDm ? call?.muted : groupCall?.isMuted)}
       deafened={Boolean(isDm ? call?.deafened : groupCall?.deafened)}
       cameraOn={Boolean(isDm ? call?.cameraOn : groupCall?.isCameraOn)}
+      levelProbe={levelProbe}
     />
   );
 }
@@ -1557,6 +1608,32 @@ function CallRingingTile({ user, label }) {
   );
 }
 
+/**
+ * Grid cell with the join / leave transition. Grid cells must keep
+ * `transform: none` (call-grid.css — a share-strip animation must never
+ * leave a tile translated), so the cell itself only fades + blurs and the
+ * inner wrapper does the scale. Re-flow of the remaining tiles is a CSS
+ * flex-basis transition (no framer projection on the grid).
+ */
+function TileMotion({ children }) {
+  const reduceMotion = useReducedMotion();
+  const m = tileMotion({ reduced: Boolean(reduceMotion) });
+  return (
+    <motion.div
+      className="call-tile-cell"
+      initial="enter"
+      animate="shown"
+      exit="leave"
+      variants={m.cell}
+      style={{ minWidth: 0, minHeight: 0, position: "relative", overflow: "visible" }}
+    >
+      <motion.div className="call-tile-cell-inner" variants={m.inner}>
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
   const t = useT();
   const glass = useGlassUi();
@@ -1566,6 +1643,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
     remoteMediaReady: isDm ? call?.remoteMediaReady : false,
     peerConnectionState: isDm ? call?.peerConnectionState : "idle",
     connectionQuality: isDm ? call?.connectionQuality : "unknown",
+    ending: isDm ? call?.ending || null : null,
   });
 
   const remoteTiles = remoteParticipants.map((p) => {
@@ -1581,6 +1659,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
       deafened: Boolean(p.isDeafened),
       cameraOn: p.isCameraOn,
       connectionQuality: p.connectionQuality || null,
+      reconnecting: groupTileTroubled(p),
     };
   });
 
@@ -1620,6 +1699,7 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
           username={localUsername}
           avatarUrl={localAvatarUrl}
           user={localUser}
+          levelProbe={isDm ? call?.getLocalAudioLevel : null}
         />
       </div>
 
@@ -1632,10 +1712,9 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
         </div>
       )}
 
+      <AnimatePresence initial={false}>
       {isDm && dmRemote.showSlot && (
-        <div
-          style={{ minWidth: 0, minHeight: 0, position: "relative", overflow: "visible" }}
-        >
+        <TileMotion key={`dm-remote-${dmRemote.displayPeer?.id || "peer"}`}>
           <SpeakingRemoteSlot
             displayPeer={dmRemote.displayPeer}
             phase={dmRemote.phase}
@@ -1648,12 +1727,13 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             isDeafened={Boolean(call?.remoteDeafened)}
             cameraOn={call?.remoteCameraOn}
             onContextMenu={(event) => onOpenUserMenu?.(event, call?.peer, Boolean(call?.remoteScreenSharing))}
+            levelProbe={call?.getRemoteAudioLevel}
           />
-        </div>
+        </TileMotion>
       )}
 
       {!isDm && remoteTiles.map((tile) => (
-        <div key={tile.id} style={{ minWidth: 0, minHeight: 0, overflow: "visible" }}>
+        <TileMotion key={tile.id}>
           <ParticipantTile
             username={tile.username}
             avatarUrl={tile.avatarUrl}
@@ -1666,10 +1746,12 @@ function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVi
             deafened={tile.deafened}
             cameraOn={tile.cameraOn}
             connectionQuality={tile.connectionQuality}
+            reconnecting={tile.reconnecting}
             onContextMenu={(event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))}
           />
-        </div>
+        </TileMotion>
       ))}
+      </AnimatePresence>
     </div>
   );
 }

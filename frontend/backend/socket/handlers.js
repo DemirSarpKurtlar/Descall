@@ -69,7 +69,9 @@ const {
   bufferCallerIce,
   listRingingForCallee,
   callStateByUuid,
+  listActiveDmCalls,
 } = require("../lib/dmCallLog");
+const { createRingFanout } = require("../lib/callRingFanout");
 const { buildDmCallSummary, callSummaryMessageFields } = require("../lib/callSummary");
 const { isBlockedEitherWay } = require("../lib/blocking");
 const { planDmSend, planCallOffer } = require("../lib/messageRequestPolicy");
@@ -163,6 +165,40 @@ async function publishDmCallSummary(io, record) {
 
   emitToUser(io, record.calleeId, "dm:message", { ...messagePayload, convWith: record.callerId });
   emitToUser(io, record.callerId, "dm:message", { ...messagePayload, convWith: record.calleeId });
+}
+
+let ringFanout = null;
+/**
+ * One ring-state tracker per process (lib/callRingFanout.js). Every way a DM
+ * ring can end goes through it so the callee's other devices — sockets, the
+ * iPhone's CallKit screen (VoIP end push) and closed-tab web notifications —
+ * stop at once.
+ */
+function getRingFanout(io) {
+  if (ringFanout) return ringFanout;
+  ringFanout = createRingFanout({
+    emitToUserRoom: (userId, event, payload, exceptSocketId) => {
+      const target = io.to(`user:${userId}`);
+      (exceptSocketId ? target.except(exceptSocketId) : target).emit(event, payload);
+    },
+    emitToUser: (userId, event, payload) => emitToUser(io, userId, event, payload),
+    sendVoipEnd: (calleeId, end) => require("../lib/voipPush").sendCallEndVoip(calleeId, end),
+    sendWebPushEnd: (calleeId, end) => require("../lib/webPush").sendCallRingEndedPush([calleeId], end),
+    onMissed: (ring) => finishDmCall(io, ring.callerId, ring.calleeId, "missed"),
+    onCallerLost: (ring) => finishDmCall(io, ring.callerId, ring.calleeId, "missed"),
+    hasLiveSockets: (userId) => (io.sockets?.adapter?.rooms?.get(`user:${userId}`)?.size || 0) > 0,
+  });
+  return ringFanout;
+}
+
+/** Peer ids of the connected DM calls `userId` is in. */
+function activeDmPeersOf(userId) {
+  const out = [];
+  for (const call of listActiveDmCalls()) {
+    if (call.callerId === userId) out.push(call.calleeId);
+    else if (call.calleeId === userId) out.push(call.callerId);
+  }
+  return out;
 }
 
 async function finishDmCall(io, userA, userB, status) {
@@ -554,6 +590,12 @@ function registerSocketHandlers(io) {
     });
     socket.join(`user:${myId}`);
     socketToUser.set(socket.id, myId);
+    // A caller whose app blipped keeps ringing; a DM peer learns we are back
+    // (its client stops counting toward "peer lost").
+    getRingFanout(io).callerSocketsBack(myId);
+    for (const peerId of activeDmPeersOf(myId)) {
+      emitToUser(io, peerId, "call:peer-presence", { peerId: myId, online: true });
+    }
     // Native iOS app sockets identify with auth.platform === "ios" (used for push context).
     const fromIosApp = String(socket?.handshake?.auth?.platform || "").toLowerCase() === "ios";
     socket.data.activeDmPeer = null;
@@ -1403,6 +1445,15 @@ function registerSocketHandlers(io) {
         ...(announced ? { screen: announced } : {}),
       });
 
+      if (!renegotiation && callUuid) {
+        getRingFanout(io).ringStarted({
+          callUuid,
+          callerId: myId,
+          calleeId: targetId,
+          callerName: fromUser.displayName || fromUser.display_name || fromUser.username || me.username,
+        });
+      }
+
       // Native iOS: PushKit VoIP ring → CallKit. Fresh rings only, never a
       // renegotiation (that would ring a phone that is already in the call).
       if (!renegotiation && callUuid) {
@@ -1434,8 +1485,9 @@ function registerSocketHandlers(io) {
           fromId: myId,
           from: me.username,
           conversationId: myId,
-          title: `${me.username} is calling`,
-          body: `Incoming ${callType || "voice"} call`,
+          title: `${fromUser.displayName || fromUser.display_name || me.username} arıyor`,
+          body: (callType || "voice") === "video" ? "Görüntülü arama" : "Sesli arama",
+          callUuid,
           tag: `call-${myId}`,
           deepLink: `/?dm=${encodeURIComponent(myId)}&call=1`,
           action: "answer",
@@ -1462,11 +1514,26 @@ function registerSocketHandlers(io) {
       // Callee answers → caller is toUserId
       markAnswered({ callerId: toUserId, calleeId: myId });
       if (wasRinging) {
-        // Stop the ring on the callee's other devices (iOS ends its CallKit call).
-        socket.to(`user:${myId}`).emit("call:answered-elsewhere", {
-          fromUserId: toUserId,
-          callUuid: ringing.callUuid || null,
-        });
+        // Stop the ring on every other device of the callee: sockets
+        // (call:ring-ended + legacy call:answered-elsewhere), the iPhone's
+        // CallKit screen even when locked / killed (VoIP end push), and
+        // closed-tab web notifications (web push).
+        const fanout = getRingFanout(io);
+        const plan =
+          fanout.endRingByPair(toUserId, myId, "answered_elsewhere", { exceptSocketId: socket.id }) ||
+          null;
+        if (!plan) {
+          // Ring not tracked (server restarted mid-ring): sockets still need it.
+          socket.to(`user:${myId}`).emit("call:answered-elsewhere", {
+            fromUserId: toUserId,
+            callUuid: ringing.callUuid || null,
+          });
+          socket.to(`user:${myId}`).emit("call:ring-ended", {
+            fromUserId: toUserId,
+            callUuid: ringing.callUuid || null,
+            reason: "answered_elsewhere",
+          });
+        }
       }
       emitToUser(io, toUserId, "call:answer", {
         fromUserId: myId,
@@ -1486,6 +1553,9 @@ function registerSocketHandlers(io) {
     socket.on("call:end", async ({ toUserId } = {}) => {
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:ended", { fromUserId: myId });
+      // Hung up before the callee answered (older caller clients send end,
+      // not cancel): the callee's other devices must stop ringing too.
+      getRingFanout(io).endRingByPair(myId, toUserId, "cancelled");
       try {
         await finishDmCall(io, myId, toUserId, "completed");
       } catch (err) {
@@ -1496,6 +1566,7 @@ function registerSocketHandlers(io) {
     socket.on("call:cancel", async ({ toUserId } = {}) => {
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:cancelled", { fromUserId: myId });
+      getRingFanout(io).endRingByPair(myId, toUserId, "cancelled");
       try {
         // Unanswered cancel = missed for the callee history
         await finishDmCall(io, myId, toUserId, "missed");
@@ -1508,10 +1579,20 @@ function registerSocketHandlers(io) {
       if (typeof toUserId !== "string") return;
       const ringing = getPendingCall(toUserId, myId);
       if (ringing?.status === "ringing" && ringing.calleeId === myId) {
-        socket.to(`user:${myId}`).emit("call:declined-elsewhere", {
-          fromUserId: toUserId,
-          callUuid: ringing.callUuid || null,
+        const plan = getRingFanout(io).endRingByPair(toUserId, myId, "declined_elsewhere", {
+          exceptSocketId: socket.id,
         });
+        if (!plan) {
+          socket.to(`user:${myId}`).emit("call:declined-elsewhere", {
+            fromUserId: toUserId,
+            callUuid: ringing.callUuid || null,
+          });
+          socket.to(`user:${myId}`).emit("call:ring-ended", {
+            fromUserId: toUserId,
+            callUuid: ringing.callUuid || null,
+            reason: "declined_elsewhere",
+          });
+        }
       }
       emitToUser(io, toUserId, "call:declined", { fromUserId: myId });
       try {
@@ -1547,6 +1628,21 @@ function registerSocketHandlers(io) {
       socket.emit("call:resume-pending:result", {
         calls: wanted.map((callUuid) => ({ callUuid, state: callStateByUuid(callUuid, myId) })),
       });
+    });
+
+    // A tab / device that was asleep while it rang asks whether that ring is
+    // still on (it may have missed call:ring-ended). "ringing" | "active" | "ended".
+    socket.on("call:ring-status", ({ fromUserId, callUuid } = {}) => {
+      if (typeof fromUserId !== "string" || !fromUserId) return;
+      const pending = getPendingCall(fromUserId, myId);
+      let state = "ended";
+      if (pending && pending.calleeId === myId) {
+        if (pending.status === "active") state = "active";
+        else if (pending.status === "ringing" && (!callUuid || !pending.callUuid || pending.callUuid === callUuid)) {
+          state = "ringing";
+        }
+      }
+      socket.emit("call:ring-status:result", { fromUserId, callUuid: callUuid || null, state });
     });
 
     socket.on("screen:share-start", ({ toUserId, screen } = {}) => {
@@ -2165,6 +2261,13 @@ function registerSocketHandlers(io) {
         for (const groupId of activeGroupCalls.keys()) {
           scheduleParticipantDisconnectGrace(io, groupId, myId);
         }
+        // DM: an outgoing ring whose caller vanished is cancelled after a
+        // short grace; a connected call is never ended here (WebRTC often
+        // outlives the socket) — the peer is only told we are offline.
+        getRingFanout(io).callerSocketsGone(myId);
+        for (const peerId of activeDmPeersOf(myId)) {
+          emitToUser(io, peerId, "call:peer-presence", { peerId: myId, online: false });
+        }
         removeUserFromAllServerVoice(io, myId);
         dmScreenSharingUsers.delete(myId);
         scheduleTemporaryMemberCleanup(io, myId);
@@ -2217,4 +2320,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall };
+module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout };
