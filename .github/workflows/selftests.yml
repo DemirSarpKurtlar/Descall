@@ -79,6 +79,8 @@ jobs:
           node src/lib/videoPresence.selftest.mjs
           node src/lib/bootSession.selftest.mjs
           node src/lib/iosNativeCall.selftest.mjs
+          node src/lib/pinnedPopover.selftest.mjs
+          node src/lib/appVersion.selftest.mjs
       - name: Native iOS call logic selftest (Swift, Foundation only)
         run: |
           set -euo pipefail

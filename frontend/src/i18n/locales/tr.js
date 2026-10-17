@@ -3105,6 +3105,8 @@ export const phrases = {
   "Unpin": "Sabitlemeyi kaldır",
   "Pinned": "Sabitlendi",
   "No pinned messages yet": "Henüz sabitlenmiş mesaj yok",
+  "Pin important messages from the message menu to find them here.": "Önemli mesajları mesaj menüsünden sabitleyin, burada görünsün.",
+  "App version {version}": "Sürüm {version}",
   "Blocked users": "Engellenen kullanıcılar",
   "Email address": "E-posta adresi",
   "Verify your email to enable two-factor authentication.": "İki adımlı doğrulamayı etkinleştirmek için e-postanı doğrula.",

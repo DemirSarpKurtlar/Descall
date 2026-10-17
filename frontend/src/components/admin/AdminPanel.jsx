@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
+import AdminVersionBadge from "./AdminVersionBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
@@ -667,6 +668,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               <div>
                 <h1>{t("admin.title")}</h1>
                 <p className="admin-sub">{t("admin.subtitle")}</p>
+                <AdminVersionBadge t={t} />
               </div>
             </div>
             <button type="button" className="admin-close" onClick={onClose} aria-label={t("Close")}>

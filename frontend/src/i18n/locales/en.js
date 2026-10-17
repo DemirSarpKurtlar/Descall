@@ -2774,6 +2774,8 @@ export const phrases = {
   "Unpin": "Unpin",
   "Pinned": "Pinned",
   "No pinned messages yet": "No pinned messages yet",
+  "Pin important messages from the message menu to find them here.": "Pin important messages from the message menu to find them here.",
+  "App version {version}": "Version {version}",
   "Blocked users": "Blocked users",
   "Loading…": "Loading…",
   "No blocked users": "No blocked users",

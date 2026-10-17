@@ -531,3 +531,76 @@ html.glass-desktop.gd-lite .sidebar-actions::before {
   backdrop-filter: none;
   background: var(--gd-solid);
 }
+
+/* In-chat message search (2.10.109). Was the flat opaque strip from
+   messages.css (`--surface-0` + bottom border). Now a Liquid Glass capsule
+   under the header, same material and hairline as the header pills. No
+   backdrop-filter here: .main-panel is already the backdrop root, and a
+   nested one paints a square band on Windows Electron (see header pills). */
+html.glass-desktop .chat-search-bar {
+  gap: 8px;
+  padding: 0 16px 8px;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html.glass-desktop .chat-search-field {
+  height: 44px;
+  padding: 0 16px;
+  gap: 10px;
+  border: 0;
+  border-radius: 22px;
+  color: var(--gd-t2);
+  background: var(--gd-glass-fill);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+  transition: box-shadow 180ms ease;
+}
+
+html.glass-desktop .chat-search-field:focus-within {
+  border-color: transparent;
+  color: var(--gd-t1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), 0 0 0 2px color-mix(in srgb, var(--gd-brand-hi) 55%, transparent);
+}
+
+html.glass-desktop .chat-search-field input {
+  font-family: var(--gd-font);
+  font-size: 14px;
+  color: var(--gd-t1);
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html.glass-desktop .chat-search-field input::placeholder {
+  color: var(--gd-t3);
+}
+
+html.glass-desktop .chat-search-field input:focus,
+html.glass-desktop .chat-search-field input:focus-visible {
+  outline: none;
+  box-shadow: none !important;
+}
+
+html.glass-desktop .chat-search-bar > .icon-btn {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  color: var(--gd-t1);
+  background: var(--gd-glass-fill);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+
+html.glass-desktop .chat-search-bar > .icon-btn:hover {
+  background: var(--gd-chip-hover);
+}
+
+html.glass-desktop[data-theme="light"] .chat-search-field,
+html.glass-desktop[data-theme="light"] .chat-search-bar > .icon-btn {
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.10);
+}
+
+html.glass-desktop.gd-lite .chat-search-field,
+html.glass-desktop.gd-lite .chat-search-bar > .icon-btn {
+  background: var(--gd-solid);
+}
