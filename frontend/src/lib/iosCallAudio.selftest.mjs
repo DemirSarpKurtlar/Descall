@@ -63,7 +63,7 @@ function liveTrack(id, extra = {}) {
   };
 }
 
-function makeGuard(clock, { ongoing = () => true, trackExtra = {} } = {}) {
+function makeGuard(clock, { ongoing = () => true, trackExtra = {}, ice = "connected" } = {}) {
   const reasons = [];
   const logs = [];
   const old = liveTrack("old", trackExtra);
@@ -86,6 +86,8 @@ function makeGuard(clock, { ongoing = () => true, trackExtra = {} } = {}) {
     },
   };
   const pc = {
+    iceConnectionState: ice,
+    connectionState: ice === "connected" || ice === "completed" ? "connected" : "connecting",
     getSenders: () => [sender],
     getTransceivers: () => [],
     async getStats() {
@@ -117,7 +119,7 @@ function makeGuard(clock, { ongoing = () => true, trackExtra = {} } = {}) {
       if (reason) reasons.push(reason);
     },
   });
-  return { guard, reasons, logs, stream, sender, old };
+  return { guard, reasons, logs, stream, sender, old, pc };
 }
 
 const UUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
@@ -152,6 +154,25 @@ function pluginStub() {
   assert.ok(reasons.includes("callkit-before-capture"), `reasons=${reasons.join(",")}`);
   assert.equal(old.readyState, "ended", "the silent first track is stopped");
   assert.ok(logs.some((line) => line.includes("mic refreshed")));
+}
+
+// ── Still connecting: do not stop the mic track (that freezes "Bağlanıyor…") ──
+
+{
+  const clock = createClock();
+  const { guard, reasons, old, pc } = makeGuard(clock, { ice: "checking" });
+  guard.onAudioSessionActivated();
+  guard.noteCaptureStart();
+  clock.advance(2000);
+  await flush();
+  assert.equal(reasons.includes("callkit-before-capture"), false, `reasons=${reasons.join(",")}`);
+  assert.equal(old.readyState, "live");
+  pc.iceConnectionState = "connected";
+  pc.connectionState = "connected";
+  clock.advance(1000);
+  await flush();
+  assert.ok(reasons.includes("callkit-before-capture"), `reasons=${reasons.join(",")}`);
+  assert.equal(old.readyState, "ended");
 }
 
 // ── App already open: capture then didActivate still refreshes ──
@@ -269,6 +290,11 @@ assert.ok(manager.includes("bluetoothHFP"));
 assert.ok(manager.includes(".headphones"));
 assert.equal(manager.includes("video ? .speaker : .receiver"), false);
 assert.ok(manager.includes("return .speaker"));
+assert.ok(manager.includes("scheduleSpeakerFollowUp"));
+assert.ok(manager.includes("Re-applying here fights WebKit"));
+assert.equal(manager.includes("didActivate category failed"), false);
+assert.ok(mic.includes("transportReady"));
+assert.ok(mic.includes("iceConnectionState"));
 
 assert.ok(keepAlive.includes(".defaultToSpeaker"));
 assert.ok(keepAlive.includes("overrideOutputAudioPort(.speaker)"));

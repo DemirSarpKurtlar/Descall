@@ -26,7 +26,10 @@
 const MAX_REFRESHES = 4;
 const ACTIVATION_SETTLE_MS = 350;
 const READY_POLL_MS = 250;
-const READY_POLL_TRIES = 20;
+// Long enough for ICE to finish. Refreshing earlier stops the mic track
+// while the peer connection is still "connecting" and the call never leaves
+// "Bağlanıyor…".
+const READY_POLL_TRIES = 80;
 const MUTE_GRACE_MS = 700;
 // First seconds of a call: sample every second and act on two silent samples
 // (~2–3 s), an interrupted capture produces digital silence (energy frozen),
@@ -152,11 +155,30 @@ export function createMicGuard({
     later(() => whenReady(() => void refresh("callkit-before-capture")), ACTIVATION_SETTLE_MS);
   }
 
+  function transportReady() {
+    const pc = getPc();
+    if (!pc) return false;
+    const ice = pc.iceConnectionState;
+    const conn = pc.connectionState;
+    return ice === "connected" || ice === "completed" || conn === "connected";
+  }
+
+  function deferUntilConnected(reason) {
+    return (
+      reason === "callkit-before-capture" ||
+      reason === "callkit-activate" ||
+      reason === "track-muted" ||
+      reason === "track-ended" ||
+      reason === "retry" ||
+      String(reason).startsWith("silent-")
+    );
+  }
+
   function whenReady(fn, tries = READY_POLL_TRIES) {
-    // Accept is still in "incoming" until the answer is sent. Keep waiting:
-    // a permanent bail there drops the cold-start refresh. reset() bumps the
-    // generation, so a call that ends stops the poll.
-    if (getPc() && currentTrack() && isCallOngoing()) return fn();
+    // Accept is still in "incoming" until the answer is sent, and ICE may
+    // still be checking. Keep waiting. reset() bumps the generation, so a
+    // call that ends stops the poll.
+    if (getPc() && currentTrack() && isCallOngoing() && transportReady()) return fn();
     if (tries <= 0) {
       log("mic refresh skipped, call not ready");
       return;
@@ -227,6 +249,12 @@ export function createMicGuard({
    */
   async function refresh(reason = "manual", { force = false } = {}) {
     if (s.inFlight || !isCallOngoing()) return false;
+    // Stopping the mic track while ICE is still checking freezes the call
+    // on "Bağlanıyor…". Wait until media can actually flow.
+    if (deferUntilConnected(reason) && !transportReady()) {
+      later(() => whenReady(() => void refresh(reason, { force })), READY_POLL_MS);
+      return false;
+    }
     if (!force && s.refreshes >= MAX_REFRESHES) return false;
     const pc = getPc();
     const local = getLocalStream();
