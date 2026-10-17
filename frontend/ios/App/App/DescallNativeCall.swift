@@ -516,6 +516,12 @@ final class DescallNativeCall: NSObject {
         return sent
     }
 
+    /// CallKit provider reset: drop everything without signalling.
+    func reset() {
+        guard let s = session else { return }
+        teardown(s, notifyCallKit: nil)
+    }
+
     /// The JS layer is taking this ring (foreground answer) or it ended: drop prep.
     func cancel(_ uuid: UUID) {
         guard let s = session, s.uuid == uuid, !s.answered else { return }
