@@ -11,6 +11,7 @@ const {
   resolveChannelPermissions,
 } = require("../lib/serverPermissions");
 const { expandTurnUrls, liveKitEndpoints } = require("../lib/turnUrls");
+const { turnIceServers, turnMode } = require("../lib/turnCredentials");
 
 const router = express.Router();
 
@@ -26,7 +27,12 @@ function expandIceServers(servers) {
   });
 }
 
-function buildIceServersFromEnv() {
+/**
+ * STUN + TURN for every mesh call. ICE_SERVERS_JSON (full override) still
+ * wins; otherwise TURN comes from lib/turnCredentials.js (Cloudflare,
+ * shared-secret ephemeral, or static credentials).
+ */
+async function buildIceServersFromEnv() {
   const raw = process.env.ICE_SERVERS_JSON;
   if (raw) {
     try {
@@ -36,21 +42,8 @@ function buildIceServersFromEnv() {
       console.warn("[webrtc] Invalid ICE_SERVERS_JSON:", e.message);
     }
   }
-
-  const servers = [...DEFAULT_STUN];
-  const turnUrl = process.env.TURN_URL || process.env.TURN_URI;
-  const turnUser = process.env.TURN_USERNAME;
-  const turnPass = process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD;
-
-  if (turnUrl && turnUser && turnPass) {
-    servers.push({
-      urls: expandTurnUrls(turnUrl),
-      username: turnUser,
-      credential: turnPass,
-    });
-  }
-
-  return servers;
+  const turn = await turnIceServers(process.env);
+  return [...DEFAULT_STUN, ...turn];
 }
 
 function isLiveKitConfigured() {
@@ -62,11 +55,8 @@ function isLiveKitConfigured() {
 }
 
 function isTurnConfigured() {
-  return Boolean(
-    (process.env.TURN_URL || process.env.TURN_URI) &&
-      process.env.TURN_USERNAME &&
-      (process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD)
-  );
+  if (process.env.ICE_SERVERS_JSON && /turns?:/i.test(process.env.ICE_SERVERS_JSON)) return true;
+  return turnMode(process.env) !== "none";
 }
 
 function isSeatedInVoiceChannel(userId, channelId) {
@@ -133,12 +123,19 @@ function stageRoleFor(channelId, userId) {
 }
 
 /** Public — browsers need ICE before auth for call setup timing */
-router.get("/ice-config", (_req, res) => {
-  res.set("Cache-Control", "public, max-age=300");
-  res.json({
-    iceServers: buildIceServersFromEnv(),
-    turnConfigured: isTurnConfigured(),
-  });
+router.get("/ice-config", async (_req, res) => {
+  // Short-lived TURN credentials: never cache in shared proxies.
+  res.set("Cache-Control", "private, max-age=300");
+  try {
+    res.json({
+      iceServers: await buildIceServersFromEnv(),
+      turnConfigured: isTurnConfigured(),
+      turnMode: turnMode(process.env),
+    });
+  } catch (err) {
+    console.warn("[webrtc] ice-config failed:", err?.message || err);
+    res.json({ iceServers: DEFAULT_STUN, turnConfigured: false, turnMode: "none" });
+  }
 });
 
 router.get("/media-config", (_req, res) => {

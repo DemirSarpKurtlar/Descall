@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
-const { showNotificationWindow, closeShownNotification } = require('./notificationWindow.cjs');
+const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
 const { registerRiotRsoAuthIPC } = require('./riotRsoAuth.cjs');
@@ -1579,41 +1579,72 @@ autoUpdater.on('update-downloaded', (info) => {
 });
 
 // ─── Notification IPC ────────────────────────────────────────────────────────
-// tag → BrowserWindow — prevents duplicate notifications for the same event
+// tag → { win, count } — one toast per chat / call; repeats update it in place.
 const activeNotifByTag = new Map();
+
+function mainWindowInFront() {
+  try {
+    return Boolean(
+      mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() &&
+      !mainWindow.isMinimized() && mainWindow.isFocused()
+    );
+  } catch (_) {
+    return false;
+  }
+}
 
 function showAppNotification({ title, options = {} } = {}) {
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
-  // Deduplicate: close any existing window with the same tag
-  if (activeNotifByTag.has(tag)) {
-    const existing = activeNotifByTag.get(tag);
-    activeNotifByTag.delete(tag);
-    closeShownNotification(existing);
-  }
-
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
+  // Descall in front: the in-app UI (message list, incoming call card) is
+  // already showing this. A toast on top would be a duplicate.
+  if (mainWindowInFront() && (isCall || !requireInteraction)) return null;
+
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;
   const APP_KINDS = new Set(['friend-online', 'announcement']);
   const appIcon = !avatarUrl && (!data?.type || APP_KINDS.has(data.type));
+  // DM call card: the caller's name as the title, "Sesli arama" below.
+  const cardTitle = data?.type === 'call'
+    ? (data.callerName || data.from || title || 'Descall')
+    : (title || 'Descall');
 
+  // Grouping: another message for the same chat updates the visible toast
+  // (new text + count chip, timer restarts) instead of closing and
+  // re-opening a window for every message.
+  const existing = activeNotifByTag.get(tag);
+  if (existing && !isCall) {
+    const count = (existing.count || 1) + 1;
+    if (updateShownNotification(existing.win, { title: cardTitle, body: body || '', count })) {
+      existing.count = count;
+      existing.data = data || {};
+      return existing.win;
+    }
+  }
+  if (existing) {
+    activeNotifByTag.delete(tag);
+    closeShownNotification(existing.win);
+  }
+
+  const entry = { win: null, count: 1, data: data || {} };
   const win = showNotificationWindow({
-    title: title || 'Descall',
-    body: body || '',
+    title: cardTitle,
+    body: body || (data?.type === 'call' ? 'Sesli arama' : ''),
     type: notifType,
-    avatarUrl: avatarUrl || null,
+    avatarUrl: avatarUrl || data?.avatarUrl || null,
     appIcon,
     from: data?.from || data?.username || null,
     duration,
     onClick: () => {
       showMainWindow();
       // Always send a consistent envelope so the renderer can route by data.type
+      // (latest grouped message's data, so the click opens the right chat).
       mainWindow?.webContents?.send('notification:click', {
         title,
         body,
         tag,
-        data: data || {},
+        data: entry.data || {},
       });
     },
     onAccept: isCall ? () => {
@@ -1626,9 +1657,10 @@ function showAppNotification({ title, options = {} } = {}) {
   });
 
   if (win) {
-    activeNotifByTag.set(tag, win);
+    entry.win = win;
+    activeNotifByTag.set(tag, entry);
     win.once('closed', () => {
-      if (activeNotifByTag.get(tag) === win) activeNotifByTag.delete(tag);
+      if (activeNotifByTag.get(tag) === entry) activeNotifByTag.delete(tag);
     });
   }
   return win;
@@ -1644,9 +1676,9 @@ ipcMain.on('notification:close', (_event, payload = {}) => {
   const tags = Array.isArray(payload.tags) ? payload.tags : [payload.tag];
   for (const tag of tags) {
     if (!tag || !activeNotifByTag.has(tag)) continue;
-    const win = activeNotifByTag.get(tag);
+    const entry = activeNotifByTag.get(tag);
     activeNotifByTag.delete(tag);
-    closeShownNotification(win);
+    closeShownNotification(entry?.win);
   }
 });
 

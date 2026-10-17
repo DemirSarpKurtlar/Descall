@@ -459,6 +459,24 @@ export function createCallKitController({
     if (pendingAnswer || knownPushes.size) requestResume(true);
   }
 
+  /**
+   * Native ended this ring from a VoIP "call-end" push (answered / declined
+   * on another device, caller cancelled, missed) while JS may have been
+   * suspended. Only the local UI is torn down: the server already knows.
+   */
+  function onEndedElsewhere(data) {
+    const uuid = normUuid(data.uuid);
+    if (!uuid) return;
+    rememberEnded(uuid);
+    knownPushes.delete(uuid);
+    if (pendingAnswer?.uuid === uuid) clearPendingAnswer();
+    const c = getCall();
+    if (current && current.uuid === uuid && !current.answered) {
+      current.endedByCallKit = true;
+      if (c?.mode === "incoming") c.cleanup?.();
+    }
+  }
+
   function onIncomingReportFailed(data) {
     // Push-reported call already ended natively (busy / DND / blocked).
     const uuid = normUuid(data.uuid);
@@ -483,6 +501,8 @@ export function createCallKitController({
         return onMute(data);
       case "ringTimeout":
         return onRingTimeout(data);
+      case "endedElsewhere":
+        return onEndedElsewhere(data);
       case "incomingReportFailed":
         return onIncomingReportFailed(data);
       case "reset":
@@ -572,6 +592,7 @@ export function createCallKitController({
     onSocketConnect,
     onRemoteEnded,
     onHandledElsewhere,
+    onEndedElsewhere,
     onResumeResult,
     onOfferSeen,
     onAppVisible,

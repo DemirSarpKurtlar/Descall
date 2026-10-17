@@ -17,6 +17,7 @@
 import {
   VOICE_SAMPLE_MS,
   classifyAudioTracks,
+  combineLevels,
   rmsFromTimeDomain,
 } from "./voiceActivityMath";
 
@@ -27,6 +28,11 @@ const unmuteBound = new WeakSet();
 
 let ctx = null;
 let timer = 0;
+let lastResumeTry = 0;
+/** A context that is not running (suspended / iOS "interrupted") is retried this often. */
+const RESUME_RETRY_MS = 1000;
+/** 1024 samples ≈ 21 ms at 48 kHz: a stable RMS; 256 (5 ms) was dominated by noise spikes. */
+export const VOICE_FFT_SIZE = 1024;
 let unlocked = false;
 let gestureInstalled = false;
 
@@ -90,7 +96,7 @@ function ensureGraph(track) {
   try {
     const source = c.createMediaStreamSource(new MediaStream([track]));
     const analyser = c.createAnalyser();
-    analyser.fftSize = 256;
+    analyser.fftSize = VOICE_FFT_SIZE;
     analyser.smoothingTimeConstant = 0.8;
     source.connect(analyser);
     let sink = null;
@@ -119,6 +125,36 @@ function readRms(graph) {
   return rmsFromTimeDomain(graph.data);
 }
 
+/**
+ * The context can fall out of "running" mid-call (iOS "interrupted" after a
+ * route change / Siri / a second call, Chromium suspending it after a device
+ * change). The old code only resumed on a tap, so speaking rings died for the
+ * rest of the call. Retry quietly — resume() outside a gesture is allowed once
+ * the page has had user activation, which every call has.
+ */
+function keepContextRunning(now) {
+  if (!ctx || ctx.state === "running" || ctx.state === "closed") return;
+  if (now - lastResumeTry < RESUME_RETRY_MS) return;
+  lastResumeTry = now;
+  try {
+    const pending = ctx.resume();
+    if (pending && typeof pending.catch === "function") pending.catch(() => {});
+  } catch {
+    /* next retry */
+  }
+}
+
+/** RTP / stats level (0–1) a subscriber can provide; null when unknown. */
+function readProbe(sub) {
+  if (typeof sub.levelProbe !== "function") return null;
+  try {
+    const v = sub.levelProbe();
+    return typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : null;
+  } catch {
+    return null;
+  }
+}
+
 function sampleAll() {
   if (!subscribers.size || (typeof document !== "undefined" && document.hidden)) {
     dropGraphs();
@@ -126,6 +162,7 @@ function sampleAll() {
     return;
   }
   const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  keepContextRunning(now);
   const seen = new Set();
   let anyVisible = false;
   for (const sub of subscribers) {
@@ -133,18 +170,21 @@ function sampleAll() {
     anyVisible = true;
     const tracks = sub.stream?.getAudioTracks?.() || [];
     const { audible, waiting } = classifyAudioTracks(tracks);
+    const probe = readProbe(sub);
     if (!audible) {
       if (waiting) noteUnmute(waiting);
-      sub.onRms(0, now);
+      // A disabled track is a user mute: stay silent even if stats lag.
+      const userMuted = tracks.length > 0 && tracks.every((t) => t.enabled === false);
+      sub.onRms(userMuted ? 0 : combineLevels(0, probe), now);
       continue;
     }
     const graph = ensureGraph(audible);
     if (!graph) {
-      sub.onRms(0, now);
+      sub.onRms(combineLevels(0, probe), now);
       continue;
     }
     seen.add(audible.id);
-    sub.onRms(readRms(graph), now);
+    sub.onRms(combineLevels(readRms(graph), probe), now);
   }
   for (const [id, graph] of graphs) {
     if (!seen.has(id)) {
@@ -171,7 +211,7 @@ function ensureGestureUnlock() {
   if (gestureInstalled || typeof window === "undefined") return;
   gestureInstalled = true;
   const unlock = () => {
-    if (!unlocked || ctx?.state === "suspended") primeVoiceActivity();
+    if (!unlocked || (ctx && ctx.state !== "running")) primeVoiceActivity();
   };
   window.addEventListener("pointerdown", unlock, { capture: true, passive: true });
   window.addEventListener("touchend", unlock, { capture: true, passive: true });
@@ -229,12 +269,13 @@ function watchStream(stream) {
   });
 }
 
-export function subscribeVoiceActivity(stream, { hidden, onRms } = {}) {
+export function subscribeVoiceActivity(stream, { hidden, onRms, levelProbe } = {}) {
   if (!stream || typeof onRms !== "function") return () => {};
   const sub = {
     stream,
     hidden: typeof hidden === "function" ? hidden : () => false,
     onRms,
+    levelProbe: typeof levelProbe === "function" ? levelProbe : null,
   };
   subscribers.add(sub);
   watchStream(stream);

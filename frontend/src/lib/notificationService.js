@@ -365,17 +365,21 @@ class NotificationService {
     await this.mention({ groupName, from, text, groupId });
   }
 
-  async incomingCall({ from, fromId = null, type = 'voice' }) {
+  async incomingCall({ from, fromId = null, type = 'voice', avatarUrl = null }) {
     // Live calls still notify during DND so you don't miss them
     if (readUserSettings().callNotifications === false) return;
     const incomingTicket = beginIncomingShow(this._incomingGate, "dm", fromId);
+    // The in-app incoming call card is already on screen when Descall is the
+    // focused, visible window: a second (OS / Electron) card would duplicate it.
+    if (await this._isWindowActive()) return;
     await this.show({
-      title: `📞 ${t("{from} is calling", { from })}`,
+      title: t("{from} is calling", { from }),
       body: type === 'video' ? t("Video call") : t("Voice call"),
       tag: CALL_TAG,
       requireInteraction: true,
       incomingTicket,
-      data: { type: 'call', from, fromId, callType: type },
+      avatarUrl,
+      data: { type: 'call', from, fromId, callType: type, callerName: from, avatarUrl },
     });
   }
 
@@ -393,15 +397,16 @@ class NotificationService {
     });
   }
 
-  async missedCall({ from, type = 'voice' }) {
+  async missedCall({ from, fromId = null, type = 'voice' }) {
     if (isDndMuted()) return;
     await this.show({
       title: t("Missed Call"),
       body: type === 'video'
         ? t("{from} made a video call", { from })
         : t("{from} made a voice call", { from }),
-      tag: `missed-call-${from}`,
-      data: { type: 'missed-call', from, callType: type },
+      tag: `missed-call-${fromId || from}`,
+      // fromId: a click opens that DM (App routes missed-call by fromId).
+      data: { type: 'missed-call', from, fromId, conversationId: fromId, callType: type },
     });
   }
 

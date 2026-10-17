@@ -85,3 +85,15 @@ export function createSpeakingGate({
     },
   };
 }
+
+/**
+ * Combine the analyser RMS with an RTP / stats level probe (0–1, or null).
+ * The probe needs no AudioContext and follows replaced tracks, so it keeps
+ * speaking rings alive when the analyser graph is dead or not built yet
+ * (suspended / interrupted context, replaceTrack, iOS mic restart).
+ */
+export function combineLevels(rms, probe) {
+  const a = typeof rms === "number" && Number.isFinite(rms) ? rms : 0;
+  if (probe == null || !Number.isFinite(probe)) return a;
+  return Math.max(a, Math.max(0, Math.min(1, probe)));
+}

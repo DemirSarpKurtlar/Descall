@@ -35,7 +35,8 @@ assert.equal(jitterBufferTargetSeconds("fair"), 0.1);
 assert.equal(jitterBufferTargetSeconds("poor"), 0.16);
 
 assert.ok(speakingThreshold(100) < speakingThreshold(0));
-assert.ok(speakingThreshold(45) > 0.03 && speakingThreshold(45) < 0.05);
+assert.ok(speakingThreshold(45) > 0.022 && speakingThreshold(45) < 0.036);
+assert.ok(speakingThreshold(100) >= 0.008, "max sensitivity must stay above the noise floor");
 
 assert.equal(clampGain(3), 2);
 assert.equal(clampGain(-1), 0);

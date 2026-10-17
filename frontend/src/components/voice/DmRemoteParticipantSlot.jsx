@@ -9,7 +9,6 @@ import { resolveDisplayName } from "../../lib/userProfile";
 import {
   deriveDmConnectionStatus,
   getConnectionStatusLabel,
-  DM_PARTICIPANT_EXIT_MS,
 } from "../../hooks/useDmRemoteParticipant";
 import { useT } from "../../context/LocaleContext";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
@@ -18,22 +17,6 @@ import ParticipantStateIcons from "./ParticipantStateIcons";
 import useGlassUi from "../../hooks/useGlassUi";
 
 const PARTICIPANT_EASE = [0.16, 1, 0.3, 1];
-
-const enterVariants = {
-  hidden: { opacity: 0, scale: 0.96, y: 10 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: PARTICIPANT_EASE },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.96,
-    y: 8,
-    transition: { duration: DM_PARTICIPANT_EXIT_MS / 1000, ease: PARTICIPANT_EASE },
-  },
-};
 
 function ConnectionBadge({ status }) {
   const t = useT();
@@ -77,10 +60,9 @@ function ConnectingPlaceholder({ username, user, status }) {
   const shellSize = avatarSize + shellPad * 2;
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96, y: 8 }}
-      transition={{ duration: 0.28, ease: PARTICIPANT_EASE }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.24, ease: PARTICIPANT_EASE }}
       className="dm-remote-connecting participant-tile--avatar-only"
       style={{
         position: "relative",
@@ -123,6 +105,34 @@ function ConnectingPlaceholder({ username, user, status }) {
         <ConnectionBadge status={status || "connecting"} />
       </div>
     </motion.div>
+  );
+}
+
+/**
+ * Calm "Yeniden bağlanıyor…" layer: the tile underneath stays mounted and
+ * is only dimmed / blurred (CSS .is-reconnecting), with a small spinner.
+ * Shown after the debounced status says the link is really in trouble.
+ */
+export function ReconnectOverlay({ show }) {
+  const t = useT();
+  return (
+    <AnimatePresence>
+      {show ? (
+        <motion.div
+          key="reconnect"
+          className="call-reconnect-overlay"
+          role="status"
+          aria-live="polite"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.28, ease: PARTICIPANT_EASE }}
+        >
+          <span className="call-reconnect-spinner" aria-hidden="true" />
+          <span className="call-reconnect-label">{t("Reconnecting…")}</span>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 
@@ -172,36 +182,34 @@ export default function DmRemoteParticipantSlot({
     el.play().catch(() => {});
   }, [remoteStream, hasVideo, videoRef]);
 
-  const showConnecting = phase === "connecting" || (phase === "visible" && !isMediaReady);
-  const showParticipant = phase === "visible" && isMediaReady;
+  const reconnecting = phase === "reconnecting";
+  const live = Boolean(isMediaReady);
+  const avatarOnly = !(live && hasVideo && videoRef);
 
+  // ONE element per peer for the whole call (key = peer id in the grid).
+  // Connecting → live swaps only the inside; reconnecting is an overlay on
+  // top of the live tile, so video / avatar never remount during ICE blips.
   return (
-    <AnimatePresence mode="wait">
-      {showConnecting && displayPeer && (
+    <div
+      ref={onTile}
+      className={`participant-tile dm-remote-tile${isSpeaking && !reconnecting ? " is-speaking" : ""}${
+        avatarOnly ? " participant-tile--avatar-only" : ""
+      }${reconnecting ? " is-reconnecting" : ""}`}
+      data-phase={phase}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onContextMenu?.(event);
+      }}
+    >
+      {!live ? (
         <ConnectingPlaceholder
-          key={`connecting-${displayPeer.id}`}
           username={username}
           user={user}
           status={connectionStatus || "connecting"}
         />
-      )}
-      {showParticipant && displayPeer && (
-        <motion.div
-          key={`participant-${displayPeer.id}`}
-          ref={onTile}
-          variants={enterVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          className={`participant-tile${isSpeaking ? " is-speaking" : ""}${
-            hasVideo && videoRef ? "" : " participant-tile--avatar-only"
-          }`}
-          style={{ willChange: "transform, opacity" }}
-          onContextMenu={(event) => {
-            event.preventDefault();
-            onContextMenu?.(event);
-          }}
-        >
+      ) : (
+        <div className="dm-remote-tile-media" style={{ display: "contents" }}>
           {hasVideo && videoRef ? (
             <video
               ref={remoteVideoCallbackRef}
@@ -368,40 +376,10 @@ export default function DmRemoteParticipantSlot({
             )}
           </div>
           )}
-        </motion.div>
+        </div>
       )}
-      {phase === "exiting" && displayPeer && (
-        <motion.div
-          key={`exiting-${displayPeer.id}`}
-          initial={{ opacity: 1, scale: 1, y: 0 }}
-          animate={{ opacity: 0, scale: 0.96, y: 8 }}
-          transition={{ duration: DM_PARTICIPANT_EXIT_MS / 1000, ease: PARTICIPANT_EASE }}
-          className="participant-tile--avatar-only"
-          style={{
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            minWidth: 0,
-            minHeight: 0,
-            width: "100%",
-            height: "100%",
-            willChange: "transform, opacity",
-          }}
-        >
-          <Avatar
-            name={username}
-            size={96}
-            user={user}
-            imageUrl={resolveAvatarUrl(user)}
-            animate="never"
-          />
-          <ConnectionBadge status="disconnected" />
-        </motion.div>
-      )}
-    </AnimatePresence>
+      <ReconnectOverlay show={reconnecting} />
+    </div>
   );
 }
 

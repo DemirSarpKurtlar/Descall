@@ -100,8 +100,8 @@ async function sendGroupCallPush(userIds, payload = {}) {
 async function sendIncomingCallPush(userIds, payload = {}) {
   const body = {
     type: "call",
-    title: payload.title || "Incoming call",
-    body: payload.body || "Someone is calling you on Descall",
+    title: payload.title || "Gelen arama",
+    body: payload.body || "Descall'da biri seni arıyor",
     tag: payload.tag || "incoming-call",
     deepLink: payload.deepLink || "/",
     ...payload,
@@ -112,6 +112,37 @@ async function sendIncomingCallPush(userIds, payload = {}) {
     fromName: payload.from,
     callType: payload.callType,
   });
+}
+
+/**
+ * The DM ring is over (answered / declined on another device, caller
+ * cancelled, missed). Web Push only: the service worker replaces the
+ * requireInteraction "arıyor" card that has the same tag (call-<callerId>)
+ * with a quiet result card, so a closed tab's notification can't ring on
+ * forever. Every push must show something (Safari revokes silent pushers),
+ * hence a replacement instead of a bare close. Native apps stop through
+ * their own channels (socket, VoIP end push).
+ */
+async function sendCallRingEndedPush(userIds, payload = {}) {
+  const outcome = String(payload.outcome || "cancelled");
+  const name = String(payload.callerName || "").slice(0, 64) || "Descall";
+  const missed = outcome === "missed" || outcome === "cancelled";
+  const body = {
+    type: "call-ring-ended",
+    outcome,
+    title: missed ? `Cevapsız arama: ${name}` : name,
+    body:
+      outcome === "answered_elsewhere"
+        ? "Arama başka bir cihazda yanıtlandı."
+        : outcome === "declined_elsewhere"
+          ? "Arama başka bir cihazda reddedildi."
+          : "Aramayı kaçırdın.",
+    tag: payload.callerId ? `call-${payload.callerId}` : "incoming-call",
+    fromId: payload.callerId || null,
+    callUuid: payload.callUuid || null,
+    deepLink: payload.callerId ? `/?dm=${encodeURIComponent(payload.callerId)}` : "/",
+  };
+  await sendWebPushToUsers(userIds, body);
 }
 
 /** Direct message while recipient is backgrounded / offline. */
@@ -257,6 +288,7 @@ function sendFriendRequestPush(userId, payload = {}) {
 }
 
 module.exports = {
+  sendCallRingEndedPush,
   sendWebPushToUsers,
   sendGroupCallPush,
   sendIncomingCallPush,

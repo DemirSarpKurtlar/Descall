@@ -7,46 +7,78 @@ const os = require('os');
 const {
   NOTIF_WIDTH,
   NOTIF_HEIGHT,
+  MAX_VISIBLE,
   SHADOW_PAD,
   buildNotificationHtml,
   cardHeightFor,
 } = require('./notificationCard.cjs');
 
-const NOTIF_MARGIN = 12;
+const { NOTIF_MARGIN, stackPositions, evictionsFor } = require('./notificationStack.cjs');
 const DEFAULT_DURATION = 5000;
 const SAFETY_GRACE_MS = 1500;
 
 const activeNotifications = [];
 const closers = new WeakMap();
+const updaters = new WeakMap();
+const notifWindows = new WeakSet();
 
+/**
+ * Monitor for the stack: the display of Descall's own (visible) window,
+ * else the display under the mouse — the one the user is looking at —
+ * else the primary display. Notification windows themselves never count.
+ */
 function getAnchorWorkArea() {
   const wins = BrowserWindow.getAllWindows().filter((w) => {
-    try { return w && !w.isDestroyed() && w.isVisible() && !w.isAlwaysOnTop(); }
+    try { return w && !w.isDestroyed() && !notifWindows.has(w) && w.isVisible() && !w.isMinimized() && !w.isAlwaysOnTop(); }
     catch (_) { return false; }
   });
-  const display = wins.length
-    ? screen.getDisplayMatching(wins[0].getBounds())
-    : screen.getPrimaryDisplay();
-  return display.workArea;
+  let display = null;
+  try {
+    const focused = wins.find((w) => w.isFocused());
+    const anchor = focused || wins[0];
+    if (anchor) display = screen.getDisplayMatching(anchor.getBounds());
+    else display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  } catch (_) {
+    display = null;
+  }
+  return (display || screen.getPrimaryDisplay()).workArea;
 }
 
-function windowOrigin(area, cardY) {
-  return {
-    x: Math.round(area.x + area.width - NOTIF_WIDTH - NOTIF_MARGIN - SHADOW_PAD),
-    y: Math.round(cardY - SHADOW_PAD),
-  };
+/** Ease a window to (x, y) — Windows ignores setPosition's animate flag. */
+function moveWindow(win, x, y) {
+  if (!win || win.isDestroyed()) return;
+  const prev = win.__descallMove;
+  if (prev) clearInterval(prev);
+  let from;
+  try { from = win.getPosition(); } catch (_) { return; }
+  const [fx, fy] = from;
+  if (fx === x && fy === y) return;
+  if (Math.abs(fx - x) > 400 || Math.abs(fy - y) > 600) {
+    // Other monitor / first placement: jump, don't fly across screens.
+    try { win.setPosition(x, y, false); } catch (_) { /* ignore */ }
+    return;
+  }
+  const start = Date.now();
+  const DURATION = 240;
+  win.__descallMove = setInterval(() => {
+    if (win.isDestroyed()) { clearInterval(win.__descallMove); return; }
+    const t = Math.min(1, (Date.now() - start) / DURATION);
+    // Critically damped feel: fast start, soft landing, no overshoot.
+    const k = 1 - Math.pow(1 - t, 3);
+    try {
+      win.setPosition(Math.round(fx + (x - fx) * k), Math.round(fy + (y - fy) * k), false);
+    } catch (_) { /* ignore */ }
+    if (t >= 1) {
+      clearInterval(win.__descallMove);
+      win.__descallMove = null;
+    }
+  }, 16);
 }
 
 function repositionAll() {
   const area = getAnchorWorkArea();
-  let cardY = area.y + NOTIF_MARGIN;
-  activeNotifications.forEach((entry) => {
-    const { win, height } = entry;
-    if (!win || win.isDestroyed()) return;
-    const { x, y } = windowOrigin(area, cardY);
-    win.setPosition(x, y, true);
-    cardY += height + NOTIF_MARGIN;
-  });
+  const live = activeNotifications.filter((e) => e.win && !e.win.isDestroyed());
+  for (const { entry, x, y } of stackPositions(area, live)) moveWindow(entry.win, x, y);
 }
 
 /**
@@ -65,14 +97,19 @@ function repositionAll() {
  */
 function showNotificationWindow({
   title, body, type = 'default', avatarUrl = null, appIcon = false, from = null,
-  duration = DEFAULT_DURATION, onClick, onAccept, onDecline,
+  duration = DEFAULT_DURATION, onClick, onAccept, onDecline, count = 1,
 } = {}) {
   const isCall = type === 'call';
   const winHeight = cardHeightFor(type);
+  // No wall of toasts: keep at most MAX_VISIBLE on screen.
+  for (const old of evictionsFor(activeNotifications)) {
+    const close = closers.get(old.win);
+    if (typeof close === 'function') close('external');
+  }
   const area = getAnchorWorkArea();
-  const stackOffset = activeNotifications.reduce((sum, entry) => sum + entry.height + NOTIF_MARGIN, 0);
-  const cardY = area.y + NOTIF_MARGIN + stackOffset;
-  const { x, y } = windowOrigin(area, cardY);
+  const probe = { type, height: winHeight };
+  const planned = stackPositions(area, [...activeNotifications, probe]).find((p) => p.entry === probe);
+  const { x, y } = planned;
 
   // Same contract as the splash: the OS must not paint a square behind the
   // rounded card. Window material and the OS shadow are that square.
@@ -93,14 +130,20 @@ function showNotificationWindow({
     movable: false,
     focusable: isCall,
     show: false,
+    fullscreenable: false,
+    minimizable: false,
+    maximizable: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      zoomFactor: 1,
+      backgroundThrottling: false,
       preload: path.join(__dirname, 'notifPreload.cjs'),
     },
   };
 
   const win = new BrowserWindow(winOptions);
+  notifWindows.add(win);
   try { win.setBackgroundColor('#00000000'); } catch (_) { /* ignore */ }
   try { win.setHasShadow(false); } catch (_) { /* ignore */ }
 
@@ -114,6 +157,7 @@ function showNotificationWindow({
     avatarUrl,
     appIcon,
     from,
+    count,
     duration: isCall ? 0 : duration,
   });
 
@@ -178,6 +222,15 @@ function showNotificationWindow({
     armSafety();
   });
   closers.set(win, dismiss);
+  updaters.set(win, (payload = {}) => {
+    if (dismissed || win.isDestroyed()) return false;
+    try { win.webContents.send('notif:update', payload); } catch (_) { return false; }
+    if (!isCall && duration > 0) {
+      remaining = duration;
+      armSafety();
+    }
+    return true;
+  });
 
   const reveal = () => {
     if (shown || dismissed) return;
@@ -212,4 +265,18 @@ function closeShownNotification(win) {
   return false;
 }
 
-module.exports = { showNotificationWindow, closeShownNotification, NOTIF_HEIGHT };
+/** Update a shown toast in place (grouping). Returns false if it is gone. */
+function updateShownNotification(win, payload) {
+  if (!win) return false;
+  const update = updaters.get(win);
+  return typeof update === 'function' ? update(payload) : false;
+}
+
+module.exports = {
+  showNotificationWindow,
+  closeShownNotification,
+  updateShownNotification,
+  stackPositions,
+  evictionsFor,
+  NOTIF_HEIGHT,
+};

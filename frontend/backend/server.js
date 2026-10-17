@@ -73,8 +73,12 @@ const io = new Server(httpServer, {
   cors: { origin: corsOrigin, methods: ["GET", "POST"], credentials: false },
   transports: ["websocket", "polling"],
   allowUpgrades: true,
-  pingInterval: 25000,
-  pingTimeout: 20000,
+  // A dead link (Wi-Fi ↔ cellular switch, NAT rebinding, sleeping radio) is
+  // noticed after pingInterval + pingTimeout. 25 s + 20 s left a call without
+  // signaling for up to 45 s, so an ICE restart offer could not get through;
+  // 12 s + 10 s keeps that under ~22 s at a negligible ping cost.
+  pingInterval: 12000,
+  pingTimeout: 10000,
 });
 
 app.set("io", io);

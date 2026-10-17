@@ -10,9 +10,14 @@
  *   topic "<bundle>.voip" and apns-push-type "voip".
  * - apns-expiration 0: APNs delivers now or drops the push. A ring that
  *   arrives late is useless and would make the phone ring for a dead call.
- * - Only RING pushes are sent. iOS must report a CallKit call for every VoIP
- *   push, so cancel / answered-elsewhere / declined-elsewhere are delivered
- *   over the socket instead (the app reconnects as soon as it is woken).
+ * - RING pushes (type "call") and, since 2.10.107, END pushes (type
+ *   "call-end": answered / declined on another device, caller cancelled,
+ *   missed). The socket alone could not stop a locked or killed iPhone: its
+ *   web layer is suspended, so the CallKit screen kept saying "arıyor" after
+ *   the call was answered on Windows. iOS still requires a CallKit report for
+ *   every VoIP push; the app answers an end push for a ring it knows with
+ *   reportCall(endedAt:reason:), and for an unknown UUID with a
+ *   report-then-end (DescallCallManager.handleCallEndPush).
  * - Production APNs host unless APNS_VOIP_USE_SANDBOX=true (TestFlight and
  *   App Store builds get production tokens).
  */
@@ -59,6 +64,21 @@ function buildVoipPayload(call = {}) {
     payload.statusUrl = statusUrl;
   }
   return payload;
+}
+
+const END_REASONS = new Set(["answeredElsewhere", "declinedElsewhere", "remoteEnded", "unanswered", "failed"]);
+
+/** End push for one ring. `reason` is a CXCallEndedReason name. */
+function buildVoipEndPayload(end = {}) {
+  const reason = END_REASONS.has(end.reason) ? end.reason : "remoteEnded";
+  return {
+    type: "call-end",
+    callUuid: clip(end.callUuid, 64),
+    callerId: clip(end.callerId, 64),
+    callerName: clip(end.callerName, MAX_NAME) || "Descall",
+    reason,
+    sentAt: new Date().toISOString(),
+  };
 }
 
 function buildVoipHeaders(cfg, token, jwtToken) {
@@ -155,7 +175,53 @@ function createVoipPusher(deps = {}) {
     return result;
   }
 
-  return { sendIncomingCallVoip, loadVoipTokens };
+  async function sendToAll(userId, body, label) {
+    const result = { sent: 0, dropped: 0, failed: 0, skipped: false };
+    const cfg = fcm.apnsConfig();
+    const tokens = await loadVoipTokens(userId);
+    if (!tokens.length) return result;
+    if (!cfg) return { ...result, skipped: true };
+    const host = voipHost();
+    const jwtToken = fcm.getApnsJwt(cfg);
+    await Promise.allSettled(
+      tokens.map(async (token) => {
+        try {
+          const res = await transport({ host, headers: buildVoipHeaders(cfg, token, jwtToken), body });
+          if (res.status === 200) {
+            result.sent += 1;
+            return;
+          }
+          if (fcm.apnsTokenShouldDrop(res.status, res.body)) {
+            result.dropped += 1;
+            await dropToken(token);
+            return;
+          }
+          result.failed += 1;
+          log.warn(`[VoIP] ${label} failed:`, res.status, clip(res.body, 200));
+        } catch (err) {
+          result.failed += 1;
+          log.warn(`[VoIP] ${label} error:`, err?.message || err);
+        }
+      })
+    );
+    return result;
+  }
+
+  /**
+   * Stop the CallKit ring on every iPhone of `userId` (answered / declined
+   * elsewhere, caller cancelled, missed). Never throws.
+   */
+  async function sendCallEndVoip(userId, end = {}) {
+    try {
+      if (!userId || !end.callUuid) return { sent: 0, dropped: 0, failed: 0, skipped: true };
+      return await sendToAll(userId, JSON.stringify(buildVoipEndPayload(end)), "end");
+    } catch (err) {
+      log.warn("[VoIP] end failed:", err?.message || err);
+      return { sent: 0, dropped: 0, failed: 1, skipped: false };
+    }
+  }
+
+  return { sendIncomingCallVoip, sendCallEndVoip, loadVoipTokens };
 }
 
 let defaultPusher = null;
@@ -164,8 +230,15 @@ function sendIncomingCallVoip(userId, call) {
   return defaultPusher.sendIncomingCallVoip(userId, call);
 }
 
+function sendCallEndVoip(userId, end) {
+  if (!defaultPusher) defaultPusher = createVoipPusher();
+  return defaultPusher.sendCallEndVoip(userId, end);
+}
+
 module.exports = {
   buildVoipPayload,
+  buildVoipEndPayload,
+  sendCallEndVoip,
   buildVoipHeaders,
   voipTopic,
   voipHost,
