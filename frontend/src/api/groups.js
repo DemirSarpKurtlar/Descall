@@ -148,3 +148,16 @@ export async function joinGroupByInvite(code) {
   if (!res.ok) throw new Error(body.error || "Failed to join group");
   return body;
 }
+
+/** Set (url) or remove (null) the group photo. Any member may change it. */
+export async function setGroupAvatar(groupId, avatarUrl) {
+  const remove = !avatarUrl;
+  const res = await fetch(`${BASE}/${groupId}/avatar`, {
+    method: remove ? "DELETE" : "POST",
+    headers: getHeaders(),
+    body: remove ? undefined : JSON.stringify({ avatarUrl }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || "Failed to update group photo");
+  return body;
+}

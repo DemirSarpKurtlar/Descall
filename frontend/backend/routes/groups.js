@@ -1,4 +1,5 @@
 const express = require("express");
+const { validateGroupAvatarUrl, canEditGroupAvatar } = require("../lib/groupAvatar");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser } = require("../runtime/sharedState");
@@ -897,50 +898,54 @@ router.delete("/:groupId", requireAuth, async (req, res) => {
   }
 });
 
-// Update group avatar
-router.post("/:groupId/avatar", requireAuth, async (req, res) => {
+// Update / remove group photo. Any member may change it (like renaming a
+// group chat in iMessage); the URL must come from Descall's own storage.
+async function applyGroupAvatar(req, res, rawUrl) {
   try {
     const userId = req.user.id;
     const { groupId } = req.params;
-    const { avatarUrl } = req.body;
+    const checked = validateGroupAvatarUrl(rawUrl);
+    if (!checked.ok) return res.status(400).json({ error: checked.error });
 
-    if (!avatarUrl) return res.status(400).json({ error: "Avatar URL required" });
-
-    // Validate URL
-    try {
-      new URL(avatarUrl);
-    } catch {
-      return res.status(400).json({ error: "Invalid URL" });
-    }
-
-    // Check if user is creator
     const { data: group, error: fetchError } = await supabase
       .from("groups")
       .select("created_by")
       .eq("id", groupId)
-      .single();
-
+      .maybeSingle();
     if (fetchError || !group) return res.status(404).json({ error: "Group not found" });
-    if (group.created_by !== userId) return res.status(403).json({ error: "Only creator can update avatar" });
+
+    const isMember = await isGroupMember(groupId, userId);
+    if (!canEditGroupAvatar({ userId, createdBy: group.created_by, isMember })) {
+      return res.status(403).json({ error: "Only group members can change the group photo" });
+    }
 
     const { error } = await supabase
       .from("groups")
-      .update({ avatar_url: avatarUrl })
+      .update({ avatar_url: checked.url })
       .eq("id", groupId);
-
     if (error) throw error;
 
-    // Notify members via socket
     const io = req.app.get("io");
     if (io) {
-      io.to(`group:${groupId}`).emit("group:avatar:updated", { groupId, avatarUrl });
+      io.to(`group:${groupId}`).emit("group:avatar:updated", {
+        groupId,
+        avatarUrl: checked.url,
+        updatedBy: userId,
+      });
     }
-
-    res.json({ success: true, avatarUrl });
+    return res.json({ success: true, avatarUrl: checked.url });
   } catch (err) {
     console.error("[Groups] Avatar update error:", err);
-    res.status(500).json({ error: "Failed to update avatar" });
+    return res.status(500).json({ error: "Failed to update avatar" });
   }
+}
+
+router.post("/:groupId/avatar", requireAuth, (req, res) => {
+  const raw = req.body?.avatarUrl;
+  if (raw === undefined) return res.status(400).json({ error: "Avatar URL required" });
+  return applyGroupAvatar(req, res, raw);
 });
+
+router.delete("/:groupId/avatar", requireAuth, (req, res) => applyGroupAvatar(req, res, null));
 
 module.exports = router;

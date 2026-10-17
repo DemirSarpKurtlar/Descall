@@ -67,6 +67,7 @@ export default function AppLayout({
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
+  onGroupAvatarChanged,
   onRefresh,
   friendNotice,
   activeCallBanner,
@@ -615,6 +616,7 @@ export default function AppLayout({
             onGroupCreated={onGroupCreated}
             onGroupLeft={onGroupLeft}
             onGroupRenamed={onGroupRenamed}
+            onGroupAvatarChanged={onGroupAvatarChanged}
             onRefresh={onRefresh}
             friendRequests={friendRequests}
             messageRequests={messageRequests}
@@ -686,6 +688,7 @@ export default function AppLayout({
             >
               <ErrorBoundary scope="pane">
               <ChatPanel
+                onGroupAvatarChanged={onGroupAvatarChanged}
                 activeView={activeView}
                 activeDmUser={activeDmUser}
                 activeGroup={activeGroup}

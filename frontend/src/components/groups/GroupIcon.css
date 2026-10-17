@@ -1,0 +1,117 @@
+.group-photo-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--primary, #7c8cff);
+  background: var(--primary-soft, rgba(124, 140, 255, 0.16));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+}
+.group-photo-icon.has-photo { background: rgba(255, 255, 255, 0.06); }
+.group-photo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+.group-photo-initials { line-height: 1; letter-spacing: 0.01em; }
+
+/* Inside the chat header the container owns the shape and colours. */
+.header-icon .group-photo-icon.header-group-photo {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: transparent;
+  color: inherit;
+  font-size: inherit !important;
+  box-shadow: none;
+}
+.header-icon.has-group-photo,
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon.has-group-photo {
+  background: rgba(255, 255, 255, 0.06);
+}
+/* Group list rows: the wrapper owns size/shape. */
+.group-icon > .group-photo-icon {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font-size: inherit !important;
+  box-shadow: none;
+}
+
+.header-icon.is-clickable { cursor: pointer; transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.18s; }
+.header-icon.is-clickable:hover { filter: brightness(1.08); }
+.header-icon.is-clickable:active { transform: scale(0.95); }
+.header-icon.is-clickable:focus-visible { outline: 2px solid var(--primary, #7c8cff); outline-offset: 2px; }
+
+/* Group photo card at the top of the group members panel (group settings). */
+.group-photo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 8px 14px;
+  padding: 16px 12px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+.group-photo-card-icon {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 22px;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.group-photo-card-icon:active { transform: scale(0.96); }
+.group-photo-card-icon:focus-visible { outline: 2px solid var(--primary, #7c8cff); outline-offset: 3px; }
+.group-photo-card-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--primary, #6c7cff);
+  box-shadow: 0 0 0 3px var(--surface-1, #1c1c22);
+}
+.group-photo-card-name {
+  font-weight: 650;
+  font-size: 14px;
+  color: var(--text-0, #fff);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-photo-card-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.group-photo-card-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-0, #fff);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+  transition: background 0.15s;
+}
+.group-photo-card-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.group-photo-card-btn.is-danger { color: var(--danger, #ff5a5f); }
+.group-photo-card-btn:disabled { opacity: 0.55; cursor: progress; }
+html[data-theme="light"] .group-photo-card { background: rgba(0, 0, 0, 0.035); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
+html[data-theme="light"] .group-photo-card-btn { background: rgba(0, 0, 0, 0.05); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); color: var(--text-0, #111); }

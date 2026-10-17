@@ -117,6 +117,7 @@ import { isBlockedByMe, setBlockedUserIds } from "./lib/blockedUsers";
 import MessageComposer from "./components/chat/MessageComposer";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
+import { applyGroupAvatar } from "./lib/avatarFile";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
@@ -1977,6 +1978,13 @@ export default function App() {
     socket.on("group:invited", ({ group } = {}) => {
       if (!group?.id) return;
       setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [...prev, group]);
+    });
+
+    // Group photo changed by any member (or removed).
+    socket.on("group:avatar:updated", ({ groupId, avatarUrl } = {}) => {
+      if (!groupId) return;
+      setMyGroups((prev) => applyGroupAvatar(prev, groupId, avatarUrl));
+      setActiveGroup((cur) => (cur?.id === groupId ? applyGroupAvatar([cur], groupId, avatarUrl)[0] : cur));
     });
 
     // Group messages listener
@@ -4815,6 +4823,10 @@ export default function App() {
           onGroupLeft={(groupId) => {
             setMyGroups((prev) => prev.filter((g) => g.id !== groupId));
             setActiveGroup((cur) => (cur?.id === groupId ? null : cur));
+          }}
+          onGroupAvatarChanged={(groupId, avatarUrl) => {
+            setMyGroups((prev) => applyGroupAvatar(prev, groupId, avatarUrl));
+            setActiveGroup((cur) => (cur?.id === groupId ? applyGroupAvatar([cur], groupId, avatarUrl)[0] : cur));
           }}
           onGroupRenamed={(groupId, newName) => {
             setMyGroups((prev) => prev.map((g) => g.id === groupId ? { ...g, name: newName } : g));

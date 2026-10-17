@@ -1,9 +1,9 @@
 import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
   Search, MessageSquare, X, ChevronDown, ChevronRight, Menu, ChevronLeft,
-  UserPlus, Plus, Crown, Pin, PinOff, Timer
+  UserPlus, Plus, Crown, Pin, PinOff, Timer, ImagePlus
 } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
@@ -28,6 +28,10 @@ import ServerMembersPanel from "../servers/ServerMembersPanel";
 import ServerVoicePanel from "../servers/ServerVoicePanel";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useGlassUi from "../../hooks/useGlassUi";
+import GroupIcon from "../groups/GroupIcon";
+import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
+import { groupAvatarUrl } from "../../lib/avatarFile";
+import PinnedMessagesPopover from "./PinnedMessagesPopover";
 
 function glassGroupInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -36,6 +40,7 @@ function glassGroupInitials(name) {
 }
 
 export default function ChatPanel({
+  onGroupAvatarChanged,
   activeView,
   activeDmUser,
   activeGroup,
@@ -92,6 +97,9 @@ export default function ChatPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [showMembers, setShowMembers] = useState(false);
   const [showPinned, setShowPinned] = useState(false);
+  const pinButtonRef = useRef(null);
+  const groupPhoto = useGroupPhotoChanger({ onUpdated: onGroupAvatarChanged });
+  const reduceMotion = useReducedMotion();
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [profileTarget, setProfileTarget] = useState(null);
   useEffect(() => {
@@ -443,12 +451,22 @@ export default function ChatPanel({
                 <StatusBadge status={getPresenceStatus(onlineUsers, headerDm.id)} />
               </button>
             ) : headerGroup ? (
-              <div className="header-icon" aria-hidden={!headerGroup.icon}>
-                {headerGroup.icon ? (
-                  <img src={headerGroup.icon} alt="" />
-                ) : (
-                  <span>{glass && headerGroup ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}</span>
-                )}
+              <div
+                className={`header-icon is-clickable${groupAvatarUrl(headerGroup) ? " has-group-photo" : ""}`}
+                role="button"
+                tabIndex={0}
+                title={t("Change Group Photo")}
+                aria-label={t("Change Group Photo")}
+                onClick={() => groupPhoto.pick(headerGroup)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); groupPhoto.pick(headerGroup); } }}
+              >
+                <GroupIcon
+                  group={headerGroup}
+                  size={40}
+                  radius={12}
+                  className="header-group-photo"
+                  initials={glass ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}
+                />
               </div>
             ) : glassHash ? (
               <div className="header-icon g-hash" aria-hidden="true">
@@ -501,9 +519,12 @@ export default function ChatPanel({
           )}
           {(headerDm || headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
             <button
+              ref={pinButtonRef}
               className={`icon-btn ${showPinned ? "active" : ""}`}
               title={t("Pinned messages")}
               aria-label={t("Pinned messages")}
+              aria-haspopup="dialog"
+              aria-expanded={showPinned}
               onClick={togglePinnedPanel}
             >
               <Pin size={20} />
@@ -547,13 +568,24 @@ export default function ChatPanel({
         </div>
         )}
 
+      <AnimatePresence initial={false}>
       {showSearch && activeView !== "activity" && (
-        <div className="chat-search-bar">
+        <motion.div
+          key="chat-search"
+          className="chat-search-bar"
+          role="search"
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+          animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
+          transition={reduceMotion ? { duration: 0.16 } : { type: "spring", bounce: 0, duration: 0.32 }}
+        >
           <label className="chat-search-field">
             <Search size={16} aria-hidden="true" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); } }}
+              aria-label={t("Search messages...")}
               placeholder={t("Search messages...")}
               autoFocus
             />
@@ -566,8 +598,9 @@ export default function ChatPanel({
           >
             <X size={16} />
           </button>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Friend Notice Banner */}
       <AnimatePresence>
@@ -867,6 +900,32 @@ export default function ChatPanel({
                       </button>
                     </div>
                     <div className="members-panel-scroll">
+                      {activeGroup ? (
+                        <section className="group-photo-card" aria-label={t("Group photo")}>
+                          <button
+                            type="button"
+                            className="group-photo-card-icon"
+                            onClick={() => groupPhoto.pick(activeGroup)}
+                            title={t("Change Group Photo")}
+                            aria-label={t("Change Group Photo")}
+                            disabled={groupPhoto.busyId === activeGroup.id}
+                          >
+                            <GroupIcon group={activeGroup} size={72} radius={22} />
+                            <span className="group-photo-card-badge" aria-hidden="true"><ImagePlus size={13} /></span>
+                          </button>
+                          <div className="group-photo-card-name">{activeGroup.name}</div>
+                          <div className="group-photo-card-actions">
+                            <button type="button" className="group-photo-card-btn" onClick={() => groupPhoto.pick(activeGroup)} disabled={groupPhoto.busyId === activeGroup.id}>
+                              {t("Change Group Photo")}
+                            </button>
+                            {groupAvatarUrl(activeGroup) ? (
+                              <button type="button" className="group-photo-card-btn is-danger" onClick={() => groupPhoto.remove(activeGroup)} disabled={groupPhoto.busyId === activeGroup.id}>
+                                {t("Remove")}
+                              </button>
+                            ) : null}
+                          </div>
+                        </section>
+                      ) : null}
                       {online.length > 0 && (
                         <section className="members-section">
                           <h5 className="members-section-label">
@@ -896,77 +955,18 @@ export default function ChatPanel({
       )}
     </AnimatePresence>
 
-    {/* Pinned Messages Panel */}
-    <AnimatePresence>
-      {showPinned && (
-        <>
-          <motion.div
-            key="pinned-backdrop"
-            className="members-panel-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setShowPinned(false)}
-            aria-hidden="true"
-          />
-          <motion.aside
-            key="pinned-panel"
-            className="members-panel pinned-panel"
-            role="complementary"
-            aria-label={t("Pinned messages")}
-            initial={isMobile ? { x: "100%" } : { x: 24, opacity: 0 }}
-            animate={isMobile ? { x: 0 } : { x: 0, opacity: 1 }}
-            exit={isMobile ? { x: "100%" } : { x: 24, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
-          >
-            <div className="members-panel-header">
-              <h4>
-                <Pin size={16} />
-                {t("Pinned messages")}
-                <span className="members-panel-count">{pinnedMessages.length}</span>
-              </h4>
-              <button type="button" className="icon-btn" onClick={() => setShowPinned(false)} title={t("Close")} aria-label={t("Close")}>
-                <X size={16} />
-              </button>
-            </div>
-            <div className="members-panel-scroll">
-              {pinnedMessages.length === 0 ? (
-                <p className="members-empty">{t("No pinned messages yet")}</p>
-              ) : (
-                pinnedMessages.map((pm) => {
-                  const author = pm.from || pm.sender;
-                  return (
-                    <div key={pm.id} className="pinned-msg-row">
-                      <Avatar name={resolveDisplayName(author) || "?"} size={32} user={author} />
-                      <div className="pinned-msg-body">
-                        <div className="pinned-msg-meta">
-                          <span className="pinned-msg-author">{resolveDisplayName(author)}</span>
-                          <span className="pinned-msg-time">
-                            {pm.timestamp ? new Date(pm.timestamp).toLocaleDateString() : ""}
-                          </span>
-                        </div>
-                        <p className="pinned-msg-text">
-                          {displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="icon-btn sm"
-                        title={t("Unpin")} aria-label={t("Unpin")}
-                        onClick={() => unpinMessage(pm.id)}
-                      >
-                        <PinOff size={14} />
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+    {/* Pinned messages: glass popover under the header pin button (2.10.109). */}
+    <PinnedMessagesPopover
+      open={showPinned}
+      anchorRef={pinButtonRef}
+      onClose={() => setShowPinned(false)}
+      items={pinnedMessages}
+      t={t}
+      resolveName={resolveDisplayName}
+      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
+      onUnpin={unpinMessage}
+    />
+    {groupPhoto.element}
     </div>
   );
 }

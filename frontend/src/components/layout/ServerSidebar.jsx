@@ -5,8 +5,11 @@ import {
   Settings, Hash, Phone, MessageSquare,
   ChevronDown, Bell, UserPlus, X, User, Users,
   MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Star, ChevronDown as ChevronDownIcon,
-  Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag,
+  Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff,
 } from "lucide-react";
+import GroupIcon from "../groups/GroupIcon";
+import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
+import { groupAvatarUrl } from "../../lib/avatarFile";
 import { MagnifyingGlass as Search, Megaphone, Chat as MessageSquarePlus, Plus } from "./phosphorInline.jsx";
 import SwipeRevealRow from "./SwipeRevealRow";
 import GlassConfirm from "../ui/GlassConfirm";
@@ -61,6 +64,7 @@ export default function ServerSidebar({
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
+  onGroupAvatarChanged,
   friendRequests,
   messageRequests,
   onAcceptFriend,
@@ -445,6 +449,7 @@ export default function ServerSidebar({
               onGroupSelect={onGroupSelect}
               onGroupLeft={onGroupLeft}
               onGroupRenamed={onGroupRenamed}
+              onGroupAvatarChanged={onGroupAvatarChanged}
               isMobile={isMobile}
               unreadById={groupUnread}
               loading={!groupsLoaded}
@@ -1580,7 +1585,7 @@ function AddMemberDialog({ group, friends, onClose, onMemberAdded }) {
   , document.body);
 }
 
-function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null }) {
+function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null, onChangePhoto, onRemovePhoto }) {
   const t = useT();
   const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0, visibility: "hidden" });
@@ -1724,6 +1729,40 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
       </button>
       <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
       <button
+        onClick={() => { onChangePhoto?.(); onClose(); }}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 14px", background: "none", border: "none",
+          cursor: "pointer", fontSize: 13, color: "var(--text-1)",
+          transition: "background 0.1s",
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        <ImagePlus size={14} style={{ color: "var(--text-muted)" }} />
+        {t("Change Group Photo")}
+      </button>
+      {groupAvatarUrl(group) ? (
+        <>
+          <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
+          <button
+            onClick={() => { onRemovePhoto?.(); onClose(); }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 14px", background: "none", border: "none",
+              cursor: "pointer", fontSize: 13, color: "var(--text-1)",
+              transition: "background 0.1s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+          >
+            <ImageOff size={14} style={{ color: "var(--text-muted)" }} />
+            {t("Remove Group Photo")}
+          </button>
+        </>
+      ) : null}
+      <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
+      <button
         className="is-danger"
         onClick={() => { onLeave(); onClose(); }}
         style={{
@@ -1831,7 +1870,7 @@ function RenameDialog({ group, onConfirm, onCancel }) {
   );
 }
 
-function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
+function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
   const t = useT();
   const { locale } = useLocale();
   const safeGroups = Array.isArray(groups) ? groups : [];
@@ -1846,6 +1885,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const [swipeOpenId, setSwipeOpenId] = useState(null);
   const menuRef = useRef(null);
   const dotBtnRefs = useRef({});
+  const groupPhoto = useGroupPhotoChanger({ onUpdated: onGroupAvatarChanged });
 
   useEffect(() => {
     if (!openMenuId) return;
@@ -1904,6 +1944,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
     if (action === "invite") setInviteGroup(group);
     else if (action === "add") setAddMemberGroup(group);
     else if (action === "rename") setConfirmRename(group);
+    else if (action === "photo") groupPhoto.pick(group);
     else if (action === "leave") setConfirmLeave(group);
   };
 
@@ -2020,6 +2061,8 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                                 onClose={closeMenu}
                                 onLeave={() => setConfirmLeave(group)}
                                 onRename={() => setConfirmRename(group)}
+                                onChangePhoto={() => groupPhoto.pick(group)}
+                                onRemovePhoto={() => groupPhoto.remove(group)}
                                 onAddMember={() => setAddMemberGroup(group)}
                                 onInvite={() => setInviteGroup(group)}
                                 anchorRef={{ current: dotBtnRefs.current[group.id] }}
@@ -2035,6 +2078,8 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
               )}
         </SidebarSectionContent>
       </div>
+
+      {groupPhoto.element}
 
       <AnimatePresence>
         {confirmLeave && (
@@ -2106,12 +2151,13 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
   const memberCount = group.memberCount || group.members?.length || 0;
   return (
     <>
-      <div className="group-icon" style={{ width: 36, height: 36, borderRadius: 10, background: "var(--primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
-        {group.icon ? (
-          <img src={group.icon} alt={group.name} style={{ width: "100%", height: "100%", borderRadius: 10, objectFit: "cover" }} />
-        ) : (
-          <span>{glass ? glassGroupInitials(group.name) : group.name?.charAt(0)?.toUpperCase()}</span>
-        )}
+      <div className={`group-icon${groupAvatarUrl(group) ? " has-group-photo" : ""}`} style={{ width: 36, height: 36, borderRadius: 10, background: "var(--primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: "hidden" }}>
+        <GroupIcon
+          group={group}
+          size={36}
+          radius={10}
+          initials={glass ? glassGroupInitials(group.name) : group.name?.charAt(0)?.toUpperCase()}
+        />
       </div>
       <div className="group-info conv-row-body">
         <div className="conv-row-top">
@@ -2192,6 +2238,10 @@ function SwipeableGroupRow({
           <button type="button" className="group-swipe-btn rename" onClick={() => onAction?.("rename")}>
             <Edit3 size={15} />
             <span>{t("Rename")}</span>
+          </button>
+          <button type="button" className="group-swipe-btn photo" onClick={() => onAction?.("photo")}>
+            <ImagePlus size={15} />
+            <span>{t("Photo")}</span>
           </button>
           <button type="button" className="group-swipe-btn leave" onClick={() => onAction?.("leave")}>
             <LogOut size={15} />

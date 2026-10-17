@@ -77,7 +77,19 @@ html.glass-desktop {
   --gd-blur: var(--g-blur);
   --gd-saturate: var(--g-saturate);
   --nav-rail-width: 72px;
-  --sidebar-width: 296px;
+  /* DM / group / server channel list column (2.10.109). Unchanged 296px up
+     to a 1440px window; above that it grows 0.3px per px of window width and
+     stops at 380px (reached at 1720px). Measured at 1280/1366/1440/1600/1920/
+     2560: names stop truncating at 1920+, chat keeps ~75-80% of the width.
+     Continuous function of 100vw, so resizing never jumps. */
+  --sidebar-width-base: 296px;
+  --sidebar-width-breakpoint: 1440px;
+  --sidebar-width-max: 380px;
+  --sidebar-width: clamp(
+    var(--sidebar-width-base),
+    calc(var(--sidebar-width-base) + (100vw - var(--sidebar-width-breakpoint)) * 0.3),
+    var(--sidebar-width-max)
+  );
   --gd-solid: var(--g-solid);
   --gd-solid-heavy: var(--g-solid-heavy);
   --gd-heavy-base: var(--g-heavy-base);

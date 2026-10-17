@@ -2994,8 +2994,8 @@ button.header-avatar {
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--border-2);
+  background: transparent;
+  border-bottom: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;

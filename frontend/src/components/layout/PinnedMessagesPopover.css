@@ -1,0 +1,224 @@
+/* Pinned messages popover (2.10.109). Liquid Glass, anchored under the
+   header pin button, portaled to <body>. Tokens fall back for themes that
+   don't define the glass variables (narrow web, Android). */
+.pinned-popover {
+  position: fixed;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 22px;
+  color: var(--gd-t1, var(--g-t1, #f4f5f8));
+  font-family: var(--gd-font, -apple-system, "SF Pro Text", Inter, "Segoe UI Variable", system-ui, sans-serif);
+  background:
+    linear-gradient(180deg, var(--g-tint-top, rgba(255, 255, 255, 0.10)) 0%, var(--g-tint-bot, rgba(255, 255, 255, 0.04)) 100%),
+    linear-gradient(var(--g-tint-base, rgba(32, 34, 44, 0.62)), var(--g-tint-base, rgba(32, 34, 44, 0.62)));
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy, 28px)) saturate(var(--g-saturate, 180%));
+  backdrop-filter: blur(var(--g-blur-heavy, 28px)) saturate(var(--g-saturate, 180%));
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 24px 60px rgba(0, 0, 0, 0.42),
+    0 4px 14px rgba(0, 0, 0, 0.22);
+  will-change: transform, opacity;
+  outline: none;
+}
+
+.pinned-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 10px 8px 16px;
+}
+
+.pinned-popover-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.pinned-popover-count {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+  color: var(--gd-t2, var(--g-t2, rgba(255, 255, 255, 0.72)));
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.pinned-popover-close,
+.pinned-popover-unpin {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 15px;
+  color: var(--gd-t2, var(--g-t2, rgba(255, 255, 255, 0.72)));
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 100ms ease-out, color 160ms ease;
+}
+
+.pinned-popover-close:hover,
+.pinned-popover-unpin:hover {
+  color: var(--gd-t1, var(--g-t1, #fff));
+  background: color-mix(in srgb, var(--gd-t1, #fff) 12%, transparent);
+}
+
+.pinned-popover-close:active,
+.pinned-popover-unpin:active {
+  transform: scale(0.94);
+}
+
+.pinned-popover-close:focus-visible,
+.pinned-popover-unpin:focus-visible {
+  outline: 2px solid var(--gd-brand-hi, #8ea2ff);
+  outline-offset: 1px;
+}
+
+.pinned-popover-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 6px 8px;
+  overscroll-behavior: contain;
+}
+
+.pinned-popover-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 8px 9px 10px;
+  border-radius: 14px;
+  transition: background-color 160ms ease;
+}
+
+.pinned-popover-row:hover {
+  background: color-mix(in srgb, var(--gd-t1, #fff) 6%, transparent);
+}
+
+.pinned-popover-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pinned-popover-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pinned-popover-author {
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pinned-popover-time {
+  font-size: 11px;
+  color: var(--gd-t3, var(--g-t3, rgba(255, 255, 255, 0.5)));
+}
+
+.pinned-popover-text {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--gd-t2, var(--g-t2, rgba(255, 255, 255, 0.78)));
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pinned-popover-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 20px 22px;
+  text-align: center;
+}
+
+.pinned-popover-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  border-radius: 24px;
+  color: var(--gd-brand-hi, #8ea2ff);
+  background: color-mix(in srgb, var(--gd-brand-hi, #8ea2ff) 16%, transparent);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+}
+
+.pinned-popover-empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.pinned-popover-empty-hint {
+  margin: 0;
+  max-width: 260px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--gd-t3, var(--g-t3, rgba(255, 255, 255, 0.56)));
+}
+
+[data-theme="light"] .pinned-popover {
+  color: #15171c;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 24px 60px rgba(0, 0, 0, 0.18),
+    0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+html.gd-lite .pinned-popover,
+html.a11y-solid .pinned-popover {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid, var(--g-solid, rgb(30, 32, 40)));
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .pinned-popover {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--gd-solid, var(--g-solid, rgb(30, 32, 40)));
+  }
+}
+
+@media (prefers-contrast: more) {
+  .pinned-popover {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 24px 60px rgba(0, 0, 0, 0.42);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinned-popover-close,
+  .pinned-popover-unpin,
+  .pinned-popover-row {
+    transition: none;
+  }
+  .pinned-popover-close:active,
+  .pinned-popover-unpin:active {
+    transform: none;
+  }
+}

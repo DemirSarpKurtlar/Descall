@@ -26,6 +26,7 @@ import AdminBadge from "../social/AdminBadge";
 import { BadgeIcon, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
+import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS } from "../../lib/singleActiveHover";
 import { getLocale } from "../../i18n/runtime";
 import { formatMessageClock, formatMessageDate, intlLocaleTag, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
@@ -871,18 +872,36 @@ function MessageBubble({
     if (!menuOpen) suppressMediaClickUntil.current = 0;
   }, [menuOpen]);
 
+  // Single shared hover toolbar: opening this one closes any other instantly.
+  const hoverKey = useRef(null);
+  if (!hoverKey.current) hoverKey.current = {};
+  const closeFromOwner = useCallback(() => {
+    setMenuOpen(false);
+    setPickerOpen(false);
+  }, []);
+
   const openMenu = () => {
     clearHide();
+    if (!messageHoverToolbar.activate(hoverKey.current, closeFromOwner)) return;
     setMenuOpen(true);
   };
 
   const scheduleClose = () => {
     clearHide();
-    hideTimer.current = setTimeout(() => {
-      setMenuOpen(false);
-      setPickerOpen(false);
-    }, 180);
+    messageHoverToolbar.scheduleRelease(hoverKey.current, HOVER_TOOLBAR_GRACE_MS);
   };
+
+  useEffect(() => {
+    const key = hoverKey.current;
+    if (menuOpen) messageHoverToolbar.activate(key, closeFromOwner);
+    else messageHoverToolbar.forget(key);
+  }, [menuOpen, closeFromOwner]);
+
+  useEffect(() => {
+    messageHoverToolbar.setLocked(hoverKey.current, pickerOpen);
+  }, [pickerOpen, menuOpen]);
+
+  useEffect(() => () => messageHoverToolbar.forget(hoverKey.current), []);
 
   useEffect(() => {
     pressGate.current.noteLightbox(lightboxOpen);
@@ -1213,7 +1232,7 @@ function MessageBubble({
               className={`message-hover-bar ${isOwn ? "own" : "other"}`}
               initial={{ opacity: 0, y: 6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 4, scale: 0.96 }}
+              exit={{ opacity: 0, y: 2, scale: 0.98, transition: { duration: 0.08, ease: "easeOut" } }}
               transition={{ duration: 0.14 }}
               onMouseEnter={openMenu}
               onMouseLeave={scheduleClose}

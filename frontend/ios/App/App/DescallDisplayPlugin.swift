@@ -21,6 +21,7 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setStatusBarStyle", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getAppInfo", returnType: CAPPluginReturnPromise),
     ]
 
     private var observers: [NSObjectProtocol] = []
@@ -91,5 +92,15 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
         return withUnsafePointer(to: &info.machine) { ptr in
             ptr.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
         }
+    }
+
+    /// Installed app version for the admin panel (2.10.109):
+    /// { version: CFBundleShortVersionString, build: CFBundleVersion }.
+    @objc func getAppInfo(_ call: CAPPluginCall) {
+        let info = Bundle.main.infoDictionary ?? [:]
+        call.resolve([
+            "version": info["CFBundleShortVersionString"] as? String ?? "",
+            "build": info["CFBundleVersion"] as? String ?? "",
+        ])
     }
 }
