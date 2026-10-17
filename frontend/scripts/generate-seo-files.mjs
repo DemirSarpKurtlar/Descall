@@ -56,8 +56,34 @@ const PAGE_SOURCES = {
   "/sitemap": ["src/site/buildSitemapHtml.js", "src/site/seoConfig.js"],
 };
 
+let historyReady = null;
+/**
+ * Cloudflare Pages clones with depth 1, so every file would report the deploy
+ * commit's date. Fetch commit history (no blobs) once so lastmod is real.
+ */
+function ensureHistory() {
+  if (historyReady !== null) return historyReady;
+  const git = (args, timeout = 15000) =>
+    execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout }).trim();
+  try {
+    if (git(["rev-parse", "--is-shallow-repository"]) === "true") {
+      try {
+        git(["fetch", "--quiet", "--unshallow", "--filter=blob:none"], 120000);
+      } catch {
+        git(["fetch", "--quiet", "--unshallow"], 180000);
+      }
+    }
+    historyReady = git(["rev-parse", "--is-shallow-repository"]) !== "true";
+  } catch {
+    historyReady = false;
+  }
+  if (!historyReady) console.warn("[generate-seo-files] shallow git history: lastmod falls back to build time");
+  return historyReady;
+}
+
 const lastmodCache = new Map();
 function gitLastmod(files) {
+  if (!ensureHistory()) return null;
   const key = files.join("|");
   if (lastmodCache.has(key)) return lastmodCache.get(key);
   let out = null;
