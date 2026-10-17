@@ -2,15 +2,18 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
-  Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply, Dice5, HelpCircle, Wallet, Trophy, CalendarDays,
-  Info, UserRound, ImageIcon, Pencil, BarChart3, Timer, Cherry, Coins, HandCoins
+  Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply,
+  Info, UserRound, ImageIcon, Pencil, BarChart3, Timer,
+  CircleHelp, UserX, Ban, Eraser
 } from "lucide-react";
+import { CardsGlyph, ReelsGlyph, CoinGlyph, SendGlyph, DailyGlyph, WalletGlyph, TrophyGlyph } from "./slashIcons";
 import GiphyPicker from "./GiphyPicker";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../lib/voiceMessage";
 import { useT } from "../../context/LocaleContext";
-import { filterSlashCommandMatches, getSlashCommandsForSurface } from "../../lib/slashCommands";
+import { filterSlashCommandMatches, getSlashCommandsForSurface, slashInsertText } from "../../lib/slashCommands";
+import SlashCommandMenu, { orderSlashMatches } from "./SlashCommandMenu";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
@@ -24,24 +27,23 @@ const EMOJI_CATEGORIES = [
 ];
 
 const SLASH_ICONS = {
-  bj: Dice5,
-  slot: Cherry,
-  coinflip: Coins,
-  cf: Coins,
-  pay: HandCoins,
-  send: HandCoins,
-  gonder: HandCoins,
-  tip: HandCoins,
-  daily: CalendarDays,
-  help: HelpCircle,
-  credits: Wallet,
-  top: Trophy,
+  bj: CardsGlyph,
+  slot: ReelsGlyph,
+  coinflip: CoinGlyph,
+  pay: SendGlyph,
+  daily: DailyGlyph,
+  help: CircleHelp,
+  credits: WalletGlyph,
+  top: TrophyGlyph,
   server: Info,
   user: UserRound,
   avatar: ImageIcon,
   nick: Pencil,
   poll: BarChart3,
   timeout: Timer,
+  kick: UserX,
+  ban: Ban,
+  purge: Eraser,
 };
 
 function formatSlowmode(seconds) {
@@ -250,38 +252,40 @@ export default function MessageComposer({
       getSlashCommandsForSurface({
         activeChannel,
         activeGroup,
+        activeDmUser,
         permissionFlags: activeServer?.myPermissions?.flags || {},
         isOwner: Boolean(activeServer?.isOwner),
       }).map((cmd) => ({
         ...cmd,
-        Icon: SLASH_ICONS[cmd.name] || HelpCircle,
+        Icon: SLASH_ICONS[cmd.name] || CircleHelp,
       })),
-    [activeChannel, activeGroup, activeServer?.isOwner, activeServer?.myPermissions?.flags]
+    [activeChannel, activeGroup, activeDmUser, activeServer?.isOwner, activeServer?.myPermissions?.flags]
   );
 
+  // Esc closes the menu for the text typed so far; typing again reopens it.
+  const [slashDismissedFor, setSlashDismissedFor] = useState(null);
   const slashMatches = useMemo(
-    () => filterSlashCommandMatches(slashCommands, message),
-    [message, slashCommands]
+    () =>
+      slashDismissedFor !== null && slashDismissedFor === message
+        ? []
+        : orderSlashMatches(filterSlashCommandMatches(slashCommands, message)),
+    [message, slashCommands, slashDismissedFor]
   );
 
   useEffect(() => {
     setSlashIndex(0);
   }, [slashMatches.length, message]);
 
-  useEffect(() => {
-    const item = slashMenuRef.current?.querySelector(".slash-command-item.active");
-    item?.scrollIntoView({ block: "nearest" });
-  }, [slashIndex, slashMatches.length]);
-
   const applySlashCommand = useCallback((cmd) => {
     if (!cmd) return;
-    setMessage(cmd.insert);
+    const insert = slashInsertText(cmd);
+    setMessage(insert);
     setSlashIndex(0);
     requestAnimationFrame(() => {
       const el = inputRef.current;
       if (!el) return;
       el.focus();
-      const pos = cmd.insert.length;
+      const pos = insert.length;
       el.selectionStart = el.selectionEnd = pos;
     });
   }, []);
@@ -386,7 +390,7 @@ export default function MessageComposer({
       }
       if (e.key === "Escape") {
         e.preventDefault();
-        setMessage("");
+        setSlashDismissedFor(message);
         return;
       }
     }
@@ -789,40 +793,14 @@ export default function MessageComposer({
 
       <AnimatePresence>
         {slashMatches.length > 0 && (
-          <motion.div
-            className="slash-command-menu"
-            ref={slashMenuRef}
-            role="listbox"
-            aria-label={t("Slash commands")}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.14 }}
-          >
-            <div className="slash-command-header">{t("Commands")}</div>
-            {slashMatches.map((cmd, idx) => {
-              const Icon = cmd.Icon;
-              const active = idx === slashIndex;
-              return (
-                <button
-                  key={cmd.id}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  className={`slash-command-item ${active ? "active" : ""}`}
-                  onMouseEnter={() => setSlashIndex(idx)}
-                  onClick={() => applySlashCommand(cmd)}
-                >
-                  <span className="slash-command-ico"><Icon size={18} /></span>
-                  <span className="slash-command-copy">
-                    <strong>{cmd.command}</strong>
-                    <span>{t(cmd.hint)}</span>
-                  </span>
-                  <span className="slash-command-label">{t(cmd.label)}</span>
-                </button>
-              );
-            })}
-          </motion.div>
+          <SlashCommandMenu
+            key="slash-menu"
+            menuRef={slashMenuRef}
+            items={slashMatches}
+            activeIndex={slashIndex}
+            onHover={setSlashIndex}
+            onPick={applySlashCommand}
+          />
         )}
       </AnimatePresence>
 

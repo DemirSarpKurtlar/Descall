@@ -16,6 +16,11 @@ const supabasePath = require.resolve("../db/supabase");
 const fakeSupabase = createFakeSupabase({
   users: [{ id: "u-ios", username: "iosuser", birth_date: "1990-01-01" }],
   user_credits: [],
+  // Membership: game events are authorized against the target chat first.
+  group_members: [
+    { group_id: "g1", user_id: "u-ios" },
+    { group_id: "g1", user_id: "u-plain" },
+  ],
 });
 require.cache[supabasePath] = {
   id: supabasePath,

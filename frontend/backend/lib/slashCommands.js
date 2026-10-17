@@ -97,6 +97,7 @@ const slashCommands = [
   defineCommand({
     name: "help",
     description: "List commands available in this chat.",
+    contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleHelpCommand,
   }),
@@ -111,6 +112,7 @@ const slashCommands = [
     name: "user",
     description: "Show a member card.",
     options: [option("user", "@user, username, or id.")],
+    contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleUserCommand,
   }),
@@ -118,6 +120,7 @@ const slashCommands = [
     name: "avatar",
     description: "Show a user's avatar.",
     options: [option("user", "@user, username, or id.")],
+    contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleAvatarCommand,
   }),
@@ -133,6 +136,7 @@ const slashCommands = [
     name: "poll",
     description: "Create a simple poll. Use: /poll question | option 1 | option 2",
     options: [option("question | options", "Poll question followed by pipe-separated options.", { required: true })],
+    contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handlePollCommand,
   }),
@@ -272,8 +276,31 @@ function createSlashBotMessage(content, type = "app_command", embed = null) {
   };
 }
 
+/** DM payload shape (same as dm:message rows) for an ephemeral app reply. */
+function dmAppPayload(message, convWith) {
+  return {
+    id: message.id,
+    from: { ...APP_BOT },
+    text: message.content || "",
+    type: message.type,
+    appType: message.type,
+    embed: message.embed || null,
+    isAppMessage: true,
+    isBot: true,
+    timestamp: message.timestamp || message.created_at,
+    convWith,
+  };
+}
+
 function emitAppMessage({ io, socket, context, roomId, message }) {
   if (!message) return;
+  if (context === "dm") {
+    const [a, b] = Array.isArray(message.dm_user_ids) ? message.dm_user_ids : [];
+    if (!a || !b) return;
+    io.to(`user:${a}`).emit("dm:message", dmAppPayload(message, b));
+    io.to(`user:${b}`).emit("dm:message", dmAppPayload(message, a));
+    return;
+  }
   if (context === "server") {
     socket.emit("server:channel:message", {
       serverId: message.server_id,
@@ -303,7 +330,12 @@ async function executeSlashCommand(ctx) {
   if (!command.contexts.includes(ctx.context)) return { handled: false };
   await assertCommandPermission(ctx, command);
   const result = await command.handler({ ...ctx, parsed, command });
-  return { handled: true, suppress: Boolean(result?.suppress), message: result?.message || null };
+  return {
+    handled: true,
+    suppress: Boolean(result?.suppress),
+    message: result?.message || null,
+    dmText: result?.dmText || null,
+  };
 }
 
 async function assertCommandPermission(ctx, command) {
@@ -542,12 +574,11 @@ async function handlePollCommand(ctx) {
       }),
     };
   }
-  const [question, ...rawOptions] = parts;
-  const options = rawOptions.slice(0, 10);
-  const content = [
-    `**Poll: ${escapeMd(question.slice(0, 180))}**`,
-    ...options.map((opt, index) => `${index + 1}. ${escapeMd(opt.slice(0, 80))}`),
-  ].join("\n");
+  const content = formatPollContent(ctx.parsed.args);
+  if (ctx.context === "dm") {
+    // DMs persist the poll as the caller's own dm_messages row (see dm:send).
+    return { dmText: content };
+  }
   const message = await persistPollMessage(ctx, content);
   return { message };
 }
@@ -1085,6 +1116,14 @@ function createContextMessage(ctx, contentOrOpts, maybeType) {
       sender: { ...APP_BOT },
     };
   }
+  if (ctx.context === "dm") {
+    return {
+      ...message,
+      dm_user_ids: [ctx.userId, ctx.dmUserId],
+      sender_id: APP_BOT.id,
+      sender: { ...APP_BOT },
+    };
+  }
   return {
     ...message,
     group_id: ctx.roomId,
@@ -1219,6 +1258,17 @@ function clampTimeoutSeconds(value) {
   return Math.max(1, Math.min(MAX_TIMEOUT_SECONDS, n));
 }
 
+function formatPollContent(args) {
+  const parts = String(args || "").split("|").map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 3) return null;
+  const [question, ...rawOptions] = parts;
+  const options = rawOptions.slice(0, 10);
+  return [
+    `**Poll: ${escapeMd(question.slice(0, 180))}**`,
+    ...options.map((opt, index) => `${index + 1}. ${escapeMd(opt.slice(0, 80))}`),
+  ].join("\n");
+}
+
 function escapeMd(value) {
   return String(value || "").replace(/([\\*_`~])/g, "\\$1");
 }
@@ -1230,6 +1280,7 @@ module.exports = {
   executeSlashCommand,
   emitAppMessage,
   isCasinoCommand,
+  formatPollContent,
   applyServerTimeout,
   clearServerTimeout,
   updateMemberNickname,

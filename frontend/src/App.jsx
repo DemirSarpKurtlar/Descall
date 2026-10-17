@@ -74,6 +74,7 @@ import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audi
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
+import { isDmSlashCommand } from "./lib/slashCommands";
 import { isNativeIOS } from "./lib/platform";
 import { hapticError, hapticImpactMedium, hapticSuccess } from "./lib/fluid/haptics";
 import { resolveMessageDeleted, resolveMessageDeleteFailed } from "./lib/messageDeleteFeedback";
@@ -2211,7 +2212,7 @@ export default function App() {
       isCasinoBoard(message) ||
       ["game_start", "game_update", "game_end"].includes(message?.type);
 
-    const upsertGameMessage = (roomId, message, { channelId = null } = {}) => {
+    const upsertGameMessage = (roomId, message, { channelId = null, dmUserId = null } = {}) => {
       if (!roomId || !message) return;
       // Casino games are hidden in the native iOS app (App Store age rating).
       if (isNativeIOS()) return;
@@ -2235,8 +2236,9 @@ export default function App() {
         sessionOwnerId: ownerId,
         timestamp: message.timestamp || new Date().toISOString(),
         isGameMessage: true,
-        groupId: channelId ? null : roomId,
+        groupId: channelId || dmUserId ? null : roomId,
         channelId: channelId || null,
+        dmUserId: dmUserId || null,
       };
 
       const mergeInto = (prev, bagKey) => {
@@ -2277,22 +2279,28 @@ export default function App() {
         return { ...prev, [bagKey]: [...cur, gameMessage] };
       };
 
-      if (channelId) {
+      if (dmUserId) {
+        setDmByUserId((prev) => mergeInto(prev, dmUserId));
+      } else if (channelId) {
         setChannelMessagesById((prev) => mergeInto(prev, channelId));
       } else {
         setGroupMessagesById((prev) => mergeInto(prev, roomId));
       }
     };
 
-    socket.on("game:message", ({ groupId, channelId, message } = {}) => {
+    // 1:1 DM games carry both participant ids; the bag is keyed by the other person.
+    const routeGamePayload = ({ groupId, channelId, dmUserIds, message } = {}) => {
+      if (Array.isArray(dmUserIds) && dmUserIds.length === 2) {
+        const peer = dmUserIds.find((id) => id && id !== myIdRef.current);
+        if (peer) upsertGameMessage(peer, message, { dmUserId: peer });
+        return;
+      }
       const roomId = channelId || groupId;
       upsertGameMessage(roomId, message, { channelId: channelId || null });
-    });
+    };
 
-    socket.on("game:update", ({ groupId, channelId, message } = {}) => {
-      const roomId = channelId || groupId;
-      upsertGameMessage(roomId, message, { channelId: channelId || null });
-    });
+    socket.on("game:message", routeGamePayload);
+    socket.on("game:update", routeGamePayload);
 
     socket.on("game:notice", ({ text } = {}) => {
       if (!text || isNativeIOS()) return;
@@ -4881,6 +4889,23 @@ export default function App() {
             const replyMeta = isObj ? msg.replyTo : null;
 
             if (activeDmUser) {
+              // Slash commands in a DM (games, /help, /user, /avatar, /poll): the
+              // server answers with game/app cards, so no optimistic chat row.
+              const dmSlash = isMediaObject ? "" : String(textPayload || "").trim();
+              if (dmSlash && isDmSlashCommand(dmSlash)) {
+                if (isNativeIOS() && isCasinoSlash(dmSlash)) {
+                  toast(t("Casino games are not available in the iOS app."), "info");
+                  return;
+                }
+                socketRef.current?.emit("dm:send", {
+                  toUserId: activeDmUser.id,
+                  tempId: `cmd-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                  text: dmSlash,
+                });
+                hapticSuccess();
+                setReplyTo(null);
+                return;
+              }
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const optimisticMessage = {
                 id: tempId,

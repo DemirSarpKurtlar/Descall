@@ -74,6 +74,7 @@ const {
 const { createRingFanout } = require("../lib/callRingFanout");
 const { buildDmCallSummary, callSummaryMessageFields } = require("../lib/callSummary");
 const { isBlockedEitherWay } = require("../lib/blocking");
+const { routeDmSlashCommand } = require("../lib/dmSlashCommands");
 const { planDmSend, planCallOffer } = require("../lib/messageRequestPolicy");
 const {
   upsertMessageRequest,
@@ -1090,6 +1091,16 @@ function registerSocketHandlers(io) {
         return socket.emit("dm:error", { message: "Rate limited.", tempId: tempId || null, toUserId });
       }
       rateLimitDm.set(myId, now);
+
+      // Slash commands in a 1:1 DM: casino games and DM-safe app commands.
+      // Friends only (never via a message request), not blocked, not banned or
+      // timed out; age + iOS gates still run inside handleGameCommand.
+      if (!mediaUrl && typeof text === "string" && text.trim().startsWith("/")) {
+        const routed = await routeDmSlashCommand({ io, socket, myId, me, toUserId, tempId, text: text.trim() });
+        if (routed.handled && !routed.dmText) return;
+        if (routed.dmText) text = routed.dmText;
+      }
+
       const friendsOk = await isAcceptedFriend(myId, toUserId);
       if (planDmSend({ friends: friendsOk }) === "request") {
         const preview = messageRequestPreview({ text, mediaType, mediaUrl });
