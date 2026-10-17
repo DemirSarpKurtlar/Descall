@@ -1,0 +1,47 @@
+# Adds a TestFlight tester (by email) to the app's existing external beta group via the
+# App Store Connect API (appstore/asc_beta_tester.py). Manual trigger only. Never submits for review.
+name: TestFlight add tester
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Tester email"
+        required: true
+      group:
+        description: "External beta group name (blank = the external group with most testers)"
+        required: false
+        default: ""
+      assign_build:
+        description: "Assign latest VALID build to the group if missing (no review submission)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet pyjwt cryptography requests
+      - name: Add tester
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TESTER_EMAIL: ${{ inputs.email }}
+          GROUP_NAME: ${{ inputs.group }}
+          ASSIGN_BUILD: ${{ inputs.assign_build }}
+        run: |
+          set -euo pipefail
+          umask 077
+          export ASC_KEY_PATH="$RUNNER_TEMP/asc_key.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          python appstore/asc_beta_tester.py
+          rm -f "$ASC_KEY_PATH"
