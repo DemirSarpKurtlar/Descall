@@ -73,6 +73,14 @@ export function createCallKitController({
   // Answered on the lock screen (native "awaitingJoin"): WKWebView can't
   // capture the mic while hidden, so the answer waits for the app to be opened.
   let waitingForUnlock = false;
+  // Answered natively on the lock screen (2.10.108, DescallNativeCall.swift):
+  // Swift owns the call. JS never answers, declines or ends it in CallKit.
+  const nativeUuids = new Set();
+
+  function rememberNative(uuid) {
+    nativeUuids.add(uuid);
+    if (nativeUuids.size > 16) nativeUuids.delete(nativeUuids.values().next().value);
+  }
 
   const safe = (promise) => {
     if (promise && typeof promise.catch === "function") {
@@ -165,6 +173,14 @@ export function createCallKitController({
     if (!uuid) uuid = newUuid();
     knownPushes.delete(uuid);
     current = { uuid, direction: "incoming", peerId, answered: false, endedByCallKit: false, fallback: false };
+
+    if (nativeUuids.has(uuid)) {
+      // Late offer replay for the call the native engine already answered:
+      // not a ring for this web app. Local cleanup only (never decline).
+      current.endedByCallKit = true;
+      c.cleanup?.();
+      return;
+    }
 
     if (endedUuids.has(uuid) || pendingDeclines.has(peerId)) {
       // Declined on the lock screen before the offer reached the web app.
@@ -339,12 +355,16 @@ export function createCallKitController({
     knownPushes.delete(uuid);
     if (pendingAnswer?.uuid === uuid) clearPendingAnswer();
     const c = getCall();
+    // The native engine already sent call:decline / call:end on its own socket.
+    const handled = data.handledNatively === true || nativeUuids.has(uuid);
     if (current && current.uuid === uuid) {
       current.endedByCallKit = true;
-      if (c?.mode === "incoming") c.declineIncoming?.();
+      if (handled) c?.cleanup?.();
+      else if (c?.mode === "incoming") c.declineIncoming?.();
       else if (c?.mode) c.endCall?.();
       return;
     }
+    if (handled) return;
     if (data.callerId && !data.answered) {
       pendingDeclines.set(data.callerId, uuid);
       flushPendingDeclines();
@@ -477,6 +497,27 @@ export function createCallKitController({
     }
   }
 
+  /** CallKit answer handled by the native engine (app in background / killed). */
+  function onNativeAnswered(data) {
+    const uuid = normUuid(data.uuid);
+    if (!uuid) return;
+    rememberNative(uuid);
+    knownPushes.delete(uuid);
+    pendingDeclines.delete(data.callerId || "");
+    if (pendingAnswer?.uuid === uuid) clearPendingAnswer();
+    waitingForUnlock = false;
+    clearAcceptTimer();
+    const c = getCall();
+    if (current && (current.uuid === uuid || (data.callerId && current.peerId === data.callerId && current.direction === "incoming"))) {
+      current.endedByCallKit = true;
+      if (current.fallback) {
+        current.fallback = false;
+        onFallbackRing(false);
+      }
+      if (c?.mode === "incoming") c.cleanup?.(); // local only; never decline
+    }
+  }
+
   function onIncomingReportFailed(data) {
     // Push-reported call already ended natively (busy / DND / blocked).
     const uuid = normUuid(data.uuid);
@@ -494,7 +535,10 @@ export function createCallKitController({
         return;
       }
       case "answer":
+        if (nativeUuids.has(normUuid(data.uuid))) return undefined;
         return onAnswer(data);
+      case "nativeCallAnswered":
+        return onNativeAnswered(data);
       case "end":
         return onEnd(data);
       case "mute":
@@ -547,6 +591,7 @@ export function createCallKitController({
       c?.cleanup?.(); // local only; the other device already told the caller
       return;
     }
+    if (uuid && nativeUuids.has(uuid)) return;
     if (uuid && (knownPushes.has(uuid) || pendingAnswer?.uuid === uuid)) {
       knownPushes.delete(uuid);
       if (pendingAnswer?.uuid === uuid) clearPendingAnswer();
@@ -559,7 +604,7 @@ export function createCallKitController({
   function onResumeResult({ calls } = {}) {
     for (const entry of Array.isArray(calls) ? calls : []) {
       const uuid = normUuid(entry?.callUuid);
-      if (!uuid || entry.state === "ringing") continue;
+      if (!uuid || entry.state === "ringing" || nativeUuids.has(uuid)) continue;
       if (current && current.uuid === uuid) continue;
       const tracked = knownPushes.has(uuid) || pendingAnswer?.uuid === uuid;
       if (!tracked) continue;
@@ -573,7 +618,7 @@ export function createCallKitController({
   /** Any call:offer seen by the socket: a push-reported ring useCall refused (busy) must stop. */
   function onOfferSeen({ fromUser, callUuid } = {}, settle = (fn) => setTimer(fn, OFFER_SETTLE_MS)) {
     const uuid = normUuid(callUuid);
-    if (!uuid || !knownPushes.has(uuid)) return;
+    if (!uuid || !knownPushes.has(uuid) || nativeUuids.has(uuid)) return;
     settle(() => {
       const c = getCall();
       if (current?.uuid === uuid) return;
@@ -607,6 +652,7 @@ export function createCallKitController({
       audioActive,
       acceptPending: acceptTimer != null,
       waitingForUnlock,
+      nativeUuids: [...nativeUuids],
     }),
   };
 }

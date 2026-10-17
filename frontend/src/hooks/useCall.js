@@ -48,6 +48,8 @@ import {
   writeParticipantGain,
 } from "../lib/voiceProfile";
 import { getUser } from "../lib/storage";
+import { getNativeCallSnapshot } from "../lib/iosNativeCall";
+import { nativeOfferVerdict } from "../lib/iosNativeCallState";
 import useConnectionStats from "./useConnectionStats";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
@@ -1045,6 +1047,18 @@ export function useCall(socket, callOccupancyRef = null) {
             }
           }
         } catch (err) { console.error("[WebRTC] Renegotiation failed:", err); }
+        return;
+      }
+
+      // A renegotiation offer for a call this tab isn't in (answered on another
+      // device, or natively from the iOS lock screen) is never a new ring.
+      if (renegotiate === true) return;
+
+      // iOS: a call answered natively on the CallKit screen owns the audio.
+      const nativeVerdict = nativeOfferVerdict(getNativeCallSnapshot(), fromUser.id);
+      if (nativeVerdict === "ignore") return;
+      if (nativeVerdict === "decline") {
+        socket.emit("call:decline", { toUserId: fromUser.id });
         return;
       }
 

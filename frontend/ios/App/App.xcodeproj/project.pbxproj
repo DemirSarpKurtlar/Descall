@@ -23,6 +23,10 @@
 		D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */; };
 		D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */; };
 		E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A022F5B000100D35C0A /* DescallCallManager.swift */; };
+		E7C41B012F5C000100D35C0A /* DescallNativeCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */; };
+		E7C41B032F5C000100D35C0A /* DescallNativeCallLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */; };
+		E7C41B052F5C000100D35C0A /* DescallSignalSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */; };
+		E7C41B122F5C000100D35C0A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = E7C41B112F5C000100D35C0A /* WebRTC */; };
 		E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */; };
 		B1B2C3D51FED79650016851F /* DescallBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */; };
 /* End PBXBuildFile section */
@@ -46,6 +50,9 @@
 		D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDisplayPlugin.swift; sourceTree = "<group>"; };
 		D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKeychainPlugin.swift; sourceTree = "<group>"; };
 		E7C41A022F5B000100D35C0A /* DescallCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallManager.swift; sourceTree = "<group>"; };
+		E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNativeCall.swift; sourceTree = "<group>"; };
+		E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNativeCallLogic.swift; sourceTree = "<group>"; };
+		E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallSignalSocket.swift; sourceTree = "<group>"; };
 		E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallKitPlugin.swift; sourceTree = "<group>"; };
 		B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallBridgeViewController.swift; sourceTree = "<group>"; };
 		C1B2C3D41FED79650016851F /* App.debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.debug.entitlements; sourceTree = "<group>"; };
@@ -59,6 +66,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+				E7C41B122F5C000100D35C0A /* WebRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,6 +99,9 @@
 				D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */,
 				D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */,
 				E7C41A022F5B000100D35C0A /* DescallCallManager.swift */,
+				E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */,
+				E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */,
+				E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */,
 				E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */,
 				B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */,
 				C1B2C3D41FED79650016851F /* App.debug.entitlements */,
@@ -127,6 +138,7 @@
 			name = App;
 			packageProductDependencies = (
 				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
+				E7C41B112F5C000100D35C0A /* WebRTC */,
 			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
@@ -160,6 +172,7 @@
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
 				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
+				E7C41B102F5C000100D35C0A /* XCRemoteSwiftPackageReference "WebRTC" */,
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
@@ -200,6 +213,9 @@
 				D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */,
 				D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */,
 				E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */,
+				E7C41B012F5C000100D35C0A /* DescallNativeCall.swift in Sources */,
+				E7C41B032F5C000100D35C0A /* DescallNativeCallLogic.swift in Sources */,
+				E7C41B052F5C000100D35C0A /* DescallSignalSocket.swift in Sources */,
 				E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */,
 				B1B2C3D51FED79650016851F /* DescallBridgeViewController.swift in Sources */,
 			);
@@ -359,7 +375,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.10.107;
+				MARKETING_VERSION = 2.10.108;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -382,7 +398,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.10.107;
+				MARKETING_VERSION = 2.10.108;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -421,11 +437,27 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		E7C41B102F5C000100D35C0A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = exactVersion;
+				version = 155.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		4D22ABE82AF431CB00220026 /* CapApp-SPM */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */;
 			productName = "CapApp-SPM";
+		};
+		E7C41B112F5C000100D35C0A /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E7C41B102F5C000100D35C0A /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

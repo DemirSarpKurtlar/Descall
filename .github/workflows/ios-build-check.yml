@@ -1,0 +1,88 @@
+# Compile the iOS app (unsigned) for pull requests that touch native iOS code
+# or the iOS project, so a Swift / package error is caught before a tag starts
+# the TestFlight upload. No signing, no secrets, nothing is uploaded.
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "frontend/ios/**"
+      - "frontend/capacitor.config.*"
+      - "frontend/package.json"
+      - ".github/workflows/ios-build-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Compile iOS app (unsigned)
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      XCODE_APP: /Applications/Xcode_26.6.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          if [ -d "$XCODE_APP" ]; then sudo xcode-select -s "$XCODE_APP"; else echo "::warning::$XCODE_APP not found, using the image default"; fi
+          xcodebuild -version
+
+      - name: Native call logic selftest (Swift)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/ncl" App/App/DescallNativeCallLogic.swift selftest/main.swift
+          "$RUNNER_TEMP/ncl"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build web assets
+        working-directory: frontend
+        run: npm run build:prod
+
+      - name: Sync Capacitor iOS
+        working-directory: frontend
+        run: npx cap sync ios
+
+      - name: Resolve Swift packages
+        working-directory: frontend/ios/App
+        run: xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App
+
+      - name: Build (Release, generic iOS device, unsigned)
+        working-directory: frontend/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/build.log" | grep -E "error:|warning: .*Descall|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" "$RUNNER_TEMP/build.log"
+          APP="$(find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 2 -name 'App.app' | head -n 1)"
+          test -d "$APP/Frameworks/WebRTC.framework" && echo "WebRTC.framework embedded"
+          /usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$APP/Info.plist"

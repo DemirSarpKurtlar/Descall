@@ -28,6 +28,9 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
         CAPPluginMethod(name: "setAudioRoute", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAudioDiagnostics", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "reactivateCapture", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getNativeCall", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "nativeHangup", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "nativeSetMuted", returnType: CAPPluginReturnPromise),
     ]
 
     private var manager: DescallCallManager { DescallCallManager.shared }
@@ -104,6 +107,33 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
         }
     }
 
+    // MARK: - Native call engine (2.10.108)
+
+    @objc func getNativeCall(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            var state = DescallNativeCall.shared.state()
+            state["lastMetrics"] = DescallNativeCall.lastMetrics()
+            call.resolve(state)
+        }
+    }
+
+    @objc func nativeHangup(_ call: CAPPluginCall) {
+        guard let uuid = callUuid(call) else { return }
+        DispatchQueue.main.async {
+            guard DescallNativeCall.shared.owns(uuid) else { call.resolve(["native": false]); return }
+            self.manager.requestNativeEnd(uuid) { _ in call.resolve(["native": true]) }
+        }
+    }
+
+    @objc func nativeSetMuted(_ call: CAPPluginCall) {
+        guard let uuid = callUuid(call) else { return }
+        let muted = call.getBool("muted") ?? false
+        DispatchQueue.main.async {
+            guard DescallNativeCall.shared.owns(uuid) else { call.resolve(["native": false]); return }
+            self.manager.requestNativeMute(uuid, muted: muted) { _ in call.resolve(["native": true]) }
+        }
+    }
+
     @objc func isAvailable(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             call.resolve([
@@ -164,6 +194,7 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
     @objc func answerCall(_ call: CAPPluginCall) {
         guard let uuid = callUuid(call) else { return }
         DispatchQueue.main.async {
+            if DescallNativeCall.shared.owns(uuid) { call.resolve(["native": true]); return }
             self.manager.answerFromJs(uuid) { self.finish(call, $0) }
         }
     }
@@ -172,6 +203,7 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
         guard let uuid = callUuid(call) else { return }
         let muted = call.getBool("muted") ?? false
         DispatchQueue.main.async {
+            if DescallNativeCall.shared.owns(uuid) { call.resolve(["native": true]); return }
             self.manager.setMutedFromJs(uuid, muted: muted) { self.finish(call, $0) }
         }
     }
@@ -179,6 +211,7 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
     @objc func endCall(_ call: CAPPluginCall) {
         guard let uuid = callUuid(call) else { return }
         DispatchQueue.main.async {
+            if DescallNativeCall.shared.owns(uuid) { call.resolve(["native": true]); return }
             self.manager.endFromJs(uuid) { self.finish(call, $0) }
         }
     }
@@ -195,6 +228,8 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
         default: reason = .remoteEnded
         }
         DispatchQueue.main.async {
+            // A natively answered call is ended by its own engine, never by JS.
+            if DescallNativeCall.shared.owns(uuid) { call.resolve(["native": true]); return }
             self.manager.reportEnded(uuid, reason: reason)
             call.resolve()
         }
@@ -221,6 +256,7 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
 
     @objc func endCallAudio(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
+            if DescallNativeCall.shared.isActive { call.resolve(); return }
             DescallAudioRouter.shared.end()
             call.resolve()
         }

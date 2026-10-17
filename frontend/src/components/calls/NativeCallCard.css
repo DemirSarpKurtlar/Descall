@@ -1,0 +1,142 @@
+/* iOS native call card (2.10.108): Liquid Glass, critically damped entrance. */
+.native-call-card {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  z-index: 2147483000;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "avatar text" "actions actions";
+  gap: 12px 12px;
+  padding: 14px 16px 16px;
+  border-radius: 28px;
+  color: #fff;
+  background: rgba(28, 30, 38, 0.58);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform-origin: 50% 0;
+  animation: native-call-in 420ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.native-call-avatar {
+  grid-area: avatar;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 20px/1 system-ui, -apple-system, sans-serif;
+  background: linear-gradient(145deg, rgba(120, 140, 255, 0.9), rgba(88, 101, 242, 0.9));
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, 0);
+  transition: box-shadow 320ms ease;
+}
+
+.native-call-avatar.is-live {
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.85);
+}
+
+.native-call-text {
+  grid-area: text;
+  min-width: 0;
+  align-self: center;
+}
+
+.native-call-name {
+  font: 600 17px/1.2 system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.native-call-status {
+  margin-top: 2px;
+  font: 500 14px/1.3 system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.native-call-actions {
+  grid-area: actions;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.native-call-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 8px;
+  border: 0;
+  border-radius: 18px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  font: 600 12px/1 system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 100ms ease-out, background-color 180ms ease;
+}
+
+.native-call-btn:active {
+  transform: scale(0.95);
+}
+
+.native-call-btn.is-on {
+  color: #111;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.native-call-btn.is-end {
+  background: #ff3b30;
+}
+
+.native-call-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+}
+
+@keyframes native-call-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+    -webkit-backdrop-filter: blur(0) saturate(100%);
+    backdrop-filter: blur(0) saturate(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-call-card {
+    animation: native-call-fade 160ms ease both;
+  }
+  .native-call-btn,
+  .native-call-avatar {
+    transition: none;
+  }
+  .native-call-btn:active {
+    transform: none;
+  }
+}
+
+@keyframes native-call-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .native-call-card {
+    background: rgb(28, 30, 38);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

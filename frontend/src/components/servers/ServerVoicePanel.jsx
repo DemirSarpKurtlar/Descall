@@ -35,6 +35,7 @@ import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
+import { useVideoPresence } from "../../hooks/useVideoPresence";
 
 function TileFullscreenVideo({ stream }) {
   const ref = useRef(null);
@@ -150,14 +151,18 @@ const VoiceTile = memo(function VoiceTile({
   const speaking = tile.muted ? false : heldSpeaking;
   const qualityKey = networkQualityTooltipKey(tile.linkQuality);
   const name = tile.label || "User";
-  const showVideo = streamHasLiveVideo(cameraStream);
+  // LiveKit camera mute keeps the track "live" but stops frames (muted):
+  // show the avatar again instead of a black frame (lib/videoPresence.js).
+  const presence = useVideoPresence(cameraStream, { cameraOn: tile.isLocal ? null : tile.member?.cameraOn === false ? false : null });
+  const mountVideo = streamHasLiveVideo(cameraStream) && presence.mount;
+  const showVideo = mountVideo && presence.show;
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     if (el.srcObject !== cameraStream) el.srcObject = cameraStream || null;
-    if (cameraStream) el.play?.().catch(() => {});
-  }, [cameraStream, showVideo]);
+    if (cameraStream && showVideo) el.play?.().catch(() => {});
+  }, [cameraStream, showVideo, mountVideo]);
 
   const openMenu = (event) => {
     if (!tile.member) return;
@@ -188,16 +193,18 @@ const VoiceTile = memo(function VoiceTile({
       onContextMenu={openMenu}
       onClick={expandShare}
     >
-      {showVideo ? (
+      {mountVideo ? (
         <video
           ref={videoRef}
-          className={`server-voice-tile-video${tile.isLocal ? " is-local-mirror" : ""}`}
+          className={`server-voice-tile-video tile-video-layer${showVideo ? " is-shown" : ""}${tile.isLocal ? " is-local-mirror" : ""}`}
+          aria-hidden={showVideo ? undefined : "true"}
           autoPlay
           playsInline
           muted
         />
-      ) : (
-        <div className="server-voice-tile-avatar">
+      ) : null}
+      {showVideo ? null : (
+        <div className="server-voice-tile-avatar tile-avatar-layer">
           <Avatar
             name={name}
             size={avatarSizeFor(count, compact)}

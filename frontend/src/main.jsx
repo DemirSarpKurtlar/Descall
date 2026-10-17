@@ -181,12 +181,22 @@ async function bootApp() {
     /* ignore */
   }
 
-  const [{ ToastProvider }, { LocaleProvider }, { default: IosPwaInstallBanner }] =
+  // One parallel wave (was two sequential ones): providers, styles, i18n,
+  // glass flags and the boot skeleton. App.jsx was already requested in
+  // boot() (prefetchAppChunk), so it downloads/parses alongside.
+  const [
+    { ToastProvider },
+    { LocaleProvider },
+    { default: IosPwaInstallBanner },
+    { default: AppBootSkeleton },
+  ] =
     await Promise.all([
       import("./context/ToastContext"),
       import("./context/LocaleContext"),
       import("./components/IosPwaInstallBanner"),
-      import("./styles.css"),
+      import("./components/boot/AppBootSkeleton.jsx"),
+      // Same cascade order as before: app styles, then the skeleton's.
+      import("./styles.css").then(() => import("./styles/boot-skeleton.css")),
       loadI18nCatalogs(),
       // iPhone + mobile web Liquid Glass (html.glass-ui) and desktop Liquid Glass
       // (html.glass-desktop, on at >=960px unless a kill switch says otherwise).
@@ -194,11 +204,7 @@ async function bootApp() {
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
     ]);
 
-  const [{ default: AppBootSkeleton }] = await Promise.all([
-    import("./components/boot/AppBootSkeleton.jsx"),
-    import("./styles/boot-skeleton.css"),
-  ]);
-  const RootApp = lazy(() => import("./App.jsx"));
+  const RootApp = lazy(() => prefetchAppChunk());
 
   ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
@@ -223,14 +229,27 @@ async function bootApp() {
   // Brand flash ~0.45s, hard cap ~1.8s so hard refresh never sticks on the splash.
   try {
     requestAnimationFrame(() => {
-      window.__descallDismissBootSplash?.({ minMs: 450, maxMs: 1800 });
+      // Native: the splash is the system launch screen's twin, so a minimum
+      // "brand flash" is only waiting; hide it on the app's first paint.
+      window.__descallDismissBootSplash?.({ minMs: isNativeApp ? 0 : 450, maxMs: 1800 });
     });
   } catch {
     /* ignore */
   }
 }
 
+let appChunkPromise = null;
+/** Start downloading / parsing the app bundle once; lazy() reuses the promise. */
+function prefetchAppChunk() {
+  if (!appChunkPromise) appChunkPromise = import("./App.jsx");
+  return appChunkPromise;
+}
+
 async function boot() {
+  // Native shells and the desktop app always boot the app (never the
+  // marketing shell): fetch the big App chunk while the Keychain read runs,
+  // instead of after it and after the provider wave (cold-start waterfall).
+  if (isNativeApp || isElectronDesktop) prefetchAppChunk().catch(() => {});
   // iOS: copy the Keychain token into memory before any getToken() / render.
   // Web, Android, and Electron return immediately and keep their existing store.
   await hydrateSecureToken();

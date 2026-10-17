@@ -46,6 +46,7 @@ import { createSocket } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
 import { preloadIceServers } from "./lib/iceConfig";
+import { optimisticSessionReady } from "./lib/bootSession";
 import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
@@ -123,6 +124,7 @@ const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
+const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -415,7 +417,10 @@ export default function App() {
   const { toast } = useToast();
   const { t, setLocale } = useLocale();
   const [authError, setAuthError] = useState("");
-  const [sessionChecked, setSessionChecked] = useState(false);
+  // Paint the app from the cached session; /auth/me revalidates in the background.
+  const [sessionChecked, setSessionChecked] = useState(() =>
+    optimisticSessionReady({ token: getToken(), cachedUser: normalizeUser(getUser()) })
+  );
   const sessionEpochRef = useRef(0);
   const [me, setMe] = useState(() => normalizeUser(getUser()));
   const [inviteCode, setInviteCode] = useState(() => parseInviteCodeFromLocation());
@@ -5196,6 +5201,11 @@ export default function App() {
               onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
               onDecline={(groupId, fromUserId, fromUser, callType) => groupCall?.declineCall(groupId, fromUserId, fromUser, callType)}
             />
+          </Suspense>
+        ) : null}
+        {IOS_NATIVE && me?.id ? (
+          <Suspense fallback={null}>
+            <NativeCallCard />
           </Suspense>
         ) : null}
         <GlassConfirmHost />

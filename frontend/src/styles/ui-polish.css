@@ -3032,3 +3032,36 @@ body.electron-app .modal-backdrop {
     justify-content: center;
   }
 }
+
+/* Call tiles: camera on ↔ off cross-fade (2.10.108, lib/videoPresence.js).
+   The <video> stays mounted while its track exists and only fades, so a
+   camera turned off returns to the avatar + speaking ring instead of a
+   black frame, and turning it on again fades the picture back in. */
+.tile-video-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 320ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: opacity;
+}
+.tile-video-layer.is-shown {
+  opacity: 1;
+}
+.tile-video-layer:not(.is-shown) {
+  pointer-events: none;
+}
+.tile-avatar-layer {
+  animation: descall-tile-avatar-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes descall-tile-avatar-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes descall-tile-avatar-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-video-layer { transition-duration: 160ms; }
+  .tile-avatar-layer { animation: descall-tile-avatar-fade 160ms ease both; }
+}

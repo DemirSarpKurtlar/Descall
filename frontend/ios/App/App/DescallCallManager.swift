@@ -342,6 +342,10 @@ final class DescallCallManager: NSObject {
                     return
                 }
                 self.scheduleRingTimeout(info.uuid)
+                // 2.10.108: get the native answer path ready while it rings
+                // (token, TURN config, signaling, offer, ICE). Nothing is sent
+                // unless the call is answered on the CallKit screen.
+                DescallNativeCall.shared.prepare(self.calls[info.uuid] ?? info)
                 self.emit("incomingPush", info.dictionary)
                 DescallBridgeHost.preloadIfNoScene()
             }
@@ -364,6 +368,7 @@ final class DescallCallManager: NSObject {
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, let info = self.calls[uuid], !info.answered else { return }
             self.ringTimers.removeValue(forKey: uuid)
+            DescallNativeCall.shared.cancel(uuid)
             self.calls.removeValue(forKey: uuid)
             self.noteEnded(uuid)
             self.provider?.reportCall(with: uuid, endedAt: Date(), reason: .unanswered)
@@ -650,10 +655,53 @@ final class DescallCallManager: NSObject {
     /// another device, missed, failed).
     func reportEnded(_ uuid: UUID, reason: CXCallEndedReason) {
         cancelRingTimeout(uuid)
+        DescallNativeCall.shared.cancel(uuid)
         finishAwaitingJoin(uuid)
         calls.removeValue(forKey: uuid)
         noteEnded(uuid)
         provider?.reportCall(with: uuid, endedAt: Date(), reason: reason)
+    }
+
+    /// The native engine ended its call (remote hang-up, failure).
+    func nativeCallEnded(_ uuid: UUID, reason: CXCallEndedReason) {
+        let info = calls[uuid]
+        if calls[uuid] != nil || !endedRecently(uuid) {
+            reportEnded(uuid, reason: reason)
+        }
+        var data = info?.dictionary ?? ["uuid": uuid.uuidString.lowercased()]
+        data["handledNatively"] = true
+        emit("end", data)
+    }
+
+    /// Native hang-up from the in-app call card (not a JS-initiated CallKit end,
+    /// so CXEndCallAction routes it to the native engine).
+    func requestNativeEnd(_ uuid: UUID, completion: @escaping (Error?) -> Void) {
+        let tx = CXTransaction(action: CXEndCallAction(call: uuid))
+        callController.request(tx) { [weak self] error in
+            DispatchQueue.main.async {
+                if error != nil {
+                    DescallNativeCall.shared.hangUp(uuid)
+                    self?.reportEnded(uuid, reason: .remoteEnded)
+                }
+                completion(nil)
+            }
+        }
+    }
+
+    /// Mute from the in-app call card: through CallKit so its UI stays in sync.
+    func requestNativeMute(_ uuid: UUID, muted: Bool, completion: @escaping (Error?) -> Void) {
+        let tx = CXTransaction(action: CXSetMutedCallAction(call: uuid, muted: muted))
+        callController.request(tx) { error in
+            DispatchQueue.main.async {
+                if error != nil { DescallNativeCall.shared.setMuted(muted) }
+                completion(nil)
+            }
+        }
+    }
+
+    private func postCallStatusIfKnown(_ uuid: UUID, status: String) {
+        guard let info = calls[uuid], !info.statusUrl.isEmpty else { return }
+        postCallStatus(info, status: status)
     }
 
     func activeCalls() -> [[String: Any]] {
@@ -704,6 +752,7 @@ extension DescallCallManager: CXProviderDelegate {
         for uuid in Array(joinTimers.keys) { finishAwaitingJoin(uuid) }
         calls.removeAll()
         jsInitiated.removeAll()
+        DescallNativeCall.shared.reset()
         emit("reset")
     }
 
@@ -723,6 +772,20 @@ extension DescallCallManager: CXProviderDelegate {
         // .inactive = CallKit's full-screen ring over the open app; only a
         // backgrounded / locked app can't join by itself.
         let appBackgrounded = UIApplication.shared.applicationState == .background
+        let native = DescallNativeCall.shared
+        if !fromJs && appBackgrounded && native.canAnswer(uuid) {
+            // 2.10.108: answered on the lock screen / with the app killed or in
+            // the background → connect natively, no need to open Descall.
+            native.answer(uuid)
+            postCallStatusIfKnown(uuid, status: "answering")
+            var data = calls[uuid]?.dictionary ?? ["uuid": uuid.uuidString.lowercased()]
+            data["answered"] = true
+            data["native"] = true
+            emit("nativeCallAnswered", data)
+            action.fulfill()
+            return
+        }
+        native.cancel(uuid)
         if !fromJs && appBackgrounded {
             beginAwaitingJoin(uuid)
         }
@@ -741,8 +804,21 @@ extension DescallCallManager: CXProviderDelegate {
         let info = calls.removeValue(forKey: uuid)
         noteEnded(uuid)
         let fromJs = jsInitiated.remove("end:\(uuid.uuidString)") != nil
+        let native = DescallNativeCall.shared
+        var handledNatively = false
+        if native.owns(uuid) {
+            native.hangUp(uuid) // call:end on the native socket
+            handledNatively = true
+        } else if !fromJs {
+            // Declined on the ring screen: the native socket (if up) sends it.
+            handledNatively = native.decline(uuid)
+        } else {
+            native.cancel(uuid)
+        }
         if !fromJs {
-            emit("end", info?.dictionary ?? ["uuid": uuid.uuidString.lowercased()])
+            var data = info?.dictionary ?? ["uuid": uuid.uuidString.lowercased()]
+            if handledNatively { data["handledNatively"] = true }
+            emit("end", data)
         }
         action.fulfill()
     }
@@ -750,6 +826,11 @@ extension DescallCallManager: CXProviderDelegate {
     func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
         let uuid = action.callUUID
         let fromJs = jsInitiated.remove("mute:\(uuid.uuidString)") != nil
+        if DescallNativeCall.shared.owns(uuid) {
+            DescallNativeCall.shared.setMuted(action.isMuted)
+            action.fulfill()
+            return
+        }
         if !fromJs {
             emit("mute", ["uuid": uuid.uuidString.lowercased(), "muted": action.isMuted])
         }
@@ -775,13 +856,20 @@ extension DescallCallManager: CXProviderDelegate {
         let outputs = audioSession.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
         NSLog("[DescallCallKit] didActivate category=\(audioSession.category.rawValue) mode=\(audioSession.mode.rawValue) outputs=\(outputs)")
         callKitAudioActive = true
-        sink?.callAudioSessionActivated()
+        if DescallNativeCall.shared.isActive {
+            // Native call: WebRTC's audio unit starts on CallKit's session.
+            // The WebView mic is not involved (no capture reactivation).
+            DescallNativeCall.shared.audioSessionActivated(audioSession)
+        } else {
+            sink?.callAudioSessionActivated()
+        }
         DescallAudioRouter.shared.sessionActivated()
         emit("audioSessionActivated", audioDiagnostics())
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
         callKitAudioActive = false
+        DescallNativeCall.shared.audioSessionDeactivated(audioSession)
         emit("audioSessionDeactivated")
     }
 }

@@ -15,6 +15,7 @@ import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import SpeakingRings from "./SpeakingRings";
 import ParticipantStateIcons from "./ParticipantStateIcons";
 import useGlassUi from "../../hooks/useGlassUi";
+import { useVideoPresence } from "../../hooks/useVideoPresence";
 
 const PARTICIPANT_EASE = [0.16, 1, 0.3, 1];
 
@@ -174,17 +175,24 @@ export default function DmRemoteParticipantSlot({
     [videoRef, remoteStream]
   );
 
+  // Camera off (signaled, or the remote track went muted / ended) returns
+  // the tile to the avatar; the <video> stays mounted so camera on again
+  // fades straight back in (lib/videoPresence.js).
+  const presence = useVideoPresence(remoteStream, { cameraOn });
+  const mountVideo = Boolean(hasVideo && videoRef && presence.mount);
+  const showVideo = Boolean(mountVideo && presence.show);
+
   useEffect(() => {
     const el = videoRef?.current;
-    if (!el || !remoteStream || !hasVideo) return;
+    if (!el || !remoteStream || !mountVideo) return;
     el.muted = true;
     if (el.srcObject !== remoteStream) el.srcObject = remoteStream;
-    el.play().catch(() => {});
-  }, [remoteStream, hasVideo, videoRef]);
+    if (showVideo) el.play().catch(() => {});
+  }, [remoteStream, mountVideo, showVideo, videoRef]);
 
   const reconnecting = phase === "reconnecting";
   const live = Boolean(isMediaReady);
-  const avatarOnly = !(live && hasVideo && videoRef);
+  const avatarOnly = !(live && showVideo);
 
   // ONE element per peer for the whole call (key = peer id in the grid).
   // Connecting → live swaps only the inside; reconnecting is an overlay on
@@ -210,16 +218,19 @@ export default function DmRemoteParticipantSlot({
         />
       ) : (
         <div className="dm-remote-tile-media" style={{ display: "contents" }}>
-          {hasVideo && videoRef ? (
+          {mountVideo ? (
             <video
               ref={remoteVideoCallbackRef}
               autoPlay
               playsInline
               muted
+              className={`tile-video-layer${showVideo ? " is-shown" : ""}`}
+              aria-hidden={showVideo ? undefined : "true"}
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
-          ) : (
-            <div className="participant-tile-avatar-stack">
+          ) : null}
+          {showVideo ? null : (
+            <div className="participant-tile-avatar-stack tile-avatar-layer">
               <div
                 className="participant-tile-avatar-shell"
                 style={{ width: 96 + 38, height: 96 + 38, position: "relative" }}
@@ -260,7 +271,7 @@ export default function DmRemoteParticipantSlot({
             </div>
           )}
 
-          {hasVideo && videoRef && (
+          {showVideo && (
           <div
             style={{
               position: "absolute",
