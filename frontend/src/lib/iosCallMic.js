@@ -13,9 +13,12 @@
  *   1. ask WebKit to un-mute capture (WKWebView.setMicrophoneCaptureState)
  *   2. capture a fresh microphone track and RTCRtpSender.replaceTrack it
  *   3. stop every capture first (restarts WebKit's capture unit), then 2.
- * Triggers: CallKit's didActivate after capture started, the track's `mute`
- * / unexpected `ended`, and outbound stats showing zero microphone energy.
- * One non-personal Sentry diagnostic per call when silence is detected.
+ * Triggers: CallKit's didActivate after capture started; didActivate that
+ * already happened before capture (killed / locked / background answer —
+ * the session is active before getUserMedia, so the first track stays live
+ * and sends silence unless it is stopped and captured again); the track's
+ * `mute` / unexpected `ended`; and outbound stats showing zero microphone
+ * energy. One non-personal Sentry diagnostic per call when silence is detected.
  *
  * Pure (dependencies injected) so it runs in Node selftests.
  */
@@ -77,6 +80,10 @@ export function createMicGuard({
     generation += 1;
     return {
       captureStartedAt: 0,
+      // didActivate ran before getUserMedia. The first track misses CallKit's
+      // audio-unit handshake and must be replaced once the peer connection exists.
+      activateBeforeCapture: false,
+      loggedSending: false,
       refreshes: 0,
       inFlight: false,
       retired: new WeakSet(),
@@ -139,20 +146,36 @@ export function createMicGuard({
   /** getUserMedia started for this call (startCall / acceptIncoming). */
   function noteCaptureStart() {
     if (!s.captureStartedAt) s.captureStartedAt = now();
+    if (!s.activateBeforeCapture) return;
+    s.activateBeforeCapture = false;
+    log("capture started after CallKit activation; refreshing mic");
+    later(() => whenReady(() => void refresh("callkit-before-capture")), ACTIVATION_SETTLE_MS);
   }
 
   function whenReady(fn, tries = READY_POLL_TRIES) {
-    if (!isCallOngoing()) return;
-    if (getPc() && currentTrack()) return fn();
-    if (tries <= 0) return;
+    // Accept is still in "incoming" until the answer is sent. Keep waiting:
+    // a permanent bail there drops the cold-start refresh. reset() bumps the
+    // generation, so a call that ends stops the poll.
+    if (getPc() && currentTrack() && isCallOngoing()) return fn();
+    if (tries <= 0) {
+      log("mic refresh skipped, call not ready");
+      return;
+    }
     later(() => whenReady(fn, tries - 1), READY_POLL_MS);
   }
 
   /** CallKit activated the audio session (didActivate). */
   function onAudioSessionActivated() {
-    log("audio session activated", { captureStarted: Boolean(s.captureStartedAt) });
-    // Capture that starts after this point runs in the CallKit session: fine.
-    if (!s.captureStartedAt) return;
+    const beforeCapture = !s.captureStartedAt;
+    log("audio session activated", {
+      order: beforeCapture ? "activate-then-capture" : "capture-then-activate",
+    });
+    if (beforeCapture) {
+      // Killed-app / locked answer: this event is queued before JS starts
+      // the microphone. Remember it and refresh once the track exists.
+      s.activateBeforeCapture = true;
+      return;
+    }
     later(() => whenReady(() => void refresh("callkit-activate")), ACTIVATION_SETTLE_MS);
   }
 
@@ -217,27 +240,45 @@ export function createMicGuard({
     const wasEnabled = old ? old.enabled !== false : true;
     let created = null;
     try {
-      const resumed = await reactivateCapture();
-      if (old && old.readyState === "live" && old.muted && resumed?.micReactivated) {
-        await wait(300);
-        if (!old.muted) {
-          log("mic resumed by WebKit", { reason });
-          return true;
-        }
-      }
-      // Fresh capture next to the old one.
-      try {
-        created = await capture();
-      } catch (err) {
-        log("fresh capture failed", err?.name || err?.message);
-        created = null;
-      }
-      if (!created?.track || created.track.muted || created.track.readyState !== "live") {
-        // Same interrupted capture unit: stop all capture, then start over.
-        created?.stream?.getTracks?.().forEach((t) => retire(t));
+      if (reason === "callkit-before-capture") {
+        // First capture ran after didActivate and sends silence while looking
+        // live. Stop it so WebKit opens a new audio unit inside the session.
         retire(old);
         await wait(250);
-        created = await capture();
+        try {
+          created = await capture();
+        } catch (err) {
+          log("fresh capture failed", err?.name || err?.message);
+          created = null;
+        }
+        if (!created?.track || created.track.muted || created.track.readyState !== "live") {
+          created?.stream?.getTracks?.().forEach((t) => retire(t));
+          await wait(250);
+          created = await capture();
+        }
+      } else {
+        const resumed = await reactivateCapture();
+        if (old && old.readyState === "live" && old.muted && resumed?.micReactivated) {
+          await wait(300);
+          if (!old.muted) {
+            log("mic resumed by WebKit", { reason });
+            return true;
+          }
+        }
+        // Fresh capture next to the old one.
+        try {
+          created = await capture();
+        } catch (err) {
+          log("fresh capture failed", err?.name || err?.message);
+          created = null;
+        }
+        if (!created?.track || created.track.muted || created.track.readyState !== "live") {
+          // Same interrupted capture unit: stop all capture, then start over.
+          created?.stream?.getTracks?.().forEach((t) => retire(t));
+          retire(old);
+          await wait(250);
+          created = await capture();
+        }
       }
       if (gen !== s.generation || !isCallOngoing()) {
         created?.stream?.getTracks?.().forEach((t) => retire(t));
@@ -307,6 +348,14 @@ export function createMicGuard({
     const zeroEnergy = energy != null && s.lastEnergy != null && energy === s.lastEnergy && !level;
     s.lastEnergy = energy;
     const silent = Boolean(track.muted) || zeroEnergy;
+    if (!silent && energy != null && s.lastEnergy != null && energy > s.lastEnergy && !s.loggedSending) {
+      s.loggedSending = true;
+      log("outbound mic energy", {
+        energy,
+        level: level || 0,
+        packetsSent: Number(stats.outbound?.packetsSent || 0),
+      });
+    }
     s.silentSamples = silent ? s.silentSamples + 1 : 0;
     const needed = now() - s.monitorStartedAt < STATS_START_WINDOW_MS ? SILENT_SAMPLES_START : SILENT_SAMPLES;
     if (s.silentSamples < needed) return;

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Add a TestFlight tester to the app's existing external beta group (App Store Connect API).
+"""TestFlight helpers for App Store Connect.
+
+Modes (MODE): external (add a tester), add-internal, invite-user, inspect, inspect-fix,
+assign-internal (put BUILD_NUMBER on the internal group, default "Descall Ekip").
 
 Never submits anything for App Store review or beta app review. Never prints secrets.
-Env: ASC_KEY_PATH, ASC_KEY_ID, ASC_ISSUER_ID, TESTER_EMAIL, optional GROUP_NAME, BUNDLE_ID, ASSIGN_BUILD.
+Env: ASC_KEY_PATH, ASC_KEY_ID, ASC_ISSUER_ID, optional TESTER_EMAIL, GROUP_NAME, BUNDLE_ID,
+ASSIGN_BUILD, BUILD_NUMBER.
 """
 import os, sys, time, jwt, requests
 
@@ -10,7 +14,7 @@ API = "https://api.appstoreconnect.apple.com"
 KEY = open(os.environ["ASC_KEY_PATH"]).read()
 KID, ISS = os.environ["ASC_KEY_ID"], os.environ["ASC_ISSUER_ID"]
 BUNDLE = os.environ.get("BUNDLE_ID") or "com.descall.app"
-EMAIL = os.environ["TESTER_EMAIL"].strip()
+EMAIL = (os.environ.get("TESTER_EMAIL") or "").strip()
 GROUP_NAME = (os.environ.get("GROUP_NAME") or "").strip()
 ASSIGN_BUILD = (os.environ.get("ASSIGN_BUILD") or "true").lower() == "true"
 S = requests.Session()
@@ -42,6 +46,48 @@ print(f"App: {app['attributes']['name']} ({APP_ID})")
 
 MODE = (os.environ.get("MODE") or "external").strip()
 print(f"Mode: {MODE}")
+
+if MODE == "assign-internal":
+    # Put this build on the internal TestFlight group. Never submits for review.
+    gname = GROUP_NAME or "Descall Ekip"
+    build_no = (os.environ.get("BUILD_NUMBER") or "").strip()
+    grp = [g for g in all_pages(f"/v1/apps/{APP_ID}/betaGroups?limit=200")
+           if g["attributes"]["name"] == gname and g["attributes"].get("isInternalGroup")]
+    if not grp:
+        print(f"::error::Internal group '{gname}' not found")
+        sys.exit(2)
+    GID = grp[0]["id"]
+    print(f"Internal group '{gname}' ({GID})")
+    found = None
+    for attempt in range(40):
+        q = f"/v1/builds?filter[app]={APP_ID}&sort=-uploadedDate&limit=20"
+        if build_no:
+            q += f"&filter[version]={requests.utils.quote(build_no)}"
+        builds = call("GET", q).get("data") or []
+        if builds:
+            found = builds[0]
+            state = found["attributes"].get("processingState")
+            print(f"Build {found['attributes'].get('version')} processingState={state}")
+            if state in ("INVALID", "FAILED"):
+                print("::error::Build processing failed")
+                sys.exit(1)
+            gb_ids = {b["id"] for b in all_pages(f"/v1/betaGroups/{GID}/builds?limit=200")}
+            if found["id"] in gb_ids:
+                print(f"Build {found['attributes'].get('version')} already in '{gname}'")
+                sys.exit(0)
+            try:
+                call("POST", f"/v1/betaGroups/{GID}/relationships/builds",
+                     json={"data": [{"type": "builds", "id": found["id"]}]})
+                print(f"Assigned build {found['attributes'].get('version')} to '{gname}' (no review submission)")
+                sys.exit(0)
+            except requests.HTTPError:
+                print(f"[{attempt}] group assignment not accepted yet (state={state})")
+        else:
+            print(f"[{attempt}] build {build_no or '(latest)'} not listed yet")
+        if attempt < 39:
+            time.sleep(30)
+    print("::error::Could not assign the build to the internal group")
+    sys.exit(1)
 
 def find_user_and_invites():
     q = requests.utils.quote(EMAIL)

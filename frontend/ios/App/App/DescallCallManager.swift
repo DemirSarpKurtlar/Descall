@@ -424,7 +424,14 @@ final class DescallCallManager: NSObject {
         let session = AVAudioSession.sharedInstance()
         guard session.category != .playAndRecord else { return }
         do {
-            try session.setCategory(.playAndRecord, mode: video ? .videoChat : .voiceChat, options: [.allowBluetooth])
+            // .defaultToSpeaker: voice calls must not open on the earpiece.
+            // Wired headphones and Bluetooth still take the route (iOS leaves
+            // an external port alone). Category is only set while idle.
+            try session.setCategory(
+                .playAndRecord,
+                mode: video ? .videoChat : .voiceChat,
+                options: [.allowBluetooth, .defaultToSpeaker]
+            )
         } catch {
             NSLog("[DescallCallKit] audio session category failed: \(error.localizedDescription)")
         }
@@ -665,10 +672,27 @@ extension DescallCallManager: CXProviderDelegate {
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
         // CallKit activated the shared session at call priority. If WebKit was
-        // already capturing (outgoing call, or answered while the app was open)
-        // that capture is interrupted and its track goes silent: the plugin
-        // un-mutes WKWebView capture and JS re-acquires the microphone
-        // (useCall.refreshMicrophone) on "audioSessionActivated".
+        // already capturing (answered while the app was open) that capture is
+        // interrupted and its track goes silent. If the app was killed, this
+        // fires before the web view exists: JS must recapture after getUserMedia
+        // (iosCallMic "callkit-before-capture"). Either way, re-apply the
+        // loudspeaker — WebKit reconfigures the shared session and would
+        // otherwise leave voice calls on the receiver. Do not setCategory
+        // while a capture is already in .playAndRecord (that silences the mic).
+        if audioSession.category != .playAndRecord {
+            let video = calls.values.contains { $0.video }
+            do {
+                try audioSession.setCategory(
+                    .playAndRecord,
+                    mode: video ? .videoChat : .voiceChat,
+                    options: [.allowBluetooth, .defaultToSpeaker]
+                )
+            } catch {
+                NSLog("[DescallCallKit] didActivate category failed: \(error.localizedDescription)")
+            }
+        }
+        let outputs = audioSession.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
+        NSLog("[DescallCallKit] didActivate category=\(audioSession.category.rawValue) mode=\(audioSession.mode.rawValue) outputs=\(outputs)")
         callKitAudioActive = true
         sink?.callAudioSessionActivated()
         DescallAudioRouter.shared.sessionActivated()
@@ -692,11 +716,11 @@ extension DescallCallManager: CXProviderDelegate {
 /// - WebKit re-configures the shared session when capture starts and on
 ///   device changes, which resets an override. Route changes are observed
 ///   (debounced) and the chosen route is re-asserted a few times per choice.
-/// - A route change the app didn't cause (CallKit's speaker button, Control
-///   Center, AirPods connecting) is adopted as the new choice and reported to
-///   JS ("audioRoute" event), so the in-app menu and CallKit stay in sync.
-/// - Defaults: video → speaker, voice → receiver, unless a headset /
-///   Bluetooth / car route is connected (then audio stays there).
+/// - A newly connected headset / Bluetooth / car route is followed. WebKit
+///   resetting the built-in port to the receiver is not: voice and video
+///   calls stay on the loudspeaker unless the user picked the earpiece.
+/// - Defaults: loudspeaker, unless wired headphones or Bluetooth (or car /
+///   AirPlay / USB) are connected.
 final class DescallAudioRouter: NSObject {
     static let shared = DescallAudioRouter()
 
@@ -716,6 +740,10 @@ final class DescallAudioRouter: NSObject {
     private var assertsLeft = maxAssertsPerChoice
     private var pending: DispatchWorkItem?
     private var selfChangeUntil = Date.distantPast
+    /// CallKit didActivate ran (possibly before JS called begin).
+    private var speakerArmed = false
+    /// In-call menu picked a route; don't snap that back to the loudspeaker.
+    private var userPicked = false
 
     private override init() {
         super.init()
@@ -723,6 +751,12 @@ final class DescallAudioRouter: NSObject {
             self,
             selector: #selector(routeChanged(_:)),
             name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(interruption(_:)),
+            name: AVAudioSession.interruptionNotification,
             object: nil
         )
     }
@@ -757,22 +791,31 @@ final class DescallAudioRouter: NSObject {
         currentOutputs().contains { !Self.isBuiltIn($0) }
     }
 
+    /// Headphones / Bluetooth / car / AirPlay / USB, including a device that
+    /// is connected but not the current output yet.
+    private func prefersExternalRoute() -> Bool {
+        if externalConnected() { return true }
+        let externalIn: [AVAudioSession.Port] = [.headsetMic, .bluetoothHFP, .bluetoothLE, .usbAudio, .carAudio]
+        return session.availableInputs?.contains { externalIn.contains($0.portType) } ?? false
+    }
+
     private func wiredHeadphonesConnected() -> Bool {
         currentOutputs().contains(.headphones) ||
             (session.availableInputs?.contains { $0.portType == .headsetMic } ?? false)
     }
 
     private func defaultChoice() -> Choice {
-        if externalConnected() { return .system }
-        return video ? .speaker : .receiver
+        if prefersExternalRoute() { return .system }
+        return .speaker
     }
 
-    /// The choice that matches what iOS is playing through right now.
-    private func choiceFromCurrentRoute() -> Choice {
-        let outs = currentOutputs()
-        if outs.contains(.builtInSpeaker) { return .speaker }
-        if outs.contains(.builtInReceiver) { return .receiver }
-        return .system
+    /// Loudspeaker port override. Does not touch the category (safe mid-capture).
+    private func forceBuiltInSpeaker() {
+        if prefersExternalRoute() { return }
+        selfChangeUntil = Date().addingTimeInterval(0.8)
+        if !currentOutputs().contains(.builtInSpeaker) {
+            try? session.overrideOutputAudioPort(.speaker)
+        }
     }
 
     // MARK: Public API (main thread)
@@ -783,8 +826,12 @@ final class DescallAudioRouter: NSObject {
         let first = !active
         active = true
         self.video = video
-        if first { choice = defaultChoice() }
+        if first {
+            userPicked = false
+            choice = defaultChoice()
+        }
         assertsLeft = Self.maxAssertsPerChoice
+        NSLog("[DescallAudioRoute] begin video=\(self.video) external=\(prefersExternalRoute())")
         apply()
         emitState()
     }
@@ -793,6 +840,8 @@ final class DescallAudioRouter: NSObject {
     func end() {
         guard active else { return }
         active = false
+        speakerArmed = false
+        userPicked = false
         pending?.cancel()
         pending = nil
         choice = .system
@@ -803,6 +852,7 @@ final class DescallAudioRouter: NSObject {
 
     /// "receiver" | "speaker" | "system" | "input:<uid>"
     func select(_ id: String) -> Bool {
+        userPicked = true
         switch id {
         case "receiver": choice = .receiver
         case "speaker": choice = .speaker
@@ -823,14 +873,25 @@ final class DescallAudioRouter: NSObject {
         return true
     }
 
-    /// CallKit (re)activated the session: WebKit may have reset the route.
+    /// CallKit (re)activated the session. WebKit's media process reconfigures
+    /// the shared AVAudioSession (there is no app-owned RTCAudioSession) and
+    /// that reset lands voice calls on the receiver. Re-apply the loudspeaker
+    /// unless headphones / Bluetooth are connected. Safe before JS calls begin
+    /// (killed-app answer: didActivate is queued before the web view exists).
     func sessionActivated() {
-        guard active else { return }
+        speakerArmed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.settleDelay) { [weak self] in
-            guard let self = self, self.active else { return }
-            self.assertsLeft = max(self.assertsLeft, 2)
-            self.apply()
-            self.emitState()
+            guard let self = self, self.speakerArmed || self.active else { return }
+            if self.active {
+                if !self.userPicked && !self.prefersExternalRoute() {
+                    self.choice = .speaker
+                }
+                self.assertsLeft = max(self.assertsLeft, 2)
+                self.apply()
+                self.emitState()
+            } else {
+                self.forceBuiltInSpeaker()
+            }
         }
     }
 
@@ -897,33 +958,58 @@ final class DescallAudioRouter: NSObject {
         DispatchQueue.main.async { [weak self] in self?.handleRouteChange(reason) }
     }
 
+    @objc private func interruption(_ note: Notification) {
+        let raw = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt) ?? 0
+        guard let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+        let opts = AVAudioSession.InterruptionOptions(rawValue: (note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.active || self.speakerArmed else { return }
+            guard type == .ended, opts.contains(.shouldResume) else { return }
+            if self.active {
+                self.assertsLeft = max(self.assertsLeft, 2)
+                self.apply()
+                self.emitState()
+            } else {
+                self.forceBuiltInSpeaker()
+            }
+        }
+    }
+
     private func handleRouteChange(_ reason: AVAudioSession.RouteChangeReason) {
-        guard active else { return }
+        guard active || speakerArmed else { return }
         let ours = Date() < selfChangeUntil
         pending?.cancel()
         let work = DispatchWorkItem { [weak self] in
-            guard let self = self, self.active else { return }
+            guard let self = self, self.active || self.speakerArmed else { return }
+            if !self.active {
+                // Answered before JS began the route (killed / locked). Keep
+                // the loudspeaker; a headset that just connected wins.
+                if reason == .newDeviceAvailable || self.prefersExternalRoute() { return }
+                if !self.currentOutputs().contains(.builtInSpeaker) {
+                    self.forceBuiltInSpeaker()
+                }
+                return
+            }
             switch reason {
             case .newDeviceAvailable:
-                // AirPods / headset / car connected: follow it (iPhone convention).
+                // AirPods / headset / car connected: follow it.
                 self.choice = .system
                 self.assertsLeft = Self.maxAssertsPerChoice
                 self.apply()
             case .oldDeviceUnavailable:
-                // Headset gone: back to this call type's default.
+                // Headset gone: loudspeaker, unless something external remains.
                 self.choice = self.defaultChoice()
                 self.assertsLeft = Self.maxAssertsPerChoice
                 self.apply()
             default:
-                if !ours && (reason == .override || self.externalConnected()) {
-                    // CallKit speaker button / Control Center / system picker: adopt it.
-                    let adopted = self.choiceFromCurrentRoute()
-                    if adopted != self.choice {
-                        self.choice = adopted
-                        self.assertsLeft = Self.maxAssertsPerChoice
-                    }
+                if !ours && self.prefersExternalRoute() {
+                    self.choice = .system
+                    self.assertsLeft = Self.maxAssertsPerChoice
+                    self.apply()
                 } else if !self.matchesChoice() && self.assertsLeft > 0 {
-                    // WebKit reconfigured the session (capture start, category change): re-assert.
+                    // WebKit reconfigured the session (capture start): re-assert.
+                    // A receiver reset is not adopted — calls stay on the loudspeaker
+                    // unless the in-call menu picked the earpiece (userPicked).
                     self.assertsLeft -= 1
                     self.apply()
                 }

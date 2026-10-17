@@ -51,6 +51,7 @@ import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/a
 import { useToast } from "../context/ToastContext";
 import { t as tRuntime } from "../i18n/runtime";
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
+import { beginIosCallAudio, endIosCallAudio } from "../lib/iosAudioRoute";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
@@ -166,8 +167,11 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   useEffect(() => {
     if (isInCall) {
       acquireCallWakeLock({ title: "Descall group call" });
+      // Same loudspeaker route as DM calls (headphones / Bluetooth stay put).
+      void beginIosCallAudio({ video: false, owner: "group" });
     } else {
       releaseCallWakeLock();
+      void endIosCallAudio("group");
     }
   }, [isInCall]);
 

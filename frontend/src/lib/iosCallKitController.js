@@ -10,8 +10,10 @@
  * CallKit UI added nothing the app needs. (REPORT_OUTGOING_TO_CALLKIT)
  *
  * Answering: the web app starts its microphone only after CallKit activated
- * the audio session (or after AUDIO_ACTIVATION_WAIT_MS), so capture starts
- * inside the call session instead of being interrupted by it.
+ * the audio session (or after AUDIO_ACTIVATION_WAIT_MS). On a killed-app
+ * answer didActivate is queued before getUserMedia, so iosCallMic.js
+ * replaces that first track once the peer connection exists — a capture
+ * that merely starts after activation still sends silence.
  *
  * Locked phone: WKWebView can't capture the mic / run the web app while the
  * phone is locked. Native code shows "open Descall to connect", tells the
