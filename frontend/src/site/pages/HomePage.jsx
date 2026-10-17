@@ -1,3 +1,4 @@
+import SeoExtraContent from "../components/SeoExtraContent";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocale } from "../../context/localeContextInstance";
@@ -147,6 +148,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
         </div>
       </section>
 
+      <SeoExtraContent />
       <SeoRelatedLinks title="Keep exploring" links={SEO_DEFAULT_RELATED} />
     </>
   );

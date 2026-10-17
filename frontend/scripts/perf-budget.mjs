@@ -27,9 +27,9 @@ function fileSize(rel) {
   return fs.statSync(abs).size;
 }
 
-const htmlPath = path.join(distDir, "features", "index.html");
+const htmlPath = path.join(distDir, "features.html");
 if (!fs.existsSync(htmlPath)) {
-  console.error("Missing dist/features/index.html — run build:prod first");
+  console.error("Missing dist/features.html — run build:prod first");
   process.exit(1);
 }
 

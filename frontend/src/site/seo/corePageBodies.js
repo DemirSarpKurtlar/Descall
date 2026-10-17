@@ -350,7 +350,7 @@ export function corePageBody(path) {
     case "/copyright":
       return legalHtml(isTr ? COPYRIGHT_CONTENT.tr : COPYRIGHT_CONTENT.en, isTr, "copyright");
 
-    case "/discord-alternative": return `\n<main> ${brandBlock(isTr)} <h1>The best free Discord alternative for friends &amp; gamers</h1> <p>A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free, no Nitro paywall.</p> ${ctaRow("/compare/discord", "Discord vs Descall")} <h2>What you get</h2> <ul> <li>Discord-style servers with roles, channels, and templates</li> <li>Free real-time chat, group voice/video, and screen share</li> <li>Built-in LFG without bot hell</li> <li>Windows, Android, and full web app</li> </ul> <p><a href="/alternatives">Compare Discord alternatives</a> · <a href="/discord-alternative-turkey">Türkçe</a> · <a href="/download">Download</a></p>
+    case "/discord-alternative": return `\n<main> ${brandBlock(isTr)} <h1>The best free Discord alternative for friends &amp; gamers</h1> <p>A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free, no Nitro paywall.</p> ${ctaRow("/compare/discord", "Discord vs Descall")} <h2>What you get</h2> <ul> <li>Discord-style servers with roles, channels, and templates</li> <li>Free real-time chat, group voice/video, and screen share</li> <li>Built-in LFG without bot hell</li> <li>Windows, Android, and full web app</li> </ul> <p><a href="/alternatives">Compare Discord alternatives</a> · <a href="/tr/discord-alternatifi">Türkçe</a> · <a href="/download">Download</a></p>
   ${faqHtml(ALTERNATIVE_HUB_FAQ, isTr)}
   ${navBlock(isTr)}
 </main>`;

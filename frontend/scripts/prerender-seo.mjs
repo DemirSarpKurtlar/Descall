@@ -24,7 +24,12 @@ const { BLOG_POSTS, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_F
 );
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
 const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
-const { cookieBannerHtml, navLabels, noscriptNavHtml, prefixHref, seoSiteNavHtml } = await import(
+const { pageExtrasHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/pageExtras.js")).href);
+const { TR_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/trLandings.js")).href);
+const { TR_BLOG_POSTS, TR_BLOG_BODIES, TR_BLOG_FAQ_BY_SLUG } = await import(
+  pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href
+);
+const { cookieBannerHtml, navLabels, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy } = await import(
   pathToFileURL(path.join(root, "src/site/seo/prerenderCopy.js")).href
 );
 const { FAQ_ITEMS } = await import(pathToFileURL(path.join(root, "src/site/faqData.js")).href);
@@ -42,7 +47,7 @@ const {
   OWNERSHIP_STATEMENT_EN,
   OWNERSHIP_STATEMENT_TR,
 } = await import(pathToFileURL(path.join(root, "src/site/ownershipFacts.js")).href);
-const { enPathForHreflang, trPathForHreflang } = await import(
+const { hreflangPair } = await import(
   pathToFileURL(path.join(root, "src/site/localePaths.js")).href
 );
 
@@ -59,7 +64,7 @@ function seoBrand() {
 }
 
 function routeIsTr(route) {
-  return route.lang === "tr" || route.path === "/discord-alternative-turkey" || route.path.startsWith("/tr");
+  return route.lang === "tr" || route.path === "/tr" || route.path.startsWith("/tr/");
 }
 
 function seoCtaRow(softHref = "/discord-alternative", softLabel, isTr = false) {
@@ -83,8 +88,98 @@ function stripBootSplash(html) {
 }
 
 function crawlBody(route) {
+  const body = crawlBodyInner(route);
+  const extra = pageExtrasHtml(route.path);
+  if (!extra) return body;
+  return body.includes('<footer class="seo-footer">')
+    ? body.replace('<footer class="seo-footer">', `${extra}\n<footer class="seo-footer">`)
+    : body.replace(/<\/main>\s*$/, `${extra}\n</main>`);
+}
+
+function crawlBodyInner(route) {
   const isTr = routeIsTr(route);
   const n = navLabels(isTr);
+  const trLanding = TR_LANDINGS[route.path];
+  if (trLanding) {
+    const sections = trLanding.sections
+      .map(
+        (s) =>
+          `<h2>${escapeHtml(s.h)}</h2>\n${s.p.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n")}${
+            s.list?.length ? `\n<ul>${s.list.map((li) => `<li>${escapeHtml(li)}</li>`).join("")}</ul>` : ""
+          }`
+      )
+      .join("\n");
+    const faq = trLanding.faq
+      .map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`)
+      .join("\n");
+    const links = trLanding.related
+      .map((l) => `<li><a href="${escapeHtml(l.to)}">${escapeHtml(l.label)}</a></li>`)
+      .join("");
+    return `
+<main>
+  ${seoBrand()}
+  <h1>${escapeHtml(trLanding.h1)}</h1>
+  ${trLanding.updatedLabel ? `<p class="seo-note"><time datetime="${trLanding.updated}">${escapeHtml(trLanding.updatedLabel)}</time></p>` : ""}
+  <p>${escapeHtml(trLanding.lead)}</p>
+  ${seoCtaRow("/tr/discord-alternatifleri", "Alternatifleri karşılaştır", true)}
+  ${sections}
+  <h2>Sık sorulan sorular</h2>
+  ${faq}
+  <nav aria-label="İlgili sayfalar"><h2>İlgili sayfalar</h2><ul>${links}</ul></nav>
+  ${seoSiteNav(true)}
+</main>`;
+  }
+
+  if (route.path === "/tr/blog") {
+    const posts = TR_BLOG_POSTS.map(
+      (p) =>
+        `<li><a href="${escapeHtml(p.path)}"><strong>${escapeHtml(p.title)}</strong></a> — ${escapeHtml(p.description)}</li>`
+    ).join("");
+    const hubs = Object.values(TR_LANDINGS)
+      .map((p) => `<li><a href="${p.path}">${escapeHtml(p.h1.split(":")[0].trim())}</a></li>`)
+      .join("");
+    return `
+<main>
+  ${seoBrand()}
+  <h1>Descall blog: Discord alternatifleri ve sesli sohbet rehberleri</h1>
+  <p>Discord alternatifleri, Discord’dan geçiş, LFG, sesli sohbet ve topluluk yönetimi üzerine Türkçe, pratik rehberler.</p>
+  <ul>${posts}</ul>
+  <h2>Türkçe rehber sayfaları</h2>
+  <ul>${hubs}</ul>
+  ${seoCtaRow("/tr/download", n.download, true)}
+  ${seoSiteNav(true)}
+</main>`;
+  }
+
+  if (route.path.startsWith("/tr/blog/")) {
+    const slug = route.path.slice("/tr/blog/".length);
+    const post = TR_BLOG_POSTS.find((p) => p.slug === slug);
+    const body = TR_BLOG_BODIES[slug];
+    if (post && body) {
+      const sections = body.sections
+        .map((s) => `<h2>${escapeHtml(s.h)}</h2><p>${escapeHtml(s.p)}</p>`)
+        .join("\n");
+      const faq = (TR_BLOG_FAQ_BY_SLUG[slug] || [])
+        .map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`)
+        .join("\n");
+      return `
+<main>
+  ${seoBrand()}
+  <nav aria-label="Breadcrumb"><a href="/tr">Ana sayfa</a> › <a href="/tr/blog">Blog</a></nav>
+  <article>
+    <h1>${escapeHtml(post.title)}</h1>
+    <p>${escapeHtml(post.description)}</p>
+    <p class="seo-note">Yayın: ${post.date} · Güncelleme: ${post.updated}</p>
+    ${sections}
+    ${faq ? `<h2>Sık sorulan sorular</h2>${faq}` : ""}
+    <p><a href="/blog/${slug}">English version</a></p>
+    ${seoCtaRow("/tr/blog", "Tüm rehberler", true)}
+  </article>
+  ${seoSiteNav(true)}
+</main>`;
+    }
+  }
+
   const core = corePageBody(route.path);
   if (core) return core;
 
@@ -177,15 +272,17 @@ function crawlBody(route) {
 function jsonLdForRoute(route) {
   const graphs = [buildEntityGraphLd()];
 
-  if (route.path === "/" || route.path === "/features" || route.path === "/download") {
-    graphs.push(buildSoftwareApplicationLd());
-  }
+  // SoftwareApplication already lives in the entity @graph (same @id) on every
+  // page; a second standalone copy was a duplicate.
 
   if (route.path === "/faq") {
     graphs.push(buildFaqLd(FAQ_ITEMS));
   }
+  if (route.path === "/tr/faq") {
+    graphs.push(buildFaqLd(FAQ_ITEMS.map((f) => ({ q: trCopy(f.q, true), a: trCopy(f.a, true) }))));
+  }
   if (route.path === "/discord-alternative") {
-    graphs.push(buildFaqLd(ALTERNATIVE_HUB_FAQ), buildSoftwareApplicationLd());
+    graphs.push(buildFaqLd(ALTERNATIVE_HUB_FAQ));
   }
   if (route.path === "/alternatives") {
     graphs.push(buildFaqLd(ALTERNATIVES_FAQ));
@@ -193,8 +290,41 @@ function jsonLdForRoute(route) {
   if (route.path === "/compare/discord" || route.path === "/tr/compare/discord") {
     graphs.push(buildFaqLd(COMPARE_FAQ));
   }
-  if (route.path === "/discord-alternative-turkey") {
-    graphs.push(buildFaqLd(TURKEY_FAQ), buildSoftwareApplicationLd());
+  const trLanding = TR_LANDINGS[route.path];
+  if (trLanding) {
+    graphs.push(
+      buildFaqLd(trLanding.faq),
+      buildBreadcrumbLd([
+        { name: "Ana sayfa", path: "/tr" },
+        { name: trLanding.h1.split(":")[0].trim(), path: route.path },
+      ])
+    );
+  }
+  if (route.path === "/tr/blog") {
+    graphs.push(buildBreadcrumbLd([{ name: "Ana sayfa", path: "/tr" }, { name: "Blog", path: "/tr/blog" }]));
+  }
+  if (route.path.startsWith("/tr/blog/")) {
+    const slug = route.path.slice("/tr/blog/".length);
+    const post = TR_BLOG_POSTS.find((p) => p.slug === slug);
+    if (post) {
+      graphs.push(
+        buildArticleLd({
+          title: post.title,
+          description: post.description,
+          path: route.path,
+          datePublished: post.date,
+          dateModified: post.updated || post.date,
+          inLanguage: "tr",
+        }),
+        buildBreadcrumbLd([
+          { name: "Ana sayfa", path: "/tr" },
+          { name: "Blog", path: "/tr/blog" },
+          { name: post.title, path: route.path },
+        ])
+      );
+      const faq = TR_BLOG_FAQ_BY_SLUG[slug];
+      if (faq?.length) graphs.push(buildFaqLd(faq));
+    }
   }
   if (route.path === "/who-owns-descall") {
     graphs.push(
@@ -278,11 +408,7 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
   const title = escapeHtml(route.title);
   const desc = escapeHtml(route.description);
   const keywords = route.keywords ? escapeHtml(route.keywords) : "";
-  const lang =
-    route.lang ||
-    (route.path === "/discord-alternative-turkey" || route.path === "/tr" || route.path.startsWith("/tr/")
-      ? "tr"
-      : "en");
+  const lang = route.lang || (routeIsTr(route) ? "tr" : "en");
   const ogType = route.ogType || "website";
 
   // Vercel rewrites authenticated deep links (/calls, /direct, …) to dist/index.html
@@ -293,16 +419,19 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
   out = out.replace(/<html\s+lang="[^"]*"/i, `<html lang="${lang}"`);
   out = out.replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`);
 
-  const enPath = enPathForHreflang(route.path);
-  const trPath = trPathForHreflang(route.path);
-  const enHref = `${SITE}${enPath === "/" ? "/" : enPath}`;
-  const trHref = `${SITE}${trPath}`;
-  const isTr = route.lang === "tr" || route.path === "/discord-alternative-turkey" || route.path.startsWith("/tr");
-  const hreflang = [
-    `<link rel="alternate" hreflang="en" href="${enHref}" />`,
-    `<link rel="alternate" hreflang="tr" href="${trHref}" />`,
-    `<link rel="alternate" hreflang="x-default" href="${enHref}" />`,
-  ];
+  // hreflang only for true 1:1 EN/TR translations; reciprocal, x-default → EN.
+  const isTr = lang === "tr";
+  const pair = hreflangPair(route.path);
+  const hreflang = [];
+  if (pair) {
+    const enHref = `${SITE}${pair.en === "/" ? "/" : pair.en}`;
+    const trHref = `${SITE}${pair.tr}`;
+    hreflang.push(
+      `<link rel="alternate" hreflang="en" href="${enHref}" />`,
+      `<link rel="alternate" hreflang="tr" href="${trHref}" />`,
+      `<link rel="alternate" hreflang="x-default" href="${enHref}" />`
+    );
+  }
 
   const ldScripts = jsonLdForRoute(route)
     .map(
@@ -330,6 +459,7 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:locale" content="${isTr ? "tr_TR" : "en_US"}" />`,
+    pair ? `<meta property="og:locale:alternate" content="${isTr ? "en_US" : "tr_TR"}" />` : "",
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${desc}" />`,
@@ -380,14 +510,29 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
   return out;
 }
 
+/**
+ * Cloudflare Pages serves /download from dist/download.html with 200 and
+ * 308-redirects /download/ (and /download.html) to /download. A folder
+ * index (dist/download/index.html) would instead 308 /download → /download/,
+ * which contradicts our no-slash canonicals. So: "/" → dist/index.html,
+ * everything else → dist/<route>.html.
+ */
+export function distFileForRoute(routePath) {
+  if (routePath === "/") return path.join(distDir, "index.html");
+  return path.join(distDir, `${routePath.replace(/^\//, "")}.html`);
+}
+
 function writeRoute(route, html) {
-  const rel = route.path === "/" ? "" : route.path.replace(/^\//, "");
-  const dir = rel ? path.join(distDir, rel) : distDir;
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, "index.html");
+  const file = distFileForRoute(route.path);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  // Remove any stale folder-index shell from older builds.
+  if (route.path !== "/") {
+    const stale = path.join(distDir, route.path.replace(/^\//, ""), "index.html");
+    if (fs.existsSync(stale)) fs.rmSync(stale);
+  }
   // Keep boot splash on "/" — it is also the SPA fallback shell for app routes.
   fs.writeFileSync(file, injectMeta(html, route, { keepBootSplash: route.path === "/" }), "utf8");
-  console.log(`[prerender-seo] ${route.path}`);
+  console.log(`[prerender-seo] ${route.path} -> ${path.relative(distDir, file)}`);
 }
 
 function main() {

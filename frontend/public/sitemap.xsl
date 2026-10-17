@@ -34,7 +34,7 @@
           <h1>Descall XML sitemap</h1>
           <p>Styled view of the machine-readable sitemap. Crawlers still receive raw XML.</p>
           <div class="chips">
-            <a href="/sitemap.html">Human sitemap</a>
+            <a href="/sitemap">Human sitemap</a>
             <a href="/sitemap.xml">XML index</a>
             <a href="/sitemap-pages.xml">Pages XML</a>
             <a href="/">Home</a>

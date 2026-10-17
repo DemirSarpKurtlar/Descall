@@ -22,7 +22,7 @@ const MARKETING_EXACT = new Set([
   "/compare/discord",
   "/apps-like-discord",
   "/discord-replacement",
-  "/discord-alternative-turkey",
+  "/tr/discord-alternatifi",
   "/best-discord-alternative-for-gamers",
   "/discord-alternative-for-communities",
   "/discord-alternative-for-lfg",

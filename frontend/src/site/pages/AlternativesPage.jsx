@@ -115,7 +115,7 @@ export default function AlternativesPage() {
             <Link to="/best-discord-alternative-for-gamers">{t("Best for gamers")}</Link>
           </li>
           <li>
-            <Link to="/discord-alternative-turkey">{t("Türkiye / Turkish")}</Link>
+            <Link to="/tr/discord-alternatifi">{t("Türkiye / Turkish")}</Link>
           </li>
           <li>
             <Link to="/blog/leave-nitro-keep-voice-chat">{t("Leave Nitro guide")}</Link>
@@ -132,7 +132,7 @@ export default function AlternativesPage() {
           { to: "/compare/discord", label: "Discord vs Descall" },
           { to: "/apps-like-discord", label: "Apps like Discord" },
           { to: "/discord-replacement", label: "Discord replacement" },
-          { to: "/discord-alternative-turkey", label: "Discord alternatifi (TR)" },
+          { to: "/tr/discord-alternatifi", label: "Discord alternatifi (TR)" },
           { to: "/download", label: "Download" },
         ]}
       />

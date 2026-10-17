@@ -18,7 +18,7 @@ export const SEO_NICHES = [
   { to: "/best-discord-alternative-for-gamers", label: "Gamers" },
   { to: "/apps-like-discord", label: "Apps like Discord" },
   { to: "/discord-replacement", label: "Discord replacement" },
-  { to: "/discord-alternative-turkey", label: "Türkiye" },
+  { to: "/tr/discord-alternatifi", label: "Türkiye" },
   { to: "/alternatives", label: "Alternatives list" },
 ];
 

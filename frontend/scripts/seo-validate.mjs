@@ -33,6 +33,8 @@ const { BLOG_POSTS } = await import(
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
 );
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
+const { TR_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/trLandings.js")).href);
+const { TR_BLOG_POSTS, TR_BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href);
 
 const marketingApp = fs.readFileSync(path.join(root, "src/site/MarketingApp.jsx"), "utf8");
 const sitemapJs = fs.readFileSync(path.join(root, "backend/routes/sitemap.js"), "utf8");
@@ -73,7 +75,12 @@ for (const route of PUBLIC_ROUTES) {
   } else descriptions.set(route.description, route.path);
 
   // Route should be registered in MarketingApp (blog/:slug covers posts)
-  if (route.path.startsWith("/blog/") && route.path !== "/blog") {
+  if (route.path.startsWith("/tr/blog/")) {
+    const slug = route.path.slice("/tr/blog/".length);
+    if (!marketingApp.includes('path="/tr/blog/:slug"')) fail("MarketingApp missing /tr/blog/:slug");
+    if (!TR_BLOG_POSTS.some((p) => p.slug === slug) || !TR_BLOG_BODIES[slug]) fail(`TR blog post missing: ${slug}`);
+    if (!BLOG_POSTS.some((p) => p.slug === slug)) fail(`TR blog post has no EN twin: ${slug}`);
+  } else if (route.path.startsWith("/blog/") && route.path !== "/blog") {
     const slug = route.path.slice("/blog/".length);
     if (!marketingApp.includes('path="/blog/:slug"')) fail("MarketingApp missing /blog/:slug");
     if (!BLOG_POSTS.some((p) => p.slug === slug)) fail(`Blog slug missing from BLOG_POSTS: ${slug}`);
@@ -251,7 +258,7 @@ if (checkDist) {
     }
 
     for (const route of PUBLIC_ROUTES) {
-      const rel = route.path === "/" ? "index.html" : path.join(route.path.replace(/^\//, ""), "index.html");
+      const rel = route.path === "/" ? "index.html" : `${route.path.replace(/^\//, "")}.html`;
       const file = path.join(dist, rel);
       if (!fs.existsSync(file)) {
         fail(`Prerender shell missing: ${rel}`);
@@ -275,9 +282,8 @@ if (checkDist) {
         fail(`FAQPage JSON-LD missing in ${rel}`);
       }
       if (
-        ["/discord-alternative", "/alternatives", "/compare/discord", "/discord-alternative-turkey"].includes(
-          route.path
-        ) &&
+        (["/discord-alternative", "/alternatives", "/compare/discord", "/tr/faq", "/faq"].includes(route.path) ||
+          TR_LANDINGS[route.path]) &&
         !html.includes("FAQPage")
       ) {
         fail(`FAQPage JSON-LD missing in ${rel}`);
@@ -318,6 +324,79 @@ if (checkDist) {
       const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
       if (h1Count !== 1) warn(`Expected 1 H1 in ${rel}, found ${h1Count}`);
     }
+  }
+}
+
+if (checkDist) {
+  // Cloudflare Pages model: /foo is served 200 from dist/foo.html; a dist/foo/index.html
+  // would make Pages 308 /foo → /foo/. Every sitemap URL must be a 200 at its own
+  // canonical, so simulate that here.
+  const dist = path.join(root, "dist");
+  const pagesXmlPath = path.join(dist, "sitemap-pages.xml");
+  if (fs.existsSync(pagesXmlPath)) {
+    const locs = [...fs.readFileSync(pagesXmlPath, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    const seenLoc = new Set();
+    const hreflangByUrl = new Map();
+    for (const loc of locs) {
+      if (seenLoc.has(loc)) fail(`Duplicate sitemap loc ${loc}`);
+      seenLoc.add(loc);
+      const u = new URL(loc);
+      if (u.origin !== "https://descall.com") fail(`Sitemap loc not on https://descall.com: ${loc}`);
+      if (u.pathname !== "/" && u.pathname.endsWith("/")) fail(`Sitemap loc has trailing slash (would 308): ${loc}`);
+      if (u.pathname.endsWith(".html")) fail(`Sitemap loc ends with .html (Pages 308s it): ${loc}`);
+      const rel = u.pathname === "/" ? "index.html" : `${u.pathname.slice(1)}.html`;
+      const file = path.join(dist, rel);
+      if (!fs.existsSync(file)) {
+        fail(`Sitemap URL would not be 200 (no dist/${rel}): ${loc}`);
+        continue;
+      }
+      if (u.pathname !== "/" && fs.existsSync(path.join(dist, u.pathname.slice(1), "index.html"))) {
+        fail(`Stale folder index dist${u.pathname}/index.html would 308 ${loc} → trailing slash`);
+      }
+      const html = fs.readFileSync(file, "utf8");
+      const canon = html.match(/<link rel="canonical" href="([^"]+)"/i)?.[1];
+      if (canon !== loc) fail(`Canonical != sitemap URL for ${loc} (got ${canon})`);
+      const ogUrl = html.match(/<meta property="og:url" content="([^"]+)"/i)?.[1];
+      if (ogUrl && ogUrl !== loc) fail(`og:url != URL for ${loc} (got ${ogUrl})`);
+      const alts = {};
+      for (const m of html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)"/gi)) alts[m[1]] = m[2];
+      hreflangByUrl.set(loc, alts);
+      const lang = html.match(/<html\s+lang="([^"]+)"/i)?.[1];
+      const ogLocale = html.match(/<meta property="og:locale" content="([^"]+)"/i)?.[1];
+      if (lang === "tr" && ogLocale !== "tr_TR") fail(`TR page without og:locale tr_TR: ${loc}`);
+      if (lang === "en" && ogLocale && ogLocale !== "en_US") fail(`EN page with og:locale ${ogLocale}: ${loc}`);
+      for (const m of html.matchAll(/href="(\/[^"#?]*)"/g)) {
+        const href = m[1];
+        if (href.length > 1 && href.endsWith("/") && !href.startsWith("//")) {
+          fail(`Internal link with trailing slash (308) in dist/${rel}: ${href}`);
+        }
+      }
+    }
+    for (const [loc, alts] of hreflangByUrl) {
+      const langs = Object.keys(alts).filter((k) => k !== "x-default");
+      if (!langs.length) continue;
+      const selfLang = (fs.readFileSync(path.join(dist, new URL(loc).pathname === "/" ? "index.html" : `${new URL(loc).pathname.slice(1)}.html`), "utf8").match(/<html\s+lang="([^"]+)"/i) || [])[1];
+      if (alts[selfLang] !== loc) fail(`hreflang self-reference missing on ${loc}`);
+      for (const [lang, href] of Object.entries(alts)) {
+        if (!seenLoc.has(href)) fail(`hreflang ${lang} on ${loc} points to non-sitemap URL ${href}`);
+        if (lang === "x-default") continue;
+        const back = hreflangByUrl.get(href);
+        if (back && back[selfLang] !== loc) fail(`hreflang not reciprocal: ${loc} -> ${href} (${lang})`);
+      }
+    }
+    // No folder-index shells may remain anywhere except the root.
+    const walk = (dir) => {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+          if (["assets", ".well-known"].includes(ent.name)) continue;
+          walk(full);
+        } else if (ent.name === "index.html" && dir !== dist) {
+          fail(`Stale folder index shell: ${path.relative(dist, full)} (Pages would 308 to trailing slash)`);
+        }
+      }
+    };
+    walk(dist);
   }
 }
 

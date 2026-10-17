@@ -100,26 +100,9 @@ async function submitIndexNow(key, urls) {
   return { ...last, submitted: 0 };
 }
 
-async function pingSitemapEngines(sitemapUrl) {
-  // Google retired /ping; keep for logs. Bing still accepts sitemap ping.
-  const targets = [
-    ["Bing", `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`],
-    ["Google", `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`],
-  ];
-  if (DRY_RUN) {
-    for (const [name] of targets) console.log(`[dry-run] ${name} sitemap ping ${sitemapUrl}`);
-    return { ok: true, status: 200, dryRun: true };
-  }
-  for (const [name, pingUrl] of targets) {
-    try {
-      const res = await fetch(pingUrl, { method: "GET", redirect: "follow" });
-      console.log(`${name} sitemap ping → HTTP ${res.status} (${sitemapUrl})`);
-    } catch (err) {
-      console.warn(`${name} sitemap ping failed:`, err?.message || err);
-    }
-  }
-  return { ok: true };
-}
+// Sitemap "ping" endpoints are gone: Google retired /ping (404 since Dec 2023) and
+// Bing deprecated anonymous sitemap pings in favour of IndexNow. Sitemaps are
+// discovered from robots.txt and Search Console; fresh URLs go out via IndexNow.
 
 async function submitGoogleIndexingApi(urls) {
   const raw = process.env.GOOGLE_INDEXING_CREDENTIALS_JSON;
@@ -229,12 +212,6 @@ async function main() {
       console.warn("IndexNow stopped after error:", result.status, result.text?.slice(0, 200));
       break;
     }
-  }
-
-  await pingSitemapEngines(`${SITE_ORIGIN}/sitemap.xml`);
-  await pingSitemapEngines(`${SITE_ORIGIN}/sitemap-pages.xml`);
-  for (const table of SITEMAP_TABLES) {
-    await pingSitemapEngines(`${SITE_ORIGIN}/${table.file}`);
   }
 
   const googleResult = await submitGoogleIndexingApi(googleBatch);

@@ -50,7 +50,7 @@ export const INDEXING_PRIORITY_PATHS = [
   "/best-discord-alternative-for-gamers",
   "/discord-alternative-for-lfg",
   "/apps-like-discord",
-  "/discord-alternative-turkey",
+  "/tr/discord-alternatifi",
   "/discord-replacement",
   "/discord-alternative-for-voice-chat",
   "/discord-alternative-for-friends",
@@ -80,7 +80,7 @@ export const INDEXING_PRIORITY_PATHS = [
 
 function tableIdForPath(path) {
   const p = path || "/";
-  if (p.startsWith("/blog")) return "blog";
+  if (p.startsWith("/blog") || p.startsWith("/tr/blog")) return "blog";
   if (p === "/tr" || p.startsWith("/tr/")) return "niches";
   if (p === "/status") return "company";
   if (
@@ -110,11 +110,17 @@ export function routesForTable(tableId) {
   return indexableRoutes().filter((r) => tableIdForPath(r.path) === tableId);
 }
 
-export function allSitemapEntries(origin = SITE, now = new Date().toISOString()) {
+/**
+ * @param {string} origin
+ * @param {string} now fallback lastmod (ISO)
+ * @param {(path: string) => string | null} [lastmodFor] real per-page lastmod (e.g. git)
+ */
+export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
+  const lm = (p) => (lastmodFor && lastmodFor(p)) || now;
   const entries = indexableRoutes().map((r) => ({
     path: r.path,
     loc: absoluteLoc(r.path, origin),
-    lastmod: now,
+    lastmod: lm(r.path),
     changefreq: r.changefreq || "weekly",
     priority: r.priority || "0.5",
     title: r.title,
@@ -124,9 +130,9 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString())
 
   // Human sitemap page
   entries.push({
-    path: "/sitemap.html",
-    loc: absoluteLoc("/sitemap.html", origin),
-    lastmod: now,
+    path: "/sitemap",
+    loc: absoluteLoc("/sitemap", origin),
+    lastmod: lm("/sitemap"),
     changefreq: "weekly",
     priority: "0.3",
     title: "Sitemap",
@@ -137,8 +143,8 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString())
   return entries;
 }
 
-export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString()) {
-  return allSitemapEntries(origin, now).filter((e) => e.tableId === tableId);
+export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
+  return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.tableId === tableId);
 }
 
 /** Deduped absolute URLs ordered by INDEXING_PRIORITY_PATHS then remaining. */

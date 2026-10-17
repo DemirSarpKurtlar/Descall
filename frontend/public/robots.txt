@@ -39,7 +39,7 @@ Allow: /terms
 Allow: /contact
 Allow: /compare/
 Allow: /discord-alternative
-Allow: /discord-alternative-turkey
+Allow: /tr/
 Allow: /discord-alternative-for-communities
 Allow: /discord-alternative-for-lfg
 Allow: /discord-alternative-for-voice-chat
@@ -60,6 +60,7 @@ Allow: /sitemap-core.xml
 Allow: /sitemap-niches.xml
 Allow: /sitemap-blog.xml
 Allow: /sitemap-company.xml
+Allow: /sitemap
 Allow: /sitemap.html
 Allow: /favicon.ico
 Allow: /favicon.svg

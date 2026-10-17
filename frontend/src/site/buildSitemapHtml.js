@@ -105,7 +105,7 @@ ${cards}
   <title>Sitemap | Descall</title>
   <meta name="description" content="Browse every public Descall page, product, Discord alternative guides, blog, and legal." />
   <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="${xmlEscape(site)}/sitemap.html" />
+  <link rel="canonical" href="${xmlEscape(site)}/sitemap" />
   <meta property="og:image" content="${xmlEscape(site)}/og-default.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
@@ -331,7 +331,7 @@ export const SITEMAP_XSL = `<?xml version="1.0" encoding="UTF-8"?>
           <h1>Descall XML sitemap</h1>
           <p>Styled view of the machine-readable sitemap. Crawlers still receive raw XML.</p>
           <div class="chips">
-            <a href="/sitemap.html">Human sitemap</a>
+            <a href="/sitemap">Human sitemap</a>
             <a href="/sitemap.xml">XML index</a>
             <a href="/sitemap-pages.xml">Pages XML</a>
             <a href="/">Home</a>

@@ -10,8 +10,7 @@ import {
 import { useLocale } from "../context/localeContextInstance";
 import {
   isTrPath,
-  enPathForHreflang,
-  trPathForHreflang,
+  hreflangPair,
   stripLocalePrefix,
 } from "./localePaths";
 import { SITE_OPERATOR } from "./siteIdentity";
@@ -93,17 +92,21 @@ export default function SeoHead({ forceNoindex = false, title, description, path
     upsertMeta("name", "citation_author", SITE_OPERATOR.operatorName);
 
     const origin = DEFAULT_ORIGIN.replace(/\/$/, "");
-    const enHref = `${origin}${enPathForHreflang(rawPath) === "/" ? "/" : enPathForHreflang(rawPath)}`;
-    const trHref = `${origin}${trPathForHreflang(rawPath)}`;
     document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove());
-    upsertLink("alternate", enHref, { hreflang: "en" });
-    upsertLink("alternate", trHref, { hreflang: "tr" });
-    upsertLink("alternate", enHref, { hreflang: "x-default" });
+    const pair = hreflangPair(rawPath);
+    if (pair && !noindex) {
+      const enHref = `${origin}${pair.en === "/" ? "/" : pair.en}`;
+      const trHref = `${origin}${pair.tr}`;
+      upsertLink("alternate", enHref, { hreflang: "en" });
+      upsertLink("alternate", trHref, { hreflang: "tr" });
+      upsertLink("alternate", enHref, { hreflang: "x-default" });
+    }
 
     upsertMeta("property", "og:type", meta.ogType || "website");
     upsertMeta("property", "og:site_name", SITE_NAME);
     upsertMeta("property", "og:locale", tr ? "tr_TR" : "en_US");
-    upsertMeta("property", "og:locale:alternate", tr ? "en_US" : "tr_TR");
+    if (hreflangPair(rawPath)) upsertMeta("property", "og:locale:alternate", tr ? "en_US" : "tr_TR");
+    else document.head.querySelector('meta[property="og:locale:alternate"]')?.remove();
     upsertMeta("property", "og:title", pageTitle);
     upsertMeta("property", "og:description", pageDesc);
     upsertMeta("property", "og:url", canonical);

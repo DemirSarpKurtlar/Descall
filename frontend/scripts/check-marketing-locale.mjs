@@ -64,7 +64,8 @@ const pathCases = [
   ["/tr", true],
   ["/tr/features", true],
   ["/descall-sahibi", true],
-  ["/discord-alternative-turkey", true],
+  ["/tr/discord-alternatifi", true],
+  ["/tr/discord-acildi-mi", true],
   ["/", false],
   ["/who-owns-descall", false],
   ["/features", false],
@@ -80,7 +81,7 @@ if (trDestinationForPath("/who-owns-descall") !== "/descall-sahibi") {
   console.error("trDestinationForPath ownership failed");
   process.exit(1);
 }
-if (trDestinationForPath("/discord-alternative") !== "/discord-alternative-turkey") {
+if (trDestinationForPath("/discord-alternative") !== "/tr/discord-alternatifi") {
   console.error("trDestinationForPath alternative failed");
   process.exit(1);
 }

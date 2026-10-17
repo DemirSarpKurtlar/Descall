@@ -24,6 +24,77 @@ const { llmsTxt, llmsFullTxt, humansTxt, securityTxt } = await import(
   pathToFileURL(path.join(root, "src/site/ownershipFacts.js")).href
 );
 
+const { BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href);
+const { TR_BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href);
+const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
+const { execFileSync } = await import("node:child_process");
+
+/** Source files whose last commit date is the page's real lastmod. */
+const PAGE_SOURCES = {
+  "/": ["src/site/pages/HomePage.jsx"],
+  "/download": ["src/site/pages/MarketingDownloadPage.jsx"],
+  "/features": ["src/site/pages/FeaturesPage.jsx"],
+  "/faq": ["src/site/pages/FaqPage.jsx", "src/site/faqData.js"],
+  "/security": ["src/site/pages/SecurityPage.jsx"],
+  "/status": ["src/site/pages/StatusPage.jsx"],
+  "/privacy": ["src/site/pages/PrivacyPage.jsx"],
+  "/gizlilik": ["src/site/pages/PrivacyPage.jsx"],
+  "/terms": ["src/site/pages/TermsPage.jsx"],
+  "/kosullar": ["src/site/pages/TermsPage.jsx"],
+  "/copyright": ["src/site/pages/CopyrightPage.jsx"],
+  "/about": ["src/site/pages/AboutPage.jsx"],
+  "/contact": ["src/site/pages/ContactPage.jsx"],
+  "/iletisim": ["src/site/pages/ContactPage.jsx"],
+  "/who-owns-descall": ["src/site/pages/WhoOwnsDescallPage.jsx", "src/site/ownershipFacts.js"],
+  "/descall-sahibi": ["src/site/pages/WhoOwnsDescallPage.jsx", "src/site/ownershipFacts.js"],
+  "/discord-alternative": ["src/site/pages/DiscordAlternativePage.jsx"],
+  "/alternatives": ["src/site/pages/AlternativesPage.jsx"],
+  "/compare/discord": ["src/site/pages/CompareDiscordPage.jsx"],
+  "/best-discord-alternative-for-gamers": ["src/site/pages/DiscordAlternativeGamersPage.jsx"],
+  "/blog": ["src/site/pages/BlogIndexPage.jsx", "src/site/content/discordSeoContent.js"],
+  "/tr/blog": ["src/site/pages/TrBlogIndexPage.jsx", "src/site/seo/trMeta.js"],
+  "/sitemap": ["src/site/buildSitemapHtml.js", "src/site/seoConfig.js"],
+};
+
+const lastmodCache = new Map();
+function gitLastmod(files) {
+  const key = files.join("|");
+  if (lastmodCache.has(key)) return lastmodCache.get(key);
+  let out = null;
+  try {
+    const iso = execFileSync("git", ["log", "-1", "--format=%cI", "--", ...files], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (iso) out = new Date(iso).toISOString();
+  } catch {
+    out = null;
+  }
+  lastmodCache.set(key, out);
+  return out;
+}
+
+/** Real per-page lastmod: editorial date for posts, git mtime of sources otherwise. */
+function lastmodFor(routePath) {
+  const en = BLOG_POSTS.find((p) => p.path === routePath);
+  if (en) return `${en.updated || en.date}T00:00:00.000Z`;
+  const tr = TR_BLOG_POSTS.find((p) => p.path === routePath);
+  if (tr) return `${tr.updated || tr.date}T00:00:00.000Z`;
+  let files = PAGE_SOURCES[routePath];
+  if (!files && NICHE_LANDINGS[routePath]) {
+    files = ["src/site/seo/nicheLandings.js", "src/site/pages/DiscordAlternativeNichePage.jsx"];
+  }
+  if (!files && routePath.startsWith("/tr/")) {
+    const bare = routePath.slice(3);
+    files = PAGE_SOURCES[bare]
+      ? [...PAGE_SOURCES[bare], "src/site/marketingPhrases.tr.js"]
+      : ["src/site/seo/trLandings.js", "src/site/seo/trMeta.js", "src/site/pages/TrLandingPage.jsx"];
+  }
+  if (routePath === "/tr") files = [...PAGE_SOURCES["/"], "src/site/marketingPhrases.tr.js"];
+  return files ? gitLastmod(files) : null;
+}
+
 function xmlEscape(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -82,7 +153,7 @@ Allow: /terms
 Allow: /contact
 Allow: /compare/
 Allow: /discord-alternative
-Allow: /discord-alternative-turkey
+Allow: /tr/
 Allow: /discord-alternative-for-communities
 Allow: /discord-alternative-for-lfg
 Allow: /discord-alternative-for-voice-chat
@@ -100,6 +171,7 @@ Allow: /.well-known/security.txt
 Allow: /sitemap.xml
 Allow: /sitemap-pages.xml
 ${childAllows}
+Allow: /sitemap
 Allow: /sitemap.html
 Allow: /favicon.ico
 Allow: /favicon.svg
@@ -154,9 +226,13 @@ function buildSitemapIndex(now) {
   const children = SITEMAP_TABLES.map((t) => {
     const loc = `${SITE}/${t.file}`;
     assertHttpsDescall(loc);
+    const newest = entriesForTable(t.id, SITE, now, lastmodFor)
+      .map((e) => e.lastmod)
+      .sort()
+      .pop();
     return `  <sitemap>
     <loc>${xmlEscape(loc)}</loc>
-    <lastmod>${xmlEscape(now)}</lastmod>
+    <lastmod>${xmlEscape(newest || now)}</lastmod>
   </sitemap>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -194,14 +270,14 @@ function main() {
   }
 
   const now = new Date().toISOString();
-  const allEntries = allSitemapEntries(SITE, now);
+  const allEntries = allSitemapEntries(SITE, now, lastmodFor);
   const robots = buildRobots();
   const index = buildSitemapIndex(now);
   const pages = buildUrlset(allEntries);
   const html = buildSitemapHtml();
   const tableBodies = SITEMAP_TABLES.map((t) => ({
     file: t.file,
-    body: buildUrlset(entriesForTable(t.id, SITE, now)),
+    body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor)),
   }));
 
   for (const [name, body] of [

@@ -176,7 +176,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           { to: "/discord-alternative-for-communities", label: "For communities" },
           { to: "/discord-alternative-for-voice-chat", label: "Voice chat alternative" },
           { to: "/discord-alternative-for-friends", label: "For friends" },
-          { to: "/discord-alternative-turkey", label: "Discord alternatifi (Türkiye)" },
+          { to: "/tr/discord-alternatifi", label: "Discord alternatifi (Türkiye)" },
           { to: "/blog", label: "Descall blog" },
         ]}
       />

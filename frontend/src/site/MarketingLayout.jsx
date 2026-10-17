@@ -41,6 +41,25 @@ const NAV = [
   { to: "/faq", label: "FAQ" },
 ];
 
+/** Turkish header adds the Turkish hubs (they have no EN twin). */
+const NAV_TR_EXTRA = [
+  { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
+  { to: "/tr/blog", label: "Blog" },
+];
+
+/** Turkish hubs in the footer "Explore" column. */
+const TR_FOOTER_HUBS = [
+  { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
+  { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri" },
+  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı?" },
+  { to: "/tr/turk-discord", label: "Türk Discord’u" },
+  { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
+  { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
+  { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },
+  { to: "/tr/compare/discord", label: "Discord mu Descall mı?" },
+  { to: "/tr/blog", label: "Blog" },
+];
+
 export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   const t = useT();
   const { locale, setLocale } = useLocale();
@@ -106,13 +125,15 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
       className={`mkt-nav${menuOpen ? " is-open" : ""}`}
       aria-label={t("Primary navigation")}
     >
-      {NAV.map((item) => (
+      {(useTrUrls ? [...NAV, ...NAV_TR_EXTRA] : NAV).map((item) => (
         <NavLink
           key={item.to}
           to={L(item.to)}
           onClick={closeMenu}
           className={() =>
-            stripLocalePrefix(location.pathname) === item.to ? "mkt-nav-link is-active" : "mkt-nav-link"
+            stripLocalePrefix(location.pathname) === item.to || location.pathname === item.to
+              ? "mkt-nav-link is-active"
+              : "mkt-nav-link"
           }
         >
           {t(item.label)}
@@ -233,13 +254,23 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
           </section>
           <section className="mkt-footer-col">
             <h2>{t("Explore")}</h2>
-            <Link to="/discord-alternative">{t("Discord alternative")}</Link>
-            <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>
-            <Link to={L("/compare/discord")}>{t("vs Discord")}</Link>
-            <Link to="/discord-alternative-turkey">{t("Turkey")}</Link>
-            <Link to="/blog">{t("Blog")}</Link>
+            {useTrUrls ? (
+              TR_FOOTER_HUBS.map((item) => (
+                <Link key={item.to} to={item.to}>
+                  {item.label}
+                </Link>
+              ))
+            ) : (
+              <>
+                <Link to="/discord-alternative">{t("Discord alternative")}</Link>
+                <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>
+                <Link to="/compare/discord">{t("vs Discord")}</Link>
+                <Link to="/tr/discord-alternatifi">Türkçe: Discord alternatifi</Link>
+                <Link to="/blog">{t("Blog")}</Link>
+              </>
+            )}
             <Link to="/status">{t("Status")}</Link>
-            <a href="/sitemap.html">{t("Sitemap")}</a>
+            <a href="/sitemap">{t("Sitemap")}</a>
           </section>
           <section className="mkt-footer-col">
             <h2>{t("Company")}</h2>
