@@ -1320,6 +1320,8 @@ export const phrases = {
   "Failed to load announcements": "Failed to load announcements",
   "Add Member": "Add Member",
   "Rename Group": "Rename Group",
+  "Group info": "Group info",
+  "Group actions": "Group actions",
   "Change Group Photo": "Change Group Photo",
   "Remove Group Photo": "Remove Group Photo",
   "Group photo": "Group photo",

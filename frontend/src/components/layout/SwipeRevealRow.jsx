@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useGlassUi from "../../hooks/useGlassUi";
 import useDragSpring from "../../hooks/useDragSpring";
 import { hapticLight } from "../../lib/haptics";
+import { isFullSwipe, revealFor, swipeActionsWidth } from "../../lib/swipeReveal";
+
+export { swipeActionsWidth };
 
 /**
  * Mobile swipe-to-reveal: front + actions as flex siblings (same row height).
@@ -15,19 +18,53 @@ export default function SwipeRevealRow(props) {
   return <LegacySwipeRevealRow {...props} />;
 }
 
-function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, actions }) {
-  const trackRef = useRef(null);
+/**
+ * iPhone glass swipe row. The row content never leaves the screen: instead of
+ * translating the whole row, the action strip grows from the right edge and
+ * the front shrinks (avatar stays put, the name truncates). The drag clamps at
+ * full reveal with UIScrollView rubber-banding past it; dragging far past it
+ * (when `onFullSwipe` is given) highlights and fires the destructive action.
+ */
+function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, actions, onFullSwipe }) {
+  const viewportRef = useRef(null);
   const openRef = useRef(open);
   openRef.current = open;
+  const lastX = useRef(0);
+  const fullRef = useRef(false);
+  // Stable snap points: a fresh array each render rebuilt the drag controller,
+  // so any re-render mid-swipe (presence, clock) dropped the release and the
+  // row stayed stuck over-dragged.
+  const snapPoints = useMemo(() => [-width, 0], [width]);
   const drag = useDragSpring({
     axis: "x",
     min: -width,
     max: 0,
-    snapPoints: [-width, 0],
+    snapPoints,
     dimension: Math.max(width, 1),
     rubberBand: true,
     onFrame: (x) => {
-      if (trackRef.current) trackRef.current.style.transform = `translate3d(${x}px,0,0)`;
+      lastX.current = x;
+      const el = viewportRef.current;
+      if (!el) return;
+      const reveal = revealFor(x);
+      el.style.setProperty("--swipe-reveal", `${reveal}px`);
+      // While actions show, the time column yields its space to the name.
+      el.classList.toggle("is-revealing", reveal > 12);
+      const full = Boolean(onFullSwipe) && isFullSwipe(x, width);
+      if (full !== fullRef.current) {
+        fullRef.current = full;
+        el.classList.toggle("is-full-swipe", full);
+        if (full) hapticLight();
+      }
+    },
+    onRelease: (r) => {
+      if (onFullSwipe && isFullSwipe(lastX.current, width)) {
+        fullRef.current = false;
+        viewportRef.current?.classList.remove("is-full-swipe");
+        onFullSwipe();
+        return -width; // stay open behind the destructive confirm
+      }
+      return r.target;
     },
     onSettle: (x) => {
       const shouldOpen = x < -width * 0.5;
@@ -44,21 +81,21 @@ function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, 
 
   return (
     <div
-      className="group-swipe-viewport"
+      ref={viewportRef}
+      className="group-swipe-viewport is-fluid-reveal"
+      style={{ "--swipe-reveal": "0px", "--swipe-width": `${width}px` }}
       {...drag.bind}
       onPointerDown={(e) => {
         onCloseOthers?.();
         drag.bind.onPointerDown(e);
       }}
     >
-      <div ref={trackRef} className="group-swipe-track" style={{ transform: "translate3d(0px,0,0)" }}>
+      <div className="group-swipe-track">
         {front}
-        <div
-          className="group-swipe-actions"
-          style={{ flex: `0 0 ${width}px`, width, minWidth: width }}
-          aria-hidden={!open}
-        >
-          {actions}
+        <div className="group-swipe-actions" aria-hidden={!open}>
+          <div className="group-swipe-actions-inner" style={{ width }}>
+            {actions}
+          </div>
         </div>
       </div>
     </div>
