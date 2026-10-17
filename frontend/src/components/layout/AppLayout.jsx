@@ -689,6 +689,8 @@ export default function AppLayout({
               <ErrorBoundary scope="pane">
               <ChatPanel
                 onGroupAvatarChanged={onGroupAvatarChanged}
+                onGroupLeft={onGroupLeft}
+                onGroupRenamed={onGroupRenamed}
                 activeView={activeView}
                 activeDmUser={activeDmUser}
                 activeGroup={activeGroup}

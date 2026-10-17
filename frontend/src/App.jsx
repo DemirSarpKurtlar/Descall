@@ -119,6 +119,7 @@ import MessageComposer from "./components/chat/MessageComposer";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
+import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
@@ -459,7 +460,8 @@ export default function App() {
   const fetchGroupsRef = useRef(null);
   const fetchServersRef = useRef(null);
   const [dmUnread, setDmUnread] = useState({});
-  const [dmPrefs, setDmPrefs] = useState({});
+  // Pinned/hidden DMs from the local cache so the first paint already has pins on top.
+  const [dmPrefs, setDmPrefs] = useState(() => readCachedDmPrefs(normalizeUser(getUser())?.id));
   const [groupUnread, setGroupUnread] = useState({});
   const [channelUnread, setChannelUnread] = useState({});
   const [dmLastActivity, setDmLastActivity] = useState({});
@@ -781,13 +783,20 @@ export default function App() {
       return;
     }
     let cancelled = false;
+    // Account switch: show this user's cached pins right away.
+    setDmPrefs((prev) => (Object.keys(prev || {}).length ? prev : readCachedDmPrefs(me.id)));
     getDmPrefs()
       .then((data) => {
-        if (!cancelled) setDmPrefs(prefsMapFromList(data?.prefs));
+        // Reconcile without a re-sort when the server agrees with the cache.
+        if (!cancelled) setDmPrefs((prev) => reconcileDmPrefs(prev, prefsMapFromList(data?.prefs)));
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [me?.id]);
+
+  useEffect(() => {
+    if (me?.id) writeCachedDmPrefs(me.id, dmPrefs);
+  }, [me?.id, dmPrefs]);
 
   useEffect(() => {
     myStatusRef.current = myStatus;
@@ -1591,7 +1600,7 @@ export default function App() {
         setDmLastActivity((prev) => ({ ...state.dmLastActivityByPeer, ...prev }));
       }
       if (Array.isArray(state?.dmPrefs)) {
-        setDmPrefs(prefsMapFromList(state.dmPrefs));
+        setDmPrefs((prev) => reconcileDmPrefs(prev, prefsMapFromList(state.dmPrefs)));
       }
       if (Array.isArray(state?.notifications)) setNotifications(state.notifications);
     });
@@ -3484,7 +3493,7 @@ export default function App() {
     } catch (err) {
       try {
         const fresh = await getDmPrefs();
-        setDmPrefs(prefsMapFromList(fresh?.prefs));
+        setDmPrefs((prev) => reconcileDmPrefs(prev, prefsMapFromList(fresh?.prefs)));
       } catch { /* keep optimistic */ }
       throw err;
     }

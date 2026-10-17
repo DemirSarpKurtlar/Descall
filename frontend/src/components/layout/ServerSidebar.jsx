@@ -11,7 +11,7 @@ import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
 import { groupAvatarUrl } from "../../lib/avatarFile";
 import { MagnifyingGlass as Search, Megaphone, Chat as MessageSquarePlus, Plus } from "./phosphorInline.jsx";
-import SwipeRevealRow from "./SwipeRevealRow";
+import SwipeRevealRow, { swipeActionsWidth } from "./SwipeRevealRow";
 import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import CallsView from "../calls/CallsView";
@@ -1117,7 +1117,8 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
 }
 
 const DM_SWIPE_WIDTH = 248;
-const GLASS_SWIPE_WIDTH = 226;
+// Four glass actions per row (DM: pin/mute/unread/close; group: invite/add/more/leave).
+const GLASS_SWIPE_WIDTH = swipeActionsWidth(4);
 
 function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
   const t = useT();
@@ -1870,33 +1871,19 @@ function RenameDialog({ group, onConfirm, onCancel }) {
   );
 }
 
-function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
+/**
+ * Group actions shared by the sidebar row menu, the mobile swipe actions and
+ * the in-chat group info sheet: invite, add member, rename, photo, leave.
+ * Render `element` once; call `run(group, action)`.
+ */
+export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged } = {}) {
   const t = useT();
-  const { locale } = useLocale();
-  const safeGroups = Array.isArray(groups) ? groups : [];
-  const [openMenuId, setOpenMenuId] = useState(null);
-  // { id, x, y } while the menu was opened by right-clicking the row.
-  const [menuPoint, setMenuPoint] = useState(null);
   const [confirmLeave, setConfirmLeave] = useState(null);   // group object
   const [confirmRename, setConfirmRename] = useState(null); // group object
   const [addMemberGroup, setAddMemberGroup] = useState(null); // group object
   const [inviteGroup, setInviteGroup] = useState(null); // group object
   const [actionError, setActionError] = useState("");
-  const [swipeOpenId, setSwipeOpenId] = useState(null);
-  const menuRef = useRef(null);
-  const dotBtnRefs = useRef({});
   const groupPhoto = useGroupPhotoChanger({ onUpdated: onGroupAvatarChanged });
-
-  useEffect(() => {
-    if (!openMenuId) return;
-    const handleOutsideClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [openMenuId]);
 
   const handleLeave = async (group) => {
     try {
@@ -1933,19 +1920,109 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
     }
   };
 
+  const run = (group, action) => {
+    if (!group) return;
+    if (action === "invite") setInviteGroup(group);
+    else if (action === "add") setAddMemberGroup(group);
+    else if (action === "rename") setConfirmRename(group);
+    else if (action === "photo") groupPhoto.pick(group);
+    else if (action === "remove-photo") groupPhoto.remove(group);
+    else if (action === "leave") setConfirmLeave(group);
+  };
+
+  const element = (
+    <>
+      {groupPhoto.element}
+
+      <AnimatePresence>
+        {confirmLeave && (
+          <ConfirmDialog
+            title={t("Leave Group")}
+            message={t('Are you sure you want to leave "{name}"? You won\'t be able to see its messages anymore.', { name: confirmLeave.name })}
+            confirmLabel={t("Leave")}
+            danger
+            onConfirm={() => handleLeave(confirmLeave)}
+            onCancel={() => setConfirmLeave(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {confirmRename && (
+          <RenameDialog
+            group={confirmRename}
+            onConfirm={(newName) => handleRename(confirmRename, newName)}
+            onCancel={() => setConfirmRename(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {addMemberGroup && (
+          <AddMemberDialog
+            group={addMemberGroup}
+            friends={friends}
+            onClose={() => setAddMemberGroup(null)}
+            onMemberAdded={() => {}}
+          />
+        )}
+      </AnimatePresence>
+
+      <GroupInviteModal
+        group={inviteGroup}
+        open={Boolean(inviteGroup)}
+        onClose={() => setInviteGroup(null)}
+      />
+    </>
+  );
+
+  return { run, element, actionError, groupPhoto };
+}
+
+function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const safeGroups = Array.isArray(groups) ? groups : [];
+  const [openMenuId, setOpenMenuId] = useState(null);
+  // { id, x, y } while the menu was opened by right-clicking the row.
+  const [menuPoint, setMenuPoint] = useState(null);
+  const [swipeOpenId, setSwipeOpenId] = useState(null);
+  const menuRef = useRef(null);
+  const dotBtnRefs = useRef({});
+  // Same handlers drive the row menu, the swipe actions and the group info sheet.
+  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged });
+  const { actionError, groupPhoto } = groupActions;
+  const setConfirmLeave = (g) => groupActions.run(g, "leave");
+  const setConfirmRename = (g) => groupActions.run(g, "rename");
+  const setAddMemberGroup = (g) => groupActions.run(g, "add");
+  const setInviteGroup = (g) => groupActions.run(g, "invite");
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [openMenuId]);
+
   const closeMenu = () => {
     setOpenMenuId(null);
     setMenuPoint(null);
   };
 
-  const openAction = (group, action) => {
+  const openAction = (group, action, point) => {
+    if (action === "more") {
+      // Overflow: the full group menu (rename, photo, remove photo…) under the button.
+      setMenuPoint(point ? { id: group.id, x: point.x, y: point.y } : null);
+      setOpenMenuId(group.id);
+      return;
+    }
     setSwipeOpenId(null);
     closeMenu();
-    if (action === "invite") setInviteGroup(group);
-    else if (action === "add") setAddMemberGroup(group);
-    else if (action === "rename") setConfirmRename(group);
-    else if (action === "photo") groupPhoto.pick(group);
-    else if (action === "leave") setConfirmLeave(group);
+    groupActions.run(group, action);
   };
 
   return (
@@ -2014,6 +2091,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                       }}
                     >
                       {isMobile ? (
+                        <>
                         <SwipeableGroupRow
                           group={group}
                           isActive={isActive}
@@ -2022,7 +2100,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                           preview={preview}
                           swipeOpen={swipeOpen}
                           onOpen={() => onGroupSelect?.(group)}
-                          onAction={(action) => openAction(group, action)}
+                          onAction={(action, point) => openAction(group, action, point)}
                           onSwipeOpenChange={(open) => {
                             setSwipeOpenId(open ? group.id : null);
                             if (open) closeMenu();
@@ -2031,6 +2109,23 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                             if (swipeOpenId && swipeOpenId !== group.id) setSwipeOpenId(null);
                           }}
                         />
+                        <AnimatePresence>
+                          {openMenuId === group.id && (
+                            <GroupContextMenu
+                              group={group}
+                              onClose={closeMenu}
+                              onLeave={() => openAction(group, "leave")}
+                              onRename={() => openAction(group, "rename")}
+                              onChangePhoto={() => openAction(group, "photo")}
+                              onRemovePhoto={() => openAction(group, "remove-photo")}
+                              onAddMember={() => openAction(group, "add")}
+                              onInvite={() => openAction(group, "invite")}
+                              anchorRef={{ current: null }}
+                              anchorPoint={menuPoint?.id === group.id ? menuPoint : null}
+                            />
+                          )}
+                        </AnimatePresence>
+                        </>
                       ) : (
                         <>
                           <GroupRowFront
@@ -2079,47 +2174,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
         </SidebarSectionContent>
       </div>
 
-      {groupPhoto.element}
-
-      <AnimatePresence>
-        {confirmLeave && (
-          <ConfirmDialog
-            title={t("Leave Group")}
-            message={t('Are you sure you want to leave "{name}"? You won\'t be able to see its messages anymore.', { name: confirmLeave.name })}
-            confirmLabel={t("Leave")}
-            danger
-            onConfirm={() => handleLeave(confirmLeave)}
-            onCancel={() => setConfirmLeave(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {confirmRename && (
-          <RenameDialog
-            group={confirmRename}
-            onConfirm={(newName) => handleRename(confirmRename, newName)}
-            onCancel={() => setConfirmRename(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {addMemberGroup && (
-          <AddMemberDialog
-            group={addMemberGroup}
-            friends={friends}
-            onClose={() => setAddMemberGroup(null)}
-            onMemberAdded={() => {}}
-          />
-        )}
-      </AnimatePresence>
-
-      <GroupInviteModal
-        group={inviteGroup}
-        open={Boolean(inviteGroup)}
-        onClose={() => setInviteGroup(null)}
-      />
+      {groupActions.element}
     </>
   );
 }
@@ -2208,6 +2263,7 @@ function SwipeableGroupRow({
     <SwipeRevealRow
       open={swipeOpen}
       width={glass ? GLASS_SWIPE_WIDTH : GROUP_SWIPE_WIDTH}
+      onFullSwipe={() => onAction?.("leave")}
       onOpenChange={onSwipeOpenChange}
       onCloseOthers={onCloseOthers}
       front={
@@ -2235,13 +2291,17 @@ function SwipeableGroupRow({
             <UserRoundPlus size={15} />
             <span>{t("Add")}</span>
           </button>
-          <button type="button" className="group-swipe-btn rename" onClick={() => onAction?.("rename")}>
-            <Edit3 size={15} />
-            <span>{t("Rename")}</span>
-          </button>
-          <button type="button" className="group-swipe-btn photo" onClick={() => onAction?.("photo")}>
-            <ImagePlus size={15} />
-            <span>{t("Photo")}</span>
+          <button
+            type="button"
+            className="group-swipe-btn more"
+            aria-haspopup="menu"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              onAction?.("more", { x: r.left + r.width / 2, y: r.bottom });
+            }}
+          >
+            <MoreHorizontal size={15} />
+            <span>{t("More")}</span>
           </button>
           <button type="button" className="group-swipe-btn leave" onClick={() => onAction?.("leave")}>
             <LogOut size={15} />

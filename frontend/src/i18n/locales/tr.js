@@ -1324,6 +1324,8 @@ export const phrases = {
   "Failed to load announcements": "Duyurular yüklenemedi",
   "Add Member": "Üye Ekle",
   "Rename Group": "Grubu Yeniden Adlandır",
+  "Group info": "Grup bilgisi",
+  "Group actions": "Grup işlemleri",
   "Change Group Photo": "Grup Fotoğrafını Değiştir",
   "Remove Group Photo": "Grup Fotoğrafını Kaldır",
   "Group photo": "Grup fotoğrafı",

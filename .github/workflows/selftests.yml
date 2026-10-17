@@ -90,6 +90,9 @@ jobs:
           node src/lib/singleActiveHover.selftest.mjs
           node src/lib/groupPhoto.selftest.mjs
           node src/lib/sidebarWidth.selftest.mjs
+          node src/lib/swipeReveal.selftest.mjs
+          node src/lib/dmPrefsCache.selftest.mjs
+          node src/lib/groupInfo.selftest.mjs
       - name: Native iOS call logic selftest (Swift, Foundation only)
         run: |
           set -euo pipefail

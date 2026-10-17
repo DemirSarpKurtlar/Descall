@@ -1852,3 +1852,76 @@ html.glass-ui.a11y-contrast .giphy-panel.g-giphy {
   outline: 1px solid var(--g-contrast-border);
   outline-offset: -1px;
 }
+
+/* 2.10.111: fluid reveal. The front shrinks instead of sliding off-screen, the
+   actions grow from the right edge (width = --swipe-reveal, rubber-banded). */
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track {
+  display: flex;
+  transform: none !important;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track > .group-row-front {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  overflow: hidden;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-row-front .conv-row-body,
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-row-front .dm-info {
+  min-width: 0;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-actions {
+  flex: 0 0 var(--swipe-reveal, 0px) !important;
+  width: var(--swipe-reveal, 0px) !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  display: flex !important;
+  justify-content: flex-end;
+  padding: 0 !important;
+  gap: 0;
+}
+html.glass-ui .app-root.g-shell .group-swipe-actions-inner {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0 2px 0 6px;
+  box-sizing: border-box;
+  height: 100%;
+}
+/* Past full reveal the destructive action stretches to fill (iOS Mail). */
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-actions-inner {
+  width: var(--swipe-reveal) !important;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-btn:not(.leave):not(.close) {
+  opacity: 0;
+  flex-basis: 0 !important;
+  width: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity 0.12s, flex-basis 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-btn.leave {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  align-items: flex-end;
+}
+html.glass-ui .app-root.g-shell .group-swipe-btn.more svg { background: #8e8e93; }
+html.glass-ui .app-root.g-shell .group-swipe-btn:active svg { transform: scale(0.92); filter: brightness(0.92); }
+html.glass-ui .app-root.g-shell .group-swipe-btn svg { transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-btn { transition: none; }
+}
+/* While revealing, keep avatar + name visible: the time column collapses. */
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-revealing .conv-row-meta {
+  flex-basis: 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  opacity: 0;
+}
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-revealing .group-row-front .g-member-stack .g-member-count { display: none; }
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-revealing .group-row-front { padding-right: 8px !important; gap: 10px; }
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-revealing .conv-row-top,
+html.glass-ui .app-root.g-shell .group-swipe-viewport.is-revealing .conv-row-bottom { padding-right: 0 !important; }

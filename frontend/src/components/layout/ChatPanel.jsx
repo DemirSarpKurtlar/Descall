@@ -29,7 +29,8 @@ import ServerVoicePanel from "../servers/ServerVoicePanel";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
 import useGlassUi from "../../hooks/useGlassUi";
 import GroupIcon from "../groups/GroupIcon";
-import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
+import GroupInfoSheet from "../groups/GroupInfoSheet";
+import { useGroupActions } from "./ServerSidebar";
 import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 
@@ -41,6 +42,8 @@ function glassGroupInitials(name) {
 
 export default function ChatPanel({
   onGroupAvatarChanged,
+  onGroupLeft,
+  onGroupRenamed,
   activeView,
   activeDmUser,
   activeGroup,
@@ -98,7 +101,11 @@ export default function ChatPanel({
   const [showMembers, setShowMembers] = useState(false);
   const [showPinned, setShowPinned] = useState(false);
   const pinButtonRef = useRef(null);
-  const groupPhoto = useGroupPhotoChanger({ onUpdated: onGroupAvatarChanged });
+  // Same handlers as the sidebar swipe actions / row menu.
+  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged });
+  const groupPhoto = groupActions.groupPhoto;
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  useEffect(() => { setGroupInfoOpen(false); }, [activeGroup?.id]);
   const reduceMotion = useReducedMotion();
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [profileTarget, setProfileTarget] = useState(null);
@@ -455,10 +462,10 @@ export default function ChatPanel({
                 className={`header-icon is-clickable${groupAvatarUrl(headerGroup) ? " has-group-photo" : ""}`}
                 role="button"
                 tabIndex={0}
-                title={t("Change Group Photo")}
-                aria-label={t("Change Group Photo")}
-                onClick={() => groupPhoto.pick(headerGroup)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); groupPhoto.pick(headerGroup); } }}
+                title={t("Group info")}
+                aria-label={t("Group info")}
+                onClick={() => setGroupInfoOpen(true)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setGroupInfoOpen(true); } }}
               >
                 <GroupIcon
                   group={headerGroup}
@@ -475,17 +482,19 @@ export default function ChatPanel({
             ) : null}
             <div
               className={`header-title-block${headerDm ? " is-dm" : ""}${glassConv ? " g-peer-text" : ""}`}
-              role={headerDm ? "button" : undefined}
-              tabIndex={headerDm ? 0 : undefined}
-              onClick={headerDm ? () => setProfileTarget(headerDm) : undefined}
-              onKeyDown={headerDm ? (event) => {
+              role={headerDm || headerGroup ? "button" : undefined}
+              tabIndex={headerDm || headerGroup ? 0 : undefined}
+              aria-haspopup={headerGroup ? "dialog" : undefined}
+              onClick={headerDm ? () => setProfileTarget(headerDm) : headerGroup ? () => setGroupInfoOpen(true) : undefined}
+              onKeyDown={headerDm || headerGroup ? (event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  setProfileTarget(headerDm);
+                  if (headerDm) setProfileTarget(headerDm);
+                  else setGroupInfoOpen(true);
                 }
               } : undefined}
-              title={headerDm ? t("View profile") : undefined}
-              style={{ cursor: headerDm ? "pointer" : "default" }}
+              title={headerDm ? t("View profile") : headerGroup ? t("Group info") : undefined}
+              style={{ cursor: headerDm || headerGroup ? "pointer" : "default" }}
             >
               <h1 className={glassConv ? "header-title g-peer-name" : "header-title"}>
                 <span className={glassConv ? "header-title-text g-peer-name-text" : "header-title-text"}>{glassHash ? (activeChannel?.name || "") : getTitle()}</span>
@@ -966,7 +975,16 @@ export default function ChatPanel({
       renderText={(pm) => displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
       onUnpin={unpinMessage}
     />
-    {groupPhoto.element}
+    {groupActions.element}
+    <GroupInfoSheet
+      open={groupInfoOpen && Boolean(activeGroup)}
+      group={activeGroup}
+      onClose={() => setGroupInfoOpen(false)}
+      onAction={(action) => groupActions.run(activeGroup, action)}
+      onlineUsers={onlineUsers}
+      onOpenProfile={(user) => setProfileTarget(user)}
+      t={t}
+    />
     </div>
   );
 }
