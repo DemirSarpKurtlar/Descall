@@ -44,6 +44,7 @@ import {
   tileMotion,
 } from "../lib/callTileState";
 import { ReconnectOverlay } from "./voice/DmRemoteParticipantSlot";
+import { useVideoPresence } from "../hooks/useVideoPresence";
 import { copyText } from "../lib/copyText";
 import GlassVolumeSlider from "./ui/GlassVolumeSlider";
 
@@ -1374,7 +1375,11 @@ function ParticipantTile({
   const shellPad = small ? 6 : Math.round(avatarSize * 0.2);
   const shellSize = avatarSize + shellPad * 2;
   const presenceStatus = status || (isLocal ? "online" : null);
-  const showVideo = Boolean(hasVideo && cameraOn !== false && (videoRef || stream));
+  // Camera off (signaled or the track went muted / ended / disabled) shows
+  // the avatar again; the <video> stays mounted for a fade back in.
+  const presence = useVideoPresence(stream, { cameraOn });
+  const mountVideo = Boolean(hasVideo && cameraOn !== false && (videoRef || stream) && (!stream || presence.mount));
+  const showVideo = Boolean(mountVideo && (!stream || presence.show));
   const displayName = resolveDisplayName(user) || username || "?";
 
   const setVideoEl = useCallback((el) => {
@@ -1390,11 +1395,11 @@ function ParticipantTile({
 
   useEffect(() => {
     const el = elRef.current;
-    if (!el || !hasVideo || !stream) return;
+    if (!el || !mountVideo || !stream) return;
     el.muted = true;
     if (el.srcObject !== stream) el.srcObject = stream;
-    el.play().catch(() => {});
-  }, [stream, hasVideo]);
+    if (showVideo) el.play().catch(() => {});
+  }, [stream, mountVideo, showVideo]);
 
   return (
     <div
@@ -1411,12 +1416,14 @@ function ParticipantTile({
             }
       }
     >
-      {showVideo ? (
+      {mountVideo ? (
         <video
           ref={setVideoEl}
           autoPlay
           playsInline
           muted
+          className={`tile-video-layer${showVideo ? " is-shown" : ""}`}
+          aria-hidden={showVideo ? undefined : "true"}
           style={{
             width: "100%",
             height: "100%",
@@ -1427,8 +1434,9 @@ function ParticipantTile({
             transform: isLocal ? "scaleX(-1)" : undefined,
           }}
         />
-      ) : (
-        <div className="participant-tile-avatar-stack">
+      ) : null}
+      {showVideo ? null : (
+        <div className="participant-tile-avatar-stack tile-avatar-layer">
           <div
             className="participant-tile-avatar-shell"
             style={{ width: shellSize, height: shellSize }}

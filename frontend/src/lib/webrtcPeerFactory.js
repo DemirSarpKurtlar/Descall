@@ -32,7 +32,15 @@ export function createPeerConnection({
   onTrack,
   onConnectionStateChange,
 } = {}) {
-  const pc = new RTCPeerConnection({ iceServers: iceServers || getIceServers() });
+  const pc = new RTCPeerConnection({
+    iceServers: iceServers || getIceServers(),
+    // One transport for audio + video + data (fewer TURN allocations, faster
+    // ICE), RTCP on the same port, and a small pre-gathered candidate pool
+    // so TURN relay candidates are ready by the first setLocalDescription.
+    bundlePolicy: "max-bundle",
+    rtcpMuxPolicy: "require",
+    iceCandidatePoolSize: 2,
+  });
 
   if (onIceCandidate) {
     pc.onicecandidate = (e) => onIceCandidate(e.candidate, e);

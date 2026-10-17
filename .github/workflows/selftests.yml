@@ -76,3 +76,15 @@ jobs:
           node src/lib/voiceProfile.selftest.mjs
           node src/components/voice/speakingIndicator.selftest.mjs
           node src/lib/callGridReturn.selftest.mjs
+          node src/lib/videoPresence.selftest.mjs
+          node src/lib/bootSession.selftest.mjs
+          node src/lib/iosNativeCall.selftest.mjs
+      - name: Native iOS call logic selftest (Swift, Foundation only)
+        run: |
+          set -euo pipefail
+          if ! command -v swiftc >/dev/null 2>&1; then
+            echo "::warning::swiftc not on this runner; the iOS Build check runs this test on macOS."
+            exit 0
+          fi
+          swiftc -o "$RUNNER_TEMP/ncl" ios/App/App/DescallNativeCallLogic.swift ios/selftest/main.swift
+          "$RUNNER_TEMP/ncl"
