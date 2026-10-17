@@ -1,6 +1,7 @@
 /** Canonical public marketing routes + head metadata. */
 
 import { stripLocalePrefix } from "./localePaths.js";
+import { TR_LANDING_META, TR_BLOG_META } from "./seo/trMeta.js";
 
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
@@ -160,17 +161,6 @@ export const PUBLIC_ROUTES = [
     changefreq: "weekly",
     priority: "0.88",
     keywords: "discord replacement, alternative to discord, switch from discord",
-  },
-  {
-    path: "/discord-alternative-turkey",
-    title: "Türkiye için Discord Alternatifi | Ücretsiz Sesli Sohbet",
-    description:
-      "Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama, ekran paylaşımı ve LFG. Türkçe arayüz.",
-    image: "/og-discord.png",
-    changefreq: "weekly",
-    priority: "0.9",
-    lang: "tr",
-    keywords: "discord alternatifi, discord muadili, discord benzeri uygulamalar",
   },
   {
     path: "/blog",
@@ -434,15 +424,6 @@ export const PUBLIC_ROUTES = [
     priority: "0.55",
   },
   {
-    path: "/tr/contact",
-    title: "Descall Destek | Türkçe iletişim sayfası",
-    image: "/og-contact.png",
-    description:
-      "Türkçe Descall destek sayfası: geri bildirim, basın ve güvenlik bildirimleri için contact@descall.com. Sahip Demir Sarp Kurtlar.",
-    changefreq: "monthly",
-    priority: "0.45",
-  },
-  {
     path: "/tr/security",
     title: "Descall Güvenlik | TLS, hesaplar ve aramalar",
     description:
@@ -450,6 +431,34 @@ export const PUBLIC_ROUTES = [
     changefreq: "monthly",
     priority: "0.5",
   },
+  {
+    path: "/tr/blog",
+    title: "Descall Blog | Discord Alternatifleri ve Sesli Sohbet Rehberleri",
+    description:
+      "Türkçe rehberler: Discord alternatifleri, Discord’dan geçiş, LFG, sesli sohbet ve topluluk yönetimi. Arkadaş grupları ve oyuncular için pratik yazılar.",
+    changefreq: "weekly",
+    priority: "0.75",
+    lang: "tr",
+  },
+  ...TR_LANDING_META.map((m) => ({
+    path: m.path,
+    title: m.title,
+    description: m.description,
+    h1: m.h1,
+    image: "/og-discord.png",
+    changefreq: "weekly",
+    priority: m.path === "/tr/discord-alternatifi" ? "0.9" : "0.8",
+    lang: "tr",
+  })),
+  ...TR_BLOG_META.map((p) => ({
+    path: p.path,
+    title: p.title,
+    description: p.description,
+    ogType: "article",
+    changefreq: "monthly",
+    priority: "0.5",
+    lang: "tr",
+  })),
 ];
 
 export function routeMeta(pathname) {

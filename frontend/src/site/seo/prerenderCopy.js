@@ -2,6 +2,7 @@
  * Crawlable EN/TR copy for prerendered #seo-static shells (visible until React hydrates).
  */
 import { MARKETING_TR } from "../marketingPhrases.tr.js";
+import { hreflangPair } from "../localePaths.js";
 
 /** Extra TR strings for prerender bodies that are not always in the slim catalog. */
 const EXTRA_TR = {
@@ -310,27 +311,12 @@ export function homeHero(isTr) {
       };
 }
 
+/** Map an EN marketing href to its Turkish twin (true 1:1 pairs only). */
 export function prefixHref(href, isTr) {
   if (!isTr) return href;
   if (href === "/tr" || href.startsWith("/tr/")) return href;
-  if (href === "/") return "/tr";
-  if (href === "/contact" || href === "/iletisim") return "/iletisim";
-  if (href === "/privacy" || href === "/gizlilik") return "/gizlilik";
-  if (href === "/terms" || href === "/kosullar") return "/kosullar";
-  if (href === "/who-owns-descall" || href === "/descall-sahibi") return "/descall-sahibi";
-  if (href === "/discord-alternative" || href === "/discord-alternative-turkey") {
-    return "/discord-alternative-turkey";
-  }
-  const mirrored = new Set([
-    "/features",
-    "/download",
-    "/faq",
-    "/compare/discord",
-    "/about",
-    "/contact",
-    "/security",
-  ]);
-  if (mirrored.has(href)) return `/tr${href}`;
+  const pair = hreflangPair(href);
+  if (pair) return pair.tr;
   return href;
 }
 
@@ -352,6 +338,16 @@ function footerItem(href, label) {
   return `<li><a href="${href}">${label}</a></li>`;
 }
 
+/** Turkish hub pages linked from every Turkish shell footer. */
+export const TR_HUB_LINKS = [
+  ["/tr/discord-acildi-mi", "Discord açıldı mı?"],
+  ["/tr/discord-alternatifleri", "Discord alternatifleri"],
+  ["/tr/turk-discord", "Türk Discord’u"],
+  ["/tr/discord-yerine-ne-kullanilir", "Discord yerine ne kullanılır?"],
+  ["/tr/sesli-sohbet-uygulamasi", "Sesli sohbet uygulaması"],
+  ["/tr/oyuncu-sohbet-uygulamasi", "Oyuncu sohbet uygulaması"],
+];
+
 export function seoSiteNavHtml(isTr = false) {
   const n = navLabels(isTr);
   const h = (path) => prefixHref(path, isTr);
@@ -371,12 +367,23 @@ export function seoSiteNavHtml(isTr = false) {
     <section>
       <h2>${n.explore}</h2>
       <ul>
-        ${footerItem(h("/discord-alternative"), n.alternative)}
-        ${footerItem("/discord-alternative-for-lfg", n.lfg)}
-        ${footerItem(h("/compare/discord"), n.vsDiscord)}
-        ${footerItem("/alternatives", n.alternatives)}
-        ${footerItem("/apps-like-discord", n.apps)}
-        ${footerItem("/blog", n.blog)}
+        ${
+          isTr
+            ? [
+                footerItem("/tr/discord-alternatifi", n.alternative),
+                ...TR_HUB_LINKS.map(([to, label]) => footerItem(to, label)),
+                footerItem("/tr/compare/discord", n.vsDiscord),
+                footerItem("/tr/blog", n.blog),
+              ].join("\n        ")
+            : [
+                footerItem("/discord-alternative", n.alternative),
+                footerItem("/discord-alternative-for-lfg", n.lfg),
+                footerItem("/compare/discord", n.vsDiscord),
+                footerItem("/alternatives", n.alternatives),
+                footerItem("/apps-like-discord", n.apps),
+                footerItem("/blog", n.blog),
+              ].join("\n        ")
+        }
       </ul>
     </section>
     <section>

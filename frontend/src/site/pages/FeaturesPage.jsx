@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useT } from "../../context/localeContextInstance";
 import { useMarketingHref } from "../useMarketingHref";
-import JsonLd, { buildBreadcrumbLd, buildSoftwareApplicationLd } from "../JsonLd";
+import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { SEO_DEFAULT_RELATED } from "../seoHubLinks";
@@ -53,7 +53,7 @@ export default function FeaturesPage() {
   const href = useMarketingHref();
   return (
     <>
-      <JsonLd data={[buildBreadcrumbLd(crumbs), buildSoftwareApplicationLd()]} />
+      <JsonLd data={[buildBreadcrumbLd(crumbs)]} />
       <section className="mkt-section seo-features" style={{ marginTop: 12 }}>
         <h1 className="seo-page-h1">{t("Features of a modern Discord alternative")}</h1>
         <p className="lead">

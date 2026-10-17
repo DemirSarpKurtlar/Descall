@@ -3,6 +3,11 @@
 /dimaai / 301
 /dimaai/* / 301
 
+# Turkish Discord-alternative page moved to a Turkish URL (single canonical).
+/discord-alternative-turkey /tr/discord-alternatifi 301
+/tr/discord-alternative /tr/discord-alternatifi 301
+/tr/contact /iletisim 301
+
 # No /api/* rule here: Pages cannot proxy to an external origin (it served the
 # SPA HTML instead). The apps call https://des-call.onrender.com directly.
 

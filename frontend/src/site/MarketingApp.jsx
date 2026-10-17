@@ -29,7 +29,9 @@ const CompareDiscordPage = lazy(() => import("./pages/CompareDiscordPage"));
 const DiscordAlternativePage = lazy(() => import("./pages/DiscordAlternativePage"));
 const AlternativesPage = lazy(() => import("./pages/AlternativesPage"));
 const DiscordAlternativeGamersPage = lazy(() => import("./pages/DiscordAlternativeGamersPage"));
-const DiscordAlternativeTurkeyPage = lazy(() => import("./pages/DiscordAlternativeTurkeyPage"));
+const TrLandingPage = lazy(() => import("./pages/TrLandingPage"));
+const TrBlogIndexPage = lazy(() => import("./pages/TrBlogIndexPage"));
+const TrBlogPostPage = lazy(() => import("./pages/TrBlogPostPage"));
 const DiscordAlternativeNichePage = lazy(() => import("./pages/DiscordAlternativeNichePage"));
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
@@ -316,9 +318,18 @@ function MarketingAppSite({
           })}
         />
         <Route path="/tr/faq" element={withLayout(FaqPage, openAuth)} />
-        <Route path="/tr/discord-alternative" element={<Navigate to="/discord-alternative-turkey" replace />} />
+        <Route path="/tr/discord-alternative" element={<Navigate to="/tr/discord-alternatifi" replace />} />
+        <Route path="/tr/discord-alternatifi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/turk-discord" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/discord-yerine-ne-kullanilir" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/sesli-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/oyuncu-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/discord-acildi-mi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/discord-alternatifleri" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/blog" element={withLayout(TrBlogIndexPage, openAuth)} />
+        <Route path="/tr/blog/:slug" element={withLayout(TrBlogPostPage, openAuth)} />
         <Route path="/tr/about" element={withLayout(AboutPage, openAuth)} />
-        <Route path="/tr/contact" element={withLayout(ContactPage, openAuth)} />
+        <Route path="/tr/contact" element={<Navigate to="/iletisim" replace />} />
         <Route path="/tr/security" element={withLayout(SecurityPage, openAuth)} />
         <Route path="/tr/compare/discord" element={withLayout(CompareDiscordPage, openAuth)} />
         <Route path="/alternatives" element={withLayout(AlternativesPage, openAuth)} />
@@ -345,10 +356,7 @@ function MarketingAppSite({
         />
         <Route path="/apps-like-discord" element={withLayout(DiscordAlternativeNichePage, openAuth)} />
         <Route path="/discord-replacement" element={withLayout(DiscordAlternativeNichePage, openAuth)} />
-        <Route
-          path="/discord-alternative-turkey"
-          element={withLayout(DiscordAlternativeTurkeyPage, openAuth)}
-        />
+        <Route path="/discord-alternative-turkey" element={<Navigate to="/tr/discord-alternatifi" replace />} />
         <Route path="/discord-alternatives" element={<Navigate to="/alternatives" replace />} />
         <Route path="/best-discord-alternative" element={<Navigate to="/discord-alternative" replace />} />
         <Route path="/blog" element={withLayout(BlogIndexPage, openAuth)} />

@@ -205,11 +205,12 @@ export function buildBreadcrumbLd(crumbs = []) {
   };
 }
 
-export function buildArticleLd({ title, description, path, datePublished, dateModified }) {
+export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage }) {
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: title,
+    ...(inLanguage ? { inLanguage } : {}),
     description,
     mainEntityOfPage: absoluteUrl(path),
     datePublished: datePublished || new Date().toISOString().slice(0, 10),

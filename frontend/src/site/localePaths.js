@@ -39,76 +39,64 @@ export function isTrPath(pathname = "/") {
 }
 
 /** Standalone Turkish URLs that are not /tr/* mirrors. */
-export const TR_CANONICAL_PATHS = [
-  "/descall-sahibi",
-  "/discord-alternative-turkey",
-  "/iletisim",
-  "/gizlilik",
-  "/kosullar",
-];
+export const TR_CANONICAL_PATHS = ["/descall-sahibi", "/iletisim", "/gizlilik", "/kosullar"];
 
+/**
+ * True 1:1 EN ⇄ TR translations. Only these get hreflang (reciprocal, with
+ * x-default → EN). Turkish-only landings (e.g. /tr/discord-acildi-mi) and
+ * English-only niches have no alternate on purpose.
+ */
 const HREFLANG_PAIRS = [
+  { en: "/", tr: "/tr" },
+  ...TR_MIRROR_PATHS.filter((p) => p !== "/" && p !== "/contact").map((p) => ({ en: p, tr: `/tr${p}` })),
   { en: "/contact", tr: "/iletisim" },
   { en: "/privacy", tr: "/gizlilik" },
   { en: "/terms", tr: "/kosullar" },
+  { en: "/who-owns-descall", tr: "/descall-sahibi" },
+  { en: "/discord-alternative", tr: "/tr/discord-alternatifi" },
+  { en: "/alternatives", tr: "/tr/discord-alternatifleri" },
+  { en: "/blog", tr: "/tr/blog" },
 ];
 
-/** True when the URL itself is Turkish, chrome must be TR regardless of stored language. */
-export function isTurkishMarketingPath(pathname = "/") {
-  if (isTrPath(pathname)) return true;
-  const bare = stripLocalePrefix(pathname);
-  return TR_CANONICAL_PATHS.includes(bare);
-}
-
-/**
- * Where to send the visitor when they select Turkish (or already have locale=tr
- * on an English-canonical URL that has a TR counterpart).
- */
 function cleanPath(pathname = "/") {
   return String(pathname || "/").split("?")[0].replace(/\/+$/, "") || "/";
 }
 
-export function trDestinationForPath(pathname = "/") {
+/** { en, tr } when the page has a real translation, else null. */
+export function hreflangPair(pathname = "/") {
   const raw = cleanPath(pathname);
-  if (raw === "/tr/contact") return null;
-  const bare = stripLocalePrefix(pathname);
-  const pair = HREFLANG_PAIRS.find((item) => item.en === bare || item.tr === bare);
-  if (pair) return pair.tr;
-  if (bare === "/who-owns-descall" || bare === "/descall-sahibi") return "/descall-sahibi";
-  if (bare === "/discord-alternative" || bare === "/discord-alternative-turkey") {
-    return "/discord-alternative-turkey";
-  }
-  if (TR_MIRROR_PATHS.includes(bare)) return withTrPrefix(bare);
+  const pair = HREFLANG_PAIRS.find((item) => item.en === raw || item.tr === raw);
+  if (pair) return pair;
+  let m = raw.match(/^\/blog\/([a-z0-9-]+)$/);
+  if (m) return { en: raw, tr: `/tr/blog/${m[1]}` };
+  m = raw.match(/^\/tr\/blog\/([a-z0-9-]+)$/);
+  if (m) return { en: `/blog/${m[1]}`, tr: raw };
   return null;
 }
 
-export function enPathForHreflang(pathname = "/") {
-  const raw = cleanPath(pathname);
-  if (raw === "/tr/contact") return "/contact";
-  const pair = HREFLANG_PAIRS.find((item) => item.tr === raw);
-  if (pair) return pair.en;
-  const en = stripLocalePrefix(pathname);
-  if (en === "/discord-alternative-turkey") return "/discord-alternative";
-  if (en === "/descall-sahibi") return "/who-owns-descall";
-  return en;
+/** True when the URL itself is Turkish, chrome must be TR regardless of stored language. */
+export function isTurkishMarketingPath(pathname = "/") {
+  if (isTrPath(pathname)) return true;
+  return TR_CANONICAL_PATHS.includes(cleanPath(pathname));
 }
 
-export function trPathForHreflang(pathname = "/") {
-  const raw = cleanPath(pathname);
-  if (raw === "/tr/contact") return "/tr/contact";
-  const en = stripLocalePrefix(pathname);
-  const pair = HREFLANG_PAIRS.find((item) => item.en === en || item.tr === en);
+/** Where to send the visitor when they select Turkish. */
+export function trDestinationForPath(pathname = "/") {
+  const pair = hreflangPair(pathname);
   if (pair) return pair.tr;
-  if (en === "/discord-alternative" || en === "/discord-alternative-turkey") {
-    return "/discord-alternative-turkey";
-  }
-  if (en === "/who-owns-descall" || en === "/descall-sahibi") {
-    return "/descall-sahibi";
-  }
-  if (TR_MIRROR_PATHS.includes(en) || en === "/") return withTrPrefix(en);
-  // Niche pages: fall back to turkey landing for TR alternate
-  if (en.includes("discord") || en.startsWith("/blog") || en === "/alternatives") {
-    return "/discord-alternative-turkey";
-  }
-  return withTrPrefix("/");
+  return null;
+}
+
+/** English counterpart (or EN home for Turkish-only pages). */
+export function enPathForHreflang(pathname = "/") {
+  const pair = hreflangPair(pathname);
+  if (pair) return pair.en;
+  return isTurkishMarketingPath(pathname) ? "/" : cleanPath(pathname);
+}
+
+/** Turkish counterpart (or TR home when there is none). */
+export function trPathForHreflang(pathname = "/") {
+  const pair = hreflangPair(pathname);
+  if (pair) return pair.tr;
+  return isTurkishMarketingPath(pathname) ? cleanPath(pathname) : "/tr";
 }

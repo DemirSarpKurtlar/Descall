@@ -1,3 +1,4 @@
+import SeoExtraContent from "../components/SeoExtraContent";
 import { Link } from "react-router-dom";
 import { IconCheck as Check } from "../icons";
 import SeoLandingShell from "../components/SeoLandingShell";
@@ -63,6 +64,8 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
           ))}
         </ul>
       </section>
+
+      <SeoExtraContent path="/best-discord-alternative-for-gamers" />
 
       <section className="seo-section">
         <h2>{t("Keep reading")}</h2>

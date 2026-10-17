@@ -1,3 +1,4 @@
+import SeoExtraContent from "../components/SeoExtraContent";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -16,7 +17,7 @@ import { fetchLatestDesktopRelease } from "../../lib/githubRelease";
 import { formatReleaseLabel } from "../../lib/releaseVersion";
 import { DESKTOP_RELEASE_FALLBACK } from "../../lib/desktopRelease";
 import { useT } from "../../context/localeContextInstance";
-import JsonLd, { buildBreadcrumbLd, buildSoftwareApplicationLd } from "../JsonLd";
+import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import { SEO_PILLARS } from "../seoHubLinks";
 import { Funnel } from "../analytics";
@@ -119,7 +120,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
 
   return (
     <>
-      <JsonLd data={[buildBreadcrumbLd(crumbs), buildSoftwareApplicationLd()]} />
+      <JsonLd data={[buildBreadcrumbLd(crumbs)]} />
 
       <section className="mkt-hero-split mkt-download-hero">
         <div className="mkt-hero-copy">
@@ -287,6 +288,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
+      <SeoExtraContent />
       <SeoRelatedLinks title="Keep exploring" links={SEO_PILLARS} />
     </>
   );

@@ -403,7 +403,7 @@ router.get("/sitemap.html", async (req, res) => {
   try {
     const origin = siteOrigin(req);
     const pages = (await catalogEntries(origin)).filter(
-      (p) => !String(p.loc || "").endsWith("/sitemap.html")
+      (p) => !/\/sitemap(\.html)?$/.test(String(p.loc || ""))
     );
     const { buildHumanSitemapHtml } = await loadSitemapHtmlModule();
     const routes = pages.map((p) => {

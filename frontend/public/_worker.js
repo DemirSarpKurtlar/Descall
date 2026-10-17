@@ -4,7 +4,8 @@
  * A `_redirects` rewrite to `/index.html` is not a rewrite here: Pages pretty-URLs
  * `/index.html` to `/`, so `/groups` was 308'd onto the marketing homepage.
  * Fetch the shell from the asset store instead, and serve 404.html for real misses.
- * Marketing pages stay normal files (prerendered index.html in their folders).
+ * Marketing pages stay normal files: dist/<route>.html, which Pages serves at
+ * /<route> with 200 (no trailing-slash redirect).
  *
  * This worker owns every response, so security headers are set here. `_headers`
  * is the backup when a request is not handled by the worker.
@@ -32,6 +33,13 @@ const SPA_PREFIXES = [
   "/i",
   "/s",
 ];
+
+/** Permanent marketing moves (kept in sync with _redirects). */
+const PERMANENT_REDIRECTS = {
+  "/discord-alternative-turkey": "/tr/discord-alternatifi",
+  "/tr/discord-alternative": "/tr/discord-alternatifi",
+  "/tr/contact": "/iletisim",
+};
 
 function barePath(pathname) {
   const path = String(pathname || "/").split("?")[0];
@@ -96,6 +104,14 @@ export default {
     }
 
     const path = barePath(url.pathname);
+
+    if (PERMANENT_REDIRECTS[path]) {
+      const headers = new Headers();
+      applySecurityHeaders(headers);
+      headers.set("cache-control", "public, max-age=3600");
+      headers.set("location", new URL(PERMANENT_REDIRECTS[path], url).toString());
+      return new Response(null, { status: 301, headers });
+    }
 
     if (path === "/dimaai" || path.startsWith("/dimaai/")) {
       return withSecurity(Response.redirect(new URL("/", url), 301));

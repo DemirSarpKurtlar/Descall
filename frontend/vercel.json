@@ -50,7 +50,17 @@
     },
     {
       "source": "/tr/discord-alternative",
-      "destination": "/discord-alternative-turkey",
+      "destination": "/tr/discord-alternatifi",
+      "statusCode": 301
+    },
+    {
+      "source": "/discord-alternative-turkey",
+      "destination": "/tr/discord-alternatifi",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/contact",
+      "destination": "/iletisim",
       "statusCode": 301
     },
     {

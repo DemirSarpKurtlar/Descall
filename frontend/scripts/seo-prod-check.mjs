@@ -101,14 +101,14 @@ for (const [p, needle] of [
   ["/alternatives", "Discord Alternatives Compared"],
   ["/compare/discord", "Discord vs Descall"],
   ["/discord-alternative", "Free Discord Alternative"],
-  ["/discord-alternative-turkey", "Discord Alternatifi"],
+  ["/tr/discord-alternatifi", "Discord Alternatifi"],
 ]) {
   const page = await get(p);
   if (page.status !== 200) fail(`${p} status ${page.status}`);
   else ok(`${p} ${page.status}`);
   if (!page.text.includes(needle)) fail(`${p} missing title needle "${needle}"`);
   else ok(`${p} title contains "${needle}"`);
-  if (["/alternatives", "/compare/discord", "/discord-alternative", "/discord-alternative-turkey"].includes(p)) {
+  if (["/alternatives", "/compare/discord", "/discord-alternative", "/tr/discord-alternatifi"].includes(p)) {
     if (!/FAQPage/i.test(page.text)) fail(`${p} missing FAQPage JSON-LD`);
     else ok(`${p} has FAQPage JSON-LD`);
   }
@@ -137,5 +137,33 @@ if (!/Marketing shell: consent \+ hydrate/i.test(html.text)) {
   if (!/descall:cookie_consent_v1/i.test(html.text)) fail("/features missing static consent script");
   else ok("/features has static consent script");
 } else ok("/features keeps marketing shell script after prerender");
+
+// Every sitemap URL must answer 200 itself (no redirect) and self-canonicalise.
+{
+  const idx = await get("/sitemap.xml");
+  const children = [...idx.text.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const locs = new Set();
+  for (const child of children) {
+    const res = await fetch(child, { headers: { "user-agent": "DescallSeoProdCheck/1.0" } });
+    for (const m of (await res.text()).matchAll(/<loc>([^<]+)<\/loc>/g)) locs.add(m[1]);
+  }
+  let bad = 0;
+  for (const loc of locs) {
+    const target = ORIGIN === "https://descall.com" ? loc : loc.replace("https://descall.com", ORIGIN);
+    const res = await fetch(target, { redirect: "manual", headers: { "user-agent": "DescallSeoProdCheck/1.0" } });
+    if (res.status !== 200) {
+      bad++;
+      fail(`sitemap URL ${loc} → HTTP ${res.status}${res.headers.get("location") ? ` → ${res.headers.get("location")}` : ""}`);
+      continue;
+    }
+    const body = await res.text();
+    const canon = body.match(/<link rel="canonical" href="([^"]+)"/i)?.[1];
+    if (canon !== loc) {
+      bad++;
+      fail(`sitemap URL ${loc} canonical is ${canon}`);
+    }
+  }
+  if (!bad) ok(`all ${locs.size} sitemap URLs return 200 and self-canonicalise`);
+}
 
 if (!process.exitCode) console.log("\nseo-prod-check: all checks passed for", ORIGIN);

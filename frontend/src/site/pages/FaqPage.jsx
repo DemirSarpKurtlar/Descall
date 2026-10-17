@@ -9,7 +9,7 @@ export default function FaqPage() {
   const href = useMarketingHref();
   return (
     <>
-      <JsonLd data={buildFaqLd(FAQ_ITEMS)} />
+      <JsonLd data={buildFaqLd(FAQ_ITEMS.map((item) => ({ q: t(item.q), a: t(item.a) })))} />
       <section className="mkt-faq-layout">
         <aside className="mkt-faq-nav">
           <h1>{t("FAQ")}</h1>
