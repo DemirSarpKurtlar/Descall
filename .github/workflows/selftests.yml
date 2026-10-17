@@ -81,6 +81,7 @@ jobs:
           node src/lib/iosNativeCall.selftest.mjs
           node src/lib/pinnedPopover.selftest.mjs
           node src/lib/appVersion.selftest.mjs
+          node src/lib/singleActiveHover.selftest.mjs
       - name: Native iOS call logic selftest (Swift, Foundation only)
         run: |
           set -euo pipefail
