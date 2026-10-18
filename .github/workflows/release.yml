@@ -111,15 +111,21 @@ jobs:
           function Invoke-BootSmoke([string]$Exe) {
             $ud = Join-Path $env:TEMP ("descall-bootsmoke-" + [guid]::NewGuid().ToString("n"))
             $out = Join-Path $env:TEMP ("descall-bootsmoke-" + [guid]::NewGuid().ToString("n") + ".log")
+            $prevSmoke = $env:DESCALL_SMOKE
+            $env:DESCALL_SMOKE = "boot"
             $proc = Start-Process -FilePath $Exe -ArgumentList "--descall-smoke-boot", "--user-data-dir=$ud" -RedirectStandardError $out -PassThru
-            if (-not $proc.WaitForExit(90000)) {
+            $finished = $proc.WaitForExit(90000)
+            $env:DESCALL_SMOKE = $prevSmoke
+            if (-not $finished) {
               try { Stop-Process -Id $proc.Id -Force } catch {}
               throw "boot smoke did not finish within 90s ($Exe)"
             }
             if (Test-Path $out) { Get-Content $out | Select-String "smoke-boot" | ForEach-Object { Write-Host $_ } }
             $json = Join-Path $ud "smoke-boot.json"
-            if (Test-Path $json) { Get-Content $json | Write-Host }
-            if ($proc.ExitCode -ne 0) { throw "boot smoke failed, exit code $($proc.ExitCode) ($Exe)" }
+            if (-not (Test-Path $json)) { throw "boot smoke wrote no result, so the main window never booted ($Exe)" }
+            $result = Get-Content $json -Raw | ConvertFrom-Json
+            Write-Host "boot smoke result: $($result.reason) in $($result.elapsedMs)ms (v$($result.version))"
+            if ($proc.ExitCode -ne 0 -or -not $result.ok) { throw "boot smoke failed: $($result.reason) ($Exe)" }
             Write-Host "boot smoke ok $Exe"
           }
           Invoke-Smoke (Join-Path (Get-Location) "release\win-unpacked\Descall.exe")
@@ -134,15 +140,30 @@ jobs:
           if (-not $setup) { throw "No versioned setup exe" }
           $dest = Join-Path $env:TEMP ("descall-smoke-" + [guid]::NewGuid().ToString("n"))
           New-Item -ItemType Directory -Path $dest | Out-Null
+          # The NSIS setup can hand off to a child process and return before the files are
+          # written (flaky "did not write Descall.exe" in 2.11.10 / 2.11.12): wait for it.
+          function Wait-Installer([string]$Path) {
+            $deadline = (Get-Date).AddSeconds(120)
+            while ((Get-Date) -lt $deadline) {
+              $busy = Get-Process | Where-Object { $_.ProcessName -like "Descall-Setup*" -or $_.ProcessName -like "Un_A*" -or $_.ProcessName -like "Au_*" }
+              if (-not $busy -and (Test-Path $Path)) { return }
+              Start-Sleep -Milliseconds 500
+            }
+          }
           cmd /c "`"$($setup.FullName)`" /S /D=$dest"
+          Wait-Installer (Join-Path $dest "Descall.exe")
           if (-not (Test-Path (Join-Path $dest "Descall.exe"))) { throw "Silent install did not write Descall.exe" }
           if (-not (Test-Path (Join-Path $dest "ffmpeg.dll"))) { throw "Silent install did not write ffmpeg.dll" }
           Invoke-Smoke (Join-Path $dest "Descall.exe")
+          Invoke-BootSmoke (Join-Path $dest "Descall.exe")
+          Get-Process Descall -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
           $ffmpeg = Join-Path $dest "ffmpeg.dll"
           $before = (Get-FileHash -Algorithm SHA256 $ffmpeg).Hash
           [IO.File]::WriteAllBytes($ffmpeg, [byte[]](0x4D, 0x5A, 0x00, 0x00))
           cmd /c "`"$($setup.FullName)`" /S --updated /D=$dest"
           if (-not $?) { throw "in-place update installer failed" }
+          Wait-Installer (Join-Path $dest "Descall.exe")
           $after = (Get-FileHash -Algorithm SHA256 $ffmpeg).Hash
           if ($after -ne $before) { throw "update left a damaged ffmpeg.dll in place" }
           Invoke-Smoke (Join-Path $dest "Descall.exe")

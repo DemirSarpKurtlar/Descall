@@ -25,10 +25,12 @@ const {
 const path = require('path');
 const fs = require('fs');
 
-const smokeLaunch = process.env.DESCALL_SMOKE === '1' || process.argv.includes('--descall-smoke');
 // Packaged boot smoke (2.11.11, electron/bootSmoke.cjs): real main window, exit 0 only
 // when the app painted, the splash is gone and no inline script was blocked by the CSP.
-const smokeBoot = !smokeLaunch && (process.env.DESCALL_SMOKE === 'boot' || process.argv.includes('--descall-smoke-boot'));
+// The explicit flag wins over a DESCALL_SMOKE=1 left in the environment (2.11.13: the
+// release script's earlier quick smoke set it, so the boot smoke exited at once).
+const smokeBoot = process.argv.includes('--descall-smoke-boot') || process.env.DESCALL_SMOKE === 'boot';
+const smokeLaunch = !smokeBoot && (process.env.DESCALL_SMOKE === '1' || process.argv.includes('--descall-smoke'));
 if (smokeLaunch || smokeBoot) {
   app.commandLine.appendSwitch('no-sandbox');
   app.commandLine.appendSwitch('disable-gpu');
