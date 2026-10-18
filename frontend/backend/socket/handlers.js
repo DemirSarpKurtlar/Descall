@@ -654,7 +654,10 @@ function registerSocketHandlers(io) {
         ensureCosmeticsCached(friendIds)
           .catch(() => {})
           .finally(() => {
-            socket.emit("friend:list", getFriendList(myId));
+            // 2.11.7: reconnects with an unchanged list get "same" (boot diet).
+            require("../lib/bootDiet").emitBootFriendList(socket, getFriendList(myId), {
+              enabled: systemConfig.featureFlags?.bootDiet !== false,
+            });
             socket.emit("friend:requests", getPendingList(myId));
             listMessageRequests(supabase, myId)
               .then((list) => socket.emit("dm:requests", list))

@@ -22,6 +22,8 @@ const DEFAULT_SYSTEM_CONFIG = {
     // 2.11.4 scale S0: presence goes only to friends + shared servers/groups,
     // coalesced. Off = legacy global roster to everyone (kill switch).
     presenceScoped: true,
+    // 2.11.7 scale S3: reconnect skips an unchanged friend list (kill switch).
+    bootDiet: true,
     // 2.11.6 scale S2: edge realtime master switch. Opt-in (missing = off).
     edgeRealtime: false,
   },

@@ -1375,6 +1375,7 @@ export const phrases = {
   "Accent color": "Accent color",
   "Desktop Liquid Glass": "Desktop Liquid Glass",
   "Scoped presence": "Scoped presence",
+  "Reconnect boot diet": "Reconnect boot diet",
   "Edge realtime (Cloudflare)": "Edge realtime (Cloudflare)",
   "Bridge connected": "Bridge connected",
   "Bridge down": "Bridge down",

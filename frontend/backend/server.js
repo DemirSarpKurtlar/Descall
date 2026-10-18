@@ -213,6 +213,12 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.use("/api/features", publicFeatureRoutes);
+// 2.11.7 (scale S3): public ES256 keys for the Cloudflare edge. Empty until
+// JWT_ES256_PRIVATE_KEY is set. Public by design; shared cache 1 h.
+app.get("/api/jwks.json", (_req, res) => {
+  require("./lib/edgeConfig").publicCache(res, { maxAge: 300, sMaxAge: 3600 });
+  res.json(require("./config/jwt").publicJwks());
+});
 
 // Health check
 function sendHealth(_req, res) {
