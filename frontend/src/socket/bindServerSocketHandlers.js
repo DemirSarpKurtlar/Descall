@@ -321,6 +321,10 @@ export function bindServerSocketHandlers(socket, ctx) {
       embed: hasEmbed ? message.embed : null,
       appType: typeof message.type === "string" ? message.type : null,
       isAppMessage: isAppBot,
+      poll: message.poll || null,
+      // Invoker-only app replies: not stored, "Kanala paylaş" can post them.
+      ephemeral: Boolean(message.ephemeral),
+      shareable: Boolean(message.shareable),
     };
     setChannelMessagesById((prev) => {
       const cur = prev[channelId] ?? [];

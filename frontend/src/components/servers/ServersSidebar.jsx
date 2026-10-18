@@ -413,6 +413,17 @@ export default function ServersSidebar({
     setFolderMenu(null);
   }, [activeServer?.id]);
 
+  // 2.12.0: Descall Apps cards ("Denetim kaydı", "Davet bağlantısı") open these sheets.
+  useEffect(() => {
+    const onOpen = (event) => {
+      const kind = event?.detail?.kind;
+      if (kind === "audit" || kind === "bans") setShowModeration(kind);
+      else if (kind === "invite") setShowInvite(true);
+    };
+    window.addEventListener("descall:server-open", onOpen);
+    return () => window.removeEventListener("descall:server-open", onOpen);
+  }, []);
+
   useEffect(() => {
     const onRulesRequired = () => setRulesPrompt(true);
     window.addEventListener("descall:server-rules-required", onRulesRequired);

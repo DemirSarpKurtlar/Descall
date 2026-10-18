@@ -25,6 +25,7 @@ const {
   isCasinoCommand,
 } = require("../lib/slashCommands");
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
+const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 
 const slowmodeLastSend = new Map();
 
@@ -558,13 +559,14 @@ function registerServerChannelHandlers(io, socket) {
       }
       const { data: row, error } = await supabase
         .from("server_messages")
-        .select("id, sender_id, channel_id, server_id")
+        .select("id, sender_id, channel_id, server_id, media_type")
         .eq("id", messageId)
         .eq("channel_id", channelId)
         .maybeSingle();
       if (error) throw error;
       if (!row) return fail("Message not found.");
       if (row.sender_id !== myId) return fail("You can only edit your own messages.", "MISSING_PERMISSION");
+      if (["poll_v2", "poll_end", "app_card"].includes(row.media_type)) return fail("Bu mesaj metin olarak düzenlenemez.", "NOT_EDITABLE");
       const editedAt = new Date().toISOString();
       const { error: updErr } = await supabase
         .from("server_messages")
@@ -830,10 +832,41 @@ function registerServerChannelHandlers(io, socket) {
     }
   });
 
+  /** "Kanala paylaş" for an invoker-only Descall Apps reply (2.12.0). */
+  socket.on("server:app:share", async ({ serverId, channelId, messageId } = {}, cb) => {
+    const reply = (out) => {
+      if (typeof cb === "function") cb(out);
+      else if (!out.ok) socket.emit("server:channel:message:error", { channelId, message: out.message, code: out.code });
+    };
+    if (typeof channelId !== "string" || typeof messageId !== "string") return reply({ ok: false, code: "BAD_REQUEST", message: "Paylaşılamadı." });
+    try {
+      const { shareAppMessage } = require("../lib/slashCommands");
+      reply(await shareAppMessage({ io, socket, userId: myId, serverId, channelId, messageId, sender: buildSenderPayload(socket) }));
+    } catch (err) {
+      reply({ ok: false, code: err.code || "SHARE_FAILED", message: err.status === 403 ? "Bu kanala mesaj gönderme yetkin yok." : "Paylaşılamadı." });
+    }
+  });
+
   socket.on(
     "server:channel:message",
-    async ({ serverId, channelId, tempId, content, mediaUrl, mediaType, duration, replyTo } = {}) => {
+    async ({ serverId, channelId, tempId, content, mediaUrl, mediaType, duration, replyTo, poll: pollInput } = {}) => {
       try {
+        // Poll from the creation sheet: validated here, stored as a poll_v2 row + polls tables.
+        let pollDraft = null;
+        if (pollInput) {
+          const normalized = normalizePollInput(pollInput);
+          if (!normalized.ok) {
+            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: normalized.message, code: normalized.code });
+            return;
+          }
+          pollDraft = normalized.poll;
+          content = pollFallbackText(pollDraft);
+          mediaUrl = null;
+          mediaType = "poll_v2";
+          replyTo = null;
+        } else if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") {
+          mediaType = null;
+        }
         try {
           const { getActiveTimeout } = require("../lib/moderation");
           const to = getActiveTimeout(myId);
@@ -1074,6 +1107,26 @@ function registerServerChannelHandlers(io, socket) {
           });
           return;
         }
+        let pollSnapshot = null;
+        if (pollDraft) {
+          try {
+            const { createPollForMessage } = require("../lib/polls");
+            const made = await createPollForMessage({
+              scope: "server",
+              messageId: row.id,
+              serverId: channel.server_id,
+              channelId,
+              creatorId: myId,
+              poll: pollDraft,
+            });
+            pollSnapshot = buildPollSnapshot(made.poll, made.options, null, {});
+          } catch (pollErr) {
+            console.error("[ServerChannel] poll create failed:", pollErr?.message || pollErr);
+            await supabase.from("server_messages").delete().eq("id", row.id).eq("channel_id", channelId);
+            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: "Anket oluşturulamadı. Tekrar dene." });
+            return;
+          }
+        }
         markSlowmodeSend(channelId, myId);
         void recordFirstMessage(myId);
 
@@ -1122,6 +1175,7 @@ function registerServerChannelHandlers(io, socket) {
           reply_to: replyMeta,
           replyTo: replyMeta,
           sender: buildSenderPayload(socket),
+          ...(pollSnapshot ? { poll: pollSnapshot } : {}),
         };
 
         const room = `server-channel:${channelId}`;
