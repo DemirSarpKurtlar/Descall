@@ -16,8 +16,39 @@ export function isModuleLoadError(error) {
 
 const RELOAD_KEY = "descall_module_reload";
 
+import { getVoiceBusy } from "./voiceBusy.js";
+import { bindInputTracking, decideDeferredApply, getActivityBusy, userIdleMs } from "./updateTiming.js";
+
+let deferredTimer = null;
+
+/**
+ * A stale chunk after a deploy needs a reload, but never mid-call or while
+ * typing/uploading (2.11.0): wait for the next idle moment instead. The
+ * error screen keeps its own "Yeniden dene" button for an explicit reload.
+ */
+function scheduleIdleReload() {
+  if (deferredTimer || typeof window === "undefined") return;
+  bindInputTracking();
+  deferredTimer = setInterval(() => {
+    const d = decideDeferredApply({
+      voiceBusy: getVoiceBusy(),
+      activityBusy: getActivityBusy(),
+      hidden: typeof document !== "undefined" && document.visibilityState === "hidden",
+      idleMs: userIdleMs(),
+    });
+    if (d.action !== "apply") return;
+    clearInterval(deferredTimer);
+    deferredTimer = null;
+    recoverFromModuleLoadError();
+  }, 5000);
+}
+
 export function recoverFromModuleLoadError() {
   if (typeof window === "undefined") return false;
+  if (getVoiceBusy() || getActivityBusy()) {
+    scheduleIdleReload();
+    return false;
+  }
   try {
     if (sessionStorage.getItem(RELOAD_KEY) === "1") return false;
     sessionStorage.setItem(RELOAD_KEY, "1");

@@ -19,6 +19,7 @@ import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
+import { setActivityFlag } from "../../lib/updateTiming";
 
 const EMOJI_CATEGORIES = [
   { nameKey: "Smileys", emojis: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"] },
@@ -98,6 +99,13 @@ export default function MessageComposer({
   const [uploadError, setUploadError] = useState("");
   const [pendingAttach, setPendingAttach] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  // Smart update timing (2.11.0): unsent text, a recording or an upload holds any restart/reload.
+  const activityKeyRef = useRef(`composer:${Math.random().toString(36).slice(2, 9)}`);
+  const composerBusy = Boolean(message.trim()) || uploading || isRecording || Boolean(pendingAttach);
+  useEffect(() => {
+    setActivityFlag(activityKeyRef.current, composerBusy);
+  }, [composerBusy]);
+  useEffect(() => () => setActivityFlag(activityKeyRef.current, false), []);
   const [sendFlash, setSendFlash] = useState(false);
   const [slowmodeUntil, setSlowmodeUntil] = useState(0);
   const [nowTick, setNowTick] = useState(() => Date.now());

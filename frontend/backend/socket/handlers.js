@@ -1727,25 +1727,11 @@ function registerSocketHandlers(io) {
       });
     });
 
-    socket.on("room:join", (roomId) => {
-      if (typeof roomId !== "string" || !roomId.trim()) return;
-      socket.join(roomId);
-      socket.to(roomId).emit("room:user_joined", { user: me, roomId });
-    });
-
-    socket.on("room:message", ({ roomId, text } = {}) => {
-      if (typeof roomId !== "string" || typeof text !== "string") return;
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      io.to(roomId).emit("room:message:new", {
-        id: String(Date.now()),
-        roomId,
-        username: me.username,
-        userId: myId,
-        text: trimmed,
-        timestamp: new Date().toISOString(),
-      });
-    });
+    // 2.11.1 security: the old generic "room:join" / "room:message" events let any
+    // logged-in socket join any room (user:<otherId>, admin, …) and inject events
+    // into it. No client used them, so they are gone. Rooms are only joined
+    // server-side after an authorization check (user:<self>, admin for admins,
+    // group/server/voice rooms in their own handlers).
 
     // Emoji Reactions
     socket.on("reaction:add", async ({ messageId, conversationType, conversationId, emoji } = {}) => {

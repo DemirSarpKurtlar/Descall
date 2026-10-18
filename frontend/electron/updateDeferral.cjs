@@ -5,13 +5,15 @@
  *
  * Downloading is always allowed. Installing is not, while any voice session is
  * busy (DM call including incoming ring, group call including incoming ring,
- * server voice channel including the join/connecting window).
+ * server voice channel including the join/connecting window, screen share),
+ * or while the user is typing / uploading (userBusy, 2.11.1: unsent composer
+ * text, a running upload or a voice-message recording).
  *
  * An automatic install is allowed only when one of these is true AND a fresh
  * read still says the user is not in a call:
  *   - the user left every call and stayed out for CALL_GRACE_MS (2 min)
  *   - the OS reports the session locked, or input idle for SYSTEM_IDLE_THRESHOLD_MS
- *     (5 min), and no post-call grace is still running
+ *     (2 min, 2.11.1), and no post-call grace is still running
  *   - the update never overlapped a call, and the window has been in the
  *     background for BACKGROUND_SETTLE_MS (12s) — the previous quiet path
  *   - splash/prelaunch (no renderer, so no live call can exist)
@@ -20,13 +22,15 @@
  */
 
 const CALL_GRACE_MS = 2 * 60 * 1000;
-const SYSTEM_IDLE_THRESHOLD_MS = 5 * 60 * 1000;
+const SYSTEM_IDLE_THRESHOLD_MS = 2 * 60 * 1000;
 const BACKGROUND_SETTLE_MS = 12 * 1000;
 
 function createDeferralState() {
   return {
     updateReady: false,
     voiceBusy: false,
+    /** Typing / uploading in the renderer. Blocks install, never arms the call grace. */
+    userBusy: false,
     /** Epoch ms. Non-null while the post-call grace window is running. */
     graceUntil: null,
     /** True once a pending update overlapped a voice session. Blocks the 12s background path. */
@@ -69,12 +73,16 @@ function applyDeferralEvent(state, event, opts = {}) {
       }
       break;
 
+    case 'user-busy':
+      next.userBusy = Boolean(event.busy);
+      break;
+
     case 'reset-voice':
       // Renderer crash / reload / window closed. Same transition as "call ended"
       // when a call was active, so a pending update waits out the grace period
       // instead of restarting in the same breath. A reset while already idle
       // must not start or extend a grace window.
-      return applyDeferralEvent(state, { type: 'voice-busy', busy: false, now }, opts);
+      return applyDeferralEvent({ ...state, userBusy: false }, { type: 'voice-busy', busy: false, now }, opts);
 
     case 'presence':
       next.appInBackground = Boolean(event.appInBackground);
@@ -112,6 +120,8 @@ function decideUpdateInstall(state, opts = {}) {
   if (state.explicitConfirm) return { action: 'install', reason: 'user-confirmed' };
 
   if (state.voiceBusy) return { action: 'wait', reason: 'voice-busy' };
+  // Unsent text / upload / recording would be lost by a restart.
+  if (state.userBusy) return { action: 'wait', reason: 'user-busy' };
 
   const graceUntil = state.graceUntil;
   if (graceUntil != null && now < graceUntil) {

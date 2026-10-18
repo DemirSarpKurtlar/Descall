@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { bindInputTracking, getActivityBusy, subscribeActivityBusy } from "../lib/updateTiming";
 import { deriveVoiceBusy, publishVoiceBusy } from "../lib/voiceBusy";
 
 /**
@@ -25,6 +26,26 @@ export function useElectronVoiceBusy({ call, groupCall, serverVoice } = {}) {
     }
     return undefined;
   }, [busy]);
+
+  // Typing / uploading (2.11.1): forwarded separately so it holds an install
+  // without starting the post-call grace.
+  useEffect(() => {
+    bindInputTracking();
+    if (typeof window === "undefined" || !window.electronAPI?.isElectron) return undefined;
+    const send = (b) => {
+      try {
+        window.electronAPI.setActivityBusy?.(b);
+      } catch {
+        /* bridge gone */
+      }
+    };
+    send(getActivityBusy());
+    const off = subscribeActivityBusy(send);
+    return () => {
+      off();
+      send(false);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.electronAPI?.isElectron) return undefined;

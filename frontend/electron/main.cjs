@@ -255,6 +255,8 @@ let updateCheckInFlight = false;
 let powerHooksBound = false;
 /** Renderer-reported voice session. Overlay visibility is OR'd in at read time. */
 let voiceBusyFromRenderer = false;
+/** Renderer: unsent composer text / upload / recording (2.11.1). */
+let userBusyFromRenderer = false;
 /** OS session lock. Input-idle time is read from powerMonitor on each decision. */
 let sessionLocked = false;
 let deferral = createDeferralState();
@@ -370,6 +372,9 @@ function syncDeferralSignals(now = Date.now()) {
   if (busy !== deferral.voiceBusy) {
     deferral = applyDeferralEvent(deferral, { type: 'voice-busy', busy, now });
   }
+  if (userBusyFromRenderer !== deferral.userBusy) {
+    deferral = applyDeferralEvent(deferral, { type: 'user-busy', busy: userBusyFromRenderer, now });
+  }
   deferral = applyDeferralEvent(deferral, {
     type: 'presence',
     now,
@@ -395,6 +400,8 @@ function resetVoiceBusyFromLifecycle(why) {
   log.info(`[updater] voice-busy reset (${why}) wasBusy=${wasBusy}`);
   try { hideOverlayWindow(); } catch (_) { /* overlay already gone */ }
   voiceBusyFromRenderer = false;
+  userBusyFromRenderer = false;
+  deferral = applyDeferralEvent(deferral, { type: 'user-busy', busy: false, now: Date.now() });
   if (!wasBusy) return;
   deferral = applyDeferralEvent(
     { ...deferral, voiceBusy: true },
@@ -424,6 +431,10 @@ function installQuietly(reason) {
   // when we bail out.
   if (isBusyWithLiveSession()) {
     log.info(`[updater] quiet install refused — live voice session (${reason})`);
+    return false;
+  }
+  if (userBusyFromRenderer) {
+    log.info(`[updater] quiet install refused — typing/uploading (${reason})`);
     return false;
   }
   // Come back exactly as backgrounded: minimized stays minimized (taskbar
@@ -1724,6 +1735,15 @@ ipcMain.on('voice:set-busy', (event, busy) => {
   deferral = applyDeferralEvent(deferral, { type: 'voice-busy', busy: next, now: Date.now() });
   log.info(`[updater] voice-busy=${next} graceUntil=${deferral.graceUntil || 0} armed=${deferral.callDeferralArmed}`);
   if (updateReady) evaluatePendingUpdate('voice-busy');
+});
+
+ipcMain.on('activity:set-busy', (event, busy) => {
+  if (!mainWindow || mainWindow.isDestroyed?.() || event.sender !== mainWindow.webContents) return;
+  const next = Boolean(busy);
+  if (next === userBusyFromRenderer) return;
+  userBusyFromRenderer = next;
+  deferral = applyDeferralEvent(deferral, { type: 'user-busy', busy: next, now: Date.now() });
+  if (updateReady && !next) evaluatePendingUpdate('user-busy');
 });
 
 ipcMain.handle('restart-app', () => requestExplicitInstall('ipc'));

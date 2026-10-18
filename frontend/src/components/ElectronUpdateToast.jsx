@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "../context/LocaleContext";
 import Modal from "./ui/Modal";
 import { getVoiceBusy, subscribeVoiceBusy } from "../lib/voiceBusy";
+import { getActivityBusy, subscribeActivityBusy, updateChipKey } from "../lib/updateTiming";
 
 /**
  * Premium charcoal desktop update toast, no emoji spam, clear status/progress,
@@ -17,7 +18,9 @@ export default function ElectronUpdateToast() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const confirmingRef = useRef(false);
 
+  const [activityBusy, setActivityBusy] = useState(() => getActivityBusy());
   useEffect(() => subscribeVoiceBusy(setVoiceBusy), []);
+  useEffect(() => subscribeActivityBusy(setActivityBusy), []);
 
   useEffect(() => {
     // Drop the main-process "deferred" hint once we know the user is not in
@@ -105,7 +108,7 @@ export default function ElectronUpdateToast() {
     state === "installing"
       ? t("updateToast.installing", { version: version || "" })
       : state === "ready"
-        ? t(heldForCall || deferred ? "updateToast.readyDeferred" : "updateToast.ready", { version: version || "" })
+        ? t(updateChipKey({ voiceBusy: heldForCall || deferred, activityBusy }), { version: version || "" })
         : t("updateToast.downloading", { version: version || "" });
 
   const askRestart = async () => {
@@ -155,7 +158,7 @@ export default function ElectronUpdateToast() {
     <>
       {state ? (
         <div
-          className={`electron-update-toast is-${state}`}
+          className={`electron-update-toast is-${state}${state === "ready" ? " is-chip" : ""}`}
           role="status"
           aria-live="polite"
           aria-atomic="true"
@@ -188,7 +191,7 @@ export default function ElectronUpdateToast() {
                 className="electron-update-toast-restart"
                 onClick={askRestart}
               >
-                {t("updateToast.restart")}
+                {t("updateToast.installNow")}
               </button>
             ) : null}
           </div>

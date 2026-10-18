@@ -68,4 +68,5 @@
    ============================================ */
 @import './styles/call-device-menu.css';
 @import './styles/user-voice-panel.css';
+@import './styles/mini-call-card.css';
 @import './styles/frost.css';
