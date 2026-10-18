@@ -5,6 +5,8 @@ import useVoiceActivity from "../../hooks/useVoiceActivity";
 import {
   anchorPoint,
   bandAxis,
+  clampDockPosition,
+  dockInsets,
   nearestAnchor,
   readDockAnchor,
   releaseVelocity,
@@ -13,6 +15,7 @@ import {
   writeDockAnchor,
 } from "../../lib/miniCallDock";
 
+const DOCK_GAP = 16; // drag may approach the title bar up to the margin, never under it
 const DRAG_SLOP = 4; // px before a press becomes a drag (a tap returns to the chat)
 const KEEP_OUT = [".uvp", ".message-composer", ".mobile-tab-bar"];
 
@@ -37,6 +40,29 @@ function keepOutRects() {
 
 function viewport() {
   return { w: window.innerWidth, h: window.innerHeight };
+}
+
+/**
+ * Safe box below the Electron title bar (and macOS traffic lights) plus a
+ * margin. The bar is measured when mounted; the CSS token is the fallback.
+ */
+function safeInsets() {
+  const api = typeof window !== "undefined" ? window.electronAPI : null;
+  const electron = Boolean(api?.isElectron) || document.documentElement.classList.contains("electron-app");
+  let titlebarH = NaN;
+  let bottom = 0;
+  if (electron) {
+    const bar = document.querySelector(".titlebar");
+    const r = bar?.getBoundingClientRect?.();
+    if (r && r.height > 0) titlebarH = r.bottom;
+    else {
+      const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--electron-titlebar-h"));
+      if (Number.isFinite(v) && v > 0) titlebarH = v;
+    }
+    const b = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--electron-bottom-inset"));
+    if (Number.isFinite(b)) bottom = b;
+  }
+  return dockInsets({ electron, platform: api?.platform, titlebarH, bottom });
 }
 
 /** Five bars driven by the live audio level; flat when silent / muted. */
@@ -126,7 +152,8 @@ export default function MiniCallCard({
   }, [apply]);
 
   const place = useCallback((animate) => {
-    const target = anchorPoint(anchor.current, viewport(), size(), keepOutRects());
+    // Saved anchor → pixel point inside the safe box (clamped on load and on resize).
+    const target = anchorPoint(anchor.current, viewport(), size(), keepOutRects(), safeInsets());
     if (animate) settleTo(target);
     else {
       pos.current = target;
@@ -143,7 +170,9 @@ export default function MiniCallCard({
     window.addEventListener("resize", onResize);
     // The panel / composer can appear or grow after mount.
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(onResize) : null;
-    for (const sel of KEEP_OUT) document.querySelectorAll(sel).forEach((el) => ro?.observe(el));
+    for (const sel of [...KEEP_OUT, ".titlebar"]) document.querySelectorAll(sel).forEach((el) => ro?.observe(el));
+    // The card itself can change height (long name, pending → live).
+    if (ref.current) ro?.observe(ref.current);
     return () => {
       window.removeEventListener("resize", onResize);
       ro?.disconnect();
@@ -173,10 +202,11 @@ export default function MiniCallCard({
     if (!d.moved) { d.moved = true; setDragging(true); }
     const vp = viewport();
     const c = size();
-    // 1:1 inside the screen, rubber band past the edge.
+    const ins = d.insets || (d.insets = safeInsets());
+    // 1:1 inside the safe box, rubber band past its edge (never up under the title bar).
     pos.current = {
       x: bandAxis(e.clientX - d.ox, 0, vp.w - c.w, c.w),
-      y: bandAxis(e.clientY - d.oy, 0, vp.h - c.h, c.h),
+      y: Math.max(ins.top - DOCK_GAP, bandAxis(e.clientY - d.oy, ins.top - DOCK_GAP, vp.h - c.h, c.h)),
     };
     d.samples.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
     if (d.samples.length > 12) d.samples.shift();
@@ -197,9 +227,10 @@ export default function MiniCallCard({
     const vp = viewport();
     const c = size();
     const avoid = keepOutRects();
-    anchor.current = nearestAnchor(pos.current, vel, vp, c, avoid);
+    const ins = d.insets || safeInsets();
+    anchor.current = nearestAnchor(pos.current, vel, vp, c, avoid, ins);
     writeDockAnchor(anchor.current);
-    settleTo(anchorPoint(anchor.current, vp, c, avoid), vel);
+    settleTo(clampDockPosition(anchorPoint(anchor.current, vp, c, avoid, ins), vp, c, ins), vel);
   };
 
   const onKeyDown = (e) => {
@@ -234,10 +265,12 @@ export default function MiniCallCard({
         {screenSharing ? <span className="mcc-share"><Monitor size={10} /></span> : null}
       </span>
       <span className="mcc-text">
-        <span className="mcc-title">{title}</span>
+        <span className="mcc-title" title={typeof title === "string" ? title : undefined}>{title}</span>
         <span className="mcc-sub">
           {pending ? <span className="mcc-dots" aria-hidden="true"><i /><i /><i /></span> : <Waveform level={level} active={voiceLive} />}
-          <span className="mcc-sub-text">{timer && !pending ? timer : subtitle}</span>
+          <span className="mcc-sub-text" title={typeof subtitle === "string" && !(timer && !pending) ? subtitle : undefined}>
+            {timer && !pending ? timer : subtitle}
+          </span>
         </span>
       </span>
       <span className="mcc-actions">

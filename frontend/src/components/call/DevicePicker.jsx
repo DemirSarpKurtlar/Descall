@@ -29,6 +29,8 @@ import { hapticSelection } from "../../lib/fluid/haptics";
 const LONG_PRESS_MS = 420;
 const MENU_GAP = 12;
 const EDGE = 10;
+/** Compact desktop menu (2.11.3): never wider than this; long names ellipsize with a tooltip. */
+export const DEVICE_MENU_MAX_W = 320;
 
 const KIND_ICON = {
   mic: Mic,
@@ -104,7 +106,7 @@ export function CallDeviceMenu({ open, anchorRef, title, groups = [], onClose, m
   const reduce = useReducedMotion();
   const menuRef = useRef(null);
   const rect = useAnchorRect(anchorRef, open);
-  const [size, setSize] = useState({ w: 280, h: 0 });
+  const [size, setSize] = useState({ w: 260, h: 0 });
 
   useLayoutEffect(() => {
     if (!open || !menuRef.current) return;
@@ -155,7 +157,7 @@ export function CallDeviceMenu({ open, anchorRef, title, groups = [], onClose, m
 
   const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
   const vh = typeof window !== "undefined" ? window.innerHeight : 768;
-  const w = Math.min(size.w || 280, vw - EDGE * 2);
+  const w = Math.min(size.w || 260, DEVICE_MENU_MAX_W, vw - EDGE * 2);
   let left = rect ? rect.left + rect.width / 2 - w / 2 : EDGE;
   left = Math.max(EDGE, Math.min(left, vw - w - EDGE));
   const above = rect ? rect.top - MENU_GAP : vh / 2;
@@ -184,7 +186,7 @@ export function CallDeviceMenu({ open, anchorRef, title, groups = [], onClose, m
           role="menu"
           aria-label={title}
           data-fitsabove={fitsAbove ? "1" : "0"}
-          style={{ ...style, transformOrigin, maxWidth: vw - EDGE * 2 }}
+          style={{ ...style, transformOrigin, maxWidth: Math.min(DEVICE_MENU_MAX_W, vw - EDGE * 2) }}
           initial={hidden}
           animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
           exit={hidden}
@@ -205,6 +207,7 @@ export function CallDeviceMenu({ open, anchorRef, title, groups = [], onClose, m
                       role="menuitemradio"
                       aria-checked={row.selected ? "true" : "false"}
                       className={`call-device-row${row.selected ? " is-selected" : ""}`}
+                      title={row.detail ? `${row.name} · ${row.detail}` : row.name}
                       onClick={() => {
                         hapticSelection();
                         group.onSelect?.(row.id, row);
@@ -212,14 +215,14 @@ export function CallDeviceMenu({ open, anchorRef, title, groups = [], onClose, m
                       }}
                     >
                       <span className="call-device-ico" aria-hidden>
-                        <Icon size={17} strokeWidth={2.1} />
+                        <Icon size={16} strokeWidth={2} />
                       </span>
                       <span className="call-device-text">
                         <span className="call-device-name">{row.name}</span>
                         {row.detail ? <span className="call-device-detail">{row.detail}</span> : null}
                       </span>
                       <span className="call-device-check" aria-hidden>
-                        {row.selected ? <Check size={17} strokeWidth={2.6} /> : null}
+                        {row.selected ? <Check size={14} strokeWidth={2.8} /> : null}
                       </span>
                     </button>
                   );

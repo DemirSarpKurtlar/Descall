@@ -99,6 +99,7 @@ jobs:
           node src/lib/callRouteSync.selftest.mjs
           node src/lib/miniCallDock.selftest.mjs
           node src/components/call/callAudioWiring.selftest.mjs
+          node src/components/call/deviceMenuCompact.selftest.mjs
           node src/styles/frost.selftest.mjs
           node src/styles/headerTitle.selftest.mjs
           node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
