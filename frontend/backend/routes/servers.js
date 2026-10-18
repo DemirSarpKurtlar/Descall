@@ -36,6 +36,7 @@ const {
   updateMemberNickname,
 } = require("../lib/slashCommands");
 const { postWelcomeMessage } = require("../lib/serverMemberJoin");
+const { planDetachFromCategory, applyDetachPlan } = require("../lib/categoryDetach");
 const {
   BLANK_ID,
   listTemplateSummaries,
@@ -727,6 +728,49 @@ function emitToServer(req, serverId, event, payload) {
   }
 }
 
+/** Members (and the owner) of serverId who can VIEW_CHANNEL `channel`. */
+async function channelViewerIds(serverId, channel) {
+  const { data: members, error } = await supabase
+    .from("server_members")
+    .select("user_id")
+    .eq("server_id", serverId);
+  if (error) throw error;
+
+  const { data: serverRow } = await supabase
+    .from("servers")
+    .select("owner_id")
+    .eq("id", serverId)
+    .maybeSingle();
+
+  const userIds = new Set((members || []).map((m) => m.user_id));
+  if (serverRow?.owner_id) userIds.add(serverRow.owner_id);
+
+  const viewers = [];
+  await Promise.all(
+    [...userIds].map(async (uid) => {
+      try {
+        const visible = await filterChannelsForMember(serverId, uid, [channel]);
+        if (visible.length) viewers.push(uid);
+      } catch (err) {
+        console.warn("[SERVERS] channelViewerIds member skip:", uid, err?.message || err);
+      }
+    })
+  );
+  return viewers;
+}
+
+function emitToUsers(req, userIds, event, payload) {
+  const io = getIo(req);
+  if (!io || !event) return;
+  for (const uid of userIds || []) {
+    try {
+      io.to(`user:${uid}`).emit(event, payload);
+    } catch (err) {
+      console.warn("[SERVERS] emitToUsers failed:", event, err?.message || err);
+    }
+  }
+}
+
 /** Emit channel create/update only to members who can VIEW_CHANNEL (no private channel leaks). */
 async function emitChannelToViewers(req, serverId, event, channel, extra = {}) {
   const io = getIo(req);
@@ -735,32 +779,7 @@ async function emitChannelToViewers(req, serverId, event, channel, extra = {}) {
   const payload = { serverId, channel: pub, ...extra };
 
   try {
-    const { data: members, error } = await supabase
-      .from("server_members")
-      .select("user_id")
-      .eq("server_id", serverId);
-    if (error) throw error;
-
-    const { data: serverRow } = await supabase
-      .from("servers")
-      .select("owner_id")
-      .eq("id", serverId)
-      .maybeSingle();
-
-    const userIds = new Set((members || []).map((m) => m.user_id));
-    if (serverRow?.owner_id) userIds.add(serverRow.owner_id);
-
-    await Promise.all(
-      [...userIds].map(async (uid) => {
-        try {
-          const visible = await filterChannelsForMember(serverId, uid, [channel]);
-          if (!visible.length) return;
-          io.to(`user:${uid}`).emit(event, payload);
-        } catch (err) {
-          console.warn("[SERVERS] emitChannelToViewers member skip:", uid, err?.message || err);
-        }
-      })
-    );
+    emitToUsers(req, await channelViewerIds(serverId, channel), event, payload);
   } catch (err) {
     console.warn("[SERVERS] emitChannelToViewers failed:", event, err?.message || err);
   }
@@ -3571,10 +3590,16 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
     if (req.body?.topic !== undefined && (existing.type === "text" || existing.type === "announcement")) {
       patch.topic = req.body.topic == null ? null : String(req.body.topic).trim().slice(0, 1024) || null;
     }
+    let detachPlan = null;
     if (req.body?.parentId !== undefined) {
       const parentId = req.body.parentId || null;
       await assertValidParent(serverId, parentId, existing.type);
       patch.parent_id = existing.type === "category" ? null : parentId;
+      // Moving out of (or to another) category keeps the old category's rules on the
+      // channel as its own; moving into a category is the intended "inherit" step.
+      if (existing.parent_id && String(existing.parent_id) !== String(patch.parent_id || "")) {
+        detachPlan = await planDetachFromCategory(serverId, existing.parent_id, [existing.id]);
+      }
     }
     if (typeof req.body?.position === "number" && Number.isFinite(req.body.position)) {
       patch.position = Math.max(0, Math.floor(req.body.position));
@@ -3597,6 +3622,8 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "No valid fields to update." });
     }
 
+    if (detachPlan) await applyDetachPlan(detachPlan);
+
     const { data: channel, error } = await supabase
       .from("server_channels")
       .update(patch)
@@ -3605,6 +3632,9 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
       .select("*")
       .single();
     if (error) throw error;
+    if (patch.parent_id !== undefined && String(patch.parent_id || "") !== String(existing.parent_id || "")) {
+      notifyAccess(req, serverId, { channelId });
+    }
 
     await writeAudit({
       serverId,
@@ -3627,7 +3657,8 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
 
 /**
  * DELETE /servers/:id/channels/:channelId
- * Categories: children are unparented (ON DELETE SET NULL), then category removed.
+ * Categories: children first take the category's overrides as their own (effective
+ * permissions unchanged, 409 if that is impossible), are unparented, then the category is removed.
  */
 router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
   try {
@@ -3644,12 +3675,34 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
     if (findErr) throw findErr;
     if (!existing) return res.status(404).json({ error: "Channel not found." });
 
+    // Who could see it, computed before the row (and its overrides) are gone. The
+    // delete event used to go to the whole server room, leaking hidden channel ids.
+    let viewerIds = [];
+    try {
+      viewerIds = await channelViewerIds(serverId, existing);
+    } catch (err) {
+      console.warn("[SERVERS] channel delete viewers failed:", err?.message || err);
+    }
+
+    let detached = [];
     if (existing.type === "category") {
-      await supabase
+      // Safe order: children get the category's rules as their own first (a no-op for
+      // their effective permissions while still parented), then unparent, then delete.
+      // A failure at any step leaves every child exactly as private as before.
+      const { data: children, error: chErr } = await supabase
+        .from("server_channels")
+        .select("id")
+        .eq("server_id", serverId)
+        .eq("parent_id", channelId);
+      if (chErr) throw chErr;
+      detached = (children || []).map((c) => c.id);
+      await applyDetachPlan(await planDetachFromCategory(serverId, channelId, detached));
+      const { error: unErr } = await supabase
         .from("server_channels")
         .update({ parent_id: null })
         .eq("server_id", serverId)
         .eq("parent_id", channelId);
+      if (unErr) throw unErr;
     }
 
     const { error } = await supabase
@@ -3668,10 +3721,12 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
       changes: { name: existing.name, type: existing.type },
     });
 
-    emitToServer(req, serverId, "server:channel:deleted", {
+    emitToUsers(req, viewerIds, "server:channel:deleted", {
+      serverId,
       channelId,
       type: existing.type,
     });
+    if (detached.length) notifyAccess(req, serverId, { channelIds: detached });
     return res.json({ message: "Channel deleted.", channelId, type: existing.type });
   } catch (err) {
     const status = err.status || 500;
@@ -3679,6 +3734,65 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
     return res.status(status).json({ error: err.message || "Failed to delete channel.", code: err.code });
   }
 });
+
+/**
+ * Who may edit a channel override (K2, 2026-10-18). Before this, MANAGE_ROLES on the
+ * server was enough: a member who could not see a channel could give themselves
+ * VIEW / READ / MANAGE_MESSAGES / MENTION_EVERYONE there, or lock a higher role out.
+ * Now:
+ *  - the actor must be able to VIEW the channel;
+ *  - a non-owner, non-ADMINISTRATOR actor may only touch bits they hold in that
+ *    channel (`actorBits`); other bits of an existing override are preserved;
+ *  - role target: below the actor's highest role (owner exempt);
+ *  - member target: not yourself (owner exempt) and below you in the hierarchy.
+ * Returns { actorBits, unrestricted }.
+ */
+async function assertOverrideEditor(serverId, actorId, channel, target = null) {
+  const chPerms = await resolveChannelPermissions(supabase, serverId, actorId, channel.id);
+  if (!chPerms.isMember || !hasPermission(chPerms.bits, Permissions.VIEW_CHANNEL)) {
+    const err = new Error("Missing permission.");
+    err.status = 403;
+    err.code = "MISSING_PERMISSION";
+    err.permission = "VIEW_CHANNEL";
+    throw err;
+  }
+  const unrestricted = Boolean(chPerms.isOwner) || hasPermission(chPerms.bits, Permissions.ADMINISTRATOR);
+  if (target) {
+    if (target.type === "role") {
+      const { data: role, error } = await supabase
+        .from("server_roles")
+        .select("id, position, is_everyone")
+        .eq("id", target.id)
+        .eq("server_id", serverId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!role) {
+        const err = new Error("Role not found.");
+        err.status = 404;
+        throw err;
+      }
+      // @everyone (position 0) is below every assigned role.
+      await assertCanManageRole(supabase, serverId, actorId, role);
+    } else {
+      const mem = await getMembership(serverId, target.id);
+      if (!mem) {
+        const err = new Error("Member not found.");
+        err.status = 404;
+        throw err;
+      }
+      if (!chPerms.isOwner) {
+        if (String(target.id) === String(actorId)) {
+          const err = new Error("You cannot change your own channel permissions.");
+          err.status = 403;
+          err.code = "CANNOT_EDIT_SELF";
+          throw err;
+        }
+        await assertHierarchy(supabase, serverId, actorId, target.id);
+      }
+    }
+  }
+  return { actorBits: chPerms.bits, unrestricted };
+}
 
 /**
  * GET /servers/:id/channels/:channelId/overrides
@@ -3697,11 +3811,12 @@ router.get("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
       .maybeSingle();
     if (cErr) throw cErr;
     if (!channel) return res.status(404).json({ error: "Channel not found." });
+    await assertOverrideEditor(serverId, req.user.id, channel);
 
     const { data: rows, error } = await supabase
       .from("server_channel_overrides")
       .select("*")
-      .eq("channel_id", channelId);
+      .eq("channel_id", channel.id);
     if (error) throw error;
 
     const overrides = (rows || []).map((row) => ({
@@ -3751,21 +3866,31 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
     if (cErr) throw cErr;
     if (!channel) return res.status(404).json({ error: "Channel not found." });
 
-    if (targetType === "role") {
-      const { data: role } = await supabase
-        .from("server_roles")
-        .select("id")
-        .eq("id", targetId)
-        .eq("server_id", serverId)
-        .maybeSingle();
-      if (!role) return res.status(404).json({ error: "Role not found." });
-    } else {
-      const mem = await getMembership(serverId, targetId);
-      if (!mem) return res.status(404).json({ error: "Member not found." });
-    }
+    const { actorBits, unrestricted } = await assertOverrideEditor(serverId, req.user.id, channel, {
+      type: targetType,
+      id: targetId,
+    });
 
     const keys = CHANNEL_OVERRIDE_KEYS[channel.type] || CHANNEL_OVERRIDE_KEYS.text;
-    const { allow, deny } = parseAllowDenyFlags(req.body?.permissions || req.body?.flags, keys);
+    let { allow, deny } = parseAllowDenyFlags(req.body?.permissions || req.body?.flags, keys);
+    if (!unrestricted) {
+      // Only bits the actor holds in this channel can change; everything else on
+      // an existing override stays as it was (so a mod can still edit an override
+      // the owner set, without granting or stripping bits they do not have).
+      const { data: existingRow, error: exErr } = await supabase
+        .from("server_channel_overrides")
+        .select("allow_permissions, deny_permissions")
+        .eq("channel_id", channel.id)
+        .eq("target_type", targetType)
+        .eq("target_id", targetId)
+        .maybeSingle();
+      if (exErr) throw exErr;
+      const mask = fromPgBigint(actorBits);
+      const oldAllow = fromPgBigint(existingRow?.allow_permissions ?? 0);
+      const oldDeny = fromPgBigint(existingRow?.deny_permissions ?? 0);
+      allow = (allow & mask) | (oldAllow & ~mask);
+      deny = (deny & mask) | (oldDeny & ~mask);
+    }
 
     if (allow === 0n && deny === 0n) {
       await supabase
@@ -3853,12 +3978,34 @@ router.delete(
       // hidden channel of server B (the 2026-10-18 cross-server fix).
       const { data: channel, error: cErr } = await supabase
         .from("server_channels")
-        .select("id, server_id")
+        .select("id, server_id, type")
         .eq("id", channelId)
         .eq("server_id", serverId)
         .maybeSingle();
       if (cErr) throw cErr;
       if (!channel) return res.status(404).json({ error: "Channel not found." });
+
+      const { actorBits, unrestricted } = await assertOverrideEditor(serverId, req.user.id, channel, {
+        type: targetType,
+        id: targetId,
+      });
+      if (!unrestricted) {
+        const { data: existingRow, error: exErr } = await supabase
+          .from("server_channel_overrides")
+          .select("allow_permissions, deny_permissions")
+          .eq("channel_id", channel.id)
+          .eq("target_type", targetType)
+          .eq("target_id", targetId)
+          .maybeSingle();
+        if (exErr) throw exErr;
+        const touched = fromPgBigint(existingRow?.allow_permissions ?? 0) | fromPgBigint(existingRow?.deny_permissions ?? 0);
+        if (touched & ~fromPgBigint(actorBits)) {
+          return res.status(403).json({
+            error: "This override contains permissions you do not have.",
+            code: "OVERRIDE_PERMISSION",
+          });
+        }
+      }
 
       // server_channel_overrides has no server_id column: scope by the verified channel.
       const { error } = await supabase
