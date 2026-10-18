@@ -74,6 +74,8 @@ import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audi
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline, applyPresenceDelta } from "./lib/onlineRoster";
 import { fetchPublic, rememberEdgeApiBase } from "./lib/edgeApi";
+import { chooseRealtimeUrl, rememberRealtimeAdvice, parkEdgeRealtime, createEdgeFailureCounter } from "./lib/edgeRealtime";
+import { reportDiagnostic } from "./lib/sentry";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isDmSlashCommand } from "./lib/slashCommands";
 import { isNativeIOS } from "./lib/platform";
@@ -1499,9 +1501,20 @@ export default function App() {
       socketRef.current = null;
     }
 
-    const socket = createSocket(token, options);
+    // 2.11.6: Cloudflare Hub when Render advised it and it has not failed lately.
+    const edgeUrl = options.noEdge || options.transports ? null : chooseRealtimeUrl();
+    const socket = createSocket(token, { ...options, edgeUrl });
     socketRef.current = socket;
     setSocketApi(socket);
+    const edgeFailures = createEdgeFailureCounter();
+
+    socket.on("edge:advice", (advice) => {
+      const next = rememberRealtimeAdvice(advice);
+      // Admin kill switch / bridge down: leave the edge right away.
+      if (socket.edge && !next && socketRef.current === socket) {
+        connectSocket(token, { noEdge: true });
+      }
+    });
 
     const rejoinGroups = () => {
       const ids = myGroupsRef.current.map((g) => g.id).filter(Boolean);
@@ -1531,6 +1544,7 @@ export default function App() {
     };
 
     socket.on("connect", () => {
+      edgeFailures.reset();
       setIsConnected(true);
       setReconnectState("connected");
       // Reconnect (network change, wake): make sure TURN credentials are fresh for the next call.
@@ -1561,6 +1575,15 @@ export default function App() {
     socket.on("connect_error", (error) => {
       setIsConnected(false);
       const msg = error?.message || "Socket authentication failed";
+      if (socket.edge && !/authentication failed|authentication required/i.test(msg)) {
+        // Edge trouble is never shown to the user: two misses → Render.
+        if (edgeFailures.fail()) {
+          parkEdgeRealtime();
+          reportDiagnostic("edge_realtime_fallback", { area: "edge", reason: String(msg).slice(0, 80) });
+          connectSocket(token, { noEdge: true });
+        }
+        return;
+      }
       if (transportFallbackStepRef.current === 0) {
         transportFallbackStepRef.current = 1;
         setAuthError("Connection retry: switching to polling-first…");

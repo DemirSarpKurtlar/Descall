@@ -1,0 +1,7 @@
+/* 2.11.6 scale S2: edge realtime rollout card in Admin → System. */
+.admin-edge-realtime { display: grid; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--glass-bg-soft, rgba(255, 255, 255, 0.04)); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08)); }
+.admin-edge-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; }
+.admin-edge-row input[type="number"] { width: 72px; }
+.admin-edge-row input[type="text"] { flex: 1 1 220px; min-width: 0; }
+.admin-edge-status { opacity: 0.7; font-size: 12px; }
+.admin-edge-chip { display: inline-flex; align-items: center; gap: 4px; }

@@ -559,6 +559,8 @@ function registerSocketHandlers(io) {
     });
 
     socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags));
+    // 2.11.6: where this client should connect next time (Cloudflare Hub or Render).
+    require("../runtime/edgeRuntime").sendAdvice(socket);
 
     if (!userRoles.has(myId)) {
       userRoles.set(myId, me.username === "admin" || me.is_admin ? "admin" : "user");
