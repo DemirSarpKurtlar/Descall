@@ -25,7 +25,26 @@ async function purchaseItem(userId, item) {
       sku: item.sku,
     });
 
-    const granted = await shop.grantItem(userId, item.id, { acquiredVia: "purchase" });
+    let granted;
+    try {
+      granted = await shop.grantItem(userId, item.id, { acquiredVia: "purchase" });
+    } catch (grantError) {
+      // The debit already happened: give the coins back before surfacing the error
+      // (a failed grant used to keep the money and give nothing).
+      try {
+        await descoin.credit(userId, price, "shop_refund", {
+          itemId: item.id,
+          sku: item.sku,
+          reason: "grant_failed",
+        });
+      } catch (refundError) {
+        console.error(
+          `[shopPurchase] CRITICAL: grant failed and refund failed for user ${userId}, item ${item.id}`,
+          refundError
+        );
+      }
+      throw grantError;
+    }
     if (!granted) {
       const refund = await descoin.credit(userId, price, "shop_refund", {
         itemId: item.id,
@@ -40,7 +59,9 @@ async function purchaseItem(userId, item) {
       amount_descoin: price,
       status: "paid",
     });
-    if (error) throw error;
+    // The item is granted and paid; a failed receipt row must not report the purchase
+    // as failed (the user would retry and the next call says "already owned").
+    if (error) console.error(`[shopPurchase] receipt insert failed for user ${userId}, item ${item.id}:`, error.message);
 
     return { alreadyOwned: false, balance: debitResult.balance, item };
   });

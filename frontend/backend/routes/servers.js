@@ -50,6 +50,7 @@ const router = express.Router();
 const MAX_OWNED_SERVERS = 10;
 const MAX_CHANNELS_PER_SERVER = 500;
 const MAX_ROLES_PER_SERVER = 50;
+const MAX_SERVER_FOLDERS = 50;
 const NAME_MIN = 2;
 const NAME_MAX = 100;
 const CHANNEL_NAME_MIN = 1;
@@ -275,7 +276,7 @@ function parseAllowDenyFlags(raw, allowedKeys) {
 function generateInviteCode() {
   let code = "";
   for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
-    code += INVITE_CHARS.charAt(Math.floor(Math.random() * INVITE_CHARS.length));
+    code += INVITE_CHARS.charAt(require("crypto").randomInt(INVITE_CHARS.length));
   }
   return code;
 }
@@ -288,6 +289,65 @@ function publicVanityUrl(req, slug) {
   return `${String(origin).replace(/\/$/, "")}/s/${slug}`;
 }
 
+// Slugs that would impersonate the product or collide with app routes (audit 2026-10-19 #15).
+const RESERVED_VANITY_SLUGS = new Set([
+  "descall", "des-call", "admin", "administrator", "api", "app", "apps", "auth", "billing",
+  "discover", "download", "downloads", "help", "invite", "invites", "login", "logout", "mod",
+  "moderator", "official", "register", "security", "servers", "settings", "shop", "signup",
+  "staff", "support", "system", "team", "www", "mail", "status", "store", "terms", "privacy",
+  "legal", "kvkk", "destek", "yonetici", "resmi", "ekip", "descoin",
+]);
+
+/**
+ * Server images must be our own uploads (https, Supabase storage of this project or a host
+ * in SERVER_IMAGE_HOSTS). Arbitrary URLs leaked members' IPs to third-party hosts and
+ * allowed http/data/javascript URLs (audit 2026-10-19 #5).
+ */
+function allowedServerImageHosts() {
+  const hosts = new Set();
+  for (const raw of [process.env.SUPABASE_URL, process.env.PUBLIC_API_URL]) {
+    try {
+      if (raw) hosts.add(new URL(raw).host.toLowerCase());
+    } catch {
+      /* ignore */
+    }
+  }
+  for (const h of String(process.env.SERVER_IMAGE_HOSTS || "").split(",")) {
+    if (h.trim()) hosts.add(h.trim().toLowerCase());
+  }
+  return hosts;
+}
+
+function cleanServerImageUrl(raw, field) {
+  if (raw == null || raw === "") return null;
+  const value = String(raw).trim();
+  if (!value) return null;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    url = null;
+  }
+  const hosts = allowedServerImageHosts();
+  const supabaseHost = url ? /\.supabase\.(co|in)$/i.test(url.hostname) : false;
+  const hostOk = url ? (hosts.size ? hosts.has(url.host.toLowerCase()) : supabaseHost) : false;
+  const ok =
+    Boolean(url) &&
+    url.protocol === "https:" &&
+    value.length <= 500 &&
+    !url.username &&
+    !url.password &&
+    hostOk &&
+    (!supabaseHost || url.pathname.startsWith("/storage/v1/object/public/"));
+  if (!ok) {
+    const err = new Error(`${field} must be an image uploaded to Descall.`);
+    err.status = 400;
+    err.code = "INVALID_IMAGE_URL";
+    throw err;
+  }
+  return value;
+}
+
 function normalizeVanitySlug(raw) {
   const slug = String(raw || "")
     .trim()
@@ -296,6 +356,12 @@ function normalizeVanitySlug(raw) {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
   if (!slug) return null;
+  if (RESERVED_VANITY_SLUGS.has(slug)) {
+    const err = new Error("That vanity URL is reserved.");
+    err.status = 400;
+    err.code = "VANITY_RESERVED";
+    throw err;
+  }
   if (slug.length < 3 || slug.length > 32) {
     const err = new Error("Vanity URL must be 3–32 characters (letters, numbers, hyphens).");
     err.status = 400;
@@ -495,6 +561,16 @@ async function nextChannelPosition(serverId) {
   return typeof top === "number" ? top + 1 : 0;
 }
 
+/** You cannot put channels into a category you cannot see (same 400 as a missing one). */
+async function assertParentVisible(serverId, actorId, parentId) {
+  const r = await resolveChannelPermissions(supabase, serverId, actorId, parentId);
+  if (!r.isMember || r.channelMissing || !hasPermission(r.bits, Permissions.VIEW_CHANNEL)) {
+    const err = new Error("Parent category not found.");
+    err.status = 400;
+    throw err;
+  }
+}
+
 async function assertValidParent(serverId, parentId, channelType) {
   if (!parentId) return null;
   if (channelType === "category") {
@@ -659,6 +735,29 @@ function publicRole(row) {
     iconUrl: row.icon_url || null,
     createdAt: row.created_at,
   };
+}
+
+/**
+ * Compensating check for count-then-insert limits (no row lock available through
+ * PostgREST): after inserting row `id`, the oldest `cap` rows win; true means ours is
+ * past the cap and must be undone. Parallel inserts can no longer both slip through,
+ * and at most the late ones are rejected.
+ */
+async function insertedOverCap(table, column, value, id, cap) {
+  const { data, error } = await supabase
+    .from(table)
+    .select("id, created_at")
+    .eq(column, value)
+    .order("created_at", { ascending: true })
+    .limit(cap + 50);
+  if (error) throw error;
+  const rows = [...(data || [])].sort((a, b) => {
+    const t = String(a.created_at || "").localeCompare(String(b.created_at || ""));
+    return t || String(a.id).localeCompare(String(b.id));
+  });
+  if (rows.length <= cap) return false;
+  const idx = rows.findIndex((r) => String(r.id) === String(id));
+  return idx === -1 || idx >= cap;
 }
 
 async function countOwnedServers(userId) {
@@ -877,21 +976,7 @@ async function publicMemberBrief(serverId, userId, extras = {}) {
 async function evictLeavingMember(req, serverId, userId) {
   const io = req.app?.get?.("io");
   if (!io) return;
-  try {
-    const { data: chans } = await supabase.from("server_channels").select("id").eq("server_id", serverId);
-    const rooms = [`server:${serverId}`];
-    for (const c of chans || []) rooms.push(`server-channel:${c.id}`, `server-voice:${c.id}`);
-    const sockets = await io.in(`user:${userId}`).fetchSockets();
-    for (const sock of sockets || []) for (const r of rooms) sock.leave(r);
-  } catch (err) {
-    console.warn("[SERVERS] leave rooms after leave failed:", err?.message || err);
-  }
-  try {
-    const { removeUserFromServerVoice } = require("../socket/serverVoiceHandlers");
-    removeUserFromServerVoice(io, serverId, userId, "left");
-  } catch (err) {
-    console.warn("[SERVERS] voice cleanup after leave failed:", err?.message || err);
-  }
+  await require("../lib/serverRooms").dropUserFromServer(io, serverId, userId, "left");
 }
 
 /**
@@ -921,30 +1006,9 @@ function notifyServerMemberRemoved(req, {
   io.to(`user:${targetUserId}`).emit("server:member:removed", payload);
   io.to(`server:${serverId}`).emit("server:member:removed", payload);
 
-  try {
-    const userRoom = io.sockets?.adapter?.rooms?.get(`user:${targetUserId}`);
-    if (userRoom) {
-      for (const sockId of userRoom) {
-        const sock = io.sockets.sockets.get(sockId);
-        if (!sock) continue;
-        sock.leave(`server:${serverId}`);
-        for (const roomName of [...sock.rooms]) {
-          if (typeof roomName === "string" && roomName.startsWith("server-channel:")) {
-            sock.leave(roomName);
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("[SERVERS] leave rooms after remove failed:", err?.message || err);
-  }
+  // Only this server's rooms and voice calls (other servers' were dropped too before).
+  void require("../lib/serverRooms").dropUserFromServer(io, serverId, targetUserId, action === "ban" ? "ban" : "kick");
 
-  try {
-    const { removeUserFromAllServerVoice } = require("../socket/serverVoiceHandlers");
-    removeUserFromAllServerVoice(io, targetUserId);
-  } catch (err) {
-    console.warn("[SERVERS] voice cleanup after remove failed:", err?.message || err);
-  }
 }
 
 /**
@@ -1371,6 +1435,23 @@ router.post("/me/folders", requireAuth, async (req, res) => {
     if (name.length < 1) {
       return res.status(400).json({ error: "Folder name is required." });
     }
+    // Folders were unlimited and unthrottled (audit 2026-10-19 #17).
+    {
+      const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+      if (rejectIfLimited(res, [recordFailure(`server-folder-create:user:${userId}`, { windowMs: 10 * 60 * 1000, max: 30 })])) return;
+      const { count, error: cntErr } = await supabase
+        .from("server_folders")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId);
+      if (cntErr) throw cntErr;
+      if ((count || 0) >= MAX_SERVER_FOLDERS) {
+        return res.status(400).json({
+          error: `You can have at most ${MAX_SERVER_FOLDERS} folders.`,
+          code: "MAX_FOLDERS",
+          maxFolders: MAX_SERVER_FOLDERS,
+        });
+      }
+    }
     const { data: existing, error: listErr } = await supabase
       .from("server_folders")
       .select("position")
@@ -1388,6 +1469,14 @@ router.post("/me/folders", requireAuth, async (req, res) => {
       .select("id, name, position, created_at")
       .single();
     if (error) throw error;
+    if (await insertedOverCap("server_folders", "user_id", userId, data.id, MAX_SERVER_FOLDERS)) {
+      await supabase.from("server_folders").delete().eq("id", data.id);
+      return res.status(400).json({
+        error: `You can have at most ${MAX_SERVER_FOLDERS} folders.`,
+        code: "MAX_FOLDERS",
+        maxFolders: MAX_SERVER_FOLDERS,
+      });
+    }
     return res.status(201).json({
       folder: {
         id: data.id,
@@ -1575,7 +1664,7 @@ router.post("/", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const name = cleanName(req.body?.name);
-    const iconUrl = req.body?.iconUrl ? String(req.body.iconUrl).trim().slice(0, 500) : null;
+    const iconUrl = cleanServerImageUrl(req.body?.iconUrl, "iconUrl");
     let description = req.body?.description
       ? String(req.body.description).trim().slice(0, 500)
       : null;
@@ -1629,6 +1718,18 @@ router.post("/", requireAuth, async (req, res) => {
       .select("*")
       .single();
     if (sErr) throw sErr;
+
+    // Two parallel creates both passed the count above: re-count after the insert and
+    // undo ours if it went over the cap (audit 2026-10-19 #9).
+    if (await insertedOverCap("servers", "owner_id", userId, server.id, MAX_OWNED_SERVERS)) {
+      await deleteServerCascade(server.id);
+      return res.status(400).json({
+        error: `You can own at most ${MAX_OWNED_SERVERS} servers.`,
+        code: "MAX_OWNED_SERVERS",
+        ownedCount: MAX_OWNED_SERVERS,
+        maxOwned: MAX_OWNED_SERVERS,
+      });
+    }
 
     // Member row
     const { count: existingPos } = await supabase
@@ -1776,69 +1877,182 @@ router.post("/", requireAuth, async (req, res) => {
       maxOwned: MAX_OWNED_SERVERS,
     });
   } catch (err) {
+    if (err.status && err.status < 500) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
+    }
     console.error("[SERVERS] POST / error:", err);
     return res.status(500).json({ error: "Failed to create server." });
   }
 });
+
+// ---- join hardening (audit 2026-10-19: D1, #9, #17) ----
+const MAX_JOINED_SERVERS = 200;
+const JOIN_LIMIT = { windowMs: 10 * 60 * 1000, max: 20 };
+const JOIN_IP_LIMIT = { windowMs: 10 * 60 * 1000, max: 60 };
+const INVITE_LOOKUP_LIMIT = { windowMs: 10 * 60 * 1000, max: 120 };
+const DISCOVER_LIMIT = { windowMs: 60 * 1000, max: 30 };
+
+/** Counted on every attempt: joins and invite lookups had no limit (code guessing, join spam). */
+function rejectJoinRate(req, res, kind = "join") {
+  const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+  const uid = req.user?.id;
+  const ip = req.ip || "";
+  const results =
+    kind === "lookup"
+      ? [recordFailure(`server-invite-lookup:user:${uid}`, INVITE_LOOKUP_LIMIT)]
+      : kind === "discover"
+        ? [recordFailure(`server-discover:user:${uid}`, DISCOVER_LIMIT)]
+        : [
+            recordFailure(`server-join:user:${uid}`, JOIN_LIMIT),
+            ip ? recordFailure(`server-join:ip:${ip}`, JOIN_IP_LIMIT) : { ok: true },
+          ];
+  return rejectIfLimited(res, results);
+}
+
+async function alreadyMemberPayload(serverId, userId, existing) {
+  const membership = existing || (await getMembership(serverId, userId));
+  const bundle = await loadServerBundle(serverId);
+  const myPermissions = await buildMyPermissionsPayload(serverId, userId);
+  const channels = await publicVisibleChannels(serverId, userId, bundle.channels);
+  return {
+    alreadyMember: true,
+    server: publicServer(bundle.server, {
+      isOwner: bundle.server.owner_id === userId,
+      memberCount: bundle.memberCount,
+      nickname: membership?.nickname || null,
+      listPosition: membership?.list_position ?? 0,
+      joinedAt: membership?.joined_at,
+      channels,
+      roles: bundle.roles.map(publicRole),
+      myPermissions,
+    }),
+  };
+}
+
+/**
+ * Insert the membership for a join. Returns { ok } or { alreadyMember } (a parallel join
+ * won: unique violation 23505 used to surface as a 500) or { banned } (a ban landed between
+ * the ban check and the insert: the fresh membership is removed again) or { capped }.
+ */
+async function insertJoinMembership(serverId, userId, { listPosition, temporary = false } = {}) {
+  if (listPosition >= MAX_JOINED_SERVERS) return { capped: true };
+  const { error } = await supabase.from("server_members").insert({
+    server_id: serverId,
+    user_id: userId,
+    list_position: listPosition,
+    temporary: Boolean(temporary),
+  });
+  if (error) {
+    if (String(error.code) === "23505") return { alreadyMember: true };
+    throw error;
+  }
+  const { data: ban } = await supabase
+    .from("server_bans")
+    .select("user_id")
+    .eq("server_id", serverId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (ban) {
+    await supabase.from("server_members").delete().eq("server_id", serverId).eq("user_id", userId);
+    return { banned: true };
+  }
+  return { ok: true };
+}
+
+function joinRefusal(res, result) {
+  if (result.banned) return res.status(403).json({ error: "You are banned from this server.", code: "BANNED" });
+  if (result.capped) {
+    return res.status(400).json({
+      error: `You can be in at most ${MAX_JOINED_SERVERS} servers.`,
+      code: "MAX_JOINED_SERVERS",
+      maxJoined: MAX_JOINED_SERVERS,
+    });
+  }
+  return null;
+}
 
 /**
  * GET /servers/discover — public servers directory (is_public = true)
  */
 router.get("/discover", requireAuth, async (req, res) => {
   try {
+    if (rejectJoinRate(req, res, "discover")) return;
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 24));
+    const offset = Math.min(5000, Math.max(0, Math.floor(Number(req.query.offset) || 0)));
+    const sort = ["members", "new", "active"].includes(String(req.query.sort)) ? String(req.query.sort) : "new";
     const q = String(req.query.q || "").trim().slice(0, 80);
+    const cols =
+      "id, name, icon_url, banner_url, splash_url, description, owner_id, vanity_slug, is_public, community_enabled, rules_text, verification_level, created_at, updated_at";
 
+    // members/active are ranked over a bounded candidate window (newest 200 public servers
+    // matching q), then paged; "new" pages straight in the database.
+    const windowed = sort !== "new";
     let query = supabase
       .from("servers")
-      .select(
-        "id, name, icon_url, banner_url, splash_url, description, owner_id, vanity_slug, is_public, community_enabled, rules_text, verification_level, created_at"
-      )
+      .select(cols)
       .eq("is_public", true)
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .order(sort === "active" ? "updated_at" : "created_at", { ascending: false });
+    if (q) query = query.ilike("name", `%${q.replace(/[%_\\]/g, "")}%`);
+    query = windowed ? query.limit(200) : query.range(offset, offset + limit);
 
-    if (q) {
-      query = query.ilike("name", `%${q.replace(/[%_]/g, "")}%`);
-    }
-
-    const { data: rows, error } = await query;
+    const { data: fetched, error } = await query;
     if (error) throw error;
 
-    const ids = (rows || []).map((r) => r.id);
-    let counts = new Map();
-    if (ids.length) {
-      const { data: members } = await supabase
+    // Exact member counts with head-only count queries (the old single select silently
+    // stopped at PostgREST's 1000-row cap, so busy servers showed wrong counts).
+    const countFor = async (id) => {
+      const { count } = await supabase
         .from("server_members")
-        .select("server_id")
-        .in("server_id", ids);
-      counts = (members || []).reduce((map, m) => {
-        map.set(m.server_id, (map.get(m.server_id) || 0) + 1);
-        return map;
-      }, new Map());
+        .select("user_id", { count: "exact", head: true })
+        .eq("server_id", id);
+      return count || 0;
+    };
+    let rows = fetched || [];
+    let hasMore;
+    let counts = new Map();
+    if (windowed) {
+      const all = await Promise.all(rows.map(async (r) => [r.id, await countFor(r.id)]));
+      counts = new Map(all);
+      if (sort === "members") rows = [...rows].sort((a, b) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
+      hasMore = rows.length > offset + limit;
+      rows = rows.slice(offset, offset + limit);
+    } else {
+      hasMore = rows.length > limit;
+      rows = rows.slice(0, limit);
+      counts = new Map(await Promise.all(rows.map(async (r) => [r.id, await countFor(r.id)])));
     }
 
+    const ids = rows.map((r) => r.id);
     const { data: myMemberships } = await supabase
       .from("server_members")
       .select("server_id")
       .eq("user_id", req.user.id)
       .in("server_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const joined = new Set((myMemberships || []).map((m) => m.server_id));
+    const { maskProfanity } = require("../lib/profanity");
 
     return res.json({
-      servers: (rows || []).map((row) =>
-        publicServer(row, {
-          memberCount: counts.get(row.id) || 1,
-          isMember: joined.has(row.id),
-          isOwner: row.owner_id === req.user.id,
-        })
+      servers: rows.map((row) =>
+        publicServer(
+          // Public listing: bad words in name / description are masked (stored text unchanged).
+          { ...row, name: maskProfanity(row.name), description: row.description ? maskProfanity(row.description) : row.description },
+          {
+            memberCount: counts.get(row.id) || 1,
+            isMember: joined.has(row.id),
+            isOwner: row.owner_id === req.user.id,
+          }
+        )
       ),
+      sort,
+      offset,
+      nextOffset: hasMore ? offset + limit : null,
     });
   } catch (err) {
     console.error("[SERVERS] GET /discover error:", err);
     return res.status(500).json({ error: "Failed to load public servers." });
   }
 });
+
 
 /**
  * GET /servers/invites/:code — public invite preview (auth optional but requireAuth for consistency)
@@ -1847,6 +2061,7 @@ router.get("/invites/:code", requireAuth, async (req, res) => {
   try {
     const code = String(req.params.code || "").trim();
     if (!code) return res.status(400).json({ error: "Invite code is required." });
+    if (rejectJoinRate(req, res, "lookup")) return;
 
     const { data: invite, error } = await supabase
       .from("server_invites")
@@ -1957,6 +2172,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
     const userId = req.user.id;
     const code = String(req.params.code || "").trim();
     if (!code) return res.status(400).json({ error: "Invite code is required." });
+    if (rejectJoinRate(req, res, "join")) return;
 
     const { data: invite, error } = await supabase
       .from("server_invites")
@@ -1981,24 +2197,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
     }
 
     const existing = await getMembership(invite.server_id, userId);
-    if (existing) {
-      const bundle = await loadServerBundle(invite.server_id);
-      const myPermissions = await buildMyPermissionsPayload(invite.server_id, userId);
-      const channels = await publicVisibleChannels(invite.server_id, userId, bundle.channels);
-      return res.json({
-        alreadyMember: true,
-        server: publicServer(bundle.server, {
-          isOwner: bundle.server.owner_id === userId,
-          memberCount: bundle.memberCount,
-          nickname: existing.nickname || null,
-          listPosition: existing.list_position ?? 0,
-          joinedAt: existing.joined_at,
-          channels,
-          roles: bundle.roles.map(publicRole),
-          myPermissions,
-        }),
-      });
-    }
+    if (existing) return res.json(await alreadyMemberPayload(invite.server_id, userId, existing));
 
     const { data: inviteServer, error: inviteServerErr } = await supabase
       .from("servers")
@@ -2030,15 +2229,24 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
       return res.status(410).json({ error: "Invite invalid or expired.", code: "INVITE_EXPIRED" });
     }
 
-    const { error: joinErr } = await supabase.from("server_members").insert({
-      server_id: invite.server_id,
-      user_id: userId,
-      list_position: listPosition,
-      temporary: Boolean(invite.temporary),
-    });
-    if (joinErr) {
+    if (listPosition >= MAX_JOINED_SERVERS) {
+      await releaseInviteUse(code);
+      return joinRefusal(res, { capped: true });
+    }
+    let joined;
+    try {
+      joined = await insertJoinMembership(invite.server_id, userId, {
+        listPosition,
+        temporary: invite.temporary,
+      });
+    } catch (joinErr) {
       await releaseInviteUse(code);
       throw joinErr;
+    }
+    if (!joined.ok) {
+      await releaseInviteUse(code);
+      if (joined.alreadyMember) return res.json(await alreadyMemberPayload(invite.server_id, userId));
+      return joinRefusal(res, joined);
     }
 
     if (claimed.max_uses != null && claimed.uses >= claimed.max_uses) {
@@ -2086,6 +2294,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
  */
 router.get("/vanity/:slug", requireAuth, async (req, res) => {
   try {
+    if (rejectJoinRate(req, res, "lookup")) return;
     let slug;
     try {
       slug = normalizeVanitySlug(req.params.slug);
@@ -2137,6 +2346,7 @@ router.get("/vanity/:slug", requireAuth, async (req, res) => {
 router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
+    if (rejectJoinRate(req, res, "join")) return;
     let slug;
     try {
       slug = normalizeVanitySlug(req.params.slug);
@@ -2165,24 +2375,7 @@ router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
     }
 
     const existing = await getMembership(server.id, userId);
-    if (existing) {
-      const bundle = await loadServerBundle(server.id);
-      const myPermissions = await buildMyPermissionsPayload(server.id, userId);
-      const channels = await publicVisibleChannels(server.id, userId, bundle.channels);
-      return res.json({
-        alreadyMember: true,
-        server: publicServer(bundle.server, {
-          isOwner: bundle.server.owner_id === userId,
-          memberCount: bundle.memberCount,
-          nickname: existing.nickname || null,
-          listPosition: existing.list_position ?? 0,
-          joinedAt: existing.joined_at,
-          channels,
-          roles: bundle.roles.map(publicRole),
-          myPermissions,
-        }),
-      });
-    }
+    if (existing) return res.json(await alreadyMemberPayload(server.id, userId, existing));
 
     try {
       await assertJoinVerification(server, userId);
@@ -2201,13 +2394,9 @@ router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
       .eq("user_id", userId);
     const listPosition = existingPos || 0;
 
-    const { error: joinErr } = await supabase.from("server_members").insert({
-      server_id: server.id,
-      user_id: userId,
-      list_position: listPosition,
-      temporary: false,
-    });
-    if (joinErr) throw joinErr;
+    const joined = await insertJoinMembership(server.id, userId, { listPosition, temporary: false });
+    if (joined.alreadyMember) return res.json(await alreadyMemberPayload(server.id, userId));
+    if (!joined.ok) return joinRefusal(res, joined);
 
     await writeAudit({
       serverId: server.id,
@@ -2247,6 +2436,7 @@ router.post("/discover/:id/join", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const serverId = req.params.id;
+    if (rejectJoinRate(req, res, "join")) return;
 
     const { data: server, error } = await supabase
       .from("servers")
@@ -2269,23 +2459,7 @@ router.post("/discover/:id/join", requireAuth, async (req, res) => {
     }
 
     const existing = await getMembership(serverId, userId);
-    if (existing) {
-      const bundle = await loadServerBundle(serverId);
-      const myPermissions = await buildMyPermissionsPayload(serverId, userId);
-      const channels = await publicVisibleChannels(serverId, userId, bundle.channels);
-      return res.json({
-        alreadyMember: true,
-        server: publicServer(bundle.server, {
-          isOwner: bundle.server.owner_id === userId,
-          memberCount: bundle.memberCount,
-          nickname: existing.nickname || null,
-          listPosition: existing.list_position ?? 0,
-          channels,
-          roles: bundle.roles.map(publicRole),
-          myPermissions,
-        }),
-      });
-    }
+    if (existing) return res.json(await alreadyMemberPayload(serverId, userId, existing));
 
     try {
       await assertJoinVerification(server, userId);
@@ -2303,12 +2477,9 @@ router.post("/discover/:id/join", requireAuth, async (req, res) => {
       .select("server_id", { count: "exact", head: true })
       .eq("user_id", userId);
 
-    const { error: joinErr } = await supabase.from("server_members").insert({
-      server_id: serverId,
-      user_id: userId,
-      list_position: existingPos || 0,
-    });
-    if (joinErr) throw joinErr;
+    const joined = await insertJoinMembership(serverId, userId, { listPosition: existingPos || 0 });
+    if (joined.alreadyMember) return res.json(await alreadyMemberPayload(serverId, userId));
+    if (!joined.ok) return joinRefusal(res, joined);
 
     await writeAudit({
       serverId,
@@ -2333,8 +2504,9 @@ router.post("/discover/:id/join", requireAuth, async (req, res) => {
       }),
     });
   } catch (err) {
-    console.error("[SERVERS] POST /discover/:id/join error:", err);
-    return res.status(500).json({ error: "Failed to join public server." });
+    const status = err.status || 500;
+    if (status >= 500) console.error("[SERVERS] POST /discover/:id/join error:", err);
+    return res.status(status).json({ error: status >= 500 ? "Failed to join public server." : err.message, code: err.code });
   }
 });
 
@@ -2408,16 +2580,12 @@ router.delete("/:id", requireAuth, async (req, res) => {
       });
     }
 
-    await writeAudit({
-      serverId,
+    // The SERVER_DELETE row now lives in server_deletion_log (server_audit_logs rows
+    // cascade with the server, so the old audit write vanished with it).
+    await require("../lib/serverDeletion").deleteServerFully(req.app?.get?.("io"), server, {
       actorId: req.user.id,
-      action: "SERVER_DELETE",
-      targetType: "server",
-      targetId: serverId,
-      changes: { name: server.name },
+      via: "delete",
     });
-
-    await deleteServerCascade(serverId);
     return res.json({ message: "Server deleted.", serverId });
   } catch (err) {
     console.error("[SERVERS] DELETE /:id error:", err);
@@ -2426,8 +2594,108 @@ router.delete("/:id", requireAuth, async (req, res) => {
 });
 
 /**
+ * POST /servers/:id/ownership/transfer  { userId, confirmName, password }
+ * Owner hands the server to another member (O3: before 2026-10-19 there was no transfer,
+ * and an owner who wanted out could only delete the server). Owner only; the target must be
+ * a full (non-temporary, not banned) member; the server name must be typed; accounts with a
+ * password must give it. Compare-and-swap on owner_id, audited, and pushed live.
+ */
+router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
+  try {
+    const serverId = req.params.id;
+    const actorId = req.user.id;
+    const targetId = String(req.body?.userId || "").trim();
+    const confirmName = cleanName(req.body?.confirmName);
+    const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
+    const limitKey = `server-transfer:user:${actorId}`;
+    const LIMIT = { windowMs: 15 * 60 * 1000, max: 5 };
+    if (rejectIfLimited(res, [peek(limitKey, LIMIT)])) return;
+
+    const { server } = await requireServerOwner(serverId, actorId);
+    if (!targetId) return res.status(400).json({ error: "Choose the new owner.", code: "TARGET_REQUIRED" });
+    if (String(targetId) === String(actorId)) {
+      return res.status(400).json({ error: "You already own this server.", code: "TARGET_IS_OWNER" });
+    }
+    if (!confirmName || confirmName.toLowerCase() !== String(server.name).toLowerCase()) {
+      return res.status(400).json({ error: "Type the server name to confirm.", code: "CONFIRM_NAME_REQUIRED" });
+    }
+
+    const { data: me, error: meErr } = await supabase
+      .from("users")
+      .select("id, password_hash")
+      .eq("id", actorId)
+      .maybeSingle();
+    if (meErr) throw meErr;
+    if (me?.password_hash) {
+      const password = typeof req.body?.password === "string" ? req.body.password : "";
+      const bcrypt = require("bcryptjs");
+      const ok = password ? await bcrypt.compare(password, me.password_hash) : false;
+      if (!ok) {
+        if (rejectIfLimited(res, [recordFailure(limitKey, LIMIT)])) return;
+        return res.status(403).json({ error: "Password is incorrect.", code: "PASSWORD_REQUIRED" });
+      }
+    }
+
+    const target = await getMembership(serverId, targetId);
+    if (!target || target.temporary) {
+      return res.status(400).json({ error: "The new owner must be a member of this server.", code: "TARGET_NOT_MEMBER" });
+    }
+    const { data: targetBan } = await supabase
+      .from("server_bans")
+      .select("user_id")
+      .eq("server_id", serverId)
+      .eq("user_id", targetId)
+      .maybeSingle();
+    if (targetBan) {
+      return res.status(400).json({ error: "The new owner must be a member of this server.", code: "TARGET_NOT_MEMBER" });
+    }
+    if ((await countOwnedServers(targetId)) >= MAX_OWNED_SERVERS) {
+      return res.status(400).json({
+        error: `That member already owns ${MAX_OWNED_SERVERS} servers.`,
+        code: "TARGET_MAX_OWNED_SERVERS",
+      });
+    }
+
+    const { data: moved, error: upErr } = await supabase
+      .from("servers")
+      .update({ owner_id: targetId, updated_at: new Date().toISOString() })
+      .eq("id", serverId)
+      .eq("owner_id", actorId)
+      .select("*");
+    if (upErr) throw upErr;
+    const updated = Array.isArray(moved) ? moved[0] : moved;
+    if (!updated) {
+      return res.status(409).json({ error: "Ownership changed meanwhile. Reload and try again.", code: "OWNER_CHANGED" });
+    }
+
+    await writeAudit({
+      serverId,
+      actorId,
+      action: "OWNERSHIP_TRANSFER",
+      targetType: "member",
+      targetId,
+      changes: { from: actorId, to: targetId, name: server.name },
+    });
+
+    const pub = publicServer(updated, {});
+    emitToServer(req, serverId, "server:updated", { server: pub });
+    for (const uid of [actorId, targetId]) {
+      emitToServer(req, serverId, "server:member:roles-changed", { userId: uid, action: "owner" });
+    }
+    notifyAccess(req, serverId);
+
+    return res.json({ message: "Ownership transferred.", serverId, ownerId: targetId, server: pub });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("[SERVERS] POST /:id/ownership/transfer error:", err);
+    return res.status(status).json({ error: err.message || "Failed to transfer ownership.", code: err.code });
+  }
+});
+
+/**
  * POST /servers/:id/leave
- * Non-owner leaves. Owner leave deletes the server (no transfer).
+ * Non-owner leaves. Owner leave deletes the server; to keep it, transfer ownership first
+ * (POST /:id/ownership/transfer).
  * Owner must pass confirmName when leaving (= delete).
  */
 router.post("/:id/leave", requireAuth, async (req, res) => {
@@ -2457,15 +2725,10 @@ router.post("/:id/leave", requireAuth, async (req, res) => {
           deletesServer: true,
         });
       }
-      await writeAudit({
-        serverId,
+      await require("../lib/serverDeletion").deleteServerFully(req.app?.get?.("io"), server, {
         actorId: userId,
-        action: "SERVER_DELETE",
-        targetType: "server",
-        targetId: serverId,
-        changes: { name: server.name, via: "owner_leave" },
+        via: "owner_leave",
       });
-      await deleteServerCascade(serverId);
       return res.json({ message: "Server deleted.", deleted: true, serverId });
     }
 
@@ -2491,6 +2754,13 @@ router.post("/:id/leave", requireAuth, async (req, res) => {
       targetId: userId,
     });
     await evictLeavingMember(req, serverId, userId);
+    // D2: the user's other tabs / devices drop the server too, and members see the count change.
+    {
+      const io = req.app?.get?.("io");
+      const payload = { serverId, serverName: server.name || null, userId, action: "leave" };
+      io?.to?.(`user:${userId}`).emit("server:member:removed", payload);
+      io?.to?.(`server:${serverId}`).emit("server:member:removed", payload);
+    }
 
     return res.json({ message: "Left server.", deleted: false, serverId });
   } catch (err) {
@@ -2796,6 +3066,13 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
       .select("*")
       .single();
     if (error) throw error;
+    if (await insertedOverCap("server_roles", "server_id", serverId, role.id, MAX_ROLES_PER_SERVER)) {
+      await supabase.from("server_roles").delete().eq("id", role.id);
+      return res.status(400).json({
+        error: `Servers can have at most ${MAX_ROLES_PER_SERVER} roles.`,
+        code: "MAX_ROLES",
+      });
+    }
 
     await writeAudit({
       serverId,
@@ -3621,6 +3898,7 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
 
     const parentId = req.body?.parentId || null;
     await assertValidParent(serverId, parentId, type);
+    if (parentId && type !== "category") await assertParentVisible(serverId, req.user.id, parentId);
 
     const isTextLike = type === "text" || type === "announcement";
     const topic =
@@ -3656,6 +3934,13 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
       .select("*")
       .single();
     if (error) throw error;
+    if (await insertedOverCap("server_channels", "server_id", serverId, channel.id, MAX_CHANNELS_PER_SERVER)) {
+      await supabase.from("server_channels").delete().eq("id", channel.id);
+      return res.status(400).json({
+        error: `Servers can have at most ${MAX_CHANNELS_PER_SERVER} channels.`,
+        code: "MAX_CHANNELS",
+      });
+    }
 
     await writeAudit({
       serverId,
@@ -3694,6 +3979,7 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
       .maybeSingle();
     if (findErr) throw findErr;
     if (!existing) return res.status(404).json({ error: "Channel not found." });
+    await assertChannelManageable(serverId, req.user.id, existing.id);
 
     const patch = {};
     if (req.body?.name != null) {
@@ -3711,6 +3997,10 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
       const parentId = req.body.parentId || null;
       await assertValidParent(serverId, parentId, existing.type);
       patch.parent_id = existing.type === "category" ? null : parentId;
+      if (patch.parent_id && String(patch.parent_id) !== String(existing.parent_id || "")) {
+        await assertParentVisible(serverId, req.user.id, patch.parent_id);
+        await assertInheritChangeAllowed(serverId, req.user.id, existing, patch.parent_id);
+      }
       // Moving out of (or to another) category keeps the old category's rules on the
       // channel as its own; moving into a category is the intended "inherit" step.
       if (existing.parent_id && String(existing.parent_id) !== String(patch.parent_id || "")) {
@@ -3775,6 +4065,81 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
 });
 
 /**
+ * MANAGE_CHANNELS must hold on the channel itself (after its overrides) and the actor
+ * must be able to see it: a hidden channel answers 404 like a missing one (audit
+ * 2026-10-19 #1: a MANAGE_CHANNELS member could rename / move / delete channels they
+ * could not see).
+ */
+async function assertChannelManageable(serverId, actorId, channelId) {
+  const r = await resolveChannelPermissions(supabase, serverId, actorId, channelId);
+  if (!r.isMember || r.channelMissing || !hasPermission(r.bits, Permissions.VIEW_CHANNEL)) {
+    const err = new Error("Channel not found.");
+    err.status = 404;
+    throw err;
+  }
+  if (!hasPermission(r.bits, Permissions.MANAGE_CHANNELS)) {
+    const err = new Error("Missing permission.");
+    err.status = 403;
+    err.code = "MISSING_PERMISSION";
+    throw err;
+  }
+  return r;
+}
+
+/**
+ * A synced channel that starts inheriting a category's rules (moved under it with no
+ * own overrides, from no rules) changes who can do what in it. That is a permission
+ * edit: it needs MANAGE_ROLES, and for non-owner/admin every inherited rule must be one
+ * the actor could have written by hand (target below them, bits they hold), like
+ * assertOverrideEditor (audit 2026-10-19 #2).
+ */
+async function assertInheritChangeAllowed(serverId, actorId, channel, newParentId) {
+  if (!newParentId) return;
+  const ids = [String(channel.id), String(newParentId)];
+  if (channel.parent_id) ids.push(String(channel.parent_id));
+  const { data: rows, error } = await supabase
+    .from("server_channel_overrides")
+    .select("channel_id, target_type, target_id, allow_permissions, deny_permissions")
+    .in("channel_id", ids);
+  if (error) throw error;
+  const own = (rows || []).filter((r) => String(r.channel_id) === String(channel.id));
+  if (own.length) return; // channel keeps using its own rules
+  const oldParentRows = channel.parent_id
+    ? (rows || []).filter((r) => String(r.channel_id) === String(channel.parent_id))
+    : [];
+  if (oldParentRows.length) return; // detach copies them first; the new parent will not apply
+  const newRows = (rows || []).filter((r) => String(r.channel_id) === String(newParentId));
+  if (!newRows.length) return;
+  const { data: category } = await supabase
+    .from("server_channels")
+    .select("id, server_id, type")
+    .eq("id", newParentId)
+    .eq("server_id", serverId)
+    .maybeSingle();
+  if (!category) return;
+  const { actorBits, unrestricted } = await assertOverrideEditor(serverId, actorId, category);
+  if (unrestricted) return;
+  if (!hasPermission(actorBits, Permissions.MANAGE_ROLES)) {
+    const err = new Error("Moving this channel into the category changes its permissions; that needs Manage Roles.");
+    err.status = 403;
+    err.code = "MISSING_PERMISSION";
+    err.permission = "MANAGE_ROLES";
+    throw err;
+  }
+  const mask = fromPgBigint(actorBits);
+  for (const r of newRows) {
+    await assertOverrideEditor(serverId, actorId, category, { type: r.target_type, id: r.target_id });
+    const bits = fromPgBigint(r.allow_permissions) | fromPgBigint(r.deny_permissions);
+    if (bits & ~mask) {
+      const err = new Error("The category grants or denies permissions you do not have.");
+      err.status = 403;
+      err.code = "OVERRIDE_PERMISSION";
+      throw err;
+    }
+  }
+}
+
+/**
  * DELETE /servers/:id/channels/:channelId
  * Categories: children first take the category's overrides as their own (effective
  * permissions unchanged, 409 if that is impossible), are unparented, then the category is removed.
@@ -3793,6 +4158,7 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
       .maybeSingle();
     if (findErr) throw findErr;
     if (!existing) return res.status(404).json({ error: "Channel not found." });
+    await assertChannelManageable(serverId, req.user.id, existing.id);
 
     // Who could see it, computed before the row (and its overrides) are gone. The
     // delete event used to go to the whole server room, leaking hidden channel ids.
@@ -3846,6 +4212,25 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
       type: existing.type,
     });
     if (detached.length) notifyAccess(req, serverId, { channelIds: detached });
+    // Reactions are keyed by channel id without a FK: drop them with the channel.
+    if (existing.type !== "category") {
+      const { error: reactErr } = await supabase
+        .from("reactions")
+        .delete()
+        .eq("conversation_type", "server")
+        .eq("conversation_id", String(channelId));
+      if (reactErr) console.warn("[SERVERS] reaction cleanup after channel delete failed:", reactErr.message);
+    }
+    // A deleted voice channel used to keep its call (and LiveKit room) running.
+    try {
+      const io = req.app?.get?.("io");
+      if (io) {
+        require("../socket/serverVoiceHandlers").endServerVoiceChannel(io, channelId, "channel_deleted");
+        io.in(`server-channel:${channelId}`).socketsLeave(`server-channel:${channelId}`);
+      }
+    } catch (err) {
+      console.warn("[SERVERS] voice end after channel delete failed:", err?.message || err);
+    }
     return res.json({ message: "Channel deleted.", channelId, type: existing.type });
   } catch (err) {
     const status = err.status || 500;
@@ -4182,13 +4567,35 @@ router.patch("/:id", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
     let server;
+    let isOwner = false;
     try {
       ({ server } = await requireServerOwner(serverId, req.user.id));
+      isOwner = true;
     } catch (ownerErr) {
       if (ownerErr.status !== 403) throw ownerErr;
       ({ server } = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_GUILD));
     }
     const patch = {};
+    let actorIsAdmin = isOwner;
+    if (!isOwner) {
+      const resolved = await resolveMemberPermissions(supabase, serverId, req.user.id);
+      actorIsAdmin = hasPermission(resolved.bits, Permissions.ADMINISTRATOR);
+    }
+    // Visibility / vanity / verification change who can find and join the server:
+    // owner or ADMINISTRATOR only (MANAGE_GUILD could open a private server, 2026-10-19 #8).
+    // Unchanged values are accepted so settings forms that resend every field still save.
+    const sensitiveChanges = [];
+    const requireAdminFor = (field, changed) => {
+      if (!changed) return;
+      if (!actorIsAdmin) {
+        const err = new Error("Only the owner or an administrator can change this setting.");
+        err.status = 403;
+        err.code = "ADMIN_REQUIRED";
+        err.field = field;
+        throw err;
+      }
+      sensitiveChanges.push(field);
+    };
 
     if (req.body?.name != null) {
       const name = cleanName(req.body.name);
@@ -4199,19 +4606,24 @@ router.patch("/:id", requireAuth, async (req, res) => {
       }
       patch.name = name;
     }
-    if (req.body?.iconUrl !== undefined) {
-      patch.icon_url = req.body.iconUrl ? String(req.body.iconUrl).trim().slice(0, 500) : null;
-    }
-    if (req.body?.bannerUrl !== undefined) {
-      patch.banner_url = req.body.bannerUrl ? String(req.body.bannerUrl).trim().slice(0, 500) : null;
-    }
+    const imageField = (bodyKey, column) => {
+      if (req.body?.[bodyKey] === undefined) return;
+      const raw = req.body[bodyKey] ? String(req.body[bodyKey]).trim() : null;
+      // An unchanged stored value is kept as is (forms resend it).
+      if ((raw || null) === (server[column] || null)) return;
+      patch[column] = cleanServerImageUrl(raw, bodyKey);
+    };
+    imageField("iconUrl", "icon_url");
+    imageField("bannerUrl", "banner_url");
     if (req.body?.description !== undefined) {
       patch.description = req.body.description
         ? String(req.body.description).trim().slice(0, 500)
         : null;
     }
     if (req.body?.isPublic !== undefined) {
-      patch.is_public = Boolean(req.body.isPublic);
+      const next = Boolean(req.body.isPublic);
+      requireAdminFor("isPublic", next !== Boolean(server.is_public));
+      patch.is_public = next;
     }
     if (req.body?.communityEnabled !== undefined) {
       patch.community_enabled = Boolean(req.body.communityEnabled);
@@ -4229,22 +4641,23 @@ router.patch("/:id", requireAuth, async (req, res) => {
         ? String(req.body.rulesText).trim().slice(0, 4000)
         : null;
     }
-    if (req.body?.splashUrl !== undefined) {
-      patch.splash_url = req.body.splashUrl ? String(req.body.splashUrl).trim().slice(0, 500) : null;
-    }
+    imageField("splashUrl", "splash_url");
     if (req.body?.verificationLevel !== undefined) {
       const level = String(req.body.verificationLevel || "none").toLowerCase();
       if (!["none", "low", "medium", "high", "highest"].includes(level)) {
         return res.status(400).json({ error: "Invalid verification level." });
       }
+      requireAdminFor("verificationLevel", level !== String(server.verification_level || "none").toLowerCase());
       patch.verification_level = level;
     }
     if (req.body?.vanitySlug !== undefined) {
       const raw = req.body.vanitySlug;
       if (raw == null || raw === "") {
+        requireAdminFor("vanitySlug", server.vanity_slug != null);
         patch.vanity_slug = null;
       } else {
         const slug = normalizeVanitySlug(raw);
+        requireAdminFor("vanitySlug", slug !== (server.vanity_slug || null));
         const { data: taken } = await supabase
           .from("servers")
           .select("id")
@@ -4300,7 +4713,13 @@ router.patch("/:id", requireAuth, async (req, res) => {
       .eq("id", serverId)
       .select("*")
       .single();
-    if (error) throw error;
+    if (error) {
+      // Unique index on vanity_slug: two servers claiming the same slug at once.
+      if (String(error.code) === "23505") {
+        return res.status(409).json({ error: "That vanity URL is already taken.", code: "VANITY_TAKEN" });
+      }
+      throw error;
+    }
 
     await writeAudit({
       serverId,
@@ -4311,6 +4730,25 @@ router.patch("/:id", requireAuth, async (req, res) => {
       changes: patch,
     });
 
+    // Live update for every member (the sidebar kept the old name/icon until a reload).
+    {
+      const io = req.app?.get?.("io");
+      const pub = publicServer(updated || server, {});
+      if (pub) {
+        delete pub.isOwner;
+        delete pub.myPermissions;
+      }
+      emitToServer(req, serverId, "server:updated", { server: pub });
+      // Owner hears about visibility / vanity / verification changes made by an admin.
+      if (io && sensitiveChanges.length && String(server.owner_id) !== String(req.user.id)) {
+        io.to(`user:${server.owner_id}`).emit("server:updated", {
+          serverId,
+          server: pub,
+          sensitiveChange: { actorId: req.user.id, fields: sensitiveChanges },
+        });
+      }
+    }
+
     const membership = await getMembership(serverId, req.user.id);
     const bundle = await loadServerBundle(serverId);
     const myPermissions = await buildMyPermissionsPayload(serverId, req.user.id);
@@ -4318,7 +4756,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
 
     return res.json({
       server: publicServer(updated || server, {
-        isOwner: true,
+        isOwner: String((updated || server).owner_id) === String(req.user.id),
         memberCount: bundle.memberCount,
         nickname: membership?.nickname || null,
         listPosition: membership?.list_position ?? 0,

@@ -925,29 +925,9 @@ function notifyServerMemberRemoved(io, {
   };
   io.to(`user:${targetUserId}`).emit("server:member:removed", payload);
   io.to(`server:${serverId}`).emit("server:member:removed", payload);
-  try {
-    const userRoom = io.sockets?.adapter?.rooms?.get(`user:${targetUserId}`);
-    if (userRoom) {
-      for (const sockId of userRoom) {
-        const sock = io.sockets.sockets.get(sockId);
-        if (!sock) continue;
-        sock.leave(`server:${serverId}`);
-        for (const roomName of [...sock.rooms]) {
-          if (typeof roomName === "string" && roomName.startsWith("server-channel:")) {
-            sock.leave(roomName);
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("[slashCommands] leave rooms after remove failed:", err?.message || err);
-  }
-  try {
-    const { removeUserFromAllServerVoice } = require("../socket/serverVoiceHandlers");
-    removeUserFromAllServerVoice(io, targetUserId);
-  } catch (err) {
-    console.warn("[slashCommands] voice cleanup after remove failed:", err?.message || err);
-  }
+  // Only this server's rooms and voice calls (other servers' were dropped too before).
+  void require("./serverRooms").dropUserFromServer(io, serverId, targetUserId, action === "ban" ? "ban" : "kick");
+
 }
 
 async function kickServerMember({ io, serverId, actorId, targetUserId, reason }) {
