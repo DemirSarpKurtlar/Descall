@@ -247,3 +247,185 @@ export function attachMenuPress({
   }, delay);
   return { detach };
 }
+
+/* ── Lifted bubble (2.11.16) ──────────────────────────────────────────────
+ * The long-press preview is a clone of the real, rendered bubble: same skin
+ * classes (cosmetic-chat-bubble bubble-*), same markdown, newlines, media,
+ * reactions and size. It used to be a plain text copy in a fixed blue
+ * `.g-lift-bub`, so skins, **bold** and line breaks were lost.
+ */
+
+/** Long-press stack geometry (CSS px). Matches styles/glass/chat.css. */
+export const LIFT_GAP = 10;
+export const REACT_BAR_H = 56;
+export const MENU_W = 250;
+export const EDGE = 12;
+
+/** Reaction bar width: padding 8+8, n chips of 44 + the 40 "more" button, 4px gaps. */
+export function reactBarWidth(count) {
+  const n = Math.max(0, Number(count) || 0);
+  return 16 + n * 44 + 40 + n * 4;
+}
+
+/** Menu height estimate: 6+6 padding, 46px rows, separators, optional picker. */
+export function menuHeight({ rows = 2, separators = 0, picker = false } = {}) {
+  return 12 + rows * 46 + separators * 11 + (picker ? 190 : 0);
+}
+
+function clamp(v, lo, hi) {
+  return Math.min(Math.max(v, lo), Math.max(lo, hi));
+}
+
+/**
+ * Where the reaction bar, the lifted bubble and the menu go. The bubble stays
+ * where it is when the stack fits; otherwise it moves the least distance that
+ * keeps the bar above and the menu below on screen. A bubble taller than the
+ * room left is scaled down from its anchored top corner to fit (never clipped).
+ */
+export function liftLayout({
+  rect,
+  vw,
+  vh,
+  isOwn,
+  barW,
+  menuH,
+  menuW = MENU_W,
+  barH = REACT_BAR_H,
+  gap = LIFT_GAP,
+  safeTop = 62,
+  safeBottom = 34,
+  minScale = 0.1,
+}) {
+  const width = Math.max(1, rect.width);
+  const height = Math.max(1, rect.height);
+  const room = vh - safeTop - safeBottom - barH - menuH - gap * 2;
+  const scale = Math.min(1, Math.max(minScale, room / height));
+  const liftH = height * scale;
+  const minTop = safeTop + barH + gap;
+  const maxTop = vh - safeBottom - menuH - gap - liftH;
+  const liftTop = Math.round(clamp(rect.top, minTop, maxTop));
+  const bw = Math.min(barW, vw - EDGE * 2);
+  const mw = Math.min(menuW, vw - EDGE * 2);
+  const anchorLeft = (w) =>
+    isOwn ? clamp(rect.left + width - w, EDGE, vw - EDGE - w) : clamp(rect.left, EDGE, vw - EDGE - w);
+  return {
+    liftTop,
+    liftLeft: Math.round(rect.left),
+    liftScale: scale,
+    liftH,
+    dy: Math.round(rect.top - liftTop),
+    barTop: Math.round(liftTop - gap - barH),
+    barLeft: Math.round(anchorLeft(bw)),
+    barW: bw,
+    menuTop: Math.round(liftTop + liftH + gap),
+    menuLeft: Math.round(anchorLeft(mw)),
+    menuW: mw,
+    origin: isOwn ? "100% 0%" : "0% 0%",
+  };
+}
+
+const LIFT_STRIP_SELECTOR = ".message-hover-bar, .message-inline-picker, .message-swipe-hint, .msg-edit-box";
+const LIFT_STATE_CLASSES = ["menu-open", "is-editing"];
+const LIFT_COPY_PROPS = [
+  "border-top-left-radius",
+  "border-top-right-radius",
+  "border-bottom-left-radius",
+  "border-bottom-right-radius",
+  "padding-top",
+  "padding-right",
+  "padding-bottom",
+  "padding-left",
+];
+
+function copyCustomProps(from, to) {
+  const style = from?.style;
+  if (!style) return;
+  for (let i = 0; i < style.length; i += 1) {
+    const name = style[i];
+    if (name.startsWith("--")) to.style.setProperty(name, style.getPropertyValue(name));
+  }
+}
+
+/**
+ * Clone `bubble` for the lifted preview.
+ * The clone sits inside `display: contents` copies of its ancestors up to
+ * `.app-root` (same classes, data attributes and CSS custom properties), so
+ * every `html.glass-ui .app-root.g-shell …` / `.message-group.own …` rule and
+ * every theme variable still applies, yet those wrappers draw no box.
+ * Returns { root, clone } or null.
+ */
+export function buildLiftedBubble(bubble, { win = typeof window !== "undefined" ? window : null } = {}) {
+  if (!bubble || !bubble.ownerDocument) return null;
+  const doc = bubble.ownerDocument;
+  const cs = win?.getComputedStyle ? win.getComputedStyle(bubble) : null;
+  const width = bubble.offsetWidth;
+  const height = bubble.offsetHeight;
+
+  const chain = [];
+  for (let node = bubble.parentElement; node && node !== doc.body && node !== doc.documentElement; node = node.parentElement) {
+    chain.unshift(node);
+    if (node.classList?.contains("app-root")) break;
+  }
+  let root = null;
+  let parent = null;
+  for (const anc of chain) {
+    const div = doc.createElement("div");
+    if (anc.className && typeof anc.className === "string") div.className = anc.className;
+    for (const attr of Array.from(anc.attributes || [])) {
+      if (attr.name.startsWith("data-")) div.setAttribute(attr.name, attr.value);
+    }
+    copyCustomProps(anc, div);
+    div.style.setProperty("display", "contents", "important");
+    div.setAttribute("data-lift-mirror", "");
+    if (parent) parent.appendChild(div);
+    else root = div;
+    parent = div;
+  }
+
+  const clone = bubble.cloneNode(true);
+  for (const cls of LIFT_STATE_CLASSES) clone.classList.remove(cls);
+  clone.removeAttribute("data-pressed");
+  clone.removeAttribute("data-editing");
+  clone.removeAttribute("id");
+  clone.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
+  clone.querySelectorAll(LIFT_STRIP_SELECTOR).forEach((n) => n.remove());
+  clone.querySelectorAll("img").forEach((img) => {
+    img.setAttribute("loading", "eager");
+    img.setAttribute("decoding", "sync");
+  });
+  clone.querySelectorAll("video").forEach((v) => {
+    v.removeAttribute("autoplay");
+    v.muted = true;
+  });
+  clone.querySelectorAll("a, button, input, textarea, [tabindex]").forEach((n) => n.setAttribute("tabindex", "-1"));
+  clone.setAttribute("aria-hidden", "true");
+  clone.setAttribute("inert", "");
+  clone.setAttribute("data-lifted", "");
+  const s = clone.style;
+  if (cs) for (const prop of LIFT_COPY_PROPS) s.setProperty(prop, cs.getPropertyValue(prop));
+  s.setProperty("transform", "none", "important");
+  s.setProperty("opacity", "1", "important");
+  s.setProperty("visibility", "visible", "important");
+  s.setProperty("margin", "0", "important");
+  s.setProperty("box-sizing", "border-box", "important");
+  s.setProperty("width", `${width}px`, "important");
+  s.setProperty("min-width", `${width}px`, "important");
+  s.setProperty("max-width", `${width}px`, "important");
+  s.setProperty("height", `${height}px`, "important");
+  s.setProperty("pointer-events", "none", "important");
+  s.setProperty("position", "relative", "important");
+  s.setProperty("touch-action", "none");
+  if (parent) parent.appendChild(clone);
+  else root = clone;
+  return {
+    root,
+    clone,
+    width,
+    height,
+    radius: cs
+      ? ["border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"]
+          .map((p) => cs.getPropertyValue(p) || "0px")
+          .join(" ")
+      : "18px",
+  };
+}

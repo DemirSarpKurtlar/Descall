@@ -5,8 +5,11 @@ import {
   MESSAGE_MENU_LONG_PRESS_MS,
   attachMenuPress,
   createMediaPressGate,
+  liftLayout,
   liftMediaBox,
+  menuHeight,
   messageMenuOpensOnTap,
+  reactBarWidth,
   pressToActivate,
   visualMediaPreview,
 } from "./glassMessageMenu.js";
@@ -63,24 +66,78 @@ assert.equal(liftMediaBox({ width: 0, height: 0 }, { width: 220 }).width >= 160,
 const list = readFileSync(new URL("../components/chat/MessageList.jsx", import.meta.url), "utf8");
 const chatCss = readFileSync(new URL("../styles/glass/chat.css", import.meta.url), "utf8");
 
-assert.match(list, /preview=\{mediaPreview\}/);
+// 2.11.16: the lifted preview is a clone of the real bubble, not a text copy.
 assert.match(list, /visualMediaPreview\(message\)/);
-assert.match(list, /img\.message-image, \.message-media img/);
-assert.match(list, /liftMediaBox/);
-assert.match(list, /width: shot\.width, height: shot\.height/);
-assert.match(list, /g-lift-media/);
-assert.match(list, /preview\?\.src/);
-assert.match(list, /caption \? <div className=\{`g-lift-bub/);
+assert.match(list, /buildLiftedBubble\(el\)/);
+assert.match(list, /liftLayout\(\{/);
+assert.match(list, /className="g-lift"/);
+assert.match(list, /className="g-lift-shadow"/);
+assert.doesNotMatch(list, /g-lift-bub/);
+assert.doesNotMatch(list, /text=\{String\(message\.text \|\| ""\)\.slice\(0, 280\)\}/);
 assert.match(list, /fromMedia: true/);
 assert.match(list, /suppressMediaClickUntil/);
 assert.match(list, /beginMenuPress\(e, \{ pressed: true \}\)/);
-assert.doesNotMatch(list, /className=\{`g-lift-bub \$\{isOwn \? "own" : "other"\}`\}>\{text\}<\/div>/);
+// Haptic on the fire frame; bridge primed on press-down.
+assert.match(list, /onFire: \(\) => \{\s*hapticImpactMedium\(\);/);
+assert.match(list, /primeHaptics\(\);\s*pressDetach\.current\?\.\(\);/);
+// Reduced motion: fade, no spring travel.
+assert.match(list, /REDUCED_MOTION_FADE/);
+// Bar and menu are separate frosted surfaces inside a box-less layer.
+assert.match(list, /className="g-react-bar g-glass g-heavy g-materialize"/);
+assert.match(list, /className="g-menu g-glass g-heavy g-materialize"/);
 
-assert.match(chatCss, /html\.glass-ui \.g-lift-media \{/);
-assert.match(chatCss, /html\.glass-ui \.g-lift-media img \{[\s\S]*width: 100%;/);
-assert.match(chatCss, /html\.glass-ui \.g-lift-bub:empty/);
+assert.match(chatCss, /html\.glass-ui \.g-msg-pop \{[^}]*position: fixed;[^}]*inset: 0;[^}]*background: none;/);
+assert.doesNotMatch(chatCss.match(/html\.glass-ui \.g-msg-pop \{[^}]*\}/)[0], /backdrop-filter|transform|opacity|filter/);
+assert.match(chatCss, /html\.glass-ui \.g-scrim\.g-msg-scrim \{[^}]*backdrop-filter: blur\(28px\)/);
+assert.match(chatCss, /html\.glass-ui \.g-lift-shadow \{[^}]*background: transparent;/);
 assert.match(chatCss, /html\.glass-ui \.message-bubble\.menu-open \{\s*visibility: hidden/);
-assert.match(chatCss, /max-height: 240px;/);
+assert.match(chatCss, /\.message-bubble\[data-pressed\] \{\s*scale: 0\.97;/);
+assert.doesNotMatch(chatCss, /g-lift-bub/);
+
+const frost = readFileSync(new URL("../styles/frost.css", import.meta.url), "utf8");
+assert.doesNotMatch(frost, /\.g-msg-pop,/);
+assert.match(frost, /\.g-react-bar,/);
+
+// Layout: bubble stays put when the stack fits.
+{
+  const rect = { left: 227, top: 377, width: 152, height: 83 };
+  const l = liftLayout({ rect, vw: 393, vh: 852, isOwn: true, barW: reactBarWidth(5), menuH: menuHeight({ rows: 5, separators: 1 }) });
+  assert.equal(l.liftTop, 377);
+  assert.equal(l.dy, 0);
+  assert.equal(l.liftScale, 1);
+  assert.equal(l.barTop, 377 - 10 - 56);
+  assert.equal(l.menuTop, 377 + 83 + 10);
+  assert.ok(l.barLeft >= 12 && l.barLeft + l.barW <= 393 - 12, "bar on screen");
+  assert.ok(l.menuLeft + l.menuW <= 393 - 12 && l.menuLeft + l.menuW >= 379 - 1, "own: right-aligned to the bubble");
+  assert.equal(l.origin, "100% 0%");
+}
+// Near the bottom: moves up just enough for the menu.
+{
+  const rect = { left: 227, top: 700, width: 152, height: 83 };
+  const menuH = menuHeight({ rows: 5, separators: 1 });
+  const l = liftLayout({ rect, vw: 393, vh: 852, isOwn: true, barW: 296, menuH });
+  assert.equal(l.menuTop + menuH, 852 - 34);
+  assert.ok(l.dy > 0);
+}
+// Near the top: moves down so the bar clears the safe area.
+{
+  const l = liftLayout({ rect: { left: 60, top: 70, width: 200, height: 40 }, vw: 393, vh: 852, isOwn: false, barW: 296, menuH: 300 });
+  assert.equal(l.barTop, 62);
+  assert.equal(l.menuLeft, 60);
+  assert.equal(l.origin, "0% 0%");
+}
+// Taller than the room left: scaled down, never clipped.
+{
+  const menuH = menuHeight({ rows: 4, separators: 1 });
+  const l = liftLayout({ rect: { left: 60, top: 0, width: 243, height: 1500 }, vw: 393, vh: 852, isOwn: false, barW: 296, menuH });
+  assert.ok(l.liftScale < 1 && l.liftScale >= 0.1);
+  assert.ok(l.barTop >= 62 && l.menuTop + menuH <= 852 - 34 + 1);
+}
+// Narrow phone: the bar is clamped inside the screen for a left bubble.
+{
+  const l = liftLayout({ rect: { left: 200, top: 300, width: 100, height: 40 }, vw: 320, vh: 640, isOwn: false, barW: 296, menuH: 250 });
+  assert.ok(l.barLeft >= 12 && l.barLeft + l.barW <= 320 - 12);
+}
 
 const menuSrc = readFileSync(new URL("./glassMessageMenu.js", import.meta.url), "utf8");
 const lightbox = readFileSync(new URL("../components/chat/MessageMediaLightbox.jsx", import.meta.url), "utf8");

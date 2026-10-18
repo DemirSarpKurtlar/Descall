@@ -1629,6 +1629,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 0 4px;
   font-weight: 600;
 }
+/* **bold** in chat bubbles (lib/messageMarkdown.js), same weight web uses
+   for Descall Apps embeds. Inherits the bubble skin's ink. */
+.message-text .msg-bold {
+  font-weight: 700;
+  color: inherit;
+}
+
 .msg-inline-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
