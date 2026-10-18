@@ -1,4 +1,4 @@
--- 2.11.1: drop the legacy DimaAI tables (assistant removed in 2.9.141).
+-- 2.11.2: drop the legacy DimaAI tables (assistant removed in 2.9.141).
 -- Approved by Demir. Backup (schema + data) taken first: /workspace/backups/dimaai-2026-10-18/.
 -- No CASCADE: if any non-dimaai object (FK, view, function, policy) depended on these
 -- tables the drop fails instead of silently removing it. Checked before apply: none.

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from "react";
+import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, SmilePlus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "lucide-react";
@@ -647,7 +648,8 @@ function MessageBubble({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const hideTimer = useRef(null);
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
-  const mediaUrl = message.mediaUrl || message.media_url || "";
+  const rawMediaUrl = message.mediaUrl || message.media_url || "";
+  const { url: mediaUrl, onMediaError } = usePrivateMediaUrl(rawMediaUrl);
   const mediaPreview = visualMediaPreview(message);
   const isVisualMedia = Boolean(mediaPreview);
   const isGif = Boolean(mediaPreview?.isGif);
@@ -1148,6 +1150,7 @@ function MessageBubble({
                   className="message-image"
                   loading="lazy"
                   draggable={false}
+                  onError={onMediaError}
                 />
                 {isGif && (
                   <span className="message-media-badge" aria-hidden="true">GIF</span>
@@ -1158,6 +1161,7 @@ function MessageBubble({
                 src={mediaUrl}
                 controls
                 className="message-video"
+                onError={onMediaError}
                 onClick={(e) => e.stopPropagation()}
               />
             ) : mediaTypeNorm === "audio" || mediaTypeNorm === "voice" ? (
@@ -1173,6 +1177,15 @@ function MessageBubble({
                 rel="noopener noreferrer"
                 download={message.originalName || true}
                 className="message-file-chip"
+                onClick={(e) => {
+                  if (!needsPrivateMediaRefresh(mediaUrl)) return;
+                  e.preventDefault();
+                  const popup = window.open("about:blank", "_blank", "noopener");
+                  refreshMediaUrl(rawMediaUrl).then((next) => {
+                    if (next && popup) popup.location.href = next;
+                    else if (popup) popup.close();
+                  });
+                }}
               >
                 <div className="message-file-ico">
                   <FileText size={18} />

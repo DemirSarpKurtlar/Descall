@@ -1,4 +1,4 @@
--- 2.11.1: daily read-only DesCoin reconciliation (users.descoin_balance vs SUM(descoin_ledger.amount)).
+-- 2.11.2: daily read-only DesCoin reconciliation (users.descoin_balance vs SUM(descoin_ledger.amount)).
 -- Additive only. The snapshot function is STABLE (Postgres rejects any write inside it) and the
 -- backend calls it over PostgREST GET, which runs in a READ ONLY transaction. Balances are never
 -- modified by this job; results go to descoin_reconciliation_runs (admin panel + alert log).

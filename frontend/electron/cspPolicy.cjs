@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Electron renderer CSP (2.11.1). script-src carries the sha256 of every inline <script> in the
+ * Electron renderer CSP (2.11.2). script-src carries the sha256 of every inline <script> in the
  * shipped dist/index.html (computed at startup from the exact file being loaded) instead of
  * 'unsafe-inline'. If index.html cannot be read the old policy is used so the app still boots.
  */

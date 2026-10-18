@@ -1,4 +1,4 @@
-// node src/lib/iceConfig.selftest.mjs — 2.11.1 TURN needs auth; token-bound cache, refresh before expiry.
+// node src/lib/iceConfig.selftest.mjs — 2.11.2 TURN needs auth; token-bound cache, refresh before expiry.
 import assert from "node:assert/strict";
 
 const store = new Map();

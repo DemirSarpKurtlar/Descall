@@ -5,7 +5,7 @@ import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
 
 /**
- * DesCoin reconciliation (2.11.1). Read-only: shows the daily comparison of each user's
+ * DesCoin reconciliation (2.11.2). Read-only: shows the daily comparison of each user's
  * balance with the sum of their descoin_ledger rows. It never changes a balance; an admin
  * corrects drift by hand with "Grant / revoke DesCoin" below if needed.
  */

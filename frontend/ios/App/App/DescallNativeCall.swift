@@ -178,7 +178,7 @@ final class DescallNativeCall: NSObject {
         socket.connect()
     }
 
-    /// TURN is only issued to a signed-in caller (2.11.1): send the Keychain session token.
+    /// TURN is only issued to a signed-in caller (2.11.2): send the Keychain session token.
     /// Credentials are per user and short-lived; the cache honours the server's ttlSeconds.
     private func fetchIceServers(_ s: Session, token: String) {
         if let cache = iceCache, DescallNativeCallLogic.iceCacheUsable(cachedAt: cache.at, validFor: cache.validFor, now: Date()), DescallNativeCallLogic.hasTurn(cache.servers) {

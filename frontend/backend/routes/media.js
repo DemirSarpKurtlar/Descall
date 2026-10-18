@@ -5,6 +5,8 @@ const multer = require("multer");
 const { requireAuth } = require("../middleware/auth");
 const supabase = require("../db/supabase");
 const { cacheUserProfile, broadcastUserProfileUpdate, toPublicUser } = require("../lib/userProfile");
+const privateMedia = require("../lib/privateMedia");
+const { recordFailure } = require("../lib/rateLimit");
 
 const router = express.Router();
 
@@ -49,9 +51,61 @@ const upload = multer({
   },
 });
 
+// GET /api/media/f/<images|files>/<name>?e=&s= : private attachment behind a short-lived HMAC
+// URL (issued only inside payloads for members of the conversation). No bearer header: <img>
+// and <video> cannot send one. Redirects to a 10-minute Supabase signed URL.
+router.get(/^\/f\/(.+)$/, async (req, res) => {
+  const path = req.params[0];
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  if (!privateMedia.verifySignature(path, req.query.e, req.query.s)) {
+    return res.status(403).json({ error: "expired", code: "MEDIA_URL_EXPIRED" });
+  }
+  try {
+    const target = await privateMedia.supabaseSignedUrl(supabase, path);
+    return res.redirect(302, target);
+  } catch {
+    return res.status(404).json({ error: "not_found" });
+  }
+});
+
 router.use(requireAuth);
 
+// POST /api/media/refresh { urls: [...] } → { urls: { [given]: freshSignedUrl } }
+// Accepts our signed URLs (expired ones too), stored refs and legacy public message URLs.
+// Each one is re-issued only if the caller uploaded it or can see a message carrying it.
+router.post("/refresh", express.json({ limit: "64kb" }), async (req, res) => {
+  const list = Array.isArray(req.body?.urls) ? req.body.urls.filter((u) => typeof u === "string").slice(0, 50) : [];
+  const limited = recordFailure(`media-refresh:${req.user.id}`, { windowMs: 10 * 60 * 1000, max: 300 });
+  if (!limited.ok) return res.status(429).json({ error: "rate_limited" });
+  const out = {};
+  for (const given of list) {
+    const parsed = privateMedia.parseMediaUrl(given);
+    if (!parsed || parsed.path.startsWith("quarantine/")) continue;
+    try {
+      if (await privateMedia.canAccessPath(supabase, req.user.id, parsed.path)) {
+        out[given] = privateMedia.signedUrlForPath(parsed.path);
+      }
+    } catch (err) {
+      console.warn("[MEDIA] refresh check failed:", err?.message);
+    }
+  }
+  res.setHeader("Cache-Control", "private, no-store");
+  res.json({ urls: out, ttlSeconds: privateMedia.URL_TTL_S });
+});
+
 // Upload file to Supabase Storage
+async function uploadPrivate(file, folder) {
+  const ext = file.originalname.split(".").pop();
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+  const filePath = `${folder}/${filename}`;
+  const { error } = await supabase.storage
+    .from(privateMedia.PRIVATE_BUCKET)
+    .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: false });
+  if (error) throw error;
+  return { ref: privateMedia.refForPath(filePath), url: privateMedia.signedUrlForPath(filePath), path: filePath };
+}
+
 async function uploadToSupabase(file, folder = "files") {
   const ext = file.originalname.split('.').pop();
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
@@ -85,12 +139,17 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     else if (ALLOWED_DOCUMENT.includes(file.mimetype)) mediaType = "document";
 
     const folder = mediaType === "image" ? "images" : "files";
-    const { url, path: storagePath } = await uploadToSupabase(file, folder);
+    // purpose=message (2.11.2+ clients): chat attachment → private bucket, signed URL.
+    // Anything else (group photo, server icon, feedback, pre-2.11.2 clients) stays public;
+    // older clients' chat attachments are copied to private when the message is sent.
+    const isPrivate = String(req.body?.purpose || "") === "message";
+    const stored = isPrivate ? await uploadPrivate(file, folder) : await uploadToSupabase(file, folder);
+    const { url, path: storagePath } = stored;
 
     await supabase.from("media_uploads").insert({
       uploader_id: req.user.id,
       storage_path: storagePath,
-      public_url: url,
+      public_url: isPrivate ? stored.ref : url,
       media_type: mediaType,
       mime_type: file.mimetype,
       file_size: file.size,

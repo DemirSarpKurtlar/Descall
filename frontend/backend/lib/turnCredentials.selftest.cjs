@@ -54,7 +54,7 @@ const {
   assert.match(route, /turnMode/);
   assert.match(route, /private, no-store/);
 
-  // 2.11.1 per-user short-lived credentials.
+  // 2.11.2 per-user short-lived credentials.
   const { turnIceServersForUser, userTtlSeconds } = require("./turnCredentials");
   assert.equal(userTtlSeconds({}), 4 * 3600);
   assert.equal(userTtlSeconds({ TURN_CREDENTIAL_TTL_S: "60" }), 3600, "clamped to >= 1h");

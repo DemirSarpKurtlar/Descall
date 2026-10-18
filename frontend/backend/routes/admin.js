@@ -2210,7 +2210,7 @@ router.patch("/shop/items/:id", async (req, res) => {
   }
 });
 
-// DesCoin reconciliation (2.11.1): read-only balance vs ledger comparison.
+// DesCoin reconciliation (2.11.2): read-only balance vs ledger comparison.
 // Never changes a balance; an admin decides whether to correct drift with /descoin/grant.
 router.get("/descoin/reconciliation", async (_req, res) => {
   try {

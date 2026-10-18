@@ -32,7 +32,7 @@ function expandIceServers(servers) {
 }
 
 /**
- * STUN for everyone; TURN only for a signed-in user (2.11.1), with per-user short-lived
+ * STUN for everyone; TURN only for a signed-in user (2.11.2), with per-user short-lived
  * credentials from lib/turnCredentials.js. ICE_SERVERS_JSON (full override) still wins for
  * signed-in users; anonymous callers only get its STUN entries.
  */

@@ -5,6 +5,7 @@
 
 const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById } = require("../runtime/sharedState");
 const supabase = require("../db/supabase");
+const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { sendGroupCallPush } = require("../lib/webPush");
 const { assertGroupMember, bothInGroupCall } = require("../lib/groupCallMembership");
@@ -240,6 +241,14 @@ function registerGroupHandlers(io, socket, state) {
       return;
     }
 
+    if (mediaUrl) {
+      const original = mediaUrl;
+      mediaUrl = await normalizeIncomingMediaUrl(supabase, myId, mediaUrl);
+      if (!mediaUrl && original && !content?.trim()) {
+        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: "Attachment unavailable.", code: "MEDIA_UNAVAILABLE" });
+        return;
+      }
+    }
     const isVoice = mediaType === "voice" || mediaType === "audio";
     let trimmedContent = content?.trim() || null;
     if (isVoice && mediaUrl) {

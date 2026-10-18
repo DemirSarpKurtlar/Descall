@@ -16,7 +16,7 @@
  *    username = "<expiry>:descall", credential = base64(HMAC-SHA1(secret, username)).
  * 3. Static long-term credentials (legacy): TURN_URL + TURN_USERNAME + TURN_CREDENTIAL.
  *
- * 2.11.1: TURN is only handed to signed-in users (routes/webrtc.js). Every user gets their
+ * 2.11.2: TURN is only handed to signed-in users (routes/webrtc.js). Every user gets their
  * own short-lived credentials (USER_TTL_S, default 4 h, clamp 1-4 h via TURN_CREDENTIAL_TTL_S),
  * cached per user for half their lifetime so reconnects do not re-mint. Clients refresh
  * before expiry (response carries ttlSeconds / expiresAt).

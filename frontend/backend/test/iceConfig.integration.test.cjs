@@ -1,5 +1,5 @@
 "use strict";
-// GET /api/webrtc/ice-config (2.11.1): anonymous = STUN only, signed-in = per-user TURN, rate-limited.
+// GET /api/webrtc/ice-config (2.11.2): anonymous = STUN only, signed-in = per-user TURN, rate-limited.
 // Run from frontend/: node backend/test/iceConfig.integration.test.cjs
 process.env.JWT_SECRET = "test-secret-do-not-use-in-prod";
 process.env.SUPABASE_URL = "https://placeholder.supabase.co";

@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Daily DesCoin reconciliation (2.11.1). READ-ONLY with respect to balances:
+ * Daily DesCoin reconciliation (2.11.2). READ-ONLY with respect to balances:
  * compares users.descoin_balance with SUM(descoin_ledger.amount) per user and
  * records the result in descoin_reconciliation_runs (admin panel + alert log).
  * It never modifies a balance or a ledger row; fixing drift stays a manual

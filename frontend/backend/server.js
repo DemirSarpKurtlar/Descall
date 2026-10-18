@@ -82,6 +82,9 @@ const io = new Server(httpServer, {
 });
 
 app.set("io", io);
+// 2.11.2: private message media. Every outgoing Socket.IO payload / JSON body gets its
+// sb://media-private/... refs replaced with short-lived signed URLs.
+require("./lib/privateMedia").installPrivateMediaHooks({ io, express });
 // Needed so req.protocol / x-forwarded-* are correct behind Render/Vercel proxies.
 app.set("trust proxy", 1);
 

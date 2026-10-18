@@ -1,5 +1,5 @@
 /**
- * 2.11.1 CSP hardening: script-src has no 'unsafe-inline' anywhere the site is served
+ * 2.11.2 CSP hardening: script-src has no 'unsafe-inline' anywhere the site is served
  * (Cloudflare worker + _headers, Vercel), and the committed sha256 list matches index.html.
  * Run: node src/site/cspHashes.selftest.mjs   (fix drift with: node scripts/csp-sync.mjs)
  */

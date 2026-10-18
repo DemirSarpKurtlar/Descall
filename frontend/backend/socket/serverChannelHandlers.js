@@ -6,6 +6,7 @@
  */
 
 const supabase = require("../db/supabase");
+const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { toUtcIso } = require("../lib/datetime");
 const descoin = require("../lib/descoin");
@@ -870,6 +871,14 @@ function registerServerChannelHandlers(io, socket) {
           return;
         }
 
+        if (mediaUrl) {
+          const original = mediaUrl;
+          mediaUrl = await normalizeIncomingMediaUrl(supabase, myId, mediaUrl);
+          if (!mediaUrl && original && !content?.trim()) {
+            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: "Attachment unavailable.", code: "MEDIA_UNAVAILABLE" });
+            return;
+          }
+        }
         const isVoice = mediaType === "voice" || mediaType === "audio";
         let trimmedContent = content?.trim() || null;
         if (isVoice && mediaUrl) {

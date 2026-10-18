@@ -2,6 +2,7 @@ const express = require("express");
 const { validateGroupAvatarUrl, canEditGroupAvatar } = require("../lib/groupAvatar");
 const { normalizeGroupName, canRenameGroup } = require("../lib/groupRename");
 const supabase = require("../db/supabase");
+const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser } = require("../runtime/sharedState");
 const { getUserGroups } = require("../lib/groupList");
@@ -482,7 +483,8 @@ router.post("/:groupId/messages", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { groupId } = req.params;
-    const { content, mediaUrl, mediaType } = req.body;
+    const { content, mediaType } = req.body;
+    let { mediaUrl } = req.body;
     
     if (!content?.trim() && !mediaUrl) {
       return res.status(400).json({ error: "Message content or media required" });
@@ -497,6 +499,11 @@ router.post("/:groupId/messages", requireAuth, async (req, res) => {
       .maybeSingle();
     
     if (!member) return res.status(403).json({ error: "Not a member" });
+    if (mediaUrl) {
+      const original = mediaUrl;
+      mediaUrl = await normalizeIncomingMediaUrl(supabase, userId, mediaUrl);
+      if (!mediaUrl && original && !content?.trim()) return res.status(400).json({ error: "Attachment unavailable." });
+    }
     
     const { data: message, error } = await supabase
       .from("group_messages")

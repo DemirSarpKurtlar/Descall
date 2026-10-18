@@ -2,7 +2,7 @@
  * WebRTC ICE server configuration (STUN + optional TURN).
  * Preload on app start; hooks read synchronously via getIceServers().
  *
- * 2.11.1: TURN is only returned to a signed-in caller. The request carries the session
+ * 2.11.2: TURN is only returned to a signed-in caller. The request carries the session
  * token (Authorization: Bearer), credentials are per user and short-lived (1-4 h,
  * `ttlSeconds` / `expiresAt` in the response). The cache is tied to the token it was
  * fetched with, refreshed at half the lifetime, on socket reconnect, when the network

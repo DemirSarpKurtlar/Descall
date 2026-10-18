@@ -1237,7 +1237,7 @@ function createMainWindow() {
   const cspRoot = isDev ? null : distRoot();
   const rendererCsp = cspRoot ? appDocumentCsp(cspRoot) : buildElectronCsp(null, { dev: isDev });
   // Only the app document (descall://app/…) gets the hashed policy. Everything else in this
-  // session (notification/overlay files, Riot sign-in pages) keeps the pre-2.11.1 policy.
+  // session (notification/overlay files, Riot sign-in pages) keeps the pre-2.11.2 policy.
   const legacyCsp = buildElectronCsp(null);
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     const isAppDocument = /^descall:\/\/app\//i.test(details.url || '');

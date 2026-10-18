@@ -38,7 +38,7 @@ const OWN_ROWS = [
   ["server_channel_mutes", "user_id"],
   ["group_invites", "invited_user_id"],
   // Legacy call-recording table (feature removed in 2.9.141). The dimaai_*
-  // tables were dropped in 2.11.1 (supabase/migrations/20261018_drop_dimaai_tables.sql).
+  // tables were dropped in 2.11.2 (supabase/migrations/20261018_drop_dimaai_tables.sql).
   ["voice_recordings", "created_by"],
 ];
 
