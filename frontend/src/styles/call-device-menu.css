@@ -6,47 +6,55 @@
   position: fixed;
   z-index: 13000;
   box-sizing: border-box;
-  min-width: 248px;
-  max-width: calc(100vw - 20px);
-  max-height: min(60vh, 440px);
+  /* 2.11.3: compact desktop menu. Whole menu scales down (type, icons, rows,
+     padding), not only the window: 13px names, 16px glyphs, 30px rows, <=320px. */
+  min-width: 220px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 20px));
+  max-height: min(60vh, 380px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px;
-  border-radius: 22px;
+  padding: 4px;
+  border-radius: 14px;
   color: var(--g-t1, var(--gd-t1, #f4f5f8));
   font-family: var(--g-font, var(--gd-font, -apple-system, "SF Pro Text", Inter, "Segoe UI Variable", system-ui, sans-serif));
   box-shadow:
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 26px 70px rgba(0, 0, 0, 0.5),
-    0 6px 18px rgba(0, 0, 0, 0.28);
+    0 18px 48px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.28);
   will-change: transform, opacity;
   -webkit-tap-highlight-color: transparent;
 }
 
 .call-device-heading {
-  padding: 8px 12px 4px;
-  font-size: 12px;
+  padding: 5px 8px 3px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  color: rgba(235, 235, 245, 0.62);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: rgba(235, 235, 245, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .call-device-sep {
   height: 0.5px;
-  margin: 6px 10px;
+  margin: 4px 8px;
   background: rgba(255, 255, 255, 0.14);
 }
 
 .call-device-row {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
   width: 100%;
-  min-height: 46px;
-  padding: 7px 12px 7px 8px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 8px 4px 6px;
   border: 0;
-  border-radius: 15px;
+  border-radius: 9px;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -70,16 +78,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.92);
+  width: 18px;
+  height: 18px;
+  color: rgba(235, 235, 245, 0.72);
 }
 
 .call-device-row.is-selected .call-device-ico {
-  background: #0a84ff;
-  color: #fff;
+  color: #0a84ff;
 }
 
 .call-device-text {
@@ -87,35 +92,45 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
 }
 
 .call-device-name {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.call-device-row.is-selected .call-device-name { font-weight: 600; }
 
 .call-device-detail {
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.25;
   color: rgba(235, 235, 245, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .call-device-check {
-  flex: 0 0 18px;
+  flex: 0 0 14px;
   display: inline-flex;
   justify-content: flex-end;
   color: #0a84ff;
 }
 
 .call-device-empty {
-  padding: 10px 12px 12px;
-  font-size: 13px;
+  padding: 6px 8px 8px;
+  font-size: 12px;
   color: rgba(235, 235, 245, 0.6);
+}
+
+/* Touch (iPhone / tablets): same compact type, but rows keep a 44pt hit target. */
+@media (pointer: coarse) {
+  .call-device-row { min-height: 44px; }
 }
 
 :root[data-theme="light"] .call-device-menu {
@@ -131,7 +146,8 @@
   color: rgba(28, 32, 48, 0.62);
 }
 :root[data-theme="light"] .call-device-sep { background: rgba(0, 0, 0, 0.1); }
-:root[data-theme="light"] .call-device-ico { background: rgba(0, 0, 0, 0.06); color: rgba(10, 12, 22, 0.86); }
+:root[data-theme="light"] .call-device-ico { color: rgba(10, 12, 22, 0.7); }
+:root[data-theme="light"] .call-device-row.is-selected .call-device-ico { color: #0a84ff; }
 :root[data-theme="light"] .call-device-row:hover,
 :root[data-theme="light"] .call-device-row:focus-visible { background: rgba(0, 0, 0, 0.05); }
 

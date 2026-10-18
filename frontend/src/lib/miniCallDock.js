@@ -11,12 +11,20 @@
  *  - Anchors keep clear of "keep-out" rects (bottom user/voice panel,
  *    composer) so the card never parks over them.
  *  - Anchor id is persisted; the pixel position is recomputed on resize.
+ *  - Safe insets (2.11.3): the top edge sits below the Electron custom title
+ *    bar (and the macOS traffic lights) plus a margin, so a top anchor never
+ *    slides under the bar. Every resting position is clamped into the safe
+ *    box on load and on resize.
  */
 
 export const DOCK_STORAGE_KEY = "descall:mini-call-dock";
 export const DOCK_MARGIN = 16;
 export const DECELERATION = 0.998;
 export const RUBBER_C = 0.55;
+/** Electron custom title bar height (titlebar.css --electron-titlebar-h). */
+export const ELECTRON_TITLEBAR_H = 40;
+/** macOS traffic lights (titleBarStyle "hidden"): bottom edge of the buttons incl. their hit slop. */
+export const MAC_TRAFFIC_LIGHTS_BOTTOM = 32;
 export const ANCHORS = ["top-left", "top-right", "mid-left", "mid-right", "bottom-left", "bottom-right"];
 
 /** Distance travelled by a flick before coming to rest (px), v in px/ms. */
@@ -38,6 +46,49 @@ export function bandAxis(raw, min, max, dim) {
   return raw;
 }
 
+/**
+ * Safe area for the card inside the window.
+ * @param {{electron?:boolean, platform?:string, titlebarH?:number, margin?:number, bottom?:number}} env
+ *   titlebarH: measured bottom of the custom title bar (falls back to 40 on Electron).
+ *   bottom: extra bottom inset (Windows taskbar overlap, --electron-bottom-inset).
+ * @returns {{top:number,right:number,bottom:number,left:number}}
+ */
+export function dockInsets(env = {}, m = DOCK_MARGIN) {
+  const margin = Number.isFinite(env.margin) ? env.margin : m;
+  let chrome = 0;
+  if (env.electron) {
+    const measured = Number(env.titlebarH);
+    chrome = Number.isFinite(measured) && measured > 0 ? measured : ELECTRON_TITLEBAR_H;
+    if (env.platform === "darwin") chrome = Math.max(chrome, MAC_TRAFFIC_LIGHTS_BOTTOM);
+  }
+  const bottom = Math.max(0, Number(env.bottom) || 0);
+  return { top: Math.ceil(chrome) + margin, right: margin, bottom: bottom + margin, left: margin };
+}
+
+function normInsets(insets, m) {
+  if (typeof insets === "number") return { top: insets, right: insets, bottom: insets, left: insets };
+  return {
+    top: insets?.top ?? m,
+    right: insets?.right ?? m,
+    bottom: insets?.bottom ?? m,
+    left: insets?.left ?? m,
+  };
+}
+
+/**
+ * Clamp a resting position so the whole card stays inside the safe box.
+ * When the window is too small for the card, the top/left edge wins so the
+ * avatar, name and status stay visible below the title bar.
+ */
+export function clampDockPosition(pos, vp, card, insets = DOCK_MARGIN) {
+  const i = normInsets(insets, DOCK_MARGIN);
+  const maxX = vp.w - card.w - i.right;
+  const maxY = vp.h - card.h - i.bottom;
+  const x = Math.max(i.left, Math.min(Number.isFinite(pos?.x) ? pos.x : i.left, maxX));
+  const y = Math.max(i.top, Math.min(Number.isFinite(pos?.y) ? pos.y : i.top, maxY));
+  return { x, y };
+}
+
 function overlaps(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -48,31 +99,32 @@ function overlaps(a, b) {
  * @param {{w:number,h:number}} vp  @param {{w:number,h:number}} card
  * @param {Array<{x:number,y:number,w:number,h:number}>} avoid
  */
-export function anchorPoint(anchor, vp, card, avoid = [], m = DOCK_MARGIN) {
-  const left = m;
-  const right = Math.max(m, vp.w - card.w - m);
-  const top = m;
-  const bottom = Math.max(m, vp.h - card.h - m);
-  const midY = Math.max(m, (vp.h - card.h) / 2);
+export function anchorPoint(anchor, vp, card, avoid = [], insets = DOCK_MARGIN) {
+  const i = normInsets(insets, DOCK_MARGIN);
+  const left = i.left;
+  const right = Math.max(i.left, vp.w - card.w - i.right);
+  const top = i.top;
+  const bottom = Math.max(top, vp.h - card.h - i.bottom);
+  const midY = Math.max(top, top + (vp.h - i.bottom - top - card.h) / 2);
   const x = anchor.endsWith("left") ? left : right;
   let y = anchor.startsWith("top") ? top : anchor.startsWith("mid") ? midY : bottom;
   // Push up out of keep-out rects (panel / composer sit at the bottom).
-  for (let i = 0; i < 4; i += 1) {
+  for (let k = 0; k < 4; k += 1) {
     const hit = avoid.find((r) => overlaps({ x, y, w: card.w, h: card.h }, r));
     if (!hit) break;
-    y = Math.max(top, hit.y - card.h - m);
+    y = Math.max(top, hit.y - card.h - DOCK_MARGIN);
   }
-  return { x, y };
+  return clampDockPosition({ x, y }, vp, card, i);
 }
 
 /** Nearest anchor to the projected resting point of the card's center. */
-export function nearestAnchor(pos, vel, vp, card, avoid = []) {
+export function nearestAnchor(pos, vel, vp, card, avoid = [], insets = DOCK_MARGIN) {
   const px = pos.x + project(vel.x) + card.w / 2;
   const py = pos.y + project(vel.y) + card.h / 2;
   let best = ANCHORS[ANCHORS.length - 1];
   let bestD = Infinity;
   for (const a of ANCHORS) {
-    const p = anchorPoint(a, vp, card, avoid);
+    const p = anchorPoint(a, vp, card, avoid, insets);
     const d = (p.x + card.w / 2 - px) ** 2 + (p.y + card.h / 2 - py) ** 2;
     if (d < bestD) { bestD = d; best = a; }
   }
