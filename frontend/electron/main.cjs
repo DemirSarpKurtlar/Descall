@@ -14,7 +14,7 @@ const {
 } = require('./updateDeferral.cjs');
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
-const { buildElectronCsp } = require('./cspPolicy.cjs');
+const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
 const {
   AUTOSTART_ARGS,
   decideColdStart,
@@ -26,7 +26,10 @@ const path = require('path');
 const fs = require('fs');
 
 const smokeLaunch = process.env.DESCALL_SMOKE === '1' || process.argv.includes('--descall-smoke');
-if (smokeLaunch) {
+// Packaged boot smoke (2.11.11, electron/bootSmoke.cjs): real main window, exit 0 only
+// when the app painted, the splash is gone and no inline script was blocked by the CSP.
+const smokeBoot = !smokeLaunch && (process.env.DESCALL_SMOKE === 'boot' || process.argv.includes('--descall-smoke-boot'));
+if (smokeLaunch || smokeBoot) {
   app.commandLine.appendSwitch('no-sandbox');
   app.commandLine.appendSwitch('disable-gpu');
   app.disableHardwareAcceleration();
@@ -48,6 +51,7 @@ const {
   raceWithTimeout,
   PAINT_NUDGE_MS,
   paintWatchdogStep,
+  SPLASH_RESCUE_MS,
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 
@@ -85,7 +89,9 @@ let cachedAppCsp = null;
 function appDocumentCsp(root) {
   if (cachedAppCsp) return cachedAppCsp;
   try {
-    cachedAppCsp = buildElectronCsp(fs.readFileSync(path.join(root, 'index.html'), 'utf8'));
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    cachedAppCsp = buildElectronCsp(html);
+    log.info(`[csp] app document policy: ${inlineScriptHashes(html).length} inline script hashes${/\r/.test(html) ? ' (index.html has CR line endings, hashed as LF)' : ''}`);
   } catch (err) {
     log.warn('[csp] could not hash index.html, using the fallback policy:', err?.message || err);
     cachedAppCsp = buildElectronCsp(null);
@@ -101,6 +107,9 @@ function registerDescallProtocol() {
       const url = new URL(request.url);
       let rel = decodeURIComponent(url.pathname || '/index.html');
       if (!rel || rel === '/') rel = '/index.html';
+      // SPA route (descall://app/direct …): serve the app document. A reload on a route
+      // used to fetch dist/direct as a file and fail with -9 ERR_UNEXPECTED (2.11.11).
+      if (!path.extname(rel)) rel = '/index.html';
       const filePath = path.normalize(path.join(root, rel));
       const rootNorm = path.normalize(root + path.sep);
       if (!filePath.startsWith(rootNorm) && filePath !== path.normalize(root)) {
@@ -154,7 +163,11 @@ ipcMain.on('app:boot-state', (event, payload) => {
   if (!report) return;
   const since = rendererBoot.loadStartedAt ? Date.now() - rendererBoot.loadStartedAt : null;
   log.info(`[boot] renderer ${report.phase} (page ${report.ms ?? '?'}ms, load+${since ?? '?'}ms)`);
-  if (report.phase === 'painted') {
+  if (report.phase === 'app-mounted') smokeAppMounted = true;
+  if (report.phase === 'inline-missing') {
+    log.error('[boot] index.html inline boot scripts did not run (CSP hash mismatch?); React removes the splash itself');
+  }
+  if (report.phase === 'painted' || report.phase === 'forced-dismiss') {
     rendererBoot.painted = true;
     // The splash just went away: make sure Windows presents the new frame,
     // even if the window was minimized/occluded while it changed.
@@ -919,6 +932,43 @@ function openMainApp() {
   updateSplash({ status: SPLASH_TR.starting, detail: '', busy: true, showProgress: false });
   createMainWindow();
   createTray();
+  if (smokeBoot) runBootSmoke();
+}
+
+let smokeCspInlineBlocked = 0;
+let smokeAppMounted = false;
+function runBootSmoke() {
+  const { BOOT_SMOKE_POLL_MS, BOOT_SMOKE_PROBE, evaluateBootSmoke, isInlineCspViolation } = require('./bootSmoke.cjs');
+  const started = Date.now();
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) { console.error('[smoke-boot] FAIL no main window'); app.exit(21); return; }
+  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
+    const message = String(e?.message ?? legacyMessage ?? '');
+    if (isInlineCspViolation(message)) {
+      smokeCspInlineBlocked += 1;
+      console.error(`[smoke-boot] CSP blocked: ${message.slice(0, 300)}`);
+    }
+  });
+  let finished = false;
+  const tick = async () => {
+    if (finished) return;
+    let sample = null;
+    try { if (!win.isDestroyed()) sample = await win.webContents.executeJavaScript(BOOT_SMOKE_PROBE, true); } catch (_) { sample = null; }
+    const verdict = evaluateBootSmoke({ sample, cspInlineBlocked: smokeCspInlineBlocked, appMounted: smokeAppMounted, elapsedMs: Date.now() - started });
+    if (!verdict.done) { setTimeout(tick, BOOT_SMOKE_POLL_MS); return; }
+    finished = true;
+    const result = { ok: verdict.ok, reason: verdict.reason, elapsedMs: Date.now() - started, version: app.getVersion(), sample };
+    const line = `[smoke-boot] ${verdict.ok ? 'OK' : 'FAIL'} ${JSON.stringify(result)}`;
+    if (verdict.ok) { console.log(line); log.info(line); } else { console.error(line); log.error(line); }
+    try { fs.writeFileSync(path.join(app.getPath('userData'), 'smoke-boot.json'), JSON.stringify(result, null, 2)); } catch (_) { /* ignore */ }
+    const shot = process.env.DESCALL_SMOKE_SHOT;
+    if (shot && !win.isDestroyed()) {
+      try { const img = await win.webContents.capturePage(); fs.writeFileSync(shot, img.toPNG()); } catch (err) { console.error('[smoke-boot] screenshot failed', err?.message || err); }
+    }
+    isQuitting = true;
+    app.exit(verdict.ok ? 0 : 21);
+  };
+  setTimeout(tick, BOOT_SMOKE_POLL_MS);
 }
 
 /**
@@ -927,7 +977,7 @@ function openMainApp() {
  * If already latest / offline / timeout → open main.
  */
 async function runPrelaunchUpdateGate() {
-  if (!app.isPackaged) {
+  if (!app.isPackaged || smokeBoot) {
     openMainApp();
     return;
   }
@@ -1370,6 +1420,21 @@ function createMainWindow() {
       rootText: r ? (r.innerText || '').replace(/\\s+/g, ' ').trim().length : -1, rootH: r ? Math.round(r.getBoundingClientRect().height) : -1,
       vis: document.visibilityState, holds: window.__descallBootHolds, path: location.pathname, ready: document.readyState });
   })()`, true).catch((err) => `snapshot failed: ${err?.message || err}`);
+  // The app painted under a splash nothing will remove (index.html's inline boot
+  // scripts did not run, 2.11.11): remove it from main. executeJavaScript is not
+  // bound by the page's script-src, so this works whatever the CSP did.
+  const rescueStuckSplash = () => win.webContents.executeJavaScript(`(() => {
+    const s = document.querySelectorAll('#boot-splash');
+    if (!s.length) return '';
+    if (window.__descallBootHolds > 0) return '';
+    const r = document.getElementById('root');
+    const text = r ? (r.innerText || '').replace(/\\s+/g, ' ').trim().length : 0;
+    const h = r ? r.getBoundingClientRect().height : 0;
+    if (!r || !r.firstElementChild || h < 80 || !text) return '';
+    for (const n of s) n.remove();
+    return JSON.stringify({ removed: s.length, inline: typeof window.__descallDismissBootSplash === 'function', path: location.pathname });
+  })()`, true).catch(() => '');
+  let rescueBusy = false;
   win.webContents.on('did-start-loading', () => {
     rendererBoot = { painted: false, loadStartedAt: Date.now() };
     paintNudged = false;
@@ -1377,6 +1442,18 @@ function createMainWindow() {
     paintTimer = setInterval(async () => {
       if (win.isDestroyed()) { stopPaintWatchdog(); return; }
       const elapsedMs = Date.now() - rendererBoot.loadStartedAt;
+      if (!rendererBoot.painted && elapsedMs >= SPLASH_RESCUE_MS && !rescueBusy) {
+        rescueBusy = true;
+        const rescued = await rescueStuckSplash();
+        rescueBusy = false;
+        if (rescued) {
+          log.error(`[boot] removed a splash stuck over the painted app after ${elapsedMs}ms: ${rescued}`);
+          rendererBoot.painted = true;
+          try { win.webContents.invalidate(); } catch (_) { /* ignore */ }
+          stopPaintWatchdog();
+          return;
+        }
+      }
       const step = paintWatchdogStep({ painted: rendererBoot.painted, elapsedMs, reloads: paintReloads, asked: paintAsked });
       if (step === 'none') { if (rendererBoot.painted) stopPaintWatchdog(); return; }
       if (step === 'nudge') {
@@ -1431,7 +1508,9 @@ function createMainWindow() {
     if (!isWarn && !message.startsWith('[boot]')) return;
     if (rendererBoot.painted && !isWarn) return;
     if (rendererBoot.painted && Date.now() - rendererBoot.loadStartedAt > 60000) return; // boot window only
-    log.info(`[renderer:${level}] ${message.slice(0, 400)}`);
+    // CSP reports carry the hash Chromium wanted at the very end: keep it.
+    const max = /Content Security Policy/i.test(message) ? 2400 : 400;
+    log.info(`[renderer:${level}] ${message.slice(0, max)}`);
   });
   win.webContents.on('render-process-gone', (_e, details) => {
     const reason = details?.reason;
@@ -1637,7 +1716,7 @@ app.whenReady().then(async () => {
   }
 
   registerDescallProtocol();
-  ensureAutostartLoginItem();
+  if (!smokeBoot) ensureAutostartLoginItem();
 
   try {
     bindSessionSetupDownloadCleanup({ session: session.defaultSession, app, log });

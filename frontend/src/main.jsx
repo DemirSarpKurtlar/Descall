@@ -1,4 +1,5 @@
 import React, { Suspense, lazy } from "react";
+import { removeBootSplashNow, rootHasPainted } from "./lib/bootSplashDirect.js";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -313,9 +314,14 @@ boot().catch((err) => {
 });
 
 // Absolute failsafe, splash must never exceed ~2s even if React boot stalls.
+// Without index.html's inline boot scripts (CSP) remove it here once the app painted.
 window.setTimeout(() => {
   try {
-    window.__descallDismissBootSplash?.({ minMs: 0, maxMs: 0 });
+    if (typeof window.__descallDismissBootSplash === "function") {
+      window.__descallDismissBootSplash({ minMs: 0, maxMs: 0 });
+    } else if (rootHasPainted()) {
+      removeBootSplashNow();
+    }
   } catch {
     /* ignore */
   }
