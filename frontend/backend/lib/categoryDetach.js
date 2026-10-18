@@ -63,18 +63,19 @@ async function applyDetachPlan(plan) {
  * overwrites onto it, so editing one permission does not silently drop the category's
  * rules (e.g. its privacy). Discord does the same when you edit a synced channel.
  */
+/** Returns the copied rows (truthy) or null when the channel was not synced. */
 async function materializeIfSynced(channel) {
-  if (!channel?.id || !channel.parent_id) return false;
+  if (!channel?.id || !channel.parent_id) return null;
   const { data: own, error } = await supabase
     .from("server_channel_overrides")
     .select("id")
     .eq("channel_id", channel.id)
     .limit(1);
   if (error) throw error;
-  if ((own || []).length) return false;
+  if ((own || []).length) return null;
   const plan = await planDetachFromCategory(channel.server_id, channel.parent_id, [channel.id]);
   await applyDetachPlan(plan);
-  return plan.length > 0;
+  return plan.length ? plan[0].rows : null;
 }
 
 module.exports = { planDetachFromCategory, applyDetachPlan, materializeIfSynced };
