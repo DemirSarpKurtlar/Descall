@@ -1,0 +1,416 @@
+/* Bottom-left user + voice panel (2.10.115, web + Electron desktop only).
+   Spans the icon rail + list columns in a second grid row and replaces the
+   lone avatar at the rail bottom. Heavy frosted, never see-through: strong
+   blur over a high-opacity tinted base, opaque under Reduce Transparency. */
+
+.app-root.has-uvp {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.app-root.has-uvp > .app-main-slot {
+  grid-row: 1 / -1;
+}
+.app-root.has-uvp > .mobile-drawer-backdrop,
+.app-root.has-uvp > .user-settings-shell,
+.app-root.has-uvp > .feedback-overlay {
+  grid-row: 1 / -1;
+}
+.app-root.has-uvp .nav-rail-bottom {
+  display: none;
+}
+
+.uvp {
+  --uvp-base: color-mix(in srgb, var(--gd-aurora-base-1, #1c1d48) 84%, rgba(14, 15, 38, 0.96));
+  --uvp-ink: var(--g-t1, #f4f3fb);
+  --uvp-ink-2: var(--g-t2, rgba(235, 234, 250, 0.68));
+  --uvp-ink-3: var(--g-t3, rgba(225, 224, 245, 0.48));
+  --uvp-hair: rgba(255, 255, 255, 0.09);
+  --uvp-btn: rgba(255, 255, 255, 0.075);
+  --uvp-btn-hover: rgba(255, 255, 255, 0.12);
+  --uvp-btn-press: rgba(255, 255, 255, 0.16);
+  --uvp-green: #34d27b;
+  --uvp-amber: #f5b638;
+  --uvp-red: #ff6b61;
+  grid-column: 1 / 3;
+  grid-row: 2;
+  min-width: 0;
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 22px;
+  color: var(--uvp-ink);
+  font-family: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 100%),
+    linear-gradient(var(--uvp-base), var(--uvp-base));
+  -webkit-backdrop-filter: blur(48px) saturate(170%);
+  backdrop-filter: blur(48px) saturate(170%);
+  border: 1px solid var(--uvp-hair);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 14px 36px rgba(4, 5, 22, 0.38),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  -webkit-font-smoothing: antialiased;
+}
+html[data-theme="light"] .uvp {
+  --uvp-base: rgba(246, 245, 252, 0.92);
+  --uvp-ink: #17172a;
+  --uvp-ink-2: rgba(23, 23, 42, 0.66);
+  --uvp-ink-3: rgba(23, 23, 42, 0.45);
+  --uvp-hair: rgba(20, 20, 50, 0.1);
+  --uvp-btn: rgba(20, 20, 60, 0.06);
+  --uvp-btn-hover: rgba(20, 20, 60, 0.1);
+  --uvp-btn-press: rgba(20, 20, 60, 0.15);
+  --uvp-green: #18a659;
+  --uvp-red: #e0392f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 12px 30px rgba(30, 30, 80, 0.16);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .uvp { background: var(--frost-solid, rgb(28, 28, 40)); }
+}
+html.a11y-solid .uvp,
+html.gd-lite .uvp {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--frost-solid, rgb(28, 28, 40));
+}
+@media (prefers-reduced-transparency: reduce) {
+  .uvp {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--frost-solid, rgb(28, 28, 40));
+  }
+}
+
+.uvp button {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.uvp button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--gd-brand, #7b6dff) 80%, white);
+  outline-offset: 2px;
+}
+
+/* ── Idle ─────────────────────────────────────────── */
+.uvp-idle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 4px 6px;
+  padding: 4px 6px 8px 8px;
+  border-bottom: 1px solid var(--uvp-hair);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: -0.08px;
+  color: var(--uvp-ink-3);
+}
+.uvp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+  flex: none;
+}
+
+/* ── Connected / connecting ───────────────────────── */
+.uvp-voice {
+  overflow: hidden;
+}
+.uvp-voice-inner {
+  margin-bottom: 6px;
+  padding: 10px 10px 10px 12px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+html[data-theme="light"] .uvp-voice-inner {
+  background: rgba(20, 20, 60, 0.04);
+  border-color: rgba(20, 20, 60, 0.07);
+}
+.uvp-vtop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.uvp-signal-wrap {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.uvp-signal {
+  width: 20px;
+  height: 20px;
+  fill: var(--uvp-green);
+}
+.uvp-signal.tone-warn { fill: var(--uvp-amber); }
+.uvp-signal.tone-bad { fill: var(--uvp-red); }
+.uvp-signal.tone-bad rect:nth-child(n + 2),
+.uvp-signal.tone-warn rect:nth-child(3) { opacity: 0.28; }
+.uvp-signal.is-connecting rect {
+  animation: uvp-pulse 1.1s ease-in-out infinite;
+  opacity: 1;
+}
+.uvp-signal.is-connecting rect:nth-child(2) { animation-delay: 0.15s; }
+.uvp-signal.is-connecting rect:nth-child(3) { animation-delay: 0.3s; }
+@keyframes uvp-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+.uvp-vtext {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.uvp-status {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 650;
+  letter-spacing: -0.15px;
+  color: var(--uvp-green);
+}
+.uvp-status.is-connecting { color: var(--uvp-amber); }
+.uvp-room {
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 16px;
+  color: var(--uvp-ink-2);
+  white-space: nowrap;
+}
+.uvp-room-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.uvp-vtext:hover .uvp-room-name { text-decoration: underline; text-underline-offset: 2px; }
+.uvp-ping { flex: none; color: var(--uvp-ink-3); white-space: pre; }
+
+.uvp-hang {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  background: rgba(255, 69, 58, 0.16);
+  color: var(--uvp-red) !important;
+  cursor: pointer;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+.uvp-hang:hover { background: rgba(255, 69, 58, 0.26); }
+
+.uvp-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.uvp-pill {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 8px;
+  border-radius: 12px;
+  border: 1px solid var(--uvp-hair);
+  background: var(--uvp-btn);
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: -0.08px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s ease, transform 0.12s ease, color 0.12s ease;
+}
+.uvp-pill > span { overflow: hidden; text-overflow: ellipsis; }
+.uvp-pill svg { flex: none; }
+.uvp-pill:hover:not(:disabled) { background: var(--uvp-btn-hover); }
+.uvp-pill:disabled { opacity: 0.45; cursor: default; }
+.uvp-pill.is-on {
+  background: color-mix(in srgb, var(--uvp-green) 18%, transparent);
+  border-color: color-mix(in srgb, var(--uvp-green) 36%, transparent);
+}
+.uvp-pill.is-off svg { color: var(--uvp-red); }
+
+/* ── User row ─────────────────────────────────────── */
+.uvp-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 2px 2px 2px 4px;
+}
+.uvp-avatar {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  overflow: visible;
+}
+.uvp-avatar .ui-avatar { margin: 0; }
+.uvp-status-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2.5px solid var(--uvp-base);
+  background: var(--success, #3ba55d);
+  z-index: 2;
+}
+.uvp-status-dot.status-idle { background: var(--warning, #f5b10a); }
+.uvp-status-dot.status-dnd { background: var(--danger, #ed4245); }
+.uvp-status-dot.status-invisible,
+.uvp-status-dot.status-offline { background: var(--text-muted, #80848e); }
+
+.uvp-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.uvp-name b {
+  font-size: 14.5px;
+  line-height: 18px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.uvp-name small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--uvp-ink-2);
+  white-space: nowrap;
+}
+.uvp-name small svg { flex: none; color: color-mix(in srgb, var(--gd-brand, #9f9bff) 70%, white); }
+.uvp-name small span { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+.uvp-split {
+  display: flex;
+  align-items: stretch;
+  flex: none;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid var(--uvp-hair);
+  background: var(--uvp-btn);
+  overflow: hidden;
+  transition: background-color 0.12s ease;
+}
+.uvp-split.is-open { background: var(--uvp-btn-press); }
+.uvp-split.is-off {
+  background: rgba(255, 69, 58, 0.16);
+  border-color: rgba(255, 69, 58, 0.3);
+  color: var(--uvp-red);
+}
+.uvp-split-main,
+.uvp-split-chev {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+.uvp-split-main { width: 34px; }
+.uvp-split-chev {
+  width: 18px;
+  border-left: 1px solid var(--uvp-hair) !important;
+  color: var(--uvp-ink-2) !important;
+}
+.uvp-split-chev svg { transition: transform 0.2s ease; }
+.uvp-split.is-open .uvp-split-chev svg { transform: rotate(180deg); }
+.uvp-split-main:hover,
+.uvp-split-chev:hover { background: var(--uvp-btn-hover); }
+.uvp-split.is-off .uvp-split-main { color: var(--uvp-red) !important; }
+
+.uvp-gear {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+.uvp-gear:hover { background: var(--uvp-btn-hover); }
+.uvp-gear svg { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.uvp-gear:hover svg { transform: rotate(30deg); }
+
+/* Press: instant scale + brighten (apple-design.md §1). */
+.uvp-pill:active:not(:disabled),
+.uvp-hang:active,
+.uvp-gear:active,
+.uvp-avatar:active,
+.uvp-split-main:active,
+.uvp-split-chev:active {
+  transform: scale(0.96);
+  transition-duration: 0s;
+}
+.uvp-pill:active:not(:disabled),
+.uvp-split-main:active,
+.uvp-split-chev:active,
+.uvp-gear:active { background: var(--uvp-btn-press); }
+
+/* ── Narrow window (< 1000px) ─────────────────────── */
+.uvp.is-narrow .uvp-user { gap: 6px; }
+.uvp.is-narrow .uvp-avatar { width: 40px; height: 40px; }
+.uvp.is-narrow .uvp-split-main { width: 28px; }
+.uvp.is-narrow .uvp-split-chev { width: 15px; }
+.uvp.is-narrow .uvp-gear { width: 28px; }
+.uvp.is-narrow .uvp-name small { font-size: 11.5px; }
+.uvp.is-narrow .uvp-btns { gap: 6px; }
+.uvp.is-narrow .uvp-voice-inner { padding: 9px 8px 8px 10px; }
+.uvp.is-narrow .uvp-pill { gap: 4px; padding: 0 4px; font-size: 12px; letter-spacing: -0.15px; }
+.uvp.is-narrow .uvp-pill svg { width: 15px; height: 15px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uvp *,
+  .uvp *::before { transition: none !important; animation: none !important; }
+  .uvp-pill:active:not(:disabled),
+  .uvp-hang:active,
+  .uvp-gear:active,
+  .uvp-avatar:active,
+  .uvp-split-main:active,
+  .uvp-split-chev:active { transform: none; }
+}
+
+/* Classic (non-glass) desktop layout, e.g. web under 960px: the columns are
+   flush with the window, so the panel docks flush too (top corners only). */
+html:not(.glass-desktop) .uvp {
+  border-radius: 18px 18px 0 0;
+  border-bottom: 0;
+}

@@ -4784,6 +4784,8 @@ export default function App() {
           onReorderServers={handleReorderServers}
           onRefreshServers={handleRefreshServers}
           serverVoice={serverVoice}
+          call={call}
+          groupCall={groupCall}
           onlineUsers={onlineUsers}
           myStatus={myStatus}
           onStatusChange={handleStatusChange}

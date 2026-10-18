@@ -5,6 +5,9 @@ import NavigationRail from "./NavigationRail";
 import ServerSidebar from "./ServerSidebar";
 import ServersSidebar from "../servers/ServersSidebar";
 import ChatPanel from "./ChatPanel";
+import UserVoicePanel from "./UserVoicePanel";
+import { shouldShowUserVoicePanel } from "../../lib/userVoicePanel";
+import { isNativeMobileApp } from "../../lib/userVoicePanelEnv";
 import ErrorBoundary from "../ErrorBoundary";
 import { preloadWhenIdle } from "../../lib/preloadIdle";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
@@ -136,6 +139,8 @@ export default function AppLayout({
   onJoinServer,
   onServerUpdated,
   serverVoice = null,
+  call = null,
+  groupCall = null,
 }) {
   const t = useT();
   const publicFeatures = usePublicFeatures();
@@ -152,6 +157,7 @@ export default function AppLayout({
   const [localActiveView, setLocalActiveView] = useState("chat");
   const [localUserPanelOpen, setLocalUserPanelOpen] = useState(false);
   const activeView = controlledActiveView ?? localActiveView;
+  const showUserVoicePanel = shouldShowUserVoicePanel({ isMobile, glassShell, native: isNativeMobileApp(), view: activeView });
   const userPanelOpen = controlledUserPanelOpen ?? localUserPanelOpen;
   const hideDesktopPlaySidebar = !isMobile && activeView === "play";
   const setActiveView = useCallback((view) => {
@@ -465,7 +471,7 @@ export default function AppLayout({
   return (
     <GlassShellContext.Provider value={glassShellValue}>
     <div
-      className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}`}
+      className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}${showUserVoicePanel ? " has-uvp" : ""}`}
       data-view={activeView}
     >
       <div className="g-theme-stage" aria-hidden="true">
@@ -636,6 +642,26 @@ export default function AppLayout({
             onOpenGroupFromCalls={handleOpenGroupFromCalls}
           />
         )}
+        {showUserVoicePanel ? (
+          <UserVoicePanel
+            me={me}
+            myStatus={myStatus}
+            currentActivity={activity.currentActivity}
+            call={call}
+            groupCall={groupCall}
+            serverVoice={serverVoice}
+            groups={groups}
+            servers={servers}
+            socket={socket}
+            onOpenSettings={openUserPanel}
+            onOpenDm={handleOpenChatFromCalls}
+            onOpenGroup={handleOpenGroupFromCalls}
+            onOpenServer={(server) => {
+              setActiveView("servers");
+              onServerSelect?.(server);
+            }}
+          />
+        ) : null}
       </div>
 
       <div ref={mainSlotRef} className="app-main-slot">
