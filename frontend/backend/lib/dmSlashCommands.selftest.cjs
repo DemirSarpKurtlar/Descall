@@ -120,7 +120,7 @@ async function run() {
   assert.equal(r.dmText, null);
   assert.equal(r.dmPoll.question, "Pizza mı?");
   assert.deepEqual(r.dmPoll.options.map((o) => o.text), ["Evet", "Hayır"]);
-  assert.equal(slash.formatPollContent("Pizza mı? | Evet | Hayır"), "📊 Anket: Pizza mı?\n1. Evet\n2. Hayır");
+  assert.equal(slash.formatPollContent("Pizza mı? | Evet | Hayır"), "📊 Anket: Pizza mı?\n1. Evet\n2. Hayır\nOy vermek için Descall'ı güncelle");
   assert.equal(slash.formatPollContent("only | one"), null);
 
   // Handler errors surface as dm:error, not a crash.

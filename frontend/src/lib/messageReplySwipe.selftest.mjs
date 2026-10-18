@@ -300,9 +300,10 @@ function touchEvent(type, clientX, clientY, extra = {}) {
   const list = read("../components/chat/MessageList.jsx");
   const hook = read("../hooks/useEdgeSwipeBack.js");
   assert.match(list, /data-no-swipe-back=""/);
-  assert.match(list, /getDirection: \(\) => \(replyLive\.current\.isOwn \? "left" : "right"\)/);
+  // 2.12.0: every message sits on the left (Discord-style), so reply swipe is always to the right.
+  assert.match(list, /getDirection: \(\) => "right"/);
   assert.match(list, /drag=\{glass \|\| mediaOnly \? false : "x"\}/);
-  assert.match(list, /isOwn \? \{ left: -72, right: 0 \} : \{ left: 0, right: 72 \}/);
+  assert.match(list, /dragConstraints=\{\{ left: 0, right: 72 \}\}/);
   assert.match(list, /cancelSwipeBackIfPending/);
   assert.match(hook, /machine\.state\.phase !== PHASE\.PENDING/);
   assert.match(hook, /export function swipeBackEdgeBand/);

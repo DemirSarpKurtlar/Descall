@@ -78,6 +78,7 @@ function parsePollArgs(args) {
 function pollFallbackText(poll) {
   const lines = [`📊 Anket: ${poll.question}`];
   (poll.options || []).forEach((o, i) => lines.push(`${i + 1}. ${o.emoji ? `${o.emoji} ` : ""}${o.text}`));
+  lines.push("Oy vermek için Descall'ı güncelle");
   return lines.join("\n");
 }
 

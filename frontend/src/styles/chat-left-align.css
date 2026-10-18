@@ -1,0 +1,35 @@
+/* 2.12.0: Discord-style chat. Every message, mine included, sits on the left
+   under its author header. Own bubbles keep their brand tint (.own) but no
+   longer move to the right edge. */
+.message-bubble.own.is-left {
+  margin-left: 60px;
+  margin-right: 0;
+  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 4px;
+}
+.message-bubble.own.is-left.compact {
+  margin-left: 60px;
+  margin-right: 0;
+}
+html.glass-ui .app-root.g-shell .message-bubble.own.is-left {
+  margin-left: 46px !important;
+  margin-right: 0;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 18px;
+  border-bottom-right-radius: 18px;
+  border-bottom-left-radius: 18px;
+}
+html.glass-ui .app-root.g-shell .message-bubble.own.is-left.compact {
+  border-top-left-radius: 18px;
+  border-bottom-left-radius: 6px;
+}
+html.glass-desktop .message-bubble.own.is-left {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 18px;
+}
+.message-swipe-wrap.is-left {
+  justify-content: flex-start;
+}
+html.glass-ui .app-root.g-shell .message-group.is-left .message-content-wrapper {
+  align-items: flex-start;
+}

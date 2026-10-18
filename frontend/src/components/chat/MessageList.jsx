@@ -20,6 +20,14 @@ import { casinoHiddenOnThisDevice, isCasinoChatMessage } from "../../lib/casinoC
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import { InviteLinkEmbedList } from "./InviteLinkEmbed";
 import SlashCommandEmbed from "./SlashCommandEmbed";
+import PollCard from "../polls/PollCard";
+import LegacyPollCard, { isLegacyPollText } from "../polls/LegacyPollCard";
+import AppCard from "../polls/AppCard";
+import VotersSheet from "../polls/VotersSheet";
+import PollCreateSheet from "../polls/PollCreateSheet";
+import { useCompact } from "../polls/dsxShared";
+import { bindPollSocket, editPollNow } from "../../lib/pollStore";
+import { BarChart3 } from "lucide-react";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";
@@ -164,6 +172,29 @@ export default function MessageList({
   const [reportTarget, setReportTarget] = useState(null);
   const [hoverUser, setHoverUser] = useState(null);
   const [hoverPos, setHoverPos] = useState(null);
+  // 2.12.0 polls: one voters sheet / edit sheet for the whole list.
+  const [votersPoll, setVotersPoll] = useState(null);
+  const [editPoll, setEditPoll] = useState(null);
+  const compactCards = useCompact(720);
+  useEffect(() => {
+    if (socket) bindPollSocket(socket);
+  }, [socket]);
+  const appActions = useMemo(
+    () => ({
+      startDm: (u) => u?.id && onStartDm?.(u),
+      openProfile: (u) => u?.id && setProfileTarget(u),
+      openSettings: () => (me?.id || currentUser?.id) && setProfileTarget(me || currentUser),
+      runCommand: activeChannel?.id && socket
+        ? (text) => socket.emit("server:channel:message", {
+            serverId: activeServer?.id || activeChannel?.serverId,
+            channelId: activeChannel.id,
+            content: text,
+            tempId: `cmd-${Date.now()}`,
+          })
+        : null,
+    }),
+    [onStartDm, activeChannel?.id, activeChannel?.serverId, activeServer?.id, socket, me, currentUser]
+  );
 
   const conversationType = activeChannel?.id
     ? "server"
@@ -491,7 +522,7 @@ export default function MessageList({
         return (
           <div
             key={group.messages?.[0]?.id || group.id || `msg-group-${groupIndex}`}
-            className={`message-group ${isOwn ? "own" : ""}`}
+            className={`message-group is-left ${isOwn ? "is-mine" : ""}`}
           >
             {!group.isCompact && (
               <div className="message-header">
@@ -532,7 +563,7 @@ export default function MessageList({
                   >
                     <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
                     {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
-                      <span className="msg-bot-badge" title="App">APP</span>
+                      <span className="msg-bot-badge" title="Descall Apps">UYGULAMA</span>
                     ) : null}
                     <BadgeIcon user={avatarUser} />
                     <AdminBadge user={avatarUser} variant="inline" />
@@ -568,6 +599,10 @@ export default function MessageList({
                   editingMessageId={editingMessageId}
                   onReport={setReportTarget}
                   highlight={trimmedSearch}
+                  onOpenPollVoters={setVotersPoll}
+                  onEditPoll={setEditPoll}
+                  appActions={appActions}
+                  compactCards={compactCards}
                   chatBubbleKey={
                     isOwn
                       ? me?.equippedChatBubble?.effect_key || avatarUser?.equippedChatBubble?.effect_key || null
@@ -590,6 +625,25 @@ export default function MessageList({
       {hoverUser && hoverPos && (
         <UserHoverCard user={hoverUser} anchor={hoverPos} />
       )}
+
+      <AnimatePresence>
+        {votersPoll ? (
+          <VotersSheet key="voters" poll={votersPoll} currentUserId={currentUser?.id || me?.id} onClose={() => setVotersPoll(null)} />
+        ) : null}
+        {editPoll ? (
+          <PollCreateSheet
+            key="edit"
+            compact={compactCards}
+            initial={editPoll}
+            onClose={() => setEditPoll(null)}
+            onSubmit={async (poll) => {
+              const res = await editPollNow(editPoll, poll);
+              if (res?.ok) setEditPoll(null);
+              return res;
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <UserProfileModal
         open={!!profileTarget}
@@ -633,6 +687,10 @@ function MessageBubble({
   onStartEdit,
   editingMessageId = null,
   onReport,
+  onOpenPollVoters,
+  onEditPoll,
+  appActions,
+  compactCards = false,
   highlight = "",
   chatBubbleKey = null,
   reactionBurstKey = null,
@@ -659,12 +717,17 @@ function MessageBubble({
   const isVisualMedia = Boolean(mediaPreview);
   const isGif = Boolean(mediaPreview?.isGif);
   const mediaOnly = isVisualMedia && !String(message.text || "").trim();
-  const hasSlashEmbed = Boolean(message.embed && typeof message.embed === "object");
+  const isPollV2 = mediaTypeNorm === "poll_v2";
+  const isPollEnd = mediaTypeNorm === "poll_end";
+  const isLegacyPoll = mediaTypeNorm === "poll" || isLegacyPollText(message.text);
+  const appCard = message.embed && typeof message.embed === "object" && message.embed.card ? message.embed : null;
+  const hasCard = isPollV2 || Boolean(appCard) || isLegacyPoll;
+  const hasSlashEmbed = Boolean(message.embed && typeof message.embed === "object") || hasCard;
   const x = useMotionValue(0);
   const replyHintOpacity = useTransform(
     x,
-    isOwn ? [-56, -20, 0] : [0, 20, 56],
-    isOwn ? [1, 0.4, 0] : [0, 0.4, 1]
+    [0, 20, 56],
+    [0, 0.4, 1]
   );
   const reactions = Array.isArray(message.reactions) ? message.reactions : [];
   const reply = message.replyTo || message.reply_to || null;
@@ -776,7 +839,8 @@ function MessageBubble({
   }, [message?.id]);
 
   const canDelete = isOwn || (conversationType === "server" && canManageMessages);
-  const canEdit = isOwn && Boolean(String(message.text || "").trim());
+  // Polls, poll-end lines and app cards are not text-editable (the poll has its own editor).
+  const canEdit = isOwn && !isPollV2 && !isPollEnd && !appCard && mediaTypeNorm !== "app_card" && Boolean(String(message.text || "").trim());
   const isEditTarget = Boolean(glass && editingMessageId && editingMessageId === message.id);
 
   const beginEdit = useCallback(() => {
@@ -945,7 +1009,7 @@ function MessageBubble({
     const el = bubbleRef.current;
     if (!el) return undefined;
     return attachReplySwipe(el, {
-      getDirection: () => (replyLive.current.isOwn ? "left" : "right"),
+      getDirection: () => "right",
       getEdgeWidth: () => swipeBackEdgeBand(),
       shouldIgnore: (target) => {
         if (replyLive.current.editing) return true;
@@ -992,7 +1056,7 @@ function MessageBubble({
   if (hideCasino) return null;
 
   return (
-    <div className={`message-swipe-wrap ${isOwn ? "own" : ""}${swiping ? " is-swiping" : ""}`}>
+    <div className={`message-swipe-wrap is-left${swiping ? " is-swiping" : ""}`}>
       {swiping && (
         <motion.div
           className="message-swipe-hint"
@@ -1019,20 +1083,20 @@ function MessageBubble({
         drag={glass || mediaOnly ? false : "x"}
         dragDirectionLock
         dragSnapToOrigin
-        dragConstraints={isOwn ? { left: -72, right: 0 } : { left: 0, right: 72 }}
+        dragConstraints={{ left: 0, right: 72 }}
         dragElastic={glass ? 0 : 0.18}
         onDragStart={() => { if (!glass) setSwiping(true); }}
         onDragEnd={(_, info) => {
           if (glass) return;
           const dx = info.offset.x;
-          const shouldReply = (isOwn && dx <= -48) || (!isOwn && dx >= 48);
+          const shouldReply = dx >= 48;
           // Always snap hint away, cancel / incomplete swipe must not leave the icon stuck
           resetSwipe();
           if (shouldReply) triggerReply();
         }}
         data-no-swipe-back=""
         data-editing={isEditTarget ? "1" : undefined}
-        className={`message-bubble ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
@@ -1110,8 +1174,33 @@ function MessageBubble({
               </button>
             </div>
           </div>
+        ) : isPollV2 ? (
+          <PollCard
+            message={message}
+            scope={conversationType}
+            compact={compactCards}
+            onOpenVoters={onOpenPollVoters}
+            onEdit={onEditPoll}
+          />
+        ) : isPollEnd ? (
+          <div className="dsx-poll-end" role="status">
+            <BarChart3 className="dsx-ico" />
+            <span>{String(message.text || "").replace(/^📊\s*/u, "")}</span>
+          </div>
+        ) : appCard ? (
+          <AppCard
+            message={message}
+            embed={appCard}
+            socket={socket}
+            serverId={serverId}
+            channelId={conversationType === "server" ? conversationId : null}
+            compact={compactCards}
+            actions={appActions || {}}
+          />
         ) : message.embed ? (
           <SlashCommandEmbed embed={message.embed} type={message.appType || message.type} />
+        ) : isLegacyPoll && message.text ? (
+          <LegacyPollCard text={message.text} />
         ) : (
           message.text && (
             <>
@@ -1250,7 +1339,7 @@ function MessageBubble({
         <AnimatePresence>
           {menuOpen && !editing && !glass && (
             <motion.div
-              className={`message-hover-bar ${isOwn ? "own" : "other"}`}
+              className="message-hover-bar other"
               initial={{ opacity: 0, y: 6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 2, scale: 0.98, transition: { duration: 0.08, ease: "easeOut" } }}
@@ -1392,7 +1481,8 @@ function MessageBubble({
         {glass && menuOpen && !editing && (
           <GlassMessageMenu
             bubbleRef={bubbleRef}
-            isOwn={isOwn}
+            // 2.12.0: every bubble sits on the left, so the menu anchors left too.
+            isOwn={false}
             onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
             quick={QUICK_EMOJIS}
             onReact={emitReact}

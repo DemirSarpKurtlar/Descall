@@ -28,7 +28,7 @@ assert.equal(core.parsePollArgs("only | one"), null);
 assert.equal(core.parsePollArgs(""), null);
 
 // Fallback text (old clients, previews): plain, no markdown.
-assert.equal(core.pollFallbackText({ question: "Q?", options: [{ text: "A", emoji: "🪂" }, { text: "B" }] }), "📊 Anket: Q?\n1. 🪂 A\n2. B");
+assert.equal(core.pollFallbackText({ question: "Q?", options: [{ text: "A", emoji: "🪂" }, { text: "B" }] }), "📊 Anket: Q?\n1. 🪂 A\n2. B\nOy vermek için Descall'ı güncelle");
 
 // Snapshot: results hidden until the viewer votes; voter total always visible.
 const poll = { id: "p1", scope: "server", server_message_id: "m1", creator_id: "u1", question: "Q?", allow_multiselect: false, anonymous: false, ends_at: new Date(Date.now() + 3600e3).toISOString(), closed_at: null, version: 3 };

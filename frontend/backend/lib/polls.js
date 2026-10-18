@@ -168,13 +168,46 @@ async function snapshotsForViewer(viewerId, polls) {
   if (!visible.length) return [];
   const ids = visible.map((v) => v.poll.id);
   const [optionsById, tallies] = await Promise.all([loadOptions(ids), loadTallies(ids, viewerId)]);
-  return visible.map(({ poll, access }) =>
+  const snapshots = visible.map(({ poll, access }) =>
     core.buildPollSnapshot(poll, optionsById.get(poll.id) || [], tallies[poll.id], {
       viewerId,
       canManage: access.manage,
       canVote: access.vote,
     })
   );
+  await attachRecentVoters(snapshots).catch(() => {});
+  return snapshots;
+}
+
+/** Up to 3 recent voter avatars per option, only where results are shown and the poll is not anonymous. */
+async function attachRecentVoters(snapshots) {
+  const open = snapshots.filter((s) => s.revealed && !s.anonymous && s.voters > 0);
+  if (!open.length) return;
+  const { data: votes, error } = await supabase
+    .from("poll_votes")
+    .select("poll_id, option_id, user_id, created_at")
+    .in("poll_id", open.map((s) => s.id))
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error || !votes?.length) return;
+  const picks = new Map();
+  for (const v of votes) {
+    const key = `${v.poll_id}:${v.option_id}`;
+    const list = picks.get(key) || [];
+    if (list.length < 3 && !list.includes(v.user_id)) list.push(v.user_id);
+    picks.set(key, list);
+  }
+  const ids = [...new Set([...picks.values()].flat())];
+  const { data: users } = await supabase.from("users").select("id, username, display_name, avatar_url").in("id", ids);
+  const byId = new Map((users || []).map((u) => [u.id, u]));
+  for (const s of open) {
+    for (const o of s.options) {
+      o.recent = (picks.get(`${s.id}:${o.id}`) || []).map((id) => {
+        const u = byId.get(id);
+        return { id, username: u?.username || null, displayName: u?.display_name || null, avatarUrl: u?.avatar_url || null };
+      });
+    }
+  }
 }
 
 function emitPollChanged(io, poll, extra = {}) {
