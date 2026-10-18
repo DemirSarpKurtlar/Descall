@@ -22,14 +22,6 @@ export async function getRiotStatus() {
   return parse(res);
 }
 
-export async function getUserValorant(userId, { signal } = {}) {
-  const res = await fetch(`${BASE}/users/${encodeURIComponent(userId)}`, {
-    headers: getHeaders(),
-    signal,
-  });
-  return parse(res);
-}
-
 export async function linkRiotId({ riotId, region = "eu" }) {
   const res = await fetch(`${BASE}/link`, {
     method: "POST",

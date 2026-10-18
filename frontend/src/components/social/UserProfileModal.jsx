@@ -7,10 +7,8 @@ import StatusBadge from "../ui/StatusBadge";
 import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
-import ValorantBadge from "./ValorantBadge";
 import AdminBadge from "./AdminBadge";
 import { BadgeIcon, NameEffectText, TitleTag } from "../ui/Cosmetics";
-import { getUserValorant } from "../../api/riot";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
@@ -22,7 +20,6 @@ import {
   friendStateFor,
   memberSinceIso,
   ownedList,
-  ownedValue,
   sameUserId,
   seedProfile,
   visibleProfile,
@@ -95,7 +92,6 @@ function UserProfileModal({
   const [friendLoading, setFriendLoading] = useState(false);
   const [friendError, setFriendError] = useState({ userId: null, message: "" });
   const [mutualState, setMutualState] = useState({ forId: null, list: [] });
-  const [valorantState, setValorantState] = useState({ forId: null, value: null });
   const [reportFor, setReportFor] = useState(null);
 
   const isSelf = sameUserId(me?.id, userId);
@@ -123,20 +119,9 @@ function UserProfileModal({
         const accepted = acceptProfilePayload(requestedId, data.user);
         if (!accepted) return;
         setProfile(accepted);
-        setValorantState({ forId: requestedId, value: accepted.valorant || null });
-        if (!accepted.valorant) {
-          try {
-            const extra = await getUserValorant(requestedId, { signal: ctrl.signal });
-            if (!active) return;
-            setValorantState({ forId: requestedId, value: extra.valorant || null });
-          } catch (err) {
-            if (err?.name === "AbortError") return;
-          }
-        }
       } catch (err) {
         if (err?.name === "AbortError" || !active) return;
         setProfile(null);
-        setValorantState({ forId: requestedId, value: null });
       } finally {
         if (active) setSettledFor(requestedId);
       }
@@ -270,7 +255,6 @@ function UserProfileModal({
   });
   const viewUser = visibleProfile(profile, userId, seed);
   const pending = Boolean(open && userId && !sameUserId(settledFor, userId));
-  const valorant = ownedValue(valorantState.forId, userId, valorantState.value);
   const mutualFriends = ownedList(mutualState.forId, userId, mutualState.list);
   const memberSince = memberSinceIso(userId, [fetched, seed, known]);
   const customStatus = fetched?.customStatus || fetched?.custom_status || (sameUserId(known?.id, userId) ? (known?.customStatus || known?.custom_status) : "") || "";
@@ -391,12 +375,9 @@ function UserProfileModal({
                   <div className="g-profile-handle">
                     @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
                   </div>
-                  {(isUserAdmin(viewUser) || valorant?.linked) && (
+                  {isUserAdmin(viewUser) && (
                     <div className="g-profile-chips">
-                      {isUserAdmin(viewUser) && (
-                        <AdminBadge user={viewUser} variant="chip" />
-                      )}
-                      {valorant?.linked ? <ValorantBadge valorant={valorant} /> : null}
+                      <AdminBadge user={viewUser} variant="chip" />
                     </div>
                   )}
                   {fetched?.bio ? <p className="g-profile-bio">{fetched.bio}</p> : null}
@@ -596,7 +577,6 @@ function UserProfileModal({
                     style={{ background: STATUS_COLOR[status] || STATUS_COLOR.offline }}
                   />
                   {statusLabel}
-                  {glassDesktop && valorant?.linked ? <ValorantBadge valorant={valorant} /> : null}
                 </div>
               </div>
 
@@ -655,24 +635,6 @@ function UserProfileModal({
               ) : null}
 
               <div className="user-profile-legacy-meta">
-              {valorant?.linked && (
-                <div style={{ marginBottom: 14 }}>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.6px",
-                      color: "var(--text-muted)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Valorant
-                  </div>
-                  <ValorantBadge valorant={valorant} />
-                </div>
-              )}
-
               {/* Member since */}
               {showMemberSkeleton ? (
                 <ProfileGlassSkeleton label={t("Loading…")} />

@@ -1,13 +1,11 @@
-import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
 import { pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
-import ValorantBadge from "./ValorantBadge";
 import AdminBadge from "./AdminBadge";
 import { BadgeIcon, NameEffectText, TitleTag, profileAuraClass } from "../ui/Cosmetics";
-import { getUserValorant } from "../../api/riot";
 import { useT } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
 
@@ -55,28 +53,12 @@ export default function UserHoverCard({ user, anchor }) {
   const t = useT();
   const ref = useRef(null);
   const [pos, setPos] = useState(() => clampPos(anchor));
-  const [valorant, setValorant] = useState(user?.valorant || null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setValorant(user?.valorant || null);
-    if (!user?.id || user?.valorant?.linked) return undefined;
-    getUserValorant(user.id)
-      .then((res) => {
-        if (!cancelled) setValorant(res.valorant || null);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, user?.valorant]);
-
   useLayoutEffect(() => {
     if (!anchor) return;
     const el = ref.current;
     const h = el?.offsetHeight || 180;
     setPos(clampPos(anchor, h));
-  }, [anchor, user?.id, user?.bio, user?.customStatus, valorant]);
+  }, [anchor, user?.id, user?.bio, user?.customStatus]);
 
   if (!user || !anchor) return null;
 
@@ -145,7 +127,6 @@ export default function UserHoverCard({ user, anchor }) {
             <span className="uhc-dot" /> {statusLabel}
           </div>
           {customStatus && <p className="uhc-custom-status">{customStatus}</p>}
-          {valorant?.linked && <ValorantBadge valorant={valorant} compact />}
           {bio && <p className="uhc-bio">{bio}</p>}
           {!bio && lastSeenLabel && statusClass === "st-offline" && (
             <p className="uhc-bio">{t("Last seen {time}", { time: lastSeenLabel })}</p>

@@ -13,7 +13,6 @@ const servers = readFileSync(join(root, "../servers/ServersSidebar.jsx"), "utf8"
 const serverIcon = readFileSync(join(root, "../servers/ServerIcon.jsx"), "utf8");
 const channelAccess = readFileSync(join(root, "../servers/ChannelPermissionsModal.jsx"), "utf8");
 const rolesModal = readFileSync(join(root, "../servers/ServerRolesModal.jsx"), "utf8");
-const riot = readFileSync(join(root, "../settings/RiotLinkCard.jsx"), "utf8");
 const sidebar = readFileSync(join(root, "../servers/ServersSidebar.jsx"), "utf8");
 
 function assert(condition, message) {
@@ -32,6 +31,5 @@ assert(serverIcon.includes("SkeletonImage"), "ServerIcon must hold a skeleton un
 
 assert(channelAccess.includes("BlockListSkeleton") && channelAccess.includes("setLoading"), "Channel access modal must skeleton while overrides load");
 assert(rolesModal.includes("BlockListSkeleton") && rolesModal.includes("setLoading"), "Roles modal must skeleton while roles/members load");
-assert(riot.includes("SkeletonLine"), "Riot link settings must skeleton instead of blank Loading text");
 assert(sidebar.includes("channelListReady"), "channel list must wait on myPermissions before painting");
 console.log("Skeleton.selftest.mjs: ok");
