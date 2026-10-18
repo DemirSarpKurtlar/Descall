@@ -4121,6 +4121,15 @@ export default function App() {
     } catch {
       /* ignore */
     }
+    // Electron paint watchdog (2.11.9): a boot without an HTML splash (or one
+    // already removed) still has to tell main it is up.
+    const report = window.__descallReportBoot;
+    if (typeof report !== "function") return undefined;
+    report("app-mounted");
+    const timer = window.setTimeout(() => {
+      if (!document.getElementById("boot-splash")) report("painted");
+    }, 2500);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // After login, resume a pending group invite or server vanity link

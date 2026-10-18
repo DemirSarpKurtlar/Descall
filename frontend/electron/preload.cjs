@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Boot watchdog / "Tekrar dene" (2.11.5): clear SW + caches, reload ignoring cache.
   retryBoot: () => ipcRenderer.send('app:boot-retry'),
+  // Boot milestones for main.log and the main-process paint watchdog (2.11.9).
+  bootState: (phase, ms) => ipcRenderer.send('app:boot-state', { phase: String(phase || ''), ms: Number(ms) || 0 }),
 
   // OS transparency switch. The CSS media query is unreliable in Electron
   // (it can stick on "reduce" and flatten Liquid Glass while Chrome stays frosted).
