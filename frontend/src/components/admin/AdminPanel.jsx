@@ -24,6 +24,7 @@ import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedback from "./AdminFeedback";
 import AdminShop from "./AdminShop";
+import AdminDescoinReconcile from "./AdminDescoinReconcile";
 import AdminModeration from "./AdminModeration";
 import AdminLivePopup from "./AdminLivePopup";
 import AdminAnalytics from "./AdminAnalytics";
@@ -743,6 +744,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
         {tab === "shop" && (
           <section className="admin-section admin-section-full">
+            <AdminDescoinReconcile />
             <AdminShop />
           </section>
         )}

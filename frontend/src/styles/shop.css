@@ -1432,6 +1432,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   flex: 0 0 auto;
   min-width: 0;
   width: 100%;
+  container: shop-chips / inline-size;
 }
 
 .shop-chip-rail .shop-category-tabs {

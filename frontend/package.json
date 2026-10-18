@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "2.11.1",
+  "version": "2.11.2",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -12,8 +12,8 @@
   "homepage": "./",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-marketing-locale.mjs && vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs",
-    "build:prod": "node scripts/check-marketing-locale.mjs && npx vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/seo-validate.mjs --dist && node scripts/perf-budget.mjs",
+    "build": "node scripts/check-marketing-locale.mjs && vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/csp-verify-dist.mjs",
+    "build:prod": "node scripts/check-marketing-locale.mjs && npx vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/seo-validate.mjs --dist && node scripts/perf-budget.mjs && node scripts/csp-verify-dist.mjs",
     "locale:check": "node scripts/check-marketing-locale.mjs && node scripts/check-ownership-entity.mjs",
     "prerender:seo": "node scripts/prerender-seo.mjs",
     "seo:files": "node scripts/generate-seo-files.mjs",

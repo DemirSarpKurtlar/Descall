@@ -44,6 +44,14 @@ check(servers[1].username == "u" && servers[1].credential == "c", "credentials k
 check(L.hasTurn(servers), "has turn")
 check(!L.hasTurn(L.defaultIceServers), "default has no turn")
 check(L.iceServers(fromJSON: Data("nope".utf8)).isEmpty, "bad json")
+// 2.11.2: short-lived per-user TURN, cache honours ttlSeconds (half, capped, >= 60 s)
+check(L.iceCacheValidity(fromJSON: Data("{\"ttlSeconds\":14400}".utf8), fallback: 5400) == 5400, "ttl 4h capped at 90 min")
+check(L.iceCacheValidity(fromJSON: Data("{\"ttlSeconds\":3600}".utf8), fallback: 5400) == 1800, "ttl 1h -> 30 min")
+check(L.iceCacheValidity(fromJSON: Data("{\"ttlSeconds\":30}".utf8), fallback: 5400) == 60, "floor 60 s")
+check(L.iceCacheValidity(fromJSON: nil, fallback: 5400) == 5400, "no ttl -> fallback")
+let t0 = Date(timeIntervalSince1970: 1_000_000)
+check(L.iceCacheUsable(cachedAt: t0, validFor: 60, now: t0.addingTimeInterval(59)), "cache usable")
+check(!L.iceCacheUsable(cachedAt: t0, validFor: 60, now: t0.addingTimeInterval(61)), "cache expired")
 
 // Opus tuning
 let sdp = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\na=rtpmap:111 opus/48000/2\r\na=fmtp:111 minptime=10;useinbandfec=1;stereo=1\r\na=rtpmap:0 PCMU/8000\r\n"

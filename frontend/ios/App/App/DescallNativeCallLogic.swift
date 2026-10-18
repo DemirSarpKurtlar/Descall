@@ -121,6 +121,19 @@ enum DescallNativeCallLogic {
         return out
     }
 
+    /// How long a fetched ICE list may be reused: half the server's ttlSeconds, capped at `fallback`,
+    /// never below 60 s. Without a ttl (old server / error) the fallback applies.
+    static func iceCacheValidity(fromJSON data: Data?, fallback: TimeInterval) -> TimeInterval {
+        guard let data = data,
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let ttl = (obj["ttlSeconds"] as? NSNumber)?.doubleValue, ttl > 0 else { return fallback }
+        return max(60, min(fallback, ttl / 2))
+    }
+
+    static func iceCacheUsable(cachedAt: Date, validFor: TimeInterval, now: Date) -> Bool {
+        now.timeIntervalSince(cachedAt) < validFor
+    }
+
     static func hasTurn(_ servers: [IceServer]) -> Bool {
         servers.contains { $0.urls.contains { $0.lowercased().hasPrefix("turn") } }
     }

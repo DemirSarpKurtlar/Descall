@@ -19,6 +19,10 @@ function matches(row, filters) {
     if (type === "ilike") return String(rowVal ?? "").toLowerCase() === String(val).toLowerCase();
     if (type === "not-is-null") return rowVal !== null && rowVal !== undefined;
     if (type === "is-null") return rowVal === null || rowVal === undefined;
+    if (type === "like") {
+      const re = new RegExp("^" + String(val).split("%").map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$");
+      return re.test(String(rowVal ?? ""));
+    }
     if (type === "in") return Array.isArray(val) && val.includes(rowVal);
     if (type === "gt") return rowVal > val;
     if (type === "gte") return rowVal >= val;
@@ -87,6 +91,11 @@ class FakeQuery {
     this.filters.push({ type: "neq", col, val });
     return this;
   }
+  like(col, val) {
+    this.filters.push({ type: "like", col, val });
+    return this;
+  }
+
   ilike(col, val) {
     this.filters.push({ type: "ilike", col, val });
     return this;
@@ -240,8 +249,45 @@ function createFakeSupabase(seed = {}) {
     tables[name] = { rows: rows.map((r) => ({ ...r })) };
   }
 
+  // storage: { bucket: Map(path -> { body, contentType }) }
+  const buckets = {};
+  const bucket = (id) => (buckets[id] = buckets[id] || new Map());
+  const storage = {
+    _buckets: buckets,
+    from(id) {
+      return {
+        async upload(path, body, opts = {}) {
+          if (!opts.upsert && bucket(id).has(path)) return { data: null, error: { message: "exists" } };
+          bucket(id).set(path, { body, contentType: opts.contentType });
+          return { data: { path }, error: null };
+        },
+        getPublicUrl(path) {
+          return { data: { publicUrl: `https://placeholder.supabase.co/storage/v1/object/public/${id}/${path}` } };
+        },
+        async createSignedUrl(path, ttl) {
+          if (!bucket(id).has(path)) return { data: null, error: { message: "Object not found" } };
+          return { data: { signedUrl: `https://placeholder.supabase.co/storage/v1/object/sign/${id}/${path}?token=t&ttl=${ttl}` }, error: null };
+        },
+        async copy(from, to, opts = {}) {
+          const src = bucket(id).get(from);
+          if (!src) return { data: null, error: { message: "Object not found" } };
+          bucket(opts.destinationBucket || id).set(to, { ...src });
+          return { data: { path: to }, error: null };
+        },
+        async list(folder, opts = {}) {
+          const names = [...bucket(id).keys()]
+            .filter((k) => k.startsWith(`${folder}/`))
+            .map((k) => k.slice(folder.length + 1))
+            .filter((n) => !opts.search || n.includes(opts.search));
+          return { data: names.map((name) => ({ name })), error: null };
+        },
+      };
+    },
+  };
+
   return {
     _tables: tables,
+    storage,
     from(name) {
       if (!tables[name]) tables[name] = { rows: [] };
       return new FakeQuery(tables[name], null);

@@ -28,7 +28,11 @@ for (const file of ["glass-desktop/chat.css", "glass/chat.css"]) {
 const avatar = read("../components/ui/Avatar.jsx");
 assert.doesNotMatch(avatar, /equippedAvatarFrame|ui-avatar-frame-overlay/, "Avatar never paints a frame");
 const shopPanel = read("../components/settings/ShopPanel.jsx");
-const tabs = [...shopPanel.slice(shopPanel.indexOf("const CATEGORY_TABS"), shopPanel.indexOf("];", shopPanel.indexOf("const CATEGORY_TABS"))).matchAll(/id: "([a-z_]+)"/g)].map((m) => m[1]);
+// 2.11.2: the tab list lives in lib/shopCategories.js (shared by every platform).
+assert.match(shopPanel, /SHOP_CATEGORY_TABS/);
+const shopCategories = read("../lib/shopCategories.js");
+const tabsSrc = shopCategories.slice(shopCategories.indexOf("SHOP_CATEGORY_TABS"));
+const tabs = [...tabsSrc.slice(0, tabsSrc.indexOf("]);")).matchAll(/id: "([a-z_]+)"/g)].map((m) => m[1]);
 assert.equal(tabs.includes("avatar_frame"), false, "no Çerçeveler tab");
 assert.deepEqual(tabs.slice(0, 2), ["banner", "avatar_effect"], "Avatar efektleri takes the second slot");
 const shopLib = read("../../backend/lib/shop.js");

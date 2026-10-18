@@ -84,11 +84,12 @@ final class DescallNativeCall: NSObject {
     private static let connectTimeout: TimeInterval = 30
     /// Connected call whose link stays down (the caller drives ICE restarts).
     private static let reconnectTimeout: TimeInterval = 60
-    private static let iceCacheTTL: TimeInterval = 6 * 60 * 60
+    /// Upper bound for reusing fetched ICE servers; the server's ttlSeconds (halved) usually wins.
+    private static let iceCacheTTL: TimeInterval = 90 * 60
 
     private var session: Session?
     private var factory: RTCPeerConnectionFactory?
-    private var iceCache: (at: Date, servers: [DescallNativeCallLogic.IceServer])?
+    private var iceCache: (at: Date, servers: [DescallNativeCallLogic.IceServer], validFor: TimeInterval)?
     private var pathMonitor: NWPathMonitor?
     private var lastPathSignature = ""
 
@@ -144,7 +145,7 @@ final class DescallNativeCall: NSObject {
         session = s
         s.timeline.mark("push", at: Date().timeIntervalSince1970)
         setupAudioSessionManual()
-        fetchIceServers(s)
+        fetchIceServers(s, token: token)
         openSocket(s, token: token)
         startPathMonitor()
         emitState()
@@ -177,8 +178,10 @@ final class DescallNativeCall: NSObject {
         socket.connect()
     }
 
-    private func fetchIceServers(_ s: Session) {
-        if let cache = iceCache, Date().timeIntervalSince(cache.at) < Self.iceCacheTTL, DescallNativeCallLogic.hasTurn(cache.servers) {
+    /// TURN is only issued to a signed-in caller (2.11.2): send the Keychain session token.
+    /// Credentials are per user and short-lived; the cache honours the server's ttlSeconds.
+    private func fetchIceServers(_ s: Session, token: String) {
+        if let cache = iceCache, DescallNativeCallLogic.iceCacheUsable(cachedAt: cache.at, validFor: cache.validFor, now: Date()), DescallNativeCallLogic.hasTurn(cache.servers) {
             s.iceServers = cache.servers
             s.timeline.mark("ice", at: Date().timeIntervalSince1970)
             return
@@ -189,16 +192,18 @@ final class DescallNativeCall: NSObject {
         }
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 6)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         URLSession.shared.dataTask(with: request) { [weak self, weak s] data, response, _ in
             let ok = (response as? HTTPURLResponse)?.statusCode == 200
             let servers = ok ? data.map { DescallNativeCallLogic.iceServers(fromJSON: $0) } ?? [] : []
+            let validFor = DescallNativeCallLogic.iceCacheValidity(fromJSON: ok ? data : nil, fallback: Self.iceCacheTTL)
             DispatchQueue.main.async {
                 guard let self = self, let s = s, self.session === s else { return }
                 if servers.isEmpty {
                     s.iceServers = self.iceCache?.servers ?? DescallNativeCallLogic.defaultIceServers
                 } else {
                     s.iceServers = servers
-                    self.iceCache = (Date(), servers)
+                    self.iceCache = (Date(), servers, validFor)
                 }
                 s.timeline.mark("ice", at: Date().timeIntervalSince1970)
                 NSLog("[DescallNativeCall] ice servers=\(s.iceServers?.count ?? 0) turn=\(DescallNativeCallLogic.hasTurn(s.iceServers ?? []))")

@@ -1019,18 +1019,41 @@ html.glass-desktop .shop-category-tabs.is-glass-chips::-webkit-scrollbar {
   height: 0;
 }
 
+/* 2.11.2: compact pills so all 13 categories fit the settings pane at the default
+   1400 px window (Electron) / common laptop widths; narrower panes keep the drag/arrow
+   scroller with fade edges. Icons only when the row is wide enough (container query). */
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab {
   flex: 0 0 auto;
-  height: 32px;
-  min-height: 32px;
-  padding: 0 13px;
-  border-radius: 16px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 14px;
   border: none;
   background: rgba(255, 255, 255, 0.07);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
   color: var(--gd-t2);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips .shop-chip-track {
+  gap: 4px;
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-label {
+  gap: 5px;
+}
+
+html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-label svg {
+  width: 13px;
+  height: 13px;
+}
+
+@container shop-chips (max-width: 1339px) {
+  html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-label svg {
+    display: none;
+  }
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab.active {

@@ -17,9 +17,9 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 const supabasePath = require.resolve("../db/supabase");
 const fakeSupabase = createFakeSupabase({
   users: [
-    { id: "u-alice", username: "alice", is_admin: true, descoin_balance: 0, equipped_sound_pack_id: null },
-    { id: "u-bob", username: "bob", is_admin: false, descoin_balance: 500, equipped_sound_pack_id: "item-sound-1" },
-    { id: "u-cara", username: "cara", is_admin: false, descoin_balance: 900, equipped_sound_pack_id: null },
+    { id: "u-alice", username: "alice", active_sessions: [{ id: "s-alice" }], is_admin: true, descoin_balance: 0, equipped_sound_pack_id: null },
+    { id: "u-bob", username: "bob", active_sessions: [{ id: "s-bob" }], is_admin: false, descoin_balance: 500, equipped_sound_pack_id: "item-sound-1" },
+    { id: "u-cara", username: "cara", active_sessions: [{ id: "s-cara" }], is_admin: false, descoin_balance: 900, equipped_sound_pack_id: null },
   ],
   shop_items: [
     {
@@ -159,8 +159,8 @@ async function run() {
   const io = fakeIo();
   const { server, base } = await startServer(io);
   try {
-    const aliceToken = signToken({ id: "u-alice", username: "alice" });
-    const bobToken = signToken({ id: "u-bob", username: "bob" });
+    const aliceToken = signToken({ id: "u-alice", username: "alice", sid: "s-alice" });
+    const bobToken = signToken({ id: "u-bob", username: "bob", sid: "s-bob" });
 
     // Catalog only lists active items (3 of the 5 seeded: 2 banners + theme)
     let r = await req(base, "GET", "/api/shop/catalog", { token: bobToken });
@@ -169,6 +169,11 @@ async function run() {
     assert(r.body.items.some((i) => i.sku === "banner-aurora"), "active banner listed");
     assert(r.body.items.some((i) => i.sku === "theme-midnight"), "active theme listed");
     assert(!r.body.items.some((i) => i.category === "sound_pack"), "retired sound packs stay out of the catalog");
+    assert(
+      Array.isArray(r.body.retiredCategories) && r.body.retiredCategories.includes("avatar_frame"),
+      "catalog announces retired categories (avatar_frame) to installed apps"
+    );
+    assert(!r.body.items.some((i) => i.category === "avatar_frame"), "no avatar frames in the catalog");
     assert(
       !JSON.stringify(r.body).includes("data:"),
       "catalog never ships inline data: images: " + JSON.stringify(r.body)
@@ -318,17 +323,23 @@ async function run() {
     io.setOnline("u-bob", false);
     r = await req(base, "POST", "/api/admin/shop/gift", {
       token: aliceToken,
-      body: { userId: "u-bob", itemId: "item-frame-1", message: "For while you were away" },
+      body: { userId: "u-bob", itemId: "item-frame-1", message: "frame" },
+    });
+    // 2.11.0 retired avatar frames: gifting one is refused (410 cosmetic_removed).
+    assert(r.status === 410 && r.body.code === "cosmetic_removed", "retired avatar frame cannot be gifted");
+    r = await req(base, "POST", "/api/admin/shop/gift", {
+      token: aliceToken,
+      body: { userId: "u-bob", itemId: "item-banner-svg", message: "For while you were away" },
     });
     assert(r.status === 200, "second gift (different item) succeeds");
     const liveEventsForOfflineGift = io.emitted.filter(
-      (e) => e.event === "shop:gift:received" && e.payload?.item?.sku === "frame-gold"
+      (e) => e.event === "shop:gift:received" && e.payload?.item?.sku === "banner-inline-svg"
     );
     assert(liveEventsForOfflineGift.length === 0, "no live popup emitted while recipient is offline");
 
     let pending = await shop.getUnnotifiedGifts("u-bob");
     assert(pending.length === 1, "one unnotified gift pending: " + JSON.stringify(pending));
-    assert(pending[0].item.sku === "frame-gold", "pending gift has correct item");
+    assert(pending[0].item.sku === "banner-inline-svg", "pending gift has correct item");
     assert(pending[0].message === "For while you were away", "pending gift has correct message");
     assert(pending[0].from.username === "alice", "pending gift has correct sender");
 
@@ -337,7 +348,7 @@ async function run() {
     assert(pending.length === 0, "gift no longer pending after being marked notified");
 
     // Two in-flight purchases of the same item must debit once.
-    const caraToken = signToken({ id: "u-cara", username: "cara" });
+    const caraToken = signToken({ id: "u-cara", username: "cara", sid: "s-cara" });
     const [firstBuy, secondBuy] = await Promise.all([
       req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-1" } }),
       req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-1" } }),

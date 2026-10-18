@@ -422,6 +422,7 @@ export default function MessageComposer({
     setUploading(true);
     setUploadError("");
     const formData = new FormData();
+    formData.append("purpose", "message");
     formData.append("file", file);
     try {
       const token = getToken();
@@ -539,6 +540,7 @@ export default function MessageComposer({
         setUploading(true);
         try {
           const formData = new FormData();
+          formData.append("purpose", "message");
           const ext = extensionForMime(actualMime);
           formData.append("file", blob, `voice-${Date.now()}.${ext}`);
           const res = await fetch(`${API_BASE_URL}/api/media/upload`, {

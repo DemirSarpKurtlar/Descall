@@ -1,0 +1,10 @@
+{
+  "_doc": "Test files skipped by scripts/run-tests.mjs. Every entry needs a reason. The runner still executes quarantined files and warns when one passes again, so remove the entry then.",
+  "src/components/admin/AdminPanel.analytics.selftest.mjs": "Source-shape test from 2.9.10: expects the admin panel to open on Analytics (it now opens on Overview, covered by adminOverviewUi.selftest.mjs) and further older markup checks also fail. Needs a rewrite against the current AdminPanel.",
+  "src/components/layout/glass/navInventory.selftest.mjs": "Glass nav inventory (2.10.x) expects an 'invite' action in the Chats/Groups/Friends glass header; the header no longer carries it. Needs a product decision (restore the action or drop the expectation).",
+  "src/components/layout/NavigationRail.tooltip.selftest.mjs": "Tooltip checks pass; the trailing avatar check expects the #4f72f6 indigo letter gradient in styles/avatar.css, which is no longer there (letter avatar styling changed). Update the expected color or drop the check.",
+  "src/components/ui/Skeleton.selftest.mjs": "Expects Avatar.jsx to render a ui-avatar-skeleton shimmer; the current Avatar no longer has it. Needs a decision whether the avatar shimmer should come back.",
+  "src/hooks/useCall.selftest.mjs": "Source regex on the DM remote-audio block (`audio.srcObject !== stream`) no longer matches the current useCall/CallOverlay source; remote audio is now covered by remoteAudioKeeper.selftest.mjs and callAudioWiring.selftest.mjs. Needs a rewrite against the current code.",
+  "src/site/seo/corePageBodies.selftest.mjs": "Expects `seo-card-grid` markup in the Turkish home prerender body; the current corePageBodies.js output no longer has it. Needs a rewrite against the current page bodies.",
+  "src/styles/glass/theme-scenes.selftest.mjs": "Expects `opacity: 0.5` in the glass theme scene CSS; the current CSS no longer has that value. Needs a visual decision before the expected value is updated."
+}

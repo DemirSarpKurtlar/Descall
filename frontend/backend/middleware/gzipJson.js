@@ -1,6 +1,7 @@
 "use strict";
 
 const zlib = require("zlib");
+const { mayContainRef, rewriteOutgoing } = require("../lib/privateMedia");
 
 /**
  * Gzip JSON bodies over 2 KB when the client accepts gzip.
@@ -12,7 +13,9 @@ function gzipJson(req, res, next) {
     return next();
   }
   const orig = res.json.bind(res);
-  res.json = function gzipJsonBody(body) {
+  res.json = function gzipJsonBody(rawBody) {
+    // Private media refs must become signed URLs before the body is serialised here.
+    const body = mayContainRef(rawBody) ? rewriteOutgoing(rawBody) : rawBody;
     let payload;
     try {
       payload = JSON.stringify(body);

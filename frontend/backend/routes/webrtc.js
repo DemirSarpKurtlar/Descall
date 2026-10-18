@@ -11,7 +11,11 @@ const {
   resolveChannelPermissions,
 } = require("../lib/serverPermissions");
 const { expandTurnUrls, liveKitEndpoints } = require("../lib/turnUrls");
-const { turnIceServers, turnMode } = require("../lib/turnCredentials");
+const { turnIceServersForUser, turnMode, userTtlSeconds } = require("../lib/turnCredentials");
+const { verifyToken } = require("../config/jwt");
+const { sessionAllowed } = require("../lib/sessionGuard");
+const { bannedUserIds } = require("../runtime/sharedState");
+const { recordFailure } = require("../lib/rateLimit");
 
 const router = express.Router();
 
@@ -28,23 +32,55 @@ function expandIceServers(servers) {
 }
 
 /**
- * STUN + TURN for every mesh call. ICE_SERVERS_JSON (full override) still
- * wins; otherwise TURN comes from lib/turnCredentials.js (Cloudflare,
- * shared-secret ephemeral, or static credentials).
+ * STUN for everyone; TURN only for a signed-in user (2.11.2), with per-user short-lived
+ * credentials from lib/turnCredentials.js. ICE_SERVERS_JSON (full override) still wins for
+ * signed-in users; anonymous callers only get its STUN entries.
  */
-async function buildIceServersFromEnv() {
-  const raw = process.env.ICE_SERVERS_JSON;
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return expandIceServers(parsed);
-    } catch (e) {
-      console.warn("[webrtc] Invalid ICE_SERVERS_JSON:", e.message);
-    }
-  }
-  const turn = await turnIceServers(process.env);
-  return [...DEFAULT_STUN, ...turn];
+function stunOnly(list) {
+  return (list || []).filter((server) => {
+    const urls = Array.isArray(server?.urls) ? server.urls : [server?.urls];
+    return urls.length && urls.every((u) => /^stuns?:/i.test(String(u || "")));
+  });
 }
+
+function iceServersJsonOverride() {
+  const raw = process.env.ICE_SERVERS_JSON;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return expandIceServers(parsed);
+  } catch (e) {
+    console.warn("[webrtc] Invalid ICE_SERVERS_JSON:", e.message);
+  }
+  return null;
+}
+
+async function buildIceServersForUser(userId) {
+  const override = iceServersJsonOverride();
+  if (override) return { iceServers: override, ttlSeconds: userTtlSeconds(process.env), expiresAt: null };
+  const turn = await turnIceServersForUser(userId, process.env);
+  return { iceServers: [...DEFAULT_STUN, ...turn.servers], ttlSeconds: turn.ttlSeconds, expiresAt: turn.expiresAt };
+}
+
+/** Resolves the caller from an optional Bearer token. Returns the user id or null (never throws). */
+async function optionalUserId(req) {
+  const header = String(req.headers.authorization || "");
+  if (!header.startsWith("Bearer ")) return null;
+  try {
+    const decoded = verifyToken(header.slice(7));
+    if (!decoded || decoded.pending2fa || !decoded.sub) return null;
+    const session = await sessionAllowed(decoded);
+    if (!session.ok) return null;
+    if (bannedUserIds.has(decoded.sub)) return null;
+    return decoded.sub;
+  } catch {
+    return null;
+  }
+}
+
+const ICE_RATE_WINDOW_MS = 10 * 60 * 1000;
+const ICE_RATE_PER_USER = 30;
+const ICE_RATE_PER_IP = 120;
 
 function isLiveKitConfigured() {
   return Boolean(
@@ -122,19 +158,48 @@ function stageRoleFor(channelId, userId) {
   return participant?.stageRole === "speaker" ? "speaker" : "audience";
 }
 
-/** Public — browsers need ICE before auth for call setup timing */
-router.get("/ice-config", async (_req, res) => {
-  // Short-lived TURN credentials: never cache in shared proxies.
-  res.set("Cache-Control", "private, max-age=300");
-  try {
-    res.json({
-      iceServers: await buildIceServersFromEnv(),
+/**
+ * STUN is public (call setup can start before sign-in finishes). TURN needs a valid session:
+ * signed-in users get their own short-lived credentials (ttlSeconds / expiresAt tell the
+ * client when to refresh). Rate-limited per IP and per user.
+ */
+router.get("/ice-config", async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  res.set("Vary", "Authorization");
+  const ipCheck = recordFailure(`ice:ip:${req.ip || "unknown"}`, { windowMs: ICE_RATE_WINDOW_MS, max: ICE_RATE_PER_IP });
+  if (!ipCheck.ok) {
+    res.set("Retry-After", String(ipCheck.retryAfterSec));
+    return res.status(429).json({ error: "Too many requests.", iceServers: DEFAULT_STUN, authenticated: false });
+  }
+  const userId = await optionalUserId(req);
+  if (!userId) {
+    const override = iceServersJsonOverride();
+    return res.json({
+      iceServers: override ? (stunOnly(override).length ? stunOnly(override) : DEFAULT_STUN) : DEFAULT_STUN,
       turnConfigured: isTurnConfigured(),
       turnMode: turnMode(process.env),
+      authenticated: false,
+      turnRequiresAuth: true,
+    });
+  }
+  const userCheck = recordFailure(`ice:user:${userId}`, { windowMs: ICE_RATE_WINDOW_MS, max: ICE_RATE_PER_USER });
+  if (!userCheck.ok) {
+    res.set("Retry-After", String(userCheck.retryAfterSec));
+    return res.status(429).json({ error: "Too many requests.", iceServers: DEFAULT_STUN, authenticated: true });
+  }
+  try {
+    const built = await buildIceServersForUser(userId);
+    res.json({
+      iceServers: built.iceServers,
+      turnConfigured: isTurnConfigured(),
+      turnMode: turnMode(process.env),
+      authenticated: true,
+      ttlSeconds: built.ttlSeconds,
+      expiresAt: built.expiresAt,
     });
   } catch (err) {
     console.warn("[webrtc] ice-config failed:", err?.message || err);
-    res.json({ iceServers: DEFAULT_STUN, turnConfigured: false, turnMode: "none" });
+    res.json({ iceServers: DEFAULT_STUN, turnConfigured: false, turnMode: "none", authenticated: true });
   }
 });
 
@@ -205,3 +270,4 @@ router.all("/livekit-token", requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+module.exports._test = { stunOnly, optionalUserId };

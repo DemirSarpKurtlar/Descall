@@ -14,6 +14,7 @@ const {
 } = require('./updateDeferral.cjs');
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
+const { buildElectronCsp } = require('./cspPolicy.cjs');
 const {
   AUTOSTART_ARGS,
   decideColdStart,
@@ -67,6 +68,19 @@ function distRoot() {
   return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html'))) || null;
 }
 
+let cachedAppCsp = null;
+/** Hashed CSP for the shipped index.html (cached), or the legacy policy if it cannot be read. */
+function appDocumentCsp(root) {
+  if (cachedAppCsp) return cachedAppCsp;
+  try {
+    cachedAppCsp = buildElectronCsp(fs.readFileSync(path.join(root, 'index.html'), 'utf8'));
+  } catch (err) {
+    log.warn('[csp] could not hash index.html, using the fallback policy:', err?.message || err);
+    cachedAppCsp = buildElectronCsp(null);
+  }
+  return cachedAppCsp;
+}
+
 function registerDescallProtocol() {
   const root = distRoot();
   if (!root) return null;
@@ -80,7 +94,14 @@ function registerDescallProtocol() {
       if (!filePath.startsWith(rootNorm) && filePath !== path.normalize(root)) {
         return new Response('forbidden', { status: 403 });
       }
-      return net.fetch(pathToFileURL(filePath).href);
+      if (!/\.html?$/i.test(filePath)) return net.fetch(pathToFileURL(filePath).href);
+      // HTML documents carry the hashed CSP themselves, independent of webRequest coverage.
+      return net.fetch(pathToFileURL(filePath).href).then((res) => {
+        const headers = new Headers(res.headers);
+        headers.set('Content-Security-Policy', appDocumentCsp(root));
+        if (!headers.get('content-type')) headers.set('content-type', 'text/html; charset=utf-8');
+        return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+      });
     } catch (err) {
       log.warn('[protocol] descall fetch failed:', err?.message || err);
       return new Response('bad request', { status: 400 });
@@ -1212,20 +1233,18 @@ function createMainWindow() {
     menu.popup();
   });
 
-  // Set CSP headers to allow Supabase and API connections
+  // CSP for the renderer: inline scripts are allowed by sha256 of the shipped index.html, not 'unsafe-inline'.
+  const cspRoot = isDev ? null : distRoot();
+  const rendererCsp = cspRoot ? appDocumentCsp(cspRoot) : buildElectronCsp(null, { dev: isDev });
+  // Only the app document (descall://app/…) gets the hashed policy. Everything else in this
+  // session (notification/overlay files, Riot sign-in pages) keeps the pre-2.11.2 policy.
+  const legacyCsp = buildElectronCsp(null);
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const isAppDocument = /^descall:\/\/app\//i.test(details.url || '');
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self'; " +
-          "connect-src 'self' descall: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://*.posthog.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io; " +
-          "img-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data: blob:; " +
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-          "style-src 'self' 'unsafe-inline'; " +
-          "font-src 'self'; " +
-          "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;"
-        ]
+        'Content-Security-Policy': [isAppDocument ? rendererCsp : legacyCsp],
       }
     });
   });

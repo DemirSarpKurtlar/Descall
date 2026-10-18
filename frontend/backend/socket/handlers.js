@@ -1,6 +1,7 @@
 "use strict";
 
 const supabase = require("../db/supabase");
+const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const iosPushContext = require("../lib/iosPushContext");
 const {
   loadUserProfile,
@@ -1091,6 +1092,15 @@ function registerSocketHandlers(io) {
         return socket.emit("dm:error", { message: "Rate limited.", tempId: tempId || null, toUserId });
       }
       rateLimitDm.set(myId, now);
+
+      if (mediaUrl) {
+        // 2.11.2: attachments are private; store the stable ref, never a public URL.
+        const original = mediaUrl;
+        mediaUrl = await normalizeIncomingMediaUrl(supabase, myId, mediaUrl);
+        if (!mediaUrl && original && !(typeof text === "string" && text.trim())) {
+          return socket.emit("dm:error", { message: "Attachment unavailable.", tempId: tempId || null, toUserId });
+        }
+      }
 
       // Slash commands in a 1:1 DM: casino games and DM-safe app commands.
       // Friends only (never via a message request), not blocked, not banned or

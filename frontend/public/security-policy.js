@@ -7,13 +7,34 @@
 export const HSTS = "max-age=63072000; includeSubDomains; preload";
 export const PERMISSIONS_POLICY = "camera=(self), microphone=(self), display-capture=(self), autoplay=(self)";
 export const CSP_HEADER = "content-security-policy";
+/**
+ * sha256 of every inline <script> in index.html (the prerendered pages reuse the same
+ * head). No 'unsafe-inline' for scripts: a new or edited inline script must be hashed.
+ * Regenerate with `node scripts/csp-sync.mjs` (rewrites this list, _headers and vercel.json);
+ * src/site/cspHashes.selftest.mjs fails CI when they drift and the build verifies dist/.
+ */
+export const INLINE_SCRIPT_HASHES = [
+  // @csp-hashes-start
+  "sha256-S6HfTfHplG8p60gFprOJ2yF+7QjQiqcjT622MJIGsUc=",
+  "sha256-8DfRHI8tBT7aebwoSE1O7M5Eyi53vXPaVkKg6Ts+tXs=",
+  "sha256-KaoFSX3TCKiHgad1CVsr8xoDclCAffaQrQtErU7iRqc=",
+  "sha256-55Lg65UfHgpMWGmpdWaAw1ij+9uyiGVYnh+XvLULkP0=",
+  "sha256-yBF1MUju54iRuL/fti/cWyhku2cnv6Ff2scoFZLOa3c=",
+  "sha256-8O6fXtGVKTVzWNUD8da/uLiptJqxgFDfLe0FJkarXGw=",
+  "sha256-eSNFUNqALkZczatvPjUNWi4Zl3/adLqQoBwvL1fvHqo=",
+  "sha256-iR5Yf/pUtwXjT8aHwnroPZWD2DpFRRmis1Ng4dJfFXA=",
+  "sha256-VBPKgVDep6L7qAChJaC5pxTvbbE0dg8tBcP/y/QKQIk=",
+  "sha256-tgwUSePK11gw34zoAy9XVkHlAUU9ZbkZZM7zOx/RT9A=",
+  "sha256-uTUWQ7h7HJ1YJi/9oCc8AwDTUAvj+dsZ7s0p5cNMUcs=",
+  // @csp-hashes-end
+];
 export const SITE_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://accounts.google.com https://www.clarity.ms https://*.clarity.ms https://static.cloudflareinsights.com",
+  `script-src 'self' ${INLINE_SCRIPT_HASHES.map((h) => `'${h}'`).join(" ")} https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://accounts.google.com https://www.clarity.ms https://*.clarity.ms https://static.cloudflareinsights.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://descall.com https://www.descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com https://*.gstatic.com https://www.google-analytics.com https://www.googletagmanager.com https://*.githubusercontent.com https://*.clarity.ms",

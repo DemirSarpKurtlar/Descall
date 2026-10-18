@@ -30,7 +30,9 @@ router.get("/catalog", requireAuth, async (req, res) => {
       includeAssets,
       assetBase: publicApiBase(req),
     });
-    res.json({ items });
+    // retiredCategories (2.11.2): installed iOS/Android builds hide these tabs even if
+    // their bundled tab list still has them.
+    res.json({ items, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
   } catch (err) {
     console.error("[shop] catalog error:", err.message);
     res.status(500).json({ error: "Failed to load shop catalog." });

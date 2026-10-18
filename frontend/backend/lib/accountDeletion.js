@@ -37,19 +37,8 @@ const OWN_ROWS = [
   ["server_channel_reads", "user_id"],
   ["server_channel_mutes", "user_id"],
   ["group_invites", "invited_user_id"],
-  // Legacy tables (assistant and call recording removed in 2.9.141). Kept so a
-  // user-requested account deletion still erases any rows they left behind.
-  ["dimaai_pending_actions", "user_id"],
-  ["dimaai_messages", "user_id"],
-  ["dimaai_conversations", "user_id"],
-  ["dimaai_memories", "user_id"],
-  ["dimaai_memory_prefs", "user_id"],
-  ["dimaai_attachments", "user_id"],
-  ["dimaai_files", "user_id"],
-  ["dimaai_project_notes", "user_id"],
-  ["dimaai_projects", "user_id"],
-  ["dimaai_agents", "user_id"],
-  ["dimaai_user_settings", "user_id"],
+  // Legacy call-recording table (feature removed in 2.9.141). The dimaai_*
+  // tables were dropped in 2.11.2 (supabase/migrations/20261018_drop_dimaai_tables.sql).
   ["voice_recordings", "created_by"],
 ];
 

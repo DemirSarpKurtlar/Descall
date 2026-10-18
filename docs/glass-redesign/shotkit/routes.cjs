@@ -55,7 +55,7 @@ module.exports = function routes(app, D, log) {
   // Auth
   ok(["/auth/me", "/api/auth/me"], () => ({ user: ME }));
   ok(["/auth/google/config", "/api/auth/google/config"], () => ({ enabled: false, clientId: null }));
-  ok("/api/features", () => ({ features: { valorantLfg: true, valorantCompanion: true, dimaai: true }, valorantLfg: true, valorantCompanion: true, dimaai: true }));
+  ok("/api/features", () => ({ features: { valorantLfg: true, valorantCompanion: true }, valorantLfg: true, valorantCompanion: true }));
   ok(["/health", "/api/health", "/api/status"], () => ({ ok: true }));
   ok(["/api/friends/list", "/friends/list"], () => ({ friends: FRIENDS }));
   ok(["/api/friends/requests", "/friends/requests"], () => ({
@@ -120,22 +120,6 @@ module.exports = function routes(app, D, log) {
     lobby(3, ZEYNEP, "swiftplay", "Silver 2", "Iron 1", "Gold 3", 4, ["Flex"], false, "Hızlı bir maç atalım", 15),
     lobby(4, CAN, "premier", "Diamond 2", "Platinum 3", "Ascendant 2", 3, ["Initiator", "Controller"], true, "Premier takımına oyuncu arıyoruz", 26),
   ] }));
-
-  // DimaAI
-  const CONV = "80000000-0000-4000-8000-000000000001";
-  ok("/api/dimaai/meta", () => ({ product: "Descall", assistant: "DimaAI", tagline: "Your personal Descall agent.", version: "1.1", tools: [], modelTiers: [], uploads: { maxBytes: 10485760, types: ["pdf","txt","docx","csv","images"] } }));
-  ok("/api/dimaai/models", () => ({ tiers: [] }));
-  ok("/api/dimaai/settings", () => ({ settings: { memoryEnabled: true, ttsEnabled: false, customInstructions: "", modelTier: "fast", agentEnabled: false } }));
-  ok("/api/dimaai/memories", () => ({ memories: [] }));
-  ok("/api/dimaai/conversations", () => ({ conversations: [
-    { id: CONV, title: "Oyun gecesi planı", created_at: iso(30), updated_at: iso(25), is_favorite: false, is_pinned: false, model_tier: "fast" },
-    { id: "80000000-0000-4000-8000-000000000002", title: "Sınav çalışma programı", created_at: iso(2000), updated_at: iso(1900), is_favorite: false, is_pinned: false, model_tier: "fast" },
-    { id: "80000000-0000-4000-8000-000000000003", title: "Sunucu kuralları taslağı", created_at: iso(5000), updated_at: iso(4900), is_favorite: false, is_pinned: false, model_tier: "fast" },
-  ] }));
-  app.get("/api/dimaai/conversations/:id", (req, res) => { log("HIT dima conv"); res.json({ conversation: { id: req.params.id, title: "Oyun gecesi planı", created_at: iso(30), updated_at: iso(25), model_tier: "fast" }, messages: [
-    { id: "81000000-0000-4000-8000-000000000001", role: "user", content: "Cuma akşamı 6 kişilik oyun gecesi için kısa bir plan hazırlar mısın?", created_at: iso(30), meta: {} },
-    { id: "81000000-0000-4000-8000-000000000002", role: "assistant", content: "Tabii! İşte 6 kişilik bir oyun gecesi için kısa bir plan:\n\n🕣 **20:30 – Toplanma:** Herkes *Lobi* ses kanalında buluşsun, mikrofon ve kulaklık kontrolü yapılsın.\n\n👥 **21:00 – Takımlar:** 3'er kişilik iki takım kurun, rolleri önceden paylaştırın.\n\n🏆 **21:15 – Turnuva:** En iyi 3 maç üzerinden oynayın; aralarda 5 dakika mola verin.\n\n🎬 **23:00 – Kapanış:** Klipleri #klipler kanalında paylaşın ve haftanın oyuncusunu seçin.\n\nİstersen sunucuya bir duyuru metni de yazabilirim. 🎮", created_at: iso(29), meta: {} },
-  ], pendingActions: [] }); });
 
   // Misc
   ok(["/api/calls*", "/calls*"], () => ({ history: [], calls: [
