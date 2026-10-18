@@ -164,6 +164,8 @@ Effort: **S** a focused change in one or two files, **M** a feature slice with t
 
 ### P2-6. `room:join` accepts any room id
 
+- **Status:** fixed in 2.11.1. Both handlers removed; `backend/socket/roomJoinRemoved.selftest.cjs`.
+
 - **What:** An authenticated socket can `socket.join(roomId)` and emit `room:message` to it. No membership check. No current client caller was found; the handler is still registered.
 - **Where:** `frontend/backend/socket/handlers.js` (`room:join`, `room:message`).
 - **Why it matters:** A future feature that uses a guessable room name inherits eavesdropping.
