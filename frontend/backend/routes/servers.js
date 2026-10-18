@@ -3023,15 +3023,18 @@ router.patch("/:id/members/:userId/nickname", requireAuth, async (req, res) => {
         ? null
         : String(nicknameRaw).trim().replace(/\s+/g, " ").slice(0, 32);
 
-    const targetMembership = await getMembership(serverId, targetUserId);
-    if (!targetMembership) {
-      return res.status(404).json({ error: "Member not found in this server." });
-    }
-
+    // Authorize on :id first so a non-member cannot probe who is in the server.
     if (isSelf) {
       await requireServerPermission(serverId, req.user.id, Permissions.CHANGE_NICKNAME);
     } else {
       await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_NICKNAMES);
+    }
+
+    const targetMembership = await getMembership(serverId, targetUserId);
+    if (!targetMembership) {
+      return res.status(404).json({ error: "Member not found in this server." });
+    }
+    if (!isSelf) {
       await assertHierarchy(supabase, serverId, req.user.id, targetUserId);
     }
 
@@ -3768,7 +3771,7 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
       await supabase
         .from("server_channel_overrides")
         .delete()
-        .eq("channel_id", channelId)
+        .eq("channel_id", channel.id)
         .eq("target_type", targetType)
         .eq("target_id", targetId);
       await writeAudit({
@@ -3787,7 +3790,7 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
       .from("server_channel_overrides")
       .upsert(
         {
-          channel_id: channelId,
+          channel_id: channel.id,
           target_type: targetType,
           target_id: targetId,
           allow_permissions: toPgBigint(allow),
@@ -3845,10 +3848,23 @@ router.delete(
       const targetId = req.params.targetId;
       await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
 
+      // MANAGE_ROLES above is for :id only. The channel must belong to that
+      // server, otherwise an owner of server A could delete overrides on a
+      // hidden channel of server B (the 2026-10-18 cross-server fix).
+      const { data: channel, error: cErr } = await supabase
+        .from("server_channels")
+        .select("id, server_id")
+        .eq("id", channelId)
+        .eq("server_id", serverId)
+        .maybeSingle();
+      if (cErr) throw cErr;
+      if (!channel) return res.status(404).json({ error: "Channel not found." });
+
+      // server_channel_overrides has no server_id column: scope by the verified channel.
       const { error } = await supabase
         .from("server_channel_overrides")
         .delete()
-        .eq("channel_id", channelId)
+        .eq("channel_id", channel.id)
         .eq("target_type", targetType)
         .eq("target_id", targetId);
       if (error) throw error;
@@ -3916,7 +3932,12 @@ router.patch("/:id", requireAuth, async (req, res) => {
       patch.community_enabled = Boolean(req.body.communityEnabled);
     }
     if (req.body?.rulesChannelId !== undefined) {
-      patch.rules_channel_id = req.body.rulesChannelId || null;
+      const channelId = req.body.rulesChannelId || null;
+      if (channelId) {
+        // Must be a text channel of this server (was stored unchecked before 2026-10-18).
+        await assertServerChannelRef(serverId, channelId, ["text", "announcement"]);
+      }
+      patch.rules_channel_id = channelId;
     }
     if (req.body?.rulesText !== undefined) {
       patch.rules_text = req.body.rulesText
@@ -4065,13 +4086,19 @@ router.post("/:id/invites", requireAuth, async (req, res) => {
 
     const expiresAt = age ? new Date(Date.now() + age * 1000).toISOString() : null;
 
+    // An invite may only point at a channel of this server (was unchecked before 2026-10-18).
+    const inviteChannelId = req.body?.channelId ? String(req.body.channelId) : null;
+    if (inviteChannelId) {
+      await assertServerChannelRef(serverId, inviteChannelId);
+    }
+
     const { data: invite, error } = await supabase
       .from("server_invites")
       .insert({
         code,
         server_id: serverId,
         creator_id: req.user.id,
-        channel_id: req.body?.channelId || null,
+        channel_id: inviteChannelId,
         max_uses: maxUses,
         uses: 0,
         max_age_seconds: age,

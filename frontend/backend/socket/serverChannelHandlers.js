@@ -96,6 +96,15 @@ async function assertTextChannelAccess(userId, channelId, requiredFlag) {
     err.status = 403;
     throw err;
   }
+  // VIEW_CHANNEL is always required: without it a member of the server could
+  // react / pin / edit in a hidden channel (and reaction:add joined its live
+  // room). Before 2026-10-18 only requiredFlag was checked.
+  if (!hasPermission(resolved.bits, Permissions.VIEW_CHANNEL)) {
+    const err = new Error("Missing permission.");
+    err.status = 403;
+    err.code = "MISSING_PERMISSION";
+    throw err;
+  }
   if (requiredFlag && !hasPermission(resolved.bits, requiredFlag)) {
     const err = new Error("Missing permission.");
     err.status = 403;

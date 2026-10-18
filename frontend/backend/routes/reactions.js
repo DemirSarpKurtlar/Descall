@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
+const { Permissions, hasPermission, resolveChannelPermissions } = require("../lib/serverPermissions");
 
 // Get reactions for a conversation (DM or Group)
 router.get("/conversation/:type/:id", requireAuth, async (req, res) => {
@@ -31,6 +32,27 @@ router.get("/conversation/:type/:id", requireAuth, async (req, res) => {
       if (!member) {
         return res.status(403).json({ error: "Access denied" });
       }
+    } else if (type === "server") {
+      // id is a server text channel. Before 2026-10-18 this branch was missing,
+      // so any signed-in user could list reactions (message ids, user ids,
+      // usernames) of any channel, including private channels of other servers.
+      const { data: channel, error: chErr } = await supabase
+        .from("server_channels")
+        .select("id, server_id, type")
+        .eq("id", id)
+        .maybeSingle();
+      if (chErr) throw chErr;
+      if (!channel) return res.status(404).json({ error: "Channel not found" });
+      const resolved = await resolveChannelPermissions(supabase, channel.server_id, userId, channel.id);
+      if (
+        !resolved.isMember ||
+        !hasPermission(resolved.bits, Permissions.VIEW_CHANNEL) ||
+        !hasPermission(resolved.bits, Permissions.READ_MESSAGE_HISTORY)
+      ) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+    } else {
+      return res.status(400).json({ error: "Unknown conversation type" });
     }
 
     // Get all reactions for this conversation

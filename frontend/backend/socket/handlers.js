@@ -1806,7 +1806,23 @@ function registerSocketHandlers(io) {
         try {
           const { assertTextChannelAccess } = require("./serverChannelHandlers");
           const { Permissions } = require("../lib/serverPermissions");
-          await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          const { channel } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          // A stored message (uuid id) must live in that channel; a foreign
+          // messageId used to be accepted. Live-only app/game messages have
+          // non-uuid ids, are never stored, and keep working as before.
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(messageId))) {
+            const { data: msg } = await supabase
+              .from("server_messages")
+              .select("id")
+              .eq("id", messageId)
+              .eq("channel_id", channel.id)
+              .eq("server_id", channel.server_id)
+              .maybeSingle();
+            if (!msg) {
+              console.log("[reaction:add] Message not in this channel, returning");
+              return;
+            }
+          }
           socket.join(`server-channel:${conversationId}`);
         } catch (err) {
           console.log("[reaction:add] Server channel access denied:", err?.message || err);
@@ -1890,6 +1906,24 @@ function registerSocketHandlers(io) {
         } catch {
           return;
         }
+      } else if (conversationType === "group") {
+        // Same membership gate as reaction:add, so an outsider cannot push
+        // reaction:update events into a group room.
+        if (!socket.rooms.has(`group:${conversationId}`)) {
+          try {
+            const { data: mem } = await supabase
+              .from("group_members")
+              .select("user_id")
+              .eq("group_id", conversationId)
+              .eq("user_id", myId)
+              .maybeSingle();
+            if (!mem) return;
+          } catch {
+            return;
+          }
+        }
+      } else {
+        return;
       }
 
       try {

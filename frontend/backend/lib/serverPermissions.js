@@ -396,10 +396,10 @@ async function resolveChannelPermissions(supabase, serverId, userId, channelId) 
   if (!base.isMember) {
     return { ...base, channelId, overwritesApplied: false };
   }
-  if (base.isOwner || hasPermission(base.bits, Permissions.ADMINISTRATOR)) {
-    return { bits: ALL_PERMISSIONS, isOwner: base.isOwner, isMember: true, channelId, overwritesApplied: false };
-  }
 
+  // The channel must belong to serverId. A channel of another server used to
+  // resolve to this server's base bits (ALL for the owner / an ADMINISTRATOR),
+  // skipping that channel's own overwrites. Now it grants nothing.
   const { data: channelRow, error: chErr } = await supabase
     .from("server_channels")
     .select("id, parent_id")
@@ -407,6 +407,13 @@ async function resolveChannelPermissions(supabase, serverId, userId, channelId) 
     .eq("server_id", serverId)
     .maybeSingle();
   if (chErr) throw chErr;
+  if (!channelRow) {
+    return { bits: 0n, isOwner: base.isOwner, isMember: true, channelId, channelMissing: true, overwritesApplied: false };
+  }
+
+  if (base.isOwner || hasPermission(base.bits, Permissions.ADMINISTRATOR)) {
+    return { bits: ALL_PERMISSIONS, isOwner: base.isOwner, isMember: true, channelId, overwritesApplied: false };
+  }
 
   const parentId = channelRow?.parent_id || null;
   const overrideChannelIds = parentId ? [parentId, channelId] : [channelId];
