@@ -19,7 +19,7 @@ const DEFAULT_SYSTEM_CONFIG = {
     iosGlass: true,
     // Desktop/web Liquid Glass. Opt-in: missing or false stays off.
     desktopGlass: false,
-    // 2.11.3 scale S0: presence goes only to friends + shared servers/groups,
+    // 2.11.4 scale S0: presence goes only to friends + shared servers/groups,
     // coalesced. Off = legacy global roster to everyone (kill switch).
     presenceScoped: true,
   },
