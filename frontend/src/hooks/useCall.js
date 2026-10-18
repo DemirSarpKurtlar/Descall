@@ -57,6 +57,7 @@ import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  getNoiseSuppressionRawTrack,
   getVoiceAudioConstraints,
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
@@ -76,6 +77,14 @@ import {
 } from "../lib/iosAudioRoute";
 import { createMicGuard, withCaptureRetry } from "../lib/iosCallMic";
 import { reportDiagnostic } from "../lib/sentry";
+import {
+  liveMicDeviceId,
+  readAudioPrefs,
+  setOutputSink,
+  swapMicTrack,
+  writeAudioPref,
+} from "../lib/callAudioDevices";
+import { createRemoteAudioKeeper, inboundAudioVerdict, pickInboundAudio } from "../lib/remoteAudioKeeper";
 import { createCallSetupTimeline } from "../lib/callSetupTimeline";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { notifyCallAudioSession } from "../lib/voiceActivity";
@@ -178,8 +187,10 @@ export function useCall(socket, callOccupancyRef = null) {
   const [audioInputDevices, setAudioInputDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
   const [videoInputDevices, setVideoInputDevices] = useState([]);
-  const [selectedAudioInput, setSelectedAudioInput] = useState("");
-  const [selectedAudioOutput, setSelectedAudioOutput] = useState("");
+  // Saved choice (Settings page and the in-call menus share it). iOS routes
+  // natively (DescallAudioRouter), WKWebView device ids are not used there.
+  const [selectedAudioInput, setSelectedAudioInput] = useState(() => (IOS_NATIVE ? "" : readAudioPrefs().input));
+  const [selectedAudioOutput, setSelectedAudioOutput] = useState(() => (IOS_NATIVE ? "" : readAudioPrefs().output));
   const [selectedVideoInput, setSelectedVideoInput] = useState("");
   const videoInputIdRef = useRef("");
   const remoteVolumeRef = useRef(1);
@@ -291,6 +302,85 @@ export function useCall(socket, callOccupancyRef = null) {
     });
   }
 
+  // Remote <audio> playback (lib/remoteAudioKeeper.js): one srcObject per
+  // track set, rebind after CallKit activation / mic restarts, resume pauses.
+  const remoteAudioKeeperRef = useRef(null);
+  const lastAudioActivationRef = useRef(0);
+  if (!remoteAudioKeeperRef.current) {
+    remoteAudioKeeperRef.current = createRemoteAudioKeeper({
+      getElement: () => remoteAudioRef.current,
+      getTracks: () => remoteStreamRef.current?.getAudioTracks?.() || [],
+      isActive: () => modeRef.current === "active" || modeRef.current === "outgoing",
+      isDeafened: () => deafenedRef.current,
+      log: (...args) => console.info("[CallAudio]", ...args),
+    });
+  }
+
+  // Inbound audio telemetry once connected: packets / decoded level from
+  // getStats + the element state. Resumes a paused element, rebinds once on
+  // iOS when the track was attached before CallKit activated, and sends one
+  // non-personal diagnostic when no audio arrives (field data for "no sound").
+  const inboundProbeRef = useRef({ pc: null, timers: [] });
+  const stopInboundProbe = () => {
+    inboundProbeRef.current.timers.forEach((id) => clearTimeout(id));
+    inboundProbeRef.current = { pc: null, timers: [] };
+  };
+  const startInboundProbe = (pc) => {
+    if (!pc || inboundProbeRef.current.pc === pc || typeof pc.getStats !== "function") return;
+    stopInboundProbe();
+    const startedAt = Date.now();
+    const probe = { pc, timers: [], reported: false, rebound: false, flowingLogged: false };
+    inboundProbeRef.current = probe;
+    const sample = async (step) => {
+      if (inboundProbeRef.current !== probe || pcRef.current !== pc || pc.connectionState === "closed") return;
+      let inbound = null;
+      try {
+        inbound = pickInboundAudio(await pc.getStats());
+      } catch {
+        return;
+      }
+      const el = remoteAudioRef.current;
+      const verdict = inboundAudioVerdict({
+        inbound,
+        elapsedMs: Date.now() - startedAt,
+        hasElement: Boolean(el),
+        elementPaused: Boolean(el?.paused),
+      });
+      const keeper = remoteAudioKeeperRef.current;
+      const context = {
+        step,
+        verdict,
+        platform: callPlatformTag(),
+        direction: callDirectionRef.current || "",
+        ...(inbound || {}),
+        element: el ? { paused: Boolean(el.paused), muted: Boolean(el.muted), readyState: el.readyState, hasSrc: Boolean(el.srcObject) } : null,
+        deafened: Boolean(deafenedRef.current),
+        transceivers: (pc.getTransceivers?.() || []).map((t) => `${t.receiver?.track?.kind || "?"}:${t.currentDirection || t.direction || "?"}`).join(","),
+        ...keeper.stats(),
+      };
+      if (verdict === "resume") keeper.kick("probe");
+      if (verdict === "flowing" || verdict === "resume") {
+        if (!probe.flowingLogged) {
+          probe.flowingLogged = true;
+          console.info("[CallAudio] time-to-audio", Date.now() - startedAt, "ms after connect", context);
+        }
+        if (IOS_NATIVE && !probe.rebound && lastAudioActivationRef.current > keeper.attachedAt() && keeper.attachedAt() > 0) {
+          probe.rebound = true;
+          keeper.rebind("attached-before-activation");
+        }
+        if (verdict === "resume" && !probe.reported) {
+          probe.reported = true;
+          reportDiagnostic("dm_call_remote_audio_paused", context);
+        }
+      } else if (verdict === "missing" && !probe.reported) {
+        probe.reported = true;
+        console.warn("[CallAudio] no inbound audio", context);
+        reportDiagnostic("dm_call_inbound_audio_missing", context);
+      }
+    };
+    [1500, 4000, 9000, 20000].forEach((ms, i) => probe.timers.push(setTimeout(() => void sample(i + 1), ms)));
+  };
+
   // Native iOS: keep the microphone sending across CallKit audio-session
   // activation (lib/iosCallMic.js). null on web / Electron / Android.
   const micGuardRef = useRef(null);
@@ -314,6 +404,11 @@ export function useCall(socket, callOccupancyRef = null) {
         console.warn("[CallAudio]", kind, context);
         reportDiagnostic(kind, context);
       },
+      // A fresh capture (and above all "stop every capture") reconfigures
+      // WebKit's audio session: the remote track renderer must be rebuilt.
+      onRefreshed: ({ reason } = {}) => {
+        setTimeout(() => remoteAudioKeeperRef.current?.rebind(`mic-${reason || "refresh"}`), 150);
+      },
       onUnrecoverable: (reason) => {
         if (typeof window === "undefined") return;
         window.dispatchEvent(new CustomEvent("descall:ios-call-mic-unrecoverable", { detail: { reason } }));
@@ -326,12 +421,20 @@ export function useCall(socket, callOccupancyRef = null) {
   useEffect(() => { socketRef.current = socket; }, [socket]);
   useEffect(() => { callTypeRef.current = callType; }, [callType]);
 
-  const selectedAudioInputRef = useRef("");
+  const selectedAudioInputRef = useRef(selectedAudioInput);
   const setAudioInputRef = useRef(null);
   const replacingMicRef = useRef(false);
   useEffect(() => {
     selectedAudioInputRef.current = selectedAudioInput;
   }, [selectedAudioInput]);
+
+  // The saved speaker applies to all call audio from the start (not iOS: the
+  // native router owns output there).
+  useEffect(() => {
+    if (IOS_NATIVE) return;
+    const saved = readAudioPrefs().output;
+    if (saved) void setOutputSink(saved);
+  }, []);
 
   // Enumerate audio devices on mount and on device change. Empty selection
   // follows the system default; recapture only when the live mic is gone
@@ -348,7 +451,8 @@ export function useCall(socket, callOccupancyRef = null) {
         setAudioOutputDevices(outputs);
         setVideoInputDevices(cameras);
         const live = modeRef.current === "active" || modeRef.current === "outgoing";
-        const currentId = localStreamRef.current?.getAudioTracks?.()[0]?.getSettings?.().deviceId || "";
+        // The noise-suppressed track reports "WebAudio-…": use the raw capture id.
+        const currentId = liveMicDeviceId(localStreamRef.current, getNoiseSuppressionRawTrack());
         const plan = micRecapturePlan({
           previousIds,
           inputs,
@@ -369,6 +473,8 @@ export function useCall(socket, callOccupancyRef = null) {
   const cleanup = useCallback(() => {
     setupTimelineRef.current?.end();
     micGuardRef.current?.reset();
+    stopInboundProbe();
+    remoteAudioKeeperRef.current?.reset();
     recoveryRef.current?.dispose();
     recoveryRef.current = null;
     iceRestartQueuedRef.current = false;
@@ -477,6 +583,8 @@ export function useCall(socket, callOccupancyRef = null) {
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => t.stop());
       }
+      stopInboundProbe();
+      remoteAudioKeeperRef.current?.reset();
       const audio = remoteAudioRef.current;
       if (audio) {
         try { audio.muted = true; audio.srcObject = null; } catch { /* ignore */ }
@@ -571,16 +679,10 @@ export function useCall(socket, callOccupancyRef = null) {
       setRemoteCameraOn(true);
     }
     const audio = remoteAudioRef.current;
-    const micTracks = mainStream?.getAudioTracks().filter((track) => track.readyState !== "ended") || [];
-    if (audio) {
-      if (micTracks.length) {
-        audio.srcObject = new MediaStream(micTracks);
-        audio.muted = deafenedRef.current;
-        applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
-        audio.play().catch(() => {});
-      } else if (audio.srcObject) {
-        audio.srcObject = null;
-      }
+    // srcObject changes only when the mic track set changes (every reassign
+    // restarts WebKit's renderer; the overlay used to flip it back and forth).
+    if (audio && remoteAudioKeeperRef.current.attach("inbound") !== "cleared") {
+      applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
     }
     const video = remoteVideoRef.current;
     const cameraTracks = mainStream?.getVideoTracks().filter((track) => track.readyState !== "ended") || [];
@@ -701,6 +803,10 @@ export function useCall(socket, callOccupancyRef = null) {
         hapticCallConnected();
         setMode("active");
         modeRef.current = "active";
+      }
+      if (conn === "connected") {
+        startInboundProbe(pc);
+        remoteAudioKeeperRef.current?.start();
       }
       if (conn === "connected" || ice === "connected" || ice === "completed") {
         iceRestartAttemptedRef.current = false;
@@ -838,16 +944,8 @@ export function useCall(socket, callOccupancyRef = null) {
         );
       }
 
-      const audio = remoteAudioRef.current;
-      if (audio) {
-        try {
-          audio.muted = false;
-          const p = audio.play();
-          if (p?.catch) p.catch(() => {});
-        } catch {
-          /* ignore */
-        }
-      }
+      // Never unmute a deafened call; play() when paused, attach if missing.
+      remoteAudioKeeperRef.current?.attach("visible");
       const video = remoteVideoRef.current;
       if (video) {
         try {
@@ -1284,12 +1382,19 @@ export function useCall(socket, callOccupancyRef = null) {
   // Mic (+ camera) for a DM call. Native iOS retries a capture that collides
   // with CallKit activating the audio session (NotReadableError).
   const acquireCallMicStream = useCallback((type) => {
+    const base = type === "video"
+      ? { video: { width: 1280, height: 720, facingMode: "user" } }
+      : { video: false };
+    // The saved microphone; a missing device falls back to the default.
+    const preferred = IOS_NATIVE ? "" : selectedAudioInputRef.current || "";
+    const capture = (id) =>
+      acquireVoiceMicStream(id && id !== "default" ? { ...base, audio: { deviceId: { exact: id } } } : base);
     const acquire = () =>
-      acquireVoiceMicStream(
-        type === "video"
-          ? { video: { width: 1280, height: 720, facingMode: "user" } }
-          : { video: false }
-      );
+      capture(preferred).catch((err) => {
+        if (!preferred || (err?.name !== "OverconstrainedError" && err?.name !== "NotFoundError")) throw err;
+        console.warn("[CallAudio] saved microphone unavailable, using the default");
+        return capture("");
+      });
     if (!IOS_NATIVE) return acquire();
     return withCaptureRetry(acquire, { log: (...args) => console.info("[CallAudio]", ...args) });
   }, []);
@@ -1882,49 +1987,83 @@ export function useCall(socket, callOccupancyRef = null) {
     };
   }, [socket, handleRemoteScreenShareStart, handleRemoteScreenShareStop]);
 
-  // Change active microphone mid-call
-  const setAudioInput = useCallback(async (deviceId) => {
+  // Change active microphone mid-call: capture the device (exact id), then
+  // RTCRtpSender.replaceTrack (no renegotiation). The choice is saved.
+  const setAudioInput = useCallback(async (deviceId, opts = {}) => {
     const id = deviceId || "";
     setSelectedAudioInput(id);
-    if (!localStreamRef.current) return;
-    const prevEnabled = localStreamRef.current.getAudioTracks()[0]?.enabled !== false;
+    selectedAudioInputRef.current = id;
+    if (opts.persist !== false && !IOS_NATIVE) writeAudioPref("input", id);
+    const local = localStreamRef.current;
+    if (!local) return true;
+    const prevEnabled = local.getAudioTracks()[0]?.enabled !== false;
+    const oldRaw = getNoiseSuppressionRawTrack();
     replacingMicRef.current = true;
-    try {
-      disposeNoiseSuppressionSession({ stopRaw: true });
-      const newStream = await acquireVoiceMicStream({
-        ...(id ? { audio: { deviceId: { exact: id } } } : {}),
+    const capture = (devId) =>
+      acquireVoiceMicStream({
+        ...(devId && devId !== "default" ? { audio: { deviceId: { exact: devId } } } : {}),
         video: false,
         applyStoredMute: false,
       });
-      const newTrack = newStream.getAudioTracks()[0];
-      if (!newTrack) return;
-      newTrack.enabled = prevEnabled;
-      localStreamRef.current.getAudioTracks().forEach(t => { t.stop(); localStreamRef.current.removeTrack(t); });
-      localStreamRef.current.addTrack(newTrack);
-      setNoiseSuppressedTrackEnabled(prevEnabled);
-      if (pcRef.current) {
-        const sender = pcRef.current.getSenders().find(s => s.track?.kind === "audio" && s !== screenAudioSenderRef.current);
-        if (sender) await sender.replaceTrack(newTrack);
-      }
-      newTrack.addEventListener("ended", () => {
-        if (replacingMicRef.current) return;
-        if (localStreamRef.current?.getAudioTracks?.()[0] !== newTrack) return;
-        if (modeRef.current !== "active" && modeRef.current !== "outgoing") return;
-        void setAudioInputRef.current?.("");
+    try {
+      const { track, replaced } = await swapMicTrack({
+        pc: pcRef.current,
+        stream: local,
+        acquire: capture,
+        deviceId: id,
+        excludeSenders: [screenAudioSenderRef.current],
+        enabled: prevEnabled,
       });
-      setLocalStream(localStreamRef.current);
-    } catch (_) {} finally {
+      // The noise-suppression graph keeps its own raw capture: release the old one.
+      if (oldRaw && oldRaw !== getNoiseSuppressionRawTrack()) {
+        try { oldRaw.stop(); } catch { /* ignore */ }
+      }
+      setNoiseSuppressedTrackEnabled(prevEnabled);
+      track.addEventListener("ended", () => {
+        if (replacingMicRef.current) return;
+        if (localStreamRef.current?.getAudioTracks?.()[0] !== track) return;
+        if (modeRef.current !== "active" && modeRef.current !== "outgoing") return;
+        void setAudioInputRef.current?.("", { persist: false });
+      });
+      micGuardRef.current?.watchTrack?.(track);
+      setLocalStream(local);
+      console.info("[CallAudio] microphone switched", { replaced, device: id ? "chosen" : "default" });
+      return true;
+    } catch (err) {
+      console.warn("[CallAudio] microphone switch failed:", err?.name || err?.message || err);
+      toastRef.current?.(tRuntime("Couldn't switch the microphone."), "error");
+      // The old capture may be gone (NS graph rebuilt): get the default back.
+      const live = local.getAudioTracks()[0];
+      if (id && (!live || live.readyState === "ended" || !getNoiseSuppressionRawTrack())) {
+        try {
+          await swapMicTrack({
+            pc: pcRef.current,
+            stream: local,
+            acquire: capture,
+            deviceId: "",
+            excludeSenders: [screenAudioSenderRef.current],
+            enabled: prevEnabled,
+          });
+          setLocalStream(local);
+        } catch { /* nothing left to capture */ }
+      }
+      return false;
+    } finally {
       replacingMicRef.current = false;
     }
   }, []);
   setAudioInputRef.current = setAudioInput;
 
-  // Change active speaker/output mid-call
-  const setAudioOutput = useCallback((deviceId) => {
-    setSelectedAudioOutput(deviceId);
-    if (remoteAudioRef.current?.setSinkId) {
-      remoteAudioRef.current.setSinkId(deviceId).catch(() => {});
-    }
+  // Change speaker/output mid-call: every remote-audio element and boost
+  // AudioContext follows (lib/callAudioDevices.js). The choice is saved.
+  const setAudioOutput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    setSelectedAudioOutput(id);
+    writeAudioPref("output", id);
+    const res = await setOutputSink(id);
+    console.info("[AudioOutput] switched", res);
+    if (res.failed && !res.applied) toastRef.current?.(tRuntime("Couldn't switch the speaker."), "error");
+    return res.failed === 0;
   }, []);
 
   const setVideoInput = useCallback(async (deviceId) => {
@@ -2011,9 +2150,24 @@ export function useCall(socket, callOccupancyRef = null) {
 
   /** CallKit didActivate (from useIosCallKitBridge). */
   const onCallAudioSessionActivated = useCallback(() => {
+    lastAudioActivationRef.current = Date.now();
     notifyCallAudioSession();
+    // The remote track was attached before CallKit took the session (the
+    // callee case): rebuild its renderer on the activated session.
+    const keeper = remoteAudioKeeperRef.current;
+    if (!keeper.rebind("callkit-activated")) keeper.attach("callkit-activated");
     micGuardRef.current?.onAudioSessionActivated();
     if (iosRouteActiveRef.current) void beginIosCallAudio({ video: callTypeRef.current === "video", owner: "dm" });
+  }, []);
+
+  /** Attach / resume the remote <audio> (overlay mount, bridge events). */
+  const ensureRemoteAudio = useCallback((reason = "overlay") => {
+    const audio = remoteAudioRef.current;
+    const res = remoteAudioKeeperRef.current?.attach(reason);
+    if (audio && res && res !== "cleared" && res !== "none") {
+      applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
+    }
+    return res;
   }, []);
 
   /** Re-acquire the microphone (native iOS recovery; no-op elsewhere). */
@@ -2027,6 +2181,19 @@ export function useCall(socket, callOccupancyRef = null) {
     IOS_NATIVE ? getIosAudioRouteSnapshot : getNoRoute,
     IOS_NATIVE ? getIosAudioRouteSnapshot : getNoRoute
   );
+  // iOS: a route change (AirPods, speaker, receiver) re-plans WebKit's audio
+  // units; rebuild the remote renderer so the caller stays audible.
+  const iosRouteCurrent = iosRoute?.current || "";
+  const lastIosRouteRef = useRef("");
+  useEffect(() => {
+    if (!IOS_NATIVE) return;
+    const prev = lastIosRouteRef.current;
+    lastIosRouteRef.current = iosRouteCurrent;
+    if (!prev || !iosRouteCurrent || prev === iosRouteCurrent) return;
+    if (modeRef.current !== "active") return;
+    const id = setTimeout(() => remoteAudioKeeperRef.current?.rebind(`route-${iosRouteCurrent}`), 250);
+    return () => clearTimeout(id);
+  }, [iosRouteCurrent]);
   const iosOutputDevices = useMemo(
     () => (IOS_NATIVE && iosRoute ? iosRoutesAsOutputDevices(iosRoute, tRuntime) : null),
     [iosRoute]
@@ -2165,8 +2332,12 @@ export function useCall(socket, callOccupancyRef = null) {
     selectedVideoInput,
     setAudioInput,
     setAudioOutput: iosOutputDevices ? setIosAudioOutput : setAudioOutput,
+    // Native iOS AVAudioSession routes for the in-call device menus (null elsewhere).
+    iosAudioRoute: IOS_NATIVE ? iosRoute : null,
+    selectIosRoute: setIosAudioOutput,
     refreshMicrophone,
     onCallAudioSessionActivated,
+    ensureRemoteAudio,
     setVideoInput,
     setParticipantVolume,
     toggleParticipantMute,

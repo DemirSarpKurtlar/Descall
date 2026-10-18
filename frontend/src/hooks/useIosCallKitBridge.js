@@ -47,17 +47,8 @@ export function useIosCallKitBridge({ call, socket, meId }) {
         // The speaking-ring graph was built against the pre-CallKit session.
         notifyCallAudioSession();
         // Microphone capture that started before CallKit took the session is re-acquired.
+        // Also rebuilds the remote audio renderer (respecting deafen).
         callRef.current?.onCallAudioSessionActivated?.();
-        const audio = callRef.current?.remoteAudioRef?.current;
-        if (audio) {
-          try {
-            audio.muted = false;
-            const p = audio.play();
-            if (p?.catch) p.catch(() => {});
-          } catch {
-            /* ignore */
-          }
-        }
       },
       onAudioReleased: () => {
         setCallKitAudioReleased(true);

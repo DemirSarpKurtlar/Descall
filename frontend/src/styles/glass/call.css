@@ -512,10 +512,6 @@ html.glass-ui .g-call .g-cb:active {
   transform: scale(0.97);
 }
 
-html.glass-ui .g-call .server-voice-dock-chevron {
-  display: none;
-}
-
 html.glass-ui .g-call-menu {
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),

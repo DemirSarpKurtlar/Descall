@@ -1,0 +1,95 @@
+/* Heavy frosted glass for every floating surface (2.10.113).
+   Rule: no menu, sheet, popover, context menu, dropdown, confirm, device menu
+   or info sheet may be see-through. Text behind one must be unreadable, so each
+   gets a strong backdrop blur PLUS a high-opacity tinted base, and an opaque
+   fallback when backdrop-filter is missing or transparency is reduced.
+   Loaded last, unscoped (all platforms); !important because component CSS
+   chunks (pinned popover, slash menu…) load after this file, and the
+   :root×4 prefix (specificity 0,5,0) so it beats the per-platform
+   `html.glass-ui .x` / `html.glass-desktop .x` !important rules.
+   The selector list is the single source of truth, checked by
+   src/styles/frost.selftest.mjs. */
+
+:root {
+  --frost-blur: 48px;
+  --frost-saturate: 180%;
+  --frost-base-dark: rgba(22, 22, 28, 0.86);
+  --frost-base-light: rgba(245, 245, 250, 0.88);
+  --frost-solid-dark: rgb(28, 28, 34);
+  --frost-solid-light: rgb(246, 246, 249);
+  --frost-sheen-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 100%);
+  --frost-sheen-light: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 100%);
+  --frost-base: var(--frost-base-dark);
+  --frost-solid: var(--frost-solid-dark);
+  --frost-sheen: var(--frost-sheen-dark);
+}
+:root[data-theme="light"] {
+  --frost-base: var(--frost-base-light);
+  --frost-solid: var(--frost-solid-light);
+  --frost-sheen: var(--frost-sheen-light);
+}
+
+/* FROST-SURFACES:BEGIN */
+:root:root:root:root :is(
+  .g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-msg-pop,
+  .call-device-menu, .server-voice-device-menu, .server-voice-member-menu,
+  .server-member-menu, .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu,
+  .server-dropdown, .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel,
+  .status-picker, .message-inline-picker, .activity-privacy-menu,
+  .ssq-pop, .ssq-sheet, .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card,
+  .g-call-sheet, .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal,
+  .g-alert, .conv-confirm-card, .toast-item,
+  .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
+  .un-modal, .activity-modal, .update-notes-modal, .lfg-modal
+)
+/* FROST-SURFACES:END */
+{
+  background: var(--frost-sheen), linear-gradient(var(--frost-base), var(--frost-base)) !important;
+  background-color: var(--frost-base) !important;
+  -webkit-backdrop-filter: blur(var(--frost-blur)) saturate(var(--frost-saturate)) !important;
+  backdrop-filter: blur(var(--frost-blur)) saturate(var(--frost-saturate)) !important;
+}
+
+/* Opaque fallback: no backdrop-filter support, Reduce Transparency (native →
+   html.a11y-solid), the low-power desktop mode, or the OS media query. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root:root:root:root :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-msg-pop,
+    .call-device-menu, .server-voice-device-menu, .server-voice-member-menu, .server-member-menu,
+    .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu, .server-dropdown,
+    .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel, .status-picker,
+    .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
+    .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet,
+    .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert,
+    .conv-confirm-card, .toast-item, .server-modal, .add-modal, .report-modal, .feedback-modal,
+    .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .lfg-modal) {
+    background: var(--frost-solid) !important;
+  }
+}
+:root:root:root:root:is(.a11y-solid, .gd-lite) :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu,
+  .g-status-menu, .g-msg-pop, .call-device-menu, .server-voice-device-menu, .server-voice-member-menu,
+  .server-member-menu, .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu,
+  .server-dropdown, .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel, .status-picker,
+  .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
+  .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet, .gs-sheet,
+  .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert, .conv-confirm-card,
+  .toast-item, .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
+  .un-modal, .activity-modal, .update-notes-modal, .lfg-modal) {
+  background: var(--frost-solid) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root:root:root:root :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-msg-pop,
+    .call-device-menu, .server-voice-device-menu, .server-voice-member-menu, .server-member-menu,
+    .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu, .server-dropdown,
+    .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel, .status-picker,
+    .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
+    .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet,
+    .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert,
+    .conv-confirm-card, .toast-item, .server-modal, .add-modal, .report-modal, .feedback-modal,
+    .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .lfg-modal) {
+    background: var(--frost-solid) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}

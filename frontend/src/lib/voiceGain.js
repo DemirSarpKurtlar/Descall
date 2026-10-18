@@ -5,11 +5,15 @@
  * after that every level (including mute) stays on that node.
  */
 
+import { registerSinkContext, registerSinkElement } from "./callAudioDevices.js";
+
 const graphs = new WeakMap();
 
 export function applyPlaybackGain(el, gain) {
   const level = Math.max(0, Math.min(2, Number(gain) || 0));
   if (!el) return level;
+  // Every remote-audio element passes through here: follow the chosen speaker.
+  registerSinkElement(el);
   const existing = graphs.get(el);
   if (!existing && level <= 1) {
     el.volume = level;
@@ -30,6 +34,8 @@ export function applyPlaybackGain(el, gain) {
       node.connect(ctx.destination);
       graph = { ctx, gain: node };
       graphs.set(el, graph);
+      // The boost graph plays through the context, not the element's sink.
+      registerSinkContext(ctx);
     } catch {
       el.volume = Math.min(1, level);
       return Math.min(1, level);

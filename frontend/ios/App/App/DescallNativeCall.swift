@@ -63,6 +63,10 @@ final class DescallNativeCall: NSObject {
         var statsTimer: Timer?
         var negotiating = false
         var pendingRenegotiation: String?
+        /// ICE reached connected/completed (can happen while still ringing:
+        /// the caller's candidates arrive with the offer).
+        var iceConnected = false
+        var inboundLogged = false
 
         init(info: DescallCallManager.CallInfo, apiBase: String) {
             uuid = info.uuid
@@ -423,7 +427,43 @@ final class DescallNativeCall: NSObject {
             s.socket?.emit("call:resume-pending", ["callUuids": [s.uuid.uuidString.lowercased()]])
         }
         armFailTimer(s, after: Self.connectTimeout, reason: "connect-timeout")
+        // 2.10.113: ICE often connects while the phone is still ringing. The
+        // state callback ignored that (not answered yet) and never fired again,
+        // so the call never left "connecting": no stats probe / time-to-audio,
+        // and the 30 s connect timer hung up a call that was working.
+        if s.iceConnected { markConnected(s) }
+        // CallKit may already have activated the session (didActivate before
+        // this engine owned the call): start WebRTC's audio unit now.
+        if DescallCallManager.shared.callKitAudioActive && !RTCAudioSession.sharedInstance().isAudioEnabled {
+            NSLog("[DescallNativeCall] audio session already active at answer; enabling audio")
+            audioSessionActivated(AVAudioSession.sharedInstance())
+        }
         emitState()
+    }
+
+    private func markConnected(_ s: Session) {
+        s.failTimer?.cancel()
+        if s.connectedAt == nil {
+            s.connectedAt = Date()
+            s.timeline.mark("iceConnected", at: Date().timeIntervalSince1970)
+            startStatsProbe(s)
+        }
+        s.phase = .connected
+        enableRemoteAudio(s)
+    }
+
+    /// Remote audio tracks play through WebRTC's audio unit; make sure none is
+    /// left disabled (renegotiation can hand us a fresh receiver track).
+    private func enableRemoteAudio(_ s: Session) {
+        guard let pc = s.pc else { return }
+        var count = 0
+        for t in pc.transceivers where t.mediaType == .audio {
+            if let track = t.receiver.track, !track.isEnabled {
+                track.isEnabled = true
+                count += 1
+            }
+        }
+        if count > 0 { NSLog("[DescallNativeCall] enabled \(count) remote audio track(s)") }
     }
 
     private func sendAnswer(_ s: Session) {
@@ -473,6 +513,9 @@ final class DescallNativeCall: NSObject {
         let rtc = RTCAudioSession.sharedInstance()
         rtc.audioSessionDidActivate(audioSession)
         rtc.isAudioEnabled = true
+        enableRemoteAudio(s)
+        let outputs = audioSession.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
+        NSLog("[DescallNativeCall] audio enabled category=\(audioSession.category.rawValue) mode=\(audioSession.mode.rawValue) outputs=\(outputs)")
         s.timeline.mark("audioSession", at: Date().timeIntervalSince1970)
         emitState()
     }
@@ -595,12 +638,26 @@ final class DescallNativeCall: NSObject {
         let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self, weak s] timer in
             guard let self = self, let s = s, self.session === s, let pc = s.pc else { timer.invalidate(); return }
             ticks += 1
-            if ticks > 75 { timer.invalidate(); s.statsTimer = nil; return }
+            if ticks > 75 {
+                timer.invalidate()
+                s.statsTimer = nil
+                if s.timeline.ms("firstAudio") == nil {
+                    // Field data for "iOS doesn't hear the caller": nothing arrived.
+                    NSLog("[DescallNativeCall] no inbound audio 15 s after connect · audioEnabled=\(RTCAudioSession.sharedInstance().isAudioEnabled) callKitAudio=\(DescallCallManager.shared.callKitAudioActive) · \(s.timeline.summary)")
+                    s.timeline.mark("noInboundAudio", at: Date().timeIntervalSince1970)
+                    self.emitState()
+                }
+                return
+            }
             pc.statistics { report in
                 var packets = 0
+                var level: Double = 0
+                var samples = 0
                 for stat in report.statistics.values where stat.type == "inbound-rtp" {
                     if (stat.values["kind"] as? String) == "audio" {
                         packets += (stat.values["packetsReceived"] as? NSNumber)?.intValue ?? 0
+                        level = max(level, (stat.values["audioLevel"] as? NSNumber)?.doubleValue ?? 0)
+                        samples += (stat.values["totalSamplesReceived"] as? NSNumber)?.intValue ?? 0
                     }
                 }
                 guard packets > 0 else { return }
@@ -609,7 +666,14 @@ final class DescallNativeCall: NSObject {
                     s.timeline.mark("firstAudio", at: Date().timeIntervalSince1970)
                     s.statsTimer?.invalidate()
                     s.statsTimer = nil
-                    NSLog("[DescallNativeCall] time-to-audio \(s.timeline.answerToAudioMs ?? -1) ms · \(s.timeline.summary)")
+                    let rtc = RTCAudioSession.sharedInstance()
+                    if !rtc.isAudioEnabled && DescallCallManager.shared.callKitAudioActive {
+                        // Packets arrive but the audio unit is off: nothing would play.
+                        NSLog("[DescallNativeCall] inbound audio with audio unit off; enabling")
+                        rtc.isAudioEnabled = true
+                    }
+                    self.enableRemoteAudio(s)
+                    NSLog("[DescallNativeCall] time-to-audio \(s.timeline.answerToAudioMs ?? -1) ms · packets=\(packets) samples=\(samples) level=\(level) audioEnabled=\(rtc.isAudioEnabled) · \(s.timeline.summary)")
                     self.emitState()
                 }
             }
@@ -690,16 +754,20 @@ extension DescallNativeCall: RTCPeerConnectionDelegate {
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         DispatchQueue.main.async {
-            guard let s = self.current(peerConnection), s.answered else { return }
+            guard let s = self.current(peerConnection) else { return }
             switch newState {
             case .connected, .completed:
-                s.failTimer?.cancel()
-                if s.connectedAt == nil {
-                    s.connectedAt = Date()
-                    s.timeline.mark("iceConnected", at: Date().timeIntervalSince1970)
-                    self.startStatsProbe(s)
-                }
-                s.phase = .connected
+                s.iceConnected = true
+            case .disconnected, .failed, .closed:
+                s.iceConnected = false
+            default:
+                break
+            }
+            // Before the answer: remembered above, applied by answer().
+            guard s.answered else { return }
+            switch newState {
+            case .connected, .completed:
+                self.markConnected(s)
             case .disconnected:
                 if s.phase == .connected { s.phase = .reconnecting }
                 self.armFailTimer(s, after: Self.reconnectTimeout, reason: "lost")
