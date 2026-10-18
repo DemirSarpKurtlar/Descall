@@ -279,9 +279,19 @@ export default function ChatPanel({
   // shrink the photo so the whole effect fits instead of being clipped square.
   const headerDmHasCosmetics = Boolean(headerDm?.equippedAvatarEffect?.effect_key);
   const headerDmAvatarSize = headerDmHasCosmetics ? 28 : 40;
+  const headerGroupIconSize = 40;
   const glassServerChannel = Boolean(glass && activeView === "servers" && activeChannel);
   const glassConv = Boolean(glass && (headerDm || headerGroup || glassServerChannel));
   const glassHash = glassServerChannel && activeChannel?.type !== "voice" && activeChannel?.type !== "stage";
+  // 2.11.14: DM, group and server text channels float the header pills over
+  // the message list (spec splash-header-2026-10-18 §2). The panel frost moves
+  // to .chat-panel-bg so the pills' own blur sees the messages under them.
+  const floatingHeader = Boolean(
+    !isMobile
+      && activeView !== "activity" && activeView !== "friends" && activeView !== "calls"
+      && (activeView === "servers" ? activeChannel?.type === "text" : Boolean(headerDm || headerGroup))
+  );
+  const chromeRef = useRef(null);
   const headerConversationKey = headerGroup
     ? `group:${headerGroup.id}`
     : headerDm
@@ -388,9 +398,32 @@ export default function ChatPanel({
     };
   })();
 
+  // Scroll-edge layer shows only once a message sits under the pills.
+  // Attribute write, no React state: scrolling must not re-render the panel.
+  useEffect(() => {
+    if (!floatingHeader) return undefined;
+    const scroller = messagesRef.current;
+    const chrome = chromeRef.current;
+    if (!scroller || !chrome) return undefined;
+    let frame = 0;
+    const sync = () => {
+      frame = 0;
+      const under = scroller.scrollTop > 2;
+      if ((chrome.dataset.scrolled === "1") !== under) chrome.dataset.scrolled = under ? "1" : "0";
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(sync); };
+    sync();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [floatingHeader, headerConversationKey, activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
+
   return (
     <div className={`chat-panel-shell${showMembers && !headerDm && !isMobile ? " is-members-docked" : ""}`}>
-      <main className="main-panel">
+      <main className={floatingHeader ? "main-panel is-floating-header" : "main-panel"}>
+        {floatingHeader ? <div className="chat-panel-bg" aria-hidden="true" /> : null}
         {activeTimeout?.timedOut && (
           <div className="timeout-banner" role="status">
             <Timer size={16} className="timeout-banner-icon" aria-hidden />
@@ -422,8 +455,10 @@ export default function ChatPanel({
         <div
           className="chat-top-chrome"
           key={headerConversationKey}
+          ref={chromeRef}
         >
         {glassConv ? <div className="g-edge-top g-edge-conv" aria-hidden="true" /> : null}
+        {floatingHeader ? <div className="chat-scroll-edge" aria-hidden="true" /> : null}
         <header className={glassConv ? "panel-header g-conv" : "panel-header"}>
         <div className="header-left">
           {isMobile && (
@@ -449,7 +484,7 @@ export default function ChatPanel({
                 <Avatar
                   key={headerDm.id || headerDm.username}
                   name={resolveDisplayName(headerDm)}
-                  size={headerDmAvatarSize}
+                  size={floatingHeader && !headerDmHasCosmetics ? 36 : headerDmAvatarSize}
                   user={headerDm}
                   loading="eager"
                 />
@@ -467,8 +502,8 @@ export default function ChatPanel({
               >
                 <GroupIcon
                   group={headerGroup}
-                  size={40}
-                  radius={12}
+                  size={floatingHeader ? 36 : headerGroupIconSize}
+                  radius={floatingHeader ? 18 : 12}
                   className="header-group-photo"
                   initials={glass ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}
                 />
@@ -542,6 +577,7 @@ export default function ChatPanel({
           )}
           {(headerGroup || (headerDm && !dmBlockedByMe)) && (
             <>
+              <span className="header-actions-sep" aria-hidden="true" />
               <button 
                 className="icon-btn" 
                 title={t("Voice Call")}
@@ -561,13 +597,16 @@ export default function ChatPanel({
             </>
           )}
           {headerDm?.id && headerDm.id !== me?.id && (
+            <>
+            <span className="header-actions-sep" aria-hidden="true" />
             <BlockUserButton
               userId={headerDm.id}
               username={headerDm.username}
-              className={`icon-btn ${dmBlockedByMe ? "active" : ""}`}
+              className={`icon-btn header-block-btn ${dmBlockedByMe ? "active" : ""}`}
               iconSize={20}
               compact
             />
+            </>
           )}
         </div>
       </header>

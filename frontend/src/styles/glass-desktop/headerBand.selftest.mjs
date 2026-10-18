@@ -222,4 +222,50 @@ for (const file of files) {
 }
 assert.deepEqual(failures, []);
 
+// 2.11.14 floating conversation header (spec splash-header-2026-10-18 §2).
+// The pill blur is allowed only here, and only because the panel frost moved
+// to .chat-panel-bg: no ancestor of the pills is a backdrop root any more.
+const fh = css("floatingHeader.css");
+const index = readFileSync(join(root, "index.css"), "utf8");
+assert.ok(index.indexOf('@import "./floatingHeader.css"') > index.indexOf('@import "./surfaces.css"'), "floatingHeader.css loads after surfaces.css");
+const slotOff = block(fh, "html.glass-desktop .app-main-slot:has(> .chat-panel-shell > .main-panel.is-floating-header),");
+assert.match(slotOff, /backdrop-filter:\s*none !important/);
+assert.match(slotOff, /background:\s*transparent !important/);
+const panelOff = block(fh, "html.glass-desktop .main-panel.is-floating-header,");
+assert.match(panelOff, /backdrop-filter:\s*none !important/);
+assert.match(panelOff, /isolation:\s*isolate/);
+const bg = block(fh, "html.glass-desktop .main-panel.is-floating-header > .chat-panel-bg {");
+assert.match(bg, /backdrop-filter:\s*blur\(var\(--gd-blur-panel\)\)/);
+assert.match(bg, /z-index:\s*-1/);
+const chrome = block(fh, "html.glass-desktop .main-panel.is-floating-header > .chat-top-chrome {");
+assert.match(chrome, /position:\s*absolute/);
+const head = block(fh, "html.glass-desktop .main-panel.is-floating-header .panel-header {");
+assert.match(head, /border:\s*0 !important/);
+assert.equal(/background|box-shadow/.test(head), false, "no band behind the pills");
+assert.match(block(fh, "html.glass-desktop .main-panel.is-floating-header > .messages-container {"), /padding-top:\s*var\(--fh-top-space\)/);
+const pills = block(fh, "html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity,");
+assert.match(pills, /height:\s*var\(--fh-pill-h\)/);
+assert.match(pills, /0 8px 24px rgba\(0, 0, 0, 0\.26\)/);
+const frost = block(fh, "html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity::before,");
+assert.match(frost, /backdrop-filter:\s*blur\(44px\) saturate\(190%\) brightness\(0\.96\)/);
+assert.match(frost, /clip-path:\s*inset\(0 round/);
+const edge = block(fh, "html.glass-desktop .main-panel.is-floating-header .chat-scroll-edge {");
+assert.match(edge, /height:\s*96px/);
+assert.match(edge, /backdrop-filter:\s*blur\(18px\) saturate\(160%\)/);
+assert.match(edge, /mask-image:\s*linear-gradient\(180deg, #000 0%, #000 38%, rgba\(0, 0, 0, 0\.55\) 66%, transparent 100%\)/);
+assert.equal(/border(?!-radius)/.test(edge), false);
+assert.match(fh, /--fh-inset:\s*14px/);
+assert.match(fh, /--fh-pill-h:\s*48px/);
+assert.match(fh, /\.header-block-btn \{\s*color:\s*#ff8a80/);
+assert.match(fh, /html\.glass-desktop\.gd-lite \.main-panel\.is-floating-header \.panel-header \.header-identity,[^{]*\{\s*background:\s*var\(--gd-solid\) !important/);
+assert.match(fh, /html\.glass-desktop\.gd-contrast \{[^}]*0\.80/);
+assert.match(fh, /prefers-contrast:\s*more/);
+const panelJsx = readFileSync(join(root, "../../components/layout/ChatPanel.jsx"), "utf8");
+assert.match(panelJsx, /"main-panel is-floating-header"/);
+assert.match(panelJsx, /<div className="chat-panel-bg" aria-hidden="true" \/>/);
+assert.match(panelJsx, /<div className="chat-scroll-edge" aria-hidden="true" \/>/);
+assert.match(panelJsx, /chrome\.dataset\.scrolled/);
+assert.equal((panelJsx.match(/className="header-actions-sep"/g) || []).length, 2);
+assert.match(panelJsx, /header-block-btn/);
+
 console.log("headerBand.selftest ok");

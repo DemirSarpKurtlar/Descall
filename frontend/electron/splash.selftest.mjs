@@ -49,8 +49,16 @@ assert.doesNotMatch(main, /status:\s*'Downloading update/);
 assert.doesNotMatch(main, /status:\s*'Up to date'/);
 assert.doesNotMatch(main, /Couldn’t check for updates/);
 
-assert.match(splash, /descall-icon\.png/);
-assert.match(splash, /Konsept 2/);
+// 2.11.14 glass tile: logo-final symbol + wordmark, no app-icon bitmap.
+assert.match(splash, /class="logo-wrap" id="logo"/);
+assert.match(splash, /class="symbol"/);
+assert.match(splash, /#86A0FF/);
+assert.match(splash, /class="wordmark"/);
+assert.match(splash, /width: 120px;\s*height: 120px;\s*border-radius: 32px;/);
+assert.match(splash, /width: 132px;\s*height: 3px;/);
+assert.match(splash, /@keyframes sheen/);
+assert.match(splash, /let scale = 0\.96;/);
+assert.doesNotMatch(splash, /<img src="descall-icon\.png"/);
 assert.match(splash, /backdrop-filter:\s*blur\(40px\)/);
 assert.match(splash, /background:\s*transparent !important/);
 assert.match(splash, /prefers-reduced-motion:\s*reduce/);

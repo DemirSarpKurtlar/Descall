@@ -966,6 +966,178 @@
           animation: none !important;
         }
       }
+
+      /* 2.11.14 desktop splash (spec splash-header-2026-10-18 §3): glass tile
+         with the logo-final symbol, wordmark, thin brand capsule, a status line
+         only after 4 s, and the error state. Phones keep the launch tile above. */
+      .boot-spec, .boot-sheen, .boot-symbol, .boot-wordmark, .boot-slow { display: none; }
+      html:not(.boot-mobile) #boot-splash {
+        background:
+          radial-gradient(42% 46% at 24% 22%, rgba(88, 110, 242, 0.34), transparent 70%),
+          radial-gradient(40% 44% at 80% 84%, rgba(62, 190, 140, 0.14), transparent 70%),
+          linear-gradient(170deg, #0d0f17 0%, #0b0c12 55%, #0a0b10 100%);
+      }
+      html:not(.boot-mobile) #boot-splash .boot-orb { animation: none; filter: blur(70px); }
+      html:not(.boot-mobile) #boot-splash .boot-card {
+        gap: 0;
+        padding: 0;
+        transform: translateY(-10px);
+        animation: boot-tile-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      }
+      @keyframes boot-tile-in {
+        from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+        to { opacity: 1; transform: translateY(-10px) scale(1); }
+      }
+      html:not(.boot-mobile) #boot-splash .boot-mark:has(.boot-symbol) {
+        position: relative;
+        isolation: isolate;
+        width: 120px;
+        height: 120px;
+        border-radius: 32px;
+        overflow: hidden;
+        background:
+          linear-gradient(160deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.06) 46%, rgba(255, 255, 255, 0.03) 100%),
+          linear-gradient(rgba(57, 60, 77, 0.58), rgba(57, 60, 77, 0.58));
+        -webkit-backdrop-filter: blur(30px) saturate(160%);
+        backdrop-filter: blur(30px) saturate(160%);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.22),
+          inset 0 -10px 24px -14px rgba(0, 0, 0, 0.45),
+          0 24px 60px rgba(0, 0, 0, 0.45),
+          0 0 60px rgba(88, 110, 242, 0.18);
+        animation: none;
+      }
+      html:not(.boot-mobile) #boot-splash .boot-mark:has(.boot-symbol) #boot-logo { display: none; }
+      html:not(.boot-mobile) #boot-splash .boot-mark .boot-spec {
+        display: block;
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: radial-gradient(150% 100% at 18% -30%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 72%);
+      }
+      html:not(.boot-mobile) #boot-splash .boot-mark .boot-sheen {
+        display: block;
+        position: absolute;
+        inset: -40%;
+        background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.26) 50%, transparent 58%);
+        transform: translateX(-70%);
+        animation: boot-sheen 4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s infinite;
+      }
+      @keyframes boot-sheen {
+        0% { transform: translateX(-70%); }
+        60%, 100% { transform: translateX(70%); }
+      }
+      html:not(.boot-mobile) #boot-splash .boot-mark .boot-symbol {
+        display: block;
+        position: relative;
+        z-index: 2;
+        width: 64px;
+        height: 64px;
+        border-radius: 0;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 6px rgba(20, 40, 140, 0.45));
+      }
+      html:not(.boot-mobile) #boot-splash .boot-card:has(.boot-wordmark) .boot-title { display: none; }
+      html:not(.boot-mobile) #boot-splash .boot-wordmark {
+        display: block;
+        width: auto;
+        height: 28px;
+        margin-top: 18px;
+        opacity: 0.94;
+        animation: boot-tile-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) 0.06s both;
+      }
+      html:not(.boot-mobile) #boot-splash .boot-bar {
+        position: relative;
+        width: 132px;
+        height: 3px;
+        margin-top: 22px;
+        background: rgba(255, 255, 255, 0.10);
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+      }
+      html:not(.boot-mobile) #boot-splash .boot-bar > i {
+        width: 40px;
+        background: linear-gradient(90deg, rgba(110, 140, 255, 0), #a0b6ff 50%, rgba(110, 140, 255, 0));
+        box-shadow: 0 0 8px rgba(110, 140, 255, 0.6);
+        animation: boot-capsule 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      @keyframes boot-capsule {
+        0% { transform: translateX(-40px); }
+        100% { transform: translateX(132px); }
+      }
+      html:not(.boot-mobile) #boot-splash .boot-slow {
+        display: block;
+        height: 16px;
+        margin: 14px 0 0;
+        font-size: 13px;
+        font-weight: 550;
+        letter-spacing: -0.005em;
+        color: rgba(235, 238, 255, 0.72);
+        opacity: 0;
+        animation: boot-slow-in 0.2s ease 4s forwards;
+      }
+      @keyframes boot-slow-in { to { opacity: 1; } }
+      html:not(.boot-mobile) #boot-splash[data-boot-failed="1"] .boot-slow { display: none; }
+      html:not(.boot-mobile) #boot-splash[data-boot-failed="1"] .boot-sheen { animation: none; opacity: 0; }
+      html:not(.boot-mobile) #boot-splash[data-boot-failed="1"] .boot-status.boot-status--visible {
+        margin-top: 22px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #f2f3f5;
+      }
+      html:not(.boot-mobile) #boot-splash .boot-detail {
+        margin: 10px 0 0;
+        max-width: 300px;
+        font-size: 13px;
+        color: rgba(235, 238, 255, 0.72);
+      }
+      html:not(.boot-mobile) #boot-splash .boot-retry {
+        margin-top: 16px;
+        height: 40px;
+        padding: 0 22px;
+        font-weight: 650;
+        background: linear-gradient(180deg, #6d8cff, #4f6ff0);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 22px rgba(88, 110, 242, 0.35);
+      }
+      html:not(.boot-mobile) #boot-splash .boot-retry:focus-visible {
+        outline: 2px solid #a0b6ff;
+        outline-offset: 3px;
+      }
+      html:not(.boot-mobile) #boot-splash.boot-splash--hide {
+        transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.24s, transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform: none;
+      }
+      html:not(.boot-mobile) #boot-splash.boot-splash--hide .boot-mark {
+        transform: scale(1.04);
+        filter: blur(6px);
+        transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.24s;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html:not(.boot-mobile) #boot-splash .boot-sheen { display: none !important; }
+        html:not(.boot-mobile) #boot-splash .boot-bar > i {
+          width: 100%;
+          transform: none;
+          background: rgba(110, 140, 255, 0.55);
+          box-shadow: none;
+        }
+        html:not(.boot-mobile) #boot-splash .boot-wordmark,
+        html:not(.boot-mobile) #boot-splash .boot-slow { animation-duration: 0.2s; }
+        html:not(.boot-mobile) #boot-splash .boot-card { animation: boot-fade-in 0.2s ease both; transform: translateY(-10px); }
+        html:not(.boot-mobile) #boot-splash.boot-splash--hide .boot-mark { transform: none; filter: none; }
+      }
+      @keyframes boot-fade-in { from { opacity: 0; } to { opacity: 1; } }
+      @media (prefers-reduced-transparency: reduce) {
+        html:not(.boot-mobile) #boot-splash .boot-mark:has(.boot-symbol) {
+          background: #393c4d;
+          -webkit-backdrop-filter: none;
+          backdrop-filter: none;
+        }
+      }
+      @media (prefers-contrast: more) {
+        html:not(.boot-mobile) #boot-splash .boot-mark:has(.boot-symbol) {
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 24px 60px rgba(0, 0, 0, 0.45);
+        }
+      }
     </style>
     <script>
       /* Hold the prerendered SEO shell (see html.seo-hold CSS). Fallback: if the
@@ -1178,9 +1350,11 @@
       <div class="boot-orb boot-orb--a" aria-hidden="true"></div>
       <div class="boot-orb boot-orb--b" aria-hidden="true"></div>
       <div class="boot-card">
-        <div class="boot-mark" aria-hidden="true"><img id="boot-logo" src="/brand/descall-icon.png" alt="" width="112" height="112"></div>
+        <div class="boot-mark" aria-hidden="true"><img id="boot-logo" src="/brand/descall-icon.png" alt="" width="112" height="112"><span class="boot-spec"></span><span class="boot-sheen"></span><img class="boot-symbol" src="/brand/descall-symbol-gradient.svg" alt="" width="64" height="64"></div>
         <div class="boot-title">Descall</div>
+        <img class="boot-wordmark" src="/brand/descall-wordmark-white.svg" alt="" width="121" height="28">
         <div class="boot-bar" aria-hidden="true"><i></i></div>
+        <p class="boot-slow" id="boot-slow" aria-hidden="true">Connecting to Descall…</p>
         <p class="boot-status" id="boot-status">Starting</p>
       </div>
     </div>
@@ -1213,6 +1387,17 @@
             } catch (eBoot) {}
             if (bootTr) bootLabel.textContent = "Yükleniyor";
           }
+        }
+        var slowLabel = document.getElementById("boot-slow");
+        if (slowLabel) {
+          var slowTr = false;
+          try {
+            var slowLang = (localStorage.getItem("descall_language") || navigator.language || "").toLowerCase();
+            var slowTz = "";
+            try { slowTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz3) {}
+            slowTr = slowLang.indexOf("tr") === 0 || (!localStorage.getItem("descall_language") && slowTz === "Europe/Istanbul");
+          } catch (eSlow) {}
+          if (slowTr) slowLabel.textContent = "Sunucuya bağlanılıyor…";
         }
         var logo = document.getElementById("boot-logo");
         if (logo && location.protocol === "file:") logo.src = "./brand/descall-icon.png";

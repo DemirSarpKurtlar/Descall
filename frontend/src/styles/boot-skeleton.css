@@ -1,102 +1,157 @@
+/* Desktop boot skeleton (2.11.14, spec splash-header-2026-10-18 §4).
+   Same geometry as the glass-desktop shell: 8px gutters, rail, list column,
+   user/voice panel under the list, chat panel with floating header pills.
+   Blocks are a 6% ink fill with no hairline. One shimmer: every block paints
+   the same fixed-attachment gradient, so a single light sweeps the window. */
 .app-boot-skeleton {
+  --abs-gap: 8px;
+  --abs-rail: var(--nav-rail-width, 72px);
+  --abs-list: var(--sidebar-width, 296px);
+  --abs-block: rgba(255, 255, 255, 0.06);
+  --abs-panel: rgba(255, 255, 255, 0.035);
+  --abs-shine: rgba(255, 255, 255, 0.07);
   position: fixed;
   inset: 0;
   z-index: 50;
   display: grid;
-  grid-template-columns: 64px 280px 1fr;
+  grid-template-columns: var(--abs-rail) var(--abs-list) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: "rail list main" "uvp uvp main";
+  gap: var(--abs-gap);
+  padding: var(--abs-gap);
+  box-sizing: border-box;
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(88, 101, 242, 0.18), transparent 55%),
-    #0b0c10;
+    radial-gradient(60% 38% at 8% 4%, rgba(88, 110, 242, 0.30), transparent 70%),
+    radial-gradient(55% 34% at 100% 22%, rgba(110, 90, 220, 0.16), transparent 70%),
+    radial-gradient(60% 35% at 95% 96%, rgba(62, 190, 140, 0.10), transparent 70%),
+    linear-gradient(170deg, #0e1018 0%, #0c0d14 45%, #0a0b10 100%);
   color: #f2f3f5;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
   overflow: hidden;
+  animation: app-boot-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+html.electron-app[data-app-shell="1"] .app-boot-skeleton {
+  padding-top: calc(40px + var(--abs-gap));
+}
+
+html.theme-teal .app-boot-skeleton,
+html[data-theme="borealis"] .app-boot-skeleton {
+  --abs-block: rgba(255, 255, 255, 0.10);
+}
+
+@keyframes app-boot-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.app-boot-skeleton *,
+.app-boot-skeleton *::before,
+.app-boot-skeleton *::after { box-sizing: border-box; }
+
+.app-boot-skeleton__rail,
+.app-boot-skeleton__sidebar,
+.app-boot-skeleton__uvp,
+.app-boot-skeleton__main {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 24px;
+  background: var(--abs-panel);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 18px 48px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+/* Shared shimmer. */
+.app-boot-skeleton__sk {
+  display: block;
+  background-color: var(--abs-block);
+  background-image: linear-gradient(115deg, transparent 30%, var(--abs-shine) 50%, transparent 70%);
+  background-size: 250% 100%;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  animation: app-boot-sweep 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes app-boot-sweep {
+  0% { background-position: 130% 0; }
+  80%, 100% { background-position: -30% 0; }
 }
 
 .app-boot-skeleton__rail {
+  grid-area: rail;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 18px 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.25);
+  gap: 10px;
+  padding: 10px 0;
 }
 
 .app-boot-skeleton__rail-dot {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.07);
-  animation: app-boot-shimmer 1.4s ease-in-out infinite;
 }
 
-.app-boot-skeleton__rail-dot:nth-child(2) { animation-delay: 0.08s; }
-.app-boot-skeleton__rail-dot:nth-child(3) { animation-delay: 0.16s; }
-.app-boot-skeleton__rail-dot:nth-child(4) { animation-delay: 0.24s; }
-.app-boot-skeleton__rail-dot:nth-child(5) { animation-delay: 0.32s; }
+.app-boot-skeleton__rail-sep {
+  width: 28px;
+  height: 1px;
+  margin: 2px 0;
+  background: rgba(255, 255, 255, 0.08);
+}
 
 .app-boot-skeleton__sidebar {
+  grid-area: list;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 14px;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(15, 16, 20, 0.92);
-  min-width: 0;
+  gap: 12px;
+  padding: 12px;
 }
 
-.app-boot-skeleton__main {
+.app-boot-skeleton__list-head {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: rgba(11, 12, 16, 0.96);
+  align-items: center;
+  gap: 8px;
 }
 
-.app-boot-skeleton__main-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 22px;
-}
-
-.app-boot-skeleton__block {
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  animation: app-boot-shimmer 1.4s ease-in-out infinite;
-}
-
-.app-boot-skeleton__block--title {
-  height: 22px;
-  width: 42%;
-  margin-bottom: 4px;
-}
-
-.app-boot-skeleton__block--search {
+.app-boot-skeleton__title-pill {
+  width: 112px;
   height: 36px;
-  width: 100%;
-  margin-bottom: 8px;
+  border-radius: 18px;
+  margin-right: auto;
 }
 
-.app-boot-skeleton__block--header {
-  height: 56px;
-  width: 100%;
-  border-radius: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+.app-boot-skeleton__round {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.app-boot-skeleton__search {
+  height: 36px;
+  border-radius: 18px;
+}
+
+.app-boot-skeleton__section {
+  width: 72px;
+  height: 8px;
+  margin: 6px 0 2px 6px;
+  border-radius: 4px;
 }
 
 .app-boot-skeleton__row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+  padding: 6px 8px;
 }
 
 .app-boot-skeleton__avatar {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   border-radius: 50%;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.07);
-  animation: app-boot-shimmer 1.4s ease-in-out infinite;
 }
 
 .app-boot-skeleton__lines {
@@ -104,45 +159,149 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 4px;
+  gap: 7px;
 }
 
 .app-boot-skeleton__lines i {
-  display: block;
-  height: 11px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.07);
-  animation: app-boot-shimmer 1.4s ease-in-out infinite;
+  height: 9px;
+  border-radius: 5px;
+}
+
+.app-boot-skeleton__uvp {
+  grid-area: uvp;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 14px;
+}
+
+.app-boot-skeleton__uvp-status {
+  width: 46%;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.app-boot-skeleton__uvp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-boot-skeleton__uvp-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+}
+
+.app-boot-skeleton__uvp-lines { margin-right: 6px; }
+
+.app-boot-skeleton__uvp-btn {
+  width: 44px;
+  height: 26px;
+  flex: 0 0 44px;
+  border-radius: 13px;
+}
+
+.app-boot-skeleton__uvp-btn--sm {
+  width: 26px;
+  flex-basis: 26px;
+}
+
+.app-boot-skeleton__main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-boot-skeleton__head {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-boot-skeleton__pill {
+  height: 48px;
+  border-radius: 24px;
+  max-width: 45%;
+}
+
+.app-boot-skeleton__main-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 76px 22px 18px;
+}
+
+.app-boot-skeleton__bubble-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.app-boot-skeleton__bubble-row.is-out { justify-content: flex-end; }
+
+.app-boot-skeleton__bubble-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+}
+
+.app-boot-skeleton__bubble {
+  border-radius: 18px;
+}
+
+.app-boot-skeleton__composer {
+  height: 52px;
+  margin: 0 16px 16px;
+  border-radius: 26px;
 }
 
 .app-boot-skeleton__label {
   position: absolute;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  margin: 0;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  color: rgba(242, 243, 245, 0.85);
-  animation: boot-status-fade 1.8s ease-in-out infinite;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-@keyframes app-boot-shimmer {
-  0%, 100% { opacity: 0.55; }
+@media (prefers-reduced-motion: reduce) {
+  .app-boot-skeleton { animation-duration: 0.2s; }
+  .app-boot-skeleton__sk {
+    background-image: none;
+    animation: app-boot-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes app-boot-pulse {
+  0%, 100% { opacity: 0.7; }
   50% { opacity: 1; }
+}
+
+@media (prefers-contrast: more) {
+  .app-boot-skeleton { --abs-block: rgba(255, 255, 255, 0.12); }
 }
 
 @media (max-width: 860px) {
   .app-boot-skeleton {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "main";
+    grid-template-rows: minmax(0, 1fr);
   }
   .app-boot-skeleton__rail,
-  .app-boot-skeleton__sidebar {
+  .app-boot-skeleton__sidebar,
+  .app-boot-skeleton__uvp {
     display: none;
   }
 }
@@ -270,4 +429,62 @@
 .route-loading__retry:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
+}
+
+/* Boot error glass tile (2.11.14), same as the splash error state. */
+.route-loading--error .route-loading__aurora { animation: none; }
+.route-loading--error .route-loading__card { gap: 0; }
+.route-loading__tile {
+  position: relative;
+  isolation: isolate;
+  width: 120px;
+  height: 120px;
+  border-radius: 32px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.06) 46%, rgba(255, 255, 255, 0.03) 100%),
+    linear-gradient(rgba(57, 60, 77, 0.58), rgba(57, 60, 77, 0.58));
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  backdrop-filter: blur(30px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -10px 24px -14px rgba(0, 0, 0, 0.45),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.route-loading__tile-spec {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(150% 100% at 18% -30%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 72%);
+}
+.route-loading__tile img {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 2px 6px rgba(20, 40, 140, 0.45));
+}
+.route-loading__wordmark {
+  height: 28px;
+  width: auto;
+  margin: 18px 0 22px;
+  opacity: 0.94;
+}
+.route-loading--error .route-loading__label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f2f3f5;
+}
+.route-loading--error .route-loading__detail { margin: 10px 0 0; color: rgba(235, 238, 255, 0.72); }
+.route-loading--error .route-loading__retry {
+  margin-top: 16px;
+  padding: 0 22px;
+  background: linear-gradient(180deg, #6d8cff, #4f6ff0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 22px rgba(88, 110, 242, 0.35);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .route-loading__tile { background: #393c4d; -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
