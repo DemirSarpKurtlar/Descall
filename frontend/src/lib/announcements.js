@@ -1,3 +1,4 @@
+import { fetchPublic } from "./edgeApi.js";
 import { Bell, Megaphone, ShoppingBag, Users } from "lucide-react";
 
 /**
@@ -38,9 +39,11 @@ export function normalizeAnnouncements(payload) {
 }
 
 export async function loadAnnouncements(apiBase, token) {
-  const res = await fetch(`${apiBase}/api/announcements`, {
+  // Same list for everyone: public read via the edge when live (the token is
+  // only sent to the origin fallback).
+  const res = await fetchPublic("/api/announcements", {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  }, { origin: apiBase });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data?.error || "Failed to load announcements");

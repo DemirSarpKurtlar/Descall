@@ -1,3 +1,4 @@
+import AdminEdgeRealtime from "./AdminEdgeRealtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
@@ -1680,6 +1681,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       disabled={busy}
                       onChange={(enabled) => setFeatureFlag("presenceScoped", enabled)}
                     />
+                    <AdminEdgeRealtime system={system} busy={busy} patchSystem={patchSystem} t={t} />
                   </div>
                 </article>
 

@@ -1,0 +1,19 @@
+{
+  "_comment": "Scale plan S1 (2.11.5). Applied by apply-edge.mjs / .github/workflows/cloudflare-edge.yml. Free plan: Cache Rules only (no Workers), so cache hits never touch the Workers 100k/day quota.",
+  "zone": "descall.com",
+  "apiHost": "api.descall.com",
+  "origin": "des-call.onrender.com",
+  "cacheRules": [
+    {
+      "description": "descall-edge: public cacheable API reads (origin Cache-Control decides TTL)",
+      "paths": ["/api/features", "/api/announcements", "/api/app/latest-release", "/api/shop/catalog/public"],
+      "prefixes": ["/api/shop/assets/"],
+      "cache": true
+    },
+    {
+      "description": "descall-edge: never cache realtime / auth / writes",
+      "prefixes": ["/socket.io", "/auth/", "/api/auth/", "/api/webrtc/"],
+      "cache": false
+    }
+  ]
+}

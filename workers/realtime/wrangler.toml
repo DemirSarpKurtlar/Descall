@@ -1,0 +1,26 @@
+# Descall realtime edge (scale plan S2). Workers Free plan only.
+# Deploy: npx wrangler deploy   (needs CLOUDFLARE_API_TOKEN, see README)
+name = "descall-realtime"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+routes = [{ pattern = "rt.descall.com", custom_domain = true }]
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+# Free plan: Durable Objects must use the SQLite storage backend.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]
+
+# Daily free-quota guard (units = DO requests + incoming WS messages / 20; Free = 100,000).
+# Past SOFT no new edge clients (they use Render); past HARD every client moves to Render.
+[vars]
+HUB_SOFT_UNITS = "80000"
+HUB_HARD_UNITS = "92000"
+
+[observability]
+enabled = true
+head_sampling_rate = 0.01

@@ -1,5 +1,5 @@
 // The bottom user/voice panel follows the equipped catalog theme and is the same
-// material as the chat-list column under desktop Liquid Glass (2.11.6).
+// material as the chat-list column under desktop Liquid Glass (2.11.7).
 // Run from frontend/: node src/styles/userVoicePanelTheme.selftest.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

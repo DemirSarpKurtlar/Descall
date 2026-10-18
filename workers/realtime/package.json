@@ -1,0 +1,10 @@
+{
+  "name": "descall-realtime-edge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/jwt.test.mjs && node test/hub.test.mjs && node test/budget.test.mjs",
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy"
+  }
+}

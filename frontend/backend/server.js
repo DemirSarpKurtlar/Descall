@@ -79,7 +79,7 @@ const io = new Server(httpServer, {
   // 12 s + 10 s keeps that under ~22 s at a negligible ping cost.
   pingInterval: 12000,
   pingTimeout: 10000,
-  // 2.11.3 (scale S0): compress only big frames (boot lists, roster
+  // 2.11.4 (scale S0): compress only big frames (boot lists, roster
   // snapshots). Small chat/typing frames stay raw. Small zlib window and no
   // context takeover keep memory per socket at ~12 KB instead of ~300 KB.
   perMessageDeflate: {
@@ -102,7 +102,13 @@ const { canonicalHostMiddleware } = require("./middleware/canonicalHost");
 
 // Middleware
 const compression = require("compression");
-app.use(cors({ origin: corsOrigin, credentials: false }));
+{
+  const { isEdgePublicPath } = require("./lib/edgeConfig");
+  const appCors = cors({ origin: corsOrigin, credentials: false });
+  const publicCors = cors({ origin: "*", credentials: false, methods: ["GET", "HEAD", "OPTIONS"] });
+  // Edge-cacheable public reads answer `*` (CDN caches ignore Vary: Origin).
+  app.use((req, res, next) => (isEdgePublicPath(req.path) && (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") ? publicCors : appCors)(req, res, next));
+}
 app.use(securityHeadersMiddleware);
 // HTTP→HTTPS, www→apex, Render HTML→descall.com (API paths excluded)
 app.use(canonicalHostMiddleware);
@@ -775,8 +781,19 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
 // ========== ANNOUNCEMENTS ENDPOINTS ==========
 
 // Get all active announcements - GET /api/announcements
+// 2.11.5: same list for everyone → 30 s memory cache (cleared by the admin
+// routes below) + shared edge cache 60 s.
+const announcementsCache = { at: 0, rows: null };
+function invalidateAnnouncementsCache() {
+  announcementsCache.at = 0;
+  announcementsCache.rows = null;
+}
 app.get("/api/announcements", async (req, res) => {
   try {
+    if (announcementsCache.rows && Date.now() - announcementsCache.at < 30_000) {
+      require("./lib/edgeConfig").publicCache(res, { maxAge: 30, sMaxAge: 60 });
+      return res.json({ success: true, announcements: announcementsCache.rows });
+    }
     const { data, error } = await supabase
       .from("announcements")
       .select("id, title, content, created_at, priority, color, emoji, pinned, target, author")
@@ -784,8 +801,10 @@ app.get("/api/announcements", async (req, res) => {
       .order("pinned", { ascending: false })
       .order("created_at", { ascending: false });
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
+    if (error) return res.status(500).json({ success: false, error: "Failed to load announcements." });
+    announcementsCache.rows = data || [];
+    announcementsCache.at = Date.now();
+    require("./lib/edgeConfig").publicCache(res, { maxAge: 30, sMaxAge: 60 });
     return res.json({ success: true, announcements: data || [] });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -794,6 +813,7 @@ app.get("/api/announcements", async (req, res) => {
 
 // Create announcement - POST /api/admin/announcements
 app.post("/api/admin/announcements", requireAuth, async (req, res) => {
+  res.on("finish", invalidateAnnouncementsCache);
   try {
     const { data: requester } = await supabase
       .from("users")
@@ -843,6 +863,7 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
 
 // Toggle pin on announcement - PATCH /api/admin/announcements/:id
 app.patch("/api/admin/announcements/:id", requireAuth, async (req, res) => {
+  res.on("finish", invalidateAnnouncementsCache);
   try {
     const { data: requester } = await supabase
       .from("users")
@@ -878,6 +899,7 @@ app.patch("/api/admin/announcements/:id", requireAuth, async (req, res) => {
 
 // Delete announcement - DELETE /api/admin/announcements/:id
 app.delete("/api/admin/announcements/:id", requireAuth, async (req, res) => {
+  res.on("finish", invalidateAnnouncementsCache);
   try {
     const { data: requester } = await supabase
       .from("users")
@@ -1170,6 +1192,9 @@ app.use((err, _req, res, _next) => {
 
 // Socket.IO
 io.use(socketAuthMiddleware);
+// 2.11.6 (scale S2): Render ↔ Cloudflare Hub bridge. Off unless EDGE_BRIDGE_URL
+// and EDGE_BRIDGE_SECRET are set; edge clients then join this same io server.
+require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
 

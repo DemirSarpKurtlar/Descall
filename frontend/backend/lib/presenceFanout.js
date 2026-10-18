@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Scoped presence fan-out (2.11.3, scale plan S0).
+ * Scoped presence fan-out (2.11.4, scale plan S0).
  *
  * Before: every connect, disconnect and status change sent the whole online
  * roster to every socket (`io.emit("users:update", all)`), so egress grew with

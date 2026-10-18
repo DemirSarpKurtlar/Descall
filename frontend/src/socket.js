@@ -23,6 +23,17 @@ function isElectronRuntime() {
   return false;
 }
 
+function appPlatform() {
+  if (isElectronRuntime()) return "electron";
+  try {
+    if (Capacitor.getPlatform() === "android") return "android";
+    if (Capacitor.getPlatform() === "ios") return "ios";
+  } catch {
+    /* web */
+  }
+  return "web";
+}
+
 function isLocalVite() {
   if (typeof window === "undefined") return false;
   if (isElectronRuntime()) return false;
@@ -54,17 +65,21 @@ export function createSocket(token, options = {}) {
   }
   const local = isLocalVite();
   const native = isNativeApp();
+  const edgeUrl = typeof options.edgeUrl === "string" && options.edgeUrl ? options.edgeUrl : null;
   // Native shells: WebSocket first. One handshake instead of polling + upgrade,
   // and it never reuses a pooled keep-alive HTTP connection that died while
   // the phone was locked (that stalled reconnects for a full 20 s timeout).
   // tryAllTransports falls back to polling if WebSocket can't open.
   const {
-    transports = native ? ["websocket", "polling"] : ["polling", "websocket"],
+    transports = edgeUrl ? ["websocket"] : native ? ["websocket", "polling"] : ["polling", "websocket"],
   } = options;
 
   const opts = {
-    // presence: 2 = this build merges `presence:delta` (2.11.3, scoped roster).
-    auth: isNativeIOS() ? { token, platform: "ios", presence: 2 } : { token, presence: 2 },
+    // presence: 2 = this build merges `presence:delta` (2.11.4, scoped roster).
+    // app = platform for the edge rollout (2.11.6).
+    auth: isNativeIOS()
+      ? { token, platform: "ios", presence: 2, app: "ios" }
+      : { token, presence: 2, app: appPlatform() },
     autoConnect: false,
     transports,
     withCredentials: false,
@@ -76,15 +91,23 @@ export function createSocket(token, options = {}) {
     reconnectionDelayMax: 10000,
     randomizationFactor: 0.5,
     timeout: 20000,
-    tryAllTransports: true,
+    tryAllTransports: !edgeUrl,
   };
+  if (edgeUrl) {
+    // Cloudflare Hub (2.11.6): WebSocket only; the token rides in the
+    // subprotocol so the Worker can check it before the Hub is involved.
+    opts.protocols = ["descall.v1", `jwt.${token}`];
+    // A few quick tries; App.jsx falls back to Render after two failures.
+    opts.reconnectionDelayMax = 5000;
+  }
   // Render (and local Express) mount Socket.IO at /socket.io.
   // Do not use /api/socket.io, that was the Vercel Fluid rewrite.
   if (!local) {
     opts.path = "/socket.io";
   }
 
-  const socket = io(SOCKET_URL, opts);
+  const socket = io(edgeUrl || SOCKET_URL, opts);
+  socket.edge = Boolean(edgeUrl);
   const origEmit = socket.emit;
   socket.emit = function patchedEmit(event, ...args) {
     const ret = origEmit.apply(this, [event, ...args]);

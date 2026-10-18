@@ -116,6 +116,14 @@ jobs:
           node backend/lib/presenceFanout.selftest.cjs
           node backend/middleware/gzipJson.selftest.cjs
           node src/lib/onlineRoster.unit.test.mjs
+          node backend/lib/edgeConfig.selftest.cjs
+          node src/lib/edgeApi.selftest.mjs
+          node ../infra/cloudflare/apply-edge.selftest.mjs
+          node backend/lib/edgeRealtime.selftest.cjs
+          node src/lib/edgeRealtime.selftest.mjs
+          node ../workers/realtime/test/jwt.test.mjs
+          node ../workers/realtime/test/hub.test.mjs
+          node ../workers/realtime/test/budget.test.mjs
           node src/lib/coinTossMotion.selftest.mjs
           node backend/games/BlackjackGame.selftest.js
           node backend/games/SlotGame.selftest.js

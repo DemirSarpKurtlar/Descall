@@ -3,12 +3,19 @@
 const express = require("express");
 const state = require("../runtime/sharedState");
 const { publicFeatureFlags } = require("../lib/systemSettings");
+const { edgePublicBase, publicCache } = require("../lib/edgeConfig");
 
 const router = express.Router();
 
 router.get("/", (_req, res) => {
-  res.set("Cache-Control", "no-store");
-  res.json(publicFeatureFlags(state.systemConfig?.featureFlags));
+  // 2.11.5: short shared cache (edge 30 s, browser 15 s). Live flips still
+  // reach open apps at once through the `features:updated` socket event.
+  publicCache(res, { maxAge: 15, sMaxAge: 30 });
+  const edgeApiBase = edgePublicBase();
+  res.json({
+    ...publicFeatureFlags(state.systemConfig?.featureFlags),
+    ...(edgeApiBase ? { edgeApiBase } : {}),
+  });
 });
 
 /**
