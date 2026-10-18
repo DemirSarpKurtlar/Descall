@@ -27,7 +27,7 @@ for (const must of [
   ".g-react-bar",
 ]) assert.ok(surfaces.includes(must), `${must} must be frosted`);
 // Layout wrappers must not be frosted: .g-msg-pop is the full-screen long-press
-// layer; frosting it drew an opaque box behind the lifted bubble (2.11.16).
+// layer; frosting it drew an opaque box behind the lifted bubble (2.11.17).
 for (const wrapper of [".g-msg-pop", ".g-msg-stack", ".g-lift"]) {
   assert.ok(!surfaces.includes(wrapper), `${wrapper} is a layout wrapper, not a surface`);
 }

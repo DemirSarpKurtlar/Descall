@@ -66,7 +66,7 @@ assert.equal(liftMediaBox({ width: 0, height: 0 }, { width: 220 }).width >= 160,
 const list = readFileSync(new URL("../components/chat/MessageList.jsx", import.meta.url), "utf8");
 const chatCss = readFileSync(new URL("../styles/glass/chat.css", import.meta.url), "utf8");
 
-// 2.11.16: the lifted preview is a clone of the real bubble, not a text copy.
+// 2.11.17: the lifted preview is a clone of the real bubble, not a text copy.
 assert.match(list, /visualMediaPreview\(message\)/);
 assert.match(list, /buildLiftedBubble\(el\)/);
 assert.match(list, /liftLayout\(\{/);

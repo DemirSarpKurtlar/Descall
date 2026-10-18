@@ -248,7 +248,7 @@ export function attachMenuPress({
   return { detach };
 }
 
-/* ── Lifted bubble (2.11.16) ──────────────────────────────────────────────
+/* ── Lifted bubble (2.11.17) ──────────────────────────────────────────────
  * The long-press preview is a clone of the real, rendered bubble: same skin
  * classes (cosmetic-chat-bubble bubble-*), same markdown, newlines, media,
  * reactions and size. It used to be a plain text copy in a fixed blue

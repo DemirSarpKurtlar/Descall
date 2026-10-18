@@ -10,7 +10,7 @@
    The selector list is the single source of truth, checked by
    src/styles/frost.selftest.mjs.
    Only real surfaces go here, never a layout wrapper: the long-press
-   `.g-msg-pop` layer was listed until 2.11.16 and painted a dark sharp
+   `.g-msg-pop` layer was listed until 2.11.17 and painted a dark sharp
    rectangle behind the lifted bubble (its bar/menu are listed instead). */
 
 :root {
