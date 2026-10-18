@@ -43,8 +43,13 @@ assert.ok(/script-src[^"]*eu-assets\.i\.posthog\.com/.test(policy.replace(/\n/g,
 const attrs = readFileSync(join(repo, ".gitattributes"), "utf8");
 assert.match(attrs, /^\* text=auto eol=lf$/m, ".gitattributes forces LF");
 const release = readFileSync(join(repo, ".github/workflows/release.yml"), "utf8");
-assert.match(release, /npm run build:prod\s*\n\s*if \(\$LASTEXITCODE -ne 0\)/, "release checks build:prod exit code");
-assert.match(release, /git ls-files --eol index\.html/, "release refuses a CRLF index.html");
+// The pwsh guards belong to the Windows job (web-gate runs bash; 2.11.11 put them there by mistake).
+const winJob = release.slice(release.indexOf("\n  windows:"), release.indexOf("\n  publish:") > 0 ? release.indexOf("\n  publish:") : undefined);
+const webGate = release.slice(release.indexOf("\n  web-gate:"), release.indexOf("\n  selftests:"));
+assert.ok(winJob.length > 100 && webGate.length > 100, "release.yml has web-gate and windows jobs");
+assert.match(winJob, /shell: pwsh[\s\S]*npm run build:prod\s*\n\s*if \(\$LASTEXITCODE -ne 0\)/, "Windows build checks the build:prod exit code");
+assert.match(winJob, /git ls-files --eol index\.html/, "Windows build refuses a CRLF index.html");
+assert.equal(/\$LASTEXITCODE|throw "/.test(webGate), false, "no PowerShell in the bash web-gate step");
 assert.match(release, /--descall-smoke-boot/, "release boots the packaged app");
 
 // No script asset may be inlined as data: (blocked by script-src 'self').
