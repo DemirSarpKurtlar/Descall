@@ -16,7 +16,7 @@ const {
 } = require("./updateDeferral.cjs");
 
 assert.equal(CALL_GRACE_MS, 2 * 60 * 1000);
-assert.equal(SYSTEM_IDLE_THRESHOLD_MS, 5 * 60 * 1000);
+assert.equal(SYSTEM_IDLE_THRESHOLD_MS, 2 * 60 * 1000);
 assert.equal(BACKGROUND_SETTLE_MS, 12 * 1000);
 
 function decide(state, now, extra = {}) {
@@ -255,3 +255,16 @@ function decide(state, now, extra = {}) {
 }
 
 console.log("updateDeferral.selftest.mjs: ok");
+
+// 2.11.0 smart update: typing / uploading holds the install, even hidden + idle.
+{
+  let s2 = createDeferralState();
+  s2 = applyDeferralEvent(s2, { type: "update-ready", now: 0 });
+  s2 = applyDeferralEvent(s2, { type: "user-busy", busy: true, now: 0 });
+  assert.equal(s2.userBusy, true);
+  assert.deepEqual(decideUpdateInstall({ ...s2, now: 1e9, systemIdleMs: 1e9, windowHidden: true, sessionLocked: true }), { action: "wait", reason: "user-busy" });
+  assert.equal(decideUpdateInstall({ ...s2, now: 1e9, explicitConfirm: true }).action, "install");
+  s2 = applyDeferralEvent(s2, { type: "user-busy", busy: false, now: 1 });
+  assert.equal(s2.userBusy, false);
+  console.log("updateDeferral user-busy OK");
+}

@@ -57,6 +57,8 @@ jobs:
           node src/lib/remoteAudioKeeper.selftest.mjs
           node src/lib/callDeviceMenus.selftest.mjs
           node src/lib/userVoicePanel.selftest.mjs
+          node src/lib/updateTiming.selftest.mjs
+          node electron/updateDeferral.selftest.mjs
           node src/components/call/callAudioWiring.selftest.mjs
           node src/styles/frost.selftest.mjs
           node src/styles/headerTitle.selftest.mjs

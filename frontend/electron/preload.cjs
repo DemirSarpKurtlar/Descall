@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
   // True while a DM call, group call, or server voice channel is up (ringing counts).
   setVoiceBusy: (busy) => ipcRenderer.send('voice:set-busy', Boolean(busy)),
+  setActivityBusy: (busy) => ipcRenderer.send('activity:set-busy', Boolean(busy)),
   onConfirmRestart: (callback) => {
     const handler = (_, data) => callback(data);
     ipcRenderer.on('update:confirm-restart', handler);
