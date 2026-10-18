@@ -20,15 +20,8 @@ jobs:
       - name: Web build (same checks as Render)
         working-directory: frontend
         run: |
-          # Windows checks out with LF too (.gitattributes); fail if it did not, because
-          # inline <script> CSP hashes depend on it (2.11.11).
-          $crlf = (git ls-files --eol index.html) -match 'w/crlf'
-          if ($crlf) { throw "frontend/index.html was checked out with CRLF (check .gitattributes)" }
           npm ci
-          if ($LASTEXITCODE -ne 0) { throw "npm ci failed with $LASTEXITCODE" }
-          # A failing build step (csp-verify-dist, perf budget, SEO) must stop the release.
           npm run build:prod
-          if ($LASTEXITCODE -ne 0) { throw "build:prod failed with $LASTEXITCODE" }
       - name: Backend syntax check
         working-directory: frontend/backend
         run: |
@@ -61,8 +54,15 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
+          # Windows checks out with LF too (.gitattributes); fail if it did not, because
+          # inline <script> CSP hashes depend on it (2.11.11).
+          $crlf = (git ls-files --eol index.html) -match 'w/crlf'
+          if ($crlf) { throw "frontend/index.html was checked out with CRLF (check .gitattributes)" }
           npm ci
+          if ($LASTEXITCODE -ne 0) { throw "npm ci failed with $LASTEXITCODE" }
+          # A failing build step (csp-verify-dist, perf budget, SEO) must stop the release.
           npm run build:prod
+          if ($LASTEXITCODE -ne 0) { throw "build:prod failed with $LASTEXITCODE" }
           if (-not [string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
             $env:CSC_LINK = $env:WIN_CSC_LINK
             $env:CSC_KEY_PASSWORD = $env:WIN_CSC_KEY_PASSWORD
@@ -124,6 +124,10 @@ jobs:
           }
           Invoke-Smoke (Join-Path (Get-Location) "release\win-unpacked\Descall.exe")
           Invoke-BootSmoke (Join-Path (Get-Location) "release\win-unpacked\Descall.exe")
+          # No Descall process may outlive the smoke runs: the silent installer below refuses to
+          # write over a running app.
+          Get-Process Descall -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
           $setup = Get-ChildItem -File release\Descall-Setup-*.exe |
             Where-Object { $_.Name -ne "Descall-Setup.exe" } |
             Select-Object -First 1
