@@ -31,7 +31,9 @@ if (gaps.length) {
 }
 
 const call = readFileSync(join(root, "components/CallOverlay.jsx"), "utf8");
-if (!call.includes('aria-label={t("End Call")}')) {
+// 2.11.1 moved the minimized end-call button into the mini call card.
+const miniCard = readFileSync(join(root, "components/call/MiniCallCard.jsx"), "utf8");
+if (!call.includes('aria-label={t("End Call")}') && !miniCard.includes('aria-label={t("End Call")}')) {
   console.error("CallOverlay end-call button must be named");
   process.exit(1);
 }
