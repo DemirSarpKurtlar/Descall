@@ -936,6 +936,19 @@
         font-size: 14px;
         font-weight: 600;
       }
+      .boot-detail {
+        margin: -6px 0 0;
+        max-width: 300px;
+        font-size: 13px;
+        line-height: 1.45;
+        color: rgba(235, 238, 255, 0.66);
+      }
+      #boot-splash[data-boot-failed="1"] .boot-bar {
+        display: none;
+      }
+      #boot-splash[data-boot-failed="1"] .boot-mark {
+        animation: none;
+      }
       .boot-retry {
         margin-top: 4px;
         border: 0;
@@ -1174,16 +1187,18 @@
     <script>
       /* Boot splash only, prerender strips this with #boot-splash. */
       (function () {
-        // Mobile: the app-shell safety net (above) injects a fallback splash
-        // before this markup is parsed; keep only this one so the held splash
-        // and its single release-dismiss target the splash actually on screen.
-        // (Desktop web / Electron keep their existing two-step timing.)
-        if (document.documentElement.classList.contains("boot-mobile")) {
+        // The app-shell safety net (above) runs before this markup is parsed and
+        // injects a fallback splash, so an app boot with a token had TWO
+        // #boot-splash nodes. getElementById() (dismiss, failure, retry) only
+        // ever touched the first; this one, later in the DOM, painted on top and
+        // stayed forever: the Electron "stuck on the splash" bug (2.11.5). Keep
+        // only the last one on every platform (mobile already did).
+        (function dedupeBootSplash() {
           var all = document.querySelectorAll("#boot-splash");
           for (var di = 0; di < all.length - 1; di += 1) {
             if (all[di].parentNode) all[di].parentNode.removeChild(all[di]);
           }
-        }
+        })();
         var el = document.getElementById("boot-splash");
         if (el) el.setAttribute("data-shown-at", String(Date.now()));
         if (document.documentElement.classList.contains("boot-mobile") && !document.documentElement.classList.contains("native-app")) {
@@ -1224,34 +1239,74 @@
           var tr = false;
           try {
             var lang = (localStorage.getItem("descall_language") || navigator.language || "").toLowerCase();
-            tr = lang.indexOf("tr") === 0;
+            var tz = "";
+            try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz2) {}
+            tr = lang.indexOf("tr") === 0 || (!localStorage.getItem("descall_language") && tz === "Europe/Istanbul");
           } catch (eLang) {}
-          if (kind === "retry") return tr ? "Tekrar dene" : "Retry";
-          return tr ? "Yüklenemedi" : "Failed to load";
+          if (kind === "retry") return tr ? "Tekrar dene" : "Try again";
+          if (kind === "detail") return tr ? "Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene." : "The app did not load in time. Check your connection and try again.";
+          return tr ? "Descall açılamadı" : "Descall could not start";
         }
+
+        // Boot watchdog (2.11.5). 12s without a painted app: retry once on our
+        // own (Electron also drops the service worker / HTTP cache), then show
+        // the error with "Tekrar dene". The marker lives in sessionStorage so a
+        // reload loop is impossible; a successful boot clears it.
+        var BOOT_RETRY_KEY = "descall:boot-auto-retry";
+        var BOOT_RETRY_WINDOW_MS = 120000;
+        function retryBoot() {
+          try {
+            var api = window.electronAPI;
+            if (api && typeof api.retryBoot === "function") { api.retryBoot(); return; }
+          } catch (eApi) {}
+          try { location.reload(); } catch (eReload) {}
+        }
+        function autoRetryAllowed() {
+          try {
+            var last = Number(sessionStorage.getItem(BOOT_RETRY_KEY) || 0);
+            return !last || Date.now() - last > BOOT_RETRY_WINDOW_MS;
+          } catch (eSs) {
+            return false;
+          }
+        }
+        function markAutoRetry() {
+          try { sessionStorage.setItem(BOOT_RETRY_KEY, String(Date.now())); } catch (eSs2) {}
+        }
+        function clearAutoRetry() {
+          try { sessionStorage.removeItem(BOOT_RETRY_KEY); } catch (eSs3) {}
+        }
+        window.__descallRetryBoot = retryBoot;
 
         function showBootFailure(splash) {
           if (!splash || splash.getAttribute("data-boot-failed") === "1") return;
           splash.setAttribute("data-boot-failed", "1");
-          var status = document.getElementById("boot-status");
+          splash.setAttribute("aria-busy", "false");
+          var status = splash.querySelector(".boot-status") || document.getElementById("boot-status");
           if (status) {
             status.classList.add("boot-status--visible");
             status.textContent = bootCopy("fail");
           }
           if (splash.querySelector(".boot-retry")) return;
+          var card = splash.querySelector(".boot-card") || splash;
+          var detail = document.createElement("p");
+          detail.className = "boot-detail";
+          detail.textContent = bootCopy("detail");
+          card.appendChild(detail);
           var btn = document.createElement("button");
           btn.type = "button";
           btn.className = "boot-retry";
           btn.textContent = bootCopy("retry");
           btn.addEventListener("click", function () {
-            try { location.reload(); } catch (eReload) {}
+            btn.disabled = true;
+            retryBoot();
           });
-          var card = splash.querySelector(".boot-card") || splash;
           card.appendChild(btn);
+          try { btn.focus(); } catch (eFocus) {}
         }
 
         window.__descallBootFailed = function () {
-          showBootFailure(document.getElementById("boot-splash"));
+          var all = document.querySelectorAll("#boot-splash");
+          for (var fi = 0; fi < all.length; fi += 1) showBootFailure(all[fi]);
         };
 
         function waitForPaint(splash) {
@@ -1271,9 +1326,15 @@
               window.__descallDismissBootSplash({ minMs: 0, maxMs: 0, force: true });
               return;
             }
-            if (tries >= 60) {
-              window.clearInterval(timer);
-              showBootFailure(splash);
+            // Keep polling after the failure: a late paint still clears it.
+            if (tries === 40) {
+              if (autoRetryAllowed()) {
+                window.clearInterval(timer);
+                markAutoRetry();
+                retryBoot();
+                return;
+              }
+              window.__descallBootFailed();
             }
           }, 300);
         }
@@ -1300,12 +1361,18 @@
           if (status && !status.classList.contains("boot-status--visible")) status.textContent = "Ready";
           window.setTimeout(function () {
             if (!root || root.classList.contains("boot-splash--hide")) return;
-            if (root.getAttribute("data-boot-failed") === "1") return;
+            if (root.getAttribute("data-boot-failed") === "1" && !force) return;
             if (window.__descallBootHolds > 0) return;
-            root.classList.add("boot-splash--hide");
+            clearAutoRetry();
+            // Every splash node goes, not just the first one (see dedupe above).
+            var nodes = document.querySelectorAll("#boot-splash");
+            for (var hi = 0; hi < nodes.length; hi += 1) nodes[hi].classList.add("boot-splash--hide");
             kickPaint();
             window.setTimeout(function () {
-              if (root && root.parentNode) root.parentNode.removeChild(root);
+              var left = document.querySelectorAll("#boot-splash");
+              for (var ri = 0; ri < left.length; ri += 1) {
+                if (left[ri].parentNode) left[ri].parentNode.removeChild(left[ri]);
+              }
               kickPaint();
             }, 320);
           }, wait);

@@ -38,6 +38,15 @@ const {
   bindSessionSetupDownloadCleanup,
   versionFromSetupFilename,
 } = require('./setupDownloadsCleanup.cjs');
+const {
+  SPLASH_LOAD_TIMEOUT_MS,
+  READY_FALLBACK_MS,
+  BOOT_RETRY_STORAGES,
+  shouldRetryLoad,
+  nextLoadRetryDelay,
+  shouldReloadAfterCrash,
+  raceWithTimeout,
+} = require('./bootWatchdog.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -113,6 +122,18 @@ function registerDescallProtocol() {
 function tokenFilePath() {
   return path.join(app.getPath('userData'), 'auth-token.bin');
 }
+
+// Renderer boot watchdog / "Tekrar dene" (index.html, 2.11.5): drop the service
+// worker and Cache Storage plus the HTTP cache, then reload ignoring cache.
+// The session (localStorage, IndexedDB, cookies, safeStorage token) is kept.
+ipcMain.on('app:boot-retry', async (event) => {
+  const wc = event.sender;
+  if (!mainWindow || mainWindow.isDestroyed() || wc !== mainWindow.webContents) return;
+  log.warn('[boot] renderer asked for a boot retry');
+  try { await wc.session.clearStorageData({ storages: BOOT_RETRY_STORAGES }); } catch (err) { log.warn('[boot] clear sw/cache storage failed:', err?.message || err); }
+  try { await wc.session.clearCache(); } catch (err) { log.warn('[boot] clear http cache failed:', err?.message || err); }
+  try { if (!wc.isDestroyed()) wc.reloadIgnoringCache(); } catch (_) { /* window gone */ }
+});
 
 ipcMain.on('secure-token:get', (event) => {
   try {
@@ -857,7 +878,11 @@ function createSplashWindow() {
     splashWindow.center();
   });
 
-  return ready;
+  // Never let a splash that does not finish loading hold the update gate and
+  // the main window back (2.11.5 boot watchdog).
+  return raceWithTimeout(ready, SPLASH_LOAD_TIMEOUT_MS).then((r) => {
+    if (r?.timedOut) log.warn(`[splash] loadFile did not settle in ${SPLASH_LOAD_TIMEOUT_MS}ms, continuing`);
+  });
 }
 
 function openMainApp() {
@@ -1249,25 +1274,85 @@ function createMainWindow() {
     });
   });
 
-  // Load app
+  // Load app. Boot watchdog (2.11.5, bootWatchdog.cjs): a failed main-frame
+  // load is retried with backoff, then the user gets Tekrar dene / Çıkış; a
+  // renderer crash during boot reloads; a window that never becomes
+  // ready-to-show is revealed anyway so the renderer's error state is reachable.
+  const win = mainWindow;
+  const appUrl = isDev ? 'http://localhost:5173' : 'descall://app/index.html';
+  let loadFailures = 0;
+  let loadRetryTimer = null;
+  let bootCrashReloads = 0;
+  let booted = false;
+  const loadApp = () => {
+    if (!win || win.isDestroyed()) return;
+    win.loadURL(appUrl).catch((err) => {
+      // did-fail-load carries the retry; this only logs.
+      log.warn(`[boot] loadURL rejected: ${err?.code || ''} ${err?.message || err}`);
+    });
+  };
+  const askToRetryLoad = (detail) => {
+    if (!win || win.isDestroyed()) return;
+    revealMainWindow('load-failed');
+    dialog.showMessageBox(win, {
+      type: 'error',
+      title: 'Descall',
+      message: 'Descall yüklenemedi',
+      detail: `Uygulama dosyaları açılamadı (${detail}). Tekrar deneyebilir veya Descall'ı kapatabilirsin.`,
+      buttons: ['Tekrar dene', 'Çıkış'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    }).then(({ response }) => {
+      if (response === 0) {
+        loadFailures = 0;
+        loadApp();
+      } else {
+        isQuitting = true;
+        app.quit();
+      }
+    }).catch(() => {});
+  };
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!shouldRetryLoad({ errorCode, isMainFrame })) return;
+    const delay = nextLoadRetryDelay(loadFailures);
+    loadFailures += 1;
+    log.warn(`[boot] main frame load failed (${errorCode} ${errorDescription}) ${validatedURL || ''} attempt=${loadFailures} next=${delay ?? 'ask'}`);
+    if (loadRetryTimer) clearTimeout(loadRetryTimer);
+    if (delay == null) {
+      askToRetryLoad(`${errorCode} ${errorDescription || ''}`.trim());
+      return;
+    }
+    loadRetryTimer = setTimeout(() => { loadRetryTimer = null; loadApp(); }, delay);
+  });
+  win.webContents.on('did-finish-load', () => { loadFailures = 0; });
+  win.webContents.on('render-process-gone', (_e, details) => {
+    const reason = details?.reason;
+    if (!shouldReloadAfterCrash({ booted, crashReloads: bootCrashReloads, reason })) return;
+    bootCrashReloads += 1;
+    log.warn(`[boot] renderer gone during boot (${reason}), reload ${bootCrashReloads}`);
+    setTimeout(() => { try { if (!win.isDestroyed()) win.webContents.reload(); } catch (_) { /* ignore */ } }, 500);
+  });
+
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    loadApp();
     mainWindow.webContents.openDevTools();
   } else {
     const root = distRoot();
     console.log('Loading from:', root);
     if (root) {
-      mainWindow.loadURL('descall://app/index.html').catch((err) => {
-        console.error('Failed to load:', err);
-        dialog.showErrorBox('Loading Error', `Failed to load app: ${err.message}`);
-      });
+      loadApp();
     } else {
       dialog.showErrorBox('Loading Error', 'index.html was not found in the app resources.');
     }
   }
 
-  // Show window when ready (unless we were in the tray and the updater relaunched)
-  mainWindow.once('ready-to-show', () => {
+  let revealed = false;
+  function revealMainWindow(why) {
+    if (revealed || !mainWindow || mainWindow.isDestroyed()) return;
+    revealed = true;
+    if (why !== 'ready-to-show') log.warn(`[boot] revealing main window without ready-to-show (${why})`);
+    setTimeout(() => { booted = true; }, 30 * 1000);
     containRestoredWindow(mainWindow);
     if (splashWindow && !splashWindow.isDestroyed()) {
       try { splashWindow.close(); } catch (_) { /* ignore */ }
@@ -1289,7 +1374,11 @@ function createMainWindow() {
 
     // Background polling only after the Discord-style prelaunch gate
     scheduleBackgroundUpdateChecks();
-  });
+  }
+  // Show window when ready (unless we were in the tray and the updater relaunched)
+  mainWindow.once('ready-to-show', () => revealMainWindow('ready-to-show'));
+  const readyFallback = setTimeout(() => revealMainWindow('ready-timeout'), READY_FALLBACK_MS);
+  mainWindow.once('closed', () => clearTimeout(readyFallback));
 
   // Window events
   mainWindow.on('closed', () => {

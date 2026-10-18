@@ -9,6 +9,8 @@ import MarketingApp from "./site/MarketingApp";
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
+import BootErrorScreen from "./components/boot/BootErrorScreen";
+import { checkBootSession } from "./lib/bootSessionCheck";
 import { getMyGroups, getGroupMessages } from "./api/groups";
 import { getBlockedUsers, getFriendsList, getFriendRequestsList } from "./api/friends";
 import { getDmPrefs, patchDmPref } from "./api/dmPrefs";
@@ -430,6 +432,8 @@ export default function App() {
     optimisticSessionReady({ token: getToken(), cachedUser: normalizeUser(getUser()) })
   );
   const sessionEpochRef = useRef(0);
+  const [bootError, setBootError] = useState(false);
+  const [bootAttempt, setBootAttempt] = useState(0);
   const [me, setMe] = useState(() => normalizeUser(getUser()));
   const [inviteCode, setInviteCode] = useState(() => parseInviteCodeFromLocation());
   const [inviteAuthOpen, setInviteAuthOpen] = useState(false);
@@ -1249,6 +1253,9 @@ export default function App() {
     me?.username,
   ]);
 
+  // Boot session check (2.11.5): every /auth/me attempt is capped and retried
+  // (lib/bootSessionCheck.js). Nothing answering used to keep the skeleton up
+  // forever. With no cached session we now show BootErrorScreen + "Tekrar dene".
   useEffect(() => {
     const token = getToken();
     const bootStatus = document.getElementById("boot-status");
@@ -1265,50 +1272,35 @@ export default function App() {
     if (bootStatus) bootStatus.textContent = tRuntime("Signing in");
     let cancelled = false;
     const bootEpoch = sessionEpochRef.current;
+    const current = () => !cancelled && sessionEpochRef.current === bootEpoch;
+    setBootError(false);
     (async () => {
-      try {
-        const { user } = await getMe(token);
-        if (!cancelled && sessionEpochRef.current === bootEpoch) {
-          commitSessionUser(user);
-          if (bootStatus) bootStatus.textContent = tRuntime("Welcome back");
-        }
-      } catch (err) {
-        if (!cancelled && sessionEpochRef.current === bootEpoch) {
-          const status = err?.status || err?.causeStatus || err?.response?.status;
-          const msg = String(err?.message || "");
-          const authFail = status === 401 || status === 403 || /unauthorized|invalid token|jwt/i.test(msg);
-          if (authFail) {
-            clearToken();
-            clearUser();
-            setMe(null);
-            if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
-          } else {
-            // Network / API blip on hard refresh, keep token and retry once.
-            try {
-              await new Promise((r) => setTimeout(r, 700));
-              const again = await getMe(token);
-              if (!cancelled && sessionEpochRef.current === bootEpoch) {
-                commitSessionUser(again.user);
-                if (bootStatus) bootStatus.textContent = tRuntime("Welcome back");
-              }
-            } catch (err2) {
-              const status2 = err2?.status || err2?.causeStatus;
-              if (status2 === 401 || status2 === 403) {
-                clearToken();
-                clearUser();
-                setMe(null);
-              }
-              // else keep token; user can refresh, avoid dumping an app deep-link → marketing
-              if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
-            }
-          }
-        }
-      } finally {
-        if (!cancelled && sessionEpochRef.current === bootEpoch) setSessionChecked(true);
+      const result = await checkBootSession({
+        token,
+        fetchMe: getMe,
+        isCancelled: () => !current(),
+      });
+      if (!current()) return;
+      if (result.status === "ok") {
+        commitSessionUser(result.user);
+        if (bootStatus) bootStatus.textContent = tRuntime("Welcome back");
+      } else if (result.status === "auth") {
+        clearToken();
+        clearUser();
+        setMe(null);
+        if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
+      } else if (result.status === "network") {
+        // Keep the token. A cached session is already on screen and the socket
+        // / later requests revalidate it; without one, offer a retry instead of
+        // an endless skeleton (or dumping an app deep-link to marketing).
+        console.warn("[boot] /auth/me did not answer", result.error?.message || result.error);
+        if (!normalizeUser(getUser())?.id) setBootError(true);
+        if (bootStatus) bootStatus.textContent = tRuntime("Almost ready");
       }
+      if (current()) setSessionChecked(true);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [bootAttempt]);
 
   // Initialize audio manager and notification service on app startup
   useEffect(() => {
@@ -4274,6 +4266,21 @@ export default function App() {
     setInviteCode(null);
     setInviteAuthOpen(false);
   }, []);
+
+  if (bootError && !me) {
+    return (
+      <>
+        <TitleBar />
+        <BootErrorScreen
+          onRetry={() => {
+            setBootError(false);
+            setSessionChecked(false);
+            setBootAttempt((n) => n + 1);
+          }}
+        />
+      </>
+    );
+  }
 
   if (!sessionChecked) {
     return (

@@ -66,17 +66,105 @@ html[data-theme="light"] .uvp {
   --uvp-red: #e0392f;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 12px 30px rgba(30, 30, 80, 0.16);
 }
+/* 2.11.6: under desktop Liquid Glass (web + Electron) the panel is the same
+   material as the chat-list column (.sidebar-secondary in glass-desktop/shell.css)
+   and follows the equipped catalog theme: --gd-glass-fill tint, the theme's ink,
+   hairline and accent, the list's radius, blur, shadow, edge highlight and inner
+   sheen. It used to paint its own dark slab (--gd-aurora-base-1 at 84%) with a
+   1px border, so on Borealis / Ocean / Lagoon it read as a separate piece.
+   Only the aurora sits behind it (its own grid row), so nothing readable
+   shows through; menus it opens stay opaque. Test: userVoicePanelTheme.selftest.mjs */
+html.glass-desktop .uvp {
+  --uvp-base: var(--gd-solid);
+  --uvp-ink: var(--gd-t1);
+  --uvp-ink-2: var(--gd-t2);
+  --uvp-ink-3: var(--gd-t3);
+  --uvp-hair: color-mix(in srgb, var(--g-t1) 10%, transparent);
+  --uvp-btn: var(--gd-chip);
+  --uvp-btn-hover: var(--gd-chip-hover);
+  --uvp-btn-press: color-mix(in srgb, var(--g-t1) 16%, transparent);
+  --uvp-accent: var(--gd-brand);
+  isolation: isolate;
+  border: none;
+  border-radius: var(--gd-r-panel);
+  /* The list's fill plus a faint theme wash: the bottom of most scenes is the
+     darkest part of the aurora, so without it the panel read darker than the
+     list right above it. */
+  background:
+    linear-gradient(180deg, rgba(var(--g-brand-rgb), 0.11) 0%, rgba(var(--g-brand-rgb), 0.06) 100%),
+    var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.40),
+    0 2px 8px rgba(0, 0, 0, 0.22),
+    0 10px 32px -14px rgba(var(--g-brand-rgb), 0.32);
+}
+/* Edge highlight + inner sheen: identical to the list column. */
+html.glass-desktop .uvp::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.10) 18%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.06) 82%, rgba(255, 255, 255, 0.18) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+html.glass-desktop .uvp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: inset 10px 12px 24px -16px rgba(255, 255, 255, 0.22), inset -8px -10px 22px -16px rgba(255, 255, 255, 0.10);
+}
+html.glass-desktop .uvp > * {
+  position: relative;
+  z-index: 1;
+}
+/* Subtle inner divider: a hairline in the theme ink that fades at both ends. */
+html.glass-desktop .uvp-idle {
+  border-bottom: 0;
+  background:
+    linear-gradient(90deg, transparent, var(--uvp-hair) 12%, var(--uvp-hair) 88%, transparent)
+    left bottom / 100% 1px no-repeat;
+}
+html.glass-desktop .uvp-voice-inner {
+  background: var(--gd-chip);
+  border-color: var(--uvp-hair);
+}
+html.glass-desktop .uvp button:focus-visible {
+  outline-color: var(--gd-brand-hi, var(--gd-brand));
+}
+html.glass-desktop.gd-contrast .uvp {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 18px 48px rgba(0, 0, 0, 0.40);
+}
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .uvp { background: var(--frost-solid, rgb(28, 28, 40)); }
 }
 html.a11y-solid .uvp,
-html.gd-lite .uvp {
+html.gd-lite .uvp,
+html.glass-desktop.a11y-solid .uvp,
+html.glass-desktop.gd-lite .uvp {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: var(--frost-solid, rgb(28, 28, 40));
 }
+/* Lite Electron forces the frost back on the list (glass-desktop/shell.css);
+   the panel follows it so the two never mismatch. */
+html.glass-desktop.electron-app.gd-lite:not(.a11y-solid) .uvp {
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+}
 @media (prefers-reduced-transparency: reduce) {
-  .uvp {
+  .uvp,
+  html.glass-desktop .uvp {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--frost-solid, rgb(28, 28, 40));
