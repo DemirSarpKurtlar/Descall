@@ -50,6 +50,7 @@ import {
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  getNoiseSuppressionRawTrack,
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
@@ -61,6 +62,8 @@ import {
   screenShareStillLive,
 } from "../lib/screenShareTracks";
 import { useToast } from "../context/ToastContext";
+import { IOS_NATIVE } from "../lib/iosCallKit";
+import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "../lib/callAudioDevices";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
 import { primeVoiceActivity } from "../lib/voiceActivity";
@@ -86,6 +89,8 @@ const CAMERA_CONSTRAINTS = {
  */
 export function useServerVoice(socket) {
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const [activeChannelId, setActiveChannelId] = useState(null);
   const [activeServerId, setActiveServerId] = useState(null);
   const [channelName, setChannelName] = useState("");
@@ -108,11 +113,11 @@ export function useServerVoice(socket) {
   const participantVolumeRef = useRef(new Map());
   const lastParticipantVolumeRef = useRef(new Map());
   const screenVolumeRef = useRef(new Map());
-  const audioInputIdRef = useRef("");
+  const audioInputIdRef = useRef(IOS_NATIVE ? "" : readAudioPrefs().input);
   const inputIdsRef = useRef([]);
   const setAudioInputRef = useRef(null);
   const replacingMicRef = useRef(false);
-  const audioOutputIdRef = useRef("");
+  const audioOutputIdRef = useRef(IOS_NATIVE ? "" : readAudioPrefs().output);
   const videoInputIdRef = useRef("");
   const activeChannelIdRef = useRef(null);
   const voiceJoinEpochRef = useRef(0);
@@ -127,8 +132,8 @@ export function useServerVoice(socket) {
   const [audioInputDevices, setAudioInputDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
   const [videoInputDevices, setVideoInputDevices] = useState([]);
-  const [selectedAudioInput, setSelectedAudioInput] = useState("");
-  const [selectedAudioOutput, setSelectedAudioOutput] = useState("");
+  const [selectedAudioInput, setSelectedAudioInput] = useState(() => audioInputIdRef.current);
+  const [selectedAudioOutput, setSelectedAudioOutput] = useState(() => audioOutputIdRef.current);
   const [selectedVideoInput, setSelectedVideoInput] = useState("");
   const [participantVolumes, setParticipantVolumes] = useState({});
   const [screenVolumes, setScreenVolumes] = useState({});
@@ -1404,10 +1409,11 @@ export function useServerVoice(socket) {
     publishLevelState();
   }, [publishLevelState]);
 
-  const setAudioInput = useCallback(async (deviceId) => {
+  const setAudioInput = useCallback(async (deviceId, opts = {}) => {
     const id = deviceId || "";
     audioInputIdRef.current = id;
     setSelectedAudioInput(id);
+    if (opts.persist !== false && !IOS_NATIVE) writeAudioPref("input", id);
     const current = localStreamRef.current;
     if (!current?.getAudioTracks?.().length) return;
     replacingMicRef.current = true;
@@ -1446,7 +1452,12 @@ export function useServerVoice(socket) {
       }
       setLocalStream(current);
     } catch (err) {
-      console.warn("[ServerVoice] setAudioInput failed:", err);
+      console.warn("[ServerVoice] setAudioInput failed:", err?.name || err?.message || err);
+      toastRef.current?.(tRuntime("Couldn't switch the microphone."), "error");
+      // A saved device that is gone: fall back to the default capture.
+      if (id && (err?.name === "OverconstrainedError" || err?.name === "NotFoundError")) {
+        audioInputIdRef.current = "";
+      }
     } finally {
       replacingMicRef.current = false;
     }
@@ -1457,12 +1468,14 @@ export function useServerVoice(socket) {
     const id = deviceId || "";
     audioOutputIdRef.current = id;
     setSelectedAudioOutput(id);
-    const tasks = [];
+    writeAudioPref("output", id);
     for (const [userId, el] of remoteAudioRefs.current.entries()) {
       applyVoiceElement(userId, el);
-      tasks.push(Promise.resolve());
     }
-    await Promise.all(tasks);
+    // All voice elements, boost contexts and screen-audio sinks.
+    const res = await setOutputSink(id);
+    console.info("[AudioOutput] switched", res);
+    if (res.failed && !res.applied) toastRef.current?.(tRuntime("Couldn't switch the speaker."), "error");
   }, [applyVoiceElement]);
 
   const setVideoInput = useCallback(async (deviceId) => {
@@ -1516,7 +1529,7 @@ export function useServerVoice(socket) {
       setAudioInputDevices(inputs);
       setAudioOutputDevices(devices.filter((device) => device.kind === "audiooutput"));
       setVideoInputDevices(devices.filter((device) => device.kind === "videoinput"));
-      const currentId = localStreamRef.current?.getAudioTracks?.()[0]?.getSettings?.().deviceId || "";
+      const currentId = liveMicDeviceId(localStreamRef.current, getNoiseSuppressionRawTrack());
       const plan = micRecapturePlan({
         previousIds: inputIdsRef.current,
         inputs,

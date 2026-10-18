@@ -34,6 +34,7 @@ import ShareFilmstrip from "../voice/ShareFilmstrip";
 import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { DockDeviceSlot } from "../call/DevicePicker";
+import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 
@@ -1028,25 +1029,11 @@ export default function ServerVoicePanel({
         {inThis ? (
           <>
             <div className="server-voice-dock-group" role="group" aria-label={t("Voice channel")}>
+              {/* Mic → input menu, deafen → output menu (chevron, long press, right click). */}
               <DockDeviceSlot
                 onOpen={() => serverVoice.refreshMediaDevices?.()}
-                menuLabel={t("Audio devices")}
-                sections={[
-                  {
-                    id: "mic",
-                    label: t("Microphone"),
-                    devices: serverVoice.audioInputDevices || [],
-                    selectedId: serverVoice.selectedAudioInput || "",
-                    onSelect: (deviceId) => serverVoice.setAudioInput?.(deviceId),
-                  },
-                  {
-                    id: "out",
-                    label: t("Headphones"),
-                    devices: serverVoice.audioOutputDevices || [],
-                    selectedId: serverVoice.selectedAudioOutput || "",
-                    onSelect: (deviceId) => serverVoice.setAudioOutput?.(deviceId),
-                  },
-                ]}
+                menuLabel={t("Choose microphone")}
+                groups={inputMenuGroups(serverVoice, t)}
               >
                 <button
                   type="button"
@@ -1066,16 +1053,22 @@ export default function ServerVoicePanel({
                   {serverVoice.muted ? <MicOff size={18} /> : <Mic size={18} />}
                 </button>
               </DockDeviceSlot>
-              <button
-                type="button"
-                className={`server-voice-dock-btn${serverVoice.deafened ? " is-off" : ""}`}
-                onClick={() => serverVoice.toggleDeafen?.()}
-                aria-pressed={Boolean(serverVoice.deafened)}
-                aria-label={serverVoice.deafened ? t("Undeafen") : t("Deafen")}
-                title={serverVoice.deafened ? t("Undeafen") : t("Deafen")}
+              <DockDeviceSlot
+                onOpen={() => serverVoice.refreshMediaDevices?.()}
+                menuLabel={t("Choose speaker")}
+                groups={outputMenuGroups(serverVoice, t)}
               >
-                {serverVoice.deafened ? <HeadphoneOff size={18} /> : <Headphones size={18} />}
-              </button>
+                <button
+                  type="button"
+                  className={`server-voice-dock-btn${serverVoice.deafened ? " is-off" : ""}`}
+                  onClick={() => serverVoice.toggleDeafen?.()}
+                  aria-pressed={Boolean(serverVoice.deafened)}
+                  aria-label={serverVoice.deafened ? t("Undeafen") : t("Deafen")}
+                  title={serverVoice.deafened ? t("Undeafen") : t("Deafen")}
+                >
+                  {serverVoice.deafened ? <HeadphoneOff size={18} /> : <Headphones size={18} />}
+                </button>
+              </DockDeviceSlot>
               {isNoiseSuppressionEnabled() ? (
                 <span className="server-voice-ns-badge" title={t("AI noise suppression")}>
                   NS

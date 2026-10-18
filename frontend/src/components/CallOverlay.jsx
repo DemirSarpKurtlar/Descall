@@ -28,6 +28,7 @@ import ShareFilmstrip, { ShareGridVideo } from "./voice/ShareFilmstrip";
 import { useT } from "../context/LocaleContext";
 import { useToast } from "../context/ToastContext";
 import { DockDeviceSlot } from "./call/DevicePicker";
+import { inputMenuGroups, outputMenuGroups } from "../lib/callDeviceMenus";
 import VoiceMemberContextMenu from "./servers/VoiceMemberContextMenu";
 import UserProfileModal from "./social/UserProfileModal";
 import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
@@ -117,7 +118,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const [showChat, setShowChat] = useState(false);
   const [screenExpanded, setScreenExpanded] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [showAudioPanel, setShowAudioPanel] = useState(false);
+  const outputMenuRef = useRef(null);
   const [showScreenQuality, setShowScreenQuality] = useState(false);
   const [screenShareVolume, setScreenShareVolume] = useState(100);
   const [screenVolumes, setScreenVolumes] = useState({});
@@ -144,7 +145,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   const shareEpochRef = useRef(0);
   const prevShareRef = useRef(false);
   const moreMenuRef = useRef(null);
-  const audioPanelRef = useRef(null);
   const screenQualityAnchorRef = useRef(null);
 
   useEffect(() => {
@@ -158,16 +158,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showMoreMenu]);
 
-  useEffect(() => {
-    if (!showAudioPanel) return;
-    const handleClickOutside = (e) => {
-      if (audioPanelRef.current && !audioPanelRef.current.contains(e.target)) {
-        setShowAudioPanel(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showAudioPanel]);
 
   // Native iOS: CallKit shows the incoming ring; only fall back to the card
   // when CallKit couldn't report it. Always false on web/Electron/Android.
@@ -222,17 +212,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
   // `ontrack` can run while an incoming caller is still negotiating, before
   // the active-call UI mounts its <audio>. Retry attachment after each render
   // so the first remote audio track is never lost until a later renegotiation.
+  // Same mic-only track set the hook attaches (lib/remoteAudioKeeper.js):
+  // reassigning the full remote stream here restarted playback each render.
   useEffect(() => {
-    const audio = call?.remoteAudioRef?.current;
-    const stream = call?.remoteStream;
-    const hasLiveAudio = stream?.getAudioTracks?.().some(
-      (track) => track?.readyState === "live" || track?.readyState === "new"
-    );
-    if (!isDm || !audio || !stream || !hasLiveAudio) return;
-    if (audio.srcObject !== stream) audio.srcObject = stream;
-    audio.muted = false;
-    audio.play().catch(() => {});
-  }, [isDm, call?.mode, call?.remoteAudioRef, call?.remoteStream]);
+    if (!isDm || !call?.remoteStream) return;
+    call?.ensureRemoteAudio?.("overlay");
+  }, [isDm, call?.mode, call?.remoteAudioRef, call?.remoteStream, call?.ensureRemoteAudio]);
 
   if (!active) {
     const shot = glass && typeof window !== "undefined" ? window.__DESCALL_SHOT_CALL : null;
@@ -748,24 +733,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
           </>
         ) : (
           <>
+            {/* Mic → input menu, deafen → output menu (chevron, long press, right click). */}
             <DockDeviceSlot
-              menuLabel={t("Audio devices")}
-              sections={[
-                {
-                  id: "mic",
-                  label: t("Microphone"),
-                  devices: (isDm ? call : groupCall)?.audioInputDevices || [],
-                  selectedId: (isDm ? call : groupCall)?.selectedAudioInput || "",
-                  onSelect: (deviceId) => { hapticSelection(); (isDm ? call : groupCall)?.setAudioInput?.(deviceId); },
-                },
-                {
-                  id: "out",
-                  label: (isDm ? call : groupCall)?.audioOutputLabel || t("Headphones"),
-                  devices: (isDm ? call : groupCall)?.audioOutputDevices || [],
-                  selectedId: (isDm ? call : groupCall)?.selectedAudioOutput || "",
-                  onSelect: (deviceId) => { hapticSelection(); (isDm ? call : groupCall)?.setAudioOutput?.(deviceId); },
-                },
-              ]}
+              menuLabel={t("Choose microphone")}
+              groups={inputMenuGroups(isDm ? call : groupCall, t)}
             >
               <CircleBtn
                 className={glass ? `g-cb${muted ? " is-on" : ""}` : undefined}
@@ -778,15 +749,21 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
               </CircleBtn>
             </DockDeviceSlot>
 
-            <CircleBtn
-              className={glass ? `g-cb${deafened ? " is-on" : ""}` : undefined}
-              size={narrowViewport ? 46 : 52}
-              color={deafened ? "#ed4245" : "#3c4043"}
-              onClick={() => { hapticSelection(); (isDm ? call.toggleDeafen : groupCall.toggleDeafen)?.(); }}
-              title={deafened ? t("Undeafen") : t("Deafen")}
+            <DockDeviceSlot
+              menuLabel={t("Choose speaker")}
+              groups={outputMenuGroups(isDm ? call : groupCall, t)}
+              controlRef={outputMenuRef}
             >
-              {deafened ? <HeadphoneOff size={narrowViewport ? 19 : 22} /> : <Headphones size={narrowViewport ? 19 : 22} />}
-            </CircleBtn>
+              <CircleBtn
+                className={glass ? `g-cb${deafened ? " is-on" : ""}` : undefined}
+                size={narrowViewport ? 46 : 52}
+                color={deafened ? "#ed4245" : "#3c4043"}
+                onClick={() => { hapticSelection(); (isDm ? call.toggleDeafen : groupCall.toggleDeafen)?.(); }}
+                title={deafened ? t("Undeafen") : t("Deafen")}
+              >
+                {deafened ? <HeadphoneOff size={narrowViewport ? 19 : 22} /> : <Headphones size={narrowViewport ? 19 : 22} />}
+              </CircleBtn>
+            </DockDeviceSlot>
 
             <DockDeviceSlot
               menuLabel={t("Camera")}
@@ -830,7 +807,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                 color={screenSharing ? "#3ba55d" : "#3c4043"}
                 onClick={() => {
                   setShowMoreMenu(false);
-                  setShowAudioPanel(false);
                   if (isDm) {
                     if (screenSharing) call.stopScreenShare();
                     else setShowScreenQuality((v) => !v);
@@ -849,7 +825,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                   title={t("Screen quality")} aria-label={t("Screen quality")}
                   onClick={() => {
                     setShowMoreMenu(false);
-                    setShowAudioPanel(false);
                     setShowScreenQuality((v) => !v);
                   }}
                   style={{
@@ -894,35 +869,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
             </div>
             )}
 
-            {!narrowViewport && (
-              <div ref={audioPanelRef} style={{ position: "relative", flexShrink: 0 }}>
-                <CircleBtn
-                  className={glass ? "g-cb" : undefined}
-                  size={52}
-                  color={showAudioPanel ? "rgba(255,255,255,0.18)" : "#3c4043"}
-                  title={t("Audio devices")}
-                  onClick={() => {
-                    setShowAudioPanel((v) => !v);
-                    setShowMoreMenu(false);
-                    setShowScreenQuality(false);
-                  }}
-                >
-                  <Volume2 size={22} />
-                </CircleBtn>
-                <AnimatePresence>
-                  {showAudioPanel && (
-                    <AudioDevicePanel
-                      isDm={isDm}
-                      call={call}
-                      groupCall={groupCall}
-                      narrow={false}
-                      onClose={() => setShowAudioPanel(false)}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
             <div ref={moreMenuRef} style={{ position: "relative", flexShrink: 0 }}>
               <CircleBtn
                 className={glass ? "g-cb" : undefined}
@@ -931,7 +877,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                 title={t("More options")}
                 onClick={() => {
                   setShowMoreMenu((v) => !v);
-                  setShowAudioPanel(false);
                   setShowScreenQuality(false);
                 }}
               >
@@ -987,10 +932,11 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                       <>
                         <MoreMenuItem
                           icon={<Volume2 size={16} />}
-                          label={t("Audio devices")}
+                          label={t("Audio output")}
                           onClick={() => {
                             setShowMoreMenu(false);
-                            setShowAudioPanel(true);
+                            // Same menu as the deafen button's chevron.
+                            requestAnimationFrame(() => outputMenuRef.current?.open());
                           }}
                         />
                         {!screenShareUnavailableOnIos() && (
@@ -1060,23 +1006,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Mobile audio panel (opened from More) */}
-            {narrowViewport && (
-              <div ref={audioPanelRef} className={glass ? "g-call-audio-slot" : undefined} style={{ position: "absolute", width: 0, height: 0, overflow: "visible" }}>
-                <AnimatePresence>
-                  {showAudioPanel && (
-                    <AudioDevicePanel
-                      isDm={isDm}
-                      call={call}
-                      groupCall={groupCall}
-                      narrow
-                      onClose={() => setShowAudioPanel(false)}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
 
             <CircleBtn
               className={glass ? "g-cb is-end" : "is-end"}
@@ -2330,230 +2259,6 @@ function PersonRow({ name, avatarUrl, isHost }) {
         {isHost && <span style={{ fontSize: 11, color: "#b5bac1" }}>{t("Host")}</span>}
       </div>
     </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   AudioDevicePanel, floating panel for mic/speaker selection
-   ───────────────────────────────────────────────────────────────── */
-function AudioDevicePanel({ isDm, call, groupCall, onClose, narrow = false }) {
-  const t = useT();
-  const glass = useGlassUi();
-  const hook = isDm ? call : groupCall;
-  const {
-    audioInputDevices = [],
-    audioOutputDevices = [],
-    selectedAudioInput = "",
-    selectedAudioOutput = "",
-    setAudioInput,
-    setAudioOutput,
-  } = hook || {};
-
-  const [switching, setSwitching] = useState(null); // "input" | "output"
-
-  const handleInputChange = async (deviceId) => {
-    setSwitching("input");
-    try { await setAudioInput?.(deviceId); } finally { setSwitching(null); }
-  };
-
-  const handleOutputChange = async (deviceId) => {
-    setSwitching("output");
-    try { await setAudioOutput?.(deviceId); } finally { setSwitching(null); }
-  };
-
-  const labelOf = (d) =>
-    d.label ||
-    (d.kind === "audioinput"
-      ? `${t("Microphone")} ${d.deviceId.slice(0, 5)}`
-      : `${t("Speaker")} ${d.deviceId.slice(0, 5)}`);
-
-  return (
-    <motion.div
-      className={glass ? "g-call-sheet" : undefined}
-      initial={narrow ? { opacity: 0, y: 24 } : { opacity: 0, y: 12, x: "-50%", scale: 0.96 }}
-      animate={narrow ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, x: "-50%", scale: 1 }}
-      exit={narrow ? { opacity: 0, y: 24 } : { opacity: 0, y: 12, x: "-50%", scale: 0.96 }}
-      transition={{ duration: 0.16, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{
-        ...(narrow
-          ? {
-              position: "fixed",
-              left: 12,
-              right: 12,
-              bottom: "max(12px, calc(env(safe-area-inset-bottom, 0px) + 72px))",
-              width: "auto",
-              maxHeight: "min(70dvh, calc(100dvh - 120px))",
-              overflowY: "auto",
-              overflowX: "hidden",
-              WebkitOverflowScrolling: "touch",
-              zIndex: 10050,
-            }
-          : {
-              position: "absolute",
-              bottom: "calc(100% + 14px)",
-              left: "50%",
-              width: "min(320px, calc(100vw - 24px))",
-              maxHeight: "min(70vh, 480px)",
-              overflowY: "auto",
-              overflowX: "hidden",
-              zIndex: 200,
-            }),
-        background: "linear-gradient(160deg, #25272e 0%, #1e2026 100%)",
-        border: "1px solid rgba(255,255,255,0.09)",
-        borderRadius: 16,
-        boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
-        boxSizing: "border-box",
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(88,101,242,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Volume2 size={14} color="#7289da" />
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#e3e5e8", letterSpacing: "0.01em" }}>{t("Audio Devices")}</span>
-        </div>
-        <button
-          onClick={onClose}
-          style={{ background: "none", border: "none", color: "#72767d", cursor: "pointer", padding: 4, borderRadius: 6, display: "flex", alignItems: "center" }}
-          onMouseEnter={e => e.currentTarget.style.color = "#e3e5e8"}
-          onMouseLeave={e => e.currentTarget.style.color = "#72767d"}
-         aria-label={t("Close")}>
-          <XIcon size={15} />
-        </button>
-      </div>
-
-      <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 16px" }} />
-
-      <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* Microphone section */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
-            <div style={{ width: 22, height: 22, borderRadius: 6, background: "rgba(59,165,93,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Mic2 size={12} color="#3ba55d" />
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "#72767d", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("Microphone")}</span>
-            {switching === "input" && (
-              <span style={{ fontSize: 10, color: "#7289da", marginLeft: "auto" }}>{t("Switching…")}</span>
-            )}
-          </div>
-          {audioInputDevices.length === 0 ? (
-            <div style={{ fontSize: 12, color: "#72767d", padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: 8 }}>{t("No microphones found")}</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {audioInputDevices.map((d) => {
-                const isSelected = d.deviceId === selectedAudioInput;
-                return (
-                  <button
-                    key={d.deviceId}
-                    onClick={() => !isSelected && handleInputChange(d.deviceId)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "9px 12px",
-                      background: isSelected ? "rgba(88,101,242,0.18)" : "rgba(255,255,255,0.04)",
-                      border: isSelected ? "1px solid rgba(88,101,242,0.4)" : "1px solid transparent",
-                      borderRadius: 10, cursor: isSelected ? "default" : "pointer",
-                      textAlign: "left", width: "100%",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                  >
-                    <div style={{
-                      width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                      background: isSelected ? "#5865f2" : "#4f545c",
-                      boxShadow: isSelected ? "0 0 6px rgba(88,101,242,0.8)" : "none",
-                      transition: "all 0.15s",
-                    }} />
-                    <span style={{
-                      fontSize: 12, fontWeight: isSelected ? 600 : 400,
-                      color: isSelected ? "#dee0fc" : "#b5bac1",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1,
-                    }}>
-                      {labelOf(d)}
-                    </span>
-                    {isSelected && (
-                      <Check size={13} color="#5865f2" style={{ flexShrink: 0 }} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
-
-        {/* Speaker / Output section */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
-            <div style={{ width: 22, height: 22, borderRadius: 6, background: "rgba(114,137,218,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Volume2 size={12} color="#7289da" />
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "#72767d", textTransform: "uppercase", letterSpacing: "0.06em" }}>{hook?.audioOutputLabel || t("Speaker")}</span>
-            {switching === "output" && (
-              <span style={{ fontSize: 10, color: "#7289da", marginLeft: "auto" }}>{t("Switching…")}</span>
-            )}
-          </div>
-          {audioOutputDevices.length === 0 ? (
-            <div style={{ fontSize: 12, color: "#72767d", padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: 8 }}>
-              {t("No output devices found")}
-              <div style={{ fontSize: 11, marginTop: 3, color: "#4f545c" }}>{t("Browser may not support output selection")}</div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {audioOutputDevices.map((d) => {
-                const isSelected = d.deviceId === selectedAudioOutput;
-                return (
-                  <button
-                    key={d.deviceId}
-                    onClick={() => !isSelected && handleOutputChange(d.deviceId)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "9px 12px",
-                      background: isSelected ? "rgba(114,137,218,0.18)" : "rgba(255,255,255,0.04)",
-                      border: isSelected ? "1px solid rgba(114,137,218,0.4)" : "1px solid transparent",
-                      borderRadius: 10, cursor: isSelected ? "default" : "pointer",
-                      textAlign: "left", width: "100%",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                  >
-                    <div style={{
-                      width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                      background: isSelected ? "#7289da" : "#4f545c",
-                      boxShadow: isSelected ? "0 0 6px rgba(114,137,218,0.8)" : "none",
-                      transition: "all 0.15s",
-                    }} />
-                    <span style={{
-                      fontSize: 12, fontWeight: isSelected ? 600 : 400,
-                      color: isSelected ? "#dee0fc" : "#b5bac1",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1,
-                    }}>
-                      {labelOf(d)}
-                    </span>
-                    {isSelected && (
-                      <Check size={13} color="#7289da" style={{ flexShrink: 0 }} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Arrow pointing down to the button */}
-      <div style={{
-        position: "absolute", bottom: -7, left: "50%",
-        width: 14, height: 14, background: "#1e2026",
-        border: "1px solid rgba(255,255,255,0.09)",
-        borderTop: "none", borderLeft: "none",
-        transform: "translateX(-50%) rotate(45deg)",
-        transformOrigin: "center",
-      }} />
-    </motion.div>
   );
 }
 

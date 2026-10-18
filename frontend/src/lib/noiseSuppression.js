@@ -320,6 +320,11 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   return stream;
 }
 
+/** Raw capture track behind the processed (noise-suppressed) one, if any. */
+export function getNoiseSuppressionRawTrack() {
+  return activeSession?.rawStream?.getAudioTracks?.()?.[0] || null;
+}
+
 export function disposeNoiseSuppressionSession({ stopRaw = true } = {}) {
   if (!activeSession) return;
   const { rawStream, nodes } = activeSession;

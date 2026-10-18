@@ -50,6 +50,15 @@ import { sampleConnectionStats } from "../lib/connectionStats";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
 import { useToast } from "../context/ToastContext";
+import { IOS_NATIVE } from "../lib/iosCallKit";
+import {
+  acquirePreferredMic,
+  liveMicDeviceId,
+  readAudioPrefs,
+  registerSinkElement,
+  setOutputSink,
+  writeAudioPref,
+} from "../lib/callAudioDevices";
 import { t as tRuntime } from "../i18n/runtime";
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
 import { beginIosCallAudio, endIosCallAudio } from "../lib/iosAudioRoute";
@@ -57,6 +66,7 @@ import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  getNoiseSuppressionRawTrack,
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
@@ -78,6 +88,8 @@ function buildCallParticipant(user, extras = {}) {
 
 export function useGroupCall(socket, currentUserId = null, callOccupancyRef = null) {
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const [isInCall, setIsInCall] = useState(false);
   const [isInitiator, setIsInitiator] = useState(false);
   const [callType, setCallType] = useState(null);
@@ -111,8 +123,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const [audioInputDevices, setAudioInputDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
   const [videoInputDevices, setVideoInputDevices] = useState([]);
-  const [selectedAudioInput, setSelectedAudioInput] = useState("");
-  const [selectedAudioOutput, setSelectedAudioOutput] = useState("");
+  const [selectedAudioInput, setSelectedAudioInput] = useState(() => (IOS_NATIVE ? "" : readAudioPrefs().input));
+  const [selectedAudioOutput, setSelectedAudioOutput] = useState(() => (IOS_NATIVE ? "" : readAudioPrefs().output));
   const [selectedVideoInput, setSelectedVideoInput] = useState("");
   const videoInputIdRef = useRef("");
   const participantVolumeRef = useRef(new Map());
@@ -416,7 +428,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         setAudioInputDevices(inputs);
         setAudioOutputDevices(outputs);
         setVideoInputDevices(cameras);
-        const currentId = localStreamRef.current?.getAudioTracks?.()[0]?.getSettings?.().deviceId || "";
+        const currentId = liveMicDeviceId(localStreamRef.current, getNoiseSuppressionRawTrack());
         const plan = micRecapturePlan({
           previousIds,
           inputs,
@@ -889,10 +901,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     const hangout = Boolean(options?.hangout);
     
     try {
-      const stream = await acquireVoiceMicStream(
+      const stream = await acquirePreferredMic(
+        acquireVoiceMicStream,
         type === "video"
           ? { video: { width: 1280, height: 720, facingMode: "user" } }
-          : { video: false }
+          : { video: false },
+        IOS_NATIVE ? "" : readAudioPrefs().input
       );
       localStreamRef.current = stream;
       setLocalStream(stream);
@@ -972,10 +986,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       acceptCueAtRef.current = Date.now();
       audioManager.play("callAccept");
 
-      const stream = await acquireVoiceMicStream(
+      const stream = await acquirePreferredMic(
+        acquireVoiceMicStream,
         type === "video"
           ? { video: { width: 1280, height: 720, facingMode: "user" } }
-          : { video: false }
+          : { video: false },
+        IOS_NATIVE ? "" : readAudioPrefs().input
       );
       localStreamRef.current = stream;
       setLocalStream(stream);
@@ -2181,10 +2197,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
       try {
         // Get media stream (AI noise suppression applied when enabled)
-        const stream = await acquireVoiceMicStream(
+        const stream = await acquirePreferredMic(
+          acquireVoiceMicStream,
           existingCallType === "video"
             ? { video: { width: 1280, height: 720, facingMode: "user" } }
-            : { video: false }
+            : { video: false },
+          IOS_NATIVE ? "" : readAudioPrefs().input
         );
         localStreamRef.current = stream;
         setLocalStream(stream);
@@ -2406,9 +2424,10 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   }, []);
 
   // Change audio input device
-  const setAudioInput = useCallback(async (deviceId) => {
+  const setAudioInput = useCallback(async (deviceId, opts = {}) => {
     const id = deviceId || "";
     setSelectedAudioInput(id);
+    if (opts.persist !== false && !IOS_NATIVE) writeAudioPref("input", id);
     if (!localStreamRef.current) return;
     const prevEnabled = localStreamRef.current.getAudioTracks()[0]?.enabled !== false;
     replacingMicRef.current = true;
@@ -2448,6 +2467,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
       setLocalStream(localStreamRef.current);
     } catch (err) {
+      console.warn("[GroupCall] microphone switch failed:", err?.name || err?.message || err);
+      toastRef.current?.(tRuntime("Couldn't switch the microphone."), "error");
     } finally {
       replacingMicRef.current = false;
     }
@@ -2455,16 +2476,16 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   setAudioInputRef.current = setAudioInput;
 
   // Change audio output device
-  const setAudioOutput = useCallback((deviceId) => {
-    setSelectedAudioOutput(deviceId);
-    remoteAudioRefs.current.forEach(async (audioEl, userId) => {
-      try {
-        if (audioEl.setSinkId) {
-          await audioEl.setSinkId(deviceId);
-        }
-      } catch (err) {
-      }
-    });
+  // Every participant element, boost AudioContext and screen-audio sink
+  // follows (lib/callAudioDevices.js); the choice is saved.
+  const setAudioOutput = useCallback(async (deviceId) => {
+    const id = deviceId || "";
+    setSelectedAudioOutput(id);
+    writeAudioPref("output", id);
+    remoteAudioRefs.current.forEach((audioEl) => registerSinkElement(audioEl));
+    const res = await setOutputSink(id);
+    console.info("[AudioOutput] switched", res);
+    if (res.failed && !res.applied) toastRef.current?.(tRuntime("Couldn't switch the speaker."), "error");
   }, []);
 
   const setVideoInput = useCallback(async (deviceId) => {
@@ -2538,10 +2559,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       participantCount,
     } = banner;
     try {
-      const stream = await acquireVoiceMicStream(
+      const stream = await acquirePreferredMic(
+        acquireVoiceMicStream,
         type === "video"
           ? { video: { width: 1280, height: 720, facingMode: "user" } }
-          : { video: false }
+          : { video: false },
+        IOS_NATIVE ? "" : readAudioPrefs().input
       );
       localStreamRef.current = stream;
       setLocalStream(stream);

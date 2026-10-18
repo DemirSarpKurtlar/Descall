@@ -71,6 +71,7 @@ export function createMicGuard({
   getDiagnostics = async () => null,
   report = () => {},
   onUnrecoverable = () => {},
+  onRefreshed = () => {},
   now = () => Date.now(),
   setTimer = (fn, ms) => setTimeout(fn, ms),
   clearTimer = (id) => clearTimeout(id),
@@ -327,6 +328,11 @@ export function createMicGuard({
       local.addTrack(track);
       watchTrack(track);
       log("mic refreshed", { reason, muted: Boolean(track.muted) });
+      try {
+        onRefreshed({ reason });
+      } catch {
+        /* ignore */
+      }
       return true;
     } catch (err) {
       log("mic refresh failed", reason, err?.name || err?.message);

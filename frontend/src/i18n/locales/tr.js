@@ -3572,6 +3572,13 @@ export const phrases = {
     "Ekran paylaşımı için güvenli bağlantı (HTTPS) gerekir.",
   "Could not start screen share.": "Ekran paylaşımı başlatılamadı.",
   "Loudspeaker": "Hoparlör",
+  "Couldn't switch the microphone.": "Mikrofon değiştirilemedi.",
+  "Couldn't switch the speaker.": "Ses çıkışı değiştirilemedi.",
+  "Choose microphone": "Mikrofon seç",
+  "Choose speaker": "Ses çıkışını seç",
+  "iPhone microphone": "iPhone mikrofonu",
+  "Earpiece": "Ahize",
+  "No devices found": "Cihaz bulunamadı",
   "Audio output": "Ses çıkışı",
   "Answered on iPhone, waiting for unlock…": "iPhone'da yanıtlandı, kilidin açılması bekleniyor…",
   "They answered on a locked iPhone but couldn't join in time. Try calling again.":

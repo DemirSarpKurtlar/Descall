@@ -49,6 +49,11 @@ jobs:
           node src/styles/glass-desktop/giphyCenter.selftest.mjs
           node src/styles/glass-desktop/callStage.selftest.mjs
           node src/lib/iosCallAudio.selftest.mjs
+          node src/lib/callAudioDevices.selftest.mjs
+          node src/lib/remoteAudioKeeper.selftest.mjs
+          node src/lib/callDeviceMenus.selftest.mjs
+          node src/components/call/callAudioWiring.selftest.mjs
+          node src/styles/frost.selftest.mjs
           node src/styles/headerTitle.selftest.mjs
           node src/styles/glass-desktop/glass-desktop-scope.selftest.mjs
           node src/styles/glass-desktop/themeTint.selftest.mjs

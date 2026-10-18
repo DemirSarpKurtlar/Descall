@@ -1117,14 +1117,16 @@ function createMainWindow() {
   ipcMain.handle('notification:request-permission', async () => true);
 
   // Allow screen capture permissions
+  // 'speaker-selection' (2.10.113): without it Chromium rejects
+  // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
+  // silently did nothing.
+  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowed = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture'];
-    callback(allowed.includes(permission));
+    callback(MEDIA_PERMISSIONS.includes(permission));
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
-    const allowed = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture'];
-    return allowed.includes(permission);
+    return MEDIA_PERMISSIONS.includes(permission);
   });
 
   // Make navigator.mediaDevices.getDisplayMedia work in Electron (DM/group/server).
