@@ -324,26 +324,8 @@ async function broadcastUserProfileUpdate(io, userId) {
     }
   }
 
-  const list = [];
-  for (const [id, pres] of presence) {
-    if (pres.status === "invisible") continue;
-    const cached = userProfileById.get(id);
-    list.push({
-      id,
-      username: cached?.username || pres.username,
-      displayName: cached?.display_name || null,
-      display_name: cached?.display_name || null,
-      status: publicPresenceStatus(pres.status),
-      avatarUrl: cached?.avatar_url || pres.avatar_url || null,
-      avatar_url: cached?.avatar_url || pres.avatar_url || null,
-      avatarVersion: cached?.updated_at || null,
-      updated_at: cached?.updated_at || null,
-      is_admin: isAdminProfile(cached) || (pres.username === "admin"),
-      isAdmin: isAdminProfile(cached) || (pres.username === "admin"),
-      ...pickChatCosmetics(cached),
-    });
-  }
-  io.emit("users:update", list);
+  // Roster rows of this user refresh through the scoped presence fan-out.
+  require("../runtime/presenceFanoutInstance").markPresenceDirty(userId);
 }
 
 function publicPresenceStatus(status) {

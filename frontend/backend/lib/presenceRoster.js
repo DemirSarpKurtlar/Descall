@@ -43,6 +43,11 @@ function pruneDeadPresence(presence, io) {
     if (isPresenceSocketLive(io, id, entry)) continue;
     presence.delete(id);
     removed += 1;
+    try {
+      require("../runtime/presenceFanoutInstance").markPresenceDirty(id);
+    } catch {
+      /* fan-out not loaded (selftests) */
+    }
   }
   return removed;
 }

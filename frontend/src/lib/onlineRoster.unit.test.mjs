@@ -79,3 +79,27 @@ test("friends loaded after the first roster still do not notify for that roster"
   });
   assert.deepEqual(afterFriendsArrive.newcomers, []);
 });
+
+import { applyPresenceDelta } from "./onlineRoster.js";
+
+test("presence delta upserts, removes and keeps identity when nothing changes", () => {
+  const base = [{ id: "ada", status: "online" }, { id: "me", status: "online" }];
+  assert.equal(applyPresenceDelta(base, { up: [], rm: [] }), base);
+  assert.equal(applyPresenceDelta(base, null), base);
+  const added = applyPresenceDelta(base, { up: [{ id: "bey", status: "online" }], rm: [] });
+  assert.deepEqual(added.map((u) => u.id), ["ada", "me", "bey"]);
+  const changed = applyPresenceDelta(added, { up: [{ id: "ada", status: "dnd" }] });
+  assert.equal(changed.find((u) => u.id === "ada").status, "dnd");
+  assert.equal(changed.length, 3);
+  const removed = applyPresenceDelta(changed, { rm: ["bey", "ghost"] });
+  assert.deepEqual(removed.map((u) => u.id), ["ada", "me"]);
+  const norm = applyPresenceDelta([], { up: [{ id: 5, status: "idle" }] }, (u) => ({ ...u, n: true }));
+  assert.deepEqual(norm, [{ id: 5, status: "idle", n: true }]);
+});
+
+test("delta newcomers still trigger the friend-online toast logic", () => {
+  const base = [{ id: "me", status: "online" }];
+  const next = applyPresenceDelta(base, { up: [{ id: "ada", status: "online" }] });
+  const r = friendsWhoJustCameOnline({ previous: base, next, friendIds: ["ada"], myId: "me", hasBaseline: true });
+  assert.deepEqual(r.newcomers.map((u) => u.id), ["ada"]);
+});

@@ -63,7 +63,8 @@ export function createSocket(token, options = {}) {
   } = options;
 
   const opts = {
-    auth: isNativeIOS() ? { token, platform: "ios" } : { token },
+    // presence: 2 = this build merges `presence:delta` (2.11.3, scoped roster).
+    auth: isNativeIOS() ? { token, platform: "ios", presence: 2 } : { token, presence: 2 },
     autoConnect: false,
     transports,
     withCredentials: false,

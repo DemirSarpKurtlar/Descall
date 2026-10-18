@@ -1374,6 +1374,7 @@ export const phrases = {
   "Choose how Descall looks on this device.": "Choose how Descall looks on this device.",
   "Accent color": "Accent color",
   "Desktop Liquid Glass": "Desktop Liquid Glass",
+  "Scoped presence": "Scoped presence",
   "Low performance mode": "Low performance mode",
   "Turns off glass blur so Descall stays smooth on older computers.": "Turns off glass blur so Descall stays smooth on older computers.",
   "Density": "Density",

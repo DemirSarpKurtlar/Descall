@@ -29,3 +29,38 @@ export function friendsWhoJustCameOnline({
   });
   return { newcomers, hasBaseline: true };
 }
+
+/**
+ * Merge a scoped `presence:delta { up: [user], rm: [id] }` into the roster.
+ * `normalize` maps raw server rows like the `users:update` handler does.
+ * Returns the previous array when nothing changed.
+ */
+export function applyPresenceDelta(previous, delta, normalize = (u) => u) {
+  const list = Array.isArray(previous) ? previous : [];
+  const up = Array.isArray(delta?.up) ? delta.up.filter((u) => u && u.id) : [];
+  const rm = new Set(Array.isArray(delta?.rm) ? delta.rm.map(String) : []);
+  if (!up.length && !rm.size) return list;
+  const byId = new Map();
+  for (const u of up) byId.set(String(u.id), normalize(u));
+  let changed = false;
+  const out = [];
+  for (const u of list) {
+    const id = String(u?.id ?? "");
+    if (rm.has(id) && !byId.has(id)) {
+      changed = true;
+      continue;
+    }
+    if (byId.has(id)) {
+      out.push(byId.get(id));
+      byId.delete(id);
+      changed = true;
+      continue;
+    }
+    out.push(u);
+  }
+  for (const u of byId.values()) {
+    out.push(u);
+    changed = true;
+  }
+  return changed ? out : list;
+}

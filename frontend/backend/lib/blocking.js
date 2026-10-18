@@ -51,6 +51,11 @@ async function blockUser(userId, targetId) {
   // Blocking severs any existing friendship and pending requests immediately.
   friends.get(userId)?.delete(targetId);
   friends.get(targetId)?.delete(userId);
+  try {
+    require("../runtime/presenceFanoutInstance").refreshPresenceFor(userId, targetId);
+  } catch {
+    /* presence refresh is best-effort */
+  }
   pendingRequests.get(userId)?.delete(targetId);
   pendingRequests.get(targetId)?.delete(userId);
   try {

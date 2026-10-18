@@ -1377,6 +1377,7 @@ export const phrases = {
   "Choose how Descall looks on this device.": "Descall'ın bu cihazda nasıl görüneceğini seç.",
   "Accent color": "Vurgu rengi",
   "Desktop Liquid Glass": "Masaüstü Liquid Glass",
+  "Scoped presence": "Kapsamlı çevrimiçi listesi",
   "Low performance mode": "Düşük performans modu",
   "Turns off glass blur so Descall stays smooth on older computers.": "Cam bulanıklığını kapatır. Eski bilgisayarlarda Descall daha akıcı çalışır.",
   "Density": "Yoğunluk",

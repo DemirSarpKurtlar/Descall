@@ -79,6 +79,16 @@ const io = new Server(httpServer, {
   // 12 s + 10 s keeps that under ~22 s at a negligible ping cost.
   pingInterval: 12000,
   pingTimeout: 10000,
+  // 2.11.3 (scale S0): compress only big frames (boot lists, roster
+  // snapshots). Small chat/typing frames stay raw. Small zlib window and no
+  // context takeover keep memory per socket at ~12 KB instead of ~300 KB.
+  perMessageDeflate: {
+    threshold: 2048,
+    serverNoContextTakeover: true,
+    clientNoContextTakeover: true,
+    serverMaxWindowBits: 10,
+    zlibDeflateOptions: { level: 1, memLevel: 4, windowBits: 10 },
+  },
 });
 
 app.set("io", io);
