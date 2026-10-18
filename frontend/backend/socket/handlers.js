@@ -55,6 +55,7 @@ const {
   attachReactions,
 } = require("../lib/dmMessages");
 const { remainingUserSocketIds } = require("../lib/presenceRoster");
+const { getPresenceFanout, refreshPresenceFor } = require("../runtime/presenceFanoutInstance");
 const { registerGroupHandlers, removeUserFromAllGroupCalls } = require("./groupHandlers");
 const { registerServerChannelHandlers } = require("./serverChannelHandlers");
 const { registerServerVoiceHandlers, removeUserFromAllServerVoice, startAfkIdleScanner } = require("./serverVoiceHandlers");
@@ -247,30 +248,13 @@ function pushNotification(io, userId, n) {
   emitToUser(io, userId, "notification:new", { notification: entry });
 }
 
-function broadcastUsers(io) {
-  const list = [];
-  for (const [id, p] of presence) {
-    // Invisible users must not appear in the online roster at all —
-    // remapping status to "offline" still leaked them via membership checks.
-    if (p.status === "invisible") continue;
-    const cached = getCachedPublicUser(id);
-    const username = cached?.username || p.username;
-    const isAdmin = Boolean(cached?.is_admin || cached?.isAdmin) || username === "admin";
-    list.push({
-      id,
-      username,
-      displayName: cached?.displayName || null,
-      display_name: cached?.displayName || null,
-      status: publicPresenceStatus(p.status),
-      avatarUrl: cached?.avatarUrl || p.avatar_url || null,
-      avatar_url: cached?.avatarUrl || p.avatar_url || null,
-      avatarVersion: cached?.avatarVersion || cached?.updated_at || null,
-      updated_at: cached?.updated_at || null,
-      is_admin: isAdmin,
-      isAdmin,
-    });
-  }
-  io.emit("users:update", list);
+// Presence fan-out is scoped (friends + shared servers/groups) and coalesced
+// in runtime/presenceFanoutInstance.js. `presenceScoped: false` restores the
+// legacy global roster.
+function broadcastUsers(io, userId) {
+  const fanout = getPresenceFanout(io);
+  if (fanout && userId != null) fanout.markDirty(userId);
+  else if (fanout) fanout.flush();
 }
 
 function getSocketForUser(io, userId) {
@@ -601,6 +585,8 @@ function registerSocketHandlers(io) {
     // Native iOS app sockets identify with auth.platform === "ios" (used for push context).
     const fromIosApp = String(socket?.handshake?.auth?.platform || "").toLowerCase() === "ios";
     socket.data.activeDmPeer = null;
+    // 2.11.3+ clients merge `presence:delta`; older builds get scoped snapshots.
+    socket.data.presenceDelta = Number(socket.handshake?.auth?.presence) >= 2;
 
     // Durable activity timestamp for admin "recently active" boards.
     touchLastSeen(myId).catch(() => {});
@@ -680,7 +666,7 @@ function registerSocketHandlers(io) {
         socket.emit("dm:requests", []);
       }
       emitSyncState(io, myId, socket);
-      broadcastUsers(io);
+      getPresenceFanout(io).userOnline(myId);
 
       try {
         const { getActiveTimeout } = require("../lib/moderation");
@@ -729,7 +715,7 @@ function registerSocketHandlers(io) {
       }
       await savePresenceStatus(myId, s);
       socket.emit("status:current", { status: s });
-      broadcastUsers(io);
+      broadcastUsers(io, myId);
       io.to(socket.id).emit("friend:list", getFriendList(myId));
     });
 
@@ -775,6 +761,7 @@ function registerSocketHandlers(io) {
         if (existingRows?.some((r) => r.status === "accepted")) {
           ensureSet(friends, myId).add(target.id);
           ensureSet(friends, target.id).add(myId);
+          refreshPresenceFor(myId, target.id);
           return socket.emit("friend:error", { message: "Already friends." });
         }
         if (existingRows?.some((r) => r.status === "pending")) {
@@ -868,6 +855,7 @@ function registerSocketHandlers(io) {
 
       ensureSet(friends, myId).add(fromUserId);
       ensureSet(friends, fromUserId).add(myId);
+      refreshPresenceFor(myId, fromUserId);
       if (fromProf?.username) usernameById.set(fromUserId, fromProf.username);
 
       // Accept in DB — update pending, or upsert accepted for legacy memory-only requests
@@ -962,6 +950,7 @@ function registerSocketHandlers(io) {
       if (removed.username) usernameById.set(fromId, removed.username);
       ensureSet(friends, myId).add(fromId);
       ensureSet(friends, fromId).add(myId);
+      refreshPresenceFor(myId, fromId);
       const saved = await saveFriendshipToDB(fromId, myId);
       if (!saved) {
         ensureSet(friends, myId).delete(fromId);
@@ -1000,6 +989,7 @@ function registerSocketHandlers(io) {
       const b = friends.get(friendId);
       if (a) a.delete(friendId);
       if (b) b.delete(myId);
+      refreshPresenceFor(myId, friendId);
       ensureDmUnreadMap(myId).delete(friendId);
       ensureDmUnreadMap(friendId).delete(myId);
       
@@ -2295,7 +2285,8 @@ function registerSocketHandlers(io) {
             socketId: nextSocketId,
           });
         }
-        broadcastUsers(io);
+        getPresenceFanout(io).socketGone(socket.id);
+        broadcastUsers(io, myId);
         notifyAdminRoom(io, { type: "presence", online: presence.size });
         return;
       }
@@ -2310,7 +2301,8 @@ function registerSocketHandlers(io) {
       lastSeenByUserId.set(myId, new Date().toISOString());
       touchLastSeen(myId, { force: true }).catch(() => {});
       presence.delete(myId);
-      broadcastUsers(io);
+      getPresenceFanout(io).socketGone(socket.id);
+      getPresenceFanout(io).userOffline(myId);
       notifyAdminRoom(io, { type: "presence", online: presence.size });
     });
 

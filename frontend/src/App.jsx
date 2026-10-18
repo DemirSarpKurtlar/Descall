@@ -72,7 +72,7 @@ import {
 } from "./lib/userProfile";
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
-import { friendsWhoJustCameOnline } from "./lib/onlineRoster";
+import { friendsWhoJustCameOnline, applyPresenceDelta } from "./lib/onlineRoster";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isDmSlashCommand } from "./lib/slashCommands";
 import { isNativeIOS } from "./lib/platform";
@@ -1147,6 +1147,7 @@ export default function App() {
 
     setFriends((prev) => patchUserInList(prev, id, patch));
     setFriendRequests((prev) => patchUserInList(prev, id, patch));
+    prevOnlineUsersRef.current = patchUserInList(prevOnlineUsersRef.current || [], id, patch);
     setOnlineUsers((prev) => patchUserInList(prev, id, patch));
     setActiveDmUser((prev) => {
       if (prev?.id !== id) return prev;
@@ -1693,8 +1694,7 @@ export default function App() {
       }
     });
 
-    socket.on("users:update", (users) => {
-      const newUsers = (users ?? []).map((u) => normalizeUser(u));
+    const applyOnlineRoster = (newUsers) => {
       const { newcomers, hasBaseline } = friendsWhoJustCameOnline({
         previous: prevOnlineUsersRef.current,
         next: newUsers,
@@ -1718,6 +1718,18 @@ export default function App() {
 
       prevOnlineUsersRef.current = newUsers;
       setOnlineUsers(newUsers);
+    };
+
+    // Scoped roster (2.11.3): a snapshot of friends + shared server/group
+    // members, then `presence:delta` changes merged into it.
+    socket.on("users:update", (users) => {
+      applyOnlineRoster((users ?? []).map((u) => normalizeUser(u)));
+    });
+
+    socket.on("presence:delta", (delta) => {
+      const prev = prevOnlineUsersRef.current || [];
+      const next = applyPresenceDelta(prev, delta, normalizeUser);
+      if (next !== prev) applyOnlineRoster(next);
     });
 
     socket.on("friend:list", (list) => {

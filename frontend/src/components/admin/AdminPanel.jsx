@@ -1671,6 +1671,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       disabled={busy}
                       onChange={(enabled) => setFeatureFlag("desktopGlass", enabled)}
                     />
+                    <SystemSwitch
+                      icon={Zap}
+                      tone="glass"
+                      label={t("Scoped presence")}
+                      status={system.config?.featureFlags?.presenceScoped !== false ? t("On") : t("Off")}
+                      checked={system.config?.featureFlags?.presenceScoped !== false}
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("presenceScoped", enabled)}
+                    />
                   </div>
                 </article>
 

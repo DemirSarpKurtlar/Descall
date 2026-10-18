@@ -103,6 +103,7 @@ function audit(actor, action, target, meta) {
 
 function cleanupUserMemory(userId) {
   state.presence.delete(userId);
+  require("../runtime/presenceFanoutInstance").markPresenceDirty(userId);
   state.socketToUser.forEach((uid, sid) => {
     if (uid === userId) state.socketToUser.delete(sid);
   });
@@ -794,7 +795,7 @@ router.patch("/users/:id/status", (req, res) => {
   if (p) {
     p.status = status;
     state.presence.set(req.params.id, p);
-    getIo(req).emit("users:update", [...state.presence].map(([id, x]) => ({ id, username: x.username, status: x.status })));
+    require("../runtime/presenceFanoutInstance").markPresenceDirty(req.params.id);
   }
   audit(req.user, "force_status", req.params.id, { status });
   res.json({ ok: true });

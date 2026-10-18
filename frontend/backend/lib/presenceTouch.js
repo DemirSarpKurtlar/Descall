@@ -4,7 +4,8 @@ const supabase = require("../db/supabase");
 const { userLastLoginAt, lastSeenByUserId } = require("../runtime/sharedState");
 
 /** Avoid hammering Postgres on rapid reconnects / multi-tab sockets. */
-const MIN_INTERVAL_MS = 60_000;
+// 2.11.3: 60 s → 5 min. Memory is always current; disconnect forces a write.
+const MIN_INTERVAL_MS = 5 * 60_000;
 const lastDbWriteAt = new Map();
 
 /**
