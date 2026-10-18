@@ -75,10 +75,11 @@ export function getGoogleAuthConfig() {
   });
 }
 
-export function getMe(token) {
+export function getMe(token, { signal } = {}) {
   return httpRequest(API_ROUTES.me, {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
+    ...(signal ? { signal } : {}),
   });
 }
 

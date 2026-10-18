@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Is electron
   isElectron: true,
 
+  // Boot watchdog / "Tekrar dene" (2.11.5): clear SW + caches, reload ignoring cache.
+  retryBoot: () => ipcRenderer.send('app:boot-retry'),
+
   // OS transparency switch. The CSS media query is unreliable in Electron
   // (it can stick on "reduce" and flatten Liquid Glass while Chrome stays frosted).
   getPrefersReducedTransparency: () => ipcRenderer.sendSync('native-theme:reduced-transparency'),

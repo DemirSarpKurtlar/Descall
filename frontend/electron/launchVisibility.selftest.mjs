@@ -115,7 +115,9 @@ assert(main.includes("userRequestedShow"), "a second launch during splash must b
 const second = main.slice(main.indexOf("app.on('second-instance'"), main.indexOf("app.on('second-instance'") + 500);
 assert(second.includes("showMainWindow()"), "second-instance must show and focus the existing window");
 assert(second.includes("userRequestedShow = true"), "second-instance must request a show if the window is not up yet");
-const ready = main.slice(main.indexOf("mainWindow.once('ready-to-show'"), main.indexOf("mainWindow.on('closed'"));
+// 2.11.5: ready-to-show (and the boot watchdog's ready-timeout) go through revealMainWindow.
+assert(main.includes("mainWindow.once('ready-to-show', () => revealMainWindow('ready-to-show'))"), "ready-to-show must reveal the window");
+const ready = main.slice(main.indexOf("function revealMainWindow("), main.indexOf("mainWindow.on('closed'"));
 assert(ready.includes("launch.action === 'show'"), "ready-to-show must show on a manual launch");
 assert(ready.includes("showMainWindow()"), "a manual launch must focus through showMainWindow");
 assert(main.includes("setUpdaterRelaunch(true)"), "a quiet install must mark the following process as a relaunch");
