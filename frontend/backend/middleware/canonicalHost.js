@@ -11,7 +11,13 @@
  */
 
 const CANONICAL_HOST = "descall.com";
-const RENDER_HOSTS = new Set(["des-call.onrender.com", "des-call-staging.onrender.com"]);
+// API hosts: HTML paths here bounce to descall.com (SEO); API paths never do.
+const RENDER_HOSTS = new Set([
+  "des-call.onrender.com",
+  "des-call-staging.onrender.com",
+  "api.descall.com",
+  "api-staging.descall.com",
+]);
 
 const API_PREFIXES = [
   "/api",

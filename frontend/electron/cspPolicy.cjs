@@ -21,9 +21,9 @@ function inlineScriptHashes(html) {
   return [...new Set(out)];
 }
 
-const CONNECT = "connect-src 'self' descall: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com http://localhost:5173 https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://*.posthog.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io; ";
-const IMG = "img-src 'self' https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data: blob:; ";
-const MEDIA = "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;";
+const CONNECT = "connect-src 'self' descall: https://descall.com https://des-call.onrender.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://descall.com wss://des-call.onrender.com https://api.descall.com wss://rt.descall.com http://localhost:5173 https://api.github.com https://api.giphy.com https://*.giphy.com https://tenor.googleapis.com https://*.tenor.com https://eu.i.posthog.com https://*.posthog.com https://*.livekit.cloud wss://*.livekit.cloud https://o4512220968779776.ingest.de.sentry.io; ";
+const IMG = "img-src 'self' https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.githubusercontent.com https://*.giphy.com https://*.tenor.com https://*.gstatic.com data: blob:; ";
+const MEDIA = "media-src 'self' blob: data: https://descall.com https://des-call.onrender.com https://api.descall.com https://*.supabase.co https://*.supabase.in https://*.giphy.com https://*.tenor.com;";
 
 function buildElectronCsp(indexHtml, { dev = false } = {}) {
   const hashes = indexHtml ? inlineScriptHashes(indexHtml) : null;

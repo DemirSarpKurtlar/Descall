@@ -12,12 +12,15 @@ const { requireAuth } = require("../middleware/auth");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
 const { purchaseItem } = require("../lib/shopPurchase");
+const { edgePublicBase, publicCache } = require("../lib/edgeConfig");
 
 const router = express.Router();
 
 /** Public origin of this API, for absolute image URLs (native apps run on a custom scheme). */
 function publicApiBase(req) {
-  return `${req.protocol}://${req.get("host")}`;
+  // Behind the Cloudflare edge (EDGE_PUBLIC_BASE) card images load from the
+  // CDN host, so repeat views never reach Render.
+  return edgePublicBase() || `${req.protocol}://${req.get("host")}`;
 }
 
 router.get("/catalog", requireAuth, async (req, res) => {
@@ -35,6 +38,22 @@ router.get("/catalog", requireAuth, async (req, res) => {
     res.json({ items, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
   } catch (err) {
     console.error("[shop] catalog error:", err.message);
+    res.status(500).json({ error: "Failed to load shop catalog." });
+  }
+});
+
+/**
+ * Same active catalog as /catalog, without a token: it is identical for every
+ * user (inventory, wallet and equip state are separate routes). Shared cache
+ * 5 min at the edge, ETag revalidation in the browser (gzipJson).
+ */
+router.get("/catalog/public", async (req, res) => {
+  try {
+    const items = await shop.listActiveItems({ assetBase: publicApiBase(req) });
+    publicCache(res, { maxAge: 60, sMaxAge: 300, swr: 600 });
+    res.json({ items, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
+  } catch (err) {
+    console.error("[shop] public catalog error:", err.message);
     res.status(500).json({ error: "Failed to load shop catalog." });
   }
 });

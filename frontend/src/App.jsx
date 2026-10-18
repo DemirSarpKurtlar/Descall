@@ -73,6 +73,7 @@ import {
 import audioManager, { initAudioManager, setEquippedSoundPack } from "./lib/audioManager";
 import notificationService from "./lib/notificationService";
 import { friendsWhoJustCameOnline, applyPresenceDelta } from "./lib/onlineRoster";
+import { fetchPublic, rememberEdgeApiBase } from "./lib/edgeApi";
 import { isCasinoSlash } from "./lib/casinoCommands";
 import { isDmSlashCommand } from "./lib/slashCommands";
 import { isNativeIOS } from "./lib/platform";
@@ -1361,7 +1362,7 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE_URL}/api/features`)
+    fetchPublic("/api/features")
       .then((res) => {
         if (!res.ok) throw new Error(`features ${res.status}`);
         return res.json();
@@ -1372,6 +1373,8 @@ export default function App() {
           applyRemoteGlassDesktopFlag(undefined);
           return;
         }
+        // S1: the server advertises the Cloudflare host once it is live.
+        rememberEdgeApiBase(data.edgeApiBase);
         applyPublicFeatures(data);
         applyRemoteGlassFlag(data.iosGlass);
         applyRemoteGlassDesktopFlag(data.desktopGlass);
@@ -1720,7 +1723,7 @@ export default function App() {
       setOnlineUsers(newUsers);
     };
 
-    // Scoped roster (2.11.3): a snapshot of friends + shared server/group
+    // Scoped roster (2.11.4): a snapshot of friends + shared server/group
     // members, then `presence:delta` changes merged into it.
     socket.on("users:update", (users) => {
       applyOnlineRoster((users ?? []).map((u) => normalizeUser(u)));

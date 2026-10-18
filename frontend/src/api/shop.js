@@ -1,6 +1,25 @@
+import { edgeApiBase, fetchPublic } from "../lib/edgeApi";
 import { authedRequest } from "./authedHttp";
 
-export const getShopCatalog = ({ category, assets } = {}) => {
+/**
+ * Full catalog: through the Cloudflare edge (public, identical for everyone)
+ * when it is live, else the signed-in route as before.
+ */
+export const getShopCatalog = async ({ category, assets } = {}) => {
+  if (!category && !assets && edgeApiBase()) {
+    try {
+      const res = await fetchPublic("/api/shop/catalog/public", { headers: { Accept: "application/json" } });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.items)) return data;
+      }
+    } catch {
+      /* fall back to the signed-in route */
+    }
+  }
+  return getShopCatalogOrigin({ category, assets });
+};
+const getShopCatalogOrigin = ({ category, assets } = {}) => {
   const params = new URLSearchParams();
   if (category) params.set("category", category);
   if (assets) params.set("assets", "1");
