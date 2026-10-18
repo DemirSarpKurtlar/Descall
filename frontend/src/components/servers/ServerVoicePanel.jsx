@@ -869,13 +869,14 @@ export default function ServerVoicePanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [tileFullscreen, closeTileFullscreen]);
 
+  const sharing = screenSharers.length > 0;
+  // Declared after `sharing`: its dependency array is read during render,
+  // so above the const it threw "Cannot access before initialization" (2.10.114).
   useEffect(() => {
     if (sharing) return;
     setScreenExpand({ token: 0, id: null });
     setTileFullscreen(null);
   }, [sharing]);
-
-  const sharing = screenSharers.length > 0;
   const reduceMotion = useReducedMotion();
   const shareEpochRef = useRef(0);
   const prevSharingRef = useRef(false);

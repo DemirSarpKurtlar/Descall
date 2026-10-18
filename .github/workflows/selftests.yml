@@ -38,6 +38,10 @@ jobs:
           node src/components/admin/adminOverviewUi.selftest.mjs
           node src/lib/glassConfirm.source.selftest.mjs
           node src/styles/conv-rows.selftest.mjs
+          node src/lib/glassDesktop.selftest.mjs
+          node src/lib/glassBreakpoints.selftest.mjs
+          node src/styles/cosmeticPrecedence.selftest.mjs
+          node src/lib/hookDepsTdz.selftest.mjs
           node src/styles/list-card-padding.selftest.mjs
           node src/styles/call-glass.selftest.mjs
           node src/lib/profileModalState.selftest.mjs
@@ -102,6 +106,10 @@ jobs:
           node src/lib/groupInfo.selftest.mjs
           node src/lib/groupRename.selftest.mjs
           node src/components/layout/ContextMenu.parity.selftest.mjs
+      - name: Install frontend dependencies (render selftests)
+        run: npm ci --no-audit --no-fund
+      - name: Server voice channel render selftest
+        run: node src/components/servers/ServerVoicePanel.render.selftest.mjs
       - name: Native iOS call logic selftest (Swift, Foundation only)
         run: |
           set -euo pipefail

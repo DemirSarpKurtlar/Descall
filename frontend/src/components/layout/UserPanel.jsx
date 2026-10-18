@@ -633,7 +633,6 @@ const UserPanel = forwardRef(function UserPanel({
   const equipped = useMemo(
     () => ({
       bannerId: me?.equippedBanner?.id || null,
-      avatarFrameId: me?.equippedAvatarFrame?.id || null,
       backgroundId: me?.equippedBackground?.id || null,
       themeId: me?.equippedTheme?.id || null,
       badgeId: me?.equippedBadge?.id || null,
@@ -650,7 +649,6 @@ const UserPanel = forwardRef(function UserPanel({
     }),
     [
       me?.equippedBanner?.id,
-      me?.equippedAvatarFrame?.id,
       me?.equippedBackground?.id,
       me?.equippedTheme?.id,
       me?.equippedBadge?.id,

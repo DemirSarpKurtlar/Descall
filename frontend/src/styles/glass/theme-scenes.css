@@ -67,7 +67,6 @@ html.glass-ui .g-theme-specks,
 html.glass-ui .g-theme-sheen {
   display: none;
 }
-
 /* The painted ambient on these surfaces would hide the stage. */
 html.glass-ui[data-theme="lagoon"] .app-root.g-shell .app-sidebar-shell,
 html.glass-ui[data-theme="grove"] .app-root.g-shell .app-sidebar-shell,
@@ -172,7 +171,12 @@ html.glass-ui[data-theme="emberfall"] .user-settings.is-mobile.g-profile-edit,
 html.glass-ui[data-theme="borealis"] .user-settings.is-mobile.g-profile-edit,
 html.glass-ui[data-theme="starwell"] .user-settings.is-mobile.g-profile-edit,
 html.glass-ui[data-theme="chromeveil"] .user-settings.is-mobile.g-profile-edit,
-html.glass-ui[data-theme="iriscape"] .user-settings.is-mobile.g-profile-edit,
+html.glass-ui[data-theme="iriscape"] .user-settings.is-mobile.g-profile-edit {
+  background-color: var(--g-deep) !important;
+  background-color: color-mix(in srgb, var(--g-deep) 62%, transparent) !important;
+  background-image: none !important;
+}
+
 html.glass-ui[data-theme="lagoon"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="grove"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="hanami"] .call-overlay-root.g-call,
@@ -181,9 +185,10 @@ html.glass-ui[data-theme="borealis"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="starwell"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="chromeveil"] .call-overlay-root.g-call,
 html.glass-ui[data-theme="iriscape"] .call-overlay-root.g-call {
-  background-color: var(--g-deep) !important;
-  background-color: color-mix(in srgb, var(--g-deep) 62%, transparent) !important;
-  background-image: none !important;
+  /* Opaque: a 62% scene let the DM transcript show through the call. */
+  background-color: #0b0c12 !important;
+  background-color: var(--g-deep, #0b0c12) !important;
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--g-deep, #0b0c12) 100%, #000 0%), color-mix(in srgb, var(--g-deep, #0b0c12) 80%, #000)) !important;
 }
 
 /* The desktop "your chats live here" pane stays mounted under the phone.

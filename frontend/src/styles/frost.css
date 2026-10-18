@@ -38,7 +38,7 @@
   .status-picker, .message-inline-picker, .activity-privacy-menu,
   .ssq-pop, .ssq-sheet, .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card,
   .g-call-sheet, .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal,
-  .g-alert, .conv-confirm-card, .toast-item,
+  .g-alert, .conv-confirm-card, .toast-item, .call-overlay-minimized,
   .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
   .un-modal, .activity-modal, .update-notes-modal, .lfg-modal
 )
@@ -60,7 +60,7 @@
     .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
     .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet,
     .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert,
-    .conv-confirm-card, .toast-item, .server-modal, .add-modal, .report-modal, .feedback-modal,
+    .conv-confirm-card, .toast-item, .call-overlay-minimized, .server-modal, .add-modal, .report-modal, .feedback-modal,
     .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .lfg-modal) {
     background: var(--frost-solid) !important;
   }
@@ -72,7 +72,7 @@
   .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
   .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet, .gs-sheet,
   .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert, .conv-confirm-card,
-  .toast-item, .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
+  .toast-item, .call-overlay-minimized, .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
   .un-modal, .activity-modal, .update-notes-modal, .lfg-modal) {
   background: var(--frost-solid) !important;
   -webkit-backdrop-filter: none !important;
@@ -86,7 +86,7 @@
     .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
     .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet,
     .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert,
-    .conv-confirm-card, .toast-item, .server-modal, .add-modal, .report-modal, .feedback-modal,
+    .conv-confirm-card, .toast-item, .call-overlay-minimized, .server-modal, .add-modal, .report-modal, .feedback-modal,
     .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .lfg-modal) {
     background: var(--frost-solid) !important;
     -webkit-backdrop-filter: none !important;

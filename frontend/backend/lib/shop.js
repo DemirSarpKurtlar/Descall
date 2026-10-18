@@ -11,7 +11,13 @@ const crypto = require("crypto");
 const supabase = require("../db/supabase");
 
 /** Shop sound packs are retired. Equipped packs fall back to the default tones. */
-const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack"]);
+/**
+ * Avatar frames are removed (2.10.114). Owned rows and equipped ids stay in
+ * the database untouched (no migration, no refunds); the API simply never
+ * sells, equips, lists, or returns them.
+ */
+const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame"]);
+const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack", ...REMOVED_COSMETIC_CATEGORIES]);
 
 const EQUIP_COLUMN_BY_CATEGORY = {
   banner: "equipped_banner_id",
@@ -422,7 +428,9 @@ async function getUserInventory(userId) {
   if (itemsError) throw itemsError;
   const itemById = new Map((items || []).map((i) => [i.id, normalizeItem(i)]));
 
-  return rows.map((row) => ({
+  return rows
+    .filter((row) => !REMOVED_COSMETIC_CATEGORIES.has(itemById.get(row.item_id)?.category))
+    .map((row) => ({
     id: row.id,
     itemId: row.item_id,
     acquiredVia: row.acquired_via,
@@ -501,7 +509,9 @@ async function getUnnotifiedGifts(userId) {
   const itemById = new Map((items || []).map((i) => [i.id, i]));
   const gifterById = new Map((gifters || []).map((u) => [u.id, u]));
 
-  return rows.map((row) => ({
+  return rows
+    .filter((row) => !REMOVED_COSMETIC_CATEGORIES.has(itemById.get(row.item_id)?.category))
+    .map((row) => ({
     inventoryId: row.id,
     item: itemById.get(row.item_id) || null,
     message: row.gift_message || null,
@@ -579,7 +589,7 @@ function equippedRecord(user, byId) {
     return id ? byId.get(id) || null : null;
   };
   return {
-    avatarFrame: pick("equipped_avatar_frame_id"),
+    avatarFrame: null, // frames removed in 2.10.114; the stored id is ignored
     banner: pick("equipped_banner_id"),
     background: pick("equipped_background_id"),
     theme: pick("equipped_theme_id"),
@@ -650,7 +660,7 @@ async function getEquippedForUsers(userIds) {
   const map = new Map();
   (data || []).forEach((u) => {
     map.set(u.id, {
-      avatarFrameId: u.equipped_avatar_frame_id,
+      avatarFrameId: null,
       bannerId: u.equipped_banner_id,
       backgroundId: u.equipped_background_id,
       themeId: u.equipped_theme_id,
@@ -673,6 +683,7 @@ async function getEquippedForUsers(userIds) {
 module.exports = {
   EQUIP_COLUMN_BY_CATEGORY,
   RETIRED_SHOP_CATEGORIES,
+  REMOVED_COSMETIC_CATEGORIES,
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
   getCatalogAsset,

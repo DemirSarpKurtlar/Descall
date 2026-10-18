@@ -22,8 +22,9 @@ for (const vw of [1600, 1920, 2560]) assert.ok(width(vw) / vw <= 0.22, `ratio at
 // Continuous (no jump) around the breakpoint.
 assert.ok(Math.abs(width(bp + 1) - width(bp)) < 1);
 
-// Small windows keep the compact rule.
+// Small windows (now incl. 769–1024 px web tablets, 2.10.114) keep a compact column
+// that still fits DM names next to the time/pin slot.
 const shell = readFileSync(new URL("../styles/glass-desktop/shell.css", import.meta.url), "utf8");
-assert.match(shell, /@media \(max-width: 1024px\)\s*\{\s*html\.glass-desktop\s*\{[^}]*--sidebar-width: 240px/);
+assert.match(shell, /@media \(max-width: 1024px\)\s*\{\s*html\.glass-desktop\s*\{[^}]*--sidebar-width: 272px/);
 
 console.log("sidebarWidth.selftest ok");

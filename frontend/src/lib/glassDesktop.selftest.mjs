@@ -95,10 +95,11 @@ assert.equal(nativeShellPlatform(cap("android")), "android");
 assert.equal(nativeShellPlatform(cap("ios", false)), null);
 assert.equal(nativeShellPlatform({}), null);
 
-function fakeWindow({ platform = null, width = 1440, store = {}, search = "" } = {}) {
+function fakeWindow({ platform = null, width = 1440, height = 900, store = {}, search = "" } = {}) {
   const classes = new Set();
   const win = {
     innerWidth: width,
+    innerHeight: height,
     navigator: { hardwareConcurrency: 8 },
     location: { href: `https://descall.com/login${search}`, search, pathname: "/login", hash: "" },
     history: {
@@ -191,7 +192,13 @@ assert.equal(setGlassDesktopLiteManual(false, forced), false);
 assert.equal(forced._store[GLASS_DESKTOP_LITE_KEY], "0");
 assert.ok(!forced._classes.has(GLASS_DESKTOP_LITE_CLASS));
 
-const narrow = fakeWindow({ width: 800, search: "?gd=1" });
+const narrow = fakeWindow({ width: 390, height: 844, search: "?gd=1" });
 assert.equal(initGlassDesktop(narrow), false, "phone-width web ignores the flag");
+const landscape = fakeWindow({ width: 852, height: 393, search: "?gd=1" });
+assert.equal(initGlassDesktop(landscape), false, "phone landscape stays on glass-ui");
+// 2.10.114: a ~900×930 browser window matched neither glass gate.
+const tablet = fakeWindow({ width: 900, height: 930 });
+assert.equal(initGlassDesktop(tablet), true, "900×930 web window gets glass-desktop");
+assert.ok(tablet._classes.has(GLASS_DESKTOP_CLASS));
 
 console.log("glassDesktop.selftest.mjs ok");

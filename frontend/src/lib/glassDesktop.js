@@ -4,7 +4,8 @@
  * Separate from the iPhone UI (`html.glass-ui` / publicFeatures.iosGlass).
  * Native iOS and Android never get `html.glass-desktop`.
  *
- * Electron, and web at >= 960px, default on when the remote flag is missing.
+ * Electron, and every web viewport that is not phone-like (see webGlassMode),
+ * default on when the remote flag is missing.
  * These still turn it off:
  *   1. local override  localStorage "descall:glass-desktop" = "0"
  *      (also set by ?glass-desktop=0 or ?gd=0, then the param is removed)
@@ -40,6 +41,26 @@ export const GLASS_DESKTOP_OVERRIDE_KEY = "descall:glass-desktop";
 export const GLASS_DESKTOP_REMOTE_KEY = "descall:glass-desktop-remote";
 export const GLASS_DESKTOP_LITE_KEY = "descall:glass-desktop-lite";
 export const GLASS_DESKTOP_MIN_WIDTH = 960;
+/** Phone-like web viewport: short side under 600 px, or 768 px wide or less. */
+export const WEB_PHONE_MAX_SHORT_SIDE = 600;
+export const WEB_PHONE_MAX_WIDTH = 768;
+
+/**
+ * Which Liquid Glass layer a web viewport gets. Every width has exactly one:
+ * "ui" (html.glass-ui) for a phone-like viewport under 960 px, otherwise
+ * "desktop" (html.glass-desktop). Before 2.10.114 a 769–959 px window whose
+ * short side was 600 px or more (a ~900×930 browser window, an iPad portrait
+ * window) matched neither gate and fell back to the pre-glass theme.
+ * null when the size is unknown.
+ */
+export function webGlassMode({ width = 0, height = 0 } = {}) {
+  const wv = Number(width) || 0;
+  if (wv <= 0) return null;
+  const hv = Number(height) || 0;
+  const short = hv > 0 ? Math.min(wv, hv) : 0;
+  const phoneLike = (short > 0 && short < WEB_PHONE_MAX_SHORT_SIDE) || wv <= WEB_PHONE_MAX_WIDTH;
+  return wv < GLASS_DESKTOP_MIN_WIDTH && phoneLike ? "ui" : "desktop";
+}
 
 const AUTH_PREVIEW_PATHS = new Set(["/login", "/register", "/tr/login", "/tr/register"]);
 
@@ -192,7 +213,7 @@ function snapshotInputs(w, remoteOverride) {
     isNativeIos: platform === "ios",
     isNativeAndroid: platform === "android",
     isElectron,
-    viewportOk: isElectron || width >= GLASS_DESKTOP_MIN_WIDTH,
+    viewportOk: isElectron || webGlassMode({ width, height: Number(w?.innerHeight) || 0 }) === "desktop",
     surfaceOk: isGlassDesktopSurface(w?.location?.pathname),
     buildFlag: readBuildFlag(),
     remoteFlag,
