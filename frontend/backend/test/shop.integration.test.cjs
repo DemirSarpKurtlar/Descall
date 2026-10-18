@@ -318,17 +318,23 @@ async function run() {
     io.setOnline("u-bob", false);
     r = await req(base, "POST", "/api/admin/shop/gift", {
       token: aliceToken,
-      body: { userId: "u-bob", itemId: "item-frame-1", message: "For while you were away" },
+      body: { userId: "u-bob", itemId: "item-frame-1", message: "frame" },
+    });
+    // 2.11.0 retired avatar frames: gifting one is refused (410 cosmetic_removed).
+    assert(r.status === 410 && r.body.code === "cosmetic_removed", "retired avatar frame cannot be gifted");
+    r = await req(base, "POST", "/api/admin/shop/gift", {
+      token: aliceToken,
+      body: { userId: "u-bob", itemId: "item-banner-svg", message: "For while you were away" },
     });
     assert(r.status === 200, "second gift (different item) succeeds");
     const liveEventsForOfflineGift = io.emitted.filter(
-      (e) => e.event === "shop:gift:received" && e.payload?.item?.sku === "frame-gold"
+      (e) => e.event === "shop:gift:received" && e.payload?.item?.sku === "banner-inline-svg"
     );
     assert(liveEventsForOfflineGift.length === 0, "no live popup emitted while recipient is offline");
 
     let pending = await shop.getUnnotifiedGifts("u-bob");
     assert(pending.length === 1, "one unnotified gift pending: " + JSON.stringify(pending));
-    assert(pending[0].item.sku === "frame-gold", "pending gift has correct item");
+    assert(pending[0].item.sku === "banner-inline-svg", "pending gift has correct item");
     assert(pending[0].message === "For while you were away", "pending gift has correct message");
     assert(pending[0].from.username === "alice", "pending gift has correct sender");
 
