@@ -122,7 +122,6 @@ for (const rel of [
   "components/servers/ServersSidebar.jsx",
   "components/servers/ServerMembersPanel.jsx",
   "components/servers/ServerRolesModal.jsx",
-  "components/settings/RiotLinkCard.jsx",
   "components/lfg/LfgWorkspace.jsx",
   "lib/blockedUsers.js",
   "components/settings/DeleteAccountSection.jsx",

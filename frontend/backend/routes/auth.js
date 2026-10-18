@@ -20,7 +20,6 @@ const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
 
 const { toPublicUser, cacheUserProfile, broadcastUserProfileUpdate } = require("../lib/userProfile");
-const { publicRiotCard } = require("../lib/riotLink");
 const moderation = require("../lib/moderation");
 const accountDeletion = require("../lib/accountDeletion");
 const ageGate = require("../lib/ageGate");
@@ -189,21 +188,6 @@ const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "";
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
-
-async function loadPublicValorant(userId) {
-  if (!userId) return null;
-  try {
-    const { data } = await supabase
-      .from("user_riot_accounts")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (!data || data.card_public === false) return null;
-    return publicRiotCard(data);
-  } catch {
-    return null;
-  }
-}
 
 function authUserPayload(user, extra = {}) {
   const displayName = user.display_name || user.displayName || null;
@@ -1179,13 +1163,11 @@ router.get("/me", requireAuth, async (req, res) => {
       return res.status(401).json({ error: "This account is closed.", code: "account_closed" });
     }
 
-    const valorant = await loadPublicValorant(user.id);
     const equipped = await shop.getEquippedCosmeticsForUser(user.id).catch(() => ({}));
     return res.status(200).json({
       user: {
         ...toPublicUser(user),
         birthDate: user.birth_date || null,
-        valorant,
         email: user.email || null,
         emailVerified: Boolean(user.email_confirmed_at),
         twoFactorEnabled: Boolean(user.two_factor_enabled),
@@ -1227,13 +1209,11 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
 
     if (error || !user) return res.status(404).json({ error: "User not found" });
 
-    const valorant = await loadPublicValorant(user.id);
     const equipped = await shop.getEquippedCosmeticsForUser(user.id).catch(() => ({}));
     return res.json({
       user: {
         ...toPublicUser(user),
         createdAt: user.created_at,
-        valorant,
         equippedAvatarFrame: equipped.avatarFrame || null,
         equippedBanner: equipped.banner || null,
         equippedBackground: equipped.background || null,

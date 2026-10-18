@@ -88,22 +88,10 @@ router.get("/status", requireAuth, async (req, res) => {
   }
 });
 
-// GET /riot/users/:userId — public card for profiles
-router.get("/users/:userId", requireAuth, async (req, res) => {
-  try {
-    const { data } = await supabase
-      .from("user_riot_accounts")
-      .select("*")
-      .eq("user_id", req.params.userId)
-      .maybeSingle();
-    if (!data || data.card_public === false) {
-      return res.json({ valorant: null });
-    }
-    return res.json({ valorant: publicRiotCard(data) });
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to load Valorant card" });
-  }
-});
+// GET /riot/users/:userId: retired in 2.11.16. Descall shows no Valorant/Riot
+// card on profiles. Installed builds that still ask get an empty card, never
+// another user's Riot ID or rank.
+router.get("/users/:userId", requireAuth, (_req, res) => res.json({ valorant: null }));
 
 // POST /riot/link — link by Name#TAG and fetch real competitive rank
 router.post("/link", requireAuth, async (req, res) => {

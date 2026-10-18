@@ -3,7 +3,6 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import ParallaxBanner from "../ui/ParallaxBanner";
 import AdminBadge from "../social/AdminBadge";
-import ValorantBadge from "../social/ValorantBadge";
 import { BadgeIcon, NameEffectText, TitleTag, profileAuraClass } from "../ui/Cosmetics";
 import { cssUrl } from "../../lib/cssUrl";
 
@@ -100,7 +99,6 @@ export default function ShopProfilePreview({ me, t }) {
               <p>{bio}</p>
             </div>
           ) : null}
-          {me?.valorant?.linked ? <ValorantBadge valorant={me.valorant} compact /> : null}
           {(bubble || typing || reaction || callOverlay) && (
             <div className="shop-live-extras">
               {bubble ? (

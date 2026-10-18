@@ -54,10 +54,8 @@ import {
   syncNativePushToken,
 } from "../../lib/nativePush";
 import { detectDefaultLocale } from "../../i18n/detect";
-import RiotLinkCard from "../settings/RiotLinkCard";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
-import ValorantBadge from "../social/ValorantBadge";
 import AdminBadge from "../social/AdminBadge";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
@@ -1366,9 +1364,6 @@ const UserPanel = forwardRef(function UserPanel({
                     <AdminBadge user={me} variant="chip" />
                   </div>
                   {customStatus && <span className="us-status-pill">{customStatus}</span>}
-                  {me?.valorant?.linked && (
-                    <ValorantBadge valorant={me.valorant} compact />
-                  )}
                 </div>
               </div>
             </div>
@@ -1379,8 +1374,6 @@ const UserPanel = forwardRef(function UserPanel({
                 <span>{profileError}</span>
               </div>
             )}
-
-            <RiotLinkCard />
 
             <section className="us-section">
               <h4 className="us-section-label">{t("Account details")}</h4>
