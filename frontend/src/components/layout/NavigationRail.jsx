@@ -18,6 +18,7 @@ import {
 import { RAIL_ACCENT } from "./railIcons";
 import { filterMainNavItems, usePublicFeatures } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
+import { UVP_STATUS_EVENT } from "../../lib/userVoicePanel";
 import useMaterialize from "../../hooks/useMaterialize";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 
@@ -183,6 +184,8 @@ export default function NavigationRail({
   const avatarBtnRef = useRef(null);
   const menuRef = useRef(null);
   const glassLensRef = useRef(null);
+  /** Anchor rect when the bottom user panel's avatar opened the picker. */
+  const uvpAnchorRef = useRef(null);
 
   const mainItems = useMemo(
     () => filterMainNavItems(buildMainNavItems(t), publicFeatures),
@@ -209,10 +212,18 @@ export default function NavigationRail({
 
   const placeMenu = () => {
     if (glass) return; // glass menu is CSS-anchored above the tab bar (mockup 18)
+    const menuWidth = 260;
+    const uvp = uvpAnchorRef.current;
+    if (uvp) {
+      // Above the panel avatar, left-aligned with it.
+      const h = menuRef.current?.getBoundingClientRect().height || 360;
+      const left = Math.max(8, Math.min(uvp.left, window.innerWidth - menuWidth - 8));
+      setMenuPos({ top: Math.max(8, uvp.top - h - 10), left });
+      return;
+    }
     const el = avatarBtnRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const menuWidth = 260;
     const gap = 10;
     let left = rect.right + gap;
     if (left + menuWidth > window.innerWidth - 8) {
@@ -230,10 +241,12 @@ export default function NavigationRail({
   useLayoutEffect(() => {
     if (!statusOpen) return undefined;
     placeMenu();
+    const raf = requestAnimationFrame(placeMenu); // real menu height after mount
     const onReposition = () => placeMenu();
     window.addEventListener("resize", onReposition);
     window.addEventListener("scroll", onReposition, true);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", onReposition);
       window.removeEventListener("scroll", onReposition, true);
     };
@@ -243,6 +256,7 @@ export default function NavigationRail({
     if (!statusOpen) return undefined;
     const onDoc = (e) => {
       if (avatarBtnRef.current?.contains(e.target)) return;
+      if (e.target?.closest?.("[data-uvp-avatar]")) return;
       if (menuRef.current?.contains(e.target)) return;
       if (glassLensRef.current?.contains(e.target)) return;
       setStatusOpen(false);
@@ -256,6 +270,20 @@ export default function NavigationRail({
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
+  }, [statusOpen]);
+
+  // Bottom user panel avatar (desktop) toggles this same picker.
+  useEffect(() => {
+    if (glass) return undefined;
+    const toggle = (e) => {
+      uvpAnchorRef.current = e?.detail || null;
+      setStatusOpen((v) => !v);
+    };
+    window.addEventListener(UVP_STATUS_EVENT, toggle);
+    return () => window.removeEventListener(UVP_STATUS_EVENT, toggle);
+  }, [glass]);
+  useEffect(() => {
+    if (!statusOpen) uvpAnchorRef.current = null;
   }, [statusOpen]);
 
   // Glass toolbar avatar (GlassMeButton) opens this same picker.
@@ -546,7 +574,10 @@ export default function NavigationRail({
           type="button"
           ref={avatarBtnRef}
           className="rail-user-panel"
-          onClick={() => setStatusOpen((v) => !v)}
+          onClick={() => {
+            uvpAnchorRef.current = null;
+            setStatusOpen((v) => !v);
+          }}
           title={`${t(statusKey === "dnd" ? "Do Not Disturb" : STATUS_META[statusKey]?.label || "Online")}, ${t("change status")}`}
           aria-label={`${resolveDisplayName(railUser || me) || t("You")}, ${t("change status")}`}
           aria-haspopup="menu"
