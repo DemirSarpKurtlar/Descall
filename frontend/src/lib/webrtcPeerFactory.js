@@ -23,7 +23,7 @@
  *     replaceTrack(track) on it. Returns the sender, or null if none found.
  */
 
-import { getIceServers } from "./iceConfig";
+import { getIceServers, trackPeerConnection } from "./iceConfig";
 import { opusOptionsForSenders, preferVoiceCodecs, tuneAudioReceiver, tuneOpusSdp } from "./voiceProfile.js";
 
 export function createPeerConnection({
@@ -41,6 +41,8 @@ export function createPeerConnection({
     rtcpMuxPolicy: "require",
     iceCandidatePoolSize: 2,
   });
+  // Refreshed short-lived TURN credentials reach this pc via setConfiguration (next ICE restart).
+  trackPeerConnection(pc);
 
   if (onIceCandidate) {
     pc.onicecandidate = (e) => onIceCandidate(e.candidate, e);

@@ -16,6 +16,11 @@
  *    username = "<expiry>:descall", credential = base64(HMAC-SHA1(secret, username)).
  * 3. Static long-term credentials (legacy): TURN_URL + TURN_USERNAME + TURN_CREDENTIAL.
  *
+ * 2.11.1: TURN is only handed to signed-in users (routes/webrtc.js). Every user gets their
+ * own short-lived credentials (USER_TTL_S, default 4 h, clamp 1-4 h via TURN_CREDENTIAL_TTL_S),
+ * cached per user for half their lifetime so reconnects do not re-mint. Clients refresh
+ * before expiry (response carries ttlSeconds / expiresAt).
+ *
  * Credentials are never logged.
  */
 
@@ -28,6 +33,21 @@ const CACHE_MS = 8 * 60 * 60 * 1000;
 
 let cfCache = null; // { at, iceServers }
 let cfInflight = null;
+
+const USER_TTL_DEFAULT_S = 4 * 60 * 60;
+const USER_CACHE_MAX = 5000;
+const userCache = new Map(); // userId -> { at, expiresAt, servers }
+const userInflight = new Map();
+
+function userTtlSeconds(env = process.env) {
+  const raw = Number(env.TURN_CREDENTIAL_TTL_S);
+  if (!Number.isFinite(raw) || raw <= 0) return USER_TTL_DEFAULT_S;
+  return Math.min(4 * 60 * 60, Math.max(60 * 60, Math.round(raw)));
+}
+
+function safeUserTag(userId) {
+  return String(userId || "user").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64) || "user";
+}
 
 function splitUrls(value) {
   return String(value || "")
@@ -109,9 +129,86 @@ async function turnIceServers(env = process.env, opts = {}) {
   return [];
 }
 
+async function mintCloudflareForUser(env, ttlS, fetchImpl) {
+  const res = await fetchImpl(
+    `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(env.CLOUDFLARE_TURN_KEY_ID)}/credentials/generate-ice-servers`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.CLOUDFLARE_TURN_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ttl: ttlS }),
+    }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const list = Array.isArray(data?.iceServers) ? data.iceServers : data?.iceServers ? [data.iceServers] : [];
+  // Port 53 is blocked by browsers and only adds a timeout without trickle ICE.
+  const servers = list
+    .filter((s) => s && s.urls)
+    .map((s) => ({ ...s, urls: (Array.isArray(s.urls) ? s.urls : [s.urls]).filter((u) => !/:53(\?|$)/.test(String(u))) }))
+    .filter((s) => s.urls.length);
+  if (!servers.length) throw new Error("empty iceServers");
+  return servers;
+}
+
+/**
+ * Per-user, short-lived TURN entries for a signed-in user.
+ * Returns { servers, ttlSeconds, expiresAt } (servers possibly empty when TURN is off).
+ */
+async function turnIceServersForUser(userId, env = process.env, { fetchImpl = globalThis.fetch, now = Date.now() } = {}) {
+  const mode = turnMode(env);
+  const ttlS = userTtlSeconds(env);
+  if (mode === "none") return { servers: [], ttlSeconds: ttlS, expiresAt: null };
+  if (mode === "static") {
+    // Long-term credentials cannot expire; still only for signed-in users.
+    return { servers: await turnIceServers(env), ttlSeconds: ttlS, expiresAt: null };
+  }
+  if (mode === "shared-secret") {
+    const urls = turnUrlsFromEnv(env);
+    const secret = env.TURN_SHARED_SECRET || env.TURN_STATIC_AUTH_SECRET;
+    const expiry = Math.floor(now / 1000) + ttlS;
+    const username = `${expiry}:${safeUserTag(userId)}`;
+    const credential = crypto.createHmac("sha1", secret).update(username).digest("base64");
+    return { servers: [{ urls: expandTurnUrls(urls), username, credential }], ttlSeconds: ttlS, expiresAt: new Date(expiry * 1000).toISOString() };
+  }
+  // Cloudflare: one credential per user, reused for half its lifetime.
+  const key = String(userId);
+  const hit = userCache.get(key);
+  if (hit && now - hit.at < (ttlS * 1000) / 2) {
+    return { servers: hit.servers, ttlSeconds: Math.max(60, Math.floor((hit.expiresAt - now) / 1000)), expiresAt: new Date(hit.expiresAt).toISOString() };
+  }
+  if (userInflight.has(key)) return userInflight.get(key);
+  const p = (async () => {
+    try {
+      const servers = await mintCloudflareForUser(env, ttlS, fetchImpl);
+      const expiresAt = now + ttlS * 1000;
+      if (userCache.size >= USER_CACHE_MAX) {
+        for (const [k, v] of userCache) if (now - v.at >= (ttlS * 1000) / 2) userCache.delete(k);
+        if (userCache.size >= USER_CACHE_MAX) userCache.delete(userCache.keys().next().value);
+      }
+      userCache.set(key, { at: now, expiresAt, servers });
+      return { servers, ttlSeconds: ttlS, expiresAt: new Date(expiresAt).toISOString() };
+    } catch (err) {
+      console.warn("[webrtc] Cloudflare TURN credentials failed:", err?.message || err);
+      if (hit && hit.expiresAt - now > 10 * 60 * 1000) {
+        return { servers: hit.servers, ttlSeconds: Math.floor((hit.expiresAt - now) / 1000), expiresAt: new Date(hit.expiresAt).toISOString() };
+      }
+      return { servers: [], ttlSeconds: 60, expiresAt: null };
+    } finally {
+      userInflight.delete(key);
+    }
+  })();
+  userInflight.set(key, p);
+  return p;
+}
+
 function _resetTurnCacheForTests() {
   cfCache = null;
   cfInflight = null;
+  userCache.clear();
+  userInflight.clear();
 }
 
 module.exports = {
@@ -120,5 +217,7 @@ module.exports = {
   turnUrlsFromEnv,
   sharedSecretCredentials,
   turnIceServers,
+  turnIceServersForUser,
+  userTtlSeconds,
   _resetTurnCacheForTests,
 };

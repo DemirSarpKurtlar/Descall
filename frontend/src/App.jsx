@@ -45,7 +45,7 @@ import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, setChatP
 import { createSocket } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
-import { preloadIceServers } from "./lib/iceConfig";
+import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
 import { optimisticSessionReady } from "./lib/bootSession";
 import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
@@ -1529,6 +1529,8 @@ export default function App() {
     socket.on("connect", () => {
       setIsConnected(true);
       setReconnectState("connected");
+      // Reconnect (network change, wake): make sure TURN credentials are fresh for the next call.
+      refreshIceServers({ ifStale: true }).catch(() => {});
       transportFallbackStepRef.current = 0;
       setAuthError("");
       emitDmActive(socket, activeDmRef.current?.id ?? null);

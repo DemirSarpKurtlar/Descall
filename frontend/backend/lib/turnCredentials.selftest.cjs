@@ -50,9 +50,37 @@ const {
   const fs = require("node:fs");
   const path = require("node:path");
   const route = fs.readFileSync(path.join(__dirname, "../routes/webrtc.js"), "utf8");
-  assert.match(route, /turnIceServers\(/);
+  assert.match(route, /turnIceServersForUser\(/);
   assert.match(route, /turnMode/);
-  assert.match(route, /private, max-age=300/);
+  assert.match(route, /private, no-store/);
+
+  // 2.11.1 per-user short-lived credentials.
+  const { turnIceServersForUser, userTtlSeconds } = require("./turnCredentials");
+  assert.equal(userTtlSeconds({}), 4 * 3600);
+  assert.equal(userTtlSeconds({ TURN_CREDENTIAL_TTL_S: "60" }), 3600, "clamped to >= 1h");
+  assert.equal(userTtlSeconds({ TURN_CREDENTIAL_TTL_S: "999999" }), 4 * 3600, "clamped to <= 4h");
+  const ss = await turnIceServersForUser("user-1", { TURN_URL: "turn:t.example:3478", TURN_SHARED_SECRET: "sek" }, { now });
+  assert.equal(ss.servers[0].username, `${Math.floor(now / 1000) + 4 * 3600}:user-1`, "shared-secret username is per user");
+  assert.equal(ss.ttlSeconds, 4 * 3600);
+  _resetTurnCacheForTests();
+  let minted = 0;
+  const bodies = [];
+  const cf = async (_url, init) => {
+    minted += 1;
+    bodies.push(JSON.parse(init.body));
+    return { ok: true, json: async () => ({ iceServers: [{ urls: ["turn:turn.cloudflare.com:3478?transport=udp", "turn:turn.cloudflare.com:53?transport=udp"], username: `u${minted}`, credential: "c" }] }) };
+  };
+  const a1 = await turnIceServersForUser("alice", env, { fetchImpl: cf, now: 0 });
+  const a2 = await turnIceServersForUser("alice", env, { fetchImpl: cf, now: 3600 * 1000 });
+  const b1 = await turnIceServersForUser("bob", env, { fetchImpl: cf, now: 3600 * 1000 });
+  assert.equal(bodies[0].ttl, 4 * 3600, "Cloudflare credential ttl is 4h, not 24h");
+  assert.equal(a1.servers[0].username, a2.servers[0].username, "reused within half the ttl");
+  assert.notEqual(a1.servers[0].username, b1.servers[0].username, "each user gets their own credential");
+  assert.ok(!a1.servers[0].urls.some((u) => /:53\?/.test(u)), "port 53 dropped");
+  assert.equal(a2.ttlSeconds, 3 * 3600, "remaining lifetime reported");
+  const a3 = await turnIceServersForUser("alice", env, { fetchImpl: cf, now: 2.5 * 3600 * 1000 });
+  assert.notEqual(a3.servers[0].username, a1.servers[0].username, "re-minted after half the ttl");
+  assert.equal((await turnIceServersForUser("x", {})).servers.length, 0);
   console.log("turnCredentials.selftest ok");
 })().catch((err) => {
   console.error(err);
