@@ -51,6 +51,9 @@ assert.match(winJob, /shell: pwsh[\s\S]*npm run build:prod\s*\n\s*if \(\$LASTEXI
 assert.match(winJob, /git ls-files --eol index\.html/, "Windows build refuses a CRLF index.html");
 assert.equal(/\$LASTEXITCODE|throw "/.test(webGate), false, "no PowerShell in the bash web-gate step");
 assert.match(release, /--descall-smoke-boot/, "release boots the packaged app");
+assert.match(release, /\$env:DESCALL_SMOKE = "boot"/, "boot smoke does not inherit DESCALL_SMOKE=1");
+assert.match(release, /smoke-boot\.json[\s\S]*ConvertFrom-Json[\s\S]*-not \$result\.ok/, "boot smoke result must exist and be ok");
+assert.match(release, /Wait-Installer \(Join-Path \$dest "Descall\.exe"\)\s*\n\s*if \(-not \(Test-Path/, "silent install is awaited");
 
 // No script asset may be inlined as data: (blocked by script-src 'self').
 const vite = readFileSync(join(front, "vite.config.js"), "utf8");
@@ -67,6 +70,8 @@ if (existsSync(join(dist, "assets"))) {
 const main = readFileSync(join(here, "main.cjs"), "utf8");
 assert.match(main, /if \(!path\.extname\(rel\)\) rel = '\/index\.html';/);
 assert.match(main, /rescueStuckSplash/, "main removes a splash stuck over a painted app");
+assert.match(main, /const smokeBoot = process\.argv\.includes\('--descall-smoke-boot'\)/, "--descall-smoke-boot wins over DESCALL_SMOKE=1");
+assert.match(main, /const smokeLaunch = !smokeBoot &&/);
 
 // Boot smoke verdicts.
 const ok = { splashes: 0, inlineRan: true, rootPainted: true };
