@@ -97,6 +97,7 @@ import { useToast } from "./context/ToastContext";
 import { useLocale } from "./context/LocaleContext";
 import { t as tRuntime } from "./i18n/runtime";
 import { resolveInitialLocale } from "./i18n";
+import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
@@ -585,18 +586,17 @@ export default function App() {
   // Reflect a live call in the address bar without treating a pasted call URL
   // as permission to start a microphone/camera session. Refreshing the URL
   // safely returns to its DM/group conversation instead.
+  const callUrlKeyRef = useRef(null);
   useEffect(() => {
     if (!me?.id) return;
-    if (call.mode && call.peer?.username) {
-      const callPath = `${directPath(call.peer)}/call/${call.callType || "voice"}`;
-      if (location.pathname !== callPath) navigate(callPath, { replace: true });
+    const route = liveCallRoute(call, groupCall);
+    if (route) {
+      const target = callUrlTarget(route, location.pathname, callUrlKeyRef.current);
+      callUrlKeyRef.current = route.key;
+      if (target) navigate(target, { replace: true });
       return;
     }
-    if (groupCall.isInCall && groupCall.activeGroupId) {
-      const callPath = `${groupPath(groupCall.activeGroupId)}/call`;
-      if (location.pathname !== callPath) navigate(callPath, { replace: true });
-      return;
-    }
+    callUrlKeyRef.current = null;
     if (requestedRoute.call && call.mode == null) {
       navigate(directPath(requestedRoute.username), { replace: true });
     } else if (requestedRoute.joinCall && !groupCall.isInCall) {
@@ -613,6 +613,11 @@ export default function App() {
     navigate,
     requestedRoute,
   ]);
+
+  const returnToCall = useCallback(() => {
+    const route = liveCallRoute(call, groupCall);
+    if (route && location.pathname !== route.callPath) navigate(route.callPath);
+  }, [call, groupCall, location.pathname, navigate]);
 
   useEffect(() => {
     preloadIceServers().catch(() => {});
@@ -5251,7 +5256,7 @@ export default function App() {
         </AppLayout>
         {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
-            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} />
+            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} />
             <GroupCallIncomingModal
               incomingCall={groupCall?.incomingCall}
               onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}

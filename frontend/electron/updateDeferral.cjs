@@ -6,14 +6,14 @@
  * Downloading is always allowed. Installing is not, while any voice session is
  * busy (DM call including incoming ring, group call including incoming ring,
  * server voice channel including the join/connecting window, screen share),
- * or while the user is typing / uploading (userBusy, 2.11.0: unsent composer
+ * or while the user is typing / uploading (userBusy, 2.11.1: unsent composer
  * text, a running upload or a voice-message recording).
  *
  * An automatic install is allowed only when one of these is true AND a fresh
  * read still says the user is not in a call:
  *   - the user left every call and stayed out for CALL_GRACE_MS (2 min)
  *   - the OS reports the session locked, or input idle for SYSTEM_IDLE_THRESHOLD_MS
- *     (2 min, 2.11.0), and no post-call grace is still running
+ *     (2 min, 2.11.1), and no post-call grace is still running
  *   - the update never overlapped a call, and the window has been in the
  *     background for BACKGROUND_SETTLE_MS (12s) — the previous quiet path
  *   - splash/prelaunch (no renderer, so no live call can exist)

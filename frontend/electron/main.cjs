@@ -255,7 +255,7 @@ let updateCheckInFlight = false;
 let powerHooksBound = false;
 /** Renderer-reported voice session. Overlay visibility is OR'd in at read time. */
 let voiceBusyFromRenderer = false;
-/** Renderer: unsent composer text / upload / recording (2.11.0). */
+/** Renderer: unsent composer text / upload / recording (2.11.1). */
 let userBusyFromRenderer = false;
 /** OS session lock. Input-idle time is read from powerMonitor on each decision. */
 let sessionLocked = false;

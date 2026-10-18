@@ -27,7 +27,7 @@ export function useElectronVoiceBusy({ call, groupCall, serverVoice } = {}) {
     return undefined;
   }, [busy]);
 
-  // Typing / uploading (2.11.0): forwarded separately so it holds an install
+  // Typing / uploading (2.11.1): forwarded separately so it holds an install
   // without starting the post-call grace.
   useEffect(() => {
     bindInputTracking();

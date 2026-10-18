@@ -1625,6 +1625,7 @@ export const phrases = {
   "Block": "Engelle",
   "Mute": "Sessiz",
   "Unmute": "Sesi Aç",
+  "Return to call": "Aramaya dön",
   "Report": "Bildir",
   "Pin": "Sabitle",
   "Unpin": "Kaldır",

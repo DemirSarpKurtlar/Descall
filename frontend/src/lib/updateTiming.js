@@ -1,5 +1,5 @@
 /**
- * Smart update timing (2.11.0), renderer side. Shared by the Electron update
+ * Smart update timing (2.11.1), renderer side. Shared by the Electron update
  * chip and the web stale-chunk reload.
  *
  * Never restart or reload while the user is in a call / voice room / screen

@@ -1,0 +1,123 @@
+/* 2.11.1 — draggable mini call card. Heavy frosted glass, never see-through. */
+.mini-call-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 10px 10px 10px 12px;
+  border-radius: 22px;
+  color: #f5f5f7;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 55%),
+    rgba(24, 26, 31, 0.86);
+  -webkit-backdrop-filter: blur(48px) saturate(160%);
+  backdrop-filter: blur(48px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 1px 2px rgba(0, 0, 0, 0.30),
+    0 18px 44px rgba(0, 0, 0, 0.42);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+  transition: box-shadow 0.2s ease, scale 0.2s ease;
+}
+.mini-call-card.is-dragging {
+  cursor: grabbing;
+  scale: 1.03;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 28px 64px rgba(0, 0, 0, 0.5);
+}
+.mini-call-card:focus-visible { outline: 2px solid rgba(10, 132, 255, 0.9); outline-offset: 3px; }
+
+.mcc-avatar { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; }
+.mcc-avatar::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #30d158;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.mcc-avatar.is-speaking::after {
+  opacity: calc(0.55 + var(--mcc-level, 0) * 0.45);
+  transform: scale(calc(1 + var(--mcc-level, 0) * 0.06));
+  box-shadow: 0 0 12px rgba(48, 209, 88, 0.45);
+}
+.mcc-group {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(180deg, #5e6ad2, #4752c4); color: #fff;
+}
+.mcc-share {
+  position: absolute; right: -2px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center; background: #30d158; color: #fff;
+  box-shadow: 0 0 0 2px rgba(24, 26, 31, 1);
+}
+
+.mcc-text { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 3px; }
+.mcc-title {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mcc-sub { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mcc-sub-text {
+  font-size: 12px; color: rgba(235, 235, 245, 0.62); font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mini-call-card.is-pending .mcc-sub-text { color: #ffd60a; }
+
+.mcc-wave { display: inline-flex; align-items: center; gap: 2px; height: 12px; flex: none; }
+.mcc-wave i {
+  display: block; width: 2.5px; height: 12px; border-radius: 2px;
+  background: rgba(235, 235, 245, 0.35); transform-origin: center;
+  transition: transform 0.09s linear;
+}
+.mcc-wave.is-active i { background: #30d158; }
+
+.mcc-dots { display: inline-flex; gap: 3px; flex: none; }
+.mcc-dots i {
+  width: 4px; height: 4px; border-radius: 50%; background: #ffd60a;
+  animation: mcc-dot 1.2s ease-in-out infinite;
+}
+.mcc-dots i:nth-child(2) { animation-delay: 0.15s; }
+.mcc-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes mcc-dot { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+
+.mcc-actions { display: flex; gap: 6px; flex: none; }
+.mcc-btn {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  border: 0; cursor: pointer; color: #f5f5f7;
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.mcc-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.mcc-btn:active { transform: scale(0.92); }
+.mcc-btn:focus-visible { outline: 2px solid rgba(10, 132, 255, 0.9); outline-offset: 2px; }
+.mcc-btn.is-off { background: rgba(255, 255, 255, 0.92); color: #1c1c1e; }
+.mcc-end { background: #ff453a; color: #fff; }
+.mcc-end:hover { background: #ff5b52; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-call-card, .mcc-avatar::after, .mcc-wave i, .mcc-btn { transition: none; }
+  .mini-call-card.is-dragging { scale: none; }
+  .mcc-dots i { animation: none; opacity: 0.8; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .mini-call-card { -webkit-backdrop-filter: none; backdrop-filter: none; background: #1c1d22; }
+}
+html.a11y-solid .mini-call-card { -webkit-backdrop-filter: none; backdrop-filter: none; background: #1c1d22; }
+@media (max-width: 520px) {
+  .mini-call-card { width: calc(100vw - 32px); }
+}

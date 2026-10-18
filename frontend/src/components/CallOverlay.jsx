@@ -6,6 +6,7 @@ import {
   Volume2, ChevronUp, ChevronDown, Mic2, SlidersHorizontal,
 } from "lucide-react";
 import { Avatar } from "./ui/Avatar";
+import MiniCallCard from "./call/MiniCallCard";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
 import { BadgeIcon, NameEffectText } from "./ui/Cosmetics";
@@ -108,7 +109,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
-export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
+export default function CallOverlay({ call, groupCall, me, groupName = "", onReturnToCall }) {
   const t = useT();
   const { toast } = useToast();
   const callOverlayKey = me?.equippedCallOverlay?.effect_key || null;
@@ -328,108 +329,29 @@ export default function CallOverlay({ call, groupCall, me, groupName = "" }) {
     );
   }
 
-  /* ---------- Minimized widget ---------- */
+  /* ---------- Minimized widget (2.11.1: draggable glass mini card) ---------- */
   if (minimized) {
     return (
       <>
         {remoteAudio}
         {durableScreenAudio}
-        <motion.div
-          className={`call-overlay-minimized ${callOverlayClass}${glass ? " g-call-min" : ""}`.trim()}
-          initial={{ opacity: 0, y: 60, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 60, scale: 0.9 }}
-          style={{
-            position: "fixed",
-            bottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
-            right: "calc(20px + env(safe-area-inset-right, 0px))",
-            zIndex: 9999,
-            ...(callOverlayKey ? {} : { background: "#1e1f23" }),
-            borderRadius: 14,
-            padding: 14,
-            boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            cursor: "pointer",
-            border: "1px solid rgba(255,255,255,0.06)",
-            minWidth: 260,
-          }}
-          onClick={() => setMinimized(false)}
-        >
-          <div style={{ position: "relative" }}>
-            {isDm ? (
-              <Avatar
-                name={peer?.username || "?"}
-                size={44}
-                user={peer}
-                imageUrl={resolveAvatarUrl(peer)}
-                animate="always"
-              />
-            ) : (
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background: "#5865f2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Users size={22} color="white" />
-              </div>
-            )}
-            {screenSharing && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: -2,
-                  right: -2,
-                  background: "#3ba55d",
-                  borderRadius: "50%",
-                  width: 16,
-                  height: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Monitor size={10} color="white" />
-              </div>
-            )}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#fff" }}>{title}</span>
-            <span style={{ fontSize: 12, color: "#b5bac1" }}>
-              {subtitle}
-              {formattedDuration ? ` · ${formattedDuration}` : ""}
-            </span>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              hapticImpactMedium();
-              isDm ? call.endCall(peer?.id) : groupCall.leaveCall();
-            }}
-            style={{
-              background: "#ed4245",
-              border: "none",
-              borderRadius: "50%",
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "white",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-           aria-label={t("End Call")}>
-            <PhoneOff size={18} />
-          </button>
-        </motion.div>
+        <MiniCallCard
+          t={t}
+          isDm={isDm}
+          peer={peer}
+          title={title}
+          subtitle={subtitle}
+          timer={formattedDuration}
+          muted={muted}
+          deafened={deafened}
+          screenSharing={screenSharing}
+          stream={isDm ? call?.remoteStream : null}
+          pending={isDm && mode === "outgoing"}
+          onReturn={() => { setMinimized(false); onReturnToCall?.(); }}
+          onToggleMute={() => { hapticSelection(); (isDm ? call.toggleMute : groupCall.toggleMute)?.(); }}
+          onToggleDeafen={() => { hapticSelection(); (isDm ? call.toggleDeafen : groupCall.toggleDeafen)?.(); }}
+          onHangUp={() => { hapticImpactMedium(); isDm ? call.endCall(peer?.id) : groupCall.leaveCall(); }}
+        />
       </>
     );
   }

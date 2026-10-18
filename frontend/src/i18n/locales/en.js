@@ -1664,6 +1664,7 @@ export const phrases = {
   "Block": "Block",
   "Mute": "Mute",
   "Unmute": "Unmute",
+  "Return to call": "Return to call",
   "Report": "Report",
   "Pin": "Pin",
   "Unpin": "Unpin",
