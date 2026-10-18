@@ -1,7 +1,32 @@
 import { useCallback, useEffect, useRef } from "react";
-import { resolveDisplayName } from "../lib/userProfile";
+import { resolveAvatarUrl, resolveDisplayName } from "../lib/userProfile.js";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
+
+/** Theme accent as "r, g, b" (desktop Liquid Glass token), or "" when unset. */
+export function readOverlayBrandRgb(doc = typeof document !== "undefined" ? document : null) {
+  try {
+    const v = getComputedStyle(doc.documentElement).getPropertyValue("--g-brand-rgb").trim();
+    return /^\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}$/.test(v) ? v : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Only absolute https / data:image avatars can load in the overlay's file:// page. */
+export function overlayAvatarUrl(user) {
+  const url = resolveAvatarUrl(user);
+  return url && /^(https:\/\/|data:image\/)/i.test(url) ? url : "";
+}
+
+function overlayLang() {
+  try {
+    const l = (document.documentElement.lang || navigator.language || "tr").toLowerCase();
+    return l.startsWith("en") ? "en" : "tr";
+  } catch {
+    return "tr";
+  }
+}
 
 /** Mute/unmute every `<audio>` element currently in the document. */
 function applyAudioMute(mutedEls, shouldMute) {
@@ -61,6 +86,15 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
     : serverActive
     ? Boolean(serverVoice?.deafened)
     : false;
+
+  const kind = dmActive ? "dm" : groupActive ? "group" : serverActive ? "server" : "";
+  const pending = dmActive && call?.mode === "outgoing";
+  const avatarUrl = dmActive ? overlayAvatarUrl(call?.peer) : "";
+  // Call duration for the overlay's status line: starts when the session goes live.
+  const sinceRef = useRef({ key: "", at: 0 });
+  const liveKey = active && !pending ? `${kind}:${dmActive ? call?.peer?.id || "" : title}` : "";
+  if (sinceRef.current.key !== liveKey) sinceRef.current = { key: liveKey, at: liveKey ? Date.now() : 0 };
+  const since = sinceRef.current.at;
 
   const toggleMute = dmActive ? call?.toggleMute : groupActive ? groupCall?.toggleMute : serverActive ? serverVoice?.toggleMute : null;
   const toggleDeafen = dmActive ? call?.toggleDeafen : groupActive ? groupCall?.toggleDeafen : serverActive ? serverVoice?.toggleDeafen : null;
@@ -158,8 +192,29 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
       muted,
       deafened: deafened || deafenedRef.current,
       connected: true,
+      pending,
+      kind,
+      since,
+      avatarUrl,
+      brandRgb: readOverlayBrandRgb(),
+      lang: overlayLang(),
     });
-  }, [active, title, muted, deafened, applyDeafen]);
+  }, [active, title, muted, deafened, applyDeafen, pending, kind, since, avatarUrl]);
+
+  // Equipping another theme mid-call re-tints the overlay.
+  useEffect(() => {
+    if (!isElectron || !active || typeof MutationObserver === "undefined") return undefined;
+    let last = readOverlayBrandRgb();
+    const obs = new MutationObserver(() => {
+      const next = readOverlayBrandRgb();
+      if (next && next !== last) {
+        last = next;
+        window.electronAPI?.overlayUpdate?.({ brandRgb: next });
+      }
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-theme"] });
+    return () => obs.disconnect();
+  }, [active]);
 }
 
 export default useElectronOverlay;

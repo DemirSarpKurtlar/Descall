@@ -105,7 +105,8 @@ assert.match(overlayWin, /transparent:\s*true/);
 assert.match(overlayWin, /backgroundColor:\s*'#00000000'/);
 assert.match(overlayWin, /hasShadow:\s*false/);
 assert.match(overlayWin, /thickFrame:\s*false/);
-assert.match(overlay, /background:transparent/);
+// 2.11.8: the overlay markup moved to overlayHtml.cjs.
+assert.match(readFileSync(join(here, "overlayHtml.cjs"), "utf8"), /background:transparent/);
 assert.match(windowSrc, /notif:pause/);
 assert.match(windowSrc, /notif:resume/);
 assert.doesNotMatch(windowSrc, /border-left/);
