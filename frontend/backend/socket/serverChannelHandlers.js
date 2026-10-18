@@ -111,6 +111,12 @@ async function assertTextChannelAccess(userId, channelId, requiredFlag) {
     err.code = "MISSING_PERMISSION";
     throw err;
   }
+  // Timed-out members cannot react (send/edit report TIMED_OUT via assertServerTimeout).
+  if (requiredFlag === Permissions.ADD_REACTIONS && !resolved.isOwner) {
+    const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutState");
+    const t = await getActiveServerTimeout(channel.server_id, userId);
+    if (t) throw timedOutError(t);
+  }
   return { channel, permissions: resolved.bits, resolved };
 }
 
@@ -1133,7 +1139,17 @@ function registerServerChannelHandlers(io, socket) {
               const memberSet = new Set((memberRows || []).map((r) => r.user_id));
               const fromName =
                 message.sender?.username || socket.user?.username || "Someone";
-              const mentionTargets = candidateIds.filter((uid) => memberSet.has(uid));
+              // Only members who can see the channel: a mention in a hidden channel used to
+              // send its text (mention:received + push) to anyone named in it (2026-10-18).
+              const mentionTargets = [];
+              for (const uid of candidateIds.filter((id) => memberSet.has(id))) {
+                try {
+                  const r = await resolveChannelPermissions(supabase, channel.server_id, uid, channelId);
+                  if (r.isMember && hasPermission(r.bits, Permissions.VIEW_CHANNEL)) mentionTargets.push(uid);
+                } catch {
+                  /* cannot resolve: no alert */
+                }
+              }
               for (const uid of mentionTargets) {
                 io.to(`user:${uid}`).emit("mention:received", {
                   serverId: channel.server_id,

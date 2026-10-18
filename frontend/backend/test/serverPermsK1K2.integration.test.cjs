@@ -10,6 +10,10 @@
  *       server:voice:channel-state / member-left / member-joined / states
  *   Y1  voice moderation ignored the role hierarchy (a low mod could mute/disconnect the owner)
  *   Y2  GET /reactions/conversation/server/:id had no access check
+ *   T2  second round (Bot/Grok retest of f8410bb): channel move keeps stale room sockets,
+ *       override precedence, timed-out members in voice / reactions / typing, hidden
+ *       channel attachments via /api/media/refresh, invite max_uses race, invite listing,
+ *       read/mute on hidden channels, voluntary leave keeps rooms, mention leak
  *   C1  deleting a private category (or moving a channel out of it) dropped its rules:
  *       child channels without own overrides became visible to every member
  * Run: node frontend/backend/test/serverPermsK1K2.integration.test.cjs
@@ -35,9 +39,9 @@ const MSG_STAFF = crypto.randomUUID();
 const MSG_GENERAL = crypto.randomUUID();
 const MSG_NOREAD = crypto.randomUUID();
 const fake = createFakeSupabase({
-  users: ["owner", "mod", "member", "senior", "helper", "outsider"].map((id) => ({ id, username: id, active_sessions: [{ id: `s-${id}` }] })),
+  users: ["owner", "mod", "member", "senior", "helper", "outsider", "dual", "late1", "late2"].map((id) => ({ id, username: id, active_sessions: [{ id: `s-${id}` }] })),
   servers: [{ id: S, owner_id: "owner", name: "S1" }],
-  server_members: ["owner", "mod", "member", "senior", "helper"].map((u) => ({ server_id: S, user_id: u })),
+  server_members: ["owner", "mod", "member", "senior", "helper", "dual"].map((u) => ({ server_id: S, user_id: u })),
   server_roles: [
     { id: "everyone", server_id: S, is_everyone: true, position: 0, permissions: P.toPgBigint(P.EVERYONE_DEFAULT) },
     { id: "helperrole", server_id: S, is_everyone: false, position: 1, permissions: "0" },
@@ -48,6 +52,8 @@ const fake = createFakeSupabase({
     { server_id: S, user_id: "mod", role_id: "modrole" },
     { server_id: S, user_id: "senior", role_id: "seniorrole" },
     { server_id: S, user_id: "helper", role_id: "helperrole" },
+    { server_id: S, user_id: "dual", role_id: "seniorrole" },
+    { server_id: S, user_id: "dual", role_id: "helperrole" },
   ],
   server_channels: [
     { id: "general", server_id: S, type: "text", name: "general", position: 0 },
@@ -66,6 +72,11 @@ const fake = createFakeSupabase({
     { id: "c-move", server_id: S, type: "text", name: "move-me", position: 13, parent_id: "cat-two" },
     { id: "cat-open", server_id: S, type: "category", name: "Open", position: 14 },
     { id: "c-public", server_id: S, type: "text", name: "public", position: 15 },
+    { id: "cat-three", server_id: S, type: "category", name: "Private three", position: 16 },
+    { id: "c-sync", server_id: S, type: "text", name: "synced", position: 17, parent_id: "cat-three" },
+    { id: "c-roles", server_id: S, type: "text", name: "roles", position: 18 },
+    { id: "c-mdeny", server_id: S, type: "text", name: "mdeny", position: 19 },
+    { id: "c-evict", server_id: S, type: "text", name: "evict", position: 20 },
   ],
   server_channel_overrides: [
     { id: "o1", channel_id: "staff", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
@@ -84,12 +95,27 @@ const fake = createFakeSupabase({
     { id: "om3", channel_id: "c-conflict", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
     { id: "ot1", channel_id: "cat-two", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
     { id: "ot2", channel_id: "cat-two", target_type: "role", target_id: "helperrole", allow_permissions: P.toPgBigint(F.VIEW_CHANNEL), deny_permissions: "0" },
+    { id: "ok1", channel_id: "cat-three", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
+    { id: "ok2", channel_id: "cat-three", target_type: "member", target_id: "helper", allow_permissions: "0", deny_permissions: P.toPgBigint(F.SEND_MESSAGES) },
+    { id: "ok3", channel_id: "cat-three", target_type: "role", target_id: "helperrole", allow_permissions: P.toPgBigint(F.VIEW_CHANNEL | F.SEND_MESSAGES), deny_permissions: "0" },
+    { id: "or1", channel_id: "c-roles", target_type: "role", target_id: "seniorrole", allow_permissions: "0", deny_permissions: P.toPgBigint(F.SEND_MESSAGES) },
+    { id: "or2", channel_id: "c-roles", target_type: "role", target_id: "helperrole", allow_permissions: P.toPgBigint(F.SEND_MESSAGES), deny_permissions: "0" },
+    { id: "od1", channel_id: "c-mdeny", target_type: "role", target_id: "everyone", allow_permissions: P.toPgBigint(F.VIEW_CHANNEL), deny_permissions: "0" },
+    { id: "od2", channel_id: "c-mdeny", target_type: "member", target_id: "member", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
     { id: "oo1", channel_id: "cat-open", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
   ],
   server_messages: [
     { id: MSG_STAFF, server_id: S, channel_id: "staff", sender_id: "owner", content: "secret staff talk", created_at: "2026-10-18T10:00:00Z" },
     { id: MSG_GENERAL, server_id: S, channel_id: "general", sender_id: "owner", content: "hello", created_at: "2026-10-18T10:01:00Z" },
     { id: MSG_NOREAD, server_id: S, channel_id: "noread", sender_id: "owner", content: "no history", created_at: "2026-10-18T10:02:00Z" },
+    { id: crypto.randomUUID(), server_id: S, channel_id: "staff", sender_id: "owner", content: "", media_url: "sb://media-private/files/staff-plan.pdf", created_at: "2026-10-18T10:03:00Z" },
+    { id: crypto.randomUUID(), server_id: S, channel_id: "noread", sender_id: "owner", content: "", media_url: "sb://media-private/files/noread.pdf", created_at: "2026-10-18T10:04:00Z" },
+    { id: crypto.randomUUID(), server_id: S, channel_id: "general", sender_id: "owner", content: "", media_url: "sb://media-private/files/general.pdf", created_at: "2026-10-18T10:05:00Z" },
+  ],
+  server_invites: [
+    { code: "INVOWNER", server_id: S, creator_id: "owner", uses: 0, max_uses: null, created_at: "2026-10-18T09:00:00Z" },
+    { code: "INVMOD", server_id: S, creator_id: "mod", uses: 0, max_uses: null, created_at: "2026-10-18T09:01:00Z" },
+    { code: "ONEUSE", server_id: S, creator_id: "owner", uses: 0, max_uses: 1, created_at: "2026-10-18T09:02:00Z" },
   ],
   reactions: [{ id: "rx1", message_id: MSG_STAFF, conversation_type: "server", conversation_id: "staff", user_id: "owner", emoji: "🔥" }],
 });
@@ -183,7 +209,7 @@ async function run() {
   const { registerSocketHandlers } = require("../socket/handlers");
   registerSocketHandlers(io);
   const sk = {};
-  for (const u of ["owner", "mod", "member", "senior"]) {
+  for (const u of ["owner", "mod", "member", "senior", "dual"]) {
     sk[u] = makeSocket(u);
     io._conn(sk[u]);
     sk[u].join(`server:${S}`); // what server:subscribe does for members
@@ -364,6 +390,13 @@ async function run() {
       assert.equal(activeServerVoiceCalls.get("lobbyvoice").participants.get("member").serverMuted, true);
     });
 
+    await check("Y1 move needs MOVE_MEMBERS + CONNECT on the destination (channel overrides)", async () => {
+      sk.mod.out.length = 0;
+      await sk.mod.fire("server:voice:move", { serverId: S, userId: "member", fromChannelId: "lobbyvoice", toChannelId: "staffvoice" });
+      await settle();
+      assert.ok(activeServerVoiceCalls.get("lobbyvoice").participants.has("member"), "member not moved into staffvoice");
+      assert.ok(sk.mod.out.some((o) => o.ev === "server:voice:error" && /CONNECT/.test(o.payload.message)), JSON.stringify(sk.mod.out.slice(-2)));
+    });
     // ---------------- Y2 reactions REST
     await check("Y2 GET reactions of a hidden channel / as a non-member → 403", async () => {
       assert.equal((await call("member", "GET", "/reactions/conversation/server/staff")).status, 403);
@@ -374,7 +407,7 @@ async function run() {
     });
 
     // ---------------- C1 category detach keeps effective permissions
-    const USERS = ["owner", "mod", "member", "senior", "helper", "outsider"];
+    const USERS = ["owner", "mod", "member", "senior", "helper", "outsider", "dual"];
     const snapshot = async (channels) => {
       const out = {};
       for (const ch of channels) for (const u of USERS) out[`${ch}/${u}`] = String((await P.resolveChannelPermissions(fake, S, u, ch)).bits);
@@ -396,17 +429,12 @@ async function run() {
       assert.equal(await can("helper", "c-plain", F.SEND_MESSAGES), false, "category deny kept");
       assert.ok(emitted.slice(mark).some((e) => e.ev === "server:channels:resync"), "clients refetch");
     });
-    await check("C1 a detach that cannot keep permissions identical is refused (409), nothing changes", async () => {
+    await check("C1 deleting a category whose child has its own overrides changes nothing for it", async () => {
+      assert.equal(await can("member", "c-conflict", F.VIEW_CHANNEL), false, "own @everyone deny; category member allow not stacked");
       const before = await snapshot(["c-conflict"]);
-      const n = rows("server_channel_overrides").length;
       const r = await call("owner", "DELETE", `/servers/${S}/channels/cat-mixed`);
-      assert.equal(r.status, 409, JSON.stringify(r.body));
-      assert.equal(r.body.code, "CATEGORY_PERMISSIONS_CONFLICT");
-      assert.ok(rows("server_channels").some((c) => c.id === "cat-mixed"), "category kept");
-      assert.equal(rows("server_channels").find((c) => c.id === "c-conflict").parent_id, "cat-mixed");
-      assert.equal(rows("server_channel_overrides").length, n);
+      assert.equal(r.status, 200, JSON.stringify(r.body));
       assert.deepEqual(await snapshot(["c-conflict"]), before);
-      assert.equal((await call("owner", "PATCH", `/servers/${S}/channels/c-conflict`, { parentId: null })).status, 409);
     });
     await check("C1 moving a channel out of a private category keeps it private", async () => {
       const before = await snapshot(["c-move"]);
@@ -426,6 +454,146 @@ async function run() {
       r = await call("owner", "PATCH", `/servers/${S}/channels/c-public`, { parentId: null });
       assert.equal(r.status, 200);
       assert.equal(await can("member", "c-public", F.VIEW_CHANNEL), false, "leaving keeps it private, not silently public");
+    });
+
+    // ---------------- P1 overwrite precedence (Discord order, synced categories)
+    await check("P1 role overrides are aggregated: any role allow beats any role deny", async () => {
+      assert.equal(await can("dual", "c-roles", F.SEND_MESSAGES), true, "helperrole allow + seniorrole deny → allowed");
+      assert.equal(await can("senior", "c-roles", F.SEND_MESSAGES), false);
+      assert.equal(await can("helper", "c-roles", F.SEND_MESSAGES), true);
+    });
+    await check("P1 member deny beats @everyone allow in the same channel", async () => {
+      assert.equal(await can("member", "c-mdeny", F.VIEW_CHANNEL), false);
+      assert.equal(await can("mod", "c-mdeny", F.VIEW_CHANNEL), true);
+    });
+    await check("P1 a synced channel uses its category's rules (member deny wins over role allow)", async () => {
+      assert.equal(await can("member", "c-sync", F.VIEW_CHANNEL), false);
+      assert.equal(await can("helper", "c-sync", F.VIEW_CHANNEL), true);
+      assert.equal(await can("helper", "c-sync", F.SEND_MESSAGES), false, "category member deny beats category role allow");
+      const list = await call("member", "GET", `/servers/${S}`);
+      const ids = (list.body.server?.channels || list.body.channels || []).map((c) => c.id);
+      assert.ok(ids.length > 0 && !ids.includes("c-sync") && ids.includes("general"), JSON.stringify(ids).slice(0, 200));
+    });
+    await check("P1 first edit on a synced channel copies the category rules (stays private)", async () => {
+      const r = await call("owner", "PUT", `/servers/${S}/channels/c-sync/overrides`, { targetType: "role", targetId: "helperrole", permissions: { ATTACH_FILES: "allow" } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.ok(override("c-sync", "role", "everyone"), "category @everyone deny copied");
+      assert.equal(await can("member", "c-sync", F.VIEW_CHANNEL), false, "still hidden");
+      assert.equal(await can("helper", "c-sync", F.SEND_MESSAGES), false, "category member deny kept");
+      assert.equal(await can("helper", "c-sync", F.ATTACH_FILES), true, "edit applied");
+    });
+
+    // ---------------- T2 second round
+    await check("T2 mention in a hidden channel does not alert a non-viewer", async () => {
+      sk.member.out.length = 0;
+      await sk.owner.fire("server:channel:join", "staff");
+      await sk.owner.fire("server:channel:message", { channelId: "staff", content: "staff only: ban plan for @member", tempId: "t-m1" });
+      await settle(80);
+      assert.ok(!sk.member.out.some((o) => o.ev === "mention:received"), "no mention:received for member");
+      sk.senior.out.length = 0;
+      await sk.owner.fire("server:channel:message", { channelId: "staff", content: "ping @senior", tempId: "t-m2" });
+      await settle(80);
+      assert.ok(sk.senior.out.some((o) => o.ev === "mention:received"), "viewer still alerted");
+    });
+    await check("T2 moving a channel into a private category evicts sockets that lost VIEW", async () => {
+      await sk.member.fire("server:channel:join", "c-evict");
+      assert.ok(sk.member.rooms.has("server-channel:c-evict"), "precondition: joined");
+      const r = await call("owner", "PATCH", `/servers/${S}/channels/c-evict`, { parentId: "cat-open" });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      await settle(400);
+      assert.equal(await can("member", "c-evict", F.VIEW_CHANNEL), false);
+      assert.ok(!sk.member.rooms.has("server-channel:c-evict"), "evicted from the live room");
+    });
+    const { canAccessPath } = require("../lib/privateMedia");
+    await check("T2 /api/media/refresh: hidden-channel attachment needs VIEW + READ_MESSAGE_HISTORY", async () => {
+      assert.equal(await canAccessPath(fake, "member", "files/staff-plan.pdf"), false, "hidden #staff");
+      assert.equal(await canAccessPath(fake, "member", "files/noread.pdf"), false, "no READ_MESSAGE_HISTORY");
+      assert.equal(await canAccessPath(fake, "outsider", "files/general.pdf"), false, "non-member");
+      assert.equal(await canAccessPath(fake, "senior", "files/staff-plan.pdf"), true, "viewer");
+      assert.equal(await canAccessPath(fake, "member", "files/general.pdf"), true, "visible channel");
+    });
+    await check("T2 read receipt / mute on a hidden channel → 404", async () => {
+      assert.equal((await call("member", "POST", `/servers/${S}/channels/staff/read`, {})).status, 404);
+      assert.equal((await call("member", "PUT", `/servers/${S}/channels/staff/mute`, { muted: true })).status, 404);
+      assert.equal((await call("member", "POST", `/servers/${S}/channels/general/read`, {})).status, 200);
+      assert.equal((await call("senior", "PUT", `/servers/${S}/channels/staff/mute`, { muted: true })).status, 200);
+    });
+    await check("T2 invites: only MANAGE_GUILD lists / revokes everyone's", async () => {
+      const mine = await call("mod", "GET", `/servers/${S}/invites`);
+      assert.equal(mine.status, 200, JSON.stringify(mine.body));
+      assert.deepEqual(mine.body.invites.map((i) => i.code), ["INVMOD"]);
+      const all = await call("owner", "GET", `/servers/${S}/invites`);
+      assert.ok(all.body.invites.length >= 3);
+      assert.equal((await call("mod", "DELETE", `/servers/${S}/invites/INVOWNER`)).status, 404);
+      assert.ok(rows("server_invites").some((i) => i.code === "INVOWNER"));
+      assert.equal((await call("mod", "DELETE", `/servers/${S}/invites/INVMOD`)).status, 200);
+    });
+    await check("T2 invite max_uses=1 with two parallel joins → exactly one gets in", async () => {
+      const [a, b] = await Promise.all([
+        call("late1", "POST", "/servers/invites/ONEUSE/join"),
+        call("late2", "POST", "/servers/invites/ONEUSE/join"),
+      ]);
+      const codes = [a.status, b.status].sort();
+      assert.ok(codes[0] === 201 && [404, 410].includes(codes[1]), JSON.stringify([a.status, a.body.error, b.status, b.body.error]));
+      const joined = rows("server_members").filter((m) => m.server_id === S && ["late1", "late2"].includes(m.user_id));
+      assert.equal(joined.length, 1);
+    });
+    await check("T2 typing on a server channel needs the live room, SEND_MESSAGES and no timeout", async () => {
+      await sk.owner.fire("server:channel:join", "general");
+      sk.owner.out.length = 0;
+      await sk.member.fire("typing:start", { context: "server", channelId: "staff" });
+      await sk.mod.fire("typing:start", { context: "server", channelId: "general" });
+      await settle(60);
+      assert.ok(!sk.owner.out.some((o) => o.ev === "typing:update" && o.payload.channelId === "staff"), "no fake typing into #staff");
+      assert.ok(!sk.owner.out.some((o) => o.ev === "typing:update" && o.payload.fromUser.id === "mod"), "mod is not in #general room");
+      await sk.senior.fire("server:channel:join", "general");
+      sk.senior.out.length = 0;
+      await sk.owner.fire("typing:start", { context: "server", channelId: "general" });
+      await settle(60);
+      assert.ok(sk.senior.out.some((o) => o.ev === "typing:update" && o.payload.fromUser.id === "owner"), "legit typing works");
+    });
+    const memberRow = () => rows("server_members").find((m) => m.server_id === S && m.user_id === "member");
+    await check("T2 applying a timeout drops the member from voice", async () => {
+      assert.ok(activeServerVoiceCalls.get("lobbyvoice").participants.has("member"), "precondition: seated");
+      sk.member.out.length = 0;
+      const r = await call("owner", "POST", `/servers/${S}/members/member/timeout`, { durationSeconds: 600 });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      await settle();
+      assert.ok(!activeServerVoiceCalls.get("lobbyvoice")?.participants.has("member"), "removed from voice");
+      assert.ok(sk.member.out.some((o) => o.ev === "server:voice:force-disconnected"), "client told");
+      assert.ok(memberRow().timeout_until);
+    });
+    await check("T2 timed-out member cannot join voice, start camera/screen, react or type", async () => {
+      sk.member.out.length = 0;
+      await sk.member.fire("server:voice:join", { serverId: S, channelId: "lobbyvoice" });
+      await settle();
+      assert.ok(!activeServerVoiceCalls.get("lobbyvoice")?.participants.has("member"), "join refused");
+      assert.ok(sk.member.out.some((o) => o.ev === "server:voice:error" && o.payload.code === "TIMED_OUT"), JSON.stringify(sk.member.out.slice(-2)));
+      // Seated anyway (race): camera/screen refused and the seat dropped.
+      activeServerVoiceCalls.get("lobbyvoice").participants.set("member", { id: "member", canStream: true });
+      await sk.member.fire("server:voice:camera:start", { channelId: "lobbyvoice" });
+      assert.ok(!activeServerVoiceCalls.get("lobbyvoice")?.participants.has("member"), "camera refused, seat dropped");
+      activeServerVoiceCalls.get("lobbyvoice").participants.set("member", { id: "member", canStream: true });
+      await sk.member.fire("server:voice:screen:start", { channelId: "lobbyvoice" });
+      assert.ok(!activeServerVoiceCalls.get("lobbyvoice")?.participants.has("member"), "screen refused");
+      const before = rows("reactions").length;
+      await sk.member.fire("reaction:add", { messageId: MSG_GENERAL, conversationType: "server", conversationId: "general", emoji: "😡" });
+      await settle();
+      assert.equal(rows("reactions").length, before, "no reaction");
+      await sk.member.fire("server:channel:join", "general");
+      sk.owner.out.length = 0;
+      await sk.member.fire("typing:start", { context: "server", channelId: "general" });
+      await settle(60);
+      assert.ok(!sk.owner.out.some((o) => o.ev === "typing:update" && o.payload.fromUser.id === "member"), "no typing");
+    });
+    await check("T2 leaving a server drops the live rooms right away", async () => {
+      await sk.dual.fire("server:channel:join", "general");
+      assert.ok(sk.dual.rooms.has("server-channel:general") && sk.dual.rooms.has(`server:${S}`));
+      const r = await call("dual", "POST", `/servers/${S}/leave`, {});
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      await settle();
+      assert.ok(!sk.dual.rooms.has("server-channel:general"), "left channel room");
+      assert.ok(!sk.dual.rooms.has(`server:${S}`), "left server room");
     });
   } finally {
     server.close();

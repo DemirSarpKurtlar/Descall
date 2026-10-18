@@ -238,8 +238,9 @@ async function rowsReferencing(supabase, table, columns, path) {
 }
 
 /**
- * True when userId uploaded the object or can see a message (DM party, group member, server
- * member) whose media_url is this object.
+ * True when userId uploaded the object or can see a message (DM party, group member, or a
+ * server member with VIEW_CHANNEL + READ_MESSAGE_HISTORY on that message's channel) whose
+ * media_url is this object.
  */
 async function canAccessPath(supabase, userId, path) {
   if (!userId || !isSafePath(path)) return false;
@@ -258,10 +259,27 @@ async function canAccessPath(supabase, userId, path) {
     const mine = await userGroupIds(supabase, uid);
     if (gm.some((r) => mine.has(String(r.group_id)))) return true;
   }
-  const sm = await rowsReferencing(supabase, "server_messages", "server_id", path);
+  const sm = await rowsReferencing(supabase, "server_messages", "server_id, channel_id", path);
   if (sm.length) {
+    // Membership alone is not enough: the message's channel must be visible and its
+    // history readable (hidden-channel attachments used to refresh for any member).
     const mine = await userServerIds(supabase, uid);
-    if (sm.some((r) => mine.has(String(r.server_id)))) return true;
+    const { Permissions, hasPermission, resolveChannelPermissions } = require("./serverPermissions");
+    const seen = new Set();
+    for (const r of sm) {
+      if (!mine.has(String(r.server_id)) || !r.channel_id) continue;
+      const k = `${r.server_id}|${r.channel_id}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const res = await resolveChannelPermissions(supabase, r.server_id, uid, r.channel_id);
+      if (
+        res.isMember &&
+        hasPermission(res.bits, Permissions.VIEW_CHANNEL) &&
+        hasPermission(res.bits, Permissions.READ_MESSAGE_HISTORY)
+      ) {
+        return true;
+      }
+    }
   }
   return false;
 }

@@ -352,44 +352,56 @@ function permissionsToFlags(bits) {
 
 /**
  * Apply Discord-style channel overwrites onto base member bits.
- * Order: @everyone role override → other role overrides (by position) → member override.
- * Deny clears bits, then allow sets bits.
+ * Order: @everyone override → all of the member's role overrides together
+ * (denies ORed, allows ORed; deny then allow, so any role allow beats any role deny)
+ * → member override. Deny clears bits, then allow sets bits.
+ * (Before 2026-10-18 roles were applied one by one by position, so a higher role's
+ * deny could cancel a lower role's allow, unlike Discord.)
  */
 function applyOverwrites(baseBits, overwrites, { everyoneRoleId, memberRoleIds, userId }) {
   let bits = typeof baseBits === "bigint" ? baseBits : fromPgBigint(baseBits);
   const list = Array.isArray(overwrites) ? overwrites : [];
 
-  const applyOne = (row) => {
-    if (!row) return;
-    const deny = fromPgBigint(row.deny_permissions);
-    const allow = fromPgBigint(row.allow_permissions);
+  const applyPair = (deny, allow) => {
     bits = (bits & ~deny) | allow;
   };
 
   if (everyoneRoleId) {
-    applyOne(
-      list.find((o) => o.target_type === "role" && String(o.target_id) === String(everyoneRoleId))
-    );
+    const row = list.find((o) => o.target_type === "role" && String(o.target_id) === String(everyoneRoleId));
+    if (row) applyPair(fromPgBigint(row.deny_permissions), fromPgBigint(row.allow_permissions));
   }
 
-  const roleOverrides = list
-    .filter(
-      (o) =>
-        o.target_type === "role" &&
-        String(o.target_id) !== String(everyoneRoleId || "") &&
-        memberRoleIds.has(String(o.target_id))
-    )
-    .sort((a, b) => (Number(a._position) || 0) - (Number(b._position) || 0));
-  for (const row of roleOverrides) applyOne(row);
+  let roleDeny = 0n;
+  let roleAllow = 0n;
+  for (const o of list) {
+    if (o.target_type !== "role") continue;
+    if (String(o.target_id) === String(everyoneRoleId || "")) continue;
+    if (!memberRoleIds.has(String(o.target_id))) continue;
+    roleDeny |= fromPgBigint(o.deny_permissions);
+    roleAllow |= fromPgBigint(o.allow_permissions);
+  }
+  applyPair(roleDeny, roleAllow);
 
-  applyOne(list.find((o) => o.target_type === "member" && String(o.target_id) === String(userId)));
+  const member = list.find((o) => o.target_type === "member" && String(o.target_id) === String(userId));
+  if (member) applyPair(fromPgBigint(member.deny_permissions), fromPgBigint(member.allow_permissions));
   return bits;
+}
+
+/**
+ * Which overwrites govern a channel (Discord "synced" model): the channel's own when
+ * it has any, otherwise its category's. Category and channel rules are never stacked
+ * (stacking let a channel @everyone allow cancel a category member deny).
+ */
+function effectiveOverwrites(ownRows, parentRows) {
+  const own = Array.isArray(ownRows) ? ownRows : [];
+  if (own.length) return own;
+  return Array.isArray(parentRows) ? parentRows : [];
 }
 
 /**
  * Resolve effective permissions for a member in a specific channel.
  * Owner / ADMINISTRATOR ignore channel denies.
- * Discord-like: category overwrites apply first, then the channel's own overwrites.
+ * Discord-like: the channel's own overwrites, or its category's when it has none (synced).
  */
 async function resolveChannelPermissions(supabase, serverId, userId, channelId) {
   const base = await resolveMemberPermissions(supabase, serverId, userId);
@@ -450,19 +462,9 @@ async function resolveChannelPermissions(supabase, serverId, userId, channelId) 
     }));
 
   const ctx = { everyoneRoleId, memberRoleIds, userId };
-  let bits = base.bits;
-  if (parentId) {
-    bits = applyOverwrites(
-      bits,
-      decorate((overrides || []).filter((o) => String(o.channel_id) === String(parentId))),
-      ctx
-    );
-  }
-  bits = applyOverwrites(
-    bits,
-    decorate((overrides || []).filter((o) => String(o.channel_id) === String(channelId))),
-    ctx
-  );
+  const own = (overrides || []).filter((o) => String(o.channel_id) === String(channelId));
+  const parentRows = parentId ? (overrides || []).filter((o) => String(o.channel_id) === String(parentId)) : [];
+  const bits = applyOverwrites(base.bits, decorate(effectiveOverwrites(own, parentRows)), ctx);
 
   return {
     bits,
@@ -488,6 +490,7 @@ module.exports = {
   assertCanManageRole,
   resolveChannelPermissions,
   applyOverwrites,
+  effectiveOverwrites,
   permissionsToFlags,
   canBrowsePrivateChannels,
   clipRolePermissions,
