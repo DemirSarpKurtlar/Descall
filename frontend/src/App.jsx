@@ -119,6 +119,7 @@ import MessageComposer from "./components/chat/MessageComposer";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
+import { applyGroupRename } from "./lib/groupRename";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
@@ -1995,6 +1996,13 @@ export default function App() {
       if (!groupId) return;
       setMyGroups((prev) => applyGroupAvatar(prev, groupId, avatarUrl));
       setActiveGroup((cur) => (cur?.id === groupId ? applyGroupAvatar([cur], groupId, avatarUrl)[0] : cur));
+    });
+
+    // Group renamed by any member: list row, chat header and info sheet update live.
+    socket.on("group:renamed", ({ groupId, name } = {}) => {
+      if (!groupId || typeof name !== "string" || !name) return;
+      setMyGroups((prev) => applyGroupRename(prev, groupId, name));
+      setActiveGroup((cur) => (cur?.id === groupId && cur.name !== name ? { ...cur, name } : cur));
     });
 
     // Group messages listener
@@ -4846,7 +4854,7 @@ export default function App() {
             setActiveGroup((cur) => (cur?.id === groupId ? applyGroupAvatar([cur], groupId, avatarUrl)[0] : cur));
           }}
           onGroupRenamed={(groupId, newName) => {
-            setMyGroups((prev) => prev.map((g) => g.id === groupId ? { ...g, name: newName } : g));
+            setMyGroups((prev) => applyGroupRename(prev, groupId, newName));
             setActiveGroup((cur) => (cur?.id === groupId ? { ...cur, name: newName } : cur));
           }}
           friendRequests={friendRequests}

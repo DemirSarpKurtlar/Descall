@@ -66,6 +66,8 @@ jobs:
           node backend/games/CoinFlipGame.selftest.js
           node backend/lib/corsOrigins.selftest.cjs
           node backend/lib/groupAvatar.selftest.cjs
+          node backend/lib/groupRename.selftest.cjs
+          node backend/test/groupRename.integration.test.cjs
           node backend/lib/messageRequestPolicy.selftest.cjs
           node backend/lib/messageRequestStore.selftest.cjs
           node backend/socket/messageRequests.selftest.cjs
@@ -93,6 +95,8 @@ jobs:
           node src/lib/swipeReveal.selftest.mjs
           node src/lib/dmPrefsCache.selftest.mjs
           node src/lib/groupInfo.selftest.mjs
+          node src/lib/groupRename.selftest.mjs
+          node src/components/layout/ContextMenu.parity.selftest.mjs
       - name: Native iOS call logic selftest (Swift, Foundation only)
         run: |
           set -euo pipefail

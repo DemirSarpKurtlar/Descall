@@ -1,0 +1,450 @@
+/* Liquid Glass sheet + grouped-list primitives for group flows.
+   Phone: bottom sheet. ≥760px: centred card. Type follows iOS sizes:
+   17 semibold nav title, 17 body, 13 footnote/section, 15 secondary. */
+
+.gs-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10030;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(4, 6, 14, 0.42);
+  -webkit-backdrop-filter: blur(5px) saturate(120%);
+  backdrop-filter: blur(5px) saturate(120%);
+}
+
+.gs-sheet {
+  --gs-fill: rgba(255, 255, 255, 0.075);
+  --gs-fill-press: rgba(255, 255, 255, 0.14);
+  --gs-hair: rgba(255, 255, 255, 0.12);
+  --gs-t1: var(--g-t1, #fff);
+  --gs-t2: var(--g-t2, rgba(235, 235, 245, 0.68));
+  --gs-t3: var(--g-t3, rgba(235, 235, 245, 0.46));
+  --gs-brand: var(--g-brand, #6c86ff);
+  --gs-danger: #ff453a;
+  --gs-green: #30d158;
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: min(90vh, 860px);
+  max-height: min(90dvh, 860px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 34px 34px 0 0;
+  color: var(--gs-t1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  /* Thick material: a sheet is the biggest surface on screen, so it stays
+     legible even where the backdrop blur is weak or unavailable. */
+  background: rgba(18, 19, 29, 0.92);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.025) 42%, rgba(255, 255, 255, 0) 100%),
+    color-mix(in srgb, var(--g-deep, #0d0e13) 91%, transparent);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy, 32px)) saturate(var(--g-saturate, 180%));
+  backdrop-filter: blur(var(--g-blur-heavy, 32px)) saturate(var(--g-saturate, 180%));
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    0 -18px 60px rgba(0, 0, 0, 0.45);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  will-change: transform;
+}
+
+@media (min-width: 760px) {
+  .gs-scrim { align-items: center; padding: 24px; }
+  .gs-sheet {
+    width: min(440px, calc(100vw - 48px));
+    border-radius: 30px;
+    padding-bottom: 0;
+    box-shadow:
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.3),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+      0 30px 90px rgba(0, 0, 0, 0.55);
+  }
+  .gs-grabber { visibility: hidden; height: 0 !important; margin: 0 !important; }
+}
+
+/* Navigation bar (drag handle on phones). */
+.gs-nav {
+  flex: 0 0 auto;
+  padding: 8px 14px 10px;
+  touch-action: none;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.gs-nav:active { cursor: grabbing; }
+.gs-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  margin: 0 auto 8px;
+  background: rgba(255, 255, 255, 0.3);
+}
+.gs-nav-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+.gs-nav-side { display: flex; align-items: center; min-width: 0; }
+.gs-nav-side.is-trailing { justify-content: flex-end; }
+.gs-nav-title { text-align: center; min-width: 0; max-width: 62vw; }
+.gs-nav-title h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.43px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gs-nav-title p {
+  margin: 1px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--gs-t2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Round glass close (×). */
+.gs-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  color: var(--gs-t2);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.15s;
+}
+.gs-close:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
+
+/* Nav text buttons (Vazgeç / Kaydet). */
+.gs-text-btn {
+  border: 0;
+  background: none;
+  padding: 8px 4px;
+  font: inherit;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  color: var(--gs-brand);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+  transition: opacity 0.15s;
+}
+.gs-text-btn.is-primary { font-weight: 600; }
+.gs-text-btn:active { opacity: 0.45; }
+.gs-text-btn:disabled { color: var(--gs-t3); cursor: default; opacity: 1; }
+.gs-text-btn:focus-visible,
+.gs-close:focus-visible { outline: 2px solid var(--gs-brand); outline-offset: 2px; }
+
+/* Body. Content scrolls under the floating nav with a soft edge, not a hairline. */
+.gs-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 10px);
+  mask-image: linear-gradient(180deg, transparent 0, #000 10px);
+}
+
+/* Grouped inset list (Settings style). */
+.gs-section { display: flex; flex-direction: column; gap: 6px; }
+.gs-section-title {
+  margin: 0 16px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: -0.08px;
+  text-transform: uppercase;
+  color: var(--gs-t3);
+  display: flex;
+  justify-content: space-between;
+}
+.gs-footnote {
+  margin: 0 16px;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: -0.08px;
+  color: var(--gs-t3);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.gs-footnote .is-count { font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.gs-footnote .is-count.is-over { color: var(--gs-danger); }
+.gs-group {
+  border-radius: 20px;
+  background: var(--gs-fill);
+  box-shadow: inset 0 0 0 0.5px var(--gs-hair);
+  overflow: hidden;
+}
+.gs-row {
+  position: relative;
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  text-align: start;
+  box-sizing: border-box;
+}
+button.gs-row { cursor: pointer; transition: background 0.12s; }
+button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
+.gs-row + .gs-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--gs-sep-inset, 16px);
+  height: 0.5px;
+  background: var(--gs-hair);
+}
+.gs-group.has-avatars { --gs-sep-inset: 68px; }
+.gs-row.is-tint { color: var(--gs-brand); }
+.gs-row.is-danger { color: var(--gs-danger); }
+.gs-row .gs-row-icon { flex: 0 0 auto; display: grid; place-items: center; color: currentColor; }
+.gs-row-text { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 1px; }
+.gs-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.gs-row-sub { font-size: 13px; line-height: 18px; letter-spacing: -0.08px; color: var(--gs-t2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Text field inside a group (17pt so iOS never zooms). */
+.gs-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 10px 0 16px;
+}
+.gs-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--gs-t1);
+  font: inherit;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  padding: 14px 0;
+  caret-color: var(--gs-brand);
+}
+.gs-field input::placeholder { color: var(--gs-t3); }
+/* The grouped field draws its own focus ring (.gs-group:focus-within), so
+   global input/focus-visible rings must not stack a second box inside it. */
+.gs-sheet .gs-field input,
+.gs-sheet .gs-field input:focus,
+.gs-sheet .gs-field input:focus-visible,
+.gs-sheet .gs-search input,
+.gs-sheet .gs-search input:focus,
+.gs-sheet .gs-search input:focus-visible {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+.gs-clear {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: none;
+  color: var(--gs-t3);
+  cursor: pointer;
+}
+.gs-clear:active { opacity: 0.5; }
+.gs-group:focus-within { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gs-brand) 70%, transparent); }
+
+/* iOS search bar. */
+.gs-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 8px 0 10px;
+  border-radius: 12px;
+  background: rgba(118, 118, 128, 0.24);
+  color: var(--gs-t3);
+}
+.gs-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--gs-t1);
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.43px;
+}
+.gs-search input::placeholder { color: var(--gs-t3); }
+.gs-search input::-webkit-search-cancel-button { display: none; }
+
+/* Pills / primary buttons. */
+.gs-pill {
+  flex: 0 0 auto;
+  min-width: 72px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.23px;
+  color: var(--gs-brand);
+  background: color-mix(in srgb, var(--gs-brand) 18%, transparent);
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.15s, color 0.15s;
+}
+.gs-pill:active:not(:disabled) { transform: scale(0.94); }
+.gs-pill.is-done { color: var(--gs-green); background: rgba(48, 209, 88, 0.16); }
+.gs-pill.is-muted { color: var(--gs-t3); background: rgba(255, 255, 255, 0.07); }
+.gs-pill:disabled { cursor: default; }
+
+.gs-primary {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.43px;
+  color: #fff;
+  background: var(--gs-brand);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.35), 0 8px 24px color-mix(in srgb, var(--gs-brand) 35%, transparent);
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s;
+}
+.gs-primary:active:not(:disabled) { transform: scale(0.97); filter: brightness(0.92); }
+.gs-primary:disabled { opacity: 0.45; cursor: default; }
+.gs-primary.is-done { background: #248a3d; }
+
+/* Segmented control. */
+.gs-segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.24);
+}
+.gs-segmented button {
+  border: 0;
+  background: none;
+  color: var(--gs-t1);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.08px;
+  min-height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+.gs-segmented button.is-active {
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+.gs-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: -0.23px;
+}
+.gs-banner.is-error { color: #ff6961; background: rgba(255, 69, 58, 0.14); }
+.gs-banner.is-ok { color: var(--gs-green); background: rgba(48, 209, 88, 0.14); }
+.gs-banner svg { flex: 0 0 auto; margin-top: 2px; }
+
+.gs-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 2px;
+}
+.gs-hero .group-photo-icon { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+.gs-hero-name { font-size: 15px; font-weight: 600; letter-spacing: -0.23px; color: var(--gs-t2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.gs-empty { padding: 26px 16px; text-align: center; font-size: 15px; color: var(--gs-t3); }
+.gs-spin { animation: gs-spin 0.8s linear infinite; }
+@keyframes gs-spin { to { transform: rotate(360deg); } }
+
+/* Light theme. */
+html[data-theme="light"] .gs-sheet {
+  --gs-fill: rgba(255, 255, 255, 0.62);
+  --gs-fill-press: rgba(0, 0, 0, 0.06);
+  --gs-hair: rgba(60, 60, 67, 0.18);
+  --gs-t1: #111;
+  --gs-t2: rgba(60, 60, 67, 0.72);
+  --gs-t3: rgba(60, 60, 67, 0.5);
+  background: rgba(242, 242, 247, 0.82);
+}
+html[data-theme="light"] .gs-close { background: rgba(120, 120, 128, 0.16); color: rgba(60, 60, 67, 0.7); }
+html[data-theme="light"] .gs-grabber { background: rgba(60, 60, 67, 0.3); }
+html[data-theme="light"] .gs-segmented button.is-active { background: #fff; }
+
+/* Reduced transparency / solid modes / high contrast. */
+html.gd-lite .gs-sheet,
+html.a11y-solid .gs-sheet { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--gd-solid, #1c1d26); }
+@media (prefers-reduced-transparency: reduce) {
+  .gs-sheet, .gs-scrim { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .gs-sheet { background: var(--g-solid, #1c1d26); }
+  html[data-theme="light"] .gs-sheet { background: #f2f2f7; }
+}
+@media (prefers-contrast: more) {
+  .gs-sheet { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+  .gs-group { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+}
+html.a11y-contrast .gs-sheet { outline: 1px solid var(--g-contrast-border, rgba(255, 255, 255, 0.5)); outline-offset: -1px; }
+@media (prefers-reduced-motion: reduce) {
+  .gs-close, .gs-pill, .gs-primary, button.gs-row, .gs-segmented button { transition: none; }
+  .gs-spin { animation-duration: 2s; }
+}

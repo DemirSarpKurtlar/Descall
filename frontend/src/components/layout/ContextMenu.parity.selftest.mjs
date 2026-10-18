@@ -36,7 +36,7 @@ assert(groupList.includes("<ConvMoreButton"), "the group kebab button must still
 
 // Both shared menus support pointer anchoring with viewport flipping.
 for (const [name, fn] of [
-  ["DmContextMenu", convos.slice(convos.indexOf("function DmContextMenu("), convos.indexOf("function AddMemberDialog("))],
+  ["DmContextMenu", convos.slice(convos.indexOf("function DmContextMenu("), convos.indexOf("function GroupContextMenu("))],
   ["GroupContextMenu", convos.slice(convos.indexOf("function GroupContextMenu("), convos.indexOf("function ConfirmDialog("))],
 ]) {
   assert(fn.includes("anchorPoint"), `${name} must accept a pointer anchor`);

@@ -48,8 +48,7 @@ function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, 
       if (!el) return;
       const reveal = revealFor(x);
       el.style.setProperty("--swipe-reveal", `${reveal}px`);
-      // While actions show, the time column yields its space to the name.
-      el.classList.toggle("is-revealing", reveal > 12);
+      el.classList.toggle("is-revealing", reveal > 0.5);
       const full = Boolean(onFullSwipe) && isFullSwipe(x, width);
       if (full !== fullRef.current) {
         fullRef.current = full;

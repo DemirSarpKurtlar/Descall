@@ -1,5 +1,6 @@
 const express = require("express");
 const { validateGroupAvatarUrl, canEditGroupAvatar } = require("../lib/groupAvatar");
+const { normalizeGroupName, canRenameGroup } = require("../lib/groupRename");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser } = require("../runtime/sharedState");
@@ -830,35 +831,48 @@ router.post("/:groupId/leave", requireAuth, async (req, res) => {
   }
 });
 
-// Rename group
+// Rename group. Any member may rename (like the group photo); every member's
+// list and open chat header update live through group:renamed.
 router.post("/:groupId/rename", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { groupId } = req.params;
-    const { name } = req.body;
-    
-    if (!name?.trim()) return res.status(400).json({ error: "Name required" });
-    
-    // Check if user is creator
+    const checked = normalizeGroupName(req.body?.name);
+    if (!checked.ok) return res.status(400).json({ error: checked.error, code: checked.code });
+
     const { data: group, error: fetchError } = await supabase
       .from("groups")
-      .select("created_by")
+      .select("created_by, name")
       .eq("id", groupId)
-      .single();
-    
-    if (fetchError || !group) return res.status(404).json({ error: "Group not found" });
-    if (group.created_by !== userId) return res.status(403).json({ error: "Only creator can rename" });
-    
-    const { error } = await supabase
-      .from("groups")
-      .update({ name: name.trim(), updated_at: new Date() })
-      .eq("id", groupId);
-    
-    if (error) throw error;
-    res.json({ success: true, name: name.trim() });
+      .maybeSingle();
+    if (fetchError || !group) return res.status(404).json({ error: "Group not found", code: "NOT_FOUND" });
+
+    const isMember = await isGroupMember(groupId, userId);
+    if (!canRenameGroup({ userId, createdBy: group.created_by, isMember })) {
+      return res.status(403).json({ error: "Only group members can rename the group", code: "NOT_MEMBER" });
+    }
+
+    if (group.name !== checked.name) {
+      const { error } = await supabase
+        .from("groups")
+        .update({ name: checked.name, updated_at: new Date().toISOString() })
+        .eq("id", groupId);
+      if (error) throw error;
+
+      const io = req.app.get("io");
+      if (io) {
+        io.to(`group:${groupId}`).emit("group:renamed", {
+          groupId,
+          name: checked.name,
+          renamedBy: userId,
+          renamedByUsername: req.user.username || null,
+        });
+      }
+    }
+    res.json({ success: true, name: checked.name });
   } catch (err) {
     console.error("[Groups] Rename error:", err);
-    res.status(500).json({ error: "Failed to rename group" });
+    res.status(500).json({ error: "Failed to rename group", code: "SERVER" });
   }
 });
 

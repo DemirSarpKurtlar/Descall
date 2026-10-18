@@ -109,14 +109,24 @@ export async function addMemberToGroup(groupId, userId) {
   return body;
 }
 
+/** Throws an Error carrying `code` (NOT_MEMBER, NOT_FOUND, NAME_*, NETWORK, SERVER). */
 export async function renameGroup(groupId, newName) {
-  const res = await fetch(`${BASE}/${groupId}/rename`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify({ name: newName }),
-  });
-  if (!res.ok) throw new Error("Failed to rename");
-  return res.json();
+  let res;
+  try {
+    res = await fetch(`${BASE}/${groupId}/rename`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ name: newName }),
+    });
+  } catch {
+    throw Object.assign(new Error("Network error"), { code: "NETWORK" });
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const code = body.code || (res.status === 403 ? "NOT_MEMBER" : res.status === 404 ? "NOT_FOUND" : "SERVER");
+    throw Object.assign(new Error(body.error || "Failed to rename group"), { code, status: res.status });
+  }
+  return body;
 }
 
 export async function createGroupInviteLink(groupId, { maxUses = null, expiresInHours = 24 * 7 } = {}) {
