@@ -170,6 +170,11 @@ async function run() {
     assert(r.body.items.some((i) => i.sku === "theme-midnight"), "active theme listed");
     assert(!r.body.items.some((i) => i.category === "sound_pack"), "retired sound packs stay out of the catalog");
     assert(
+      Array.isArray(r.body.retiredCategories) && r.body.retiredCategories.includes("avatar_frame"),
+      "catalog announces retired categories (avatar_frame) to installed apps"
+    );
+    assert(!r.body.items.some((i) => i.category === "avatar_frame"), "no avatar frames in the catalog");
+    assert(
       !JSON.stringify(r.body).includes("data:"),
       "catalog never ships inline data: images: " + JSON.stringify(r.body)
     );

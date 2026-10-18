@@ -41,24 +41,25 @@ import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
 import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
+import { SHOP_CATEGORY_TABS, visibleShopTabs, visibleShopItems } from "../../lib/shopCategories.js";
 
-/** Short tab labels, same pattern as admin top nav. */
-const CATEGORY_TABS = [
-  { id: "banner", label: "Banners", icon: Image },
-  // Avatar frames were removed in 2.10.114; effects took their slot.
-  { id: "avatar_effect", label: "Avatar Effects", icon: Sparkles },
-  { id: "profile_background", label: "Backgrounds", icon: Wallpaper },
-  { id: "theme", label: "Themes", icon: Palette },
-  { id: "profile_badge", label: "Badges", icon: Award },
-  { id: "profile_title", label: "Titles", icon: Tag },
-  { id: "name_effect", label: "Name Effects", icon: Type },
-  { id: "chat_bubble", label: "Bubbles", icon: MessageSquare },
-  { id: "presence_flare", label: "Presence", icon: CircleDot },
-  { id: "profile_aura", label: "Auras", icon: Sun },
-  { id: "typing_flare", label: "Typing", icon: Ellipsis },
-  { id: "reaction_burst", label: "Reactions", icon: Flame },
-  { id: "call_overlay", label: "Call Overlays", icon: Phone },
-];
+/** Short tab labels, same pattern as admin top nav. Source: lib/shopCategories.js. */
+const CATEGORY_ICONS = {
+  banner: Image,
+  avatar_effect: Sparkles,
+  profile_background: Wallpaper,
+  theme: Palette,
+  profile_badge: Award,
+  profile_title: Tag,
+  name_effect: Type,
+  chat_bubble: MessageSquare,
+  presence_flare: CircleDot,
+  profile_aura: Sun,
+  typing_flare: Ellipsis,
+  reaction_burst: Flame,
+  call_overlay: Phone,
+};
+const CATEGORY_TABS = SHOP_CATEGORY_TABS.map((tab) => ({ ...tab, icon: CATEGORY_ICONS[tab.id] || null }));
 
 const IMAGE_ASSET_CATEGORIES = new Set(["banner", "profile_background"]);
 
@@ -181,6 +182,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const t = useT();
   const { locale } = useLocale();
   const [items, setItems] = useState([]);
+  const [serverRetired, setServerRetired] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyItemId, setBusyItemId] = useState(null);
@@ -209,7 +211,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     ]);
     if (catalogRes.status === "fulfilled") {
       loadedAssetCategories.current = new Set();
-      setItems(catalogRes.value?.items || []);
+      setServerRetired(Array.isArray(catalogRes.value?.retiredCategories) ? catalogRes.value.retiredCategories : []);
+      setItems(visibleShopItems(catalogRes.value?.items || [], catalogRes.value?.retiredCategories));
       setCatalogError("");
       setCatalogGeneration((n) => n + 1);
     } else if (!silent) {
@@ -319,10 +322,12 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const glassDesktop = useGlassDesktop();
   const { isMobile } = useMobile();
   const availableTabs = useMemo(
-    () => (glassShell && isMobile
-      ? CATEGORY_TABS
-      : CATEGORY_TABS.filter((tab) => countsByCategory.has(tab.id))),
-    [countsByCategory, glassShell, isMobile]
+    () => visibleShopTabs(CATEGORY_TABS, {
+      counts: countsByCategory,
+      showEmpty: Boolean(glassShell && isMobile),
+      serverRetired,
+    }),
+    [countsByCategory, glassShell, isMobile, serverRetired]
   );
   const chips = useShopChipScroll({
     activeId: activeCategory,
