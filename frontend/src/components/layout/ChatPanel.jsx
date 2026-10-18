@@ -818,6 +818,10 @@ export default function ChatPanel({
               editingMessage={editingMessage}
               onCancelEdit={onCancelEdit}
               onSaveEdit={onSaveEdit}
+              me={me}
+              onlineUsers={onlineUsers}
+              friends={friends}
+              recentMessages={messages}
             />
           </div>
         </>

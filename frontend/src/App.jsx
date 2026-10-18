@@ -310,6 +310,11 @@ function normalizeGroupMessage(m) {
     editedAt: m.edited_at || m.editedAt || null,
     pinnedAt: m.pinned_at || m.pinnedAt || null,
     pinnedBy: m.pinned_by || m.pinnedBy || null,
+    // 2.12.0: a Descall Apps card someone shared into the channel ("Kanala paylaş").
+    ...(m.media_type === "app_card" && m.system_meta?.embed
+      ? { embed: m.system_meta.embed, appType: m.system_meta.appType || m.system_kind || null, text: "" }
+      : {}),
+    poll: m.poll || null,
   };
 }
 
@@ -516,6 +521,28 @@ export default function App() {
     setEditingMessage(null);
   }, [activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
   const [channelMessagesById, setChannelMessagesById] = useState({});
+  // 2.12.0: "Kapat" / shared on an invoker-only Descall Apps reply removes it locally.
+  useEffect(() => {
+    const onDismiss = (event) => {
+      const id = event?.detail?.messageId;
+      if (!id) return;
+      const drop = (prev) => {
+        let changed = false;
+        const next = {};
+        for (const [key, list] of Object.entries(prev)) {
+          const kept = Array.isArray(list) ? list.filter((m) => m?.id !== id) : list;
+          if (kept !== list && kept.length !== list.length) changed = true;
+          next[key] = kept;
+        }
+        return changed ? next : prev;
+      };
+      setChannelMessagesById(drop);
+      setGroupMessagesById(drop);
+      setDmByUserId(drop);
+    };
+    window.addEventListener("descall:app-message-dismiss", onDismiss);
+    return () => window.removeEventListener("descall:app-message-dismiss", onDismiss);
+  }, []);
   const [ownedServerCount, setOwnedServerCount] = useState(0);
   const [maxOwnedServers, setMaxOwnedServers] = useState(10);
   // Electron update toast lives in <ElectronUpdateToast /> (charcoal, no focus steal).
@@ -2108,6 +2135,7 @@ export default function App() {
         embed: hasEmbed ? message.embed : null,
         appType: typeof message.type === "string" ? message.type : null,
         isAppMessage: isAppBot,
+        poll: message.poll || null,
       };
       setGroupMessagesById((prev) => {
         const cur = prev[groupId] ?? [];
@@ -4978,6 +5006,30 @@ export default function App() {
             const isMediaObject = isObj && (msg.type === "gif" || msg.type === "media");
             const textPayload = isObj && msg.type === "text" ? msg.text : (!isObj ? msg : "");
             const replyMeta = isObj ? msg.replyTo : null;
+
+            // 2.12.0: a poll from the create sheet. The server stores it and
+            // echoes the message (with its tempId), so no optimistic row.
+            if (isObj && msg.type === "poll" && msg.poll) {
+              const tempId = `poll-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+              if (activeDmUser) {
+                socketRef.current?.emit("dm:send", { toUserId: activeDmUser.id, tempId, text: "", poll: msg.poll });
+              } else if (activeGroup) {
+                socketRef.current?.emit("group:message", { groupId: activeGroup.id, tempId, content: "", poll: msg.poll });
+              } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
+                socketRef.current?.emit("server:channel:message", {
+                  serverId: activeServer.id,
+                  channelId: activeChannel.id,
+                  tempId,
+                  content: "",
+                  poll: msg.poll,
+                });
+              } else {
+                return;
+              }
+              hapticSuccess();
+              setReplyTo(null);
+              return;
+            }
 
             if (activeDmUser) {
               // Slash commands in a DM (games, /help, /user, /avatar, /poll): the

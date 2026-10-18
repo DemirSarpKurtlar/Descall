@@ -3,17 +3,25 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
   Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply,
-  Info, UserRound, ImageIcon, Pencil, BarChart3, Timer,
-  CircleHelp, UserX, Ban, Eraser
+  Pencil, Timer, CircleHelp,
 } from "lucide-react";
-import { CardsGlyph, ReelsGlyph, CoinGlyph, SendGlyph, DailyGlyph, WalletGlyph, TrophyGlyph } from "./slashIcons";
+import { SLASH_ICONS } from "../polls/slashIconsMap";
+import PollCreateSheet from "../polls/PollCreateSheet";
+import BanConfirm from "../polls/BanConfirm";
+import { useCompact } from "../polls/dsxShared";
+import { getServerMembers } from "../../api/servers";
+import { getPresenceStatus } from "../../lib/presence";
 import GiphyPicker from "./GiphyPicker";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../lib/voiceMessage";
 import { useT } from "../../context/LocaleContext";
-import { filterSlashCommandMatches, getSlashCommandsForSurface, slashInsertText } from "../../lib/slashCommands";
-import SlashCommandMenu, { orderSlashMatches } from "./SlashCommandMenu";
+import {
+  getSlashCommandsForSurface, slashInsertText, searchSlashCommands, slashMenuSections, slashQueryOf,
+  slashArgState, slashNameOf, findSlashCommand, foldTr, TIMEOUT_DURATIONS, PURGE_COUNTS,
+} from "../../lib/slashCommands";
+import SlashCommandMenu, { SLASH_CATEGORIES, UserPicker, DurationPicker, CountPicker } from "./SlashCommandMenu";
+import { hapticWarning } from "../../lib/fluid/haptics";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
@@ -27,25 +35,6 @@ const EMOJI_CATEGORIES = [
   { nameKey: "Hearts", emojis: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","❣️","💕","💞","💓","💗","💖","💘","💝","💟"] },
 ];
 
-const SLASH_ICONS = {
-  bj: CardsGlyph,
-  slot: ReelsGlyph,
-  coinflip: CoinGlyph,
-  pay: SendGlyph,
-  daily: DailyGlyph,
-  help: CircleHelp,
-  credits: WalletGlyph,
-  top: TrophyGlyph,
-  server: Info,
-  user: UserRound,
-  avatar: ImageIcon,
-  nick: Pencil,
-  poll: BarChart3,
-  timeout: Timer,
-  kick: UserX,
-  ban: Ban,
-  purge: Eraser,
-};
 
 function formatSlowmode(seconds) {
   const n = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -73,6 +62,9 @@ export default function MessageComposer({
   editingMessage = null,
   onCancelEdit,
   onSaveEdit,
+  me = null,
+  onlineUsers = [],
+  recentMessages = [],
 }) {
   const t = useT();
   const glass = useGlassUi();
@@ -272,31 +264,221 @@ export default function MessageComposer({
 
   // Esc closes the menu for the text typed so far; typing again reopens it.
   const [slashDismissedFor, setSlashDismissedFor] = useState(null);
-  const slashMatches = useMemo(
-    () =>
-      slashDismissedFor !== null && slashDismissedFor === message
-        ? []
-        : orderSlashMatches(filterSlashCommandMatches(slashCommands, message)),
-    [message, slashCommands, slashDismissedFor]
+  const [slashCategory, setSlashCategory] = useState("all");
+  const slashQuery = slashDismissedFor !== null && slashDismissedFor === message ? null : slashQueryOf(message);
+  const slashMenuOpen = slashQuery !== null && slashCommands.length > 0;
+  const slashSearch = useMemo(
+    () => (slashMenuOpen ? searchSlashCommands(slashCommands, slashQuery) : []),
+    [slashMenuOpen, slashCommands, slashQuery]
   );
+  const slashSections = useMemo(
+    () => slashMenuSections(slashSearch, { query: slashQuery || "", category: slashCategory }),
+    [slashSearch, slashQuery, slashCategory]
+  );
+  const slashMatches = useMemo(() => slashSections.flatMap((sec) => sec.items), [slashSections]);
+  const compactUi = useCompact(720);
+  const [wideMenu, setWideMenu] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1100);
+  useEffect(() => {
+    const onResize = () => setWideMenu(window.innerWidth >= 1100);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!slashMenuOpen) setSlashCategory("all");
+  }, [slashMenuOpen]);
 
   useEffect(() => {
     setSlashIndex(0);
-  }, [slashMatches.length, message]);
+  }, [slashMatches.length, message, slashCategory]);
 
-  const applySlashCommand = useCallback((cmd) => {
-    if (!cmd) return;
-    const insert = slashInsertText(cmd);
-    setMessage(insert);
-    setSlashIndex(0);
+  // 2.12.0 poll create sheet and the /ban confirm.
+  const [pollSheetOpen, setPollSheetOpen] = useState(false);
+  const [banConfirm, setBanConfirm] = useState(null);
+
+  const focusInputAt = useCallback((pos) => {
     requestAnimationFrame(() => {
       const el = inputRef.current;
       if (!el) return;
       el.focus();
-      const pos = insert.length;
-      el.selectionStart = el.selectionEnd = pos;
+      const p = pos ?? el.value.length;
+      el.selectionStart = el.selectionEnd = p;
     });
   }, []);
+
+  const openPollSheet = useCallback(() => {
+    setMessage("");
+    setSlashIndex(0);
+    setPollSheetOpen(true);
+  }, []);
+
+  const applySlashCommand = useCallback((cmd) => {
+    if (!cmd) return;
+    if (cmd.locked) {
+      hapticWarning();
+      return;
+    }
+    if (cmd.name === "poll") {
+      openPollSheet();
+      return;
+    }
+    const insert = slashInsertText(cmd);
+    setMessage(insert);
+    setSlashIndex(0);
+    focusInputAt(insert.length);
+  }, [openPollSheet, focusInputAt]);
+
+  // Error card suggestions ("Bunu mu demek istedin?") put a command in the composer.
+  useEffect(() => {
+    const onInsert = (event) => {
+      const text = String(event?.detail?.text || "");
+      if (!text) return;
+      setMessage(text);
+      focusInputAt(text.length);
+    };
+    window.addEventListener("descall:composer-insert", onInsert);
+    return () => window.removeEventListener("descall:composer-insert", onInsert);
+  }, [focusInputAt]);
+
+  /* ---------- argument pickers (user / duration / count) ---------- */
+  const [pickerIndex, setPickerIndex] = useState(0);
+  const [pickerDismissedFor, setPickerDismissedFor] = useState(null);
+  const [serverMembers, setServerMembers] = useState({ serverId: null, list: null });
+  const argState = useMemo(() => {
+    if (slashMenuOpen || (pickerDismissedFor !== null && pickerDismissedFor === message)) return null;
+    const st = slashArgState(message);
+    if (!st) return null;
+    const available = slashCommands.find((c) => c.name === st.cmd.name);
+    if (!available || available.locked) return null;
+    return st;
+  }, [message, slashMenuOpen, pickerDismissedFor, slashCommands]);
+  const pickerKind = !argState
+    ? null
+    : argState.cmd.userArg && argState.argIndex === 0
+      ? "user"
+      : argState.cmd.durationArg && argState.argIndex === 1
+        ? "duration"
+        : argState.cmd.countArg && argState.argIndex === 0 && /^\d{0,3}$/.test(argState.argText)
+          ? "count"
+          : null;
+
+  const serverIdForPicker = activeChannel?.id ? activeServer?.id || activeChannel?.serverId : null;
+  useEffect(() => {
+    if (pickerKind !== "user" || !serverIdForPicker) return;
+    if (serverMembers.serverId === serverIdForPicker && serverMembers.list) return;
+    let cancelled = false;
+    getServerMembers(serverIdForPicker)
+      .then((data) => !cancelled && setServerMembers({ serverId: serverIdForPicker, list: data?.members || [] }))
+      .catch(() => !cancelled && setServerMembers({ serverId: serverIdForPicker, list: [] }));
+    return () => {
+      cancelled = true;
+    };
+  }, [pickerKind, serverIdForPicker, serverMembers.serverId, serverMembers.list]);
+
+  const pickerUserSections = useMemo(() => {
+    if (pickerKind !== "user") return [];
+    const q = foldTr(String(argState.argText || "").replace(/^@/, ""));
+    const selfId = me?.id || null;
+    const excludeSelf = !["user", "avatar"].includes(argState.cmd.name);
+    const roles = Array.isArray(activeServer?.roles) ? activeServer.roles : [];
+    const roleInfo = (roleIds) => {
+      const ids = new Set((roleIds || []).map(String));
+      const top = roles
+        .filter((r) => !r.isEveryone && ids.has(String(r.id)))
+        .sort((a, b) => (b.position || 0) - (a.position || 0))[0];
+      if (!top) return { roleName: null, roleColor: null };
+      const n = Number(top.color) || 0;
+      return { roleName: top.name, roleColor: n ? `#${n.toString(16).padStart(6, "0")}` : null };
+    };
+    const norm = (u) => ({
+      id: u.userId || u.id,
+      username: u.username,
+      displayName: u.displayName || u.display_name || null,
+      nickname: u.nickname || null,
+      avatarUrl: u.avatarUrl || u.avatar_url || null,
+      roleIds: u.roleIds || [],
+    });
+    const matches = (u) => !q || [u.username, u.displayName, u.nickname].some((v) => v && foldTr(v).includes(q));
+    const ok = (u) => u?.id && u.username && matches(u) && !(excludeSelf && selfId && String(u.id) === String(selfId));
+    let pool = [];
+    if (serverIdForPicker) pool = (serverMembers.serverId === serverIdForPicker ? serverMembers.list || [] : []).map(norm);
+    else if (activeGroup) pool = (activeGroup.members || []).map(norm);
+    else if (activeDmUser) pool = [norm(activeDmUser), ...(me ? [norm(me)] : [])];
+    const byId = new Map(pool.map((u) => [String(u.id), u]));
+    const recentIds = [];
+    for (let i = (recentMessages || []).length - 1; i >= 0 && recentIds.length < 12; i -= 1) {
+      const m = recentMessages[i];
+      const sid = m?.sender?.id || m?.from?.id || m?.senderId || m?.sender_id;
+      if (sid && !recentIds.includes(String(sid)) && byId.has(String(sid))) recentIds.push(String(sid));
+    }
+    const decorate = (u) => {
+      const presence = getPresenceStatus(onlineUsers, u.id);
+      const live = (onlineUsers || []).find((x) => String(x.id) === String(u.id));
+      const custom = live?.customStatus?.text || (typeof live?.customStatus === "string" ? live.customStatus : null);
+      return { user: u, presence, status: custom || null, ...(serverIdForPicker ? roleInfo(u.roleIds) : {}) };
+    };
+    const here = recentIds.map((id) => byId.get(id)).filter(ok).slice(0, 4);
+    const hereIds = new Set(here.map((u) => String(u.id)));
+    const rest = pool
+      .filter((u) => !hereIds.has(String(u.id)) && ok(u))
+      .sort((a, b) => {
+        const qa = foldTr(a.username).startsWith(q) ? 0 : 1;
+        const qb = foldTr(b.username).startsWith(q) ? 0 : 1;
+        return qa - qb || String(a.username).localeCompare(String(b.username), "tr");
+      })
+      .slice(0, 8);
+    const out = [];
+    if (here.length) out.push({ id: "here", label: activeChannel?.id ? "BU KANALDA" : "BU SOHBETTE", items: here.map(decorate) });
+    if (rest.length) out.push({ id: "all", label: activeChannel?.id ? "SUNUCU ÜYELERİ" : activeGroup ? "GRUP ÜYELERİ" : "SOHBET", items: rest.map(decorate) });
+    return out;
+  }, [pickerKind, argState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id]);
+  const pickerUsers = useMemo(() => pickerUserSections.flatMap((s) => s.items), [pickerUserSections]);
+
+  const timeoutTarget = useMemo(() => {
+    if (pickerKind !== "duration") return null;
+    const handle = String(argState.before[0] || "").replace(/^@/, "");
+    const list = serverMembers.list || [];
+    const hit = list.find((m) => foldTr(m.username || "") === foldTr(handle));
+    return hit ? { ...hit, id: hit.userId } : handle ? { username: handle } : null;
+  }, [pickerKind, argState, serverMembers.list]);
+
+  const pickerCount = pickerKind === "user" ? pickerUsers.length : pickerKind === "duration" ? TIMEOUT_DURATIONS.length : pickerKind === "count" ? PURGE_COUNTS.length : 0;
+  useEffect(() => {
+    if (pickerKind === "duration") setPickerIndex(1);
+    else setPickerIndex(0);
+  }, [pickerKind, argState?.argText]);
+
+  const fillArg = useCallback((value) => {
+    const first = message.split(" ")[0];
+    const before = argState?.before || [];
+    const next = `${first} ${[...before, value].join(" ")} `;
+    setMessage(next);
+    focusInputAt(next.length);
+  }, [message, argState, focusInputAt]);
+
+  const pickFromPicker = useCallback((index = pickerIndex) => {
+    if (pickerKind === "user") {
+      const it = pickerUsers[index];
+      if (it) fillArg(`@${it.user.username}`);
+      return Boolean(it);
+    }
+    if (pickerKind === "duration") {
+      const d = TIMEOUT_DURATIONS[index];
+      if (d) fillArg(d.token);
+      return Boolean(d);
+    }
+    if (pickerKind === "count") {
+      const c = PURGE_COUNTS[index];
+      if (c) {
+        const first = message.split(" ")[0];
+        const next = `${first} ${c}`;
+        setMessage(next);
+        focusInputAt(next.length);
+      }
+      return Boolean(c);
+    }
+    return false;
+  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt]);
 
   const withReply = (payload) => {
     if (!replyTo) return payload;
@@ -372,7 +554,33 @@ export default function MessageComposer({
     }
 
     if (!message.trim()) return;
-    onSend?.(withReply(message.trim()));
+    const text = message.trim();
+    const typedName = slashNameOf(text);
+    const typedCmd = typedName ? findSlashCommand(typedName) : null;
+    // "/poll" alone opens the create sheet; "/poll Soru | A | B" stays the quick path.
+    if (typedCmd?.name === "poll" && !/\s/.test(text)) {
+      const allowed = slashCommands.find((c) => c.name === "poll");
+      if (allowed && !allowed.locked) {
+        openPollSheet();
+        return;
+      }
+    }
+    // "/ban @x sebep" asks first.
+    if (typedCmd?.name === "ban" && activeChannel?.id && !banConfirm) {
+      const parts = text.split(/\s+/);
+      const handle = String(parts[1] || "").replace(/^@/, "");
+      if (handle) {
+        const hit = (serverMembers.list || []).find((m) => foldTr(m.username || "") === foldTr(handle));
+        setBanConfirm({
+          first: parts[0],
+          handle,
+          targetName: hit?.nickname || hit?.displayName || handle,
+          reason: parts.slice(2).join(" "),
+        });
+        return;
+      }
+    }
+    onSend?.(withReply(text));
     setMessage("");
     onClearReply?.();
     armLocalSlowmode();
@@ -380,7 +588,19 @@ export default function MessageComposer({
   };
 
   const handleKeyDown = (e) => {
-    if (slashMatches.length > 0) {
+    if (slashMenuOpen) {
+      if ((e.metaKey || e.ctrlKey) && /^[1-5]$/.test(e.key)) {
+        e.preventDefault();
+        setSlashCategory(SLASH_CATEGORIES[Number(e.key) - 1]?.id || "all");
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSlashDismissedFor(message);
+        return;
+      }
+    }
+    if (slashMenuOpen && slashMatches.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSlashIndex((i) => (i + 1) % slashMatches.length);
@@ -392,13 +612,46 @@ export default function MessageComposer({
         return;
       }
       if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        const cmd = slashMatches[slashIndex] || slashMatches[0];
+        const typed = message.trim().slice(1).toLocaleLowerCase("tr");
+        const exact = cmd && (cmd.name === typed || (cmd.aliases || []).includes(typed));
+        // "/help" + Enter runs it; picking only completes when there is more to type.
+        if (e.key === "Enter" && exact && cmd.name !== "poll" && !slashInsertText(cmd).endsWith(" ")) {
+          e.preventDefault();
+          handleSend();
+          return;
+        }
         e.preventDefault();
-        applySlashCommand(slashMatches[slashIndex] || slashMatches[0]);
+        applySlashCommand(cmd);
+        return;
+      }
+    }
+    if (pickerKind && pickerCount > 0) {
+      const horizontal = pickerKind !== "user";
+      const nextKey = horizontal ? ["ArrowRight", "ArrowDown"] : ["ArrowDown"];
+      const prevKey = horizontal ? ["ArrowLeft", "ArrowUp"] : ["ArrowUp"];
+      if (nextKey.includes(e.key)) {
+        e.preventDefault();
+        setPickerIndex((i) => (i + 1) % pickerCount);
+        return;
+      }
+      if (prevKey.includes(e.key)) {
+        e.preventDefault();
+        setPickerIndex((i) => (i - 1 + pickerCount) % pickerCount);
         return;
       }
       if (e.key === "Escape") {
         e.preventDefault();
-        setSlashDismissedFor(message);
+        setPickerDismissedFor(message);
+        return;
+      }
+      const typedArg = argState?.argText || "";
+      const optionalUser = pickerKind === "user" && argState?.cmd.args?.[0]?.optional && !typedArg;
+      const typedCount = pickerKind === "count" && /^\d+$/.test(typedArg) && Number(typedArg) >= 1 && Number(typedArg) <= 100;
+      const typedDuration = pickerKind === "duration" && TIMEOUT_DURATIONS.some((d) => d.token === typedArg);
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey && !optionalUser && !typedCount && !typedDuration)) {
+        e.preventDefault();
+        pickFromPicker();
         return;
       }
     }
@@ -802,16 +1055,106 @@ export default function MessageComposer({
       </AnimatePresence>
 
       <AnimatePresence>
-        {slashMatches.length > 0 && (
+        {slashMenuOpen ? (
           <SlashCommandMenu
             key="slash-menu"
             menuRef={slashMenuRef}
-            items={slashMatches}
+            sections={slashSections}
+            flat={slashMatches}
             activeIndex={slashIndex}
             onHover={setSlashIndex}
             onPick={applySlashCommand}
+            query={slashQuery || ""}
+            category={slashCategory}
+            onCategory={setSlashCategory}
+            compact={compactUi}
+            showDetail={wideMenu}
+            allCommands={slashCommands}
+            onPickFrequent={applySlashCommand}
           />
-        )}
+        ) : pickerKind === "user" ? (
+          <UserPicker
+            key="slash-user"
+            menuRef={slashMenuRef}
+            query={String(argState?.argText || "").replace(/^@/, "")}
+            sections={pickerUserSections}
+            activeIndex={pickerIndex}
+            onHover={setPickerIndex}
+            onPick={(it) => fillArg(`@${it.user.username}`)}
+            compact={compactUi}
+            self={argState?.cmd.args?.[0]?.optional ? me : null}
+          />
+        ) : pickerKind === "duration" ? (
+          <DurationPicker
+            key="slash-duration"
+            menuRef={slashMenuRef}
+            durations={TIMEOUT_DURATIONS}
+            activeIndex={pickerIndex}
+            onHover={setPickerIndex}
+            onPick={(d) => fillArg(d.token)}
+            target={timeoutTarget}
+            compact={compactUi}
+          />
+        ) : pickerKind === "count" ? (
+          <CountPicker
+            key="slash-count"
+            menuRef={slashMenuRef}
+            counts={PURGE_COUNTS}
+            activeIndex={pickerIndex}
+            onHover={setPickerIndex}
+            onPick={(c) => {
+              const next = `${message.split(" ")[0]} ${c}`;
+              setMessage(next);
+              focusInputAt(next.length);
+            }}
+            compact={compactUi}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pollSheetOpen ? (
+          <PollCreateSheet
+            key="poll-create"
+            compact={compactUi}
+            targetLabel={
+              activeChannel?.id
+                ? `# ${activeChannel.name || "kanal"} kanalına`
+                : activeGroup
+                  ? `${activeGroup.name || "Grup"} grubuna`
+                  : activeDmUser
+                    ? `${activeDmUser.displayName || activeDmUser.display_name || activeDmUser.username} ile sohbete`
+                    : ""
+            }
+            onClose={() => {
+              setPollSheetOpen(false);
+              focusInputAt(0);
+            }}
+            onSubmit={async (poll) => {
+              onSend?.(withReply({ type: "poll", poll }));
+              onClearReply?.();
+              return { ok: true };
+            }}
+          />
+        ) : null}
+        {banConfirm ? (
+          <BanConfirm
+            key="ban-confirm"
+            targetName={banConfirm.targetName}
+            reason={banConfirm.reason}
+            onCancel={() => {
+              setBanConfirm(null);
+              focusInputAt();
+            }}
+            onConfirm={(reason) => {
+              const text = `${banConfirm.first} @${banConfirm.handle}${reason ? ` ${reason}` : ""}`;
+              setBanConfirm(null);
+              onSend?.(withReply(text));
+              setMessage("");
+              onClearReply?.();
+            }}
+          />
+        ) : null}
       </AnimatePresence>
 
       {glass && showAttachmentMenu && (
