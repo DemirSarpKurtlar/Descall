@@ -242,22 +242,34 @@ async function publicVisibleChannels(serverId, userId, channels, preloaded = nul
   return visible.map(publicChannel);
 }
 
+/**
+ * Parse an allow/deny map. `specified` marks the bits the caller actually named:
+ * "allow"/true, "deny"/false, or an explicit "inherit"/null (= clear). A key that is
+ * absent is "not specified" (the client omits inherit), so callers that must keep
+ * stored bits (first edit on a synced channel) can tell the two apart.
+ */
 function parseAllowDenyFlags(raw, allowedKeys) {
   const keys = allowedKeys || EDITABLE_PERMISSION_KEYS;
   let allow = 0n;
   let deny = 0n;
-  if (!raw || typeof raw !== "object") return { allow, deny };
+  let specified = 0n;
+  if (!raw || typeof raw !== "object") return { allow, deny, specified };
   for (const key of keys) {
     if (!Permissions[key]) continue;
+    if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
     const v = raw[key];
     if (v === true || v === "allow") allow |= Permissions[key];
     else if (v === false || v === "deny") deny |= Permissions[key];
+    else if (v === null || v === "inherit" || v === "clear") {
+      /* explicit clear */
+    } else continue;
+    specified |= Permissions[key];
   }
   // Discord: a bit cannot be both allow and deny
   const both = allow & deny;
   allow &= ~both;
   deny &= ~both;
-  return { allow, deny };
+  return { allow, deny, specified };
 }
 
 function generateInviteCode() {
@@ -3979,10 +3991,26 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
     });
 
     // First edit on a synced channel: take the category's rules as its own first.
-    await materializeIfSynced(channel);
+    const materialized = await materializeIfSynced(channel);
 
     const keys = CHANNEL_OVERRIDE_KEYS[channel.type] || CHANNEL_OVERRIDE_KEYS.text;
-    let { allow, deny } = parseAllowDenyFlags(req.body?.permissions || req.body?.flags, keys);
+    const parsed = parseAllowDenyFlags(req.body?.permissions || req.body?.flags, keys);
+    let { allow, deny } = parsed;
+    if (materialized) {
+      // First edit on a synced channel: the editor showed no own rules (the channel
+      // inherited its category's), so bits it did not name keep the category value
+      // that was just copied. Full replacement here wiped e.g. the category's
+      // @everyone VIEW deny and made the channel public (T3-4, 2.11.15 regression).
+      // Applies to owner/admin and to restricted editors alike.
+      const copied = materialized.find(
+        (r) => r.target_type === targetType && String(r.target_id) === String(targetId)
+      );
+      if (copied) {
+        const keep = ~parsed.specified;
+        allow |= fromPgBigint(copied.allow_permissions) & keep;
+        deny |= fromPgBigint(copied.deny_permissions) & keep & ~allow;
+      }
+    }
     if (!unrestricted) {
       // Only bits the actor holds in this channel can change; everything else on
       // an existing override stays as it was (so a mod can still edit an override

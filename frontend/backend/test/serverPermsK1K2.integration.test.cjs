@@ -14,6 +14,8 @@
  *       override precedence, timed-out members in voice / reactions / typing, hidden
  *       channel attachments via /api/media/refresh, invite max_uses race, invite listing,
  *       read/mute on hidden channels, voluntary leave keeps rooms, mention leak
+ *   T3-4 first override edit on a synced private channel replaced the copied category
+ *       row: an unrelated allow on @everyone made the channel public (2.11.15 regression)
  *   C1  deleting a private category (or moving a channel out of it) dropped its rules:
  *       child channels without own overrides became visible to every member
  * Run: node frontend/backend/test/serverPermsK1K2.integration.test.cjs
@@ -77,6 +79,11 @@ const fake = createFakeSupabase({
     { id: "c-roles", server_id: S, type: "text", name: "roles", position: 18 },
     { id: "c-mdeny", server_id: S, type: "text", name: "mdeny", position: 19 },
     { id: "c-evict", server_id: S, type: "text", name: "evict", position: 20 },
+    { id: "cat-t3", server_id: S, type: "category", name: "T3 private", position: 21 },
+    { id: "t3-owner", server_id: S, type: "text", name: "t3-owner", position: 22, parent_id: "cat-t3" },
+    { id: "t3-mod", server_id: S, type: "text", name: "t3-mod", position: 23, parent_id: "cat-t3" },
+    { id: "t3-inherit", server_id: S, type: "text", name: "t3-inherit", position: 24, parent_id: "cat-t3" },
+    { id: "t3-member", server_id: S, type: "text", name: "t3-member", position: 25, parent_id: "cat-t3" },
   ],
   server_channel_overrides: [
     { id: "o1", channel_id: "staff", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
@@ -102,6 +109,8 @@ const fake = createFakeSupabase({
     { id: "or2", channel_id: "c-roles", target_type: "role", target_id: "helperrole", allow_permissions: P.toPgBigint(F.SEND_MESSAGES), deny_permissions: "0" },
     { id: "od1", channel_id: "c-mdeny", target_type: "role", target_id: "everyone", allow_permissions: P.toPgBigint(F.VIEW_CHANNEL), deny_permissions: "0" },
     { id: "od2", channel_id: "c-mdeny", target_type: "member", target_id: "member", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
+    { id: "ot3a", channel_id: "cat-t3", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL | F.SEND_MESSAGES) },
+    { id: "ot3b", channel_id: "cat-t3", target_type: "role", target_id: "modrole", allow_permissions: P.toPgBigint(F.VIEW_CHANNEL), deny_permissions: "0" },
     { id: "oo1", channel_id: "cat-open", target_type: "role", target_id: "everyone", allow_permissions: "0", deny_permissions: P.toPgBigint(F.VIEW_CHANNEL) },
   ],
   server_messages: [
@@ -594,6 +603,44 @@ async function run() {
       await settle();
       assert.ok(!sk.dual.rooms.has("server-channel:general"), "left channel room");
       assert.ok(!sk.dual.rooms.has(`server:${S}`), "left server room");
+    });
+
+    // ---------------- T3-4 first edit on a synced private channel
+    const everyoneRow = (ch) => override(ch, "role", "everyone");
+    await check("T3-4 owner: unrelated @everyone allow on a synced private channel keeps the category deny", async () => {
+      assert.equal(await can("member", "t3-owner", F.VIEW_CHANNEL), false, "precondition");
+      const r = await call("owner", "PUT", `/servers/${S}/channels/t3-owner/overrides`, { targetType: "role", targetId: "everyone", permissions: { ADD_REACTIONS: "allow" } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.equal(await can("member", "t3-owner", F.VIEW_CHANNEL), false, "still private");
+      const row = everyoneRow("t3-owner");
+      assert.ok(P.hasPermission(P.fromPgBigint(row.deny_permissions), F.VIEW_CHANNEL), "VIEW deny kept");
+      assert.ok(P.hasPermission(P.fromPgBigint(row.deny_permissions), F.SEND_MESSAGES), "SEND deny kept");
+      assert.ok(P.hasPermission(P.fromPgBigint(row.allow_permissions), F.ADD_REACTIONS), "edit applied");
+      assert.equal(await can("mod", "t3-owner", F.VIEW_CHANNEL), true, "modrole allow copied too");
+    });
+    await check("T3-4 restricted editor (mod): same merge, channel stays private", async () => {
+      assert.equal(await can("mod", "t3-mod", F.VIEW_CHANNEL), true, "mod can see it");
+      const r = await call("mod", "PUT", `/servers/${S}/channels/t3-mod/overrides`, { targetType: "role", targetId: "everyone", permissions: { ATTACH_FILES: "deny" } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.equal(await can("member", "t3-mod", F.VIEW_CHANNEL), false, "still private");
+      assert.ok(P.hasPermission(P.fromPgBigint(everyoneRow("t3-mod").deny_permissions), F.ATTACH_FILES));
+    });
+    await check("T3-4 member target on a synced private channel keeps the copied @everyone deny", async () => {
+      const r = await call("owner", "PUT", `/servers/${S}/channels/t3-member/overrides`, { targetType: "member", targetId: "helper", permissions: { ADD_REACTIONS: "allow" } });
+      assert.equal(r.status, 200);
+      assert.equal(await can("member", "t3-member", F.VIEW_CHANNEL), false);
+      assert.equal(await can("helper", "t3-member", F.VIEW_CHANNEL), false, "helper got reactions, not VIEW");
+    });
+    await check("T3-4 an explicit inherit still clears a copied bit; later edits are full replacement", async () => {
+      let r = await call("owner", "PUT", `/servers/${S}/channels/t3-inherit/overrides`, { targetType: "role", targetId: "everyone", permissions: { VIEW_CHANNEL: "inherit", ADD_REACTIONS: "allow" } });
+      assert.equal(r.status, 200);
+      assert.equal(await can("member", "t3-inherit", F.VIEW_CHANNEL), true, "owner explicitly opened it");
+      assert.equal(await can("member", "t3-inherit", F.SEND_MESSAGES), false, "unnamed SEND deny kept");
+      r = await call("owner", "PUT", `/servers/${S}/channels/t3-inherit/overrides`, { targetType: "role", targetId: "everyone", permissions: { VIEW_CHANNEL: "deny" } });
+      assert.equal(r.status, 200);
+      const row = everyoneRow("t3-inherit");
+      assert.equal(row.deny_permissions, P.toPgBigint(F.VIEW_CHANNEL), "second edit replaces (client now sees the row)");
+      assert.equal(row.allow_permissions, "0");
     });
   } finally {
     server.close();
