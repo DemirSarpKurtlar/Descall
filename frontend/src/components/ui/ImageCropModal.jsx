@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
 import { X, ZoomIn, ZoomOut, Check } from "lucide-react";
 import { useT } from "../../context/LocaleContext";
 import { getCroppedImageFile } from "../../lib/cropImage";
@@ -41,6 +42,7 @@ export default function ImageCropModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const reduceMotion = useReducedMotion();
 
   const onCropComplete = useCallback((_area, pixels) => {
     setCroppedAreaPixels(pixels);
@@ -77,9 +79,9 @@ export default function ImageCropModal({
     >
       <motion.div
         className="img-crop-modal"
-        initial={{ scale: 0.96, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.96, opacity: 0 }}
+        initial={reduceMotion ? { opacity: 0 } : { scale: 0.92, opacity: 0, y: 12 }}
+        animate={reduceMotion ? { opacity: 1, transition: REDUCED_MOTION_FADE } : { scale: 1, opacity: 1, y: 0, transition: framerSpring(SPRINGS.materialize) }}
+        exit={reduceMotion ? { opacity: 0, transition: REDUCED_MOTION_FADE } : { scale: 0.96, opacity: 0, transition: { duration: 0.16 } }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -117,6 +119,7 @@ export default function ImageCropModal({
             step={0.01}
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
+            style={{ "--crop-fill": `${((zoom - 1) / 2) * 100}%` }}
             aria-label={t("Zoom")}
             disabled={busy}
           />

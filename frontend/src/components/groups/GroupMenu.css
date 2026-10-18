@@ -1,0 +1,100 @@
+/* Liquid Glass context menu for group rows ("Daha fazla", long-press,
+   right-click, ⋯). iOS layout: label left, SF-style glyph right, hairlines
+   between items, thick separators between sections, destructive in red. */
+.grp-menu-catcher {
+  position: fixed;
+  inset: 0;
+  z-index: 10019;
+  background: transparent;
+}
+html.glass-ui .grp-menu-catcher {
+  background: rgba(4, 6, 14, 0.18);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.grp-menu {
+  position: fixed;
+  z-index: 10020;
+  width: 272px;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  border-radius: 14px;
+  color: var(--g-t1, #fff);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  background: rgba(36, 38, 52, 0.93);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
+    color-mix(in srgb, var(--g-deep, #0d0e13) 70%, rgba(60, 64, 90, 0.9));
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  backdrop-filter: blur(40px) saturate(190%);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.22);
+  will-change: transform, opacity;
+}
+.grp-menu-section + .grp-menu-section { border-top: 6px solid rgba(0, 0, 0, 0.16); }
+.grp-menu-item {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  text-align: start;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.grp-menu-item + .grp-menu-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.grp-menu-item svg { flex: 0 0 auto; opacity: 0.92; }
+.grp-menu-item:active,
+.grp-menu-item:focus-visible,
+.grp-menu-item:hover { background: rgba(255, 255, 255, 0.12); outline: none; }
+.grp-menu-item.is-danger { color: #ff453a; }
+.grp-menu-item.is-danger:active,
+.grp-menu-item.is-danger:hover { background: rgba(255, 69, 58, 0.14); }
+
+/* Desktop (pointer): compact macOS-sized rows, same material. */
+html.glass-desktop .grp-menu { width: 236px; border-radius: 12px; padding: 5px; }
+html.glass-desktop .grp-menu-section + .grp-menu-section { border-top: 0; margin-top: 5px; padding-top: 5px; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14); }
+html.glass-desktop .grp-menu-item { min-height: 30px; padding: 6px 10px; border-radius: 7px; font-size: 13.5px; line-height: 18px; letter-spacing: -0.08px; }
+html.glass-desktop .grp-menu-item + .grp-menu-item::before { display: none; }
+html.glass-desktop .grp-menu-item:hover { background: var(--g-brand, #587af6); color: #fff; }
+html.glass-desktop .grp-menu-item.is-danger:hover { background: #ff453a; color: #fff; }
+
+html[data-theme="light"] .grp-menu { color: #111; background: rgba(246, 246, 250, 0.9); }
+html[data-theme="light"] .grp-menu-item + .grp-menu-item::before { background: rgba(60, 60, 67, 0.2); }
+html[data-theme="light"] .grp-menu-section + .grp-menu-section { border-top-color: rgba(60, 60, 67, 0.1); }
+html[data-theme="light"] .grp-menu-item:active { background: rgba(0, 0, 0, 0.06); }
+
+html.gd-lite .grp-menu,
+html.a11y-solid .grp-menu { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--gd-solid, #24252f); }
+@media (prefers-reduced-transparency: reduce) {
+  .grp-menu, html.glass-ui .grp-menu-catcher { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .grp-menu { background: #24252f; }
+  html[data-theme="light"] .grp-menu { background: #f2f2f7; }
+}
+@media (prefers-contrast: more) {
+  .grp-menu { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 20px 60px rgba(0, 0, 0, 0.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grp-menu-item { transition: none; }
+}

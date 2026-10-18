@@ -21,9 +21,10 @@
   overflow: hidden;
   border-radius: 32px 32px 0 0;
   color: var(--g-t1, #fff);
+  background: rgba(18, 19, 29, 0.92);
   background:
-    linear-gradient(180deg, var(--g-tint-top, rgba(60, 64, 92, 0.72)) 0%, var(--g-tint-bot, rgba(24, 26, 40, 0.82)) 100%),
-    linear-gradient(var(--g-tint-base, rgba(20, 22, 34, 0.55)), var(--g-tint-base, rgba(20, 22, 34, 0.55)));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.025) 42%, rgba(255, 255, 255, 0) 100%),
+    color-mix(in srgb, var(--g-deep, #0d0e13) 91%, transparent);
   -webkit-backdrop-filter: blur(var(--g-blur-heavy, 30px)) saturate(var(--g-saturate, 180%));
   backdrop-filter: blur(var(--g-blur-heavy, 30px)) saturate(var(--g-saturate, 180%));
   box-shadow:
@@ -252,7 +253,7 @@
 .group-info-leave:hover { background: rgba(255, 69, 58, 0.18); }
 .group-info-leave:active { transform: scale(0.97); }
 
-html[data-theme="light"] .group-info-sheet { color: #111; }
+html[data-theme="light"] .group-info-sheet { color: #111; background: rgba(242, 242, 247, 0.88); }
 html[data-theme="light"] .group-info-action,
 html[data-theme="light"] .group-info-members,
 html[data-theme="light"] .group-info-close { background: rgba(0, 0, 0, 0.05); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); color: #111; }

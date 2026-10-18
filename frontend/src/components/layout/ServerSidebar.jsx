@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Settings, Hash, Phone, MessageSquare,
   ChevronDown, Bell, UserPlus, X, User, Users,
@@ -20,11 +20,15 @@ import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { announcementIcon, loadAnnouncements, loadUnreadAnnouncementCount, markAnnouncementRead } from "../../lib/announcements";
-import { addMemberToGroup } from "../../api/groups";
+import { renameGroup as renameGroupApi } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
 import GroupInviteModal from "../groups/GroupInviteModal";
+import GroupRenameSheet from "../groups/GroupRenameSheet";
+import { useToast } from "../../context/ToastContext";
+import GroupAddMemberSheet from "../groups/GroupAddMemberSheet";
+import "../groups/GroupMenu.css";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { displayText } from "../../lib/profanity";
@@ -37,6 +41,7 @@ import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/datetime";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
+import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import useGlassUi from "../../hooks/useGlassUi";
 import { requestChatPrefetch } from "../../lib/chatPrefetch";
 
@@ -907,17 +912,8 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
   const menuRef = useRef(null);
   const dotBtnRefs = useRef({});
 
-  useEffect(() => {
-    if (!openMenuId) return;
-    const handleOutsideClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [openMenuId]);
-
+  // The menu (portaled) closes itself on outside pointerdown / Esc. A row-level
+  // mousedown listener used to close it before taps on its items registered.
   const closeMenu = () => {
     setOpenMenuId(null);
     setMenuPoint(null);
@@ -1422,193 +1418,33 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
   );
 }
 
-function AddMemberDialog({ group, friends, onClose, onMemberAdded }) {
-  const t = useT();
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const filtered = (friends || []).filter((f) =>
-    f.username?.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const handleAdd = async (friend) => {
-    setLoading(true);
-    setError("");
-    setSuccess("");
-    try {
-      await addMemberToGroup(group.id, friend.id);
-      setSuccess(`${friend.username} added to ${group.name}`);
-      onMemberAdded?.();
-      setTimeout(onClose, 1200);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return createPortal(
-    <motion.div
-      className="add-modal-backdrop"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 16 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 16 }}
-        transition={{ type: "spring", damping: 24, stiffness: 340 }}
-        style={{
-          background: "var(--surface-1)",
-          border: "1px solid var(--border-3)",
-          borderRadius: 16,
-          padding: 0,
-          width: 340,
-          maxHeight: 520,
-          boxShadow: "var(--shadow-xl)",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "16px 20px", borderBottom: "1px solid var(--border-2)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: "var(--primary-soft)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "var(--primary)",
-            }}>
-              <UserRoundPlus size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-0)" }}>{t("Add Member")}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{group.name}</div>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 28, height: 28, borderRadius: 6, border: "none",
-              background: "transparent", color: "var(--text-muted)",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-3)"; e.currentTarget.style.color = "var(--text-1)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-           aria-label={t("Close")}>
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-2)" }}>
-          <div style={{ position: "relative" }}>
-            <Search size={14} style={{
-              position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
-              color: "var(--text-muted)", pointerEvents: "none",
-            }} />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("Search friends…")}
-              style={{
-                width: "100%", padding: "8px 10px 8px 32px",
-                background: "var(--surface-2)", border: "1px solid var(--border-3)",
-                borderRadius: 8, color: "var(--text-1)", fontSize: 13,
-                outline: "none", boxSizing: "border-box",
-              }}
-              onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }}
-              onBlur={(e) => { e.target.style.borderColor = "var(--border-3)"; }}
-            />
-          </div>
-        </div>
-
-        {/* Friend list */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
-          {filtered.length === 0 ? (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
-              {(friends || []).length === 0 ? t("No friends to add") : t("No results")}
-            </div>
-          ) : (
-            filtered.map((friend) => (
-              <button
-                key={friend.id}
-                disabled={loading}
-                onClick={() => handleAdd(friend)}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 12,
-                  padding: "9px 12px", borderRadius: 8, border: "none",
-                  background: "transparent", cursor: loading ? "not-allowed" : "pointer",
-                  transition: "background 0.12s", textAlign: "left",
-                }}
-                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "var(--surface-2)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              >
-                <div style={{ flexShrink: 0 }}>
-                  <Avatar name={resolveDisplayName(friend)} size={34} user={friend} />
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)" }}>{resolveDisplayName(friend)}</span>
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4,
-                  fontSize: 11, color: "var(--primary)", fontWeight: 600,
-                }}>
-                  <UserRoundPlus size={13} />
-                  Add
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-
-        {/* Feedback */}
-        {(error || success) && (
-          <div style={{
-            padding: "10px 16px", borderTop: "1px solid var(--border-2)",
-            fontSize: 12, fontWeight: 500,
-            color: error ? "var(--danger)" : "#23a55a",
-            background: error ? "var(--danger-soft)" : "rgba(35,165,90,0.1)",
-          }}>
-            {error || success}
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
-  , document.body);
-}
-
 function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null, onChangePhoto, onRemovePhoto }) {
   const t = useT();
+  const reduceMotion = useReducedMotion();
   const menuRef = useRef(null);
-  const [position, setPosition] = useState({ top: 0, left: 0, visibility: "hidden" });
+  const [position, setPosition] = useState({ top: 0, left: 0, origin: "top right", visibility: "hidden" });
 
   useLayoutEffect(() => {
     const anchor = anchorRef?.current;
     const menu = menuRef.current;
-    if (!menu) return;
+    if (!menu) return undefined;
+    // offsetWidth/Height ignore the presentation scale, so the first measure is exact.
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
+    const pad = 8;
 
-    // Right-click → pointer-anchored, like a native context menu.
+    // Pointer / long-press / "Daha fazla" → anchored at that point, like a native context menu.
     if (anchorPoint) {
-      const pad = 8;
-      const menuRect = menu.getBoundingClientRect();
       let left = anchorPoint.x;
       let top = anchorPoint.y;
-      if (left + menuRect.width > window.innerWidth - pad) left = anchorPoint.x - menuRect.width;
-      if (top + menuRect.height > window.innerHeight - pad) top = anchorPoint.y - menuRect.height;
-      setPosition({
-        top: Math.max(pad, top),
-        left: Math.max(pad, left),
-        visibility: "visible",
-      });
+      if (left + w > window.innerWidth - pad) left = anchorPoint.x - w;
+      // A trigger button passes its top edge so a flipped menu sits above it, not over it.
+      if (top + h > window.innerHeight - pad) top = (anchorPoint.top ?? anchorPoint.y) - h - (anchorPoint.top != null ? 6 : 0);
+      left = Math.max(pad, Math.min(left, window.innerWidth - w - pad));
+      top = Math.max(pad, Math.min(top, window.innerHeight - h - pad));
+      const ox = Math.max(0, Math.min(w, anchorPoint.x - left));
+      const oy = Math.max(0, Math.min(h, anchorPoint.y - top));
+      setPosition({ top, left, origin: `${ox}px ${oy}px`, visibility: "visible" });
       return undefined;
     }
 
@@ -1616,20 +1452,17 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
 
     const updatePosition = () => {
       const anchorRect = anchor.getBoundingClientRect();
-      const menuRect = menu.getBoundingClientRect();
       const gap = 6;
-      const pad = 8;
-
       let top = anchorRect.bottom + gap;
-      if (top + menuRect.height > window.innerHeight - pad) {
-        top = anchorRect.top - menuRect.height - gap;
+      let below = true;
+      if (top + h > window.innerHeight - pad) {
+        top = anchorRect.top - h - gap;
+        below = false;
       }
-      top = Math.max(pad, Math.min(top, window.innerHeight - menuRect.height - pad));
-
-      let left = anchorRect.right - menuRect.width;
-      left = Math.max(pad, Math.min(left, window.innerWidth - menuRect.width - pad));
-
-      setPosition({ top, left, visibility: "visible" });
+      top = Math.max(pad, Math.min(top, window.innerHeight - h - pad));
+      let left = anchorRect.right - w;
+      left = Math.max(pad, Math.min(left, window.innerWidth - w - pad));
+      setPosition({ top, left, origin: below ? "top right" : "bottom right", visibility: "visible" });
     };
 
     updatePosition();
@@ -1647,138 +1480,97 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
         onClose();
       }
     };
-    const handleEscape = (e) => {
-      if (e.key === "Escape") onClose();
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      const items = [...(menuRef.current?.querySelectorAll('[role="menuitem"]') || [])];
+      if (!items.length) return;
+      e.preventDefault();
+      const i = items.indexOf(document.activeElement);
+      const next = e.key === "ArrowDown" ? (i + 1) % items.length : (i <= 0 ? items.length - 1 : i - 1);
+      items[next]?.focus();
     };
-    document.addEventListener("mousedown", handleOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("pointerdown", handleOutside, true);
+    document.addEventListener("keydown", handleKey, true);
     return () => {
-      document.removeEventListener("mousedown", handleOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("pointerdown", handleOutside, true);
+      document.removeEventListener("keydown", handleKey, true);
     };
   }, [onClose, anchorRef]);
 
-  return createPortal(
-    <motion.div
-      ref={menuRef}
-      role="menu"
-      className="gd-row-menu"
-      initial={{ opacity: 0, scale: 0.94, y: -4 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.94, y: -4 }}
-      transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
-      style={{
-        position: "fixed",
-        top: position.top,
-        left: position.left,
-        visibility: position.visibility,
-        zIndex: 10000,
-        background: "rgba(40, 40, 44, 0.92)",
-        backdropFilter: "blur(24px) saturate(180%)",
-        WebkitBackdropFilter: "blur(24px) saturate(180%)",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        borderRadius: 12,
-        boxShadow: "0 12px 40px rgba(0, 0, 0, 0.45)",
-        minWidth: 180,
-        overflow: "hidden",
+  // A long-press opens the menu under a finger that is still down; the lift
+  // must not count as a tap on whichever item appeared there.
+  const openedAt = useRef(typeof performance !== "undefined" ? performance.now() : 0);
+  const pressedInside = useRef(false);
+
+  const item = (label, Icon, onSelect, { danger = false, testId } = {}) => (
+    <button
+      type="button"
+      role="menuitem"
+      className={`grp-menu-item${danger ? " is-danger" : ""}`}
+      data-testid={testId}
+      onPointerDown={() => { pressedInside.current = true; }}
+      onClick={(e) => {
+        e.stopPropagation();
+        const fresh = performance.now() - openedAt.current < 450;
+        if (fresh && !pressedInside.current && e.detail !== 0) return;
+        onSelect?.();
+        onClose();
       }}
-      onClick={(e) => e.stopPropagation()}
     >
-      <button
-        onClick={() => { onInvite?.(); onClose(); }}
+      <span>{label}</span>
+      <Icon size={18} strokeWidth={2} />
+    </button>
+  );
+
+  return createPortal(
+    <>
+      <motion.div
+        className="grp-menu-catcher"
+        aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        onClick={(e) => e.stopPropagation()}
+        onContextMenu={(e) => { e.preventDefault(); onClose(); }}
+      />
+      <motion.div
+        ref={menuRef}
+        role="menu"
+        aria-label={group?.name}
+        className="grp-menu"
+        data-testid="group-menu"
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
+        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8, transition: { duration: 0.14 } }}
+        transition={reduceMotion ? { duration: 0.15 } : framerSpring(SPRINGS.materialize)}
         style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: "none", border: "none",
-          cursor: "pointer", fontSize: 13, color: "var(--text-1)",
-          transition: "background 0.1s",
+          top: position.top,
+          left: position.left,
+          visibility: position.visibility,
+          transformOrigin: position.origin,
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+        onClick={(e) => e.stopPropagation()}
       >
-        <Link2 size={14} style={{ color: "var(--primary)" }} />
-        {t("Invite People")}
-      </button>
-      <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
-      <button
-        onClick={() => { onAddMember(); onClose(); }}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: "none", border: "none",
-          cursor: "pointer", fontSize: 13, color: "var(--text-1)",
-          transition: "background 0.1s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-      >
-        <UserRoundPlus size={14} style={{ color: "var(--text-muted)" }} />
-        {t("Add Member")}
-      </button>
-      <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
-      <button
-        onClick={() => { onRename(); onClose(); }}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: "none", border: "none",
-          cursor: "pointer", fontSize: 13, color: "var(--text-1)",
-          transition: "background 0.1s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-      >
-        <Edit3 size={14} style={{ color: "var(--text-muted)" }} />
-        {t("Rename Group")}
-      </button>
-      <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
-      <button
-        onClick={() => { onChangePhoto?.(); onClose(); }}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: "none", border: "none",
-          cursor: "pointer", fontSize: 13, color: "var(--text-1)",
-          transition: "background 0.1s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-      >
-        <ImagePlus size={14} style={{ color: "var(--text-muted)" }} />
-        {t("Change Group Photo")}
-      </button>
-      {groupAvatarUrl(group) ? (
-        <>
-          <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
-          <button
-            onClick={() => { onRemovePhoto?.(); onClose(); }}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 14px", background: "none", border: "none",
-              cursor: "pointer", fontSize: 13, color: "var(--text-1)",
-              transition: "background 0.1s",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-          >
-            <ImageOff size={14} style={{ color: "var(--text-muted)" }} />
-            {t("Remove Group Photo")}
-          </button>
-        </>
-      ) : null}
-      <div style={{ height: 1, background: "var(--border-2)", margin: "2px 0" }} />
-      <button
-        className="is-danger"
-        onClick={() => { onLeave(); onClose(); }}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: "none", border: "none",
-          cursor: "pointer", fontSize: 13, color: "var(--danger)",
-          transition: "background 0.1s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "var(--danger-soft)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-      >
-        <LogOut size={14} />
-        {t("Leave Group")}
-      </button>
-    </motion.div>,
+        <div className="grp-menu-section">
+          {item(t("Invite People"), Link2, onInvite, { testId: "group-menu-invite" })}
+          {item(t("Add Member"), UserRoundPlus, onAddMember, { testId: "group-menu-add" })}
+        </div>
+        <div className="grp-menu-section">
+          {item(t("Rename Group"), Edit3, onRename, { testId: "group-menu-rename" })}
+          {item(t("Change Group Photo"), ImagePlus, onChangePhoto, { testId: "group-menu-photo" })}
+          {groupAvatarUrl(group) ? item(t("Remove Group Photo"), ImageOff, onRemovePhoto, { testId: "group-menu-remove-photo" }) : null}
+        </div>
+        <div className="grp-menu-section">
+          {item(t("Leave Group"), LogOut, onLeave, { danger: true, testId: "group-menu-leave" })}
+        </div>
+      </motion.div>
+    </>,
     document.body
   );
 }
@@ -1798,91 +1590,18 @@ function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = fals
   );
 }
 
-function RenameDialog({ group, onConfirm, onCancel }) {
-  const t = useT();
-  const [value, setValue] = useState(group.name);
-  const trimmed = value.trim();
-  const valid = trimmed.length >= 2 && trimmed.length <= 50 && trimmed !== group.name;
-
-  return createPortal(
-    <motion.div
-      className="conv-confirm-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onCancel}
-    >
-      <motion.div
-        className="conv-confirm-card"
-        role="dialog"
-        aria-modal="true"
-        initial={{ scale: 0.92, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.92, opacity: 0 }}
-        transition={{ type: "spring", damping: 22, stiffness: 320 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 style={{ marginBottom: 16 }}>{t("Rename Group")}</h3>
-        <input
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && valid) onConfirm(trimmed); if (e.key === "Escape") onCancel(); }}
-          maxLength={50}
-          style={{
-            width: "100%", padding: "10px 12px", borderRadius: 8,
-            border: "1px solid var(--border-3)", background: "var(--surface-1)",
-            color: "var(--text-0)", fontSize: 14, outline: "none",
-            boxSizing: "border-box", marginBottom: 6,
-          }}
-        />
-        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right", marginBottom: 18 }}>
-          {value.length}/50
-        </div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: "8px 18px", borderRadius: 8, border: "1px solid var(--border-3)",
-              background: "var(--surface-3)", color: "var(--text-1)", cursor: "pointer",
-              fontSize: 13, fontWeight: 600,
-            }}
-          >
-            {t("Cancel")}
-          </button>
-          <button
-            onClick={() => valid && onConfirm(trimmed)}
-            disabled={!valid}
-            style={{
-              padding: "8px 18px", borderRadius: 8, border: "none",
-              background: valid ? "var(--primary)" : "var(--surface-active)",
-              color: valid ? "#fff" : "var(--text-muted)",
-              cursor: valid ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 600,
-              transition: "all 0.15s",
-            }}
-          >
-            <Check size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
-            {t("Rename")}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
-  );
-}
-
 /**
  * Group actions shared by the sidebar row menu, the mobile swipe actions and
  * the in-chat group info sheet: invite, add member, rename, photo, leave.
  * Render `element` once; call `run(group, action)`.
  */
-export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged } = {}) {
+export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded } = {}) {
   const t = useT();
+  const { toast } = useToast();
   const [confirmLeave, setConfirmLeave] = useState(null);   // group object
-  const [confirmRename, setConfirmRename] = useState(null); // group object
+  const [renameGroupTarget, setRenameGroupTarget] = useState(null); // group object
   const [addMemberGroup, setAddMemberGroup] = useState(null); // group object
   const [inviteGroup, setInviteGroup] = useState(null); // group object
-  const [actionError, setActionError] = useState("");
   const groupPhoto = useGroupPhotoChanger({ onUpdated: onGroupAvatarChanged });
 
   const handleLeave = async (group) => {
@@ -1891,40 +1610,31 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
         method: "POST",
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || `Failed to leave group`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Failed to leave group");
       onGroupLeft?.(group.id);
     } catch (err) {
-      setActionError(err.message);
-      setTimeout(() => setActionError(""), 4000);
+      toast(t(err?.message || "Failed to leave group"), "error");
     } finally {
       setConfirmLeave(null);
     }
   };
 
+  // Rejects with { code } so the sheet can stay open and explain why.
   const handleRename = async (group, newName) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/groups/${group.id}/rename`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ name: newName }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Failed to rename group");
-      onGroupRenamed?.(group.id, newName);
-    } catch (err) {
-      setActionError(err.message);
-      setTimeout(() => setActionError(""), 4000);
-    } finally {
-      setConfirmRename(null);
-    }
+    const body = await renameGroupApi(group.id, newName);
+    const name = body?.name || newName;
+    onGroupRenamed?.(group.id, name);
+    // Keep the open sheet's header in sync if the parent list hasn't re-rendered yet.
+    setRenameGroupTarget((cur) => (cur?.id === group.id ? { ...cur, name } : cur));
+    toast(t("Group renamed"), "success");
   };
 
   const run = (group, action) => {
     if (!group) return;
     if (action === "invite") setInviteGroup(group);
     else if (action === "add") setAddMemberGroup(group);
-    else if (action === "rename") setConfirmRename(group);
+    else if (action === "rename") setRenameGroupTarget(group);
     else if (action === "photo") groupPhoto.pick(group);
     else if (action === "remove-photo") groupPhoto.remove(group);
     else if (action === "leave") setConfirmLeave(group);
@@ -1947,26 +1657,20 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {confirmRename && (
-          <RenameDialog
-            group={confirmRename}
-            onConfirm={(newName) => handleRename(confirmRename, newName)}
-            onCancel={() => setConfirmRename(null)}
-          />
-        )}
-      </AnimatePresence>
+      <GroupRenameSheet
+        group={renameGroupTarget}
+        open={Boolean(renameGroupTarget)}
+        onClose={() => setRenameGroupTarget(null)}
+        onSubmit={(name) => handleRename(renameGroupTarget, name)}
+      />
 
-      <AnimatePresence>
-        {addMemberGroup && (
-          <AddMemberDialog
-            group={addMemberGroup}
-            friends={friends}
-            onClose={() => setAddMemberGroup(null)}
-            onMemberAdded={() => {}}
-          />
-        )}
-      </AnimatePresence>
+      <GroupAddMemberSheet
+        group={addMemberGroup}
+        open={Boolean(addMemberGroup)}
+        friends={friends}
+        onClose={() => setAddMemberGroup(null)}
+        onMemberAdded={(friend) => onMemberAdded?.(addMemberGroup?.id, friend)}
+      />
 
       <GroupInviteModal
         group={inviteGroup}
@@ -1976,7 +1680,7 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
     </>
   );
 
-  return { run, element, actionError, groupPhoto };
+  return { run, element, actionError: "", groupPhoto };
 }
 
 function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
@@ -1991,23 +1695,9 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const dotBtnRefs = useRef({});
   // Same handlers drive the row menu, the swipe actions and the group info sheet.
   const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged });
-  const { actionError, groupPhoto } = groupActions;
-  const setConfirmLeave = (g) => groupActions.run(g, "leave");
-  const setConfirmRename = (g) => groupActions.run(g, "rename");
-  const setAddMemberGroup = (g) => groupActions.run(g, "add");
-  const setInviteGroup = (g) => groupActions.run(g, "invite");
 
-  useEffect(() => {
-    if (!openMenuId) return;
-    const handleOutsideClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [openMenuId]);
-
+  // The portaled menu closes itself on outside pointerdown / Esc. A row-level
+  // mousedown listener used to close it before taps on its items registered.
   const closeMenu = () => {
     setOpenMenuId(null);
     setMenuPoint(null);
@@ -2016,7 +1706,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const openAction = (group, action, point) => {
     if (action === "more") {
       // Overflow: the full group menu (rename, photo, remove photo…) under the button.
-      setMenuPoint(point ? { id: group.id, x: point.x, y: point.y } : null);
+      setMenuPoint(point ? { id: group.id, x: point.x, y: point.y, top: point.top } : null);
       setOpenMenuId(group.id);
       return;
     }
@@ -2027,15 +1717,6 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
 
   return (
     <>
-      {actionError && (
-        <div style={{
-          margin: "4px 8px", padding: "8px 12px", borderRadius: 8,
-          background: "var(--danger-soft)", color: "var(--danger)", fontSize: 12,
-        }}>
-          {actionError}
-        </div>
-      )}
-
       <div className="sidebar-section">
         <button
           className="section-header"
@@ -2091,7 +1772,6 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                       }}
                     >
                       {isMobile ? (
-                        <>
                         <SwipeableGroupRow
                           group={group}
                           isActive={isActive}
@@ -2109,23 +1789,6 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                             if (swipeOpenId && swipeOpenId !== group.id) setSwipeOpenId(null);
                           }}
                         />
-                        <AnimatePresence>
-                          {openMenuId === group.id && (
-                            <GroupContextMenu
-                              group={group}
-                              onClose={closeMenu}
-                              onLeave={() => openAction(group, "leave")}
-                              onRename={() => openAction(group, "rename")}
-                              onChangePhoto={() => openAction(group, "photo")}
-                              onRemovePhoto={() => openAction(group, "remove-photo")}
-                              onAddMember={() => openAction(group, "add")}
-                              onInvite={() => openAction(group, "invite")}
-                              anchorRef={{ current: null }}
-                              anchorPoint={menuPoint?.id === group.id ? menuPoint : null}
-                            />
-                          )}
-                        </AnimatePresence>
-                        </>
                       ) : (
                         <>
                           <GroupRowFront
@@ -2149,24 +1812,25 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                               setOpenMenuId(openMenuId === group.id ? null : group.id);
                             }}
                           />
-                          <AnimatePresence>
-                            {openMenuId === group.id && (
-                              <GroupContextMenu
-                                group={group}
-                                onClose={closeMenu}
-                                onLeave={() => setConfirmLeave(group)}
-                                onRename={() => setConfirmRename(group)}
-                                onChangePhoto={() => groupPhoto.pick(group)}
-                                onRemovePhoto={() => groupPhoto.remove(group)}
-                                onAddMember={() => setAddMemberGroup(group)}
-                                onInvite={() => setInviteGroup(group)}
-                                anchorRef={{ current: dotBtnRefs.current[group.id] }}
-                                anchorPoint={menuPoint?.id === group.id ? menuPoint : null}
-                              />
-                            )}
-                          </AnimatePresence>
                         </>
                       )}
+                      {/* One menu for every entry point: ⋯, right-click, long-press, swipe "Daha fazla". */}
+                      <AnimatePresence>
+                        {openMenuId === group.id && (
+                          <GroupContextMenu
+                            group={group}
+                            onClose={closeMenu}
+                            onLeave={() => openAction(group, "leave")}
+                            onRename={() => openAction(group, "rename")}
+                            onChangePhoto={() => openAction(group, "photo")}
+                            onRemovePhoto={() => openAction(group, "remove-photo")}
+                            onAddMember={() => openAction(group, "add")}
+                            onInvite={() => openAction(group, "invite")}
+                            anchorRef={{ current: isMobile ? null : dotBtnRefs.current[group.id] }}
+                            anchorPoint={menuPoint?.id === group.id ? menuPoint : null}
+                          />
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   );
                 })
@@ -2259,6 +1923,10 @@ function SwipeableGroupRow({
 }) {
   const t = useT();
   const glass = useGlassUi();
+  // Long-press (touch) opens the same glass group menu at the finger, like an iOS context menu.
+  const lp = useRef({ timer: 0, x: 0, y: 0, fired: false });
+  useEffect(() => () => clearTimeout(lp.current.timer), []);
+  const cancelLongPress = () => clearTimeout(lp.current.timer);
   return (
     <SwipeRevealRow
       open={swipeOpen}
@@ -2270,7 +1938,30 @@ function SwipeableGroupRow({
         <button
           type="button"
           className={`group-item conv-row group-row-front ${isActive ? "active" : ""} ${unread > 0 ? "has-unread" : ""}`}
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse" || swipeOpen) return;
+            const st = lp.current;
+            st.fired = false;
+            st.x = e.clientX;
+            st.y = e.clientY;
+            clearTimeout(st.timer);
+            st.timer = setTimeout(() => {
+              st.fired = true;
+              hapticImpactMedium();
+              onAction?.("more", { x: st.x, y: st.y });
+            }, 480);
+          }}
+          onPointerMove={(e) => {
+            if (Math.hypot(e.clientX - lp.current.x, e.clientY - lp.current.y) > 8) cancelLongPress();
+          }}
+          onPointerUp={cancelLongPress}
+          onPointerCancel={cancelLongPress}
+          onContextMenu={(e) => e.preventDefault()}
           onClick={() => {
+            if (lp.current.fired) {
+              lp.current.fired = false;
+              return;
+            }
             if (swipeOpen) {
               onSwipeOpenChange?.(false);
               return;
@@ -2297,7 +1988,7 @@ function SwipeableGroupRow({
             aria-haspopup="menu"
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              onAction?.("more", { x: r.left + r.width / 2, y: r.bottom });
+              onAction?.("more", { x: r.left + r.width / 2, y: r.bottom + 6, top: r.top });
             }}
           >
             <MoreHorizontal size={15} />
