@@ -1192,6 +1192,9 @@ app.use((err, _req, res, _next) => {
 
 // Socket.IO
 io.use(socketAuthMiddleware);
+// 2.11.6 (scale S2): Render ↔ Cloudflare Hub bridge. Off unless EDGE_BRIDGE_URL
+// and EDGE_BRIDGE_SECRET are set; edge clients then join this same io server.
+require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
 

@@ -22,6 +22,8 @@ const DEFAULT_SYSTEM_CONFIG = {
     // 2.11.4 scale S0: presence goes only to friends + shared servers/groups,
     // coalesced. Off = legacy global roster to everyone (kill switch).
     presenceScoped: true,
+    // 2.11.6 scale S2: edge realtime master switch. Opt-in (missing = off).
+    edgeRealtime: false,
   },
   themeForce: null,
   maintenanceMode: false,
@@ -34,6 +36,9 @@ const DEFAULT_SYSTEM_CONFIG = {
   maxMessagesPerMinute: 60,
   maxMessageLength: 2000,
   rateLimitGlobalMs: 0,
+  edgeRealtimePercent: 0,
+  edgeRealtimePlatforms: ["web"],
+  edgeRealtimeAllowUserIds: [],
 };
 
 function clampInt(value, fallback, min, max) {
@@ -51,7 +56,7 @@ function pickFeatureFlags(input) {
   const src = input && typeof input === "object" ? input : {};
   const out = {};
   for (const key of FEATURE_FLAG_KEYS) {
-    if (key === "desktopGlass") {
+    if (key === "desktopGlass" || key === "edgeRealtime") {
       // Opt-in. Older rows without the key must not restyle desktop and web.
       out[key] = src[key] === true;
       continue;
@@ -97,6 +102,7 @@ function pickConfig(input) {
     out.loggingLevel = ["debug", "info", "warn", "error"].includes(level) ? level : "info";
   }
   if (input.featureFlags !== undefined) out.featureFlags = pickFeatureFlags(input.featureFlags);
+  Object.assign(out, require("./edgeRealtime").pickEdgeRealtimeConfig(input));
   if (input.themeForce !== undefined) {
     out.themeForce = input.themeForce == null || input.themeForce === "" ? null : String(input.themeForce).slice(0, 32);
   }

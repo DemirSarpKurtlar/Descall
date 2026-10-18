@@ -1087,6 +1087,7 @@ router.get("/system", async (_req, res) => {
       profanityCount: state.profanityWords.size,
       flaggedCount: state.flaggedMessages.length,
       bannedUserIds,
+      edge: require("../runtime/edgeRuntime").edgeStats(),
     });
   } catch (error) {
     res.json({
@@ -1108,7 +1109,8 @@ router.patch("/system", async (req, res) => {
   if (io) {
     io.emit("features:updated", publicFeatureFlags(state.systemConfig.featureFlags));
   }
-  res.json({ config: state.systemConfig });
+  require("../runtime/edgeRuntime").broadcastAdvice();
+  res.json({ config: state.systemConfig, edge: require("../runtime/edgeRuntime").edgeStats() });
 });
 
 router.post("/chat/freeze", async (req, res) => {
