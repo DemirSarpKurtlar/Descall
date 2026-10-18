@@ -136,6 +136,11 @@ class FakeQuery {
     this.limitCount = n;
     return this;
   }
+  range(from, to) {
+    this.rangeFrom = from;
+    this.rangeTo = to;
+    return this;
+  }
   gt(col, val) {
     this.filters.push({ type: "gt", col, val });
     return this;
@@ -229,8 +234,11 @@ class FakeQuery {
       }
       return { data: matched[0], error: null };
     }
+    const total = matched.length;
+    if (typeof this.rangeFrom === "number") matched = matched.slice(this.rangeFrom, this.rangeTo + 1);
     if (typeof this.limitCount === "number") matched = matched.slice(0, this.limitCount);
-    if (this.wantCount) return { data: this.headOnly ? null : matched, count: matched.length, error: null };
+    if (this.wantCount && this.headOnly) return { data: null, count: total, error: null };
+    if (this.wantCount) return { data: this.headOnly ? null : matched, count: total, error: null };
     return { data: matched, error: null };
   }
 
@@ -273,6 +281,11 @@ function createFakeSupabase(seed = {}) {
           if (!src) return { data: null, error: { message: "Object not found" } };
           bucket(opts.destinationBucket || id).set(to, { ...src });
           return { data: { path: to }, error: null };
+        },
+        async remove(paths) {
+          const gone = [];
+          for (const p of paths || []) if (bucket(id).delete(p)) gone.push({ name: p });
+          return { data: gone, error: null };
         },
         async list(folder, opts = {}) {
           const names = [...bucket(id).keys()]

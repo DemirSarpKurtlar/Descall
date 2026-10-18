@@ -411,6 +411,45 @@ async function loadSenderProfiles(senderIds) {
   return new Map((profiles || []).map((p) => [p.id, p]));
 }
 
+const REPLY_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** { id, text, mediaType, from } for a reply, read from the DB; null when the target is not in this channel. */
+async function resolveServerReplyMeta(replyTo, channelId) {
+  const id = replyTo && typeof replyTo === "object" ? String(replyTo.id || "") : "";
+  if (!id || !REPLY_ID_RE.test(id) || !channelId) return null;
+  const { data: target, error } = await supabase
+    .from("server_messages")
+    .select("id, channel_id, sender_id, content, media_type")
+    .eq("id", id)
+    .eq("channel_id", channelId)
+    .maybeSingle();
+  if (error || !target) return null;
+  let from = null;
+  if (target.sender_id) {
+    const { data: u } = await supabase
+      .from("users")
+      .select("id, username, display_name, avatar_url")
+      .eq("id", target.sender_id)
+      .maybeSingle();
+    from = u
+      ? {
+          id: u.id,
+          username: u.username || null,
+          displayName: u.display_name || null,
+          display_name: u.display_name || null,
+          avatar: u.avatar_url || null,
+          avatar_url: u.avatar_url || null,
+        }
+      : { id: target.sender_id };
+  }
+  return {
+    id: target.id,
+    text: String(target.content || "").slice(0, 500),
+    mediaType: target.media_type || null,
+    from,
+  };
+}
+
 function registerServerChannelHandlers(io, socket) {
   const myId = socket.user?.id;
   if (!myId) return;
@@ -1008,15 +1047,9 @@ function registerServerChannelHandlers(io, socket) {
           }
         }
 
-        const replyMeta =
-          replyTo && typeof replyTo === "object"
-            ? {
-                id: replyTo.id || null,
-                text: replyTo.text || "",
-                mediaType: replyTo.mediaType || null,
-                from: replyTo.from || null,
-              }
-            : null;
+        // Quote meta is built from the stored message (same channel only). The client used
+        // to send text/from itself, so a reply could quote words nobody wrote (T3-2).
+        const replyMeta = await resolveServerReplyMeta(replyTo, channelId);
 
         const { data: row, error } = await supabase
           .from("server_messages")

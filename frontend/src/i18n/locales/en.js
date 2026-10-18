@@ -2029,6 +2029,8 @@ export const phrases = {
   "Join to talk, no ringing, drop in anytime.": "Join to talk, no ringing, drop in anytime.",
   "the server": "the server",
   "You were kicked from {name}": "You were kicked from {name}",
+  "{name} was deleted": "{name} was deleted",
+  "An admin changed visibility / invite settings of {name}": "An admin changed visibility / invite settings of {name}",
   "You were banned from {name}": "You were banned from {name}",
   "Connect (voice)": "Connect (voice)",
   "Speak": "Speak",

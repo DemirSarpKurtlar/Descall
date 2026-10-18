@@ -433,14 +433,25 @@ async function claimDaily(userId) {
     );
     const amount = DAILY_CLAIM_BASE + streakBonus;
 
-    const { error: updateError } = await supabase
+    // Compare-and-swap on the stored claim date: the in-process queue does not cover
+    // several backend instances (or a restart mid-claim), so two claims could both
+    // credit. Only the request that moves the date from lastClaim to today credits.
+    let claimQuery = supabase
       .from("users")
       .update({
         descoin_streak: nextStreak,
         descoin_last_daily_claim: today,
       })
       .eq("id", userId);
+    claimQuery = lastClaim == null
+      ? claimQuery.is("descoin_last_daily_claim", null)
+      : claimQuery.eq("descoin_last_daily_claim", lastClaim);
+    const { data: claimedRows, error: updateError } = await claimQuery.select("id");
     if (updateError) throw updateError;
+    if (!(Array.isArray(claimedRows) ? claimedRows.length : claimedRows)) {
+      const status = await getDailyStatus(userId);
+      return { claimed: false, alreadyClaimed: true, ...status };
+    }
 
     let result;
     try {
@@ -460,7 +471,8 @@ async function claimDaily(userId) {
             descoin_streak: prevStreak,
             descoin_last_daily_claim: lastClaim,
           })
-          .eq("id", userId);
+          .eq("id", userId)
+          .eq("descoin_last_daily_claim", today);
       } catch (rollbackError) {
         console.error(
           `[descoin] CRITICAL: daily claim credit failed for user ${userId} and streak rollback also failed.`,

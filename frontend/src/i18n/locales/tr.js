@@ -1990,6 +1990,8 @@ export const phrases = {
   "Join to talk, no ringing, drop in anytime.": "Konuşmak için katıl, zil yok, istediğin zaman gir.",
   "the server": "sunucu",
   "You were kicked from {name}": "{name} sunucusundan atıldın",
+  "{name} was deleted": "{name} silindi",
+  "An admin changed visibility / invite settings of {name}": "Bir yönetici {name} sunucusunun görünürlük / davet ayarlarını değiştirdi",
   "You were banned from {name}": "{name} sunucusundan yasaklandın",
   "Connect (voice)": "Bağlan (ses)",
   "Speak": "Konuş",

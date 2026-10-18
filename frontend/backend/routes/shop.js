@@ -198,9 +198,14 @@ router.post("/equip", requireAuth, async (req, res) => {
     if (itemId) {
       const owns = await shop.userOwnsItem(req.user.id, itemId);
       if (!owns) return res.status(403).json({ error: "You do not own this item." });
+      // The item must belong to the slot it is equipped into (a banner could be put
+      // into the badge / theme slot before 2026-10-19).
+      const item = await shop.getItemById(itemId);
+      if (!item || item.category !== category) {
+        return res.status(400).json({ error: "This item does not belong to that category.", code: "category_mismatch" });
+      }
       if (category === "theme") {
         const { themeEquipAllowed } = require("../lib/glassThemeCatalog");
-        const item = await shop.getItemById(itemId);
         if (item && !themeEquipAllowed(item.theme_key, req.body?.themeEngine)) {
           return res.status(409).json({
             error: "Update Descall to use this theme.",

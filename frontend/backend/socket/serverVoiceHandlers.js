@@ -262,6 +262,37 @@ function removeUserFromServerVoice(io, serverId, userId, reason = null) {
   }
 }
 
+/**
+ * End a voice channel's call for everyone (channel deleted, server deleted). Before
+ * 2026-10-19 the in-memory call and the LiveKit room outlived a deleted channel.
+ */
+function endServerVoiceChannel(io, channelId, reason = "channel_deleted") {
+  const call = activeServerVoiceCalls.get(channelId);
+  if (!call) return 0;
+  const serverId = call.serverId;
+  const uids = [...call.participants.keys()].map(String);
+  for (const uid of uids) {
+    removeFromVoice(io, channelId, uid);
+    io?.to?.(`user:${uid}`).emit("server:voice:force-disconnected", { serverId, channelId, reason });
+  }
+  activeServerVoiceCalls.delete(channelId);
+  try {
+    io?.in?.(`server-voice:${channelId}`).socketsLeave(`server-voice:${channelId}`);
+  } catch {
+    /* older socket.io */
+  }
+  return uids.length;
+}
+
+/** End every voice call of one server (server deleted). */
+function endAllServerVoice(io, serverId, reason = "server_deleted") {
+  let n = 0;
+  for (const [channelId, call] of [...activeServerVoiceCalls.entries()]) {
+    if (sameUserId(call.serverId, serverId)) n += endServerVoiceChannel(io, channelId, reason);
+  }
+  return n;
+}
+
 function findUserVoiceChannel(userId) {
   const uid = String(userId);
   for (const [channelId, call] of activeServerVoiceCalls.entries()) {
@@ -1164,6 +1195,8 @@ module.exports = {
   registerServerVoiceHandlers,
   removeUserFromAllServerVoice,
   removeUserFromServerVoice,
+  endServerVoiceChannel,
+  endAllServerVoice,
   findUserVoiceChannel,
   startAfkIdleScanner,
 };

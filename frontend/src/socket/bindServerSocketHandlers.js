@@ -33,6 +33,8 @@ const SERVER_EVENTS = [
   "server:member:joined",
   "server:member:updated",
   "server:member:roles-changed",
+  "server:deleted",
+  "server:updated",
 ];
 
 function sortMessagesChronologically(messages) {
@@ -505,6 +507,7 @@ export function bindServerSocketHandlers(socket, ctx) {
       } catch {
         /* ignore */
       }
+      if (action === "leave") return; // left from another tab / device: no kick toast
       const name = serverName || t("the server");
       const base =
         action === "ban"
@@ -688,6 +691,46 @@ export function bindServerSocketHandlers(socket, ctx) {
     }
   };
 
+  // Server deleted by its owner: drop it locally (members used to keep a dead server).
+  const handleServerDeleted = ({ serverId, serverName } = {}) => {
+    if (!serverId) return;
+    let wasListed = false;
+    setMyServers((prev) => {
+      wasListed = prev.some((s) => String(s.id) === String(serverId));
+      return prev.filter((s) => String(s.id) !== String(serverId));
+    });
+    setActiveServer((prev) => {
+      if (prev && String(prev.id) === String(serverId)) {
+        setActiveChannel(null);
+        return null;
+      }
+      return prev;
+    });
+    const voice = serverVoiceRef.current;
+    if (voice?.activeServerId && String(voice.activeServerId) === String(serverId)) {
+      voice.leave?.();
+    }
+    try {
+      const path = typeof window !== "undefined" ? window.location?.pathname || "" : "";
+      if (path.startsWith("/servers") && path.includes(String(serverId))) navigate("/servers");
+    } catch {
+      /* ignore */
+    }
+    if (wasListed) toast(t("{name} was deleted", { name: serverName || t("the server") }), "info");
+  };
+
+  // Server settings changed (name, icon, banner, ...): merge the public fields.
+  const handleServerUpdated = ({ serverId, server, sensitiveChange } = {}) => {
+    if (!serverId || !server || typeof server !== "object") return;
+    const { isOwner: _o, myPermissions: _p, ...pub } = server;
+    const merge = (s) => (s && String(s.id) === String(serverId) ? { ...s, ...pub, id: s.id } : s);
+    setMyServers((prev) => prev.map(merge));
+    setActiveServer((prev) => merge(prev));
+    if (sensitiveChange) {
+      toast(t("An admin changed visibility / invite settings of {name}", { name: pub.name || t("the server") }), "info");
+    }
+  };
+
   const handlers = {
     "server:channel:message:ack": handleChannelMessageAck,
     "server:channel:message": handleChannelMessage,
@@ -710,6 +753,8 @@ export function bindServerSocketHandlers(socket, ctx) {
     "server:member:joined": handleMemberJoined,
     "server:member:updated": handleMemberUpdated,
     "server:member:roles-changed": handleMemberRolesChanged,
+    "server:deleted": handleServerDeleted,
+    "server:updated": handleServerUpdated,
   };
 
   for (const event of SERVER_EVENTS) {
