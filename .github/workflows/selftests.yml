@@ -53,6 +53,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/backend/package-lock.json
+      # frontend/backend/node_modules is no longer committed (2.11.2): install from the lockfile.
+      - name: Install backend dependencies
+        working-directory: frontend/backend
+        run: npm ci --no-audit --no-fund
       - name: Run release selftests
         run: |
           set -euo pipefail
