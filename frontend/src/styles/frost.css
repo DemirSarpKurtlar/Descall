@@ -8,7 +8,10 @@
    :root×4 prefix (specificity 0,5,0) so it beats the per-platform
    `html.glass-ui .x` / `html.glass-desktop .x` !important rules.
    The selector list is the single source of truth, checked by
-   src/styles/frost.selftest.mjs. */
+   src/styles/frost.selftest.mjs.
+   Only real surfaces go here, never a layout wrapper: the long-press
+   `.g-msg-pop` layer was listed until 2.11.17 and painted a dark sharp
+   rectangle behind the lifted bubble (its bar/menu are listed instead). */
 
 :root {
   --frost-blur: 48px;
@@ -31,7 +34,7 @@
 
 /* FROST-SURFACES:BEGIN */
 :root:root:root:root :is(
-  .g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-msg-pop,
+  .g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-react-bar,
   .call-device-menu, .server-voice-device-menu, .server-voice-member-menu,
   .server-member-menu, .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu,
   .server-dropdown, .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel,
@@ -53,7 +56,7 @@
 /* Opaque fallback: no backdrop-filter support, Reduce Transparency (native →
    html.a11y-solid), the low-power desktop mode, or the OS media query. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :root:root:root:root :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-msg-pop,
+  :root:root:root:root :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-react-bar,
     .call-device-menu, .server-voice-device-menu, .server-voice-member-menu, .server-member-menu,
     .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu, .server-dropdown,
     .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel, .status-picker,
@@ -66,7 +69,7 @@
   }
 }
 :root:root:root:root:is(.a11y-solid, .gd-lite) :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu,
-  .g-status-menu, .g-msg-pop, .call-device-menu, .server-voice-device-menu, .server-voice-member-menu,
+  .g-status-menu, .g-react-bar, .call-device-menu, .server-voice-device-menu, .server-voice-member-menu,
   .server-member-menu, .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu,
   .server-dropdown, .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel, .status-picker,
   .message-inline-picker, .activity-privacy-menu, .ssq-pop, .ssq-sheet,
@@ -79,7 +82,7 @@
   backdrop-filter: none !important;
 }
 @media (prefers-reduced-transparency: reduce) {
-  :root:root:root:root :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-msg-pop,
+  :root:root:root:root :is(.g-menu, .grp-menu, .gd-row-menu, .g-call-menu, .g-toolbar-menu, .g-status-menu, .g-react-bar,
     .call-device-menu, .server-voice-device-menu, .server-voice-member-menu, .server-member-menu,
     .server-member-role-submenu, .server-folder-move-menu, .server-channel-menu, .server-dropdown,
     .attachment-menu, .slash-command-menu, .emoji-picker, .giphy-panel, .status-picker,

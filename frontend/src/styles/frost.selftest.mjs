@@ -24,7 +24,13 @@ for (const must of [
   ".pinned-popover", ".slash-command-menu", ".attachment-menu", ".emoji-picker", ".g-alert",
   ".conv-confirm-card", ".server-voice-device-menu", ".call-device-menu", ".toast-item",
   ".g-menu", ".server-member-menu", ".server-channel-menu", ".img-crop-modal", ".user-hover-card",
+  ".g-react-bar",
 ]) assert.ok(surfaces.includes(must), `${must} must be frosted`);
+// Layout wrappers must not be frosted: .g-msg-pop is the full-screen long-press
+// layer; frosting it drew an opaque box behind the lifted bubble (2.11.17).
+for (const wrapper of [".g-msg-pop", ".g-msg-stack", ".g-lift"]) {
+  assert.ok(!surfaces.includes(wrapper), `${wrapper} is a layout wrapper, not a surface`);
+}
 
 const alpha = (name) => {
   const m = css.match(new RegExp(`--${name}:\\s*rgba\\(\\s*\\d+,\\s*\\d+,\\s*\\d+,\\s*([0-9.]+)\\)`));

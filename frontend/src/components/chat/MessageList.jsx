@@ -14,6 +14,7 @@ import ReportUserModal from "../social/ReportUserModal";
 import GameMessageBubble from "./GameMessageBubble";
 import MessageReactions from "./MessageReactions";
 import MessageContent from "./MessageContent";
+import { plainText } from "../../lib/messageMarkdown";
 import { displayText } from "../../lib/profanity";
 import { casinoHiddenOnThisDevice, isCasinoChatMessage } from "../../lib/casinoCommands";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
@@ -42,12 +43,16 @@ import {
   MESSAGE_MENU_LONG_PRESS_MS,
   attachMenuPress,
   createMediaPressGate,
-  liftMediaBox,
   messageMenuOpensOnTap,
   pressToActivate,
   swallowOpeningPress,
   visualMediaPreview,
+  buildLiftedBubble,
+  liftLayout,
+  menuHeight,
+  reactBarWidth,
 } from "../../lib/glassMessageMenu";
+import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
 const PICKER_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "👏", "🤔", "👎"];
@@ -843,6 +848,9 @@ function MessageBubble({
     if (event.button != null && event.button !== 0) return;
     const el = event.currentTarget;
     if (!el) return;
+    // Warm the native haptics bridge now so the lift tick lands on the
+    // same frame as the menu (onFire), not one bridge round-trip later.
+    primeHaptics();
     pressDetach.current?.();
     let detach = () => {};
     const session = attachMenuPress({
@@ -1056,7 +1064,7 @@ function MessageBubble({
             </span>
             <span className="message-reply-text">
               {reply.text
-                ? displayText(String(reply.text).slice(0, 120))
+                ? displayText(plainText(String(reply.text)).slice(0, 120))
                 : reply.mediaType
                 ? `📎 ${reply.mediaType}`
                 : t("Original message")}
@@ -1385,8 +1393,6 @@ function MessageBubble({
           <GlassMessageMenu
             bubbleRef={bubbleRef}
             isOwn={isOwn}
-            text={String(message.text || "").slice(0, 280)}
-            preview={mediaPreview}
             onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
             quick={QUICK_EMOJIS}
             onReact={emitReact}
@@ -1438,78 +1444,145 @@ function MessageBubble({
   );
 }
 
+function prefersReducedMotionNow() {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * iOS-style long-press menu (glass phone layout). The lifted preview is a
+ * clone of the real rendered bubble (`buildLiftedBubble`): same skin, markdown,
+ * newlines, media and size, floating with no box behind it. Reaction bar and
+ * menu are separate heavy frosted surfaces (frost.css), positioned by
+ * `liftLayout` so nothing is clipped. The real bubble stays hidden
+ * (`.menu-open`) until the copy has flown back.
+ */
 function GlassMessageMenu({
-  bubbleRef, isOwn, text, preview, onClose, quick, onReact, onMore, pickerOpen, pickerEmojis,
+  bubbleRef, isOwn, onClose, quick, onReact, onMore, pickerOpen, pickerEmojis,
   onReply, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
-  const { ref } = useMaterialize(true);
+  const [closing, setClosing] = useState(false);
+  const bar = useMaterialize(!closing);
+  const menu = useMaterialize(!closing);
   const act = (fn) => pressToActivate(fn);
-  const [box, setBox] = useState(null);
-  const [shot, setShot] = useState(null);
+  const [lift, setLift] = useState(null);
+  const slotRef = useRef(null);
+  const reduced = useMemo(() => prefersReducedMotionNow(), []);
+
   useLayoutEffect(() => {
     const el = bubbleRef.current;
     if (!el) return;
+    const built = buildLiftedBubble(el);
+    if (!built) return;
     const r = el.getBoundingClientRect();
-    setBox({
-      top: r.top,
-      bottom: r.bottom,
-      left: r.left,
-      right: r.right,
-      width: r.width,
-      height: r.height,
+    // getBoundingClientRect includes the press shrink (`scale`); use the
+    // layout size and keep the visual centre.
+    const w = built.width || r.width;
+    const h = built.height || r.height;
+    setLift({
+      built,
+      rect: { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h },
     });
-    const img = el.querySelector("img.message-image, .message-media img");
-    const src = String(preview?.src || img?.currentSrc || img?.getAttribute("src") || "").trim();
-    if (!src) {
-      setShot(null);
-      return;
-    }
-    const ir = img?.getBoundingClientRect();
-    const size = liftMediaBox(ir, r);
-    const isGif = Boolean(preview?.isGif) || /\.gif(\?|#|$)/i.test(src) || /giphy\.com/i.test(src);
-    setShot({ src, isGif, width: size.width, height: size.height });
-  }, [bubbleRef, preview]);
-  if (!box || typeof document === "undefined") return null;
-  const menuW = 250;
-  const reactH = 66;
-  const menuRows = 2
-    + (canPin ? 1 : 0)
-    + (canEdit ? 1 : 0)
-    + ((canDelete || canReport) ? 1 : 0)
-    + (canDelete ? 1 : 0)
-    + (canReport ? 1 : 0);
-  const menuH = 12 + menuRows * 48 + (pickerOpen ? 180 : 0);
-  const caption = String(text || "").trim();
-  const liftH = shot
-    ? Math.min(shot.height || 180, 240)
-    : (caption ? Math.min(box.height || 48, 160) : 0);
-  const stackH = reactH + (liftH ? 10 + liftH + 10 : 10) + menuH;
-  const safeTop = 62;
-  const safeBot = 34;
-  let top = box.top - reactH - 8;
-  const limit = window.innerHeight - safeBot - stackH;
-  if (top > limit) top = limit;
-  if (top < safeTop) top = safeTop;
+  }, [bubbleRef]);
+
+  useLayoutEffect(() => {
+    const slot = slotRef.current;
+    const root = lift?.built?.root;
+    if (!slot || !root) return undefined;
+    slot.appendChild(root);
+    return () => {
+      if (root.parentNode === slot) slot.removeChild(root);
+    };
+  }, [lift]);
+
+  const closeRef = useRef({ started: false, done: false, timer: null });
+  const finishClose = useCallback(() => {
+    const c = closeRef.current;
+    if (c.done) return;
+    c.done = true;
+    clearTimeout(c.timer);
+    onClose?.();
+  }, [onClose]);
+  const beginClose = useCallback(() => {
+    const c = closeRef.current;
+    if (c.started) return;
+    c.started = true;
+    setClosing(true);
+    // Fly-back normally ends in onAnimationComplete; the timer is the floor.
+    c.timer = setTimeout(finishClose, reduced ? 200 : 650);
+  }, [finishClose, reduced]);
+  useEffect(() => () => clearTimeout(closeRef.current.timer), []);
+
+  if (!lift || typeof document === "undefined") return null;
+  const menuRows = 2 + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
+  const layout = liftLayout({
+    rect: lift.rect,
+    vw: window.innerWidth,
+    vh: window.innerHeight,
+    isOwn,
+    barW: reactBarWidth(quick.length),
+    menuH: menuHeight({ rows: menuRows, separators: canDelete || canReport ? 1 : 0, picker: pickerOpen }),
+  });
+  const moveSpring = framerSpring(SPRINGS.move);
+  const liftSpring = framerSpring(SPRINGS.default);
+  const back = { y: layout.dy, scale: 1, opacity: 1 };
+  const lifted = { y: 0, scale: layout.liftScale, opacity: 1 };
   return createPortal(
     <>
-      <button type="button" className="g-scrim" aria-label={t("Close")} {...act(onClose)} />
-      <div
-        ref={ref}
-        className="g-msg-pop g-materialize"
-        style={{
-          position: "fixed",
-          top,
-          left: isOwn ? "auto" : Math.max(12, box.left),
-          right: isOwn ? Math.max(12, window.innerWidth - box.right) : "auto",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: isOwn ? "flex-end" : "flex-start",
-          gap: 10,
-          zIndex: 90,
-          ["--g-mat-origin"]: isOwn ? "100% 30%" : "0% 30%",
-        }}
-      >
-        <div className="g-react-bar g-glass g-heavy" role="toolbar">
+      <motion.button
+        type="button"
+        className="g-scrim g-msg-scrim"
+        aria-label={t("Close")}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: closing ? 0 : 1 }}
+        transition={reduced ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
+        {...act(beginClose)}
+      />
+      <div className="g-msg-pop">
+        <motion.div
+          className="g-lift"
+          style={{
+            top: layout.liftTop,
+            left: layout.liftLeft,
+            width: lift.rect.width,
+            height: lift.rect.height,
+            transformOrigin: layout.origin,
+          }}
+          initial={reduced ? { y: 0, scale: layout.liftScale, opacity: layout.dy === 0 ? 1 : 0 } : { y: layout.dy, scale: 0.97, opacity: 1 }}
+          animate={closing ? (reduced ? { opacity: 0 } : back) : lifted}
+          transition={
+            reduced
+              ? REDUCED_MOTION_FADE
+              : { y: moveSpring, scale: liftSpring, opacity: { duration: 0.12 } }
+          }
+          onAnimationComplete={() => {
+            if (closing && !reduced) finishClose();
+          }}
+        >
+          <motion.div
+            className="g-lift-shadow"
+            style={{ borderRadius: lift.built.radius }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: closing ? 0 : 1 }}
+            transition={reduced ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
+            aria-hidden="true"
+          />
+          <div ref={slotRef} className="g-lift-slot" />
+        </motion.div>
+        <div
+          ref={bar.ref}
+          className="g-react-bar g-glass g-heavy g-materialize"
+          role="toolbar"
+          style={{
+            top: layout.barTop,
+            left: layout.barLeft,
+            maxWidth: layout.barW,
+            ["--g-mat-origin"]: isOwn ? "100% 100%" : "0% 100%",
+          }}
+        >
           {quick.map((e) => (
             <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
           ))}
@@ -1517,49 +1590,45 @@ function GlassMessageMenu({
             <Smile size={18} />
           </button>
         </div>
-        {caption ? <div className={`g-lift-bub ${isOwn ? "own" : "other"}`}>{caption}</div> : null}
-        {shot?.src ? (
+        <div
+          className="g-msg-stack"
+          style={{ top: layout.menuTop, left: layout.menuLeft, width: layout.menuW }}
+        >
           <div
-            className={`g-lift-media ${isOwn ? "own" : "other"}`}
-            style={{ width: shot.width, minHeight: shot.height }}
+            ref={menu.ref}
+            className="g-menu g-glass g-heavy g-materialize"
+            role="menu"
+            style={{ ["--g-mat-origin"]: isOwn ? "100% 0%" : "0% 0%" }}
           >
-            <img
-              src={shot.src}
-              alt={shot.isGif ? "GIF" : ""}
-              style={{ width: shot.width, height: shot.height }}
-            />
-            {shot.isGif ? <span className="message-media-badge">GIF</span> : null}
+            <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
+            {canPin && (
+              <button type="button" className="g-mi" {...act(onPin)}>
+                {isPinned ? <PinOff size={19} /> : <Pin size={19} />}
+                {isPinned ? t("Unpin") : t("Pin")}
+              </button>
+            )}
+            {canEdit && (
+              <button type="button" className="g-mi" {...act(onEdit)}><Pencil size={19} />{t("Edit")}</button>
+            )}
+            <button type="button" className="g-mi" {...act(onMore)}><SmilePlus size={19} />{t("More reactions")}</button>
+            {(canDelete || canReport) && <div className="g-msep" />}
+            {canDelete && (
+              <button type="button" className="g-mi danger" {...act(onDelete)}><Trash2 size={19} />{t("Delete")}</button>
+            )}
+            {canReport && (
+              <button type="button" className="g-mi" {...act(onReport)}><Flag size={19} />{t("report.action")}</button>
+            )}
           </div>
-        ) : null}
-        <div className="g-menu g-glass g-heavy" role="menu">
-          <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
-          {canPin && (
-            <button type="button" className="g-mi" {...act(onPin)}>
-              {isPinned ? <PinOff size={19} /> : <Pin size={19} />}
-              {isPinned ? t("Unpin") : t("Pin")}
-            </button>
-          )}
-          {canEdit && (
-            <button type="button" className="g-mi" {...act(onEdit)}><Pencil size={19} />{t("Edit")}</button>
-          )}
-          <button type="button" className="g-mi" {...act(onMore)}><SmilePlus size={19} />{t("More reactions")}</button>
-          {(canDelete || canReport) && <div className="g-msep" />}
-          {canDelete && (
-            <button type="button" className="g-mi danger" {...act(onDelete)}><Trash2 size={19} />{t("Delete")}</button>
-          )}
-          {canReport && (
-            <button type="button" className="g-mi" {...act(onReport)}><Flag size={19} />{t("report.action")}</button>
+          {pickerOpen && (
+            <div className="g-menu g-glass g-heavy g-msg-picker">
+              <div className="message-inline-picker-grid">
+                {pickerEmojis.map((e) => (
+                  <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-        {pickerOpen && (
-          <div className="g-menu g-glass g-heavy" style={{ width: 250 }}>
-            <div className="message-inline-picker-grid">
-              {pickerEmojis.map((e) => (
-                <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </>,
     document.body

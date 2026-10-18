@@ -1,8 +1,9 @@
 /**
- * Lightweight rich-text renderer: autolinks, `inline code`, ```code blocks```, @mentions.
+ * Lightweight rich-text renderer: **bold**, autolinks, `inline code`, ```code blocks```, @mentions.
  * Keeps the wire format as plain strings.
  */
 import { splitHighlightRanges } from "../../lib/textHighlight";
+import { splitBlocks, tokenizeInline } from "../../lib/messageMarkdown";
 import { displayText } from "../../lib/profanity";
 import { isDescallInviteUrl, parseDescallInviteUrl, isVanityServerInvite, vanitySlugFromInviteCode } from "../../lib/inviteLinks";
 
@@ -38,75 +39,76 @@ function highlightPlain(value, needle, keyPrefix) {
   );
 }
 
-function renderInline(text, keyPrefix = "t", highlight = "") {
-  if (!text) return null;
-  const parts = [];
-  let last = 0;
-  const re =
-    /(`[^`]+`)|(@[a-zA-Z0-9_]{2,32})|((?:https?:\/\/|(?:www\.)?descall\.(?:com|vercel\.app)\/|des-call\.onrender\.com\/)[^\s<]+[^\s<.,;:!?'")\]])/g;
-  let m;
-  let i = 0;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) {
-      parts.push(<span key={`${keyPrefix}-${i++}`}>{highlightPlain(text.slice(last, m.index), highlight, `${keyPrefix}-${i}`)}</span>);
+function renderTokens(tokens, keyPrefix, highlight) {
+  return tokens.map((token, i) => {
+    const key = `${keyPrefix}-${i}`;
+    if (token.type === "bold") {
+      return (
+        <strong key={key} className="msg-bold">
+          {renderTokens(token.children, key, highlight)}
+        </strong>
+      );
     }
-    const token = m[0];
-    if (token.startsWith("`")) {
-      parts.push(
-        <code key={`${keyPrefix}-${i++}`} className="msg-inline-code">
-          {token.slice(1, -1)}
+    if (token.type === "code") {
+      return (
+        <code key={key} className="msg-inline-code">
+          {displayText(token.value)}
         </code>
       );
-    } else if (token.startsWith("@")) {
-      parts.push(
-        <span key={`${keyPrefix}-${i++}`} className="msg-mention">
-          {token}
+    }
+    if (token.type === "mention") {
+      return (
+        <span key={key} className="msg-mention">
+          {displayText(token.value)}
         </span>
       );
-    } else {
-      const isInvite = isDescallInviteUrl(token);
-      const href = /^https?:\/\//i.test(token) ? token : `https://${token.replace(/^\/\//, "")}`;
-      parts.push(
+    }
+    if (token.type === "url") {
+      const href = /^https?:\/\//i.test(token.value) ? token.value : `https://${token.value.replace(/^\/\//, "")}`;
+      const isInvite = isDescallInviteUrl(token.value);
+      return (
         <a
-          key={`${keyPrefix}-${i++}`}
+          key={key}
           className={isInvite ? "msg-link msg-link-invite" : "msg-link"}
           href={href}
           target="_blank"
           rel="noopener noreferrer"
         >
-          {isInvite ? inviteLinkLabel(token) : token}
+          {isInvite ? inviteLinkLabel(token.value) : displayText(token.value)}
         </a>
       );
     }
-    last = m.index + token.length;
-  }
-  if (last < text.length) {
-    parts.push(<span key={`${keyPrefix}-${i++}`}>{highlightPlain(text.slice(last), highlight, `${keyPrefix}-${i}`)}</span>);
-  }
-  return parts.length ? parts : highlightPlain(text, highlight, keyPrefix);
+    return <span key={key}>{highlightPlain(displayText(token.value), highlight, key)}</span>;
+  });
 }
 
-export default function MessageContent({ text: rawText, highlight = "" }) {
-  // Native iOS app: bad words are masked with *** (display only).
-  const text = displayText(rawText);
+function renderInline(text, keyPrefix = "t", highlight = "") {
   if (!text) return null;
+  return renderTokens(tokenizeInline(text), keyPrefix, highlight);
+}
 
-  const blocks = text.split(/(```[\s\S]*?```)/g);
+/**
+ * `**bold**`, `inline code`, ```code blocks```, @mentions, links, `\*` escapes
+ * (lib/messageMarkdown.js). Newlines are kept (`.message-text` is pre-wrap).
+ */
+export default function MessageContent({ text, highlight = "" }) {
+  // Native iOS app: bad words are masked with *** (display only). Masking runs
+  // per token after parsing, so a "***" mask can never open or close **bold**.
+  if (!text || !displayText(text)) return null;
 
   return (
     <div className="message-text">
-      {blocks.map((block, idx) => {
-        if (block.startsWith("```") && block.endsWith("```")) {
-          const inner = block.slice(3, -3).replace(/^\n/, "").replace(/\n$/, "");
+      {splitBlocks(text).map((block, idx) => {
+        if (block.type === "codeblock") {
           return (
             <pre key={`code-${idx}`} className="msg-code-block">
-              <code>{inner}</code>
+              <code>{displayText(block.value)}</code>
             </pre>
           );
         }
         return (
           <span key={`p-${idx}`} className="msg-text-chunk">
-            {renderInline(block, `i${idx}`, highlight)}
+            {renderInline(block.value, `i${idx}`, highlight)}
           </span>
         );
       })}
