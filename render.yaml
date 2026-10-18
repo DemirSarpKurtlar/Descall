@@ -53,7 +53,7 @@ services:
         - .github/**
     aptPackages:
       - ffmpeg
-    buildCommand: cd frontend && npm install --include=dev && npm run build:prod && cd backend && npm install
+    buildCommand: cd frontend && npm ci --include=dev --no-audit --no-fund && npm run build:prod && cd backend && npm ci --omit=dev --no-audit --no-fund
     startCommand: cd frontend/backend && NODE_ENV=production node server.js
     envVars:
       - key: SUPABASE_URL
@@ -132,7 +132,7 @@ services:
         - .github/**
     aptPackages:
       - ffmpeg
-    buildCommand: cd frontend && npm install --include=dev && npm run build:prod && cd backend && npm install
+    buildCommand: cd frontend && npm ci --include=dev --no-audit --no-fund && npm run build:prod && cd backend && npm ci --omit=dev --no-audit --no-fund
     startCommand: cd frontend/backend && NODE_ENV=production node server.js
     envVars:
       - key: SUPABASE_URL

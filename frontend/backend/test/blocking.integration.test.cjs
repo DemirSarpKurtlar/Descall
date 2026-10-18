@@ -16,8 +16,8 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 const supabasePath = require.resolve("../db/supabase");
 const fakeSupabase = createFakeSupabase({
   users: [
-    { id: "u-alice", username: "alice", blocked_users: [] },
-    { id: "u-bob", username: "bob", blocked_users: [] },
+    { id: "u-alice", username: "alice", active_sessions: [{ id: "s-alice" }], blocked_users: [] },
+    { id: "u-bob", username: "bob", active_sessions: [{ id: "s-bob" }], blocked_users: [] },
   ],
   friendships: [{ id: "f1", user_id: "u-alice", friend_id: "u-bob", status: "accepted" }],
 });
@@ -56,7 +56,7 @@ async function req(base, method, urlPath, { body, token } = {}) {
 async function run() {
   const { server, base } = await startServer();
   try {
-    const aliceToken = signToken({ id: "u-alice", username: "alice" });
+    const aliceToken = signToken({ id: "u-alice", username: "alice", sid: "s-alice" });
 
     // Cannot block yourself
     let r = await req(base, "POST", "/block", { token: aliceToken, body: { userId: "u-alice" } });

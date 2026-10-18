@@ -33,8 +33,12 @@ assert(describeDevice("Descall-Electron/2.8.11") === "Descall Desktop", "detects
 assert(describeDevice("") === "Browser on Unknown OS", "handles empty UA gracefully");
 
 assert(
-  clientIp({ headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" }, ip: "9.9.9.9" }) === "1.2.3.4",
-  "prefers first x-forwarded-for entry"
+  clientIp({ headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" }, ip: "9.9.9.9" }) === "9.9.9.9",
+  "trusts req.ip (trust proxy) over a client-controlled x-forwarded-for"
+);
+assert(
+  clientIp({ headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" } }) === "5.6.7.8",
+  "without req.ip uses the last (proxy-appended) x-forwarded-for hop, never the first"
 );
 assert(
   clientIp({ headers: {}, ip: "9.9.9.9" }) === "9.9.9.9",

@@ -17,9 +17,9 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 const supabasePath = require.resolve("../db/supabase");
 const fakeSupabase = createFakeSupabase({
   users: [
-    { id: "u-alice", username: "alice", is_admin: true, descoin_balance: 0, equipped_sound_pack_id: null },
-    { id: "u-bob", username: "bob", is_admin: false, descoin_balance: 500, equipped_sound_pack_id: "item-sound-1" },
-    { id: "u-cara", username: "cara", is_admin: false, descoin_balance: 900, equipped_sound_pack_id: null },
+    { id: "u-alice", username: "alice", active_sessions: [{ id: "s-alice" }], is_admin: true, descoin_balance: 0, equipped_sound_pack_id: null },
+    { id: "u-bob", username: "bob", active_sessions: [{ id: "s-bob" }], is_admin: false, descoin_balance: 500, equipped_sound_pack_id: "item-sound-1" },
+    { id: "u-cara", username: "cara", active_sessions: [{ id: "s-cara" }], is_admin: false, descoin_balance: 900, equipped_sound_pack_id: null },
   ],
   shop_items: [
     {
@@ -159,8 +159,8 @@ async function run() {
   const io = fakeIo();
   const { server, base } = await startServer(io);
   try {
-    const aliceToken = signToken({ id: "u-alice", username: "alice" });
-    const bobToken = signToken({ id: "u-bob", username: "bob" });
+    const aliceToken = signToken({ id: "u-alice", username: "alice", sid: "s-alice" });
+    const bobToken = signToken({ id: "u-bob", username: "bob", sid: "s-bob" });
 
     // Catalog only lists active items (3 of the 5 seeded: 2 banners + theme)
     let r = await req(base, "GET", "/api/shop/catalog", { token: bobToken });
@@ -337,7 +337,7 @@ async function run() {
     assert(pending.length === 0, "gift no longer pending after being marked notified");
 
     // Two in-flight purchases of the same item must debit once.
-    const caraToken = signToken({ id: "u-cara", username: "cara" });
+    const caraToken = signToken({ id: "u-cara", username: "cara", sid: "s-cara" });
     const [firstBuy, secondBuy] = await Promise.all([
       req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-1" } }),
       req(base, "POST", "/api/shop/purchase", { token: caraToken, body: { itemId: "item-banner-1" } }),
