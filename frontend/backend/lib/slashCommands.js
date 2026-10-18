@@ -634,6 +634,12 @@ async function handleTimeoutCommand(ctx) {
     durationSeconds,
     reason,
   });
+  try {
+    const { removeUserFromServerVoice } = require("../socket/serverVoiceHandlers");
+    removeUserFromServerVoice(ctx.io, ctx.serverId, target.id, "timeout");
+  } catch (err) {
+    console.warn("[slashCommands] voice cleanup after timeout failed:", err?.message || err);
+  }
   const display = target.display_name || target.username || "member";
   return {
     message: createContextMessage(ctx, {

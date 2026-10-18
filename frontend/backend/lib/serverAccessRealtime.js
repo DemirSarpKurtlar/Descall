@@ -15,7 +15,11 @@ const {
 function emitServerChannelsResync(io, serverId, extra = {}) {
   if (!io || !serverId) return;
   try {
-    io.to(`server:${serverId}`).emit("server:channels:resync", { serverId, ...extra });
+    // Only serverId goes to the whole server room. The changed channel id used to
+    // be included and leaked hidden channel ids to every member (O2, 2026-10-18);
+    // clients refetch their own visible list from serverId alone.
+    void extra;
+    io.to(`server:${serverId}`).emit("server:channels:resync", { serverId });
   } catch (err) {
     console.warn("[SERVERS] channels resync emit failed:", err?.message || err);
   }
@@ -72,6 +76,11 @@ async function evictUnauthorizedChannelSockets(io, serverId) {
 }
 
 async function notifyServerAccessChanged(io, serverId, extra = {}) {
+  try {
+    require("./channelViewers").clearChannelViewCache(serverId);
+  } catch {
+    /* ignore */
+  }
   emitServerChannelsResync(io, serverId, extra);
   try {
     await evictUnauthorizedChannelSockets(io, serverId);

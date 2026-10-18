@@ -81,8 +81,32 @@ const pm = require("./privateMedia");
   assert.ok(!(await pm.canAccessPath(fake, "u-x", "images/1-abc.png")), "stranger");
   assert.ok(await pm.canAccessPath(fake, "u-g", "files/7-v.webm"), "group member via legacy url");
   assert.ok(!(await pm.canAccessPath(fake, "u-s", "files/7-v.webm")), "non member of group");
-  assert.ok(await pm.canAccessPath(fake, "u-s", "files/8-z.pdf"), "server member");
-  assert.ok(!(await pm.canAccessPath(fake, "u-g", "files/8-z.pdf")), "non server member");
+  // Server attachments: member + VIEW_CHANNEL + READ_MESSAGE_HISTORY on the message's channel.
+  {
+    const { createFakeSupabase } = require("../test/fakeSupabase.cjs");
+    const P = require("./serverPermissions");
+    const sfake = createFakeSupabase({
+      servers: [{ id: "s1", owner_id: "u-own" }],
+      server_members: [{ server_id: "s1", user_id: "u-s" }, { server_id: "s1", user_id: "u-own" }],
+      server_roles: [{ id: "r-every", server_id: "s1", is_everyone: true, position: 0, permissions: P.toPgBigint(P.EVERYONE_DEFAULT) }],
+      server_member_roles: [],
+      server_channels: [
+        { id: "c-open", server_id: "s1", type: "text" },
+        { id: "c-hidden", server_id: "s1", type: "text" },
+      ],
+      server_channel_overrides: [
+        { id: "o1", channel_id: "c-hidden", target_type: "role", target_id: "r-every", allow_permissions: "0", deny_permissions: P.toPgBigint(P.Permissions.VIEW_CHANNEL) },
+      ],
+      server_messages: [
+        { id: "m1", server_id: "s1", channel_id: "c-open", media_url: "sb://media-private/files/8-z.pdf" },
+        { id: "m2", server_id: "s1", channel_id: "c-hidden", media_url: "sb://media-private/files/9-h.pdf" },
+      ],
+    });
+    assert.ok(await pm.canAccessPath(sfake, "u-s", "files/8-z.pdf"), "server member, visible channel");
+    assert.ok(!(await pm.canAccessPath(sfake, "u-g", "files/8-z.pdf")), "non server member");
+    assert.ok(!(await pm.canAccessPath(sfake, "u-s", "files/9-h.pdf")), "member, hidden channel");
+    assert.ok(await pm.canAccessPath(sfake, "u-own", "files/9-h.pdf"), "owner sees hidden channel");
+  }
 
   // send-time normalisation
   assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-a", url), "sb://media-private/images/1-abc.png");

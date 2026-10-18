@@ -13,8 +13,11 @@ const {
   hasPermission,
   resolveMemberPermissions,
   resolveChannelPermissions,
+  assertHierarchy,
 } = require("../lib/serverPermissions");
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
+const { emitToChannelViewers, canViewChannel } = require("../lib/channelViewers");
+const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutState");
 
 function resolvePublicUser(socket) {
   const myId = socket.user?.id;
@@ -62,7 +65,9 @@ function emitChannelState(io, serverId, channelId) {
     memberCount: members.length,
     members,
   };
-  io.to(`server:${serverId}`).emit("server:voice:channel-state", payload);
+  // Server room: only members who can see the channel (hidden voice channel ids and
+  // occupants used to reach everyone). Participants always get it via the voice room.
+  void emitToChannelViewers(io, serverId, channelId, "server:voice:channel-state", payload);
   io.to(`server-voice:${channelId}`).emit("server:voice:channel-state", payload);
   return payload;
 }
@@ -101,6 +106,11 @@ async function assertVoiceAccess(userId, channelId, { bypassConnectView = false 
     const err = new Error("You are not a member of this server.");
     err.code = "NOT_MEMBER";
     throw err;
+  }
+  // Timed-out members cannot be in voice at all (Discord parity; audit 2026-10-18).
+  if (!resolved.isOwner) {
+    const t = await getActiveServerTimeout(channel.server_id, userId);
+    if (t) throw timedOutError(t);
   }
   const canView = hasPermission(resolved.bits, Permissions.VIEW_CHANNEL);
   const canConnect = hasPermission(resolved.bits, Permissions.CONNECT);
@@ -219,7 +229,7 @@ function removeFromVoice(io, channelId, userId) {
   };
   // Voice room (peers) + server room (sidebar viewers who aren't connected)
   io.to(`server-voice:${channelId}`).emit("server:voice:member-left", leavePayload);
-  io.to(`server:${call.serverId}`).emit("server:voice:member-left", leavePayload);
+  void emitToChannelViewers(io, call.serverId, channelId, "server:voice:member-left", leavePayload);
   // Kick every socket for that user out of the voice room so they can't linger
   try {
     io.in(`user:${uid}`).socketsLeave(`server-voice:${channelId}`);
@@ -239,6 +249,16 @@ function removeUserFromAllServerVoice(io, userId) {
     if (getParticipantEntry(call, uid)) {
       removeFromVoice(io, channelId, uid);
     }
+  }
+}
+
+/** Drop a user from every voice channel of one server and tell their clients (timeout). */
+function removeUserFromServerVoice(io, serverId, userId, reason = null) {
+  const uid = String(userId);
+  for (const [channelId, call] of activeServerVoiceCalls.entries()) {
+    if (!sameUserId(call.serverId, serverId) || !getParticipantEntry(call, uid)) continue;
+    removeFromVoice(io, channelId, uid);
+    io?.to?.(`user:${uid}`).emit("server:voice:force-disconnected", { serverId, channelId, reason });
   }
 }
 
@@ -277,8 +297,58 @@ async function assertVoiceMod(actorId, serverId, flag) {
   return resolved;
 }
 
+/**
+ * Voice moderation obeys the role hierarchy like kick/ban/timeout (Y1, 2026-10-18):
+ * nobody can mute / deafen / disconnect / move / re-stage the owner or a member
+ * whose highest role is at or above their own. Acting on yourself is not checked here.
+ */
+async function assertVoiceTarget(actorId, serverId, targetId, { flag = null, channelIds = [], connectIds = [] } = {}) {
+  // The moderation bit must survive the channel's overrides (not just server bits),
+  // and a mover must be able to CONNECT to the destination.
+  for (const chId of channelIds.filter(Boolean)) {
+    const r = await resolveChannelPermissions(supabase, serverId, actorId, chId);
+    if (r.channelMissing || (flag && !hasPermission(r.bits, flag))) {
+      const err = new Error("Missing permission.");
+      err.code = "MISSING_PERMISSION";
+      throw err;
+    }
+  }
+  for (const chId of connectIds.filter(Boolean)) {
+    const r = await resolveChannelPermissions(supabase, serverId, actorId, chId);
+    if (r.channelMissing || !hasPermission(r.bits, Permissions.CONNECT)) {
+      const err = new Error("Missing CONNECT permission on the destination channel.");
+      err.code = "MISSING_PERMISSION";
+      throw err;
+    }
+  }
+  if (sameUserId(actorId, targetId)) return;
+  try {
+    await assertHierarchy(supabase, serverId, actorId, targetId);
+  } catch (err) {
+    if (!err.code) err.code = "HIERARCHY";
+    throw err;
+  }
+}
+
 function registerServerVoiceHandlers(io, socket) {
   const myId = socket.user?.id;
+
+  /** Timed out while seated (e.g. timeout raced the disconnect): no new media, drop the seat. */
+  async function rejectIfTimedOut(call, channelId) {
+    let t = null;
+    try {
+      t = await getActiveServerTimeout(call?.serverId, myId);
+    } catch {
+      t = null;
+    }
+    if (!t) return false;
+    socket.emit("server:voice:error", { channelId, message: timedOutError(t).message, code: "TIMED_OUT", timeout: t });
+    if (getParticipantEntry(activeServerVoiceCalls.get(channelId), myId)) {
+      removeFromVoice(io, channelId, myId);
+      io.to(`user:${myId}`).emit("server:voice:force-disconnected", { serverId: call.serverId, channelId, reason: "timeout" });
+    }
+    return true;
+  }
   if (!myId) return;
 
   socket.on("server:voice:subscribe", async ({ serverId } = {}) => {
@@ -290,6 +360,8 @@ function registerServerVoiceHandlers(io, socket) {
       const states = [];
       for (const [channelId, call] of activeServerVoiceCalls.entries()) {
         if (sameUserId(call.serverId, serverId)) {
+          // Only channels this user can see (or sits in after a move).
+          if (!getParticipantEntry(call, myId) && !(await canViewChannel(serverId, channelId, myId))) continue;
           states.push({
             serverId,
             channelId,
@@ -471,6 +543,7 @@ function registerServerVoiceHandlers(io, socket) {
         socket.emit("server:voice:error", { message: "User is not in a voice channel." });
         return;
       }
+      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [found.channelId] });
       removeFromVoice(io, found.channelId, targetId);
       io.to(`user:${targetId}`).emit("server:voice:force-disconnected", {
         serverId,
@@ -517,6 +590,7 @@ function registerServerVoiceHandlers(io, socket) {
           socket.emit("server:voice:error", { message: "User is not in a voice channel." });
           return;
         }
+        await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [found.channelId, destId], connectIds: [destId] });
         if (String(found.channelId) === destId) return;
 
         const snapshot = {
@@ -565,7 +639,7 @@ function registerServerVoiceHandlers(io, socket) {
           channelId: destId,
           user: seated,
         });
-        io.to(`server:${serverId}`).emit("server:voice:member-joined", {
+        void emitToChannelViewers(io, serverId, destId, "server:voice:member-joined", {
           serverId,
           channelId: destId,
           user: seated,
@@ -607,6 +681,7 @@ function registerServerVoiceHandlers(io, socket) {
         socket.emit("server:voice:error", { message: "User is not in a voice channel." });
         return;
       }
+      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MUTE_MEMBERS, channelIds: [found.channelId] });
       const member = { ...(found.entry?.member || { id: targetId }) };
       member.serverMuted = Boolean(muted);
       if (muted) member.muted = true;
@@ -649,6 +724,7 @@ function registerServerVoiceHandlers(io, socket) {
         socket.emit("server:voice:error", { message: "User is not in a voice channel." });
         return;
       }
+      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.DEAFEN_MEMBERS, channelIds: [found.channelId] });
       const member = { ...(found.entry?.member || { id: targetId }) };
       member.serverDeafened = Boolean(deafened);
       if (deafened) {
@@ -726,11 +802,12 @@ function registerServerVoiceHandlers(io, socket) {
     });
   });
 
-  socket.on("server:voice:screen:start", ({ channelId, screen } = {}) => {
+  socket.on("server:voice:screen:start", async ({ channelId, screen } = {}) => {
     if (!channelId) return;
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
+    if (await rejectIfTimedOut(call, channelId)) return;
     const me = self.member;
     if (!participantCanStream(me)) {
       socket.emit("server:voice:error", {
@@ -774,11 +851,12 @@ function registerServerVoiceHandlers(io, socket) {
     emitChannelState(io, call.serverId, channelId);
   });
 
-  socket.on("server:voice:camera:start", ({ channelId } = {}) => {
+  socket.on("server:voice:camera:start", async ({ channelId } = {}) => {
     if (!channelId) return;
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self?.member) return;
+    if (await rejectIfTimedOut(call, channelId)) return;
     const me = self.member;
     if (!participantCanStream(me)) {
       socket.emit("server:voice:error", {
@@ -868,6 +946,7 @@ function registerServerVoiceHandlers(io, socket) {
         socket.emit("server:voice:error", { channelId, message: "User is not in this stage." });
         return;
       }
+      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [channelId] });
       const nextRole = stageRole === "speaker" ? "speaker" : "audience";
       if (nextRole === "speaker" && !hasPermission(resolved.bits, Permissions.SPEAK)) {
         socket.emit("server:voice:error", {
@@ -1084,6 +1163,7 @@ function startAfkIdleScanner(io) {
 module.exports = {
   registerServerVoiceHandlers,
   removeUserFromAllServerVoice,
+  removeUserFromServerVoice,
   findUserVoiceChannel,
   startAfkIdleScanner,
 };

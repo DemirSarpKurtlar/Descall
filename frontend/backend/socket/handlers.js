@@ -1032,9 +1032,30 @@ function registerSocketHandlers(io) {
       } else if (context === "group" && typeof groupId === "string") {
         socket.to(`group:${groupId}`).emit("typing:update", { context: "group", groupId, fromUser, typing: true });
       } else if (context === "server" && typeof channelId === "string") {
-        socket
-          .to(`server-channel:${channelId}`)
-          .emit("typing:update", { context: "server", channelId, fromUser, typing: true });
+        // Only from a VIEW-checked live room, with SEND_MESSAGES and not timed out
+        // (anyone could fake typing into any channel before). Cached 10 s per socket.
+        if (!socket.rooms?.has?.(`server-channel:${channelId}`)) return;
+        void (async () => {
+          const cache = socket.data.typingOk || (socket.data.typingOk = new Map());
+          const hit = cache.get(channelId);
+          let ok = hit && Date.now() - hit.at < 10000 ? hit.ok : null;
+          if (ok === null) {
+            try {
+              const { assertTextChannelAccess } = require("./serverChannelHandlers");
+              const { Permissions } = require("../lib/serverPermissions");
+              const { getActiveServerTimeout } = require("../lib/serverTimeoutState");
+              const { channel } = await assertTextChannelAccess(myId, channelId, Permissions.SEND_MESSAGES);
+              ok = !(await getActiveServerTimeout(channel.server_id, myId));
+            } catch {
+              ok = false;
+            }
+            cache.set(channelId, { ok, at: Date.now() });
+          }
+          if (!ok) return;
+          socket
+            .to(`server-channel:${channelId}`)
+            .emit("typing:update", { context: "server", channelId, fromUser, typing: true });
+        })();
       }
     });
 
@@ -1046,6 +1067,7 @@ function registerSocketHandlers(io) {
       } else if (context === "group" && typeof groupId === "string") {
         socket.to(`group:${groupId}`).emit("typing:update", { context: "group", groupId, fromUser, typing: false });
       } else if (context === "server" && typeof channelId === "string") {
+        if (!socket.rooms?.has?.(`server-channel:${channelId}`)) return;
         socket
           .to(`server-channel:${channelId}`)
           .emit("typing:update", { context: "server", channelId, fromUser, typing: false });
@@ -1805,8 +1827,16 @@ function registerSocketHandlers(io) {
         // conversationId is the text channel id
         try {
           const { assertTextChannelAccess } = require("./serverChannelHandlers");
-          const { Permissions } = require("../lib/serverPermissions");
-          const { channel } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          const { Permissions, hasPermission } = require("../lib/serverPermissions");
+          // assertTextChannelAccess always requires VIEW_CHANNEL; reacting also
+          // needs READ_MESSAGE_HISTORY (you can only react to what you can read).
+          const { channel, permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) {
+            console.log("[reaction:add] Missing READ_MESSAGE_HISTORY, returning");
+            return;
+          }
+          // Timed-out members are refused inside assertTextChannelAccess(ADD_REACTIONS);
+          // removing your own reaction stays allowed.
           // A stored message (uuid id) must live in that channel; a foreign
           // messageId used to be accepted. Live-only app/game messages have
           // non-uuid ids, are never stored, and keep working as before.
@@ -1823,7 +1853,8 @@ function registerSocketHandlers(io) {
               return;
             }
           }
-          socket.join(`server-channel:${conversationId}`);
+          // No socket.join here: a reaction never grants live-room membership
+          // (K1, 2026-10-18). Only server:channel:join / rejoin do, after VIEW_CHANNEL.
         } catch (err) {
           console.log("[reaction:add] Server channel access denied:", err?.message || err);
           return;
@@ -1901,8 +1932,9 @@ function registerSocketHandlers(io) {
       } else if (conversationType === "server") {
         try {
           const { assertTextChannelAccess } = require("./serverChannelHandlers");
-          const { Permissions } = require("../lib/serverPermissions");
-          await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          const { Permissions, hasPermission } = require("../lib/serverPermissions");
+          const { permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) return;
         } catch {
           return;
         }
