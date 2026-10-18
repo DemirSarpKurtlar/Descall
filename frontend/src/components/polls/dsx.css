@@ -1912,3 +1912,19 @@ button.dsx-po:focus-visible {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
+/* Phone glass skins paint the bubble (and its pseudo layers); cards bring their own glass. */
+html.glass-ui .app-root.g-shell .message-bubble.has-card,
+html.glass-desktop .message-bubble.has-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.glass-ui .app-root.g-shell .message-bubble.has-card::before,
+html.glass-ui .app-root.g-shell .message-bubble.has-card::after,
+html.glass-desktop .message-bubble.has-card::before,
+html.glass-desktop .message-bubble.has-card::after {
+  display: none !important;
+}
