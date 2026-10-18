@@ -52,6 +52,17 @@ function pullDmHistory(socket, withUserId) {
     .catch(() => {});
 }
 
+// 2.11.7 boot diet: hash of the friend list this page already shows, per token
+// (a new login = new token = full list). App.jsx sets it from `boot:hash`.
+const bootHashByToken = new Map();
+export function rememberBootFriendsHash(token, hash) {
+  bootHashByToken.clear();
+  if (token && typeof hash === "string" && hash) bootHashByToken.set(token, hash);
+}
+export function forgetBootHashes() {
+  bootHashByToken.clear();
+}
+
 export function createSocket(token, options = {}) {
   // Dev visual harness only. Vite replaces import.meta.env.DEV with false in
   // production builds, so this branch (and any call into the page hook) is
@@ -77,9 +88,14 @@ export function createSocket(token, options = {}) {
   const opts = {
     // presence: 2 = this build merges `presence:delta` (2.11.4, scoped roster).
     // app = platform for the edge rollout (2.11.6).
-    auth: isNativeIOS()
-      ? { token, platform: "ios", presence: 2, app: "ios" }
-      : { token, presence: 2, app: appPlatform() },
+    // Function form: re-read on every (re)connect so the boot-diet hash is current.
+    auth: (cb) => {
+      const base = isNativeIOS()
+        ? { token, platform: "ios", presence: 2, app: "ios" }
+        : { token, presence: 2, app: appPlatform() };
+      const bootFriends = bootHashByToken.get(token);
+      cb(bootFriends ? { ...base, bootFriends } : base);
+    },
     autoConnect: false,
     transports,
     withCredentials: false,

@@ -6,7 +6,7 @@
   "cacheRules": [
     {
       "description": "descall-edge: public cacheable API reads (origin Cache-Control decides TTL)",
-      "paths": ["/api/features", "/api/announcements", "/api/app/latest-release", "/api/shop/catalog/public"],
+      "paths": ["/api/features", "/api/announcements", "/api/app/latest-release", "/api/shop/catalog/public", "/api/jwks.json"],
       "prefixes": ["/api/shop/assets/"],
       "cache": true
     },

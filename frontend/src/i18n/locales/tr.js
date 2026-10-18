@@ -1378,6 +1378,7 @@ export const phrases = {
   "Accent color": "Vurgu rengi",
   "Desktop Liquid Glass": "Masaüstü Liquid Glass",
   "Scoped presence": "Kapsamlı çevrimiçi listesi",
+  "Reconnect boot diet": "Yeniden bağlanmada hafif açılış",
   "Edge realtime (Cloudflare)": "Edge gerçek zamanlı (Cloudflare)",
   "Bridge connected": "Köprü bağlı",
   "Bridge down": "Köprü kapalı",

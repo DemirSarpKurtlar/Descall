@@ -1681,6 +1681,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                       disabled={busy}
                       onChange={(enabled) => setFeatureFlag("presenceScoped", enabled)}
                     />
+                    <SystemSwitch
+                      icon={Zap}
+                      tone="glass"
+                      label={t("Reconnect boot diet")}
+                      status={system.config?.featureFlags?.bootDiet !== false ? t("On") : t("Off")}
+                      checked={system.config?.featureFlags?.bootDiet !== false}
+                      disabled={busy}
+                      onChange={(enabled) => setFeatureFlag("bootDiet", enabled)}
+                    />
                     <AdminEdgeRealtime system={system} busy={busy} patchSystem={patchSystem} t={t} />
                   </div>
                 </article>

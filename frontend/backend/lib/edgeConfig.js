@@ -18,7 +18,7 @@ const EDGE_HOSTS = new Set(["api.descall.com", "api-staging.descall.com"]);
  * They answer CORS with `*`: Cloudflare ignores `Vary: Origin`, so a cached
  * reflected origin would break every other origin.
  */
-const EDGE_PUBLIC_PATHS = ["/api/features", "/api/announcements", "/api/app/latest-release", "/api/shop/catalog/public"];
+const EDGE_PUBLIC_PATHS = ["/api/features", "/api/announcements", "/api/app/latest-release", "/api/shop/catalog/public", "/api/jwks.json"];
 const EDGE_PUBLIC_PREFIXES = ["/api/shop/assets/"];
 
 function isEdgePublicPath(pathname) {

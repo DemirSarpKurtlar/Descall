@@ -124,6 +124,9 @@ jobs:
           node ../workers/realtime/test/jwt.test.mjs
           node ../workers/realtime/test/hub.test.mjs
           node ../workers/realtime/test/budget.test.mjs
+          node ../workers/realtime/test/jwtEs256.test.mjs
+          node backend/config/jwt.selftest.cjs
+          node backend/lib/bootDiet.selftest.cjs
           node src/lib/coinTossMotion.selftest.mjs
           node backend/games/BlackjackGame.selftest.js
           node backend/games/SlotGame.selftest.js

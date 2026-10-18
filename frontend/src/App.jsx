@@ -44,7 +44,7 @@ import {
 } from "./lib/chatCache";
 import { emitRoomOnce, nextGroupRejoin } from "./lib/socketResubscribe";
 import { createPrefetchQueue, planStartupPrefetch, requestChatPrefetch, setChatPrefetchHandler } from "./lib/chatPrefetch";
-import { createSocket } from "./socket";
+import { createSocket, rememberBootFriendsHash, forgetBootHashes } from "./socket";
 import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
 import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
@@ -1750,7 +1750,18 @@ export default function App() {
       if (next !== prev) applyOnlineRoster(next);
     });
 
+    // 2.11.7 boot diet: on reconnect the server says "same" when the friend list
+    // we show is unchanged; remember the hash only once a list was applied.
+    let friendListApplied = false;
+    socket.on("boot:hash", ({ friends } = {}) => {
+      if (friendListApplied) rememberBootFriendsHash(token, friends);
+    });
+    socket.on("friend:list:same", () => {
+      friendListApplied = true;
+      setFriendsLoaded(true);
+    });
     socket.on("friend:list", (list) => {
+      friendListApplied = true;
       const normalized = (list ?? []).map((u) => normalizeUser(u));
       friendsFromSocketRef.current = true;
       setFriends(normalized);
@@ -2865,6 +2876,7 @@ export default function App() {
     setSessionChecked(true);
     setActiveTimeout(null);
     setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]); setMessageRequests([]);
+    forgetBootHashes();
     friendsFromSocketRef.current = false;
     setFriendsLoaded(false);
     setGroupsLoaded(false);
