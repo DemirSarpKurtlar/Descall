@@ -17,11 +17,17 @@ html.glass-ui.g-in-call {
 }
 
 /* ── Active call stage ── */
+/* The call stage is fully opaque on every theme (2.10.114): the chat under
+   it (call-history cards, date pills) must never read through. Color and
+   image are separate longhands so an invalid gradient stop (a theme without
+   --g-brand-rgb) cannot drop the fill to transparent. */
 html.glass-ui .call-overlay-root.g-call {
-  background:
-    radial-gradient(70% 45% at 50% 30%, rgba(var(--g-brand-rgb), 0.30), transparent 70%),
-    radial-gradient(60% 40% at 80% 90%, rgba(var(--g-brand2-rgb), 0.25), transparent 70%),
+  background-color: #0b0c12 !important;
+  background-image:
+    radial-gradient(70% 45% at 50% 30%, rgba(var(--g-brand-rgb, 88, 122, 246), 0.30), transparent 70%),
+    radial-gradient(60% 40% at 80% 90%, rgba(var(--g-brand2-rgb, 138, 92, 246), 0.25), transparent 70%),
     linear-gradient(180deg, #10121c, #0b0c12) !important;
+  background-repeat: no-repeat !important;
   font-family: var(--g-font) !important;
   color: var(--g-t1);
 }

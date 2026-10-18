@@ -275,11 +275,9 @@ export default function ChatPanel({
   // never leaves a stuck header node. Group voice rings members; it is not a room.
   const headerGroup = activeGroup || null;
   const headerDm = headerGroup ? null : activeDmUser || null;
-  // Shop frames/effects paint outside the avatar circle. In the 40px header slot
-  // shrink the photo so the whole frame fits instead of being clipped square.
-  const headerDmHasCosmetics = Boolean(
-    headerDm?.equippedAvatarFrame?.asset_url || headerDm?.equippedAvatarEffect?.effect_key,
-  );
+  // Avatar effects paint outside the avatar circle. In the 40px header slot
+  // shrink the photo so the whole effect fits instead of being clipped square.
+  const headerDmHasCosmetics = Boolean(headerDm?.equippedAvatarEffect?.effect_key);
   const headerDmAvatarSize = headerDmHasCosmetics ? 28 : 40;
   const glassServerChannel = Boolean(glass && activeView === "servers" && activeChannel);
   const glassConv = Boolean(glass && (headerDm || headerGroup || glassServerChannel));

@@ -11,7 +11,6 @@ import { useT } from "../../context/LocaleContext";
 
 const CATEGORIES = [
   { id: "banner", label: "Banner" },
-  { id: "avatar_frame", label: "Avatar Frame" },
   { id: "profile_background", label: "Profile Background" },
   { id: "theme", label: "Premium Theme" },
   { id: "profile_badge", label: "Profile Badge" },

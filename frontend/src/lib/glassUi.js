@@ -21,11 +21,11 @@
 
 import {
   GLASS_DESKTOP_LITE_KEY,
-  GLASS_DESKTOP_MIN_WIDTH,
   GLASS_DESKTOP_OVERRIDE_KEY,
   GLASS_DESKTOP_REMOTE_KEY,
   nativeShellPlatform,
   shouldUseGlassDesktopLite,
+  webGlassMode,
 } from "./glassDesktop.js";
 
 export const GLASS_CLASS = "glass-ui";
@@ -109,11 +109,10 @@ export function shouldEnableGlass({
 
   // Phone-like browser under the desktop glass breakpoint. A wide desktop
   // window stays on html.glass-desktop (or the classic UI if that is off).
+  // Same split as glassDesktop's webGlassMode, so every web width gets one layer.
   const width = Number(viewportWidth) || 0;
   const short = Number(viewportShortSide) || 0;
-  const narrow = width > 0 && width < GLASS_DESKTOP_MIN_WIDTH;
-  const phoneLike = (short > 0 && short < PHONE_MAX_SHORT_SIDE) || (width > 0 && width <= 768);
-  if (!narrow || !phoneLike) return false;
+  if (webGlassMode({ width, height: short > 0 && short < width ? short : width }) !== "ui") return false;
   if (webOverride === "0" || override === "0") return false;
   if (webBuildFlag === false || buildFlag === false) return false;
   if (webOverride === "1" || override === "1") return true;

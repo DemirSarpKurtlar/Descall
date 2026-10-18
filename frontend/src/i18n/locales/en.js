@@ -278,7 +278,7 @@ export const nested = {
     "languageHint": "English / Turkish",
     "personalization": "Personalization",
     "shop": "Shop",
-    "shopHint": "Banners, frames & backgrounds",
+    "shopHint": "Banners, avatar effects & backgrounds",
     "darkMode": "Dark Mode",
     "accentColor": "Accent Color",
     "fontSize": "Font Size",

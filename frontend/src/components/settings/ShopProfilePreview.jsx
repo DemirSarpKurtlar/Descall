@@ -9,13 +9,12 @@ import { cssUrl } from "../../lib/cssUrl";
 
 const EQUIPPED_SLOTS = [
   { id: "banner", label: "Banners", pick: (user) => user?.equippedBanner },
-  { id: "avatar_frame", label: "Frames", pick: (user) => user?.equippedAvatarFrame },
+  { id: "avatar_effect", label: "Avatar Effects", pick: (user) => user?.equippedAvatarEffect },
   { id: "profile_background", label: "Backgrounds", pick: (user) => user?.equippedBackground },
   { id: "theme", label: "Themes", pick: (user) => user?.equippedTheme },
   { id: "profile_badge", label: "Badges", pick: (user) => user?.equippedBadge },
   { id: "profile_title", label: "Titles", pick: (user) => user?.equippedTitle },
   { id: "name_effect", label: "Name Effects", pick: (user) => user?.equippedNameEffect },
-  { id: "avatar_effect", label: "Avatar Effects", pick: (user) => user?.equippedAvatarEffect },
   { id: "chat_bubble", label: "Bubbles", pick: (user) => user?.equippedChatBubble },
   { id: "presence_flare", label: "Presence", pick: (user) => user?.equippedPresenceFlare },
   { id: "profile_aura", label: "Auras", pick: (user) => user?.equippedProfileAura },

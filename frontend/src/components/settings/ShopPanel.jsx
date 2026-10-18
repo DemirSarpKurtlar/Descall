@@ -45,13 +45,13 @@ import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
 /** Short tab labels, same pattern as admin top nav. */
 const CATEGORY_TABS = [
   { id: "banner", label: "Banners", icon: Image },
-  { id: "avatar_frame", label: "Frames", icon: CircleDot },
+  // Avatar frames were removed in 2.10.114; effects took their slot.
+  { id: "avatar_effect", label: "Avatar Effects", icon: Sparkles },
   { id: "profile_background", label: "Backgrounds", icon: Wallpaper },
   { id: "theme", label: "Themes", icon: Palette },
   { id: "profile_badge", label: "Badges", icon: Award },
   { id: "profile_title", label: "Titles", icon: Tag },
   { id: "name_effect", label: "Name Effects", icon: Type },
-  { id: "avatar_effect", label: "Avatar Effects", icon: Sparkles },
   { id: "chat_bubble", label: "Bubbles", icon: MessageSquare },
   { id: "presence_flare", label: "Presence", icon: CircleDot },
   { id: "profile_aura", label: "Auras", icon: Sun },
@@ -60,7 +60,7 @@ const CATEGORY_TABS = [
   { id: "call_overlay", label: "Call Overlays", icon: Phone },
 ];
 
-const IMAGE_ASSET_CATEGORIES = new Set(["banner", "avatar_frame", "profile_background"]);
+const IMAGE_ASSET_CATEGORIES = new Set(["banner", "profile_background"]);
 
 function shopLoadNotice(err, t) {
   const msg = String(err?.message || "").trim();
@@ -402,7 +402,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   const equippedIdFor = (category) => {
     if (category === "banner") return equipped?.bannerId;
-    if (category === "avatar_frame") return equipped?.avatarFrameId;
     if (category === "profile_background") return equipped?.backgroundId;
     if (category === "theme") return equipped?.themeId;
     if (category === "profile_badge") return equipped?.badgeId;

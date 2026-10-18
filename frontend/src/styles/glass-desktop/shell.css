@@ -36,6 +36,31 @@ html.glass-desktop .nav-rail {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
+/* One seamless rail (2.10.114): the user footer has no own slab, gradient,
+   or divider. app-layout.css paints .nav-rail-bottom with a dark gradient
+   plus a hairline and the avatar button with a lighter tile, which read as
+   a separate lighter block at the bottom of the frosted rail. */
+html.glass-desktop .nav-rail .nav-rail-bottom {
+  border-top: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html.glass-desktop .nav-rail .rail-user-panel {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html.glass-desktop .nav-rail .rail-user-panel:hover {
+  background: color-mix(in srgb, var(--g-t1, #fff) 8%, transparent) !important;
+  transform: none;
+}
+
+html.glass-desktop .nav-rail .rail-user-panel:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gd-brand) 55%, transparent) !important;
+}
+
 html.glass-desktop .nav-rail-logo {
   width: 44px;
   height: 44px;
@@ -110,7 +135,8 @@ html.glass-desktop .chat-panel-shell.is-members-docked > .members-panel {
 @media (max-width: 1024px) {
   html.glass-desktop {
     --nav-rail-width: 64px;
-    --sidebar-width: 240px;
+    /* 2.10.114: 240px left DM names one letter wide. */
+    --sidebar-width: 272px;
   }
 
   html.glass-desktop .chat-panel-shell.is-members-docked > .members-panel,

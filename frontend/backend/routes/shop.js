@@ -171,6 +171,9 @@ router.post("/equip", requireAuth, async (req, res) => {
     if (!shop.EQUIP_COLUMN_BY_CATEGORY[category]) {
       return res.status(400).json({ error: "Invalid item category." });
     }
+    if (shop.REMOVED_COSMETIC_CATEGORIES.has(category)) {
+      return res.status(410).json({ error: "Avatar frames are no longer available.", code: "cosmetic_removed" });
+    }
     if (itemId) {
       const owns = await shop.userOwnsItem(req.user.id, itemId);
       if (!owns) return res.status(403).json({ error: "You do not own this item." });

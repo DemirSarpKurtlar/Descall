@@ -281,7 +281,7 @@ export const nested = {
     "languageHint": "İngilizce / Türkçe",
     "personalization": "Kişiselleştirme",
     "shop": "Mağaza",
-    "shopHint": "Banner, çerçeve ve arka planlar",
+    "shopHint": "Banner, avatar efekti ve arka planlar",
     "darkMode": "Karanlık Mod",
     "accentColor": "Vurgu Rengi",
     "fontSize": "Yazı Boyutu",
@@ -3269,9 +3269,9 @@ export const phrases = {
   "Password updated successfully.": "Şifre başarıyla güncellendi.",
   "This account has no email on file. Contact support@descall.com to recover access.": "Bu hesapta kayıtlı e-posta yok. Erişimi kurtarmak için support@descall.com adresine yazın.",
   "Shop": "Mağaza",
-  "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.": "Diğerlerinin seni nasıl gördüğünü kişiselleştirmek için banner, avatar çerçevesi ve profil arkaplanı satın al.",
+  "Buy banners, avatar frames, and profile backgrounds to personalize how others see you.": "Diğerlerinin seni nasıl gördüğünü kişiselleştirmek için banner, avatar efekti ve profil arkaplanı satın al.",
   "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, frames, auras, flares, and more.":
-    "Aramalarda konuşarak, mesajlaşarak ve ekran paylaşarak DesCoin kazan, sonra banner, çerçeve, aura, flare ve daha fazlasına harca.",
+    "Aramalarda konuşarak, mesajlaşarak ve ekran paylaşarak DesCoin kazan, sonra banner, avatar efekti, aura, flare ve daha fazlasına harca.",
   "No items available yet, check back soon!": "Henüz ürün yok, yakında tekrar kontrol et!",
   "Shop categories": "Mağaza kategorileri",
   "Banners": "Bannerlar",
@@ -3348,7 +3348,7 @@ export const phrases = {
   // DesCoin economy + premium themes
   "Premium Themes": "Premium Temalar",
   "Premium Theme": "Premium Tema",
-  "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, avatar frames, backgrounds, and premium themes.": "Görüşmelerde konuşarak, mesajlaşarak ve ekranını paylaşarak DesCoin kazan, sonra bunları banner, avatar çerçevesi, arkaplan ve premium temalar için harca.",
+  "Earn DesCoin by talking in calls, messaging, and sharing your screen, then spend it on banners, avatar frames, backgrounds, and premium themes.": "Görüşmelerde konuşarak, mesajlaşarak ve ekranını paylaşarak DesCoin kazan, sonra bunları banner, avatar efekti, arkaplan ve premium temalar için harca.",
   "Your DesCoin balance": "DesCoin bakiyen",
   "Not enough DesCoin yet": "Henüz yeterli DesCoin yok",
   "Not enough DesCoin": "Yeterli DesCoin yok",
@@ -3683,7 +3683,7 @@ export const phrases = {
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.":
     "Yavaş mod, konular, izin override’ları ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
   "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.":
-    "DesCoin ile temalar, çerçeveler ve efektler. Temel sohbet, sunucu ve aramalar sonsuza kadar ücretsiz.",
+    "DesCoin ile temalar, avatar efektleri ve baloncuklar. Temel sohbet, sunucu ve aramalar sonsuza kadar ücretsiz.",
   "Servers with roles and channels, messaging, calls, screen share, and LFG, everything friend groups and communities need, without turning your PC into a second operating system.":
     "Rollü ve kanallı sunucular, mesajlaşma, aramalar, ekran paylaşımı ve LFG, bilgisayarını ikinci işletim sistemine çevirmeden.",
   "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG, without Nitro paywalls for the features you actually use.":
@@ -3775,7 +3775,7 @@ export const phrases = {
     "TURN destekli WebRTC ses/görüntü, gelen arama UX’i, PiP ve ekran paylaşımı kalite kontrolleri. Sunucu veya DM’de temiz arama isteyenler için daha hafif Discord alternatifi.",
   "Free core, optional cosmetics": "Ücretsiz çekirdek, isteğe bağlı kozmetik",
   "Chat, servers, and calls are free. The shop is cosmetic (themes, frames, effects) via DesCoin, not a Nitro-style lock on talking to friends.":
-    "Sohbet, sunucu ve aramalar ücretsiz. Mağaza DesCoin ile kozmetik (tema, çerçeve, efekt), arkadaşlarla konuşmayı kilitleyen Nitro tarzı değil.",
+    "Sohbet, sunucu ve aramalar ücretsiz. Mağaza DesCoin ile kozmetik (tema, efekt, baloncuk), arkadaşlarla konuşmayı kilitleyen Nitro tarzı değil.",
   "Desktop + web + Android": "Masaüstü + web + Android",
   "Install on Windows, open the web app anywhere, or use Android. A practical Discord alternative if your group mixes desktop gaming with mobile chat.":
     "Windows’a kur, web’i her yerden aç veya Android kullan. Masaüstü oyun + mobil sohbet karışık gruplar için pratik Discord alternatifi.",

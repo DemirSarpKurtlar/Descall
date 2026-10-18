@@ -2273,6 +2273,9 @@ router.post("/shop/gift", async (req, res) => {
 
     const item = await shop.getItemById(itemId);
     if (!item) return res.status(404).json({ error: "Item not found." });
+    if (shop.REMOVED_COSMETIC_CATEGORIES.has(item.category)) {
+      return res.status(410).json({ error: "Avatar frames are no longer available.", code: "cosmetic_removed" });
+    }
 
     const { data: targetUser } = await supabase
       .from("users")

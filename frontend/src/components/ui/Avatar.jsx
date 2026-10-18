@@ -162,10 +162,10 @@ export function Avatar({
     size >= 56;
 
   const showImage = Boolean(displaySrc) && !failed;
-  const frameUrl = user?.equippedAvatarFrame?.asset_url || null;
+  // Avatar frames were removed in 2.10.114: an equipped frame is never painted.
   const effectClass = avatarEffectClass(user);
 
-  const avatarClass = `ui-avatar ${frameUrl ? "has-frame" : ""} ${isSpeaking ? "is-speaking" : ""} ${className}`.trim();
+  const avatarClass = `ui-avatar ${isSpeaking ? "is-speaking" : ""} ${className}`.trim();
   const avatarStyle = {
     width: size,
     height: size,
@@ -271,20 +271,6 @@ export function Avatar({
           />
         ) : null}
       </div>
-      {frameUrl && (
-        <img
-          className="ui-avatar-frame-overlay"
-          src={frameUrl}
-          alt=""
-          draggable={false}
-          aria-hidden
-          style={{
-            // Explicit px size, never fall back to the SVG intrinsic 256×256.
-            width: Math.round(size * 1.32),
-            height: Math.round(size * 1.32),
-          }}
-        />
-      )}
     </Root>
   );
 }

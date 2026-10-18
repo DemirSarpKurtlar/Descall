@@ -244,3 +244,37 @@ html.glass-desktop .server-list-row-wrap:has(> .server-list-item.active) > .serv
   min-width: 0;
   text-align: start;
 }
+
+/* 2.10.114: on a hover-capable pointer the ⋯ appears only on row hover,
+   keyboard focus, or while its menu is open, and takes the time/pin slot
+   instead of reserving 44px that squeezed names down to one letter.
+   Touch-only screens keep the always-visible button. */
+@media (hover: hover) and (pointer: fine) {
+  .conv-group-wrap.is-desktop > .dm-item,
+  .conv-group-wrap.is-desktop > .group-item,
+  .conv-group-wrap.is-desktop > button.conv-row,
+  html.glass-desktop .conv-group-wrap.is-desktop > button.conv-row {
+    padding-right: 12px !important;
+  }
+
+  .conv-group-wrap.is-desktop:not(:hover):not(:focus-within):not(.menu-open) > .conv-more-btn {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  .conv-group-wrap.is-desktop:is(:hover, :focus-within, .menu-open) > .conv-more-btn {
+    opacity: 1 !important;
+  }
+
+  .conv-group-wrap.is-desktop:is(:hover, :focus-within, .menu-open) .conv-row-meta {
+    visibility: hidden;
+  }
+}
+
+/* Time/pin column: 44px fits "28 Eyl" and "Dün" and leaves the name room. */
+html.glass-desktop .conv-row-meta {
+  flex-basis: 44px;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+}
