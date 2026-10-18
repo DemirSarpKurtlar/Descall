@@ -58,6 +58,8 @@ const { remainingUserSocketIds } = require("../lib/presenceRoster");
 const { getPresenceFanout, refreshPresenceFor } = require("../runtime/presenceFanoutInstance");
 const { registerGroupHandlers, removeUserFromAllGroupCalls } = require("./groupHandlers");
 const { registerServerChannelHandlers } = require("./serverChannelHandlers");
+const { registerPollHandlers } = require("./pollHandlers");
+const { startPollSweeper } = require("../lib/polls");
 const { registerServerVoiceHandlers, removeUserFromAllServerVoice, startAfkIdleScanner } = require("./serverVoiceHandlers");
 const { scheduleTemporaryMemberCleanup } = require("../lib/serverMemberJoin");
 const { scheduleParticipantDisconnectGrace } = require("./groupCallLifecycle");
@@ -542,6 +544,7 @@ async function removeFriendshipFromDB(userId, friendId) {
 
 function registerSocketHandlers(io) {
   startAfkIdleScanner(io);
+  if (process.env.NODE_ENV !== "test") startPollSweeper(io);
   io.on("connection", (socket) => {
     const me = socket.user;
     const myId = me.id;
@@ -1074,7 +1077,9 @@ function registerSocketHandlers(io) {
       }
     });
 
-    socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo } = {}) => {
+    socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, poll: pollInput } = {}) => {
+      let pollDraft = null;
+      if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") mediaType = null;
       if (bannedUserIds.has(myId)) {
         appendErrorLog("dm:send", "User is banned", { toUserId }, myId, me.username);
         return socket.emit("dm:error", { message: "You are banned.", tempId: tempId || null, toUserId });
@@ -1124,8 +1129,25 @@ function registerSocketHandlers(io) {
       // timed out; age + iOS gates still run inside handleGameCommand.
       if (!mediaUrl && typeof text === "string" && text.trim().startsWith("/")) {
         const routed = await routeDmSlashCommand({ io, socket, myId, me, toUserId, tempId, text: text.trim() });
-        if (routed.handled && !routed.dmText) return;
-        if (routed.dmText) text = routed.dmText;
+        if (routed.handled && !routed.dmText && !routed.dmPoll) return;
+        if (routed.dmPoll) pollInput = routed.dmPoll;
+        else if (routed.dmText) text = routed.dmText;
+      }
+      if (pollInput) {
+        const { normalizePollInput, pollFallbackText } = require("../lib/pollCore");
+        const normalized = normalizePollInput(pollInput);
+        if (!normalized.ok) {
+          return socket.emit("dm:error", { message: normalized.message, code: normalized.code, tempId: tempId || null, toUserId });
+        }
+        // Polls never travel as a message request: friends only.
+        if (!(await isAcceptedFriend(myId, toUserId))) {
+          return socket.emit("dm:error", { message: "Anketi yalnızca arkadaşlarına gönderebilirsin.", code: "NOT_FRIENDS", tempId: tempId || null, toUserId });
+        }
+        pollDraft = normalized.poll;
+        text = pollFallbackText(pollDraft);
+        mediaUrl = null;
+        mediaType = "poll_v2";
+        replyTo = null;
       }
 
       const friendsOk = await isAcceptedFriend(myId, toUserId);
@@ -1201,6 +1223,19 @@ function registerSocketHandlers(io) {
       }
       const messageId = row.id;
       const timestamp = toUtcIso(row.created_at) || row.created_at;
+      let pollSnapshot = null;
+      if (pollDraft) {
+        try {
+          const { createPollForMessage } = require("../lib/polls");
+          const { buildPollSnapshot } = require("../lib/pollCore");
+          const made = await createPollForMessage({ scope: "dm", messageId, dmUsers: [myId, toUserId], creatorId: myId, poll: pollDraft });
+          pollSnapshot = buildPollSnapshot(made.poll, made.options, null, {});
+        } catch (pollErr) {
+          console.error("[DM] poll create failed:", pollErr?.message || pollErr);
+          await supabase.from("dm_messages").delete().eq("id", messageId).eq("from_user_id", myId);
+          return socket.emit("dm:error", { message: "Anket oluşturulamadı. Tekrar dene.", tempId: tempId || null, toUserId });
+        }
+      }
       void recordFirstMessage(myId);
 
       // DesCoin: a small, capped reward per genuine message. Fully
@@ -1242,6 +1277,7 @@ function registerSocketHandlers(io) {
         duration: voiceDuration,
         replyTo: replyMeta,
         timestamp,
+        ...(pollSnapshot ? { poll: pollSnapshot } : {}),
       };
       cacheDmMessages(convKey(myId, toUserId), [{ ...messagePayload, to: { id: toUserId } }]);
       void Promise.all([
@@ -2003,6 +2039,10 @@ function registerSocketHandlers(io) {
 
       // Verify friendship
       if (!friends.get(myId)?.has(toUserId)) return fail("Failed to edit message.");
+      {
+        const { data: kind } = await supabase.from("dm_messages").select("media_type").eq("id", messageId).eq("from_user_id", myId).maybeSingle();
+        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("Bu mesaj metin olarak düzenlenemez.");
+      }
 
       const key = convKey(myId, toUserId);
       const arr = dmHistory.get(key) || [];
@@ -2166,6 +2206,10 @@ function registerSocketHandlers(io) {
 
       // Check membership
       if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to edit message.");
+      {
+        const { data: kind } = await supabase.from("group_messages").select("media_type").eq("id", messageId).eq("group_id", groupId).maybeSingle();
+        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("Bu mesaj metin olarak düzenlenemez.");
+      }
       
       const editedAt = new Date().toISOString();
       
@@ -2387,6 +2431,7 @@ function registerSocketHandlers(io) {
     // Server channel text chat (Step 4) + voice hangouts (Step 10)
     registerServerChannelHandlers(io, socket);
     registerServerVoiceHandlers(io, socket);
+    registerPollHandlers(io, socket);
   });
 }
 

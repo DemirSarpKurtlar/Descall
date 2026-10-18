@@ -5,6 +5,7 @@
 
 const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById } = require("../runtime/sharedState");
 const supabase = require("../db/supabase");
+const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { sendGroupCallPush } = require("../lib/webPush");
@@ -199,7 +200,23 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Group message — persist to DB then broadcast
-  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo }) => {
+  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, poll: pollInput } = {}) => {
+    // Poll from the creation sheet: validated here, stored as a poll_v2 row + polls tables.
+    let pollDraft = null;
+    if (pollInput) {
+      const normalized = normalizePollInput(pollInput);
+      if (!normalized.ok) {
+        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: normalized.message, code: normalized.code });
+        return;
+      }
+      pollDraft = normalized.poll;
+      content = pollFallbackText(pollDraft);
+      mediaUrl = null;
+      mediaType = "poll_v2";
+      replyTo = null;
+    } else if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") {
+      mediaType = null;
+    }
     try {
       const { getActiveTimeout } = require("../lib/moderation");
       const to = getActiveTimeout(myId);
@@ -319,6 +336,19 @@ function registerGroupHandlers(io, socket, state) {
       });
       return;
     }
+    let pollSnapshot = null;
+    if (pollDraft) {
+      try {
+        const { createPollForMessage } = require("../lib/polls");
+        const made = await createPollForMessage({ scope: "group", messageId: row.id, groupId, creatorId: myId, poll: pollDraft });
+        pollSnapshot = buildPollSnapshot(made.poll, made.options, null, {});
+      } catch (pollErr) {
+        console.error("[GroupMessage] poll create failed:", pollErr?.message || pollErr);
+        await supabase.from("group_messages").delete().eq("id", row.id).eq("group_id", groupId);
+        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: "Anket oluşturulamadı. Tekrar dene." });
+        return;
+      }
+    }
 
     if (trimmedContent && shouldCreditMessage(myId, trimmedContent)) {
       descoin
@@ -354,6 +384,7 @@ function registerGroupHandlers(io, socket, state) {
       created_at: toUtcIso(row?.created_at) || new Date().toISOString(),
       reply_to: replyMeta,
       replyTo: replyMeta,
+      ...(pollSnapshot ? { poll: pollSnapshot } : {}),
       sender: (() => {
         const cached = getCachedPublicUser(myId);
         const avatar = resolveSocketAvatar(socket);

@@ -67,7 +67,39 @@ const fake = createFakeSupabase({
   ],
   reactions: [{ id: "rx1", message_id: MSG_SECRET, conversation_type: "server", conversation_id: "cB-secret", user_id: "u-bob", emoji: "🔥" }],
   group_members: [{ group_id: "g1", user_id: "u-bob" }],
+  polls: [
+    { id: "poll-secret", scope: "server", server_id: "srv-B", channel_id: "cB-secret", server_message_id: MSG_SECRET, creator_id: "u-bob", question: "Staff?", allow_multiselect: false, anonymous: false, ends_at: new Date(Date.now() + 3600e3).toISOString(), closed_at: null, version: 0 },
+    { id: "poll-a", scope: "server", server_id: "srv-A", channel_id: "cA-text", server_message_id: MSG_A, creator_id: "u-alice", question: "A?", allow_multiselect: false, anonymous: false, ends_at: new Date(Date.now() + 3600e3).toISOString(), closed_at: null, version: 0 },
+  ],
+  poll_options: [
+    { id: "po-s1", poll_id: "poll-secret", position: 0, text: "Yes" },
+    { id: "po-s2", poll_id: "poll-secret", position: 1, text: "No" },
+    { id: "po-a1", poll_id: "poll-a", position: 0, text: "Yes" },
+    { id: "po-a2", poll_id: "poll-a", position: 1, text: "No" },
+  ],
+  poll_votes: [],
 });
+// Minimal stand-in for public.poll_cast_vote (single choice, open polls only).
+fake.rpc = async (name, args) => {
+  if (name === "poll_tally") {
+    const out = {};
+    for (const id of args.p_poll_ids) {
+      const vs = fake._tables.poll_votes.rows.filter((v) => v.poll_id === id);
+      const counts = {};
+      for (const v of vs) counts[v.option_id] = (counts[v.option_id] || 0) + 1;
+      out[id] = { counts, voters: new Set(vs.map((v) => v.user_id)).size, mine: vs.filter((v) => v.user_id === args.p_user_id).map((v) => v.option_id) };
+    }
+    return { data: out, error: null };
+  }
+  if (name !== "poll_cast_vote") return { data: null, error: { message: `unknown rpc ${name}` } };
+  const poll = fake._tables.polls.rows.find((p) => p.id === args.p_poll_id);
+  if (!poll || poll.closed_at) return { data: null, error: { message: poll ? "POLL_CLOSED" : "POLL_NOT_FOUND" } };
+  const votes = fake._tables.poll_votes.rows;
+  for (let i = votes.length - 1; i >= 0; i -= 1) if (votes[i].poll_id === poll.id && votes[i].user_id === args.p_user_id) votes.splice(i, 1);
+  for (const o of args.p_option_ids) votes.push({ poll_id: poll.id, option_id: o, user_id: args.p_user_id, created_at: new Date().toISOString() });
+  poll.version += 1;
+  return { data: { version: poll.version, voters: new Set(votes.filter((v) => v.poll_id === poll.id).map((v) => v.user_id)).size }, error: null };
+};
 require.cache[supabasePath] = { id: supabasePath, filename: supabasePath, loaded: true, exports: fake };
 
 const express = require("express");
@@ -384,6 +416,66 @@ async function socketChecks() {
   const { activeServerVoiceCalls } = require("../runtime/sharedState");
   activeServerVoiceCalls.set("cA-voice", { serverId: "srv-A", channelName: "Voice", participants: new Map([["u-alice", { id: "u-alice" }], ["u-erin", { id: "u-erin" }]]), startTime: Date.now() });
   activeServerVoiceCalls.set("cB-voice", { serverId: "srv-B", channelName: "Staff Voice", participants: new Map([["u-carol", { id: "u-carol", muted: false }]]), startTime: Date.now() });
+
+  // ---- Polls (2.12.0): every poll event is authorized against the poll's own channel.
+  const ask = (who, event, payload) => new Promise((resolve) => who.handlers.get(event)(payload, resolve));
+  await check("poll:vote on a poll in a hidden channel of another server → refused, no vote", async () => {
+    const r = await ask(alice, "poll:vote", { pollId: "poll-secret", optionIds: ["po-s1"] });
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "NO_ACCESS");
+    assert.equal(rows("poll_votes").length, 0);
+  });
+  await check("poll:get with a hidden message id returns nothing", async () => {
+    const r = await ask(alice, "poll:get", { scope: "server", messageIds: [MSG_SECRET, MSG_A] });
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.polls.map((p) => p.id), ["poll-a"], "only the poll of a channel she can view");
+    assert.equal(r.polls[0].revealed, false, "results hidden before voting");
+  });
+  await check("poll:close / poll:voters / poll:edit on a foreign poll → refused", async () => {
+    assert.equal((await ask(alice, "poll:close", { pollId: "poll-secret" })).ok, false);
+    assert.equal(rows("polls").find((p) => p.id === "poll-secret").closed_at, null);
+    assert.equal((await ask(alice, "poll:voters", { pollId: "poll-secret" })).ok, false);
+    assert.equal((await ask(alice, "poll:edit", { pollId: "poll-secret", poll: { question: "pwned", options: ["a", "b"] } })).ok, false);
+    assert.equal(rows("polls").find((p) => p.id === "poll-secret").question, "Staff?");
+  });
+  await check("poll:vote by an outsider → refused; by a member → counted and revealed", async () => {
+    assert.equal((await ask(dave, "poll:vote", { pollId: "poll-a", optionIds: ["po-a1"] })).ok, false);
+    const r = await ask(erin, "poll:vote", { pollId: "poll-a", optionIds: ["po-a2"] });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.poll.revealed, true);
+    assert.deepEqual(r.poll.myVotes, ["po-a2"]);
+    assert.equal(r.poll.options.find((o) => o.id === "po-a2").votes, 1);
+    assert.ok(emitted.some((e) => e.room === "server-channel:cA-text" && e.event === "poll:changed" && e.payload.pollId === "poll-a" && e.payload.options === undefined), "room update carries no counts");
+  });
+  await check("poll:vote with an option of another poll → refused", async () => {
+    const r = await ask(erin, "poll:vote", { pollId: "poll-a", optionIds: ["po-s1"] });
+    assert.equal(r.ok, false);
+  });
+  await check("poll:close by a non-creator without MANAGE_MESSAGES → refused; creator → closed + end message", async () => {
+    assert.equal((await ask(erin, "poll:close", { pollId: "poll-a" })).ok, false);
+    const r = await ask(alice, "poll:close", { pollId: "poll-a" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.ok(rows("polls").find((p) => p.id === "poll-a").closed_at);
+    const end = rows("server_messages").find((m) => m.media_type === "poll_end");
+    assert.ok(end && end.channel_id === "cA-text" && end.server_id === "srv-A", "end line posted in the poll's own channel");
+    assert.match(end.content, /anketi sona erdi/);
+  });
+
+  // ---- "Kanala paylaş": only the invoker, only into the channel the reply was made in, only with VIEW+SEND.
+  await check("server:app:share into another server's hidden channel → refused, nothing inserted", async () => {
+    const slash = require("../lib/slashCommands");
+    const before = rows("server_messages").length;
+    slash.rememberShareable({ id: "share-x", type: "user", server_id: "srv-B", channel_id: "cB-secret", content: "x", embed: {} }, "u-alice");
+    const r = await ask(alice, "server:app:share", { serverId: "srv-B", channelId: "cB-secret", messageId: "share-x" });
+    assert.equal(r.ok, false);
+    slash.rememberShareable({ id: "share-y", type: "user", server_id: "srv-A", channel_id: "cA-text", content: "y", embed: {} }, "u-bob");
+    const r2 = await ask(alice, "server:app:share", { serverId: "srv-A", channelId: "cA-text", messageId: "share-y" });
+    assert.equal(r2.ok, false, "someone else's reply");
+    slash.rememberShareable({ id: "share-z", type: "user", server_id: "srv-A", channel_id: "cA-text", content: "z", embed: {} }, "u-alice");
+    const r3 = await ask(alice, "server:app:share", { serverId: "srv-B", channelId: "cB-secret", messageId: "share-z" });
+    assert.equal(r3.ok, false, "a reply cannot be moved to another channel");
+    assert.equal(rows("server_messages").length, before);
+  });
 
   await check("voice offer/answer/ice only relay to a peer in the same call", async () => {
     const mark = emitted.length;
