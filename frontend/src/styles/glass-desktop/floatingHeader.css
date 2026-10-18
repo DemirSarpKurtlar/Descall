@@ -1,0 +1,314 @@
+/* Floating glass chat header (2.11.14).
+   Spec: /design/splash-header-2026-10-18/spec.md §2, approved 18 Oct 2026.
+   - No band and no separator line. The message list starts at the panel top
+     and scrolls under two floating capsules (identity, actions).
+   - The panel frost lives on .chat-panel-bg, the first child of the panel,
+     not on .app-main-slot / .main-panel. A backdrop-filter on an ancestor is
+     a backdrop root, and a pill's blur inside it never sees the messages
+     (spec §2.5). With the frost on a sibling, the pills blur the real chat.
+   - The pill blur sits on ::before with a rounded clip-path, so it can never
+     paint as a square slab (the Windows Electron artifact from 2.10.x was a
+     backdrop root with paint containment; none of the ancestors is one now).
+   - Menus and popovers opened from the header are heavy frost (frost.css),
+     never see-through. Only these one-line capsules are glass.
+   Scoped to html.glass-desktop .main-panel.is-floating-header (ChatPanel). */
+
+html.glass-desktop {
+  --fh-inset: 14px;
+  --fh-pill-h: 48px;
+  --fh-pill-base: rgba(var(--g-edge-rgb, 18, 20, 30), 0.52);
+  --fh-pill-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+  --fh-pill-hair: rgba(255, 255, 255, 0.14);
+  --fh-pill-spec: rgba(255, 255, 255, 0.22);
+  --fh-edge-tint: rgba(var(--g-edge-rgb, 16, 18, 28), 0.55);
+  --fh-top-space: calc(var(--fh-inset) * 2 + var(--fh-pill-h));
+}
+
+html.glass-desktop[data-theme="light"] {
+  --fh-pill-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.20) 100%);
+  --fh-pill-hair: rgba(0, 0, 0, 0.08);
+  --fh-pill-spec: rgba(255, 255, 255, 0.70);
+  --fh-edge-tint: rgba(var(--g-edge-rgb, 235, 238, 245), 0.55);
+}
+
+/* 1. Panel frost moves to a sibling layer. */
+html.glass-desktop .app-main-slot:has(> .chat-panel-shell > .main-panel.is-floating-header),
+html.glass-desktop .app-main-slot:has(.main-panel.is-floating-header) {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-desktop .main-panel.is-floating-header,
+html.glass-desktop .chat-panel-shell.is-members-docked > .main-panel.is-floating-header,
+html.glass-desktop.electron-app.gd-lite .main-panel.is-floating-header,
+html.glass-desktop.electron-app.gd-lite .chat-panel-shell.is-members-docked > .main-panel.is-floating-header {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.glass-desktop .main-panel.is-floating-header > .chat-panel-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Two tint layers: what .app-main-slot + .main-panel painted together. */
+  background: var(--gd-main-fill), var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+}
+
+html.glass-desktop .chat-panel-shell.is-members-docked > .main-panel.is-floating-header > .chat-panel-bg {
+  background: var(--gd-main-fill);
+}
+
+/* 2. Header floats over the list. No band, no line. */
+html.glass-desktop .main-panel.is-floating-header > .chat-top-chrome {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  padding: var(--fh-inset) var(--fh-inset) 0;
+  gap: 12px;
+  border: 0 !important;
+  pointer-events: none;
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header > * {
+  pointer-events: auto;
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-left {
+  pointer-events: none;
+  min-width: 0;
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity {
+  pointer-events: auto;
+}
+
+html.glass-desktop .main-panel.is-floating-header > .messages-container {
+  padding-top: var(--fh-top-space);
+  scroll-padding-top: var(--fh-top-space);
+}
+
+/* Banners and the search capsule stay in the flow, under the pills. */
+html.glass-desktop .main-panel.is-floating-header > .timeout-banner,
+html.glass-desktop .main-panel.is-floating-header > .chat-top-chrome + .chat-search-bar,
+html.glass-desktop .main-panel.is-floating-header > .chat-top-chrome + .friend-notice-banner {
+  margin-top: var(--fh-top-space);
+}
+
+html.glass-desktop .main-panel.is-floating-header:has(> .chat-search-bar) > .messages-container,
+html.glass-desktop .main-panel.is-floating-header:has(> .friend-notice-banner) > .messages-container,
+html.glass-desktop .main-panel.is-floating-header:has(> .timeout-banner) > .messages-container {
+  padding-top: 12px;
+}
+
+/* 3. Scroll edge: soft frosted fade, never a hard edge. */
+html.glass-desktop .main-panel.is-floating-header .chat-scroll-edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 96px;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: var(--gd-r-panel) var(--gd-r-panel) 0 0;
+  background: linear-gradient(180deg, var(--fh-edge-tint) 0%, transparent 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 38%, rgba(0, 0, 0, 0.55) 66%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 38%, rgba(0, 0, 0, 0.55) 66%, transparent 100%);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+html.glass-desktop .main-panel.is-floating-header .chat-top-chrome[data-scrolled="1"] .chat-scroll-edge {
+  opacity: 1;
+}
+
+/* 4. Capsules: heavy frosted glass (blur 44, saturate 190, brightness .96). */
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity,
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-right {
+  position: relative;
+  height: var(--fh-pill-h);
+  border-radius: calc(var(--fh-pill-h) / 2);
+  background: var(--fh-pill-sheen), linear-gradient(var(--fh-pill-base), var(--fh-pill-base)) !important;
+  box-shadow:
+    inset 0 1px 0 var(--fh-pill-spec),
+    inset 0 0 0 0.5px var(--fh-pill-hair),
+    0 8px 24px rgba(0, 0, 0, 0.26),
+    0 1px 3px rgba(0, 0, 0, 0.18);
+  isolation: isolate !important;
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity::before,
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-right::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-clip-path: inset(0 round calc(var(--fh-pill-h) / 2));
+  clip-path: inset(0 round calc(var(--fh-pill-h) / 2));
+  -webkit-backdrop-filter: blur(44px) saturate(190%) brightness(0.96);
+  backdrop-filter: blur(44px) saturate(190%) brightness(0.96);
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity {
+  gap: 10px;
+  padding: 0 16px 0 6px;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar,
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gd-t1);
+}
+
+/* Status line was --gd-t3 (2.5:1 on teal). --gd-t2 measures >= 4.5:1. */
+html.glass-desktop .main-panel.is-floating-header .header-subtitle,
+html.glass-desktop .main-panel.is-floating-header .header-subtitle.is-dim {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--gd-t2);
+  opacity: 1;
+}
+
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-right {
+  gap: 2px;
+  padding: 0 4px;
+  align-items: center;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-right .icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-right .icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-right .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html.glass-desktop[data-theme="light"] .main-panel.is-floating-header .header-right .icon-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+html.glass-desktop .header-actions-sep {
+  display: none;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-right .header-actions-sep {
+  display: block;
+  flex: 0 0 1px;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  border-radius: 1px;
+  background: var(--fh-pill-hair);
+  background: color-mix(in srgb, var(--gd-t1) 18%, transparent);
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-right .header-actions-sep:first-child,
+html.glass-desktop .main-panel.is-floating-header .header-right .header-actions-sep + .header-actions-sep {
+  display: none;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-right .header-block-btn {
+  color: #ff8a80;
+}
+
+html.glass-desktop[data-theme="light"] .main-panel.is-floating-header .header-right .header-block-btn {
+  color: #c62828;
+}
+
+/* 5. Accessibility. */
+html.glass-desktop.gd-contrast {
+  --fh-pill-base: rgba(var(--g-edge-rgb, 18, 20, 30), 0.80);
+  --fh-pill-hair: rgba(255, 255, 255, 0.35);
+  --fh-edge-tint: rgba(var(--g-edge-rgb, 16, 18, 28), 0.82);
+}
+
+@media (prefers-contrast: more) {
+  html.glass-desktop {
+    --fh-pill-base: rgba(var(--g-edge-rgb, 18, 20, 30), 0.80);
+    --fh-pill-hair: rgba(255, 255, 255, 0.35);
+    --fh-edge-tint: rgba(var(--g-edge-rgb, 16, 18, 28), 0.82);
+  }
+}
+
+/* Reduced transparency / low-power: opaque capsules, opaque-to-clear edge. */
+html.glass-desktop.gd-lite .main-panel.is-floating-header .panel-header .header-identity,
+html.glass-desktop.gd-lite .main-panel.is-floating-header .panel-header .header-right,
+html.glass-desktop.a11y-solid .main-panel.is-floating-header .panel-header .header-identity,
+html.glass-desktop.a11y-solid .main-panel.is-floating-header .panel-header .header-right {
+  background: var(--gd-solid) !important;
+}
+
+html.glass-desktop.gd-lite .main-panel.is-floating-header .panel-header .header-identity::before,
+html.glass-desktop.gd-lite .main-panel.is-floating-header .panel-header .header-right::before,
+html.glass-desktop.a11y-solid .main-panel.is-floating-header .panel-header .header-identity::before,
+html.glass-desktop.a11y-solid .main-panel.is-floating-header .panel-header .header-right::before {
+  content: none;
+}
+
+html.glass-desktop.gd-lite .main-panel.is-floating-header .chat-scroll-edge,
+html.glass-desktop.a11y-solid .main-panel.is-floating-header .chat-scroll-edge {
+  background: linear-gradient(180deg, var(--gd-solid) 0%, var(--gd-solid) 40%, transparent 100%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-desktop .main-panel.is-floating-header .chat-scroll-edge,
+  html.glass-desktop .main-panel.is-floating-header .header-right .icon-btn {
+    transition: opacity 120ms linear;
+  }
+}
+
+@media (forced-colors: active) {
+  html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity,
+  html.glass-desktop .main-panel.is-floating-header .panel-header .header-right {
+    background: Canvas !important;
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+  html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity::before,
+  html.glass-desktop .main-panel.is-floating-header .panel-header .header-right::before,
+  html.glass-desktop .main-panel.is-floating-header .chat-scroll-edge {
+    content: none;
+    display: none;
+  }
+}
