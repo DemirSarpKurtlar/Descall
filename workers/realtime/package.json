@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test/jwt.test.mjs && node test/hub.test.mjs && node test/budget.test.mjs",
+    "test": "node test/jwt.test.mjs && node test/hub.test.mjs && node test/budget.test.mjs && node test/jwtEs256.test.mjs",
     "dev": "wrangler dev --local",
     "deploy": "wrangler deploy"
   }

@@ -2,11 +2,12 @@
 //   wss://rt.descall.com/socket.io/?EIO=4&transport=websocket  (clients)
 //   wss://rt.descall.com/bridge                               (Render, Bearer EDGE_BRIDGE_SECRET)
 //   https://rt.descall.com/health
-// Secrets (wrangler secret put): EDGE_BRIDGE_SECRET, JWT_SECRET (optional pre-check).
+// Secrets (wrangler secret put): EDGE_BRIDGE_SECRET, JWT_SECRET (optional HS256 pre-check).
+// Vars: JWT_JWKS = JSON of https://api.descall.com/api/jwks.json (ES256 pre-check, public).
 // Vars: HUB_SOFT_UNITS / HUB_HARD_UNITS (daily free-quota guard, see budget.js).
 import { HubCore } from "./hub.js";
 import { createBudget, DEFAULT_SOFT, DEFAULT_HARD } from "./budget.js";
-import { verifyAppJwt, tokenFromProtocols, safeEqual } from "./jwt.js";
+import { verifyEdgeJwt, tokenFromProtocols, safeEqual } from "./jwt.js";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -33,12 +34,9 @@ export default {
       const proto = request.headers.get("Sec-WebSocket-Protocol");
       const token = tokenFromProtocols(proto);
       if (!token) return json({ error: "token required" }, 401);
-      let uid = "";
-      if (env.JWT_SECRET) {
-        const v = await verifyAppJwt(token, env.JWT_SECRET);
-        if (!v.ok) return json({ error: "unauthorized", code: v.code }, 401);
-        uid = v.uid;
-      }
+      const v = await verifyEdgeJwt(token, env);
+      if (!v.ok) return json({ error: "unauthorized", code: v.code }, 401);
+      const uid = v.uid;
       const headers = new Headers(request.headers);
       headers.set("x-hub-op", "client");
       headers.set("x-edge-uid", uid);
