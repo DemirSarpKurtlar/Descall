@@ -689,6 +689,8 @@ function registerServerVoiceHandlers(io, socket) {
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
+    // Relay only to a peer seated in the same call (any user id was accepted before).
+    if (!getParticipantEntry(call, toUserId)) return;
     const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
     const announced = sanitizeScreenAnnouncement(screen);
     io.to(`user:${String(toUserId)}`).emit("server:voice:offer", {
@@ -704,6 +706,7 @@ function registerServerVoiceHandlers(io, socket) {
     if (!channelId || !toUserId || !answer) return;
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
+    if (!getParticipantEntry(call, toUserId)) return;
     io.to(`user:${String(toUserId)}`).emit("server:voice:answer", {
       channelId,
       fromUserId: String(myId),
@@ -715,6 +718,7 @@ function registerServerVoiceHandlers(io, socket) {
     if (!channelId || !toUserId || !candidate) return;
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
+    if (!getParticipantEntry(call, toUserId)) return;
     io.to(`user:${String(toUserId)}`).emit("server:voice:ice", {
       channelId,
       fromUserId: String(myId),
