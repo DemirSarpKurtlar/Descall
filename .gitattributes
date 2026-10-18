@@ -1,0 +1,34 @@
+# Everything text is checked out with LF on every OS (2.11.11). The Windows release
+# runner used to check out CRLF, and inline <script> hashes taken from those bytes never
+# match what Chromium hashes (the HTML parser turns CRLF into LF), so every inline script
+# in the Electron app was blocked by its own CSP.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.mp4 binary
+*.wasm binary
+*.onnx binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.node binary
+*.p12 binary
+*.pfx binary
+*.mobileprovision binary
+*.car binary
+*.bat -text
+*.cmd -text
+*.ps1 -text

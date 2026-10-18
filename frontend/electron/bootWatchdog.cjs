@@ -77,7 +77,10 @@ function paintWatchdogStep({ painted, elapsedMs, reloads, asked }) {
   return 'none';
 }
 
-const BOOT_PHASES = new Set(['painted', 'splash-failed', 'auto-retry', 'app-mounted', 'visible']);
+/** From this point main removes a splash left over an app that already painted (2.11.11). */
+const SPLASH_RESCUE_MS = 3000;
+
+const BOOT_PHASES = new Set(['painted', 'splash-failed', 'auto-retry', 'app-mounted', 'visible', 'inline-missing', 'forced-dismiss']);
 /** Sanitize a renderer boot report (untrusted input from the page). */
 function normalizeBootReport(payload) {
   const phase = String(payload?.phase || '');
@@ -90,6 +93,7 @@ function normalizeBootReport(payload) {
 const BOOT_RETRY_STORAGES = ['serviceworkers', 'cachestorage'];
 
 module.exports = {
+  SPLASH_RESCUE_MS,
   SPLASH_LOAD_TIMEOUT_MS,
   READY_FALLBACK_MS,
   LOAD_RETRY_DELAYS_MS,

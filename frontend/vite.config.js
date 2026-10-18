@@ -85,6 +85,10 @@ export default defineConfig({
     outDir: "dist",
     assetsDir: "assets",
     sourcemap: false,
+    // Never inline a script asset as a data: URL. The small noise-gate AudioWorklet
+    // (`noiseGateWorklet.js?url`) became data:text/javascript, which script-src 'self'
+    // blocks (web and Electron), so the noise gate never loaded (2.11.11).
+    assetsInlineLimit: (filePath) => (/\.(?:m?js|cjs)(?:\?|$)/.test(filePath) ? false : undefined),
     // Electron's file:// loader historically used IIFE; web builds benefit from
     // ES modules + manual chunks so marketing pages do not download voice WASM first.
     rollupOptions: {

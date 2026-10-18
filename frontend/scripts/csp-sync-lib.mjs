@@ -10,7 +10,8 @@ export function inlineScriptHashes(html) {
     if (/\bsrc\s*=/.test(attrs)) continue;
     const type = (attrs.match(/\btype\s*=\s*["']?([^"'\s>]+)/i) || [])[1];
     if (type && !/^(text\/javascript|module|application\/javascript)$/i.test(type)) continue; // data blocks (JSON-LD) never execute
-    out.push(`sha256-${createHash("sha256").update(m[2], "utf8").digest("base64")}`);
+    // Hash what Chromium hashes: HTML input preprocessing turns CRLF / lone CR into LF.
+    out.push(`sha256-${createHash("sha256").update(m[2].replace(/\r\n?/g, "\n"), "utf8").digest("base64")}`);
   }
   return [...new Set(out)];
 }

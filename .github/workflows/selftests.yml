@@ -177,3 +177,43 @@ jobs:
           fi
           swiftc -o "$RUNNER_TEMP/ncl" ios/App/App/DescallNativeCallLogic.swift ios/selftest/main.swift
           "$RUNNER_TEMP/ncl"
+
+  # 2.11.11: boot the real Electron app from a production build whose HTML has CRLF line
+  # endings (what the Windows runner used to check out) and require the main window to
+  # paint with the splash gone and no inline script blocked by the CSP. The Windows
+  # release job runs the same smoke on the packaged Descall.exe.
+  electron-boot-smoke:
+    name: Electron boot smoke (CRLF build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend deps (with the Electron binary)
+        run: npm ci --no-audit --no-fund
+      - name: Electron production build
+        env:
+          ELECTRON_BUILD: "1"
+        run: npm run build
+      - name: Give the built HTML Windows (CRLF) line endings
+        run: |
+          node -e '
+            const fs = require("fs"), path = require("path");
+            const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+            let n = 0;
+            for (const f of walk("dist").filter((f) => f.endsWith(".html"))) {
+              fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/\r\n?/g, "\n").replace(/\n/g, "\r\n")); n++;
+            }
+            console.log("CRLF html files:", n);'
+      - name: Boot smoke
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
+          xvfb-run -a -s "-screen 0 1400x900x24" npx electron . --no-sandbox --descall-smoke-boot --user-data-dir="$RUNNER_TEMP/descall-smoke" 2>&1 | tee "$RUNNER_TEMP/smoke.log"
+          grep -q "\[smoke-boot\] OK" "$RUNNER_TEMP/smoke.log"

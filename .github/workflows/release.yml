@@ -20,8 +20,15 @@ jobs:
       - name: Web build (same checks as Render)
         working-directory: frontend
         run: |
+          # Windows checks out with LF too (.gitattributes); fail if it did not, because
+          # inline <script> CSP hashes depend on it (2.11.11).
+          $crlf = (git ls-files --eol index.html) -match 'w/crlf'
+          if ($crlf) { throw "frontend/index.html was checked out with CRLF (check .gitattributes)" }
           npm ci
+          if ($LASTEXITCODE -ne 0) { throw "npm ci failed with $LASTEXITCODE" }
+          # A failing build step (csp-verify-dist, perf budget, SEO) must stop the release.
           npm run build:prod
+          if ($LASTEXITCODE -ne 0) { throw "build:prod failed with $LASTEXITCODE" }
       - name: Backend syntax check
         working-directory: frontend/backend
         run: |
@@ -99,7 +106,24 @@ jobs:
             if ($proc.ExitCode -ne 0) { throw "Descall.exe smoke exit code $($proc.ExitCode) ($Exe)" }
             Write-Host "smoke ok $Exe"
           }
+          # Real boot of the packaged app (electron/bootSmoke.cjs): the main window must paint,
+          # the boot splash must be gone and no inline script may be blocked by the CSP.
+          function Invoke-BootSmoke([string]$Exe) {
+            $ud = Join-Path $env:TEMP ("descall-bootsmoke-" + [guid]::NewGuid().ToString("n"))
+            $out = Join-Path $env:TEMP ("descall-bootsmoke-" + [guid]::NewGuid().ToString("n") + ".log")
+            $proc = Start-Process -FilePath $Exe -ArgumentList "--descall-smoke-boot", "--user-data-dir=$ud" -RedirectStandardError $out -PassThru
+            if (-not $proc.WaitForExit(90000)) {
+              try { Stop-Process -Id $proc.Id -Force } catch {}
+              throw "boot smoke did not finish within 90s ($Exe)"
+            }
+            if (Test-Path $out) { Get-Content $out | Select-String "smoke-boot" | ForEach-Object { Write-Host $_ } }
+            $json = Join-Path $ud "smoke-boot.json"
+            if (Test-Path $json) { Get-Content $json | Write-Host }
+            if ($proc.ExitCode -ne 0) { throw "boot smoke failed, exit code $($proc.ExitCode) ($Exe)" }
+            Write-Host "boot smoke ok $Exe"
+          }
           Invoke-Smoke (Join-Path (Get-Location) "release\win-unpacked\Descall.exe")
+          Invoke-BootSmoke (Join-Path (Get-Location) "release\win-unpacked\Descall.exe")
           $setup = Get-ChildItem -File release\Descall-Setup-*.exe |
             Where-Object { $_.Name -ne "Descall-Setup.exe" } |
             Select-Object -First 1

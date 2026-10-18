@@ -42,7 +42,7 @@ assert.match(html, /reportBoot\("auto-retry"\)/);
 assert.match(html, /addEventListener\("visibilitychange"[\s\S]*?force: true/);
 
 const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
-assert.match(app, /report\("app-mounted"\)[\s\S]*?if \(!document\.getElementById\("boot-splash"\)\) report\("painted"\)/);
+assert.match(app, /reportBootPhase\("app-mounted"\)[\s\S]*?dismissBootSplashFromApp\([\s\S]*?if \(!document\.getElementById\("boot-splash"\)\) reportBootPhase\("painted"\)/);
 
 const entry = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 assert.match(entry, /prefetchAppChunk\(\)\s*\.then\(\(\) => window\.setTimeout\(\(\) => clearModuleLoadRecovery\(\), 4000\)\)/, "module reload re-arms only after the App chunk loaded");

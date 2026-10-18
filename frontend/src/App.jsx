@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
@@ -4116,20 +4117,18 @@ export default function App() {
   // (skeleton is already painted), never wait for getMe / sessionChecked
   // (that caused an 8–10s "STARTING" wall on hard nav).
   useEffect(() => {
-    try {
-      window.__descallDismissBootSplash?.({ minMs: 450, maxMs: 1800 });
-    } catch {
-      /* ignore */
-    }
-    // Electron paint watchdog (2.11.9): a boot without an HTML splash (or one
-    // already removed) still has to tell main it is up.
-    const report = window.__descallReportBoot;
-    if (typeof report !== "function") return undefined;
-    report("app-mounted");
+    // React's own mount removes the splash even when index.html's inline boot
+    // scripts never ran (CSP mismatch, 2.11.11) and reports to Electron main.
+    reportBootPhase("app-mounted");
+    const stopDismiss = dismissBootSplashFromApp({ minMs: 450, maxMs: 1800 });
+    // A boot without an HTML splash (or one already removed) still tells main it is up.
     const timer = window.setTimeout(() => {
-      if (!document.getElementById("boot-splash")) report("painted");
+      if (!document.getElementById("boot-splash")) reportBootPhase("painted");
     }, 2500);
-    return () => window.clearTimeout(timer);
+    return () => {
+      stopDismiss();
+      window.clearTimeout(timer);
+    };
   }, []);
 
   // After login, resume a pending group invite or server vanity link
