@@ -1184,6 +1184,12 @@ async function runBoot() {
   if (bootStarted) return;
   bootStarted = true;
   try {
+    // Daily read-only DesCoin balance vs ledger check (never modifies balances).
+    require("./lib/descoinReconcile").startReconcileScheduler();
+  } catch (e) {
+    console.warn("[boot] descoin reconcile scheduler failed:", e.message);
+  }
+  try {
     const { loadModerationStateFromDb } = require("./lib/moderation");
     await loadModerationStateFromDb();
   } catch (e) {

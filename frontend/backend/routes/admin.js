@@ -2210,6 +2210,46 @@ router.patch("/shop/items/:id", async (req, res) => {
   }
 });
 
+// DesCoin reconciliation (2.11.1): read-only balance vs ledger comparison.
+// Never changes a balance; an admin decides whether to correct drift with /descoin/grant.
+router.get("/descoin/reconciliation", async (_req, res) => {
+  try {
+    const reconcile = require("../lib/descoinReconcile");
+    const runs = await reconcile.listRuns(supabase, 14);
+    const latest = runs[0] || null;
+    const ids = latest ? (latest.mismatches || []).map((m) => m.user_id).filter(Boolean).slice(0, 500) : [];
+    let users = {};
+    if (ids.length) {
+      const { data } = await supabase.from("users").select("id, username, display_name, descoin_frozen").in("id", ids);
+      users = Object.fromEntries((data || []).map((u) => [u.id, u]));
+    }
+    res.json({
+      latest: latest && {
+        ...latest,
+        mismatches: (latest.mismatches || []).map((m) => ({ ...m, user: users[m.user_id] || null })),
+      },
+      history: runs.map(({ mismatches, ...r }) => r),
+    });
+  } catch (err) {
+    if (/descoin_reconciliation_runs|schema cache|does not exist/i.test(err.message || "")) {
+      return res.json({ latest: null, history: [], notInstalled: true });
+    }
+    console.error("[Admin] descoin reconciliation list error:", err.message);
+    res.status(500).json({ error: "Failed to load reconciliation runs." });
+  }
+});
+
+router.post("/descoin/reconciliation/run", async (req, res) => {
+  try {
+    const reconcile = require("../lib/descoinReconcile");
+    const run = await reconcile.runManual(req.user.id);
+    audit(req.user, "descoin_reconcile_run", null, { mismatch_count: run.mismatch_count ?? null, error: run.error || null });
+    res.json({ success: !run.error, run: { ...run, mismatches: undefined } });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.status ? err.message : "Reconciliation failed." });
+  }
+});
+
 // Directly credit or debit a user's DesCoin balance (support / compensation).
 // A positive grant can carry an optional `message`, in which case it behaves
 // just like gifting an item: the recipient gets a real-time celebratory

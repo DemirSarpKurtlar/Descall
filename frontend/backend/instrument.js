@@ -66,4 +66,14 @@ function setupSentryExpressErrorHandler(app) {
   }
 }
 
-module.exports = { sentryEnabled: () => Boolean(Sentry), setupSentryExpressErrorHandler };
+/** Sends a message-level event (alerts such as DesCoin reconciliation drift). No-op without SENTRY_DSN. */
+function captureMessage(message, level = "warning", extra = undefined) {
+  if (!Sentry) return;
+  try {
+    Sentry.captureMessage(message, { level, extra });
+  } catch {
+    /* ignore */
+  }
+}
+
+module.exports = { sentryEnabled: () => Boolean(Sentry), setupSentryExpressErrorHandler, captureMessage };
