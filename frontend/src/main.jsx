@@ -223,7 +223,13 @@ async function bootApp() {
     </React.StrictMode>
   );
 
-  window.setTimeout(() => clearModuleLoadRecovery(), 4000);
+  // Only a boot whose App chunk really loaded re-arms the one-shot module
+  // reload. Clearing on a bare timer turned a chunk that keeps failing into an
+  // endless reload loop behind "Yükleniyor" (2.11.9); now the second failure
+  // reaches the ErrorBoundary's error screen with its retry button.
+  prefetchAppChunk()
+    .then(() => window.setTimeout(() => clearModuleLoadRecovery(), 4000))
+    .catch(() => {});
 
   // Hand off to the real shell/skeleton ASAP, do not wait for getMe / sessionChecked.
   // Brand flash ~0.45s, hard cap ~1.8s so hard refresh never sticks on the splash.
@@ -269,7 +275,13 @@ async function boot() {
       import("./site/hydrateMarketing.jsx")
         .then((m) => {
           m.hydrateMarketing();
-          window.setTimeout(() => clearModuleLoadRecovery(), 4000);
+          // Only a boot whose App chunk really loaded re-arms the one-shot module
+  // reload. Clearing on a bare timer turned a chunk that keeps failing into an
+  // endless reload loop behind "Yükleniyor" (2.11.9); now the second failure
+  // reaches the ErrorBoundary's error screen with its retry button.
+  prefetchAppChunk()
+    .then(() => window.setTimeout(() => clearModuleLoadRecovery(), 4000))
+    .catch(() => {});
         })
         .catch((err) => {
           console.error("[boot] marketing hydrate failed", err);

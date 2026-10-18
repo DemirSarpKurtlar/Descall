@@ -46,6 +46,9 @@ const {
   nextLoadRetryDelay,
   shouldReloadAfterCrash,
   raceWithTimeout,
+  PAINT_NUDGE_MS,
+  paintWatchdogStep,
+  normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 
 // Logging
@@ -126,13 +129,37 @@ function tokenFilePath() {
 // Renderer boot watchdog / "Tekrar dene" (index.html, 2.11.5): drop the service
 // worker and Cache Storage plus the HTTP cache, then reload ignoring cache.
 // The session (localStorage, IndexedDB, cookies, safeStorage token) is kept.
+async function clearAndReloadRenderer(wc, why) {
+  log.warn(`[boot] clean reload (${why})`);
+  try { await wc.session.clearStorageData({ storages: BOOT_RETRY_STORAGES }); } catch (err) { log.warn('[boot] clear sw/cache storage failed:', err?.message || err); }
+  try { await wc.session.clearCache(); } catch (err) { log.warn('[boot] clear http cache failed:', err?.message || err); }
+  try { if (!wc.isDestroyed()) wc.reloadIgnoringCache(); } catch (_) { /* window gone */ }
+}
+
 ipcMain.on('app:boot-retry', async (event) => {
   const wc = event.sender;
   if (!mainWindow || mainWindow.isDestroyed() || wc !== mainWindow.webContents) return;
   log.warn('[boot] renderer asked for a boot retry');
-  try { await wc.session.clearStorageData({ storages: BOOT_RETRY_STORAGES }); } catch (err) { log.warn('[boot] clear sw/cache storage failed:', err?.message || err); }
-  try { await wc.session.clearCache(); } catch (err) { log.warn('[boot] clear http cache failed:', err?.message || err); }
-  try { if (!wc.isDestroyed()) wc.reloadIgnoringCache(); } catch (_) { /* window gone */ }
+  await clearAndReloadRenderer(wc, 'renderer-retry');
+});
+
+// Renderer boot milestones (2.11.9): index.html reports when the boot splash is
+// really gone ('painted'), when its own watchdog fired, and when React mounted.
+// They land in main.log, so a stuck start leaves evidence, and they feed the
+// main-process paint watchdog in createMainWindow.
+let rendererBoot = { painted: false, loadStartedAt: 0 };
+ipcMain.on('app:boot-state', (event, payload) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) return;
+  const report = normalizeBootReport(payload);
+  if (!report) return;
+  const since = rendererBoot.loadStartedAt ? Date.now() - rendererBoot.loadStartedAt : null;
+  log.info(`[boot] renderer ${report.phase} (page ${report.ms ?? '?'}ms, load+${since ?? '?'}ms)`);
+  if (report.phase === 'painted') {
+    rendererBoot.painted = true;
+    // The splash just went away: make sure Windows presents the new frame,
+    // even if the window was minimized/occluded while it changed.
+    try { mainWindow.webContents.invalidate(); } catch (_) { /* ignore */ }
+  }
 });
 
 ipcMain.on('secure-token:get', (event) => {
@@ -1326,6 +1353,86 @@ function createMainWindow() {
     loadRetryTimer = setTimeout(() => { loadRetryTimer = null; loadApp(); }, delay);
   });
   win.webContents.on('did-finish-load', () => { loadFailures = 0; });
+
+  // Paint watchdog (2.11.9, bootWatchdog.paintWatchdogStep). Runs in main, so it
+  // also covers a renderer that never gets to its own timers or a window whose
+  // last presented frame is stale (splash shown although the app is up).
+  let paintTimer = null;
+  let paintReloads = 0;
+  let paintAsked = false;
+  let paintNudged = false;
+  const stopPaintWatchdog = () => { if (paintTimer) { clearInterval(paintTimer); paintTimer = null; } };
+  const snapshotRenderer = () => win.webContents.executeJavaScript(`(() => {
+    const s = document.querySelectorAll('#boot-splash');
+    const r = document.getElementById('root');
+    return JSON.stringify({ splashes: s.length, failed: [...s].map((x) => x.getAttribute('data-boot-failed') || '').join(','),
+      hidden: [...s].map((x) => x.classList.contains('boot-splash--hide')).join(','), rootChildren: r ? r.childElementCount : -1,
+      rootText: r ? (r.innerText || '').replace(/\\s+/g, ' ').trim().length : -1, rootH: r ? Math.round(r.getBoundingClientRect().height) : -1,
+      vis: document.visibilityState, holds: window.__descallBootHolds, path: location.pathname, ready: document.readyState });
+  })()`, true).catch((err) => `snapshot failed: ${err?.message || err}`);
+  win.webContents.on('did-start-loading', () => {
+    rendererBoot = { painted: false, loadStartedAt: Date.now() };
+    paintNudged = false;
+    stopPaintWatchdog();
+    paintTimer = setInterval(async () => {
+      if (win.isDestroyed()) { stopPaintWatchdog(); return; }
+      const elapsedMs = Date.now() - rendererBoot.loadStartedAt;
+      const step = paintWatchdogStep({ painted: rendererBoot.painted, elapsedMs, reloads: paintReloads, asked: paintAsked });
+      if (step === 'none') { if (rendererBoot.painted) stopPaintWatchdog(); return; }
+      if (step === 'nudge') {
+        if (paintNudged) return;
+        paintNudged = true;
+        log.warn(`[boot] not painted after ${elapsedMs}ms: ${await snapshotRenderer()}`);
+        try { win.webContents.invalidate(); } catch (_) { /* ignore */ }
+        return;
+      }
+      if (step === 'reload') {
+        paintReloads += 1;
+        log.warn(`[boot] still not painted after ${elapsedMs}ms: ${await snapshotRenderer()}`);
+        stopPaintWatchdog();
+        clearAndReloadRenderer(win.webContents, 'paint-watchdog');
+        return;
+      }
+      if (step === 'ask') {
+        paintAsked = true;
+        stopPaintWatchdog();
+        log.error(`[boot] gave up waiting for paint after ${elapsedMs}ms: ${await snapshotRenderer()}`);
+        if (!win.isVisible()) return; // tray/autostart: the next show re-checks via invalidate
+        dialog.showMessageBox(win, {
+          type: 'error',
+          title: 'Descall',
+          message: 'Descall açılamadı',
+          detail: 'Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene.',
+          buttons: ['Tekrar dene', 'Çıkış'],
+          defaultId: 0,
+          cancelId: 1,
+          noLink: true,
+        }).then(({ response }) => {
+          if (response === 0) { paintAsked = false; paintReloads = 0; clearAndReloadRenderer(win.webContents, 'user-retry'); }
+          else { isQuitting = true; app.quit(); }
+        }).catch(() => {});
+      }
+    }, 1000);
+  });
+  win.once('closed', stopPaintWatchdog);
+
+  // Coming back from minimized/tray: present a fresh frame. A window that was
+  // minimized while the renderer booted (updater relaunch) could otherwise keep
+  // showing the splash frame it had when it went away.
+  for (const ev of ['show', 'restore', 'focus']) {
+    win.on(ev, () => { try { win.webContents.invalidate(); } catch (_) { /* ignore */ } });
+  }
+
+  // Renderer warnings/errors and [boot] lines go to main.log (evidence for stuck starts).
+  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
+    const level = e?.level ?? legacyLevel;
+    const message = String(e?.message ?? legacyMessage ?? '');
+    const isWarn = level === 'warning' || level === 'error' || level === 2 || level === 3;
+    if (!isWarn && !message.startsWith('[boot]')) return;
+    if (rendererBoot.painted && !isWarn) return;
+    if (rendererBoot.painted && Date.now() - rendererBoot.loadStartedAt > 60000) return; // boot window only
+    log.info(`[renderer:${level}] ${message.slice(0, 400)}`);
+  });
   win.webContents.on('render-process-gone', (_e, details) => {
     const reason = details?.reason;
     if (!shouldReloadAfterCrash({ booted, crashReloads: bootCrashReloads, reason })) return;
@@ -1512,6 +1619,10 @@ function createTray() {
 
 // App events
 app.whenReady().then(async () => {
+  // A second process that lost the single-instance lock must not create a
+  // splash, check for updates or touch userData (2.11.9: the updater relaunch
+  // plus a manual start used to run both boots side by side for a moment).
+  if (!gotTheLock) return;
   try {
     const bootDir = app.getPath('userData');
     fs.mkdirSync(bootDir, { recursive: true });

@@ -1276,9 +1276,19 @@
           try { sessionStorage.removeItem(BOOT_RETRY_KEY); } catch (eSs3) {}
         }
         window.__descallRetryBoot = retryBoot;
+        // Boot milestones to the Electron main process (main.log + paint watchdog, 2.11.9).
+        function reportBoot(phase) {
+          try {
+            var api = window.electronAPI;
+            var ms = (window.performance && performance.now) ? Math.round(performance.now()) : 0;
+            if (api && typeof api.bootState === "function") api.bootState(phase, ms);
+          } catch (eReport) {}
+        }
+        window.__descallReportBoot = reportBoot;
 
         function showBootFailure(splash) {
           if (!splash || splash.getAttribute("data-boot-failed") === "1") return;
+          reportBoot("splash-failed");
           splash.setAttribute("data-boot-failed", "1");
           splash.setAttribute("aria-busy", "false");
           var status = splash.querySelector(".boot-status") || document.getElementById("boot-status");
@@ -1331,6 +1341,7 @@
               if (autoRetryAllowed()) {
                 window.clearInterval(timer);
                 markAutoRetry();
+                reportBoot("auto-retry");
                 retryBoot();
                 return;
               }
@@ -1374,9 +1385,21 @@
                 if (left[ri].parentNode) left[ri].parentNode.removeChild(left[ri]);
               }
               kickPaint();
+              reportBoot("painted");
             }, 320);
           }, wait);
         };
+        // Back from minimized/hidden (updater relaunch boots minimized): timers may
+        // have been starved while hidden, so check right away instead of waiting.
+        if (document.addEventListener) document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState !== "visible") return;
+          if (!document.getElementById("boot-splash")) return;
+          if (appHasPainted()) {
+            try { window.__descallDismissBootSplash({ minMs: 0, maxMs: 0, force: true }); } catch (eVis) {}
+          } else {
+            kickPaint();
+          }
+        });
         // Do not tear the splash down on a timer while #root is still empty.
         // That was the black screen after the logo on iPhone Safari.
         window.setTimeout(function () {

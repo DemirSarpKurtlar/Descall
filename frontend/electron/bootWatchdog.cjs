@@ -52,6 +52,40 @@ function raceWithTimeout(promise, ms, setTimer = setTimeout, clearTimer = clearT
   });
 }
 
+/**
+ * Paint watchdog (2.11.9). The renderer reports 'painted' over IPC once the
+ * HTML boot splash is gone (index.html). Until then main checks in steps after
+ * the main frame finished loading:
+ *   PAINT_NUDGE_MS   → log a DOM snapshot and force a fresh frame (invalidate);
+ *   PAINT_RELOAD_MS  → drop SW/Cache Storage + HTTP cache, reload ignoring cache (once);
+ *   PAINT_ASK_MS     → native "Descall açılamadı" with Tekrar dene / Çıkış.
+ * Main does this itself, so a wedged renderer (no JS timers, stale frame)
+ * still gets out.
+ */
+const PAINT_NUDGE_MS = 12000;
+const PAINT_RELOAD_MS = 22000;
+const PAINT_ASK_MS = 45000;
+const MAX_PAINT_RELOADS = 1;
+
+/** What main does at a watchdog tick: 'none' | 'nudge' | 'reload' | 'ask'. */
+function paintWatchdogStep({ painted, elapsedMs, reloads, asked }) {
+  if (painted) return 'none';
+  const t = Number(elapsedMs) || 0;
+  if (t >= PAINT_ASK_MS && !asked) return 'ask';
+  if (t >= PAINT_RELOAD_MS && (Number(reloads) || 0) < MAX_PAINT_RELOADS) return 'reload';
+  if (t >= PAINT_NUDGE_MS) return 'nudge';
+  return 'none';
+}
+
+const BOOT_PHASES = new Set(['painted', 'splash-failed', 'auto-retry', 'app-mounted', 'visible']);
+/** Sanitize a renderer boot report (untrusted input from the page). */
+function normalizeBootReport(payload) {
+  const phase = String(payload?.phase || '');
+  if (!BOOT_PHASES.has(phase)) return null;
+  const ms = Number(payload?.ms);
+  return { phase, ms: Number.isFinite(ms) && ms >= 0 ? Math.round(ms) : null };
+}
+
 /** Storage a boot retry clears. Never localStorage / IndexedDB / cookies (the session lives there). */
 const BOOT_RETRY_STORAGES = ['serviceworkers', 'cachestorage'];
 
@@ -65,4 +99,10 @@ module.exports = {
   nextLoadRetryDelay,
   shouldReloadAfterCrash,
   raceWithTimeout,
+  PAINT_NUDGE_MS,
+  PAINT_RELOAD_MS,
+  PAINT_ASK_MS,
+  MAX_PAINT_RELOADS,
+  paintWatchdogStep,
+  normalizeBootReport,
 };
