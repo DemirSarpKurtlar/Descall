@@ -49,6 +49,7 @@ const STRINGS = {
     videoCall: "Görüntülü arama",
     groupCallTitle: "{groupName} — Grup Araması",
     groupCallBody: "{from} grup araması başlattı",
+    ownerTitle: "Sunucu sahipliği",
   },
   en: {
     someone: "Someone",
@@ -64,6 +65,7 @@ const STRINGS = {
     videoCall: "Video call",
     groupCallTitle: "{groupName} — Group Call",
     groupCallBody: "{from} started a group call",
+    ownerTitle: "Server ownership",
   },
 };
 
@@ -222,6 +224,20 @@ function describeEvent(event = {}, lang = "tr") {
       title: s.friendTitle,
       body: fmt(s.friendBody, { from }),
       data: { type: "friend-request", fromId: event.fromId, from },
+    };
+  }
+  if (type === "server-owner") {
+    const serverName = clip(event.serverName, 60) || (pickLang(lang) === "en" ? "the server" : "Sunucu");
+    const body = pickLang(lang) === "en"
+      ? `You now own ${serverName}`
+      : `${require("./trSuffix").trGenitive(serverName)} sahibi artık sensin`;
+    return {
+      ...base,
+      threadId: event.serverId ? `server-${event.serverId}`.slice(0, 64) : "server-owner",
+      priority: 5,
+      title: s.ownerTitle,
+      body,
+      data: { type: "server-owner", serverId: event.serverId, serverName: event.serverName || null, from },
     };
   }
   if (type === "call") {
