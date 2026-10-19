@@ -85,7 +85,7 @@
    window controls keep working). While a modal is open (detected with :has(), no JS) it gets the same dim + blur layer as the scrim, so the
    backdrop reads edge to edge with no unblurred strip at the top; only the
    window controls stay crisp and clickable above it. */
-html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar::after {
+html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar::after {
   content: "";
   position: absolute;
   inset: 0 0 -1px 0;
@@ -96,11 +96,11 @@ html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-o
   backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate));
   animation: dc-overlay-fade 180ms ease-out both;
 }
-html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar { border-bottom-color: transparent; }
-html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar-controls { position: relative; z-index: 2; }
+html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar { border-bottom-color: transparent; }
+html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar-controls { position: relative; z-index: 2; }
 @keyframes dc-overlay-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar::after { animation-duration: 1ms; }
+  html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar::after { animation-duration: 1ms; }
 }
 
 /* Cards inside a scrim. The scrim has its own backdrop-filter, which makes it
@@ -140,3 +140,49 @@ html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-o
   backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
 }
 :root:root:root:root:is(.a11y-solid, .gd-lite) .user-settings-shell.is-desktop { background: var(--overlay-dim-solid) !important; }
+
+/* Admin panel (findings Y6): the shell is the full-window scrim, the card sat
+   at ~0.5 alpha inside it (nested backdrop root, so its own blur saw nothing). */
+:root:root:root:root .admin-shell {
+  background: var(--overlay-dim) !important;
+  -webkit-backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+  backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+}
+:root:root:root:root .admin-shell .admin-container {
+  background: var(--frost-sheen), linear-gradient(var(--frost-base), var(--frost-base)) !important;
+  background-color: var(--frost-base) !important;
+}
+:root:root:root:root:is(.a11y-solid, .gd-lite) .admin-shell .admin-container { background: var(--frost-solid) !important; }
+:root:root:root:root:is(.a11y-solid, .gd-lite) .admin-shell { background: var(--overlay-dim-solid) !important; }
+
+/* iPhone / mobile web Liquid Glass (findings B1-B4). */
+/* B4: menu / sheet scrims were 6px / 0.42, big titles readable behind. */
+html.glass-ui :is(.g-scrim, .g-attach-scrim, .g-giphy-scrim):not(.g-msg-scrim) {
+  background: rgba(5, 6, 10, 0.6) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(140%) !important;
+  backdrop-filter: blur(32px) saturate(140%) !important;
+}
+/* B1: Reduce Transparency / Darker Colors / no backdrop-filter: every scrim
+   goes near-opaque instead of keeping a 0.42-0.62 tint with no blur. */
+html.glass-ui:is(.a11y-solid, .a11y-contrast) :is(.g-scrim, .g-msg-scrim, .g-attach-scrim, .g-giphy-scrim, .g-server-menu-scrim) {
+  background: rgba(8, 9, 14, 0.94) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.glass-ui :is(.g-scrim, .g-msg-scrim, .g-attach-scrim, .g-giphy-scrim, .g-server-menu-scrim) { background: rgba(8, 9, 14, 0.94) !important; }
+}
+/* B2/B3: tab bar and list search capsule were 0.22 alpha glass; list text
+   under them was readable. Heavy frosted base + opaque fallback. */
+html.glass-ui :is(.g-tabbar, .g-searchbar) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)), rgba(20, 21, 30, 0.86) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+}
+html.glass-ui[data-theme="light"] :is(.g-tabbar, .g-searchbar) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12)), rgba(245, 245, 250, 0.88) !important;
+}
+html.glass-ui:is(.a11y-solid, .a11y-contrast) :is(.g-tabbar, .g-searchbar) { background: var(--frost-solid) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.glass-ui :is(.g-tabbar, .g-searchbar) { background: var(--frost-solid) !important; }
+}

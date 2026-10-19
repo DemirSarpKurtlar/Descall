@@ -43,7 +43,7 @@
   .g-call-sheet, .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal,
   .g-alert, .conv-confirm-card, .toast-item, .call-overlay-minimized,
   .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
-  .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner
+  .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner, .message-hover-bar, .incoming-call-card, .reaction-picker
 )
 /* FROST-SURFACES:END */
 {
@@ -64,7 +64,7 @@
     .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet,
     .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert,
     .conv-confirm-card, .toast-item, .call-overlay-minimized, .server-modal, .add-modal, .report-modal, .feedback-modal,
-    .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner) {
+    .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner, .message-hover-bar, .incoming-call-card, .reaction-picker) {
     background: var(--frost-solid) !important;
   }
 }
@@ -76,7 +76,7 @@
   .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet, .gs-sheet,
   .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert, .conv-confirm-card,
   .toast-item, .call-overlay-minimized, .server-modal, .add-modal, .report-modal, .feedback-modal, .legal-modal-card, .login-modal,
-  .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner) {
+  .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner, .message-hover-bar, .incoming-call-card, .reaction-picker) {
   background: var(--frost-solid) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
@@ -90,7 +90,7 @@
     .screen-quality-panel, .pinned-popover, .profile-popover, .user-hover-card, .g-call-sheet,
     .gs-sheet, .group-info-sheet, .g-profile-sheet, .g-server-sheet, .img-crop-modal, .g-alert,
     .conv-confirm-card, .toast-item, .call-overlay-minimized, .server-modal, .add-modal, .report-modal, .feedback-modal,
-    .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner) {
+    .legal-modal-card, .login-modal, .un-modal, .activity-modal, .update-notes-modal, .o3-transfer, .o3-leave-sheet, .rail-tooltip, .app-notif-banner, .app-feedback-banner, .call-banner-card, .admin-broadcast-card, .mini-call-card, .electron-update-toast-inner, .message-hover-bar, .incoming-call-card, .reaction-picker) {
     background: var(--frost-solid) !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;

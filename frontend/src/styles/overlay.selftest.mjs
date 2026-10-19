@@ -26,6 +26,7 @@ for (const must of [".modal-backdrop", ".user-profile-scrim", ".add-modal-backdr
 for (const menu of [".g-msg-scrim", ".reaction-picker-backdrop", ".g-attach-scrim", ".server-voice-menu-backdrop"]) {
   assert.ok(!backdrops.includes(menu), `${menu} is a menu click-catcher, not a modal backdrop`);
 }
+assert.equal((css.match(/\(/g) || []).length, (css.match(/\)/g) || []).length, "balanced parentheses (a stray one drops the rule when minified)");
 assert.match(css, /position:\s*fixed !important;\s*inset:\s*0 !important/);
 assert.match(css, /backdrop-filter:\s*blur\(var\(--overlay-blur\)\)/);
 assert.ok(Number(css.match(/--overlay-blur:\s*(\d+)px/)[1]) >= 24, "heavy blur");

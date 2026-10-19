@@ -1150,10 +1150,11 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
           className="call-quality-details"
           style={{
             position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 30,
-            background: "rgba(22, 24, 36, 0.72)", border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(22, 24, 36, 0.95)", border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 16, padding: "10px 12px", minWidth: 180,
             boxShadow: "0 16px 40px rgba(0,0,0,0.45)", fontSize: 12, color: "#dcddde",
-            backdropFilter: "blur(24px) saturate(180%)",
+            backdropFilter: "blur(40px) saturate(180%)",
+            WebkitBackdropFilter: "blur(40px) saturate(180%)",
           }}
           onClick={(e) => e.stopPropagation()}
         >
