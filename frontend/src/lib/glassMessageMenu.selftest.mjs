@@ -6,6 +6,7 @@ import {
   attachMenuPress,
   createMediaPressGate,
   liftLayout,
+  untransformedBox,
   liftMediaBox,
   menuHeight,
   messageMenuOpensOnTap,
@@ -88,7 +89,8 @@ assert.match(list, /className="g-menu g-glass g-heavy g-materialize"/);
 
 assert.match(chatCss, /html\.glass-ui \.g-msg-pop \{[^}]*position: fixed;[^}]*inset: 0;[^}]*background: none;/);
 assert.doesNotMatch(chatCss.match(/html\.glass-ui \.g-msg-pop \{[^}]*\}/)[0], /backdrop-filter|transform|opacity|filter/);
-assert.match(chatCss, /html\.glass-ui \.g-scrim\.g-msg-scrim \{[^}]*backdrop-filter: blur\(28px\)/);
+assert.match(chatCss, /html\.glass-ui \.g-scrim\.g-msg-scrim \{[^}]*backdrop-filter: blur\(40px\)/);
+assert.match(chatCss, /prefers-reduced-transparency: reduce\) \{\s*html\.glass-ui \.g-scrim\.g-msg-scrim \{[^}]*backdrop-filter: none/);
 assert.match(chatCss, /html\.glass-ui \.g-lift-shadow \{[^}]*background: transparent;/);
 assert.match(chatCss, /html\.glass-ui \.message-bubble\.menu-open \{\s*visibility: hidden/);
 assert.match(chatCss, /\.message-bubble\[data-pressed\] \{\s*scale: 0\.97;/);
@@ -98,46 +100,73 @@ const frost = readFileSync(new URL("../styles/frost.css", import.meta.url), "utf
 assert.doesNotMatch(frost, /\.g-msg-pop,/);
 assert.match(frost, /\.g-react-bar,/);
 
-// Layout: bubble stays put when the stack fits.
+// 2.13.1 regression: the long-pressed bubble never moves (it used to be
+// clamped / scaled into the room between bar and menu and could jump down or
+// up). It lifts in place; the bar and menu flip or clamp around it.
+const menu5 = menuHeight({ rows: 5, separators: 1 });
+const SCENARIOS = [
+  ["middle", { left: 227, top: 377, width: 152, height: 83 }, true, "bar-above-menu-below"],
+  ["near the bottom (above the composer)", { left: 290.5, top: 760, width: 88.05, height: 40.59 }, true, "both-above"],
+  ["near the top (under the header)", { left: 60.6, top: 92, width: 119.16, height: 38.61 }, false, "both-below"],
+  ["tall multi-line", { left: 60, top: 40, width: 297, height: 900 }, false, "clamped"],
+];
+for (const [name, rect, isOwn, placement] of SCENARIOS) {
+  const l = liftLayout({ rect, vw: 393, vh: 852, isOwn, barW: reactBarWidth(5), menuH: menu5 });
+  assert.equal(l.liftTop, rect.top, `${name}: bubble keeps its top`);
+  assert.equal(l.liftLeft, rect.left, `${name}: bubble keeps its left`);
+  assert.equal(l.dy, 0, `${name}: no jump`);
+  assert.equal(l.placement, placement, `${name}: placement`);
+  assert.ok(l.liftScale >= 1 && l.liftScale <= 1.05, `${name}: small lift scale`);
+  assert.equal(l.origin, "50% 50%", `${name}: scales in place`);
+  assert.ok(l.barTop >= 62 && l.barTop + 56 <= 852 - 34, `${name}: bar inside the safe area`);
+  assert.ok(l.menuTop >= 62 && l.menuTop + menu5 <= 852 - 34 + 1, `${name}: menu inside the safe area`);
+  assert.ok(l.barLeft >= 12 && l.barLeft + l.barW <= 393 - 12, `${name}: bar on screen`);
+  assert.ok(l.menuLeft >= 12 && l.menuLeft + l.menuW <= 393 - 12, `${name}: menu on screen`);
+  // Bar and menu never overlap each other.
+  assert.ok(l.barTop + 56 <= l.menuTop || l.menuTop + menu5 <= l.barTop, `${name}: bar/menu overlap`);
+  if (placement !== "clamped") {
+    const vTop = rect.top - (rect.height * (l.liftScale - 1)) / 2;
+    const vBot = rect.top + rect.height + (rect.height * (l.liftScale - 1)) / 2;
+    for (const [t, h] of [[l.barTop, 56], [l.menuTop, menu5]]) {
+      assert.ok(t + h <= vTop + 0.5 || t >= vBot - 0.5, `${name}: surfaces do not cover the bubble`);
+    }
+  }
+}
+// Default: bar just above, menu just below.
 {
   const rect = { left: 227, top: 377, width: 152, height: 83 };
-  const l = liftLayout({ rect, vw: 393, vh: 852, isOwn: true, barW: reactBarWidth(5), menuH: menuHeight({ rows: 5, separators: 1 }) });
-  assert.equal(l.liftTop, 377);
-  assert.equal(l.dy, 0);
-  assert.equal(l.liftScale, 1);
-  assert.equal(l.barTop, 377 - 10 - 56);
-  assert.equal(l.menuTop, 377 + 83 + 10);
-  assert.ok(l.barLeft >= 12 && l.barLeft + l.barW <= 393 - 12, "bar on screen");
-  assert.ok(l.menuLeft + l.menuW <= 393 - 12 && l.menuLeft + l.menuW >= 379 - 1, "own: right-aligned to the bubble");
-  assert.equal(l.origin, "100% 0%");
+  const l = liftLayout({ rect, vw: 393, vh: 852, isOwn: true, barW: reactBarWidth(5), menuH: menu5 });
+  const grow = (83 * (l.liftScale - 1)) / 2;
+  assert.equal(l.barTop, Math.round(377 - grow - 10 - 56));
+  assert.equal(l.menuTop, Math.round(377 + 83 + grow + 10));
+  assert.ok(l.menuLeft + l.menuW >= 379 - 1, "own: right-aligned to the bubble");
 }
-// Near the bottom: moves up just enough for the menu.
+// Keyboard up: clamp to the visual viewport, not the layout viewport.
 {
-  const rect = { left: 227, top: 700, width: 152, height: 83 };
-  const menuH = menuHeight({ rows: 5, separators: 1 });
-  const l = liftLayout({ rect, vw: 393, vh: 852, isOwn: true, barW: 296, menuH });
-  assert.equal(l.menuTop + menuH, 852 - 34);
-  assert.ok(l.dy > 0);
-}
-// Near the top: moves down so the bar clears the safe area.
-{
-  const l = liftLayout({ rect: { left: 60, top: 70, width: 200, height: 40 }, vw: 393, vh: 852, isOwn: false, barW: 296, menuH: 300 });
-  assert.equal(l.barTop, 62);
-  assert.equal(l.menuLeft, 60);
-  assert.equal(l.origin, "0% 0%");
-}
-// Taller than the room left: scaled down, never clipped.
-{
-  const menuH = menuHeight({ rows: 4, separators: 1 });
-  const l = liftLayout({ rect: { left: 60, top: 0, width: 243, height: 1500 }, vw: 393, vh: 852, isOwn: false, barW: 296, menuH });
-  assert.ok(l.liftScale < 1 && l.liftScale >= 0.1);
-  assert.ok(l.barTop >= 62 && l.menuTop + menuH <= 852 - 34 + 1);
+  const l = liftLayout({ rect: { left: 290, top: 380, width: 88, height: 40 }, vw: 393, vh: 500, viewTop: 0, isOwn: true, barW: 296, menuH: menu5 });
+  assert.equal(l.liftTop, 380);
+  assert.ok(l.menuTop + menu5 <= 500 - 34 + 1);
 }
 // Narrow phone: the bar is clamped inside the screen for a left bubble.
 {
   const l = liftLayout({ rect: { left: 200, top: 300, width: 100, height: 40 }, vw: 320, vh: 640, isOwn: false, barW: 296, menuH: 250 });
   assert.ok(l.barLeft >= 12 && l.barLeft + l.barW <= 320 - 12);
+  assert.equal(l.liftTop, 300);
 }
+// The copy keeps the original's sub-pixel width ("nold" / "u" wrap bug).
+{
+  const cs = { getPropertyValue: (p) => ({ width: "88.0481px", height: "40.59px", "box-sizing": "border-box" })[p] || "0px" };
+  const box = untransformedBox({ offsetWidth: 88, offsetHeight: 41 }, cs);
+  assert.equal(box.width, 88.0481);
+  assert.equal(box.height, 40.59);
+  const cb = { getPropertyValue: (p) => ({ width: "60.25px", height: "20px", "padding-left": "14px", "padding-right": "14px", "padding-top": "10px", "padding-bottom": "10px", "box-sizing": "content-box" })[p] || "0px" };
+  assert.equal(untransformedBox({ offsetWidth: 88 }, cb).width, 88.25);
+  assert.equal(untransformedBox({ offsetWidth: 88, offsetHeight: 40 }, null).width, 88);
+}
+// MessageList: lift in place = scale only, never a y travel.
+assert.doesNotMatch(list, /y: layout\.dy/);
+assert.match(list, /const lifted = \{ scale: reduced \? 1 : layout\.liftScale, opacity: 1 \}/);
+assert.match(list, /visualViewport/);
 
 const menuSrc = readFileSync(new URL("./glassMessageMenu.js", import.meta.url), "utf8");
 const lightbox = readFileSync(new URL("../components/chat/MessageMediaLightbox.jsx", import.meta.url), "utf8");

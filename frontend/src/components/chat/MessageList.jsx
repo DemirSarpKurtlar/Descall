@@ -1576,6 +1576,8 @@ function GlassMessageMenu({
     setLift({
       built,
       rect: { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h },
+      // Start the copy at the press shrink the finger left on the original.
+      pressScale: w > 0 ? Math.min(1, Math.max(0.9, r.width / w)) : 1,
     });
   }, [bubbleRef]);
 
@@ -1609,18 +1611,23 @@ function GlassMessageMenu({
 
   if (!lift || typeof document === "undefined") return null;
   const menuRows = 2 + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
+  // Visible area: with the keyboard up the visual viewport is shorter than
+  // the layout viewport, so clamp the bar and menu to what the user sees.
+  const vv = window.visualViewport;
   const layout = liftLayout({
     rect: lift.rect,
     vw: window.innerWidth,
-    vh: window.innerHeight,
+    vh: vv?.height || window.innerHeight,
+    viewTop: vv?.offsetTop || 0,
     isOwn,
     barW: reactBarWidth(quick.length),
     menuH: menuHeight({ rows: menuRows, separators: canDelete || canReport ? 1 : 0, picker: pickerOpen }),
   });
-  const moveSpring = framerSpring(SPRINGS.move);
   const liftSpring = framerSpring(SPRINGS.default);
-  const back = { y: layout.dy, scale: 1, opacity: 1 };
-  const lifted = { y: 0, scale: layout.liftScale, opacity: 1 };
+  // Lift in place (2.13.1): scale only, never a translate, so the copy stays
+  // exactly over the hidden original. Reduced motion: no scale at all.
+  const back = { scale: 1, opacity: 1 };
+  const lifted = { scale: reduced ? 1 : layout.liftScale, opacity: 1 };
   return createPortal(
     <>
       <motion.button
@@ -1642,13 +1649,10 @@ function GlassMessageMenu({
             height: lift.rect.height,
             transformOrigin: layout.origin,
           }}
-          initial={reduced ? { y: 0, scale: layout.liftScale, opacity: layout.dy === 0 ? 1 : 0 } : { y: layout.dy, scale: 0.97, opacity: 1 }}
-          animate={closing ? (reduced ? { opacity: 0 } : back) : lifted}
-          transition={
-            reduced
-              ? REDUCED_MOTION_FADE
-              : { y: moveSpring, scale: liftSpring, opacity: { duration: 0.12 } }
-          }
+          data-placement={layout.placement}
+          initial={reduced ? { scale: 1, opacity: 1 } : { scale: lift.pressScale, opacity: 1 }}
+          animate={closing ? back : lifted}
+          transition={reduced ? REDUCED_MOTION_FADE : { scale: liftSpring, opacity: { duration: 0.12 } }}
           onAnimationComplete={() => {
             if (closing && !reduced) finishClose();
           }}
@@ -1671,7 +1675,7 @@ function GlassMessageMenu({
             top: layout.barTop,
             left: layout.barLeft,
             maxWidth: layout.barW,
-            ["--g-mat-origin"]: isOwn ? "100% 100%" : "0% 100%",
+            ["--g-mat-origin"]: `${isOwn ? "100%" : "0%"} ${layout.barFromBelow ? "100%" : "0%"}`,
           }}
         >
           {quick.map((e) => (
@@ -1689,7 +1693,7 @@ function GlassMessageMenu({
             ref={menu.ref}
             className="g-menu g-glass g-heavy g-materialize"
             role="menu"
-            style={{ ["--g-mat-origin"]: isOwn ? "100% 0%" : "0% 0%" }}
+            style={{ ["--g-mat-origin"]: `${isOwn ? "100%" : "0%"} ${layout.menuFromAbove ? "0%" : "100%"}` }}
           >
             <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
             {canPin && (

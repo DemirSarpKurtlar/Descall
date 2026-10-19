@@ -1371,9 +1371,18 @@ html.glass-ui .g-scrim {
 
 /* Message long-press: heavy frosted dim over the whole screen. */
 html.glass-ui .g-scrim.g-msg-scrim {
-  background: rgba(5, 6, 10, 0.5);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
-  backdrop-filter: blur(28px) saturate(150%);
+  background: rgba(5, 6, 10, 0.62);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  backdrop-filter: blur(40px) saturate(150%);
+}
+
+/* Reduced transparency: a solid dim, no see-through blur. */
+@media (prefers-reduced-transparency: reduce) {
+  html.glass-ui .g-scrim.g-msg-scrim {
+    background: rgba(8, 9, 14, 0.94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* A full-screen, box-less layer. It must never paint, filter, clip or
