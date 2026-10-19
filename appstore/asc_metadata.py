@@ -11,6 +11,8 @@ Modes:
   submit  read-only verify first; only if it reports no errors and no warnings, submit the version
           for review (manual release). Resubmits an UNRESOLVED_ISSUES submission (items marked
           resolved) or creates/uses a READY_FOR_REVIEW one. Requires --build.
+  withdraw  cancel ONE review submission (--submission <id>) that is WAITING_FOR_REVIEW, so its
+          version becomes editable again. Touches nothing else. Run only after the owner confirms.
 
 Inputs (env): ASC_KEY_PATH, ASC_KEY_ID, ASC_ISSUER_ID, ASC_APP_ID, APP_VERSION,
   DEMO_A_USERNAME, DEMO_A_PASSWORD, DEMO_B_USERNAME, DEMO_B_PASSWORD, REVIEW_PHONE,
@@ -535,6 +537,34 @@ def submit(asc, app_id, ver, pin, subs):
     log(f"  version {va.get('versionString')} state={va.get('appVersionState') or va.get('appStoreState')}")
 
 
+def withdraw(asc, app_id, sub_id):
+    """Cancel one review submission (the API's 'Remove from review'). Returns an exit code."""
+    log(f"=== Withdraw review submission {sub_id or '(none)'}")
+    if not sub_id:
+        log("  ERROR: --submission is required"); return 1
+    d = asc.get(f"/v1/reviewSubmissions/{sub_id}", include="app")["data"]
+    app_rel = ((d.get("relationships") or {}).get("app") or {}).get("data") or {}
+    st = d["attributes"].get("state")
+    log(f"  submission {sub_id} state={st} submitted={d['attributes'].get('submittedDate')} app={app_rel.get('id')}")
+    if app_rel.get("id") and app_rel["id"] != app_id:
+        log("  ERROR: submission belongs to another app"); return 1
+    if st not in ("WAITING_FOR_REVIEW", "READY_FOR_REVIEW", "UNRESOLVED_ISSUES"):
+        log(f"  ERROR: not cancelling a submission in state {st}"); return 1
+    asc.req("PATCH", f"/v1/reviewSubmissions/{sub_id}", {"data": {"type": "reviewSubmissions", "id": sub_id,
+            "attributes": {"canceled": True}}})
+    for _ in range(30):
+        st = asc.get(f"/v1/reviewSubmissions/{sub_id}")["data"]["attributes"].get("state")
+        log(f"  state={st}")
+        if st != "CANCELING":
+            break
+        time.sleep(10)
+    for v in asc.get_all(f"/v1/apps/{app_id}/appStoreVersions", **{"filter[platform]": "IOS"}):
+        log(f"  version {v['attributes']['versionString']} state={v['attributes'].get('appVersionState') or v['attributes'].get('appStoreState')}")
+    if st in ("WAITING_FOR_REVIEW", "IN_REVIEW", "CANCELING"):
+        log(f"  ERROR: submission still {st}"); return 1
+    return 0
+
+
 def readback(asc, app_id, ver, meta):
     if not ver:
         return
@@ -565,10 +595,13 @@ def readback(asc, app_id, ver, meta):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto"], default="apply")
+    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto", "withdraw"], default="apply")
+    ap.add_argument("--submission", default="", help="review submission id to cancel (withdraw mode)")
     ap.add_argument("--wait-build-minutes", type=int, default=0)
     ap.add_argument("--build", default="", help="exact build number to attach (blank = latest VALID)")
     a = ap.parse_args()
+    if a.mode == "withdraw":
+        sys.exit(withdraw(ASC(), os.environ["ASC_APP_ID"], a.submission.strip()))
     apply = a.mode == "apply"
     app_id, version = os.environ["ASC_APP_ID"], os.environ["APP_VERSION"]
     log(f"Descall App Store Connect sync: app {app_id}, version {version}, mode={a.mode}, build={a.build or 'latest VALID'}")

@@ -15,6 +15,7 @@
 #               screenshots). Never submits.
 # mode=verify   read-only report (screenshot counts per locale, attached build, review submissions).
 # mode=submit   read-only verify, then submits for review only if verify is clean.
+# mode=withdraw  cancels the one review submission given in `submission` (Remove from review).
 # mode=release-auto  only sets the version release type to "automatically release after approval".
 #               Requires the exact build number. Run it only after the owner confirms.
 # App Privacy nutrition labels are not in the API and must be set in the App Store Connect web UI.
@@ -31,10 +32,14 @@ on:
       mode:
         description: "apply = write metadata (no submit), verify = read-only report, submit = verify then submit for review"
         type: choice
-        options: [verify, apply, submit, release-auto]
+        options: [verify, apply, submit, release-auto, withdraw]
         default: verify
       build:
         description: "Exact build number to attach, e.g. 20261008.2053 (blank = latest VALID build of the version)"
+        required: false
+        default: ""
+      submission:
+        description: "withdraw mode only: the review submission id to cancel"
         required: false
         default: ""
       wait_build_minutes:
@@ -107,6 +112,7 @@ jobs:
           MODE: ${{ inputs.mode }}
           WAIT_BUILD: ${{ inputs.wait_build_minutes }}
           BUILD_NUMBER: ${{ inputs.build }}
+          SUBMISSION_ID: ${{ inputs.submission }}
         run: |
           set -euo pipefail
           # Belt and braces: secrets are masked by GitHub already.
@@ -120,6 +126,10 @@ jobs:
           fi
           if [ "${MODE}" = "submit" ] && [ -z "${BUILD_NUMBER}" ]; then
             echo "::error::mode=submit needs the exact build number input"; exit 1
+          fi
+          if [ "${MODE}" = "withdraw" ]; then
+            [[ "$SUBMISSION_ID" =~ ^[0-9a-f-]{36}$ ]] || { echo "::error::withdraw needs the review submission id"; exit 1; }
+            args+=(--submission "$SUBMISSION_ID")
           fi
           python appstore/asc_metadata.py "${args[@]}"
 
