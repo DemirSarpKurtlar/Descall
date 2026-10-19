@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Award,
   CheckCircle2,
@@ -47,6 +47,9 @@ import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
 import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
 import { SHOP_CATEGORY_TABS, visibleShopTabs, visibleShopItems } from "../../lib/shopCategories.js";
+import { localizeShopItem } from "../../lib/shopItemI18n.js";
+import { usesPurchaseModal } from "../../lib/storePurchaseState.js";
+import StorePurchaseModal from "../shop/purchase/StorePurchaseModal";
 
 /** Short tab labels, same pattern as admin top nav. Source: lib/shopCategories.js. */
 const CATEGORY_ICONS = {
@@ -100,7 +103,7 @@ const CATEGORY_HEADING = {
   call_overlay: "Call Overlays",
 };
 
-function ShopItemPreview({ category, item, t }) {
+function ShopItemPreview({ category, item, t, name }) {
   if (category === "theme") {
     return <div className={`shop-theme-swatch theme-${item.theme_key || "default"}`} />;
   }
@@ -110,7 +113,7 @@ function ShopItemPreview({ category, item, t }) {
   if (category === "name_effect") {
     return (
       <span className={`cosmetic-name-effect effect-${item.effect_key} shop-name-effect-preview`}>
-        {item.name}
+        {name || item.name}
       </span>
     );
   }
@@ -199,6 +202,10 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [vouchers, setVouchers] = useState({});
   const [retiredTitles, setRetiredTitles] = useState(0);
   const [view, setView] = useState("store");
+  // Purchase modal (2.13.1): the item id it is open for, null when closed.
+  const [purchaseItemId, setPurchaseItemId] = useState(null);
+  const dailyCardRef = useRef(null);
+  const inviteRef = useRef(null);
   const loadedAssetCategories = useRef(new Set());
   const itemsRef = useRef(items);
   const buyLockRef = useRef(new Set());
@@ -438,6 +445,39 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     return null;
   };
 
+  const inventoryById = useMemo(() => new Map(inventory.map((row) => [row.itemId, row])), [inventory]);
+  const itemsById = useMemo(() => new Map(items.map((row) => [row.id, row])), [items]);
+  const purchaseItem = purchaseItemId ? itemsById.get(purchaseItemId) || inventoryById.get(purchaseItemId)?.item || null : null;
+  const openPurchase = (item) => {
+    if (!item?.id || !usesPurchaseModal(item.category)) return;
+    setNotice("");
+    setPurchaseItemId(item.id);
+  };
+  const closePurchase = () => setPurchaseItemId(null);
+  // "Ways to earn" in the insufficient state: close, then bring the daily reward card or
+  // the invite card into view and focus its button.
+  const goEarn = (kind) => {
+    setPurchaseItemId(null);
+    setView("store");
+    window.setTimeout(() => {
+      const row = document.querySelector(".shop-lead .descoin-retention-row");
+      const target = kind === "invite"
+        ? row?.querySelector(":scope > :not(.descoin-daily-card)")
+        : dailyCardRef.current || row?.querySelector(".descoin-daily-card");
+      if (!target) return;
+      const reduce = document.documentElement.getAttribute("data-reduce-motion") === "true"
+        || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+      target.classList.add("shop-earn-focus");
+      window.setTimeout(() => target.classList.remove("shop-earn-focus"), 1800);
+      const btn = target.querySelector("button:not([disabled])");
+      btn?.focus({ preventScroll: true });
+    }, 260);
+  };
+  const currentThemeKey = typeof document !== "undefined"
+    ? document.documentElement.getAttribute("data-theme") || "dark"
+    : "dark";
+
   const activeTabMeta = availableTabs.find((tab) => tab.id === activeCategory) || null;
   const [chromeSlot, setChromeSlot] = useState(null);
   useLayoutEffect(() => {
@@ -479,7 +519,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       </p>
 
       <div className="descoin-retention-row">
-        <div className="descoin-daily-card">
+        <div className="descoin-daily-card" ref={dailyCardRef} id="shop-daily-reward">
           <div className="descoin-daily-head">
             <Flame size={18} />
             <div>
@@ -594,11 +634,18 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
               const buying = busyItemId === item.id && busyAction === "buy";
               const equipping = busyItemId === item.id && busyAction === "equip";
               const affordable = balance >= (item.price_descoin || 0);
+              const label = localizeShopItem(item, locale);
+              const modal = usesPurchaseModal(category);
               return (
                 <div
-                  className={`shop-item-card${celebrateItemId === item.id ? " is-celebrating" : ""}`}
+                  className={`shop-item-card${celebrateItemId === item.id ? " is-celebrating" : ""}${modal ? " is-openable" : ""}`}
                   data-category={category}
+                  data-sku={item.sku || undefined}
                   key={item.id}
+                  onClick={modal ? (e) => {
+                    if (e.target.closest("button, a")) return;
+                    openPurchase(item);
+                  } : undefined}
                 >
                   {celebrateItemId === item.id && (
                     <div className="shop-celebrate-banner">{t("Purchased, equip it anytime")}</div>
@@ -610,16 +657,16 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                     {GLASS_THEME_SCENE_SKUS.has(item.sku) ? (
                       <span className="shop-item-new">{t("New")}</span>
                     ) : null}
-                    <ShopItemPreview category={category} item={item} t={t} />
+                    <ShopItemPreview category={category} item={item} t={t} name={label.name} />
                   </div>
                   <div className="shop-item-body">
                     <div className="shop-item-name-row">
-                      <span className="shop-item-name">{item.name}</span>
+                      <span className="shop-item-name">{label.name}</span>
                       {item.rarity && (
                         <span className={`shop-rarity-badge shop-rarity-${item.rarity}`}>{item.rarity}</span>
                       )}
                     </div>
-                    {item.description && <p className="shop-item-desc">{item.description}</p>}
+                    {label.description && <p className="shop-item-desc">{label.description}</p>}
                     <div className="shop-item-footer">
                       {owned && !buying ? (
                         <span className="shop-item-owned-pill">
@@ -641,9 +688,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                       ) : (
                         <RippleButton
                           className="btn-primary sm"
-                          onClick={() => handleBuy(item)}
-                          disabled={buying || !affordable}
+                          data-short={!affordable ? "true" : undefined}
+                          onClick={() => (modal ? openPurchase(item) : handleBuy(item))}
+                          disabled={buying || (!modal && !affordable)}
                           title={!affordable ? t("Not enough DesCoin yet") : undefined}
+                          data-action="open-purchase"
                         >
                           {buying ? t("Buying…") : affordable ? t("Buy") : t("Not enough DesCoin")}
                         </RippleButton>
@@ -738,6 +787,37 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         </div>
         <ShopProfilePreview me={me} t={t} />
       </div>
+      <AnimatePresence>
+        {purchaseItem ? (
+          <StorePurchaseModal
+            key={purchaseItem.id}
+            item={purchaseItem}
+            balance={balance}
+            owned={ownedItemIds.has(purchaseItem.id)}
+            ownedRow={inventoryById.get(purchaseItem.id) || null}
+            isEquipped={equippedIdFor(purchaseItem.category) === purchaseItem.id}
+            equippedItem={(() => {
+              const id = equippedIdFor(purchaseItem.category);
+              return id ? itemsById.get(id) || inventoryById.get(id)?.item || null : null;
+            })()}
+            me={me}
+            isMobile={isMobile}
+            locale={locale}
+            notice={notice}
+            dailyAmount={daily?.claimAmount || 40}
+            canInvite={Boolean(me?.username)}
+            currentThemeKey={currentThemeKey}
+            onClose={closePurchase}
+            onBuy={handleBuy}
+            onEquip={handleEquip}
+            onOpenInventory={() => {
+              setPurchaseItemId(null);
+              setView("inventory");
+            }}
+            onEarn={goEarn}
+          />
+        ) : null}
+      </AnimatePresence>
     </motion.div>
   );
 }
