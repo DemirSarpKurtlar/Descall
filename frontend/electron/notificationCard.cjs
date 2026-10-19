@@ -115,8 +115,11 @@ function notificationCss() {
       justify-content: center;
       padding: 12px 12px 14px 14px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.06)),
-        rgba(16, 18, 28, 0.52);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02)),
+        rgba(18, 20, 30, 0.97);
+      /* A separate always-on-top window: backdrop-filter cannot sample other
+         OS windows, so the near-opaque tinted base is what keeps the desktop
+         behind unreadable (2.13.x modal audit). */
       -webkit-backdrop-filter: blur(40px) saturate(180%);
       backdrop-filter: blur(40px) saturate(180%);
       box-shadow:
@@ -135,8 +138,8 @@ function notificationCss() {
     }
     .card:hover {
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08)),
-        rgba(20, 22, 34, 0.58);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+        rgba(24, 26, 38, 0.975);
     }
     .row { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
     .mark {

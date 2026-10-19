@@ -136,7 +136,7 @@ assert.match(panel, /onBuy=\{handleBuy\}/, "the modal buys through ShopPanel.han
 assert.match(panel, /onEquip=\{handleEquip\}/, "the modal equips through ShopPanel.handleEquip");
 assert.match(panel, /usesPurchaseModal\(/);
 assert.doesNotMatch(modal, /purchaseShopItem|equipShopItem|authedRequest|fetch\(/, "the modal never calls the shop API itself");
-assert.match(modal, /createPortal\(node, document\.body\)/, "the modal portals into <body>");
+assert.match(modal, /createPortal\(node, document\.body\)|<OverlayPortal>\{node\}<\/OverlayPortal>/, "the modal portals into <body>");
 assert.match(modal, /addEventListener\("keydown", onKey, true\)/, "Escape is handled in the capture phase");
 const css = read("../styles/store-purchase-modal.css");
 assert.match(css, /--us-avail-h/, "the modal is sized from the usable viewport");

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { PhoneOff, Mic, MicOff, Video, VideoOff, Monitor } from "lucide-react";
 import RippleButton from "./ui/RippleButton";
 import { useT } from "../context/LocaleContext";
+import OverlayPortal from "./ui/OverlayPortal";
 
 /**
  * Mobile-optimized video conference UI
@@ -35,6 +36,7 @@ export default function VideoConferenceMobile({
   const safeParticipants = Array.isArray(participants) ? participants : [];
 
   return (
+    <OverlayPortal>
     <motion.div
       className="vc-mobile-overlay"
       initial={{ opacity: 0, y: "100%" }}
@@ -84,5 +86,6 @@ export default function VideoConferenceMobile({
         </RippleButton>
       </div>
     </motion.div>
+    </OverlayPortal>
   );
 }

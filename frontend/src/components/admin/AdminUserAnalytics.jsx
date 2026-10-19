@@ -4,6 +4,7 @@ import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import { SkeletonLine } from "../ui/Skeleton";
+import OverlayPortal from "../ui/OverlayPortal";
 
 function sourceLabel(key, t) {
   if (!key) return t("common.unknown");
@@ -57,6 +58,7 @@ export default function AdminUserAnalytics({ userId, onClose }) {
   const timeline = payload?.timeline || [];
 
   return (
+    <OverlayPortal>
     <div className="admin-user-analytics-overlay" role="dialog" aria-modal="true">
       <div className="admin-user-analytics">
         <header>
@@ -139,5 +141,6 @@ export default function AdminUserAnalytics({ userId, onClose }) {
         ) : null}
       </div>
     </div>
+    </OverlayPortal>
   );
 }

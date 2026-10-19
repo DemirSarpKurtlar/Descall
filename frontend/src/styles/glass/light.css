@@ -44,3 +44,10 @@ html.glass-ui[data-theme="light"] .g-tabbar,
 html.glass-ui[data-theme="light"] .g-glass.g-heavy {
   box-shadow: var(--g-shadow-heavy), inset 0 0 0 0.5px var(--g-hair);
 }
+
+/* Feedback type segment: selected pill was white label on a white lens. */
+html.glass-ui[data-theme="light"] .feedback-type-btn.active {
+  color: #1c1c22;
+  background: rgba(0, 122, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.45);
+}

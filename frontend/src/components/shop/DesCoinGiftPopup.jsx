@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Coins, Sparkles, X } from "lucide-react";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
+import OverlayPortal from "../ui/OverlayPortal";
 
 /**
  * Full-screen celebratory popup shown when an admin grants a user DesCoin
@@ -15,6 +16,7 @@ export default function DesCoinGiftPopup({ gift, onDismiss }) {
   const { amount, message, from } = gift;
 
   return (
+    <OverlayPortal>
     <AnimatePresence>
       <motion.div
         className="shop-gift-backdrop"
@@ -59,5 +61,6 @@ export default function DesCoinGiftPopup({ gift, onDismiss }) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </OverlayPortal>
   );
 }

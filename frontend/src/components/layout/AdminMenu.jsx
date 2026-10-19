@@ -11,6 +11,7 @@ import { confirmAction } from "../../lib/glassConfirm";
 import { useT } from "../../context/LocaleContext";
 import { API_BASE_URL } from "../../config/api";
 import { SkeletonLine, ConversationListSkeleton } from "../ui/Skeleton";
+import OverlayPortal from "../ui/OverlayPortal";
 
 export default function AdminMenu({ onClose, onLogout, me }) {
   const [activeSection, setActiveSection] = useState("overview");
@@ -25,6 +26,7 @@ export default function AdminMenu({ onClose, onLogout, me }) {
   ];
 
   return (
+    <OverlayPortal>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -116,6 +118,7 @@ export default function AdminMenu({ onClose, onLogout, me }) {
         </div>
       </motion.div>
     </motion.div>
+    </OverlayPortal>
   );
 }
 

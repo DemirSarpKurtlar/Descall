@@ -7,6 +7,7 @@ import { getMe } from "../../api/auth";
 import { getToken } from "../../lib/storage";
 import { ageGroupOf, isEligibleBirthDate } from "../../lib/age";
 import "../../styles/age-gate.css";
+import OverlayPortal from "../ui/OverlayPortal";
 
 function formatDate(iso, locale) {
   const [y, m, d] = String(iso).split("-").map(Number);
@@ -58,6 +59,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
 
   if (known && ageGroupOf(known) === "child") {
     return (
+      <OverlayPortal>
       <div className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
         <div className="age-gate-card">
           <div className="age-gate-icon age-gate-icon--warn"><ShieldCheck size={26} /></div>
@@ -71,6 +73,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
           </button>
         </div>
       </div>
+      </OverlayPortal>
     );
   }
 
@@ -107,6 +110,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
   };
 
   return (
+    <OverlayPortal>
     <div className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
       <div className="age-gate-card">
         <div className="age-gate-icon"><ShieldCheck size={26} /></div>
@@ -152,5 +156,6 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
         )}
       </div>
     </div>
+    </OverlayPortal>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import OverlayPortal from "../ui/OverlayPortal";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
 import { X, UserPlus, MessageSquare, Check, UserMinus, Flag } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
@@ -464,6 +465,7 @@ function UserProfileModal({
   }
 
   return (
+    <OverlayPortal>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -486,13 +488,16 @@ function UserProfileModal({
         >
           <motion.div
             key={userId || "profile"}
-            initial={{ scale: 0.88, opacity: 0, y: 24 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 16 }}
-            transition={{ type: "spring", damping: 26, stiffness: 360 }}
+            initial={reduceMotion ? { opacity: 0 } : { scale: 0.94, opacity: 0, y: 12 }}
+            animate={reduceMotion ? { opacity: 1, transition: REDUCED_MOTION_FADE } : { scale: 1, opacity: 1, y: 0, transition: framerSpring(SPRINGS.sheet) }}
+            exit={reduceMotion ? { opacity: 0, transition: REDUCED_MOTION_FADE } : { scale: 0.96, opacity: 0, y: 8, transition: framerSpring(SPRINGS.sheet) }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={displayName}
             className={[
               "user-profile-card",
               glassDesktop ? "is-gd" : "",
+              equippedBackgroundUrl ? "has-custom-bg" : "",
               fetched?.equippedProfileAura?.effect_key
                 ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}`
                 : "",
@@ -859,6 +864,7 @@ function UserProfileModal({
         contextType="profile"
       />
     </AnimatePresence>
+    </OverlayPortal>
   );
 }
 

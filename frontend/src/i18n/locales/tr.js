@@ -1375,7 +1375,7 @@ export const phrases = {
   "Output Device": "Çıkış Cihazı",
   "Speakers 1": "Hoparlör 1",
   "Headphones": "Kulaklık",
-  "Volume": "Volume",
+  "Volume": "Ses düzeyi",
   "Test Sound": "Test Sesi",
   "Play Test Sound": "Test Sesini Çal",
   "Configure your privacy settings": "Gizlilik ayarlarını yapılandır",

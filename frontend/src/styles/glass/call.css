@@ -521,7 +521,7 @@ html.glass-ui .g-call .g-cb:active {
 html.glass-ui .g-call-menu {
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
-    rgba(20, 21, 30, 0.62) !important;
+    rgba(20, 21, 30, 0.86) !important;
   -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   border: 0 !important;
@@ -541,7 +541,7 @@ html.glass-ui .g-call-menu button {
 html.glass-ui .g-call-sheet {
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
-    rgba(20, 21, 30, 0.72) !important;
+    rgba(20, 21, 30, 0.86) !important;
   -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   border-radius: 28px !important;

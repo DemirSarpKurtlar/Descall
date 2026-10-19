@@ -32,6 +32,7 @@ import './DownloadPage.css';
 import BirthDateInput from "../auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../../lib/age";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import OverlayPortal from "../ui/OverlayPortal";
 
 const GITHUB_REPO = 'DemirSarpKurtlar/Descall';
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
@@ -492,6 +493,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
       </footer>
 
       {/* Login Modal */}
+      <OverlayPortal>
       <AnimatePresence>
       {showLogin && (
         <motion.div 
@@ -668,6 +670,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
         </motion.div>
       )}
       </AnimatePresence>
+      </OverlayPortal>
       <LegalContentModal open={legalModal === "terms"} type="terms" onClose={() => setLegalModal(null)} />
       <LegalContentModal open={legalModal === "privacy"} type="privacy" onClose={() => setLegalModal(null)} />
       </div>

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, Shield } from "lucide-react";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
+import OverlayPortal from "../ui/OverlayPortal";
 
 const SEVERITY_TONE = {
   info: { label: "Info", color: "#6ea0ff" },
@@ -121,6 +122,7 @@ export default function AdminBroadcastPopup({ popup, onDismiss, preview = false 
   if (!popup) return null;
 
   return (
+    <OverlayPortal>
     <AnimatePresence>
       <motion.div
         className="admin-broadcast-backdrop"
@@ -134,5 +136,6 @@ export default function AdminBroadcastPopup({ popup, onDismiss, preview = false 
         </div>
       </motion.div>
     </AnimatePresence>
+    </OverlayPortal>
   );
 }

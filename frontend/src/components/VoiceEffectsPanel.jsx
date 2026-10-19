@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useT } from '../context/LocaleContext';
 import './VoiceEffectsPanel.css';
+import OverlayPortal from "./ui/OverlayPortal";
 
 const PRESET_ICONS = {
   none: Mic,
@@ -335,6 +336,7 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
   if (!isOpen) return null;
 
   return (
+    <OverlayPortal>
     <div className="voice-effects-panel-overlay" onClick={onClose}>
       <div className="voice-effects-panel" onClick={e => e.stopPropagation()}>
         <div className="panel-header">
@@ -478,5 +480,6 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
         </div>
       </div>
     </div>
+    </OverlayPortal>
   );
 }

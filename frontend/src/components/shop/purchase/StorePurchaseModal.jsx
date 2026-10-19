@@ -1,3 +1,4 @@
+import OverlayPortal from "../../ui/OverlayPortal.jsx";
 // Store purchase modal / sheet (2.13.1), built from the approved mockups
 // (design/store-purchase-modal-2026-10-19). Desktop and Electron get the centred
 // heavy-glass modal; phones (iOS) get the bottom sheet.
@@ -5,7 +6,6 @@
 // onEquip is ShopPanel.handleEquip(item, isEquipped), with the same endpoints, prices and
 // DesCoin rules as the cards. This file only renders and sequences them.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from "framer-motion";
 import {
   Check, CircleDot, Crown, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus,
@@ -512,5 +512,5 @@ export default function StorePurchaseModal({
   );
 
   if (typeof document === "undefined" || !document.body) return node;
-  return createPortal(node, document.body);
+  return <OverlayPortal>{node}</OverlayPortal>;
 }
