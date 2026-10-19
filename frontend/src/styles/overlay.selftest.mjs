@@ -49,3 +49,22 @@ assert.deepEqual(offenders, [], "backdrops rendered in place");
 const profile = readFileSync(join(src, "components/social/UserProfileModal.jsx"), "utf8");
 assert.match(profile, /<OverlayPortal>\s*<AnimatePresence>/, "desktop profile popup is portaled (was scoped to the chat panel)");
 console.log(`overlay selftest ok (${backdrops.length} backdrops)`);
+
+// Surfaces are never see-through: frost bases >= 0.85, separate transparent
+// Electron windows >= 0.94 (CSS blur cannot sample the desktop), every frost
+// and backdrop rule has an opaque fallback, purchase modal base >= 0.85.
+const alpha = (s, re) => Number(s.match(re)[1]);
+const frost = readFileSync(join(here, "frost.css"), "utf8");
+assert.ok(alpha(frost, /--frost-base-dark:\s*rgba\([^)]*,\s*([0-9.]+)\)/) >= 0.85, "dark frost base >= 0.85");
+assert.ok(alpha(frost, /--frost-base-light:\s*rgba\([^)]*,\s*([0-9.]+)\)/) >= 0.85, "light frost base >= 0.85");
+assert.match(frost, /@supports not \(\(backdrop-filter/, "frost opaque fallback");
+assert.match(css, /@supports not \(\(backdrop-filter/, "backdrop opaque fallback");
+assert.match(css, /@supports not \(background: color-mix/, "color-mix fallback");
+const spm = readFileSync(join(here, "store-purchase-modal.css"), "utf8");
+assert.ok(Number("0" + spm.match(/--heavy:\s*rgba\([^)]*,\s*0?(\.[0-9]+)\)/)[1]) >= 0.85, "purchase modal base >= 0.85");
+assert.ok(backdrops.includes(".spm-scrim"), "store purchase scrim uses the shared backdrop");
+const card = readFileSync(join(src, "..", "electron", "notificationCard.cjs"), "utf8");
+assert.ok(alpha(card, /rgba\(\s*18,\s*20,\s*30,\s*([0-9.]+)\)/) >= 0.94, "Electron notification card >= 0.94");
+const splash = readFileSync(join(src, "..", "electron", "splash.html"), "utf8");
+assert.ok(alpha(splash, /rgba\(\s*20,\s*21,\s*30,\s*([0-9.]+)\)/) >= 0.94, "splash card >= 0.94");
+console.log("overlay alpha checks ok");
