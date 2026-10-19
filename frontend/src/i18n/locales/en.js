@@ -1,5 +1,7 @@
 /** Auto-generated + curated en locale */
+import { MAINT_EN } from "./maintenance.en.js";
 export const nested = {
+  maint: MAINT_EN,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Danger zone",

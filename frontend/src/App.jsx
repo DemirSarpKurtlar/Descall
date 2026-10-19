@@ -129,6 +129,7 @@ import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/d
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
+const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
@@ -4627,6 +4628,9 @@ export default function App() {
           }}
           onLogout={handleLogout}
         />
+        <Suspense fallback={null}>
+          <MaintenanceGate socket={socketApi} isAdmin={Boolean(me?.is_admin || me?.username === "admin")} />
+        </Suspense>
         {(me?.is_admin || me?.username === "admin") && adminOpen && (
           <Suspense fallback={null}>
             <AdminPanel socket={socketApi} viewerUsername={me?.username} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />

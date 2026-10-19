@@ -211,6 +211,8 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.use("/api/features", publicFeatureRoutes);
+app.use("/api/maintenance", require("./routes/maintenanceStatus"));
+app.use("/maintenance", require("./routes/maintenanceStatus"));
 // 2.11.7 (scale S3): public ES256 keys for the Cloudflare edge. Empty until
 // JWT_ES256_PRIVATE_KEY is set. Public by design; shared cache 1 h.
 app.get("/api/jwks.json", (_req, res) => {
@@ -1188,6 +1190,11 @@ io.use(socketAuthMiddleware);
 require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
+{
+  const maint = require("./runtime/maintenanceInstance");
+  maint.attachIo(io);
+  if (process.env.NODE_ENV !== "test") maint.service.start();
+}
 
 // Activity handlers run on every authenticated socket connection
 // (registerSocketHandlers already sets up the main io.on('connection') listener;

@@ -58,6 +58,7 @@ const BCRYPT_ROUNDS = 12;
 router.use(requireAuth, requireAdmin);
 router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
+router.use(require("./adminMaintenance"));
 
 router.get("/directory", async (req, res) => {
   try {
