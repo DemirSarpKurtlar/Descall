@@ -119,27 +119,43 @@ html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-o
   background: var(--frost-solid) !important;
 }
 
-/* Electron: scrims pad the top by the title bar so a card never slides under
-   the window controls. Mirror it at the bottom so the card's centre is the
-   window's centre, not the centre of the area below the title bar. (The
-   settings shell keeps its own layout.) */
-:root:root:root:root.glass-desktop.electron-app :is(.conv-confirm-overlay, .server-modal-overlay,
+/* Window fit (same variables as settings.css, PR #219): every scrim pads the
+   unusable strip (Electron title bar, taskbar overlap, safe areas) plus a gap,
+   mirrored top and bottom so the card's centre is the window's centre, and
+   every card is capped to what is left (scrolls inside instead of running
+   off a short window: 1024x670, 900x600). The settings shell keeps its own
+   layout from settings.css. */
+:root {
+  --ov-safe-y: max(var(--us-safe-top, 0px), var(--us-safe-bottom, 0px));
+  --ov-gap-y: clamp(8px, 3vh, 24px);
+  --ov-fit-h: calc(100vh - 2 * var(--ov-safe-y) - 2 * var(--ov-gap-y));
+}
+@supports (height: 100dvh) {
+  :root { --ov-fit-h: calc(100dvh - 2 * var(--ov-safe-y) - 2 * var(--ov-gap-y)); }
+}
+:root:root:root:root.glass-desktop :is(.conv-confirm-overlay, .server-modal-overlay,
   .add-modal-backdrop, .feedback-overlay, .legal-modal-backdrop, .activity-modal-backdrop,
   .invite-modal-overlay, .g-alert-scrim, .modal-backdrop, .giphy-overlay, .report-modal-overlay,
-  .user-profile-scrim) {
+  .user-profile-scrim, .un-overlay, .server-rules-overlay, .img-crop-overlay,
+  .server-icon-picker-overlay, .shop-gift-backdrop, .admin-broadcast-backdrop,
+  .voice-modal-overlay):not(.g-server-menu-scrim) {
   box-sizing: border-box;
-  padding-top: calc(24px + var(--electron-titlebar-h, 0px)) !important;
-  padding-bottom: calc(24px + var(--electron-titlebar-h, 0px)) !important;
+  padding-top: calc(var(--ov-safe-y) + var(--ov-gap-y)) !important;
+  padding-bottom: calc(var(--ov-safe-y) + var(--ov-gap-y)) !important;
 }
-
-/* Desktop settings / store: its shell is the full-window scrim. Same dim and
-   blur as every other modal (layout of the shell is untouched here). */
-:root:root:root:root .user-settings-shell.is-desktop {
-  background: var(--overlay-dim) !important;
-  -webkit-backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
-  backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+:root:root:root:root.glass-desktop :is(.conv-confirm-overlay, .server-modal-overlay,
+  .add-modal-backdrop, .feedback-overlay, .legal-modal-backdrop, .activity-modal-backdrop,
+  .invite-modal-overlay, .g-alert-scrim, .modal-backdrop, .giphy-overlay, .report-modal-overlay,
+  .user-profile-scrim, .un-overlay, .server-rules-overlay, .img-crop-overlay,
+  .server-icon-picker-overlay, .shop-gift-backdrop, .admin-broadcast-backdrop,
+  .voice-modal-overlay):not(.g-server-menu-scrim) > :is(.server-modal, .add-modal, .feedback-modal,
+  .report-modal, .modal-card, .legal-modal-card, .g-alert, .user-profile-card, .activity-modal,
+  .un-modal, .invite-modal, .conv-confirm-card, .giphy-panel, .img-crop-modal, .shop-gift-card,
+  .admin-broadcast-card, [role="dialog"]) {
+  max-height: var(--ov-fit-h) !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-:root:root:root:root:is(.a11y-solid, .gd-lite) .user-settings-shell.is-desktop { background: var(--overlay-dim-solid) !important; }
 
 /* Admin panel (findings Y6): the shell is the full-window scrim, the card sat
    at ~0.5 alpha inside it (nested backdrop root, so its own blur saw nothing). */
