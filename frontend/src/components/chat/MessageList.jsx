@@ -37,6 +37,7 @@ import { BadgeIcon, CountryBadge, NameEffectText, profileAuraClass } from "../ui
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS } from "../../lib/singleActiveHover";
+import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
 import { getLocale } from "../../i18n/runtime";
 import { formatMessageClock, formatMessageDate, intlLocaleTag, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
@@ -978,22 +979,72 @@ function MessageBubble({
 
   useEffect(() => () => messageHoverToolbar.forget(hoverKey.current), []);
 
-  // Desktop hover toolbar: pin it to the row's top-right (the message group's
-  // right edge), not the bubble's left edge. Anchored to a narrow bubble the
-  // bar used to sit on the header row (avatar, name, badges) and spill past
-  // the left edge of the chat column.
+  // Desktop hover toolbar placement (lib/hoverToolbarPlacement.js): the pill is
+  // anchored to the row's top-right inside the visible chat column, never on the
+  // header (avatar, name, badges, time) and never clipped; above the row when
+  // short of space, quick reactions folded into the emoji button as a last resort.
+  const [barCompact, setBarCompact] = useState(false);
+  const placeBar = useCallback(() => {
+    const el = bubbleRef.current;
+    const bar = el?.querySelector(":scope > .message-hover-bar");
+    if (!el || !bar) return;
+    const row = el.closest(".message-group") || el.parentElement;
+    const list = el.closest(".message-list");
+    if (!row || !list) return;
+    const rect = (n) => n.getBoundingClientRect();
+    // The visible column is the list's scroll container (the list itself can be
+    // taller than the viewport and start far above it).
+    let scroller = list;
+    for (let n = list; n && n !== document.body; n = n.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(n).overflowY) && n.scrollHeight > n.clientHeight) { scroller = n; break; }
+    }
+    const l = rect(scroller);
+    const lw = scroller.clientWidth || l.width;
+    // Visible part of the list (it can extend under the title bar / window edge).
+    const clip = {
+      left: Math.max(l.left, 0),
+      right: Math.min(l.left + lw, window.innerWidth),
+      top: Math.max(l.top, 0),
+      bottom: Math.min(l.bottom, window.innerHeight),
+    };
+    const qr = bar.querySelector(".msg-quick-react");
+    const compactNow = bar.classList.contains("is-compact");
+    if (!compactNow && qr) bar.dataset.qrw = String(qr.offsetWidth + 8);
+    const qrW = Number(bar.dataset.qrw || 0);
+    const fullWidth = compactNow ? bar.offsetWidth + qrW : bar.offsetWidth;
+    const compactW = fullWidth - qrW;
+    // Row header (avatar, name, badges, time) plus the floating conversation
+    // header pills that overlay the top of the list.
+    const obstacles = [
+      ...row.querySelectorAll(":scope > .message-header .message-avatar, :scope > .message-header .message-meta > *"),
+      ...document.querySelectorAll(".chat-top-chrome .header-left, .chat-top-chrome .header-right"),
+    ].map(rect).filter((r) => r.width > 0 && r.height > 0);
+    // The hovered message itself: the pill may overlap the row's empty top-right,
+    // never the text, media or embed it acts on.
+    obstacles.push(rect(el));
+    const p = placeHoverToolbar({
+      row: rect(row), clip, bubble: rect(el), obstacles,
+      fullW: fullWidth, compactW, barH: bar.offsetHeight || 44,
+    });
+    const b = rect(el);
+    el.style.setProperty("--mhb-shift", `${Math.round(p.right - b.right)}px`);
+    el.style.setProperty("--mhb-top", `${Math.round(p.top - b.top)}px`);
+    bar.dataset.place = p.where;
+    setBarCompact(p.compact);
+  }, []);
   useLayoutEffect(() => {
     const el = bubbleRef.current;
-    if (!el || glass) return;
+    if (!el || glass) return undefined;
     if (!menuOpen) {
       el.style.removeProperty("--mhb-shift");
-      return;
+      el.style.removeProperty("--mhb-top");
+      setBarCompact(false);
+      return undefined;
     }
-    const row = el.closest(".message-group") || el.parentElement;
-    if (!row) return;
-    const shift = row.getBoundingClientRect().right - 8 - el.getBoundingClientRect().right;
-    el.style.setProperty("--mhb-shift", `${Math.round(shift)}px`);
-  }, [menuOpen, glass]);
+    placeBar();
+    window.addEventListener("resize", placeBar);
+    return () => window.removeEventListener("resize", placeBar);
+  }, [menuOpen, glass, placeBar]);
 
   // Full reaction picker: open below the bar, flip above when it would be
   // clipped by the bottom of the message list.
@@ -1372,7 +1423,7 @@ function MessageBubble({
         <AnimatePresence>
           {menuOpen && !editing && !glass && (
             <motion.div
-              className="message-hover-bar other"
+              className={`message-hover-bar other${barCompact ? " is-compact" : ""}`}
               initial={{ opacity: 0, y: 6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 2, scale: 0.98, transition: { duration: 0.08, ease: "easeOut" } }}
