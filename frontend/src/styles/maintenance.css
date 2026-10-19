@@ -140,7 +140,7 @@ table.mt-h td{padding:9px 8px;border-top:1px solid rgba(255,255,255,.06);white-s
 @keyframes mt-pop{from{opacity:0;transform:scale(.94)}}
 
 /* ---------- user full screen ---------- */
-.mt-screen{position:fixed;inset:0;z-index:99990;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px calc(env(safe-area-inset-bottom,0px) + 16px);overflow:auto;color:#f4f6fb;font-family:-apple-system,"SF Pro Display","Inter","Segoe UI",system-ui,sans-serif;letter-spacing:-.01em;background:radial-gradient(60% 50% at 15% 10%,rgba(10,132,255,.32),transparent 60%),radial-gradient(50% 50% at 90% 90%,rgba(94,92,230,.28),transparent 60%),#0d0f15}
+.mt-screen{position:fixed;inset:0;z-index:99990;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px calc(env(safe-area-inset-bottom,0px) + 16px);overflow:auto;color:#f4f6fb;font-family:-apple-system,"SF Pro Display","Inter","Segoe UI",system-ui,sans-serif;letter-spacing:-.01em;background:radial-gradient(60% 50% at 15% 10%,rgba(10,132,255,.32),transparent 60%),radial-gradient(50% 50% at 90% 90%,rgba(94,92,230,.28),transparent 60%),#0d0f15}
 html.electron .mt-screen,.mt-screen.has-titlebar{top:32px}
 .mt-mc{border-radius:30px;padding:26px 30px 22px;text-align:center;width:460px;max-width:100%}
 .mt-mc .lg{width:76px;height:76px;border-radius:20px;box-shadow:0 14px 36px rgba(10,132,255,.4)}
