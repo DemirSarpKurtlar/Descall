@@ -8,6 +8,7 @@ import { Avatar } from "../ui/Avatar";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import { confirmAction } from "../../lib/glassConfirm";
 import { useT } from "../../context/LocaleContext";
+import OverlayPortal from "../ui/OverlayPortal";
 
 /**
  * COMPLETELY REBUILT SETTINGS PANEL
@@ -37,6 +38,7 @@ export default function SettingsPanelNew({ onClose, me }) {
   ];
 
   return (
+    <OverlayPortal>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -117,6 +119,7 @@ export default function SettingsPanelNew({ onClose, me }) {
         </div>
       </motion.div>
     </motion.div>
+    </OverlayPortal>
   );
 }
 

@@ -1,0 +1,142 @@
+/* One backdrop for every modal, sheet and dialog (2.13.x modal audit).
+   Every listed scrim is rendered through <OverlayPortal> (document.body), so
+   position: fixed is relative to the window, never to a panel that has a
+   transform / filter / backdrop-filter (which would create a containing block
+   and scope the scrim to that panel: the "blur only covers the right panel,
+   seam at its edge" bug). Here each scrim covers the whole window edge to edge
+   with one uniform heavy blur + dim and centres its card in the viewport.
+   Menu click-catchers (.g-msg-scrim, .g-server-menu-scrim, .reaction-picker-
+   backdrop, .g-attach-scrim, ...) are intentionally NOT listed: popovers keep
+   their anchor and do not dim the app.
+   The list is the single source of truth, checked by overlay.selftest.mjs. */
+
+:root {
+  --overlay-blur: 28px;
+  --overlay-saturate: 140%;
+  --overlay-dim: rgba(6, 7, 12, 0.62);
+  --overlay-dim-solid: rgba(6, 7, 12, 0.86);
+  /* z-index scale (higher = on top). Existing per-surface values keep their
+     relative order; new overlays use these. */
+  --z-popover: 12000;
+  --z-modal: 20000;
+  --z-modal-nested: 30000;
+  --z-alert: 100500;
+  --z-toast: 110000;
+}
+:root[data-theme="light"] {
+  --overlay-dim: rgba(20, 22, 30, 0.42);
+  --overlay-dim-solid: rgba(20, 22, 30, 0.72);
+}
+
+/* OVERLAY-BACKDROPS:BEGIN */
+:root:root:root:root :is(
+  .modal-backdrop, .user-profile-scrim, .add-modal-backdrop, .feedback-overlay, .server-modal-overlay,
+  .legal-modal-backdrop, .activity-modal-backdrop, .invite-modal-overlay, .conv-confirm-overlay,
+  .g-alert-scrim, .img-crop-overlay, .server-icon-picker-overlay, .report-modal-overlay, .o3-scrim,
+  .gs-scrim, .group-info-scrim, .g-profile-scrim, .un-overlay, .server-rules-overlay, .dsx-scrim,
+  .age-gate-backdrop, .voice-modal-overlay, .shop-gift-backdrop, .login-modal-overlay,
+  .admin-user-analytics-overlay, .admin-broadcast-backdrop, .settings-overlay, .user-panel-backdrop,
+  .voice-effects-panel-overlay, .electron-screen-picker-overlay, .mobile-sheet-backdrop, .giphy-overlay
+):not(.g-server-menu-scrim)
+/* OVERLAY-BACKDROPS:END */
+{
+  position: fixed !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  transform: none;
+  border-radius: 0 !important;
+  border: 0 !important;
+  outline: 0;
+  background: var(--overlay-dim) !important;
+  -webkit-backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+  backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+  /* Electron frameless: the scrim must also sit over the custom title bar and
+     must not be a drag region (clicks outside close the modal). */
+  -webkit-app-region: no-drag;
+  isolation: isolate;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root:root:root:root :is(.modal-backdrop, .user-profile-scrim, .add-modal-backdrop, .feedback-overlay,
+    .server-modal-overlay, .legal-modal-backdrop, .activity-modal-backdrop, .invite-modal-overlay,
+    .conv-confirm-overlay, .g-alert-scrim, .img-crop-overlay, .server-icon-picker-overlay,
+    .report-modal-overlay, .o3-scrim, .gs-scrim, .group-info-scrim, .g-profile-scrim, .un-overlay,
+    .server-rules-overlay, .dsx-scrim, .age-gate-backdrop, .voice-modal-overlay, .shop-gift-backdrop,
+    .login-modal-overlay, .admin-user-analytics-overlay, .admin-broadcast-backdrop, .settings-overlay,
+    .user-panel-backdrop, .voice-effects-panel-overlay, .electron-screen-picker-overlay,
+    .mobile-sheet-backdrop, .giphy-overlay):not(.g-server-menu-scrim) {
+    background: var(--overlay-dim-solid) !important;
+  }
+}
+:root:root:root:root:is(.a11y-solid, .gd-lite) :is(.modal-backdrop, .user-profile-scrim, .add-modal-backdrop,
+  .feedback-overlay, .server-modal-overlay, .legal-modal-backdrop, .activity-modal-backdrop,
+  .invite-modal-overlay, .conv-confirm-overlay, .g-alert-scrim, .img-crop-overlay,
+  .server-icon-picker-overlay, .report-modal-overlay, .o3-scrim, .gs-scrim, .group-info-scrim,
+  .g-profile-scrim, .un-overlay, .server-rules-overlay, .dsx-scrim, .age-gate-backdrop,
+  .voice-modal-overlay, .shop-gift-backdrop, .login-modal-overlay, .admin-user-analytics-overlay,
+  .admin-broadcast-backdrop, .settings-overlay, .user-panel-backdrop, .voice-effects-panel-overlay,
+  .electron-screen-picker-overlay, .mobile-sheet-backdrop, .giphy-overlay):not(.g-server-menu-scrim) {
+  background: var(--overlay-dim-solid) !important;
+}
+
+/* Electron title bar (fixed, z-index 2147483000, always above the app so the
+   window controls keep working). While a modal is open (detected with :has(), no JS) it gets the same dim + blur layer as the scrim, so the
+   backdrop reads edge to edge with no unblurred strip at the top; only the
+   window controls stay crisp and clickable above it. */
+html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 -1px 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--overlay-dim);
+  -webkit-backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate));
+  backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate));
+  animation: dc-overlay-fade 180ms ease-out both;
+}
+html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar { border-bottom-color: transparent; }
+html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar-controls { position: relative; z-index: 2; }
+@keyframes dc-overlay-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.server-icon-picker-overlay,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay), .user-settings-shell.is-desktop):not(.g-server-menu-scrim)) .titlebar::after { animation-duration: 1ms; }
+}
+
+/* Cards inside a scrim. The scrim has its own backdrop-filter, which makes it
+   a backdrop root: a card's backdrop-filter then only samples the scrim's
+   (empty) layer, so a translucent card fill showed the app through it,
+   readable (the desktop profile card used a ~0.5 alpha fill). Cards get the
+   heavy frosted base instead; the scrim already blurs the app behind. A
+   purchased profile background keeps its own tinted gradient. */
+:root:root:root:root .user-profile-card.is-gd:not(.has-custom-bg),
+:root:root:root:root .modal-card,
+:root:root:root:root .user-settings.is-desktop {
+  background: var(--frost-sheen), linear-gradient(var(--frost-base), var(--frost-base)) !important;
+  background-color: var(--frost-base) !important;
+}
+:root:root:root:root:is(.a11y-solid, .gd-lite) :is(.user-profile-card.is-gd:not(.has-custom-bg), .modal-card, .user-settings.is-desktop) {
+  background: var(--frost-solid) !important;
+}
+
+/* Electron: scrims pad the top by the title bar so a card never slides under
+   the window controls. Mirror it at the bottom so the card's centre is the
+   window's centre, not the centre of the area below the title bar. (The
+   settings shell keeps its own layout.) */
+:root:root:root:root.glass-desktop.electron-app :is(.conv-confirm-overlay, .server-modal-overlay,
+  .add-modal-backdrop, .feedback-overlay, .legal-modal-backdrop, .activity-modal-backdrop,
+  .invite-modal-overlay, .g-alert-scrim, .modal-backdrop, .giphy-overlay, .report-modal-overlay,
+  .user-profile-scrim) {
+  box-sizing: border-box;
+  padding-top: calc(24px + var(--electron-titlebar-h, 0px)) !important;
+  padding-bottom: calc(24px + var(--electron-titlebar-h, 0px)) !important;
+}
+
+/* Desktop settings / store: its shell is the full-window scrim. Same dim and
+   blur as every other modal (layout of the shell is untouched here). */
+:root:root:root:root .user-settings-shell.is-desktop {
+  background: var(--overlay-dim) !important;
+  -webkit-backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+  backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate)) !important;
+}
+:root:root:root:root:is(.a11y-solid, .gd-lite) .user-settings-shell.is-desktop { background: var(--overlay-dim-solid) !important; }

@@ -4,6 +4,7 @@ import { Gift, Sparkles, X } from "lucide-react";
 import RippleButton from "../ui/RippleButton";
 import { equipShopItem } from "../../api/shop";
 import { useT } from "../../context/LocaleContext";
+import OverlayPortal from "../ui/OverlayPortal";
 
 const CATEGORY_LABEL = {
   banner: "Profile Banner",
@@ -52,6 +53,7 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
   };
 
   return (
+    <OverlayPortal>
     <AnimatePresence>
       <motion.div
         className="shop-gift-backdrop"
@@ -107,5 +109,6 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </OverlayPortal>
   );
 }

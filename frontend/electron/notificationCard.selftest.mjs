@@ -45,6 +45,7 @@ assert.equal(resolveMark({ title: "Friend Request", from: "Ege" }).letter, "E");
 
 for (const html of [system, message, call]) {
   assert.match(html, /backdrop-filter:\s*blur\(40px\) saturate\(180%\)/);
+assert.match(html, /rgba\(18, 20, 30, 0\.97\)/, "card base is near-opaque (separate window, nothing to blur)");
   assert.match(html, /-webkit-line-clamp:\s*2/);
   assert.match(html, /white-space:\s*normal/);
   assert.match(html, /prefers-reduced-motion:\s*reduce/);

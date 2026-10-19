@@ -8,6 +8,7 @@ import {
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { useT } from "../../context/LocaleContext";
+import OverlayPortal from "../ui/OverlayPortal";
 
 /**
  * COMPLETELY REBUILT VOICE CALL UI
@@ -43,6 +44,7 @@ export default function VoiceCallUI({
   const unknown = t("Unknown");
 
   return (
+    <OverlayPortal>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -256,5 +258,6 @@ export default function VoiceCallUI({
         </div>
       </motion.div>
     </motion.div>
+    </OverlayPortal>
   );
 }
