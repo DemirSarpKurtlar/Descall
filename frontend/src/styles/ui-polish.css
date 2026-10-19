@@ -261,20 +261,22 @@
   max-width: min(320px, calc(100vw - 48px));
 }
 
-/* Own messages: pin to bubble's right edge; others: left edge (never off-screen) */
+/* Top-right of the message row, overlapping the bubble's top edge.
+   --mhb-shift (set in MessageList) moves the anchor from the bubble's
+   right edge to the row's right edge, so the bar never covers the
+   avatar, name or badges and never spills past the chat column. */
 .message-hover-bar.own,
-.message-bubble.own .message-hover-bar {
-  right: 0;
-  left: auto;
-}
 .message-hover-bar.other,
-.message-bubble:not(.own) .message-hover-bar {
-  left: 0;
-  right: auto;
+.message-bubble .message-hover-bar {
+  top: -16px;
+  bottom: auto;
+  right: calc(-1 * var(--mhb-shift, 0px));
+  left: auto;
+  max-width: none;
 }
 
 .message-bubble.menu-open {
-  z-index: 6;
+  z-index: 25;
 }
 
 .msg-quick-react {
@@ -314,7 +316,8 @@
 .message-inline-picker {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  right: 0;
+  left: auto;
   min-width: 220px;
   padding: 8px;
   border-radius: 12px;
@@ -323,9 +326,9 @@
   box-shadow: var(--shadow-md);
   z-index: 30;
 }
-.message-bubble.own .message-inline-picker {
-  left: auto;
-  right: 0;
+.message-inline-picker.flip-up {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 .message-inline-picker-head {
   display: flex;

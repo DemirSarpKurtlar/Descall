@@ -236,3 +236,21 @@ html.glass-ui:is(.a11y-solid, .gd-lite) .server-voice-menu-backdrop {
   background: rgba(6, 7, 12, 0.94) !important;
   -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
 }
+
+/* Profile cards, popouts and sheets: the window-fit rule above makes the
+   card a scroll container (overflow-y: auto). The avatar ring / aura and
+   fractional heights (scale-in spring, 150px banner + rounded 28px corners)
+   left it 1px taller than its box, so Electron and desktop web showed a
+   needless vertical scrollbar on the card's right edge. Never scroll
+   sideways, and keep scrolling (wheel, touch, keyboard) without a visible
+   bar. */
+:is(.user-profile-card, .user-hover-card, .profile-popover, .g-profile-sheet, .g-profile-body) {
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+:is(.user-profile-card, .user-hover-card, .profile-popover, .g-profile-sheet, .g-profile-body)::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
