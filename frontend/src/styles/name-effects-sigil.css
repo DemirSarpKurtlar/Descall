@@ -38,22 +38,25 @@
 }
 
 .cosmetic-name-effect.effect-sigil-sapphire {
+  /* 2.13.1: the pavilion faces were near-black navy (#082f49 / #0c4a6e / #075985) and the
+     name disappeared on dark surfaces. Same conic cut and face order, every dark face lifted
+     to a mid sapphire, plus a thin dark rim so the bright table still has an edge. */
   background-image: conic-gradient(
     from 210deg at 38% 42%,
-    #082f49 0 16%,
+    #3b82f6 0 16%,
     #38bdf8 16% 24%,
     #f0f9ff 24% 31%,
-    #0369a1 31% 48%,
+    #4f9df7 31% 48%,
     #7dd3fc 48% 57%,
-    #0c4a6e 57% 74%,
+    #5b8ff9 57% 74%,
     #e0f2fe 74% 82%,
-    #075985 82% 100%
+    #4a8cf5 82% 100%
   );
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 2px rgba(125, 211, 252, 0.55));
+  filter: drop-shadow(0 0 0.6px rgba(3, 14, 38, 0.95)) drop-shadow(0 0 3px rgba(125, 211, 252, 0.5));
 }
 
 .cosmetic-name-effect.effect-sigil-porcelain {
