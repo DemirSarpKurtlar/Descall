@@ -6,6 +6,12 @@
 # The game tab and its marketing pages were removed in 2.13.0: old links go home.
 /play / 301
 /play/* / 301
+/lfg / 301
+/lfg/* / 301
+/valorant / 301
+/valorant/* / 301
+/riot / 301
+/riot/* / 301
 /discord-alternative-for-lfg / 301
 /blog/best-discord-alternative-for-lfg / 301
 
