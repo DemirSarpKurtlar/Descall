@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Play, Pause } from "lucide-react";
 import { waveformFromSeed } from "../../lib/voiceMessage";
 import { useT } from "../../context/LocaleContext";
+import { needsVoiceCompat, fetchVoiceCompatUrl } from "../../lib/voiceCompat";
 
 /** Only one voice note plays at a time across the app */
 const stopBus = typeof window !== "undefined" ? new EventTarget() : null;
@@ -83,8 +84,13 @@ function resolveAudioDuration(audio) {
   });
 }
 
-export default function VoiceMessagePlayer({ audioUrl, duration: durationProp = 0, isOwn = false }) {
+export default function VoiceMessagePlayer({ audioUrl: originalUrl, duration: durationProp = 0, isOwn = false }) {
   const t = useT();
+  // Playable source: the original, or an AAC/M4A copy when this platform (iOS/Safari)
+  // cannot decode a WebM/Opus note recorded on Electron/Chromium.
+  const [compatUrl, setCompatUrl] = useState(null);
+  const compatTriedRef = useRef(false);
+  const audioUrl = compatUrl || originalUrl;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [resolvedDuration, setResolvedDuration] = useState(
@@ -93,7 +99,26 @@ export default function VoiceMessagePlayer({ audioUrl, duration: durationProp = 
   const [error, setError] = useState("");
   const audioRef = useRef(null);
   const idRef = useRef(`vm-${Math.random().toString(36).slice(2)}`);
-  const bars = useMemo(() => waveformFromSeed(audioUrl || idRef.current), [audioUrl]);
+  const bars = useMemo(() => waveformFromSeed(originalUrl || idRef.current), [originalUrl]);
+
+  const switchToCompat = useCallback(async () => {
+    if (compatTriedRef.current || !originalUrl) return null;
+    compatTriedRef.current = true;
+    const url = await fetchVoiceCompatUrl(originalUrl);
+    if (url) setCompatUrl(url);
+    return url;
+  }, [originalUrl]);
+
+  useEffect(() => {
+    setCompatUrl(null);
+    compatTriedRef.current = false;
+  }, [originalUrl]);
+
+  // Known-undecodable original (WebM on iOS): fetch the M4A copy up front.
+  useEffect(() => {
+    if (!originalUrl || compatUrl) return;
+    if (needsVoiceCompat(originalUrl, audioRef.current)) switchToCompat();
+  }, [originalUrl, compatUrl, switchToCompat]);
 
   const duration = resolvedDuration > 0 ? resolvedDuration : Number(durationProp) > 0 ? Number(durationProp) : 0;
 
@@ -102,7 +127,7 @@ export default function VoiceMessagePlayer({ audioUrl, duration: durationProp = 
     setCurrentTime(0);
     setIsPlaying(false);
     setError("");
-  }, [audioUrl, durationProp]);
+  }, [originalUrl, durationProp]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -149,6 +174,12 @@ export default function VoiceMessagePlayer({ audioUrl, duration: durationProp = 
     const onPause = () => setIsPlaying(false);
     const onError = () => {
       setIsPlaying(false);
+      if (!compatTriedRef.current && audioUrl === originalUrl) {
+        switchToCompat().then((url) => {
+          if (!url) setError(t("Can't play this voice note"));
+        });
+        return;
+      }
       setError(t("Can't play this voice note"));
     };
 
@@ -167,7 +198,7 @@ export default function VoiceMessagePlayer({ audioUrl, duration: durationProp = 
       audio.removeEventListener("error", onError);
       audio.pause();
     };
-  }, [audioUrl, duration, t]);
+  }, [audioUrl, originalUrl, duration, t, switchToCompat]);
 
   // Stop when another voice note starts
   useEffect(() => {

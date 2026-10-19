@@ -22,11 +22,16 @@ export function parseVoiceMeta(content, mediaType) {
 
 export function pickRecorderMime() {
   if (typeof MediaRecorder === "undefined") return "";
+  // AAC-in-MP4 first (Safari/iOS, and Chromium where an AAC encoder exists), then WebM/Opus
+  // (Chromium/Electron). Plain "audio/mp4" comes after WebM: Chromium accepts it but may put
+  // Opus inside, which older iOS cannot play. The server transcodes every note to AAC/M4A
+  // anyway (lib/voiceTranscode.js); this order only matters if that ever fails.
   const candidates = [
-    "audio/mp4",
-    "audio/aac",
+    "audio/mp4;codecs=mp4a.40.2",
     "audio/webm;codecs=opus",
     "audio/webm",
+    "audio/mp4",
+    "audio/aac",
     "audio/ogg;codecs=opus",
     "audio/ogg",
   ];

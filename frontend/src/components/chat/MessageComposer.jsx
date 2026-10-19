@@ -807,7 +807,8 @@ export default function MessageComposer({
             type: "media",
             mediaUrl: data.url,
             mediaType: "voice",
-            mimeType: actualMime,
+            // The server stores voice notes as AAC/M4A; report what was stored.
+            mimeType: data.mimeType || actualMime,
             originalName: data.originalName || `voice.${ext}`,
             size: data.size || blob.size,
             duration: durationSec,

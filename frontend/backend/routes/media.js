@@ -7,6 +7,7 @@ const supabase = require("../db/supabase");
 const { cacheUserProfile, broadcastUserProfileUpdate, toPublicUser } = require("../lib/userProfile");
 const privateMedia = require("../lib/privateMedia");
 const { recordFailure } = require("../lib/rateLimit");
+const voiceTranscode = require("../lib/voiceTranscode");
 
 const router = express.Router();
 
@@ -46,7 +47,12 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_ALL.includes(file.mimetype)) return cb(null, true);
+    // Browsers may send "audio/webm;codecs=opus": compare the base type only.
+    const base = voiceTranscode.baseMime(file.mimetype);
+    if (ALLOWED_ALL.includes(base)) {
+      file.mimetype = base;
+      return cb(null, true);
+    }
     cb(new Error(`File type ${file.mimetype} is not allowed.`));
   },
 });
@@ -94,6 +100,50 @@ router.post("/refresh", express.json({ limit: "64kb" }), async (req, res) => {
   res.json({ urls: out, ttlSeconds: privateMedia.URL_TTL_S });
 });
 
+// POST /api/media/voice-compat { url } → { url } : an AAC/M4A copy of an older voice note
+// (WebM/Opus recorded before 2.13.2) for clients that cannot decode the original (iOS).
+// Same access rule as /refresh. The copy is a new object next to the original
+// (<path>.m4a in the private bucket); the original and the message row are never touched.
+const compatInflight = new Map();
+router.post("/voice-compat", express.json({ limit: "16kb" }), async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  const limited = recordFailure(`media-voice-compat:${req.user.id}`, { windowMs: 10 * 60 * 1000, max: 60 });
+  if (!limited.ok) return res.status(429).json({ error: "rate_limited" });
+  const parsed = typeof req.body?.url === "string" ? privateMedia.parseMediaUrl(req.body.url) : null;
+  if (!parsed || parsed.path.startsWith("quarantine/") || /\.m4a$/i.test(parsed.path)) {
+    return res.status(400).json({ error: "bad_url" });
+  }
+  try {
+    if (!(await privateMedia.canAccessPath(supabase, req.user.id, parsed.path))) {
+      return res.status(404).json({ error: "not_found" });
+    }
+    const bucket = parsed.kind === "legacy" ? privateMedia.PUBLIC_BUCKET : privateMedia.PRIVATE_BUCKET;
+    const target = `${parsed.path.replace(/^quarantine\//, "")}.m4a`;
+    if (!privateMedia.isSafePath(target)) return res.status(400).json({ error: "bad_url" });
+    let job = compatInflight.get(target);
+    if (!job) {
+      job = (async () => {
+        const store = supabase.storage.from(privateMedia.PRIVATE_BUCKET);
+        const dir = target.slice(0, target.lastIndexOf("/"));
+        const name = target.slice(target.lastIndexOf("/") + 1);
+        const { data: existing } = await store.list(dir, { search: name, limit: 1 });
+        if (existing && existing.some((o) => o.name === name)) return;
+        const { data: blob, error: dlErr } = await supabase.storage.from(bucket).download(parsed.path);
+        if (dlErr || !blob) throw dlErr || new Error("download failed");
+        const out = await voiceTranscode.transcodeToM4a(Buffer.from(await blob.arrayBuffer()));
+        const { error: upErr } = await store.upload(target, out.buffer, { contentType: out.mimeType, upsert: true });
+        if (upErr) throw upErr;
+      })().finally(() => compatInflight.delete(target));
+      compatInflight.set(target, job);
+    }
+    await job;
+    return res.json({ url: privateMedia.signedUrlForPath(target), mimeType: voiceTranscode.OUTPUT_MIME });
+  } catch (err) {
+    console.warn("[MEDIA] voice-compat failed:", err?.message);
+    return res.status(500).json({ error: "compat_failed" });
+  }
+});
+
 // Upload file to Supabase Storage
 async function uploadPrivate(file, folder) {
   const ext = file.originalname.split(".").pop();
@@ -132,6 +182,12 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded." });
 
     const file = req.file;
+    const isPrivate = String(req.body?.purpose || "") === "message";
+    // Chat audio (voice notes) → AAC/M4A so a note recorded on Electron (WebM/Opus) plays on
+    // iOS and one recorded on iOS plays everywhere. On failure the original is stored.
+    if (isPrivate && ALLOWED_AUDIO.includes(file.mimetype)) {
+      await voiceTranscode.normalizeVoiceUpload(file);
+    }
     let mediaType = "file";
     if (ALLOWED_IMAGE.includes(file.mimetype)) mediaType = "image";
     else if (ALLOWED_VIDEO.includes(file.mimetype)) mediaType = "video";
@@ -142,7 +198,6 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     // purpose=message (2.11.2+ clients): chat attachment → private bucket, signed URL.
     // Anything else (group photo, server icon, feedback, pre-2.11.2 clients) stays public;
     // older clients' chat attachments are copied to private when the message is sent.
-    const isPrivate = String(req.body?.purpose || "") === "message";
     const stored = isPrivate ? await uploadPrivate(file, folder) : await uploadToSupabase(file, folder);
     const { url, path: storagePath } = stored;
 
