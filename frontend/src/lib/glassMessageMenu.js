@@ -276,11 +276,21 @@ function clamp(v, lo, hi) {
   return Math.min(Math.max(v, lo), Math.max(lo, hi));
 }
 
+/** Lift scale for the in-place pop (iMessage-style). Tall bubbles stay at 1. */
+export const LIFT_SCALE = 1.03;
+
 /**
- * Where the reaction bar, the lifted bubble and the menu go. The bubble stays
- * where it is when the stack fits; otherwise it moves the least distance that
- * keeps the bar above and the menu below on screen. A bubble taller than the
- * room left is scaled down from its anchored top corner to fit (never clipped).
+ * Where the reaction bar, the lifted bubble and the menu go (2.13.1).
+ * The bubble never moves: it lifts in place (small scale from its own
+ * centre, no translate), so it is exactly where the finger pressed it.
+ * The reaction bar sits just above it and the menu just below it. Only when
+ * there is no room do they flip, in this order:
+ *   1. bar above, menu below (default)
+ *   2. bar below, menu under the bar (bubble near the top)
+ *   3. bar above, menu above the bar (bubble near the bottom)
+ *   4. no room either way (very tall bubble): bar clamped to the safe top,
+ *      menu clamped to the safe bottom, both over the bubble.
+ * `vh` is the visible height (visualViewport when the keyboard is up).
  */
 export function liftLayout({
   rect,
@@ -294,34 +304,88 @@ export function liftLayout({
   gap = LIFT_GAP,
   safeTop = 62,
   safeBottom = 34,
-  minScale = 0.1,
+  viewTop = 0,
 }) {
   const width = Math.max(1, rect.width);
   const height = Math.max(1, rect.height);
-  const room = vh - safeTop - safeBottom - barH - menuH - gap * 2;
-  const scale = Math.min(1, Math.max(minScale, room / height));
-  const liftH = height * scale;
-  const minTop = safeTop + barH + gap;
-  const maxTop = vh - safeBottom - menuH - gap - liftH;
-  const liftTop = Math.round(clamp(rect.top, minTop, maxTop));
+  const top = rect.top;
+  const bottom = rect.top + height;
+  const lo = viewTop + safeTop;
+  const hi = viewTop + vh - safeBottom;
+  const scale = height > vh * 0.5 ? 1 : LIFT_SCALE;
+  // Visual extent of the scaled bubble (scaled about its centre).
+  const grow = (height * (scale - 1)) / 2;
+  const vTop = top - grow;
+  const vBottom = bottom + grow;
+  const roomAbove = vTop - lo;
+  const roomBelow = hi - vBottom;
+  const needBar = barH + gap;
+  const needMenu = menuH + gap;
+  let barTop;
+  let menuTop;
+  let placement;
+  if (roomAbove >= needBar && roomBelow >= needMenu) {
+    placement = "bar-above-menu-below";
+    barTop = vTop - gap - barH;
+    menuTop = vBottom + gap;
+  } else if (roomBelow >= needBar + needMenu) {
+    placement = "both-below";
+    barTop = vBottom + gap;
+    menuTop = barTop + barH + gap;
+  } else if (roomAbove >= needBar + needMenu) {
+    placement = "both-above";
+    barTop = vTop - gap - barH;
+    menuTop = barTop - gap - menuH;
+  } else {
+    placement = "clamped";
+    barTop = clamp(vTop - gap - barH, lo, hi - menuH - gap - barH);
+    menuTop = clamp(vBottom + gap, barTop + barH + gap, hi - menuH);
+  }
   const bw = Math.min(barW, vw - EDGE * 2);
   const mw = Math.min(menuW, vw - EDGE * 2);
   const anchorLeft = (w) =>
     isOwn ? clamp(rect.left + width - w, EDGE, vw - EDGE - w) : clamp(rect.left, EDGE, vw - EDGE - w);
   return {
-    liftTop,
-    liftLeft: Math.round(rect.left),
+    placement,
+    liftTop: top,
+    liftLeft: rect.left,
     liftScale: scale,
-    liftH,
-    dy: Math.round(rect.top - liftTop),
-    barTop: Math.round(liftTop - gap - barH),
+    liftH: height,
+    dy: 0,
+    barTop: Math.round(barTop),
     barLeft: Math.round(anchorLeft(bw)),
     barW: bw,
-    menuTop: Math.round(liftTop + liftH + gap),
+    menuTop: Math.round(menuTop),
     menuLeft: Math.round(anchorLeft(mw)),
     menuW: mw,
-    origin: isOwn ? "100% 0%" : "0% 0%",
+    origin: "50% 50%",
+    // The bar/menu materialize from the edge that touches the bubble.
+    barFromBelow: barTop < top,
+    menuFromAbove: menuTop > top,
   };
+}
+
+/**
+ * Border-box size of `el` without its transforms (the press shrink), keeping
+ * sub-pixel precision. offsetWidth rounds, and a lifted copy that is even
+ * 0.4px narrower than the original re-wraps its text ("nold" / "u").
+ */
+export function untransformedBox(el, cs) {
+  if (!el) return { width: 0, height: 0 };
+  let width = 0;
+  let height = 0;
+  if (cs) {
+    const px = (p) => parseFloat(cs.getPropertyValue(p)) || 0;
+    width = px("width");
+    height = px("height");
+    if (cs.getPropertyValue("box-sizing") !== "border-box") {
+      width += px("padding-left") + px("padding-right") + px("border-left-width") + px("border-right-width");
+      height += px("padding-top") + px("padding-bottom") + px("border-top-width") + px("border-bottom-width");
+    }
+  }
+  if (!(width > 0)) width = el.offsetWidth || 0;
+  if (!(height > 0)) height = el.offsetHeight || 0;
+  return { width, height };
 }
 
 const LIFT_STRIP_SELECTOR = ".message-hover-bar, .message-inline-picker, .message-swipe-hint, .msg-edit-box";
@@ -358,8 +422,7 @@ export function buildLiftedBubble(bubble, { win = typeof window !== "undefined" 
   if (!bubble || !bubble.ownerDocument) return null;
   const doc = bubble.ownerDocument;
   const cs = win?.getComputedStyle ? win.getComputedStyle(bubble) : null;
-  const width = bubble.offsetWidth;
-  const height = bubble.offsetHeight;
+  const { width, height } = untransformedBox(bubble, cs);
 
   const chain = [];
   for (let node = bubble.parentElement; node && node !== doc.body && node !== doc.documentElement; node = node.parentElement) {

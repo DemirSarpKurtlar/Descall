@@ -1,4 +1,4 @@
-Thank you for reviewing Descall, a messaging and calling app: private and group chats, one-on-one and group voice/video calls, servers with text channels and voice rooms, friends with presence and profiles. Free: no in-app purchases, subscriptions, ads or real-money features. UI follows the device language (English/Turkish).
+Thank you for reviewing Descall, a messaging and calling app: private and group chats, one-on-one and group voice/video calls, servers with text channels and voice rooms, friends with presence and profiles. Free: no in-app purchases, subscriptions, ads or real-money features. Shop (You > Shop): cosmetic items only (themes, bubbles, country flag badges) priced in DesCoin, earned only by using the app, never sold for real money. UI follows the device language (English/Turkish).
 
 DEMO ACCOUNTS (already friends with each other; sign in with Username + Password on the first screen, then tap "Login")
 A: {{DEMO_A_USERNAME}} / {{DEMO_A_PASSWORD}}
@@ -11,7 +11,7 @@ Sign in with Apple or username + password. Every new account (also via Apple fro
 TESTING CALLS
 - One-on-one: Chats (top icon on the left rail) > open the chat > phone or camera icon (top right). Incoming one-on-one calls ring through CallKit, also in the background or when locked.
 - Group: Groups (second icon) > create a group with the other account > phone or camera icon. Group calls arrive as a notification/in-app prompt, not CallKit.
-- Locked phone: the calling engine runs in the app's WKWebView, which can't use the mic while locked. Accept on the call screen; it then shows "Open Descall to connect". Unlock and open Descall and the accepted call joins automatically (it ends cleanly after 60 seconds if the app isn't opened). This is intentional and explained on screen.
+- Locked phone: a one-on-one call answered on the iPhone call screen connects right away, also when locked or Descall is closed.
 - Servers/voice rooms: "+" (Add New) on the left rail > create a server. It comes with a #general text channel and a "General" voice room; tap it > "Join Voice". Invite account B via the server menu > "Invite People".
 Calls are never recorded; audio/video is only relayed in real time.
 
@@ -26,7 +26,7 @@ SAFETY (Guideline 1.2)
 - Server owners/moderators can kick, ban, time out and delete messages. The developer reviews every report within 24 hours and removes content or suspends/bans accounts.
 - Users must be 13+ (date of birth required).
 
-NOT IN THE iOS APP: screen sharing and casino mini-games.
+NOT IN THE iOS APP: starting a screen share (iOS can watch shares from desktop) and casino mini-games. Polls: type /poll in a chat.
 
 The backend runs on Render; if the first request is slow, wait a few seconds and retry.
 
