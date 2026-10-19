@@ -1010,6 +1010,19 @@ html.glass-ui.kb-open .app-root.g-shell.in-conversation .composer-container {
   bottom: calc(var(--kb-gap, 0px) + 8px);
 }
 
+/* Landscape iPhone (glass-ui at >= 769px wide): rail + list + chat columns.
+   A viewport-fixed capsule would span every column and sit on top of the
+   members panel, so pin it to the chat column instead, and stop it at the
+   members panel when that is open. */
+@media (min-width: 769px) {
+  html.glass-ui .app-root.g-shell.in-conversation .chat-panel-shell .composer-container {
+    position: absolute;
+  }
+  html.glass-ui .app-root.g-shell.in-conversation .chat-panel-shell:has(> .members-panel) .composer-container {
+    right: calc(var(--g-members-w, 260px) + 12px);
+  }
+}
+
 html.glass-ui .app-root.g-shell .message-composer {
   display: flex;
   flex-direction: column;

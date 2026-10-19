@@ -72,6 +72,7 @@ jobs:
           node src/api/transportRetry.selftest.mjs
           node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs
+          node src/styles/landscapeComposer.selftest.mjs
           node src/components/admin/adminOverviewUi.selftest.mjs
           node src/lib/glassConfirm.source.selftest.mjs
           node src/styles/conv-rows.selftest.mjs
