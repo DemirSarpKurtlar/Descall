@@ -51,9 +51,12 @@ const {
   raceWithTimeout,
   PAINT_NUDGE_MS,
   paintWatchdogStep,
+  shouldArmPaintWatchdog,
+  appLooksPainted,
   SPLASH_RESCUE_MS,
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
+const { resolveDistFile } = require('./appProtocolPath.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -105,16 +108,12 @@ function registerDescallProtocol() {
   protocol.handle('descall', (request) => {
     try {
       const url = new URL(request.url);
-      let rel = decodeURIComponent(url.pathname || '/index.html');
-      if (!rel || rel === '/') rel = '/index.html';
-      // SPA route (descall://app/direct …): serve the app document. A reload on a route
-      // used to fetch dist/direct as a file and fail with -9 ERR_UNEXPECTED (2.11.11).
-      if (!path.extname(rel)) rel = '/index.html';
-      const filePath = path.normalize(path.join(root, rel));
-      const rootNorm = path.normalize(root + path.sep);
-      if (!filePath.startsWith(rootNorm) && filePath !== path.normalize(root)) {
-        return new Response('forbidden', { status: 403 });
-      }
+      // SPA routes serve the app document (2.11.11), and the document's relative
+      // ./assets and ./brand URLs resolve from any route depth: a reload on
+      // descall://app/settings/shop asks for /settings/assets/… (2.13.1, appProtocolPath.cjs).
+      const resolved = resolveDistFile(root, url.pathname, (p) => fs.existsSync(p));
+      if (resolved.forbidden) return new Response('forbidden', { status: 403 });
+      const filePath = resolved.filePath;
       if (!/\.html?$/i.test(filePath)) return net.fetch(pathToFileURL(filePath).href);
       // HTML documents carry the hashed CSP themselves, independent of webRequest coverage.
       return net.fetch(pathToFileURL(filePath).href).then((res) => {
@@ -1435,10 +1434,21 @@ function createMainWindow() {
     return JSON.stringify({ removed: s.length, inline: typeof window.__descallDismissBootSplash === 'function', path: location.pathname });
   })()`, true).catch(() => '');
   let rescueBusy = false;
-  win.webContents.on('did-start-loading', () => {
+  let paintTickBusy = false;
+  let paintGen = 0;
+  // Armed per document (2.13.1): only a main-frame, cross-document navigation boots the
+  // renderer again. did-start-loading also fires for pushState, so 2.11.9 re-armed on every
+  // in-app navigation and "clean reloaded" a healthy app 22 s later (Mağaza → Ülkeler).
+  win.webContents.on('did-start-navigation', (details, legacyUrl, legacyInPlace, legacyMainFrame) => {
+    const nav = details && typeof details === 'object' && 'isSameDocument' in details
+      ? { isMainFrame: details.isMainFrame, isSameDocument: details.isSameDocument }
+      : { isMainFrame: legacyMainFrame, isSameDocument: legacyInPlace };
+    if (!shouldArmPaintWatchdog(nav)) return;
     rendererBoot = { painted: false, loadStartedAt: Date.now() };
     paintNudged = false;
+    paintTickBusy = false;
     stopPaintWatchdog();
+    const gen = ++paintGen;
     paintTimer = setInterval(async () => {
       if (win.isDestroyed()) { stopPaintWatchdog(); return; }
       const elapsedMs = Date.now() - rendererBoot.loadStartedAt;
@@ -1454,18 +1464,34 @@ function createMainWindow() {
           return;
         }
       }
-      const step = paintWatchdogStep({ painted: rendererBoot.painted, elapsedMs, reloads: paintReloads, asked: paintAsked });
+      let step = paintWatchdogStep({ painted: rendererBoot.painted, elapsedMs, reloads: paintReloads, asked: paintAsked });
       if (step === 'none') { if (rendererBoot.painted) stopPaintWatchdog(); return; }
+      // The painted report can be lost (IPC raced the load, renderer reported early): never
+      // reload or nag over an app that is visibly up with no boot splash.
+      if (paintTickBusy) return;
+      paintTickBusy = true;
+      // A wedged renderer may never answer: the watchdog still moves on after 2 s.
+      const raced = await raceWithTimeout(snapshotRenderer(), 2000);
+      paintTickBusy = false;
+      const snap = raced.timedOut ? 'snapshot timed out' : raced.value;
+      if (win.isDestroyed() || gen !== paintGen || !paintTimer) return;
+      if (appLooksPainted(snap)) {
+        log.info(`[boot] app is up without a painted report after ${elapsedMs}ms, watchdog stands down: ${snap}`);
+        rendererBoot.painted = true;
+        stopPaintWatchdog();
+        return;
+      }
+      step = paintWatchdogStep({ painted: rendererBoot.painted, elapsedMs, reloads: paintReloads, asked: paintAsked });
       if (step === 'nudge') {
         if (paintNudged) return;
         paintNudged = true;
-        log.warn(`[boot] not painted after ${elapsedMs}ms: ${await snapshotRenderer()}`);
+        log.warn(`[boot] not painted after ${elapsedMs}ms: ${snap}`);
         try { win.webContents.invalidate(); } catch (_) { /* ignore */ }
         return;
       }
       if (step === 'reload') {
         paintReloads += 1;
-        log.warn(`[boot] still not painted after ${elapsedMs}ms: ${await snapshotRenderer()}`);
+        log.warn(`[boot] still not painted after ${elapsedMs}ms: ${snap}`);
         stopPaintWatchdog();
         clearAndReloadRenderer(win.webContents, 'paint-watchdog');
         return;
@@ -1473,7 +1499,7 @@ function createMainWindow() {
       if (step === 'ask') {
         paintAsked = true;
         stopPaintWatchdog();
-        log.error(`[boot] gave up waiting for paint after ${elapsedMs}ms: ${await snapshotRenderer()}`);
+        log.error(`[boot] gave up waiting for paint after ${elapsedMs}ms: ${snap}`);
         if (!win.isVisible()) return; // tray/autostart: the next show re-checks via invalidate
         dialog.showMessageBox(win, {
           type: 'error',

@@ -68,7 +68,9 @@ if (existsSync(join(dist, "assets"))) {
 
 // Protocol: SPA routes serve the app document (reload on /direct was -9 ERR_UNEXPECTED).
 const main = readFileSync(join(here, "main.cjs"), "utf8");
-assert.match(main, /if \(!path\.extname\(rel\)\) rel = '\/index\.html';/);
+// SPA routes serve index.html (2.11.11); the rule now lives in appProtocolPath.cjs (2.13.1).
+assert.match(main, /resolveDistFile\(root, url\.pathname/);
+assert.match(readFileSync(new URL("./appProtocolPath.cjs", import.meta.url), "utf8"), /if \(!path\.posix\.extname\(rel\)\) \{\s*return \{ filePath: path\.join\(rootAbs, 'index\.html'\)/);
 assert.match(main, /rescueStuckSplash/, "main removes a splash stuck over a painted app");
 assert.match(main, /const smokeBoot = process\.argv\.includes\('--descall-smoke-boot'\)/, "--descall-smoke-boot wins over DESCALL_SMOKE=1");
 assert.match(main, /const smokeLaunch = !smokeBoot &&/);

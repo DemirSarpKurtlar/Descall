@@ -57,6 +57,7 @@ import { detectDefaultLocale } from "../../i18n/detect";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
+import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, BadgeIcon, CountryBadge } from "../ui/Cosmetics";
@@ -2963,7 +2964,9 @@ const UserPanel = forwardRef(function UserPanel({
               {!isMobile && activeTab !== "overview" && (
                 <h3 className="us-page-title">{tabTitles[activeTab]}</h3>
               )}
-              {renderTab()}
+              <ErrorBoundary scope="pane" resetKey={activeTab}>
+                {renderTab()}
+              </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </div>

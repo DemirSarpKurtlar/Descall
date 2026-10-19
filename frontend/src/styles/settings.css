@@ -4,6 +4,28 @@
    Mobile: menu → detail drill-down
    ============================================ */
 
+/* Viewport the desktop settings card may use. The Electron title bar (40px,
+   frameless window) and a taskbar overlap at the bottom are not part of the
+   window's usable area, and neither are iOS safe areas. 100vh alone counts
+   them, which pushed the card and its sidebar footer below the window edge
+   when the window was not maximized. Every desktop settings / shop size below
+   is derived from --us-avail-h. */
+:root {
+  --us-safe-top: calc(var(--electron-titlebar-h, 0px) + env(safe-area-inset-top, 0px));
+  --us-safe-bottom: calc(var(--electron-bottom-inset, 0px) + env(safe-area-inset-bottom, 0px));
+  --us-avail-h: calc(100vh - var(--us-safe-top) - var(--us-safe-bottom));
+  /* Space kept around the card: regular pages, and the wider shop. */
+  --us-gap-y: clamp(8px, 4vh, 32px);
+  --us-gap-y-shop: clamp(6px, 1.6vh, 10px);
+  --us-fit-h: calc(var(--us-avail-h) - 2 * var(--us-gap-y));
+  --us-fit-h-shop: calc(var(--us-avail-h) - 2 * var(--us-gap-y-shop));
+}
+@supports (height: 100dvh) {
+  :root {
+    --us-avail-h: calc(100dvh - var(--us-safe-top) - var(--us-safe-bottom));
+  }
+}
+
 /* Hide global notif prompt while settings are open (banner is z-index 99999) */
 .app-root.mobile-settings-open .app-notif-banner {
   display: none !important;
@@ -35,9 +57,12 @@
   cursor: default;
 }
 
-/* Desktop: centered card over blurred app (not solid black letterbox) */
+/* Desktop: centered card over blurred app (not solid black letterbox).
+   The shell covers the whole window; its top / bottom padding is exactly the
+   unusable strip (title bar, taskbar, safe area). The card is centered in
+   what is left and sized from --us-avail-h, so it can never be taller. */
 .user-settings-shell.is-desktop {
-  padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 64px);
+  padding: var(--us-safe-top) clamp(16px, 4vw, 64px) var(--us-safe-bottom);
   inset: 0;
   width: 100%;
   height: 100%;
@@ -69,8 +94,10 @@
 
 .user-settings.is-desktop {
   width: min(1080px, calc(100vw - 64px));
-  height: min(780px, calc(100vh - 64px));
-  max-height: calc(100vh - 64px);
+  height: min(780px, var(--us-fit-h));
+  max-height: var(--us-fit-h);
+  margin: auto;
+  flex: 0 0 auto;
   background: var(--surface-0);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -85,8 +112,8 @@
 
 .user-settings.is-desktop.is-shop-open {
   width: min(1480px, calc(100vw - 28px));
-  height: min(960px, calc(100vh - 20px));
-  max-height: calc(100vh - 20px);
+  height: min(960px, var(--us-fit-h-shop));
+  max-height: var(--us-fit-h-shop);
 }
 
 .user-settings.is-desktop.is-shop-open .us-main-scroll {
@@ -1546,19 +1573,15 @@ button.us-row.g-privacy-link:hover {
 /* Narrow desktop / tablet */
 @media (max-width: 820px) {
   .user-settings-shell.is-desktop {
-    padding: 16px;
+    padding: var(--us-safe-top) 16px var(--us-safe-bottom);
   }
 
   .user-settings.is-desktop {
     width: min(100vw - 32px, 1080px);
-    height: min(100vh - 32px, 780px);
-    max-height: calc(100vh - 32px);
   }
 
   .user-settings.is-desktop.is-shop-open {
     width: min(100vw - 16px, 1480px);
-    height: min(100vh - 16px, 960px);
-    max-height: calc(100vh - 16px);
   }
 
   .user-settings.is-desktop.is-shop-open .shop-workspace {

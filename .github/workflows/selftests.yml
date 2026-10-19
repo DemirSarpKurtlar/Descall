@@ -218,3 +218,10 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
           xvfb-run -a -s "-screen 0 1400x900x24" npx electron . --no-sandbox --descall-smoke-boot --user-data-dir="$RUNNER_TEMP/descall-smoke" 2>&1 | tee "$RUNNER_TEMP/smoke.log"
           grep -q "\[smoke-boot\] OK" "$RUNNER_TEMP/smoke.log"
+      # 2.13.1: signed in against a mock API, open Mağaza → Ülkeler (245 flags), stay past the
+      # paint watchdog's reload point, contain a forced tab render error, then reload on
+      # /settings/shop and require every asset and both splash logos to load.
+      - name: Electron Ülkeler tab e2e
+        run: |
+          xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/countriesTab.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-countries.log"
+          grep -q "\[e2e-countries\] OK" "$RUNNER_TEMP/e2e-countries.log"

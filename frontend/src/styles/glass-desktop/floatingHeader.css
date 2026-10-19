@@ -15,7 +15,11 @@
 
 html.glass-desktop {
   --fh-inset: 14px;
-  --fh-pill-h: 48px;
+  /* 2.13.1: 48 → 50 so the identity capsule holds a 40px avatar with an
+     even 5px inset; both capsules share the height. */
+  --fh-pill-h: 50px;
+  --fh-avatar: 40px;
+  --fh-avatar-inset: calc((var(--fh-pill-h) - var(--fh-avatar)) / 2);
   --fh-pill-base: rgba(var(--g-edge-rgb, 18, 20, 30), 0.52);
   --fh-pill-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
   --fh-pill-hair: rgba(255, 255, 255, 0.14);
@@ -170,16 +174,131 @@ html.glass-desktop .main-panel.is-floating-header .panel-header .header-right::b
   backdrop-filter: blur(44px) saturate(190%) brightness(0.96);
 }
 
+/* Identity capsule: avatar inset by the same amount on top, bottom and left,
+   name + status on one line each, long names end in "…". */
 html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity {
-  gap: 10px;
-  padding: 0 16px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  max-width: min(440px, 100%);
+  padding: 0 20px 0 var(--fh-avatar-inset);
+  box-sizing: border-box;
+  /* The capsule clips to its own pill shape, never a square. */
+  overflow: hidden;
 }
 
+/* Server channels have no avatar: the text gets the same side padding. */
+html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity > .header-title-block:first-child {
+  margin-left: calc(20px - var(--fh-avatar-inset));
+}
+
+/* app-layout.css forces the header .ui-avatar to 40px !important and the slot
+   clips with contain: paint. A 36px slot with a 40px disc cut the circle flat
+   and pushed it 4px down-right, past the capsule's rounded edge. One size for
+   the slot, the disc and the photo. */
 html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar,
 html.glass-desktop .main-panel.is-floating-header .header-identity .header-icon {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: var(--fh-avatar);
+  height: var(--fh-avatar);
+  min-width: var(--fh-avatar);
+  flex: 0 0 var(--fh-avatar);
+  margin: 0;
+  align-self: center;
+  border-radius: 50%;
+  overflow: visible;
+  contain: layout;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar .ui-avatar {
+  width: var(--fh-avatar) !important;
+  height: var(--fh-avatar) !important;
+  min-width: var(--fh-avatar) !important;
+  min-height: var(--fh-avatar) !important;
+  max-width: var(--fh-avatar) !important;
+  max-height: var(--fh-avatar) !important;
+  font-size: var(--fh-avatar);
+}
+
+/* With a shop frame / effect the ring (132%) must fit the same 40px slot. */
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar.has-cosmetics .ui-avatar {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+  font-size: 30px;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar .ui-avatar-inner,
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-icon > *:not(.status-badge) {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  overflow: hidden;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar img,
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+
+/* Status dot sits on the disc's edge, ringed in the capsule tint. */
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar .status-badge {
+  right: -1px;
+  bottom: -1px;
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  z-index: 3;
+  border-width: 2.5px;
+  border-color: rgb(var(--g-edge-rgb, 18, 20, 30));
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-block {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 1px;
+  overflow: hidden;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-title,
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-block.is-dm .header-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-text,
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-block.is-dm .header-title-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-subtitle,
+html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-block.is-dm .header-subtitle {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 html.glass-desktop .main-panel.is-floating-header .header-title {

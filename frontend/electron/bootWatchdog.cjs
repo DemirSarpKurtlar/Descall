@@ -77,6 +77,34 @@ function paintWatchdogStep({ painted, elapsedMs, reloads, asked }) {
   return 'none';
 }
 
+/**
+ * Which navigations restart the paint watchdog (2.13.1). Only a new document in
+ * the main frame boots the app again. A same-document navigation (React Router
+ * pushState, e.g. opening Settings → Mağaza) or a subframe load does not: the
+ * renderer only reports 'painted' once per document, so re-arming on those
+ * (2.11.9 used did-start-loading, which fires for pushState too) made main
+ * "clean reload" a healthy app 22 s after any in-app navigation.
+ */
+function shouldArmPaintWatchdog({ isMainFrame, isSameDocument } = {}) {
+  if (isMainFrame === false) return false;
+  if (isSameDocument === true) return false;
+  return true;
+}
+
+/**
+ * Renderer snapshot (main.cjs snapshotRenderer) of an app that is up: no boot
+ * splash, and #root has real content. Main never reloads such a page.
+ */
+function appLooksPainted(snapshot) {
+  let s = snapshot;
+  if (typeof s === 'string') { try { s = JSON.parse(s); } catch (_) { return false; } }
+  if (!s || typeof s !== 'object') return false;
+  return Number(s.splashes) === 0
+    && Number(s.rootChildren) > 0
+    && Number(s.rootH) >= 80
+    && Number(s.rootText) > 0;
+}
+
 /** From this point main removes a splash left over an app that already painted (2.11.11). */
 const SPLASH_RESCUE_MS = 3000;
 
@@ -108,5 +136,7 @@ module.exports = {
   PAINT_ASK_MS,
   MAX_PAINT_RELOADS,
   paintWatchdogStep,
+  shouldArmPaintWatchdog,
+  appLooksPainted,
   normalizeBootReport,
 };
