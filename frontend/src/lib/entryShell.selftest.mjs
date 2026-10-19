@@ -1,7 +1,7 @@
 /**
  * Run: node frontend/src/lib/entryShell.selftest.mjs
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -87,23 +87,32 @@ assert(/html\.native-app \.toast-stack\s*\{[^}]*safe-area-inset-top/.test(native
 assert(/html\.native-app \.app-feedback-banner,[\s\S]{0,80}\{[^}]*safe-area-inset-top/.test(nativeCss), "native top banners must pad for the Dynamic Island");
 assert(/is-native/.test(authView) && /auth-legal-links/.test(authView), "AuthView must render native safe-area class + legal links");
 
-// Mobile boot: launch-style splash (original app-icon tile on #1E1F22), never the skeleton.
+// Mobile boot: launch-style splash, never the skeleton.
 assert(/classList\.add\("boot-mobile"\)/.test(indexHtml), "index.html must flag the mobile boot surface before paint");
 assert(/window\.__descallHoldBootSplash = function/.test(indexHtml), "index.html must expose the boot splash hold");
 assert((indexHtml.match(/if \(window\.__descallBootHolds > 0\) return;/g) || []).length >= 5, "every splash dismiss path must respect holds");
 assert(/html\.boot-mobile #boot-splash,\s*\.descall-boot-splash\s*\{[^}]*background: #1e1f22;/.test(indexHtml), "mobile splash must be the app's dark surface #1E1F22 like the launch screen");
 assert(/html\.boot-mobile #boot-splash \.boot-title\s*\{/.test(indexHtml) || /html\.boot-mobile #boot-splash \.boot-orb,\s*html\.boot-mobile #boot-splash \.boot-title/.test(indexHtml), "mobile splash must hide the title/orbs (logo only, no text)");
-assert(/\.descall-boot-splash \.boot-mark\s*\{[^}]*width: 192px;[^}]*height: 192px;[^}]*url\("\/brand\/descall-launch\.png"\)/.test(indexHtml), "mobile splash must draw the 192pt launch tile like LaunchScreen.storyboard");
+// Native app: Aurora splash (option A), the web first paint continues the LaunchAurora screen.
+assert(/html\.native-app #boot-splash,\s*html\.native-app \.descall-boot-splash\s*\{[^}]*--u: max\(100vw \/ 393, 100vh \/ 852\);[^}]*url\("\/brand\/splash-aurora-bg\.jpg"\) center \/ cover/.test(indexHtml), "native splash must draw the baked aurora background with cover scaling like Aspect Fill");
+assert(/html\.native-app #boot-splash \.boot-mark,[^{]*\{[^}]*backdrop-filter: blur\(calc\(28 \* var\(--u\)\)\)/.test(indexHtml), "native splash tile must be live glass at the launch-screen scale");
+assert(/messageHandlers\.descallSplashPainted/.test(indexHtml) && /img\.decode/.test(indexHtml), "web splash must report its first paint after the background decodes");
+assert(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*html\.native-app #boot-splash::before,[^}]*\{\s*animation: none;/.test(indexHtml), "reduced motion stops the blob drift");
+assert(existsSync(join(here, "..", "..", "public", "brand", "splash-aurora-bg.jpg")), "aurora background asset must ship");
 const capConfig = readFileSync(join(here, "..", "..", "capacitor.config.ts"), "utf8");
-assert((capConfig.match(/backgroundColor: "#1E1F22"/g) || []).length >= 2, "capacitor ios/android backgroundColor must match the splash surface");
+assert(/ios:\s*\{[\s\S]*?backgroundColor: "#0D1030"/.test(capConfig), "iOS WebView background must be the aurora base color");
+assert(/android:\s*\{[\s\S]*?backgroundColor: "#1E1F22"/.test(capConfig), "Android keeps its own splash surface");
 const launchStoryboard = readFileSync(join(here, "..", "..", "ios", "App", "App", "Base.lproj", "LaunchScreen.storyboard"), "utf8");
-assert(/image="LaunchLogo"/.test(launchStoryboard) && /<image name="LaunchLogo" width="192" height="192"\/>/.test(launchStoryboard), "LaunchScreen must show the 192pt LaunchLogo");
-assert(/red="0\.11764705882352941" green="0\.12156862745098039" blue="0\.13333333333333333"/.test(launchStoryboard), "LaunchScreen background must be #1E1F22");
-assert(/firstAttribute="centerX"/.test(launchStoryboard) && /firstAttribute="centerY"/.test(launchStoryboard), "LaunchScreen logo must be centered");
+assert(/image="LaunchAurora"/.test(launchStoryboard) && /contentMode="scaleAspectFill"/.test(launchStoryboard), "LaunchScreen must show the full-bleed LaunchAurora image");
+assert(/red="0\.050980392156862744" green="0\.062745098039215685" blue="0\.18823529411764706"/.test(launchStoryboard), "LaunchScreen background must be #0D1030");
+for (const edge of ["top", "bottom", "leading", "trailing"]) assert(new RegExp(`firstAttribute="${edge}" secondItem="Dsc-Lv-001"`).test(launchStoryboard), `LaunchAurora pinned ${edge}`);
+assert(existsSync(join(here, "..", "..", "ios", "App", "App", "Assets.xcassets", "LaunchAurora.imageset", "launch-aurora@3x.jpg")), "LaunchAurora @3x asset");
+const bridgeVc = readFileSync(join(here, "..", "..", "ios", "App", "App", "DescallBridgeViewController.swift"), "utf8");
+assert(/splashPaintedHandler = "descallSplashPainted"/.test(bridgeVc) && /func webSplashDidPaint\(\)/.test(bridgeVc), "native launch view waits for the web splash paint");
 const bootSkeleton = readFileSync(join(here, "..", "components", "boot", "AppBootSkeleton.jsx"), "utf8");
 assert(/isMobileBootSurface\(\) && isNativeBootSurface\(\)\) return <MobileBootSplash \/>;/.test(bootSkeleton), "native mobile boot still uses the launch splash");
 assert(/isMobileBootSurface\(\)\) return <WebBootSplash \/>;/.test(bootSkeleton), "phone web boot uses the aurora loader");
-assert(/__descallHoldBootSplash/.test(bootSkeleton) && /descall-boot-splash/.test(bootSkeleton) && /brand\/descall-launch\.png/.test(bootSkeleton), "mobile boot placeholder must hold the HTML splash and draw the same tile");
+assert(/__descallHoldBootSplash/.test(bootSkeleton) && /descall-boot-splash/.test(bootSkeleton) && /boot-symbol/.test(bootSkeleton), "mobile boot placeholder must hold the HTML splash and draw the same tile");
 const mobileBranch = bootSkeleton.slice(bootSkeleton.indexOf("function MobileBootSplash"), bootSkeleton.indexOf("export default function AppBootSkeleton"));
 assert(mobileBranch && !/Loading Descall|app-boot-skeleton/.test(mobileBranch), "mobile boot placeholder must have no skeleton / English text");
 

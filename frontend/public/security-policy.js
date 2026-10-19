@@ -24,7 +24,7 @@ export const INLINE_SCRIPT_HASHES = [
   "sha256-eSNFUNqALkZczatvPjUNWi4Zl3/adLqQoBwvL1fvHqo=",
   "sha256-iR5Yf/pUtwXjT8aHwnroPZWD2DpFRRmis1Ng4dJfFXA=",
   "sha256-4zeQ0a6Zva8udw26XngEAu7R+YFuCpFjoEtJYflfD88=",
-  "sha256-L11PM8opOtaMjs+KOM7YpalUsa0puagXNbOg/jYA6As=",
+  "sha256-AoCYD6fcGiKRjWdR6UeNQOo0OuaKaJ71WFc96VAirOE=",
   "sha256-uTUWQ7h7HJ1YJi/9oCc8AwDTUAvj+dsZ7s0p5cNMUcs=",
   // @csp-hashes-end
 ];

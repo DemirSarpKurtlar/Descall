@@ -508,6 +508,174 @@
         font-weight: 600;
         letter-spacing: -0.01em;
       }
+      /* Native iOS/Android app, splash option A "Aurora" (design/ios-splash-glass-2026-10-19).
+         First paint = the native launch screen pixel for pixel: the same baked
+         background (/brand/splash-aurora-bg.jpg = LaunchAurora without the tile)
+         scaled like UIImageView Aspect Fill (cover), and the same glass tile drawn
+         live (real backdrop blur) at the same point. --u is the cover scale in
+         design points (393x852). Then the loader fades in and the blobs drift;
+         prefers-reduced-motion keeps the picture still. */
+      html.native-app #boot-splash,
+      html.native-app .descall-boot-splash {
+        --u: max(100vw / 393, 100vh / 852);
+        background: #0d1030 url("/brand/splash-aurora-bg.jpg") center / cover no-repeat;
+        overflow: hidden;
+      }
+      html.native-app #boot-splash::before,
+      html.native-app .descall-boot-splash::before {
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+        background: url("/brand/splash-aurora-bg.jpg") center / cover no-repeat;
+        opacity: 1;
+        transform-origin: 50% 45%;
+        will-change: transform;
+      }
+      /* Motion starts only after the handoff (html.boot-aurora-live is set when
+         the paint is reported), so the frame under the launch view is static. */
+      html.native-app.boot-aurora-live #boot-splash::before,
+      html.native-app.boot-aurora-live .descall-boot-splash::before {
+        animation: boot-aurora-drift 26s ease-in-out 0.3s infinite;
+      }
+      html.native-app #boot-splash .boot-orb,
+      html.native-app #boot-splash .boot-title,
+      html.native-app #boot-splash .boot-wordmark,
+      html.native-app #boot-splash .boot-slow,
+      html.native-app #boot-splash .boot-status,
+      html.native-app #boot-splash .boot-spec,
+      html.native-app #boot-splash .boot-sheen,
+      html.native-app #boot-splash #boot-logo,
+      html.native-app .descall-boot-splash .boot-mark img:not(.boot-symbol) {
+        display: none !important;
+      }
+      html.native-app #boot-splash .boot-card,
+      html.native-app .descall-boot-splash .boot-card {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: calc(132 * var(--u));
+        height: calc(132 * var(--u));
+        margin: calc(-66 * var(--u)) 0 0 calc(-66 * var(--u));
+        padding: 0;
+        display: block;
+        transform: none;
+        animation: none;
+      }
+      html.native-app #boot-splash .boot-mark,
+      html.native-app .descall-boot-splash .boot-mark {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        border-radius: calc(32 * var(--u));
+        overflow: visible;
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.10));
+        -webkit-backdrop-filter: blur(calc(28 * var(--u))) saturate(180%);
+        backdrop-filter: blur(calc(28 * var(--u))) saturate(180%);
+        box-shadow:
+          inset 0 calc(1 * var(--u)) 0 rgba(255, 255, 255, 0.55),
+          inset 0 calc(-1 * var(--u)) 0 rgba(255, 255, 255, 0.08),
+          inset 0 0 0 calc(0.5 * var(--u)) rgba(255, 255, 255, 0.28),
+          0 calc(24 * var(--u)) calc(60 * var(--u)) rgba(5, 8, 30, 0.55),
+          0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, 0.25);
+        animation: none !important;
+      }
+      html.native-app #boot-splash .boot-mark::before,
+      html.native-app .descall-boot-splash .boot-mark::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: radial-gradient(120% 70% at 22% 0%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 46%);
+        pointer-events: none;
+      }
+      html.native-app #boot-splash .boot-mark::after,
+      html.native-app .descall-boot-splash .boot-mark::after {
+        content: "";
+        position: absolute;
+        left: 14%;
+        right: 14%;
+        top: calc(5 * var(--u));
+        height: calc(22 * var(--u));
+        border-radius: calc(20 * var(--u));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+        filter: blur(calc(1 * var(--u)));
+      }
+      html.native-app #boot-splash .boot-mark .boot-symbol,
+      html.native-app .descall-boot-splash .boot-mark .boot-symbol {
+        display: block !important;
+        position: relative;
+        z-index: 2;
+        width: calc(80 * var(--u));
+        height: calc(80 * var(--u));
+        filter: drop-shadow(0 calc(4 * var(--u)) calc(10 * var(--u)) rgba(30, 50, 160, 0.45));
+      }
+      /* Loader: three dots 46pt under the tile, fade in after 300 ms. */
+      html.native-app #boot-splash .boot-bar,
+      html.native-app .descall-boot-splash .boot-bar {
+        position: absolute;
+        left: 50%;
+        top: calc(100% + 46 * var(--u));
+        width: calc(37 * var(--u));
+        height: calc(7 * var(--u));
+        margin: 0 0 0 calc(-18.5 * var(--u));
+        border-radius: 0;
+        background:
+          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 0 0 / calc(7 * var(--u)) 100% no-repeat,
+          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 50% 0 / calc(7 * var(--u)) 100% no-repeat,
+          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 100% 0 / calc(7 * var(--u)) 100% no-repeat;
+        overflow: visible;
+        opacity: 0;
+        animation: none;
+      }
+      html.native-app.boot-aurora-live #boot-splash .boot-bar,
+      html.native-app.boot-aurora-live .descall-boot-splash .boot-bar {
+        animation: boot-glow-in 0.4s ease-out 0.3s forwards, boot-dots-breathe 1.4s ease-in-out 0.7s infinite;
+      }
+      html.native-app #boot-splash .boot-bar > i,
+      html.native-app .descall-boot-splash .boot-bar > i {
+        display: none;
+      }
+      html.native-app #boot-splash[data-boot-failed="1"] .boot-bar {
+        display: none;
+      }
+      html.native-app #boot-splash[data-boot-failed="1"] .boot-status {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(50% + 90 * var(--u));
+        text-align: center;
+        color: rgba(235, 238, 255, 0.82);
+      }
+      html.native-app #boot-splash.boot-splash--hide .boot-card {
+        transform: none;
+      }
+      @keyframes boot-aurora-drift {
+        0%, 100% { transform: none; }
+        33% { transform: scale(1.06) translate(-1.6%, 1.1%); }
+        66% { transform: scale(1.05) translate(1.4%, -0.9%); }
+      }
+      @keyframes boot-dots-breathe {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.55; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html.native-app #boot-splash::before,
+        html.native-app .descall-boot-splash::before,
+        html.native-app.boot-aurora-live #boot-splash::before,
+        html.native-app.boot-aurora-live .descall-boot-splash::before {
+          animation: none;
+        }
+        html.native-app.boot-aurora-live #boot-splash .boot-bar,
+        html.native-app.boot-aurora-live .descall-boot-splash .boot-bar {
+          animation: boot-glow-in 0.2s ease-out 0.3s forwards;
+        }
+      }
       /* Static SEO shell, readable first paint before React hydrate (all niche pages). */
       #seo-static {
         --seo-bg: #0b0c10;
@@ -1375,6 +1543,32 @@
         })();
         var el = document.getElementById("boot-splash");
         if (el) el.setAttribute("data-shown-at", String(Date.now()));
+        /* Native app: tell DescallBridgeViewController the Aurora splash has
+           painted (background decoded, two frames later), so the launch screen
+           goes only when the identical web picture is under it. */
+        if (document.documentElement.classList.contains("native-app")) {
+          (function () {
+            var posted = false;
+            function post() {
+              if (posted) return;
+              posted = true;
+              document.documentElement.classList.add("boot-aurora-live");
+              try {
+                var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.descallSplashPainted;
+                if (h) h.postMessage(1);
+              } catch (eP) {}
+            }
+            function afterPaint() {
+              requestAnimationFrame(function () { requestAnimationFrame(post); });
+            }
+            var img = new Image();
+            img.onload = img.onerror = function () {
+              if (img.decode) img.decode().then(afterPaint, afterPaint); else afterPaint();
+            };
+            img.src = "/brand/splash-aurora-bg.jpg";
+            window.setTimeout(post, 2500);
+          })();
+        }
         if (document.documentElement.classList.contains("boot-mobile") && !document.documentElement.classList.contains("native-app")) {
           var bootLabel = document.getElementById("boot-status");
           if (bootLabel) {

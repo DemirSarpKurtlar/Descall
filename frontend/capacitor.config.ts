@@ -25,10 +25,10 @@ const config: CapacitorConfig = {
     // edge-to-edge and the app paints its own colors under the status bar /
     // Dynamic Island and home indicator (src/styles/native-app.css).
     contentInset: "never",
-    // The app's dark surface (--surface-1, chat list) — same as the LaunchScreen
-    // background and the in-app boot splash, so launch → WebView → app has no
-    // color jump.
-    backgroundColor: "#1E1F22",
+    // Base color of the Aurora splash (LaunchScreen background behind the
+    // LaunchAurora image and the web boot splash), so launch → WebView → splash
+    // never shows a different color.
+    backgroundColor: "#0D1030",
     scheme: "Descall",
   },
   plugins: {
