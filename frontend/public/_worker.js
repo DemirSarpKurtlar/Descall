@@ -23,7 +23,6 @@ const SPA_PREFIXES = [
   "/friends",
   "/calls",
   "/activity",
-  "/play",
   "/settings",
   "/admin",
   "/invite",
@@ -40,6 +39,9 @@ const PERMANENT_REDIRECTS = {
   "/tr/discord-alternative": "/tr/discord-alternatifi",
   "/tr/contact": "/iletisim",
 };
+
+/** Removed surfaces: old links land on the home page (kept in sync with _redirects). */
+const RETIRED_TO_HOME = ["/dimaai", "/play", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"];
 
 function barePath(pathname) {
   const path = String(pathname || "/").split("?")[0];
@@ -113,7 +115,8 @@ export default {
       return new Response(null, { status: 301, headers });
     }
 
-    if (path === "/dimaai" || path.startsWith("/dimaai/")) {
+    // DimaAI (2.9.141) and the retired game tab + its marketing pages (2.13.0) go home.
+    if (RETIRED_TO_HOME.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
       return withSecurity(Response.redirect(new URL("/", url), 301));
     }
 

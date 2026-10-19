@@ -308,16 +308,13 @@ const root = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(join(root, rel), "utf8");
 const layout = read("../components/layout/AppLayout.jsx");
 const panel = read("../components/layout/UserPanel.jsx");
-const lfg = read("../components/lfg/LfgWorkspace.jsx");
 const hook = read("../hooks/useEdgeSwipeBack.js");
 const bridge = read("../../ios/App/App/DescallBridgeViewController.swift");
 
 assert.ok(/\{!glassShell && showMobileTabBar && \(\s*<nav/.test(layout), "tab bar and swipe-back share one nav-visibility flag");
-assert.ok(/showMobileTabBar && \(!isPlayPage \|\| glassShell\) \? \(\s*<>/.test(layout), "glass tab bar stays on Play (2.9.156)");
-assert.ok(/onBack: isPlayPage \? closePlay : handleMobileBack/.test(layout), "conversation swipe runs the ‹ back handler");
-assert.ok(/onClose=\{closePlay\}/.test(layout), "Play swipe and ‹ Descall share closePlay");
+assert.ok(/showMobileTabBar \? \(\s*<>/.test(layout), "glass tab bar shows on every root tab");
+assert.ok(/onBack: handleMobileBack/.test(layout), "conversation swipe runs the ‹ back handler");
 assert.ok(/onBack: backToMenu/.test(panel) && /onBack: onClose/.test(panel), "settings swipe uses its ‹ / ✕ handlers");
-assert.ok(/onBack: clearLobbySelection/.test(lfg), "LFG detail swipe uses Back to list");
 assert.ok(!/history\.back\(\)/.test(hook), "swipe-back never calls history.back() itself");
 assert.ok(/allowsBackForwardNavigationGestures = false/.test(bridge), "WKWebView history swipe stays off on iOS");
 assert.ok(/getPlatform\(\) === "android"/.test(hook), "Android app keeps the system back gesture only");

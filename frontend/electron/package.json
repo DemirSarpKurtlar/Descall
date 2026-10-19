@@ -1,6 +1,6 @@
 {
   "name": "descall-electron",
-  "version": "2.12.2",
+  "version": "2.13.0",
   "description": "Descall - Discord-like chat application",
   "main": "main.cjs",
   "author": {
@@ -51,9 +51,6 @@
       "notificationWindow.cjs",
       "notifPreload.cjs",
       "processScanner.cjs",
-      "riotLocalAuth.cjs",
-      "valorantFriendsShape.cjs",
-      "riotRsoAuth.cjs",
       "overlayWindow.cjs",
       "overlayPreload.cjs",
       "icon.ico",

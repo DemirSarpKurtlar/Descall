@@ -67,7 +67,7 @@ export default function AboutPage() {
         <h2>{t("What we build")}</h2>
         <p>
           {t(
-            "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG, with privacy policies and security docs you can actually read."
+            "Real-time messaging, Discord-style servers, WebRTC voice/video, and screen share, with privacy policies and security docs you can actually read."
           )}
         </p>
         <p>

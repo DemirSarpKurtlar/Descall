@@ -30,7 +30,7 @@ EDITABLE_VERSION_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJE
 SCREENSHOT_SETS = [("iphone69", "APP_IPHONE_67", (1320, 2868)), ("ipad13", "APP_IPAD_PRO_3GEN_129", (2064, 2752))]
 EXCLUDED_TERRITORIES = {"CHN"}  # China mainland
 # Removed / hidden features that must never appear in the live listing text (case-insensitive).
-BANNED_LISTING = ["valorant", "riot", "dimaai", "dima ai", "call recording", "record calls", "arama kayd", "görüşme kayd"]
+BANNED_LISTING = ["valorant", "riot", "lfg", "looking for group", "takım bul", "dimaai", "dima ai", "call recording", "record calls", "arama kayd", "görüşme kayd"]
 
 errors, warnings = [], []
 def log(msg): print(msg, flush=True)

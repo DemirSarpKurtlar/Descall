@@ -675,6 +675,7 @@ async function loadProfileCard(ctx, base) {
       equippedNameEffect: pub.equippedNameEffect || null,
       equippedBanner: pub.equippedBanner || null,
       equippedTitle: pub.equippedTitle || null,
+      equippedCountry: pub.equippedCountry || null,
       isAdmin: Boolean(u.is_admin),
     },
     nickname: u.member?.nickname || null,
@@ -697,6 +698,8 @@ async function handleUserCommand(ctx) {
   const fields = [field("Kullanıcı adı", `@${user.username || "bilinmiyor"}`, true)];
   if (user.member?.nickname) fields.push(field("Takma ad", user.member.nickname, true));
   if (user.member?.joined_at) fields.push(field("Sunucuya katıldı", trDate(user.member.joined_at), true));
+  const country = card.user?.equippedCountry;
+  if (country?.name) fields.push(field("Ülke", String(country.name), true));
   if (card.timeoutUntil) fields.push(field("Susturma bitişi", trDateTime(card.timeoutUntil), false));
   return {
     message: createContextMessage(ctx, {

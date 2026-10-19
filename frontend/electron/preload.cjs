@@ -131,28 +131,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanProcesses: () => ipcRenderer.invoke('scan-processes'),
 
 
-  // Valorant Companion — RSO (primary) + local Riot Client lockfile (optional)
-  valorantRsoOpen: (payload) => ipcRenderer.invoke('valorant:rso-open', payload || {}),
-  valorantRsoCancel: () => ipcRenderer.invoke('valorant:rso-cancel'),
-  onValorantRsoResult: (callback) => {
-    const handler = (_evt, result) => callback(result);
-    ipcRenderer.on('valorant:rso-result', handler);
-    return () => ipcRenderer.off('valorant:rso-result', handler);
-  },
-  valorantLocalStatus: () => ipcRenderer.invoke('valorant:local-status'),
-  valorantLocalConnect: () => ipcRenderer.invoke('valorant:local-connect'),
-  valorantLocalGetTokens: () => ipcRenderer.invoke('valorant:local-get-tokens'),
-  valorantLocalSaveSession: (patch) => ipcRenderer.invoke('valorant:local-save-session', patch || {}),
-  valorantLocalDisconnect: () => ipcRenderer.invoke('valorant:local-disconnect'),
-  // Adım 4 — friends / presence / requests (local Riot Client chat)
-  valorantLocalFriends: () => ipcRenderer.invoke('valorant:local-friends'),
-  valorantLocalFriendRequestSend: (payload) =>
-    ipcRenderer.invoke('valorant:local-friend-request-send', payload || {}),
-  valorantLocalFriendRequestRemove: (payload) =>
-    ipcRenderer.invoke('valorant:local-friend-request-remove', payload || {}),
-  valorantLocalFriendRequestAccept: (payload) =>
-    ipcRenderer.invoke('valorant:local-friend-request-accept', payload || {}),
-
   // Always-on voice mini overlay (Discord-style always-on-top HUD)
   overlayShow: (payload) => ipcRenderer.send('descall:overlay:show', payload || {}),
   overlayHide: () => ipcRenderer.send('descall:overlay:hide'),

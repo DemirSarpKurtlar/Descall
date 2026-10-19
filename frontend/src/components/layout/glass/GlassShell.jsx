@@ -251,8 +251,8 @@ export function GlassToolbarMenu({ open, onClose, items }) {
 }
 
 /**
- * Floating glass tab bar (same destinations + order as the rail; Play only
- * when the LFG feature is on). A tap still selects instantly. A hold or a
+ * Floating glass tab bar (same destinations + order as the rail, evenly
+ * split across the bar). A tap still selects instantly. A hold or a
  * horizontal drag lifts the lens, tracks the finger, and snaps to a tab.
  */
 export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {

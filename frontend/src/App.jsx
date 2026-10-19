@@ -108,9 +108,7 @@ import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPa
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
-  getPublicFeatures,
   usePublicFeatures,
-  valorantPlayVisible,
 } from "./lib/publicFeatures";
 import { applyRemoteGlassFlag } from "./lib/glassUi";
 import { applyRemoteGlassDesktopFlag, shouldPreviewDesktopAuth, syncGlassDesktop } from "./lib/glassDesktop";
@@ -688,95 +686,6 @@ export default function App() {
     }
   }, [me?.language, setLocale]);
 
-  // Riot OAuth / link callback (?riot_link=success|error)
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search || "");
-      const riotLink = params.get("riot_link");
-      if (!riotLink) return;
-      const reason = params.get("reason") || "";
-      const openPlay = params.get("play") === "valorant" || params.get("tab") === "companion";
-      params.delete("riot_link");
-      params.delete("reason");
-      params.delete("play");
-      params.delete("tab");
-      const qs = params.toString();
-      window.history.replaceState({}, "", qs ? `/?${qs}` : "/");
-      if (openPlay) {
-        const features = getPublicFeatures();
-        try {
-          if (!valorantPlayVisible(features)) {
-            sessionStorage.removeItem("descall.valorant.tab");
-            sessionStorage.removeItem("descall.valorant.openPlay");
-          } else if (features.valorantCompanion === false) {
-            sessionStorage.setItem("descall.valorant.tab", "lfg");
-            sessionStorage.setItem("descall.valorant.openPlay", "1");
-          } else {
-            sessionStorage.setItem("descall.valorant.tab", "companion");
-            sessionStorage.setItem("descall.valorant.openPlay", "1");
-          }
-        } catch {
-          /* ignore */
-        }
-        if (valorantPlayVisible(features)) {
-          window.dispatchEvent(new CustomEvent("descall:open-valorant-companion"));
-        }
-      }
-      if (riotLink === "success") {
-        toast(t("Valorant account linked"), "success");
-      } else {
-        const msg = reason
-          ? t("Valorant link failed: {reason}", { reason })
-          : t("Valorant link failed");
-        toast(msg, "error");
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [toast, t]);
-
-  // Open Valorant Companion after RSO redirect / custom event
-  useEffect(() => {
-    const openCompanion = () => {
-      const features = getPublicFeatures();
-      try {
-        sessionStorage.removeItem("descall.valorant.openPlay");
-      } catch {
-        /* ignore */
-      }
-      if (!valorantPlayVisible(features)) {
-        try {
-          sessionStorage.removeItem("descall.valorant.tab");
-        } catch {
-          /* ignore */
-        }
-        if (requestedRouteRef.current?.view === "play") {
-          navigate(appPathForView("chat"), { replace: true });
-        }
-        return;
-      }
-      const tab = features.valorantCompanion === false ? "lfg" : "companion";
-      try {
-        sessionStorage.setItem("descall.valorant.tab", tab);
-      } catch {
-        /* ignore */
-      }
-      window.dispatchEvent(new CustomEvent("descall:valorant-tab", { detail: { tab } }));
-      setActiveView("play");
-      const nextPath = appPathForView("play");
-      if (location.pathname !== nextPath) navigate(nextPath);
-    };
-    window.addEventListener("descall:open-valorant-companion", openCompanion);
-    try {
-      if (sessionStorage.getItem("descall.valorant.openPlay") === "1") {
-        openCompanion();
-      }
-    } catch {
-      /* ignore */
-    }
-    return () => window.removeEventListener("descall:open-valorant-companion", openCompanion);
-  }, [location.pathname, navigate]);
-
   // Soft feedback nudge after voice/video calls end (≥45s)
   useEffect(() => {
     if (call?.isInCall) {
@@ -1145,6 +1054,7 @@ export default function App() {
       equippedTheme: normalized.equippedTheme,
       equippedBadge: normalized.equippedBadge,
       equippedTitle: normalized.equippedTitle,
+      equippedCountry: normalized.equippedCountry,
       equippedNameEffect: normalized.equippedNameEffect,
       equippedAvatarEffect: normalized.equippedAvatarEffect,
       equippedChatBubble: normalized.equippedChatBubble,
@@ -3415,16 +3325,6 @@ export default function App() {
     setActiveView(requestedRoute.view);
     setUserPanelOpen(Boolean(requestedRoute.settingsTab));
 
-    // Play keeps the open conversation mounted under app-chat-keep.
-    // Do not tear it down on route sync (nav return to Chat restores the DM).
-    if (requestedRoute.view === "play") {
-      if (!valorantPlayVisible(publicFeatures)) {
-        navigate(appPathForView("chat"), { replace: true });
-        return;
-      }
-      return;
-    }
-
     if (requestedRoute.view === "chat") {
       setActiveGroup(null);
       setActiveServer(null);
@@ -4378,7 +4278,7 @@ export default function App() {
     const isElectronDesktop =
       typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
     const nativeOrDesktop = Capacitor.isNativePlatform() || isElectronDesktop;
-    // Token still present on an app deep-link (e.g. /play): never dump to
+    // Token still present on an app deep-link (e.g. /friends): never dump to
     // marketing, keep the boot skeleton. Hard refresh used to Navigate → "/"
     // while descall_token remained, which looked like a session drop.
     if (getToken() && isAuthenticatedAppPath(location.pathname)) {
@@ -4776,30 +4676,15 @@ export default function App() {
           activeGroup={activeGroup}
           activeView={activeView}
           onActiveViewChange={(view) => {
-            const featuresNow = getPublicFeatures();
-            if (
-              view === "play" && !valorantPlayVisible(featuresNow)
-            ) {
-              setActiveView("chat");
-              const nextPath = appPathForView("chat");
-              if (location.pathname !== nextPath) navigate(nextPath, { replace: true });
-              return;
-            }
             setActiveView(view);
 
             // Single navigate owner, clear conversation state here without
             // calling onDmSelect(null)/onGroupSelect(null)/onServerBack, which
             // would navigate to /direct|/groups|/servers and race this path.
-            if (view === "play") {
-              const nextPath = appPathForView(view);
-              if (location.pathname !== nextPath) navigate(nextPath);
-              return;
-            }
-
             if (view === "chat") {
               setActiveServer(null);
               setActiveChannel(null);
-              // Restore kept DM under play instead of dumping to /direct.
+              // Restore the kept DM instead of dumping to /direct.
               const dm = activeDmRef.current;
               const nextPath = dm?.username ? directPath(dm) : appPathForView("chat");
               if (location.pathname !== nextPath) navigate(nextPath);

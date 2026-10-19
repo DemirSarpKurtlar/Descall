@@ -22,17 +22,15 @@ assert(defaults.slowModeSeconds === 0, "default slowmode 0");
 assert(defaults.registrationEnabled === true, "default registration on");
 assert(defaults.maxMessageLength === 2000, "default max length fills empty UI");
 assert(defaults.featureFlags.voice === true, "default voice on");
-assert(defaults.featureFlags.valorantLfg === true, "default lfg on");
-assert(defaults.featureFlags.valorantCompanion === true, "default companion on");
+assert(!("valorantLfg" in defaults.featureFlags) && !("valorantCompanion" in defaults.featureFlags), "no Valorant flags (2.13.0)");
 
 const legacy = mergeSystemConfig({
   featureFlags: { voice: true, dm: true, video: true, screen: false },
 });
 assert(legacy.featureFlags.screen === false, "stored screen off survives");
-assert(legacy.featureFlags.valorantLfg === true, "missing lfg defaults on");
-assert(legacy.featureFlags.valorantCompanion === true, "missing companion defaults on");
+assert(legacy.featureFlags.dm === true, "stored dm on survives");
 const pub = publicFeatureFlags(legacy.featureFlags);
-assert(pub.valorantLfg === true && pub.valorantCompanion === true, "public flags");
+assert(pub.valorantLfg === false && pub.valorantCompanion === false, "retired Play tab is always off for installed apps");
 assert(pub.voice === undefined && pub.maintenanceMode === undefined, "public payload is availability only");
 assert(Object.keys(pub).sort().join(",") === "desktopGlass,iosGlass,valorantCompanion,valorantLfg", "public keys only");
 assert(pub.iosGlass === true, "iOS glass kill switch defaults on");
@@ -40,8 +38,8 @@ assert(pub.desktopGlass === false, "desktop glass stays off until enabled");
 assert(defaults.featureFlags.iosGlass === true && legacy.featureFlags.iosGlass === true, "missing iosGlass defaults on");
 assert(defaults.featureFlags.desktopGlass === false && legacy.featureFlags.desktopGlass === false, "missing desktopGlass stays off");
 assert(pickFeatureFlags({ desktopGlass: true }).desktopGlass === true, "desktop glass can be turned on");
-const partial = pickFeatureFlags({ valorantLfg: false });
-assert(partial.valorantLfg === false && partial.voice === true && partial.valorantCompanion === true, "partial flag patch");
+const partial = pickFeatureFlags({ screen: false, valorantLfg: true });
+assert(partial.screen === false && partial.voice === true && !("valorantLfg" in partial), "partial flag patch drops retired keys");
 
 const picked = pickConfig({
   chatFrozen: true,
@@ -145,12 +143,12 @@ function mockSettingsClient({ row, insertError, updateError, selectError } = {})
         started_at: "2026-08-01T00:00:00.000Z",
       },
     }),
-    { featureFlags: { valorantLfg: false } },
+    { featureFlags: { video: false } },
     { timeoutMs: 200 }
   );
-  assert(flagged.config.featureFlags.valorantLfg === false, "lfg patch persists");
+  assert(flagged.config.featureFlags.video === false, "flag patch persists");
   assert(flagged.config.featureFlags.screen === false, "partial flag patch keeps older flags");
-  assert(flagged.config.featureFlags.valorantCompanion === true, "omitted companion stays on");
+  assert(flagged.config.featureFlags.dm === true, "omitted flag stays on");
 
   console.log("systemSettings.selftest.cjs ok");
 })().catch((err) => {

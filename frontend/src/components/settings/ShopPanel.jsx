@@ -8,25 +8,29 @@ import {
   Coins,
   Ellipsis,
   Flame,
+  Globe,
   Image,
+  Package,
+  Store,
   MessageSquare,
   Palette,
   Phone,
   Sparkles,
   Sun,
-  Tag,
   Type,
   Wallpaper,
   Zap,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
+import { ShopBadgeIcon } from "../../lib/shopIcons";
+import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
 import RippleButton from "../ui/RippleButton";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import {
   getShopCatalog,
   getShopInventory,
+  getShopVouchers,
   purchaseShopItem,
   equipShopItem,
   getDesCoinDaily,
@@ -50,7 +54,7 @@ const CATEGORY_ICONS = {
   profile_background: Wallpaper,
   theme: Palette,
   profile_badge: Award,
-  profile_title: Tag,
+  countries: Globe,
   name_effect: Type,
   chat_bubble: MessageSquare,
   presence_flare: CircleDot,
@@ -84,7 +88,7 @@ const CATEGORY_HEADING = {
   profile_background: "Profile Backgrounds",
   theme: "Premium Themes",
   profile_badge: "Profile Badges",
-  profile_title: "Profile Titles",
+  countries: "Countries",
   name_effect: "Name Effects",
   avatar_effect: "Avatar Effects",
   chat_bubble: "Chat Bubble Skins",
@@ -101,9 +105,6 @@ function ShopItemPreview({ category, item, t }) {
   }
   if (category === "profile_badge") {
     return <ShopBadgeIcon item={item} size={44} className="shop-badge-preview" />;
-  }
-  if (category === "profile_title") {
-    return <ShopTitleTag item={item} size={14} className="cosmetic-title-tag shop-title-preview" />;
   }
   if (category === "name_effect") {
     return (
@@ -194,6 +195,9 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [claiming, setClaiming] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [catalogGeneration, setCatalogGeneration] = useState(0);
+  const [vouchers, setVouchers] = useState({});
+  const [retiredTitles, setRetiredTitles] = useState(0);
+  const [view, setView] = useState("store");
   const loadedAssetCategories = useRef(new Set());
   const itemsRef = useRef(items);
   const buyLockRef = useRef(new Set());
@@ -204,11 +208,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     // Only show it on the first open, refresh after buy/equip stays silent.
     if (!silent) setLoading(true);
     if (!silent) setCatalogError("");
-    const [catalogRes, inventoryRes, dailyRes] = await Promise.allSettled([
+    const [catalogRes, inventoryRes, dailyRes, vouchersRes] = await Promise.allSettled([
       getShopCatalog(),
       getShopInventory(),
       getDesCoinDaily(),
+      getShopVouchers(),
     ]);
+    if (vouchersRes.status === "fulfilled") setVouchers(vouchersRes.value?.vouchers || {});
     if (catalogRes.status === "fulfilled") {
       loadedAssetCategories.current = new Set();
       setServerRetired(Array.isArray(catalogRes.value?.retiredCategories) ? catalogRes.value.retiredCategories : []);
@@ -223,6 +229,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     }
     if (inventoryRes.status === "fulfilled") {
       setInventory(inventoryRes.value?.inventory || []);
+      setRetiredTitles(Number(inventoryRes.value?.retiredTitles) || 0);
     }
     if (dailyRes.status === "fulfilled" && dailyRes.value) {
       setDaily(dailyRes.value);
@@ -350,16 +357,21 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     [items, activeCategory]
   );
 
-  const handleBuy = async (item) => {
-    if (!item?.id || buyLockRef.current.has(item.id)) return;
+  const handleBuy = async (item, { useVoucher = false, equipAfter = false } = {}) => {
+    if (!item?.id || buyLockRef.current.has(item.id)) return false;
+    let ok = false;
     buyLockRef.current.add(item.id);
     setBusyItemId(item.id);
     setBusyAction("buy");
     setNotice("");
     try {
       await preserveShopScroll(async () => {
-        const result = await purchaseShopItem(item.id);
+        const result = await purchaseShopItem(item.id, { useVoucher });
         if (result?.balance != null) onBalanceChange?.(result.balance);
+        if (result?.voucher) {
+          setVouchers((prev) => ({ ...prev, [item.category]: Math.max(0, (prev[item.category] || 0) - 1) }));
+        }
+        ok = true;
         setInventory((prev) =>
           prev.some((row) => row.itemId === item.id)
             ? prev
@@ -374,10 +386,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       });
     } catch (err) {
       if (typeof err.balance === "number") onBalanceChange?.(err.balance);
-      if (err.status === 409 && err.code !== "theme_client") {
+      if (err.status === 409 && err.code !== "theme_client" && err.code !== "no_voucher") {
         await load({ silent: true });
-        return;
+        return false;
       }
+      if (err.code === "no_voucher") setVouchers((prev) => ({ ...prev, [item.category]: 0 }));
       hapticError();
       setNotice(err.message || t("Purchase failed. Please try again."));
     } finally {
@@ -385,6 +398,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       setBusyItemId(null);
       setBusyAction(null);
     }
+    if (ok && equipAfter) await handleEquip(item, false);
+    return ok;
   };
 
   const handleEquip = async (item, isEquipped) => {
@@ -410,7 +425,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     if (category === "profile_background") return equipped?.backgroundId;
     if (category === "theme") return equipped?.themeId;
     if (category === "profile_badge") return equipped?.badgeId;
-    if (category === "profile_title") return equipped?.titleId;
+    if (category === "countries") return equipped?.countryId;
     if (category === "name_effect") return equipped?.nameEffectId;
     if (category === "avatar_effect") return equipped?.avatarEffectId;
     if (category === "chat_bubble") return equipped?.chatBubbleId;
@@ -431,6 +446,17 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     }
     setChromeSlot(document.querySelector(".user-settings.g-shop-open .g-shop-chrome"));
   }, [glassShell, isMobile, activeCategory]);
+  const viewSwitch = (
+    <div className="cs-seg shop-view-seg" role="tablist" aria-label={t("Shop view")}>
+      <button type="button" role="tab" aria-selected={view === "store"} className={view === "store" ? "is-on" : ""} onClick={() => setView("store")}>
+          <Store size={13} /> {t("Store")}
+        </button>
+        <button type="button" role="tab" aria-selected={view === "inventory"} className={view === "inventory" ? "is-on" : ""} onClick={() => setView("inventory")}>
+          <Package size={13} /> {t("Inventory")}
+          {inventory.length ? <span className="cs-count">{inventory.length}</span> : null}
+        </button>
+      </div>
+  );
   const wallet = (
     <div className="shop-wallet-bar">
       <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
@@ -438,7 +464,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         <span>{balance.toLocaleString()}</span>
         <span className="shop-wallet-label">DesCoin</span>
       </div>
-      {glassShell && isMobile && activeTabMeta ? (
+      {chromeSlot ? null : viewSwitch}
+      {glassShell && isMobile && activeTabMeta && view === "store" ? (
         <span className="g-shop-count">{t(activeTabMeta.label)} · {visibleItems.length}</span>
       ) : null}
     </div>
@@ -524,8 +551,37 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             {t("Retry")}
           </RippleButton>
         </div>
+      ) : view === "inventory" ? (
+        <ShopInventoryView
+          inventory={inventory}
+          equippedIdFor={equippedIdFor}
+          busyItemId={busyItemId}
+          onEquip={handleEquip}
+          retiredTitles={retiredTitles}
+          categoryLabel={(category) => CATEGORY_HEADING[category] || category}
+          onBrowseCountries={() => {
+            setView("store");
+            setActiveCategory("countries");
+          }}
+        />
       ) : items.length === 0 ? (
         <p className="shop-empty-state">{t("No items available yet, check back soon!")}</p>
+      ) : activeCategory === "countries" ? (
+        <div className="shop-category-block">
+          <h4>{t("Countries")}</h4>
+          <CountryShop
+            items={visibleItems}
+            ownedItemIds={ownedItemIds}
+            equippedId={equippedIdFor("countries")}
+            balance={balance}
+            vouchers={vouchers.countries || 0}
+            me={me}
+            busyItemId={busyItemId}
+            onBuy={handleBuy}
+            onEquip={handleEquip}
+            isMobile={isMobile}
+          />
+        </div>
       ) : (
         <div className="shop-category-block">
           <h4>{t(CATEGORY_HEADING[activeCategory] || activeCategory)}</h4>
@@ -602,7 +658,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     </>
   );
 
-  const categoryTabs = !loading && availableTabs.length > 0 ? (
+  const categoryTabs = !loading && view === "store" && availableTabs.length > 0 ? (
     <div className="shop-chip-rail">
       <button
         type="button"
@@ -669,6 +725,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         <div className="shop-main">
           {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
           <div className="shop-catalog">
+            {chromeSlot ? <div className="shop-view-row">{viewSwitch}</div> : null}
             {lead}
             {categoryTabs}
             {catalog}

@@ -10,11 +10,6 @@ import pkg from "../../package.json";
  */
 export const UPDATE_NOTES = [
   {
-    version: "2.9.36",
-    titleKey: "updateNotes.v2936.title",
-    bodyKey: "updateNotes.v2936.body",
-  },
-  {
     version: "2.9.37",
     titleKey: "updateNotes.v2937.title",
     bodyKey: "updateNotes.v2937.body",
@@ -28,46 +23,6 @@ export const UPDATE_NOTES = [
     version: "2.9.39",
     titleKey: "updateNotes.v2939.title",
     bodyKey: "updateNotes.v2939.body",
-  },
-  {
-    version: "2.9.40",
-    titleKey: "updateNotes.v2940.title",
-    bodyKey: "updateNotes.v2940.body",
-  },
-  {
-    version: "2.9.41",
-    titleKey: "updateNotes.v2941.title",
-    bodyKey: "updateNotes.v2941.body",
-  },
-  {
-    version: "2.9.42",
-    titleKey: "updateNotes.v2942.title",
-    bodyKey: "updateNotes.v2942.body",
-  },
-  {
-    version: "2.9.43",
-    titleKey: "updateNotes.v2943.title",
-    bodyKey: "updateNotes.v2943.body",
-  },
-  {
-    version: "2.9.44",
-    titleKey: "updateNotes.v2944.title",
-    bodyKey: "updateNotes.v2944.body",
-  },
-  {
-    version: "2.9.45",
-    titleKey: "updateNotes.v2945.title",
-    bodyKey: "updateNotes.v2945.body",
-  },
-  {
-    version: "2.9.46",
-    titleKey: "updateNotes.v2946.title",
-    bodyKey: "updateNotes.v2946.body",
-  },
-  {
-    version: "2.9.47",
-    titleKey: "updateNotes.v2947.title",
-    bodyKey: "updateNotes.v2947.body",
   },
   {
     version: "2.9.48",

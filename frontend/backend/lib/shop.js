@@ -16,7 +16,12 @@ const supabase = require("../db/supabase");
  * the database untouched (no migration, no refunds); the API simply never
  * sells, equips, lists, or returns them.
  */
-const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame"]);
+/**
+ * Profile titles are retired (2.13.0, replaced by country flags). Same rule as
+ * frames: owned rows and the backup of who had one equipped stay in the
+ * database; the API never sells, equips, lists or returns them.
+ */
+const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame", "profile_title"]);
 const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack", ...REMOVED_COSMETIC_CATEGORIES]);
 
 const EQUIP_COLUMN_BY_CATEGORY = {
@@ -35,10 +40,14 @@ const EQUIP_COLUMN_BY_CATEGORY = {
   typing_flare: "equipped_typing_flare_id",
   reaction_burst: "equipped_reaction_burst_id",
   call_overlay: "equipped_call_overlay_id",
+  countries: "equipped_country_id",
 };
 
+/** One flag per user: buying or equipping a country replaces the previous one. */
+const COUNTRY_CATEGORY = "countries";
+
 const ITEM_COLUMNS =
-  "id, sku, name, description, category, asset_url, preview_url, price_cents, currency, price_descoin, theme_key, badge_icon, title_text, effect_key, active, rarity, sort_order, created_at";
+  "id, sku, name, description, category, asset_url, preview_url, price_cents, currency, price_descoin, theme_key, badge_icon, title_text, effect_key, active, rarity, sort_order, created_at, country_code, country_region, country_kind";
 
 /** Browsers reject the non-standard `;utf8` data-URI parameter — normalize. */
 function normalizeAssetUrl(url) {
@@ -202,6 +211,9 @@ function toCatalogItem(item, { assetBase = "", decoded = null } = {}) {
     effect_key: normalized.effect_key,
     rarity: normalized.rarity,
     sort_order: normalized.sort_order,
+    country_code: normalized.country_code || null,
+    country_region: normalized.country_region || null,
+    country_kind: normalized.country_kind || null,
   };
 }
 
@@ -409,6 +421,15 @@ async function updateItem(itemId, fields) {
 }
 
 async function getUserInventory(userId) {
+  return (await getUserInventoryWithRetired(userId)).inventory;
+}
+
+/**
+ * Inventory plus how many owned rows sit in retired categories (titles since
+ * 2.13.0). Those rows stay in the table but are never shown or equipped; the
+ * Envanter view only mentions how many there were.
+ */
+async function getUserInventoryWithRetired(userId) {
   const { data, error } = await supabase
     .from("user_inventory")
     .select("id, item_id, acquired_via, gifted_by, gift_message, acquired_at")
@@ -416,7 +437,7 @@ async function getUserInventory(userId) {
     .order("acquired_at", { ascending: false });
   if (error) throw error;
   const rows = data || [];
-  if (!rows.length) return [];
+  if (!rows.length) return { inventory: [], retiredTitles: 0 };
 
   // Two-step fetch (instead of a Postgrest embed) keeps this portable across
   // both the real supabase-js client and the lightweight fake used in tests.
@@ -428,7 +449,8 @@ async function getUserInventory(userId) {
   if (itemsError) throw itemsError;
   const itemById = new Map((items || []).map((i) => [i.id, normalizeItem(i)]));
 
-  return rows
+  const retiredTitles = rows.filter((row) => itemById.get(row.item_id)?.category === "profile_title").length;
+  const inventory = rows
     .filter((row) => !REMOVED_COSMETIC_CATEGORIES.has(itemById.get(row.item_id)?.category))
     .map((row) => ({
     id: row.id,
@@ -439,6 +461,7 @@ async function getUserInventory(userId) {
     acquiredAt: row.acquired_at,
     item: itemById.get(row.item_id) || null,
   }));
+  return { inventory, retiredTitles };
 }
 
 async function userOwnsItem(userId, itemId) {
@@ -543,7 +566,7 @@ const EQUIPPED_USER_COLUMNS =
   "equipped_avatar_frame_id, equipped_banner_id, equipped_background_id, equipped_theme_id, " +
   "equipped_badge_id, equipped_title_id, equipped_name_effect_id, equipped_avatar_effect_id, equipped_chat_bubble_id, " +
   "equipped_presence_flare_id, equipped_profile_aura_id, equipped_sound_pack_id, " +
-  "equipped_typing_flare_id, equipped_reaction_burst_id, equipped_call_overlay_id";
+  "equipped_typing_flare_id, equipped_reaction_burst_id, equipped_call_overlay_id, equipped_country_id";
 
 const EMPTY_EQUIPPED = {
   avatarFrame: null,
@@ -561,6 +584,7 @@ const EMPTY_EQUIPPED = {
   typingFlare: null,
   reactionBurst: null,
   callOverlay: null,
+  country: null,
 };
 
 /** Resolves one user's equip slots (all cosmetic categories) into full item records. */
@@ -580,6 +604,7 @@ const EQUIPPED_ID_FIELDS = [
   "equipped_typing_flare_id",
   "equipped_reaction_burst_id",
   "equipped_call_overlay_id",
+  "equipped_country_id",
 ];
 
 function equippedRecord(user, byId) {
@@ -594,7 +619,7 @@ function equippedRecord(user, byId) {
     background: pick("equipped_background_id"),
     theme: pick("equipped_theme_id"),
     badge: pick("equipped_badge_id"),
-    title: pick("equipped_title_id"),
+    title: null, // titles retired in 2.13.0; the stored id is ignored
     nameEffect: pick("equipped_name_effect_id"),
     avatarEffect: pick("equipped_avatar_effect_id"),
     chatBubble: pick("equipped_chat_bubble_id"),
@@ -604,6 +629,7 @@ function equippedRecord(user, byId) {
     typingFlare: pick("equipped_typing_flare_id"),
     reactionBurst: pick("equipped_reaction_burst_id"),
     callOverlay: pick("equipped_call_overlay_id"),
+    country: pick("equipped_country_id"),
   };
 }
 
@@ -665,7 +691,7 @@ async function getEquippedForUsers(userIds) {
       backgroundId: u.equipped_background_id,
       themeId: u.equipped_theme_id,
       badgeId: u.equipped_badge_id,
-      titleId: u.equipped_title_id,
+      titleId: null,
       nameEffectId: u.equipped_name_effect_id,
       avatarEffectId: u.equipped_avatar_effect_id,
       chatBubbleId: u.equipped_chat_bubble_id,
@@ -675,6 +701,7 @@ async function getEquippedForUsers(userIds) {
       typingFlareId: u.equipped_typing_flare_id,
       reactionBurstId: u.equipped_reaction_burst_id,
       callOverlayId: u.equipped_call_overlay_id,
+      countryId: u.equipped_country_id || null,
     });
   });
   return map;
@@ -682,6 +709,7 @@ async function getEquippedForUsers(userIds) {
 
 module.exports = {
   EQUIP_COLUMN_BY_CATEGORY,
+  COUNTRY_CATEGORY,
   RETIRED_SHOP_CATEGORIES,
   REMOVED_COSMETIC_CATEGORIES,
   IMAGE_ASSET_CATEGORIES,
@@ -698,6 +726,7 @@ module.exports = {
   createItem,
   updateItem,
   getUserInventory,
+  getUserInventoryWithRetired,
   userOwnsItem,
   grantItem,
   getUnnotifiedGifts,

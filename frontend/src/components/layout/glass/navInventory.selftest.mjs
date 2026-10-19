@@ -27,9 +27,9 @@ const index = read("../../../styles/glass/index.css");
 
 /* 1. Primary destinations: the glass tab bar is built from the same source as the rail. */
 const mainIds = [...navConfig.matchAll(/\{ id: "([a-z]+)", icon: [A-Za-z]+, label: [^}]+group: "main" \}/g)].map((m) => m[1]);
-assert.deepEqual(mainIds, ["chat", "groups", "servers", "play", "friends", "activity", "calls"], "rail main items (tab order)");
-match(rail, /filterMainNavItems\(buildMainNavItems\(t\), publicFeatures\)/, "rail items");
-match(layout, /filterMainNavItems\(buildMainNavItems\(t\), publicFeatures\)/, "glass tab bar items = rail items (LFG off hides Oyna)");
+assert.deepEqual(mainIds, ["chat", "groups", "servers", "friends", "activity", "calls"], "rail main items (tab order)");
+match(rail, /filterMainNavItems\(buildMainNavItems\(t\)\)/, "rail items");
+match(layout, /filterMainNavItems\(buildMainNavItems\(t\)\)/, "glass tab bar items = rail items, no Play tab");
 match(layout, /<GlassTabBar[\s\S]*?items=\{glassTabItems\}[\s\S]*?onSelect=\{handleViewChange\}/, "tabs navigate like the rail");
 match(layout, /\.\.\.navBadges/, "tab badges reuse the rail badges");
 

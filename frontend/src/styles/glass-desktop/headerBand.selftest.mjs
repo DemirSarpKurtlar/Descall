@@ -61,8 +61,6 @@ const wrappers = [
   "sidebar-header",
   "sidebar-actions",
   "server-shell-header",
-  "lfg-sidebar-header",
-  "lfg-detail-header",
   "activity-view-toolbar",
   "activity-view-header",
   "activity-view-header-left",
@@ -72,15 +70,11 @@ const wrappers = [
   "chat-top-chrome",
   "panel-header",
   "header-left",
-  "valorant-hub-header",
-  "valorant-hub-header-left",
   "voice-call-header",
 ];
 for (const name of wrappers) {
   assert.ok(slabSelectors.includes(`.${name}`), `wrapper missing from empty-header slab: ${name}`);
 }
-assert.match(block(surfaces, "html.glass-desktop .lfg-sidebar-header h2 {"), /border-radius:\s*18px/);
-assert.match(block(surfaces, "html.glass-desktop .lfg-sidebar-header h2 {"), /backdrop-filter:\s*none/);
 
 const convPills = block(chat, "html.glass-desktop .header-identity,");
 assert.match(convPills, /border-radius:\s*26px/);

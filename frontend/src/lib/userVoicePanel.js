@@ -166,6 +166,5 @@ export function writeDeafenPref(on, s = store()) {
 /** Panel is web + Electron desktop only: never mobile layout, glass phone shell, or native iOS/Android. */
 export function shouldShowUserVoicePanel({ isMobile, glassShell, native, view }) {
   if (isMobile || glassShell || native) return false;
-  if (view === "play") return false;
   return true;
 }

@@ -493,29 +493,6 @@ select {
   gap: 8px;
 }
 
-.skeleton-lfg-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 4px 8px 12px;
-}
-
-.skeleton-lfg-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 11px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border-2);
-  background: var(--surface-1);
-}
-
-.skeleton-lfg-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .skeleton-detail-pane {
   display: flex;
   flex-direction: column;

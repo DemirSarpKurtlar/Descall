@@ -50,7 +50,7 @@ const FEATURE_DEFS = [
 const STAT_DEFS = [
   { value: "10K+", label: "Downloads" },
   { value: "4.9", label: "Rating" },
-  { value: "50+", label: "Countries" },
+  { value: "50+", label: "Countries reached" },
 ];
 
 const platforms = [

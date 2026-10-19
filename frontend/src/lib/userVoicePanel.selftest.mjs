@@ -88,7 +88,6 @@ assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, nati
 assert.equal(shouldShowUserVoicePanel({ isMobile: true, glassShell: false, native: false, view: "chat" }), false);
 assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: true, native: false, view: "chat" }), false);
 assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, native: true, view: "chat" }), false, "iPad app");
-assert.equal(shouldShowUserVoicePanel({ isMobile: false, glassShell: false, native: false, view: "play" }), false);
 
 // Source contracts.
 const here = new URL(".", import.meta.url);

@@ -49,7 +49,7 @@ function organizationNode() {
     email: SITE_OPERATOR.supportEmail,
     sameAs: [SITE_OPERATOR.githubUrl, SITE_OPERATOR.githubProfileUrl],
     description:
-      "Free Discord alternative for servers, roles, channels, chat, voice, screen share, and LFG.",
+      "Free Discord alternative for servers, roles, channels, chat, voice, and screen share.",
     foundingLocation: {
       "@type": "Place",
       address: {
@@ -109,7 +109,7 @@ export function buildSoftwareApplicationLd() {
     downloadUrl: absoluteUrl("/download"),
     image: absoluteUrl("/og-default.png"),
     description:
-      "Descall is a free Discord alternative with servers, roles, channels, messaging, group calls, screen share, and LFG.",
+      "Descall is a free Discord alternative with servers, roles, channels, messaging, group calls, and screen share.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -121,8 +121,7 @@ export function buildSoftwareApplicationLd() {
       "Server templates",
       "Real-time messaging",
       "Group voice and video calls",
-      "Screen share",
-      "LFG",
+      "Screen share"
     ],
     author: { "@id": PERSON_ID },
     creator: { "@id": PERSON_ID },
@@ -237,7 +236,7 @@ export function buildDiscordAlternativeAppLd(path = "/discord-alternative") {
     ...buildSoftwareApplicationLd(),
     url: absoluteUrl(path),
     description:
-      "Free Discord alternative with servers, roles, channels, real-time chat, group voice/video, screen share, and LFG.",
+      "Free Discord alternative with servers, roles, channels, real-time chat, group voice/video, and screen share.",
     featureList: [
       "Discord-style servers with channels",
       "Roles and permission overrides",
@@ -245,7 +244,6 @@ export function buildDiscordAlternativeAppLd(path = "/discord-alternative") {
       "Real-time messaging",
       "Group voice and video calls",
       "Screen share",
-      "LFG",
       "Windows desktop app",
       "Android APK",
     ],

@@ -2083,12 +2083,14 @@ const SHOP_CATEGORIES = [
   "typing_flare",
   "reaction_burst",
   "call_overlay",
+  "countries",
 ];
 
 // Categories that render from a small piece of metadata rather than an
 // image/SVG asset — createItem/updateItem still write a placeholder
 // asset_url for these (never rendered) to satisfy the NOT NULL column.
 const METADATA_ONLY_CATEGORIES = new Set([
+  "countries",
   "profile_badge",
   "profile_title",
   "name_effect",
@@ -2135,6 +2137,13 @@ router.post("/shop/items", async (req, res) => {
     }
     if (!SHOP_CATEGORIES.includes(category)) {
       return res.status(400).json({ error: "Invalid category." });
+    }
+    if (shop.RETIRED_SHOP_CATEGORIES.has(category)) {
+      return res.status(400).json({ error: "This category is retired." });
+    }
+    if (category === shop.COUNTRY_CATEGORY) {
+      // The 245 flags come from the catalogue migration (ISO code, region, kind).
+      return res.status(400).json({ error: "Countries are managed by the catalogue migration." });
     }
     if (!METADATA_ONLY_CATEGORIES.has(category) && !assetUrl) {
       return res.status(400).json({ error: "assetUrl is required for this category." });
@@ -2317,7 +2326,7 @@ router.post("/shop/gift", async (req, res) => {
     const item = await shop.getItemById(itemId);
     if (!item) return res.status(404).json({ error: "Item not found." });
     if (shop.REMOVED_COSMETIC_CATEGORIES.has(item.category)) {
-      return res.status(410).json({ error: "Avatar frames are no longer available.", code: "cosmetic_removed" });
+      return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
     }
 
     const { data: targetUser } = await supabase

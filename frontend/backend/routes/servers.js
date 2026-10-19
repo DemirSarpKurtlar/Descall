@@ -2988,9 +2988,22 @@ router.get("/:id/members", requireAuth, async (req, res) => {
     const userIds = (members || []).map((m) => m.user_id);
     const { data: users, error: uErr } = await supabase
       .from("users")
-      .select("id, username, display_name, avatar_url")
+      .select("id, username, display_name, avatar_url, equipped_country_id")
       .in("id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
     if (uErr) throw uErr;
+
+    // One flag per member (2.13.0): a single lookup for every equipped country.
+    const countryIds = [...new Set((users || []).map((u) => u.equipped_country_id).filter(Boolean))];
+    const countryById = new Map();
+    if (countryIds.length) {
+      const { data: flags } = await supabase
+        .from("shop_items")
+        .select("id, name, category, badge_icon, country_code")
+        .in("id", countryIds);
+      for (const flag of flags || []) {
+        if (flag.category === "countries") countryById.set(flag.id, flag);
+      }
+    }
 
     const { data: server } = await supabase
       .from("servers")
@@ -3028,6 +3041,7 @@ router.get("/:id/members", requireAuth, async (req, res) => {
         username: u.username || null,
         displayName: u.display_name || null,
         avatarUrl: u.avatar_url || null,
+        equippedCountry: countryById.get(u.equipped_country_id) || null,
         nickname: m.nickname || null,
         joinedAt: m.joined_at,
         timeoutUntil: m.timeout_until || null,

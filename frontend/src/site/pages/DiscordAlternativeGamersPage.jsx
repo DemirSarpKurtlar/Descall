@@ -19,16 +19,16 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker={t("For gamers")}
-      title={t("Best Discord alternative for gamers & LFG")}
+      title={t("Best Discord alternative for gamers")}
       lead={t(
-        "Gamers don’t need another bloated server, they need voice, screen share, and LFG that actually works. Descall is the Discord alternative built around squads, ranks, and queueing together."
+        "Gamers don’t need another bloated server, they need voice and screen share that actually work. Descall is the Discord alternative built around squads and playing together."
       )}
-      tone="lfg"
+      tone="gaming"
       faq={GAMER_FAQ}
       jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(GAMER_FAQ), buildDiscordAlternativeAppLd()]}
       primaryCta={
         <button type="button" className="mkt-btn mkt-btn-primary" onClick={onSignIn}>
-          {t("Open Play / LFG")}
+          {t("Open Descall")}
         </button>
       }
       secondaryCta={
@@ -36,13 +36,13 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
           {t("Download for Windows")}
         </Link>
       }
-      heroExtra={<SeoProductPreview mode="lfg" caption={t("Play tab, LFG inside Descall")} />}
+      heroExtra={<SeoProductPreview mode="friends" caption={t("Friends and presence inside Descall")} />}
     >
       <section className="seo-section">
-        <h2>{t("Why gamers leave Discord for LFG")}</h2>
+        <h2>{t("Why gamers leave Discord")}</h2>
         <p>
           {t(
-            "Classic Discord LFG means bots, roles, and channel spam."
+            "A classic Discord gaming server means bots, roles, and channel spam."
           )}
         </p>
       </section>
@@ -52,7 +52,7 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
         <ul className="seo-checklist">
           {[
             "Group voice/video with screen share",
-            "LFG lobbies + party codes",
+            "Gaming templates with squad-up rooms",
             "account link for rank on profile",
             "Desktop app for low-friction gaming sessions",
             "Free core, cosmetics optional",
@@ -70,9 +70,6 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
       <section className="seo-section">
         <h2>{t("Keep reading")}</h2>
         <ul className="seo-link-list">
-          <li>
-            <Link to="/blog/best-discord-alternative-for-lfg">{t("Blog: best Discord alternative for LFG")}</Link>
-          </li>
           <li>
             <Link to="/compare/discord">{t("Descall vs Discord")}</Link>
           </li>

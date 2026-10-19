@@ -35,7 +35,7 @@ const fragments = [
   row("b", "Minecraft", t0 + 5 * 60 * 1000, 3 * 60),
   row("c", "Minecraft", t0 + 9 * 60 * 1000, 60),
   row("d", "Minecraft", t0 + 11 * 60 * 1000, 60),
-  row("v", "Valorant", t0 + 20 * 60 * 1000, 14 * 60),
+  row("v", "Rocket League", t0 + 20 * 60 * 1000, 14 * 60),
   row("m2", "Minecraft", t0 + 3 * 60 * 60 * 1000, 26 * 60),
 ];
 
@@ -48,7 +48,7 @@ assert.equal(first.duration_sec, 4 * 60 + 3 * 60 + 60 + 60);
 assert.equal(first.started_at, iso(t0));
 assert.equal(first.ended_at, iso(t0 + 12 * 60 * 1000));
 assert.equal(first.display_name, "Playing Minecraft");
-assert.equal(grouped.find((r) => r.app_name === "Valorant").duration_sec, 14 * 60);
+assert.equal(grouped.find((r) => r.app_name === "Rocket League").duration_sec, 14 * 60);
 
 const gap = 5 * 60 * 1000;
 const edge = [
@@ -137,7 +137,7 @@ assert.equal(step.state.paused, null);
 let switched = stepActivityScan(null, { appName: "Minecraft", nowMs: t0 });
 switched = stepActivityScan(switched.state, { appName: null, nowMs: t0 + 4 * 60 * 1000 });
 switched = stepActivityScan(switched.state, {
-  appName: "Valorant",
+  appName: "Rocket League",
   nowMs: t0 + 5 * 60 * 1000,
   meta: { appType: "game" },
 });
@@ -145,7 +145,7 @@ assert.equal(switched.log.appName, "Minecraft");
 assert.equal(switched.log.endedAt, iso(t0 + 4 * 60 * 1000));
 assert.equal(switched.log.durationSec, 4 * 60);
 assert.equal(switched.emit, "update");
-assert.equal(switched.state.active.appName, "Valorant");
+assert.equal(switched.state.active.appName, "Rocket League");
 
 let resumedLate = stepActivityScan(null, { appName: "Minecraft", nowMs: t0 });
 resumedLate = stepActivityScan(resumedLate.state, { appName: null, nowMs: t0 + 60_000 });

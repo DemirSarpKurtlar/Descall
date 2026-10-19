@@ -41,7 +41,6 @@ Allow: /compare/
 Allow: /discord-alternative
 Allow: /tr/
 Allow: /discord-alternative-for-communities
-Allow: /discord-alternative-for-lfg
 Allow: /discord-alternative-for-voice-chat
 Allow: /discord-alternative-for-friends
 Allow: /best-discord-alternative-for-gamers

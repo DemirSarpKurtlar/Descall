@@ -8,8 +8,8 @@ import { hreflangPair } from "../localePaths.js";
 const EXTRA_TR = {
   "Descall Features, Free Voice, Screen Share & Servers":
     "Descall Özellikleri, Ücretsiz Ses, Ekran Paylaşımı ve Sunucular",
-  "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG.":
-    "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, Discord tarzı sunucular, roller, şablonlar ve LFG.",
+  "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, and templates.":
+    "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, Discord tarzı sunucular, roller ve şablonlar.",
   "Servers & community tools": "Sunucular ve topluluk araçları",
   "Full server structure with categories, text, voice, and stage channels":
     "Kategorili metin, ses ve sahne kanallarıyla tam sunucu yapısı",
@@ -27,8 +27,8 @@ const EXTRA_TR = {
   "Screen share with quality presets for games, VODs, and watch parties":
     "Oyun, VOD ve izleme partileri için kalite hazır ayarlı ekran paylaşımı",
   "Gaming extras": "Oyun ekstraları",
-  "LFG lobbies, party codes, and linking":
-    "LFG lobileri, parti kodları ve bağlantısı",
+  "Gaming server templates with squad-up and scrim rooms":
+    "Ekip toplama ve scrim odalı oyun sunucusu şablonları",
   "Optional DesCoin cosmetics, core chat and calls stay free":
     "İsteğe bağlı DesCoin kozmetikleri, temel sohbet ve aramalar ücretsiz kalır",
   "Descall vs Discord": "Descall vs Discord",
@@ -50,7 +50,7 @@ const EXTRA_TR = {
   "What you get": "Neler var",
   "Servers, roles, channels, and moderation tools": "Sunucular, roller, kanallar ve moderasyon araçları",
   "Chat, voice, video, and screen share": "Sohbet, ses, görüntü ve ekran paylaşımı",
-  "LFG and friend presence": "LFG ve arkadaş durumu",
+  "Friend presence and activity": "Arkadaş durumu ve etkinlik",
   "See features": "Özelliklere bak",
   "About Descall": "Descall Hakkında",
   "Who owns Descall?": "Descall’ın sahibi kim?",
@@ -63,8 +63,8 @@ const EXTRA_TR = {
   "Support": "Destek",
   "Source": "Kaynak",
   "What we build": "Ne inşa ediyoruz",
-  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and LFG, with privacy policies and security docs you can actually read.":
-    "Anlık mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve LFG, okunabilir gizlilik ve güvenlik dokümanlarıyla.",
+  "Real-time messaging, Discord-style servers, WebRTC voice/video, and screen share, with privacy policies and security docs you can actually read.":
+    "Anlık mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü ve ekran paylaşımı, okunabilir gizlilik ve güvenlik dokümanlarıyla.",
   "Last updated": "Son güncelleme",
   "Contact": "İletişim",
   "Contact Descall": "Descall ile iletişim",
@@ -95,7 +95,6 @@ export function navLabels(isTr) {
         features: "Özellikler",
         alternative: "Discord alternatifi",
         alternatives: "Alternatifler",
-        lfg: "LFG",
         vsDiscord: "Discord karşılaştırması",
         apps: "Discord benzeri uygulamalar",
         blog: "Blog",
@@ -114,7 +113,6 @@ export function navLabels(isTr) {
         features: "Features",
         alternative: "Discord alternative",
         alternatives: "Alternatives",
-        lfg: "LFG",
         vsDiscord: "vs Discord",
         apps: "Apps like Discord",
         blog: "Blog",
@@ -169,13 +167,13 @@ export function homeHero(isTr) {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
         h1: "Birlikte konuşun",
-        lead: "Grup sesi, görüntü ve ekran paylaşımı. Metin ve ses kanallı sunucular, ekip gerektiğinde LFG.",
+        lead: "Grup sesi, görüntü ve ekran paylaşımı. Tüm ekibin için metin ve ses kanallı sunucular.",
         voiceTitle: "Sohbetin yanında ses",
         voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. Windows, Android ve tarayıcı aynı hesabı kullanır.",
         serversTitle: "Rol ve kanallı sunucular",
         serversBody: "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Admin, Moderator, Member rolleri vardır.",
         serversPoints: [
-          "Duyuru, LFG ve staff kanalları şablonlarda hazırdır.",
+          "Duyuru, ekip toplama ve yetkili kanalları şablonlarda hazırdır.",
           "Staff kick, ban, timeout uygulayabilir ve denetim kaydını okuyabilir.",
           "Ses kanalları metin kanallarının yanındadır.",
         ],
@@ -183,7 +181,7 @@ export function homeHero(isTr) {
         bullets: [
           "Rol, kanal izni, davet ve moderasyonlu Discord tarzı sunucular",
           "Temel iletişimde Nitro duvarı olmadan HD ses/görüntü ve ekran paylaşımı",
-          "Bot karmaşası olmadan yerleşik LFG",
+          "Bot karmaşası olmadan hazır oyun şablonları",
           "Windows masaüstü, Android ve tam web uygulaması",
         ],
         core: "Temel özellikler",
@@ -206,8 +204,8 @@ export function homeHero(isTr) {
             body: "Temel iletişimde Nitro duvarı olmadan ses, görüntü ve ekran paylaşımı",
           },
           {
-            title: "LFG",
-            body: "Bot karmaşası olmadan yerleşik lobi ve parti kodu",
+            title: "Oyun şablonları",
+            body: "Bot karmaşası olmadan hazır ekip toplama ve scrim kanalları",
           },
           {
             title: "Her cihaz",
@@ -241,13 +239,13 @@ export function homeHero(isTr) {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
         h1: "Talk together",
-        lead: "Group voice, video, and screen share. Servers with text and voice channels, plus LFG when you need a team.",
+        lead: "Group voice, video, and screen share. Servers with text and voice channels for your whole crew.",
         voiceTitle: "Voice next to the chat",
         voiceBody: "Join a voice channel from the server list. Share your screen at 720p. Windows, Android, and the browser use one account.",
         serversTitle: "Servers with roles and channels",
         serversBody: "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member.",
         serversPoints: [
-          "Announcements, LFG, and staff channels are already in the templates.",
+          "Announcements, squad-up, and staff channels are already in the templates.",
           "Staff can kick, ban, timeout, and read an audit log.",
           "Voice channels sit beside the text channels.",
         ],
@@ -255,7 +253,7 @@ export function homeHero(isTr) {
         bullets: [
           "Discord-style servers with roles, channel overrides, invites, and moderation",
           "HD voice/video and screen share without Nitro paywalls on core communication",
-          "Built-in LFG so squads queue without bot hell",
+          "Gaming templates so squads get set up without bot hell",
           "Windows desktop, Android, and full web app",
         ],
         core: "Core features",
@@ -278,8 +276,8 @@ export function homeHero(isTr) {
             body: "Voice, video, and screen share without Nitro paywalls on core communication",
           },
           {
-            title: "LFG",
-            body: "Built-in lobbies and party codes, no bot hell",
+            title: "Gaming templates",
+            body: "Ready-made squad-up and scrim channels, no bot hell",
           },
           {
             title: "Every device",
@@ -377,7 +375,6 @@ export function seoSiteNavHtml(isTr = false) {
               ].join("\n        ")
             : [
                 footerItem("/discord-alternative", n.alternative),
-                footerItem("/discord-alternative-for-lfg", n.lfg),
                 footerItem("/compare/discord", n.vsDiscord),
                 footerItem("/alternatives", n.alternatives),
                 footerItem("/apps-like-discord", n.apps),

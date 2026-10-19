@@ -4,7 +4,7 @@ export const TR_LANDING_META = [
   {
     "path": "/tr/discord-alternatifi",
     "title": "Discord Alternatifi | Ücretsiz Türkçe Sesli Sohbet: Descall",
-    "description": "Discord’a erişemiyor ya da daha hafif bir uygulama mı arıyorsun? Descall: ücretsiz sunucular, sesli ve görüntülü arama, ekran paylaşımı, LFG. Türkçe.",
+    "description": "Discord’a erişemiyor ya da daha hafif bir uygulama mı arıyorsun? Descall: ücretsiz sunucular, sesli ve görüntülü arama, ekran paylaşımı. Türkçe.",
     "h1": "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı"
   },
   {
@@ -27,9 +27,9 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/oyuncu-sohbet-uygulamasi",
-    "title": "Oyuncu Sohbet Uygulaması | Ses, Klan Sunucusu ve LFG: Descall",
-    "description": "Oyuncular için ücretsiz sohbet uygulaması: klan sunucusu, rollerle düzen, oyun içi sesli sohbet, ekran paylaşımı ve Play sekmesinde LFG ile takım arkadaşı bul.",
-    "h1": "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve LFG tek yerde"
+    "title": "Oyuncu Sohbet Uygulaması | Ses, Klan Sunucusu ve Ekran Paylaşımı: Descall",
+    "description": "Oyuncular için ücretsiz sohbet uygulaması: klan sunucusu, rollerle düzen, oyun içi sesli sohbet ve ekran paylaşımı tek uygulamada.",
+    "h1": "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve ekran paylaşımı tek yerde"
   },
   {
     "path": "/tr/discord-acildi-mi",
@@ -49,7 +49,7 @@ export const TR_BLOG_META = [
   {
     "slug": "discord-vs-descall",
     "title": "Discord mu Descall mı? Grubun için 2026’da hangisi?",
-    "description": "Sohbet, sunucular, roller, ses, ekran paylaşımı, LFG ve fiyat açısından dürüst bir Discord ve Descall karşılaştırması: hangi grup için hangisi daha uygun?",
+    "description": "Sohbet, sunucular, roller, ses, ekran paylaşımı ve fiyat açısından dürüst bir Discord ve Descall karşılaştırması: hangi grup için hangisi daha uygun?",
     "date": "2026-08-11",
     "updated": "2026-10-17",
     "tags": [
@@ -60,7 +60,7 @@ export const TR_BLOG_META = [
   {
     "slug": "best-discord-alternatives-2026",
     "title": "2026’nın en iyi Discord alternatifleri: dürüst kısa liste",
-    "description": "Arkadaş grupları, sunucular, sesli sohbet ve LFG için 2026’nın en iyi Discord alternatifleri; Descall, TeamSpeak, Telegram ve diğerleri gerçekte nasıl kıyaslanıyor?",
+    "description": "Arkadaş grupları, sunucular, sesli sohbet için 2026’nın en iyi Discord alternatifleri; Descall, TeamSpeak, Telegram ve diğerleri gerçekte nasıl kıyaslanıyor?",
     "date": "2026-08-11",
     "updated": "2026-10-17",
     "tags": [
@@ -88,17 +88,6 @@ export const TR_BLOG_META = [
     "tags": [
       "Discord rakipleri",
       "Pazar"
-    ]
-  },
-  {
-    "slug": "best-discord-alternative-for-lfg",
-    "title": "LFG için en iyi Discord alternatifi",
-    "description": "Takım arkadaşı aramak için Discord botları yerine Descall’ın Play sekmesindeki LFG lobilerini kullanmak: nasıl çalışır, kimler için uygun?",
-    "date": "2026-08-11",
-    "updated": "2026-10-17",
-    "tags": [
-      "LFG",
-      "Discord alternatifi"
     ]
   },
   {
@@ -137,7 +126,7 @@ export const TR_BLOG_META = [
   {
     "slug": "migrate-from-discord-to-descall",
     "title": "Discord’dan Descall’a geçiş: adım adım kontrol listesi",
-    "description": "Discord’dan Descall’a adım adım geçiş: arkadaşlarını davet et, sunucunu şablonla yeniden kur, LFG’yi taşı ve sesli akşamları ücretsiz sürdür.",
+    "description": "Discord’dan Descall’a adım adım geçiş: arkadaşlarını davet et, sunucunu şablonla yeniden kur ve sesli akşamları ücretsiz sürdür.",
     "date": "2026-08-14",
     "updated": "2026-10-17",
     "tags": [

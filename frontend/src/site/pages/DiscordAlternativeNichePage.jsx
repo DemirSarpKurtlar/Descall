@@ -8,7 +8,7 @@ import { NICHE_LANDINGS } from "../seo/nicheLandings";
 import { useT } from "../../context/localeContextInstance";
 
 function previewForPath(path) {
-  if (path.includes("lfg") || path.includes("gamers")) return { tone: "lfg", mode: "lfg" };
+  if (path.includes("gamers")) return { tone: "gaming", mode: "friends" };
   if (path.includes("communities")) return { tone: "community", mode: "servers" };
   if (path.includes("voice")) return { tone: "voice", mode: "call" };
   if (path.includes("friends")) return { tone: "friends", mode: "chat" };

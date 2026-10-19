@@ -6,7 +6,8 @@
 // was compiled with. Since 2.11.2 the server also sends `retiredCategories` with the catalog
 // and the client hides those tabs, so a future removal reaches already-installed builds.
 
-export const REMOVED_SHOP_CATEGORIES = Object.freeze(["avatar_frame", "sound_pack"]);
+// Profile titles were retired in 2.13.0 and replaced by country flags (one flag per user).
+export const REMOVED_SHOP_CATEGORIES = Object.freeze(["avatar_frame", "sound_pack", "profile_title"]);
 
 export const SHOP_CATEGORY_TABS = Object.freeze([
   { id: "banner", label: "Banners" },
@@ -14,7 +15,7 @@ export const SHOP_CATEGORY_TABS = Object.freeze([
   { id: "profile_background", label: "Backgrounds" },
   { id: "theme", label: "Themes" },
   { id: "profile_badge", label: "Badges" },
-  { id: "profile_title", label: "Titles" },
+  { id: "countries", label: "Countries" },
   { id: "name_effect", label: "Name Effects" },
   { id: "chat_bubble", label: "Bubbles" },
   { id: "presence_flare", label: "Presence" },

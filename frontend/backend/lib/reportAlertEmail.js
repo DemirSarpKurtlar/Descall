@@ -2,14 +2,14 @@
 
 /**
  * Moderation alert email: every new user report (message / profile / member
- * list / DM list / LFG) emails the owner via the shared Resend sender.
+ * list / DM list) emails the owner via the shared Resend sender.
  *
  * Fire-and-forget by design: scheduleReportAlert() returns immediately and the
  * send runs on a later tick, so a slow or failing Resend call can never block
  * or fail the report request. Errors are caught and logged.
  *
  * Flood protection (in-memory, single Render instance):
- *   - at most 1 email per reporter+target (or reporter+lobby) per 10 minutes
+ *   - at most 1 email per reporter+target per 10 minutes
  *   - at most REPORT_ALERT_MAX_PER_HOUR emails per rolling hour (default 20)
  *   Suppressed alerts are counted and summarized in the next email that goes
  *   out; every report is still in the admin panel.
@@ -76,7 +76,6 @@ function istanbulStamp(value) {
 
 /** Human label for where the report came from (message vs. user list entry). */
 function reportTypeLabel({ contextType, contextId, kind }) {
-  if (kind === "lfg_lobby") return "LFG lobisi";
   const hasMsg = Boolean(contextId);
   switch (contextType) {
     case "dm":
@@ -87,8 +86,6 @@ function reportTypeLabel({ contextType, contextId, kind }) {
       return hasMsg ? "Mesaj (sunucu kanalı)" : "Kullanıcı (sunucu üye listesi)";
     case "profile":
       return "Kullanıcı profili";
-    case "lfg":
-      return "LFG lobisindeki oyuncu";
     default:
       return "Diğer";
   }
@@ -116,7 +113,6 @@ function buildReportAlertEmail({
   reporter = null,
   target = null,
   message = null,
-  lobby = null,
   priorCount = null,
   openCount = null,
   throttleNote = null,
@@ -124,7 +120,7 @@ function buildReportAlertEmail({
 } = {}) {
   const reason = report.reason || "other";
   const typeLabel = reportTypeLabel({ contextType: report.contextType, contextId: report.contextId, kind: report.kind });
-  const targetHandle = target?.username ? `@${oneLine(target.username, 40)}` : report.kind === "lfg_lobby" ? "LFG lobisi" : "bilinmeyen kullanıcı";
+  const targetHandle = target?.username ? `@${oneLine(target.username, 40)}` : "bilinmeyen kullanıcı";
   const subject = `🚩 Yeni şikayet: ${reasonTr(reason)} — ${targetHandle}`;
   const link = adminUrl(env);
 
@@ -134,17 +130,15 @@ function buildReportAlertEmail({
     ["Sebep", `${reasonTr(reason)} (${reason})`],
     ["Ek açıklama", report.note || "—"],
     ["Şikayet eden", userLine(reporter, report.reporterId)],
-    ["Şikayet edilen", report.kind === "lfg_lobby" && !report.targetId ? "— (lobi şikayeti)" : userLine(target, report.targetId)],
+    ["Şikayet edilen", userLine(target, report.targetId)],
     ["Şikayet zamanı", istanbulStamp(report.createdAt || new Date()) || "—"],
   ];
-  if (report.kind !== "lfg_lobby") {
-    rows.push([
-      "Önceki şikayetler",
-      priorCount == null
-        ? "bilinmiyor"
-        : `${priorCount} (bu kullanıcıya karşı, bu şikayet hariç)${openCount != null ? ` · açık: ${openCount}` : ""}`,
-    ]);
-  }
+  rows.push([
+    "Önceki şikayetler",
+    priorCount == null
+      ? "bilinmiyor"
+      : `${priorCount} (bu kullanıcıya karşı, bu şikayet hariç)${openCount != null ? ` · açık: ${openCount}` : ""}`,
+  ]);
 
   const ctxRows = [];
   let content = null;
@@ -157,9 +151,6 @@ function buildReportAlertEmail({
   } else if (report.contextId) {
     ctxRows.push(["Bağlam ID", report.contextId]);
     if (report.occurredAt) ctxRows.push(["Mesaj zamanı", istanbulStamp(report.occurredAt) || "—"]);
-  }
-  if (lobby) {
-    ctxRows.push(["Lobi", lobby]);
   }
   if (content == null && report.snippet) {
     content = report.snippet;
@@ -310,14 +301,6 @@ async function loadMessageContext(supabase, { contextType, contextId }) {
   return null;
 }
 
-async function loadLobbyLabel(supabase, lobbyId) {
-  if (!lobbyId || !UUID_RE.test(String(lobbyId))) return lobbyId ? String(lobbyId) : null;
-  const row = await safeSingle(supabase.from("lfg_lobbies").select("*").eq("id", String(lobbyId)).maybeSingle());
-  if (!row) return String(lobbyId);
-  const bits = [row.title || row.name, row.mode, row.region].filter(Boolean).join(" · ");
-  return `${bits || "Lobi"} · ID ${lobbyId}`;
-}
-
 async function countPriorReports(supabase, targetId, reportId) {
   if (!targetId) return null;
   try {
@@ -379,7 +362,7 @@ function createReportAlerter({
 
   async function notify(input = {}) {
     const report = input.report || {};
-    const pairKey = `${report.reporterId || "?"}:${report.targetId || `lobby:${report.contextId || "?"}`}`;
+    const pairKey = `${report.reporterId || "?"}:${report.targetId || "?"}`;
     const gate = admit(pairKey);
     if (!gate.ok) {
       logger.log?.(`[report-alert] skipped (${gate.why} limit) report ${report.id || "?"}`);
@@ -387,18 +370,16 @@ function createReportAlerter({
     }
     try {
       const supabase = getSupabase();
-      const [users, message, priorCount, lobby] = await Promise.all([
+      const [users, message, priorCount] = await Promise.all([
         loadUsers(supabase, [report.reporterId, report.targetId]),
         loadMessageContext(supabase, report),
-        report.kind === "lfg_lobby" ? null : countPriorReports(supabase, report.targetId, report.id),
-        report.contextType === "lfg" || report.kind === "lfg_lobby" ? loadLobbyLabel(supabase, report.contextId) : null,
+        countPriorReports(supabase, report.targetId, report.id),
       ]);
       const email = buildReportAlertEmail({
         report,
         reporter: users[String(report.reporterId)] || null,
         target: users[String(report.targetId)] || null,
         message,
-        lobby,
         priorCount,
         openCount: input.openCount ?? null,
         throttleNote: gate.note,

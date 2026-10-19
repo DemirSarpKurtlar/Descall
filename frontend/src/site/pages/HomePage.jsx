@@ -48,12 +48,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
               ? String(heroPayload.sub)
               : (
                 <>
-                  {t(
-                    "Group voice, video, and screen share. Servers with text and voice channels, plus"
-                  )}{" "}
-                  <Link to="/discord-alternative-for-lfg">{t("LFG")}</Link>
-                  {" "}
-                  {t("when you need a team.")}
+                  {t("Group voice, video, and screen share. Servers with text and voice channels for your whole crew.")}
                 </>
               )}
           </p>
@@ -127,7 +122,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
               )}
             </p>
             <ul className="mkt-plain-list">
-              <li>{t("Announcements, LFG, and staff channels are already in the templates.")}</li>
+              <li>{t("Announcements, squad-up, and staff channels are already in the templates.")}</li>
               <li>{t("Staff can kick, ban, timeout, and read an audit log.")}</li>
               <li>{t("Voice channels sit beside the text channels.")}</li>
             </ul>

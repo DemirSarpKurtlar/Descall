@@ -17,7 +17,6 @@ import { EXTRA_APPS } from './apps500.js';
 
 export const PROCESS_DB = {
   // ─── FPS / TACTICAL SHOOTERS ────────────────────────────────────────────────
-  'valorant-win64-shipping.exe':       { name: 'Valorant',            type: 'game', category: 'fps',      icon: '🎮' },
   'csgo.exe':                          { name: 'CS:GO',               type: 'game', category: 'fps',      icon: '🎮' },
   'cs2.exe':                           { name: 'Counter-Strike 2',    type: 'game', category: 'fps',      icon: '🎮' },
   'r5apex.exe':                        { name: 'Apex Legends',        type: 'game', category: 'fps',      icon: '🎮' },
@@ -284,7 +283,6 @@ export const PROCESS_DB = {
   // ─── GAME LAUNCHERS ─────────────────────────────────────────────────────────
   'steam.exe':                         { name: 'Steam',               type: 'launcher', category: 'launcher',  icon: '🎮' },
   'epicgameslauncher.exe':             { name: 'Epic Games Launcher', type: 'launcher', category: 'launcher',  icon: '🎮' },
-  'riotclientservices.exe':            { name: 'Riot Client',         type: 'launcher', category: 'launcher',  icon: '🎮' },
   'battlenet.exe':                     { name: 'Battle.net',          type: 'launcher', category: 'launcher',  icon: '🎮' },
   'gog galaxy.exe':                    { name: 'GOG Galaxy',          type: 'launcher', category: 'launcher',  icon: '🎮' },
   'goggalaxy.exe':                     { name: 'GOG Galaxy',          type: 'launcher', category: 'launcher',  icon: '🎮' },

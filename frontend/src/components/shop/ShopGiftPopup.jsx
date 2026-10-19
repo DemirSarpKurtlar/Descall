@@ -12,6 +12,7 @@ const CATEGORY_LABEL = {
   theme: "Premium Theme",
   profile_badge: "Profile Badge",
   profile_title: "Profile Title",
+  countries: "Country",
   name_effect: "Name Effect",
   avatar_effect: "Avatar Effect",
   chat_bubble: "Chat Bubble Skin",

@@ -1,4 +1,4 @@
-Thank you for reviewing Descall, a messaging and calling app: private and group chats, one-on-one and group voice/video calls, servers with text channels and voice rooms, friends with presence, profiles and a looking-for-group (LFG) lobby list. Free: no in-app purchases, subscriptions, ads or real-money features. UI follows the device language (English/Turkish).
+Thank you for reviewing Descall, a messaging and calling app: private and group chats, one-on-one and group voice/video calls, servers with text channels and voice rooms, friends with presence and profiles. Free: no in-app purchases, subscriptions, ads or real-money features. UI follows the device language (English/Turkish).
 
 DEMO ACCOUNTS (already friends with each other; sign in with Username + Password on the first screen, then tap "Login")
 A: {{DEMO_A_USERNAME}} / {{DEMO_A_PASSWORD}}

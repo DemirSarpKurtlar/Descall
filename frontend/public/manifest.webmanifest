@@ -1,7 +1,7 @@
 {
   "name": "Descall",
   "short_name": "Descall",
-  "description": "Chat, voice, and gaming LFG — Discord alternative.",
+  "description": "Chat, voice, and servers — Discord alternative.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

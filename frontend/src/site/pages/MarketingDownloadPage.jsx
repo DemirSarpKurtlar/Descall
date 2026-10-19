@@ -261,8 +261,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
           <li>
             <IconCheck size={16} />
             <span>
-              {t("Servers, roles, channels, and")}{" "}
-              <Link to={href("/discord-alternative-for-lfg")}>{t("LFG")}</Link>
+              {t("Servers, roles, and channels")}
             </span>
           </li>
           <li>

@@ -1,6 +1,5 @@
 import {
   ChatCircleDots,
-  GameController,
   GearSix,
   HardDrives,
   Lightning,
@@ -19,7 +18,6 @@ const RAIL_ICONS = {
   chat: ChatCircleDots,
   groups: UsersThree,
   servers: HardDrives,
-  play: GameController,
   friends: UserPlus,
   activity: Lightning,
   calls: Phone,
@@ -48,7 +46,6 @@ function railIcon(id) {
 export const RailChat = railIcon("chat");
 export const RailGroups = railIcon("groups");
 export const RailServers = railIcon("servers");
-export const RailPlay = railIcon("play");
 export const RailFriends = railIcon("friends");
 export const RailActivity = railIcon("activity");
 export const RailCalls = railIcon("calls");
@@ -59,7 +56,6 @@ export const RAIL_ACCENT = {
   chat: "#5C7CFA",
   groups: "#0F9F8F",
   servers: "#7C3AED",
-  play: "#E23B4A",
   friends: "#16A34A",
   activity: "#E8A317",
   calls: "#059669",

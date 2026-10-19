@@ -46,9 +46,9 @@ export const PAGE_EXTRAS = {
         ],
       },
       {
-        h: "Find a team without bots",
+        h: "Gaming servers without bots",
         p: [
-          "The Play tab is a built-in LFG space: open a lobby or join one, then move into voice with the same account. No separate LFG server and no bot commands to learn.",
+          "The Gaming template sets up squad-up, clip, and scrim channels with staff roles in one click, then everyone moves into voice with the same account. No bot commands to learn.",
         ],
       },
       {
@@ -89,9 +89,9 @@ export const PAGE_EXTRAS = {
         ],
       },
       {
-        h: "Sunucular, roller ve LFG",
+        h: "Sunucular ve roller",
         p: [
-          "Sunucularda kategoriler, yazı, ses ve sahne kanalları bulunur. Roller ve kanal izinleriyle yetkili odalarını ve duyuru kanallarını düzenlersin. Oyun, Topluluk, Ders, Arkadaşlar ve Yayın şablonları bunları tek tıkla kurar. Play sekmesindeki LFG lobileriyle bot kurmadan takım arkadaşı bulursun.",
+          "Sunucularda kategoriler, yazı, ses ve sahne kanalları bulunur. Roller ve kanal izinleriyle yetkili odalarını ve duyuru kanallarını düzenlersin. Oyun, Topluluk, Ders, Arkadaşlar ve Yayın şablonları bunları tek tıkla kurar. Oyun şablonundaki ekip toplama kanalıyla bot kurmadan oyun arkadaşlarını bir araya getirirsin.",
         ],
       },
       {
@@ -109,8 +109,8 @@ export const PAGE_EXTRAS = {
       {
         h: "What gamers actually need from a chat app",
         p: [
-          "Clear, low-latency voice. Channels you can drop into without ringing anyone. Screen share that does not turn a replay into a slideshow. A way to find a fifth player without joining yet another LFG server. And for clans, some structure: roles, a staff room, and an announcements channel only leaders can post in.",
-          "Descall puts those pieces in one free app. You do not need a subscription for better voice or screen share, and you do not need bots for LFG or basic moderation.",
+          "Clear, low-latency voice. Channels you can drop into without ringing anyone. Screen share that does not turn a replay into a slideshow. And for clans, some structure: roles, a staff room, and an announcements channel only leaders can post in.",
+          "Descall puts those pieces in one free app. You do not need a subscription for better voice or screen share, and you do not need bots for basic moderation.",
         ],
       },
       {
@@ -133,21 +133,19 @@ export const PAGE_EXTRAS = {
         ],
       },
       {
-        h: "LFG built in",
+        h: "Gaming templates built in",
         p: [
-          "The Play tab lets you open a lobby or join an open one for whatever game you are playing. When you find someone, you move into voice in the same app with the same account, no swapping usernames across three platforms. Many clans also use LFG to meet new regulars and invite them to the clan server.",
+          "The Gaming template gives your clan squad-up, clip, and scrim channels out of the box. Everyone talks in voice in the same app with the same account, no swapping usernames across three platforms.",
         ],
       },
       {
         h: "Honest limits",
         p: [
-          "Descall does not have Discord’s bot marketplace (music bots, levelling systems, complex automations), and it is not built for public servers with tens of thousands of members. It is not an in-game overlay either. It is a chat app for squads, clans, and small-to-mid communities that want good voice, tidy servers, and LFG for free.",
+          "Descall does not have Discord’s bot marketplace (music bots, levelling systems, complex automations), and it is not built for public servers with tens of thousands of members. It is not an in-game overlay either. It is a chat app for squads, clans, and small-to-mid communities that want good voice and tidy servers for free.",
         ],
       },
     ],
     links: [
-      { to: "/discord-alternative-for-lfg", label: "Discord alternative for LFG" },
-      { to: "/blog/best-discord-alternative-for-lfg", label: "Blog: LFG without bots" },
       { to: "/discord-alternative-for-voice-chat", label: "Voice chat alternative" },
       { to: "/download", label: "Download for Windows" },
     ],

@@ -43,7 +43,7 @@ export const PUBLIC_ROUTES = [
     path: "/",
     title: "Descall | Voice Chat, Servers & Screen Share",
     description:
-      "HD voice, video, screen share, and Discord-style servers, plus LFG. Free chat for friends and gamers. Start in the browser or download Windows.",
+      "HD voice, video, screen share, and Discord-style servers. Free chat for friends and gamers. Start in the browser or download Windows.",
     image: "/og-default.png",
     changefreq: "daily",
     priority: "1.0",
@@ -62,7 +62,7 @@ export const PUBLIC_ROUTES = [
     path: "/features",
     title: "Descall Features | Free Voice, Screen Share & Servers",
     description:
-      "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, templates, and LFG. No Nitro wall on talking.",
+      "See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, and templates. No Nitro wall on talking.",
     image: "/og-features.png",
     changefreq: "weekly",
     priority: "0.85",
@@ -70,9 +70,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/discord-alternative",
-    title: "Free Discord Alternative | Voice, Screen Share & LFG",
+    title: "Free Discord Alternative | Voice, Screen Share & Servers",
     description:
-      "A free Discord alternative with real servers, HD voice/video, screen share, and LFG. Core chat and calls stay free, no Nitro paywall.",
+      "A free Discord alternative with real servers, HD voice/video, and screen share. Core chat and calls stay free, no Nitro paywall.",
     image: "/og-discord.png",
     h1: "The best free Discord alternative for friends & gamers",
     changefreq: "weekly",
@@ -93,7 +93,7 @@ export const PUBLIC_ROUTES = [
     path: "/compare/discord",
     title: "Discord vs Descall (2026) | Which Should You Use?",
     description:
-      "Side-by-side Discord vs Descall: servers, roles, voice, screen share, LFG, mobile, and price. Clear verdict for friend groups vs mega-communities.",
+      "Side-by-side Discord vs Descall: servers, roles, voice, screen share, mobile, and price. Clear verdict for friend groups vs mega-communities.",
     h1: "Discord vs Descall | which fits your group in 2026?",
     changefreq: "weekly",
     priority: "0.95",
@@ -101,12 +101,12 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/best-discord-alternative-for-gamers",
-    title: "Best Discord Alternative for Gamers & LFG | Descall",
+    title: "Best Discord Alternative for Gamers | Descall",
     description:
-      "Discord alternative for gamers: free voice, screen share, and built-in LFG so squads queue without Nitro or bot hell.",
+      "Discord alternative for gamers: free voice, screen share, and gaming server templates without Nitro or bot hell.",
     changefreq: "weekly",
     priority: "0.9",
-    keywords: "discord alternative for gamers, gaming chat alternative, valorant lfg",
+    keywords: "discord alternative for gamers, gaming chat alternative",
   },
   {
     path: "/discord-alternative-for-communities",
@@ -116,15 +116,6 @@ export const PUBLIC_ROUTES = [
     changefreq: "weekly",
     priority: "0.88",
     keywords: "discord alternative for communities, community chat platform, discord server alternative",
-  },
-  {
-    path: "/discord-alternative-for-lfg",
-    title: "Discord Alternative for LFG | Lobbies | Descall",
-    description:
-      "LFG app built into a Discord alternative: Play tab lobbies, party codes, link, then jump straight into voice.",
-    changefreq: "weekly",
-    priority: "0.9",
-    keywords: "discord alternative for lfg, lfg app, lfg platform, valorant lfg",
   },
   {
     path: "/discord-alternative-for-voice-chat",
@@ -164,9 +155,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/blog",
-    title: "Descall Blog | Discord Alternatives, LFG & Voice Chat Guides",
+    title: "Descall Blog | Discord Alternatives & Voice Chat Guides",
     description:
-      "Practical guides on Discord alternatives, Discord competitors, LFG, voice chat, and migrating friend groups to Descall.",
+      "Practical guides on Discord alternatives, Discord competitors, voice chat, and migrating friend groups to Descall.",
     changefreq: "weekly",
     priority: "0.8",
   },
@@ -174,16 +165,7 @@ export const PUBLIC_ROUTES = [
     path: "/blog/discord-vs-descall",
     title: "Discord vs Descall (2026) | Which Should Your Group Use?",
     description:
-      "Honest Discord vs Descall comparison for chat, voice, screen share, LFG, and pricing, when a lighter Discord alternative wins.",
-    changefreq: "monthly",
-    priority: "0.85",
-    ogType: "article",
-  },
-  {
-    path: "/blog/best-discord-alternative-for-lfg",
-    title: "Best Discord Alternative for LFG | Descall Blog",
-    description:
-      "Why gamers choose Descall as a Discord alternative for LFG: Play tab lobbies, party codes, and linking.",
+      "Honest Discord vs Descall comparison for chat, voice, screen share, and pricing, when a lighter Discord alternative wins.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
@@ -201,7 +183,7 @@ export const PUBLIC_ROUTES = [
     path: "/blog/best-discord-alternatives-2026",
     title: "Best Discord Alternatives in 2026 | Honest Shortlist",
     description:
-      "Best Discord alternatives in 2026 for friends, voice, and LFG, how Descall, Discord, Guilded, and others actually compare.",
+      "Best Discord alternatives in 2026 for friends, servers, and voice, how Descall, Discord, Guilded, and others actually compare.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
@@ -246,7 +228,7 @@ export const PUBLIC_ROUTES = [
     path: "/blog/migrate-from-discord-to-descall",
     title: "Migrate from Discord to Descall | practical checklist",
     description:
-      "Step-by-step migration from Discord to Descall: invite friends, recreate servers with templates, move LFG, and keep voice nights free.",
+      "Step-by-step migration from Discord to Descall: invite friends, recreate servers with templates, and keep voice nights free.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",
@@ -255,7 +237,7 @@ export const PUBLIC_ROUTES = [
     path: "/faq",
     title: "Descall FAQ | Is It Free? Voice, Screen Share & Apps",
     description:
-      "Quick answers: is Descall free, how calls and screen share work, Windows/Android download, LFG, accounts, and privacy.",
+      "Quick answers: is Descall free, how calls and screen share work, Windows/Android download, accounts, and privacy.",
     changefreq: "weekly",
     priority: "0.75",
   },
@@ -382,7 +364,7 @@ export const PUBLIC_ROUTES = [
     path: "/tr/features",
     title: "Descall Özellikleri | Ücretsiz Ses ve Ekran Paylaşımı",
     description:
-      "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, sunucular, roller, şablonlar ve LFG. Konuşmak için abonelik yok.",
+      "Ücretsiz neler var: HD ses/görüntü, ekran paylaşımı, sunucular, roller ve şablonlar. Konuşmak için abonelik yok.",
     image: "/og-features.png",
     changefreq: "weekly",
     priority: "0.8",
@@ -398,9 +380,9 @@ export const PUBLIC_ROUTES = [
   },
   {
     path: "/tr/faq",
-    title: "Descall SSS | Ücretsiz mi, indirme, arama, LFG",
+    title: "Descall SSS | Ücretsiz mi, indirme, arama, gizlilik",
     description:
-      "Descall sık sorulan sorular: ücretsiz mi, Windows ve Android indirme, sesli arama, ekran paylaşımı, LFG, hesap ve gizlilik.",
+      "Descall sık sorulan sorular: ücretsiz mi, Windows ve Android indirme, sesli arama, ekran paylaşımı, hesap ve gizlilik.",
     changefreq: "weekly",
     priority: "0.7",
   },
@@ -408,7 +390,7 @@ export const PUBLIC_ROUTES = [
     path: "/tr/compare/discord",
     title: "Discord mu Descall mı? 2026 Karşılaştırması",
     description:
-      "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı, LFG ve fiyat. Arkadaş grubu için hangisi daha uygun?",
+      "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı ve fiyat. Arkadaş grubu için hangisi daha uygun?",
     h1: "Discord mu Descall mı | 2026 karşılaştırması",
     changefreq: "weekly",
     priority: "0.9",
@@ -435,7 +417,7 @@ export const PUBLIC_ROUTES = [
     path: "/tr/blog",
     title: "Descall Blog | Discord Alternatifleri ve Sesli Sohbet Rehberleri",
     description:
-      "Türkçe rehberler: Discord alternatifleri, Discord’dan geçiş, LFG, sesli sohbet ve topluluk yönetimi. Arkadaş grupları ve oyuncular için pratik yazılar.",
+      "Türkçe rehberler: Discord alternatifleri, Discord’dan geçiş, sesli sohbet ve topluluk yönetimi. Arkadaş grupları ve oyuncular için pratik yazılar.",
     changefreq: "weekly",
     priority: "0.75",
     lang: "tr",
@@ -524,8 +506,8 @@ const TR_TITLES = {
     description: "Descall beta hizmet durumu, API sağlığı ve destek.",
   },
   "/blog": {
-    title: "Descall blog | Discord alternatifleri ve LFG",
-    description: "Descall rehberleri: Discord alternatifi, LFG ve sesli sohbet.",
+    title: "Descall blog | Discord alternatifleri ve sesli sohbet",
+    description: "Descall rehberleri: Discord alternatifi, sunucular ve sesli sohbet.",
   },
   "/alternatives": {
     title: "Discord alternatifleri | Descall karşılaştırması",

@@ -303,7 +303,6 @@ Allow: /compare/
 Allow: /discord-alternative
 Allow: /discord-alternative-turkey
 Allow: /discord-alternative-for-communities
-Allow: /discord-alternative-for-lfg
 Allow: /discord-alternative-for-voice-chat
 Allow: /discord-alternative-for-friends
 Allow: /best-discord-alternative-for-gamers
@@ -337,9 +336,7 @@ Disallow: /groups/
 Disallow: /friends/
 Disallow: /servers/
 Disallow: /reactions/
-Disallow: /lfg/
 Disallow: /calls/
-Disallow: /riot/
 Disallow: /debug/
 Disallow: /health
 Disallow: /invite/

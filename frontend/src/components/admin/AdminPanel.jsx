@@ -12,7 +12,7 @@ import {
   UserX, MessageCircle, Volume2, VolumeX, Flag, FlagOff,
   History, RotateCcw, Save, Edit3, Layers, Grid, List, PieChart,
   Activity as ActivityIcon, Box, Code, GitBranch, Layers2, Monitor,
-  MousePointer, Play, Pause, Square, Maximize2, Minimize2, Copy,
+  MousePointer, Pause, Square, Maximize2, Minimize2, Copy,
   ExternalLink, FileDown, Printer, Share2, Star, ThumbsUp,
   ThumbsDown, Upload, Video, ZoomIn, ZoomOut, Megaphone,
   Coins, DollarSign, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
@@ -1636,24 +1636,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               <div className="admin-system-layout">
                 <article className="admin-system-card admin-system-card-features">
                   <div className="admin-system-switches">
-                    <SystemSwitch
-                      icon={Play}
-                      tone="lfg"
-                      label={`${t("Valorant")} ${t("valorantHub.lfg")}`}
-                      status={system.config?.featureFlags?.valorantLfg !== false ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.valorantLfg !== false}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("valorantLfg", enabled)}
-                    />
-                    <SystemSwitch
-                      icon={Zap}
-                      tone="companion"
-                      label={`${t("Valorant")} ${t("valorantHub.companion")}`}
-                      status={system.config?.featureFlags?.valorantCompanion !== false ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.valorantCompanion !== false}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("valorantCompanion", enabled)}
-                    />
                     <SystemSwitch
                       icon={Smartphone}
                       tone="glass"

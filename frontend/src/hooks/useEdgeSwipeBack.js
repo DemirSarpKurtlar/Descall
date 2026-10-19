@@ -54,7 +54,6 @@ export const SWIPE_BACK_BLOCKERS = [
   ".incoming-call-card",
   ".modal-backdrop",
   ".server-modal-overlay",
-  ".lfg-modal-overlay",
   ".add-modal-backdrop",
   ".login-modal-overlay",
   ".report-modal-overlay",

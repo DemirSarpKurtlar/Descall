@@ -26,7 +26,7 @@ const USER_REASONS = [
 ];
 
 const REASON_IDS = new Set(USER_REASONS.map((r) => r.id));
-const CONTEXT_TYPES = new Set(["profile", "dm", "group", "server", "lfg", "other"]);
+const CONTEXT_TYPES = new Set(["profile", "dm", "group", "server", "other"]);
 const STATUSES = new Set(["open", "dismissed", "actioned"]);
 
 function stripTags(value) {
@@ -325,7 +325,7 @@ async function createReport({
   const openCount = count || 0;
   const usersById = await loadUsersById([reporterId, targetId]);
   const report = publicReport(data, usersById);
-  // Owner email alert for every report path (route, LFG dual-write). Fire-and-forget:
+  // Owner email alert for every report path (route). Fire-and-forget:
   // never awaited, never throws, throttled inside lib/reportAlertEmail.js.
   try {
     require("./reportAlertEmail").scheduleReportAlert({ report: { ...report, kind: "user" }, openCount });

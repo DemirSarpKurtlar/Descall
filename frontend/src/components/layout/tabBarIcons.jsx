@@ -1,6 +1,5 @@
 import {
   ChatCircleDots,
-  GameController,
   HardDrives,
   Lightning,
   Phone,
@@ -19,7 +18,6 @@ const TAB_BAR_ICONS = {
   chat: ChatCircleDots,
   groups: UsersThree,
   servers: HardDrives,
-  play: GameController,
   friends: UserPlus,
   activity: Lightning,
   calls: Phone,

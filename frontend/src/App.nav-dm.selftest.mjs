@@ -10,7 +10,6 @@ const app = readFileSync(join(root, "App.jsx"), "utf8");
 const layout = readFileSync(join(root, "components/layout/AppLayout.jsx"), "utf8");
 const avatar = readFileSync(join(root, "components/ui/Avatar.jsx"), "utf8");
 const chatPanel = readFileSync(join(root, "components/layout/ChatPanel.jsx"), "utf8");
-const lfgCss = readFileSync(join(root, "styles/lfg.css"), "utf8");
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -22,8 +21,8 @@ assert(
 );
 
 assert(
-  /requestedRoute\.view === "play"/.test(app),
-  "route sync must keep conversation mounted under play",
+  !/["']play["']|valorant|riot_link/i.test(app),
+  "no Play view or Riot link callback left in App.jsx (2.13.0)",
 );
 
 assert(
@@ -34,7 +33,7 @@ assert(
 
 assert(
   /dm\?\.username \? directPath\(dm\)/.test(app),
-  "returning to chat from play must restore the kept DM path",
+  "returning to chat must restore the kept DM path",
 );
 
 assert(
@@ -46,11 +45,6 @@ assert(
   /setProfileTarget\(null\)/.test(chatPanel)
     && /setShowMembers\(false\)/.test(chatPanel),
   "ChatPanel must clear profile/members on conversation switch",
-);
-
-assert(
-  /lfg-modal-overlay[\s\S]{0,160}left:\s*var\(--nav-rail-width/.test(lfgCss),
-  "LFG modal overlay must not cover the nav rail",
 );
 
 console.log("App.nav-dm.selftest.mjs: ok");

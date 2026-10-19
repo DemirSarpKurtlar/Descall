@@ -6,7 +6,7 @@
      are also sent to PostHog identify (product analytics, no session replay). CoarseLocation: signup
      country from the edge IP-country header + PostHog GeoIP. DeviceID: APNs push tokens, the PostHog
      anonymous id and the first-party analytics visitor key. EmailsOrTextMessages / OtherUserContent:
-     messages, server/channel content, profile text, reactions, block list, LFG lobbies.
+     messages, server/channel content, profile text, reactions, block list.
      PhotosorVideos: avatars, banners, attachments. AudioData: voice messages the user sends only
      (calls are never recorded). CustomerSupport: in-app feedback and user reports.
      ProductInteraction / OtherUsageData: PostHog + first-party analytics events, presence.

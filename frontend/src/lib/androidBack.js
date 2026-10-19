@@ -7,7 +7,6 @@
 const OVERLAY_SELECTORS = [
   ".modal-backdrop",
   ".server-modal-overlay",
-  ".lfg-modal-overlay",
   ".add-modal-backdrop",
   ".user-settings-shell",
   ".img-crop-overlay",
@@ -69,9 +68,6 @@ export function findAndroidBackTarget(doc = document) {
   const direct = [...doc.querySelectorAll(".user-profile-close")].filter(isVisible);
   const overlay = topmost([...overlays, ...direct]);
   if (overlay) return { action: "overlay", element: overlay };
-
-  const lfgBack = doc.querySelector(".lfg-main.is-open .lfg-mobile-detail-back");
-  if (isVisible(lfgBack)) return { action: "lfg-detail", element: lfgBack };
 
   const root = doc.querySelector(".app-root.is-mobile");
   if (root?.classList.contains("mobile-drawer-open") && root.classList.contains("in-conversation")) {

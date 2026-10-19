@@ -3446,16 +3446,6 @@ button.overview-kpi:hover {
   color: rgba(244, 246, 251, 0.7);
 }
 
-.admin-system-switch-mark.is-lfg {
-  background: rgba(255, 70, 85, 0.16);
-  color: #ff8b95;
-}
-
-.admin-system-switch-mark.is-companion {
-  background: rgba(10, 132, 255, 0.16);
-  color: #8ec7ff;
-}
-
 .admin-system-switch-mark.is-glass {
   background: rgba(88, 122, 246, 0.18);
   color: #8fa6ff;

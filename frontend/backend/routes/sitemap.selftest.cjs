@@ -46,7 +46,7 @@ assert.ok(locs.includes(`${ORIGIN}/blog`));
 assert.ok(locs.includes(`${ORIGIN}/blog/discord-vs-descall`));
 assert.ok(locs.includes(`${ORIGIN}/apps-like-discord`));
 assert.ok(locs.includes(`${ORIGIN}/discord-replacement`));
-assert.ok(locs.includes(`${ORIGIN}/discord-alternative-for-lfg`));
+assert.ok(!locs.some((l) => /lfg|valorant|riot/i.test(l)), "retired gaming pages stay out of the sitemap");
 
 // No invite spam / locale alternates
 assert.ok(!pages.some((p) => p.alternates?.length));

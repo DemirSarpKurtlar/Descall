@@ -2,7 +2,7 @@ export const FAQ_ITEMS = [
   {
     group: "product",
     q: "Is Descall a Discord alternative?",
-    a: "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and LFG, without Nitro paywalls for core communication.",
+    a: "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, and screen share, without Nitro paywalls for core communication.",
   },
   {
     group: "product",
@@ -17,7 +17,7 @@ export const FAQ_ITEMS = [
   {
     group: "product",
     q: "Descall vs Discord, who should switch?",
-    a: "Friend groups, gaming squads, and small-to-mid communities that need servers, roles, voice, screen share, and LFG often prefer Descall as a lighter Discord alternative. Keep Discord if you still rely on huge bot ecosystems.",
+    a: "Friend groups, gaming squads, and small-to-mid communities that need servers, roles, voice, and screen share often prefer Descall as a lighter Discord alternative. Keep Discord if you still rely on huge bot ecosystems.",
   },
   {
     group: "product",
@@ -50,11 +50,6 @@ export const FAQ_ITEMS = [
     a: "Server members with invite permission can create invite links. Opening an invite lets you preview the server and join after signing in.",
   },
   {
-    group: "servers",
-    q: "Does Descall support LFG?",
-    a: "Yes. The Play tab lets you create and join LFG lobbies.",
-  },
-  {
     group: "download",
     q: "Does Descall have screen sharing?",
     a: "Yes. Screen share works in DM and group/server calls with quality presets designed for smooth sharing while gaming or reviewing VODs.",
@@ -67,7 +62,7 @@ export const FAQ_ITEMS = [
   {
     group: "download",
     q: "Do I need an account?",
-    a: "Yes. Create a free account (or sign in with Google) to chat, create servers, start calls, and use LFG.",
+    a: "Yes. Create a free account (or sign in with Google) to chat, create servers, and start calls.",
   },
   {
     group: "privacy",
@@ -78,7 +73,7 @@ export const FAQ_ITEMS = [
 
 const GROUP_META = [
   { id: "product", title: "Product" },
-  { id: "servers", title: "Servers & LFG" },
+  { id: "servers", title: "Servers & communities" },
   { id: "download", title: "Download & accounts" },
   { id: "privacy", title: "Support" },
 ];

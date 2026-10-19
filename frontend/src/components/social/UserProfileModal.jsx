@@ -8,7 +8,7 @@ import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
 import AdminBadge from "./AdminBadge";
-import { BadgeIcon, NameEffectText, TitleTag } from "../ui/Cosmetics";
+import { BadgeIcon, NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
@@ -370,7 +370,7 @@ function UserProfileModal({
                       <NameEffectText user={fetched}>{displayName}</NameEffectText>
                     </span>
                     <BadgeIcon user={fetched} />
-                    <TitleTag user={fetched} />
+                    <CountryBadge user={fetched} />
                   </div>
                   <div className="g-profile-handle">
                     @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
@@ -560,9 +560,9 @@ function UserProfileModal({
                     @{displayUsername}
                   </div>
                 )}
-                {(fetched?.equippedTitle?.title_text || isUserAdmin(viewUser)) && (
+                {(fetched?.equippedCountry || isUserAdmin(viewUser)) && (
                   <div className="user-profile-badges">
-                    <TitleTag user={fetched} />
+                    <CountryBadge user={fetched} />
                     {isUserAdmin(viewUser) && (
                       <AdminBadge user={viewUser} variant="chip" />
                     )}
