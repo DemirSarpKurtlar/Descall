@@ -8,6 +8,10 @@ class DescallBridgeViewController: CAPBridgeViewController {
     /// page load finishes (see "Launch overlay" below).
     private var launchOverlay: UIView?
     private var launchLoadObservation: NSKeyValueObservation?
+    /// True once index.html reports that the web boot splash (Aurora, same
+    /// picture as the launch screen) has painted with its background decoded.
+    private var webSplashPainted = false
+    private var launchPageLoaded = false
     /// Status-bar content colour. White by default (dark themes); the Liquid
     /// Glass light theme asks for black via DescallDisplay.setStatusBarStyle.
     private var statusBarDarkContent = false
@@ -105,13 +109,31 @@ class DescallBridgeViewController: CAPBridgeViewController {
 
 // MARK: - Launch overlay
 
-/// Without this the system launch screen is replaced by the bare WebView
-/// background (#1E1F22) for a moment before index.html paints its boot splash,
-/// so the logo blinked out and back in. The launch view stays on top until the
-/// first navigation finishes (the HTML splash, which draws the same logo at the
-/// same size and position, is painted by then) and then fades out over it.
+/// Aurora splash, base color of the launch image (#0D1030).
+let descallSplashBaseColor = UIColor(red: 13 / 255, green: 16 / 255, blue: 48 / 255, alpha: 1)
+
+/// Weak proxy so WKUserContentController does not retain the view controller.
+final class DescallSplashMessageProxy: NSObject, WKScriptMessageHandler {
+    weak var target: DescallBridgeViewController?
+    init(_ target: DescallBridgeViewController) { self.target = target }
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        target?.webSplashDidPaint()
+    }
+}
+
+/// The launch screen (LaunchAurora) stays over the WebView until index.html
+/// reports, through the `descallSplashPainted` message handler, that its boot
+/// splash has painted the same picture (background image decoded, two frames
+/// later). Only then does the launch view go, so the handoff is invisible.
+/// Fallbacks: 1.5 s after the first page load (an older web bundle never
+/// posts), and 5 s in any case.
 extension DescallBridgeViewController {
+    static let splashPaintedHandler = "descallSplashPainted"
+
     private func showLaunchOverlay() {
+        view?.backgroundColor = descallSplashBaseColor
+        webView?.backgroundColor = descallSplashBaseColor
+        webView?.scrollView.backgroundColor = descallSplashBaseColor
         guard launchOverlay == nil,
               let host = view,
               let overlay = UIStoryboard(name: "LaunchScreen", bundle: nil).instantiateInitialViewController()?.view
@@ -122,9 +144,13 @@ extension DescallBridgeViewController {
         host.addSubview(overlay)
         launchOverlay = overlay
 
+        if let controller = webView?.configuration.userContentController {
+            controller.removeScriptMessageHandler(forName: Self.splashPaintedHandler)
+            controller.add(DescallSplashMessageProxy(self), name: Self.splashPaintedHandler)
+        }
         launchLoadObservation = webView?.observe(\.isLoading, options: [.new]) { [weak self] webView, _ in
             guard !webView.isLoading else { return }
-            DispatchQueue.main.async { self?.hideLaunchOverlay() }
+            DispatchQueue.main.async { self?.launchPageDidLoad() }
         }
         // Never leave the launch view up if the page load stalls or fails.
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
@@ -132,14 +158,31 @@ extension DescallBridgeViewController {
         }
     }
 
+    func webSplashDidPaint() {
+        webSplashPainted = true
+        hideLaunchOverlay()
+    }
+
+    private func launchPageDidLoad() {
+        guard !launchPageLoaded else { return }
+        launchPageLoaded = true
+        if webSplashPainted { hideLaunchOverlay(); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.hideLaunchOverlay()
+        }
+    }
+
     private func hideLaunchOverlay() {
         launchLoadObservation?.invalidate()
         launchLoadObservation = nil
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: Self.splashPaintedHandler)
         guard let overlay = launchOverlay else { return }
         launchOverlay = nil
+        // Same picture underneath: a short cross-fade only hides sub-pixel
+        // differences between the baked image and the live glass.
         UIView.animate(
-            withDuration: 0.25,
-            delay: 0.05,
+            withDuration: 0.2,
+            delay: 0,
             options: [.curveEaseOut, .beginFromCurrentState],
             animations: { overlay.alpha = 0 },
             completion: { _ in overlay.removeFromSuperview() }

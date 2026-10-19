@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "launch-aurora@2x.jpg", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "launch-aurora@3x.jpg", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}

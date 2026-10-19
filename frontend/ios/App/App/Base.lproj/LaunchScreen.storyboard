@@ -8,7 +8,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Launch Screen: Descall app-icon tile (LaunchLogo, 192x192pt incl. its soft shadow; the tile itself is 120pt) centered on the app's dark surface #1E1F22. The web boot splash (index.html, html.boot-mobile) draws the same image at the same size/center, and DescallBridgeViewController keeps this view up until the first page load, so launch -> splash -> app is one continuous screen.-->
+        <!--Launch Screen (2.13.x, splash option A "Aurora"): one full-bleed image, LaunchAurora (393x852pt @2x/@3x, the deep gradient, blurred blobs and the frosted Konsept 2 tile baked in), Aspect Fill on the base color #0D1030. The web boot splash (index.html, html.native-app) paints the same picture with CSS cover scaling and a live glass tile at the same point, and DescallBridgeViewController keeps this view up until the web splash reports its first paint.-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
@@ -16,18 +16,16 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="Dsc-Lg-001">
-                                <rect key="frame" x="91.5" y="237.5" width="192" height="192"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="192" id="Dsc-Lg-W01"/>
-                                    <constraint firstAttribute="height" constant="192" id="Dsc-Lg-H01"/>
-                                </constraints>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" clipsSubviews="YES" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchAurora" translatesAutoresizingMaskIntoConstraints="NO" id="Dsc-Lg-001">
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="0.11764705882352941" green="0.12156862745098039" blue="0.13333333333333333" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.050980392156862744" green="0.062745098039215685" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="Dsc-Lg-001" firstAttribute="centerX" secondItem="Dsc-Lv-001" secondAttribute="centerX" id="Dsc-Lg-CX1"/>
-                            <constraint firstItem="Dsc-Lg-001" firstAttribute="centerY" secondItem="Dsc-Lv-001" secondAttribute="centerY" id="Dsc-Lg-CY1"/>
+                            <constraint firstItem="Dsc-Lg-001" firstAttribute="top" secondItem="Dsc-Lv-001" secondAttribute="top" id="Dsc-Lg-T01"/>
+                            <constraint firstItem="Dsc-Lg-001" firstAttribute="bottom" secondItem="Dsc-Lv-001" secondAttribute="bottom" id="Dsc-Lg-B01"/>
+                            <constraint firstItem="Dsc-Lg-001" firstAttribute="leading" secondItem="Dsc-Lv-001" secondAttribute="leading" id="Dsc-Lg-L01"/>
+                            <constraint firstItem="Dsc-Lg-001" firstAttribute="trailing" secondItem="Dsc-Lv-001" secondAttribute="trailing" id="Dsc-Lg-R01"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -37,6 +35,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchLogo" width="192" height="192"/>
+        <image name="LaunchAurora" width="393" height="852"/>
     </resources>
 </document>

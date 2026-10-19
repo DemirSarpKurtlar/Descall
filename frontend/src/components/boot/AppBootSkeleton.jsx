@@ -31,9 +31,9 @@ function isNativeBootSurface() {
 }
 
 /**
- * Mobile: never a skeleton. Keep the launch-style splash (the original Descall
- * app-icon tile on the app's dark surface #1E1F22, same size/position as the
- * native launch screen) up for as long as the app is booting: hold the
+ * Mobile: never a skeleton. Keep the launch-style splash (Aurora: deep
+ * gradient, blurred blobs and the frosted Konsept 2 tile, same picture as the
+ * native LaunchAurora launch screen) up for as long as the app is booting: hold the
  * pre-React #boot-splash so it does not fade into a placeholder, and paint the
  * identical splash underneath for the cases where the HTML splash is already
  * gone. Styles live in index.html (.descall-boot-splash).
@@ -47,10 +47,11 @@ function MobileBootSplash() {
   return (
     <div className="descall-boot-splash" role="status" aria-busy="true" aria-label={t("Loading")}>
       <div className="boot-card" aria-hidden="true">
-        <div
-          className="boot-mark"
-          style={{ backgroundImage: `url("${import.meta.env.BASE_URL || "/"}brand/descall-launch.png")` }}
-        />
+        {/* Aurora splash (index.html, html.native-app): live glass tile over
+            /brand/splash-aurora-bg.jpg, same picture as the LaunchAurora screen. */}
+        <div className="boot-mark">
+          <img className="boot-symbol" src={`${import.meta.env.BASE_URL || "/"}brand/descall-symbol-gradient.svg`} alt="" width="64" height="64" />
+        </div>
         <div className="boot-bar">
           <i />
         </div>
