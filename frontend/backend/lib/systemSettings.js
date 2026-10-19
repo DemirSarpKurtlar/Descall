@@ -13,8 +13,6 @@ const DEFAULT_SYSTEM_CONFIG = {
     dm: true,
     video: true,
     screen: true,
-    valorantLfg: true,
-    valorantCompanion: true,
     // iPhone app Liquid Glass UI (2.9.151+): remote kill switch, default on.
     iosGlass: true,
     // Desktop/web Liquid Glass. Opt-in: missing or false stays off.
@@ -73,8 +71,11 @@ function pickFeatureFlags(input) {
 function publicFeatureFlags(input) {
   const flags = pickFeatureFlags(input);
   return {
-    valorantLfg: flags.valorantLfg,
-    valorantCompanion: flags.valorantCompanion,
+    // 2.13.0: the Valorant Play tab (LFG + Companion) is gone. Installed 2.12.x and
+    // older apps show it unless these two legacy keys are explicitly false, so they
+    // are always sent as false. They are not settable flags any more.
+    valorantLfg: false,
+    valorantCompanion: false,
     iosGlass: flags.iosGlass,
     desktopGlass: flags.desktopGlass,
   };

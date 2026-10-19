@@ -16,10 +16,8 @@ function walk(dir, out = []) {
   return out;
 }
 
-// The LFG mic row is a switch (icon + label + mark). Its input stays hidden.
 const allow = new Set([
   join(src, "components/ui/GlassCheckbox.jsx"),
-  join(src, "components/lfg/LfgWorkspace.jsx"),
   // Selector string for the haptic hint, not a rendered control.
   join(src, "lib/fluid/haptics.js"),
 ]);
@@ -49,9 +47,5 @@ assert.match(
 );
 const marketing = readFileSync(join(src, "site/marketing-entry.css"), "utf8");
 assert.match(marketing, /@import "\.\.\/styles\/checkbox\.css";/);
-
-const lfg = readFileSync(join(src, "components/lfg/LfgWorkspace.jsx"), "utf8");
-assert.equal((lfg.match(/type="checkbox"/g) || []).length, 2);
-assert.match(lfg, /lfg-mic-toggle/);
 
 console.log("GlassCheckbox.selftest ok");

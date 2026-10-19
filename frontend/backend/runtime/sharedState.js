@@ -30,8 +30,6 @@ const systemConfig = {
     dm: true,
     video: true,
     screen: true,
-    valorantLfg: true,
-    valorantCompanion: true,
   },
   themeForce: null,
   maintenanceMode: false,

@@ -30,9 +30,7 @@ const API_PREFIXES = [
   "/reactions",
   "/health",
   "/debug",
-  "/lfg",
   "/calls",
-  "/riot",
   "/socket.io",
 ];
 

@@ -71,8 +71,7 @@ html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root.in-conversation),
-html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root[data-view="play"]) {
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root.in-conversation) {
   padding-bottom: 0;
 }
 
@@ -793,37 +792,6 @@ html.glass-ui .g-mi svg { width: 19px; height: 19px; color: var(--g-t2); flex-sh
 html.glass-ui .g-mi.on { background: rgba(255, 255, 255, 0.08); }
 html.glass-ui .g-mi:disabled { opacity: 0.5; }
 html.glass-ui .g-msep { height: 0.5px; background: rgba(255, 255, 255, 0.12); margin: 5px 14px; }
-
-/* Play (LFG): the list drawer is full-screen on glass and was painting the
-   ambient over the hub, so Oyna opened as an empty gradient. */
-@media (max-width: 768px) {
-  html.glass-ui .app-root.g-shell[data-view="play"] .app-sidebar-shell {
-    display: none !important;
-  }
-
-  html.glass-ui .app-root.g-shell[data-view="play"] > .app-main-slot {
-    position: relative;
-    z-index: 20;
-  }
-
-  html.glass-ui .app-root.g-shell[data-view="play"] .valorant-hub {
-    position: absolute !important;
-    inset: 0 !important;
-    z-index: 6;
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  html.glass-ui .app-root.g-shell[data-view="play"] .valorant-hub-header {
-    padding-top: calc(var(--g-chrome-top) + 8px);
-  }
-
-  html.glass-ui .app-root.g-shell[data-view="play"] .lfg-lobby-list,
-  html.glass-ui .app-root.g-shell[data-view="play"] .lfg-main,
-  html.glass-ui .app-root.g-shell[data-view="play"] .valorant-companion {
-    padding-bottom: calc(var(--g-bar-bottom) + var(--g-tab-h) + 28px) !important;
-  }
-}
 
 /* ── Status picker (mockup 18) ── */
 html.glass-ui .g-status-layer {

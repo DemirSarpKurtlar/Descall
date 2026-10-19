@@ -35,7 +35,7 @@ export function reorderMyServers(serverIds) {
   });
 }
 
-/** Create a server (max 10 owned). Optional templateId: blank | gaming | valorant | … */
+/** Create a server (max 10 owned). Optional templateId: blank | gaming | friends | … */
 export function createServer({ name, iconUrl, description, templateId } = {}) {
   return serversRequest("/api/servers", {
     method: "POST",

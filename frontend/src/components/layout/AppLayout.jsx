@@ -22,18 +22,17 @@ import { TabBarGlyph } from "./tabBarIcons";
 import { GlassShellContext, GlassTabBar } from "./glass/GlassShell";
 import { useTabBarDrag } from "../../hooks/useTabBarDrag";
 import { useT } from "../../context/LocaleContext";
-import { filterMainNavItems, usePublicFeatures, valorantPlayVisible } from "../../lib/publicFeatures";
+import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
 import LegalContentModal from "../legal/LegalContentModal";
 
 const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
-const ValorantHub = lazy(() => import("../valorant/ValorantHub"));
 const UserPanel = lazy(() => import("./UserPanel"));
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
 function mainViewId(activeView) {
-  // Play overlays the same slot. A separate motion key remounts the
+  // One motion key for every view. A separate key per view remounts the
   // wrapper and lets the underlying server/group empty flash through.
   void activeView;
   return "app";
@@ -143,8 +142,6 @@ export default function AppLayout({
   groupCall = null,
 }) {
   const t = useT();
-  const publicFeatures = usePublicFeatures();
-  const showPlay = valorantPlayVisible(publicFeatures);
   const { isMobile } = useMobile();
   const reduceMotion = useReducedMotion();
   // Liquid Glass navigation shell (Stage 2): iPhone app (html.glass-ui) + mobile
@@ -159,7 +156,6 @@ export default function AppLayout({
   const activeView = controlledActiveView ?? localActiveView;
   const showUserVoicePanel = shouldShowUserVoicePanel({ isMobile, glassShell, native: isNativeMobileApp(), view: activeView });
   const userPanelOpen = controlledUserPanelOpen ?? localUserPanelOpen;
-  const hideDesktopPlaySidebar = !isMobile && activeView === "play";
   const setActiveView = useCallback((view) => {
     if (onActiveViewChange) onActiveViewChange(view);
     else setLocalActiveView(view);
@@ -196,7 +192,6 @@ export default function AppLayout({
     () =>
       preloadWhenIdle([
         () => import("../activity/ActivitySidebar"),
-        () => import("../valorant/ValorantHub"),
         () => import("./UserPanel"),
       ]),
     []
@@ -209,10 +204,9 @@ export default function AppLayout({
 
   const closeUserPanel = useCallback(() => {
     setUserPanelOpen(false);
-    // Play / Activity are full-page surfaces, never reopen the chat drawer over them.
+    // Activity is a full-page surface, never reopen the chat drawer over it.
     if (
       isMobile &&
-      activeView !== "play" &&
       activeView !== "activity" &&
       !activeDmUser &&
       !activeGroup &&
@@ -228,11 +222,11 @@ export default function AppLayout({
 
   // Mobile: keep the sidebar open for server list + channel list.
   // Only treat an opened channel as "in conversation" (main pane).
-  // Play / Activity own the viewport (rail is inside their page or unused) —
-  // forcing the drawer open here left a rail-only shell over LFG and broke layout.
+  // Activity owns the viewport (rail is inside their page or unused) —
+  // forcing the drawer open here left a rail-only shell over it and broke layout.
   useEffect(() => {
     if (!isMobile) return;
-    if (activeView === "play" || activeView === "activity") {
+    if (activeView === "activity") {
       setMobileDrawerOpen(false);
       return;
     }
@@ -315,7 +309,7 @@ export default function AppLayout({
     setActiveView(view);
     if (userPanelOpen) closeUserPanel();
     if (isMobile) {
-      setMobileDrawerOpen(view !== "play" && view !== "activity");
+      setMobileDrawerOpen(view !== "activity");
     }
   }, [isMobile, setActiveView, userPanelOpen, closeUserPanel]);
 
@@ -347,29 +341,27 @@ export default function AppLayout({
     openMobileDrawer,
   ]);
 
-  const closePlay = useCallback(() => handleViewChange("chat"), [handleViewChange]);
 
   const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
   const inServersChannel = activeView === "servers" && !!activeServer && !!activeChannel;
   const inConversation = !!(activeDmUser || activeGroup || inServersChannel);
   // Mobile main navigation: the bottom tab bar and the rail + list drawer only
   // show on root tabs. Inner screens (open DM / group / channel, settings) hide
-  // it, and so does Play (full-page, own ‹ Descall back). Only those screens
+  // it. Only those screens
   // get the iOS edge swipe-back; it runs the same back handler as their ‹ button.
   const showMobileTabBar = isMobile && !inConversation && (!userPanelOpen || glassShell);
-  const isPlayPage = activeView === "play" && showPlay;
-  const mobileNavHidden = isMobile && !mobileDrawerOpen && (!showMobileTabBar || isPlayPage);
+  const mobileNavHidden = isMobile && !mobileDrawerOpen && !showMobileTabBar;
   const mainSlotRef = useRef(null);
   const sidebarShellRef = useRef(null);
   useEdgeSwipeBack({
     // Settings has its own swipe-back (UserPanel); Activity keeps its rail.
-    enabled: mobileNavHidden && !userPanelOpen && activeView !== "activity" && (isPlayPage || inConversation),
-    onBack: isPlayPage ? closePlay : handleMobileBack,
+    enabled: mobileNavHidden && !userPanelOpen && activeView !== "activity" && inConversation,
+    onBack: handleMobileBack,
     surfaceRef: mainSlotRef,
     // The list drawer is the real previous screen of a conversation, it slides
-    // in live underneath. Play has no list mounted under it → skeleton placeholder.
-    underlayRef: isPlayPage ? null : sidebarShellRef,
-    placeholder: isPlayPage,
+    // in live underneath.
+    underlayRef: sidebarShellRef,
+    placeholder: false,
     priority: 10,
   });
   // Root tabs have no previous page: an edge drag is fully inert there (no
@@ -414,8 +406,8 @@ export default function AppLayout({
   }, [dmUnread, groupUnread, channelUnread]);
 
   const glassTabItems = useMemo(
-    () => (glassShell ? filterMainNavItems(buildMainNavItems(t), publicFeatures) : []),
-    [glassShell, t, publicFeatures]
+    () => (glassShell ? filterMainNavItems(buildMainNavItems(t)) : []),
+    [glassShell, t]
   );
   const classicTabItems = useMemo(() => {
     if (glassShell) return [];
@@ -424,14 +416,12 @@ export default function AppLayout({
         { id: "chat", label: t("Chat") },
         { id: "servers", label: t("Servers") },
         { id: "friends", label: t("Friends") },
-        { id: "play", label: t("Play") },
         { id: "calls", label: t("Calls") },
         { id: "activity", label: t("Activity") },
-      ],
-      publicFeatures
+      ]
     );
     return [...main, { id: "you", label: t("You"), settings: true }];
-  }, [glassShell, publicFeatures, t]);
+  }, [glassShell, t]);
   const classicActiveIndex = Math.max(0, classicTabItems.findIndex((item) => item.id === activeView));
   const { navRef: classicNavRef, lensRef: classicLensRef } = useTabBarDrag({
     count: classicTabItems.length,
@@ -549,7 +539,7 @@ export default function AppLayout({
           glass={glassShell}
         />
 
-        {hideDesktopPlaySidebar ? null : activeView === "activity" ? (
+        {activeView === "activity" ? (
           <Suspense fallback={null}>
             <ErrorBoundary scope="pane">
               <ActivitySidebar
@@ -686,32 +676,7 @@ export default function AppLayout({
                 : { duration: 0 }
             }
           >
-            {activeView === "play" && showPlay ? (
-              <Suspense fallback={null}>
-                <ErrorBoundary scope="pane">
-                  <ValorantHub
-                    me={me}
-                    socket={socket}
-                    onClose={closePlay}
-                    onGroupCreated={onGroupCreated}
-                    onOpenGroup={(group) => {
-                      handleGroupSelect(group);
-                      setActiveView("groups");
-                    }}
-                    onJoinVoice={(group) => {
-                      handleGroupSelect(group);
-                      setActiveView("groups");
-                      window.setTimeout(() => onGroupVoiceCall?.(), 80);
-                    }}
-                  />
-                </ErrorBoundary>
-              </Suspense>
-            ) : null}
-            <div
-              className={activeView === "play" ? "app-chat-keep hidden" : "app-chat-keep"}
-              hidden={activeView === "play"}
-              aria-hidden={activeView === "play"}
-            >
+            <div className="app-chat-keep">
               <ErrorBoundary scope="pane">
               <ChatPanel
                 onGroupAvatarChanged={onGroupAvatarChanged}
@@ -799,7 +764,7 @@ export default function AppLayout({
       </AnimatePresence>
 
       {glassShell ? (
-        showMobileTabBar && (!isPlayPage || glassShell) ? (
+        showMobileTabBar ? (
           <>
             <div className="g-edge-bot" aria-hidden="true" />
             <GlassTabBar

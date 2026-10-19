@@ -33,19 +33,21 @@ async function getJson(port, path, headers) {
 
 (async () => {
   const pub = publicFeatureFlags({ voice: false, screen: false });
-  assert(pub.valorantLfg === true && pub.valorantCompanion === true, "legacy row defaults new flags on");
+  assert(pub.iosGlass === true, "legacy row defaults the iOS glass flag on");
+  assert(pub.valorantLfg === false && pub.valorantCompanion === false, "retired Play tab is always off for installed apps");
+  const fromOldRow = publicFeatureFlags({ valorantLfg: true, valorantCompanion: true });
+  assert(fromOldRow.valorantLfg === false && fromOldRow.valorantCompanion === false, "an old row cannot turn the Play tab back on");
   assert(!("voice" in pub) && !("screen" in pub), "public payload omits private flags");
 
   state.systemConfig.featureFlags = {
     ...original,
-    valorantLfg: false,
-    valorantCompanion: true,
+    iosGlass: false,
   };
 
   const app = express();
   app.use("/api/features", publicFeatureRoutes);
-  app.use("/api/lfg", requirePublicFeature("valorantLfg"));
-  app.get("/api/lfg/meta", (_req, res) => res.json({ ok: true }));
+  app.use("/api/glass-only", requirePublicFeature("iosGlass"));
+  app.get("/api/glass-only/meta", (_req, res) => res.json({ ok: true }));
   app.get("/api/admin/system", requireAuth, (_req, res) => res.json({ config: state.systemConfig }));
 
   const server = await listen(app);
@@ -54,14 +56,13 @@ async function getJson(port, path, headers) {
     const features = await getJson(port, "/api/features");
     assert(features.status === 200, "public features status");
     assert(Object.keys(features.body).sort().join(",") === "desktopGlass,iosGlass,valorantCompanion,valorantLfg", "only public keys");
-    assert(features.body.valorantLfg === false, "persisted ram flags are returned");
-    assert(features.body.valorantCompanion === true, "companion stays on");
-    assert(features.body.iosGlass === true, "iOS glass kill switch defaults on");
+    assert(features.body.iosGlass === false, "persisted ram flags are returned");
+    assert(features.body.valorantLfg === false && features.body.valorantCompanion === false, "retired Play tab stays off");
     assert(features.body.desktopGlass === false, "desktop glass stays off until enabled");
     assert(features.body.voice === undefined && features.body.maintenanceMode === undefined, "no admin config leak");
 
-    const blocked = await getJson(port, "/api/lfg/meta");
-    assert(blocked.status === 403 && blocked.body.code === "FEATURE_DISABLED", "disabled lfg is rejected");
+    const blocked = await getJson(port, "/api/glass-only/meta");
+    assert(blocked.status === 403 && blocked.body.code === "FEATURE_DISABLED", "a disabled public feature is rejected");
 
     const unauth = await getJson(port, "/api/admin/system");
     assert(unauth.status === 401, "admin config requires auth");

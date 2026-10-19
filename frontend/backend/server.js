@@ -29,9 +29,6 @@ const webrtcRoutes = require("./routes/webrtc");
 const appReleaseRoutes = require("./routes/appRelease");
 const errorRoutes = require("./routes/errors");
 const callsRoutes = require("./routes/calls");
-const lfgRoutes = require("./routes/lfg");
-const riotRoutes = require("./routes/riot");
-const valorantRoutes = require("./routes/valorant");
 const webPushRoutes = require("./routes/webPush");
 const shopRoutes = require("./routes/shop");
 const publicFeatureRoutes = require("./routes/publicFeatures");
@@ -129,8 +126,6 @@ if (isVercel) {
     "/reactions",
     "/servers",
     "/calls",
-    "/lfg",
-    "/riot", "/valorant",
     "/dm",
     "/reports",
     "/voice-recordings",
@@ -430,8 +425,6 @@ app.use("/reactions", reactionRoutes);
 app.use("/friends", friendsRoutes);
 app.use("/servers", serverRoutes);
 app.use("/calls", callsRoutes);
-app.use("/lfg", lfgRoutes);
-app.use("/riot", riotRoutes);
 
 // /api/* aliases — frontend calls mix /api/... and /... so support both
 app.use("/api/auth", authRoutes);
@@ -448,18 +441,6 @@ app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);
 app.use("/api/calls", callsRoutes);
-app.use("/api/lfg", lfgRoutes);
-// Riot Developer Portal domain verification (exact product URL path).
-app.get(["/api/riot/oauth/callback/riot.txt", "/riot/oauth/callback/riot.txt"], (_req, res) => {
-  const code = String(process.env.RIOT_DOMAIN_VERIFY_CODE || "223b4bc7-691f-4474-b7e2-38b62382532d").trim();
-  res.set("Cache-Control", "no-store");
-  res.type("text/plain; charset=utf-8");
-  return res.status(200).send(code + "\n");
-});
-
-app.use("/api/riot", riotRoutes);
-app.use("/valorant", valorantRoutes);
-app.use("/api/valorant", valorantRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
 app.use("/dm", dmPrefsRoutes);
@@ -1144,7 +1125,7 @@ app.get(["/invite/:code", "/i/:code"], (req, res) => {
 // those routers are mounted.
 const API_PREFIXES = [
   "/api", "/auth", "/admin", "/media", "/groups",
-  "/friends", "/servers", "/reactions", "/health", "/debug", "/lfg", "/calls", "/riot", "/valorant",
+  "/friends", "/servers", "/reactions", "/health", "/debug", "/calls",
   "/sitemap.xml", "/sitemap-pages.xml", "/sitemap-invites.xml",
   "/sitemap-announcements.xml", "/sitemap.html", "/sitemap.xsl", "/robots.txt",
 ];

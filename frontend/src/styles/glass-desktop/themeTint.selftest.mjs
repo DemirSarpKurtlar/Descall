@@ -57,7 +57,6 @@ assert.equal(/electron-app \.group-icon/.test(shell), false, "group tiles use th
 const chat = readFileSync(join(here, "chat.css"), "utf8");
 assert.match(chat, /html\.glass-desktop \.search-input,\nhtml\.glass-desktop \.sidebar-search input \{[\s\S]*blur\(16px\)/);
 assert.match(chat, /html\.glass-desktop \.header-identity \{[\s\S]*blur\(26px\)/);
-assert.match(surfaces, /html\.glass-desktop \.lfg-sidebar,\nhtml\.glass-desktop \.lfg-main \{[\s\S]*blur\(var\(--gd-blur-panel\)\)/);
 assert.match(shell, /messages-container > \.empty-state[\s\S]*border:\s*none !important/);
 assert.equal(/electron-app:not\(\.gd-lite\) \.sidebar-secondary/.test(shell), false);
 assert.match(shell, /html\.glass-desktop \.main-panel \{\s*background:\s*var\(--gd-glass-fill\) !important/);

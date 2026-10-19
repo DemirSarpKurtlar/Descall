@@ -20,24 +20,12 @@ export const SERVER_TEMPLATES = [
     id: "gaming",
     name: "Gaming hub",
     description:
-      "Squad-ready layout with LFG, game chats, clip drops, staff ops, and ranked voice lobbies.",
+      "Squad-ready layout with a squad-up channel, game chats, clip drops, staff ops, and ranked voice lobbies.",
     accent: "#22c55e",
     icon: "Gamepad2",
-    highlights: ["LFG board", "Clip channel", "Staff roles", "Lobby voice"],
+    highlights: ["Squad-up channel", "Clip channel", "Staff roles", "Lobby voice"],
     roleCount: 6,
     channelCount: 19,
-    categoryCount: 4,
-  },
-  {
-    id: "valorant",
-    name: "Valorant / competitive",
-    description:
-      "Ranked LFG, agent mains, VOD review, scrim voice, and coach/IGL roles ready to assign.",
-    accent: "#ff4655",
-    icon: "Crosshair",
-    highlights: ["Ranked LFG", "VOD review", "Scrim rooms", "Coach role"],
-    roleCount: 7,
-    channelCount: 20,
     categoryCount: 4,
   },
   {

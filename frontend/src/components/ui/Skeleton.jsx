@@ -167,24 +167,6 @@ export function ShopGridSkeleton({ count = 6, label }) {
   );
 }
 
-export function LfgListSkeleton({ count = 5, label }) {
-  const t = useT();
-  return (
-    <div className="skeleton-lfg-list" aria-busy="true" aria-label={label || t("Loading lobbies…")}>
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="skeleton-lfg-card">
-          <div className="skeleton-lfg-top">
-            <SkeletonLine width={`${34 + (i % 3) * 8}%`} height={12} />
-            <SkeletonLine width={40} height={10} />
-          </div>
-          <SkeletonLine width="46%" height={11} />
-          <SkeletonLine width={`${54 + (i % 4) * 8}%`} height={10} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function DetailPaneSkeleton({ label }) {
   const t = useT();
   return (

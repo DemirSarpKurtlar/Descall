@@ -15,23 +15,15 @@ const layout = readFileSync(join(root, "AppLayout.jsx"), "utf8");
 const css = readFileSync(join(root, "../../styles/app-layout.css"), "utf8");
 const messagesCss = readFileSync(join(root, "../../styles/messages.css"), "utf8");
 
-assert(layout.includes("app-main-slot"), "main views must share a slot so play can crossfade");
-assert(layout.includes("app-main-view"), "play/chat must render inside an animated main view");
+assert(layout.includes("app-main-slot"), "main views must share a slot so views can crossfade");
+assert(layout.includes("app-main-view"), "views must render inside an animated main view");
 assert(layout.includes("useReducedMotion"), "view transition must respect reduced motion");
-assert(layout.includes("hideDesktopPlaySidebar"), "mobile must keep the drawer contents while sliding to LFG");
 assert(css.includes(".app-main-slot"), "main slot must fill the app grid cell");
 assert(css.includes(".app-main-view"), "animated view wrapper styles must exist");
-assert(layout.includes("app-chat-keep"), "chat must stay mounted under LFG");
-assert(
-  !layout.includes('view === "friends" || view === "play"'),
-  "LFG must not clear the open conversation",
-);
+assert(layout.includes("app-chat-keep"), "chat column wrapper stays");
+assert(!/["']play["']|ValorantHub|Lfg/i.test(layout), "no Play/LFG view left in AppLayout (2.13.0)");
 
 
-assert(
-  css.includes(".app-chat-keep[hidden]") && css.includes("display: none !important"),
-  "chat keep must use display:none !important so LFG fills the column",
-);
 assert(
   /\.messages-container \{[\s\S]{0,180}min-height:\s*0/.test(css),
   "messages-container must flex-fill with min-height 0 so the composer stays at the bottom",
@@ -50,10 +42,6 @@ assert(
 );
 
 assert(
-  !/if \(activeView === "play"\) return activeView/.test(layout),
-  "play must not use a separate motion key (that flashes server empty under LFG)",
-);
-assert(
   /flex:\s*1 1 0/.test(css),
   "chat column children must use flex 1 1 0 so empty composer pins to the bottom",
 );
@@ -69,32 +57,7 @@ assert(
 );
 
 
-assert(
-  /activeView === "play"[\s\S]{0,220}<ValorantHub/.test(layout),
-  "ValorantHub must mount only when activeView is play",
-);
-assert(
-  layout.includes('const ValorantHub = lazy(() => import("../valorant/ValorantHub"))'),
-  "AppLayout must lazy-load ValorantHub for the Play slot",
-);
-assert(
-  !/activeView === "play" \? \([\s\S]{0,40}<LfgWorkspace/.test(layout),
-  "LfgWorkspace must not mount directly from AppLayout (wrap via ValorantHub)",
-);
-assert(
-  !/\.app-main-view\s*>\s*\.lfg-workspace\s*\{[\s\S]{0,80}position:\s*absolute/.test(css),
-  "must not unconditionally absolute-position LFG under .app-main-view",
-);
-assert(
-  /:not\(\[data-view="play"\]\)\s*\.valorant-hub/.test(css)
-    && /:not\(\[data-view="play"\]\)\s*\.lfg-workspace/.test(css)
-    && /display:\s*none\s*!important/.test(css),
-  "inactive play workspaces must hard-hide via data-view",
-);
-assert(
-  /\[data-view="play"\]\s*\.valorant-hub/.test(css),
-  "play view must absolute-position ValorantHub (not bare LFG)",
-);
+assert(!/valorant|lfg/i.test(css), "no Play/LFG styles in app-layout.css");
 
 
 assert(

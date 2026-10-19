@@ -155,9 +155,6 @@
 }
 
 /* Play: only rail + main (sidebar unmounted). */
-.app-root[data-view="play"] > .app-main-slot {
-  grid-column: 2 / -1;
-}
 
 /* Fixed overlays must never take a grid track if they render in-flow. */
 .app-root > .mobile-drawer-backdrop,
@@ -185,26 +182,6 @@
   grid-template-columns: var(--nav-rail-width) var(--sidebar-width) minmax(0, 1fr);
 }
 
-/* Play / LFG: rail + full workspace (no list sidebar column).
-   Default app-root is 3 columns (rail | sidebar | main). Without this,
-   a full-page workspace is placed in --sidebar-width (~280px) and an inner 220px
-   column leaves the chat pane ~60px, text stacks letter-by-letter. */
-.app-root[data-view="play"] {
-  grid-template-columns: var(--nav-rail-width) 1fr;
-}
-.app-root[data-view="play"] .valorant-hub {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  background: var(--surface-0, #111214);
-  box-sizing: border-box;
-}
-
 .app-main-slot {
   position: relative;
   min-width: 0;
@@ -226,8 +203,6 @@
   flex-direction: column;
 }
 
-.app-main-view > .valorant-hub,
-.app-main-view > .lfg-workspace,
 .app-main-view > .app-chat-keep,
 .app-main-view > .chat-panel-shell {
   flex: 1 1 0;
@@ -237,17 +212,6 @@
   width: 100%;
   height: 100%;
 }
-/* Absolute overlay only under matching data-view (rules above). Never paint
-   LFG over servers/chat if a node lingers after a view switch. */
-.app-root:not([data-view="play"]) .valorant-hub,
-.app-root:not([data-view="play"]) .lfg-workspace {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* Keep chat mounted for LFG, but never paint it over/under those views.
-   HTML hidden is not enough: .app-chat-keep { display:flex } would override UA [hidden]. */
 .app-chat-keep {
   display: flex;
   flex-direction: column;
@@ -620,9 +584,6 @@ html.gd-lite .rail-tooltip {
       0 8px 20px rgba(0, 0, 0, 0.4);
   }
 }
-
-/* Touch: iOS fires mouseenter after tap and never mouseleave. The portal
-   tooltip would otherwise linger over LFG after the drawer closes. */
 @media (hover: none) {
   .rail-tooltip {
     display: none !important;

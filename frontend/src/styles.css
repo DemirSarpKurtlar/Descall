@@ -31,8 +31,6 @@
 @import './styles/boot-skeleton.css';
 @import './styles/ui-polish.css';
 @import './styles/voice-speaking.css';
-@import './styles/lfg.css';
-@import './styles/valorant.css';
 @import './styles/titlebar.css';
 @import './styles/voice-message.css';
 @import './styles/shop.css';
@@ -58,7 +56,6 @@
 @import './styles/conv-rows.css';
 @import './styles/feedback-nudge.css';
 @import './styles/rail-icons.css';
-@import './styles/lfg-sheet.css';
 @import './styles/auth-sheet.css';
 @import './styles/checkbox.css';
 @import './styles/google-signin.css';

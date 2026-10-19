@@ -215,14 +215,12 @@ const SELECTION = [
   ".emoji-btn",
   ".emoji-chip",
   ".report-reason-chip",
-  ".lfg-role-chip",
   ".g-activity-seg button",
 ].join(",");
 
 const LIGHT = [
   "button.is-brand",
   "button.us-btn.primary",
-  "button.lfg-btn.primary",
   "button.auth-submit",
   "button.btn-primary",
 ].join(",");

@@ -160,7 +160,7 @@ function scheduleMarketingHydration(run) {
 
 async function bootApp() {
   // Authenticated (or non-marketing) boot: never leave prerendered marketing HTML
-  // visible above the React app, that stacks Privacy / Valorant LFG links over /play.
+  // visible above the React app, that stacks Privacy links over the app.
   try {
     document.documentElement.setAttribute("data-react-ready", "1");
     document.documentElement.setAttribute("data-app-shell", "1");

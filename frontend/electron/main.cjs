@@ -3,8 +3,6 @@ const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
-const { registerRiotLocalAuthIPC } = require('./riotLocalAuth.cjs');
-const { registerRiotRsoAuthIPC } = require('./riotRsoAuth.cjs');
 const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
 const { autoUpdater } = require('electron-updater');
 const {
@@ -1341,7 +1339,7 @@ function createMainWindow() {
   const cspRoot = isDev ? null : distRoot();
   const rendererCsp = cspRoot ? appDocumentCsp(cspRoot) : buildElectronCsp(null, { dev: isDev });
   // Only the app document (descall://app/…) gets the hashed policy. Everything else in this
-  // session (notification/overlay files, Riot sign-in pages) keeps the pre-2.11.2 policy.
+  // session (notification and overlay files) keeps the pre-2.11.2 policy.
   const legacyCsp = buildElectronCsp(null);
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     const isAppDocument = /^descall:\/\/app\//i.test(details.url || '');
@@ -1729,8 +1727,6 @@ app.whenReady().then(async () => {
   pruneOldSetupDownloads('app-ready', app.isPackaged ? app.getVersion() : null);
 
   registerProcessScannerIPC();
-  registerRiotLocalAuthIPC(app);
-  registerRiotRsoAuthIPC(() => mainWindow);
   registerOverlayIPC(() => mainWindow);
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());

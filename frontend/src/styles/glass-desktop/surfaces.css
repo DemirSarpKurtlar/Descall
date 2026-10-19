@@ -279,7 +279,6 @@ html.glass-desktop .user-settings.is-shop-open .us-main-heading h3 {
 
 html.glass-desktop .user-settings.is-desktop .us-main-heading,
 html.glass-desktop .activity-view-title,
-html.glass-desktop .lfg-sidebar-title,
 html.glass-desktop .shop-panel-header-row h3 {
   font-family: var(--gd-font);
   font-weight: 700;
@@ -750,107 +749,17 @@ html.glass-desktop .feedback-success p {
 }
 
 html.glass-desktop .activity-view,
-html.glass-desktop .lfg-workspace,
-html.glass-desktop .shop-panel,
-html.glass-desktop .valorant-hub,
-html.glass-desktop .app-root[data-view="play"] .valorant-hub {
+html.glass-desktop .shop-panel {
   background: transparent !important;
   color: var(--gd-t1);
 }
 
-html.glass-desktop .shop-card,
-html.glass-desktop .lfg-card {
+html.glass-desktop .shop-card {
   border: none;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
   color: var(--gd-t1);
-}
-
-html.glass-desktop .valorant-hub-header,
-html.glass-desktop .valorant-hub-body,
-html.glass-desktop .valorant-hub-panel {
-  background: transparent !important;
-  border-color: transparent;
-}
-
-/* LFG columns use the same 8px gutter as the rail and the window edges.
-   The play slot is only a frame when Companion is showing; on LFG it stays
-   clear so the gap between the list and the detail is the aurora gutter. */
-html.glass-desktop .app-root[data-view="play"] > .app-main-slot:has(.valorant-hub-panel-lfg:not([hidden])) {
-  background: transparent !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border-radius: 0;
-  overflow: visible;
-}
-
-html.glass-desktop .app-root[data-view="play"] > .app-main-slot:has(.valorant-hub-panel-lfg:not([hidden]))::before,
-html.glass-desktop .app-root[data-view="play"] > .app-main-slot:has(.valorant-hub-panel-lfg:not([hidden]))::after {
-  content: none;
-}
-
-html.glass-desktop .lfg-workspace {
-  gap: var(--gd-gap);
-  padding: 0;
-  height: 100%;
-  min-height: 0;
-  align-items: stretch;
-  background: transparent !important;
-}
-
-html.glass-desktop .lfg-sidebar,
-html.glass-desktop .lfg-main {
-  border: none !important;
-  border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045)),
-    rgba(36, 42, 64, 0.55) !important;
-  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
-  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
-  color: var(--gd-t1);
-  align-self: stretch;
-  height: auto;
-  min-height: 0;
-}
-
-html.glass-desktop .lfg-filters-bar {
-  padding: 0 14px 10px;
-}
-
-html.glass-desktop .lfg-filters {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  padding: 0;
-}
-
-html.glass-desktop .lfg-filters select,
-html.glass-desktop .lfg-mic-toggle {
-  width: 100%;
-  max-width: 100%;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-}
-
-html.glass-desktop .lfg-lobby-list {
-  padding-left: 14px;
-  padding-right: 14px;
-}
-
-html.glass-desktop .lfg-lobby-card {
-  border: none;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
-  color: var(--gd-t1);
-}
-
-html.glass-desktop .lfg-lobby-card.active,
-html.glass-desktop .lfg-lobby-card:hover {
-  background: color-mix(in srgb, var(--gd-brand) 22%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gd-brand-hi) 55%, transparent);
 }
 
 html.glass-desktop .shop-wallet-bar {
@@ -863,7 +772,6 @@ html.glass-desktop .shop-wallet-bar {
 }
 
 html.glass-desktop .activity-view-subtitle,
-html.glass-desktop .lfg-kicker,
 html.glass-desktop .shop-panel-intro {
   color: var(--gd-t3);
 }
@@ -887,8 +795,6 @@ html.glass-desktop.gd-lite .invite-modal-overlay,
 html.glass-desktop.gd-lite .giphy-overlay,
 html.glass-desktop.gd-lite .user-profile-scrim,
 html.glass-desktop.gd-lite .modal-backdrop,
-html.glass-desktop.gd-lite .lfg-sidebar,
-html.glass-desktop.gd-lite .lfg-main,
 html.glass-desktop.gd-lite .user-settings.is-desktop .us-sidebar-foot,
 html.glass-desktop.gd-lite .user-settings.is-desktop .us-logout,
 html.glass-desktop.gd-lite .user-settings.is-desktop .us-mini-profile {
@@ -898,9 +804,7 @@ html.glass-desktop.gd-lite .user-settings.is-desktop .us-mini-profile {
 
 html.glass-desktop.gd-lite .user-settings.is-desktop,
 html.glass-desktop.gd-lite .add-modal,
-html.glass-desktop.gd-lite .feedback-modal,
-html.glass-desktop.gd-lite .lfg-sidebar,
-html.glass-desktop.gd-lite .lfg-main {
+html.glass-desktop.gd-lite .feedback-modal {
   background: var(--gd-solid-heavy) !important;
 }
 
@@ -1124,8 +1028,6 @@ html.glass-desktop .sidebar-inner {
 html.glass-desktop .sidebar-header,
 html.glass-desktop .sidebar-actions,
 html.glass-desktop .server-shell-header,
-html.glass-desktop .lfg-sidebar-header,
-html.glass-desktop .lfg-detail-header,
 html.glass-desktop .activity-view-toolbar,
 html.glass-desktop .activity-view-header,
 html.glass-desktop .activity-view-header-left,
@@ -1135,8 +1037,6 @@ html.glass-desktop .user-settings .us-main-header,
 html.glass-desktop .chat-top-chrome,
 html.glass-desktop .panel-header,
 html.glass-desktop .header-left,
-html.glass-desktop .valorant-hub-header,
-html.glass-desktop .valorant-hub-header-left,
 html.glass-desktop .voice-call-header {
   background: transparent !important;
   background-color: transparent !important;
@@ -1159,10 +1059,6 @@ html.glass-desktop .sidebar-header::after,
 html.glass-desktop .sidebar-actions::after,
 html.glass-desktop .server-shell-header::before,
 html.glass-desktop .server-shell-header::after,
-html.glass-desktop .lfg-sidebar-header::before,
-html.glass-desktop .lfg-sidebar-header::after,
-html.glass-desktop .lfg-detail-header::before,
-html.glass-desktop .lfg-detail-header::after,
 html.glass-desktop .activity-view-toolbar::before,
 html.glass-desktop .activity-view-toolbar::after,
 html.glass-desktop .activity-view-header::before,
@@ -1181,10 +1077,6 @@ html.glass-desktop .panel-header::before,
 html.glass-desktop .panel-header::after,
 html.glass-desktop .header-left::before,
 html.glass-desktop .header-left::after,
-html.glass-desktop .valorant-hub-header::before,
-html.glass-desktop .valorant-hub-header::after,
-html.glass-desktop .valorant-hub-header-left::before,
-html.glass-desktop .valorant-hub-header-left::after,
 html.glass-desktop .voice-call-header::before,
 html.glass-desktop .voice-call-header::after {
   content: none !important;
@@ -1193,21 +1085,6 @@ html.glass-desktop .voice-call-header::after {
   box-shadow: none !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-}
-
-html.glass-desktop .lfg-sidebar-header h2 {
-  width: fit-content;
-  height: 36px;
-  margin: 0;
-  padding: 0 14px;
-  border-radius: 18px;
-  overflow: hidden;
-  line-height: 36px;
-  background: var(--gd-glass-fill);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  filter: none;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
 html.glass-desktop .user-settings.is-desktop .us-main-header .us-icon-btn {
@@ -1223,7 +1100,6 @@ html.glass-desktop .user-settings.is-desktop .us-main-header .us-icon-btn {
 }
 
 html.glass-desktop.gd-lite .sidebar-header .sidebar-title:not(.server-shell-title),
-html.glass-desktop.gd-lite .lfg-sidebar-header h2,
 html.glass-desktop.gd-lite .user-settings.is-desktop .us-main-header .us-icon-btn,
 html.glass-desktop.gd-lite .sidebar-actions::before,
 html.glass-desktop.gd-lite .header-identity,

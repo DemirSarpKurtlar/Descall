@@ -1,0 +1,157 @@
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-status {
+  margin: 0 16px 14px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-kicker {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--g-t3);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-status-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-vis {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  color: var(--g-t2);
+  white-space: nowrap;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-me {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-me strong {
+  display: block;
+  font-size: 16px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-me .g-activity-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--g-t2);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-av {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-av .ui-avatar {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 52px !important;
+  max-height: 52px !important;
+  font-size: 52px !important;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-av .ui-avatar-letter {
+  display: flex !important;
+  font-size: 0.42em !important;
+  color: #fff !important;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-av .status-badge {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  border-width: 2px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-set {
+  width: 100%;
+  margin-top: 14px;
+  height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 40px;
+  margin: 0 16px 14px;
+  padding: 3px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg button {
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--g-t2);
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg button.on {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--g-t1);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-presence-card {
+  min-height: 76px;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-presence-avatar .ui-avatar {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: 52px !important;
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-view,
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-sidebar {
+  background: transparent;
+  color: var(--g-t1);
+  font-family: var(--g-font);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-current-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 0;
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-friend-row,
+html.glass-ui .app-root.g-shell[data-view="activity"] .activity-row {
+  min-height: 76px;
+  border-radius: 18px;
+}
+
+/* "Mikrofon zorunlu" is wider than the row. The control stays; the label is
+   read by VoiceOver and the chip shows the mic icon so Silver 3 is not cut. */

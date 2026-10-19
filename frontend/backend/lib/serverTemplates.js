@@ -93,13 +93,13 @@ const TEMPLATES = [
     id: "gaming",
     name: "Gaming hub",
     description:
-      "Squad-ready layout with LFG, game chats, clip drops, staff ops, and ranked voice lobbies.",
+      "Squad-ready layout with a squad-up channel, game chats, clip drops, staff ops, and ranked voice lobbies.",
     accent: "#22c55e",
     icon: "Gamepad2",
-    highlights: ["LFG board", "Clip channel", "Staff roles", "Lobby voice"],
+    highlights: ["Squad-up channel", "Clip channel", "Staff roles", "Lobby voice"],
     descriptionSeed: "A gaming community — find teammates, drop clips, and hop into voice.",
     rulesText:
-      "1) Be respectful.\n2) No hate, spam, or NSFW outside marked channels.\n3) Keep LFG posts clear (game + rank + region).\n4) Staff decisions are final.\n5) Have fun and play fair.",
+      "1) Be respectful.\n2) No hate, spam, or NSFW outside marked channels.\n3) Keep squad-up posts clear (game + rank + region).\n4) Staff decisions are final.\n5) Have fun and play fair.",
     communityEnabled: true,
     verificationLevel: 1,
     everyonePermissions: orBits(MEMBER_BASE, bits("CREATE_INSTANT_INVITE")),
@@ -178,9 +178,9 @@ const TEMPLATES = [
             topic: "Main hangout for anything gaming.",
           },
           {
-            name: "looking-for-group",
+            name: "squad-up",
             type: "text",
-            topic: "LFG posts: game · rank · region · mic yes/no.",
+            topic: "Squad-up posts: game · rank · region · mic yes/no.",
             slowmodeSeconds: 15,
           },
           {
@@ -256,179 +256,6 @@ const TEMPLATES = [
             overrides: [
               { key: "@everyone", deny: ["VIEW_CHANNEL", "CONNECT"] },
               { key: "Helper", allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"] },
-              { key: "Moderator", allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS"] },
-              { key: "Admin", allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS"] },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "valorant",
-    name: "Valorant / competitive",
-    description:
-      "Ranked LFG, agent mains, VOD review, scrim voice, and coach/IGL roles ready to assign.",
-    accent: "#ff4655",
-    icon: "Crosshair",
-    highlights: ["Ranked LFG", "VOD review", "Scrim rooms", "Coach role"],
-    descriptionSeed: "Competitive Valorant community — ranked queues, VODs, and scrims.",
-    rulesText:
-      "1) No toxicity or throw accusations in public chat.\n2) LFG must include rank + role + region.\n3) Scrim rooms are for scheduled matches.\n4) Respect coaches and IGLs during review.\n5) Cheating = instant ban.",
-    communityEnabled: true,
-    verificationLevel: 1,
-    everyonePermissions: MEMBER_BASE,
-    roles: [
-      {
-        name: "Admin",
-        color: 0xff4655,
-        hoist: true,
-        mentionable: false,
-        permissions: ADMIN_PERMS,
-      },
-      {
-        name: "Moderator",
-        color: 0x0f1923,
-        hoist: true,
-        mentionable: true,
-        permissions: MOD_PERMS,
-      },
-      {
-        name: "Coach",
-        color: 0x9b59b6,
-        hoist: true,
-        mentionable: true,
-        permissions: orBits(HELPER_PERMS, bits("PRIORITY_SPEAKER", "MOVE_MEMBERS", "MENTION_EVERYONE")),
-      },
-      {
-        name: "IGL",
-        color: 0xe67e22,
-        hoist: true,
-        mentionable: true,
-        permissions: orBits(MEMBER_BASE, bits("PRIORITY_SPEAKER", "MOVE_MEMBERS")),
-      },
-      {
-        name: "Radiant+",
-        color: 0xf1c40f,
-        hoist: true,
-        mentionable: false,
-        permissions: VIP_PERMS,
-      },
-      {
-        name: "Member",
-        color: 0x7f8c8d,
-        hoist: false,
-        mentionable: false,
-        permissions: MEMBER_BASE,
-      },
-    ],
-    categories: [
-      {
-        name: "Info",
-        channels: [
-          {
-            name: "announcements",
-            type: "text",
-            topic: "Patch notes, event nights, scrim schedules.",
-            overrides: [
-              { key: "@everyone", deny: ["SEND_MESSAGES"] },
-              { key: "Moderator", allow: ["SEND_MESSAGES", "MANAGE_MESSAGES"] },
-              { key: "Admin", allow: ["SEND_MESSAGES", "MANAGE_MESSAGES"] },
-              { key: "Coach", allow: ["SEND_MESSAGES"] },
-            ],
-          },
-          {
-            name: "rules",
-            type: "text",
-            topic: "Competitive etiquette and LFG format.",
-            overrides: [{ key: "@everyone", deny: ["SEND_MESSAGES"] }],
-          },
-          {
-            name: "roles-and-ranks",
-            type: "text",
-            topic: "Ask staff for rank/role tags after verifying.",
-            slowmodeSeconds: 20,
-          },
-        ],
-      },
-      {
-        name: "Play",
-        channels: [
-          {
-            name: "ranked-lfg",
-            type: "text",
-            topic: "Format: Rank · Roles · Region · Party size · Mic?",
-            slowmodeSeconds: 20,
-          },
-          {
-            name: "unrated-and-swiftplay",
-            type: "text",
-            topic: "Casual queues and warmups.",
-            slowmodeSeconds: 10,
-          },
-          {
-            name: "agent-mains",
-            type: "text",
-            topic: "Lineups, utilities, and agent tips.",
-          },
-          {
-            name: "vod-review",
-            type: "text",
-            topic: "Share VODs for coach / peer review.",
-            slowmodeSeconds: 30,
-          },
-          {
-            name: "highlights",
-            type: "text",
-            topic: "Clutches, aces, and funny fails.",
-            slowmodeSeconds: 5,
-          },
-        ],
-      },
-      {
-        name: "Voice",
-        channels: [
-          { name: "Warmup", type: "voice" },
-          { name: "Ranked Stack", type: "voice" },
-          { name: "Duo / Trio", type: "voice" },
-          { name: "Scrim A", type: "voice" },
-          { name: "Scrim B", type: "voice" },
-          {
-            name: "VOD Review Stage",
-            type: "stage",
-            topic: "Live review sessions with coaches.",
-          },
-        ],
-      },
-      {
-        name: "Staff",
-        channels: [
-          {
-            name: "staff-ops",
-            type: "text",
-            topic: "Private ops for mods and coaches.",
-            overrides: [
-              { key: "@everyone", deny: ["VIEW_CHANNEL"] },
-              {
-                key: "Coach",
-                allow: ["VIEW_CHANNEL", "SEND_MESSAGES", "READ_MESSAGE_HISTORY"],
-              },
-              {
-                key: "Moderator",
-                allow: ["VIEW_CHANNEL", "SEND_MESSAGES", "MANAGE_MESSAGES", "READ_MESSAGE_HISTORY"],
-              },
-              {
-                key: "Admin",
-                allow: ["VIEW_CHANNEL", "SEND_MESSAGES", "MANAGE_MESSAGES", "READ_MESSAGE_HISTORY"],
-              },
-            ],
-          },
-          {
-            name: "Staff Huddle",
-            type: "voice",
-            overrides: [
-              { key: "@everyone", deny: ["VIEW_CHANNEL", "CONNECT"] },
-              { key: "Coach", allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "PRIORITY_SPEAKER"] },
               { key: "Moderator", allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS"] },
               { key: "Admin", allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS"] },
             ],
