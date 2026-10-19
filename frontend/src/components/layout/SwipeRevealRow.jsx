@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import useGlassUi from "../../hooks/useGlassUi";
 import useDragSpring from "../../hooks/useDragSpring";
 import { hapticLight } from "../../lib/haptics";
-import { isFullSwipe, revealFor, swipeActionsWidth } from "../../lib/swipeReveal";
+import { isFullSwipe, revealFor, swipeActionsWidth, trackTransform } from "../../lib/swipeReveal";
 
 export { swipeActionsWidth };
 
@@ -18,15 +18,27 @@ export default function SwipeRevealRow(props) {
   return <LegacySwipeRevealRow {...props} />;
 }
 
+function prefersReducedMotion() {
+  try {
+    return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+  } catch {
+    return false;
+  }
+}
+
 /**
- * iPhone glass swipe row. The row content never leaves the screen: instead of
- * translating the whole row, the action strip grows from the right edge and
- * the front shrinks (avatar stays put, the name truncates). The drag clamps at
- * full reveal with UIScrollView rubber-banding past it; dragging far past it
- * (when `onFullSwipe` is given) highlights and fires the destructive action.
+ * iPhone glass swipe row (iOS Mail style). ONE element moves: the track. The
+ * row front fills the viewport and the action strip hangs off the track's
+ * trailing edge (left: 100%), so a single translate3d(x) drives both and they
+ * can never drift apart. Neither part has a transition; all motion comes from
+ * the drag (1:1) and the velocity-inheriting spring. Past full reveal the drag
+ * rubber-bands and the strip widens to fill the uncovered gap; dragging far past
+ * it (when `onFullSwipe` is given) highlights and fires the destructive action.
  */
 function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, actions, onFullSwipe }) {
   const viewportRef = useRef(null);
+  const trackRef = useRef(null);
+  const reducedMotion = useMemo(prefersReducedMotion, []);
   const openRef = useRef(open);
   openRef.current = open;
   const lastX = useRef(0);
@@ -42,11 +54,14 @@ function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, 
     snapPoints,
     dimension: Math.max(width, 1),
     rubberBand: true,
+    reducedMotion,
     onFrame: (x) => {
       lastX.current = x;
       const el = viewportRef.current;
       if (!el) return;
       const reveal = revealFor(x);
+      // Same frame, same element: row and actions share this one transform.
+      if (trackRef.current) trackRef.current.style.transform = trackTransform(x);
       el.style.setProperty("--swipe-reveal", `${reveal}px`);
       el.classList.toggle("is-revealing", reveal > 0.5);
       const full = Boolean(onFullSwipe) && isFullSwipe(x, width);
@@ -89,10 +104,10 @@ function FluidSwipeRevealRow({ open, width, onOpenChange, onCloseOthers, front, 
         drag.bind.onPointerDown(e);
       }}
     >
-      <div className="group-swipe-track">
+      <div ref={trackRef} className="group-swipe-track" style={{ transform: trackTransform(lastX.current) }}>
         {front}
         <div className="group-swipe-actions" aria-hidden={!open}>
-          <div className="group-swipe-actions-inner" style={{ width }}>
+          <div className="group-swipe-actions-inner">
             {actions}
           </div>
         </div>

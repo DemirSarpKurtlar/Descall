@@ -24,3 +24,9 @@ export function isFullSwipe(x, width, extra = FULL_SWIPE_EXTRA) {
   return width > 0 && revealFor(x) >= width + extra;
 }
 
+
+/** The single transform that moves the row front and its trailing action strip together. */
+export function trackTransform(x) {
+  const v = Math.min(0, Number(x) || 0);
+  return `translate3d(${Math.round(v * 100) / 100}px, 0, 0)`;
+}

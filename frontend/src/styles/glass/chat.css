@@ -1899,9 +1899,12 @@ html.glass-ui.a11y-contrast .giphy-panel.g-giphy {
   outline-offset: -1px;
 }
 
-/* 2.10.112: iOS-style reveal. The whole row content layer translates left
-   1:1 with the finger (--swipe-reveal, rubber-banded past full reveal); the
-   actions live in the uncovered area on the right and never overlap it. */
+/* iOS Mail-style reveal. The track is the ONLY moving element: one
+   translate3d written per frame by SwipeRevealRow (1:1 drag, rubber-band,
+   velocity spring). The front fills the viewport and the actions hang off the
+   track's trailing edge, so both share that one transform. No transitions on
+   any part (row buttons inherit `transition: all` elsewhere, which made the
+   front ease behind the strip). */
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal {
   position: relative;
   overflow: hidden;
@@ -1910,32 +1913,34 @@ html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal {
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track {
   display: block;
   position: relative;
-  transform: none !important;
+  width: 100%;
+  transition: none !important;
+  will-change: transform;
 }
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-track > .group-row-front {
   position: relative;
-  z-index: 1;
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
-  transform: translate3d(calc(-1 * var(--swipe-reveal, 0px)), 0, 0);
-  will-change: transform;
+  transform: none !important;
+  transition: background-color 0.15s ease !important;
 }
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-fluid-reveal .group-swipe-actions {
   position: absolute !important;
   top: 0;
   bottom: 0;
-  right: 0;
-  left: auto !important;
-  z-index: 0;
-  width: var(--swipe-reveal, 0px) !important;
+  left: 100% !important;
+  right: auto !important;
+  /* Rubber-band past full reveal: the strip widens to cover the uncovered gap. */
+  width: max(var(--swipe-width, 0px), var(--swipe-reveal, 0px)) !important;
   min-width: 0 !important;
   overflow: hidden;
   display: flex !important;
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding: 0 !important;
   gap: 0;
   transform: none !important;
+  transition: none !important;
 }
 html.glass-ui .app-root.g-shell .group-swipe-actions-inner {
   flex: 0 0 auto;
@@ -1945,11 +1950,12 @@ html.glass-ui .app-root.g-shell .group-swipe-actions-inner {
   gap: 6px;
   padding: 0 2px 0 6px;
   box-sizing: border-box;
+  width: var(--swipe-width, auto);
   height: 100%;
 }
 /* Past full reveal the destructive action stretches to fill (iOS Mail). */
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-actions-inner {
-  width: var(--swipe-reveal) !important;
+  width: 100% !important;
 }
 html.glass-ui .app-root.g-shell .group-swipe-viewport.is-full-swipe .group-swipe-btn:not(.leave):not(.close) {
   opacity: 0;
