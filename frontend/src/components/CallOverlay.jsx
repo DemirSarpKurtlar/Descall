@@ -808,7 +808,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               <AnimatePresence>
                 {showMoreMenu && (
                   <motion.div
-                    className={glass ? "g-call-menu" : undefined}
+                    className="g-call-menu"
                     initial={narrowViewport ? { opacity: 0, y: 20 } : { opacity: 0, y: 8, scale: 0.95 }}
                     animate={narrowViewport ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: 1 }}
                     exit={narrowViewport ? { opacity: 0, y: 20 } : { opacity: 0, y: 8, scale: 0.95 }}
@@ -832,7 +832,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                             maxWidth: "min(280px, calc(100vw - 24px))",
                             zIndex: 100,
                           }),
-                      background: "#2b2d33",
+                      background: "rgba(36,38,46,0.92)",
+                      WebkitBackdropFilter: "blur(40px) saturate(160%)",
+                      backdropFilter: "blur(40px) saturate(160%)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 12,
                       overflow: "hidden",
