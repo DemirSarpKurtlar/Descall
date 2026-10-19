@@ -15,7 +15,7 @@ import {
   MousePointer, Pause, Square, Maximize2, Minimize2, Copy,
   ExternalLink, FileDown, Printer, Share2, Star, ThumbsUp,
   ThumbsDown, Upload, Video, ZoomIn, ZoomOut, Megaphone,
-  Coins, DollarSign, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
+  Coins, DollarSign, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
 } from "lucide-react";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
@@ -33,6 +33,7 @@ import AdminPeople from "./AdminPeople";
 import AdminUserDirectory from "./AdminUserDirectory";
 import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
+import MaintenanceTab from "./MaintenanceTab";
 import { useLocale } from "../../context/LocaleContext";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import {
@@ -92,7 +93,7 @@ const TABS = [
   { id: "moderation", label: "admin.moderation", icon: Shield },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
-  { id: "maintenance", label: "admin.maintenance", icon: Server },
+  { id: "maintenance", label: "admin.maintenance", icon: Wrench },
   { id: "audit", label: "admin.audit", icon: FileText },
 ];
 
@@ -1545,86 +1546,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           </section>
         )}
 
-        {tab === "maintenance" && (
-          <section className="admin-section">
-            <h2>{t("System Maintenance")}</h2>
-            <p className="muted">{t("System maintenance and cleanup tools")}</p>
-            
-            <div className="maintenance-grid">
-              <div className="maintenance-card">
-                <h3>{t("Cache Management")}</h3>
-                <RippleButton
-                  type="button"
-                  onClick={() =>
-                    act(async () => {
-                      await adminFetch("/cache/clear", { method: "POST" });
-                      setSuccessMessage(t("Cache cleared successfully"));
-                      setTimeout(() => setSuccessMessage(""), 3000);
-                    })
-                  }
-                >
-                  {t("Clear System Cache")}
-                </RippleButton>
-                <p className="muted">{t("Clears all temporary caches")}</p>
-              </div>
-              
-              <div className="maintenance-card">
-                <h3>{t("Log Management")}</h3>
-                <RippleButton
-                  type="button"
-                  onClick={() =>
-                    act(async () => {
-                      await adminFetch("/logs/archive", { method: "POST" });
-                      setSuccessMessage(t("Old logs archived successfully"));
-                      setTimeout(() => setSuccessMessage(""), 3000);
-                    })
-                  }
-                >
-                  {t("Archive Old Logs")}
-                </RippleButton>
-                <p className="muted">{t("Archives logs older than 30 days")}</p>
-              </div>
-              
-              <div className="maintenance-card">
-                <h3>{t("Database")}</h3>
-                <RippleButton
-                  type="button"
-                  onClick={() =>
-                    act(async () => {
-                      const d = await adminFetch("/backup", { method: "POST" });
-                      setSuccessMessage(t("Backup created: {id}", { id: d.backupId }));
-                      setTimeout(() => setSuccessMessage(""), 5000);
-                    })
-                  }
-                >
-                  {t("Create Backup")}
-                </RippleButton>
-                <p className="muted">{t("Creates a full system backup")}</p>
-              </div>
-              
-              <div className="maintenance-card danger">
-                <h3>{t("Danger Zone")}</h3>
-                <RippleButton
-                  type="button"
-                  className="danger"
-                  onClick={() =>
-                    act(async () => {
-                      if (!(await confirmAction({
-                        message: t("Restart Node process?\n\nAll connections will be lost."),
-                        confirmLabel: t("Restart Server"),
-                        cancelLabel: t("Cancel"),
-                      }))) return;
-                      await adminFetch("/restart", { method: "POST" });
-                    })
-                  }
-                >
-                  {t("Restart Server")}
-                </RippleButton>
-                <p className="muted warning">{t("Immediately restarts the server")}</p>
-              </div>
-            </div>
-          </section>
-        )}
+        {tab === "maintenance" && <MaintenanceTab socket={socket} />}
 
         {tab === "system" && (
           <section className="admin-section admin-system">

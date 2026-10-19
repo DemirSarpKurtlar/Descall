@@ -562,6 +562,12 @@ function registerSocketHandlers(io) {
     });
 
     socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags));
+    try {
+      const { service: maintenance } = require("../runtime/maintenanceInstance");
+      socket.emit("maintenance:state", { maintenance: maintenance.publicState(), serverTime: new Date().toISOString() });
+    } catch {
+      /* best effort */
+    }
     // 2.11.6: where this client should connect next time (Cloudflare Hub or Render).
     require("../runtime/edgeRuntime").sendAdvice(socket);
 

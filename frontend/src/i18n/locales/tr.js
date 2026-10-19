@@ -3,7 +3,9 @@ import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
 
+import { MAINT_TR } from "./maintenance.tr.js";
 export const nested = {
+  maint: MAINT_TR,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Tehlikeli bölge",
