@@ -224,3 +224,10 @@ jobs:
         run: |
           xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/countriesTab.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-countries.log"
           grep -q "\[e2e-countries\] OK" "$RUNNER_TEMP/e2e-countries.log"
+      # Store purchase modal: every category opens (portalled, centred, in the window),
+      # the insufficient state links to the daily reward, buy → success → Geri al re-wears
+      # the previous item without undoing the purchase, and it fits the minimum window.
+      - name: Electron store purchase modal e2e
+        run: |
+          xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/storePurchaseModal.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-purchase.log"
+          grep -q "\[e2e-purchase\] OK" "$RUNNER_TEMP/e2e-purchase.log"

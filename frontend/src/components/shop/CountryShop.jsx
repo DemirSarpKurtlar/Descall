@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { createPortal } from "react-dom";
 import { Check, CheckCircle2, Coins, Flame, Gift, Search, SortAsc, Undo2, X } from "lucide-react";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -648,7 +649,7 @@ export function ShopInventoryView({
               const equipped = equippedIdFor(category) === item.id;
               return (
                 <div key={item.id} className={`inv-other-row${equipped ? " is-equipped" : ""}`}>
-                  <span className="inv-other-name">{item.name}</span>
+                  <span className="inv-other-name">{localizedShopItemName(item, locale)}</span>
                   <button type="button" className="cs-btn is-ghost" disabled={busyItemId === item.id} onClick={() => onEquip(item, equipped)}>
                     {equipped ? t("Unequip") : t("Apply")}
                   </button>
