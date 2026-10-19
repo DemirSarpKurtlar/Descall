@@ -28,6 +28,7 @@ export function useDragSpring({
   onRelease,
   onSettle,
   disabled = false,
+  reducedMotion = false,
 } = {}) {
   const frameRef = useRef(onFrame);
   const releaseRef = useRef(onRelease);
@@ -84,14 +85,31 @@ export function useDragSpring({
       const r = controller.end({ t: e.timeStamp });
       if (r.type !== "release") return;
       const target = releaseRef.current?.(r) ?? r.target;
+      if (reducedMotion) {
+        // §14: no spring/overshoot under reduced motion, land on the target directly.
+        animator.stop();
+        animator.set(target, e.timeStamp);
+        settleRef.current?.(target);
+        return;
+      }
       animator.to(target, { preset, velocity: r.velocity }).then((v) => settleRef.current?.(v));
     },
-    [animator, controller, preset]
+    [animator, controller, preset, reducedMotion]
   );
 
   useEffect(() => () => animator.stop(), [animator]);
 
-  const springTo = useCallback((target, opts) => animator.to(target, { preset, ...opts }), [animator, preset]);
+  const springTo = useCallback(
+    (target, opts) => {
+      if (reducedMotion) {
+        animator.stop();
+        animator.set(target);
+        return Promise.resolve(target);
+      }
+      return animator.to(target, { preset, ...opts });
+    },
+    [animator, preset, reducedMotion]
+  );
 
   return {
     bind: {
