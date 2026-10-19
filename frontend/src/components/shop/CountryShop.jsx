@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, CheckCircle2, Coins, Flame, Gift, Search, SortAsc, Undo2, X } from "lucide-react";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -18,6 +18,7 @@ import {
 import { Avatar } from "../ui/Avatar";
 import AdminBadge from "../social/AdminBadge";
 import { CountryBadge, CountryFlag } from "./CountryFlag";
+import { condenseLetters, railCapacity } from "../../lib/letterRail";
 
 const REGION_LABEL = Object.fromEntries(COUNTRY_REGIONS.map((r) => [r.id, r.label]));
 
@@ -217,6 +218,33 @@ function PurchaseDialog({ item, me, balance, hasVoucher, currentItem, onCancel, 
 function LetterRail({ letters, onJump, t }) {
   const railRef = useRef(null);
   const lastRef = useRef(null);
+  const [capacity, setCapacity] = useState(Infinity);
+  // The rail sticks inside the shop's scroll area. On a short window that
+  // area is shorter than A–Z, so condense instead of running past the edge.
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return undefined;
+    const scroller = rail.closest(".shop-catalog, .us-main-scroll");
+    const measure = () => {
+      const top = parseFloat(getComputedStyle(rail).top) || 0;
+      const box = scroller ? scroller.clientHeight : window.innerHeight;
+      const next = railCapacity({ available: box - top - 12 });
+      setCapacity((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const ro = new ResizeObserver(measure);
+    if (scroller) ro.observe(scroller);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+  const rows = useMemo(() => condenseLetters(letters, capacity), [letters, capacity]);
   const pick = (clientY) => {
     const rail = railRef.current;
     if (!rail || !letters.length) return;
@@ -243,8 +271,17 @@ function LetterRail({ letters, onJump, t }) {
         if (e.buttons || e.pointerType === "touch") pick(e.clientY);
       }}
     >
-      {letters.map((l) => (
-        <button key={l} type="button" tabIndex={-1} onClick={() => onJump(l)}>{l}</button>
+      {rows.map((row, i) => (
+        <button
+          key={row.dot ? `dot-${i}` : row.letter}
+          type="button"
+          tabIndex={-1}
+          className={row.dot ? "is-dot" : undefined}
+          aria-label={row.dot ? row.letter : undefined}
+          onClick={() => onJump(row.letter)}
+        >
+          {row.label}
+        </button>
       ))}
     </nav>
   );

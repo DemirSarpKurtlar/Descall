@@ -249,7 +249,20 @@ assert.match(edge, /backdrop-filter:\s*blur\(18px\) saturate\(160%\)/);
 assert.match(edge, /mask-image:\s*linear-gradient\(180deg, #000 0%, #000 38%, rgba\(0, 0, 0, 0\.55\) 66%, transparent 100%\)/);
 assert.equal(/border(?!-radius)/.test(edge), false);
 assert.match(fh, /--fh-inset:\s*14px/);
-assert.match(fh, /--fh-pill-h:\s*48px/);
+// 2.13.1 (Demir, 19 Oct): capsules 48 → 50px so the identity pill holds a 40px
+// avatar with an even inset; both capsules keep one shared height.
+assert.match(fh, /--fh-pill-h:\s*50px/);
+assert.match(fh, /--fh-avatar:\s*40px/);
+assert.match(fh, /--fh-avatar-inset:\s*calc\(\(var\(--fh-pill-h\) - var\(--fh-avatar\)\) \/ 2\)/);
+const idPill = fh.split("html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity {").slice(1).map((part) => part.slice(0, part.indexOf("}"))).find((body) => /padding:/.test(body)) || "";
+assert.match(idPill, /padding:\s*0 20px 0 var\(--fh-avatar-inset\)/);
+const avSlot = block(fh, "html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar,");
+assert.match(avSlot, /width:\s*var\(--fh-avatar\)/);
+assert.match(avSlot, /height:\s*var\(--fh-avatar\)/);
+const avDisc = block(fh, "html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar .ui-avatar {");
+assert.match(avDisc, /width:\s*var\(--fh-avatar\) !important/, "disc size = slot size, never the 40px !important default in a smaller slot");
+assert.match(block(fh, "html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar img,"), /object-fit:\s*cover/);
+assert.match(block(fh, "html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-text,"), /text-overflow:\s*ellipsis/);
 assert.match(fh, /\.header-block-btn \{\s*color:\s*#ff8a80/);
 assert.match(fh, /html\.glass-desktop\.gd-lite \.main-panel\.is-floating-header \.panel-header \.header-identity,[^{]*\{\s*background:\s*var\(--gd-solid\) !important/);
 assert.match(fh, /html\.glass-desktop\.gd-contrast \{[^}]*0\.80/);

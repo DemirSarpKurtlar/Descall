@@ -154,8 +154,10 @@ body.electron-app [data-call-overlay="true"] {
 }
 
 body.electron-app .user-settings-shell.is-desktop {
-  /* inset shorthand: top right bottom left, never set inset:auto after edges */
-  inset: var(--electron-titlebar-h, 36px) 0 0 0 !important;
+  /* Full window; settings.css pads the title bar + taskbar strip
+     (--us-safe-top / --us-safe-bottom) so the card centers below the bar.
+     The title bar keeps its higher z-index and stays clickable. */
+  inset: 0 !important;
   width: auto !important;
   height: auto !important;
   max-height: none !important;

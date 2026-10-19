@@ -484,7 +484,7 @@ export default function ChatPanel({
                 <Avatar
                   key={headerDm.id || headerDm.username}
                   name={resolveDisplayName(headerDm)}
-                  size={floatingHeader && !headerDmHasCosmetics ? 36 : headerDmAvatarSize}
+                  size={floatingHeader && !headerDmHasCosmetics ? 40 : headerDmAvatarSize}
                   user={headerDm}
                   loading="eager"
                 />
@@ -502,8 +502,8 @@ export default function ChatPanel({
               >
                 <GroupIcon
                   group={headerGroup}
-                  size={floatingHeader ? 36 : headerGroupIconSize}
-                  radius={floatingHeader ? 18 : 12}
+                  size={floatingHeader ? 40 : headerGroupIconSize}
+                  radius={floatingHeader ? 20 : 12}
                   className="header-group-photo"
                   initials={glass ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}
                 />
