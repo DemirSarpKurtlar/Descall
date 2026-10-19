@@ -63,6 +63,26 @@ export default class ErrorBoundary extends React.Component {
     };
   }
 
+  // A pane boundary with a resetKey (Settings tab, shop category) clears itself when the
+  // user moves to another tab, so one broken tab never sticks to the rest (2.13.1).
+  componentDidUpdate(prevProps) {
+    if (
+      this.props.scope === "pane" &&
+      this.props.resetKey !== undefined &&
+      prevProps.resetKey !== this.props.resetKey &&
+      (this.state.hasError || this.state.recovering)
+    ) {
+      this.setState({
+        hasError: false,
+        recovering: false,
+        message: "",
+        stack: "",
+        componentStack: "",
+        detailsOpen: false,
+      });
+    }
+  }
+
   static getDerivedStateFromError(error) {
     const supportCode = makeSupportCode();
     if (isModuleLoadError(error)) {

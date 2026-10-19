@@ -26,6 +26,7 @@ import {
 import { ShopBadgeIcon } from "../../lib/shopIcons";
 import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
 import RippleButton from "../ui/RippleButton";
+import ErrorBoundary from "../ErrorBoundary";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import {
   getShopCatalog,
@@ -728,7 +729,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             {chromeSlot ? <div className="shop-view-row">{viewSwitch}</div> : null}
             {lead}
             {categoryTabs}
-            {catalog}
+            {/* A broken category (e.g. Ülkeler) shows an inline error with Tekrar dene and
+                never takes Settings or the app down with it (2.13.1). */}
+            <ErrorBoundary scope="pane" resetKey={`${view}:${activeCategory || ""}`}>
+              {catalog}
+            </ErrorBoundary>
           </div>
         </div>
         <ShopProfilePreview me={me} t={t} />
