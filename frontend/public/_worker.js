@@ -41,7 +41,7 @@ const PERMANENT_REDIRECTS = {
 };
 
 /** Removed surfaces: old links land on the home page (kept in sync with _redirects). */
-const RETIRED_TO_HOME = ["/dimaai", "/play", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"];
+const RETIRED_TO_HOME = ["/dimaai", "/play", "/lfg", "/valorant", "/riot", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"];
 
 function barePath(pathname) {
   const path = String(pathname || "/").split("?")[0];

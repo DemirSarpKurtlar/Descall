@@ -104,6 +104,36 @@
       "statusCode": 301
     },
     {
+      "source": "/lfg",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/lfg/:path*",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/valorant",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/valorant/:path*",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/riot",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/riot/:path*",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
       "source": "/play",
       "destination": "/",
       "statusCode": 301
