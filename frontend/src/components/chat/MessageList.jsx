@@ -13,6 +13,7 @@ import UserProfileModal from "../social/UserProfileModal";
 import ReportUserModal from "../social/ReportUserModal";
 import GameMessageBubble from "./GameMessageBubble";
 import MessageReactions from "./MessageReactions";
+import EmojiPickerSheet from "./EmojiPickerSheet";
 import MessageContent from "./MessageContent";
 import { plainText } from "../../lib/messageMarkdown";
 import { displayText } from "../../lib/profanity";
@@ -705,6 +706,8 @@ function MessageBubble({
   const suppressMediaClickUntil = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // iOS long-press "More reactions": full emoji sheet replaces the overlay.
+  const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -1511,6 +1514,13 @@ function MessageBubble({
             </motion.div>
           )}
         </AnimatePresence>
+        {emojiSheetOpen && (
+          <EmojiPickerSheet
+            t={t}
+            onPick={emitReact}
+            onClose={() => setEmojiSheetOpen(false)}
+          />
+        )}
         {glass && menuOpen && !editing && (
           <GlassMessageMenu
             bubbleRef={bubbleRef}
@@ -1519,9 +1529,7 @@ function MessageBubble({
             onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
             quick={QUICK_EMOJIS}
             onReact={emitReact}
-            onMore={() => setPickerOpen((v) => !v)}
-            pickerOpen={pickerOpen}
-            pickerEmojis={PICKER_EMOJIS}
+            onMore={() => { setMenuOpen(false); setPickerOpen(false); setEmojiSheetOpen(true); }}
             onReply={triggerReply}
             canPin={canPin}
             isPinned={isPinned}
@@ -1584,7 +1592,7 @@ function prefersReducedMotionNow() {
  * (`.menu-open`) until the copy has flown back.
  */
 function GlassMessageMenu({
-  bubbleRef, isOwn, onClose, quick, onReact, onMore, pickerOpen, pickerEmojis,
+  bubbleRef, isOwn, onClose, quick, onReact, onMore,
   onReply, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const [closing, setClosing] = useState(false);
@@ -1653,7 +1661,7 @@ function GlassMessageMenu({
     viewTop: vv?.offsetTop || 0,
     isOwn,
     barW: reactBarWidth(quick.length),
-    menuH: menuHeight({ rows: menuRows, separators: canDelete || canReport ? 1 : 0, picker: pickerOpen }),
+    menuH: menuHeight({ rows: menuRows, separators: canDelete || canReport ? 1 : 0 }),
   });
   const liftSpring = framerSpring(SPRINGS.default);
   // Lift in place (2.13.1): scale only, never a translate, so the copy stays
@@ -1746,15 +1754,6 @@ function GlassMessageMenu({
               <button type="button" className="g-mi" {...act(onReport)}><Flag size={19} />{t("report.action")}</button>
             )}
           </div>
-          {pickerOpen && (
-            <div className="g-menu g-glass g-heavy g-msg-picker">
-              <div className="message-inline-picker-grid">
-                {pickerEmojis.map((e) => (
-                  <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </>,

@@ -1,0 +1,69 @@
+/* "More reactions" full picker: heavy frosted bottom sheet (iOS glass). */
+.emoji-sheet-layer { position: fixed; inset: 0; z-index: 10050; pointer-events: none; }
+.emoji-sheet-scrim {
+  position: absolute; inset: 0; border: 0; padding: 0; margin: 0;
+  background: rgba(4, 5, 12, 0.5); pointer-events: auto; cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+.emoji-sheet {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(64vh, 560px); max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 40px);
+  display: flex; flex-direction: column;
+  border-radius: 28px 28px 0 0; pointer-events: auto;
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0) 140px),
+    rgba(22, 23, 36, 0.86);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy, 40px)) saturate(var(--g-saturate-heavy, 180%));
+  backdrop-filter: blur(var(--g-blur-heavy, 40px)) saturate(var(--g-saturate-heavy, 180%));
+  border: 1px solid rgba(255,255,255,0.14); border-bottom: 0;
+  box-shadow: 0 -18px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18);
+  color: var(--text-primary, #fff); overflow: hidden; touch-action: none;
+  will-change: transform;
+}
+.emoji-sheet-handle { flex: none; padding: 8px 16px 6px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.emoji-sheet-grabber { display: block; width: 38px; height: 5px; border-radius: 3px; margin: 0 auto 8px; background: rgba(255,255,255,0.32); }
+.emoji-sheet-head { display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
+.emoji-sheet-head b { font-size: 17px; font-weight: 650; letter-spacing: -0.2px; }
+.emoji-sheet-close {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: rgba(255,255,255,0.12); color: inherit;
+}
+.emoji-sheet-search {
+  flex: none; margin: 4px 16px 8px; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px;
+  border-radius: 12px; background: rgba(118,118,128,0.24); color: rgba(235,235,245,0.6);
+}
+.emoji-sheet-search input {
+  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text-primary, #fff);
+  font-size: 16px; -webkit-appearance: none; appearance: none;
+}
+.emoji-sheet-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.emoji-sheet-tabs {
+  flex: none; display: flex; gap: 2px; padding: 0 10px 6px; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 0.5px solid rgba(255,255,255,0.10);
+}
+.emoji-sheet-tabs::-webkit-scrollbar { display: none; }
+.emoji-sheet-tab {
+  flex: 1 0 36px; height: 34px; border: 0; border-radius: 10px; background: transparent; color: rgba(235,235,245,0.6);
+  display: grid; place-items: center; font-size: 19px; opacity: 0.62; transition: background 160ms ease, opacity 160ms ease;
+}
+.emoji-sheet-tab[aria-selected="true"] { background: rgba(255,255,255,0.14); opacity: 1; color: #fff; }
+.emoji-sheet-body {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  padding: 2px 10px 16px; touch-action: pan-y;
+}
+.emoji-sheet-cat {
+  margin: 10px 6px 4px; font-size: 12px; font-weight: 650; letter-spacing: 0.3px; text-transform: uppercase;
+  color: rgba(235,235,245,0.55);
+}
+.emoji-sheet-grid { display: grid; grid-template-columns: repeat(8, 1fr); }
+.emoji-sheet-emoji {
+  aspect-ratio: 1; border: 0; background: transparent; border-radius: 10px; font-size: 28px; line-height: 1;
+  display: grid; place-items: center; padding: 0; -webkit-tap-highlight-color: transparent;
+  transition: transform 100ms ease-out, background 100ms ease-out;
+}
+.emoji-sheet-emoji:active { transform: scale(0.86); background: rgba(255,255,255,0.12); }
+.emoji-sheet-empty { margin: 24px 0; text-align: center; color: rgba(235,235,245,0.55); font-size: 15px; }
+html[data-theme="light"] .emoji-sheet, html.theme-light .emoji-sheet { background: rgba(250,250,252,0.78); color: #111; }
+@media (prefers-reduced-transparency: reduce) { .emoji-sheet { background: rgb(24, 25, 38); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) { .emoji-sheet-emoji { transition: none; } }
