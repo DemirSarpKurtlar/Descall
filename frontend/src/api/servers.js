@@ -75,6 +75,19 @@ export function leaveServer(serverId, confirmName) {
   });
 }
 
+/** Owner only: does the transfer dialog need a password? → { passwordRequired } */
+export function getOwnershipTransferInfo(serverId) {
+  return serversRequest(`/api/servers/${serverId}/ownership/transfer`);
+}
+
+/** Owner hands the server to a member (O3). Body: { userId, confirmName, password }. */
+export function transferServerOwnership(serverId, { userId, confirmName, password } = {}) {
+  return serversRequest(`/api/servers/${serverId}/ownership/transfer`, {
+    method: "POST",
+    body: { userId, confirmName, password: password || undefined },
+  });
+}
+
 export function getServerMembers(serverId) {
   return serversRequest(`/api/servers/${serverId}/members`);
 }

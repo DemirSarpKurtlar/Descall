@@ -3712,7 +3712,7 @@ export default function App() {
         return;
       }
 
-      if ((type === "mention" || type === "server-message") && data.serverId) {
+      if ((type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
         setReplyTo(null);

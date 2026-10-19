@@ -33,6 +33,7 @@ const ACTION_LABELS = {
   CHANNEL_DELETE: "Channel deleted",
   INVITE_CREATE: "Invite created",
   INVITE_DELETE: "Invite revoked",
+  OWNERSHIP_TRANSFER: "Ownership transferred",
 };
 
 /**

@@ -500,6 +500,18 @@ async function run() {
       assert.equal((await call("owner3", "POST", `/servers/${T}/ownership/transfer`, { userId: "stranger", confirmName: "Tango", password: "pw-123" })).status, 400, "temporary member");
       assert.equal(rows("servers").find((s) => s.id === T).owner_id, "owner3");
     });
+    await check("O3 transfer dialog preflight: owner only, says whether a password is needed", async () => {
+      const r = await call("owner3", "GET", `/servers/${T}/ownership/transfer`);
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.equal(r.body.passwordRequired, true);
+      assert.equal((await call("heir", "GET", `/servers/${T}/ownership/transfer`)).status, 403, "non-owner");
+      const g = await call("owner", "GET", `/servers/${A}/ownership/transfer`);
+      assert.equal(g.status, 200);
+      assert.equal(g.body.passwordRequired, false, "social-login owner has no password");
+    });
+    const heirTab = makeSocket("heir", "-o3");
+    const watcher = makeSocket("stranger", "-o3");
+    for (const t of [heirTab, watcher]) t.join(`server:${T}`);
     await check("O3 ownership transfer: success, audited, old owner loses owner rights", async () => {
       const r = await call("owner3", "POST", `/servers/${T}/ownership/transfer`, { userId: "heir", confirmName: "tango", password: "pw-123" });
       assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -507,6 +519,28 @@ async function run() {
       assert.ok(rows("server_audit_logs").some((a) => a.action === "OWNERSHIP_TRANSFER" && a.target_id === "heir"));
       assert.equal((await call("owner3", "DELETE", `/servers/${T}`, { confirmName: "Tango" })).status, 403);
       assert.ok(rows("server_members").some((m) => m.server_id === T && m.user_id === "owner3"), "old owner stays a member");
+    });
+    await check("O3 transfer is live for every member and the new owner is notified", async () => {
+      await settle();
+      for (const t of [heirTab, watcher]) {
+        const upd = got(t, "server:updated").map((o) => o.payload);
+        assert.ok(
+          upd.some((p) => p.serverId === T && p.server?.ownerId === "heir" && p.ownerChanged?.toUserId === "heir" && p.ownerChanged?.fromUserId === "owner3"),
+          `${t.id} missed server:updated ${JSON.stringify(upd)}`
+        );
+      }
+      const note = got(heirTab, "server:ownership:received").map((o) => o.payload);
+      assert.equal(note.length, 1, JSON.stringify(note));
+      assert.equal(note[0].serverId, T);
+      assert.equal(note[0].serverName, "Tango");
+      assert.equal(note[0].fromUserId, "owner3");
+      assert.equal(got(watcher, "server:ownership:received").length, 0, "only the new owner gets the notification");
+      const { trGenitive } = require("../lib/trSuffix");
+      assert.equal(`${trGenitive("Tango")} sahibi artık sensin`, "Tango'nun sahibi artık sensin");
+      const ios = require("../lib/iosAlertPush").describeEvent({ type: "server-owner", serverId: T, serverName: "Alpha Topluluğu" }, "tr");
+      assert.equal(ios.body, "Alpha Topluluğu'nun sahibi artık sensin");
+      assert.equal(ios.data.type, "server-owner");
+      assert.equal(ios.data.serverId, T);
     });
 
     // ---------------- #3 (last: removes srv-c)

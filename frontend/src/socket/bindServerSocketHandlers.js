@@ -1,6 +1,7 @@
 import { getServer } from "../api/servers";
 import { serverPath } from "../lib/appRoutes";
 import { getUser } from "../lib/storage";
+import { trGenitive } from "../lib/trSuffix";
 import { normalizeUser } from "../lib/userProfile";
 import { isChannelMuted } from "../lib/serverChannelMutes";
 import { parseAppDate } from "../lib/datetime";
@@ -35,6 +36,7 @@ const SERVER_EVENTS = [
   "server:member:roles-changed",
   "server:deleted",
   "server:updated",
+  "server:ownership:received",
 ];
 
 function sortMessagesChronologically(messages) {
@@ -724,10 +726,14 @@ export function bindServerSocketHandlers(socket, ctx) {
   };
 
   // Server settings changed (name, icon, banner, ...): merge the public fields.
-  const handleServerUpdated = ({ serverId, server, sensitiveChange } = {}) => {
+  const handleServerUpdated = ({ serverId, server, sensitiveChange, ownerChanged } = {}) => {
     if (!serverId || !server || typeof server !== "object") return;
     const { isOwner: _o, myPermissions: _p, ...pub } = server;
-    const merge = (s) => (s && String(s.id) === String(serverId) ? { ...s, ...pub, id: s.id } : s);
+    // O3: ownership moved; isOwner is per viewer, so derive it here (the crown,
+    // danger zone and leave sheet follow at once; roles-changed refreshes perms).
+    const meId = ownerChanged ? myIdRef.current || getUser()?.id : null;
+    const ownerPatch = ownerChanged && meId ? { isOwner: String(ownerChanged.toUserId) === String(meId) } : {};
+    const merge = (s) => (s && String(s.id) === String(serverId) ? { ...s, ...pub, ...ownerPatch, id: s.id } : s);
     setMyServers((prev) => prev.map(merge));
     setActiveServer((prev) => merge(prev));
     if (sensitiveChange) {
@@ -735,7 +741,34 @@ export function bindServerSocketHandlers(socket, ctx) {
     }
   };
 
+  // O3: this user just became the owner of a server ("<Sunucu>'nun sahibi artık sensin").
+  const handleOwnershipReceived = ({ serverId, serverName } = {}) => {
+    if (!serverId) return;
+    const name = serverName || t("o3.theServer");
+    const meId = myIdRef.current || getUser()?.id;
+    const patch = (s) => (s && String(s.id) === String(serverId) ? { ...s, isOwner: true, ownerId: meId || s.ownerId } : s);
+    setMyServers((prev) => prev.map(patch));
+    setActiveServer((prev) => patch(prev));
+    const text = t("o3.received", { name, nameGen: trGenitive(name) });
+    toast(text, "success");
+    // Window in the background (web / Electron): a system notification too.
+    void notificationService
+      .show({
+        title: t("o3.receivedTitle"),
+        body: text,
+        tag: `server-owner-${serverId}`,
+        data: { type: "server-owner", serverId, serverName: serverName || null },
+      })
+      ?.catch?.(() => {});
+    try {
+      playUiSound?.("notification");
+    } catch {
+      /* ignore */
+    }
+  };
+
   const handlers = {
+    "server:ownership:received": handleOwnershipReceived,
     "server:channel:message:ack": handleChannelMessageAck,
     "server:channel:message": handleChannelMessage,
     "server:channel:notify": handleChannelNotify,

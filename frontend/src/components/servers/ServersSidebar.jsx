@@ -82,6 +82,7 @@ import ChannelPermissionsModal from "./ChannelPermissionsModal";
 import ServerCommunityModal from "./ServerCommunityModal";
 import ServerRulesModal from "./ServerRulesModal";
 import ServerSettingsModal from "./ServerSettingsModal";
+import { OwnerLeaveSheet, OwnershipTransferModal } from "./OwnershipTransfer";
 import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
 import GlassCheckbox from "../ui/GlassCheckbox";
@@ -152,7 +153,9 @@ export default function ServersSidebar({
   const [dragServerId, setDragServerId] = useState(null);
   const [dragOverServerId, setDragOverServerId] = useState(null);
   const [notifBusy, setNotifBusy] = useState(false);
-  const [confirm, setConfirm] = useState(null); // { mode: 'leave'|'delete', server }
+  const [confirm, setConfirm] = useState(null); // { mode: 'leave'|'delete'|'leave-delete', server }
+  // O3 (2.12.2): { server, leaveAfter } while the ownership transfer dialog is open.
+  const [transfer, setTransfer] = useState(null);
   const [channelModal, setChannelModal] = useState(null); // { mode, channel?, defaultType?, parentId? }
   const [showRoles, setShowRoles] = useState(false);
   const [channelMenuId, setChannelMenuId] = useState(null);
@@ -613,17 +616,30 @@ export default function ServersSidebar({
           })}
         </div>
         {server.isOwner ? (
-          <button
-            type="button"
-            className="server-dropdown-item danger"
-            onClick={() => {
-              setServerMenu(null);
-              setConfirm({ mode: "delete", server });
-            }}
-          >
-            <Trash2 size={14} />
-            {t("Delete server")}
-          </button>
+          <>
+            <button
+              type="button"
+              className="server-dropdown-item danger"
+              onClick={() => {
+                setServerMenu(null);
+                setConfirm({ mode: "leave", server });
+              }}
+            >
+              <LogOut size={14} />
+              {t("Leave server")}
+            </button>
+            <button
+              type="button"
+              className="server-dropdown-item danger"
+              onClick={() => {
+                setServerMenu(null);
+                setConfirm({ mode: "delete", server });
+              }}
+            >
+              <Trash2 size={14} />
+              {t("Delete server")}
+            </button>
+          </>
         ) : (
           <button
             type="button"
@@ -749,22 +765,39 @@ export default function ServersSidebar({
    * from a right-click on a server row in the list view.
    */
   const renderLeaveDeleteConfirm = () => (
-    <AnimatePresence>
-      {confirm && (
-        confirm.mode === "delete" || confirm.server.isOwner ? (
+    <>
+      <AnimatePresence>
+        {confirm && confirm.mode === "leave" && confirm.server.isOwner ? (
+          // O3: an owner leaving chooses: transfer first, or delete and leave.
+          <OwnerLeaveSheet
+            key="owner-leave"
+            server={confirm.server}
+            onCancel={() => setConfirm(null)}
+            onTransferFirst={() => {
+              const server = confirm.server;
+              setConfirm(null);
+              setTransfer({ server, leaveAfter: true });
+            }}
+            onDeleteAndLeave={() => setConfirm({ mode: "leave-delete", server: confirm.server })}
+          />
+        ) : confirm && (confirm.mode === "delete" || confirm.mode === "leave-delete" || confirm.server.isOwner) ? (
           <ConfirmNameDialog
-            mode={confirm.mode === "delete" || confirm.server.isOwner ? "delete" : "leave"}
+            key="confirm-name"
+            mode={confirm.mode === "leave-delete" ? "leave" : "delete"}
             serverName={confirm.server.name}
             onCancel={() => setConfirm(null)}
             onConfirm={async (confirmName) => {
               const server = confirm.server;
-              const mode = confirm.mode;
-              setConfirm(null);
+              const mode = confirm.mode === "leave-delete" ? "leave" : "delete";
               await runLeaveOrDelete(mode, server, confirmName);
+              setConfirm(null);
+              if (transfer?.server?.id === server.id) setTransfer(null);
+              setShowSettings(false);
             }}
           />
-        ) : (
+        ) : confirm ? (
           <ConfirmLeaveDialog
+            key="confirm-leave"
             serverName={confirm.server.name}
             onCancel={() => setConfirm(null)}
             onConfirm={async () => {
@@ -773,9 +806,38 @@ export default function ServersSidebar({
               await onLeaveServer?.(server.id);
             }}
           />
-        )
-      )}
-    </AnimatePresence>
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {transfer ? (
+          <OwnershipTransferModal
+            key={`transfer-${transfer.server.id}`}
+            server={transfer.server}
+            leaveAfter={transfer.leaveAfter}
+            onClose={() => setTransfer(null)}
+            onTransferred={async ({ result, target, leaveAfter }) => {
+              const server = transfer.server;
+              const newOwnerId = result?.ownerId || target?.userId;
+              setTransfer(null);
+              setShowSettings(false);
+              onServerUpdated?.({
+                ...server,
+                ...(result?.server || {}),
+                ownerId: newOwnerId,
+                isOwner: false,
+              });
+              if (leaveAfter) {
+                try {
+                  await onLeaveServer?.(server.id);
+                } catch (err) {
+                  toast(err?.message || t("Something went wrong."), "error");
+                }
+              }
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+    </>
   );
 
   const runLeaveOrDelete = async (mode, server, confirmName) => {
@@ -1105,21 +1167,26 @@ export default function ServersSidebar({
             )}
             {glassShell ? (
               <div className="g-menu-group is-leave">
+                <button type="button" className="server-dropdown-item danger is-leave" onClick={() => openConfirm("leave")}>
+                  {t("Leave server")}
+                </button>
                 {activeServer.isOwner ? (
                   <button type="button" className="server-dropdown-item danger is-leave" onClick={() => openConfirm("delete")}>
                     {t("Delete server")}
                   </button>
-                ) : (
-                  <button type="button" className="server-dropdown-item danger is-leave" onClick={() => openConfirm("leave")}>
-                    {t("Leave server")}
-                  </button>
-                )}
+                ) : null}
               </div>
             ) : activeServer.isOwner ? (
-              <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("delete")}>
-                <Trash2 size={15} />
-                {t("Delete server")}
-              </button>
+              <>
+                <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("leave")}>
+                  <LogOut size={15} />
+                  {t("Leave server")}
+                </button>
+                <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("delete")}>
+                  <Trash2 size={15} />
+                  {t("Delete server")}
+                </button>
+              </>
             ) : (
               <button type="button" className="server-dropdown-item danger" onClick={() => openConfirm("leave")}>
                 <LogOut size={15} />
@@ -1454,8 +1521,11 @@ export default function ServersSidebar({
           {showSettings && (
             <ServerSettingsModal
               server={activeServer}
+              stacked={Boolean(transfer || confirm)}
               onClose={() => setShowSettings(false)}
               onServerUpdated={(updated) => onServerUpdated?.(updated)}
+              onRequestTransfer={(server) => setTransfer({ server, leaveAfter: false })}
+              onRequestDelete={(server) => setConfirm({ mode: "delete", server })}
             />
           )}
           {(needsRulesAccept || rulesPrompt) && (

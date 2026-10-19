@@ -2594,6 +2594,71 @@ router.delete("/:id", requireAuth, async (req, res) => {
 });
 
 /**
+ * The new owner hears about it on every device: a live toast (`server:ownership:received`
+ * to user:<id>), the in-memory notification list, and an iOS alert push for a phone that is
+ * closed. Best effort: a failed push never undoes the transfer.
+ */
+function notifyNewOwner(req, { serverId, serverName, targetId, actorId, actorName }) {
+  const io = req.app?.get?.("io");
+  const payload = { serverId, serverName: serverName || null, fromUserId: actorId, fromName: actorName || null };
+  try {
+    io?.to?.(`user:${targetId}`).emit("server:ownership:received", payload);
+  } catch (err) {
+    console.warn("[SERVERS] ownership toast emit failed:", err?.message || err);
+  }
+  try {
+    const { pushNotification } = require("../socket/handlers");
+    if (io && typeof pushNotification === "function") {
+      const { trGenitive } = require("../lib/trSuffix");
+      pushNotification(io, targetId, {
+        type: "server_owner",
+        title: "Sunucu sahipliği",
+        body: `${trGenitive(serverName || "Sunucu")} sahibi artık sensin`,
+        meta: { serverId, serverName: serverName || null, fromUserId: actorId },
+      });
+    }
+  } catch (err) {
+    console.warn("[SERVERS] ownership notification failed:", err?.message || err);
+  }
+  try {
+    const { sendIosAlertToUsers } = require("../lib/iosAlertPush");
+    void Promise.resolve(
+      sendIosAlertToUsers([targetId], {
+        type: "server-owner",
+        serverId,
+        serverName: serverName || null,
+        fromId: actorId,
+        fromName: actorName || null,
+      })
+    ).catch((err) => console.warn("[SERVERS] ownership push failed:", err?.message || err));
+  } catch (err) {
+    console.warn("[SERVERS] ownership push failed:", err?.message || err);
+  }
+}
+
+/**
+ * GET /servers/:id/ownership/transfer → { passwordRequired }
+ * Owner only, read-only: tells the transfer dialog whether to ask for a password
+ * (accounts created with Google / Apple have none).
+ */
+router.get("/:id/ownership/transfer", requireAuth, async (req, res) => {
+  try {
+    await requireServerOwner(req.params.id, req.user.id);
+    const { data: me, error } = await supabase
+      .from("users")
+      .select("id, password_hash")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    return res.json({ passwordRequired: Boolean(me?.password_hash) });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("[SERVERS] GET /:id/ownership/transfer error:", err);
+    return res.status(status).json({ error: err.message || "Failed to load.", code: err.code });
+  }
+});
+
+/**
  * POST /servers/:id/ownership/transfer  { userId, confirmName, password }
  * Owner hands the server to another member (O3: before 2026-10-19 there was no transfer,
  * and an owner who wanted out could only delete the server). Owner only; the target must be
@@ -2678,11 +2743,24 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
     });
 
     const pub = publicServer(updated, {});
-    emitToServer(req, serverId, "server:updated", { server: pub });
+    const { data: people } = await supabase
+      .from("users")
+      .select("id, username, display_name")
+      .in("id", [actorId, targetId]);
+    const nameOf = (id) => {
+      const u = (people || []).find((row) => String(row.id) === String(id));
+      return (u && (u.display_name || u.username)) || null;
+    };
+    // Everyone in the server sees the new owner live (server list crown, settings, menus).
+    emitToServer(req, serverId, "server:updated", {
+      server: pub,
+      ownerChanged: { fromUserId: actorId, toUserId: targetId, toName: nameOf(targetId) },
+    });
     for (const uid of [actorId, targetId]) {
       emitToServer(req, serverId, "server:member:roles-changed", { userId: uid, action: "owner" });
     }
     notifyAccess(req, serverId);
+    notifyNewOwner(req, { serverId, serverName: updated.name || server.name, targetId, actorId, actorName: nameOf(actorId) });
 
     return res.json({ message: "Ownership transferred.", serverId, ownerId: targetId, server: pub });
   } catch (err) {

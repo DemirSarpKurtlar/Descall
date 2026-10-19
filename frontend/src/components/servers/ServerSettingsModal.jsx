@@ -10,12 +10,13 @@ import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import ImageCropModal from "../ui/ImageCropModal";
+import { ServerDangerZone } from "./OwnershipTransfer";
 import { ServerIcon } from "./ServerIcon";
 
 /**
  * Unified server settings: name, description, icon, banner.
  */
-export default function ServerSettingsModal({ server, onClose, onServerUpdated }) {
+export default function ServerSettingsModal({ server, onClose, onServerUpdated, onRequestTransfer, onRequestDelete, stacked = false }) {
   const t = useT();
   const { toast } = useToast();
   const [name, setName] = useState(server?.name || "");
@@ -184,10 +185,10 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={() => !busy && !uploading && !cropSrc && onClose?.()}
+        onClick={() => !busy && !uploading && !cropSrc && !stacked && onClose?.()}
       >
         <motion.form
-          className="server-modal server-settings-modal"
+          className={`server-modal server-settings-modal${stacked ? " is-stacked-under" : ""}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -397,6 +398,14 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated }
               </label>
             </div>
           )}
+
+          {/* O3 (2.12.2): owner-only danger zone, approved glass mockup. */}
+          <ServerDangerZone
+            server={server}
+            disabled={busy || uploading}
+            onTransfer={() => onRequestTransfer?.(server)}
+            onDelete={() => onRequestDelete?.(server)}
+          />
           </div>
 
           <div className="server-settings-footer">

@@ -2435,4 +2435,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout };
+module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout, pushNotification };
