@@ -245,6 +245,27 @@ function checkPlacement(m, label) {
 async function run(win) {
   win.setContentSize(1280, 900);
   await waitFor(win, 'boot', PAINTED, 45000);
+  // Turkish UI regardless of the runner's locale/timezone (CI is en-US + UTC, so the app
+  // boots in English and stores that choice): store "tr" like the language picker does,
+  // then reload, so the modal shows the i18n-map names.
+  if ((await js(win, 'document.documentElement.lang')) !== 'tr') {
+    await js(win, `(() => {
+      localStorage.setItem('descall_language', 'tr');
+      for (const k of ['descall_user_settings', 'descall_settings']) {
+        let s = {};
+        try { s = JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { s = {}; }
+        s.language = 'tr';
+        localStorage.setItem(k, JSON.stringify(s));
+      }
+      return true;
+    })()`);
+    const reloaded = new Promise((resolve) => win.webContents.once('did-finish-load', resolve));
+    win.webContents.reload();
+    await reloaded;
+    await waitFor(win, 'boot after language switch', PAINTED, 45000);
+  }
+  const lang = await js(win, 'document.documentElement.lang');
+  expect(lang === 'tr', `UI language is ${lang}, expected tr`);
   await sleep(5000);
   await js(win, `history.pushState({}, '', '/settings/shop'); dispatchEvent(new PopStateEvent('popstate')); true`);
   await waitFor(win, 'shop cards', `(() => ({ ok: [...document.querySelectorAll('.shop-item-card')].some((c) => c.getBoundingClientRect().width > 0) }))()`, 30000);
