@@ -268,7 +268,7 @@
 .message-hover-bar.own,
 .message-hover-bar.other,
 .message-bubble .message-hover-bar {
-  top: -16px;
+  top: var(--mhb-top, -16px);
   bottom: auto;
   right: calc(-1 * var(--mhb-shift, 0px));
   left: auto;
@@ -325,6 +325,11 @@
   border: 1px solid var(--border-2);
   box-shadow: var(--shadow-md);
   z-index: 30;
+}
+/* Last resort when the column is too narrow: quick reactions fold into the
+   emoji button (it opens the full picker). */
+.message-hover-bar.is-compact .msg-quick-react {
+  display: none;
 }
 .message-inline-picker.flip-up {
   top: auto;
