@@ -17,7 +17,7 @@ export default function TrBlogIndexPage() {
       breadcrumbs={crumbs}
       kicker="Blog"
       title="Descall blog: Discord alternatifleri ve sesli sohbet rehberleri"
-      lead="Discord alternatifleri, Discord’dan geçiş, LFG, sesli sohbet ve topluluk yönetimi üzerine Türkçe, pratik rehberler."
+      lead="Discord alternatifleri, Discord’dan geçiş, sesli sohbet ve topluluk yönetimi üzerine Türkçe, pratik rehberler."
       jsonLd={[buildBreadcrumbLd(crumbs)]}
     >
       <section className="seo-section">

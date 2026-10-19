@@ -14,14 +14,14 @@ const OPTIONS = [
   {
     name: "Descall",
     blurb:
-      "Best free Discord alternative for friend groups and LFG, chat, voice, video, screen share, Windows + Android.",
+      "Best free Discord alternative for friend groups: chat, voice, video, screen share, Windows + Android.",
     href: "/discord-alternative",
     highlight: true,
   },
   {
     name: "Discord",
     blurb:
-      "Still the default for huge communities and bots. Heavy for small groups that only need calls and LFG.",
+      "Still the default for huge communities and bots. Heavy for small groups that only need calls and a small server.",
     href: "/compare/discord",
     highlight: false,
   },
@@ -34,7 +34,7 @@ const OPTIONS = [
   },
   {
     name: "TeamSpeak / Mumble",
-    blurb: "Voice-first classics. Weak for modern chat, presence, mobile, and productized LFG workflows.",
+    blurb: "Voice-first classics. Weak for modern chat, presence, and mobile.",
     href: "/best-discord-alternative-for-gamers",
     highlight: false,
   },
@@ -62,7 +62,7 @@ export default function AlternativesPage() {
       kicker={t("Discord alternatives · 2026")}
       title={t("Discord alternatives compared, pick by what you actually need")}
       lead={t(
-        "Searching for Discord alternatives? Most lists recycle the same voice apps. Here’s a clearer take, and why Descall wins for friends, LFG, and free core chat/calls."
+        "Searching for Discord alternatives? Most lists recycle the same voice apps. Here’s a clearer take, and why Descall wins for friends, servers, and free core chat/calls."
       )}
       faq={ALTERNATIVES_FAQ}
       jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(ALTERNATIVES_FAQ)]}
@@ -81,11 +81,11 @@ export default function AlternativesPage() {
         <h2>{t("How to choose a Discord alternative")}</h2>
         <p>
           {t(
-            "Start with your real job-to-be-done: friend DMs, group voice, screen share, or gaming LFG. If you need mega-servers and bot ecosystems, Discord still leads. If you want a lighter Discord alternative that keeps communication free, Descall is built for you."
+            "Start with your real job-to-be-done: friend DMs, group voice, screen share, or a gaming server. If you need mega-servers and bot ecosystems, Discord still leads. If you want a lighter Discord alternative that keeps communication free, Descall is built for you."
           )}
         </p>
         <ol className="seo-steps">
-          <li>{t("List must-have features (voice, screen share, LFG, mobile).")}</li>
+          <li>{t("List must-have features (voice, screen share, servers, mobile).")}</li>
           <li>{t("Check whether core chat/calls are free or paywalled.")}</li>
           <li>{t("Try a week with your actual friend group, not a demo account.")}</li>
           <li>{t("Keep Discord only if you still need giant community servers.")}</li>
@@ -119,9 +119,6 @@ export default function AlternativesPage() {
           </li>
           <li>
             <Link to="/blog/leave-nitro-keep-voice-chat">{t("Leave Nitro guide")}</Link>
-          </li>
-          <li>
-            <Link to="/blog/best-discord-alternative-for-lfg">{t("LFG guide")}</Link>
           </li>
         </ul>
       </section>

@@ -2048,13 +2048,13 @@ body:has(.mkt-consent),
   margin-bottom: 8px;
 }
 
-.seo-landing.seo-tone-lfg .mkt-kicker { color: #f0b232; }
+.seo-landing.seo-tone-gaming .mkt-kicker { color: #f0b232; }
 .seo-landing.seo-tone-community .mkt-kicker { color: #2ad4b8; }
 .seo-landing.seo-tone-voice .mkt-kicker { color: #8eacff; }
 .seo-landing.seo-tone-friends .mkt-kicker { color: #e8a0c8; }
 .seo-landing.seo-tone-compare .mkt-kicker { color: #c9a46a; }
 
-.seo-landing.seo-tone-lfg .seo-hero {
+.seo-landing.seo-tone-gaming .seo-hero {
   padding: 8px 18px 18px;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(240, 178, 50, 0.08), transparent 60%);

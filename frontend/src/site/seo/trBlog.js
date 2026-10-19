@@ -10,7 +10,7 @@ export const TR_BLOG_BODIES = {
     sections: [
       {
         h: "Kısa cevap",
-        p: "Grubun sohbet, ses, ekran paylaşımı ve LFG için daha hafif ve ücretsiz bir uygulama istiyorsa Descall’ı seç. Büyük herkese açık topluluklar yönetiyor ve botlara dayanıyorsan Discord’un ekosistemi hâlâ daha geniş. Türkiye’de Discord’a erişimin 9 Ekim 2024’ten beri engelli olduğunu da hesaba katmak gerekiyor.",
+        p: "Grubun sohbet, ses ve ekran paylaşımı için daha hafif ve ücretsiz bir uygulama istiyorsa Descall’ı seç. Büyük herkese açık topluluklar yönetiyor ve botlara dayanıyorsan Discord’un ekosistemi hâlâ daha geniş. Türkiye’de Discord’a erişimin 9 Ekim 2024’ten beri engelli olduğunu da hesaba katmak gerekiyor.",
       },
       {
         h: "Sohbet ve çevrimiçi durumu",
@@ -34,11 +34,11 @@ export const TR_BLOG_BODIES = {
     sections: [
       {
         h: "Discord alternatiflerini nasıl değerlendirdik?",
-        p: "Uygulamaları en uzun özellik listesine göre değil; ücretsiz sohbet ve arama, ses kalitesi, LFG desteği, masaüstü ve mobil gerçekliği ve bir arkadaş grubunun bir haftada geçiş yapıp yapamayacağına göre değerlendirdik. Türkiye’den erişim ve Türkçe arayüz de ölçütlerimiz arasındaydı.",
+        p: "Uygulamaları en uzun özellik listesine göre değil; ücretsiz sohbet ve arama, ses kalitesi, sunucu araçları, masaüstü ve mobil gerçekliği ve bir arkadaş grubunun bir haftada geçiş yapıp yapamayacağına göre değerlendirdik. Türkiye’den erişim ve Türkçe arayüz de ölçütlerimiz arasındaydı.",
       },
       {
-        h: "Descall: arkadaşlar ve LFG için ücretsiz Discord alternatifi",
-        p: "DM’ler, gruplar, sunucular, WebRTC ses ve görüntü, ekran paylaşımı ve yerleşik LFG’yi abonelik olmadan isteyen gruplar için Descall öne çıkıyor. Türkiye’de geliştiriliyor ve Türkçe kullanılabiliyor. Her büyük herkese açık Discord sunucusunun yerini almaya çalışmıyor.",
+        h: "Descall: arkadaşlar ve ekipler için ücretsiz Discord alternatifi",
+        p: "DM’ler, gruplar, sunucular, WebRTC ses ve görüntü, ve ekran paylaşımını abonelik olmadan isteyen gruplar için Descall öne çıkıyor. Türkiye’de geliştiriliyor ve Türkçe kullanılabiliyor. Her büyük herkese açık Discord sunucusunun yerini almaya çalışmıyor.",
       },
       {
         h: "Discord: hâlâ toplulukların işletim sistemi",
@@ -46,11 +46,11 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "TeamSpeak, Mumble, Telegram ve Slack",
-        p: "TeamSpeak ve Mumble ses odaklı klasikler; ses kalitesi iyi ama mesajlaşma ve topluluk özellikleri sınırlı, sunucu kurulumu teknik bilgi ister. Telegram mesajlaşmada, Slack iş ekiplerinde çok güçlü; ama kalıcı grup sesi ve LFG için zayıf Discord yerine geçerler.",
+        p: "TeamSpeak ve Mumble ses odaklı klasikler; ses kalitesi iyi ama mesajlaşma ve topluluk özellikleri sınırlı, sunucu kurulumu teknik bilgi ister. Telegram mesajlaşmada, Slack iş ekiplerinde çok güçlü; ama kalıcı grup sesi için zayıf Discord yerine geçerler.",
       },
       {
         h: "Önce hangisini denemelisin?",
-        p: "Arkadaşlarla ses ve LFG → Descall. Sadece ses ve kendi sunucun → TeamSpeak veya Mumble. Yoğun mesajlaşma → Telegram. İş ekibi → Slack. Tam bir geçişe zorlamadan önce Türkçe karşılaştırma sayfamıza göz at ve bir hafta boyunca gerçek arkadaşlarınla dene.",
+        p: "Arkadaşlarla ses ve sunucu → Descall. Sadece ses ve kendi sunucun → TeamSpeak veya Mumble. Yoğun mesajlaşma → Telegram. İş ekibi → Slack. Tam bir geçişe zorlamadan önce Türkçe karşılaştırma sayfamıza göz at ve bir hafta boyunca gerçek arkadaşlarınla dene.",
       },
     ],
   },
@@ -58,11 +58,11 @@ export const TR_BLOG_BODIES = {
     sections: [
       {
         h: "“Discord benzeri uygulama” derken ne kastediliyor?",
-        p: "Genellikle kalıcı sohbet, gruplar ve ses. Bazen ekran paylaşımı veya LFG. Rastgele bir “En iyi 10” listesinden değil, grubunun gerçekten yapmak istediği işten başla: akşam sesli sohbet mi, düzenli bir topluluk mu, yoksa sadece yazışmak mı?",
+        p: "Genellikle kalıcı sohbet, gruplar ve ses. Bazen ekran paylaşımı. Rastgele bir “En iyi 10” listesinden değil, grubunun gerçekten yapmak istediği işten başla: akşam sesli sohbet mi, düzenli bir topluluk mu, yoksa sadece yazışmak mı?",
       },
       {
         h: "Discord benzeri bir uygulama olarak Descall",
-        p: "Descall mesajlaşma, aramalar, ekran paylaşımı, gruplar, rollü sunucular ve LFG’yi daha hafif bir pakette sunar. Arkadaşlar ve oyuncular için pratik bir Discord alternatifi; Türkiye’den doğrudan erişilebilir ve Türkçe kullanılabilir.",
+        p: "Descall mesajlaşma, aramalar, ekran paylaşımı, gruplar ve rollü sunucuları daha hafif bir pakette sunar. Arkadaşlar ve oyuncular için pratik bir Discord alternatifi; Türkiye’den doğrudan erişilebilir ve Türkçe kullanılabilir.",
       },
       {
         h: "Discord benzeri web siteleri",
@@ -78,11 +78,11 @@ export const TR_BLOG_BODIES = {
     sections: [
       {
         h: "2026’da Discord’un rakipleri: dürüst harita",
-        p: "Rakipler üç gruba ayrılıyor: hafif arkadaş sohbeti uygulamaları, oyun ve topluluk odaklı araçlar ve ses odaklı klasik yazılımlar. Descall, oyun ve LFG eğilimi olan ilk gruba giriyor.",
+        p: "Rakipler üç gruba ayrılıyor: hafif arkadaş sohbeti uygulamaları, oyun ve topluluk odaklı araçlar ve ses odaklı klasik yazılımlar. Descall, gerçek sunucular sunan ilk gruba giriyor.",
       },
       {
         h: "Descall’ın rekabet ettiği yer",
-        p: "Arkadaşlarla DM, grup sesi, ekran paylaşımı ve LFG konusunda; özellikle grup sohbetinde “aboneliğe para vermeyelim” cümlesi geçtiğinde ya da Türkiye’deki erişim engeli yüzünden yeni bir ev arandığında.",
+        p: "Arkadaşlarla DM, grup sesi ve ekran paylaşımı konusunda; özellikle grup sohbetinde “aboneliğe para vermeyelim” cümlesi geçtiğinde ya da Türkiye’deki erişim engeli yüzünden yeni bir ev arandığında.",
       },
       {
         h: "Descall’ın (henüz) rekabet ediyormuş gibi yapmadığı yerler",
@@ -90,23 +90,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "Rakipleri nasıl kısa listeye alırsın?",
-        p: "Olmazsa olmazlarını yaz: ses, LFG, mobil, ekran paylaşımı. Gerçek arkadaşlarınla yedi akşam dene. Kimse hatırlatmadan kullanılmaya devam eden uygulamayı seç.",
-      },
-    ],
-  },
-  "best-discord-alternative-for-lfg": {
-    sections: [
-      {
-        h: "Bot karmaşası olmadan LFG",
-        p: "Discord’daki LFG düzenlerinin çoğu botlara, ayrı sunuculara ve rol kapılarına dayanır. Descall’ın Play sekmesi ise uygulamanın içinde yerleşik bir LFG alanıdır: lobi oluşturur ya da açık lobilere katılırsın.",
-      },
-      {
-        h: "Lobiden sesli kanala",
-        p: "En iyi LFG deneyimi, “eksik bir kişi arıyoruz” anından “sesteyiz” anına giden yolu kısaltandır. Descall’da oyuncu bulduğunda aynı uygulamada, aynı hesapla sesli kanala geçersiniz; ayrı bir uygulamada kullanıcı adı paylaşmak zorunda kalmazsın.",
-      },
-      {
-        h: "Klanını büyütmek için LFG",
-        p: "LFG lobileri sadece tek maçlık takım arkadaşı bulmak için değil; birlikte oynayıp anlaştığın oyuncuları klan sunucuna davet etmek için de iyi bir yol. Oyun şablonuyla kurulmuş bir sunucu, yeni üyeler için hazır bir ev sağlar.",
+        p: "Olmazsa olmazlarını yaz: ses, sunucu, mobil, ekran paylaşımı. Gerçek arkadaşlarınla yedi akşam dene. Kimse hatırlatmadan kullanılmaya devam eden uygulamayı seç.",
       },
     ],
   },
@@ -118,7 +102,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "İki haftalık geçiş planı",
-        p: "Birinci hafta: Descall’da bir sunucu ya da grup kur, akşam sesli buluşmaları oraya taşı. İkinci hafta: LFG ve ekran paylaşımı oturumlarını da taşı. Hâlâ sevdiğin büyük topluluklar varsa onları ayrı tutabilirsin.",
+        p: "Birinci hafta: Descall’da bir sunucu ya da grup kur, akşam sesli buluşmaları oraya taşı. İkinci hafta: sunucunu ve ekran paylaşımı oturumlarını da taşı. Hâlâ sevdiğin büyük topluluklar varsa onları ayrı tutabilirsin.",
       },
       {
         h: "Neyi kaybetmezsin?",
@@ -150,7 +134,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "Oyuncular için ücretsiz sesli sohbet",
-        p: "Takım arkadaşı ararken Descall sesini Play sekmesiyle birlikte kullan. Lobi ve arama için tek bir uygulama, üç uygulama arasında gidip gelmekten iyidir.",
+        p: "Sohbet, ses ve ekran paylaşımı için tek bir uygulama, üç uygulama arasında gidip gelmekten iyidir.",
       },
       {
         h: "Masaüstü ipuçları",
@@ -162,7 +146,7 @@ export const TR_BLOG_BODIES = {
     sections: [
       {
         h: "0. gün: neye gerçekten ihtiyacın olduğuna karar ver",
-        p: "Grubunun her hafta kullandığı özellikleri listele: DM’ler, özel bir sunucu, sesli akşamlar, LFG. Descall bunları abonelik olmadan karşılar. İlk gün her botu kopyalamaya çalışma.",
+        p: "Grubunun her hafta kullandığı özellikleri listele: DM’ler, özel bir sunucu, sesli akşamlar. Descall bunları abonelik olmadan karşılar. İlk gün her botu kopyalamaya çalışma.",
       },
       {
         h: "1. gün: hesap aç ve arkadaşlarını davet et",
@@ -173,8 +157,8 @@ export const TR_BLOG_BODIES = {
         p: "Oyun, Arkadaşlar veya Topluluk şablonlarından birini seç; roller ve yetkili odaları hazır gelsin. Davet bağlantıları, Discord’daki davet linklerinin yerini alır.",
       },
       {
-        h: "3. gün: ses alışkanlığını ve LFG’yi taşı",
-        p: "Descall’da bir sesli buluşma planla. Takım arkadaşı arayan oyuncular Play sekmesini bir kez denesin; böylece LFG herkesi eski botlara geri çekmez.",
+        h: "3. gün: ses alışkanlığını taşı",
+        p: "Descall’da bir sesli buluşma planla ve bir sunucuyu şablonla taşı; böylece kimse eski botlara geri çekilmez.",
       },
       {
         h: "Eski platformda ne kalır? (dürüstçe)",
@@ -186,11 +170,11 @@ export const TR_BLOG_BODIES = {
 
 export const TR_BLOG_FAQ_BY_SLUG = {
   "discord-vs-descall": [
-    { q: "Grubum Discord’u mu Descall’ı mı seçmeli?", a: "Akşam sesli sohbet, sunucular ve LFG için abonelik istemiyorsanız Descall; büyük bot ekosistemine ve dev herkese açık sunuculara bağlıysanız Discord. Türkiye’de Discord’a erişimin engelli olduğunu da unutmayın." },
+    { q: "Grubum Discord’u mu Descall’ı mı seçmeli?", a: "Akşam sesli sohbet ve sunucular için abonelik istemiyorsanız Descall; büyük bot ekosistemine ve dev herkese açık sunuculara bağlıysanız Discord. Türkiye’de Discord’a erişimin engelli olduğunu da unutmayın." },
     { q: "Bu karşılaştırma sponsorlu mu?", a: "Hayır. Descall’ı biz geliştiriyoruz ve yazıda Discord’un hâlâ önde olduğu yerleri de açıkça belirtiyoruz." },
   ],
   "best-discord-alternatives-2026": [
-    { q: "2026’da en iyi Discord alternatifi hangisi?", a: "Arkadaşlarla ses, sunucu ve LFG için Descall; sadece ses için TeamSpeak veya Mumble; mesajlaşma için Telegram; iş için Slack." },
+    { q: "2026’da en iyi Discord alternatifi hangisi?", a: "Arkadaşlarla ses ve sunucu için Descall; sadece ses için TeamSpeak veya Mumble; mesajlaşma için Telegram; iş için Slack." },
     { q: "Türkiye’den erişilebilen bir Discord alternatifi var mı?", a: "Evet. Descall Türkiye’de geliştirilir ve Türkiye’den doğrudan erişilebilir." },
   ],
   "apps-like-discord": [
@@ -200,10 +184,6 @@ export const TR_BLOG_FAQ_BY_SLUG = {
   "discord-competitors": [
     { q: "Discord’un en büyük rakibi kim?", a: "Tek bir rakip yok; ihtiyaca göre Telegram, Slack, TeamSpeak ve Descall gibi uygulamalar farklı alanlarda rekabet ediyor." },
     { q: "Descall Discord’un tüm özelliklerini sunuyor mu?", a: "Hayır. Bot pazarı ve dev etkinlik araçları yok; arkadaş grupları ve küçük‑orta topluluklar için gereken temel özelliklere odaklanır." },
-  ],
-  "best-discord-alternative-for-lfg": [
-    { q: "LFG için bot kurmam gerekiyor mu?", a: "Hayır. Descall’da LFG lobileri Play sekmesinde yerleşik olarak bulunur." },
-    { q: "LFG’den sesli kanala nasıl geçilir?", a: "Oyuncu bulduğunda aynı uygulamada ve aynı hesapla sesli kanala geçersiniz." },
   ],
   "leave-nitro-keep-voice-chat": [
     { q: "Descall’da ücretli abonelik var mı?", a: "Temel iletişim için yok. Sohbet, ses, görüntü ve ekran paylaşımı ücretsiz; sadece isteğe bağlı kozmetikler DesCoin ile alınır." },

@@ -7,7 +7,7 @@ import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../
 import { TR_LANDINGS } from "../seo/trLandings";
 
 function previewForPath(path) {
-  if (path.includes("oyuncu")) return { tone: "lfg", mode: "lfg" };
+  if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
   if (path.includes("sesli")) return { tone: "voice", mode: "call" };
   if (path.includes("turk")) return { tone: "community", mode: "servers" };
   return { tone: "compare", mode: "chat" };

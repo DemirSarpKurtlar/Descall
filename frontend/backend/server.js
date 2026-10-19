@@ -156,6 +156,9 @@ if (isVercel) {
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/dimaai", goneRouter("This feature has been removed."));
+// 2.13.0: the game tab, its Riot account link and lobbies were removed. Installed
+// older apps get a clean 410 instead of an HTML 404.
+app.use(["/api/lfg", "/api/riot", "/api/valorant", "/lfg", "/riot", "/valorant"], goneRouter("This feature has been removed."));
 
 // Debug - log all requests (skip noise in production)
 if (process.env.NODE_ENV !== "production") {
@@ -370,6 +373,7 @@ app.post("/api/marketing/consent-event", (req, res, next) => {
 // The DimaAI landing page and app view were removed in 2.9.141: send old links home.
 app.get(["/dimaai", "/dimaai/*"], (_req, res) => res.redirect(301, "/"));
 app.get(["/tr/dimaai", "/tr/dimaai/*"], (_req, res) => res.redirect(301, "/tr"));
+app.get(["/play", "/play/*", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"], (_req, res) => res.redirect(301, "/"));
 app.use(sitemapRouter);
 
 // Test endpoint - no auth required

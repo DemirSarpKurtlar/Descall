@@ -343,10 +343,6 @@ function MarketingAppSite({
           element={withLayout(DiscordAlternativeNichePage, openAuth)}
         />
         <Route
-          path="/discord-alternative-for-lfg"
-          element={withLayout(DiscordAlternativeNichePage, openAuth)}
-        />
-        <Route
           path="/discord-alternative-for-voice-chat"
           element={withLayout(DiscordAlternativeNichePage, openAuth)}
         />

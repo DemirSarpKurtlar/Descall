@@ -37,11 +37,7 @@ export const KEYWORD_STRATEGY = [
   { keyword: "gaming community platform", intent: "informational", targetPath: "/discord-alternative-for-communities", priority: "P2", funnel: "MOF", commercialIntent: "medium", cluster: "communities" },
   { keyword: "gaming chat alternative", intent: "commercial", targetPath: "/best-discord-alternative-for-gamers", priority: "P1", funnel: "MOF", commercialIntent: "high", cluster: "gaming" },
   { keyword: "voice chat alternative to discord", intent: "commercial", targetPath: "/discord-alternative-for-voice-chat", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "voice" },
-  { keyword: "lfg platform", intent: "commercial", targetPath: "/discord-alternative-for-lfg", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "lfg" },
-  { keyword: "lfg app", intent: "commercial", targetPath: "/discord-alternative-for-lfg", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "lfg" },
   { keyword: "gaming community app", intent: "commercial", targetPath: "/best-discord-alternative-for-gamers", priority: "P2", funnel: "MOF", commercialIntent: "medium", cluster: "gaming" },
-  { keyword: "valorant lfg", intent: "transactional", targetPath: "/discord-alternative-for-lfg", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "lfg" },
-  { keyword: "discord alternative for lfg", intent: "commercial", targetPath: "/discord-alternative-for-lfg", priority: "P0", funnel: "BOF", commercialIntent: "high", cluster: "lfg" },
 
   // Communities / friends
   { keyword: "discord alternative for communities", intent: "commercial", targetPath: "/discord-alternative-for-communities", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "communities" },
@@ -107,7 +103,6 @@ export const CONTENT_CLUSTERS = {
       "/apps-like-discord",
       "/best-discord-alternative-for-gamers",
       "/discord-alternative-for-communities",
-      "/discord-alternative-for-lfg",
       "/discord-alternative-for-voice-chat",
       "/discord-alternative-for-friends",
       "/tr/discord-alternatifi",
@@ -117,8 +112,6 @@ export const CONTENT_CLUSTERS = {
   gaming: {
     pillar: "/best-discord-alternative-for-gamers",
     children: [
-      "/discord-alternative-for-lfg",
-      "/blog/best-discord-alternative-for-lfg",
       "/blog/best-discord-alternatives-2026",
       "/discord-alternative",
     ],

@@ -2,7 +2,7 @@
  * Turkish landing pages under /tr/*. Written in Turkish (not machine-swapped
  * EN copy). Only claim what Descall ships today: DMs, groups, servers with
  * roles/channels/templates, voice/video calls, screen share with quality
- * presets, noise suppression, LFG (Play tab), Windows/Android/web, Turkish UI,
+ * presets, noise suppression, Windows/Android/web, Turkish UI,
  * free core features with optional DesCoin cosmetics. No E2E claim.
  *
  * Shape: { path, title, description, kicker, h1, lead, updated?, sections:
@@ -36,7 +36,7 @@ export const TR_LANDINGS = {
     kicker: "Türkiye · Discord alternatifi",
     h1: "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı",
     lead:
-      "Descall, arkadaş grupları, klanlar, sınıflar ve küçük topluluklar için Türkiye’de geliştirilen ücretsiz bir Discord alternatifidir. Sunucularını roller ve kanallarla kurarsın, sesli ve görüntülü konuşursun, ekranını paylaşırsın ve Play sekmesinden oyun arkadaşı bulursun. Temel iletişim için abonelik yoktur; arayüz tamamen Türkçedir.",
+      "Descall, arkadaş grupları, klanlar, sınıflar ve küçük topluluklar için Türkiye’de geliştirilen ücretsiz bir Discord alternatifidir. Sunucularını roller ve kanallarla kurarsın, sesli ve görüntülü konuşursun, ekranını paylaşırsın ve hazır oyun şablonlarıyla sunucunu dakikalar içinde kurarsın. Temel iletişim için abonelik yoktur; arayüz tamamen Türkçedir.",
     sections: [
       {
         h: "Neden bu kadar çok kişi Discord alternatifi arıyor?",
@@ -60,7 +60,7 @@ export const TR_LANDINGS = {
           "Sesli ve görüntülü arama: birebir, grupta ve sunucu ses kanallarında",
           "Ekran paylaşımı: kalite ön ayarlarıyla oyun, sunum veya ders paylaşımı",
           "Gürültü azaltma: klavye ve fan sesini bastıran isteğe bağlı mikrofon filtresi",
-          "LFG: Play sekmesinde lobi aç, oyun arkadaşı bul, aynı hesapla sesliye geç",
+          "Oyun şablonu: ekip toplama, klip ve scrim kanallarıyla hazır sunucu",
           "Windows masaüstü uygulaması, Android uygulaması ve kurulum gerektirmeyen tarayıcı sürümü",
         ],
       },
@@ -68,14 +68,14 @@ export const TR_LANDINGS = {
         h: "Discord’dan geçince neler tanıdık gelir, neler farklıdır?",
         p: [
           "Discord kullandıysan Descall’da yolunu kaybetmezsin. Sol tarafta sunucuların, sunucu içinde kategoriler ve kanallar, sağda üyeler; ses kanalına tıklayınca bağlanırsın, ekran paylaşımı butonuyla yayına geçersin. Rol hiyerarşisi ve kanal izinleri de aynı mantıkla çalışır: bir kanalı yalnızca moderatörlere açabilir, duyuru kanalında yazmayı yetkililerle sınırlayabilirsin.",
-          "Farklı olan taraf sadelik ve fiyatlandırma. Descall’da sohbet, sunucu, ses, görüntü ve ekran paylaşımı abonelik arkasında değil. Uygulamada satılan tek şey isteğe bağlı kozmetiklerdir (DesCoin ile); bunlar iletişimi hiçbir şekilde kısıtlamaz. LFG ise ayrı bir bot sunucusu yerine doğrudan uygulamanın içinde, Play sekmesindedir.",
+          "Farklı olan taraf sadelik ve fiyatlandırma. Descall’da sohbet, sunucu, ses, görüntü ve ekran paylaşımı abonelik arkasında değil. Uygulamada satılan tek şey isteğe bağlı kozmetiklerdir (DesCoin ile); bunlar iletişimi hiçbir şekilde kısıtlamaz.",
           "Bir de dürüst olalım: Discord’un devasa bot pazarı, on binlerce kişilik herkese açık sunucuları ve yıllar içinde biriken entegrasyonları Descall’da yok. Eğer topluluğun tamamen botlara dayanıyorsa geçiş daha fazla emek ister. Ama çoğu arkadaş grubu ve klan için asıl ihtiyaç ses, sohbet, roller ve düzenli kanallardır; bunlar Descall’da hazır.",
         ],
       },
       {
         h: "Kimler için uygun?",
         p: [
-          "Her akşam aynı ses kanalında buluşan 3–15 kişilik arkadaş grupları için Descall rahat bir ev sağlar: bir sunucu kur, birkaç ses kanalı aç, davet bağlantısını gönder, bitti. Oyun klanları ve takımlar için Oyun şablonu rolleri ve kanalları hazırlar, Play sekmesi de eksik oyuncuyu bulmayı kolaylaştırır.",
+          "Her akşam aynı ses kanalında buluşan 3–15 kişilik arkadaş grupları için Descall rahat bir ev sağlar: bir sunucu kur, birkaç ses kanalı aç, davet bağlantısını gönder, bitti. Oyun klanları ve takımlar için Oyun şablonu rolleri ve kanalları hazırlar.",
           "Okul ve ders grupları için Ders şablonu duyuru, ödev ve çalışma odası kanallarıyla gelir; ekran paylaşımı ile birlikte çalışmak, sunum provası yapmak veya bir konuyu anlatmak kolaylaşır. Yayıncılar ve küçük topluluk kurucuları için Topluluk ve Yayın şablonları duyuru, etkinlik ve sahne kanallarıyla düzenli bir başlangıç sunar.",
         ],
       },
@@ -118,7 +118,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Discord’daki botlar Descall’da var mı?",
-        a: "Discord’un bot pazarı Descall’da yok. Moderasyon, roller, davetler ve LFG gibi en çok bot gerektiren işler uygulamanın içinde yerleşik olarak bulunur.",
+        a: "Discord’un bot pazarı Descall’da yok. Moderasyon, roller ve davetler gibi en çok bot gerektiren işler uygulamanın içinde yerleşik olarak bulunur.",
       },
       {
         q: "Telefonda kullanabilir miyim?",
@@ -139,7 +139,7 @@ export const TR_LANDINGS = {
         h: "“Türk Discord’u” ne demek?",
         p: [
           "Discord’a erişim Ekim 2024’te Türkiye’de engellendikten sonra arama motorlarında “Türk Discord’u”, “yerli Discord” ve “Discord’un Türk versiyonu” aramaları hızla arttı. Bu aramaların arkasında genelde üç beklenti var: Türkiye’den sorunsuz çalışması, Türkçe olması ve Discord’a alışkın birinin hemen anlayabileceği bir yapıda olması.",
-          "Descall bu üç beklentiye de doğrudan cevap verir. Uygulama Türkiye’de geliştirilir, arayüz baştan sona Türkçe kullanılabilir ve sunucu, kanal, rol, ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelecek şekilde tasarlanmıştır. Ama Descall bir kopya değil; kendi tasarım dili, yerleşik LFG’si ve abonelik gerektirmeyen yaklaşımıyla ayrı bir üründür.",
+          "Descall bu üç beklentiye de doğrudan cevap verir. Uygulama Türkiye’de geliştirilir, arayüz baştan sona Türkçe kullanılabilir ve sunucu, kanal, rol, ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelecek şekilde tasarlanmıştır. Ama Descall bir kopya değil; kendi tasarım dili ve abonelik gerektirmeyen yaklaşımıyla ayrı bir üründür.",
         ],
       },
       {
@@ -162,7 +162,7 @@ export const TR_LANDINGS = {
           "Birebir ve grup halinde sesli/görüntülü arama",
           "Kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
-          "Play sekmesinde LFG lobileri",
+          "Arkadaşlar ve durum Descall içinde",
           "Windows, Android ve tarayıcı; tek hesap",
         ],
       },
@@ -170,7 +170,7 @@ export const TR_LANDINGS = {
         h: "Discord ile karşılaştırınca",
         p: [
           "Discord dünya çapında yüz milyonlarca kullanıcıya hizmet veren, yıllar içinde dev bir bot ve entegrasyon ekosistemi kurmuş bir platform. Descall bununla ekosistem büyüklüğünde yarışmıyor; arkadaş grupları, klanlar ve küçük‑orta ölçekli topluluklar için gerekenleri sade ve ücretsiz biçimde sunmaya odaklanıyor.",
-          "Temel fark fiyatlandırma ve sadelikte. Descall’da ses kalitesi, ekran paylaşımı veya sunucu özellikleri bir aboneliğin arkasında değil. Ayrıca LFG için ayrı bir bot sunucusuna gerek yok; Play sekmesi uygulamanın içinde. Ayrıntılı bir tablo için Discord mu Descall mı karşılaştırma sayfasına göz atabilirsin.",
+          "Temel fark fiyatlandırma ve sadelikte. Descall’da ses kalitesi, ekran paylaşımı veya sunucu özellikleri bir aboneliğin arkasında değil. Ayrıntılı bir tablo için Discord mu Descall mı karşılaştırma sayfasına göz atabilirsin.",
         ],
       },
       {
@@ -200,7 +200,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Descall Discord’un kopyası mı?",
-        a: "Hayır. Kavramlar Discord kullanıcılarına tanıdık gelir (sunucu, kanal, rol), ama Descall kendi tasarımı, yerleşik LFG’si ve abonelik gerektirmeyen yapısıyla ayrı bir üründür.",
+        a: "Hayır. Kavramlar Discord kullanıcılarına tanıdık gelir (sunucu, kanal, rol), ama Descall kendi tasarımı ve abonelik gerektirmeyen yapısıyla ayrı bir üründür.",
       },
       {
         q: "Türkçe destek alabilir miyim?",
@@ -227,7 +227,6 @@ export const TR_LANDINGS = {
           "Arkadaşlarla gün boyu mesajlaşmak, fotoğraf ve link paylaşmak mı?",
           "Kurallı, rollü, onlarca kişilik bir topluluğu yönetmek mi?",
           "Ders çalışırken veya birlikte iş yaparken ekran paylaşmak mı?",
-          "Oyun arkadaşı (LFG) bulmak mı?",
           "Botlarla otomasyon, müzik, seviye sistemi gibi ekstralar mı?",
         ],
       },
@@ -241,8 +240,8 @@ export const TR_LANDINGS = {
       {
         h: "Senaryo 2: Oyun klanı veya takım",
         p: [
-          "Klanlar için ses kanallarının yanında düzen önemlidir: duyuru kanalı, yetkili odası, roller, maç ya da etkinlik planlama. Ayrıca eksik oyuncuyu bulmak (LFG) çoğu zaman ayrı bir sunucu veya bot gerektirir.",
-          "Descall’da Oyun şablonu rolleri ve kanalları hazır kurar; Play sekmesindeki LFG lobileri ile ayrı bir bot sunucusuna gerek kalmadan oyun arkadaşı bulabilirsin. Lobiden sesli kanala geçiş aynı hesapla, aynı uygulamada olur. Sadece ses odası isteyen ve kendi sunucusunu barındırmak isteyen teknik gruplar için TeamSpeak veya Mumble gibi klasik sesli sohbet yazılımları da hâlâ seçenek; ancak mesajlaşma, roller ve ekran paylaşımı tarafında daha sınırlıdırlar.",
+          "Klanlar için ses kanallarının yanında düzen önemlidir: duyuru kanalı, yetkili odası, roller, maç ya da etkinlik planlama. Bunlar çoğu zaman ayrı botlar gerektirir.",
+          "Descall’da Oyun şablonu rolleri ve kanalları hazır kurar; ekip toplama kanalı, klip alanı ve scrim ses odaları ayrı bir bot gerekmeden gelir. Sohbetten sesli kanala geçiş aynı hesapla, aynı uygulamada olur. Sadece ses odası isteyen ve kendi sunucusunu barındırmak isteyen teknik gruplar için TeamSpeak veya Mumble gibi klasik sesli sohbet yazılımları da hâlâ seçenek; ancak mesajlaşma, roller ve ekran paylaşımı tarafında daha sınırlıdırlar.",
         ],
       },
       {
@@ -270,7 +269,7 @@ export const TR_LANDINGS = {
         p: ["Kısaca hangi ihtiyaç için ne düşünmelisin:"],
         list: [
           "Akşam sesli sohbet + ekran paylaşımı → Descall",
-          "Klan, roller, LFG → Descall",
+          "Klan, roller, ses → Descall",
           "Öğrenci çalışma grubu → Descall (resmi ders için okulun platformu)",
           "Sadece mesajlaşma → WhatsApp veya Telegram",
           "Kendi sunucunda sadece ses → TeamSpeak veya Mumble",
@@ -396,16 +395,16 @@ export const TR_LANDINGS = {
 
   "/tr/oyuncu-sohbet-uygulamasi": {
     path: "/tr/oyuncu-sohbet-uygulamasi",
-    kicker: "Oyuncular · Klanlar · LFG",
-    h1: "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve LFG tek yerde",
+    kicker: "Oyuncular · Klanlar · Ekipler",
+    h1: "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve ekran paylaşımı tek yerde",
     lead:
-      "Descall oyuncular için tasarlanmış ücretsiz bir sohbet uygulamasıdır. Klanın için rolleri ve kanalları hazır bir sunucu kurarsın, oyun oynarken ses kanalında konuşursun, ekranını paylaşırsın ve eksik oyuncuyu Play sekmesindeki LFG lobilerinden bulursun. Bot kurmana ya da abonelik almana gerek yok.",
+      "Descall oyuncular için tasarlanmış ücretsiz bir sohbet uygulamasıdır. Klanın için rolleri ve kanalları hazır bir sunucu kurarsın, oyun oynarken ses kanalında konuşursun, ekranını paylaşırsın. Bot kurmana ya da abonelik almana gerek yok.",
     sections: [
       {
         h: "Oyuncuların bir sohbet uygulamasından beklentisi",
         p: [
           "Oyun oynarken iletişim, oyunun kendisi kadar önemli. Net ve düşük gecikmeli ses, oyunu yormayan hafif bir uygulama, tek tıkla girilen ses kanalları ve gerektiğinde ekran paylaşımı temel beklentiler. Klan ve takımlar için buna roller, duyuru ve yetkili kanalları eklenir. Bir de herkesin ortak derdi var: eksik oyuncu bulmak.",
-          "Çoğu oyuncu bu ihtiyaçları birkaç uygulama ve bot arasında bölüştürür: ses için bir uygulama, LFG için ayrı bir sunucu, düzen için botlar. Descall bunları tek bir uygulamada toplamayı hedefler.",
+          "Çoğu oyuncu bu ihtiyaçları birkaç uygulama ve bot arasında bölüştürür: ses için bir uygulama, düzen için botlar. Descall bunları tek bir uygulamada toplamayı hedefler.",
         ],
       },
       {
@@ -429,10 +428,10 @@ export const TR_LANDINGS = {
         ],
       },
       {
-        h: "LFG: Play sekmesinde takım arkadaşı bul",
+        h: "Oyun şablonu: hazır klan sunucusu",
         p: [
-          "Descall’ın Play sekmesi yerleşik bir LFG (looking for group, takım arkadaşı arama) alanıdır. Bir lobi oluşturursun ya da açık lobilere katılırsın; aradığın oyuncuyu bulduğunda aynı uygulamada, aynı hesapla sesli kanala geçersiniz.",
-          "Bu yaklaşım, LFG için ayrı bir sunucuya katılmak, bot komutlarını öğrenmek ve oyunculara ayrı bir uygulamadan ulaşmak zorunda kalmamak demek. Lobiden sese giden yol kısaldıkça daha çok oyun, daha az bekleme olur.",
+          "Oyun şablonu tek tıkla ekip toplama kanalı, oyun sohbetleri, klip alanı, yetkili odası ve dereceli ses lobileri olan bir sunucu kurar. Rolleri ve izinleri sonradan istediğin gibi düzenleyebilirsin.",
+          "Bu yaklaşım, düzen için bot komutlarını öğrenmek ve oyunculara ayrı bir uygulamadan ulaşmak zorunda kalmamak demek. Sohbetten sese giden yol kısaldıkça daha çok oyun, daha az bekleme olur.",
         ],
       },
       {
@@ -444,7 +443,7 @@ export const TR_LANDINGS = {
           "Kalıcı ses kanalları ve sahne kanalları",
           "Sesli/görüntülü arama ve kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
-          "Play sekmesinde LFG lobileri",
+          "Arkadaşlar ve durum Descall içinde",
           "Atma, yasaklama, zaman aşımı ve denetim kayıtları",
           "Windows, Android ve tarayıcı",
           "Ücretsiz; kozmetikler isteğe bağlı (DesCoin)",
@@ -463,8 +462,8 @@ export const TR_LANDINGS = {
         a: "Descall hafif olacak şekilde tasarlanmıştır. Windows masaüstü uygulaması arka planda çalışırken oyuna minimum yük bindirmeyi hedefler.",
       },
       {
-        q: "LFG için bot gerekiyor mu?",
-        a: "Hayır. LFG lobileri Play sekmesinde yerleşik olarak bulunur; bot kurmana gerek yoktur.",
+        q: "Klan düzeni için bot gerekiyor mu?",
+        a: "Hayır. Roller, kanal izinleri, moderasyon ve hazır oyun şablonu uygulamanın içinde yerleşik olarak bulunur; bot kurmana gerek yoktur.",
       },
       {
         q: "Klan sunucusu kurmak ücretli mi?",
@@ -519,7 +518,7 @@ export const TR_LANDINGS = {
         h: "Arkadaşlarınla iletişimde kalmak için seçenekler",
         p: [
           "Sadece mesajlaşma yeterliyse WhatsApp veya Telegram grupları iş görür. Kalıcı ses odaları, roller ve kanallarla düzenli bir sunucu, ekran paylaşımı ve oyun arkadaşı bulma gibi Discord’a özgü özellikler istiyorsan Descall gibi Discord tarzı bir uygulama daha uygun olur.",
-          "Descall Türkiye’de geliştirilir, Türkiye’den doğrudan erişilebilir ve şunları ücretsiz sunar: sunucular, roller ve kanal izinleri, hazır şablonlar, sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma, Play sekmesinde LFG. Windows, Android ve tarayıcıdan kullanılabilir.",
+          "Descall Türkiye’de geliştirilir, Türkiye’den doğrudan erişilebilir ve şunları ücretsiz sunar: sunucular, roller ve kanal izinleri, hazır şablonlar, sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma, hazır oyun şablonları. Windows, Android ve tarayıcıdan kullanılabilir.",
         ],
       },
       {
@@ -545,7 +544,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Discord yerine ne kullanabilirim?",
-        a: "Mesajlaşma için WhatsApp veya Telegram; sunucu, ses kanalı, ekran paylaşımı ve LFG için Türkiye’de geliştirilen ücretsiz Descall kullanılabilir.",
+        a: "Mesajlaşma için WhatsApp veya Telegram; sunucu, ses kanalı ve ekran paylaşımı için Türkiye’de geliştirilen ücretsiz Descall kullanılabilir.",
       },
     ],
     related: related("/tr/discord-acildi-mi"),
@@ -561,13 +560,13 @@ export const TR_LANDINGS = {
       {
         h: "Nasıl değerlendirdik?",
         p: [
-          "Her uygulamayı Discord’un en çok kullanılan beş işine göre değerlendirdik: kalıcı ses odaları, grup mesajlaşma, sunucu/kanal/rol yapısı, ekran paylaşımı ve oyun arkadaşı bulma (LFG). Bunlara fiyat, Türkçe arayüz, Türkiye’den erişim ve platform desteğini (Windows, Android, tarayıcı) ekledik. Özellik bilgileri, uygulamaların genel ve uzun süredir bilinen yeteneklerine dayanıyor; fiyat ve özellik ayrıntıları zamanla değişebilir, karar vermeden önce resmi sitelerini kontrol etmeni öneririz.",
+          "Her uygulamayı Discord’un en çok kullanılan beş işine göre değerlendirdik: kalıcı ses odaları, grup mesajlaşma, sunucu/kanal/rol yapısı, ekran paylaşımı ve hazır sunucu şablonları. Bunlara fiyat, Türkçe arayüz, Türkiye’den erişim ve platform desteğini (Windows, Android, tarayıcı) ekledik. Özellik bilgileri, uygulamaların genel ve uzun süredir bilinen yeteneklerine dayanıyor; fiyat ve özellik ayrıntıları zamanla değişebilir, karar vermeden önce resmi sitelerini kontrol etmeni öneririz.",
         ],
       },
       {
         h: "Descall",
         p: [
-          "Güçlü yanları: Discord’a en yakın yapı. Sunucular, kategoriler, yazı/ses/sahne kanalları, rol hiyerarşisi ve kanal izinleri, hazır şablonlar, davet bağlantıları ve yerleşik moderasyon var. Sesli/görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma ve Play sekmesinde LFG ücretsiz. Türkiye’de geliştiriliyor, Türkçe arayüzü var, Türkiye’den doğrudan erişiliyor. Windows, Android ve tarayıcıda çalışıyor.",
+          "Güçlü yanları: Discord’a en yakın yapı. Sunucular, kategoriler, yazı/ses/sahne kanalları, rol hiyerarşisi ve kanal izinleri, hazır şablonlar, davet bağlantıları ve yerleşik moderasyon var. Sesli/görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma ve hazır oyun şablonları ücretsiz. Türkiye’de geliştiriliyor, Türkçe arayüzü var, Türkiye’den doğrudan erişiliyor. Windows, Android ve tarayıcıda çalışıyor.",
           "Zayıf yanları: Discord’un bot pazarı ve entegrasyon ekosistemi yok. Beta aşamasında olduğu için zaman zaman hatalarla karşılaşılabilir. Çok büyük, herkese açık topluluklar için tasarlanmadı; arkadaş grupları, klanlar ve küçük‑orta topluluklar için en iyi sonucu verir. Tüm mesaj geçmişi için varsayılan uçtan uca şifreleme iddiası yok.",
           "Kimin için: Discord’daki sunucu + ses + ekran paylaşımı alışkanlığını korumak isteyen arkadaş grupları, oyun klanları ve öğrenci toplulukları.",
         ],
@@ -592,7 +591,7 @@ export const TR_LANDINGS = {
         h: "Telegram",
         p: [
           "Güçlü yanları: Mesajlaşmada çok güçlü; büyük gruplar, kanallar, botlar ve dosya paylaşımı. Türkiye’de yaygın kullanılıyor; telefon ve masaüstünde iyi çalışıyor. Grup sesli sohbetleri de var.",
-          "Zayıf yanları: Discord’daki gibi tek bir topluluk içinde çok sayıda kalıcı ses kanalı, rol bazlı kanal izinleri ve sunucu yapısı yok. Oyun odaklı LFG gibi özellikler sunmuyor.",
+          "Zayıf yanları: Discord’daki gibi tek bir topluluk içinde çok sayıda kalıcı ses kanalı, rol bazlı kanal izinleri ve sunucu yapısı yok. Hazır oyun sunucusu şablonları da sunmuyor.",
           "Kimin için: Ağırlıklı olarak yazışan, duyuru kanalı veya büyük sohbet grubu isteyen topluluklar.",
         ],
       },
@@ -625,7 +624,7 @@ export const TR_LANDINGS = {
         p: ["Hangi ihtiyaç için hangisi daha uygun:"],
         list: [
           "Discord’a en yakın deneyim (sunucu + ses + roller + ekran paylaşımı) → Descall",
-          "Oyun klanı ve LFG → Descall",
+          "Oyun klanı ve ekip → Descall",
           "Sadece ses, kendi sunucun → TeamSpeak veya Mumble",
           "Yoğun mesajlaşma, duyuru kanalı → Telegram",
           "Herkesin zaten kullandığı basit grup sohbeti → WhatsApp",
@@ -702,7 +701,7 @@ const EXTRA = {
       {
         h: "Gündelik kullanımda Descall",
         p: [
-          "Akşam saatlerinde arkadaşlarınla sunucundaki “Sohbet” ses kanalına girersin; kimin konuştuğunu görürsün, biri oyundaki bir anı göstermek istediğinde ekranını paylaşır. Gün içinde DM’lerden yazışır, grup sohbetinde link ve görsel paylaşırsın. Hafta sonu klan maçı varsa duyuru kanalından herkese haber verir, eksik oyuncuyu Play sekmesindeki LFG lobisinden bulursun.",
+          "Akşam saatlerinde arkadaşlarınla sunucundaki “Sohbet” ses kanalına girersin; kimin konuştuğunu görürsün, biri oyundaki bir anı göstermek istediğinde ekranını paylaşır. Gün içinde DM’lerden yazışır, grup sohbetinde link ve görsel paylaşırsın. Hafta sonu klan maçı varsa duyuru kanalından herkese haber verirsin.",
           "Okul döneminde aynı sunucuda bir “Ders” kategorisi açıp çalışma odası kurabilir, sınav öncesi birlikte soru çözerken ekran paylaşabilirsin. Bunların hepsi tek uygulamada ve tek hesapla olur; Windows’ta masaüstü uygulaması, telefonda Android uygulaması ya da herhangi bir bilgisayarda tarayıcı sürümüyle.",
         ],
       },
@@ -752,7 +751,7 @@ const EXTRA = {
     faq: [
       {
         q: "Discord yerine oyuncular ne kullanıyor?",
-        a: "Sadece ses isteyenler TeamSpeak veya Mumble’ı, sunucu, roller, ekran paylaşımı ve LFG’yi bir arada isteyenler Descall gibi Discord tarzı uygulamaları tercih ediyor.",
+        a: "Sadece ses isteyenler TeamSpeak veya Mumble’ı, sunucu, roller ve ekran paylaşımını bir arada isteyenler Descall gibi Discord tarzı uygulamaları tercih ediyor.",
       },
       {
         q: "Discord yerine ne kullanılır, okul grupları için?",
@@ -807,7 +806,7 @@ const EXTRA = {
       {
         h: "Yeni oyuncuları klana katmak",
         p: [
-          "Play sekmesindeki LFG lobileri sadece tek maçlık takım arkadaşı bulmak için değil, klanına yeni üye kazanmak için de iyi bir yol. Birlikte birkaç oyun oynadığın ve anlaştığın oyunculara davet bağlantısı gönderip klan sunucuna çağırabilirsin.",
+          "Birlikte birkaç oyun oynadığın ve anlaştığın oyunculara davet bağlantısı gönderip klan sunucuna çağırabilirsin.",
           "Yeni gelenler için “yeni üyeler” kanalında kısa bir karşılama mesajı ve kurallar, uyum sürecini kolaylaştırır. Deneme süresi uygulamak istiyorsan yeni üyelere ayrı bir rol verip bazı kanalları sadece kalıcı üyelere açabilirsin.",
         ],
       },
@@ -819,10 +818,6 @@ const EXTRA = {
       },
     ],
     faq: [
-      {
-        q: "Descall’da hangi oyunlar için LFG var?",
-        a: "LFG lobileri belirli bir oyuna kilitli değildir; oynadığın oyun için lobi açıp oyuncu arayabilirsin.",
-      },
       {
         q: "Ekran paylaşımında oyun akıcı görünür mü?",
         a: "Ekran paylaşımında kalite ön ayarları var; akıcılığı veya netliği öncelikleyen ayarı seçebilirsin. Sonuç bağlantı hızına da bağlıdır.",
@@ -876,7 +871,7 @@ const EXTRA = {
           "Kalıcı ses odaları: Descall ✓ · TeamSpeak ✓ · Mumble ✓ · Telegram ~ · WhatsApp – · Slack ~ · Element ~",
           "Sunucu, kanal ve rol yapısı: Descall ✓ · TeamSpeak ~ · Mumble ~ · Telegram ~ · WhatsApp – · Slack ✓ · Element ✓",
           "Ekran paylaşımı: Descall ✓ · TeamSpeak ~ · Mumble – · Telegram ~ · WhatsApp ~ · Slack ~ · Element ~",
-          "Oyun odaklı LFG: Descall ✓ · diğerleri –",
+          "Hazır oyun şablonları: Descall ✓ · diğerleri –",
           "Kurulumsuz tarayıcı kullanımı: Descall ✓ · Telegram ✓ · WhatsApp ✓ · Slack ✓ · Element ✓ · TeamSpeak – · Mumble –",
           "Türkçe ve Türkiye’de geliştirilen: Descall ✓",
         ],
@@ -896,7 +891,7 @@ const EXTRA = {
       },
       {
         q: "Discord alternatifleri arasında oyunculara en uygun hangisi?",
-        a: "Yerleşik LFG, ses kanalları ve ekran paylaşımı nedeniyle Descall oyuncu grupları için güçlü bir seçenek; sadece ses isteyenler TeamSpeak veya Mumble’ı da değerlendirebilir.",
+        a: "Hazır oyun şablonları, ses kanalları ve ekran paylaşımı nedeniyle Descall oyuncu grupları için güçlü bir seçenek; sadece ses isteyenler TeamSpeak veya Mumble’ı da değerlendirebilir.",
       },
     ],
   },
@@ -932,7 +927,7 @@ const EXTRA2 = {
     p: [
       "Birinci gün: Klan liderleri Descall’da hesap açar, Oyun şablonuyla sunucuyu kurar ve rolleri eski düzene benzer şekilde adlandırır. Duyuru kanalına kuralları ve kısa bir hoş geldin mesajı yazılır.",
       "İkinci gün: Davet bağlantısı klanın mevcut mesajlaşma grubunda paylaşılır. Aktif üyeler katılır, ses kanallarında ilk buluşma yapılır. Mikrofon ve gürültü azaltma ayarları birlikte kontrol edilir.",
-      "Birinci hafta: Tüm klan akşamları ve maçlar Descall ses kanallarında yapılır. Eksik oyuncu gerektiğinde Play sekmesindeki LFG lobileri denenir. Moderatörler denetim kayıtlarını ve izinleri gözden geçirir.",
+      "Birinci hafta: Tüm klan akşamları ve maçlar Descall ses kanallarında yapılır. Moderatörler denetim kayıtlarını ve izinleri gözden geçirir.",
       "Sonrası: Kullanılmayan kanallar silinir, ihtiyaç duyulan yenileri eklenir. Klanın kendi alışkanlıkları oturdukça sunucu da kendiliğinden şekillenir.",
     ],
   },

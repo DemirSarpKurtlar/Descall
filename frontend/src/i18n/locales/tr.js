@@ -585,8 +585,6 @@ export const phrases = {
   "Direct Messages": "Direkt Mesajlar",
   "UI Density": "Arayüz Sıklığı",
   "Sound": "Ses",
-  "Valorant": "Valorant",
-  "Valorant party code": "Valorant parti kodu",
   "Login": "Giriş",
   "Password": "Şifre",
   "Audio Devices": "Ses Cihazları",
@@ -1391,7 +1389,6 @@ export const phrases = {
   "Reduce motion (disable animations)": "Hareketi azalt (animasyonları kapat)",
   "Data": "Data",
   "Name#TAG": "Name#TAG",
-  "HENRIK_API_KEY": "HENRIK_API_KEY",
   "Region": "Bölge",
   "Player#EUW": "Player#EUW",
   "Auto (detect)": "Otomatik (algıla)",
@@ -1421,7 +1418,6 @@ export const phrases = {
   "1080p": "1080p",
   "20 FPS": "20 FPS",
   "Loading Google…": "Google yükleniyor…",
-  "Find a stack": "Takım bul",
   "All modes": "Tüm modlar",
   "All regions": "Tüm bölgeler",
   "My rank (filter)": "Rankım (filtre)",
@@ -1429,12 +1425,9 @@ export const phrases = {
   "No open lobbies": "Açık lobi yok",
   "Create one and share Descall, voice + party code in one place.": "Bir tane oluştur ve Descall’ı paylaş, ses + parti kodu tek yerde.",
   "Code set": "Kod ayarlı",
-  "Valorant LFG": "Valorant LFG",
   "Loading lobby…": "Lobi yükleniyor…",
   "Players": "Oyuncular",
-  "Join the lobby to reveal the Valorant party code": "Valorant parti kodunu görmek için lobiye katıl",
   "Your rank": "Rankın",
-  "Create Valorant lobby": "Valorant lobisi oluştur",
   "Need roles": "Gerekli roller",
   "Players reveal this after joining": "Oyuncular katıldıktan sonra görür",
   "chill / rank push / TR only…": "chill / rank push / sadece TR…",
@@ -1446,7 +1439,6 @@ export const phrases = {
   "Turkey": "Türkiye",
   "North America": "Kuzey Amerika",
   "Host hasn’t added a party code yet.": "Ev sahibi henüz parti kodu eklemedi.",
-  "Paste in Valorant → Social → Party invite code": "Valorant → Social → Party invite code'a yapıştır",
   "Paste party code": "Parti kodunu yapıştır",
   "Could not save party code": "Parti kodu kaydedilemedi",
   "Quick-dial friends or jump back into recent DM & group calls.": "Arkadaşlarını hızlı ara veya son DM & grup aramalarına dön.",
@@ -1609,9 +1601,6 @@ export const phrases = {
   "Clip channel": "Klip kanalı",
   "Staff roles": "Staff rolleri",
   "Lobby voice": "Lobi sesi",
-  "Valorant / competitive": "Valorant / rekabetçi",
-  "Ranked LFG, agent mains, VOD review, scrim voice, and coach/IGL roles ready to assign.": "Ranked LFG, ajan sohbetleri, VOD inceleme, scrim sesleri ve coach/IGL rolleri hazır.",
-  "Ranked LFG": "Ranked LFG",
   "VOD review": "VOD inceleme",
   "Scrim rooms": "Scrim odaları",
   "Coach role": "Coach rolü",
@@ -2022,8 +2011,6 @@ export const phrases = {
     "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses ücretsizdir; gerçek topluluklarla büyüyoruz.",
   "Descall is an independent messaging and voice platform for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.":
     "Descall; arkadaşlar, oyun ekipleri ve küçük topluluklar için Discord tarzı sunucular isteyen bağımsız bir mesajlaşma ve ses platformudur, temel sohbet ve aramalarda Nitro duvarı yoktur.",
-  "Real-time messaging, Discord-style servers, WebRTC voice/video, screen share, and Valorant LFG, with privacy policies and security docs you can actually read.":
-    "Gerçek zamanlı mesajlaşma, Discord tarzı sunucular, WebRTC ses/görüntü, ekran paylaşımı ve Valorant LFG, okunabilir gizlilik ve güvenlik dokümanlarıyla.",
   "How Descall protects your chats and calls, encryption in transit, account security, and honest limits about what we do not claim.":
     "Descall sohbet ve aramaları nasıl korur, aktarımda şifreleme, hesap güvenliği ve iddia etmediğimiz konular hakkında dürüst sınırlar.",
   "Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored so your devices can load chat history.":
@@ -2116,7 +2103,6 @@ export const phrases = {
   "Link Account": "Hesabı Bağla",
   "Unlink": "Bağlantıyı Kaldır",
   "Rank": "Rütbe",
-  "Looking for Group": "Grup Ara",
   "Create Lobby": "Lobi Oluştur",
   "Join Lobby": "Lobiye Katıl",
   "Leave Lobby": "Lobiden Ayrıl",
@@ -2456,7 +2442,6 @@ export const phrases = {
   "Bet:": "Bahis:",
   "Blackjack (A+10) pays 3:2": "Blackjack (A+10) 3:2 öder",
   "BLACKJACK!": "BLACKJACK!",
-  "Browse stacks, join the Descall voice lobby, then reveal the Valorant party code. Everything stays inside Descall, not a separate site.": "Takım ara, Descall ses lobisine katıl, ardından Valorant parti kodunu aç. Hepsi Descall içinde, ayrı bir site yok.",
   "Call back": "Geri ara",
   "Call ended, anything to say?": "Arama bitti, bir şey söylemek ister misin?",
   "Calling...": "Aranıyor…",
@@ -2483,7 +2468,6 @@ export const phrases = {
   "Delete this feedback permanently?": "Bu geri bildirimi kalıcı olarak silmek istiyor musun?",
   "Describe the Issue": "Sorunu Anlat",
   "Double: 2x bet, take one card": "Double: Bahisi 2x yap, 1 kart çek",
-  "Enter your Riot ID (Name#TAG) to fetch your real Valorant rank. Rank and nick appear on your profile only after linking.": "Gerçek Valorant rankını almak için Riot ID'ni (Name#TAG) gir. Rank ve nick yalnızca bağladıktan sonra profilinde görünür.",
   "Exit Fullscreen": "Tam Ekrandan Çık",
   "Failed": "Başarısız",
   "Failed to create lobby": "Lobi oluşturulamadı",
@@ -2491,7 +2475,6 @@ export const phrases = {
   "Failed to leave": "Ayrılınamadı",
   "Failed to load feedbacks: {message}": "Geri bildirimler yüklenemedi: {message}",
   "Failed to load lobbies": "Lobiler yüklenemedi",
-  "Failed to load Valorant link": "Valorant bağlantısı yüklenemedi",
   "Failed to open lobby": "Lobi açılamadı",
   "Failed to submit feedback": "Geri bildirim gönderilemedi",
   "Failed to upload {name}: {status}": "{name} yüklenemedi: {status}",
@@ -2561,7 +2544,6 @@ export const phrases = {
   "Recommended balance": "Önerilen denge",
   "Refresh failed": "Yenileme başarısız",
   "Refresh rank": "Rankı yenile",
-  "Riot ID (Name#TAG)": "Riot ID (Name#TAG)",
   "Screen quality": "Ekran kalitesi",
   "Choose a preset or fine-tune below": "Bir hazır ayar seç veya aşağıdan ince ayar yap",
   "Presets": "Hazır ayarlar",
@@ -2619,9 +2601,7 @@ export const phrases = {
   "Turn On Camera": "Kamerayı Aç",
   "Turn on camera": "Kamerayı aç",
   "Unlink failed": "Bağlantı kaldırılamadı",
-  "Unlink your Valorant account from Descall?": "Valorant hesabının Descall bağlantısını kaldırmak istiyor musun?",
   "User may be offline, waiting…": "Kullanıcı çevrimdışı olabilir, bekleniyor…",
-  "Valorant party code (optional, can add later)": "Valorant parti kodu (isteğe bağlı, sonra eklenebilir)",
   "Waiting for screen…": "Ekran bekleniyor…",
   "We are (players already)": "Biz (mevcut oyuncu)",
   "Welcome to Descall": "Descall'a hoş geldin",
@@ -3285,22 +3265,14 @@ export const phrases = {
   "Explore features": "Özellikleri keşfet",
   "Frequently asked questions": "Sık sorulan sorular",
   "Ready to try a lighter Discord alternative?": "Daha hafif bir Discord alternatifini denemeye hazır mısın?",
-  "Create a free Descall account, chat, voice, screen share, and Valorant LFG in one place.":
-    "Ücretsiz bir Descall hesabı oluştur, sohbet, ses, ekran paylaşımı ve Valorant LFG tek yerde.",
-  "The free Discord alternative for friends and gamers, real-time chat, HD voice & video, screen share, and Valorant LFG without Nitro paywalls.":
-    "Arkadaşlar ve oyuncular için ücretsiz Discord alternatifi, gerçek zamanlı sohbet, HD ses & görüntü, ekran paylaşımı ve Nitro duvarı olmadan Valorant LFG.",
   "Why choose this Discord alternative?": "Neden bu Discord alternatifini seçmelisin?",
   "Descall keeps the parts you love, chat, calls, screen share, and drops the bloat. Built for friend groups and gaming squads who want a lighter daily driver.":
     "Descall sevdiğin kısımları korur, sohbet, aramalar, ekran paylaşımı, ve şişkinliği atar. Daha hafif bir günlük deneyim isteyen arkadaş grupları ve oyun ekipleri için.",
   "Descall vs Discord, quick take": "Descall vs Discord, kısa özet",
-  "Need mega-servers and bots? Discord still wins. Need free voice, screen share, and Valorant LFG for people you actually know? Descall is the Discord alternative built for that.":
-    "Dev sunucular ve botlar mı lazım? Discord hâlâ önde. Gerçekten tanıdığın insanlarla ücretsiz ses, ekran paylaşımı ve Valorant LFG mi istiyorsun? Descall bunun için tasarlandı.",
   "Full comparison": "Tam karşılaştırma",
   "Read the blog": "Blogu oku",
   "Descall vs Discord": "Descall vs Discord",
   "Features of a modern Discord alternative": "Modern bir Discord alternatifinin özellikleri",
-  "Everything friend groups and gamers need day to day, messaging, calls, screen share, LFG, without turning your PC into a second operating system.":
-    "Arkadaş grupları ve oyuncuların her gün ihtiyacı olan her şey, mesajlaşma, aramalar, ekran paylaşımı, LFG, bilgisayarını ikinci bir işletim sistemine çevirmeden.",
   "Product": "Ürün",
   "Try Descall": "Descall’ı dene",
   "Try Descall free": "Descall’ı ücretsiz dene",
@@ -3309,7 +3281,6 @@ export const phrases = {
   "Best for gamers": "Oyuncular için en iyisi",
   "Türkiye / Turkish": "Türkiye / Türkçe",
   "Leave Nitro guide": "Nitro’dan çıkış rehberi",
-  "LFG guide": "LFG rehberi",
   "← Back to blog": "← Bloga dön",
   "Start free": "Ücretsiz başla",
   "Create free account": "Ücretsiz hesap oluştur",
@@ -3546,8 +3517,6 @@ export const phrases = {
   "Highest": "En yüksek",
 
   // Marketing, servers system
-  "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and Valorant LFG.":
-    "Gerçek sunucularla (roller, kanallar, ses ve şablonlar) ücretsiz bir Discord alternatifi, artı sohbet, aramalar ve Valorant LFG.",
   "A free Discord alternative with real servers, roles, channels, voice, and templates, plus chat, calls, and":
     "Gerçek sunucularla (roller, kanallar, ses ve şablonlar) ücretsiz bir Discord alternatifi, artı sohbet, aramalar ve",
   "Servers, roles, channels, and": "Sunucular, roller, kanallar ve",
@@ -3557,8 +3526,6 @@ export const phrases = {
     "Kategorilerle yazı, ses ve stage kanalları, Discord tarzı yapı, daha hafif his",
   "Role hierarchy, staff rooms, and per-channel overrides ready for real communities":
     "Gerçek topluluklar için rol hiyerarşisi, staff odaları ve kanal override’ları",
-  "Gaming, Valorant, friends, community, study & streaming, roles and channels pre-built":
-    "Oyun, Valorant, arkadaş, topluluk, ders ve yayın, roller ve kanallar hazır",
   "Instant DMs and server chat with typing indicators": "Yazıyor göstergeli anlık DM ve sunucu sohbeti",
   "Crystal-clear group and server calls": "Berrak grup ve sunucu aramaları",
   "Share your screen in calls with quality presets": "Aramalarda kalite önayarlarıyla ekran paylaş",
@@ -3566,8 +3533,6 @@ export const phrases = {
   "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared.":
     "Sıfırdan sunucu kur veya gelişmiş şablon seç. Roller, yazı & ses kanalları ve izin override’ları tamamen hazır gelir.",
   "Channels that match the job": "İşe uygun kanallar",
-  "Announcements, LFG, clips, VIP lounges, staff ops, topics and slowmode included in templates.":
-    "Duyurular, LFG, klipler, VIP lounge, staff, şablonlarda konu ve yavaş mod dahil.",
   "Roles that actually work": "Gerçekten işe yarayan roller",
   "Admin, Moderator, Helper, VIP and more, with kick, ban, timeout, and audit logs.":
     "Admin, Moderator, Helper, VIP ve daha fazlası, kick, ban, timeout ve denetim kayıtlarıyla.",
@@ -3587,8 +3552,6 @@ export const phrases = {
     "Kategoriler, yazı, ses ve stage kanallarıyla tam sunucu yapısı, konu, yavaş mod ve NSFW dahil.",
   "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.":
     "Hoist/mention’lı rol hiyerarşisi; staff, duyuru ve VIP için kanal allow/deny override’ları.",
-  "Gaming, Valorant, friends, community, study, and streaming templates, roles and channels ready the moment you create.":
-    "Oyun, Valorant, arkadaş, topluluk, ders ve yayın şablonları, oluşturur oluşturmaz hazır roller ve kanallar.",
   "Kick, ban, timeout, audit logs, community rules, and invite links so servers stay organized as they grow.":
     "Kick, ban, timeout, denetim kayıtları, topluluk kuralları ve davet linkleri, sunucu büyürken düzenli kalsın.",
   "DMs and server chat with typing indicators, a Discord alternative that stays focused on people you know.":
@@ -3601,28 +3564,19 @@ export const phrases = {
     "Yavaş mod, konular, izin override’ları ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
   "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.":
     "DesCoin ile temalar, avatar efektleri ve baloncuklar. Temel sohbet, sunucu ve aramalar sonsuza kadar ücretsiz.",
-  "Servers with roles and channels, messaging, calls, screen share, and LFG, everything friend groups and communities need, without turning your PC into a second operating system.":
-    "Rollü ve kanallı sunucular, mesajlaşma, aramalar, ekran paylaşımı ve LFG, bilgisayarını ikinci işletim sistemine çevirmeden.",
-  "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in Valorant LFG, without Nitro paywalls for the features you actually use.":
-    "Descall; gerçek sunucular (roller, kanallar, şablonlar), anlık sohbet, berrak ses/görüntü, ekran paylaşımı ve yerleşik Valorant LFG sunan ücretsiz bir Discord alternatifidir, Nitro duvarı olmadan.",
-  "Descall UI, servers, chat, voice, and LFG in one app": "Descall arayüzü, sunucular, sohbet, ses ve LFG tek uygulamada",
-  "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that.":
-    "Discord güçlü, ve ağır. Arkadaş grupları ve topluluklar daha hafif bir Discord alternatifi ister: rollü kanallı gerçek sunucular, daha az Nitro baskısı, hızlı aramalar ve bot labirenti olmadan LFG. Descall bunun için.",
+  "Descall UI, servers, chat, and voice in one app": "Descall arayüzü, sunucular, sohbet ve ses tek uygulamada",
+  "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming servers without installing a dozen bots. Descall is built for that.":
+    "Discord güçlü, ve ağır. Arkadaş grupları ve topluluklar daha hafif bir Discord alternatifi ister: rollü kanallı gerçek sunucular, daha az Nitro baskısı, hızlı aramalar ve bot labirenti olmadan oyun sunucuları. Descall bunun için.",
   "Servers with roles, text & voice channels": "Rollü yazı ve ses kanallı sunucular",
-  "Advanced templates (gaming, Valorant, community…)": "Gelişmiş şablonlar (oyun, Valorant, topluluk…)",
   "DMs plus a ready-made friends server, lounge chat, plans, and always-on voice.":
     "DM’ler artı hazır arkadaş sunucusu, lounge sohbet, planlar ve sürekli açık ses.",
-  "Gaming / Valorant server templates, ranked LFG channels, and the Play tab in one app.":
-    "Oyun / Valorant sunucu şablonları, ranked LFG kanalları ve Play sekmesi tek uygulamada.",
   "Communities & creators": "Topluluklar ve içerik üreticileri",
   "Announcements, support, events, stage, and a full staff ladder, without Nitro pressure.":
     "Duyurular, destek, etkinlikler, stage ve tam staff hiyerarşisi, Nitro baskısı olmadan.",
   "Keep premium cosmetics optional. Servers, chat, and calls stay free.":
     "Premium kozmetikleri isteğe bağlı tut. Sunucu, sohbet ve aramalar ücretsiz kalır.",
-  "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, LFG, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026.":
-    "Sunucular, roller, kanallar, sohbet, ses, video, ekran paylaşımı, LFG, masaüstü uygulamalar ve fiyat için dürüst Descall vs Discord karşılaştırması.",
-  "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and Valorant LFG, with free core features.":
-    "gerçek sunucular (roller, kanallar, şablonlar), arkadaş sesi, ekran paylaşımı ve Valorant LFG isteyenler için, temel özellikler ücretsiz.",
+  "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026.":
+    "Sunucular, roller, kanallar, sohbet, ses, video, ekran paylaşımı, masaüstü uygulamalar ve fiyat için dürüst Descall vs Discord karşılaştırması.",
   "still wins for massive bot ecosystems and the widest platform matrix. Many groups run both: Discord for huge public communities with bots, Descall for the squad server and nightly calls.":
     "dev bot ekosistemleri ve en geniş platform matrisi için hâlâ önde. Birçok grup ikisini birden kullanır: botlu büyük kamu sunucuları için Discord, squad sunucusu ve gece aramaları için Descall.",
   "Real servers with roles, channels, and ready-made templates": "Rollü, kanallı ve hazır şablonlu gerçek sunucular",
@@ -3643,13 +3597,10 @@ export const phrases = {
   "Yes, role hierarchy + channel overrides": "Evet, rol hiyerarşisi + kanal override",
   "Yes, deep matrix": "Evet, derin matris",
   "Server templates": "Sunucu şablonları",
-  "Yes, gaming, Valorant, community, study & more": "Evet, oyun, Valorant, topluluk, ders ve daha fazlası",
   "Limited community templates": "Sınırlı topluluk şablonları",
   "Yes, WebRTC + TURN": "Evet, WebRTC + TURN",
   "Screen share quality control": "Ekran paylaşımı kalite kontrolü",
   "Yes, presets & restart-safe": "Evet, önayarlar ve yeniden başlatmaya dayanıklı",
-  "Valorant LFG / party finder": "Valorant LFG / parti bulucu",
-  "Built-in Play tab + Riot link": "Yerleşik Play sekmesi + Riot bağlantısı",
   "Bots / external tools": "Botlar / harici araçlar",
   "Friends, presence & status": "Arkadaşlar, çevrimiçi durum ve status",
   "Push notifications": "Anlık bildirimler",
@@ -3676,17 +3627,13 @@ export const phrases = {
   "Price for chat + calls": "Sohbet + arama fiyatı",
   "Free + Nitro upsell": "Ücretsiz + Nitro satış baskısı",
   "Focus": "Odak",
-  "Friends, servers, LFG, lightweight calls": "Arkadaşlar, sunucular, LFG, hafif aramalar",
+  "Friends, servers, lightweight calls": "Arkadaşlar, sunucular, hafif aramalar",
   "Huge communities + ecosystem": "Dev topluluklar + ekosistem",
   "Servers ready in minutes": "Dakikalar içinde hazır sunucular",
-  "Start from scratch or pick a template packed with roles, text & voice channels, topics, slowmode, and staff permission overrides, gaming, Valorant, community, study, friends, or streaming.":
-    "Sıfırdan başla veya roller, yazı & ses kanalları, konular, yavaş mod ve staff izinleriyle dolu bir şablon seç, oyun, Valorant, topluluk, ders, arkadaş veya yayın.",
   "Roles, channels & moderation": "Roller, kanallar ve moderasyon",
   "Discord-style roles and channel overrides, plus kick, ban, timeout, audit logs, and invites. Run a private hangout or a public-ready community without bot hell for the basics.":
     "Discord tarzı roller ve kanal override’ları; kick, ban, timeout, denetim kayıtları ve davetler. Temel ihtiyaçlar için bot cehennemi olmadan özel takılma veya topluluk.",
-  "Built for friends & LFG": "Arkadaşlar ve LFG için",
-  "Descall still prioritizes DMs, presence, and a dedicated Play tab for Valorant LFG, so squads can queue and hop into server voice in one app.":
-    "Descall hâlâ DM, çevrimiçi durum ve Valorant LFG için Play sekmesine öncelik verir, squad’lar tek uygulamada queue’ya girip sunucu sesine geçer.",
+  "Built for friends & squads": "Arkadaşlar ve ekipler için",
   "Calls without the bloat": "Şişkinlik olmadan aramalar",
   "WebRTC voice/video with TURN support, incoming call UX, PiP, and screen-share quality controls. A lighter Discord alternative when you want clean calls inside servers or DMs.":
     "TURN destekli WebRTC ses/görüntü, gelen arama UX’i, PiP ve ekran paylaşımı kalite kontrolleri. Sunucu veya DM’de temiz arama isteyenler için daha hafif Discord alternatifi.",
@@ -3710,19 +3657,16 @@ export const phrases = {
     "Kategorili metin, ses ve sahne kanalları, gerçek topluluklar için daha hafif bir yuva",
   "DMs that feel instant, typing, replies, and media without a Nitro wall":
     "Anında hissettiren DM’ler, Nitro duvarı olmadan yazıyor göstergesi, yanıt ve medya",
-  "Servers & LFG": "Sunucular ve LFG",
+  "Servers & communities": "Sunucular ve topluluklar",
   "Download & accounts": "İndirme ve hesaplar",
   "Support": "Destek",
   "Switch in three steps": "Üç adımda geçiş",
   "Sign in with Google or email, no installer required to try the web app.":
     "Google veya e-posta ile giriş, web uygulamasını denemek için kurulum gerekmez.",
   "Spin up a server": "Bir sunucu açın",
-  "Pick a template (friends, gaming, Valorant) or start empty. Roles and channels ship ready.":
-    "Şablon seçin (arkadaşlar, oyun, Valorant) veya boş başlayın. Roller ve kanallar hazır gelir.",
   "Invite the squad": "Ekibi davet edin",
   "Share a link, hop into voice, and keep Discord only if you still need the giant bot stack.":
     "Bağlantı paylaşın, sese geçin; dev bot yığınına hâlâ ihtiyacınız varsa Discord’u tutun.",
-  "Play tab, Valorant LFG inside Descall": "Play sekmesi, Descall içinde Valorant LFG",
   "Your chats live here": "Sohbetleriniz burada",
   "Open the menu to pick a friend or start a new conversation": "Arkadaş seçmek veya yeni sohbet başlatmak için menüyü açın",
   "Pick a friend, start a DM, or create a group, Descall keeps it light.":
@@ -3736,26 +3680,19 @@ export const phrases = {
     "Descall; DM, gerçek sunucular, WebRTC ses/görüntü, ekran paylaşımı, Windows masaüstü, Android ve tarayıcı uygulaması olan modern bir mesajlaşma uygulamasıdır.",
 
   "Is Descall a Discord alternative?": "Descall bir Discord alternatifi mi?",
-  "Yes. Descall is a free Discord alternative for real-time chat, servers (roles, channels, voice), group video, screen share, and Valorant LFG, without Nitro paywalls for core communication.":
-    "Evet. Descall; sohbet, sunucular (roller, kanallar, ses), grup görüntülü arama, ekran paylaşımı ve Valorant LFG için ücretsiz bir Discord alternatifidir, temel iletişimde Nitro duvarı yok.",
   "Is Descall free?": "Descall ücretsiz mi?",
   "Yes. Chat, servers, voice, video, and screen share are free. Optional cosmetics use DesCoin and never gate core messaging or calls.":
     "Evet. Sohbet, sunucular, ses, görüntü ve ekran paylaşımı ücretsiz. İsteğe bağlı kozmetikler DesCoin kullanır ve temel mesajlaşma veya aramaları kilitlemez.",
   "Descall vs Discord, who should switch?": "Descall mi Discord mu, kim geçmeli?",
-  "Friend groups, gaming squads, and small-to-mid communities that need servers, roles, voice, screen share, and LFG often prefer Descall as a lighter Discord alternative. Keep Discord if you still rely on huge bot ecosystems.":
-    "Sunucu, rol, ses, ekran paylaşımı ve LFG isteyen arkadaş grupları, oyuncu ekipleri ve orta ölçekli topluluklar Descall’ı daha hafif bir Discord alternatifi olarak tercih eder. Hâlâ dev bot ekosistemine bağlıysan Discord’u tut.",
+  "Friend groups, gaming squads, and small-to-mid communities that need servers, roles, voice, and screen share often prefer Descall as a lighter Discord alternative. Keep Discord if you still rely on huge bot ecosystems.":
+    "Sunucu, rol, ses ve ekran paylaşımı isteyen arkadaş grupları, oyuncu ekipleri ve orta ölçekli topluluklar Descall’ı daha hafif bir Discord alternatifi olarak tercih eder. Hâlâ dev bot ekosistemine bağlıysan Discord’u tut.",
   "Does Descall have servers like Discord?": "Descall’da Discord gibi sunucu var mı?",
   "Yes. Create a server from scratch or pick an advanced template. You get categories, text/voice/stage channels, roles, permission overrides, invites, moderation tools, and optional community rules.":
     "Evet. Sıfırdan veya gelişmiş şablonla sunucu kur. Kategoriler, metin/ses/sahne kanalları, roller, izinler, davetler, moderasyon ve isteğe bağlı topluluk kuralları hazır gelir.",
   "Do server templates include roles?": "Sunucu şablonlarında rol var mı?",
-  "Yes. Templates like Gaming, Valorant, Community, Study, Friends, and Streaming ship with ready-made roles (Admin, Moderator, VIP, and more) plus channel permission overrides for staff rooms and announcements.":
-    "Evet. Gaming, Valorant, Community, Study, Friends ve Streaming şablonları hazır roller (Admin, Moderator, VIP ve daha fazlası) ve staff/duyuru kanal izinleriyle gelir.",
   "How do server invites work?": "Sunucu davetleri nasıl çalışır?",
   "Server members with invite permission can create invite links. Opening an invite lets you preview the server and join after signing in.":
     "Davet izni olan üyeler davet linki oluşturabilir. Linki açınca sunucuyu önizler, giriş yaptıktan sonra katılırsın.",
-  "Does Descall support Valorant LFG?": "Descall Valorant LFG destekliyor mu?",
-  "Yes. The Play tab lets you create and join LFG lobbies. Link your Riot ID (Name#TAG) so rank can appear on your profile after a successful lookup.":
-    "Evet. Play sekmesinde LFG lobisi açıp katılabilirsin. Riot ID’ni (Name#TAG) bağlayınca rank profilde görünebilir.",
   "Does Descall have screen sharing?": "Descall’da ekran paylaşımı var mı?",
   "Yes. Screen share works in DM and group/server calls with quality presets designed for smooth sharing while gaming or reviewing VODs.":
     "Evet. Ekran paylaşımı DM ve grup/sunucu aramalarında çalışır; oyun veya VOD için kalite hazır ayarları vardır.",
@@ -3763,8 +3700,8 @@ export const phrases = {
   "Open the Download page and get the Windows installer. You can also use the full web app in the browser, plus Android APK builds.":
     "İndir sayfasından Windows kurucusunu al. Tarayıcıdaki tam web uygulamasını veya Android APK’yı da kullanabilirsin.",
   "Do I need an account?": "Hesap gerekir mi?",
-  "Yes. Create a free account (or sign in with Google) to chat, create servers, start calls, and use LFG.":
-    "Evet. Sohbet, sunucu, arama ve LFG için ücretsiz hesap oluştur (veya Google ile giriş yap).",
+  "Yes. Create a free account (or sign in with Google) to chat, create servers, and start calls.":
+    "Evet. Sohbet, sunucu ve arama için ücretsiz hesap oluştur (veya Google ile giriş yap).",
   "Where can I get support?": "Destek nereden alınır?",
   "Use the Contact page, in-app feedback, or open an issue on the Descall GitHub repository.":
     "İletişim sayfasını, uygulama içi geri bildirimi kullan veya Descall GitHub’da issue aç.",
@@ -3774,8 +3711,6 @@ export const phrases = {
   "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.":
     "Hoist/mention’lı rol hiyerarşisi ve staff, duyuru, VIP odaları için kanal bazlı izinler.",
   "Templates that ship ready": "Hazır gelen şablonlar",
-  "Gaming, Valorant, Community, Study, Friends, and Streaming templates with roles and staff rooms preconfigured.":
-    "Rolleri ve staff odaları hazır Gaming, Valorant, Community, Study, Friends ve Streaming şablonları.",
   "Real-time messaging": "Anlık mesajlaşma",
   "DMs and server chat with typing indicators, reactions, replies, and media, without Nitro walls on core chat.":
     "Yazıyor göstergesi, tepki, yanıt ve medyalı DM ve sunucu sohbeti, temel sohbette Nitro duvarı yok.",
@@ -3784,8 +3719,6 @@ export const phrases = {
     "Takılmak, izleme partisi ve ekip brifingi için grup görüntülü, tarayıcı veya masaüstü.",
   "Share games, VODs, or docs with quality presets tuned for smooth capture while you play.":
     "Oynarken akıcı yakalama için kalite hazır ayarlarıyla oyun, VOD veya belge paylaş.",
-  "Create and join ranked LFG lobbies, share party codes, and link Riot Name#TAG for rank on profile.":
-    "Ranked LFG lobisi aç/katıl, parti kodu paylaş, profil rank’i için Riot Name#TAG bağla.",
   "Friends & presence": "Arkadaşlar ve durum",
   "Friend requests, online presence, and quick invites so your squad can jump into chat or voice.":
     "Arkadaşlık isteği, çevrimiçi durum ve hızlı davet, ekibin sohbet veya sese atlar.",

@@ -102,6 +102,26 @@
       "source": "/:path+/",
       "destination": "/:path+",
       "statusCode": 301
+    },
+    {
+      "source": "/play",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/play/:path*",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/discord-alternative-for-lfg",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/best-discord-alternative-for-lfg",
+      "destination": "/",
+      "statusCode": 301
     }
   ],
   "rewrites": [
@@ -155,14 +175,6 @@
     },
     {
       "source": "/activity/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/play",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/play/:path*",
       "destination": "/index.html"
     },
     {

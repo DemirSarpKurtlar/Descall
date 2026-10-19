@@ -25,7 +25,6 @@ const MARKETING_EXACT = new Set([
   "/tr/discord-alternatifi",
   "/best-discord-alternative-for-gamers",
   "/discord-alternative-for-communities",
-  "/discord-alternative-for-lfg",
   "/discord-alternative-for-voice-chat",
   "/discord-alternative-for-friends",
   "/login",

@@ -31,11 +31,11 @@ const GROUPS = [
     ],
   },
   {
-    mode: "lfg",
-    title: "Friends and LFG",
+    mode: "friends",
+    title: "Friends and presence",
     caption: "Friends list, ready for a lobby or a call",
     items: [
-      "Create and join ranked LFG lobbies, share party codes.",
+      "Friend presence, activity status, and quick voice with your squad.",
       "Friend requests, online presence, and quick invites so your squad can jump into chat or voice.",
       "Windows installer plus Android builds, or use the full web app in the browser.",
       "DesCoin cosmetics stay optional. Chat, servers, voice, and screen share remain free.",
@@ -57,7 +57,7 @@ export default function FeaturesPage() {
       <section className="mkt-section seo-features" style={{ marginTop: 12 }}>
         <h1 className="seo-page-h1">{t("Features of a modern Discord alternative")}</h1>
         <p className="lead">
-          {t("Servers, direct messages, voice, screen share, and LFG. Chat and calls stay free.")}
+          {t("Servers, direct messages, voice, and screen share. Chat and calls stay free.")}
         </p>
         {GROUPS.map((group) => (
           <div className={`mkt-shot-row${group.flip ? " is-flip" : ""}`} key={group.title}>

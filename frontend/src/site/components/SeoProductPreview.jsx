@@ -4,7 +4,7 @@ const SHOTS = {
   chat: { src: "brand/previews/02-dm.webp", width: 1440, height: 900 },
   servers: { src: "brand/previews/06-server.webp", width: 1440, height: 900 },
   call: { src: "brand/previews/09-server-voice.webp", width: 1440, height: 900 },
-  lfg: { src: "brand/previews/11-friends.webp", width: 1440, height: 900 },
+  friends: { src: "brand/previews/11-friends.webp", width: 1440, height: 900 },
 };
 
 /**

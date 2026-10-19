@@ -15,9 +15,9 @@ export default function BlogIndexPage() {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker="Blog"
-      title={t("Descall blog, Discord alternatives & LFG")}
+      title={t("Descall blog, Discord alternatives & voice chat")}
       lead={t(
-        "Practical guides on Discord alternatives, LFG, voice chat, and moving friend groups to Descall."
+        "Practical guides on Discord alternatives, voice chat, and moving friend groups to Descall."
       )}
       jsonLd={[buildBreadcrumbLd(crumbs)]}
     >

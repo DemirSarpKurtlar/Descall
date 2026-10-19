@@ -5,7 +5,7 @@ export const BLOG_BODIES = {
     sections: [
       {
         h: "The short answer",
-        p: "Pick Descall when your group wants a lighter Discord alternative for chat, voice, screen share, and LFG. Keep Discord when you still run large public communities and bots.",
+        p: "Pick Descall when your group wants a lighter Discord alternative for chat, voice, and screen share. Keep Discord when you still run large public communities and bots.",
       },
       {
         h: "Chat & presence",
@@ -21,22 +21,6 @@ export const BLOG_BODIES = {
       },
     ],
   },
-  "best-discord-alternative-for-lfg": {
-    sections: [
-      {
-        h: "LFG without bot hell",
-        p: "Most Discord LFG setups depend on bots and role gates. Descall’s Play tab is a productized LFG surface, lobbies, filters, party codes, and voice handoff.",
-      },
-      {
-        h: "-ready profiles",
-        p: "Your LFG card becomes trustworthy without pasting ranks into a channel every night.",
-      },
-      {
-        h: "From lobby to call",
-        p: "The winning Discord alternative for LFG shortens the path from “looking for duo” to “in voice.” Descall is designed around that loop.",
-      },
-    ],
-  },
   "leave-nitro-keep-voice-chat": {
     sections: [
       {
@@ -45,7 +29,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "A two-week migration plan",
-        p: "Week 1: create a Descall group, move evening voice. Week 2: move LFG and screen-share sessions. Keep Discord for public servers you still enjoy.",
+        p: "Week 1: create a Descall group, move evening voice. Week 2: move your server and screen-share sessions. Keep Discord for public servers you still enjoy.",
       },
       {
         h: "What you keep",
@@ -57,11 +41,11 @@ export const BLOG_BODIES = {
     sections: [
       {
         h: "How we evaluated Discord alternatives",
-        p: "We scored apps on free core chat/calls, voice quality path, LFG support, desktop/mobile reality, and whether friend groups can switch in a week, not on who has the longest feature checklist.",
+        p: "We scored apps on free core chat/calls, voice quality path, server tools, desktop/mobile reality, and whether friend groups can switch in a week, not on who has the longest feature checklist.",
       },
       {
-        h: "Descall, best free Discord alternative for friends & LFG",
-        p: "Descall wins for squads that want DMs, groups, WebRTC voice/video, screen share, and built-in LFG without Nitro. It is not trying to replace every public Discord server.",
+        h: "Descall, best free Discord alternative for friends & squads",
+        p: "Descall wins for squads that want DMs, groups, WebRTC voice/video, and screen share without Nitro. It is not trying to replace every public Discord server.",
       },
       {
         h: "Discord, still the community OS",
@@ -69,11 +53,11 @@ export const BLOG_BODIES = {
       },
       {
         h: "Guilded, TeamSpeak, Telegram, Slack",
-        p: "Guilded fits structured gaming orgs. TeamSpeak/Mumble remain voice-first. Telegram and Slack are excellent at other jobs but are weak Discord replacements for persistent group voice + LFG.",
+        p: "Guilded fits structured gaming orgs. TeamSpeak/Mumble remain voice-first. Telegram and Slack are excellent at other jobs but are weak Discord replacements for persistent group voice.",
       },
       {
         h: "Which should you try first?",
-        p: "Friend voice + LFG → Descall. Huge community → Discord. Pure voice server → TeamSpeak. Read our compare page before you force a full migration.",
+        p: "Friend voice + servers → Descall. Huge community → Discord. Pure voice server → TeamSpeak. Read our compare page before you force a full migration.",
       },
     ],
   },
@@ -81,11 +65,11 @@ export const BLOG_BODIES = {
     sections: [
       {
         h: "What people mean by apps like Discord",
-        p: "Usually: persistent chat, groups, and voice. Sometimes screen share or LFG. Start from the job-to-be-done, not from a random Top 10 listicle.",
+        p: "Usually: persistent chat, groups, and voice. Sometimes screen share. Start from the job-to-be-done, not from a random Top 10 listicle.",
       },
       {
         h: "Descall as an app like Discord",
-        p: "Descall covers messaging, calls, screen share, groups, and LFG in a lighter package, a practical Discord alternative for friends and gamers.",
+        p: "Descall covers messaging, calls, screen share, groups, and servers in a lighter package, a practical Discord alternative for friends and gamers.",
       },
       {
         h: "Websites like Discord",
@@ -101,11 +85,11 @@ export const BLOG_BODIES = {
     sections: [
       {
         h: "Discord competitors in 2026, the honest map",
-        p: "Competitors cluster into: lighter friend chat apps, gaming community suites, and voice-only classics. Descall sits in the first group with a gaming LFG twist.",
+        p: "Competitors cluster into: lighter friend chat apps, gaming community suites, and voice-only classics. Descall sits in the first group with real servers on top.",
       },
       {
         h: "Where Descall competes",
-        p: "Against Discord for friend DMs, group voice, screen share, and LFG, especially when Nitro fatigue is the trigger phrase in your group chat.",
+        p: "Against Discord for friend DMs, group voice, and screen share, especially when Nitro fatigue is the trigger phrase in your group chat.",
       },
       {
         h: "Where Descall does not pretend to compete (yet)",
@@ -113,7 +97,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "How to shortlist Discord competitors",
-        p: "Write your must-haves (voice, LFG, mobile). Trial with your real friends for seven nights. Keep the app that gets used without reminders.",
+        p: "Write your must-haves (voice, servers, mobile). Trial with your real friends for seven nights. Keep the app that gets used without reminders.",
       },
     ],
   },
@@ -141,7 +125,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "Free voice chat for gamers",
-        p: "Pair Descall voice with the Play tab when you LFG. One Discord alternative for queue + call beats juggling three apps.",
+        p: "Keep chat, voice, and screen share in one Discord alternative instead of juggling three apps.",
       },
       {
         h: "Desktop tips",
@@ -153,7 +137,7 @@ export const BLOG_BODIES = {
     sections: [
       {
         h: "Day 0, decide what you actually need",
-        p: "List the Discord features your group uses every week: DMs, a private server, voice nights, LFG. Descall covers those without Nitro. Skip trying to clone every bot on day one.",
+        p: "List the Discord features your group uses every week: DMs, a private server, voice nights. Descall covers those without Nitro. Skip trying to clone every bot on day one.",
       },
       {
         h: "Day 1, create accounts and invite friends",
@@ -164,8 +148,8 @@ export const BLOG_BODIES = {
         p: "Pick Gaming, Friends, or Community templates so roles and staff rooms appear ready. Invite codes replace Discord’s invite links.",
       },
       {
-        h: "Day 3, move voice habit + LFG",
-        p: "Schedule one voice hangout on Descall. squads should try the Play tab once so LFG does not pull everyone back to Discord bots.",
+        h: "Day 3, move the voice habit",
+        p: "Schedule one voice hangout on Descall and move one server with a template, so nobody gets pulled back to Discord bots.",
       },
       {
         h: "What stays on Discord (honestly)",

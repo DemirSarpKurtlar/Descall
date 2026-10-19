@@ -3,6 +3,12 @@
 /dimaai / 301
 /dimaai/* / 301
 
+# The game tab and its marketing pages were removed in 2.13.0: old links go home.
+/play / 301
+/play/* / 301
+/discord-alternative-for-lfg / 301
+/blog/best-discord-alternative-for-lfg / 301
+
 # Turkish Discord-alternative page moved to a Turkish URL (single canonical).
 /discord-alternative-turkey /tr/discord-alternatifi 301
 /tr/discord-alternative /tr/discord-alternatifi 301

@@ -142,7 +142,7 @@ function crawlBodyInner(route) {
 <main>
   ${seoBrand()}
   <h1>Descall blog: Discord alternatifleri ve sesli sohbet rehberleri</h1>
-  <p>Discord alternatifleri, Discord’dan geçiş, LFG, sesli sohbet ve topluluk yönetimi üzerine Türkçe, pratik rehberler.</p>
+  <p>Discord alternatifleri, Discord’dan geçiş, sesli sohbet ve topluluk yönetimi üzerine Türkçe, pratik rehberler.</p>
   <ul>${posts}</ul>
   <h2>Türkçe rehber sayfaları</h2>
   <ul>${hubs}</ul>
@@ -244,7 +244,7 @@ function crawlBodyInner(route) {
 <main>
   ${seoBrand()}
   <h1>Descall Blog</h1>
-  <p>Guides on Discord alternatives, servers, voice chat, and gaming LFG.</p>
+  <p>Guides on Discord alternatives, servers, and voice chat.</p>
   <ul>${posts}</ul>
   ${seoCtaRow("/download", n.download, isTr)}
   ${seoSiteNav(isTr)}
@@ -262,7 +262,7 @@ function crawlBodyInner(route) {
   <ul>
     <li>Discord-style servers with roles, channels, and templates</li>
     <li>Free real-time chat, group voice/video, and screen share</li>
-    <li>Built-in LFG without bot hell</li>
+    <li>Gaming server templates without bot hell</li>
     <li>Windows, Android, and full web app</li>
   </ul>
   ${seoSiteNav(isTr)}

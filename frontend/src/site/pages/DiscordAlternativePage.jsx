@@ -33,7 +33,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       kicker={t("Discord alternative · 2026")}
       title={t("The best free Discord alternative for friends & gamers")}
       lead={t(
-        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, screen share, and built-in LFG, without Nitro paywalls for the features you actually use."
+        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, and screen share, without Nitro paywalls for the features you actually use."
       )}
       tone="compare"
       faq={faq}
@@ -55,7 +55,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       heroExtra={
         <SeoProductPreview
           mode="servers"
-          caption={t("Descall UI, servers, chat, voice, and LFG in one app")}
+          caption={t("Descall UI, servers, chat, and voice in one app")}
         />
       }
     >
@@ -80,7 +80,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
         <h2>{t("Why people search for a Discord alternative")}</h2>
         <p>
           {t(
-            "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming LFG without installing a dozen bots. Descall is built for that."
+            "Discord is powerful, and heavy. Friend groups and communities often want a lighter Discord alternative: real servers with roles and channels, fewer Nitro prompts, faster calls, and gaming servers without installing a dozen bots. Descall is built for that."
           )}
         </p>
         <ul className="seo-checklist">
@@ -88,7 +88,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
             "Servers with roles, text & voice channels",
             "Advanced templates (gaming, community…)",
             "Free chat, voice, video, and screen share",
-            "LFG in a dedicated Play tab",
+            "Ready-made gaming server templates",
             "Windows desktop + web + Android",
             "Cosmetics via DesCoin, core stays free",
           ].map((item) => (
@@ -149,8 +149,8 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           </article>
           <article>
             <Gamepad2 size={20} />
-            <h3>{t("Gamers & LFG")}</h3>
-            <p>{t("Gaming server templates, ranked LFG channels, and the Play tab in one app.")}</p>
+            <h3>{t("Gamers & squads")}</h3>
+            <p>{t("Gaming server templates with squad-up, scrim, and clip channels in one app.")}</p>
           </article>
           <article>
             <Monitor size={20} />
@@ -172,7 +172,6 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           { to: "/apps-like-discord", label: "Apps like Discord" },
           { to: "/discord-replacement", label: "Discord replacement" },
           { to: "/best-discord-alternative-for-gamers", label: "Best Discord alternative for gamers" },
-          { to: "/discord-alternative-for-lfg", label: "Discord alternative for LFG" },
           { to: "/discord-alternative-for-communities", label: "For communities" },
           { to: "/discord-alternative-for-voice-chat", label: "Voice chat alternative" },
           { to: "/discord-alternative-for-friends", label: "For friends" },

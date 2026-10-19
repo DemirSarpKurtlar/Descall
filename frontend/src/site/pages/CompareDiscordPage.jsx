@@ -21,7 +21,7 @@ export default function CompareDiscordPage({ onSignIn }) {
       kicker="Descall vs Discord"
       title={t("Discord vs Descall, which fits your group in 2026?")}
       lead={t(
-        "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, LFG, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026."
+        "An honest Descall vs Discord comparison for servers, roles, channels, chat, voice, video, screen share, desktop apps, and pricing. Use this when evaluating Descall as a Discord alternative in 2026."
       )}
       faq={COMPARE_FAQ}
       jsonLd={[
@@ -47,7 +47,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           <p>
             <strong>Descall</strong>{" "}
             {t(
-              "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, screen share, and LFG, with free core features."
+              "wins if you want a lighter Discord alternative with real servers (roles, channels, templates), friends voice, and screen share, with free core features."
             )}
           </p>
           <p>
@@ -88,7 +88,7 @@ export default function CompareDiscordPage({ onSignIn }) {
         <ul className="seo-bullets">
           <li>{t("Real servers with roles, channels, and ready-made templates")}</li>
           <li>{t("Friend-group chat and voice without Nitro friction")}</li>
-          <li>{t("Built-in LFG instead of fragile bot setups")}</li>
+          <li>{t("Ready-made gaming templates instead of fragile bot setups")}</li>
           <li>{t("Screen-share quality controls tuned for calls")}</li>
           <li>{t("Modern UI focused on speed, servers without endless chrome")}</li>
         </ul>
@@ -109,7 +109,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           <li>{t("Create a Descall server from a template (or start from scratch) and invite your core squad.")}</li>
           <li>{t("Assign roles and tune channel permissions for staff / announcements.")}</li>
           <li>{t("Pin the Download link for Windows / Android users.")}</li>
-          <li>{t("Move nightly voice + LFG to Descall for two weeks.")}</li>
+          <li>{t("Move nightly voice to Descall for two weeks.")}</li>
           <li>{t("Keep Discord only for bot-heavy communities you still need.")}</li>
         </ol>
         <p className="seo-note">
