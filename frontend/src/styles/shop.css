@@ -884,13 +884,15 @@ html[data-bubble="minimal"] .shop-live-bubble {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: calc(var(--us-safe-top, 0px) + 20px) 20px calc(var(--us-safe-bottom, 0px) + 20px);
 }
 
 .shop-gift-card {
   position: relative;
   width: 100%;
   max-width: 360px;
+  max-height: calc(var(--us-avail-h, 100vh) - 40px);
+  overflow: auto;
   background: linear-gradient(160deg, #171c2b 0%, #0d1019 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
@@ -1422,6 +1424,14 @@ html[data-bubble="minimal"] .shop-live-bubble {
     grid-column: 1;
     grid-row: 2;
     max-height: 200px;
+  }
+}
+
+/* Short windows (Electron not maximized): the stacked preview strip must not
+   take the catalog's room. It keeps its own scroll, capped by height. */
+@media (max-width: 1100px) and (max-height: 760px) {
+  .user-settings.is-desktop.is-shop-open .shop-profile-stage {
+    max-height: clamp(96px, 22vh, 200px);
   }
 }
 

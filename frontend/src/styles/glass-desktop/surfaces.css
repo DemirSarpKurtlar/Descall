@@ -32,6 +32,13 @@ html.glass-desktop .user-settings-shell.is-desktop {
   color: var(--gd-t1);
 }
 
+/* Settings: pad only the unusable strip (title bar, taskbar, safe areas);
+   the card centers in the rest (see --us-avail-h in settings.css). */
+html.glass-desktop .user-settings-shell.is-desktop,
+html.glass-desktop.electron-app .user-settings-shell.is-desktop {
+  padding: var(--us-safe-top) 0 var(--us-safe-bottom) !important;
+}
+
 html.glass-desktop .user-settings.is-desktop {
   position: relative !important;
   top: auto !important;
@@ -39,9 +46,9 @@ html.glass-desktop .user-settings.is-desktop {
   bottom: auto !important;
   left: auto !important;
   width: min(1080px, calc(100vw - 64px)) !important;
-  height: min(780px, calc(100vh - 64px - var(--electron-titlebar-h, 0px))) !important;
+  height: min(780px, var(--us-fit-h)) !important;
   max-width: 1080px !important;
-  max-height: calc(100vh - 64px - var(--electron-titlebar-h, 0px)) !important;
+  max-height: var(--us-fit-h) !important;
   margin: auto !important;
   flex: 0 0 auto !important;
   border: none !important;
@@ -56,9 +63,9 @@ html.glass-desktop .user-settings.is-desktop {
 
 html.glass-desktop .user-settings.is-desktop.is-shop-open {
   width: min(1480px, calc(100vw - 28px)) !important;
-  height: min(960px, calc(100vh - 20px)) !important;
+  height: min(960px, var(--us-fit-h-shop)) !important;
   max-width: 1480px !important;
-  max-height: min(960px, calc(100vh - 20px)) !important;
+  max-height: min(960px, var(--us-fit-h-shop)) !important;
 }
 
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
@@ -362,7 +369,6 @@ html.glass-desktop .modal-backdrop {
 /* The title bar covers the top of the window. Flex-centered sheets use the
    area under it, or the card sits half a title bar too low. */
 html.glass-desktop.electron-app .user-panel-backdrop,
-html.glass-desktop.electron-app .user-settings-shell.is-desktop,
 html.glass-desktop.electron-app .conv-confirm-overlay,
 html.glass-desktop.electron-app .server-modal-overlay,
 html.glass-desktop.electron-app .add-modal-backdrop,
