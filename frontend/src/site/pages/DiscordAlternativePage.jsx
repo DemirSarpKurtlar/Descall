@@ -33,7 +33,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
       kicker={t("Discord alternative · 2026")}
       title={t("The best free Discord alternative for friends & gamers")}
       lead={t(
-        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, crystal-clear voice/video, and screen share, without Nitro paywalls for the features you actually use."
+        "Descall is a free Discord alternative with real servers (roles, channels, templates), real-time chat, voice and video calls, and screen share, without Nitro paywalls for the features you actually use."
       )}
       tone="compare"
       faq={faq}

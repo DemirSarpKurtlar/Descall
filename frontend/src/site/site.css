@@ -2177,3 +2177,15 @@ body:has(.mkt-consent),
     min-height: 48px;
   }
 }
+
+/* Long-form SEO copy on the home page stays in the DOM but folded. */
+.seo-extra-more > summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  padding: 12px 0;
+  color: var(--mkt-text-2, inherit);
+}
+.seo-extra-more > summary::-webkit-details-marker { display: none; }
+.seo-extra-more > summary::after { content: " +"; opacity: 0.6; }
+.seo-extra-more[open] > summary::after { content: " −"; }

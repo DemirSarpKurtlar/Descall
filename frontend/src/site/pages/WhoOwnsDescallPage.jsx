@@ -111,7 +111,7 @@ export default function WhoOwnsDescallPage() {
           <Link to={tr ? "/tr/about" : "/about"}>{tr ? "Hakkında" : "About Descall"}</Link>
         </p>
         <SeoRelatedLinks
-          title={tr ? "Keep exploring" : "Keep exploring"}
+          title="Keep exploring"
           links={[
             { to: "/about", label: "About" },
             { to: "/faq", label: "FAQ" },

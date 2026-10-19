@@ -140,21 +140,26 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
   if (glassShell) {
     return (
       <div className={`invite-card g-invite${compact ? " compact" : ""}`}>
-        <div className="g-invite-mark" aria-hidden="true">
-          <Link2 size={22} />
+        <div className="g-invite-head">
+          <div className="g-invite-mark" aria-hidden="true">
+            <Link2 size={22} />
+          </div>
+          <div className="g-invite-copy">
+            <strong>{t("Invite friends")}</strong>
+            <span>{t("Join me on Descall, we both get DesCoin")}</span>
+            <em>{t("You get 100 DesCoin, your friend gets 50")}</em>
+          </div>
         </div>
-        <div className="g-invite-copy">
-          <strong>{t("Invite friends")}</strong>
-          <span>{t("Join me on Descall, we both get DesCoin")}</span>
-          <em>{t("You 100 · they 50 DesCoin")}</em>
+        <div className="g-invite-actions">
+          <button type="button" className="g-invite-btn is-primary" onClick={copy}>
+            {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+            {copied ? t("Copied") : t("Copy link")}
+          </button>
+          <button type="button" className="g-invite-btn" onClick={share} disabled={shareBusy}>
+            <Share2 size={14} aria-hidden />
+            {t("Share")}
+          </button>
         </div>
-        <button type="button" className="g-invite-btn" onClick={copy}>
-          {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-          {copied ? t("Copied") : t("Copy")}
-        </button>
-        <button type="button" className="g-ib" onClick={share} disabled={shareBusy} aria-label={t("Share")} title={t("Share")}>
-          <Share2 size={16} />
-        </button>
       </div>
     );
   }

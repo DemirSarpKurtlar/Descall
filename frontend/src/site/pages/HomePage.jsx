@@ -5,14 +5,15 @@ import { useLocale } from "../../context/localeContextInstance";
 import { Funnel, getFeatureFlag, getFeatureFlagPayload } from "../analytics";
 import { useMarketingHref } from "../useMarketingHref";
 import JsonLd, { buildEntityGraphLd } from "../JsonLd";
-import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoProductPreview from "../components/SeoProductPreview";
-import { SEO_DEFAULT_RELATED } from "../seoHubLinks";
+import { APP_STORE_URL } from "../appStoreLink";
+import { useIsAppleMobile } from "../useIsAppleMobile";
 
 export default function HomePage({ onSignIn, onSignUp }) {
   const { t, locale } = useLocale();
   const href = useMarketingHref();
   const openRegister = onSignUp || onSignIn;
+  const appleMobile = useIsAppleMobile();
   const [heroVariant, setHeroVariant] = useState("control");
   const [heroPayload, setHeroPayload] = useState(null);
 
@@ -63,13 +64,24 @@ export default function HomePage({ onSignIn, onSignUp }) {
             >
               {heroCtaLabel}
             </button>
-            <Link
-              to={href("/download")}
-              className="mkt-btn mkt-btn-soft"
-              onClick={() => Funnel.ctaClick({ page: "home", placement: "hero", label: "download", intent: "download" })}
-            >
-              {t("Download")} {t("Desktop")}
-            </Link>
+            {appleMobile ? (
+              <a
+                href={APP_STORE_URL}
+                className="mkt-btn mkt-btn-soft"
+                rel="noopener noreferrer"
+                onClick={() => Funnel.ctaClick({ page: "home", placement: "hero", label: "app_store", intent: "download" })}
+              >
+                {t("Download on the App Store")}
+              </a>
+            ) : (
+              <Link
+                to={href("/download")}
+                className="mkt-btn mkt-btn-soft"
+                onClick={() => Funnel.ctaClick({ page: "home", placement: "hero", label: "download", intent: "download" })}
+              >
+                {t("Download the desktop app")}
+              </Link>
+            )}
           </div>
         </div>
         <SeoProductPreview
@@ -92,7 +104,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
         <div className="mkt-shot-copy">
           <h2>{t("Voice next to the chat")}</h2>
           <p>
-            {t("Join a voice channel from the server list. Share your screen at 720p. Windows, Android, and the browser use one account.")}
+            {t("Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.")}
           </p>
           <div className="mkt-cta-row" style={{ marginTop: 24 }}>
             <button
@@ -143,8 +155,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
         </div>
       </section>
 
-      <SeoExtraContent />
-      <SeoRelatedLinks title="Keep exploring" links={SEO_DEFAULT_RELATED} />
+      <SeoExtraContent collapsible showLinks={false} />
     </>
   );
 }
