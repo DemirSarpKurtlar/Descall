@@ -27,7 +27,7 @@ assert(/recoverFromModuleLoadError/.test(boundary), "ErrorBoundary must auto-rel
 assert(/clearModuleLoadRecovery/.test(main), "successful boot must clear the module-reload latch");
 assert(/SHOP_ICON_BY_EMOJI/.test(shopIcons) && /resolveShopBadgeIcon/.test(shopIcons), "shopIcons must map emoji + keys to Lucide");
 assert(/ShopBadgeIcon/.test(cosmetics), "Cosmetics BadgeIcon must use Lucide ShopBadgeIcon");
-assert(/ShopTitleTag/.test(cosmetics), "Cosmetics TitleTag must use Lucide ShopTitleTag");
+assert(/CountryBadge/.test(cosmetics) && !/ShopTitleTag/.test(cosmetics), "Cosmetics shows the country flag; titles were retired in 2.13.0");
 
 const meBlock = app.split("if (!me) {").pop() || "";
 const electronAuthIdx = meBlock.search(/nativeOrDesktop|Capacitor\.isNativePlatform\(\) \|\| isElectronDesktop/);

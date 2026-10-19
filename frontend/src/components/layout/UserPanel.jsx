@@ -59,7 +59,7 @@ import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
-import { NameEffectText, BadgeIcon, TitleTag } from "../ui/Cosmetics";
+import { NameEffectText, BadgeIcon, CountryBadge } from "../ui/Cosmetics";
 import {
   getNoiseSuppressionEngine,
   preloadNoiseSuppression,
@@ -277,6 +277,7 @@ const NAV_GROUPS_DEF = [
       { id: "appearance", labelKey: "settings.appearance", icon: Palette, hintKey: "settings.appearanceHint" },
       { id: "notifications", labelKey: "settings.notifications", icon: Bell, hintKey: "settings.notificationsHint" },
       { id: "language", labelKey: "settings.language", icon: Globe, hintKey: "settings.languageHint" },
+      { id: "licenses", labelKey: "settings.licenses", icon: FileText, hintKey: "settings.licensesHint" },
     ],
   },
   {
@@ -302,6 +303,7 @@ const TAB_TITLE_KEYS = {
   appearance: "settings.appearance",
   notifications: "settings.notifications",
   language: "settings.language",
+  licenses: "settings.licenses",
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
@@ -634,7 +636,7 @@ const UserPanel = forwardRef(function UserPanel({
       backgroundId: me?.equippedBackground?.id || null,
       themeId: me?.equippedTheme?.id || null,
       badgeId: me?.equippedBadge?.id || null,
-      titleId: me?.equippedTitle?.id || null,
+      countryId: me?.equippedCountry?.id || null,
       nameEffectId: me?.equippedNameEffect?.id || null,
       avatarEffectId: me?.equippedAvatarEffect?.id || null,
       chatBubbleId: me?.equippedChatBubble?.id || null,
@@ -650,7 +652,7 @@ const UserPanel = forwardRef(function UserPanel({
       me?.equippedBackground?.id,
       me?.equippedTheme?.id,
       me?.equippedBadge?.id,
-      me?.equippedTitle?.id,
+      me?.equippedCountry?.id,
       me?.equippedNameEffect?.id,
       me?.equippedAvatarEffect?.id,
       me?.equippedChatBubble?.id,
@@ -1360,7 +1362,7 @@ const UserPanel = forwardRef(function UserPanel({
                   </h3>
                   <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
                   <div className="user-profile-badges">
-                    <TitleTag user={me} />
+                    <CountryBadge user={me} />
                     <AdminBadge user={me} variant="chip" />
                   </div>
                   {customStatus && <span className="us-status-pill">{customStatus}</span>}
@@ -2403,6 +2405,34 @@ const UserPanel = forwardRef(function UserPanel({
                   {t("Install the Descall desktop app to share game and app activity automatically.")}
                 </p>
               )}
+            </section>
+          </div>
+        );
+
+      case "licenses":
+        return (
+          <div className="us-tab">
+            <p className="us-lead">{t("settings.licensesDesc")}</p>
+            <section className="us-section licenses-list">
+              <div className="licenses-item">
+                <strong>Twemoji</strong>
+                {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
+                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
+                  creativecommons.org/licenses/by/4.0
+                </a>
+              </div>
+              <div className="licenses-item">
+                <strong>country-flag-emoji-polyfill</strong>
+                {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
+              </div>
+              <div className="licenses-item">
+                <strong>Inter</strong>
+                {t("Interface font: Inter, SIL Open Font License 1.1.")}
+              </div>
+              <div className="licenses-item">
+                <strong>Lucide</strong>
+                {t("Icons: Lucide, ISC licence.")}
+              </div>
             </section>
           </div>
         );

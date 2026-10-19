@@ -243,7 +243,7 @@ export function buildDiscordAlternativeAppLd(path = "/discord-alternative") {
       "Advanced server templates",
       "Real-time messaging",
       "Group voice and video calls",
-      "Screen share"
+      "Screen share",
       "Windows desktop app",
       "Android APK",
     ],

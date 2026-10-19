@@ -32,8 +32,13 @@ export const getDesCoinLedger = (limit = 50) => authedRequest(`/api/shop/ledger?
 export const getDesCoinDaily = () => authedRequest("/api/shop/daily");
 export const claimDesCoinDaily = () =>
   authedRequest("/api/shop/daily/claim", { method: "POST", body: {} });
-export const purchaseShopItem = (itemId) =>
-  authedRequest("/api/shop/purchase", { method: "POST", body: { itemId, themeEngine: "scenes-1" } });
+export const purchaseShopItem = (itemId, { useVoucher = false } = {}) =>
+  authedRequest("/api/shop/purchase", {
+    method: "POST",
+    body: useVoucher ? { itemId, themeEngine: "scenes-1", useVoucher: true } : { itemId, themeEngine: "scenes-1" },
+  });
+/** Open free-item vouchers by category, e.g. `{ countries: 1 }` (2.13.0). */
+export const getShopVouchers = () => authedRequest("/api/shop/vouchers");
 export const equipShopItem = (category, itemId) =>
   authedRequest("/api/shop/equip", {
     method: "POST",

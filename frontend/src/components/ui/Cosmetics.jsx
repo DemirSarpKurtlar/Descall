@@ -1,10 +1,11 @@
 /**
  * Small, reusable renderers for equipped profile-customization cosmetics
- * (name effects, badges, and title tags). Fed the same enriched `user`
+ * (name effects, badges and the country flag; titles were retired in 2.13.0). Fed the same enriched `user`
  * object already used for avatars, degrades to plain text/nothing when a
  * slot isn't equipped, so callers can use these unconditionally.
  */
-import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
+import { ShopBadgeIcon } from "../../lib/shopIcons";
+export { CountryBadge } from "../shop/CountryFlag";
 
 /** Wraps a display name in its equipped name-effect gradient/glow, if any. */
 export function NameEffectText({ user, children }) {
@@ -25,13 +26,6 @@ export function BadgeIcon({ user }) {
       title={badge?.name}
     />
   );
-}
-
-/** Flair pill under a display name (Lucide + label, no leading pictograph). */
-export function TitleTag({ user }) {
-  const title = user?.equippedTitle;
-  if (!title?.title_text && !title?.sku) return null;
-  return <ShopTitleTag item={title} size={12} className="cosmetic-title-tag" />;
 }
 
 /** CSS class for the animated ring/aura behind an avatar, or "" if unequipped. */

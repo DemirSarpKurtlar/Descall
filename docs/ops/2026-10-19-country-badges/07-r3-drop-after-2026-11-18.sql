@@ -1,0 +1,6 @@
+-- ÇALIŞTIRMA: 18.11.2026'dan ÖNCE DEĞİL ve yalnızca Demir'in ayrı onayıyla.
+-- Önce 2.13.0+ dışındaki istemcilerin bu tablolara dokunmadığını doğrula (backend kodu 2.13.0'da hiç okumuyor).
+-- BEGIN;
+-- DROP TABLE IF EXISTS public.lfg_reports, public.lfg_lobby_members, public.lfg_lobbies, public.user_riot_accounts;
+-- DROP TABLE IF EXISTS ops_backup.b20261019_lfg_reports, ops_backup.b20261019_lfg_lobby_members, ops_backup.b20261019_lfg_lobbies, ops_backup.b20261019_user_riot_accounts;
+-- COMMIT;

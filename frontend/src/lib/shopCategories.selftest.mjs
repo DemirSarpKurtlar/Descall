@@ -75,7 +75,16 @@ if (existsSync(iosWf)) {
 
 // 5. Server side: frames are retired and announced to installed builds.
 const shopLib = read("backend/lib/shop.js");
-assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame"\]\)/);
+assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title"\]\)/);
 const shopRoute = read("backend/routes/shop.js");
 assert.match(shopRoute, /retiredCategories:\s*\[\.\.\.shop\.RETIRED_SHOP_CATEGORIES\]/);
+// 6. 2.13.0: titles retired, countries take their tab slot.
+{
+  const { SHOP_CATEGORY_TABS: tabs2, REMOVED_SHOP_CATEGORIES: removed2, visibleShopItems: vis2 } = await import("./shopCategories.js");
+  const ids = tabs2.map((tab) => tab.id);
+  assert.ok(ids.includes("countries"), "Countries tab exists");
+  assert.equal(ids.includes("profile_title"), false, "no Titles tab");
+  assert.ok(removed2.includes("profile_title"), "titles are retired on every platform");
+  assert.deepEqual(vis2([{ category: "profile_title" }, { category: "countries" }]).map((i) => i.category), ["countries"]);
+}
 console.log("shopCategories selftest OK");

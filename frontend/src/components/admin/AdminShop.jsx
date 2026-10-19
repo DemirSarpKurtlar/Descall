@@ -8,13 +8,14 @@ import RippleButton from "../ui/RippleButton";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
+import { CountryFlag } from "../shop/CountryFlag";
 
 const CATEGORIES = [
   { id: "banner", label: "Banner" },
   { id: "profile_background", label: "Profile Background" },
   { id: "theme", label: "Premium Theme" },
   { id: "profile_badge", label: "Profile Badge" },
-  { id: "profile_title", label: "Profile Title" },
+  { id: "countries", label: "Country" },
   { id: "name_effect", label: "Name Effect" },
   { id: "avatar_effect", label: "Avatar Effect" },
   { id: "chat_bubble", label: "Chat Bubble Skin" },
@@ -605,7 +606,7 @@ export default function AdminShop() {
                 titleText: "",
                 effectKey: "",
               }))}>
-              {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              {CATEGORIES.filter((c) => c.id !== "countries").map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
             <select className="admin-select" value={draft.rarity}
               onChange={(e) => setDraft((d) => ({ ...d, rarity: e.target.value }))}>
@@ -705,6 +706,8 @@ export default function AdminShop() {
                       <div className={`shop-theme-swatch theme-${item.theme_key || "default"}`} style={{ width: 40, height: 28, borderRadius: 6 }} />
                     ) : item.category === "profile_badge" ? (
                       <ShopBadgeIcon item={item} size={22} className="admin-shop-badge-icon" />
+                    ) : item.category === "countries" ? (
+                      <CountryFlag item={item} size={20} />
                     ) : item.category === "profile_title" ? (
                       <ShopTitleTag item={item} size={11} className="admin-badge online" />
                     ) : item.category === "name_effect" ? (

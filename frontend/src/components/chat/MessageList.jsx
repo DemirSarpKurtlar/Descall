@@ -33,7 +33,7 @@ import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";
 import UserHoverCard from "../social/UserHoverCard";
 import AdminBadge from "../social/AdminBadge";
-import { BadgeIcon, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
+import { BadgeIcon, CountryBadge, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS } from "../../lib/singleActiveHover";
@@ -566,6 +566,7 @@ export default function MessageList({
                       <span className="msg-bot-badge" title="Descall Apps">UYGULAMA</span>
                     ) : null}
                     <BadgeIcon user={avatarUser} />
+                    <CountryBadge user={avatarUser} compact />
                     <AdminBadge user={avatarUser} variant="inline" />
                   </span>
                   <span className="message-timestamp">

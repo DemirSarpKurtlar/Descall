@@ -11,6 +11,7 @@ import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
+import { installFlagFont } from "./lib/countryFlags";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
 
@@ -23,6 +24,8 @@ try {
   /* first-touch capture is best-effort */
 }
 installAndroidBack();
+// Windows has no flag emoji glyphs: use the bundled Twemoji flag subset there.
+installFlagFont();
 // Lazy so the marketing first-paint bundle does not pull Capacitor in.
 if (isCapacitorNativeShell()) {
   import("./lib/fluid/haptics.js")

@@ -1054,6 +1054,7 @@ export default function App() {
       equippedTheme: normalized.equippedTheme,
       equippedBadge: normalized.equippedBadge,
       equippedTitle: normalized.equippedTitle,
+      equippedCountry: normalized.equippedCountry,
       equippedNameEffect: normalized.equippedNameEffect,
       equippedAvatarEffect: normalized.equippedAvatarEffect,
       equippedChatBubble: normalized.equippedChatBubble,

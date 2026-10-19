@@ -12,6 +12,7 @@ const { requireAuth } = require("../middleware/auth");
 const shop = require("../lib/shop");
 const descoin = require("../lib/descoin");
 const { purchaseItem } = require("../lib/shopPurchase");
+const vouchers = require("../lib/shopVouchers");
 const { edgePublicBase, publicCache } = require("../lib/edgeConfig");
 
 const router = express.Router();
@@ -88,11 +89,21 @@ router.get("/assets/:id", async (req, res) => {
 
 router.get("/inventory", requireAuth, async (req, res) => {
   try {
-    const inventory = await shop.getUserInventory(req.user.id);
-    res.json({ inventory });
+    const { inventory, retiredTitles } = await shop.getUserInventoryWithRetired(req.user.id);
+    res.json({ inventory, retiredTitles });
   } catch (err) {
     console.error("[shop] inventory error:", err.message);
     res.status(500).json({ error: "Failed to load your inventory." });
+  }
+});
+
+/** Open free-item vouchers, e.g. `{ vouchers: { countries: 1 } }` (2.13.0). */
+router.get("/vouchers", requireAuth, async (req, res) => {
+  try {
+    res.json({ vouchers: await vouchers.getOpenVoucherCounts(req.user.id) });
+  } catch (err) {
+    console.error("[shop] vouchers error:", err.message);
+    res.status(500).json({ error: "Failed to load your vouchers." });
   }
 });
 
@@ -159,6 +170,20 @@ router.post("/purchase", requireAuth, async (req, res) => {
       }
     }
 
+    if (req.body?.useVoucher === true) {
+      try {
+        const redeemed = await vouchers.redeemVoucher(req.user.id, item);
+        const balance = await descoin.getBalance(req.user.id);
+        if (redeemed.alreadyOwned) return res.status(409).json({ error: "You already own this item.", balance });
+        return res.json({ ok: true, balance, item, voucher: true });
+      } catch (err) {
+        if (err.code === "NO_VOUCHER") {
+          return res.status(409).json({ error: "You have no free voucher for this item.", code: "no_voucher" });
+        }
+        throw err;
+      }
+    }
+
     let result;
     try {
       result = await purchaseItem(req.user.id, item);
@@ -193,7 +218,7 @@ router.post("/equip", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid item category." });
     }
     if (shop.REMOVED_COSMETIC_CATEGORIES.has(category)) {
-      return res.status(410).json({ error: "Avatar frames are no longer available.", code: "cosmetic_removed" });
+      return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
     }
     if (itemId) {
       const owns = await shop.userOwnsItem(req.user.id, itemId);
