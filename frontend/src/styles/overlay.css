@@ -216,3 +216,10 @@ html.glass-ui:is(.a11y-solid, .a11y-contrast) :is(.g-tabbar, .g-searchbar) { bac
 html.glass-ui:has(:is(.g-scrim, .g-msg-scrim, .g-attach-scrim, .g-giphy-scrim, .add-modal-backdrop, .grp-menu-catcher)) :is(.nav-rail, .g-tabbar) {
   z-index: 0 !important;
 }
+
+/* Old WebKit (iOS 15.0–16.1) drops color-mix() entirely: give store dialog and
+   report scrim a solid tint instead of nothing (teammate B15). */
+@supports not (background: color-mix(in srgb, red 50%, transparent)) {
+  .cs-dialog { background: rgba(28, 28, 34, 0.94) !important; }
+  .report-modal-overlay { background: rgba(8, 9, 14, 0.62) !important; }
+}
