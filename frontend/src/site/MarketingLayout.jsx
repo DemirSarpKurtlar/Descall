@@ -6,6 +6,8 @@ import { signalMarketingEngage } from "./analyticsGate";
 import { SITE_OPERATOR } from "./siteIdentity";
 import { isTrPath, withTrPrefix, stripLocalePrefix, TR_MIRROR_PATHS, enPathForHreflang, isTurkishMarketingPath, trDestinationForPath } from "./localePaths";
 import EmailCapture from "./components/EmailCapture";
+import { APP_STORE_URL } from "./appStoreLink";
+import { useIsAppleMobile } from "./useIsAppleMobile";
 import "./site.css";
 import "./glass-public.css";
 import "./glass-public-frames.css";
@@ -49,14 +51,8 @@ const NAV_TR_EXTRA = [
 
 /** Turkish hubs in the footer "Explore" column. */
 const TR_FOOTER_HUBS = [
-  { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
-  { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri" },
-  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı?" },
-  { to: "/tr/turk-discord", label: "Türk Discord’u" },
-  { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
-  { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
-  { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },
-  { to: "/tr/compare/discord", label: "Discord mu Descall mı?" },
+  { to: "/tr/compare/discord", label: "Discord ile karşılaştırma" },
+  { to: "/tr/discord-alternatifleri", label: "Alternatifler" },
   { to: "/tr/blog", label: "Blog" },
 ];
 
@@ -326,6 +322,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
 function StickyMobileCta({ onStart, downloadTo }) {
   const t = useT();
   const [hidden, setHidden] = useState(false);
+  const appleMobile = useIsAppleMobile();
 
   useEffect(() => {
     const footer = document.querySelector(".mkt-footer");
@@ -343,9 +340,15 @@ function StickyMobileCta({ onStart, downloadTo }) {
       <button type="button" className="mkt-btn mkt-btn-primary" onClick={onStart}>
         {t("Start free")}
       </button>
-      <Link to={downloadTo} className="mkt-btn mkt-btn-ghost">
-        {t("Download")}
-      </Link>
+      {appleMobile ? (
+        <a href={APP_STORE_URL} className="mkt-btn mkt-btn-ghost" rel="noopener noreferrer">
+          {t("App Store")}
+        </a>
+      ) : (
+        <Link to={downloadTo} className="mkt-btn mkt-btn-ghost">
+          {t("Download")}
+        </Link>
+      )}
     </div>
   );
 }

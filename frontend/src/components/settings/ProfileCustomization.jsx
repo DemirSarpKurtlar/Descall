@@ -471,13 +471,13 @@ export default function ProfileCustomization({ me, onUpdate }) {
 
             {/* Custom Status */}
             <label className="pc-field">
-              <span>Custom Status</span>
+              <span>{t("Custom Status")}</span>
               <input
                 type="text"
                 value={profile.customStatus}
                 onChange={(e) => handleChange("customStatus", e.target.value)}
                 maxLength={100}
-                placeholder="🎮 Playing games | 🎧 Listening to music"
+                placeholder={t("e.g. Listening to music")}
               />
               <small>{profile.customStatus.length}/100</small>
             </label>

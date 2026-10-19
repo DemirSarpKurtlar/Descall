@@ -7,7 +7,6 @@ import {
   Terminal,
   CheckCircle2, 
   Loader2,
-  Sparkles,
   Zap,
   Shield,
   Globe,
@@ -42,16 +41,10 @@ const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
 const ANDROID_RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 
 const FEATURE_DEFS = [
-  { icon: MessageCircle, title: "Real-time Chat", desc: "Instant messaging with typing indicators" },
-  { icon: Mic, title: "Voice Messages", desc: "Crystal clear voice recordings" },
-  { icon: Video, title: "Video Calls", desc: "HD video calling with screen share" },
-  { icon: Users, title: "Group Chats", desc: "Create groups with unlimited members" },
-];
-
-const STAT_DEFS = [
-  { value: "10K+", label: "Downloads" },
-  { value: "4.9", label: "Rating" },
-  { value: "50+", label: "Countries reached" },
+  { icon: MessageCircle, title: "Direct messages", desc: "Typing indicators, replies and reactions" },
+  { icon: Mic, title: "Voice Messages", desc: "Record a voice message and send it in any chat" },
+  { icon: Video, title: "Video Calls", desc: "Camera and screen share in DMs, groups and voice channels" },
+  { icon: Users, title: "Servers and groups", desc: "Text and voice channels with roles for your friends" },
 ];
 
 const platforms = [
@@ -76,7 +69,6 @@ const platforms = [
 export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authLoading, authError, onOpenRegister }) {
   const t = useT();
   const features = FEATURE_DEFS.map((f) => ({ ...f, title: t(f.title), desc: t(f.desc) }));
-  const stats = STAT_DEFS.map((s) => ({ ...s, label: t(s.label) }));
   const [selectedPlatform, setSelectedPlatform] = useState('windows');
   const [isInstalled, setIsInstalled] = useState(false);
   const [latestRelease, setLatestRelease] = useState(null);
@@ -230,7 +222,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             animate={{ scale: 1 }}
             transition={{ delay: 0.3, type: "spring" }}
           >
-            <Sparkles size={14} />
+            <Download size={14} />
             <span>{loading ? t("Checking for updates…") : (releaseLabel ? t("{label} available", { label: releaseLabel }) : t("Latest release"))}</span>
           </motion.div>
 
@@ -240,8 +232,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {t("Descall")} {t("Desktop")}
-            <span className="gradient-text"> {t("Experience")}</span>
+            {t("Download Descall")}
           </motion.h1>
 
           <motion.p 
@@ -250,7 +241,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            {t("The ultimate chat application for your desktop. Fast, secure, and beautifully designed.")}
+            {t("Voice chat, screen share and servers with your friends, on Windows and Android.")}
           </motion.p>
 
           {/* Login Button */}
@@ -272,26 +263,6 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             <span>{t("Sign In")}</span>
           </motion.button>
 
-          {/* Stats */}
-          <motion.div 
-            className="stats-row"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            {stats.map((stat, index) => (
-              <motion.div 
-                key={stat.label}
-                className="stat-item"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-              >
-                <span className="stat-value">{stat.value}</span>
-                <span className="stat-label">{stat.label}</span>
-              </motion.div>
-            ))}
-          </motion.div>
         </motion.div>
 
         {/* Download Card */}
@@ -433,7 +404,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
           className="section-header"
         >
           <h2>{t("Why Choose Descall?")}</h2>
-          <p>{t("Experience the next generation of communication")}</p>
+          <p>{t("Messages, calls and servers in one account")}</p>
         </motion.div>
 
         <div className="features-grid">
@@ -465,24 +436,24 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
             whileHover={{ scale: 1.05 }}
           >
             <Shield size={32} />
-            <h4>{t("End-to-End Security")}</h4>
-            <p>{t("Your conversations are encrypted and secure")}</p>
+            <h4>{t("Secure sign-in")}</h4>
+            <p>{t("Your session is kept in the system's secure storage")}</p>
           </motion.div>
           <motion.div 
             className="trust-item"
             whileHover={{ scale: 1.05 }}
           >
             <Zap size={32} />
-            <h4>{t("Lightning Fast")}</h4>
-            <p>{t("Built for speed with native performance")}</p>
+            <h4>{t("Automatic updates")}</h4>
+            <p>{t("The app downloads new versions in the background")}</p>
           </motion.div>
           <motion.div 
             className="trust-item"
             whileHover={{ scale: 1.05 }}
           >
             <Globe size={32} />
-            <h4>{t("Global Network")}</h4>
-            <p>{t("Connect with anyone, anywhere in the world")}</p>
+            <h4>{t("Free to use")}</h4>
+            <p>{t("Messages, calls and screen share cost nothing")}</p>
           </motion.div>
         </div>
       </section>
@@ -514,7 +485,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
               <X size={20} />
             </button>
             
-            <h2>{isRegistering ? t("Create Account") : t("Welcome Back")}</h2>
+            <h2>{isRegistering ? t("Create Account") : t("Welcome back")}</h2>
             <p>{isRegistering ? t("Join Descall today") : t("Sign in to your account")}</p>
             
             {(authError || deviceBlock) && <div className="auth-error">{authError || deviceBlock}</div>}

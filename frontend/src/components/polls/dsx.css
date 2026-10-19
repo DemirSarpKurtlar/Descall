@@ -1928,3 +1928,36 @@ html.glass-desktop .message-bubble.has-card::before,
 html.glass-desktop .message-bubble.has-card::after {
   display: none !important;
 }
+
+/* Light theme: the poll and app cards follow the page instead of staying navy. */
+html[data-theme="light"] {
+  --dsx-t1: #14161f;
+  --dsx-t2: rgba(20, 22, 31, 0.72);
+  --dsx-t3: rgba(20, 22, 31, 0.52);
+  --dsx-t4: rgba(20, 22, 31, 0.36);
+  --dsx-hair: rgba(0, 0, 0, 0.08);
+  --dsx-hair2: rgba(0, 0, 0, 0.13);
+  --dsx-chip: rgba(0, 0, 0, 0.05);
+  --dsx-chip2: rgba(0, 0, 0, 0.08);
+  --dsx-heavy: rgba(246, 246, 250, 0.94);
+  --dsx-heavy-top: rgba(255, 255, 255, 0.6);
+  --dsx-card: rgba(245, 245, 250, 0.88);
+  --dsx-card-top: rgba(255, 255, 255, 0.7);
+  --dsx-row: rgba(0, 0, 0, 0.04);
+  --dsx-row-hi: rgba(0, 0, 0, 0.07);
+  --dsx-scrim: rgba(20, 22, 31, 0.28);
+}
+html[data-theme="light"] .dsx-card {
+  box-shadow: 0 10px 30px rgba(20, 22, 40, 0.12), 0 1px 3px rgba(20, 22, 40, 0.08);
+}
+html[data-theme="light"] .dsx-heavy {
+  box-shadow: 0 24px 60px rgba(20, 22, 40, 0.18), 0 6px 18px rgba(20, 22, 40, 0.1);
+}
+html[data-theme="light"] .dsx-heavy::before,
+html[data-theme="light"] .dsx-card::before {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4) 30%, rgba(0, 0, 0, 0.04) 60%, rgba(0, 0, 0, 0.06));
+}
+html[data-theme="light"] .dsx-po .bar { background: linear-gradient(90deg, rgba(var(--dsx-brand), 0.12), rgba(var(--dsx-brand), 0.18)); }
+html[data-theme="light"] .dsx-po.lead .bar { background: linear-gradient(90deg, rgba(var(--dsx-brand), 0.18), rgba(var(--dsx-brand), 0.26)); }
+html[data-theme="light"] .dsx-seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.95); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+html[data-theme="light"] .dsx-toggle { background: rgba(0, 0, 0, 0.12); }

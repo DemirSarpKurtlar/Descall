@@ -12,7 +12,7 @@ import {
 import { ActivityTypeIcon } from "../../lib/shopIcons";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
-import { getPresenceStatus, isVisiblyOnline } from "../../lib/presence";
+import { getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
@@ -65,7 +65,7 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
             {localizeActivityLabel(presence.displayName, t)}
           </span>
         ) : (
-          <span className="activity-presence-idle">{t("Online")}</span>
+          <span className="activity-presence-idle">{t((STATUS_META[isOnline ? status : "offline"] || STATUS_META.online).label)}</span>
         )}
       </div>
     </motion.button>

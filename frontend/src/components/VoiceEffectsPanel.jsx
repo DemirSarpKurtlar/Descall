@@ -475,7 +475,7 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
 
         <div className="panel-footer">
           <p className="footer-note">
-            {t("Powered by Web Audio API + WebAssembly")}
+            {t("Effects change only your own voice.")}
           </p>
         </div>
       </div>

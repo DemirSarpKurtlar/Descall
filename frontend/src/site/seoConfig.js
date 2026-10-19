@@ -491,7 +491,7 @@ const TR_TITLES = {
   "/copyright": {
     title: "Descall telif hakkı bildirimleri",
     description:
-      "Descall’a telif bildirimi veya karşı bildirim göndermek için contact@descall.com adresini kullanın.",
+      "Descall’a telif bildirimi veya karşı bildirim göndermek için contact@descall.com adresini kullan.",
   },
   "/login": {
     title: "Giriş yap | Descall",

@@ -275,7 +275,7 @@ function AuthModal({
                   width={56}
                   height={56}
                 />
-                <h2>{isRegistering ? t("Create Account") : t("Welcome Back")}</h2>
+                <h2>{isRegistering ? t("Create Account") : t("Welcome back")}</h2>
                 <p>
                   {isRegistering
                     ? inviteRef

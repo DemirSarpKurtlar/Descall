@@ -736,8 +736,8 @@ export default function ChatPanel({
           </h2>
           <p>
             {!activeServer
-              ? t("Pick a server from the sidebar, or create one to get started.")
-              : t("Select a channel from the sidebar to get started.")}
+              ? t("Pick a server on the left, or create a new one with +.")
+              : t("Pick a text or voice channel from the list on the left.")}
           </p>
           {activeChannel?.topic ? (
             <p className="server-channel-topic">{activeChannel.topic}</p>

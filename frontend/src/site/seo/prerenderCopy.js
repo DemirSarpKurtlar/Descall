@@ -169,9 +169,9 @@ export function homeHero(isTr) {
         h1: "Birlikte konuşun",
         lead: "Grup sesi, görüntü ve ekran paylaşımı. Tüm ekibin için metin ve ses kanallı sunucular.",
         voiceTitle: "Sohbetin yanında ses",
-        voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. Windows, Android ve tarayıcı aynı hesabı kullanır.",
+        voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
         serversTitle: "Rol ve kanallı sunucular",
-        serversBody: "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Admin, Moderator, Member rolleri vardır.",
+        serversBody: "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Yönetici, Moderatör, Üye rolleri vardır.",
         serversPoints: [
           "Duyuru, ekip toplama ve yetkili kanalları şablonlarda hazırdır.",
           "Staff kick, ban, timeout uygulayabilir ve denetim kaydını okuyabilir.",
@@ -182,7 +182,7 @@ export function homeHero(isTr) {
           "Rol, kanal izni, davet ve moderasyonlu Discord tarzı sunucular",
           "Temel iletişimde Nitro duvarı olmadan HD ses/görüntü ve ekran paylaşımı",
           "Bot karmaşası olmadan hazır oyun şablonları",
-          "Windows masaüstü, Android ve tam web uygulaması",
+          "iPhone, Windows masaüstü, Android ve tam web uygulaması",
         ],
         core: "Temel özellikler",
         features: [
@@ -209,7 +209,7 @@ export function homeHero(isTr) {
           },
           {
             title: "Her cihaz",
-            body: "Windows masaüstü, Android ve tam web uygulaması",
+            body: "iPhone, Windows masaüstü, Android ve tam web uygulaması",
           },
         ],
         featureCards: [
@@ -241,7 +241,7 @@ export function homeHero(isTr) {
         h1: "Talk together",
         lead: "Group voice, video, and screen share. Servers with text and voice channels for your whole crew.",
         voiceTitle: "Voice next to the chat",
-        voiceBody: "Join a voice channel from the server list. Share your screen at 720p. Windows, Android, and the browser use one account.",
+        voiceBody: "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.",
         serversTitle: "Servers with roles and channels",
         serversBody: "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member.",
         serversPoints: [
@@ -254,7 +254,7 @@ export function homeHero(isTr) {
           "Discord-style servers with roles, channel overrides, invites, and moderation",
           "HD voice/video and screen share without Nitro paywalls on core communication",
           "Gaming templates so squads get set up without bot hell",
-          "Windows desktop, Android, and full web app",
+          "iPhone, Windows desktop, Android, and full web app",
         ],
         core: "Core features",
         features: [
@@ -281,7 +281,7 @@ export function homeHero(isTr) {
           },
           {
             title: "Every device",
-            body: "Windows desktop, Android, and full web app",
+            body: "iPhone, Windows desktop, Android, and full web app",
           },
         ],
         featureCards: [
