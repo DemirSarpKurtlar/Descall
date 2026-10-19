@@ -224,7 +224,9 @@ async function run(win) {
     const orig = String.prototype.toLocaleUpperCase;
     window.__e2eRestoreUpper = () => { String.prototype.toLocaleUpperCase = orig; };
     String.prototype.toLocaleUpperCase = function (...args) {
-      if (args[0] === 'tr' && this.length <= 2) throw new Error('e2e: forced Ülkeler render error');
+      // initialOf() upper-cases the first letter of every country name with an explicit
+      // locale ("tr" or "en", whatever the UI language is).
+      if (args.length && this.length <= 2) throw new Error('e2e: forced Ülkeler render error');
       return orig.apply(this, args);
     };
     return true;
