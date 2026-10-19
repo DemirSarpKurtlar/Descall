@@ -68,3 +68,11 @@ assert.ok(alpha(card, /rgba\(\s*18,\s*20,\s*30,\s*([0-9.]+)\)/) >= 0.94, "Electr
 const splash = readFileSync(join(src, "..", "electron", "splash.html"), "utf8");
 assert.ok(alpha(splash, /rgba\(\s*20,\s*21,\s*30,\s*([0-9.]+)\)/) >= 0.94, "splash card >= 0.94");
 console.log("overlay alpha checks ok");
+
+// Profile cards / popouts / sheets scroll without a visible scrollbar.
+{
+  const rule = css.slice(css.indexOf(":is(.user-profile-card, .user-hover-card"));
+  assert.match(rule, /scrollbar-width:\s*none/);
+  assert.match(rule, /::-webkit-scrollbar\s*\{\s*display:\s*none/);
+  assert.match(rule, /overflow-x:\s*hidden/);
+}

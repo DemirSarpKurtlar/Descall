@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
+import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -1268,26 +1269,27 @@ function DmRowFront({
 function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint = null }) {
   const t = useT();
   const blockedIds = useBlockedUserIds();
+  const reduceMotion = useReducedMotion();
   const menuRef = useRef(null);
-  const [position, setPosition] = useState({ top: 0, left: 0, visibility: "hidden" });
+  const [position, setPosition] = useState({ top: 0, left: 0, origin: "top right", visibility: "hidden" });
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
     if (!menu) return;
-    const menuRect = menu.getBoundingClientRect();
+    // offsetWidth/Height ignore the opening scale, so the first measure is exact.
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
     const pad = 8;
 
     // Right-click → open at the pointer, flipping at the viewport edges.
     if (anchorPoint) {
       let left = anchorPoint.x;
       let top = anchorPoint.y;
-      if (left + menuRect.width > window.innerWidth - pad) left = anchorPoint.x - menuRect.width;
-      if (top + menuRect.height > window.innerHeight - pad) top = anchorPoint.y - menuRect.height;
-      setPosition({
-        top: Math.max(pad, top),
-        left: Math.max(pad, left),
-        visibility: "visible",
-      });
+      if (left + w > window.innerWidth - pad) left = anchorPoint.x - w;
+      if (top + h > window.innerHeight - pad) top = anchorPoint.y - h;
+      left = Math.max(pad, Math.min(left, window.innerWidth - w - pad));
+      top = Math.max(pad, Math.min(top, window.innerHeight - h - pad));
+      setPosition({ top, left, origin: rowMenuOrigin(anchorPoint.x, anchorPoint.y, left, top, w, h), visibility: "visible" });
       return;
     }
 
@@ -1295,10 +1297,11 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
     let top = rect.bottom + 6;
-    let left = rect.right - menuRect.width;
+    let below = true;
+    let left = rect.right - w;
     if (left < pad) left = pad;
-    if (top + menuRect.height > window.innerHeight - pad) top = rect.top - menuRect.height - 6;
-    setPosition({ top, left, visibility: "visible" });
+    if (top + h > window.innerHeight - pad) { top = rect.top - h - 6; below = false; }
+    setPosition({ top, left, origin: below ? "top right" : "bottom right", visibility: "visible" });
   }, [anchorRef, anchorPoint]);
 
   useEffect(() => {
@@ -1330,15 +1333,13 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
       ref={menuRef}
       role="menu"
       className="gd-row-menu"
-      initial={{ opacity: 0, scale: 0.94, y: -4 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.94, y: -4 }}
-      transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
+      {...rowMenuMotion(reduceMotion)}
       style={{
         position: "fixed",
         top: position.top,
         left: position.left,
         visibility: position.visibility,
+        transformOrigin: position.origin,
         zIndex: 10000,
         background: "rgba(40, 40, 44, 0.92)",
         backdropFilter: "blur(24px) saturate(180%)",
@@ -1442,9 +1443,7 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
       if (top + h > window.innerHeight - pad) top = (anchorPoint.top ?? anchorPoint.y) - h - (anchorPoint.top != null ? 6 : 0);
       left = Math.max(pad, Math.min(left, window.innerWidth - w - pad));
       top = Math.max(pad, Math.min(top, window.innerHeight - h - pad));
-      const ox = Math.max(0, Math.min(w, anchorPoint.x - left));
-      const oy = Math.max(0, Math.min(h, anchorPoint.y - top));
-      setPosition({ top, left, origin: `${ox}px ${oy}px`, visibility: "visible" });
+      setPosition({ top, left, origin: rowMenuOrigin(anchorPoint.x, anchorPoint.y, left, top, w, h), visibility: "visible" });
       return undefined;
     }
 
@@ -1545,10 +1544,7 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
         aria-label={group?.name}
         className="grp-menu"
         data-testid="group-menu"
-        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
-        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8, transition: { duration: 0.14 } }}
-        transition={reduceMotion ? { duration: 0.15 } : framerSpring(SPRINGS.materialize)}
+        {...rowMenuMotion(reduceMotion)}
         style={{
           top: position.top,
           left: position.left,

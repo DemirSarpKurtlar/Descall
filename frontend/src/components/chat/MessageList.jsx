@@ -978,6 +978,38 @@ function MessageBubble({
 
   useEffect(() => () => messageHoverToolbar.forget(hoverKey.current), []);
 
+  // Desktop hover toolbar: pin it to the row's top-right (the message group's
+  // right edge), not the bubble's left edge. Anchored to a narrow bubble the
+  // bar used to sit on the header row (avatar, name, badges) and spill past
+  // the left edge of the chat column.
+  useLayoutEffect(() => {
+    const el = bubbleRef.current;
+    if (!el || glass) return;
+    if (!menuOpen) {
+      el.style.removeProperty("--mhb-shift");
+      return;
+    }
+    const row = el.closest(".message-group") || el.parentElement;
+    if (!row) return;
+    const shift = row.getBoundingClientRect().right - 8 - el.getBoundingClientRect().right;
+    el.style.setProperty("--mhb-shift", `${Math.round(shift)}px`);
+  }, [menuOpen, glass]);
+
+  // Full reaction picker: open below the bar, flip above when it would be
+  // clipped by the bottom of the message list.
+  const [pickerFlip, setPickerFlip] = useState(false);
+  useLayoutEffect(() => {
+    if (!pickerOpen) { setPickerFlip(false); return; }
+    const el = bubbleRef.current;
+    const bar = el?.querySelector(".message-hover-bar");
+    const list = el?.closest(".message-list");
+    if (!bar || !list) return;
+    const b = bar.getBoundingClientRect();
+    const l = list.getBoundingClientRect();
+    const need = 160;
+    setPickerFlip(b.bottom + need > l.bottom && b.top - need >= l.top - 4);
+  }, [pickerOpen]);
+
   useEffect(() => {
     pressGate.current.noteLightbox(lightboxOpen);
     if (lightboxOpen) pressDetach.current?.();
@@ -1454,7 +1486,7 @@ function MessageBubble({
               <AnimatePresence>
                 {pickerOpen && (
                   <motion.div
-                    className="message-inline-picker"
+                    className={`message-inline-picker${pickerFlip ? " flip-up" : ""}`}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 4 }}
