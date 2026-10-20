@@ -65,7 +65,11 @@ const CSS = `
       inset 0 -1px 0 rgba(0,0,0,.25),
       0 10px 22px -10px rgba(0,0,0,.70),
       0 2px 6px rgba(0,0,0,.30);
-    -webkit-app-region:drag; cursor:default;
+    /* 2.13.6: no drag region on the card. On Windows a no-drag button nested
+       inside a drag region of this transparent frameless window still hit-tests
+       as caption (HTCAPTION), so mute / deafen / hang-up never got the click.
+       Only the header row moves the window now; the buttons sit outside it. */
+    cursor:default;
     animation:ov-in .26s cubic-bezier(.2,.8,.2,1) both;
   }
   /* specular sheen along the top-left edge */
@@ -74,7 +78,7 @@ const CSS = `
     background:radial-gradient(90% 60% at 18% -20%, rgba(255,255,255,.16), rgba(255,255,255,0) 70%);
   }
   @keyframes ov-in { from { opacity:0; transform:scale(.97); } to { opacity:1; transform:none; } }
-  .head { display:flex; align-items:center; gap:10px; min-width:0; height:34px; }
+  .head { display:flex; align-items:center; gap:10px; min-width:0; height:34px; -webkit-app-region:drag; }
   .av {
     position:relative; flex:0 0 34px; width:34px; height:34px; border-radius:50%;
     display:grid; place-items:center; font-size:14px; font-weight:700; color:#fff;
@@ -102,6 +106,7 @@ const CSS = `
   }
   .btn:hover { background:linear-gradient(180deg, rgba(255,255,255,.17), rgba(255,255,255,.10)); }
   .btn:active { transform:scale(.96); transition-duration:.04s; }
+  .btn.is-pressed { transform:scale(.96); transition-duration:.04s; }
   .btn:focus-visible { outline:none; box-shadow:0 0 0 2px rgba(var(--ov-brand), .95), inset 0 0 0 .5px rgba(255,255,255,.2); }
   .btn.is-off { color:#ff8a86; background:linear-gradient(180deg, rgba(255,69,58,.22), rgba(255,69,58,.14)); box-shadow:inset 0 1px 0 rgba(255,160,150,.16), inset 0 0 0 .5px rgba(255,105,97,.35); }
   .btn.is-off:hover { background:linear-gradient(180deg, rgba(255,69,58,.30), rgba(255,69,58,.20)); }
@@ -189,9 +194,20 @@ const SCRIPT = `
       render();
     };
     window.__overlayState = function () { return state; };
-    muteBtn.onclick = function () { window.overlayAPI && window.overlayAPI.action('mute'); };
-    deafenBtn.onclick = function () { window.overlayAPI && window.overlayAPI.action('deafen'); };
-    leaveBtn.onclick = function () { window.overlayAPI && window.overlayAPI.action('leave'); };
+    function send(type) { try { window.overlayAPI && window.overlayAPI.action(type); } catch (e) { /* ignore */ } }
+    function wire(btn, type, optimistic) {
+      var release = function () { btn.classList.remove('is-pressed'); };
+      btn.onpointerdown = function () { btn.classList.add('is-pressed'); };
+      btn.onpointerup = release; btn.onpointerleave = release; btn.onpointercancel = release;
+      btn.onclick = function () {
+        // Instant state: flip locally, the renderer's update confirms / corrects it.
+        if (optimistic) { optimistic(); render(); }
+        send(type);
+      };
+    }
+    wire(muteBtn, 'mute', function () { state.muted = !state.muted; });
+    wire(deafenBtn, 'deafen', function () { state.deafened = !state.deafened; if (state.deafened) state.muted = true; });
+    wire(leaveBtn, 'leave', null);
     render();
   })();
 `;

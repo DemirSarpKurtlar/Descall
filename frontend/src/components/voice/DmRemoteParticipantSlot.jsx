@@ -11,6 +11,7 @@ import {
   getConnectionStatusLabel,
 } from "../../hooks/useDmRemoteParticipant";
 import { useT } from "../../context/LocaleContext";
+import { dmChipStatus } from "../../lib/callTileState";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import SpeakingRings from "./SpeakingRings";
 import ParticipantStateIcons from "./ParticipantStateIcons";
@@ -30,12 +31,19 @@ function ConnectionBadge({ status }) {
 
   return (
     <div
+      className={`call-conn-chip${isReconnecting ? " is-reconnecting" : isDisconnected ? " is-disconnected" : " is-connected"}`}
+      role="status"
+      aria-live="polite"
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
         padding: "3px 8px",
         borderRadius: 20,
+        // Frosted glass chip; the tint carries the state.
+        backdropFilter: "blur(12px) saturate(140%)",
+        WebkitBackdropFilter: "blur(12px) saturate(140%)",
+        boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.08)",
         background: isDisconnected
           ? "rgba(237,66,69,0.2)"
           : isReconnecting
@@ -47,7 +55,7 @@ function ConnectionBadge({ status }) {
         letterSpacing: "0.01em",
       }}
     >
-      {isDisconnected ? <WifiOff size={11} /> : <Wifi size={11} />}
+      {isDisconnected ? <WifiOff size={11} /> : isReconnecting ? <span className="call-conn-chip-spinner" aria-hidden="true" /> : <Wifi size={11} />}
       {label}
     </div>
   );
@@ -261,7 +269,10 @@ export default function DmRemoteParticipantSlot({
                   <BadgeIcon user={user} />
                 </span>
                 <AdminBadge user={user} variant="chip" />
-                <ConnectionBadge status="connected" />
+                {/* One source of truth (2.13.6): the chip follows the tile's
+                    debounced phase. It used to say "Bağlandı" while a separate
+                    "Yeniden bağlanıyor…" pill sat on the avatar. */}
+                <ConnectionBadge status={dmChipStatus(phase, connectionStatus)} />
                 <ParticipantStateIcons
                   muted={isMuted}
                   deafened={isDeafened}
@@ -389,7 +400,9 @@ export default function DmRemoteParticipantSlot({
           )}
         </div>
       )}
-      <ReconnectOverlay show={reconnecting} />
+      {/* Video tiles have no identity chip, so they keep the bottom pill;
+          avatar tiles show the state in the chip under the name instead. */}
+      <ReconnectOverlay show={reconnecting && live && showVideo} />
     </div>
   );
 }

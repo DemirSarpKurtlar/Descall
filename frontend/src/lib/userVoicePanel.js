@@ -1,3 +1,4 @@
+import { gameNameFromActivity } from "./gameActivity.js";
 /**
  * Bottom-left user + voice panel (2.10.115, web + Electron only).
  * Pure helpers so the state machine is testable without React:
@@ -113,13 +114,9 @@ export function matchVoiceShortcut(e) {
   return null;
 }
 
-/** Game label from useActivity's currentActivity ({displayName: "Playing X"} or {name}). */
+/** Game label from useActivity's currentActivity; "" unless it is a real game (lib/gameActivity.js). */
 export function activityGameName(activity) {
-  if (!activity) return "";
-  const raw = String(activity.gameName || activity.name || activity.displayName || activity.display_name || "").trim();
-  if (!raw) return "";
-  const m = raw.match(/^(?:playing|oynuyor:?)\s+(.+)$/i);
-  return (m ? m[1] : raw).trim();
+  return gameNameFromActivity(activity);
 }
 
 /**
