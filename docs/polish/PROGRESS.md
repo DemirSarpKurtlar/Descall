@@ -49,7 +49,7 @@ Login, register, reset, 2FA, email codes, username checks, Google/Apple, and soc
 
 One-time codes use `crypto.randomInt` and `timingSafeEqual`. Wrong guesses are counted in `auth_code_attempts` for an hour and are not reset when a new code is sent. Sessions are checked against `users.active_sessions` (20s cache) plus the in-memory revoke set. Password reset/change and email change revoke the other sessions, including ones dropped by the 10-session cap. Tokens that already omit a session id stay valid if they were issued before 2026-10-11T12:00:00Z. Newer session-less tokens are rejected. Token lifetime is still 7 days. No refresh-token flow.
 
-`/api/errors` list, resolve, and delete require an admin. The public test routes and `/api/auth/test` are gone. `/debug/*` cannot be enabled in production. Admin role changes require username `admin` or `users.is_super_admin` (set for the admin account only). New passwords must be at least 10 characters and are checked against Have I Been Pwned (fail-open, 2s); set `PASSWORD_HIBP=0` to skip. The signup, reset, and change forms show a Turkish strength meter. Email 2FA stays optional. Authenticator-app 2FA was not added. The desktop app stores the JWT with `safeStorage` and loads packaged pages from `descall://app` with `webSecurity` on. iOS Keychain storage shipped in 2.9.194.
+`/api/errors` list, resolve, and delete require an admin. The public test routes and `/api/auth/test` are gone. `/debug/*` cannot be enabled in production. Admin role changes require username `admin` or `users.is_super_admin` (set for the admin account only). New passwords must be at least 8 characters and are checked against Have I Been Pwned (fail-open, 2s); set `PASSWORD_HIBP=0` to skip. The signup, reset, and change forms show a Turkish strength meter. Email 2FA stays optional. Authenticator-app 2FA was not added. The desktop app stores the JWT with `safeStorage` and loads packaged pages from `descall://app` with `webSecurity` on. iOS Keychain storage shipped in 2.9.194.
 
 Migration `20261011_auth_security.sql` is applied: `pending_email`, `is_super_admin`, and `auth_code_attempts` (RLS on, no anon access).
 
@@ -60,7 +60,7 @@ Sürüm **2.9.193**. Eski uygulama (2.9.182) açılmaya devam eder. Demo hesapla
 - [ ] Demo hesapla birkaç kez giriş yap; yanlış şifreden sonra da giriş çalışır.
 - [ ] Ayarlar → e-posta kodu isterken mevcut şifreyi yaz. Şifresiz dene: Türkçe uyarı gör.
 - [ ] İki adımlı doğrulama açıkken e-posta değiştirince kapanmasın. Yeni adres doğrulanınca açılsın.
-- [ ] Şifre değiştirirken mevcut şifre + en az 10 karakter. Zayıf şifrede Türkçe uyarı.
+- [ ] Şifre değiştirirken mevcut şifre + en az 8 karakter. Zayıf şifrede Türkçe uyarı.
 - [ ] Başka bir oturumdan şifreyi değiştirince o oturum düşsün.
 - [ ] Bilinmeyen kullanıcı adı ile şifre sıfırlama, var olan hesapla aynı genel cümleyi göstersin.
 

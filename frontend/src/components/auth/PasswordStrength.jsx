@@ -5,13 +5,13 @@ export function passwordStrength(password) {
   const value = String(password || "");
   if (!value) return { score: 0, label: "", tooShort: false };
   let score = 0;
-  if (value.length >= 10) score += 1;
-  if (value.length >= 14) score += 1;
+  if (value.length >= 8) score += 1;
+  if (value.length >= 12) score += 1;
   if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
   if (/\d/.test(value)) score += 1;
   if (/[^A-Za-z0-9]/.test(value)) score += 1;
   const label = score <= 1 ? "Weak" : score === 2 ? "Fair" : score === 3 ? "Good" : "Strong";
-  return { score, label, tooShort: value.length < 10 };
+  return { score, label, tooShort: value.length < 8 };
 }
 
 export default function PasswordStrength({ password }) {
@@ -22,9 +22,9 @@ export default function PasswordStrength({ password }) {
   return (
     <p className="auth-field-hint" role="status">
       {t(tone)}
-      {info.tooShort ? `, ${t("Password must be at least 10 characters.")}` : ""}
+      {info.tooShort ? `, ${t("Password must be at least 8 characters.")}` : ""}
       {" · "}
-      {t("Use at least 10 characters. A mix of letters and numbers is safer.")}
+      {t("Use at least 8 characters. A mix of letters and numbers is safer.")}
     </p>
   );
 }

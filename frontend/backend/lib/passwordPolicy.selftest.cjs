@@ -9,7 +9,11 @@ function assert(cond, msg) {
 (async () => {
   const short = await checkNewPassword("short", { env: { PASSWORD_HIBP: "0" } });
   assert(short.code === "weak_password", "short password rejected");
-  assert(/10/.test(short.error), "message names the minimum");
+  assert(/\b8\b/.test(short.error), "message names the minimum");
+  const seven = await checkNewPassword("abcdefg", { env: { PASSWORD_HIBP: "0" } });
+  assert(seven.code === "weak_password", "7 chars rejected");
+  const eight = await checkNewPassword("abcdefgh", { env: { PASSWORD_HIBP: "0" } });
+  assert(!eight.error, "8 chars accepted");
 
   const ok = await checkNewPassword("a-reasonably-long-secret", { env: { PASSWORD_HIBP: "0" } });
   assert(!ok.error, "hibp disabled accepts a long password");

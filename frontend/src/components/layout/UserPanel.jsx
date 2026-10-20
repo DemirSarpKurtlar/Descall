@@ -542,8 +542,8 @@ const UserPanel = forwardRef(function UserPanel({
       setPwNotice(t("Passwords do not match."));
       return;
     }
-    if (pwNew.length < 10) {
-      setPwNotice(t("Password must be at least 10 characters."));
+    if (pwNew.length < 8) {
+      setPwNotice(t("Password must be at least 8 characters."));
       return;
     }
     setPwBusy(true);
