@@ -8,6 +8,8 @@ import JsonLd, { buildEntityGraphLd } from "../JsonLd";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { APP_STORE_URL } from "../appStoreLink";
 import { useIsAppleMobile } from "../useIsAppleMobile";
+import ProductFrame from "../components/ProductFrame";
+import { IconAndroid, IconApple, IconBrowser, IconWindows } from "../icons";
 
 export default function HomePage({ onSignIn, onSignUp }) {
   const { t, locale } = useLocale();
@@ -41,22 +43,25 @@ export default function HomePage({ onSignIn, onSignUp }) {
   return (
     <>
       <JsonLd data={[buildEntityGraphLd()]} />
-      <section className="mkt-hero-split">
-        <div className="mkt-hero-copy">
-          <h1>{t("Talk together")}</h1>
-          <p>
-            {useExperimentCopy && heroPayload.sub
-              ? String(heroPayload.sub)
-              : (
-                <>
-                  {t("Group voice, video, and screen share. Servers with text and voice channels for your whole crew.")}
-                </>
-              )}
+      <section className="mkt-hh" aria-labelledby="mkt-hh-title">
+        <div className="mkt-hh-copy">
+          <h1 id="mkt-hh-title">{t("Talk together")}</h1>
+          <p className="mkt-hh-lead">
+            {useExperimentCopy && heroPayload.sub ? (
+              String(heroPayload.sub)
+            ) : (
+              <>
+                <span className="mkt-hh-lead-long">
+                  {t("Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.")}
+                </span>
+                <span className="mkt-hh-lead-short">{t("Voice chat, screen sharing, and servers.")}</span>
+              </>
+            )}
           </p>
-          <div className="mkt-cta-row">
+          <div className="mkt-hh-cta">
             <button
               type="button"
-              className="mkt-btn mkt-btn-primary"
+              className="mkt-hh-btn is-primary"
               onClick={() => {
                 trackCta("hero", "start_free");
                 openRegister?.({ mode: "register", source: "home_hero" });
@@ -67,40 +72,36 @@ export default function HomePage({ onSignIn, onSignUp }) {
             {appleMobile ? (
               <a
                 href={APP_STORE_URL}
-                className="mkt-btn mkt-btn-soft"
+                className="mkt-hh-btn is-secondary"
                 rel="noopener noreferrer"
                 onClick={() => Funnel.ctaClick({ page: "home", placement: "hero", label: "app_store", intent: "download" })}
               >
+                <IconApple size={18} />
                 {t("Download on the App Store")}
               </a>
             ) : (
               <Link
                 to={href("/download")}
-                className="mkt-btn mkt-btn-soft"
+                className="mkt-hh-btn is-secondary"
                 onClick={() => Funnel.ctaClick({ page: "home", placement: "hero", label: "download", intent: "download" })}
               >
+                <IconWindows size={18} />
                 {t("Download the desktop app")}
               </Link>
             )}
           </div>
+          <ul className="mkt-hh-platforms" aria-label={t("Platforms")}>
+            <li><IconApple size={16} />iPhone</li>
+            <li><IconAndroid size={16} />Android</li>
+            <li><IconWindows size={16} />Windows</li>
+            <li><IconBrowser size={16} />Web</li>
+          </ul>
         </div>
-        <SeoProductPreview
-          mode="chat"
-          frame="tilt"
-          chips
-          priority
-          chipScreen={t("Screen share")}
-          chipVoice={t("Voice · Lobby")}
-          caption={t("Descall chat, with servers and a voice channel in the same window")}
-        />
+        <ProductFrame kind="chats" priority alt={t("Descall chat, with servers and a voice channel in the same window")} />
       </section>
 
-      <section className="mkt-shot-row">
-        <SeoProductPreview
-          mode="call"
-          frame="flat"
-          caption={t("A server voice channel with the people already in the call")}
-        />
+      <section className="mkt-shot-row mkt-hh-second">
+        <ProductFrame kind="dm" alt={t("A direct message with a poll on Descall")} />
         <div className="mkt-shot-copy">
           <h2>{t("Voice next to the chat")}</h2>
           <p>

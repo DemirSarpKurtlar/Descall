@@ -1,0 +1,178 @@
+/* Home hero (approved 2026-10-19, design/ai-look-2026-10-19/01 + 05).
+   Flat dark background with one soft light from the top, no orbs or grid,
+   plain-colour title, real app screen in heavy frosted glass. */
+
+body:has(.mkt-hh) .mkt-bg {
+  background:
+    radial-gradient(120% 70% at 70% -10%, #1a2240 0%, rgba(14, 17, 32, 0.9) 48%, rgba(10, 12, 20, 0) 78%),
+    #0a0c14;
+}
+
+/* Navigation = heavy frosted glass (strong blur, high-opacity tinted base). */
+.mkt .mkt-header {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04) 40%),
+    rgba(22, 25, 38, 0.78);
+  -webkit-backdrop-filter: blur(48px) saturate(180%);
+  backdrop-filter: blur(48px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 30px 80px rgba(0, 0, 0, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.mkt .mkt-hh {
+  display: grid;
+  grid-template-columns: minmax(0, 470px) minmax(0, 1fr);
+  gap: 72px;
+  align-items: center;
+  min-height: 640px;
+  padding: 96px 0 40px;
+}
+
+.mkt .mkt-hh-copy h1 {
+  margin: 0;
+  font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+  font-size: 76px;
+  line-height: 0.98;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  color: #f4f6fb;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  max-width: 6.2em;
+}
+
+.mkt .mkt-hh-lead {
+  margin: 22px 0 0;
+  font-size: 20px;
+  line-height: 1.45;
+  color: rgba(235, 238, 250, 0.72);
+}
+.mkt .mkt-hh-lead-short { display: none; }
+
+.mkt .mkt-hh-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.mkt .mkt-hh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms cubic-bezier(0.2, 0.9, 0.3, 1.25), background-color 120ms ease-out;
+}
+.mkt .mkt-hh-btn:active { transform: scale(0.97); transition-duration: 90ms; }
+.mkt .mkt-hh-btn:focus-visible { outline: 2px solid #8fa8ff; outline-offset: 3px; }
+.mkt .mkt-hh-btn.is-primary {
+  /* #3a66ee: white text 4.87:1 (axe AA). */
+  background: #3a66ee;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px rgba(79, 124, 255, 0.35);
+}
+.mkt .mkt-hh-btn.is-primary:hover { background: #3563e9; }
+.mkt .mkt-hh-btn.is-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f4f6fb;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+}
+.mkt .mkt-hh-btn.is-secondary:hover { background: rgba(255, 255, 255, 0.14); }
+.mkt .mkt-hh-btn svg { flex: none; }
+
+.mkt .mkt-hh-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+  color: rgba(225, 230, 245, 0.5);
+  font-size: 14px;
+  font-weight: 600;
+}
+.mkt .mkt-hh-platforms li { display: inline-flex; align-items: center; gap: 7px; }
+
+/* Product frame: desktop window. */
+.mkt .mkt-pf { margin: 0; min-width: 0; }
+.mkt .mkt-pf-glass {
+  padding: 10px;
+  border-radius: 30px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04) 40%),
+    rgba(22, 25, 38, 0.62);
+  -webkit-backdrop-filter: blur(48px) saturate(180%);
+  backdrop-filter: blur(48px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 30px 80px rgba(0, 0, 0, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.mkt .mkt-pf-screen {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1440 / 900;
+  object-fit: cover;
+  object-position: left top;
+  border-radius: 20px; /* 30 - 10 padding: concentric */
+}
+.mkt .mkt-hh-second .mkt-pf { order: 0; }
+
+@media (max-width: 1100px) {
+  .mkt .mkt-hh { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 64px; min-height: 0; }
+  .mkt .mkt-hh-copy h1 { max-width: none; }
+}
+
+/* ≤768 px: portrait phone frame with the real iPhone screen (05-mobile-landing). */
+@media (max-width: 768px) {
+  .mkt .mkt-hh { gap: 36px; padding: 28px 0 24px; }
+  .mkt .mkt-hh-copy h1 { font-size: 40px; line-height: 1.05; letter-spacing: -0.03em; }
+  .mkt .mkt-hh-copy h1 br { display: none; }
+  .mkt .mkt-hh-lead { margin-top: 12px; font-size: 17px; line-height: 1.4; }
+  .mkt .mkt-hh-lead-long { display: none; }
+  .mkt .mkt-hh-lead-short { display: inline; }
+  .mkt .mkt-hh-cta { flex-direction: column; gap: 10px; margin-top: 24px; }
+  .mkt .mkt-hh-btn { width: 100%; height: 50px; }
+  .mkt .mkt-hh-platforms { display: none; }
+
+  .mkt .mkt-pf { display: flex; justify-content: center; }
+  .mkt .mkt-pf-glass {
+    width: min(236px, 64vw);
+    padding: 8px;
+    border-radius: 38px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 40%),
+      rgba(18, 20, 30, 0.82);
+    -webkit-backdrop-filter: blur(64px) saturate(190%);
+    backdrop-filter: blur(64px) saturate(190%);
+  }
+  .mkt .mkt-pf-screen {
+    aspect-ratio: 780 / 1688;
+    object-position: center top;
+    border-radius: 30px; /* 38 - 8: concentric with the iPhone corner */
+  }
+  .mkt .mkt-hh-second { gap: 24px; }
+  .mkt .mkt-hh-second .mkt-shot-copy p { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt .mkt-hh-btn, .mkt .mkt-hh-btn:active { transition: background-color 120ms ease-out; transform: none; }
+}

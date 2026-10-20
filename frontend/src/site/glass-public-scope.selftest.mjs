@@ -30,7 +30,7 @@ assert.ok(selectors.length > 10, `expected selectors, got ${selectors.length}`);
 for (const group of selectors) {
   for (const sel of group.split(",").map((s) => s.trim()).filter(Boolean)) {
     assert.ok(
-      sel.startsWith(".mkt") || sel.startsWith(".mkt-consent") || sel.startsWith("body:has(.mkt)") || sel.startsWith(".invite-landing"),
+      sel.startsWith(".mkt") || sel.startsWith(".dc-consent") || sel.startsWith("body:has(.mkt)") || sel.startsWith(".invite-landing"),
       `unscoped public selector: ${sel}`
     );
   }

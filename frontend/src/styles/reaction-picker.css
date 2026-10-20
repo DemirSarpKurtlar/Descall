@@ -1,0 +1,173 @@
+/* Reaction picker (approved 2026-10-19, design/maintenance-and-menus-2026-10-19/2-tepki-secici-*).
+   Desktop: a small toolbar (react · reply · more) on the message row; "react" opens a
+   pill of six quick reactions + "+" above it; the hovered emoji grows on a spring
+   and names itself ("Kalp · ❤️"). Every surface is heavy frosted glass (frost.css). */
+
+:root:root .message-hover-bar {
+  height: auto;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+:root:root .message-hover-bar > .hover-bar-btn {
+  width: 30px;
+  min-width: 30px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  color: rgba(255, 255, 255, 0.75);
+  transition: background-color 120ms ease-out, color 120ms ease-out, transform 140ms ease-out;
+}
+:root:root .message-hover-bar > .hover-bar-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+:root:root .message-hover-bar > .hover-bar-btn.active { background: rgba(10, 132, 255, 0.25); color: #8ec7ff; }
+:root:root .message-hover-bar > .hover-bar-btn:active { transform: scale(0.9); transition-duration: 70ms; }
+:root[data-theme="light"] .message-hover-bar > .hover-bar-btn { color: rgba(20, 22, 30, 0.72); }
+:root[data-theme="light"] .message-hover-bar > .hover-bar-btn:hover { background: rgba(0, 0, 0, 0.06); color: #111; }
+
+/* Quick reaction pill. */
+.mrx-pill {
+  position: absolute;
+  left: auto;
+  right: 0;
+  width: max-content;
+  bottom: calc(100% + 10px);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  transform-origin: 100% 100%;
+  z-index: 31;
+}
+.mrx-pill.flip-down { top: calc(100% + 10px); bottom: auto; transform-origin: 100% 0%; }
+.mrx-e {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 260ms cubic-bezier(0.25, 1.4, 0.45, 1),
+    background-color 140ms ease-out,
+    box-shadow 200ms ease-out;
+}
+.mrx-e.is-hover,
+.mrx-e:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.22) translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  outline: none;
+  z-index: 1;
+}
+.mrx-e:active { transform: scale(1.08); transition-duration: 80ms; }
+.mrx-glyph { display: block; pointer-events: none; }
+.mrx-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.82);
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  background: rgba(10, 11, 16, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f4f6fb;
+  font: 600 12px/1.2 -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.mrx-sep { width: 1px; height: 24px; margin: 0 4px; background: rgba(255, 255, 255, 0.12); flex: none; }
+.mrx-more {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, transform 140ms ease-out;
+}
+.mrx-more:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.mrx-more:active { transform: scale(0.92); transition-duration: 70ms; }
+:root[data-theme="light"] .mrx-e.is-hover { background: rgba(0, 0, 0, 0.08); }
+:root[data-theme="light"] .mrx-sep { background: rgba(0, 0, 0, 0.12); }
+:root[data-theme="light"] .mrx-more { background: rgba(0, 0, 0, 0.06); color: rgba(20, 22, 30, 0.8); }
+
+/* "⋯" actions menu. */
+.mhb-more {
+  position: absolute;
+  left: auto;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 190px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  transform-origin: 100% 0%;
+  z-index: 31;
+}
+.mhb-mi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: #f4f6fb;
+  font: 500 14px/1 -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.mhb-mi:hover, .mhb-mi:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+.mhb-mi:active { background: rgba(255, 255, 255, 0.12); }
+.mhb-mi.danger { color: #ff6961; }
+:root[data-theme="light"] .mhb-mi { color: #15171e; }
+:root[data-theme="light"] .mhb-mi:hover { background: rgba(0, 0, 0, 0.06); }
+
+/* iPhone / mobile long-press pill: six reactions, separator, "+" circle. */
+html.glass-ui .g-msg-pop .g-react-bar { gap: 2px; padding: 0 6px; }
+html.glass-ui .g-msg-pop .g-react-bar .emoji-chip {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  transition: transform 240ms cubic-bezier(0.25, 1.4, 0.45, 1), background-color 120ms ease-out;
+}
+html.glass-ui .g-msg-pop .g-react-bar .emoji-chip:active {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.22) translateY(-3px);
+  transition-duration: 90ms;
+}
+html.glass-ui .g-msg-pop .g-react-sep { width: 1px; height: 24px; margin: 0 4px; background: rgba(255, 255, 255, 0.12); flex: none; }
+html.glass-ui .g-msg-pop .g-react-bar .hover-bar-btn.g-react-more {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mrx-e, .mrx-more, .mhb-mi, :root:root .message-hover-bar > .hover-bar-btn,
+  html.glass-ui .g-msg-pop .g-react-bar .emoji-chip { transition: background-color 120ms ease-out; }
+  .mrx-e.is-hover, .mrx-e:focus-visible, .mrx-e:active,
+  html.glass-ui .g-msg-pop .g-react-bar .emoji-chip:active { transform: none; }
+}

@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } fr
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { FileText, Download, Smile, SmilePlus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "../ui/Icon.jsx";
+import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
@@ -64,7 +64,10 @@ import {
 } from "../../lib/glassMessageMenu";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
+// Reaction picker (approved 2026-10-19, maintenance-and-menus 2-tepki-secici-*):
+// six quick reactions, a separator, then "+" for every emoji.
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+const QUICK_EMOJI_NAMES = { "👍": "Thumbs up", "❤️": "Heart", "😂": "Laughing", "😮": "Surprised", "😢": "Sad", "🔥": "Fire" };
 const PICKER_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "👏", "🤔", "👎"];
 
 function dmConversationId(a, b) {
@@ -707,6 +710,16 @@ function MessageBubble({
   const suppressMediaClickUntil = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Desktop: "+" in the reaction pill opens the full grid; "⋯" opens the rest of the actions.
+  const [fullPicker, setFullPicker] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [rxHover, setRxHover] = useState(-1);
+  useEffect(() => {
+    if (!menuOpen) { setFullPicker(false); setMoreOpen(false); setRxHover(-1); }
+  }, [menuOpen]);
+  useEffect(() => {
+    if (!pickerOpen) { setFullPicker(false); setRxHover(-1); }
+  }, [pickerOpen]);
   // iOS long-press "More reactions": full emoji sheet replaces the overlay.
   const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
@@ -977,8 +990,8 @@ function MessageBubble({
   }, [menuOpen, closeFromOwner]);
 
   useEffect(() => {
-    messageHoverToolbar.setLocked(hoverKey.current, pickerOpen);
-  }, [pickerOpen, menuOpen]);
+    messageHoverToolbar.setLocked(hoverKey.current, pickerOpen || moreOpen);
+  }, [pickerOpen, moreOpen, menuOpen]);
 
   useEffect(() => () => messageHoverToolbar.forget(hoverKey.current), []);
 
@@ -1060,9 +1073,14 @@ function MessageBubble({
     if (!bar || !list) return;
     const b = bar.getBoundingClientRect();
     const l = list.getBoundingClientRect();
+    if (!fullPicker) {
+      // Reaction pill sits above the bar; below it only when the top would clip.
+      setPickerFlip(b.top - 64 < Math.max(l.top, 0));
+      return;
+    }
     const need = 160;
     setPickerFlip(b.bottom + need > l.bottom && b.top - need >= l.top - 4);
-  }, [pickerOpen]);
+  }, [pickerOpen, fullPicker]);
 
   useEffect(() => {
     pressGate.current.noteLightbox(lightboxOpen);
@@ -1088,6 +1106,19 @@ function MessageBubble({
     setPickerOpen(false);
     resetSwipe();
   }, [message, onReply, resetSwipe]);
+
+  const copyText = useCallback(() => {
+    const text = plainText(String(message.text || ""));
+    if (!text) return;
+    try {
+      const done = navigator.clipboard?.writeText?.(text);
+      if (done?.catch) done.catch(() => {});
+    } catch {
+      /* clipboard unavailable */
+    }
+    setMenuOpen(false);
+    setPickerOpen(false);
+  }, [message.text]);
 
   const replyLive = useRef({ triggerReply, resetSwipe, isOwn, editing });
   replyLive.current = { triggerReply, resetSwipe, isOwn, editing };
@@ -1435,32 +1466,17 @@ function MessageBubble({
               onMouseLeave={scheduleClose}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <div className="msg-quick-react">
-                {QUICK_EMOJIS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    className="emoji-chip"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      emitReact(e);
-                    }}
-                    title={`${t("React")} ${e}`}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
               <button
                 type="button"
-                className={`hover-bar-btn ${pickerOpen ? "active" : ""}`}
-                title={t("More reactions")} aria-label={t("More reactions")}
+                className={`hover-bar-btn${pickerOpen ? " active" : ""}`}
+                title={t("React")} aria-label={t("React")} aria-expanded={pickerOpen}
                 onClick={(ev) => {
                   ev.stopPropagation();
+                  setMoreOpen(false);
                   setPickerOpen((v) => !v);
                 }}
               >
-                <Smile size={14} />
+                <Smile size={16} />
               </button>
               <button
                 type="button"
@@ -1471,75 +1487,75 @@ function MessageBubble({
                   triggerReply();
                 }}
               >
-                <Reply size={14} />
+                <Reply size={16} />
               </button>
-              {canPin && (
+              {(canPin || canEdit || canDelete || !isOwn) && (
                 <button
                   type="button"
-                  className={`hover-bar-btn ${isPinned ? "active" : ""}`}
-                  title={isPinned ? t("Unpin") : t("Pin")} aria-label={isPinned ? t("Unpin") : t("Pin")}
+                  className={`hover-bar-btn${moreOpen ? " active" : ""}`}
+                  title={t("More")} aria-label={t("More")} aria-haspopup="menu" aria-expanded={moreOpen}
                   onClick={(ev) => {
                     ev.stopPropagation();
-                    togglePin();
+                    setPickerOpen(false);
+                    setMoreOpen((v) => !v);
                   }}
                 >
-                  {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
-                </button>
-              )}
-              {canEdit && (
-                <button
-                  type="button"
-                  className="hover-bar-btn"
-                  title={t("Edit")} aria-label={t("Edit")}
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    beginEdit();
-                  }}
-                >
-                  <Pencil size={14} />
-                </button>
-              )}
-              {canDelete && (
-                <button
-                  type="button"
-                  className="hover-bar-btn danger"
-                  title={t("Delete")} aria-label={t("Delete")}
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    deleteMessage();
-                  }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-              {!isOwn && (
-                <button
-                  type="button"
-                  className="hover-bar-btn"
-                  title={t("report.action")} aria-label={t("report.action")}
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    const author = message.from || {};
-                    const id = author.id || message.sender_id || message.userId || message.user_id;
-                    if (!id || id === currentUserId) return;
-                    onReport?.({
-                      id,
-                      username: author.username || message.username,
-                      snippet: String(message.text || "").slice(0, 400),
-                      contextType: conversationType,
-                      contextId: message.id,
-                      occurredAt: message.timestamp || message.created_at || message.createdAt,
-                    });
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Flag size={14} />
+                  <MoreHorizontal size={16} />
                 </button>
               )}
 
               <AnimatePresence>
-                {pickerOpen && (
+                {pickerOpen && !fullPicker && (
                   <motion.div
+                    key="rx-pill"
+                    className={`reaction-picker mrx-pill${pickerFlip ? " flip-down" : ""}`}
+                    role="toolbar"
+                    aria-label={t("React")}
+                    initial={{ opacity: 0, scale: 0.9, y: pickerFlip ? -6 : 6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.08 } }}
+                    transition={{ type: "spring", stiffness: 520, damping: 34, mass: 0.8 }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseLeave={() => setRxHover(-1)}
+                  >
+                    {QUICK_EMOJIS.map((e, i) => (
+                      <button
+                        key={e}
+                        type="button"
+                        className={`mrx-e${rxHover === i ? " is-hover" : ""}`}
+                        aria-label={`${t(QUICK_EMOJI_NAMES[e] || "React")} ${e}`}
+                        onMouseEnter={() => setRxHover(i)}
+                        onFocus={() => setRxHover(i)}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          emitReact(e);
+                          setPickerOpen(false);
+                        }}
+                      >
+                        <span className="mrx-glyph">{e}</span>
+                        {rxHover === i ? (
+                          <span className="mrx-tip" role="tooltip">{t(QUICK_EMOJI_NAMES[e] || "React")} · {e}</span>
+                        ) : null}
+                      </button>
+                    ))}
+                    <span className="mrx-sep" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="mrx-more"
+                      title={t("More reactions")} aria-label={t("More reactions")}
+                      onMouseEnter={() => setRxHover(-1)}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setFullPicker(true);
+                      }}
+                    >
+                      <Plus size={19} />
+                    </button>
+                  </motion.div>
+                )}
+                {pickerOpen && fullPicker && (
+                  <motion.div
+                    key="rx-full"
                     className={`message-inline-picker${pickerFlip ? " flip-up" : ""}`}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1554,11 +1570,69 @@ function MessageBubble({
                     </div>
                     <div className="message-inline-picker-grid">
                       {PICKER_EMOJIS.map((e) => (
-                        <button key={e} type="button" onClick={() => emitReact(e)}>
+                        <button key={e} type="button" onClick={() => { emitReact(e); setPickerOpen(false); }}>
                           {e}
                         </button>
                       ))}
                     </div>
+                  </motion.div>
+                )}
+                {moreOpen && (
+                  <motion.div
+                    key="mhb-more"
+                    className="g-toolbar-menu mhb-more"
+                    role="menu"
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.08 } }}
+                    transition={{ type: "spring", stiffness: 520, damping: 34, mass: 0.8 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {canPin && (
+                      <button type="button" role="menuitem" className="mhb-mi" onClick={() => { setMoreOpen(false); togglePin(); }}>
+                        {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                        {isPinned ? t("Unpin") : t("Pin")}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button type="button" role="menuitem" className="mhb-mi" onClick={() => { setMoreOpen(false); beginEdit(); }}>
+                        <Pencil size={16} />{t("Edit")}
+                      </button>
+                    )}
+                    {message.text ? (
+                      <button type="button" role="menuitem" className="mhb-mi" onClick={() => { setMoreOpen(false); copyText(); }}>
+                        <Copy size={16} />{t("Copy")}
+                      </button>
+                    ) : null}
+                    {!isOwn && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="mhb-mi danger"
+                        onClick={() => {
+                          const author = message.from || {};
+                          const id = author.id || message.sender_id || message.userId || message.user_id;
+                          setMoreOpen(false);
+                          if (!id || id === currentUserId) return;
+                          onReport?.({
+                            id,
+                            username: author.username || message.username,
+                            snippet: String(message.text || "").slice(0, 400),
+                            contextType: conversationType,
+                            contextId: message.id,
+                            occurredAt: message.timestamp || message.created_at || message.createdAt,
+                          });
+                          setMenuOpen(false);
+                        }}
+                      >
+                        <Flag size={16} />{t("report.action")}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button type="button" role="menuitem" className="mhb-mi danger" onClick={() => { setMoreOpen(false); deleteMessage(); }}>
+                        <Trash2 size={16} />{t("Delete")}
+                      </button>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1582,6 +1656,7 @@ function MessageBubble({
             onReact={emitReact}
             onMore={() => { setMenuOpen(false); setPickerOpen(false); setEmojiSheetOpen(true); }}
             onReply={triggerReply}
+            onCopy={message.text ? copyText : null}
             canPin={canPin}
             isPinned={isPinned}
             onPin={togglePin}
@@ -1644,7 +1719,7 @@ function prefersReducedMotionNow() {
  */
 function GlassMessageMenu({
   bubbleRef, isOwn, onClose, quick, onReact, onMore,
-  onReply, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
+  onReply, onCopy, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const [closing, setClosing] = useState(false);
   const bar = useMaterialize(!closing);
@@ -1701,7 +1776,7 @@ function GlassMessageMenu({
   useEffect(() => () => clearTimeout(closeRef.current.timer), []);
 
   if (!lift || typeof document === "undefined") return null;
-  const menuRows = 2 + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
+  const menuRows = 1 + (onCopy ? 1 : 0) + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
   // Visible area: with the keyboard up the visual viewport is shorter than
   // the layout viewport, so clamp the bar and menu to what the user sees.
   const vv = window.visualViewport;
@@ -1770,10 +1845,11 @@ function GlassMessageMenu({
           }}
         >
           {quick.map((e) => (
-            <button key={e} type="button" className="emoji-chip" {...act(() => onReact(e))}>{e}</button>
+            <button key={e} type="button" className="emoji-chip" aria-label={`${t(QUICK_EMOJI_NAMES[e] || "React")} ${e}`} {...act(() => onReact(e))}>{e}</button>
           ))}
-          <button type="button" className="hover-bar-btn" aria-label={t("More reactions")} {...act(onMore)}>
-            <Smile size={18} />
+          <span className="g-react-sep" aria-hidden="true" />
+          <button type="button" className="hover-bar-btn g-react-more" aria-label={t("More reactions")} {...act(onMore)}>
+            <Plus size={20} />
           </button>
         </div>
         <div
@@ -1787,6 +1863,9 @@ function GlassMessageMenu({
             style={{ ["--g-mat-origin"]: `${isOwn ? "100%" : "0%"} ${layout.menuFromAbove ? "0%" : "100%"}` }}
           >
             <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
+            {onCopy && (
+              <button type="button" className="g-mi" {...act(onCopy)}><Copy size={19} />{t("Copy")}</button>
+            )}
             {canPin && (
               <button type="button" className="g-mi" {...act(onPin)}>
                 {isPinned ? <PinOff size={19} /> : <Pin size={19} />}
@@ -1796,13 +1875,12 @@ function GlassMessageMenu({
             {canEdit && (
               <button type="button" className="g-mi" {...act(onEdit)}><Pencil size={19} />{t("Edit")}</button>
             )}
-            <button type="button" className="g-mi" {...act(onMore)}><SmilePlus size={19} />{t("More reactions")}</button>
             {(canDelete || canReport) && <div className="g-msep" />}
             {canDelete && (
               <button type="button" className="g-mi danger" {...act(onDelete)}><Trash2 size={19} />{t("Delete")}</button>
             )}
             {canReport && (
-              <button type="button" className="g-mi" {...act(onReport)}><Flag size={19} />{t("report.action")}</button>
+              <button type="button" className="g-mi danger" {...act(onReport)}><Flag size={19} />{t("report.action")}</button>
             )}
           </div>
         </div>

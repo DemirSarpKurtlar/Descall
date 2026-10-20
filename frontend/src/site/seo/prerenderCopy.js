@@ -167,7 +167,7 @@ export function homeHero(isTr) {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
         h1: "Birlikte konuşun",
-        lead: "Grup sesi, görüntü ve ekran paylaşımı. Tüm ekibin için metin ve ses kanallı sunucular.",
+        lead: "Arkadaşlarınla sesli sohbet, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
         voiceTitle: "Sohbetin yanında ses",
         voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
         serversTitle: "Rol ve kanallı sunucular",
@@ -239,7 +239,7 @@ export function homeHero(isTr) {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
         h1: "Talk together",
-        lead: "Group voice, video, and screen share. Servers with text and voice channels for your whole crew.",
+        lead: "Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.",
         voiceTitle: "Voice next to the chat",
         voiceBody: "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.",
         serversTitle: "Servers with roles and channels",

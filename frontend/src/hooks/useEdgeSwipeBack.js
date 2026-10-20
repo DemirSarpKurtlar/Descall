@@ -84,7 +84,7 @@ export const SWIPE_BACK_BLOCKERS = [
 ].join(",");
 
 // Non-blocking banners that happen to use role="dialog".
-const NON_BLOCKING = ".ios-pwa-banner, .mkt-consent, .app-consent, .mobile-drawer-backdrop";
+const NON_BLOCKING = ".ios-pwa-banner, .dc-consent, .mobile-drawer-backdrop";
 
 // Starting a body-zone swipe on these never steals the touch (edge still works).
 const NO_SWIPE_TARGETS =
