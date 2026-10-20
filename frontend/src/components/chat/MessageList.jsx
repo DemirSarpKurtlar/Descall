@@ -996,7 +996,7 @@ function MessageBubble({
   useEffect(() => () => messageHoverToolbar.forget(hoverKey.current), []);
 
   // Desktop hover toolbar placement (lib/hoverToolbarPlacement.js): the pill is
-  // anchored to the row's top-right inside the visible chat column, never on the
+  // anchored to the message card's top-right corner (overlapping its top border) inside the visible chat column, never on the
   // header (avatar, name, badges, time) and never clipped; above the row when
   // short of space, quick reactions folded into the emoji button as a last resort.
   const [barCompact, setBarCompact] = useState(false);
@@ -1035,11 +1035,10 @@ function MessageBubble({
       ...row.querySelectorAll(":scope > .message-header .message-avatar, :scope > .message-header .message-meta > *"),
       ...document.querySelectorAll(".chat-top-chrome .header-left, .chat-top-chrome .header-right"),
     ].map(rect).filter((r) => r.width > 0 && r.height > 0);
-    // The hovered message itself: the pill may overlap the row's empty top-right,
-    // never the text, media or embed it acts on.
-    obstacles.push(rect(el));
+    // Anchor to the card (.message-group), never to the hovered bubble: a
+    // grouped follow-up bubble used to drag the pill to the card's middle.
     const p = placeHoverToolbar({
-      row: rect(row), clip, bubble: rect(el), obstacles,
+      row: rect(row), clip, obstacles,
       fullW: fullWidth, compactW, barH: bar.offsetHeight || 44,
     });
     const b = rect(el);
