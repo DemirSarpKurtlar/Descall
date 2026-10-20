@@ -11,6 +11,7 @@ import LegalContentModal from "./legal/LegalContentModal";
 import BirthDateInput from "./auth/BirthDateInput";
 import TermsConsent from "./auth/TermsConsent";
 import SocialSignupStep from "./auth/SocialSignupStep";
+import { usernameFromName } from "./auth/SignupUsernamePicker";
 import PasswordStrength from "./auth/PasswordStrength";
 import { isSocialSignupRequired } from "../api/auth";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
@@ -86,6 +87,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   // answers <provider>_signup_required and the user finishes Terms + date of birth
   // here first. { provider: "apple" | "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
+  const [signupUsername, setSignupUsername] = useState({ value: "", ok: false });
   const [socialSigningUp, setSocialSigningUp] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -128,6 +130,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
 
   const submitSocialSignup = async () => {
     if (!socialSignup || socialSigningUp || !termsAccepted || !isEligibleBirthDate(birthDate)) return;
+    if (socialSignup.provider === "apple" && !signupUsername.ok) return;
     if (under13SignupBlocked() || noteUnder13BirthDate(birthDate)) {
       setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
       return;
@@ -139,6 +142,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       await finish?.(socialSignup.credential, {
         termsAccepted: true,
         birthDate,
+        ...(socialSignup.provider === "apple" ? { username: signupUsername.value } : {}),
         ...(invitedBy ? { invitedBy } : {}),
       });
     } catch {
@@ -247,6 +251,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           busy={loading || socialSigningUp}
           onSubmit={submitSocialSignup}
           onBack={() => setSocialSignup(null)}
+          usernameInitial={socialSignup.suggestedUsername || ""}
+          onUsernameState={setSignupUsername}
+          usernameOk={signupUsername.ok}
         />
       ) : mode === "forgot" ? (
         <ForgotPasswordFlow onBack={() => setMode("login")} />
@@ -290,7 +297,8 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             });
           } catch (err) {
             if (isSocialSignupRequired(err)) {
-              setSocialSignup({ provider: "apple", credential: apple });
+              const fromName = usernameFromName([apple?.givenName, apple?.familyName].filter(Boolean).join(""));
+              setSocialSignup({ provider: "apple", credential: apple, suggestedUsername: err?.body?.suggestedUsername || fromName || "" });
               return;
             }
             throw err;
