@@ -3819,9 +3819,9 @@ export const phrases = {
   "Copyright": "Telif hakkı",
   "Check your inbox to confirm. You can unsubscribe any time.":
     "Onaylamak için gelen kutunu kontrol et. İstediğin zaman abonelikten çıkabilirsin.",
-  "Password must be at least 10 characters.": "Şifre en az 10 karakter olmalı.",
-  "Use at least 10 characters. A mix of letters and numbers is safer.":
-    "En az 10 karakter kullan. Harf ve rakam karışımı daha güvenli.",
+  "Password must be at least 8 characters.": "Şifre en az 8 karakter olmalı.",
+  "Use at least 8 characters. A mix of letters and numbers is safer.":
+    "En az 8 karakter kullan. Harf ve rakam karışımı daha güvenli.",
   "Verify your email to protect this account and to turn on two-factor sign-in.":
     "Hesabını korumak ve iki adımlı doğrulamayı açmak için e-postanı doğrula.",
   ...TR_INAPP_GAPS,

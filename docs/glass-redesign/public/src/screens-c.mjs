@@ -52,7 +52,7 @@ S["23b-forgot-reset"] = page(heroBg, { ...vp, overlay: modal(`${logoRow}<h2>Rese
   <div class="otp" style="margin-top:8px"><span>4</span><span>8</span><span>1</span><span class="on">2</span><span></span><span></span></div>
   <div class="fi" style="margin-top:14px">${I.lock}<span>New password</span><span class="end">${I.eye}</span></div>
   <div class="fi">${I.lock}<span>Confirm new password</span><span class="end">${I.eye}</span></div>
-  <p class="fhint">Password must be at least 10 characters.</p>
+  <p class="fhint">Password must be at least 8 characters.</p>
   <a class="b lg tint-brand" style="width:100%;margin-top:14px">Reset password</a>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><a class="backlink">${I.back}Back to login</a><span style="margin-top:16px;font-size:14px;color:var(--t3);font-variant-numeric:tabular-nums">Resend code · 0:42</span></div>`) });
 S["23c-forgot-done"] = page(heroBg, { ...vp, overlay: modal(`<div style="text-align:center;padding-top:8px"><div class="ico c-green" style="width:64px;height:64px;border-radius:32px;margin:0 auto">${I.check}</div>

@@ -70,8 +70,8 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
       setError(t("Passwords do not match."));
       return;
     }
-    if (newPassword.length < 10) {
-      setError(t("Password must be at least 10 characters."));
+    if (newPassword.length < 8) {
+      setError(t("Password must be at least 8 characters."));
       return;
     }
     setBusy(true);

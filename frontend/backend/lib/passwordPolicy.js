@@ -2,14 +2,14 @@
 
 const crypto = require("crypto");
 
-const MIN_PASSWORD_LENGTH = 10;
+const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 72;
 const HIBP_TIMEOUT_MS = 2000;
 
 function passwordLengthError(password) {
   if (typeof password !== "string") return "Şifre metin olmalı.";
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return "Şifre en az 10 karakter olmalı.";
+    return `Şifre en az ${MIN_PASSWORD_LENGTH} karakter olmalı.`;
   }
   if (password.length > MAX_PASSWORD_LENGTH) return "Şifre en fazla 72 karakter olabilir.";
   return null;
