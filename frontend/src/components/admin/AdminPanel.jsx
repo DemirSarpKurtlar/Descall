@@ -81,6 +81,8 @@ function SystemSwitch({ icon: Icon, tone, label, status, checked, disabled, onCh
 
 const TABS = [
   { id: "overview", label: "admin.overview", icon: LayoutDashboard },
+  // Bakım sits right after Genel Bakış so it is reachable from the front of the list.
+  { id: "maintenance", label: "admin.maintenance", icon: Wrench },
   { id: "directory", label: "admin.users", icon: Users },
   { id: "analytics", label: "admin.analytics", icon: Activity },
   { id: "people", label: "admin.people", icon: FolderSearch },
@@ -94,8 +96,6 @@ const TABS = [
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
   { id: "audit", label: "admin.audit", icon: FileText },
-  // Bakım sits last: an occasional, high-impact tool, kept out of the daily path.
-  { id: "maintenance", label: "admin.maintenance", icon: Wrench },
 ];
 
 export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername }) {
