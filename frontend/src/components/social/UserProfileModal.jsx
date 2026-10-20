@@ -357,7 +357,7 @@ function UserProfileModal({
                   </button>
                 </div>
                 <div className="g-profile-body">
-                  <div className="g-profile-avatar">
+                  <div className="g-profile-avatar" style={{ "--av-size": "88px" }}>
                     <Avatar
                       key={userId || "profile"}
                       name={displayName}
@@ -534,7 +534,8 @@ function UserProfileModal({
             <div className={`user-profile-card-top${glassDesktop ? " is-gd" : ""}`} style={glassDesktop ? undefined : { position: "relative", padding: "0 16px" }}>
               <div
                 className="profile-avatar-shell"
-                style={glassDesktop ? undefined : {
+                style={glassDesktop ? { "--av-size": "104px" } : {
+                  "--av-size": "72px",
                   position: "absolute",
                   top: -36,
                   left: 16,
