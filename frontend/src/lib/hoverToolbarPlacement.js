@@ -1,16 +1,20 @@
 // Where the desktop message hover toolbar goes (pure, unit-tested).
 //
-// The pill is anchored to the message CARD's top-right corner (the
-// .message-group row, not the hovered bubble: a grouped follow-up message must
-// not pull the pill down into the middle of the card), `right` px in from the
-// card's right edge (clamped to the visible chat column), overlapping the card's
-// top border by `overlap` px, Discord-style. It must never cover the row header
-// (avatar, name, badges, time) and never be clipped by the column. Candidates:
-//   1. full pill on the card's top edge
-//   2. full pill just inside the card's top (first row, no room above)
-//   3. compact pill (quick reactions folded into the emoji button), same two spots
-//   4. under the header, inside the card (very narrow columns)
-// If none fits, the compact pill inside the card's top-right is used.
+// The pill sits directly ABOVE the hovered bubble: `gap` px over its top edge,
+// left-aligned to the bubble's left edge (right-aligned to the bubble's right
+// edge when the left-aligned pill would overflow the visible chat column).
+// It never covers the row header (avatar, name, badges, time) or the floating
+// conversation header, and is never clipped. Candidates, in order:
+//   1. full pill above the bubble, left-aligned        ("above")
+//   2. full pill above the bubble, right-aligned       ("above-right")
+//   3. compact pill (quick reactions folded) at 1 / 2
+//   4. "above-beside-header": first bubble under the header: same height,
+//      slid right past the name/badges/date (header and text both visible)
+//   5. "edge": the bubble is the first under the header and there is no room
+//      above it, so the pill straddles the bubble's top edge, left-aligned,
+//      starting just under the header (header stays visible; it still reads
+//      as sitting on top of the bubble).
+// Horizontal position is always clamped inside the column.
 //
 // All rects are viewport rects: { left, top, right, bottom }.
 
@@ -18,41 +22,62 @@ const intersects = (a, b, pad) =>
   a.left < b.right + pad && a.right > b.left - pad && a.top < b.bottom + pad && a.bottom > b.top - pad;
 
 export function placeHoverToolbar({
-  row,
+  bubble,
   clip,
   obstacles = [],
   fullW,
   compactW,
   barH,
-  inset = 12,
-  overlap = 16,
-  gap = 4,
+  gap = 6,
+  inset = 4,
 }) {
-  const right = Math.min(row.right - inset, clip.right - 4);
-  const minLeft = Math.max(row.left, clip.left) + 4;
-  const edgeTop = row.top - overlap;
-  const insideTop = Math.max(row.top + 6, clip.top + 4);
-  const belowTop = Math.max(insideTop, ...obstacles.filter(Boolean).map((o) => o.bottom + gap));
-  const candidates = [
-    { compact: false, top: edgeTop, where: "edge" },
-    { compact: false, top: insideTop, where: "inside" },
-    { compact: true, top: edgeTop, where: "edge" },
-    { compact: true, top: insideTop, where: "inside" },
-    { compact: false, top: belowTop, where: "below-header" },
-    { compact: true, top: belowTop, where: "below-header" },
-  ];
-  const fits = (c) => {
-    const w = c.compact ? compactW : fullW;
-    const rect = { left: right - w, right, top: c.top, bottom: c.top + barH };
-    if (rect.left < minLeft) return null;
-    if (rect.top < clip.top + 4 || rect.bottom > clip.bottom - 4) return null;
-    if (obstacles.some((o) => o && intersects(rect, o, gap))) return null;
-    return rect;
+  const minLeft = clip.left + inset;
+  const maxRight = clip.right - inset;
+  const aboveTop = bubble.top - gap - barH;
+  const xFor = (w, align) => {
+    let left = align === "left" ? bubble.left : bubble.right - w;
+    if (left + w > maxRight) left = maxRight - w;
+    if (left < minLeft) left = minLeft;
+    return left;
   };
-  for (const c of candidates) {
-    const rect = fits(c);
-    if (rect) return { ...rect, compact: c.compact, where: c.where };
+  const rectFor = (w, align, top) => {
+    const left = xFor(w, align);
+    return { left, right: left + w, top, bottom: top + barH };
+  };
+  const ok = (r) =>
+    r.right <= maxRight + 0.5 && r.left >= minLeft - 0.5 &&
+    r.top >= clip.top + inset && r.bottom <= clip.bottom - inset &&
+    !obstacles.some((o) => o && intersects(r, o, 2));
+  const tries = [
+    [false, "left", "above"], [false, "right", "above-right"],
+    [true, "left", "above"], [true, "right", "above-right"],
+  ];
+  for (const [compact, align, where] of tries) {
+    const fitsLeft = bubble.left + (compact ? compactW : fullW) <= maxRight;
+    if (align === "left" && !fitsLeft) continue;
+    const r = rectFor(compact ? compactW : fullW, align, aboveTop);
+    if (ok(r)) return { ...r, compact, where };
   }
-  const left = Math.max(minLeft, right - compactW);
-  return { left, right: left + compactW, top: insideTop, bottom: insideTop + barH, compact: true, where: "fallback" };
+  // First bubble under the header: same row above the bubble, slid right past
+  // the name/badges/date so the header stays visible and the text is not covered.
+  for (const compact of [false, true]) {
+    const w = compact ? compactW : fullW;
+    const band = { top: aboveTop, bottom: aboveTop + barH };
+    const blockers = obstacles.filter((o) => o && o.top < band.bottom + 2 && o.bottom > band.top - 2 && o.right > bubble.left - 200);
+    const left = Math.max(bubble.left, ...blockers.map((o) => o.right + 8));
+    const r = { left, right: left + w, top: aboveTop, bottom: aboveTop + barH };
+    if (ok(r)) return { ...r, compact, where: "above-beside-header" };
+  }
+  // No room above: straddle the bubble's top edge just under the header.
+  const floor = Math.max(clip.top + inset, ...obstacles.filter(Boolean)
+    .filter((o) => o.bottom <= bubble.top + 2 && o.right > bubble.left - 200)
+    .map((o) => o.bottom + gap));
+  const top = Math.min(Math.max(aboveTop, floor), clip.bottom - inset - barH);
+  for (const compact of [false, true]) {
+    const w = compact ? compactW : fullW;
+    const r = rectFor(w, bubble.left + w <= maxRight ? "left" : "right", top);
+    if (r.left >= minLeft - 0.5) return { ...r, compact, where: "edge" };
+  }
+  const r = rectFor(compactW, "left", top);
+  return { ...r, compact: true, where: "edge" };
 }
