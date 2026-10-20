@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext } from "react";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
@@ -141,6 +141,26 @@ function scrollScrollerToBottom(el) {
 /**
  * Discord-style message list with day / unread separators.
  */
+const MediaGalleryContext = createContext([]);
+
+function galleryItemsFrom(messages) {
+  const out = [];
+  for (const m of Array.isArray(messages) ? messages : []) {
+    const prev = visualMediaPreview(m);
+    if (!prev || prev.isGif) continue;
+    const from = m.from || {};
+    out.push({
+      id: String(m.id ?? m.tempId ?? out.length),
+      raw: m.mediaUrl || m.media_url,
+      name: m.originalName || m.original_name || "",
+      sender: from.displayName || from.display_name || from.username || m.username || "",
+      avatar: from.avatarUrl || from.avatar_url || "",
+      at: m.timestamp || m.created_at || m.createdAt || null,
+    });
+  }
+  return out;
+}
+
 export default function MessageList({
   messages,
   currentUser,
@@ -168,6 +188,7 @@ export default function MessageList({
   const messagesEndRef = useRef(null);
   const listRef = useRef(null);
   useOffscreenRows(listRef, messages?.length || 0);
+  const galleryItems = useMemo(() => galleryItemsFrom(messages), [messages]);
   const stickToBottomRef = useRef(true);
   const prevLastIdRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
@@ -418,6 +439,7 @@ export default function MessageList({
   }
 
   return (
+    <MediaGalleryContext.Provider value={galleryItems}>
     <div className="message-list" ref={listRef}>
       {isSearching && (
         <div className="message-search-result-count">
@@ -675,6 +697,7 @@ export default function MessageList({
         occurredAt={reportTarget?.occurredAt}
       />
     </div>
+    </MediaGalleryContext.Provider>
   );
 }
 
@@ -724,6 +747,7 @@ function MessageBubble({
   const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const galleryItems = useContext(MediaGalleryContext);
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.text || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1431,6 +1455,10 @@ function MessageBubble({
             src={mediaUrl}
             alt={isGif ? "GIF" : message.originalName || t("Image")}
             onClose={closeLightbox}
+            items={isGif ? null : galleryItems}
+            startId={String(message.id ?? message.tempId ?? "")}
+            sender={message.from?.displayName || message.from?.username || ""}
+            at={message.timestamp || message.created_at || null}
           />
         )}
 

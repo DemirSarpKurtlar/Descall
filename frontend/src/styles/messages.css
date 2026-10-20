@@ -666,3 +666,59 @@
 .chat-search-field input::placeholder {
   color: var(--text-muted);
 }
+
+/* 2.13.8 image viewer: heavy frosted glass, never see-through. */
+.mv-root {
+  position: fixed; inset: 0; z-index: 12000;
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(14, 15, 22, 0.94);
+  -webkit-backdrop-filter: blur(48px) saturate(160%); backdrop-filter: blur(48px) saturate(160%);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+  box-sizing: border-box; gap: 12px;
+}
+.mv-root .g-glass-heavy {
+  background: linear-gradient(180deg, rgba(58, 60, 76, 0.92), rgba(38, 40, 52, 0.94));
+  -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+.mv-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(760px, 100%); padding: 8px 10px 8px 12px; border-radius: 999px; z-index: 2; }
+.mv-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mv-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mv-avatar-fallback { display: grid; place-items: center; background: #5865f2; color: #fff; font-weight: 700; }
+.mv-who-text { display: flex; flex-direction: column; min-width: 0; }
+.mv-who-text strong { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mv-who-text span { color: rgba(235, 235, 245, 0.6); font-size: 12.5px; }
+.mv-actions { display: flex; gap: 4px; }
+.mv-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: transparent; color: #fff; padding: 6px 10px; border-radius: 14px; cursor: pointer; transition: background 140ms ease, transform 120ms ease; }
+.mv-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.mv-btn:active { transform: scale(0.94); }
+.mv-btn-label { font-size: 11px; color: rgba(235, 235, 245, 0.75); }
+.mv-stage { position: relative; flex: 1; width: 100%; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+.mv-frame { max-width: min(1100px, 100%); max-height: 100%; padding: 14px; border-radius: 22px; box-sizing: border-box; overflow: hidden; display: grid; place-items: center; will-change: transform; }
+.mv-img { display: block; max-width: 100%; max-height: calc(100vh - 220px); border-radius: 12px; object-fit: contain; will-change: transform; transform-origin: center; }
+.mv-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border-radius: 50%; color: #fff; display: grid; place-items: center; cursor: pointer; z-index: 2; transition: transform 140ms ease; }
+.mv-nav:active { transform: translateY(-50%) scale(0.92); }
+.mv-prev { left: 18px; }
+.mv-next { right: 18px; }
+.mv-bottom { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; color: #fff; z-index: 2; }
+.mv-zoom, .mv-zoom-value { border: 0; background: transparent; color: #fff; height: 36px; min-width: 36px; border-radius: 12px; cursor: pointer; font-size: 14px; font-variant-numeric: tabular-nums; }
+.mv-zoom:disabled { opacity: 0.35; cursor: default; }
+.mv-zoom-value { min-width: 56px; }
+.mv-sep { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.14); margin: 0 6px; }
+.mv-count { font-size: 14px; font-variant-numeric: tabular-nums; }
+.mv-dots { display: inline-flex; gap: 6px; margin-left: 8px; }
+.mv-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); }
+.mv-dots i.on { background: #fff; }
+.mv-hint { margin: 0; font-size: 12px; color: rgba(235, 235, 245, 0.5); }
+.mv-toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; color: #fff; font-size: 13px; }
+@media (max-width: 768px) {
+  .mv-btn-label, .mv-hint, .mv-nav { display: none; }
+  .mv-top { border-radius: 22px; }
+  .mv-frame { padding: 0; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+  .mv-img { max-height: calc(100vh - 170px); border-radius: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mv-root *, .mv-root { transition: none !important; }
+}
