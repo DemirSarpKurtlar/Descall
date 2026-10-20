@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bug, Lightbulb, MessageSquarePlus, Star, X } from "lucide-react";
+import { Bug, Lightbulb, MessageSquarePlus, Star, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, User, Palette, Bell, Mic, Headphones,
   Globe, Lock, Shield, ChevronRight, Save
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import { confirmAction } from "../../lib/glassConfirm";

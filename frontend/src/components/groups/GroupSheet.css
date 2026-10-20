@@ -55,7 +55,7 @@
   .gs-scrim { align-items: center; padding: 24px; }
   .gs-sheet {
     width: min(440px, calc(100vw - 48px));
-    border-radius: 30px;
+    border-radius: var(--r-xl);
     padding-bottom: 0;
     box-shadow:
       inset 0 0.5px 0 rgba(255, 255, 255, 0.3),
@@ -142,7 +142,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   transition: opacity 0.15s;
 }
 .gs-text-btn.is-primary { font-weight: 600; }
@@ -192,7 +192,7 @@
 .gs-footnote .is-count { font-variant-numeric: tabular-nums; flex: 0 0 auto; }
 .gs-footnote .is-count.is-over { color: var(--gs-danger); }
 .gs-group {
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: var(--gs-fill);
   box-shadow: inset 0 0 0 0.5px var(--gs-hair);
   overflow: hidden;
@@ -293,7 +293,7 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   gap: 6px;
   height: 40px;
   padding: 0 8px 0 10px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(118, 118, 128, 0.24);
   color: var(--gs-t3);
 }
@@ -318,7 +318,7 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   height: 32px;
   padding: 0 14px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -341,7 +341,7 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   width: 100%;
   min-height: 52px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -366,7 +366,7 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   padding: 2px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(118, 118, 128, 0.24);
 }
 .gs-segmented button {
@@ -378,7 +378,7 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   font-weight: 500;
   letter-spacing: -0.08px;
   min-height: 30px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
   white-space: nowrap;
@@ -394,7 +394,7 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   align-items: flex-start;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   font-size: 15px;
   line-height: 20px;
   letter-spacing: -0.23px;

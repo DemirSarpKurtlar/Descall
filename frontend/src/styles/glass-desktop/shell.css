@@ -28,7 +28,7 @@ html.glass-desktop .app-root {
 
 html.glass-desktop .nav-rail {
   border: none;
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   overflow: hidden;
   background: var(--gd-glass-fill);
   -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
@@ -64,7 +64,7 @@ html.glass-desktop .nav-rail .rail-user-panel:focus-visible {
 html.glass-desktop .nav-rail-logo {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   padding: 0;
   background: transparent;
   border: none;
@@ -72,7 +72,7 @@ html.glass-desktop .nav-rail-logo {
 }
 
 html.glass-desktop .nav-item {
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 
 html.glass-desktop .nav-item.active {

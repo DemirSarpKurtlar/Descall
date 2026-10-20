@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
-import { X } from "lucide-react";
+import { X } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { shouldDismissSheet } from "../../lib/groupInfo";

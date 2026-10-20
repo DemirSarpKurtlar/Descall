@@ -10,7 +10,7 @@ import {
   RefreshCw,
   Search,
   Users,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { fetchCallHistory } from "../../api/calls";

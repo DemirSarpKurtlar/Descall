@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Gift, Sparkles, X } from "lucide-react";
+import { Gift, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { equipShopItem } from "../../api/shop";
 import { useT } from "../../context/LocaleContext";
@@ -74,8 +74,6 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
 
           <div className="shop-gift-icon">
             <Gift size={28} />
-            <Sparkles size={16} className="shop-gift-sparkle shop-gift-sparkle-1" />
-            <Sparkles size={12} className="shop-gift-sparkle shop-gift-sparkle-2" />
           </div>
 
           <h3>{t("You received a gift!")}</h3>

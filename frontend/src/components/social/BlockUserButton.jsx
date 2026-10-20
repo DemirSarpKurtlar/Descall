@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Ban } from "lucide-react";
+import { Ban } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { confirmToggleBlock, useIsBlocked } from "../../lib/blockedUsers";
 

@@ -323,7 +323,7 @@ html.glass-ui .g-me-btn {
   width: 44px;
   height: 44px;
   min-width: 44px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   padding: 3px;
   flex-shrink: 0;
   border: 0;
@@ -412,7 +412,7 @@ html.glass-ui .g-me-av .g-st.status-offline { background: var(--g-off); }
 html.glass-ui .g-bgroup {
   position: relative;
   height: 44px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   display: inline-flex;
   align-items: center;
   align-self: center;
@@ -447,7 +447,7 @@ html.glass-ui .g-bgroup-btn {
   border: 0;
   padding: 0;
   margin: 0;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -467,7 +467,7 @@ html.glass-ui .g-nb {
   right: 5px;
   min-width: 15px;
   height: 15px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 0 4px;
   background: var(--g-brand);
   color: #fff;
@@ -483,7 +483,7 @@ html.glass-ui .g-nb {
 html.glass-ui .g-cbtn {
   width: 44px;
   height: 44px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -553,7 +553,7 @@ html.glass-ui .g-searchbar {
   left: 16px;
   right: 16px;
   height: 42px;
-  border-radius: 21px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -623,7 +623,7 @@ html.glass-ui .g-tab-lens {
   bottom: 4px;
   left: 4px;
   width: calc((100% - 8px) / var(--g-tab-n, 7));
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   z-index: 1 !important;
   pointer-events: none;
   will-change: transform;
@@ -684,7 +684,7 @@ html.glass-ui .g-tab {
   justify-content: center;
   gap: 3px;
   min-width: 0;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   border: 0;
   padding: 0;
   margin: 0;
@@ -728,7 +728,7 @@ html.glass-ui .g-dotb {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--g-red);
   color: #fff;
   font-size: 10px;
@@ -748,7 +748,7 @@ html.glass-ui.kb-open .g-edge-bot {
 
 /* ── Menus (mockup .menu / .mi / .msep / .mhead) ── */
 html.glass-ui .g-menu {
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   padding: 6px;
   color: var(--g-t1);
   font-family: var(--g-font) !important;
@@ -779,7 +779,7 @@ html.glass-ui .g-mi {
   height: 46px;
   padding: 0 14px;
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: transparent;
   color: var(--g-t1);
   font-size: 16px;
@@ -833,7 +833,7 @@ html.glass-ui .status-picker.g-status-menu {
   overflow-y: auto;
   padding: 8px;
   border: 0;
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   z-index: 100050;
   color: var(--g-t1);
   font-family: var(--g-font) !important;
@@ -858,7 +858,7 @@ html.glass-ui .g-status-menu .status-picker-item {
   gap: 12px;
   height: 46px;
   padding: 0 14px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   font-size: 16px;
   font-weight: 400;
   letter-spacing: -0.015em;
@@ -894,7 +894,7 @@ html.glass-ui .g-status-menu .status-picker-custom {
 html.glass-ui .g-status-menu .status-picker-input-wrap {
   margin: 4px 8px 8px;
   height: 44px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -949,7 +949,7 @@ html.glass-ui .g-status-menu .status-picker-btn {
   flex: 1 1 0;
   min-width: 0;
   height: 34px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   padding: 0 14px;
   gap: 8px;
   font-size: 14px;

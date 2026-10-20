@@ -188,9 +188,10 @@
   z-index: 10;
 }
 
+/* Call controls (ai-look 02): one icon set, 52 px circles, only "Kapat" is solid red. */
 .vc-btn {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.1);
@@ -203,10 +204,17 @@
 }
 .vc-btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
+}
+.vc-btn:active {
+  transform: scale(0.94);
+  transition-duration: 80ms;
+}
+.vc-btn svg { width: 24px; height: 24px; }
+@media (prefers-reduced-motion: reduce) {
+  .vc-btn:active { transform: none; }
 }
 .vc-btn.danger { background: var(--danger); }
-.vc-btn.danger:hover { background: #c72e32; }
+.vc-btn.danger:hover { background: color-mix(in srgb, var(--danger) 86%, black); }
 .vc-btn.active { background: var(--primary); }
 
 /* ─── Minimized PiP ─── */

@@ -99,7 +99,7 @@
 .auth-brand-panel .descall-brand-mark {
   width: 88px;
   height: 88px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   object-fit: cover;
   box-shadow: 0 18px 40px rgba(88, 101, 242, 0.28);
 }
@@ -126,7 +126,7 @@
   width: min(440px, calc(100% - 32px));
   margin: auto;
   padding: 28px 24px 22px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: color-mix(in srgb, #1e1f22 92%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
@@ -147,7 +147,7 @@
 .auth-logo-container .descall-brand-mark {
   width: 72px;
   height: 72px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   object-fit: cover;
 }
 
@@ -172,7 +172,7 @@
   gap: 8px;
   margin: 18px 0 14px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.28);
 }
 
@@ -182,7 +182,7 @@
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 12px;
   background: transparent;
   color: var(--text-muted, #9aa3b2);
@@ -208,7 +208,7 @@
   align-items: center;
   gap: 10px;
   padding: 0 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.32);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -249,7 +249,7 @@
   height: 36px;
   margin-right: -4px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: #9aa3b2;
   cursor: pointer;
@@ -265,7 +265,7 @@
 .auth-submit {
   margin-top: 4px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 12px 16px;
   font-family: inherit;
   font-weight: 700;
@@ -365,7 +365,7 @@
   justify-items: center;
   text-align: center;
   padding: 18px 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: linear-gradient(180deg, rgba(26, 33, 64, 0.55), rgba(15, 17, 23, 0.7));
   color: #c5cad6;
@@ -433,7 +433,7 @@
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   color: rgba(255, 255, 255, 0.96);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
@@ -503,7 +503,7 @@
   min-height: 46px;
   padding: 0 16px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: #000;
   color: #fff;
   font: 600 16px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;

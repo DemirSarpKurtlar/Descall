@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, X, Send, Image, AlertTriangle,
   Star, CheckCircle, Flag, Loader2, ChevronRight, ChevronLeft,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";

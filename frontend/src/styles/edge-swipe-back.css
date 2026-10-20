@@ -97,7 +97,7 @@ html.edge-swipe-active body {
 .edge-swipe-placeholder .esp-head span {
   width: 96px;
   height: 14px;
-  border-radius: 7px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -125,7 +125,7 @@ html.edge-swipe-active body {
 
 .edge-swipe-placeholder .esp-lines span {
   height: 10px;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.08);
   width: 62%;
 }

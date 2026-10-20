@@ -92,7 +92,7 @@
 .mobile-icon-btn {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg-light);
   backdrop-filter: var(--glass-blur);
@@ -120,7 +120,7 @@
 .mobile-search {
   margin: 0 16px 12px;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -166,7 +166,7 @@
 .mobile-list-item {
   width: 100%;
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   border: 1px solid transparent;
   background: transparent;
   display: flex;
@@ -221,7 +221,7 @@
 .mobile-group-icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--mobile-accent-soft);
   color: var(--mobile-accent);
   display: flex;
@@ -261,7 +261,7 @@
 .mobile-empty-icon {
   width: 72px;
   height: 72px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: var(--glass-bg-light);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -299,7 +299,7 @@
 .mobile-back-btn {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: none;
   background: rgba(255, 255, 255, 0.08);
   color: var(--mobile-accent);
@@ -360,7 +360,7 @@
   flex-shrink: 0;
   margin: 8px 12px calc(env(safe-area-inset-bottom, 8px) + 8px);
   padding: 6px 8px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   display: flex;
   align-items: stretch;
   justify-content: space-around;
@@ -376,7 +376,7 @@
   gap: 3px;
   padding: 8px 4px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--text-muted);
   font-size: 10px;
@@ -403,7 +403,7 @@
 .mobile-profile-card {
   margin: 8px 0 16px;
   padding: 20px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   text-align: center;
 }
 
@@ -434,7 +434,7 @@
 .mobile-profile-btn {
   width: 100%;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg-light);
   color: var(--text-1);
@@ -463,7 +463,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.04);
   margin-bottom: 6px;
 }
@@ -482,7 +482,7 @@
 .mobile-request-btn {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: none;
   display: flex;
   align-items: center;
@@ -516,7 +516,7 @@
 .mobile-sheet {
   width: 100%;
   max-height: 85vh;
-  border-radius: 24px 24px 0 0;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
   padding: 20px 20px calc(env(safe-area-inset-bottom, 16px) + 20px);
   overflow-y: auto;
 }
@@ -544,7 +544,7 @@
 .mobile-sheet-tab {
   flex: 1;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--glass-border);
   background: transparent;
   color: var(--text-muted);
@@ -562,7 +562,7 @@
 .mobile-input {
   width: 100%;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--glass-border);
   background: rgba(0, 0, 0, 0.25);
   color: var(--text-1);
@@ -579,7 +579,7 @@
 .mobile-submit-btn {
   width: 100%;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: none;
   background: var(--mobile-accent);
   color: #fff;
@@ -623,7 +623,7 @@
 
 .mobile-notif-banner button {
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
@@ -694,7 +694,7 @@
     flex-direction: column;
     margin: 0;
     padding: 6px;
-    border-radius: 18px;
+    border-radius: var(--r-lg);
   }
 
   .mobile-app.landscape-split .mobile-tab {

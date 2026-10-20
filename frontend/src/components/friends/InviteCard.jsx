@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Coins, Copy, Gift, Link2, Share2 } from "lucide-react";
+import { Check, Coins, Copy, Gift, Link2, Share2 } from "../ui/Icon.jsx";
 import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";

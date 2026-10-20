@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Trophy, Coins, AlertCircle, Gamepad2, TrendingUp, RotateCcw, HelpCircle,
-  Wallet, Crown, Target, Sparkles, BookOpen, Terminal, BarChart3, Zap,
-  Shield, Dice5, Info, HandMetal, X,
-} from "lucide-react";
+import { Trophy, Coins, AlertCircle, Gamepad2, TrendingUp, RotateCcw, HelpCircle, Wallet, Crown, Target, BookOpen, Terminal, BarChart3, Zap, Shield, Dice5, Info, HandMetal, X, Spade } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { casinoHiddenOnThisDevice } from "../../lib/casinoCommands";
 import SlotCabinet from "../games/SlotCabinet";
@@ -260,7 +256,7 @@ function LobbyTable({ credits, onBet, onHelp }) {
     <div className="bj-shell bj-shell--lobby">
       <header className="bj-header">
         <div className="bj-brand">
-          <Sparkles size={18} />
+          <Spade size={18} />
           <div>
             <h3>Blackjack</h3>
             <p>{t("Multi-deck · 3:2 · Soft 17")}</p>

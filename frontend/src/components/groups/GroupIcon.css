@@ -6,8 +6,9 @@
   flex-shrink: 0;
   overflow: hidden;
   font-weight: 700;
-  color: var(--primary, #7c8cff);
-  background: var(--primary-soft, rgba(124, 140, 255, 0.16));
+  /* Same fallback palette as people (ai-look 04): flat colour from the group id. */
+  color: #fff;
+  background: var(--avatar-bg, var(--primary, #4f7cff));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
 }
 .group-photo-icon.has-photo { background: rgba(255, 255, 255, 0.06); }
@@ -58,7 +59,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   gap: 8px;
   margin: 4px 8px 14px;
   padding: 16px 12px 14px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
 }
@@ -68,7 +69,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   border: 0;
   background: none;
   cursor: pointer;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .group-photo-card-icon:active { transform: scale(0.96); }
@@ -100,7 +101,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
 .group-photo-card-btn {
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 0;
   font-size: 12.5px;
   font-weight: 600;

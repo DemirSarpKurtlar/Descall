@@ -10,7 +10,7 @@
   grid-template-areas: "avatar text" "actions actions";
   gap: 12px 12px;
   padding: 14px 16px 16px;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   color: #fff;
   background: rgba(28, 30, 38, 0.58);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
@@ -75,7 +75,7 @@
   gap: 4px;
   padding: 10px 6px 8px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   color: #fff;
   background: rgba(255, 255, 255, 0.14);
   font: 600 12px/1 system-ui, -apple-system, sans-serif;

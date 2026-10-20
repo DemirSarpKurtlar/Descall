@@ -26,7 +26,7 @@ html.glass-ui .app-root.g-shell[data-view="activity"] .activity-current-card {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
     rgba(22, 24, 36, 0.38);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   border-width: 1px;
   border-style: solid;
   border-color: rgba(255, 255, 255, 0.16);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link2, Copy, Check, RefreshCw, Share, AlertCircle, Users } from "lucide-react";
+import { Link2, Copy, Check, RefreshCw, Share, AlertCircle, Users } from "../ui/Icon.jsx";
 import GroupSheet from "./GroupSheet";
 import GroupIcon from "./GroupIcon";
 import { createGroupInviteLink } from "../../api/groups";

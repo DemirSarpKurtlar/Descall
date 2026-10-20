@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
-import { X, Link2, UserRoundPlus, Edit3, ImagePlus, LogOut, Crown } from "lucide-react";
+import { X, Link2, UserRoundPlus, Edit3, ImagePlus, LogOut, Crown } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import GroupIcon from "./GroupIcon";

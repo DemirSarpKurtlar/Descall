@@ -25,10 +25,10 @@ assert.match(header, /backdrop-filter:\s*none/);
 assert.match(header, /background:\s*transparent/);
 assert.equal(/container-type:\s*inline-size/.test(header), false);
 assert.match(block(chat, "html.glass-desktop .sidebar-inner {"), /container-type:\s*inline-size/);
-assert.match(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {"), /border-radius:\s*18px/);
+assert.match(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {"), /border-radius:\s*(?:18px|var\(--r-lg\))/);
 assert.match(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {"), /backdrop-filter:\s*none/);
 assert.equal(/backdrop-filter:\s*blur/.test(block(chat, "html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {")), false);
-assert.match(block(chat, "html.glass-desktop .sidebar-actions::before {"), /border-radius:\s*18px/);
+assert.match(block(chat, "html.glass-desktop .sidebar-actions::before {"), /border-radius:\s*(?:18px|var\(--r-lg\))/);
 assert.match(block(chat, "html.glass-desktop .sidebar-actions::before {"), /backdrop-filter:\s*none/);
 assert.match(block(chat, "html.glass-desktop .sidebar-actions {"), /backdrop-filter:\s*none/);
 
@@ -77,7 +77,7 @@ for (const name of wrappers) {
 }
 
 const convPills = block(chat, "html.glass-desktop .header-identity,");
-assert.match(convPills, /border-radius:\s*26px/);
+assert.match(convPills, /border-radius:\s*(?:26px|var\(--r-xl\))/);
 assert.match(convPills, /backdrop-filter:\s*none/);
 assert.equal(/backdrop-filter:\s*blur/.test(convPills), false);
 assert.match(convPills, /box-shadow:\s*inset/);

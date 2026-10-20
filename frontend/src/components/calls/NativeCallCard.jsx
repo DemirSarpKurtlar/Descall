@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Mic, MicOff, PhoneOff, Volume2 } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Volume2 } from "../ui/Icon.jsx";
 import { getNativeCallSnapshot, nativeHangup, nativeSetMuted, subscribeNativeCall } from "../../lib/iosNativeCall";
 import { nativeCallStatusLabel } from "../../lib/iosNativeCallState";
 import { setCallAudioRoute } from "../../lib/iosNativeCallRoute";

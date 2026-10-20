@@ -15,7 +15,7 @@ function assert(condition, message) {
 
 assert(panel.includes('className="btn-primary sm"'), "catalog cards still use the Buy action");
 assert(
-  /\.shop-item-footer \.ripple-btn[\s\S]{0,400}border-radius:\s*999px/.test(css),
+  /\.shop-item-footer \.ripple-btn[\s\S]{0,400}border-radius:\s*(?:999px|var\(--r-pill\))/.test(css),
   "shop catalog Buy/Equip buttons must be pill-shaped, not square",
 );
 assert(
@@ -23,7 +23,7 @@ assert(
   "shop catalog action labels must stay on one line",
 );
 assert(
-  /\.shop-gift-actions \.ripple-btn[\s\S]{0,200}border-radius:\s*999px/.test(css),
+  /\.shop-gift-actions \.ripple-btn[\s\S]{0,200}border-radius:\s*(?:999px|var\(--r-pill\))/.test(css),
   "shop gift Equip button must match the rounded catalog actions",
 );
 assert(

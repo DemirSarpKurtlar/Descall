@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Smile, X } from "lucide-react";
+import { Smile, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 const COMMON_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "👏", "🤔", "👎"];

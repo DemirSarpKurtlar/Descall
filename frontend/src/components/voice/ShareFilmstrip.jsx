@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { LayoutGrid, Pin, RectangleHorizontal } from "lucide-react";
+import { LayoutGrid, Pin, RectangleHorizontal } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 

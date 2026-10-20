@@ -87,7 +87,7 @@
   .app-sidebar-shell .rail-user-panel {
     width: 44px;
     height: 44px;
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
 
   /* List sidebar fills remaining drawer width */
@@ -443,7 +443,7 @@
   .nav-rail-logo {
     width: 44px;
     height: 44px;
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
 
   .nav-rail-logo .descall-brand,
@@ -457,7 +457,7 @@
   .rail-btn {
     width: 42px;
     height: 42px;
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
 
   .sidebar-secondary {
@@ -590,7 +590,7 @@
 
 .app-notif-banner-btn {
   padding: 5px 14px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   border: none;
   background: rgba(255, 255, 255, 0.22);
   color: white;
@@ -653,7 +653,7 @@
 }
 .app-feedback-banner-btn {
   padding: 5px 14px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   border: none;
   background: rgba(255, 255, 255, 0.22);
   color: white;
@@ -792,7 +792,7 @@
     z-index: 0;
     pointer-events: none;
     box-sizing: border-box;
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: var(--nav-active-bg);
     border: 1px solid var(--nav-active-border);
     box-shadow: var(--nav-active-shadow);
@@ -818,7 +818,7 @@
     color: var(--text-muted);
     font-size: 10px;
     font-weight: 600;
-    border-radius: 12px;
+    border-radius: var(--r-md);
     position: relative;
     z-index: 1;
     cursor: pointer;

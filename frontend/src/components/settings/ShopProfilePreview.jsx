@@ -1,4 +1,4 @@
-import { Flame, Phone, Sparkles, Zap } from "lucide-react";
+import { Flame, Phone, Zap, Check } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import ParallaxBanner from "../ui/ParallaxBanner";
@@ -135,7 +135,7 @@ export default function ShopProfilePreview({ me, t }) {
 
       <div className="shop-equipped-list">
         <div className="shop-profile-stage-label">
-          <Sparkles size={13} />
+          <Check size={13} />
           {t("Equipped")}
         </div>
         <ul>

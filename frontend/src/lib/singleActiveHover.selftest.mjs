@@ -89,7 +89,7 @@ assert.ok(HOVER_TOOLBAR_GRACE_MS >= 100 && HOVER_TOOLBAR_GRACE_MS <= 150);
   const src = readFileSync(new URL("../components/chat/MessageList.jsx", import.meta.url), "utf8");
   assert.match(src, /messageHoverToolbar\.activate\(/);
   assert.match(src, /messageHoverToolbar\.scheduleRelease\(/);
-  assert.match(src, /messageHoverToolbar\.setLocked\(hoverKey\.current, pickerOpen\)/);
+  assert.match(src, /messageHoverToolbar\.setLocked\(hoverKey\.current, pickerOpen(?: \|\| moreOpen)?\)/);
   assert.match(src, /messageHoverToolbar\.forget\(/);
   assert.doesNotMatch(src, /setTimeout\(\(\) => \{\s*setMenuOpen\(false\);\s*setPickerOpen\(false\);\s*\}, 180\)/);
 }

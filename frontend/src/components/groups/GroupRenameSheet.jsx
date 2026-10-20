@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { XCircle, AlertCircle, Loader2 } from "../ui/Icon.jsx";
 import GroupSheet from "./GroupSheet";
 import GroupIcon from "./GroupIcon";
 import { GROUP_NAME_MAX, groupNameLength, renameErrorKey, validateGroupRename } from "../../lib/groupRename";

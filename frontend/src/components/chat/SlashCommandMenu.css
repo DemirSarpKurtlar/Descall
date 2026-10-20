@@ -8,7 +8,7 @@
   right: auto !important;
   padding: 0 !important;
   border: 0 !important;
-  border-radius: 26px !important;
+  border-radius: var(--r-xl) !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) 292px;
   grid-template-rows: minmax(0, 1fr);
@@ -29,7 +29,7 @@
   width: auto;
   left: 8px !important;
   right: 8px !important;
-  border-radius: 28px !important;
+  border-radius: var(--r-xl) !important;
   max-height: min(520px, 56vh) !important;
 }
 .scm .lcol {
@@ -86,7 +86,7 @@
   gap: 6px;
   height: 28px;
   padding: 0 11px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 0;
   background: var(--dsx-chip);
   box-shadow: inset 0 0 0 0.5px var(--dsx-hair);
@@ -121,7 +121,7 @@
   align-items: center;
   gap: 12px;
   padding: 8px 10px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   position: relative;
   width: 100%;
   border: 0;
@@ -134,7 +134,7 @@
 .scm-row .ic {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   display: grid;
   place-items: center;
   flex: none;
@@ -186,7 +186,7 @@
 .scm-row mark {
   background: rgba(var(--dsx-brand), 0.32);
   color: var(--dsx-t1);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   padding: 0 1px;
 }
 .scm-row.is-hi {
@@ -235,7 +235,7 @@
 .scm.is-compact .scm-row .ic {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 .scm-foot {
   display: flex;
@@ -271,7 +271,7 @@
 .scm-det .big {
   width: 52px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: grid;
   place-items: center;
   color: #fff;
@@ -311,7 +311,7 @@
   font-size: 12px;
   line-height: 1.6;
   padding: 9px 11px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.3);
   box-shadow: inset 0 0 0 0.5px var(--dsx-hair);
   color: var(--dsx-t1);
@@ -331,7 +331,7 @@
   gap: 6px;
   height: 26px;
   padding: 0 10px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: var(--dsx-chip);
   box-shadow: inset 0 0 0 0.5px var(--dsx-hair);
   font-size: 12px;
@@ -362,7 +362,7 @@ button.scm-chipx {
 .scm-empty .eic {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   display: grid;
   place-items: center;
   background: var(--dsx-chip2);
@@ -394,7 +394,7 @@ button.scm-chipx {
   right: auto !important;
   padding: 0 !important;
   border: 0 !important;
-  border-radius: 24px !important;
+  border-radius: var(--r-xl) !important;
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
@@ -407,7 +407,7 @@ button.scm-chipx {
   width: auto;
   left: 8px !important;
   right: 8px !important;
-  border-radius: 28px !important;
+  border-radius: var(--r-xl) !important;
 }
 .scm-picker .dsx-pr-row {
   color: inherit;
@@ -418,12 +418,12 @@ button.scm-chipx {
 .scm-picker .dsx-pr-row mark {
   background: rgba(var(--dsx-brand), 0.32);
   color: inherit;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .scm-picker .warn {
   margin: 0 16px 14px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(var(--dsx-danger), 0.1);
   box-shadow: inset 0 0 0 0.5px rgba(var(--dsx-danger), 0.35);
   display: flex;
@@ -442,7 +442,7 @@ button.scm-chipx {
   display: flex;
   align-items: center;
   padding: 0 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 0 0 0.5px var(--dsx-hair2);
   font-size: 13.5px;

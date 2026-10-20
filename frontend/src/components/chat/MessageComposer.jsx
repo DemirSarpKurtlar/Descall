@@ -4,7 +4,7 @@ import {
   Send, Check, Mic, Smile,
   Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply,
   Pencil, Timer, CircleHelp,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { SLASH_ICONS } from "../polls/slashIconsMap";
 import PollCreateSheet from "../polls/PollCreateSheet";
 import BanConfirm from "../polls/BanConfirm";

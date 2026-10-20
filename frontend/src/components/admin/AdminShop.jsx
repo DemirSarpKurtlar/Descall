@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Gift, Plus, RefreshCw, ShoppingBag, Search, CheckCircle2, XCircle, Coins, Sparkles } from "lucide-react";
+import { Gift, Plus, RefreshCw, ShoppingBag, Search, CheckCircle2, XCircle, Coins, Sparkles } from "../ui/Icon.jsx";
 import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
 import { adminFetch } from "../../api/adminHttp";
 import { grantDesCoin } from "../../api/shop";

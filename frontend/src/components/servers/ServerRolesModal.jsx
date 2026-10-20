@@ -3,7 +3,7 @@ import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import { confirmAction } from "../../lib/glassConfirm";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Plus, Shield, Trash2, X, Users } from "lucide-react";
+import { Plus, Shield, Trash2, X, Users } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import {
   getServerRoles,

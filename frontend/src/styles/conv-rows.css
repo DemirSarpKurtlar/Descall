@@ -80,7 +80,7 @@ button.server-channel-row {
 .conv-group-wrap.is-swipeable {
   position: relative;
   margin: 4px 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .conv-group-wrap.is-desktop {
@@ -120,7 +120,7 @@ html.glass-desktop .conv-group-wrap.is-desktop > button.conv-row {
 
 html.glass-desktop .conv-group-wrap.is-desktop,
 html.glass-desktop .conv-group-wrap.is-swipeable {
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 
 html.glass-desktop .conv-group-wrap.is-desktop:hover,
@@ -174,11 +174,11 @@ html.glass-desktop .conv-group-wrap.is-swipeable.is-active-row:hover {
   width: 100%;
   margin: 0;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 html.glass-desktop .server-list-row-wrap > .server-list-item {
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 
 .server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row {
@@ -187,7 +187,7 @@ html.glass-desktop .server-list-row-wrap > .server-list-item {
   width: 100%;
   margin: 0;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding-right: 40px;
 }
 
@@ -208,7 +208,7 @@ html.glass-desktop .server-list-row-wrap > .server-list-item {
 }
 
 html.glass-desktop .server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row {
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: transparent;
   box-shadow: none;
 }

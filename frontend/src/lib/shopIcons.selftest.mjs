@@ -25,7 +25,7 @@ assert(/export function resolveShopBadgeIcon/.test(src), "resolveShopBadgeIcon e
 assert(/export function ShopBadgeIcon/.test(src), "ShopBadgeIcon export");
 assert(/export function ShopTitleTag/.test(src), "ShopTitleTag export");
 assert(/export function ActivityTypeIcon/.test(src), "ActivityTypeIcon export");
-assert(/from "lucide-react"/.test(src), "must use lucide-react");
+assert(/from "\.\.\/components\/ui\/Icon\.jsx"/.test(src), "must use the shared Phosphor icon set");
 assert(!/👑/.test(src.split("SHOP_ICON_BY_EMOJI")[0] || ""), "keys map must not use raw crown emoji as values");
 
 console.log("shopIcons.selftest.mjs: ok");

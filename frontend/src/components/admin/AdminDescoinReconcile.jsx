@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, RefreshCw, Scale, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw, Scale, XCircle } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";

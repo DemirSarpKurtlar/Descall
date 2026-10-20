@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings2, Camera, ImagePlus, Trash2, X } from "lucide-react";
+import { Settings2, Camera, ImagePlus, Trash2, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";

@@ -1,5 +1,5 @@
 /**
- * Shop-sold profile badges / title flair → lucide-react SVG icons.
+ * Shop-sold profile badges / title flair → Phosphor icons (components/ui/Icon.jsx).
  * Maps legacy emoji badge_icon values AND sku/slug keys so catalog rows
  * already in the DB keep rendering without a migration.
  */
@@ -93,7 +93,7 @@ import {
   Waves,
   Wind,
   Zap,
-} from "lucide-react";
+} from "../components/ui/Icon.jsx";
 
 /** Lucide component by stable key (sku slug or admin-entered key). */
 export const SHOP_ICON_BY_KEY = {

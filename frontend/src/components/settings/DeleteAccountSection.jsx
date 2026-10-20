@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { deleteAccount } from "../../api/security";
 import { hapticError } from "../../lib/fluid/haptics";

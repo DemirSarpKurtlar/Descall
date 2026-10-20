@@ -4,7 +4,7 @@ import {
   Ban, Calendar, ChevronRight, Copy, Crown, Download, Eye, IdCard, Image as ImageIcon, Info, Link, Maximize2,
   MessageCircle, Minus, Pencil, Plus, Search, Share2, Shield, Sparkles, Timer, Undo2, UserCheck, UserPlus, UserX, X,
   Eraser, Clock,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { copyText } from "../../lib/copyText";
 import { removeServerMemberTimeout, unbanServerMember } from "../../api/servers";

@@ -4,7 +4,7 @@ import {
   Mic, MicOff, Camera, CameraOff, Monitor, 
   PhoneOff, Users, Settings, Maximize2, Minimize2,
   Volume2, VolumeX, ScreenShare, X
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { useT } from "../../context/LocaleContext";

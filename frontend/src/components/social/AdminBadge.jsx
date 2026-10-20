@@ -1,4 +1,4 @@
-import { Shield } from "lucide-react";
+import { Shield } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { isUserAdmin } from "../../lib/userProfile";
 import "./AdminBadge.css";

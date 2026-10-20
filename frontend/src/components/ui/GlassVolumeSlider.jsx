@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Volume1, Volume2, VolumeX } from "lucide-react";
+import { Volume1, Volume2, VolumeX } from "./Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import {
   GLASS_VOL_THUMB,

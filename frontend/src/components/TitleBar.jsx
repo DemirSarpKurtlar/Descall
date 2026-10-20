@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Minus, Square, X } from "lucide-react";
+import { Minus, Square, X } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
 import { ELECTRON_TITLEBAR_H, electronContentBox } from "../lib/electronViewport";

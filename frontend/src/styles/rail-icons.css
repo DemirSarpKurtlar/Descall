@@ -7,7 +7,7 @@
 html body .nav-rail .rail-btn {
   width: 44px;
   height: 44px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.14));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
@@ -100,7 +100,7 @@ html body .nav-rail .rail-unread-pip {
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ff3b30;
   color: #fff;
   font-size: 11px;

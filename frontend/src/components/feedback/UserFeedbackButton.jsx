@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, X, Send, Image, AlertTriangle,
   Star, CheckCircle, Flag, Loader2, Paperclip, AlertCircle
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { API_BASE_URL } from "../../config/api";
 import { useT } from "../../context/LocaleContext";

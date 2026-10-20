@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Phone, PhoneOff, Video, Users } from "lucide-react";
+import { Phone, PhoneOff, Video, Users } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";

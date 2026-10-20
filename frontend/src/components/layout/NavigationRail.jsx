@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Settings, Check, Shield } from "lucide-react";
+import { Settings, Check, Shield } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { STATUS_META } from "../../lib/presence";
 import { getToken, getUser, setUser } from "../../lib/storage";

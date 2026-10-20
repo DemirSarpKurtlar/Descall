@@ -12,7 +12,7 @@ import {
   Radio,
   User,
   Volume2,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";

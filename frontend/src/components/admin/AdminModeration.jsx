@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Ban, Clock, Shield, Search, RefreshCw, Gavel, UserX, History,
   AlertTriangle, MessageSquare, X, CheckCircle2, Timer,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { API_BASE_URL } from "../../config/api";
 import { Avatar } from "../ui/Avatar";

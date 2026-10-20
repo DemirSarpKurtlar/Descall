@@ -52,7 +52,7 @@
   align-items: flex-start;
   gap: 3px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
   overflow: visible;
@@ -144,7 +144,7 @@
   width: fit-content;
   max-width: min(70%, 420px);
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-2);
   position: relative;
   overflow: visible;
@@ -161,12 +161,12 @@
 
 .message-bubble.own {
   background: var(--primary-soft, rgba(88, 101, 242, 0.15));
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: var(--r-sm);
   margin-left: auto;
 }
 
 .message-bubble:not(.own) {
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: var(--r-sm);
   /* Match header gutter: 40px avatar + 20px gap. Without this, the first
      (non-compact) bubble starts under the avatar and collides with the
      shop frame / effect ring that paints outside the 40×40 box. */
@@ -233,7 +233,7 @@
 .message-media.is-visual {
   margin-top: 6px;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.22);
   line-height: 0;
 }
@@ -243,7 +243,7 @@
 }
 
 .message-bubble.has-media-only .message-media.is-visual {
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .message-media-trigger {
@@ -294,7 +294,7 @@
   box-sizing: border-box;
   min-height: 20px;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-size: 11px;
   line-height: 1;
   font-weight: 800;
@@ -311,7 +311,7 @@
   max-width: 100%;
   height: auto;
   max-height: min(280px, 48vh);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: #000;
 }
 
@@ -368,7 +368,7 @@
   width: auto;
   height: auto;
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
   cursor: default;
   user-select: none;
@@ -401,7 +401,7 @@
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: var(--text-1);
   font-size: 13px;
   text-decoration: none;
@@ -451,7 +451,7 @@
   padding: 10px 14px;
   background: var(--surface-2);
   border: 1px solid var(--border-3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: var(--text-1);
   font-size: 14px;
   line-height: 1.4;
@@ -561,7 +561,7 @@
   padding: 8px;
   background: var(--surface-0);
   border: 1px solid var(--border-3);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   box-shadow: var(--shadow-lg);
   z-index: 100;
   min-width: 200px;
@@ -572,7 +572,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   color: var(--text-1);
@@ -589,7 +589,7 @@
 .attachment-icon {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--surface-2);
   display: flex;
   align-items: center;
@@ -631,7 +631,7 @@
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid color-mix(in srgb, var(--border-3) 70%, transparent);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   color: var(--text-muted);
 }
 

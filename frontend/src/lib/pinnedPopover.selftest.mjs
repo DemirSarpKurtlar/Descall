@@ -67,7 +67,7 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
   const css = read("../components/layout/PinnedMessagesPopover.css");
   assert.match(css, /position: fixed/);
   assert.match(css, /backdrop-filter: blur/);
-  assert.match(css, /border-radius: 22px/);
+  assert.match(css, /border-radius: (?:22px|var\(--r-xl\))/);
   assert.match(css, /prefers-reduced-transparency: reduce/);
 
   const tr = read("../i18n/locales/tr.js");

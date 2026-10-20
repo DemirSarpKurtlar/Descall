@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { PhoneOff, Mic, MicOff, Video, VideoOff, Monitor } from "lucide-react";
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Monitor } from "./ui/Icon.jsx";
 import RippleButton from "./ui/RippleButton";
 import { useT } from "../context/LocaleContext";
 import OverlayPortal from "./ui/OverlayPortal";

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, Reorder, useDragControls, useReducedMotion } from "framer-motion";
-import { BarChart3, Clock, EyeOff, GripVertical, ListChecks, Plus, Search, Send, Smile, X } from "lucide-react";
+import { BarChart3, Clock, EyeOff, GripVertical, ListChecks, Plus, Search, Send, Smile, X } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { foldTr } from "../../lib/slashCommands";

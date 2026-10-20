@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Ban, ChevronRight, Hash, Lock, MessageCircle, Search, Shield, Timer, Eraser, User, Users } from "lucide-react";
+import { Ban, ChevronRight, Hash, Lock, MessageCircle, Search, Shield, Timer, Eraser, User, Users } from "../ui/Icon.jsx";
 import {
   FREQUENT_COMMANDS, PERMISSION_LABELS, SLASH_GROUPS, SLASH_GROUP_BY_ID, groupSlashMatches,
 } from "../../lib/slashCommands";

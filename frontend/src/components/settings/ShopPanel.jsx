@@ -22,7 +22,7 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { ShopBadgeIcon } from "../../lib/shopIcons";
 import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
 import RippleButton from "../ui/RippleButton";

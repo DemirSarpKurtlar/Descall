@@ -54,7 +54,7 @@ for (const f of files) {
 assert.ok(count > 20, `found ${count} selectors`);
 
 const tokens = readFileSync(join(here, "tokens.css"), "utf8");
-for (const exact of ["--gd-deep: #0D0E13", "--gd-r-panel: 24px", "--gd-tb: 40px"]) {
+for (const exact of ["--gd-deep: #0D0E13", "--gd-r-panel: var(--r-xl, 26px)", "--gd-tb: 40px"]) {
   assert.ok(tokens.includes(exact), `missing ${exact}`);
 }
 

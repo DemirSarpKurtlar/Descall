@@ -8,7 +8,7 @@ import {
   Play, Pause, Zap, Server, Database, Wifi, Layers,
   Maximize2, Minimize2, RotateCcw, Save, Eye, EyeOff,
   Flag, FlagOff, Archive, ArchiveRestore
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";

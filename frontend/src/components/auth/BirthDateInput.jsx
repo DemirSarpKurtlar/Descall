@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Cake } from "lucide-react";
+import { Cake } from "../ui/Icon.jsx";
 import { useT } from "../../context/localeContextInstance";
 import { ageFromBirthDate, MIN_AGE } from "../../lib/age";
 import BirthSelect from "./BirthSelect";

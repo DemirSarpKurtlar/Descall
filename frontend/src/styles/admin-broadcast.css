@@ -26,7 +26,7 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--ab-accent, #6ea0ff) 16%, #171c2b) 0%, #0d1019 42%);
   border: 1px solid color-mix(in srgb, var(--ab-accent, #6ea0ff) 45%, rgba(255, 255, 255, 0.08));
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   padding: 28px 24px 22px;
   text-align: center;
   box-shadow:
@@ -40,7 +40,7 @@
   right: 10px;
   background: rgba(255, 255, 255, 0.06);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   width: 28px;
   height: 28px;
   display: flex;
@@ -79,7 +79,7 @@
 
 .admin-broadcast-sev {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--ab-accent, #6ea0ff) 22%, transparent);
   color: var(--ab-accent, #6ea0ff);
 }
@@ -106,7 +106,7 @@
   overflow-wrap: anywhere;
   text-align: left;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 12px 14px;
 }
 
@@ -120,7 +120,7 @@
 .admin-broadcast-actions .ripple-btn,
 .admin-broadcast-actions .btn-primary {
   width: 100%;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 10px 16px;
   font-weight: 700;
 }
@@ -149,7 +149,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--surface-2, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
 }
@@ -173,7 +173,7 @@
 .admin-live-popup-side {
   background: var(--surface-2, rgba(255, 255, 255, 0.03));
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   padding: 18px;
 }
 .admin-live-popup-compose {
@@ -214,7 +214,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: inherit;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 7px 12px;
   cursor: pointer;
   font-weight: 650;
@@ -223,7 +223,7 @@
   width: 38px;
   height: 38px;
   padding: 0;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-size: 18px;
 }
 .admin-live-popup-pills button.is-on,
@@ -248,7 +248,7 @@
 .admin-live-popup-alert,
 .admin-live-popup-ok,
 .admin-live-popup-confirm {
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 12px 14px;
   font-size: 13px;
   text-transform: none;

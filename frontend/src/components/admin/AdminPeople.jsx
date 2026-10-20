@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Search, FolderSearch } from "lucide-react";
+import { Search, FolderSearch } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";

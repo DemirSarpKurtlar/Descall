@@ -2,7 +2,7 @@
 // Every preview renders the real cosmetic classes (cosmetic-*, effect-*, bubble-*,
 // flare-*, aura-*, typing-*, burst-chip-*, overlay-*, [data-theme]) so what the modal
 // shows is what the app draws. `item` null means "nothing worn" (the Şu an side).
-import { Mic, MonitorUp, PhoneOff, Plus, ShieldCheck, SmilePlus, Video } from "lucide-react";
+import { Mic, MonitorUp, PhoneOff, Plus, ShieldCheck, SmilePlus, Video } from "../../ui/Icon.jsx";
 import { ShopBadgeIcon } from "../../../lib/shopIcons";
 import { CountryBadge } from "../CountryFlag";
 

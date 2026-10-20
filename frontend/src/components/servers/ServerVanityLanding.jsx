@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle } from "../ui/Icon.jsx";
 import { previewServerVanity, joinServerByVanity } from "../../api/servers";
 import { getToken } from "../../lib/storage";
 import { useT } from "../../context/LocaleContext";

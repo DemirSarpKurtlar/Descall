@@ -41,7 +41,7 @@
 .vc-mobile-participant {
   padding: 12px;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   margin-bottom: 8px;
 }
 

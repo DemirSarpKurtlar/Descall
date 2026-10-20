@@ -6,7 +6,7 @@
   min-width: min(220px, 72vw);
   max-width: min(320px, 85vw);
   padding: 8px 10px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -74,7 +74,7 @@
   flex: 1;
   min-width: 2px;
   max-width: 4px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.28);
   align-self: center;
 }

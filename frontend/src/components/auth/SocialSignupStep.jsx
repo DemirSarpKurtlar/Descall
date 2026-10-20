@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "../ui/Icon.jsx";
 import { useT } from "../../context/localeContextInstance";
 import { isEligibleBirthDate } from "../../lib/age";
 import BirthDateInput from "./BirthDateInput";

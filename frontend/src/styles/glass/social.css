@@ -30,7 +30,7 @@ html.glass-ui .g-invite {
 html.glass-ui .g-invite-mark {
   width: 48px;
   height: 48px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -77,7 +77,7 @@ html.glass-ui .g-invite-copy em {
 
 html.glass-ui .g-invite-btn {
   height: 34px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   padding: 0 14px;
   border: 0;
   display: inline-flex;
@@ -152,7 +152,7 @@ html.glass-ui .g-friend-row {
   gap: 12px;
   min-height: 76px;
   padding: 12px 18px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   color: var(--g-t1);
 }
 
@@ -263,7 +263,7 @@ html.glass-ui .g-friend-sub.is-dim {
 html.glass-ui .g-ib {
   width: 38px;
   height: 38px;
-  border-radius: 19px;
+  border-radius: var(--r-lg);
   border: 0;
   padding: 0;
   display: inline-flex;
@@ -356,7 +356,7 @@ html.glass-ui .add-modal.g-add-sheet .add-modal-header .icon-btn {
   height: 34px;
   min-width: 34px;
   min-height: 34px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   border: 0;
   background: var(--g-chip-bg);
   color: var(--g-t1);
@@ -369,14 +369,14 @@ html.glass-ui .add-modal.g-add-sheet .add-modal-tabs {
   margin-bottom: 16px;
   padding: 3px;
   gap: 0;
-  border-radius: 21px;
+  border-radius: var(--r-lg);
   background: var(--g-chip-bg);
   box-shadow: var(--g-shadow-chip);
 }
 
 html.glass-ui .add-modal.g-add-sheet .add-modal-tab {
   height: 36px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   gap: 5px;
   padding: 0 6px;
   font-size: 13px;
@@ -409,7 +409,7 @@ html.glass-ui .add-modal.g-add-sheet .add-modal-label {
 
 html.glass-ui .add-modal.g-add-sheet .add-modal-input {
   height: 50px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   padding: 0 16px;
   font-size: 16px;
   color: var(--g-t1);
@@ -424,7 +424,7 @@ html.glass-ui .add-modal.g-add-sheet .g-add-field {
   gap: 10px;
   height: 50px;
   padding: 0 16px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: var(--g-field-bg);
   box-shadow: var(--g-field-shadow);
 }
@@ -460,7 +460,7 @@ html.glass-ui .add-modal.g-add-sheet .add-modal-input::placeholder {
 html.glass-ui .add-modal.g-add-sheet .add-modal-btn {
   height: 50px;
   margin-top: 16px;
-  border-radius: 25px;
+  border-radius: var(--r-xl);
   font-size: 16px;
   font-weight: 650;
   color: var(--g-on-brand);
@@ -481,7 +481,7 @@ html.glass-ui .add-modal.g-add-sheet .quick-add-loading {
 
 html.glass-ui .add-modal.g-add-sheet .quick-add-card {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   color: var(--g-t1);
 }
 
@@ -517,7 +517,7 @@ html.glass-ui .app-root.g-shell .g-server-rail-add {
   height: 48px;
   padding: 0;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: transparent;
   color: var(--g-t2);
   display: flex;
@@ -532,14 +532,14 @@ html.glass-ui .app-root.g-shell .g-server-rail-btn .server-list-icon-fallback,
 html.glass-ui .app-root.g-shell .g-server-rail-btn img {
   width: 48px !important;
   height: 48px !important;
-  border-radius: 16px !important;
+  border-radius: var(--r-lg) !important;
   font-size: 15px !important;
 }
 
 html.glass-ui .app-root.g-shell .g-server-rail-btn.on .server-list-icon,
 html.glass-ui .app-root.g-shell .g-server-rail-btn.on .server-list-icon-fallback,
 html.glass-ui .app-root.g-shell .g-server-rail-btn.on img {
-  border-radius: 14px !important;
+  border-radius: var(--r-md) !important;
   box-shadow: 0 0 0 2.5px var(--g-brand), 0 4px 16px rgba(88, 122, 246, 0.4);
 }
 
@@ -558,7 +558,7 @@ html.glass-ui .app-root.g-shell .g-server-pane {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   padding: 12px 8px 16px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -613,7 +613,7 @@ html.glass-ui .app-root.g-shell .g-server-pane .sidebar-actions .icon-btn {
   padding: 0 !important;
   margin: 0;
   border: 0 !important;
-  border-radius: 15px !important;
+  border-radius: var(--r-md) !important;
   box-shadow: none !important;
   background: var(--g-chip-bg);
   color: var(--g-t1);
@@ -659,7 +659,7 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-channel-row {
   gap: 8px;
   min-height: 38px;
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 15px;
   font-weight: 500;
   color: var(--g-t2);
@@ -737,7 +737,7 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-step-hint {
 html.glass-ui .app-root.g-shell .servers-sidebar .server-list-item {
   min-height: 64px;
   padding: 12px 18px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: transparent;
 }
 
@@ -792,7 +792,7 @@ html.glass-ui .g-server-sheet-id .server-list-icon-fallback,
 html.glass-ui .g-server-sheet-id img {
   width: 48px !important;
   height: 48px !important;
-  border-radius: 16px !important;
+  border-radius: var(--r-lg) !important;
   font-size: 16px !important;
 }
 
@@ -967,7 +967,7 @@ html.glass-ui .g-profile-close {
   right: 12px;
   width: 34px;
   height: 34px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   border: 0;
   display: flex;
   align-items: center;
@@ -1082,7 +1082,7 @@ html.glass-ui .g-profile-actions button {
   flex: 1;
   height: 44px;
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1175,7 +1175,7 @@ html.glass-ui .g-profile-safety button {
   flex: 1;
   height: 40px;
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1222,7 +1222,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .g-profile-save {
   height: 36px;
   padding: 0 14px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   font-size: 15px;
   font-weight: 650;
   cursor: pointer;
@@ -1286,7 +1286,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner {
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner {
   height: 80px;
   margin-top: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1350,7 +1350,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-bio textarea {
   width: 100%;
   min-height: 88px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   padding: 14px;
   resize: vertical;
   color: var(--g-t1);
@@ -1455,7 +1455,7 @@ html.glass-ui .feedback-modal-close {
   min-width: 34px;
   min-height: 34px;
   border: 0;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   background: var(--g-chip-bg);
   color: var(--g-t1);
 }
@@ -1467,7 +1467,7 @@ html.glass-ui .feedback-type-row {
   margin: 0;
   padding: 3px;
   gap: 0;
-  border-radius: 21px;
+  border-radius: var(--r-lg);
   background: var(--g-chip-bg);
   box-shadow: var(--g-shadow-chip);
 }
@@ -1477,7 +1477,7 @@ html.glass-ui .feedback-type-btn {
   min-width: 0;
   padding: 0 6px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: transparent;
   color: var(--g-t2);
   font-size: 13px;
@@ -1504,7 +1504,7 @@ html.glass-ui .feedback-wizard-back {
 html.glass-ui .feedback-cat-btn,
 html.glass-ui .feedback-priority-btn {
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
   color: var(--g-t1);
@@ -1519,7 +1519,7 @@ html.glass-ui .feedback-priority-btn.is-active {
 
 html.glass-ui .feedback-textarea {
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   min-height: 120px;
   padding: 14px 16px;
   font-size: 16px;
@@ -1544,7 +1544,7 @@ html.glass-ui .feedback-close-btn {
   height: 50px;
   margin-top: 4px;
   border: 0;
-  border-radius: 25px;
+  border-radius: var(--r-xl);
   font-size: 16px;
   font-weight: 650;
   color: var(--g-on-brand);
@@ -1559,7 +1559,7 @@ html.glass-ui .feedback-close-btn:hover {
 }
 
 html.glass-ui .feedback-attach-chip {
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
   color: var(--g-t1);
 }

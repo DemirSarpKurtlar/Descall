@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useT } from "../../context/LocaleContext";
+import CloseButton from "./CloseButton.jsx";
 
 export default function Modal({ open, onClose, title, children, wide, className = "" }) {
   const t = useT();
@@ -40,9 +41,7 @@ export default function Modal({ open, onClose, title, children, wide, className 
             {title && (
               <header className="modal-header">
                 <h2>{title}</h2>
-                <button type="button" className="modal-close" onClick={onClose} aria-label={t("Close")}>
-                  ×
-                </button>
+                <CloseButton onClick={onClose} label={t("Close")} />
               </header>
             )}
             <div className="modal-body">{children}</div>

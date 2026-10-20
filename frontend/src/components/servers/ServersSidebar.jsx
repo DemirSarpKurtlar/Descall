@@ -5,52 +5,7 @@ import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Hash,
-  Volume2,
-  Folder,
-  ChevronDown,
-  ChevronRight,
-  ArrowLeft,
-  MoreHorizontal,
-  LogOut,
-  Trash2,
-  RefreshCw,
-  Server,
-  X,
-  Pencil,
-  Settings2,
-  Shield,
-  Link2,
-  LogIn,
-  Ban,
-  ScrollText,
-  MicOff,
-  BellOff,
-  Bell,
-  BellRing,
-  Lock,
-  Radio,
-  ShieldCheck,
-  UserPlus,
-  Settings,
-  Globe,
-  Check,
-  Gamepad2,
-  Crosshair,
-  Users,
-  Megaphone,
-  GraduationCap,
-  Sparkles,
-  Layers,
-  Camera,
-  Upload,
-  ImagePlus,
-  FolderPlus,
-  GripVertical,
-  HeadphoneOff,
-} from "lucide-react";
+import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, ShieldCheck, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff } from "../ui/Icon.jsx";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -94,7 +49,7 @@ const TEMPLATE_ICONS = {
   Megaphone,
   GraduationCap,
   Radio,
-  Sparkles,
+  Sparkles: Plus,
   Server,
 };
 
@@ -2776,7 +2731,7 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
                 onClick={() => goDetails("blank")}
               >
                 <span className="server-create-path-icon" style={{ "--tpl-accent": BLANK_TEMPLATE.accent }}>
-                  <Sparkles size={22} />
+                  <Plus size={22} />
                 </span>
                 <span className="server-create-path-body">
                   <strong>{t("Start from scratch")}</strong>

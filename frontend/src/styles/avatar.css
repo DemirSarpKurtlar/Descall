@@ -24,17 +24,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Letter discs follow the active theme accent, with a glass highlight. */
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0) 64%),
-    linear-gradient(168deg, color-mix(in srgb, var(--primary, #4f7cff) 72%, white), var(--primary, #4f7cff));
+  /* Fallback disc (ai-look 04): flat colour from the user id, no sheen, no gradient. */
+  background: var(--avatar-bg, var(--primary, #4f7cff));
 }
 
 /* Call tiles and other letter discs that are not the shared Avatar component. */
 .letter-avatar {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0) 64%),
-    linear-gradient(168deg, color-mix(in srgb, var(--primary, #4f7cff) 72%, white), var(--primary, #4f7cff));
+  background: var(--avatar-bg, var(--primary, #4f7cff));
   color: #fff;
 }
 
@@ -50,8 +46,11 @@
   line-height: 1;
   letter-spacing: -0.03em;
   color: #fff;
-  text-transform: uppercase;
   user-select: none;
+}
+.ui-avatar-letter.is-two {
+  font-size: 0.36em;
+  letter-spacing: 0.01em;
 }
 
 .ui-avatar-img {
@@ -119,7 +118,7 @@
 /* Profile modal card chrome */
 .user-profile-card {
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 
 .user-profile-card-top {
@@ -134,7 +133,7 @@
   z-index: 10;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   border: none;
   background: rgba(0, 0, 0, 0.4);
   color: #fff;
@@ -217,7 +216,7 @@
   gap: 7px;
   margin-bottom: 14px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-3);
   background: transparent;
   color: var(--text-muted);
@@ -266,7 +265,7 @@
   width: min(420px, 100%);
   max-height: min(88vh, 640px);
   overflow: auto;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.1));
   background: var(--surface-1, #16161d);
   color: var(--text-1, #f4f6fb);
@@ -302,14 +301,14 @@
   color: var(--text-1);
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
 .report-modal-snippet {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.04);
   font-size: 13px;
   color: var(--text-1);
@@ -326,7 +325,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-1);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 7px 12px;
   font-size: 12.5px;
   cursor: pointer;
@@ -348,7 +347,7 @@
 .report-modal-note textarea {
   resize: vertical;
   min-height: 72px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3);
   background: rgba(0, 0, 0, 0.25);
   color: var(--text-1);
@@ -373,7 +372,7 @@
 
 .report-btn {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 600;

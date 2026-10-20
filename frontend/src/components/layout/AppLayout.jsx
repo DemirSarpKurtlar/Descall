@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Bell, X } from "lucide-react";
+import { Bell, X } from "../ui/Icon.jsx";
 import NavigationRail from "./NavigationRail";
 import ServerSidebar from "./ServerSidebar";
 import ServersSidebar from "../servers/ServersSidebar";

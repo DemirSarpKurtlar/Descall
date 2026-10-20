@@ -13,7 +13,7 @@
   display: flex;
   flex-direction: column;
   max-height: inherit;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   overflow: hidden;
   color: inherit;
   background:
@@ -91,7 +91,7 @@
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +133,7 @@
   height: 32px;
   flex: 0 0 32px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -155,7 +155,7 @@
   align-items: center;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 12px;
   font-weight: 650;
   letter-spacing: -0.01em;
@@ -178,7 +178,7 @@
   align-items: flex-start;
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(240, 165, 0, 0.14);
   box-shadow: inset 0 0 0 0.5px rgba(252, 211, 77, 0.35);
   color: #fde68a;
@@ -216,7 +216,7 @@
   margin: 0;
   padding: 12px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   text-align: left;
   color: #fff;
   cursor: pointer;
@@ -263,7 +263,7 @@
   width: 44px;
   height: 44px;
   flex: 0 0 44px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -316,7 +316,7 @@
   right: 10px;
   width: 22px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -336,7 +336,7 @@
   margin: 0 0 8px;
   padding: 10px 12px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   font-weight: 650;
@@ -364,7 +364,7 @@
   display: grid;
   gap: 4px;
   padding: 4px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
@@ -379,7 +379,7 @@
 
 .ssq-seg button {
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 8px 8px;
   background: transparent;
   color: rgba(255, 255, 255, 0.72);
@@ -436,7 +436,7 @@
 
 .ssq-slider::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background:
     linear-gradient(90deg, rgba(143, 166, 255, 0.85), rgba(255, 255, 255, 0.16));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.28);
@@ -460,7 +460,7 @@
 .ssq-slider::-moz-range-track {
   height: 6px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, rgba(143, 166, 255, 0.85), rgba(255, 255, 255, 0.16));
 }
 
@@ -530,7 +530,7 @@
   margin-top: 4px;
   padding: 12px 16px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;

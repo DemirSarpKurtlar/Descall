@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Wallet } from "lucide-react";
+import { Wallet } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 const CELL = 68;

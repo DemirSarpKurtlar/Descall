@@ -13,7 +13,7 @@ import {
   Speaker,
   Video,
   Volume2,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { hapticSelection } from "../../lib/fluid/haptics";
 

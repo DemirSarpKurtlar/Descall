@@ -77,7 +77,7 @@ html.glass-ui {
   /* Native app only (overridden below for phone web). 60px at a 62pt inset. */
   --g-chrome-top: max(0px, calc(env(safe-area-inset-top, 0px) - 2px));
   --g-bar-bottom: 24px;
-  --g-r-card: 22px;
+  --g-r-card: var(--r-xl, 26px);
   --g-r-sheet: 38px;
 
   /* Apple system font: on iOS -apple-system resolves to SF Pro with automatic

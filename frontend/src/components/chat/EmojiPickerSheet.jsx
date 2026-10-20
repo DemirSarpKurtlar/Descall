@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { animate, motion, useDragControls, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
-import { Clock, Search, X } from "lucide-react";
+import { Clock, Search, X } from "../ui/Icon.jsx";
 import { EMOJI_CATEGORIES, loadRecentEmojis, pushRecentEmoji, searchEmojis } from "../../lib/emojiCatalog";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";

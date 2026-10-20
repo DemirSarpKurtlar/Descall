@@ -6,7 +6,7 @@ import {
   Reply, Trash2, Star, Flag, Check, ChevronDown, MoreHorizontal,
   RefreshCw, Archive, Mail, MailOpen, Paperclip as PaperclipIcon,
   Maximize2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, AlertCircle
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
 import RippleButton from "../ui/RippleButton";

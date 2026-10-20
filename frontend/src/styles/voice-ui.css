@@ -22,7 +22,7 @@
   max-width: 1400px;
   max-height: 900px;
   background: var(--surface-0);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   border: 1px solid var(--border-3);
   display: flex;
   flex-direction: column;
@@ -136,7 +136,7 @@
 .wave {
   width: 8px;
   background: var(--primary);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .local-video-pip {
@@ -146,7 +146,7 @@
   width: 200px;
   height: 150px;
   background: var(--surface-1);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 2px solid var(--border-3);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
@@ -171,7 +171,7 @@
   padding: 8px 12px;
   background: var(--surface-0);
   border: 1px solid var(--border-3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: var(--text-1);
   font-size: 13px;
   font-weight: 500;
@@ -221,7 +221,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   border: none;
   color: var(--text-1);
@@ -301,7 +301,7 @@
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface-2);
-  border-radius: 24px;
+  border-radius: var(--r-xl);
 }
 
 .volume-slider {
@@ -370,7 +370,7 @@
 .voice-room-bar-icon {
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   display: grid;
   place-items: center;
   color: #23a55a;
@@ -416,7 +416,7 @@
   align-items: center;
   gap: 6px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 7px 12px;
   font-size: 12px;
   font-weight: 700;

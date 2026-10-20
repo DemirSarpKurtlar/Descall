@@ -56,7 +56,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
   position: relative;
   min-width: 0;
   min-height: 0;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   background: var(--abs-panel);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 18px 48px rgba(0, 0, 0, 0.22);
   overflow: hidden;
@@ -91,7 +91,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
   width: 40px;
   height: 40px;
   flex: 0 0 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .app-boot-skeleton__rail-sep {
@@ -118,7 +118,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 .app-boot-skeleton__title-pill {
   width: 112px;
   height: 36px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   margin-right: auto;
 }
 
@@ -130,14 +130,14 @@ html[data-theme="borealis"] .app-boot-skeleton {
 
 .app-boot-skeleton__search {
   height: 36px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
 }
 
 .app-boot-skeleton__section {
   width: 72px;
   height: 8px;
   margin: 6px 0 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .app-boot-skeleton__row {
@@ -164,7 +164,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 
 .app-boot-skeleton__lines i {
   height: 9px;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
 }
 
 .app-boot-skeleton__uvp {
@@ -178,7 +178,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 .app-boot-skeleton__uvp-status {
   width: 46%;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .app-boot-skeleton__uvp-row {
@@ -200,7 +200,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
   width: 44px;
   height: 26px;
   flex: 0 0 44px;
-  border-radius: 13px;
+  border-radius: var(--r-md);
 }
 
 .app-boot-skeleton__uvp-btn--sm {
@@ -226,7 +226,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 
 .app-boot-skeleton__pill {
   height: 48px;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   max-width: 45%;
 }
 
@@ -255,13 +255,13 @@ html[data-theme="borealis"] .app-boot-skeleton {
 }
 
 .app-boot-skeleton__bubble {
-  border-radius: 18px;
+  border-radius: var(--r-lg);
 }
 
 .app-boot-skeleton__composer {
   height: 52px;
   margin: 0 16px 16px;
-  border-radius: 26px;
+  border-radius: var(--r-xl);
 }
 
 .app-boot-skeleton__label {
@@ -347,7 +347,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 .route-loading__logo {
   width: 88px;
   height: 88px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   object-fit: cover;
   box-shadow: 0 18px 40px rgba(88, 101, 242, 0.28);
   animation: route-loading-breathe 2.6s ease-in-out infinite;
@@ -356,7 +356,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
 .route-loading__bar {
   width: 72px;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
@@ -417,7 +417,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
   min-height: 40px;
   padding: 0 20px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font: inherit;
   font-size: 14px;
   font-weight: 650;

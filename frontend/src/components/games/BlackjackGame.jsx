@@ -4,7 +4,7 @@ import {
   Club, Diamond, Heart, Spade,
   Plus, Minus, RotateCcw, Coins,
   Trophy, AlertCircle
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 const CARD_SUITS = {

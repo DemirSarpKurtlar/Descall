@@ -1,13 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X, Mic, Headphones, Bell, User, LogOut, Moon, Sun,
-  ChevronRight, ChevronLeft, Palette, Volume2, Camera,
-  Type, Upload, Check, MonitorSpeaker, AlertTriangle,
-  Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText,
-  ShoppingBag, Mail, Monitor, CheckCircle2, UserX, Sparkles, KeyRound, Smile,
-  Trash2, AtSign, Lock,
-} from "lucide-react";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { applyDocumentTheme, applyInlineAccent, clearInlineAccent } from "../../lib/themeDocument";
 import { copyText } from "../../lib/copyText";
@@ -2144,7 +2137,7 @@ const UserPanel = forwardRef(function UserPanel({
                     >
                       <div className={`us-theme-swatch theme-${themeItem.theme_key}`} />
                       <div className="us-theme-meta">
-                        <Sparkles size={15} />
+                        <Palette size={15} />
                         <span>{themeItem.name}</span>
                       </div>
                       {selected && <Check size={14} className="us-theme-check" />}
@@ -2526,7 +2519,7 @@ const UserPanel = forwardRef(function UserPanel({
               <h4 className="us-section-label">{t("Noise suppression")}</h4>
               <div className="us-card stack">
                 <SettingRow
-                  icon={Sparkles}
+                  icon={Waveform}
                   title={t("AI noise suppression")}
                   description={t(
                     "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available."

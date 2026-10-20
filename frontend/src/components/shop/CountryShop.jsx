@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { createPortal } from "react-dom";
-import { Check, CheckCircle2, Coins, Flame, Gift, Search, SortAsc, Undo2, X } from "lucide-react";
+import { Check, CheckCircle2, Coins, Flame, Gift, Search, SortAsc, Undo2, X } from "../ui/Icon.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { hapticSelection, hapticTabTick } from "../../lib/fluid/haptics";
 import {

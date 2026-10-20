@@ -167,7 +167,7 @@ html.g-theme-paused body::before {
   left: 8px;
   z-index: 2;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(10, 12, 18, 0.72);
   color: #fff;
   font-size: 11px;

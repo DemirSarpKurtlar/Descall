@@ -13,7 +13,7 @@
   z-index: 1000;
   background: var(--surface-1);
   border: 1px solid var(--border-1);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   padding: 16px 24px;
   box-shadow: var(--shadow-elevation-high);
   display: flex;
@@ -268,7 +268,7 @@
 .nav-rail-logo {
   width: 48px;
   height: 48px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,7 +302,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 13px;
+  border-radius: var(--r-md);
   object-fit: cover;
   transform: none;
 }
@@ -399,7 +399,7 @@ button.nav-rail-logo:active {
 .rail-btn {
   width: 46px;
   height: 46px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
@@ -442,7 +442,7 @@ button.nav-rail-logo:active {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ed4245;
   color: #fff;
   font-size: 9px;
@@ -517,7 +517,7 @@ button.nav-rail-logo:active {
   position: relative;
   isolation: isolate;
   padding: 6px 11px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.05) 42%, rgba(255, 255, 255, 0.02)),
     rgba(20, 22, 34, 0.46);
@@ -617,7 +617,7 @@ html.gd-lite .rail-tooltip {
   flex-shrink: 0;
   overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.03);
@@ -813,7 +813,7 @@ html.gd-lite .rail-tooltip {
 .icon-btn {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -847,7 +847,7 @@ html.gd-lite .rail-tooltip {
 .search-input {
   width: 100%;
   padding: 8px 12px 8px 36px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
@@ -872,7 +872,7 @@ html.gd-lite .rail-tooltip {
   justify-content: space-between;
   padding: 4px 8px;
   margin-bottom: 2px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -913,7 +913,7 @@ html.gd-lite .rail-tooltip {
   align-items: center;
   gap: 12px;
   padding: 12px 18px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1033,7 +1033,7 @@ html.gd-lite .rail-tooltip {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ed4245;
   color: #fff;
   font-size: 11px;
@@ -1054,7 +1054,7 @@ html.gd-lite .rail-tooltip {
 
 .conv-group-wrap.is-swipeable {
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   touch-action: pan-y;
 }
 
@@ -1065,7 +1065,7 @@ html.gd-lite .rail-tooltip {
   transform: translateY(-50%);
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   border: none;
   background: var(--surface-3);
   color: var(--text-2);
@@ -1111,7 +1111,7 @@ html.gd-lite .rail-tooltip {
   min-width: 0;
   box-sizing: border-box;
   padding: 22px 20px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   box-shadow: var(--shadow-xl);
@@ -1145,7 +1145,7 @@ html.gd-lite .rail-tooltip {
 
 .conv-confirm-btn {
   padding: 8px 18px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-3);
   background: var(--surface-3);
   color: var(--text-1);
@@ -1167,7 +1167,7 @@ html.gd-lite .rail-tooltip {
 .group-swipe-viewport {
   width: 100%;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   touch-action: pan-y;
 }
 
@@ -1187,7 +1187,7 @@ html.gd-lite .rail-tooltip {
   max-width: 100%;
   box-sizing: border-box;
   background: var(--surface-1, #313338) !important;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   min-height: 56px;
 }
 
@@ -1226,11 +1226,11 @@ html.gd-lite .rail-tooltip {
 .group-swipe-btn.invite { background: #5865f2; }
 .group-swipe-btn.add { background: #3ba55d; }
 .group-swipe-btn.rename { background: #f0b232; color: #1e1f22; }
-.group-swipe-btn.leave { background: #ed4245; border-radius: 0 8px 8px 0; }
+.group-swipe-btn.leave { background: #ed4245; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .group-swipe-btn.pin { background: #5865f2; }
 .group-swipe-btn.mute { background: #4e5058; }
 .group-swipe-btn.unread { background: #3ba55d; }
-.group-swipe-btn.close { background: #ed4245; border-radius: 0 8px 8px 0; }
+.group-swipe-btn.close { background: #ed4245; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 
 .conv-row-flags {
   display: inline-flex;
@@ -1257,7 +1257,7 @@ html.gd-lite .rail-tooltip {
   align-items: center;
   gap: 12px;
   padding: 12px 18px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1334,7 +1334,7 @@ html.gd-lite .rail-tooltip {
   align-items: center;
   gap: 12px;
   padding: 10px 18px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1649,7 +1649,7 @@ button.header-avatar {
   gap: 12px;
   margin: 0 16px 8px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   background: var(--surface-2, rgba(255, 255, 255, 0.04));
   color: var(--text-muted);
@@ -1663,7 +1663,7 @@ button.header-avatar {
   gap: 7px;
   flex-shrink: 0;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.12));
   background: transparent;
   color: var(--text-1);
@@ -1687,7 +1687,7 @@ button.header-avatar {
   gap: 8px;
   margin: 2px 16px;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: var(--text-muted);
   font-size: 12.5px;
   font-style: italic;
@@ -1742,7 +1742,7 @@ button.header-avatar {
   height: 600px;
   max-height: 90vh;
   background: var(--surface-0);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   border: 1px solid var(--border-3);
   display: flex;
   flex-direction: column;
@@ -1768,7 +1768,7 @@ button.header-avatar {
 .admin-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--primary);
   display: flex;
   align-items: center;
@@ -1807,7 +1807,7 @@ button.header-avatar {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1887,7 +1887,7 @@ button.header-avatar {
   height: 88vh;
   max-height: 900px;
   background: #0f0f1a;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
   display: flex;
@@ -1915,7 +1915,7 @@ button.header-avatar {
   width: 48px;
   height: 48px;
   background: linear-gradient(135deg, #f23f43, #ff6b6b);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1941,7 +1941,7 @@ button.header-avatar {
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1956,7 +1956,7 @@ button.header-avatar {
   color: #f23f43;
   padding: 12px 16px;
   margin: 16px 24px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1990,12 +1990,12 @@ button.header-avatar {
 
 .admin-tabs::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .admin-tabs::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.25);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .admin-tabs::-webkit-scrollbar-thumb:hover {
@@ -2010,7 +2010,7 @@ button.header-avatar {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -2058,7 +2058,7 @@ button.header-avatar {
 .admin-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -2095,7 +2095,7 @@ button.header-avatar {
 .admin-live {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 16px;
   margin-top: 20px;
 }
@@ -2109,7 +2109,7 @@ button.header-avatar {
 
 .admin-pre {
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 12px;
   font-size: 11px;
   color: #4ecdc4;
@@ -2154,14 +2154,14 @@ button.header-avatar {
   gap: 12px;
   padding: 16px;
   background: var(--surface-1);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
 }
 
 .stat-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2203,7 +2203,7 @@ button.header-avatar {
 
 .recent-activity {
   background: var(--surface-1);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   padding: 16px;
 }
@@ -2226,7 +2226,7 @@ button.header-avatar {
   align-items: center;
   gap: 12px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: var(--surface-2);
 }
 
@@ -2243,7 +2243,7 @@ button.header-avatar {
 
 .admin-table-container {
   background: var(--surface-1);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   overflow: hidden;
 }
@@ -2280,7 +2280,7 @@ button.header-avatar {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 11px;
   font-weight: 600;
 }
@@ -2297,7 +2297,7 @@ button.header-avatar {
 
 .table-action {
   padding: 4px 12px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
@@ -2343,7 +2343,7 @@ button.header-avatar {
 
 .admin-logout {
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--danger);
   background: transparent;
   color: var(--danger);
@@ -2366,7 +2366,7 @@ button.header-avatar {
   padding: 12px 16px;
   background: rgba(35, 165, 90, 0.15);
   border: 1px solid rgba(35, 165, 90, 0.3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: #23a55a;
   font-size: 13px;
   margin-bottom: 16px;
@@ -2379,7 +2379,7 @@ button.header-avatar {
   padding: 12px 16px;
   background: rgba(242, 63, 67, 0.15);
   border: 1px solid rgba(242, 63, 67, 0.3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: #f23f43;
   font-size: 13px;
   margin-bottom: 16px;
@@ -2392,7 +2392,7 @@ button.header-avatar {
   padding: 10px 14px;
   background: rgba(242, 63, 67, 0.15);
   border: 1px solid rgba(242, 63, 67, 0.3);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   color: #f23f43;
   font-size: 13px;
   margin-bottom: 12px;
@@ -2407,7 +2407,7 @@ button.header-avatar {
   max-height: 360px;
   background: var(--surface-1);
   border: 1px solid var(--border-2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
@@ -2469,7 +2469,7 @@ button.header-avatar {
   cursor: pointer;
   font-size: 20px;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   transition: background 0.1s;
   line-height: 1;
 }
@@ -2485,7 +2485,7 @@ button.header-avatar {
   gap: 10px;
   padding: 10px 14px;
   background: rgba(242, 63, 67, 0.08);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   flex: 1;
 }
 
@@ -2517,7 +2517,7 @@ button.header-avatar {
   max-width: 420px;
   background: var(--surface-1);
   border: 1px solid var(--border-2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -2552,7 +2552,7 @@ button.header-avatar {
   color: var(--text-0);
   text-align: left;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: background 0.12s ease;
 }
@@ -2565,7 +2565,7 @@ button.header-avatar {
 .slash-command-ico {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2608,7 +2608,7 @@ button.header-avatar {
   left: 16px;
   background: var(--surface-1);
   border: 1px solid var(--border-2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -2623,7 +2623,7 @@ button.header-avatar {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   color: var(--text-0);
@@ -2640,7 +2640,7 @@ button.header-avatar {
 .attachment-icon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--primary-soft);
   color: var(--primary);
   display: flex;
@@ -2668,7 +2668,7 @@ button.header-avatar {
   max-width: calc(100vw - 32px);
   background: var(--surface-0);
   border: 1px solid var(--border-2);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   padding: 20px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.5);
 }
@@ -2693,7 +2693,7 @@ button.header-avatar {
   margin-bottom: 16px;
   background: var(--surface-1);
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
 }
 
 .add-modal-tab {
@@ -2703,7 +2703,7 @@ button.header-avatar {
   justify-content: center;
   gap: 5px;
   padding: 8px 6px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -2738,7 +2738,7 @@ button.header-avatar {
   padding: 10px 12px;
   background: var(--surface-1);
   border: 1px solid var(--border-2);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: var(--text-0);
   font-size: 14px;
   outline: none;
@@ -2752,7 +2752,7 @@ button.header-avatar {
   padding: 10px 12px;
   background: rgba(242, 63, 67, 0.1);
   border: 1px solid rgba(242, 63, 67, 0.3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: #f23f43;
   font-size: 13px;
 }
@@ -2761,7 +2761,7 @@ button.header-avatar {
   padding: 10px 12px;
   background: rgba(35, 165, 90, 0.1);
   border: 1px solid rgba(35, 165, 90, 0.3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: #23a55a;
   font-size: 13px;
 }
@@ -2773,7 +2773,7 @@ button.header-avatar {
   margin-top: 4px;
   padding: 11px 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--primary);
   color: #fff;
   font-size: 14px;
@@ -2805,7 +2805,7 @@ button.header-avatar {
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 7px;
+  border-radius: var(--r-sm);
   margin-right: 4px;
   color: var(--text-muted);
   background: transparent;
@@ -2869,7 +2869,7 @@ button.header-avatar {
   align-items: center;
   gap: 10px;
   padding: 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--border-2);
   transition: border-color 0.15s, background 0.15s;
@@ -2905,7 +2905,7 @@ button.header-avatar {
   font-size: 10.5px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 .quick-add-card-badge.mutual {
@@ -2929,7 +2929,7 @@ button.header-avatar {
   gap: 5px;
   flex-shrink: 0;
   padding: 7px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: var(--primary);
   color: #fff;
@@ -3075,7 +3075,7 @@ button.header-avatar {
   min-width: 18px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--surface-2);
   color: var(--text-3, var(--text-muted));
   font-size: 11px;
@@ -3119,7 +3119,7 @@ button.header-avatar {
   align-items: center;
   gap: 12px;
   padding: 10px 18px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   margin: 0;
   transition: background 0.12s ease, opacity 0.12s ease;
   cursor: default;
@@ -3167,7 +3167,7 @@ button.header-avatar {
   min-width: 15px;
   height: 15px;
   padding: 0 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--primary);
   color: #fff;
   font-size: 9.5px;
@@ -3181,7 +3181,7 @@ button.header-avatar {
   align-items: flex-start;
   gap: 10px;
   padding: 9px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   transition: background 0.12s ease;
 }
 
@@ -3239,7 +3239,7 @@ button.header-avatar {
   gap: 4px;
   margin-bottom: 4px;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--primary-soft);
   color: var(--primary);
   font-size: 10.5px;
@@ -3286,7 +3286,7 @@ button.header-avatar {
   gap: 3px;
   flex-shrink: 0;
   padding: 1px 5px 1px 4px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--warning, #f0b232) 16%, transparent);
   color: var(--warning, #f0b232);
   line-height: 1;
@@ -3328,7 +3328,7 @@ button.header-avatar {
   padding: 8px 12px;
   background: var(--surface-1);
   border: 1px solid var(--border-2);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -3350,7 +3350,7 @@ button.header-avatar {
 .announcement-item {
   padding: 12px;
   background: var(--surface-2);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   margin-bottom: 8px;
 }
 
@@ -3406,7 +3406,7 @@ button.header-avatar {
 .feedback-modal {
   background: var(--surface-0, #1a1a1f);
   border: 1px solid var(--border-1, rgba(255,255,255,0.08));
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   width: 480px;
   max-width: 92vw;
   padding: 24px;
@@ -3436,7 +3436,7 @@ button.header-avatar {
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--text-muted, #9da5b5);
   cursor: pointer;
@@ -3474,7 +3474,7 @@ button.header-avatar {
   width: 100%;
   box-sizing: border-box;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1.5px solid var(--border-1, rgba(255,255,255,0.08));
   background: var(--surface-1, rgba(255,255,255,0.04));
   color: var(--text-0, #f0f0f5);
@@ -3517,7 +3517,7 @@ button.header-avatar {
   align-items: center;
   gap: 8px;
   padding: 12px 10px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1.5px solid var(--border-1, rgba(255,255,255,0.08));
   background: var(--surface-1, rgba(255,255,255,0.04));
   color: var(--text-0, #f0f0f5);
@@ -3613,7 +3613,7 @@ button.header-avatar {
   gap: 6px;
   max-width: 100%;
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--surface-2, rgba(255,255,255,0.07));
   font-size: 12px;
   color: var(--text-0, #fff);
@@ -3637,7 +3637,7 @@ button.header-avatar {
 
 .feedback-wizard-error {
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(242, 63, 67, 0.35);
   background: rgba(242, 63, 67, 0.1);
   color: #f23f43;
@@ -3726,7 +3726,7 @@ button.header-avatar {
   gap: 6px;
   padding: 8px 10px;
   border: 1.5px solid var(--border-1, rgba(255,255,255,0.08));
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--surface-1, rgba(255,255,255,0.04));
   color: var(--text-muted, #8a8a93);
   font-size: 13px;
@@ -3788,7 +3788,7 @@ button.header-avatar {
   width: 100%;
   background: var(--surface-1, rgba(255,255,255,0.04));
   border: 1.5px solid var(--border-1, rgba(255,255,255,0.08));
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: var(--text-0, #f0f0f5);
   font-size: 14px;
   font-family: inherit;
@@ -3821,7 +3821,7 @@ button.header-avatar {
   background: var(--primary, #5865f2);
   color: #fff;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -3891,7 +3891,7 @@ button.header-avatar {
   padding: 10px 28px;
   background: var(--surface-2, rgba(255,255,255,0.07));
   border: 1.5px solid var(--border-1, rgba(255,255,255,0.08));
-  border-radius: 10px;
+  border-radius: var(--r-md);
   color: var(--text-0, #f0f0f5);
   font-size: 14px;
   font-weight: 500;
@@ -3924,7 +3924,7 @@ button.header-avatar {
 .electron-screen-picker-modal {
   background: var(--surface-0, #1a1a1f);
   border: 1px solid var(--border-1, rgba(255,255,255,0.08));
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   width: 720px;
   max-width: 90vw;
   max-height: 85vh;
@@ -3960,7 +3960,7 @@ button.header-avatar {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--text-muted, #8a8a93);
   font-size: 22px;
@@ -3988,7 +3988,7 @@ button.header-avatar {
 .electron-screen-picker-item {
   background: var(--surface-1, rgba(255,255,255,0.04));
   border: 2px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 10px;
   cursor: pointer;
   display: flex;
@@ -4013,7 +4013,7 @@ button.header-avatar {
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: #000;
   pointer-events: none;
 }
@@ -4053,7 +4053,7 @@ button.header-avatar {
   gap: 10px;
   width: 100%;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   border-left: 3px solid transparent;
   background: transparent;
@@ -4089,7 +4089,7 @@ button.header-avatar {
 .activity-empty-icon {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4120,7 +4120,7 @@ button.header-avatar {
   margin-top: 14px;
   padding: 8px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--primary);
   color: #fff;
   font-size: 12px;
@@ -4278,7 +4278,7 @@ button.header-avatar {
 .activity-header-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--primary-soft, rgba(88,101,242,0.15));
   display: flex;
   align-items: center;
@@ -4346,7 +4346,7 @@ button.header-avatar {
 .activity-current-card {
   background: var(--surface-1);
   border: 1.5px solid var(--border-2);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   padding: 18px 20px;
   transition: border-color 0.25s;
 }
@@ -4360,7 +4360,7 @@ button.header-avatar {
 .activity-current-icon-wrap {
   width: 56px;
   height: 56px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4399,7 +4399,7 @@ button.header-avatar {
 .activity-clear-manual-btn {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: var(--surface-2);
   color: var(--text-muted);
@@ -4423,7 +4423,7 @@ button.header-avatar {
   margin-top: 12px;
   padding: 10px 14px;
   background: rgba(88,101,242,0.08);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   font-size: 12px;
   color: var(--text-muted);
   border: 1px solid rgba(88,101,242,0.15);
@@ -4435,7 +4435,7 @@ button.header-avatar {
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
@@ -4458,7 +4458,7 @@ button.header-avatar {
   min-width: 240px;
   background: var(--surface-2);
   border: 1px solid var(--border-2);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
   z-index: 200;
   overflow: hidden;
@@ -4476,7 +4476,7 @@ button.header-avatar {
   color: var(--text-1);
   text-align: left;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   font-size: 13px;
   transition: background 0.1s;
 }
@@ -4504,7 +4504,7 @@ button.header-avatar {
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: var(--primary);
   color: white;
@@ -4603,7 +4603,7 @@ button.header-avatar {
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   transition: background 0.1s;
 }
 
@@ -4619,7 +4619,7 @@ button.header-avatar {
   align-items: center;
   justify-content: center;
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   flex-shrink: 0;
 }
 
@@ -4670,7 +4670,7 @@ button.header-avatar {
   width: 100%;
   padding: 10px 14px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: transparent;
   color: inherit;
   text-align: left;
@@ -4729,7 +4729,7 @@ button.header-avatar {
 .activity-modal {
   background: var(--surface-1);
   border: 1px solid var(--border-2);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   width: 420px;
   max-width: 90vw;
   padding: 0 0 20px;
@@ -4758,7 +4758,7 @@ button.header-avatar {
   padding: 10px 16px;
   background: var(--surface-2);
   border: 1.5px solid var(--border-3);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   color: var(--text-0);
   font-size: 14px;
   outline: none;
@@ -4784,7 +4784,7 @@ button.header-avatar {
 
 .activity-suggestion-chip {
   padding: 5px 12px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
@@ -4821,7 +4821,7 @@ button.header-avatar {
 .activity-expiry-btn {
   flex: 1;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1.5px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
@@ -4847,7 +4847,7 @@ button.header-avatar {
   width: calc(100% - 40px);
   margin: 16px 20px 0;
   padding: 11px 0;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: none;
   background: var(--primary);
   color: white;

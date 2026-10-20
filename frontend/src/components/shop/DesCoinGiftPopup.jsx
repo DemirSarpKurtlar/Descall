@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Coins, Sparkles, X } from "lucide-react";
+import { Coins, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
 import OverlayPortal from "../ui/OverlayPortal";
@@ -37,8 +37,6 @@ export default function DesCoinGiftPopup({ gift, onDismiss }) {
 
           <div className="shop-gift-icon descoin-gift-icon">
             <Coins size={28} />
-            <Sparkles size={16} className="shop-gift-sparkle shop-gift-sparkle-1" />
-            <Sparkles size={12} className="shop-gift-sparkle shop-gift-sparkle-2" />
           </div>
 
           <h3>{t("You received DesCoin!")}</h3>

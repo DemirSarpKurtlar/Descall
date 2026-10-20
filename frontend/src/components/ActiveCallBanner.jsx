@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, LogIn, X } from "lucide-react";
+import { Users, LogIn, X } from "./ui/Icon.jsx";
 import { Avatar } from "./ui/Avatar";
 import { useT } from "../context/LocaleContext";
 

@@ -19,7 +19,7 @@ html.glass-ui .g-alert-scrim {
 html.glass-ui .g-alert {
   width: min(420px, calc(100vw - 48px));
   max-width: 420px;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   overflow: hidden;
   color: var(--g-t1);
   font-family: var(--g-font);
@@ -75,7 +75,7 @@ html.glass-ui .g-alert-extra input {
   width: 100%;
   box-sizing: border-box;
   margin: 8px 0 0;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 0.5px solid rgba(255, 255, 255, 0.22);
   background: rgba(0, 0, 0, 0.28);
   color: var(--g-t1);
@@ -101,7 +101,7 @@ html.glass-ui .g-alert-btn {
   -webkit-appearance: none;
   margin: 0;
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   background: var(--g-chip-bg);
   box-shadow: inset 0 0 0 0.5px var(--g-hair);
   color: var(--g-t1);

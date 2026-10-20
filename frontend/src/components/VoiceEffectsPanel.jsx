@@ -1,31 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import voiceEffects from '../lib/voiceEffects';
-import { 
-  Mic, 
-  Wand2, 
-  Volume2, 
-  Activity, 
-  Check, 
-  Settings2,
-  Sparkles,
-  Radio,
-  Mountain,
-  Wind,
-  Ghost,
-  Baby,
-  Phone,
-  Megaphone,
-  Droplets,
-  Building,
-  Home,
-  Music,
-  Zap,
-  Headphones,
-  VolumeX
-} from 'lucide-react';
+import { Mic, Wand2, Volume2, Activity, Check, Settings2, Radio, Mountain, Wind, Ghost, Baby, Phone, Megaphone, Droplets, Building, Home, Music, Zap, Headphones, VolumeX, Waveform, MaskHappy } from "./ui/Icon.jsx";
 import { useT } from '../context/LocaleContext';
 import './VoiceEffectsPanel.css';
 import OverlayPortal from "./ui/OverlayPortal";
+import CloseButton from "./ui/CloseButton.jsx";
 
 const PRESET_ICONS = {
   none: Mic,
@@ -42,7 +21,7 @@ const PRESET_ICONS = {
   concert_hall: Music,
   whisper: Volume2,
   demon: Ghost,
-  alien: Sparkles,
+  alien: MaskHappy,
   baby: Baby,
   giant: Mountain,
   echo: Activity,
@@ -341,10 +320,9 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
       <div className="voice-effects-panel" onClick={e => e.stopPropagation()}>
         <div className="panel-header">
           <div className="header-title">
-            <Sparkles className="icon" />
             <h2>{t("Voice Effects")}</h2>
           </div>
-          <button className="close-btn" onClick={onClose} aria-label={t("Close")}>×</button>
+          <CloseButton onClick={onClose} label={t("Close")} />
         </div>
 
         {error && (
@@ -465,7 +443,7 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
           {currentPreset !== 'none' && (
             <div className="current-effect-info">
               <div className="effect-badge">
-                <Sparkles size={14} />
+                <Waveform size={14} />
                 <span>{presets.find(p => p.id === currentPreset)?.name}</span>
               </div>
               <span className="effect-status">{t("Effect active")}</span>

@@ -1,24 +1,6 @@
 import { Avatar } from "../ui/Avatar";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Palette,
-  Layout,
-  Sparkles,
-  User,
-  Check,
-  RotateCcw,
-  Moon,
-  Sun,
-  Smartphone,
-  Type,
-  Bell,
-  Eye,
-  EyeOff,
-  Camera,
-  Image as ImageIcon,
-  Hash,
-  Upload
-} from "lucide-react";
+import { Palette, Layout, User, Check, RotateCcw, Moon, Smartphone, Type, Bell, Eye, EyeOff, Camera, Hash, Upload, Droplets, Play, Star } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { uploadFile } from "../../api/media";
 import { API_BASE_URL } from "../../config/api";
@@ -159,7 +141,7 @@ export default function ProfileCustomizationPanel({
 
   const tabs = [
     { id: "theme", label: "Theme", icon: Palette },
-    { id: "animations", label: "Animations", icon: Sparkles },
+    { id: "animations", label: "Animations", icon: Play },
     { id: "layout", label: "Layout", icon: Layout },
     { id: "profile", label: "Profile", icon: User },
   ];
@@ -231,7 +213,7 @@ export default function ProfileCustomizationPanel({
                 </div>
                 <div className="setting-row">
                   <div className="setting-info">
-                    <Sparkles size={20} />
+                    <Droplets size={20} />
                     <span>Glass Effect</span>
                   </div>
                   <button
@@ -313,7 +295,7 @@ export default function ProfileCustomizationPanel({
 
                 <div className="setting-row">
                   <div className="setting-info">
-                    <Sparkles size={20} />
+                    <Play size={20} />
                     <span>Enable Animations</span>
                   </div>
                   <button
@@ -360,7 +342,7 @@ export default function ProfileCustomizationPanel({
 
                 <div className="setting-row">
                   <div className="setting-info">
-                    <Sparkles size={20} />
+                    <Star size={20} />
                     <span>Particle Effects</span>
                   </div>
                   <button
@@ -392,7 +374,7 @@ export default function ProfileCustomizationPanel({
                       background: `linear-gradient(135deg, ${customization.theme.primaryColor}, ${customization.theme.secondaryColor})`,
                     }}
                   >
-                    <Sparkles size={24} color="white" />
+                    <Palette size={24} color="white" />
                   </motion.div>
                 </div>
               </div>

@@ -5,7 +5,7 @@
   width: min(440px, 100%);
   margin: 6px 0 10px;
   padding: 0 0 12px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   color: #f6ead7;
   background:
     radial-gradient(80% 40% at 50% 0%, rgba(255, 196, 120, 0.18), transparent 60%),
@@ -79,7 +79,7 @@
   gap: 6px;
   height: fit-content;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(232, 186, 104, 0.4);
   color: #f0d48a;
@@ -94,7 +94,7 @@
   margin: 4px 12px 0;
   padding: 8px;
   height: calc(var(--cell) * 3 + 16px);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 236, 200, 0.08), transparent 30%),
     #140c0a;
@@ -107,7 +107,7 @@
 .slot-reel {
   overflow: hidden;
   height: calc(var(--cell) * 3);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: linear-gradient(180deg, #2a211c, #12100e 40%, #2a211c);
 }
 
@@ -195,7 +195,7 @@
   list-style: none;
   margin: 8px 12px 0;
   padding: 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.28);
   max-height: 180px;
   overflow: auto;
@@ -218,7 +218,7 @@
 .cf-calls button,
 .cf-again {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 8px 12px;
   font-weight: 700;
   cursor: pointer;
@@ -255,7 +255,7 @@
   width: min(420px, 100%);
   margin: 6px 0 10px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   color: #f4efe4;
   background:
     linear-gradient(160deg, rgba(232, 196, 122, 0.16), transparent 40%),

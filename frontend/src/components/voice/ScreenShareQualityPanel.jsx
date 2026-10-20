@@ -1,21 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import {
-  Monitor,
-  X,
-  Check,
-  Loader2,
-  Maximize2,
-  Gauge,
-  Info,
-  Sparkles,
-  Type,
-  Gamepad2,
-  Zap,
-  SlidersHorizontal,
-  ChevronDown,
-  Activity,
-} from "lucide-react";
+import { Monitor, X, Check, Loader2, Maximize2, Gauge, Info, Sparkles, Type, Gamepad2, Zap, SlidersHorizontal, ChevronDown, Activity } from "../ui/Icon.jsx";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   SCREEN_QUALITY_PRESETS,
@@ -54,7 +39,7 @@ const PRESET_CARDS = [
   },
   {
     id: "balanced",
-    icon: Sparkles,
+    icon: Gauge,
     titleKey: "Balanced",
     descKey: "Best for most shares",
     accent: "#818cf8",
