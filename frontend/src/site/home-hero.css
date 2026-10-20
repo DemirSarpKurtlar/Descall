@@ -80,11 +80,12 @@ body:has(.mkt-hh) .mkt-bg {
 .mkt .mkt-hh-btn:active { transform: scale(0.97); transition-duration: 90ms; }
 .mkt .mkt-hh-btn:focus-visible { outline: 2px solid #8fa8ff; outline-offset: 3px; }
 .mkt .mkt-hh-btn.is-primary {
-  background: #4f7cff;
+  /* #3a66ee: white text 4.87:1 (axe AA). */
+  background: #3a66ee;
   color: #fff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px rgba(79, 124, 255, 0.35);
 }
-.mkt .mkt-hh-btn.is-primary:hover { background: #5d87ff; }
+.mkt .mkt-hh-btn.is-primary:hover { background: #3563e9; }
 .mkt .mkt-hh-btn.is-secondary {
   background: rgba(255, 255, 255, 0.1);
   color: #f4f6fb;
