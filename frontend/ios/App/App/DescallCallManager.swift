@@ -73,6 +73,8 @@ final class DescallCallManager: NSObject {
     private var provider: CXProvider?
     private let callController = CXCallController()
     private var voipRegistry: PKPushRegistry?
+    /// CXSetHeldCallAction: mute state to restore on resume (native engine calls).
+    var heldMuteRestore: [UUID: Bool] = [:]
     private var calls: [UUID: CallInfo] = [:]
     /// Actions JS asked for itself ("answer:<uuid>" ...) — fulfilled without echoing an event back.
     private var jsInitiated = Set<String>()
@@ -855,7 +857,6 @@ extension DescallCallManager: CXProviderDelegate {
         action.fulfill()
     }
 
-    private var heldMuteRestore: [UUID: Bool] = [:]
 
     /// Phone app Recents / Siri: "call back" a Descall contact. The handle is
     /// the Descall user id (CXHandle .generic, see makeUpdate).
