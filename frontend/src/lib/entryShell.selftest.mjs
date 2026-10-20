@@ -95,7 +95,12 @@ assert(/html\.boot-mobile #boot-splash,\s*\.descall-boot-splash\s*\{[^}]*backgro
 assert(/html\.boot-mobile #boot-splash \.boot-title\s*\{/.test(indexHtml) || /html\.boot-mobile #boot-splash \.boot-orb,\s*html\.boot-mobile #boot-splash \.boot-title/.test(indexHtml), "mobile splash must hide the title/orbs (logo only, no text)");
 // Native app: Aurora splash (option A), the web first paint continues the LaunchAurora screen.
 assert(/html\.native-app #boot-splash,\s*html\.native-app \.descall-boot-splash\s*\{[^}]*--u: max\(100vw \/ 393, 100vh \/ 852\);[^}]*url\("\/brand\/splash-aurora-bg\.jpg"\) center \/ cover/.test(indexHtml), "native splash must draw the baked aurora background with cover scaling like Aspect Fill");
-assert(/html\.native-app #boot-splash \.boot-mark,[^{]*\{[^}]*backdrop-filter: blur\(calc\(28 \* var\(--u\)\)\)/.test(indexHtml), "native splash tile must be live glass at the launch-screen scale");
+assert(/html\.native-app #boot-splash \.boot-mark,[^{]*\{[^}]*backdrop-filter: blur\(calc\(28 \* var\(--t\)\)\)/.test(indexHtml), "native splash tile must be live glass at the launch-screen scale");
+assert(/--t: min\(var\(--u\), 1\.2px\);/.test(indexHtml), "iPad: tile scale is the cover scale capped at 1.2 (158pt tile), not 2-3x");
+{
+  const nativeBlock = indexHtml.slice(indexHtml.indexOf('splash option A "Aurora"'), indexHtml.indexOf("@keyframes boot-aurora-drift"));
+  assert(!/calc\([^)]*var\(--u\)/.test(nativeBlock), "tile / loader sizes use the capped --t, never the uncapped --u");
+}
 assert(/messageHandlers\.descallSplashPainted/.test(indexHtml) && /img\.decode/.test(indexHtml), "web splash must report its first paint after the background decodes");
 assert(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*html\.native-app #boot-splash::before,[^}]*\{\s*animation: none;/.test(indexHtml), "reduced motion stops the blob drift");
 assert(existsSync(join(here, "..", "..", "public", "brand", "splash-aurora-bg.jpg")), "aurora background asset must ship");
@@ -107,6 +112,12 @@ assert(/image="LaunchAurora"/.test(launchStoryboard) && /contentMode="scaleAspec
 assert(/red="0\.050980392156862744" green="0\.062745098039215685" blue="0\.18823529411764706"/.test(launchStoryboard), "LaunchScreen background must be #0D1030");
 for (const edge of ["top", "bottom", "leading", "trailing"]) assert(new RegExp(`firstAttribute="${edge}" secondItem="Dsc-Lv-001"`).test(launchStoryboard), `LaunchAurora pinned ${edge}`);
 assert(existsSync(join(here, "..", "..", "ios", "App", "App", "Assets.xcassets", "LaunchAurora.imageset", "launch-aurora@3x.jpg")), "LaunchAurora @3x asset");
+// iPad: the tile is its own centered view (capped), not baked into the Aspect Fill background.
+assert(/image="LaunchTile"/.test(launchStoryboard), "LaunchScreen draws the tile as its own image view");
+assert(/firstItem="Dsc-Tl-001" firstAttribute="centerX" secondItem="Dsc-Lv-001" secondAttribute="centerX"/.test(launchStoryboard) && /firstItem="Dsc-Tl-001" firstAttribute="centerY" secondItem="Dsc-Lv-001" secondAttribute="centerY"/.test(launchStoryboard), "launch tile centered");
+assert(/firstItem="Dsc-Tl-001" firstAttribute="width" relation="lessThanOrEqual" constant="360"/.test(launchStoryboard), "launch tile capped (158pt tile on iPad)");
+assert(/firstItem="Dsc-Tl-001" firstAttribute="width" secondItem="Dsc-Lv-001" secondAttribute="width" multiplier="0\.763/.test(launchStoryboard), "launch tile follows the phone width like the web --u");
+for (const f of ["launch-tile@2x.png", "launch-tile@3x.png"]) assert(existsSync(join(here, "..", "..", "ios", "App", "App", "Assets.xcassets", "LaunchTile.imageset", f)), `LaunchTile ${f}`);
 const bridgeVc = readFileSync(join(here, "..", "..", "ios", "App", "App", "DescallBridgeViewController.swift"), "utf8");
 assert(/splashPaintedHandler = "descallSplashPainted"/.test(bridgeVc) && /func webSplashDidPaint\(\)/.test(bridgeVc), "native launch view waits for the web splash paint");
 const bootSkeleton = readFileSync(join(here, "..", "components", "boot", "AppBootSkeleton.jsx"), "utf8");

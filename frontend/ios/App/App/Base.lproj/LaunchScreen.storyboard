@@ -8,7 +8,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Launch Screen (2.13.x, splash option A "Aurora"): one full-bleed image, LaunchAurora (393x852pt @2x/@3x, the deep gradient, blurred blobs and the frosted Konsept 2 tile baked in), Aspect Fill on the base color #0D1030. The web boot splash (index.html, html.native-app) paints the same picture with CSS cover scaling and a live glass tile at the same point, and DescallBridgeViewController keeps this view up until the web splash reports its first paint.-->
+        <!--Launch Screen (2.13.x, splash option A "Aurora"): LaunchAurora (393x852pt @2x/@3x, the deep gradient and blurred blobs, no tile) full-bleed Aspect Fill on the base color #0D1030, and LaunchTile (the frosted Konsept 2 tile with its shadow, 300pt box for a 132pt tile) centered on top: width 300/393 of the screen width, capped at 360pt (158pt tile), so an iPad no longer scales the tile 2-3x with the background. The web boot splash (index.html, html.native-app) paints the same picture with CSS cover scaling and a live glass tile at the same point, and DescallBridgeViewController keeps this view up until the web splash reports its first paint.-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
@@ -19,6 +19,9 @@
                             <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" clipsSubviews="YES" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchAurora" translatesAutoresizingMaskIntoConstraints="NO" id="Dsc-Lg-001">
                                 <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                             </imageView>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchTile" translatesAutoresizingMaskIntoConstraints="NO" id="Dsc-Tl-001">
+                                <rect key="frame" x="44" y="190" width="286" height="286"/>
+                            </imageView>
                         </subviews>
                         <color key="backgroundColor" red="0.050980392156862744" green="0.062745098039215685" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -26,6 +29,11 @@
                             <constraint firstItem="Dsc-Lg-001" firstAttribute="bottom" secondItem="Dsc-Lv-001" secondAttribute="bottom" id="Dsc-Lg-B01"/>
                             <constraint firstItem="Dsc-Lg-001" firstAttribute="leading" secondItem="Dsc-Lv-001" secondAttribute="leading" id="Dsc-Lg-L01"/>
                             <constraint firstItem="Dsc-Lg-001" firstAttribute="trailing" secondItem="Dsc-Lv-001" secondAttribute="trailing" id="Dsc-Lg-R01"/>
+                            <constraint firstItem="Dsc-Tl-001" firstAttribute="centerX" secondItem="Dsc-Lv-001" secondAttribute="centerX" id="Dsc-Tl-X01"/>
+                            <constraint firstItem="Dsc-Tl-001" firstAttribute="centerY" secondItem="Dsc-Lv-001" secondAttribute="centerY" id="Dsc-Tl-Y01"/>
+                            <constraint firstItem="Dsc-Tl-001" firstAttribute="width" secondItem="Dsc-Tl-001" secondAttribute="height" multiplier="1" id="Dsc-Tl-A01"/>
+                            <constraint firstItem="Dsc-Tl-001" firstAttribute="width" secondItem="Dsc-Lv-001" secondAttribute="width" multiplier="0.76335877862595425" priority="750" id="Dsc-Tl-W01"/>
+                            <constraint firstItem="Dsc-Tl-001" firstAttribute="width" relation="lessThanOrEqual" constant="360" id="Dsc-Tl-M01"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -36,5 +44,6 @@
     </scenes>
     <resources>
         <image name="LaunchAurora" width="393" height="852"/>
+        <image name="LaunchTile" width="300" height="300"/>
     </resources>
 </document>
