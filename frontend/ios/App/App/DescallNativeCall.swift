@@ -497,7 +497,9 @@ final class DescallNativeCall: NSObject {
         config.category = AVAudioSession.Category.playAndRecord.rawValue
         config.mode = AVAudioSession.Mode.voiceChat.rawValue
         // Loudspeaker unless headphones / Bluetooth (earlier product decision).
-        config.categoryOptions = [.allowBluetooth, .defaultToSpeaker]
+        config.categoryOptions = [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+        config.sampleRate = 48000
+        config.ioBufferDuration = 0.01
         RTCAudioSessionConfiguration.setWebRTC(config)
     }
 

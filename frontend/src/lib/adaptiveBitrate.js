@@ -5,7 +5,7 @@
  * sharpness over resolution scaling.
  */
 
-import { audioBitrateForQuality } from "./voiceProfile.js";
+import { audioBitrateForQuality, jitterBufferTargetMs } from "./voiceProfile.js";
 
 const VIDEO_ENCODING_PROFILES = {
   excellent: { maxBitrate: 2_500_000, scaleResolutionDownBy: 1, maxFramerate: 30 },
@@ -68,5 +68,22 @@ export async function applyAdaptiveAudioEncoding(sender, quality, lastAppliedRef
     if (lastAppliedRef) lastAppliedRef.current = key;
   } catch (err) {
     console.warn("[AdaptiveBitrate] audio setParameters failed:", err?.message || err);
+  }
+}
+
+/** Deeper jitter buffer on lossy links, default (lowest delay) otherwise. */
+export function applyAdaptiveJitterBuffer(pc, quality, lastAppliedRef) {
+  if (!pc || typeof pc.getReceivers !== "function") return;
+  const target = jitterBufferTargetMs(quality);
+  const key = String(target);
+  if (lastAppliedRef && lastAppliedRef.current === key) return;
+  try {
+    for (const receiver of pc.getReceivers()) {
+      if (receiver?.track?.kind !== "audio" || !("jitterBufferTarget" in receiver)) continue;
+      receiver.jitterBufferTarget = target;
+    }
+    if (lastAppliedRef) lastAppliedRef.current = key;
+  } catch (err) {
+    console.warn("[AdaptiveBitrate] jitterBufferTarget failed:", err?.message || err);
   }
 }

@@ -523,8 +523,11 @@ final class DescallCallManager: NSObject {
             try session.setCategory(
                 .playAndRecord,
                 mode: video ? .videoChat : .voiceChat,
-                options: [.allowBluetooth, .defaultToSpeaker]
+                options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
             )
+            // Fullband Opus capture/playback; 10 ms IO keeps latency low.
+            try? session.setPreferredSampleRate(48000)
+            try? session.setPreferredIOBufferDuration(0.01)
         } catch {
             NSLog("[DescallCallKit] audio session category failed: \(error.localizedDescription)")
         }

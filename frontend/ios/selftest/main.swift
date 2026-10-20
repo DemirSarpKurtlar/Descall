@@ -56,11 +56,11 @@ check(!L.iceCacheUsable(cachedAt: t0, validFor: 60, now: t0.addingTimeInterval(6
 // Opus tuning
 let sdp = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\na=rtpmap:111 opus/48000/2\r\na=fmtp:111 minptime=10;useinbandfec=1;stereo=1\r\na=rtpmap:0 PCMU/8000\r\n"
 let tuned = L.tuneOpusSdp(sdp)
-check(tuned.contains("a=fmtp:111 minptime=10;useinbandfec=1;stereo=0;usedtx=1;sprop-stereo=0;maxaveragebitrate=48000;cbr=0"), "opus fmtp merged: \(tuned)")
+check(tuned.contains("a=fmtp:111 minptime=10;useinbandfec=1;stereo=0;ptime=20;maxplaybackrate=48000;sprop-maxcapturerate=48000;usedtx=1;sprop-stereo=0;maxaveragebitrate=48000;cbr=0"), "opus fmtp merged: \(tuned)")
 check(tuned.contains("\r\n") && !tuned.contains("\n\n"), "line endings kept")
 let noFmtp = "v=0\nm=audio 9 RTP 111\na=rtpmap:111 opus/48000/2\na=rtcp-fb:111 transport-cc\n"
 let tuned2 = L.tuneOpusSdp(noFmtp)
-check(tuned2.contains("a=rtpmap:111 opus/48000/2\na=fmtp:111 minptime=10;useinbandfec=1;usedtx=1;stereo=0;sprop-stereo=0;maxaveragebitrate=48000;cbr=0"), "fmtp inserted after rtpmap")
+check(tuned2.contains("a=rtpmap:111 opus/48000/2\na=fmtp:111 minptime=10;ptime=20;maxplaybackrate=48000;sprop-maxcapturerate=48000;useinbandfec=1;usedtx=1;stereo=0;sprop-stereo=0;maxaveragebitrate=48000;cbr=0"), "fmtp inserted after rtpmap")
 check(L.tuneOpusSdp("v=0\nm=audio 9 RTP 0\na=rtpmap:0 PCMU/8000\n") == "v=0\nm=audio 9 RTP 0\na=rtpmap:0 PCMU/8000\n", "no opus untouched")
 
 // Candidates

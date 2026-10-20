@@ -3,6 +3,7 @@ import {
   audioBitrateForQuality,
   clampGain,
   jitterBufferTargetSeconds,
+  jitterBufferTargetMs,
   matchPushToTalkEvent,
   opusFmtp,
   opusOptionsForSenders,
@@ -28,7 +29,7 @@ const withShare = opusOptionsForSenders([
 ]);
 assert.equal(withShare.dtx, false);
 assert.equal(withShare.stereo, true);
-assert.equal(withShare.maxAverageBitrate, 96_000);
+assert.equal(withShare.maxAverageBitrate, 128_000);
 
 assert.equal(jitterBufferTargetSeconds("good"), 0.05);
 assert.equal(jitterBufferTargetSeconds("fair"), 0.1);
@@ -96,3 +97,13 @@ assert.equal(softCueVolume(1), 0.55);
 assert.ok(softCueVolume(0.2) < 0.2);
 
 console.log("voiceProfile.selftest: ok");
+
+// 2.13.8 call quality: fullband 20 ms Opus, ms jitter targets only on lossy links.
+assert.match(fmtp, /maxplaybackrate=48000/);
+assert.match(fmtp, /sprop-maxcapturerate=48000/);
+assert.match(fmtp, /ptime=20/);
+assert.equal(jitterBufferTargetMs("good"), null);
+assert.equal(jitterBufferTargetMs("excellent"), null);
+assert.equal(jitterBufferTargetMs("fair"), 80);
+assert.equal(jitterBufferTargetMs("poor"), 120);
+assert.equal(audioBitrateForQuality("excellent", { music: true }), 128_000);

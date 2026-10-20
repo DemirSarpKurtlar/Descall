@@ -48,7 +48,7 @@ import {
 } from "../lib/voiceProfile";
 import { sampleConnectionStats } from "../lib/connectionStats";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
-import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
+import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding, applyAdaptiveJitterBuffer } from "../lib/adaptiveBitrate";
 import { useToast } from "../context/ToastContext";
 import { IOS_NATIVE } from "../lib/iosCallKit";
 import {
@@ -311,6 +311,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
             const tracker = adaptiveQualityRef.current.get(userId);
             applyAdaptiveVideoEncoding(videoSender, result.quality, tracker.video);
             applyAdaptiveAudioEncoding(audioSender, result.quality, tracker.audio);
+            if (!tracker.jitter) tracker.jitter = { current: null };
+            applyAdaptiveJitterBuffer(pc, result.quality, tracker.jitter);
             const screenAudioIds = collectScreenAudioTrackIds(
               peerData.inbound,
               peerData.screenAnnouncement

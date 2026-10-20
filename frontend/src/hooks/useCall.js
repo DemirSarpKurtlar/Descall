@@ -51,7 +51,7 @@ import { getUser } from "../lib/storage";
 import { getNativeCallSnapshot } from "../lib/iosNativeCall";
 import { nativeOfferVerdict } from "../lib/iosNativeCallState";
 import useConnectionStats from "./useConnectionStats";
-import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
+import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding, applyAdaptiveJitterBuffer } from "../lib/adaptiveBitrate";
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
@@ -218,6 +218,7 @@ export function useCall(socket, callOccupancyRef = null) {
   const networkStats = useConnectionStats(pcRef, { active: mode === "active" });
   const lastAdaptiveVideoQualityRef = useRef(null);
   const lastAdaptiveAudioQualityRef = useRef(null);
+  const lastJitterTargetRef = useRef(null);
   useEffect(() => {
     if (mode !== "active" || !networkStats.quality) return;
     const pc = pcRef.current;
@@ -231,6 +232,7 @@ export function useCall(socket, callOccupancyRef = null) {
     );
     applyAdaptiveVideoEncoding(videoSender, networkStats.quality, lastAdaptiveVideoQualityRef);
     applyAdaptiveAudioEncoding(audioSender, networkStats.quality, lastAdaptiveAudioQualityRef);
+    applyAdaptiveJitterBuffer(pc, networkStats.quality, lastJitterTargetRef);
     const screenAudioIds = collectScreenAudioTrackIds(
       inboundMediaRef.current,
       remoteScreenAnnouncementRef.current
