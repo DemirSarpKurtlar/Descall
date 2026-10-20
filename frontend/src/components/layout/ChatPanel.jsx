@@ -770,23 +770,6 @@ export default function ChatPanel({
       {/* Typing + composer only on real chat surfaces, never under Activity */}
       {activeView !== "activity" && showComposer && (
         <>
-          <AnimatePresence>
-            {typingNames.length > 0 && (
-              <motion.div
-                key="typing-bar"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.18 }}
-                style={{ padding: "0 16px 4px", overflow: "hidden" }}
-              >
-                <TypingIndicator
-                  names={typingNames}
-                  flareKey={me?.equippedTypingFlare?.effect_key || null}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {dmBlockedByMe && (
             <div className="dm-blocked-banner" role="status">
@@ -800,6 +783,26 @@ export default function ChatPanel({
             </div>
           )}
           <div className="composer-container">
+            {/* Typing pill rides on the composer (absolute, bottom: 100%), so it
+                always sits just above it, even when the composer is
+                position: fixed (iOS glass capsule, keyboard lift, safe area). */}
+            <AnimatePresence>
+              {typingNames.length > 0 && (
+                <motion.div
+                  key="typing-bar"
+                  className="chat-typing-bar"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <TypingIndicator
+                    names={typingNames}
+                    flareKey={me?.equippedTypingFlare?.effect_key || null}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
             <MessageComposer
               onSend={onSendMessage}
               disabled={composerDisabled}

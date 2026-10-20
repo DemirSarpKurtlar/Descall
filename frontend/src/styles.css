@@ -74,3 +74,19 @@
 @import './styles/reaction-picker.css';
 @import './styles/overlay.css';
 @import './styles/frost.css';
+
+/* Typing indicator: anchored to the composer's top edge on every platform.
+   Before 2.13.6 it was a sibling in normal flow under the messages list; on
+   iOS the glass composer is position: fixed, so the pill landed at the very
+   bottom, behind the composer / home indicator. */
+.composer-container { position: relative; }
+.composer-container > .chat-typing-bar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(100% + 4px);
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  justify-content: flex-start;
+}
