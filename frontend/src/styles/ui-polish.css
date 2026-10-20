@@ -3150,3 +3150,22 @@ body.electron-app .electron-update-toast.is-chip { top: auto; }
 .signup-username-chip { border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: var(--text-0, #fff); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
 .signup-username-chip:active { transform: scale(0.96); }
 .signup-username-rules { margin: 0; font-size: 11.5px; color: var(--text-muted); opacity: 0.8; }
+/* 2.13.8: presence dot on large avatars scales with the avatar (~23% of the
+   diameter, 24 px on 104 px) and sits on the circle edge at 45° (center at
+   r·(1 − cos45°) from the corner). Ring = card background cutout. */
+.us-hero-avatar { --av-size: 84px; }
+:is(.profile-avatar-shell, .g-profile-avatar, .us-hero-avatar) > .status-badge,
+html.glass-ui :is(.profile-avatar-shell, .g-profile-avatar, .us-hero-avatar) > .status-badge.status-badge {
+  --dot: calc(var(--av-size, 88px) * 0.23);
+  width: var(--dot) !important;
+  height: var(--dot) !important;
+  min-width: var(--dot) !important;
+  min-height: var(--dot) !important;
+  box-sizing: border-box;
+  border-width: max(3px, calc(var(--av-size, 88px) * 0.045)) !important;
+  border-style: solid;
+  border-color: var(--profile-ring, var(--g-ring, var(--surface-1, #1e1f22)));
+  right: calc(var(--av-size, 88px) * 0.1464 - var(--dot) / 2) !important;
+  bottom: calc(var(--av-size, 88px) * 0.1464 - var(--dot) / 2) !important;
+  z-index: 3;
+}
