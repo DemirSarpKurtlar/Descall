@@ -1214,12 +1214,10 @@ function ParticipantTile({
   const [tileEl, setTileEl] = useState(null);
   const { speaking: detected, level } = useVoiceActivity(stream, {
     muted: muted || (isLocal === false && !stream),
-    attackMs: 90,
-    releaseMs: 220,
     observeEl: tileEl,
     levelProbe,
   });
-  // Hold the off-edge (~320ms) so VAD flapping between words never blinks
+  // Hold the off-edge (SPEAKING_HOLD_MS) so VAD flapping between words never blinks
   // the ring / restarts its animation.
   const heldSpeaking = useHeldSpeaking(Boolean(speakingProp || detected) && !muted);
   const isSpeaking = muted ? false : heldSpeaking;

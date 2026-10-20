@@ -55,6 +55,9 @@ assert.match(html, /rgba\(18, 20, 30, 0\.97\)/, "card base is near-opaque (separ
   assert.match(html, /mouseenter/);
   assert.match(html, /notifAPI\?\.pause\(\)/);
   assert.match(html, /fadeOut/);
+  assert.doesNotMatch(html, /blur\(4px\)/, "exit must not blur the backdrop-filter card (dark box bug)");
+  assert.doesNotMatch(html, /filter 200ms/, "exit transitions only opacity + transform");
+  assert.match(html, /\.card\.leaving \{[^}]*backdrop-filter: none/, "glass dropped while leaving");
   assert.doesNotMatch(html, /border-left/);
   assert.doesNotMatch(html, /#1e1f22/);
 }

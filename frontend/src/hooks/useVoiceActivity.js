@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { pokeVoiceActivity, subscribeVoiceActivity } from "../lib/voiceActivity";
-import { createSpeakingGate, smoothLevel } from "../lib/voiceActivityMath";
+import { createSpeakingGate, smoothLevel, SPEAKING_ATTACK_MS, SPEAKING_RELEASE_MS } from "../lib/voiceActivityMath";
 import { speakingThreshold } from "../lib/voiceProfile";
 
 /**
@@ -15,8 +15,8 @@ export default function useVoiceActivity(
     threshold,
     onThreshold,
     offThreshold,
-    attackMs = 90,
-    releaseMs = 220,
+    attackMs = SPEAKING_ATTACK_MS,
+    releaseMs = SPEAKING_RELEASE_MS,
     observeEl = null,
     levelProbe = null,
   } = {}

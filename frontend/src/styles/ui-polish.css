@@ -434,8 +434,8 @@
 .participant-tile,
 .call-tile {
   transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 /* Video tiles: a static green border that transitions in/out (0.22s, see
@@ -987,7 +987,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   overflow: hidden;
   background: var(--surface-1);
   border: 2px solid transparent;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2533,9 +2533,9 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   opacity: 0;
   transition:
     transform 0.2s ease-out,
-    opacity 0.22s ease,
-    border-color 0.22s ease,
-    box-shadow 0.22s ease;
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .participant-tile-avatar-shell .speaking-ring.ring-a,
 .participant-tile-avatar-core .speaking-ring.ring-a {

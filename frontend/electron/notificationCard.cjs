@@ -130,7 +130,11 @@ function notificationCss() {
       cursor: pointer;
       opacity: 0;
       transform: translate3d(36px, 0, 0);
-      will-change: transform, opacity, filter;
+      will-change: transform, opacity;
+    }
+    .card.leaving {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
     }
     body.preview .card {
       width: ${NOTIF_WIDTH}px;
@@ -375,10 +379,9 @@ function motionScript() {
             velocity += accel * dt;
             x += velocity * dt;
             opacity = Math.min(1, opacity + dt / 0.2);
-            const blur = Math.max(0, (x / 36) * 8);
-            el.style.transform = 'translate3d(' + x.toFixed(2) + 'px,0,0)';
+            const scale = 0.96 + 0.04 * Math.min(1, opacity);
+            el.style.transform = 'translate3d(' + x.toFixed(2) + 'px,0,0) scale(' + scale.toFixed(4) + ')';
             el.style.opacity = opacity.toFixed(3);
-            el.style.filter = blur > 0.3 ? 'blur(' + blur.toFixed(2) + 'px)' : 'none';
             if (Math.abs(x) > 0.4 || Math.abs(velocity) > 6) requestAnimationFrame(step);
             else {
               el.style.transform = 'translate3d(0,0,0)';
@@ -397,10 +400,15 @@ function motionScript() {
             setTimeout(done, 160);
             return;
           }
-          el.style.transition = 'opacity 200ms cubic-bezier(0.4,0,1,1), transform 220ms cubic-bezier(0.4,0,1,1), filter 200ms ease';
+          // Only the card fades and scales. No CSS filter, and the
+          // backdrop-filter is dropped first: in Chromium, opacity/filter on
+          // a backdrop-filter element inside a transparent window composites
+          // a dark box much larger than the card (2.13.6 toast exit bug).
+          el.classList.add('leaving');
+          el.style.filter = 'none';
+          el.style.transition = 'opacity 200ms cubic-bezier(0.4,0,1,1), transform 220ms cubic-bezier(0.4,0,1,1)';
           el.style.opacity = '0';
-          el.style.transform = 'translate3d(28px,0,0) scale(0.98)';
-          el.style.filter = 'blur(4px)';
+          el.style.transform = 'translate3d(28px,0,0) scale(0.96)';
           setTimeout(done, 220);
         }
         const cards = Array.from(document.querySelectorAll('.card'));

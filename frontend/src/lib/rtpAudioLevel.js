@@ -13,7 +13,10 @@
  */
 
 /** A level older than this is stale (the peer stopped sending / DTX). */
-export const RTP_LEVEL_FRESH_MS = 1000;
+// Was 1000 ms: with Opus DTX no packets arrive after speech ends, so the
+// last *speech* level stayed "fresh" for a second and held the ring on.
+// Packets arrive every 20 ms while talking; 250 ms is plenty.
+export const RTP_LEVEL_FRESH_MS = 250;
 
 /** Engines disagree on the clock (epoch ms vs performance.now()); accept either. */
 function clocks() {

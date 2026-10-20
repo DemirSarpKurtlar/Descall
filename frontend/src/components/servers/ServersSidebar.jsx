@@ -1862,8 +1862,6 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = ""
   const memberDeafened = Boolean(member?.serverDeafened || member?.deafened);
   const speakingRaw = useSpeaking(stream, {
     muted: memberMuted,
-    attackMs: 55,
-    releaseMs: 260,
     observeEl: rowEl,
   });
   // Hold the off-edge so VAD flapping can't blink the ring.
