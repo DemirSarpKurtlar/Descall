@@ -2,6 +2,7 @@
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
+import { TR_APPROVED_UI } from "./trApprovedUi.js";
 
 import { MAINT_TR } from "./maintenance.tr.js";
 export const nested = {
@@ -3825,6 +3826,7 @@ export const phrases = {
     "Hesabını korumak ve iki adımlı doğrulamayı açmak için e-postanı doğrula.",
   ...TR_INAPP_GAPS,
   ...TR_AI_LOOK_FIXES,
+  ...TR_APPROVED_UI,
 };
 
 const locale = { nested, phrases };

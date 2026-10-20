@@ -57,7 +57,7 @@
 .mkt .mkt-brand img {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   box-shadow: 0 6px 18px rgba(88, 122, 246, 0.38);
 }
 
@@ -80,7 +80,7 @@
   height: 20px;
   padding: 0 8px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   color: var(--gp-brand-hi);
   background: rgba(88, 122, 246, 0.18);
   box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.45);
@@ -93,7 +93,7 @@
     margin-left: 8px;
     padding: 4px;
     gap: 2px;
-    border-radius: 22px;
+    border-radius: var(--r-xl);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
   }
@@ -101,7 +101,7 @@
   .mkt .mkt-nav-link {
     height: 36px;
     padding: 0 16px;
-    border-radius: 18px;
+    border-radius: var(--r-lg);
     display: inline-flex;
     align-items: center;
     font-size: 14.5px;
@@ -121,7 +121,7 @@
   height: 36px;
   padding: 3px;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
 }
@@ -130,7 +130,7 @@
   min-width: 40px;
   min-height: 0;
   height: 30px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   color: var(--gp-t3);
 }
 
@@ -142,7 +142,7 @@
 .mkt .mkt-btn {
   height: 44px;
   padding: 0 18px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   font-size: 15px;
   font-weight: 650;
   letter-spacing: -0.012em;
@@ -211,7 +211,7 @@
   position: relative;
   isolation: isolate;
   border: none;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.06)),
     rgba(22, 24, 36, 0.55);
@@ -278,7 +278,7 @@
 .mkt .legal-doc section,
 .mkt .legal-section {
   border: none;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
 }
@@ -293,7 +293,7 @@
   margin: 48px auto 24px;
   padding: 28px;
   border: none;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
     rgba(18, 20, 30, 0.45);
@@ -310,23 +310,6 @@
 .mkt .mkt-footer-col a,
 .mkt .mkt-footer-copy {
   color: var(--gp-t2);
-}
-
-.mkt-consent {
-  left: 50% !important;
-  right: auto !important;
-  width: min(560px, calc(100% - 24px));
-  transform: translateX(-50%);
-  border: none;
-  border-radius: 28px;
-  padding: 14px 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
-    rgba(20, 21, 30, 0.72);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  backdrop-filter: blur(40px) saturate(200%);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
-  color: var(--gp-t1, #fff);
 }
 
 body:has(.mkt) .login-modal-overlay {
@@ -350,7 +333,7 @@ body:has(.mkt) .login-modal {
 body:has(.mkt) .login-modal input,
 body:has(.mkt) .login-modal textarea {
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.26);
   color: rgba(255, 255, 255, 0.96);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
@@ -380,7 +363,7 @@ body:has(.mkt) .login-modal textarea {
   height: 44px;
   margin-top: 12px;
   padding: 0 16px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #000;
   color: #fff;
   text-decoration: none;
@@ -392,7 +375,7 @@ body:has(.mkt) .login-modal textarea {
   .mkt .mkt-header {
     top: 8px;
     height: 56px;
-    border-radius: 28px;
+    border-radius: var(--r-xl);
   }
 
   .mkt .mkt-hero h1,
@@ -403,26 +386,18 @@ body:has(.mkt) .login-modal textarea {
 
   .mkt .mkt-nav.is-open {
     border: none;
-    border-radius: 24px;
+    border-radius: var(--r-xl);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
       rgba(20, 21, 30, 0.9);
     -webkit-backdrop-filter: blur(40px) saturate(200%);
     backdrop-filter: blur(40px) saturate(200%);
   }
-
-  .mkt-consent {
-    width: calc(100% - 16px);
-    flex-direction: column;
-    align-items: stretch;
-    border-radius: 24px;
-  }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .mkt .mkt-header,
   .mkt .mkt-footer,
-  .mkt-consent,
   body:has(.mkt) .login-modal,
   .invite-landing-card {
     -webkit-backdrop-filter: none;

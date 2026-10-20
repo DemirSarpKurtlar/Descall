@@ -66,7 +66,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   color: #d7dbff;
   background: rgba(79, 124, 255, 0.22);
   border: 1px solid rgba(142, 172, 255, 0.4);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 3px 9px;
   line-height: 1.2;
 }
@@ -78,7 +78,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   font-size: 13px;
   font-weight: 600;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: var(--mkt-text);
 }
 
@@ -146,7 +146,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 }
 
 .mkt-brand img {
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .mkt-brand img.mkt-brand-lockup,
@@ -183,7 +183,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   font-size: 13px;
   font-weight: 600;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   transition: color 0.15s, background 0.15s;
 }
 
@@ -204,7 +204,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--mkt-border);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -213,7 +213,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   min-height: 44px;
   padding: 8px 10px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: var(--mkt-muted);
   background: transparent;
   font-size: 11px;
@@ -237,7 +237,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 700;
@@ -280,7 +280,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 .mkt-invite-banner {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(79, 124, 255, 0.35);
   background: linear-gradient(135deg, rgba(79, 124, 255, 0.18), rgba(42, 212, 184, 0.08));
   color: var(--mkt-text, #e8eaed);
@@ -440,7 +440,7 @@ html:has(.mkt):not([data-app-shell="1"]) #root {
 
 .mkt-feature {
   padding: 18px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   border: 1px solid var(--mkt-border);
   background: var(--mkt-surface);
   transition: transform 0.2s, border-color 0.2s;
@@ -484,7 +484,7 @@ a.mkt-feature-link {
 .mkt-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   display: grid;
   place-items: center;
   background: rgba(79, 124, 255, 0.18);
@@ -498,7 +498,7 @@ a.mkt-feature-link {
 
 .mkt-faq details {
   border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--mkt-surface);
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -526,7 +526,7 @@ a.mkt-feature-link {
   width: 100%;
   border-collapse: collapse;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--mkt-border);
   background: var(--mkt-surface);
 }
@@ -669,68 +669,6 @@ a.mkt-feature-link {
   margin-top: 10px;
 }
 
-.mkt-consent {
-  position: fixed !important;
-  z-index: 12000;
-  left: 12px;
-  right: 12px;
-  bottom: max(10px, env(safe-area-inset-bottom, 0px));
-  top: auto !important;
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 10px 12px;
-  border-radius: 16px;
-  border: 1px solid var(--mkt-border);
-  background: rgba(10, 12, 18, 0.94);
-  color: var(--mkt-text);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  backdrop-filter: blur(16px);
-}
-
-body:has(.mkt-consent),
-.mkt:has(.mkt-consent) {
-  padding-bottom: 88px;
-}
-
-.mkt-consent p {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  color: var(--mkt-muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.mkt-consent a {
-  color: #8eb6ff;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.mkt-consent-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: stretch;
-  justify-content: flex-end;
-}
-
-.mkt-consent-actions .mkt-btn {
-  min-width: 108px;
-  min-height: 44px;
-  flex: 1 1 108px;
-}
-
-.mkt-consent-privacy {
-  margin-right: auto;
-  font-size: 12px;
-  padding: 0.45rem 0;
-  color: #8eb6ff;
-}
-
 .mkt-footer-trust {
   margin: 10px 0 0;
   color: var(--mkt-muted);
@@ -782,7 +720,7 @@ body:has(.mkt-consent),
   max-width: 400px;
   margin: auto;
   padding: 40px;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -822,7 +760,7 @@ body:has(.mkt-consent),
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .modal-close:hover {
@@ -861,7 +799,7 @@ body:has(.mkt-consent),
 .login-modal .auth-error {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(255, 80, 80, 0.12);
   color: #ff9b9b;
   font-size: 13px;
@@ -907,7 +845,7 @@ body:has(.mkt-consent),
   min-height: 46px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 11px;
+  border-radius: var(--r-md);
   color: #fff;
   background: rgba(0, 0, 0, 0.22);
   font-family: var(--mkt-font-body);
@@ -942,7 +880,7 @@ body:has(.mkt-consent),
 .login-modal form > button {
   min-height: 46px;
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   color: #fff;
   background: #3b63e6;
   font-family: var(--mkt-font-body);
@@ -994,7 +932,7 @@ body:has(.mkt-consent),
   align-items: center;
   gap: 10px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.25);
 }
@@ -1019,7 +957,7 @@ body:has(.mkt-consent),
 .login-modal .forgot-password-flow .auth-submit {
   margin-top: 4px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 12px 16px;
   font-family: var(--mkt-font-body);
   font-weight: 700;
@@ -1106,7 +1044,7 @@ body:has(.mkt-consent),
     width: auto;
     padding: 8px;
     border: 1px solid var(--mkt-border);
-    border-radius: 14px;
+    border-radius: var(--r-md);
     background: rgba(22, 23, 28, 0.98);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.42);
     backdrop-filter: blur(18px);
@@ -1147,7 +1085,7 @@ body:has(.mkt-consent),
     place-items: center;
     padding: 0;
     border: 1px solid var(--mkt-border);
-    border-radius: 9px;
+    border-radius: var(--r-md);
     color: var(--mkt-text);
     background: rgba(255, 255, 255, 0.06);
     cursor: pointer;
@@ -1160,7 +1098,7 @@ body:has(.mkt-consent),
     justify-content: center;
     margin: 4px;
     padding: 11px;
-    border-radius: 9px;
+    border-radius: var(--r-md);
     color: #fff;
     background: #3b63e6;
     font-size: 13px;
@@ -1198,19 +1136,6 @@ body:has(.mkt-consent),
     font-size: clamp(32px, 9vw, 44px);
   }
 
-  .mkt-consent {
-    flex-wrap: wrap;
-    padding: 10px 12px;
-  }
-
-  .mkt-consent p {
-    flex: 1 1 100%;
-  }
-
-  .mkt-consent-actions {
-    width: 100%;
-  }
-
   .mkt-hero p {
     font-size: 16px;
   }
@@ -1229,7 +1154,7 @@ body:has(.mkt-consent),
     max-width: 400px;
     margin: auto 0;
     padding: 28px 20px 22px;
-    border-radius: 18px;
+    border-radius: var(--r-lg);
   }
 
   .login-modal h2 {
@@ -1253,7 +1178,7 @@ body:has(.mkt-consent),
   }
 
   .seo-table-wrap {
-    border-radius: 12px;
+    border-radius: var(--r-md);
   }
 }
 
@@ -1404,7 +1329,7 @@ body:has(.mkt-consent),
   margin: 0 0 12px;
   padding: 12px 14px 12px 48px;
   border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.03);
   color: var(--mkt-text);
   line-height: 1.45;
@@ -1420,7 +1345,7 @@ body:has(.mkt-consent),
   height: 26px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgba(88, 101, 242, 0.22);
   color: #c5ccff;
   font-size: 12px;
@@ -1442,7 +1367,7 @@ body:has(.mkt-consent),
 .seo-blog-card {
   padding: 18px 18px 16px;
   border: 1px solid var(--mkt-border);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%),
     rgba(30, 31, 34, 0.55);
@@ -1494,7 +1419,7 @@ body:has(.mkt-consent),
 .seo-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--mkt-border);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(30, 31, 34, 0.55);
 }
 
@@ -1541,7 +1466,7 @@ body:has(.mkt-consent),
 .seo-verdict {
   padding: 16px 18px;
   border: 1px solid var(--mkt-border);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.04);
   color: var(--mkt-text);
   line-height: 1.55;
@@ -1566,7 +1491,7 @@ body:has(.mkt-consent),
 
 .seo-faq-item {
   border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.03);
   overflow: hidden;
 }
@@ -1600,7 +1525,7 @@ body:has(.mkt-consent),
   margin-top: 48px;
   padding: 28px 24px;
   border: 1px solid var(--mkt-border);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background:
     radial-gradient(80% 120% at 10% 0%, rgba(88, 101, 242, 0.22), transparent 55%),
     rgba(30, 31, 34, 0.65);
@@ -1634,7 +1559,7 @@ body:has(.mkt-consent),
 
 .seo-tags span {
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--mkt-border);
   color: var(--mkt-muted);
   font-size: 11px;
@@ -1696,7 +1621,7 @@ body:has(.mkt-consent),
   height: min(220px, 36vw);
   min-height: 180px;
   border: 1px solid var(--mkt-border);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
@@ -1717,7 +1642,7 @@ body:has(.mkt-consent),
 .seo-pp-rail span {
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -1744,7 +1669,7 @@ body:has(.mkt-consent),
 .seo-pp-row {
   height: 22px;
   margin-bottom: 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -1768,7 +1693,7 @@ body:has(.mkt-consent),
 .seo-pp-bubble {
   width: 58%;
   height: 18px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -1857,7 +1782,7 @@ body:has(.mkt-consent),
 .mkt-waitlist-row input {
   flex: 1 1 180px;
   min-width: 0;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--mkt-border, rgba(255,255,255,0.12));
   background: rgba(0,0,0,0.25);
   color: inherit;
@@ -1893,7 +1818,7 @@ body:has(.mkt-consent),
 .mkt-status-card {
   margin: 1rem 0 1.25rem;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(255,255,255,0.12);
   display: flex;
   flex-direction: column;
@@ -1907,7 +1832,7 @@ body:has(.mkt-consent),
 
 .mkt-download-panel {
   border: 1px solid var(--mkt-border);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: rgba(14, 16, 24, 0.9);
   padding: 18px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
@@ -1937,7 +1862,7 @@ body:has(.mkt-consent),
   min-height: 92px;
   min-width: 0;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--mkt-border);
   background: rgba(255, 255, 255, 0.04);
   color: var(--mkt-text);
@@ -2002,7 +1927,7 @@ body:has(.mkt-consent),
   min-height: 44px;
   min-width: 0;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--mkt-border);
   background: var(--mkt-surface);
   color: var(--mkt-muted);
@@ -2042,7 +1967,7 @@ body:has(.mkt-consent),
 
 .mkt-faq details {
   border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--mkt-surface);
   padding: 14px 16px;
   margin-bottom: 8px;
@@ -2056,28 +1981,28 @@ body:has(.mkt-consent),
 
 .seo-landing.seo-tone-gaming .seo-hero {
   padding: 8px 18px 18px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: linear-gradient(135deg, rgba(240, 178, 50, 0.08), transparent 60%);
 }
 .seo-landing.seo-tone-community .seo-hero {
   padding: 8px 18px 18px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: linear-gradient(135deg, rgba(42, 212, 184, 0.08), transparent 60%);
 }
 .seo-landing.seo-tone-voice .seo-hero {
   padding: 8px 18px 18px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: linear-gradient(135deg, rgba(79, 124, 255, 0.1), transparent 60%);
 }
 
 .seo-landing.seo-tone-friends .seo-hero {
   padding: 8px 18px 18px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: linear-gradient(135deg, rgba(232, 160, 200, 0.1), transparent 60%);
 }
 .seo-landing.seo-tone-compare .seo-hero {
   padding: 8px 18px 18px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: linear-gradient(135deg, rgba(201, 164, 106, 0.1), transparent 60%);
 }
 
@@ -2092,7 +2017,7 @@ body:has(.mkt-consent),
   display: grid;
   gap: 4px;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--mkt-border);
   background: var(--mkt-surface);
 }

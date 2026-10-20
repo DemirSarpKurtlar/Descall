@@ -11,6 +11,7 @@ import { useIsAppleMobile } from "./useIsAppleMobile";
 import "./site.css";
 import "./glass-public.css";
 import "./glass-public-frames.css";
+import "./home-hero.css";
 
 function IconMenu() {
   return (
