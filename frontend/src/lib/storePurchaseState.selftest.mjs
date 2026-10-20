@@ -58,6 +58,7 @@ const equip = async (item, isEquipped) => calls.push([item.id, isEquipped]);
 await applyUndo(undoTarget({ item: banner, previous: prev, autoWore: true }), equip);
 await applyUndo(undoTarget({ item: banner, previous: null, autoWore: true }), equip);
 assert.equal(await applyUndo(null, equip), false);
+assert.equal(await applyUndo(undoTarget({ item: banner, previous: prev, autoWore: true }), async () => false), false, "a failed re-wear keeps Geri al available");
 assert.deepEqual(calls, [["b0", false], ["b1", true]], "re-equip previous, or take the new one off; never a refund call");
 
 // Numbers keep the 2,918 format in both languages.

@@ -314,7 +314,12 @@ async function run(win) {
   expect(S.equipped.avatar_effect === target.id, `not worn after buy: ${S.equipped.avatar_effect}`);
   expect(S.balance === START_BALANCE - target.price_descoin, `balance after buy ${S.balance}`);
   await shot(win, 'purchase-3-success.png');
+  const equipsBefore = S.calls.filter((c) => c[0] === 'equip').length;
+  await waitFor(win, 'undo ready', `(() => { const b = document.querySelector('[data-testid="store-purchase-modal"] [data-action="undo"]'); return { ok: !!b && !b.disabled }; })()`, 6000);
   await js(win, clickIn('[data-action="undo"]'));
+  // Wait on the observable result (the re-wear request), not only on the button going away.
+  const t0 = Date.now();
+  while (S.calls.filter((c) => c[0] === 'equip').length === equipsBefore && Date.now() - t0 < 6000) await sleep(50);
   await waitFor(win, 'undo applied', `(() => ({ ok: !document.querySelector('[data-testid="store-purchase-modal"] [data-action="undo"]') }))()`, 6000);
   await sleep(400);
   expect(S.equipped.avatar_effect === WORN.id, `Geri al did not re-wear the previous item: ${S.equipped.avatar_effect}`);

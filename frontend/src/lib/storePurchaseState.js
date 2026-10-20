@@ -76,9 +76,9 @@ export function undoTarget({ item, previous, autoWore, undone = false }) {
 /** Runs an undoTarget against ShopPanel's handleEquip(item, isEquipped). */
 export async function applyUndo(target, handleEquip) {
   if (!target) return false;
-  if (target.action === "equip") await handleEquip(target.item, false);
-  else await handleEquip(target.item, true);
-  return true;
+  const res = target.action === "equip" ? await handleEquip(target.item, false) : await handleEquip(target.item, true);
+  // handleEquip reports failure with `false`; keep "Geri al" available so it can be retried.
+  return res !== false;
 }
 
 // Items with motion. The DB row has no motion column, so the frontend keeps the list

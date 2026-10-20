@@ -183,8 +183,8 @@ export default function StorePurchaseModal({
     if (!target || busy) return;
     setBusy(true);
     try {
-      await applyUndo(target, onEquip);
-      setSuccess((s) => ({ ...s, undone: true }));
+      const ok = await applyUndo(target, onEquip);
+      if (ok) setSuccess((s) => ({ ...s, undone: true }));
     } finally {
       setBusy(false);
     }
