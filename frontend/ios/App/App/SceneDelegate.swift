@@ -12,6 +12,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+        for activity in connectionOptions.userActivities {
+            _ = DescallCallManager.shared.handleStartCallIntent(activity)
+        }
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
@@ -19,6 +22,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        if DescallCallManager.shared.handleStartCallIntent(userActivity) { return }
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
     }
 }

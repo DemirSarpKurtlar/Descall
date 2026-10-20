@@ -574,7 +574,7 @@ export default function App() {
   const callOccupancyRef = useRef({ dmMode: null, groupActive: false });
   const call = useCall(socketApi, callOccupancyRef);
   // Native iOS only (CallKit + VoIP push); a no-op everywhere else.
-  useIosCallKitBridge({ call, socket: socketApi, meId: me?.id });
+  useIosCallKitBridge({ call, socket: socketApi, meId: me?.id, friends });
   const groupCall = useGroupCall(socketApi, me?.id, callOccupancyRef);
   const [callUiReady, setCallUiReady] = useState(false);
   useEffect(

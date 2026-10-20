@@ -534,6 +534,8 @@ final class DescallNativeCall: NSObject {
 
     // MARK: - Controls
 
+    var isMuted: Bool { session?.muted ?? false }
+
     func setMuted(_ muted: Bool) {
         guard let s = session, s.answered else { return }
         s.muted = muted

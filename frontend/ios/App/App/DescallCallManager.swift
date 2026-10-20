@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import PushKit
 import CallKit
+import Intents
 import AVFoundation
 import UserNotifications
 
@@ -126,9 +127,9 @@ final class DescallCallManager: NSObject {
         config.maximumCallGroups = 1
         config.maximumCallsPerCallGroup = 1
         config.supportedHandleTypes = [.generic]
-        // Recents entries would relaunch the app with a start-call intent that
-        // Descall doesn't handle yet, so calls are kept out of the Phone app.
-        config.includesCallsInRecents = false
+        // Calls (incl. missed) appear in the Phone app's Recents; tapping one
+        // relaunches Descall with INStartCallIntent → handleStartCallIntent → JS "startCallIntent".
+        config.includesCallsInRecents = true
         config.ringtoneSound = nil // system default ringtone
         // iconTemplateImageData stays unset: the only logo asset is the full-colour,
         // opaque app icon, which renders as a solid square as a template mask.
@@ -140,7 +141,7 @@ final class DescallCallManager: NSObject {
         update.remoteHandle = CXHandle(type: .generic, value: info.callerId.isEmpty ? "descall" : info.callerId)
         update.localizedCallerName = info.callerName
         update.hasVideo = info.video
-        update.supportsHolding = false
+        update.supportsHolding = true
         update.supportsGrouping = false
         update.supportsUngrouping = false
         update.supportsDTMF = false
@@ -838,8 +839,42 @@ extension DescallCallManager: CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, perform action: CXSetHeldCallAction) {
-        // Holding isn't supported (supportsHolding = false).
-        action.fail()
+        // Hold (e.g. a cellular call "Hold & Accept"): mic muted while held; the
+        // previous mute state comes back on resume. The peer stays connected.
+        let uuid = action.callUUID
+        if DescallNativeCall.shared.owns(uuid) {
+            if action.isOnHold {
+                heldMuteRestore[uuid] = DescallNativeCall.shared.isMuted
+                DescallNativeCall.shared.setMuted(true)
+            } else {
+                DescallNativeCall.shared.setMuted(heldMuteRestore.removeValue(forKey: uuid) ?? false)
+            }
+        } else {
+            emit("hold", ["uuid": uuid.uuidString.lowercased(), "held": action.isOnHold])
+        }
+        action.fulfill()
+    }
+
+    private var heldMuteRestore: [UUID: Bool] = [:]
+
+    /// Phone app Recents / Siri: "call back" a Descall contact. The handle is
+    /// the Descall user id (CXHandle .generic, see makeUpdate).
+    func handleStartCallIntent(_ userActivity: NSUserActivity) -> Bool {
+        guard let intent = userActivity.interaction?.intent else { return false }
+        var handle: String?
+        var video = false
+        if let i = intent as? INStartCallIntent {
+            handle = i.contacts?.first?.personHandle?.value
+            video = i.callCapability == .videoCall
+        } else if let i = intent as? INStartAudioCallIntent {
+            handle = i.contacts?.first?.personHandle?.value
+        } else if let i = intent as? INStartVideoCallIntent {
+            handle = i.contacts?.first?.personHandle?.value
+            video = true
+        }
+        guard let userId = handle, !userId.isEmpty, userId != "descall" else { return false }
+        emit("startCallIntent", ["userId": userId, "video": video])
+        return true
     }
 
     func provider(_ provider: CXProvider, timedOutPerforming action: CXAction) {
