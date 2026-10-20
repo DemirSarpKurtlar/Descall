@@ -49,6 +49,8 @@ const RESUME_MAX_AGE_MS = 60_000;
  */
 const ANSWERING_MAX_AGE_MS = 120_000;
 const MAX_BUFFERED_ICE = 64;
+/** A caller that was suspended (locked iPhone) can fetch the answer this long. */
+const ANSWER_REPLAY_MS = 60_000;
 
 /** Still worth replaying to a (VoIP-woken / just-unlocked) callee? */
 function isResumable(call, now = clock.now()) {
@@ -122,6 +124,25 @@ function bufferCallerIce({ callerId, calleeId, candidate }) {
   if (call.callerIce.length < MAX_BUFFERED_ICE) call.callerIce.push(candidate);
 }
 
+/** Callee ICE right after the answer (same replay purpose as `answer`). */
+function bufferCalleeIce({ fromId, toId, candidate }) {
+  const call = pendingDmCalls.get(pendingKey(toId, fromId));
+  if (!call || call.status !== "active" || !call.answer || !candidate) return;
+  if (clock.now() - (call.answeredAtMs || 0) > ANSWER_REPLAY_MS) return;
+  if (call.calleeIce.length < MAX_BUFFERED_ICE) call.calleeIce.push(candidate);
+}
+
+/**
+ * Answer (+ callee ICE) for a caller that reconnects during the first
+ * ANSWER_REPLAY_MS after the callee picked up, else null.
+ */
+function answerReplayForCaller(callerId, calleeId) {
+  const call = pendingDmCalls.get(pendingKey(callerId, calleeId));
+  if (!call || call.status !== "active" || !call.answer) return null;
+  if (clock.now() - (call.answeredAtMs || 0) > ANSWER_REPLAY_MS) return null;
+  return { answer: call.answer, candidates: [...(call.calleeIce || [])] };
+}
+
 /** Ringing offers addressed to `calleeId` that are still fresh enough to answer. */
 function listRingingForCallee(calleeId) {
   const out = [];
@@ -171,10 +192,18 @@ function markCalleeAnswering(callUuid, calleeId) {
  * A repeated answer (renegotiation, iOS CallKit answer + in-app answer) keeps
  * the first connect time so the duration is never reset mid-call.
  */
-function markAnswered({ callerId, calleeId }) {
+function markAnswered({ callerId, calleeId, answer = null }) {
   const hit = findPending(callerId, calleeId);
   if (!hit) return null;
+  const wasRinging = hit.call.status === "ringing";
   hit.call.status = "active";
+  if (wasRinging && answer) {
+    // Kept briefly so a caller whose phone was locked while it rang (socket
+    // suspended, answer missed) still gets it when its socket comes back.
+    hit.call.answer = answer;
+    hit.call.answeredAtMs = clock.now();
+    hit.call.calleeIce = [];
+  }
   hit.call.startedAt = hit.call.startedAt || nowIso();
   hit.call.offer = null;
   hit.call.callerIce = [];
@@ -550,6 +579,9 @@ module.exports = {
   markCalleeAnswering,
   isResumable,
   markAnswered,
+  bufferCalleeIce,
+  answerReplayForCaller,
+  ANSWER_REPLAY_MS,
   ensureActiveDmCall,
   isActiveDmCall,
   listActiveDmCalls,

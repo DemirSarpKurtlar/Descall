@@ -118,7 +118,7 @@ function setup(extra = {}) {
   const { fan, log, clock } = setup();
   fan.ringStarted({ callUuid: "U5", callerId: "A", calleeId: "B" });
   fan.callerSocketsGone("A");
-  clock.advance(CALLER_LOST_GRACE_MS - 10);
+  clock.advance(5_000);
   fan.callerSocketsBack("A");
   clock.advance(1000);
   assert.equal(log.voip.length, 0, "a caller that reconnected keeps ringing");

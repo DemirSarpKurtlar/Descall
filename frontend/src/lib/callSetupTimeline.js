@@ -18,6 +18,8 @@ export function createCallSetupTimeline({
   report = () => {},
   log = (...a) => console.info(...a),
   context = () => ({}),
+  // Every summary (also fast / failed ones) → server log `[CallTelemetry]`.
+  onSummary = () => {},
 } = {}) {
   let tl = null;
   let timer = null;
@@ -59,6 +61,11 @@ export function createCallSetupTimeline({
     } catch {
       /* ignore */
     }
+    try {
+      onSummary(summary);
+    } catch {
+      /* ignore */
+    }
     const slow = reason !== "done" || (summary.answerToAudioMs != null && summary.answerToAudioMs > SLOW_MS);
     if (slow && reason !== "ended") {
       try {
@@ -77,6 +84,9 @@ export function createCallSetupTimeline({
     timer = setInterval(async () => {
       if (!tl || tl.done) return stopPoll();
       if (pc.connectionState === "closed") return finish("closed");
+      if (pc.connectionState === "failed" || pc.iceConnectionState === "failed") {
+        tl.marks.iceFailed = tl.marks.iceFailed ?? Math.round(now() - tl.t0);
+      }
       if (now() - startedAt > MAX_WATCH_MS) return finish("timeout");
       if (busy) return;
       busy = true;
