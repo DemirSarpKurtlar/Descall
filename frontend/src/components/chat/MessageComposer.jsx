@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
@@ -540,7 +541,10 @@ export default function MessageComposer({
     };
 
     if (pendingAttach) {
-      onSend?.(withReply({ ...pendingAttach }));
+      // Typed text goes with the attachment as its caption (one message).
+      const caption = message.trim();
+      onSend?.(withReply(caption ? { ...pendingAttach, text: caption } : { ...pendingAttach }));
+      if (caption) setMessage("");
       setPendingAttach(null);
       if (pendingAttach.previewUrl) URL.revokeObjectURL(pendingAttach.previewUrl);
       onClearReply?.();
@@ -701,6 +705,30 @@ export default function MessageComposer({
       setTimeout(() => setUploadError(""), 4000);
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Ctrl+V / Cmd+V: clipboard images (screenshots, copied images, copied image
+  // files) are staged as an attachment; text paste is left to the textarea.
+  const onPaste = async (e) => {
+    const file = pastedImageFile(e.clipboardData);
+    if (file) {
+      e.preventDefault();
+      await stageFile(file);
+      return;
+    }
+    const hasText = Boolean(e.clipboardData?.getData?.("text/plain"));
+    if (hasText || typeof window === "undefined" || !window.electronAPI?.readClipboardImage) return;
+    // Electron: some sources (e.g. Snipping Tool, copied file in Explorer) give
+    // the paste event no File; read the clipboard image in the main process.
+    try {
+      const png = await window.electronAPI.readClipboardImage();
+      if (png && png.byteLength) {
+        e.preventDefault?.();
+        await stageFile(new File([png], `pasted-${Date.now()}.png`, { type: "image/png" }));
+      }
+    } catch {
+      /* clipboard read is best effort */
     }
   };
 
@@ -1259,6 +1287,7 @@ export default function MessageComposer({
         ) : (
           <textarea
             ref={inputRef}
+            onPaste={onPaste}
             value={message}
             onChange={(e) => {
               if (e.target.scrollTop) e.target.scrollTop = 0;

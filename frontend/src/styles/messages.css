@@ -185,13 +185,14 @@
 /* Media stays inside the bubble, definite pixel width so intrinsic GIF
    sizes cannot stretch the bubble across the chat column. */
 .message-bubble.has-media {
-  width: 280px;
+  /* 2.13.8: larger image bubbles (were 280 px, screenshots looked tiny). */
+  width: min(480px, 70%);
   max-width: calc(100% - 8px);
   min-width: 0;
 }
 
 .message-bubble.has-media-only {
-  width: 280px;
+  width: min(480px, 70%);
   max-width: calc(100% - 8px);
   min-width: 0;
   padding: 4px;
@@ -271,14 +272,21 @@
   width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: min(280px, 48vh);
+  max-height: min(480px, 60vh);
   object-fit: contain;
+  /* Progressive: soft placeholder until the full image decodes. */
+  transition: opacity 180ms ease, filter 220ms ease;
   object-position: center;
   vertical-align: middle;
   background: rgba(0, 0, 0, 0.12);
   /* Prevent replaced-element min-content from blowing past the bubble */
   min-width: 0;
   min-height: 0;
+}
+
+.message-image.is-loading {
+  opacity: 0.55;
+  filter: blur(10px);
 }
 
 .message-media-badge {

@@ -4893,6 +4893,8 @@ export default function App() {
           onSendMessage={(msg) => {
             const isObj = msg && typeof msg === "object";
             const isMediaObject = isObj && (msg.type === "gif" || msg.type === "media");
+            // 2.13.8: text typed with an attachment is its caption (one message, one bubble).
+            const mediaCaption = isMediaObject && typeof msg.text === "string" ? msg.text.trim().slice(0, 4000) : "";
             const textPayload = isObj && msg.type === "text" ? msg.text : (!isObj ? msg : "");
             const replyMeta = isObj ? msg.replyTo : null;
 
@@ -4949,7 +4951,7 @@ export default function App() {
                   updated_at: me?.updated_at || me?.avatarVersion,
                 }),
                 to: { id: activeDmUser.id },
-                text: isMediaObject ? "" : textPayload,
+                text: isMediaObject ? mediaCaption : textPayload,
                 mediaUrl: isMediaObject ? msg.mediaUrl : undefined,
                 mediaType: isMediaObject ? msg.mediaType : undefined,
                 originalName: isMediaObject ? msg.originalName : undefined,
@@ -4975,7 +4977,7 @@ export default function App() {
                 socketRef.current?.emit("dm:send", {
                   toUserId: activeDmUser.id,
                   tempId,
-                  text: isVoice ? encodeVoiceContent(msg.duration || 0) : "",
+                  text: isVoice ? encodeVoiceContent(msg.duration || 0) : mediaCaption,
                   mediaUrl: msg.mediaUrl,
                   mediaType: isVoice ? "voice" : msg.mediaType,
                   mimeType: msg.mimeType,
@@ -5011,7 +5013,7 @@ export default function App() {
                   avatarUrl: me?.avatarUrl || me?.avatar_url,
                   updated_at: me?.updated_at || me?.avatarVersion,
                 }),
-                text: isMediaObject ? "" : textStr,
+                text: isMediaObject ? mediaCaption : textStr,
                 mediaUrl: isMediaObject ? msg.mediaUrl : undefined,
                 mediaType: isMediaObject ? msg.mediaType : undefined,
                 originalName: isMediaObject ? msg.originalName : undefined,
@@ -5036,7 +5038,7 @@ export default function App() {
                 [activeGroup.id]: formatGroupPreviewFromMsg(
                   {
                     from: { username: me?.username || t("You") },
-                    text: isMediaObject ? "" : textStr,
+                    text: isMediaObject ? mediaCaption : textStr,
                     mediaType: isMediaObject ? msg.mediaType : undefined,
                     mediaUrl: isMediaObject ? msg.mediaUrl : undefined,
                   },
@@ -5048,7 +5050,7 @@ export default function App() {
                 socketRef.current?.emit("group:message", {
                   groupId: activeGroup.id,
                   tempId,
-                  content: isVoice ? encodeVoiceContent(msg.duration || 0) : "",
+                  content: isVoice ? encodeVoiceContent(msg.duration || 0) : mediaCaption,
                   mediaUrl: msg.mediaUrl,
                   mediaType: isVoice ? "voice" : msg.mediaType,
                   duration: msg.duration,
@@ -5082,7 +5084,7 @@ export default function App() {
                     avatarUrl: me?.avatarUrl || me?.avatar_url,
                     updated_at: me?.updated_at || me?.avatarVersion,
                   }),
-                  text: isMediaObject ? "" : textStr,
+                  text: isMediaObject ? mediaCaption : textStr,
                   mediaUrl: isMediaObject ? msg.mediaUrl : undefined,
                   mediaType: isMediaObject ? msg.mediaType : undefined,
                   originalName: isMediaObject ? msg.originalName : undefined,
@@ -5103,7 +5105,7 @@ export default function App() {
                   serverId: activeServer.id,
                   channelId: activeChannel.id,
                   tempId,
-                  content: isVoice ? encodeVoiceContent(msg.duration || 0) : "",
+                  content: isVoice ? encodeVoiceContent(msg.duration || 0) : mediaCaption,
                   mediaUrl: msg.mediaUrl,
                   mediaType: isVoice ? "voice" : msg.mediaType,
                   duration: msg.duration,

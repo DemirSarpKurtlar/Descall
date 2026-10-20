@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
@@ -2035,6 +2035,18 @@ ipcMain.handle('show-notification', (_event, payload = {}) => {
 });
 
 // IPC handlers
+// Composer paste fallback: clipboard image as PNG bytes (null when none).
+ipcMain.handle('clipboard:read-image', () => {
+  try {
+    const img = clipboard.readImage();
+    if (!img || img.isEmpty()) return null;
+    const png = img.toPNG();
+    return png.length > 25 * 1024 * 1024 ? null : png;
+  } catch {
+    return null;
+  }
+});
+
 ipcMain.handle('app-version', () => {
   return app.getVersion();
 });

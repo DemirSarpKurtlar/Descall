@@ -731,6 +731,7 @@ function MessageBubble({
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
   const rawMediaUrl = message.mediaUrl || message.media_url || "";
   const { url: mediaUrl, onMediaError } = usePrivateMediaUrl(rawMediaUrl);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const mediaPreview = visualMediaPreview(message);
   const isVisualMedia = Boolean(mediaPreview);
   const isGif = Boolean(mediaPreview?.isGif);
@@ -1360,10 +1361,15 @@ function MessageBubble({
                       ? "GIF"
                       : message.originalName || t("Image")
                   }
-                  className="message-image"
+                  className={`message-image${imageLoaded ? "" : " is-loading"}`}
                   loading="lazy"
+                  decoding="async"
                   draggable={false}
-                  onError={onMediaError}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={(e) => {
+                    setImageLoaded(true);
+                    onMediaError?.(e);
+                  }}
                 />
                 {isGif && (
                   <span className="message-media-badge" aria-hidden="true">GIF</span>

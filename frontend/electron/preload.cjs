@@ -4,6 +4,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   // App info
   getVersion: () => ipcRenderer.invoke('app-version'),
+  // Clipboard image (PNG bytes) for Ctrl+V in the composer
+  readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
   
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
