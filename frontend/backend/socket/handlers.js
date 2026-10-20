@@ -67,6 +67,8 @@ const { toUtcIso } = require("../lib/datetime");
 const {
   trackOffer,
   markAnswered,
+  bufferCalleeIce,
+  answerReplayForCaller,
   isActiveDmCall,
   finalizeCall,
   getPendingCall,
@@ -1592,7 +1594,7 @@ function registerSocketHandlers(io) {
       const ringing = getPendingCall(toUserId, myId);
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
-      markAnswered({ callerId: toUserId, calleeId: myId });
+      markAnswered({ callerId: toUserId, calleeId: myId, answer });
       if (wasRinging) {
         // Stop the ring on every other device of the callee: sockets
         // (call:ring-ended + legacy call:answered-elsewhere), the iPhone's
@@ -1624,6 +1626,7 @@ function registerSocketHandlers(io) {
     socket.on("call:ice-candidate", ({ toUserId, candidate } = {}) => {
       if (typeof toUserId !== "string" || !candidate) return;
       bufferCallerIce({ callerId: myId, calleeId: toUserId, candidate });
+      bufferCalleeIce({ fromId: myId, toId: toUserId, candidate });
       emitToUser(io, toUserId, "call:ice-candidate", {
         fromUserId: myId,
         candidate,
@@ -1680,6 +1683,34 @@ function registerSocketHandlers(io) {
       } catch (err) {
         console.warn("[Call] finalize decline failed:", err?.message || err);
       }
+    });
+
+    // Caller back after its socket was suspended while ringing (iPhone locked
+    // / app in background): replay the answer + callee ICE it missed.
+    socket.on("call:caller-resume", ({ toUserId } = {}) => {
+      if (typeof toUserId !== "string" || !toUserId) return;
+      getRingFanout(io).callerSocketsBack(myId);
+      const replay = answerReplayForCaller(myId, toUserId);
+      if (!replay) return;
+      socket.emit("call:answer", { fromUserId: toUserId, answer: replay.answer, resumed: true });
+      for (const candidate of replay.candidates) {
+        socket.emit("call:ice-candidate", { fromUserId: toUserId, candidate });
+      }
+    });
+
+    // Connection telemetry from clients (no ids / names): one line per call
+    // setup so failed iOS calls show up in the Render logs.
+    let telemetryCount = 0;
+    socket.on("call:telemetry", (summary = {}) => {
+      if (!summary || typeof summary !== "object" || ++telemetryCount > 30) return;
+      const pick = {};
+      for (const k of ["direction", "callType", "result", "platform", "pair", "gum", "offerSent", "answerRecv", "answerSent", "ice", "out", "in", "heard", "iceFailed", "iceCfgTurn", "iceCfgStunOnly", "answerToAudioMs"]) {
+        const v = summary[k];
+        if (v == null) continue;
+        if (typeof v === "number" && Number.isFinite(v)) pick[k] = Math.round(v);
+        else if (typeof v === "string") pick[k] = v.slice(0, 40);
+      }
+      console.log("[CallTelemetry]", JSON.stringify(pick));
     });
 
     // Native iOS after a VoIP wake / CallKit answer: replay still-ringing offers

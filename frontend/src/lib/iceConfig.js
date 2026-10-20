@@ -203,6 +203,51 @@ export async function preloadIceServers() {
   return preloadPromise;
 }
 
+/**
+ * Await a usable ICE list before a call's RTCPeerConnection is built.
+ *
+ * Root cause of "iOS call never connects" (2.13.6): getIceServers() is
+ * synchronous and returns the bare STUN default whenever the cached TURN
+ * credentials have expired or the first fetch is still in flight. An iPhone
+ * resumed from the background (or woken by a call) almost always has an
+ * expired cache, so its peer connection was built STUN-only. On cellular /
+ * carrier-grade NAT no host/srflx pair works and ICE failed every time.
+ * Every call path now awaits this (bounded) before creating the pc.
+ */
+export async function ensureIceServersForCall({ timeoutMs = 3500 } = {}) {
+  const now = Date.now();
+  const expired = cachedExpiresAt && now >= cachedExpiresAt;
+  const signedIn = Boolean(currentToken());
+  if (cachedServers && !expired && !isStale(now) && (!signedIn || iceServersHaveTurn(cachedServers))) {
+    return cachedServers;
+  }
+  let timer = null;
+  try {
+    await Promise.race([
+      refreshIceServers(),
+      new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); }),
+    ]);
+  } catch {
+    /* fall through to whatever we have */
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+  return getIceServers();
+}
+
+/**
+ * Diagnostics / tests: `localStorage["descall:ice-relay"] = "1"` forces
+ * iceTransportPolicy "relay" (TURN only) so the relay path can be verified.
+ */
+export function forcedIceTransportPolicy() {
+  try {
+    const v = typeof localStorage !== "undefined" ? localStorage.getItem("descall:ice-relay") : null;
+    return v === "1" ? "relay" : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Re-fetch now (or only when stale). Used on socket reconnect and sign-in. */
 export function refreshIceServers({ ifStale = false } = {}) {
   if (ifStale && cachedServers && !isStale()) return Promise.resolve(cachedServers);

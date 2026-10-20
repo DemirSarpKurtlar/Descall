@@ -23,7 +23,7 @@
  *     replaceTrack(track) on it. Returns the sender, or null if none found.
  */
 
-import { getIceServers, trackPeerConnection } from "./iceConfig";
+import { forcedIceTransportPolicy, getIceServers, trackPeerConnection } from "./iceConfig";
 import { opusOptionsForSenders, preferVoiceCodecs, tuneAudioReceiver, tuneOpusSdp } from "./voiceProfile.js";
 
 export function createPeerConnection({
@@ -32,8 +32,10 @@ export function createPeerConnection({
   onTrack,
   onConnectionStateChange,
 } = {}) {
+  const relay = forcedIceTransportPolicy();
   const pc = new RTCPeerConnection({
     iceServers: iceServers || getIceServers(),
+    ...(relay ? { iceTransportPolicy: relay } : {}),
     // One transport for audio + video + data (fewer TURN allocations, faster
     // ICE), RTCP on the same port, and a small pre-gathered candidate pool
     // so TURN relay candidates are ready by the first setLocalDescription.

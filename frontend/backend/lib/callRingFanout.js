@@ -25,7 +25,9 @@
 
 const RING_TIMEOUT_MS = 45_000;
 /** Caller's last socket went away while ringing: cancel unless it is back by then. */
-const CALLER_LOST_GRACE_MS = 12_000;
+// 30 s (was 12 s): an iPhone caller that locks the screen while it rings
+// has its WebView socket suspended; 12 s cancelled the ring under it.
+const CALLER_LOST_GRACE_MS = 30_000;
 
 const OUTCOMES = Object.freeze(["answered_elsewhere", "declined_elsewhere", "cancelled", "missed"]);
 

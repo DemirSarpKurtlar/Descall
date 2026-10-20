@@ -61,4 +61,19 @@ assert.equal(ice.decideStale(base), false);
 assert.equal(ice.decideStale({ ...base, token: "other" }), true, "account switch");
 assert.equal(ice.decideStale({ ...base, expiresAt: now + 60e3 }), true, "within 5 min of expiry");
 assert.equal(ice.decideStale({ ...base, cachedAuthenticated: false, cachedAt: now - 120e3 }), true, "STUN-only while signed in retries after 60 s");
+// 2.13.6: a call after the TURN credentials expired (iPhone resumed from the
+// background) must not dial STUN-only: ensureIceServersForCall refetches.
+store.set(SECURE_TOKEN_KEY, "jwt-abc");
+reply = () => ({ iceServers: [...STUN, TURN], authenticated: true, ttlSeconds: 3600, expiresAt: new Date(Date.now() - 1000).toISOString() });
+await ice.refreshIceServers();
+assert.equal(ice.iceServersHaveTurn(ice.getIceServers()), false, "expired cache: sync getter falls back to STUN");
+reply = () => ({ iceServers: [...STUN, TURN], authenticated: true, ttlSeconds: 3600, expiresAt: new Date(Date.now() + 3600e3).toISOString() });
+const forCall = await ice.ensureIceServersForCall({ timeoutMs: 500 });
+assert.ok(ice.iceServersHaveTurn(forCall), "call gets fresh TURN after expiry");
+// Backend unreachable: bounded wait, never hangs the call.
+ice._resetIceConfigForTests();
+globalThis.fetch = () => new Promise(() => {});
+const t0 = Date.now();
+const slow = await ice.ensureIceServersForCall({ timeoutMs: 200 });
+assert.ok(Date.now() - t0 < 1500 && Array.isArray(slow) && slow.length > 0, "bounded wait with STUN fallback");
 console.log("iceConfig.selftest.mjs: ok");

@@ -33,7 +33,7 @@ import {
   applyRemoteOffer,
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
-import { preloadIceServers } from "../lib/iceConfig";
+import { ensureIceServersForCall, iceServersHaveTurn, preloadIceServers } from "../lib/iceConfig";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain } from "../lib/voiceGain";
@@ -299,6 +299,13 @@ export function useCall(socket, callOccupancyRef = null) {
     setupTimelineRef.current = createCallSetupTimeline({
       report: reportDiagnostic,
       context: () => ({ platform: callPlatformTag() }),
+      onSummary: (summary) => {
+        try {
+          if (socketRef.current?.connected) socketRef.current.emit("call:telemetry", summary);
+        } catch {
+          /* ignore */
+        }
+      },
     });
   }
 
@@ -1075,6 +1082,26 @@ export function useCall(socket, callOccupancyRef = null) {
     };
   }, [mode, socket]);
 
+  // Outgoing ring: after the caller's socket comes back (phone was locked /
+  // app backgrounded while it rang) fetch an answer that arrived meanwhile.
+  useEffect(() => {
+    if (mode !== "outgoing" || !socket) return undefined;
+    const ask = () => {
+      const toUserId = peerRef.current?.id;
+      if (!toUserId || !socket.connected) return;
+      socket.emit("call:caller-resume", { toUserId: String(toUserId) });
+    };
+    socket.on("connect", ask);
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") ask();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      socket.off("connect", ask);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [mode, socket]);
+
   // Signaling health for the link recovery machine while connected.
   useEffect(() => {
     if (mode !== "active" || !socket) return undefined;
@@ -1416,6 +1443,8 @@ export function useCall(socket, callOccupancyRef = null) {
       callDirectionRef.current = "outgoing";
       setupTimelineRef.current?.start("outgoing", type);
       micGuardRef.current?.noteCaptureStart();
+      // Fresh TURN credentials in parallel with the mic prompt (see iceConfig).
+      const icePromise = ensureIceServersForCall();
       const stream = await acquireCallMicStream(type);
       setupTimelineRef.current?.mark("gum");
       localStreamRef.current = stream;
@@ -1442,7 +1471,13 @@ export function useCall(socket, callOccupancyRef = null) {
         localVideoRef.current.play().catch(() => {});
       }
 
-      const pc = createPeerConnection({});
+      const iceServers = await icePromise;
+      setupTimelineRef.current?.mark(iceServersHaveTurn(iceServers) ? "iceCfgTurn" : "iceCfgStunOnly");
+      if (modeRef.current !== "outgoing" || peerRef.current?.id !== peerId) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      const pc = createPeerConnection({ iceServers });
       pcRef.current = pc;
       setupPeerConnection(pc, stream, true);
 
@@ -1497,8 +1532,11 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     try {
       micGuardRef.current?.noteCaptureStart();
+      const icePromise = ensureIceServersForCall();
       const stream = await acquireCallMicStream(type);
       timeline?.mark("gum");
+      const iceServers = await icePromise;
+      timeline?.mark(iceServersHaveTurn(iceServers) ? "iceCfgTurn" : "iceCfgStunOnly");
       // The ring may have ended while the capture was pending (iOS defers
       // getUserMedia until the app is visible, e.g. answered on a locked phone).
       if (modeRef.current !== "incoming" || peerRef.current?.id !== currentPeer.id || incomingOfferRef.current !== offer) {
@@ -1519,7 +1557,7 @@ export function useCall(socket, callOccupancyRef = null) {
         localVideoRef.current.play().catch(() => {});
       }
 
-      const pc = createPeerConnection({});
+      const pc = createPeerConnection({ iceServers });
       pcRef.current = pc;
       setupPeerConnection(pc, stream, false);
 
