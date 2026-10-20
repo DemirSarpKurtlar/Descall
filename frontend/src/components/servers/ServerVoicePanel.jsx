@@ -143,8 +143,6 @@ const VoiceTile = memo(function VoiceTile({
   const cameraStream = tile.cameraStream || null;
   const speakingRaw = useSpeaking(tile.audioStream, {
     muted: Boolean(tile.muted),
-    attackMs: 55,
-    releaseMs: 260,
     observeEl: tileEl,
   });
   // Hold the off-edge so VAD flapping can't blink the speaking state.

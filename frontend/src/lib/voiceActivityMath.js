@@ -2,6 +2,16 @@
 
 /** ~25 fps. Analyser reads stay in this window so a call tile is not a 60 fps loop. */
 export const VOICE_SAMPLE_MS = 40;
+/**
+ * Speaking indicator timing (2.13.6). Was: EMA 0.72 (≈270 ms fall) + 220 ms
+ * release + 320 ms UI hold + 220 ms CSS, and the remote RTP level stayed
+ * "fresh" for 1000 ms after the last packet (DTX) → the ring lingered 1–2 s.
+ * Now: on ≈80–120 ms, off ≈250–350 ms after speech ends, then a 150 ms fade.
+ */
+export const SPEAKING_ATTACK_MS = 80;
+export const SPEAKING_RELEASE_MS = 160;
+export const SPEAKING_HOLD_MS = 80;
+export const SPEAKING_FADE_MS = 150;
 
 export function rmsFromTimeDomain(data) {
   const n = data?.length || 0;
@@ -43,8 +53,10 @@ export function classifyAudioTracks(tracks) {
 export function createSpeakingGate({
   onThreshold = 0.02,
   offThreshold,
-  attackMs = 90,
-  releaseMs = 220,
+  attackMs = SPEAKING_ATTACK_MS,
+  releaseMs = SPEAKING_RELEASE_MS,
+  riseAlpha = 0.6,
+  fallAlpha = 0.75,
 } = {}) {
   const onT = onThreshold;
   const offT = typeof offThreshold === "number" ? offThreshold : Math.max(0.008, onT * 0.55);
@@ -61,7 +73,9 @@ export function createSpeakingGate({
       smoothed = 0;
     },
     push(rms, now) {
-      smoothed = smoothed * 0.72 + (Number(rms) || 0) * 0.28;
+      const x = Number(rms) || 0;
+      const a = x > smoothed ? riseAlpha : fallAlpha;
+      smoothed = smoothed * (1 - a) + x * a;
       if (!speaking) {
         if (smoothed > onT) {
           if (!aboveSince) aboveSince = now;
