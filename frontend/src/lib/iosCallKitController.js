@@ -57,6 +57,7 @@ export function createCallKitController({
   now = () => Date.now(),
   setTimer = (fn, ms) => setTimeout(fn, ms),
   clearTimer = (id) => clearTimeout(id),
+  onStartCallIntent = () => {},
   log = () => {},
 }) {
   let current = null; // { uuid, direction, peerId, answered, endedByCallKit, fallback }
@@ -380,6 +381,25 @@ export function createCallKitController({
     if (Boolean(c.muted) !== want) c.toggleMute?.();
   }
 
+  // CallKit hold (cellular call "Hold & Accept"): mic off while held, the
+  // previous mute state back on resume.
+  let heldRestoreMuted = null;
+  function onHold(data) {
+    const uuid = normUuid(data.uuid);
+    const c = getCall();
+    if (!current || current.uuid !== uuid || !c) return;
+    if (data.held) {
+      if (heldRestoreMuted === null) heldRestoreMuted = Boolean(c.muted);
+      if (!c.muted) c.toggleMute?.();
+      lastMuted = true;
+    } else {
+      const want = heldRestoreMuted ?? false;
+      heldRestoreMuted = null;
+      lastMuted = want;
+      if (Boolean(c.muted) !== want) c.toggleMute?.();
+    }
+  }
+
   function onReset() {
     clearPendingAnswer();
     knownPushes.clear();
@@ -543,6 +563,12 @@ export function createCallKitController({
         return onEnd(data);
       case "mute":
         return onMute(data);
+      case "hold":
+        return onHold(data);
+      case "startCallIntent":
+        // Phone app Recents → call this Descall user back (ignored mid-call).
+        if (current || !data.userId) return undefined;
+        return onStartCallIntent({ userId: String(data.userId), video: Boolean(data.video) });
       case "ringTimeout":
         return onRingTimeout(data);
       case "endedElsewhere":

@@ -24,7 +24,9 @@ import { notifyCallAudioSession } from "../lib/voiceActivity";
  * Native iOS only: keeps CallKit in step with the DM call from useCall().
  * Does nothing at all on web, Electron and Android.
  */
-export function useIosCallKitBridge({ call, socket, meId }) {
+export function useIosCallKitBridge({ call, socket, meId, friends = [] }) {
+  const friendsRef = useRef(friends);
+  friendsRef.current = friends;
   const callRef = useRef(call);
   const socketRef = useRef(socket);
   callRef.current = call;
@@ -56,6 +58,12 @@ export function useIosCallKitBridge({ call, socket, meId }) {
         setTimeout(() => {
           void callRef.current?.refreshMicrophone?.("callkit-released", { force: true });
         }, 800);
+      },
+      onStartCallIntent: ({ userId, video }) => {
+        const c = callRef.current;
+        if (!c?.startCall || (c.mode && c.mode !== "idle")) return;
+        const friend = (friendsRef.current || []).find((f) => String(f?.id ?? f?.userId) === userId);
+        void c.startCall(friend || { id: userId }, video ? "video" : "voice");
       },
       log: (...args) => console.warn("[CallKit]", ...args),
     });
