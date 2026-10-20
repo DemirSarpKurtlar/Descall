@@ -7,7 +7,8 @@
  * against an in-process mock API (nothing leaves the machine). It opens a DM, hovers
  * the first and last message of each group at several window widths (and with the
  * conversation's side panel open when there is one), and checks that the hover pill:
- *   - sits on the message card's top-right corner (top -16px, ~12px in), also for grouped follow-ups,
+ *   - sits directly above the hovered bubble (6px gap, aligned to its left or right edge),
+ *     or straddles its top edge under the header when there is no room above,
  *   - sits inside the chat column with an inset (never clipped),
  *   - never overlaps the row's avatar, name, badges or time,
  *   - never overlaps the floating conversation header.
@@ -130,10 +131,10 @@ const MEASURE = `(() => {
   const b = r(bar);
   const hits = [...row.querySelectorAll(':scope > .message-header .message-avatar, :scope > .message-header .message-meta > *'), ...document.querySelectorAll('.chat-top-chrome .header-left, .chat-top-chrome .header-right')]
     .map((e) => ({ cls: String(e.className).slice(0, 40), ...r(e) }))
-    .concat([{ cls: 'hovered-message', ...r(bubble) }])
+    .concat(bar.dataset.place === 'edge' ? [] : [{ cls: 'hovered-message', ...r(bubble) }])
     .filter((o) => o.w > 0 && o.left < b.right && o.right > b.left && o.top < b.bottom && o.bottom > b.top);
   return { ok: true, bar: b, col, place: bar.dataset.place || '', compact: bar.classList.contains('is-compact'),
-    cardTopOff: Math.round(b.top - rowR.top), cardRightOff: Math.round(rowR.right - b.right), clipped: b.left < col.left + 4 || b.right > col.right - 4 || b.top < col.top, insetRight: Math.round(Math.min(col.right, rowR.right) - b.right), hits };
+    bub: r(bubble), clipped: b.left < col.left + 4 || b.right > col.right - 4 || b.top < col.top, insetRight: Math.round(Math.min(col.right, rowR.right) - b.right), hits };
 })()`;
 
 async function hoverAll(win, tag) {
@@ -151,7 +152,13 @@ async function hoverAll(win, tag) {
     const m = await js(win, MEASURE);
     if (!m.ok) { problems.push(`${tag} #${i}: ${m.why}`); continue; }
     if (m.clipped) problems.push(`${tag} #${i}: clipped ${JSON.stringify(m.bar)} col ${JSON.stringify(m.col)}`);
-    if (m.place === 'edge' && (m.cardTopOff !== -16 || m.cardRightOff < 8 || m.cardRightOff > 16)) problems.push(`${tag} #${i}: not at the card's top-right (top ${m.cardTopOff}, right ${m.cardRightOff})`);
+    if (m.place.startsWith('above')) {
+      const gapPx = Math.round(m.bub.top - m.bar.bottom);
+      const aligned = Math.abs(m.bar.left - m.bub.left) < 1.5 || Math.abs(m.bar.right - m.bub.right) < 1.5;
+      if (gapPx < 4 || gapPx > 8 || (!aligned && m.place !== 'above-beside-header')) problems.push(`${tag} #${i}: not directly above the bubble (gap ${gapPx}, aligned ${aligned})`);
+    } else if (m.place === 'edge') {
+      if (!(m.bar.top < m.bub.top && m.bar.bottom > m.bub.top)) problems.push(`${tag} #${i}: edge pill not on the bubble's top edge`);
+    } else problems.push(`${tag} #${i}: unexpected place ${m.place}`);
     if (m.hits.length) problems.push(`${tag} #${i}: overlaps ${m.hits.map((h) => h.cls).join(', ')}`);
     log(tag, await js(win, '`${innerWidth}x${innerHeight}`'), `#${i}`, `bar ${Math.round(m.bar.left)}-${Math.round(m.bar.right)} @${Math.round(m.bar.top)}`, `inset ${m.insetRight}`, m.compact ? 'compact' : 'full', m.place, m.hits.length ? 'OVERLAP' : '', m.clipped ? 'CLIPPED' : '');
     await shot(win, `${tag}-msg${i}.png`);

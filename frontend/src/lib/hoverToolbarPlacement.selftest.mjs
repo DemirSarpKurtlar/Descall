@@ -4,28 +4,31 @@ import { placeHoverToolbar } from "./hoverToolbarPlacement.js";
 
 const R = (left, top, right, bottom) => ({ left, top, right, bottom });
 const clip = R(360, 80, 1016, 549);
-const base = { clip, fullW: 335, compactW: 170, barH: 44 };
-const hdr = [R(408, 100, 448, 140), R(468, 110, 600, 130)]; // avatar, name+badges
+const base = { clip, fullW: 102, compactW: 70, barH: 44 };
+// Header of a card at top 300: avatar, name+badges+date (bottom 330).
+const hdr = [R(408, 300, 448, 340), R(468, 310, 640, 330)];
 
-// Wide column: full pill on the card's top-right corner, 12px in, 16px over the top border.
-const hdr2 = hdr.map((r) => ({ ...r, top: r.top + 30, bottom: r.bottom + 30 }));
-let p = placeHoverToolbar({ ...base, row: R(400, 124, 976, 312), obstacles: hdr2 });
-assert.equal(p.where, "edge"); assert.equal(p.compact, false); assert.equal(p.right, 964); assert.equal(p.top, 124 - 16);
+// Grouped follow-up bubble: directly above it, 6px gap, left-aligned.
+let p = placeHoverToolbar({ ...base, bubble: R(468, 420, 537, 460), obstacles: hdr });
+assert.equal(p.where, "above"); assert.equal(p.left, 468); assert.equal(p.bottom, 414); assert.equal(p.compact, false);
 
-// Grouped follow-up bubble far down the card: still the card's top (no bubble input at all).
-p = placeHoverToolbar({ ...base, row: R(400, 150, 976, 500), obstacles: hdr.map((r) => ({ ...r, top: r.top + 56, bottom: r.bottom + 56 })) });
-assert.equal(p.top, 134);
+// First bubble under the header with room (tall gap): above, header untouched.
+p = placeHoverToolbar({ ...base, bubble: R(468, 392, 537, 432), obstacles: hdr });
+assert.equal(p.where, "above"); assert.equal(p.bottom, 386);
 
-// First row at the top of the list (no room above) → just inside the card's top-right.
-p = placeHoverToolbar({ ...base, row: R(400, 84, 976, 282), obstacles: hdr });
-assert.equal(p.where, "inside"); assert.equal(p.top, 90); assert.equal(p.compact, false);
+// First bubble right under the header: above it, slid right past the name/badges/date.
+p = placeHoverToolbar({ ...base, bubble: R(468, 340, 537, 380), obstacles: hdr });
+assert.equal(p.where, "above-beside-header"); assert.equal(p.left, 648); assert.equal(p.bottom, 334);
 
-// Narrow column: the long name runs under the full pill → compact on the edge.
-const narrow = { ...base, clip: R(360, 80, 760, 549) };
-p = placeHoverToolbar({ ...narrow, row: R(400, 200, 720, 380), obstacles: [R(408, 206, 448, 246), R(468, 216, 520, 250)] });
-assert.equal(p.where, "edge"); assert.equal(p.compact, true); assert.ok(p.left >= 520 + 4);
+// ...and when the header fills the row width: straddles the bubble's top edge, under the header.
+p = placeHoverToolbar({ ...base, bubble: R(468, 340, 537, 380), obstacles: [R(408, 300, 448, 340), R(468, 310, 1000, 330)] });
+assert.equal(p.where, "edge"); assert.equal(p.left, 468); assert.ok(p.top >= 336); assert.ok(p.top < 380);
 
-// Never clipped: right edge stays inside the column even when the row is wider.
-p = placeHoverToolbar({ ...base, row: R(400, 300, 1100, 400), obstacles: [] });
-assert.ok(p.right <= 1012);
+// Bubble near the column's right edge: right-aligned to the bubble, never clipped.
+p = placeHoverToolbar({ ...base, bubble: R(930, 420, 1000, 460), obstacles: [] });
+assert.equal(p.where, "above-right"); assert.equal(p.right, 1000);
+
+// First row at the very top of the list: not clipped by the column top.
+p = placeHoverToolbar({ ...base, bubble: R(468, 100, 537, 140), obstacles: [] });
+assert.ok(p.top >= 84); assert.equal(p.left, 468);
 console.log("hoverToolbarPlacement selftest ok");
