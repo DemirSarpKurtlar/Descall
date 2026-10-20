@@ -2656,6 +2656,7 @@ export default function App() {
         invitedBy: invitedBy || undefined,
         termsAccepted: extra?.termsAccepted,
         birthDate: extra?.birthDate,
+        username: extra?.username,
       });
       if (invitedBy) consumeInviteRef();
       transportFallbackStepRef.current = 0;
@@ -2689,7 +2690,7 @@ export default function App() {
       }
     } catch (error) {
       // New Apple / Google account: AuthView shows the Terms + date-of-birth step instead of an error.
-      if (error?.code === "apple_signup_required" || error?.code === "google_signup_required") throw error;
+      if (error?.code === "apple_signup_required" || error?.code === "apple_username_required" || error?.code === "google_signup_required" || (method === "apple" && error?.code === "username_taken")) throw error;
       setAuthError(formatBanAuthError(error));
       throw error;
     } finally {

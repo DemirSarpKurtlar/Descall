@@ -278,6 +278,29 @@ async function allocateUniqueUsername(preferredBase) {
   return `user${Date.now().toString(36).slice(-8)}`;
 }
 
+async function usernameTaken(candidate) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .ilike("username", escapeLike(candidate))
+    .limit(1);
+  if (error) throw error;
+  return Boolean(data && data.length);
+}
+
+/** Up to 3 free alternatives for a taken username. */
+async function usernameSuggestions(candidate) {
+  const base = sanitizeUsernameBase(candidate).slice(0, 18);
+  const tries = [`${base}_`, `${base}.tr`, ...Array.from({ length: 6 }, () => `${base}${Math.floor(10 + Math.random() * 990)}`)];
+  const out = [];
+  for (const t of tries) {
+    if (out.length >= 3) break;
+    if (validateUsername(t) || out.includes(t)) continue;
+    if (!(await usernameTaken(t))) out.push(t);
+  }
+  return out;
+}
+
 function validateUsername(username) {
   if (typeof username !== "string") return "Username must be a string.";
   const trimmed = username.trim();
@@ -1050,13 +1073,47 @@ router.post("/apple", async (req, res) => {
       // until the app sends termsAccepted + birthDate (the same Apple token and
       // authorization code are re-sent from that step).
       const gate = socialSignupGate(req.body, "apple");
-      if (!gate.ok) return res.status(gate.status).json(gate.body);
+      if (!gate.ok) {
+        if (gate.status === 428 && req.body?.usernameStep) {
+          const base = [givenName, familyName].map((x) => String(x || "").trim()).filter(Boolean).join("") ||
+            (email && !apple.isPrivateEmail && email.split("@")[0]) || "";
+          if (base) gate.body.suggestedUsername = await allocateUniqueUsername(base).catch(() => undefined);
+        }
+        return res.status(gate.status).json(gate.body);
+      }
       const birthDate = gate.birthDate;
       const preferred =
+        [givenName, familyName].map((x) => String(x || "").trim()).filter(Boolean).join("") ||
         (email && !apple.isPrivateEmail && email.split("@")[0]) ||
-        String(givenName || "").trim() ||
         `user${apple.sub.replace(/[^a-z0-9]/gi, "").slice(-6)}`;
-      const username = await allocateUniqueUsername(preferred);
+      // 2.13.8: clients with the username step (usernameStep: true) let the user
+      // pick it; nothing is created until they send one. Older clients keep the
+      // auto-generated username.
+      let username;
+      const wantsStep = Boolean(req.body?.usernameStep);
+      const chosen = typeof req.body?.username === "string" ? req.body.username.trim() : "";
+      if (wantsStep && !chosen) {
+        return res.status(428).json({
+          error: "Choose a username to finish creating your account.",
+          code: "apple_username_required",
+          requiresSignup: true,
+          suggestedUsername: await allocateUniqueUsername(preferred),
+        });
+      }
+      if (chosen) {
+        const formatError = validateUsername(chosen);
+        if (formatError) return res.status(400).json({ error: formatError, code: "username_invalid" });
+        if (await usernameTaken(chosen)) {
+          return res.status(409).json({
+            error: "Username is already taken.",
+            code: "username_taken",
+            suggestions: await usernameSuggestions(chosen),
+          });
+        }
+        username = chosen;
+      } else {
+        username = await allocateUniqueUsername(preferred);
+      }
       const insertPayload = {
         username,
         password_hash: null,
@@ -1537,6 +1594,29 @@ function noteUsernameChangeFail(userId) {
     entry.count += 1;
   }
 }
+
+/**
+ * GET /api/auth/username/check?username=foo → { available, error?, suggestions? }
+ * Public (sign-up username step, before an account exists). Rate limited per IP.
+ */
+router.get("/username/check", async (req, res) => {
+  try {
+    const ip = clientIp(req);
+    const opts = { windowMs: 60 * 1000, max: 60 };
+    if (guard(res, `usercheck:ip:${ip}`, `usercheck:ip2:${ip}`, opts)) return;
+    recordFailure(`usercheck:ip:${ip}`, opts);
+    const candidate = String(req.query?.username || "").trim();
+    const formatError = validateUsername(candidate);
+    if (formatError) return res.json({ available: false, error: formatError });
+    if (await usernameTaken(candidate)) {
+      return res.json({ available: false, error: "Username is already taken.", suggestions: await usernameSuggestions(candidate) });
+    }
+    return res.json({ available: true });
+  } catch (err) {
+    console.error("[AUTH] username/check error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 /** GET /api/auth/username/available?username=foo → { available, error? } (live check while typing). */
 router.get("/username/available", requireAuth, async (req, res) => {

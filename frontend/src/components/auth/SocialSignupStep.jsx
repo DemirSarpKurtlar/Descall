@@ -3,9 +3,10 @@ import { useT } from "../../context/localeContextInstance";
 import { isEligibleBirthDate } from "../../lib/age";
 import BirthDateInput from "./BirthDateInput";
 import TermsConsent from "./TermsConsent";
+import SignupUsernamePicker from "./SignupUsernamePicker";
 
 const HINTS = {
-  apple: "No Descall account is linked to this Apple ID yet. Enter your date of birth and accept the Terms to create one.",
+  apple: "No Descall account is linked to this Apple ID yet. Pick a username, enter your date of birth and accept the Terms to create one.",
   google: "No Descall account is linked to this Google account yet. Enter your date of birth and accept the Terms to create one.",
 };
 
@@ -29,9 +30,13 @@ export default function SocialSignupStep({
   onSubmit,
   onBack,
   variant = "app",
+  usernameInitial = "",
+  onUsernameState,
+  usernameOk = true,
 }) {
   const t = useT();
-  const ready = termsAccepted && isEligibleBirthDate(birthDate);
+  const needsUsername = provider === "apple";
+  const ready = termsAccepted && isEligibleBirthDate(birthDate) && (!needsUsername || usernameOk);
   const isApp = variant === "app";
   const idPrefix = `${isApp ? "auth" : "mkt"}-${provider}-signup`;
 
@@ -48,6 +53,7 @@ export default function SocialSignupStep({
       data-provider={provider}
     >
       <p className={isApp ? "auth-field-hint" : "mkt-auth-field-hint"}>{t(HINTS[provider] || HINTS.google)}</p>
+      {needsUsername && <SignupUsernamePicker initial={usernameInitial} onState={onUsernameState} />}
       <BirthDateInput
         idPrefix={`${idPrefix}-birth`}
         value={birthDate}

@@ -34,7 +34,7 @@ export function verify2faLogin(pendingToken, code) {
  * Sign in with Apple / Google for an account that doesn't exist yet: the backend
  * created nothing and wants Terms + date of birth first (HTTP 428).
  */
-export const SOCIAL_SIGNUP_REQUIRED_CODES = ["apple_signup_required", "google_signup_required"];
+export const SOCIAL_SIGNUP_REQUIRED_CODES = ["apple_signup_required", "apple_username_required", "google_signup_required"];
 export function isSocialSignupRequired(error) {
   return SOCIAL_SIGNUP_REQUIRED_CODES.includes(error?.code);
 }
@@ -63,6 +63,9 @@ export function loginWithApple(apple, extra = {}) {
   if (extra?.invitedBy) payload.invitedBy = extra.invitedBy;
   if (extra?.termsAccepted) payload.termsAccepted = true;
   if (extra?.birthDate) payload.birthDate = extra.birthDate;
+  // 2.13.8: new Apple accounts pick their username (no random one).
+  payload.usernameStep = true;
+  if (extra?.username) payload.username = extra.username;
   return httpRequest(API_ROUTES.apple, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -124,4 +127,9 @@ export function changeUsername(token, { username, password }) {
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ username, password }),
   });
+}
+
+/** Sign-up username step: { available, error?, suggestions? } (public, no account yet). */
+export function checkSignupUsername(username) {
+  return httpRequest(`/auth/username/check?username=${encodeURIComponent(username)}`, { method: "GET" });
 }
