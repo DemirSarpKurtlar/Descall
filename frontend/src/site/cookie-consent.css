@@ -92,12 +92,12 @@
 .dc-btn.is-ghost { background: transparent; border-color: transparent; box-shadow: none; color: rgba(244, 246, 251, 0.65); padding: 0 10px; }
 .dc-btn.is-ghost:hover { background: rgba(255, 255, 255, 0.06); color: var(--dc-c-t1); }
 .dc-btn.is-primary {
-  background: linear-gradient(180deg, #2b95ff, #0a6fe0);
+  background: linear-gradient(180deg, #1a6fe0, #0a58c2);
   border-color: rgba(120, 190, 255, 0.5);
   box-shadow: 0 6px 18px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   color: #fff;
 }
-.dc-btn.is-primary:hover { background: linear-gradient(180deg, #3aa0ff, #127ae8); }
+.dc-btn.is-primary:hover { background: linear-gradient(180deg, #1f76e8, #0d5fcc); }
 
 /* Ayarlar: the choices open inside the same card. */
 .dc-consent.is-prefs { flex-direction: column; align-items: stretch; }
