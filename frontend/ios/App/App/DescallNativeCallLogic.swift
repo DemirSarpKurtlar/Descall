@@ -140,9 +140,12 @@ enum DescallNativeCallLogic {
 
     // MARK: - Opus (same voice profile as src/lib/voiceProfile.js opusFmtp)
 
-    /// Mono voice: in-band FEC on, DTX on, 48 kb/s average cap, VBR, 10 ms min ptime.
+    /// Mono fullband voice: in-band FEC on, DTX on, 48 kb/s average cap, VBR, 20 ms ptime (10 ms min), 48 kHz playback/capture.
     static let voiceOpusParams: [(String, String)] = [
         ("minptime", "10"),
+        ("ptime", "20"),
+        ("maxplaybackrate", "48000"),
+        ("sprop-maxcapturerate", "48000"),
         ("useinbandfec", "1"),
         ("usedtx", "1"),
         ("stereo", "0"),

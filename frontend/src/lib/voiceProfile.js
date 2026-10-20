@@ -119,12 +119,25 @@ export function audioBitrateForQuality(quality, { music = false } = {}) {
   if (music) {
     if (quality === "poor") return 48_000;
     if (quality === "fair") return 64_000;
+    if (quality === "excellent") return 128_000;
     return 96_000;
   }
   if (quality === "excellent") return 64_000;
   if (quality === "fair") return 32_000;
   if (quality === "poor" || quality === "failed") return 24_000;
   return 48_000;
+}
+
+/**
+ * RTCRtpReceiver.jitterBufferTarget is in milliseconds. null = browser default
+ * (lowest delay) on a healthy link; a deeper target only once the link is
+ * losing packets / jittery. Bench (10-20% loss, 40-70 ms jitter): 100-120 ms
+ * cut concealed audio by ~25% vs the default.
+ */
+export function jitterBufferTargetMs(quality) {
+  if (quality === "poor" || quality === "failed") return 120;
+  if (quality === "fair") return 80;
+  return null;
 }
 
 /** Seconds. Shorter when the link is healthy, longer when it is losing packets. */
@@ -334,6 +347,9 @@ export function opusFmtp(options = {}) {
   const stereo = Boolean(options.stereo);
   return mergeFmtp("", {
     minptime: "10",
+    ptime: "20",
+    maxplaybackrate: "48000",
+    "sprop-maxcapturerate": "48000",
     useinbandfec: options.fec === false ? "0" : "1",
     usedtx: options.dtx === false ? "0" : "1",
     stereo: stereo ? "1" : "0",

@@ -4,7 +4,7 @@ import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain } from "../lib/voiceGain";
 import { sampleConnectionStats } from "../lib/connectionStats";
-import { applyAdaptiveAudioEncoding } from "../lib/adaptiveBitrate";
+import { applyAdaptiveAudioEncoding, applyAdaptiveJitterBuffer } from "../lib/adaptiveBitrate";
 import {
   clampGain,
   liveKitMicPublishOptions,
@@ -226,6 +226,9 @@ export function useServerVoice(socket) {
           );
           if (!audioTrackers.has(userId)) audioTrackers.set(userId, { current: null });
           applyAdaptiveAudioEncoding(audioSender, result.quality, audioTrackers.get(userId));
+          const jt = audioTrackers.get(userId);
+          if (!jt.jitter) jt.jitter = { current: null };
+          applyAdaptiveJitterBuffer(pc, result.quality, jt.jitter);
           const screenAudioIds = collectScreenAudioTrackIds(
             peerData.inbound,
             peerData.screenAnnouncement
