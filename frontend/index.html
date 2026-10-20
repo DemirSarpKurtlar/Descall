@@ -513,11 +513,15 @@
          background (/brand/splash-aurora-bg.jpg = LaunchAurora without the tile)
          scaled like UIImageView Aspect Fill (cover), and the same glass tile drawn
          live (real backdrop blur) at the same point. --u is the cover scale in
-         design points (393x852). Then the loader fades in and the blobs drift;
+         design points (393x852); --t is --u capped for iPad. Then the loader fades in and the blobs drift;
          prefers-reduced-motion keeps the picture still. */
       html.native-app #boot-splash,
       html.native-app .descall-boot-splash {
         --u: max(100vw / 393, 100vh / 852);
+        /* Tile + loader scale. Phones follow the cover scale (<= 1.12 on every
+           iPhone); an iPad would get 2-3x (a 275-396 pt tile), so it is capped
+           at 1.2 (158 pt tile), the same cap as LaunchScreen.storyboard. */
+        --t: min(var(--u), 1.2px);
         background: #0d1030 url("/brand/splash-aurora-bg.jpg") center / cover no-repeat;
         overflow: hidden;
       }
@@ -556,9 +560,9 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: calc(132 * var(--u));
-        height: calc(132 * var(--u));
-        margin: calc(-66 * var(--u)) 0 0 calc(-66 * var(--u));
+        width: calc(132 * var(--t));
+        height: calc(132 * var(--t));
+        margin: calc(-66 * var(--t)) 0 0 calc(-66 * var(--t));
         padding: 0;
         display: block;
         transform: none;
@@ -571,17 +575,17 @@
         height: 100%;
         display: grid;
         place-items: center;
-        border-radius: calc(32 * var(--u));
+        border-radius: calc(32 * var(--t));
         overflow: visible;
         background: linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.10));
-        -webkit-backdrop-filter: blur(calc(28 * var(--u))) saturate(180%);
-        backdrop-filter: blur(calc(28 * var(--u))) saturate(180%);
+        -webkit-backdrop-filter: blur(calc(28 * var(--t))) saturate(180%);
+        backdrop-filter: blur(calc(28 * var(--t))) saturate(180%);
         box-shadow:
-          inset 0 calc(1 * var(--u)) 0 rgba(255, 255, 255, 0.55),
-          inset 0 calc(-1 * var(--u)) 0 rgba(255, 255, 255, 0.08),
-          inset 0 0 0 calc(0.5 * var(--u)) rgba(255, 255, 255, 0.28),
-          0 calc(24 * var(--u)) calc(60 * var(--u)) rgba(5, 8, 30, 0.55),
-          0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, 0.25);
+          inset 0 calc(1 * var(--t)) 0 rgba(255, 255, 255, 0.55),
+          inset 0 calc(-1 * var(--t)) 0 rgba(255, 255, 255, 0.08),
+          inset 0 0 0 calc(0.5 * var(--t)) rgba(255, 255, 255, 0.28),
+          0 calc(24 * var(--t)) calc(60 * var(--t)) rgba(5, 8, 30, 0.55),
+          0 calc(2 * var(--t)) calc(8 * var(--t)) rgba(0, 0, 0, 0.25);
         animation: none !important;
       }
       html.native-app #boot-splash .boot-mark::before,
@@ -599,35 +603,35 @@
         position: absolute;
         left: 14%;
         right: 14%;
-        top: calc(5 * var(--u));
-        height: calc(22 * var(--u));
-        border-radius: calc(20 * var(--u));
+        top: calc(5 * var(--t));
+        height: calc(22 * var(--t));
+        border-radius: calc(20 * var(--t));
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
-        filter: blur(calc(1 * var(--u)));
+        filter: blur(calc(1 * var(--t)));
       }
       html.native-app #boot-splash .boot-mark .boot-symbol,
       html.native-app .descall-boot-splash .boot-mark .boot-symbol {
         display: block !important;
         position: relative;
         z-index: 2;
-        width: calc(80 * var(--u));
-        height: calc(80 * var(--u));
-        filter: drop-shadow(0 calc(4 * var(--u)) calc(10 * var(--u)) rgba(30, 50, 160, 0.45));
+        width: calc(80 * var(--t));
+        height: calc(80 * var(--t));
+        filter: drop-shadow(0 calc(4 * var(--t)) calc(10 * var(--t)) rgba(30, 50, 160, 0.45));
       }
       /* Loader: three dots 46pt under the tile, fade in after 300 ms. */
       html.native-app #boot-splash .boot-bar,
       html.native-app .descall-boot-splash .boot-bar {
         position: absolute;
         left: 50%;
-        top: calc(100% + 46 * var(--u));
-        width: calc(37 * var(--u));
-        height: calc(7 * var(--u));
-        margin: 0 0 0 calc(-18.5 * var(--u));
+        top: calc(100% + 46 * var(--t));
+        width: calc(37 * var(--t));
+        height: calc(7 * var(--t));
+        margin: 0 0 0 calc(-18.5 * var(--t));
         border-radius: 0;
         background:
-          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 0 0 / calc(7 * var(--u)) 100% no-repeat,
-          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 50% 0 / calc(7 * var(--u)) 100% no-repeat,
-          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 100% 0 / calc(7 * var(--u)) 100% no-repeat;
+          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 0 0 / calc(7 * var(--t)) 100% no-repeat,
+          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 50% 0 / calc(7 * var(--t)) 100% no-repeat,
+          radial-gradient(circle closest-side, rgba(255, 255, 255, 0.85) 92%, transparent) 100% 0 / calc(7 * var(--t)) 100% no-repeat;
         overflow: visible;
         opacity: 0;
         animation: none;
@@ -648,7 +652,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: calc(50% + 90 * var(--u));
+        top: calc(50% + 90 * var(--t));
         text-align: center;
         color: rgba(235, 238, 255, 0.82);
       }

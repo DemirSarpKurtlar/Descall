@@ -39,6 +39,13 @@ assert.equal(shouldEnableGlassDesktop({ isElectron: true, surfaceOk: false }), t
 assert.equal(shouldEnableGlassDesktop({ isElectron: true, surfaceOk: false, override: "0" }), false, "Electron kill switch still wins on /");
 assert.equal(shouldEnableGlassDesktop({ isElectron: true, viewportOk: false, override: "1" }), true, "Electron ignores the width gate");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeIos: true, override: "1" }), false, "iPhone never");
+// Native iPad app: wide Liquid Glass layout (was the pre-glass theme before).
+assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true }), true, "iPad app gets glass");
+assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, viewportOk: false, surfaceOk: false }), true, "iPad app ignores web width / marketing gates");
+assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, remoteFlag: false }), false, "remote desktopGlass=false kills iPad");
+assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, override: "0" }), false, "local kill on iPad");
+assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, buildFlag: false }), false, "build kill on iPad");
+assert.equal(shouldEnableGlassDesktop({ isNativeAndroid: true, isNativeIosTablet: true }), false, "Android tablet stays classic");
 assert.equal(shouldEnableGlassDesktop({ ...web, isNativeAndroid: true, remoteFlag: true }), false, "Android never");
 assert.equal(shouldEnableGlassDesktop({ ...web, remoteFlag: false }), false, "explicit remote off");
 assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", surfaceOk: false }), false, "marketing pages stay off");
@@ -147,9 +154,15 @@ assert.ok(qa._classes.has(GLASS_DESKTOP_CLASS));
 assert.equal(qa._store[GLASS_DESKTOP_OVERRIDE_KEY], "1", "query is remembered");
 assert.equal(isGlassDesktopEnabled(), true);
 
-const ios = fakeWindow({ platform: "ios", search: "?glass-desktop=1" });
+const ios = fakeWindow({ platform: "ios", width: 440, height: 956, search: "?glass-desktop=1" });
 assert.equal(initGlassDesktop(ios), false);
-assert.ok(!ios._classes.has(GLASS_DESKTOP_CLASS), "iOS app never gets the desktop class");
+assert.ok(!ios._classes.has(GLASS_DESKTOP_CLASS), "iPhone app never gets the desktop class");
+
+for (const [w, h] of [[820, 1180], [1180, 820], [744, 1133], [1366, 1024]]) {
+  const ipad = fakeWindow({ platform: "ios", width: w, height: h });
+  assert.equal(initGlassDesktop(ipad), true, `iPad app ${w}x${h} gets Liquid Glass`);
+  assert.ok(ipad._classes.has(GLASS_DESKTOP_CLASS));
+}
 
 const android = fakeWindow({ platform: "android", store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
 assert.equal(initGlassDesktop(android), false);

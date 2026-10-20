@@ -53,6 +53,9 @@ export const WEB_PHONE_MAX_WIDTH = 768;
  * window) matched neither gate and fell back to the pre-glass theme.
  * null when the size is unknown.
  */
+/** Every iPhone's short screen side is < 600 pt, every iPad's is >= 744 pt. */
+export const NATIVE_TABLET_MIN_SHORT_SIDE = 600;
+
 export function webGlassMode({ width = 0, height = 0 } = {}) {
   const wv = Number(width) || 0;
   if (wv <= 0) return null;
@@ -140,6 +143,7 @@ export function readGlassDesktopQuery(search) {
  */
 export function shouldEnableGlassDesktop({
   isNativeIos = false,
+  isNativeIosTablet = false,
   isNativeAndroid = false,
   isElectron = false,
   viewportOk = true,
@@ -148,7 +152,17 @@ export function shouldEnableGlassDesktop({
   remoteFlag = null,
   override = null,
 } = {}) {
-  if (isNativeIos || isNativeAndroid) return false;
+  if (isNativeAndroid) return false;
+  // Native iPad (short screen side >= 600 pt) gets the wide Liquid Glass layout,
+  // the same one iPad Safari gets. Previously every native iOS shell was
+  // excluded here, and glassUi's phone-only gate excluded the iPad too, so the
+  // iPad app fell through both and showed the pre-glass theme.
+  if (isNativeIos) {
+    if (!isNativeIosTablet) return false;
+    if (override === "0" || buildFlag === false) return false;
+    if (override === "1") return true;
+    return remoteFlag !== false;
+  }
   if (!isElectron && surfaceOk === false) return false;
   if (override === "0" || buildFlag === false) return false;
   if (!isElectron && !viewportOk) return false;
@@ -209,8 +223,11 @@ function snapshotInputs(w, remoteOverride) {
   if (remoteOverride === true || remoteOverride === false) remoteFlag = remoteOverride;
   else if (cachedRemote === "0") remoteFlag = false;
   else if (cachedRemote === "1") remoteFlag = true;
+  const scr = w?.screen || {};
+  const screenShort = Math.min(Number(scr.width) || w?.innerWidth || 0, Number(scr.height) || w?.innerHeight || 0);
   return {
     isNativeIos: platform === "ios",
+    isNativeIosTablet: platform === "ios" && screenShort >= NATIVE_TABLET_MIN_SHORT_SIDE,
     isNativeAndroid: platform === "android",
     isElectron,
     viewportOk: isElectron || webGlassMode({ width, height: Number(w?.innerHeight) || 0 }) === "desktop",
