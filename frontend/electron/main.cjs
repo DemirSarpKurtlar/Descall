@@ -1181,6 +1181,7 @@ function createMainWindow() {
   });
 
   mainWindow.setMenu(null);
+  require('./viewportSync.cjs').attachViewportSync(mainWindow, { log: (m) => { try { log.warn(m); } catch (_) {} } });
   Menu.setApplicationMenu(null);
   bindVoiceBusyLifecycle(mainWindow);
 

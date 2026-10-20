@@ -106,3 +106,14 @@ export function prefersReducedMotion() {
     return false;
   }
 }
+
+/**
+ * Status chip under the DM peer's name (2.13.6): derived from the same
+ * debounced phase as the tile, so it can never say "Bağlandı" while the tile
+ * is reconnecting (or the other way round).
+ */
+export function dmChipStatus(phase, connectionStatus) {
+  if (phase === "reconnecting" || connectionStatus === "reconnecting") return "reconnecting";
+  if (connectionStatus === "lost" || connectionStatus === "disconnected") return "disconnected";
+  return "connected";
+}

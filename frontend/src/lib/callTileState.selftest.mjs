@@ -83,7 +83,8 @@ assert.ok(!groupTileTroubled({ connectionState: "connected", connectionQuality: 
   const hook = read("../hooks/useDmRemoteParticipant.js");
   const css = read("../styles/call-grid.css");
   assert.doesNotMatch(slot, /AnimatePresence mode="wait"/);
-  assert.match(slot, /<ReconnectOverlay show=\{reconnecting\} \/>/);
+  assert.match(slot, /<ReconnectOverlay show=\{reconnecting && live && showVideo\} \/>/, "pill only on video tiles; avatar tiles use the chip");
+  assert.match(slot, /<ConnectionBadge status=\{dmChipStatus\(phase, connectionStatus\)\} \/>/, "chip follows the tile phase");
   assert.match(slot, /data-phase=\{phase\}/);
   assert.match(hook, /createStatusDebouncer/);
   assert.match(overlay, /<TileMotion key=\{`dm-remote-/);
@@ -103,3 +104,14 @@ assert.ok(!groupTileTroubled({ connectionState: "connected", connectionQuality: 
 }
 
 console.log("callTileState.selftest ok");
+
+// 2.13.6: chip and tile share one state.
+{
+  const { dmChipStatus } = await import("./callTileState.js");
+  const assert = (await import("node:assert/strict")).default;
+  assert.equal(dmChipStatus("reconnecting", "reconnecting"), "reconnecting");
+  assert.equal(dmChipStatus("live", "connected"), "connected");
+  assert.equal(dmChipStatus("live", "lost"), "disconnected");
+  assert.equal(dmChipStatus("live", "reconnecting"), "reconnecting");
+  console.log("dmChipStatus ok");
+}

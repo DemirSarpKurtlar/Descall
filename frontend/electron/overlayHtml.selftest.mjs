@@ -95,7 +95,15 @@ assert.match(els.status.textContent, /^Voice channel · /);
 assert.equal(els.leaveBtn.getAttribute("aria-label"), "Leave");
 assert.match(els.avInit.innerHTML, /<svg/);
 
-els.muteBtn.onclick(); els.deafenBtn.onclick(); els.leaveBtn.onclick();
+update({ muted: false, deafened: false });
+els.muteBtn.onclick();
+assert.ok(els.muteBtn.classList.contains("is-off"), "mute flips instantly (optimistic)");
+els.deafenBtn.onclick(); els.leaveBtn.onclick();
+assert.ok(els.deafenBtn.classList.contains("is-off"), "deafen flips instantly");
 assert.deepEqual(actions, ["mute", "deafen", "leave"]);
+// 2.13.6 root cause: buttons nested in a drag region never got clicks on Windows.
+assert.equal(/\.card \{[^}]*-webkit-app-region:drag/.test(html), false, "card is not a drag region");
+assert.match(html, /\.head \{[^}]*-webkit-app-region:drag/, "only the header drags the window");
+assert.equal(/\.actions \{[^}]*-webkit-app-region:drag/.test(html), false);
 
 console.log("overlayHtml selftest ok");

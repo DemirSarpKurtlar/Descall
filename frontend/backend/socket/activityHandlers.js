@@ -2,6 +2,7 @@
 
 const supabase = require('../db/supabase');
 const { friends: friendsMap } = require('../runtime/sharedState');
+const { normalizeActivityType } = require('../lib/activityKind');
 
 const VALID_PRIVACY = new Set(['friends', 'only-me', 'hidden']);
 
@@ -75,7 +76,7 @@ function registerActivityHandlers(io, socket) {
 
     const payload = {
       app_name:     String(appName).slice(0, 100),
-      app_type:     String(appType || 'app').slice(0, 32),
+      app_type:     normalizeActivityType(appName, appType),
       display_name: String(displayName || appName).slice(0, 120),
       started_at:   startedAt || new Date().toISOString(),
       updated_at:   new Date().toISOString(),

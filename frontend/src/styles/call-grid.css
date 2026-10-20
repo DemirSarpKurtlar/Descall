@@ -340,3 +340,17 @@
 @media (prefers-reduced-motion: reduce) {
   .call-participant-grid > * { transition: none; }
 }
+
+/* 2.13.6: reconnecting lives in the status chip under the name (amber), not
+   in a pill + spinner over the avatar. Only the avatar dims. */
+.call-conn-chip-spinner {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid rgba(240, 178, 50, 0.35); border-top-color: #f0b232;
+  animation: call-conn-chip-spin 0.9s linear infinite;
+}
+@keyframes call-conn-chip-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .call-conn-chip-spinner { animation: none; } }
+.dm-remote-tile.is-reconnecting .participant-tile-avatar-shell {
+  filter: saturate(0.6) brightness(0.7);
+  transition: filter 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}

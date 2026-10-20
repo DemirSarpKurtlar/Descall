@@ -142,7 +142,12 @@ function registerOverlayIPC(getMainWindow) {
   ipcMain.on('descall:overlay:hide', () => hideOverlayWindow());
   ipcMain.on('descall:overlay:update', (_event, payload) => updateOverlayWindow(payload));
   ipcMain.on('descall:overlay:action', (_event, action) => {
-    const mainWindow = typeof getMainWindow === 'function' ? getMainWindow() : null;
+    if (!['mute', 'deafen', 'leave'].includes(action)) return;
+    let mainWindow = typeof getMainWindow === 'function' ? getMainWindow() : null;
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      // Main window was re-created (boot retry / reload): find it instead of dropping the click.
+      mainWindow = BrowserWindow.getAllWindows().find((w) => w !== overlayWin && !w.isDestroyed() && w.webContents && !w.webContents.getURL().includes('descall-overlay-')) || null;
+    }
     mainWindow?.webContents?.send('descall:overlay:action', action);
   });
 }
