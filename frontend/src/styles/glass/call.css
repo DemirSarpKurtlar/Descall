@@ -58,14 +58,14 @@ html.glass-ui .g-call-head > * { pointer-events: auto; }
 html.glass-ui .g-call-head .g-cbtn {
   width: 48px;
   height: 48px;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
 }
 
 html.glass-ui .g-call-title {
   flex: 1;
   min-width: 0;
   height: 56px;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -114,7 +114,7 @@ html.glass-ui .g-call-sub {
 html.glass-ui .g-call-people {
   width: 40px !important;
   height: 40px !important;
-  border-radius: 20px !important;
+  border-radius: var(--r-lg) !important;
   flex-shrink: 0;
 }
 
@@ -161,7 +161,7 @@ html.glass-ui .g-call-grid.is-dm {
 
 html.glass-ui .g-call .participant-tile,
 html.glass-ui .g-call .participant-tile--avatar-only {
-  border-radius: 28px !important;
+  border-radius: var(--r-xl) !important;
   overflow: hidden !important;
   border: 0 !important;
   background:
@@ -197,7 +197,7 @@ html.glass-ui .g-call .participant-tile-label {
   max-width: calc(100% - 20px);
   bottom: 10px;
   height: 30px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   padding: 0 11px 0 9px;
   margin: 0;
   display: flex;
@@ -297,7 +297,7 @@ html.glass-ui .g-call-corner {
   align-items: center;
   justify-content: center;
   height: 30px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   color: #fff;
   font-size: 11px;
   font-weight: 650;
@@ -474,7 +474,7 @@ html.glass-ui .g-call .g-cb {
   position: relative;
   width: 56px !important;
   height: 56px !important;
-  border-radius: 28px !important;
+  border-radius: var(--r-xl) !important;
   border: 0 !important;
   background: rgba(255, 255, 255, 0.12) !important;
   color: #fff !important;
@@ -504,7 +504,7 @@ html.glass-ui .g-call .g-qb {
   top: -2px;
   width: 20px;
   height: 20px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: #2a2d3c;
   display: flex;
   align-items: center;
@@ -525,14 +525,14 @@ html.glass-ui .g-call-menu {
   -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   border: 0 !important;
-  border-radius: 26px !important;
+  border-radius: var(--r-xl) !important;
   padding: 6px !important;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55) !important;
 }
 
 html.glass-ui .g-call-menu button {
   height: 46px;
-  border-radius: 20px !important;
+  border-radius: var(--r-lg) !important;
   font-size: 16px !important;
   letter-spacing: -0.015em;
   color: var(--g-t1) !important;
@@ -544,13 +544,13 @@ html.glass-ui .g-call-sheet {
     rgba(20, 21, 30, 0.86) !important;
   -webkit-backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
   backdrop-filter: blur(var(--g-blur-heavy)) saturate(var(--g-saturate-heavy));
-  border-radius: 28px !important;
+  border-radius: var(--r-xl) !important;
   border: 0 !important;
   color: var(--g-t1);
 }
 
 html.glass-ui .call-overlay-minimized.g-call-min {
-  border-radius: 28px !important;
+  border-radius: var(--r-xl) !important;
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
     var(--g-tint-base) !important;
@@ -605,7 +605,7 @@ html.glass-ui .g-incoming .incoming-call-kind {
   order: 0;
   height: 28px;
   padding: 0 12px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -782,7 +782,7 @@ html.glass-ui .g-head-search ~ .sidebar-content .g-call-chips {
 html.glass-ui .g-call-chips .calls-filter-chip {
   height: 34px;
   padding: 0 14px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   border: 0;
   background: rgba(255, 255, 255, 0.07);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
@@ -842,7 +842,7 @@ html.glass-ui .g-calls .calls-quick-card {
   width: 88px;
   flex: 0 0 88px;
   padding: 12px 8px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   gap: 8px;
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
@@ -870,7 +870,7 @@ html.glass-ui .g-calls .calls-list {
 html.glass-ui .g-calls .calls-row {
   min-height: 76px;
   padding: 10px 8px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   gap: 12px;
   background: transparent;
   border: 0;
@@ -917,7 +917,7 @@ html.glass-ui .g-calls .calls-icon-btn,
 html.glass-ui .g-calls .calls-icon-btn.is-video {
   width: 38px;
   height: 38px;
-  border-radius: 19px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.08);
   color: var(--g-t1);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.10);
@@ -944,7 +944,7 @@ html.glass-ui .activity-presence-avatar .status-badge {
 }
 
 html.glass-ui .call-banner-card {
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
     var(--g-tint-base);

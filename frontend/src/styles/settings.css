@@ -99,7 +99,7 @@
   margin: auto;
   flex: 0 0 auto;
   background: var(--surface-0);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.6),
@@ -213,7 +213,7 @@
   gap: 10px;
   /* Extra inset so a 132% avatar frame and the admin pill clear the card edge. */
   padding: 14px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   color: inherit;
@@ -308,7 +308,7 @@
   gap: 10px;
   padding: 10px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--text-2);
   cursor: pointer;
@@ -329,7 +329,7 @@
 .us-nav-ico {
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -385,7 +385,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--danger-soft);
   background: transparent;
   color: var(--danger);
@@ -454,7 +454,7 @@
 .us-icon-btn {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -545,7 +545,7 @@
 .us-card {
   background: var(--surface-0);
   border: 1px solid var(--border-2);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 
@@ -634,7 +634,7 @@
    Tapping the avatar opens the same picker/crop flow as the Profile tab. */
 .us-hero {
   position: relative;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--border-2);
   background: var(--surface-0);
@@ -737,7 +737,7 @@
   gap: 6px;
   min-height: 34px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-size: 13px;
   font-weight: 600;
   color: var(--text-0);
@@ -795,7 +795,7 @@
   background: var(--surface-2);
   border: 1px solid var(--border-2);
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 /* Rows / toggles */
@@ -818,7 +818,7 @@
 .us-row-icon {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--surface-2);
   color: var(--text-2);
   display: inline-flex;
@@ -854,7 +854,7 @@
 .us-toggle {
   width: 44px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: none;
   padding: 0;
   background: var(--surface-3);
@@ -895,7 +895,7 @@
 .us-theme-card {
   position: relative;
   border: 1.5px solid var(--border-2);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--surface-0);
   padding: 10px;
   cursor: pointer;
@@ -916,7 +916,7 @@
 
 .us-theme-swatch {
   height: 72px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   margin-bottom: 10px;
   border: 1px solid var(--border-2);
 }
@@ -1177,7 +1177,7 @@
 .us-field select {
   width: 100%;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   color: var(--text-0);
@@ -1236,7 +1236,7 @@
   justify-content: center;
   gap: 6px;
   padding: 9px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: none;
   font-size: 13px;
   font-weight: 600;
@@ -1366,7 +1366,7 @@ button.us-row.g-privacy-link:hover {
   color: var(--success);
   background: var(--success-soft);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   flex-shrink: 0;
 }
 
@@ -1382,7 +1382,7 @@ button.us-row.g-privacy-link:hover {
   flex: 1;
   min-width: 140px;
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   color: var(--text-0);
@@ -1428,7 +1428,7 @@ button.us-row.g-privacy-link:hover {
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--danger);
   background: transparent;
   color: var(--danger);
@@ -1456,7 +1456,7 @@ button.us-row.g-privacy-link:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   color: var(--text-0);
@@ -1476,7 +1476,7 @@ button.us-row.g-privacy-link:hover {
 .us-status-emoji-choice {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   cursor: pointer;
@@ -1493,7 +1493,7 @@ button.us-row.g-privacy-link:hover {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-size: 13px;
 }
 
@@ -1513,7 +1513,7 @@ button.us-row.g-privacy-link:hover {
 .us-mic-bar {
   width: 100%;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--surface-3);
   overflow: hidden;
 }
@@ -1650,7 +1650,7 @@ button.us-row.g-privacy-link:hover {
 /* ─── Profile tab: live profile card editor ─── */
 .us-pe-card {
   position: relative;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--border-2);
   background: var(--surface-0);
@@ -1692,7 +1692,7 @@ button.us-row.g-privacy-link:hover {
 .us-pe-banner-hit:focus-visible {
   outline: 2px solid #fff;
   outline-offset: -4px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 
 .us-pe-banner-empty {
@@ -1700,7 +1700,7 @@ button.us-row.g-privacy-link:hover {
   align-items: center;
   gap: 7px;
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 12.5px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
@@ -1723,7 +1723,7 @@ button.us-row.g-privacy-link:hover {
   gap: 6px;
   height: 32px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(10, 10, 14, 0.55);
   -webkit-backdrop-filter: blur(8px);
@@ -1842,7 +1842,7 @@ button.us-row.g-privacy-link:hover {
   box-sizing: border-box;
   width: 100%;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--border-2);
 }
@@ -1895,7 +1895,7 @@ button.us-row.g-privacy-link:hover {
   gap: 10px;
   margin-top: 4px;
   padding: 10px 12px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   transition: border-color 0.2s, box-shadow 0.2s;

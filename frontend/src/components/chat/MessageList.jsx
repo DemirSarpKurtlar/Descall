@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } fr
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { FileText, Download, Smile, SmilePlus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "lucide-react";
+import { FileText, Download, Smile, SmilePlus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
@@ -28,7 +28,7 @@ import VotersSheet from "../polls/VotersSheet";
 import PollCreateSheet from "../polls/PollCreateSheet";
 import { useCompact } from "../polls/dsxShared";
 import { bindPollSocket, editPollNow } from "../../lib/pollStore";
-import { BarChart3 } from "lucide-react";
+import { BarChart3 } from "../ui/Icon.jsx";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";

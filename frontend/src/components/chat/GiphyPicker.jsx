@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, TrendingUp, Loader2 } from "lucide-react";
+import { Search, X, TrendingUp, Loader2 } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";

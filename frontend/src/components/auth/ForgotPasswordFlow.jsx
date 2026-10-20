@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lock, Mail, ShieldCheck, ArrowLeft, KeyRound } from "lucide-react";
+import { Lock, Mail, ShieldCheck, ArrowLeft, KeyRound } from "../ui/Icon.jsx";
 import { requestPasswordReset, confirmPasswordReset } from "../../api/auth";
 import { useT } from "../../context/LocaleContext";
 import PasswordStrength from "./PasswordStrength";

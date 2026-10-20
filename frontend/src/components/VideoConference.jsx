@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Grid, Maximize2, Users, Minimize2, Settings, Sparkles, Activity, Check, X } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Grid, Maximize2, Users, Minimize2, Settings, X, Waveform } from "./ui/Icon.jsx";
 import RippleButton from "./ui/RippleButton";
 import VoiceEffectsPanel from "./VoiceEffectsPanel";
 import { useT } from "../context/LocaleContext";
@@ -449,23 +449,20 @@ export default function VideoConference({
           padding: '12px 24px', background: 'rgba(0,0,0,0.8)', zIndex: 1001,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <RippleButton className={`vc-btn${isMuted ? ' danger' : ''}`} onClick={toggleMute} style={{ background: isMuted ? '#f23f43' : 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <RippleButton className={`vc-btn${isMuted ? ' danger' : ''}`} onClick={toggleMute}>
             {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
           </RippleButton>
           <button onClick={() => setShowAudioSettings(!showAudioSettings)}
             style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: 4 }} aria-label={t("Audio settings")}>
             <Settings size={14} />
           </button>
-          <RippleButton className={`vc-btn${!isCameraOn ? ' danger' : ''}`} onClick={toggleCamera} disabled={callType === "voice" && !isCameraOn}
-            style={{ background: !isCameraOn ? '#f23f43' : 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <RippleButton className={`vc-btn${!isCameraOn ? ' danger' : ''}`} onClick={toggleCamera} disabled={callType === "voice" && !isCameraOn}>
             {isCameraOn ? <Video size={20} /> : <VideoOff size={20} />}
           </RippleButton>
-          <RippleButton className={`vc-btn${showVoiceEffects ? ' active' : ''}`} onClick={() => setShowVoiceEffects(!showVoiceEffects)}
-            style={{ background: showVoiceEffects ? 'rgba(102,120,255,0.4)' : 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Sparkles size={20} />
+          <RippleButton className={`vc-btn${showVoiceEffects ? ' active' : ''}`} onClick={() => setShowVoiceEffects(!showVoiceEffects)}>
+            <Waveform size={20} />
           </RippleButton>
-          <RippleButton className={`vc-btn${isScreenSharing ? ' active' : ''}`} onClick={() => isScreenSharing ? stopScreenShare?.() : handleStartScreenShare()}
-            style={{ background: isScreenSharing ? 'rgba(102,120,255,0.4)' : 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <RippleButton className={`vc-btn${isScreenSharing ? ' active' : ''}`} onClick={() => isScreenSharing ? stopScreenShare?.() : handleStartScreenShare()}>
             <Monitor size={20} />
           </RippleButton>
           {!isScreenSharing && (
@@ -482,8 +479,7 @@ export default function VideoConference({
           </span>
         )}
 
-        <RippleButton className="vc-btn danger" onClick={leaveCall}
-          style={{ background: '#f23f43', border: 'none', color: '#fff', width: 56, height: 56, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <RippleButton className="vc-btn danger vc-hangup" onClick={leaveCall} aria-label={t("Leave call")}>
           <PhoneOff size={24} />
         </RippleButton>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShieldCheck, LogOut } from "lucide-react";
+import { ShieldCheck, LogOut } from "../ui/Icon.jsx";
 import { useT } from "../../context/localeContextInstance";
 import BirthDateInput from "./BirthDateInput";
 import { setBirthDate } from "../../api/security";

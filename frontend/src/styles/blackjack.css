@@ -13,7 +13,7 @@
   --bj-win: #3ecf8e;
   width: min(420px, 100%);
   margin: 6px 0 10px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   color: var(--bj-ink);
   background:
@@ -59,7 +59,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid var(--bj-gold-soft);
   font-size: 12px;
@@ -69,7 +69,7 @@
 .bj-status-dot {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   display: grid;
   place-items: center;
   background: rgba(0, 0, 0, 0.25);
@@ -142,7 +142,7 @@
   position: relative;
   margin: 0 12px 12px;
   padding: 14px 12px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background:
     radial-gradient(80% 60% at 50% 0%, rgba(255, 255, 255, 0.05), transparent 60%),
     repeating-linear-gradient(
@@ -193,7 +193,7 @@
   font-weight: 900;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 3px solid currentColor;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
@@ -203,7 +203,7 @@
   font-size: 14px;
   font-weight: 800;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.5);
 }
 
@@ -245,7 +245,7 @@
   font-size: 13px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.35);
   color: var(--bj-ink);
 }
@@ -265,7 +265,7 @@
 .bj-card {
   width: 58px;
   height: 84px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--bj-card);
   color: #1a1a1a;
   position: relative;
@@ -305,7 +305,7 @@
 .bj-card-back-art {
   position: absolute;
   inset: 6px;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   background:
     repeating-linear-gradient(45deg, rgba(212, 168, 75, 0.25) 0 2px, transparent 2px 8px),
     repeating-linear-gradient(-45deg, rgba(212, 168, 75, 0.18) 0 2px, transparent 2px 8px);
@@ -327,7 +327,7 @@
   justify-content: center;
   gap: 6px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 11px 12px;
   font-size: 12px;
   font-weight: 800;
@@ -362,7 +362,7 @@
 .bj-result {
   margin: 0 12px 10px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -419,7 +419,7 @@
 .bj-icon-btn {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.28);
   color: var(--bj-ink);
@@ -488,7 +488,7 @@
 .bj-bet-slider-row button {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.25);
   color: var(--bj-ink);
@@ -507,7 +507,7 @@
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   padding: 13px 16px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -567,7 +567,7 @@
   color: #f3e6c0;
   background: rgba(0, 0, 0, 0.25);
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .bj-rules {
@@ -585,7 +585,7 @@
   font-size: 12px;
   color: var(--bj-muted);
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -607,7 +607,7 @@
 
 .bj-stat-row div {
   background: rgba(0, 0, 0, 0.22);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 8px;
   text-align: center;
 }
@@ -633,7 +633,7 @@
   line-height: 1.5;
   color: var(--bj-muted);
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 12px;
 }
 

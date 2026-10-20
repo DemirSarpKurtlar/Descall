@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Search, Users, X } from "lucide-react";
+import { Search, Users, X } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { loadPollVoters } from "../../lib/pollStore";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";

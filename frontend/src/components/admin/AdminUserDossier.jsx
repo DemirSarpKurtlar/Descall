@@ -3,7 +3,7 @@ import {
   AlertTriangle, Ban, Clock, Coins, Flag, Globe, History, Lock, LockOpen,
   LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
   Wallet,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";

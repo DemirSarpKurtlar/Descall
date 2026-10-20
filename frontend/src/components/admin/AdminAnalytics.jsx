@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, Clock } from "lucide-react";
+import { RefreshCw, Clock } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";

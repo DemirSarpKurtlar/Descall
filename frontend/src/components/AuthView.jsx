@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff } from "./ui/Icon.jsx";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import { isNativeIOS } from "../lib/platform";

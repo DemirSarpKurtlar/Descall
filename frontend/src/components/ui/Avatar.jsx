@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { resolveAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { getStaticAvatarFrame, isAnimatedAvatarUrl } from "../../lib/gifAvatar";
 import { avatarEffectClass } from "./Cosmetics";
+import { avatarColor, avatarInitials, avatarKey } from "../../lib/avatarFallback.js";
 
 function imgIsReady(img) {
   return Boolean(img && img.complete && img.naturalWidth > 0);
@@ -38,7 +39,9 @@ export function Avatar({
   const reduceMotion = useReducedMotion();
 
   const displayName = name || resolveDisplayName(user);
-  const letter = (displayName && displayName[0] ? displayName[0] : "?").toUpperCase();
+  // Fallback: two initials on a flat colour picked from the user id (ai-look 04).
+  const letter = avatarInitials(displayName || user?.username);
+  const fallbackBg = avatarColor(avatarKey(user, displayName));
 
   const source = useMemo(() => {
     if (user) {
@@ -175,6 +178,7 @@ export function Avatar({
     maxHeight: size,
     aspectRatio: "1 / 1",
     fontSize: size,
+    "--avatar-bg": fallbackBg,
   };
   const avatarHandlers = {
     onClick,
@@ -227,7 +231,7 @@ export function Avatar({
       )}
       <div className="ui-avatar-inner">
         {!(showImage && loaded) ? (
-          <span className="ui-avatar-letter">{letter}</span>
+          <span className={`ui-avatar-letter${letter.length > 1 ? " is-two" : ""}`}>{letter}</span>
         ) : null}
         {showImage ? (
           <img

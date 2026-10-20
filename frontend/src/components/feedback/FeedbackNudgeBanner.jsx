@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { MessageSquarePlus, X } from "lucide-react";
+import { MessageSquarePlus, X } from "../ui/Icon.jsx";
 import {
   FEEDBACK_COOLDOWN,
   evaluateAfterCallNudge,

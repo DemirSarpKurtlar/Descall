@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Compass, LogIn, Server } from "lucide-react";
+import { Compass, LogIn, Server } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import {
   previewServerInvite,

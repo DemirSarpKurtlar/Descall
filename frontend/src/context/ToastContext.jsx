@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "../components/ui/Icon.jsx";
 import { Avatar } from "../components/ui/Avatar";
 import StatusBadge from "../components/ui/StatusBadge";
 

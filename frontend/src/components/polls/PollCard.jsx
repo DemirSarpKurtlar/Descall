@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   BarChart3, Check, Clock, EyeOff, MoreHorizontal, Pencil, Sparkles, Square, Trophy, Undo2, Users,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { confirmAction } from "../../lib/glassConfirm";
 import { hapticImpactLight, hapticSuccess, hapticError } from "../../lib/fluid/haptics";

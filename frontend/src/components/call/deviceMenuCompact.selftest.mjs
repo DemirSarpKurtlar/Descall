@@ -18,7 +18,7 @@ const px = (block, prop) => {
 const menu = rule(".call-device-menu");
 assert.match(menu, /max-width:\s*min\(320px/, "menu width capped at 320px");
 assert.ok(px(menu, "padding") <= 6, "tight menu padding");
-assert.ok(px(menu, "border-radius") <= 16, "compact radius");
+assert.ok(px(menu, "border-radius") <= 16 || /border-radius:\s*var\(--r-(?:sm|md)\)/.test(menu), "compact radius");
 
 const name = rule(".call-device-name");
 const fs = px(name, "font-size");

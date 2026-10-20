@@ -15,7 +15,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 4px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   color: var(--g-t1, var(--gd-t1, #f4f5f8));
   font-family: var(--g-font, var(--gd-font, -apple-system, "SF Pro Text", Inter, "Segoe UI Variable", system-ui, sans-serif));
   box-shadow:
@@ -54,7 +54,7 @@
   min-height: 30px;
   padding: 4px 8px 4px 6px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: transparent;
   color: inherit;
   font: inherit;

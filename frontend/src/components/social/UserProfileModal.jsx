@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import OverlayPortal from "../ui/OverlayPortal";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
-import { X, UserPlus, MessageSquare, Check, UserMinus, Flag } from "lucide-react";
+import { X, UserPlus, MessageSquare, Check, UserMinus, Flag } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { API_BASE_URL } from "../../config/api";

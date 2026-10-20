@@ -1,4 +1,4 @@
-import { BarChart3 } from "lucide-react";
+import { BarChart3 } from "../ui/Icon.jsx";
 import "./dsx.css";
 
 import { parseLegacyPoll } from "../../lib/legacyPoll";

@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   LogIn,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { Avatar } from "../ui/Avatar";

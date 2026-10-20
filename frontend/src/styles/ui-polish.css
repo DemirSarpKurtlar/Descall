@@ -320,7 +320,7 @@
   left: auto;
   min-width: 220px;
   padding: 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--border-2);
   box-shadow: var(--shadow-md);
@@ -359,7 +359,7 @@
 .message-inline-picker-grid button {
   border: none;
   background: var(--surface-2);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   height: 34px;
   font-size: 16px;
   cursor: pointer;
@@ -373,7 +373,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--surface-3);
   border: 1px solid var(--border-2);
   text-decoration: none;
@@ -383,7 +383,7 @@
 .message-file-ico {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--primary-soft);
   color: var(--primary);
   display: grid;
@@ -519,7 +519,7 @@
   min-width: 220px;
   max-width: min(280px, calc(100vw - 16px));
   padding: 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--border-3);
   box-shadow: var(--shadow-xl);
@@ -558,7 +558,7 @@
   font-size: 13px;
   font-weight: 500;
   padding: 9px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   text-align: left;
 }
@@ -614,7 +614,7 @@
   flex: 0 0 auto;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   font-size: 18px;
@@ -629,7 +629,7 @@
   min-width: 0;
   height: 36px;
   padding: 0 10px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-0);
@@ -648,7 +648,7 @@
 .status-picker-emoji-choice {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid transparent;
   background: var(--surface-2);
   font-size: 16px;
@@ -673,7 +673,7 @@
   justify-content: center;
   gap: 6px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -704,7 +704,7 @@
 .empty-icon-wrap {
   width: 88px;
   height: 88px;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   display: grid;
   place-items: center;
   background: linear-gradient(145deg, var(--primary-soft), transparent);
@@ -809,7 +809,7 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-3);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   padding: 12px 18px;
   max-width: 380px;
   width: 100%;
@@ -872,7 +872,7 @@
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: var(--success);
   border: none;
   color: #fff;
@@ -897,7 +897,7 @@
 .call-summary-icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -983,7 +983,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 
 .participant-tile {
   position: relative;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-1);
   border: 2px solid transparent;
@@ -1023,7 +1023,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   opacity: 0.85;
 }
 
-.participant-tile.small { border-radius: 10px; }
+.participant-tile.small { border-radius: var(--r-md); }
 
 .participant-tile-label {
   position: absolute;
@@ -1199,7 +1199,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 6px 10px;
   border: none;
   border-left: 3px solid var(--primary);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
   background: var(--surface-2);
   color: inherit;
   text-align: left;
@@ -1233,7 +1233,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   text-decoration: none;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 1px 7px;
   word-break: break-all;
 }
@@ -1256,7 +1256,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-embed {
   position: relative;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
@@ -1311,7 +1311,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-embed-icon-fallback {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   object-fit: cover;
   flex-shrink: 0;
   border: 1px solid var(--border-3);
@@ -1371,7 +1371,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 8px;
   min-height: 38px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 9px 14px;
   font-size: 13.5px;
   font-weight: 750;
@@ -1447,7 +1447,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   margin-left: 6px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -1462,7 +1462,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   overflow: hidden;
   width: 100%;
   max-width: min(460px, 100%);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3);
   background: color-mix(in srgb, var(--surface-2) 92%, #000);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
@@ -1528,7 +1528,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.92em;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: var(--surface-3);
   border: 1px solid var(--border-2);
 }
@@ -1578,7 +1578,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .slash-embed-thumb {
   width: 72px;
   height: 72px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   object-fit: cover;
   border: 1px solid var(--border-3);
 }
@@ -1586,7 +1586,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .slash-embed-image-wrap {
   display: block;
   margin-top: 10px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--border-3);
 }
@@ -1611,7 +1611,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .slash-embed-footer-icon {
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   object-fit: cover;
 }
 
@@ -1633,7 +1633,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .msg-mention {
   color: var(--primary);
   background: var(--primary-soft);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   padding: 0 4px;
   font-weight: 600;
 }
@@ -1649,13 +1649,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-size: 0.9em;
   background: var(--surface-3);
   border: 1px solid var(--border-2);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   padding: 1px 5px;
 }
 .msg-code-block {
   margin: 6px 0 0;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--surface-0);
   border: 1px solid var(--border-2);
   overflow-x: auto;
@@ -1680,7 +1680,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   order: -1;
   padding: 8px 12px;
   margin: 0 0 2px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--border-2);
   color: var(--text-2);
@@ -1721,20 +1721,20 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 .composer-reply-clear:hover { background: var(--surface-3); color: var(--text-0); }
 .composer-attach-thumb {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   object-fit: cover;
   flex-shrink: 0;
 }
 .composer-attach-file {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   display: grid;
   place-items: center;
   background: var(--primary-soft);
@@ -1757,7 +1757,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .message-composer.is-dragover {
   outline: 2px dashed var(--primary);
   outline-offset: -4px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--primary-soft);
 }
 .composer-waveform {
@@ -1793,7 +1793,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   flex-direction: column;
   background: var(--surface-1, #1e1f23);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   z-index: 12001;
@@ -1833,7 +1833,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--text-muted);
   display: flex;
@@ -1864,7 +1864,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 9px 34px 9px 34px;
   color: var(--text-0);
   font-size: 13px;
@@ -1902,7 +1902,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-size: 12px;
   font-weight: 600;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 .giphy-tabs button.active,
@@ -1932,7 +1932,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 0;
   padding-bottom: 100%;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   overflow: hidden;
   cursor: pointer;
   background: #2b2d33;
@@ -1976,7 +1976,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: var(--primary, #5865f2);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 7px 14px;
   cursor: pointer;
   font-size: 12px;
@@ -2028,7 +2028,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   width: min(440px, 100%);
   background: var(--surface-1, #1e1f22);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
   padding: 22px 22px 18px;
   color: var(--text-0, #f2f3f5);
@@ -2055,7 +2055,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-modal-close {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: none;
   background: transparent;
   color: var(--text-2);
@@ -2072,7 +2072,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-2, #2b2d31);
   margin-bottom: 16px;
 }
@@ -2107,7 +2107,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   background: var(--surface-2, #2b2d31);
   color: var(--text-1, #dbdee1);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 6px 11px;
   font-size: 12px;
   font-weight: 600;
@@ -2131,7 +2131,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--surface-2, #2b2d31);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   color: var(--text-1);
@@ -2148,7 +2148,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 6px;
   padding: 0 14px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--primary, #5865f2);
   color: #fff;
   font-weight: 700;
@@ -2171,7 +2171,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   justify-content: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   background: transparent;
   color: var(--text-1);
@@ -2189,7 +2189,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-modal-error {
   margin-top: 10px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--danger-soft, rgba(237, 66, 69, 0.12));
   color: var(--danger, #ed4245);
   font-size: 12px;
@@ -2210,7 +2210,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   width: min(420px, 100%);
   background: rgba(30, 31, 34, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
   padding: 28px 26px 22px;
   text-align: center;
@@ -2254,7 +2254,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-landing-avatar {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -2299,7 +2299,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-size: 13px;
   margin-bottom: 14px;
 }
@@ -2320,7 +2320,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 8px;
   padding: 12px 16px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #5865f2;
   color: #fff;
   font-size: 15px;
@@ -2338,7 +2338,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   margin-top: 10px;
   width: 100%;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: none;
   background: transparent;
   color: #b5bac1;
@@ -2398,7 +2398,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   min-height: 34px;
   padding: 8px 12px;
   font-size: 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   cursor: pointer;
 }
@@ -2417,7 +2417,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   width: 280px;
   max-width: calc(100vw - 16px);
   max-height: calc(100vh - 16px);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   /* Aura/glow must not spawn a gutter scrollbar on hover. */
   overflow: hidden;
   scrollbar-width: none;
@@ -2568,7 +2568,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 6px;
   background: var(--surface-0);
   border: 1px solid var(--border-2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 4px;
 }
 .us-segment {
@@ -2579,7 +2579,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-size: 12px;
   font-weight: 600;
   padding: 8px 6px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   cursor: pointer;
 }
 .us-segment.selected {
@@ -2593,7 +2593,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-0);
   border: 1px solid var(--border-2);
 }
@@ -2605,11 +2605,11 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .us-bubble-demo.other { align-self: flex-start; background: var(--surface-2); color: var(--text-1); }
 .us-bubble-demo.own { align-self: flex-end; background: var(--primary); color: #fff; }
-.bubble-modern .us-bubble-demo { border-radius: 16px 16px 16px 6px; }
-.bubble-modern .us-bubble-demo.own { border-radius: 16px 16px 6px 16px; }
-.bubble-classic .us-bubble-demo { border-radius: 8px; }
+.bubble-modern .us-bubble-demo { border-radius: var(--r-lg) var(--r-lg) var(--r-lg) var(--r-sm); }
+.bubble-modern .us-bubble-demo.own { border-radius: var(--r-lg) var(--r-lg) var(--r-sm) var(--r-lg); }
+.bubble-classic .us-bubble-demo { border-radius: var(--r-sm); }
 .bubble-minimal .us-bubble-demo {
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: transparent !important;
   border: 1px solid var(--border-2);
   color: var(--text-1) !important;
@@ -2623,12 +2623,12 @@ html[data-density="spacious"] .message-group { margin-bottom: 18px; }
 html[data-density="spacious"] .friend-item { padding-top: 12px; padding-bottom: 12px; }
 
 html[data-bubble="classic"] .message-bubble {
-  border-radius: 8px !important;
+  border-radius: var(--r-sm) !important;
 }
 html[data-bubble="minimal"] .message-bubble {
   background: transparent !important;
   border: 1px solid var(--border-2) !important;
-  border-radius: 6px !important;
+  border-radius: var(--r-sm) !important;
   box-shadow: none !important;
 }
 
@@ -2664,7 +2664,7 @@ html[data-bubble="minimal"] .message-bubble {
   z-index: 1;
   width: 64px;
   height: 64px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   display: grid;
   place-items: center;
   background: var(--surface-2);
@@ -2700,7 +2700,7 @@ body.electron-app .electron-update-toast {
 .electron-update-toast-inner {
   pointer-events: none;
   padding: 12px 14px 10px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-0, #111214);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -2726,7 +2726,7 @@ body.electron-app .electron-update-toast {
 .electron-update-toast-bar {
   margin-top: 10px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
@@ -2755,7 +2755,7 @@ body.electron-app .electron-update-toast {
   margin-top: 10px;
   min-height: 32px;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-0, #f2f3f5);
@@ -2793,7 +2793,7 @@ body.electron-app .electron-update-toast {
 .update-restart-actions .btn {
   min-height: 36px;
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2833,7 +2833,7 @@ body.electron-app .electron-update-toast {
   overflow: hidden;
   background: var(--surface-1, #1e1f22);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
   color: var(--text-0, #f2f3f5);
   box-sizing: border-box;
@@ -2867,7 +2867,7 @@ body.electron-app .electron-update-toast {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: none;
   background: transparent;
   color: var(--text-2, #b5bac1);
@@ -2936,7 +2936,7 @@ body.electron-app .modal-backdrop {
 
 .update-notes-item {
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface-0, #111214);
   border: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
@@ -2973,7 +2973,7 @@ body.electron-app .modal-backdrop {
 
 .update-notes-done {
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 16px;
   min-height: 44px;
   font-size: 13px;
@@ -3007,7 +3007,7 @@ body.electron-app .modal-backdrop {
     max-height: calc(
       var(--vv-height, 100dvh) - env(safe-area-inset-top, 0px) - 12px
     );
-    border-radius: 16px;
+    border-radius: var(--r-lg);
     margin: 0;
   }
 
@@ -3042,7 +3042,7 @@ body.electron-app .modal-backdrop {
   .update-notes-done {
     width: 100%;
     min-height: 48px;
-    border-radius: 12px;
+    border-radius: var(--r-md);
     font-size: 15px;
     justify-content: center;
   }
@@ -3097,7 +3097,7 @@ body.electron-app .electron-update-toast.is-chip { top: auto; }
   align-items: center;
   gap: 10px;
   padding: 8px 8px 8px 14px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(22, 23, 27, 0.86);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
   backdrop-filter: blur(40px) saturate(150%);
@@ -3111,7 +3111,7 @@ body.electron-app .electron-update-toast.is-chip { top: auto; }
 .electron-update-toast.is-chip .electron-update-toast-restart {
   margin-top: 0;
   flex: none;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   min-height: 28px;
   padding: 4px 12px;
 }

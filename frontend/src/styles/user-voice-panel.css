@@ -38,7 +38,7 @@
   display: flex;
   flex-direction: column;
   padding: 8px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   color: var(--uvp-ink);
   font-family: inherit;
   background:
@@ -210,7 +210,7 @@ html.glass-desktop.electron-app.gd-lite:not(.a11y-solid) .uvp {
 .uvp-voice-inner {
   margin-bottom: 6px;
   padding: 10px 10px 10px 12px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
@@ -292,7 +292,7 @@ html[data-theme="light"] .uvp-voice-inner {
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(255, 69, 58, 0.3);
   background: rgba(255, 69, 58, 0.16);
   color: var(--uvp-red) !important;
@@ -315,7 +315,7 @@ html[data-theme="light"] .uvp-voice-inner {
   justify-content: center;
   gap: 7px;
   padding: 0 8px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--uvp-hair);
   background: var(--uvp-btn);
   font-size: 13px;
@@ -407,7 +407,7 @@ html[data-theme="light"] .uvp-voice-inner {
   align-items: stretch;
   flex: none;
   height: 34px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   border: 1px solid var(--uvp-hair);
   background: var(--uvp-btn);
   overflow: hidden;
@@ -449,7 +449,7 @@ html[data-theme="light"] .uvp-voice-inner {
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   background: transparent;
   cursor: pointer;
   transition: background-color 0.12s ease, transform 0.12s ease;
@@ -499,6 +499,6 @@ html[data-theme="light"] .uvp-voice-inner {
 /* Classic (non-glass) desktop layout, e.g. web under 960px: the columns are
    flush with the window, so the panel docks flush too (top corners only). */
 html:not(.glass-desktop) .uvp {
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
   border-bottom: 0;
 }

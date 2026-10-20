@@ -1,4 +1,4 @@
-import { HeadphoneOff, MicOff, VideoOff } from "lucide-react";
+import { HeadphoneOff, MicOff, VideoOff } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 /**

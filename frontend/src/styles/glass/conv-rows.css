@@ -13,7 +13,7 @@ html.glass-ui .conv-group-wrap.is-desktop > button.conv-row {
 
 html.glass-ui .conv-group-wrap.is-desktop,
 html.glass-ui .conv-group-wrap.is-swipeable {
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 
 html.glass-ui .conv-group-wrap.is-desktop:hover,
@@ -30,11 +30,11 @@ html.glass-ui .conv-group-wrap.is-swipeable.is-active-row:hover {
 }
 
 html.glass-ui .server-list-row-wrap > .server-list-item {
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 
 html.glass-ui .server-channel-row-wrap:not(:has(.server-channel-drag-handle)) > .server-channel-row {
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: transparent;
   box-shadow: none;
 }

@@ -108,7 +108,6 @@ export default defineConfig({
                 // and ship in the marketing first paint. Keep it with the app shell.
                 if (id.includes("@phosphor-icons")) return "vendor-phosphor";
                 if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
-                if (id.includes("lucide-react")) return "vendor-icons";
               }
               // Do not force all /src/site into one chunk — route lazy() splits pages.
               return undefined;

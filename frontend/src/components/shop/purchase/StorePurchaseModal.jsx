@@ -7,10 +7,7 @@ import OverlayPortal from "../../ui/OverlayPortal.jsx";
 // DesCoin rules as the cards. This file only renders and sequences them.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from "framer-motion";
-import {
-  Check, CircleDot, Crown, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus,
-  Package, Palette, Phone, Smile, Sparkles, Sun, Type, UserPlus, X,
-} from "lucide-react";
+import { Check, CircleDot, Crown, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus, Package, Palette, Phone, Smile, Sparkles, Sun, Type, UserPlus, X, Play } from "../../ui/Icon.jsx";
 import { purchaseCopy } from "../../../lib/storePurchaseCopy";
 import { localizeShopItem } from "../../../lib/shopItemI18n";
 import {
@@ -183,8 +180,8 @@ export default function StorePurchaseModal({
     if (!target || busy) return;
     setBusy(true);
     try {
-      await applyUndo(target, onEquip);
-      setSuccess((s) => ({ ...s, undone: true }));
+      const ok = await applyUndo(target, onEquip);
+      if (ok) setSuccess((s) => ({ ...s, undone: true }));
     } finally {
       setBusy(false);
     }
@@ -209,7 +206,7 @@ export default function StorePurchaseModal({
   const chips = (
     <div className="spm-h-chips">
       <span className={`spm-chip spm-rar spm-${rk}`}><span className="spm-gem" />{c.rarity[rk]}</span>
-      {animated ? <span className="spm-chip"><Sparkles className="spm-ic" />{c.animated}</span> : null}
+      {animated ? <span className="spm-chip"><Play className="spm-ic" />{c.animated}</span> : null}
       {ownedish ? <span className="spm-chip spm-chip-own"><Check className="spm-ic" />{c.owned}</span> : null}
     </div>
   );

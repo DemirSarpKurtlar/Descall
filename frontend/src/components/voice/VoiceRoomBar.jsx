@@ -1,4 +1,4 @@
-import { Headphones, LogIn, LogOut, Users } from "lucide-react";
+import { Headphones, LogIn, LogOut, Users } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 /**

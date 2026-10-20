@@ -95,7 +95,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(240, 178, 50, 0.1);
   border: 1px solid rgba(240, 178, 50, 0.22);
   box-shadow: none;
@@ -286,7 +286,7 @@
   height: 100%;
   box-sizing: border-box;
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--surface-1, rgba(0, 0, 0, 0.22));
 }
 
@@ -294,7 +294,7 @@
   flex: 1 1 0;
   min-height: 0;
   padding: 0 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted, rgba(244, 246, 251, 0.55));
@@ -338,7 +338,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -408,7 +408,7 @@
   overflow: visible;
   margin: 0;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .user-settings.is-mobile .shop-category-tab {
@@ -509,7 +509,7 @@
 
 .shop-item-card {
   position: relative;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-2, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
@@ -622,8 +622,8 @@
   width: fit-content;
   max-width: calc(100% - 8px);
   padding: 10px 14px;
-  border-radius: 12px;
-  border-bottom-right-radius: 4px;
+  border-radius: var(--r-md);
+  border-bottom-right-radius: var(--r-sm);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
@@ -633,12 +633,12 @@
 
 html[data-bubble="classic"] .shop-bubble-preview,
 html[data-bubble="classic"] .shop-live-bubble {
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 html[data-bubble="minimal"] .shop-bubble-preview,
 html[data-bubble="minimal"] .shop-live-bubble {
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 
 .shop-presence-flare-preview {
@@ -676,7 +676,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
 .shop-profile-aura-preview {
   width: 84px;
   height: 56px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -713,7 +713,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   gap: 4px;
   margin-top: 2px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.1);
   font-size: 0.62rem;
   font-weight: 700;
@@ -747,7 +747,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   white-space: nowrap;
 }
 .shop-rarity-common { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
@@ -788,7 +788,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   justify-content: center;
   flex: 0 0 auto;
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
@@ -831,7 +831,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   margin: 4px 0 8px;
   padding: 28px 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.03);
   text-align: center;
 }
@@ -854,7 +854,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   width: auto;
   min-height: 36px;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-size: 13px;
   font-weight: 700;
 }
@@ -863,7 +863,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   display: block;
   width: 72%;
   height: 56%;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
   background-size: 200% 100%;
   animation: shop-asset-shimmer 1.2s ease-in-out infinite;
@@ -895,7 +895,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   overflow: auto;
   background: linear-gradient(160deg, #171c2b 0%, #0d1019 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   padding: 28px 24px 24px;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -907,7 +907,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   right: 10px;
   background: rgba(255, 255, 255, 0.06);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   width: 28px;
   height: 28px;
   display: flex;
@@ -957,7 +957,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
 
 .shop-gift-preview {
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   overflow: hidden;
   margin-bottom: 12px;
   background: #0b0f18;
@@ -992,7 +992,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   font-style: italic;
   color: #d1d5db;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 12px;
   margin: 8px 0 4px;
 }
@@ -1007,7 +1007,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
 .shop-gift-actions .ripple-btn,
 .shop-gift-actions .btn-primary {
   width: 100%;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 10px 16px;
   font-weight: 700;
 }
@@ -1042,13 +1042,13 @@ html[data-bubble="minimal"] .shop-live-bubble {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.04);
 }
 .admin-gift-preview-row img {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   object-fit: cover;
 }
 
@@ -1064,7 +1064,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
 .descoin-daily-card,
 .invite-card {
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   padding: 12px 14px;
   background: linear-gradient(160deg, rgba(240, 178, 50, 0.1), rgba(255,255,255,0.02));
 }
@@ -1093,7 +1093,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   gap: 6px;
   width: 100%;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 9px 12px;
   font-size: 13px;
   font-weight: 700;
@@ -1117,7 +1117,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   gap: 2px;
   min-width: 0;
   padding: 6px 6px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgba(0,0,0,0.18);
   font-size: 11px;
   color: var(--text-muted, #98a2b3);
@@ -1134,7 +1134,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   font-size: 12px;
   color: var(--text-muted, #98a2b3);
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgba(0,0,0,0.2);
   margin-bottom: 8px;
   overflow: hidden;
@@ -1156,7 +1156,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   max-height: 40px;
   box-sizing: border-box;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 700;
@@ -1227,7 +1227,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   max-width: 100%;
   padding: 0;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 
 /* Equipped auras paint a wide outer bloom. In this narrow column it clips
@@ -1350,7 +1350,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   height: auto;
   flex: 0 0 auto;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 .shop-live-profile .shop-sound-pack-preview,
@@ -1364,7 +1364,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   align-items: center;
   gap: 6px;
   padding: 4px 8px 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 .shop-live-profile .shop-sound-pack-play {
@@ -1386,7 +1386,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   justify-content: space-between;
   gap: 8px;
   padding: 5px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   font-size: 12px;
   color: var(--text-muted, #98a2b3);
 }
@@ -1474,7 +1474,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   min-height: 32px;
   height: 32px;
   padding: 0 12px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 
 .shop-chip-viewport.is-fade-left {
@@ -1506,7 +1506,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;

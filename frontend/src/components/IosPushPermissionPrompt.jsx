@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
 import { getNativePushPermission, isNativeIosPush } from "../lib/nativePush";
 import "./IosPushPermissionPrompt.css";

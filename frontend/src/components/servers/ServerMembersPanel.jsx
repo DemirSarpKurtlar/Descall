@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
-import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "lucide-react";
+import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";

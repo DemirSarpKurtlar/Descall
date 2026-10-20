@@ -10,7 +10,7 @@ import {
   X,
   Plus,
   Users,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { Avatar } from "../ui/Avatar";
 import { canActOnServerMember } from "../../lib/serverPermissions";

@@ -29,7 +29,7 @@ const chat = css("chat.css");
 const row = block(chat, "html.glass-desktop .message-group:hover {");
 assert.match(row, /background-color:\s*var\(--gd-row-hover\)/);
 assert.match(block(chat, "html.glass-desktop .message-group {"), /transition:\s*background-color/);
-assert.match(row, /border-radius:\s*12px/);
+assert.match(row, /border-radius:\s*(?:12px|var\(--r-md\))/);
 assert.match(row, /backdrop-filter:\s*none/);
 assert.equal(/backdrop-filter:\s*blur/.test(row), false);
 assert.equal(/surface-1|#1e1f22|#1E1F22/.test(row), false);

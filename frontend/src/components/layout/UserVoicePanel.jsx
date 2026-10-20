@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ChevronUp, Gamepad2, Headphones, HeadphoneOff, Mic, MicOff, MonitorUp, PhoneOff, Settings } from "lucide-react";
+import { ChevronUp, Gamepad2, Headphones, HeadphoneOff, Mic, MicOff, MonitorUp, PhoneOff, Settings } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { CallDeviceMenu } from "../call/DevicePicker";
 import { STATUS_META } from "../../lib/presence";

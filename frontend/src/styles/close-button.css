@@ -1,0 +1,30 @@
+/* Close button (ai-look 02): 32 px circle, X Bold 16, 44 px hit area. */
+.ui-close-btn {
+  --ui-close-size: 32px;
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--ui-close-size);
+  height: var(--ui-close-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms cubic-bezier(0.2, 0.9, 0.3, 1.2), background-color 120ms ease-out;
+}
+.ui-close-btn::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--ui-close-size) - 44px) / 2);
+}
+.ui-close-btn:hover { background: color-mix(in srgb, currentColor 16%, transparent); }
+.ui-close-btn:active { transform: scale(0.92); transition-duration: 80ms; }
+.ui-close-btn:focus-visible { outline: 2px solid var(--primary, #4f7cff); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-close-btn, .ui-close-btn:active { transition: background-color 120ms ease-out; transform: none; }
+}

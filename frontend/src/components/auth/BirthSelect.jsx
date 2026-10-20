@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "../ui/Icon.jsx";
 import { isNativeIOS } from "../../lib/platform";
 
 const MENU_MAX = 248;

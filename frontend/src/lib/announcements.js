@@ -1,5 +1,5 @@
 import { fetchPublic } from "./edgeApi.js";
-import { Bell, Megaphone, ShoppingBag, Users } from "lucide-react";
+import { Bell, Megaphone, ShoppingBag, Users } from "@phosphor-icons/react/dist/ssr";
 
 /**
  * Stored `emoji` is the per-item icon. Known glyphs draw as the same

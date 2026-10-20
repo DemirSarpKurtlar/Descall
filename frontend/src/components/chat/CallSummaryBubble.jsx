@@ -1,4 +1,4 @@
-import { Video, Phone, Users, Clock } from "lucide-react";
+import { Video, Phone, Users, Clock } from "../ui/Icon.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatCallWhen } from "../../lib/callHistoryCache";
 import { intlLocaleTag } from "../../lib/datetime";

@@ -13,7 +13,7 @@ html.glass-ui .g-auth .auth-form .input-wrapper {
   height: 48px;
   padding: 0 8px 0 14px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(0, 0, 0, 0.32);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.10);
   overflow: hidden;
@@ -82,7 +82,7 @@ html.glass-ui .g-auth .auth-form .input-wrapper > input:focus-visible {
   margin: 0;
   padding: 0 14px 0 44px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: transparent;
   background-color: transparent;
   box-shadow: none;
@@ -158,7 +158,7 @@ html.glass-ui .g-auth .auth-form .input-wrapper .auth-password-toggle {
 .login-modal form > input:not([type="checkbox"]):not([type="radio"]),
 .login-modal .form-group input:not([type="checkbox"]):not([type="radio"]) {
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(0, 0, 0, 0.28);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.10);
   outline: none;

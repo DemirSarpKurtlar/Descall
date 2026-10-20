@@ -4,7 +4,7 @@ import {
   Phone, Video, Users, Hash,
   Search, MessageSquare, X, ChevronDown, ChevronRight, Menu, ChevronLeft,
   UserPlus, Plus, Crown, Pin, PinOff, Timer, ImagePlus
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import MessageList from "../chat/MessageList";

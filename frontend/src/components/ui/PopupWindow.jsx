@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Maximize2, Minimize2, Square } from "lucide-react";
+import { X, Maximize2, Minimize2, Square } from "./Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 /**

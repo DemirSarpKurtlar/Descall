@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { groupAvatarUrl } from "../../lib/avatarFile";
 import { useHoverGif } from "../../lib/useHoverGif";
+import { avatarColor, avatarInitials, avatarKey } from "../../lib/avatarFallback.js";
 import "./GroupIcon.css";
 
 export function groupInitials(name) {
-  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "?";
-  return parts.slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+  return avatarInitials(name);
 }
 
 /**
@@ -22,7 +21,7 @@ export default function GroupIcon({ group, size = 36, radius, className = "", in
   return (
     <span
       className={`group-photo-icon ${src ? "has-photo" : ""} ${className}`.trim()}
-      style={{ width: size, height: size, borderRadius: r, fontSize: Math.max(11, Math.round(size * 0.36)) }}
+      style={{ width: size, height: size, borderRadius: r, fontSize: Math.max(11, Math.round(size * 0.36)), "--avatar-bg": avatarColor(avatarKey(group, group?.name)) }}
       {...(hoverTarget === "self" ? hoverProps : {})}
       aria-hidden="true"
     >

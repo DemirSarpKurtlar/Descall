@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause } from "../ui/Icon.jsx";
 import { waveformFromSeed } from "../../lib/voiceMessage";
 import { useT } from "../../context/LocaleContext";
 import { needsVoiceCompat, fetchVoiceCompatUrl } from "../../lib/voiceCompat";

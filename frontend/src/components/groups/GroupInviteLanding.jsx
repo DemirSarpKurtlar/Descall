@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Loader2, LogIn, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Users, Loader2, LogIn, CheckCircle2, AlertTriangle } from "../ui/Icon.jsx";
 import { previewGroupInvite, joinGroupByInvite } from "../../api/groups";
 import { getToken } from "../../lib/storage";
 import { Avatar } from "../ui/Avatar";

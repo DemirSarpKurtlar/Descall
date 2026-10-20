@@ -1,6 +1,6 @@
 import {
   Ban, BarChart3, CircleHelp, Eraser, IdCard, ImageIcon, Info, Pencil, Timer, UserX,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { CardsGlyph, ReelsGlyph, CoinGlyph, SendGlyph, DailyGlyph, WalletGlyph, TrophyGlyph } from "../chat/slashIcons";
 
 /** One icon per command (menu rows, detail pane, /help card). */

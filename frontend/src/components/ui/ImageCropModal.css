@@ -15,7 +15,7 @@
   width: min(440px, 100%);
   background: var(--surface-2, #1e1f22);
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.08));
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   padding: 18px 18px 16px;
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
   color: var(--text-0, #fff);
@@ -40,7 +40,7 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.1));
   background: var(--surface-1, #2b2d31);
   color: var(--text-2, #b5bac1);
@@ -62,13 +62,13 @@
   position: relative;
   width: 100%;
   height: min(52vh, 320px);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   overflow: hidden;
   background: #0b0c0e;
 }
 
 .img-crop-stage .reactEasyCrop_Container {
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 
 .img-crop-zoom {
@@ -103,7 +103,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 700;
@@ -153,7 +153,7 @@ html.glass-ui .img-crop-overlay {
 html.glass-ui .img-crop-modal {
   width: min(420px, 100%);
   border: 0;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   padding: 18px 18px 16px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
   background: rgba(18, 19, 29, 0.92);
@@ -170,21 +170,21 @@ html.glass-ui .img-crop-modal {
 html.glass-ui .img-crop-head { align-items: center; }
 html.glass-ui .img-crop-head h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
 html.glass-ui .img-crop-icon-btn {
-  width: 30px; height: 30px; border: 0; border-radius: 999px;
+  width: 30px; height: 30px; border: 0; border-radius: var(--r-pill);
   background: rgba(118, 118, 128, 0.24); color: rgba(235, 235, 245, 0.7);
   transition: transform 0.16s ease, background 0.16s ease;
 }
 html.glass-ui .img-crop-icon-btn:active { transform: scale(0.9); background: rgba(118, 118, 128, 0.36); }
 html.glass-ui .img-crop-lead { font-size: 13px; letter-spacing: -0.08px; color: rgba(235, 235, 245, 0.6); }
-html.glass-ui .img-crop-stage { border-radius: 20px; background: rgba(0, 0, 0, 0.42); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
-html.glass-ui .img-crop-stage .reactEasyCrop_Container { border-radius: 20px; }
+html.glass-ui .img-crop-stage { border-radius: var(--r-lg); background: rgba(0, 0, 0, 0.42); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
+html.glass-ui .img-crop-stage .reactEasyCrop_Container { border-radius: var(--r-lg); }
 html.glass-ui .img-crop-zoom { color: rgba(235, 235, 245, 0.6); margin: 16px 2px 4px; }
 html.glass-ui .img-crop-zoom input[type="range"] {
   -webkit-appearance: none; appearance: none; height: 28px; padding: 0;
   background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important;
 }
 html.glass-ui .img-crop-zoom input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px; border-radius: 4px;
+  height: 4px; border-radius: var(--r-sm);
   background: linear-gradient(90deg, var(--g-brand, #6c86ff) 0 var(--crop-fill, 0%), rgba(120, 120, 128, 0.36) var(--crop-fill, 0%) 100%);
 }
 html.glass-ui .img-crop-zoom input[type="range"]::-webkit-slider-thumb {
@@ -193,7 +193,7 @@ html.glass-ui .img-crop-zoom input[type="range"]::-webkit-slider-thumb {
 }
 html.glass-ui .img-crop-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 16px; }
 html.glass-ui .img-crop-btn {
-  min-height: 50px; border-radius: 999px; border: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.4px;
+  min-height: 50px; border-radius: var(--r-pill); border: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.4px;
   transition: transform 0.16s ease, filter 0.16s ease;
 }
 html.glass-ui .img-crop-btn:active:not(:disabled) { transform: scale(0.97); }

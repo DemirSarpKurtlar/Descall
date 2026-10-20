@@ -12,7 +12,7 @@ html.glass-desktop .call-top-bar {
 html.glass-desktop .call-top-bar > div {
   min-height: 44px;
   padding: 4px 8px 4px 14px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
     var(--gd-heavy-base);
@@ -46,7 +46,7 @@ html.glass-desktop .server-voice-room-head {
 }
 
 html.glass-desktop .server-voice-room-mark {
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.1);
   color: var(--gd-t1);
 }
@@ -54,7 +54,7 @@ html.glass-desktop .server-voice-room-mark {
 html.glass-desktop .participant-tile:not(.participant-tile--avatar-only),
 html.glass-desktop .call-tile:not(.participant-tile--avatar-only) {
   border: none;
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -66,7 +66,7 @@ html.glass-desktop .call-tile.is-speaking:not(.participant-tile--avatar-only) {
 /* 1, 2, and 3+ share one centered flex grid (see call-grid.css). */
 html.glass-desktop .call-participant-grid .participant-tile,
 html.glass-desktop .call-participant-grid .call-ring-tile {
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   background:
     radial-gradient(80% 62% at 50% 0%, rgba(155, 168, 255, 0.3), transparent 60%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
@@ -85,7 +85,7 @@ html.glass-desktop .call-participant-grid .call-ring-tile.participant-tile--avat
     radial-gradient(80% 62% at 50% 0%, rgba(155, 168, 255, 0.3), transparent 60%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
     var(--gd-heavy-base);
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 
@@ -97,7 +97,7 @@ html.glass-desktop .call-participant-grid video {
 }
 
 html.glass-desktop .call-quality-hud {
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -115,7 +115,7 @@ html.glass-desktop .participant-tile-label {
   max-width: calc(100% - 24px);
   height: 30px;
   padding: 0 12px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   background: color-mix(in srgb, var(--surface-1, #1e1f22) 45%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
@@ -163,14 +163,14 @@ html.glass-desktop .gd-call-btn.is-off {
 
 html.glass-desktop .gd-call-btn.is-end {
   width: 72px !important;
-  border-radius: 26px !important;
+  border-radius: var(--r-xl) !important;
   background: #ff453a !important;
   color: #fff !important;
 }
 
 html.glass-desktop .incoming-call-card {
   border: none;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06)),
     var(--gd-heavy-base);
@@ -233,7 +233,7 @@ html.glass-desktop .calls-section-head {
 html.glass-desktop .calls-quick-card,
 html.glass-desktop .calls-row {
   border: none;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
   color: var(--gd-t1);
@@ -247,7 +247,7 @@ html.glass-desktop .calls-quick-card:hover {
 html.glass-desktop .calls-search input,
 html.glass-desktop .calls-search {
   border: none;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.1);
   color: var(--gd-t1);
 }
@@ -255,7 +255,7 @@ html.glass-desktop .calls-search {
 html.glass-desktop .screen-quality-panel,
 html.glass-desktop .call-quality-hud {
   border: none;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
     var(--gd-heavy-base);
@@ -316,7 +316,7 @@ html.glass-desktop .gd-mosaic-cell {
   min-height: 0;
   max-width: 100%;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   container-type: size;
   background:
     radial-gradient(70% 70% at 50% 40%, rgba(155, 133, 255, 0.22), transparent 70%),
@@ -350,7 +350,7 @@ html.glass-desktop .gd-mosaic-cell > .participant-tile.participant-tile--avatar-
   width: 100%;
   height: 100%;
   border: none !important;
-  border-radius: 18px !important;
+  border-radius: var(--r-lg) !important;
   overflow: hidden !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -379,7 +379,7 @@ html.glass-desktop .gd-group-mosaic .participant-tile-label {
   height: 30px;
   margin: 0;
   padding: 0 12px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   background: color-mix(in srgb, var(--surface-1, #1e1f22) 50%, transparent);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
   color: #fff;
@@ -416,7 +416,7 @@ html.glass-desktop .gd-group-mosaic .gd-mosaic-cam {
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   background: color-mix(in srgb, var(--surface-1, #1e1f22) 50%, transparent);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
   color: #fff;

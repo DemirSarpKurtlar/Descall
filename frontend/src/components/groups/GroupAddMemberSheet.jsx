@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, XCircle, Check, Loader2, UserRoundPlus, AlertCircle } from "lucide-react";
+import { Search, XCircle, Check, Loader2, UserRoundPlus, AlertCircle } from "../ui/Icon.jsx";
 import GroupSheet from "./GroupSheet";
 import { Avatar } from "../ui/Avatar";
 import { addMemberToGroup } from "../../api/groups";

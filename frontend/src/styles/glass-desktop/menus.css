@@ -7,7 +7,7 @@ html.glass-desktop .message-hover-bar {
   padding: 0 6px;
   gap: 2px;
   border: none;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
     var(--gd-heavy-base);
@@ -29,7 +29,7 @@ html.glass-desktop .hover-bar-btn {
   min-width: 34px;
   height: 34px;
   padding: 0;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   color: var(--gd-t1);
   font-size: 18px;
 }
@@ -46,7 +46,7 @@ html.glass-desktop .message-inline-picker {
   min-width: 236px;
   padding: 10px 10px 12px;
   border: none;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
     var(--gd-heavy-base);
@@ -67,14 +67,14 @@ html.glass-desktop .message-inline-picker-head {
 html.glass-desktop .message-inline-picker-head button {
   width: 24px;
   height: 24px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
   color: var(--gd-t2);
 }
 
 html.glass-desktop .message-inline-picker-grid button {
   height: 38px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 20px;
 }
 
@@ -92,7 +92,7 @@ html.glass-desktop .reaction-pill {
   height: 26px;
   padding: 0 8px;
   border: none;
-  border-radius: 13px;
+  border-radius: var(--r-md);
   transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--gd-chip);
   box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-t1) 12%, transparent);
@@ -119,7 +119,7 @@ html.glass-desktop .message-reply-quote {
   padding: 6px 10px;
   border: none;
   border-left: 2px solid var(--gd-brand-hi);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
   background: var(--gd-row-hover);
 }
 
@@ -170,7 +170,7 @@ html.glass-desktop .composer-attach-preview {
   width: auto;
   flex: 1 0 calc(100% - 60px);
   border: none;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--g-t1) 13%, transparent), color-mix(in srgb, var(--g-t1) 6%, transparent)),
     var(--g-tint-base);
@@ -197,7 +197,7 @@ html.glass-desktop .composer-attach-meta span {
 html.glass-desktop .composer-reply-clear {
   width: 30px;
   height: 30px;
-  border-radius: 15px;
+  border-radius: var(--r-md);
   background: var(--gd-chip);
   color: var(--gd-t2);
 }
@@ -209,14 +209,14 @@ html.glass-desktop .composer-reply-clear:hover {
 
 html.glass-desktop .msg-edit-box,
 html.glass-desktop .message-edit-ui {
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 
 html.glass-desktop .msg-edit-input,
 html.glass-desktop .message-edit-ui textarea,
 html.glass-desktop .message-edit-ui input {
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--gd-field-bg);
   color: var(--gd-t1);
   box-shadow: var(--gd-field-shadow);
@@ -225,7 +225,7 @@ html.glass-desktop .message-edit-ui input {
 html.glass-desktop .composer-left .composer-action-btn {
   width: 52px;
   height: 52px;
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   color: var(--gd-t1);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--g-t1) 13%, transparent), color-mix(in srgb, var(--g-t1) 6%, transparent)),
@@ -245,7 +245,7 @@ html.glass-desktop .emoji-picker,
 html.glass-desktop .slash-command-menu,
 html.glass-desktop .gd-row-menu {
   border: none !important;
-  border-radius: 18px !important;
+  border-radius: var(--r-lg) !important;
   padding: 6px !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
@@ -265,7 +265,7 @@ html.glass-desktop .attachment-item {
   height: 48px;
   gap: 12px;
   padding: 0 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: var(--gd-t1);
   font-size: 14px;
   font-weight: 550;
@@ -278,7 +278,7 @@ html.glass-desktop .attachment-item:hover {
 html.glass-desktop .attachment-icon {
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--r-md);
   color: #fff;
   background: var(--gd-brand);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
@@ -295,7 +295,7 @@ html.glass-desktop .attachment-item:nth-child(3) .attachment-icon {
 html.glass-desktop .emoji-picker {
   width: 372px;
   max-height: 420px;
-  border-radius: 24px !important;
+  border-radius: var(--r-xl) !important;
   padding: 14px 14px 12px !important;
 }
 
@@ -311,7 +311,7 @@ html.glass-desktop .emoji-picker-header {
 html.glass-desktop .emoji-picker-close {
   width: 28px;
   height: 28px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
   color: var(--gd-t2);
 }
@@ -328,7 +328,7 @@ html.glass-desktop .slash-command-header {
 
 html.glass-desktop .emoji-btn {
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-size: 21px;
 }
 
@@ -338,7 +338,7 @@ html.glass-desktop .emoji-btn:hover {
 
 html.glass-desktop .slash-command-item {
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   color: var(--gd-t1);
 }
 
@@ -383,7 +383,7 @@ html.glass-desktop .giphy-panel {
   margin: 0 !important;
   flex: 0 0 auto;
   border: none;
-  border-radius: 28px;
+  border-radius: var(--r-xl);
   padding: 16px 16px 8px;
   color: var(--gd-t1);
   background:
@@ -412,7 +412,7 @@ html.glass-desktop .giphy-brand {
 html.glass-desktop .giphy-close {
   width: 32px;
   height: 32px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: var(--g-chip-bg);
   color: var(--gd-t1);
   box-shadow: inset 0 0 0 0.5px var(--g-hair);
@@ -430,7 +430,7 @@ html.glass-desktop .giphy-search-ico {
 html.glass-desktop .giphy-search input {
   height: 40px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--gd-field-bg);
   color: var(--gd-t1);
   box-shadow: var(--gd-field-shadow);
@@ -451,7 +451,7 @@ html.glass-desktop .giphy-tabs button:hover {
 }
 
 html.glass-desktop .giphy-cell {
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--gd-chip);
   box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-t1) 12%, transparent);
 }
@@ -470,7 +470,7 @@ html.glass-desktop .gd-row-menu {
 
 html.glass-desktop .gd-row-menu button {
   height: 36px !important;
-  border-radius: 11px !important;
+  border-radius: var(--r-md) !important;
   padding: 0 12px !important;
   font-size: 13.5px !important;
   letter-spacing: -0.01em;

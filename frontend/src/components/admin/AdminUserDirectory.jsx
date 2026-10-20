@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Mail, RefreshCw, Search, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, RefreshCw, Search, Users } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";

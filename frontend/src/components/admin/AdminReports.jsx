@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Ban, Check, Flag, RefreshCw, Timer, FolderOpen } from "lucide-react";
+import { AlertTriangle, Ban, Check, Flag, RefreshCw, Timer, FolderOpen } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";

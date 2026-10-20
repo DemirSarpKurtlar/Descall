@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Check, Minus, Shield, UserPlus, X, Trash2 } from "lucide-react";
+import { Check, Minus, Shield, UserPlus, X, Trash2 } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import {

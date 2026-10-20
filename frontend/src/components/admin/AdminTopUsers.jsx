@@ -9,7 +9,7 @@ import {
   Star,
   Users,
   Wifi,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import RippleButton from "../ui/RippleButton";
 import { Avatar } from "../ui/Avatar";

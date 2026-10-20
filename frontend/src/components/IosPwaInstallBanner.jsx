@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Share, X } from "lucide-react";
+import { Share, X } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
 import "./IosPwaInstallBanner.css";
 

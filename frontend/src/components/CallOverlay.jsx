@@ -4,7 +4,7 @@ import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
   Minus, Maximize2, Users, MessageSquare, MoreVertical, Check, X as XIcon,
   Volume2, ChevronUp, ChevronDown, Mic2, SlidersHorizontal,
-} from "lucide-react";
+} from "./ui/Icon.jsx";
 import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
 import StatusBadge from "./ui/StatusBadge";

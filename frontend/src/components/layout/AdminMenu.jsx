@@ -5,7 +5,7 @@ import {
   Database, Activity, Zap,
   Globe, Lock, Bell, Palette,
   ChevronRight, Check, AlertTriangle, RefreshCw, Ban, Trash2
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { getToken } from "../../lib/storage";
 import { confirmAction } from "../../lib/glassConfirm";
 import { useT } from "../../context/LocaleContext";

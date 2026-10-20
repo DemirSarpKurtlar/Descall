@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HeadphoneOff, Mic, MicOff, VideoOff, Wifi, WifiOff } from "lucide-react";
+import { HeadphoneOff, Mic, MicOff, VideoOff, Wifi, WifiOff } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import AdminBadge from "../social/AdminBadge";
 import { BadgeIcon, NameEffectText } from "../ui/Cosmetics";

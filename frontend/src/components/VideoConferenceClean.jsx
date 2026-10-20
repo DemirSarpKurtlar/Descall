@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Grid, Maximize2, Users, Minimize2, Volume2, Headphones, ChevronDown, Settings, Sparkles, Activity, Check, X } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Grid, Maximize2, Users, Minimize2, Settings, Activity, Check, X, Waveform } from "./ui/Icon.jsx";
 import RippleButton from "./ui/RippleButton";
 import VoiceEffectsPanel from "./VoiceEffectsPanel";
 import VideoConferenceMobile from "./VideoConferenceMobile";
@@ -723,7 +723,7 @@ export default function VideoConference({
             onClick={() => setShowVoiceEffects(!showVoiceEffects)}
             title={t("Voice Effects")}
           >
-            <Sparkles size={20} />
+            <Waveform size={20} />
           </RippleButton>
           
           <RippleButton

@@ -2,12 +2,7 @@ import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import {
-  Settings, Hash, Phone, MessageSquare,
-  ChevronDown, Bell, UserPlus, X, User, Users,
-  MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Star, ChevronDown as ChevronDownIcon,
-  Link2, Sparkles, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff,
-} from "lucide-react";
+import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff } from "../ui/Icon.jsx";
 import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
 import { groupAvatarUrl } from "../../lib/avatarFile";
@@ -566,7 +561,7 @@ export default function ServerSidebar({
 
                 <div className="add-modal-tabs">
                   <button className={`add-modal-tab ${addTab === "quickadd" ? "active" : ""}`} onClick={() => { setAddTab("quickadd"); setAddError(""); setAddSuccess(""); }}>
-                    <Sparkles size={16} /> {t("Quick Add")}
+                    <UserPlus size={16} /> {t("Quick Add")}
                   </button>
                   <button className={`add-modal-tab ${addTab === "friend" ? "active" : ""}`} onClick={() => { setAddTab("friend"); setAddError(""); setAddSuccess(""); }}>
                     <User size={16} /> {glassShell ? t("Friend") : t("Add Friend")}
@@ -626,7 +621,6 @@ export default function ServerSidebar({
                                     </span>
                                   ) : (
                                     <span className="quick-add-card-badge suggested">
-                                      <Sparkles size={11} />
                                       {t("Suggested for you")}
                                     </span>
                                   )}
@@ -2218,7 +2212,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onQuickAdd(); } }}
             className="friends-quick-add-btn"
           >
-            <Sparkles size={13} />
+            <UserPlus size={13} />
           </span>
         )}
         <SectionChevron expanded={expanded} />

@@ -159,7 +159,7 @@
   top: 50%;
   width: 3px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, #9db0ff, #6b84f7);
   box-shadow: 0 0 10px rgba(120, 145, 255, 0.7);
   transform: translateY(-50%);
@@ -218,7 +218,7 @@
   bottom: 10px;
   z-index: 4;
   padding: 7px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: color-mix(in srgb, #1a1b1f 82%, #facc15);
   border: 1px solid rgba(250, 204, 21, 0.4);
   color: #fde68a;
@@ -252,7 +252,7 @@
 }
 
 .uhc-banner.profile-banner-parallax {
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--r-md) var(--r-md) 0 0;
 }
 
 .profile-banner-parallax-layer {
@@ -289,7 +289,7 @@
   top: 50%;
   width: 3px;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ed4245;
   box-shadow: 0 0 8px rgba(237, 66, 69, 0.45);
   transform: translateY(-50%);

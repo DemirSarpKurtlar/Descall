@@ -6,7 +6,7 @@ import {
   Clock, Moon, Sun, Volume2, Keyboard, UserX,
   Download, Mail, Smartphone, Eye, EyeOff, AlertCircle,
   CheckCircle2, LogOut, Monitor
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Link2, Copy, Check, Trash2, RefreshCw, Globe } from "lucide-react";
+import { Link2, Copy, Check, Trash2, RefreshCw, Globe } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { toPublicShareUrl } from "../../lib/referral";
 import { useToast } from "../../context/ToastContext";

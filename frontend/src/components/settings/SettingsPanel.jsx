@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { User, Volume2, Monitor, Bell, Shield } from "lucide-react";
+import { User, Volume2, Monitor, Bell, Shield } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import ProfileCustomization from "./ProfileCustomization";
 import { getAudioSettings, setGlobalMute, setSoundEnabled, setSoundVolume } from "../../lib/audioManager";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import CloseButton from "../ui/CloseButton.jsx";
 
 export default function SettingsPanel({
   onClose,
@@ -58,9 +59,7 @@ export default function SettingsPanel({
     >
       <header className="settings-head">
         <h3>Settings</h3>
-        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close settings">
-          ×
-        </button>
+        <CloseButton onClick={onClose} label="Close settings" />
       </header>
       {/* Tabs */}
       <div className="settings-tabs">

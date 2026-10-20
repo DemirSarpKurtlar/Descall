@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Flag, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Flag, X, CheckCircle2, AlertTriangle } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { REPORT_REASONS, submitUserReport } from "../../api/reports";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";

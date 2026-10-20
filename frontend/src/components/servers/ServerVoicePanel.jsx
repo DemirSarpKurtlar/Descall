@@ -17,7 +17,7 @@ import {
   Video,
   VideoOff,
   Volume2,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";

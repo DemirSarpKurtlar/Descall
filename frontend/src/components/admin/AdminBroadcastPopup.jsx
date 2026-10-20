@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Shield } from "lucide-react";
+import { X, Shield } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
 import OverlayPortal from "../ui/OverlayPortal";

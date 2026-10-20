@@ -8,7 +8,7 @@ import {
   Users,
   UserPlus,
   Clock,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { ActivityTypeIcon } from "../../lib/shopIcons";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";

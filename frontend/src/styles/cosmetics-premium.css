@@ -232,7 +232,7 @@
 }
 .burst-chip-petal-burst {
   box-shadow: 0 0 12px rgba(244, 114, 182, 0.45) !important;
-  border-radius: 999px !important;
+  border-radius: var(--r-pill) !important;
 }
 .burst-chip-thunderclap {
   box-shadow: 0 0 0 2px #fde047, 0 0 18px rgba(250, 204, 21, 0.65) !important;
@@ -296,7 +296,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .shop-typing-flare-preview .typing-dot {

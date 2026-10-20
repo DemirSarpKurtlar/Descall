@@ -201,7 +201,7 @@
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   padding: 32px;
   box-shadow: 
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
@@ -214,7 +214,7 @@
   margin-bottom: 24px;
   padding: 4px;
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 
 .platform-tab {
@@ -226,7 +226,7 @@
   padding: 12px 16px;
   background: transparent;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
   font-weight: 500;
@@ -259,7 +259,7 @@
 .platform-icon-large {
   width: 64px;
   height: 64px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -304,7 +304,7 @@
   padding: 16px 24px;
   background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: white;
   font-size: 16px;
   font-weight: 600;
@@ -427,7 +427,7 @@
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   padding: 32px;
   transition: all 0.4s ease;
 }
@@ -442,7 +442,7 @@
   width: 56px;
   height: 56px;
   background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -565,7 +565,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   padding: 1px;
   background: linear-gradient(135deg, rgba(88, 101, 242, 0.3), rgba(139, 92, 246, 0.1), transparent);
   -webkit-mask: 
@@ -619,7 +619,7 @@
 .login-modal {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   padding: 40px;
   width: 100%;
   max-width: 400px;
@@ -637,7 +637,7 @@
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   transition: all 0.2s ease;
 }
 
@@ -678,7 +678,7 @@
   padding: 12px 16px;
   background: rgba(0, 0, 0, 0.28);
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   color: white;
   font-family: inherit;
   font-size: 15px;
@@ -704,7 +704,7 @@
   padding: 14px;
   background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: white;
   font-family: inherit;
   font-size: 16px;
@@ -729,7 +729,7 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #ef4444;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   margin-bottom: 16px;
   font-size: 14px;
   text-align: center;
@@ -789,7 +789,7 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #ef4444;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   margin-bottom: 12px;
   font-size: 13px;
   text-align: center;

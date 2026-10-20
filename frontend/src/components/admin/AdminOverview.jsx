@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Activity, AlertTriangle, Bell, Clock, Flag, FolderSearch, History, Megaphone,
   RefreshCw, Shield, UserPlus, Users,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { isRetryableAdminError } from "../../api/adminHttpRetry";
 import { Avatar } from "../ui/Avatar";

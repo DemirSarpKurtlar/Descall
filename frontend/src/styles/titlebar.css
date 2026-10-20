@@ -43,7 +43,7 @@ body.electron-app {
   width: 28px;
   height: 28px;
   background: linear-gradient(135deg, var(--primary, #5865f2) 0%, var(--primary-2, #4752c4) 100%);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +204,7 @@ body.electron-app .electron-update-banner {
 .titlebar .descall-brand-mark {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .titlebar .descall-brand strong {
@@ -266,7 +266,7 @@ body.electron-app .app-feedback-banner {
   transform: translateX(-50%);
   width: max-content;
   max-width: min(560px, calc(100vw - 32px));
-  border-radius: 14px;
+  border-radius: var(--r-md);
   padding: 12px 16px 14px;
   border: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
@@ -275,5 +275,5 @@ body.electron-app .app-feedback-banner-text {
   max-width: min(420px, 60vw);
 }
 body.electron-app .app-feedback-banner-progress {
-  border-radius: 0 0 14px 14px;
+  border-radius: 0 0 var(--r-md) var(--r-md);
 }

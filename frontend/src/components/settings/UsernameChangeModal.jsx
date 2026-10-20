@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { AtSign, Check, Eye, EyeOff, KeyRound, Loader2, X, AlertTriangle } from "lucide-react";
+import { AtSign, Check, Eye, EyeOff, KeyRound, Loader2, X, AlertTriangle } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { getToken, setToken } from "../../lib/storage";
 import { checkUsernameAvailable, changeUsername } from "../../api/auth";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Megaphone, X } from "lucide-react";
+import { Megaphone, X } from "../ui/Icon.jsx";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { announcementIcon, loadAnnouncements } from "../../lib/announcements";

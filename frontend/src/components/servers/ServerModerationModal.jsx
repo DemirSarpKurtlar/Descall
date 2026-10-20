@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Ban, ScrollText, UserCheck, RefreshCw, X, Search } from "lucide-react";
+import { Ban, ScrollText, UserCheck, RefreshCw, X, Search } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { Avatar } from "../ui/Avatar";

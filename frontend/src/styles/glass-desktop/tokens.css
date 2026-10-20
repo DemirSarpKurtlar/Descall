@@ -55,8 +55,8 @@ html.glass-desktop {
   --gd-font: -apple-system, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
   --gd-tb: 40px;
   --gd-gap: 8px;
-  --gd-r-panel: 24px;
-  --gd-r-card: 18px;
+  --gd-r-panel: var(--r-xl, 26px);
+  --gd-r-card: var(--r-lg, 18px);
   /* Whole-window aurora. Same stops as the iPhone shell. */
   --gd-aurora:
     radial-gradient(60% 38% at 8% 4%, rgba(var(--g-brand-rgb), var(--g-amb-a)), transparent 70%),

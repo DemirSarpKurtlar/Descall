@@ -4,7 +4,7 @@ import Cropper from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { motion, useReducedMotion } from "framer-motion";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
-import { X, ZoomIn, ZoomOut, Check } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Check } from "./Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { getCroppedImageFile } from "../../lib/cropImage";
 import "./ImageCropModal.css";

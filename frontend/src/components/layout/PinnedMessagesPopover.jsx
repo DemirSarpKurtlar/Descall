@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Pin, PinOff, X } from "lucide-react";
+import { Pin, PinOff, X } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { computeAnchoredPopover, isOutside } from "../../lib/anchoredPopover";
 import "./PinnedMessagesPopover.css";

@@ -7,7 +7,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-pill {
   gap: 7px;
   height: 34px;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(240, 178, 50, 0.12);
   box-shadow: inset 0 0 0 1px rgba(240, 178, 50, 0.45);
   color: var(--g-gold);
@@ -30,7 +30,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)) !important;
   border: 0 !important;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   -webkit-backdrop-filter: blur(18px) saturate(150%);
   backdrop-filter: blur(18px) saturate(150%);
@@ -43,7 +43,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-item-preview {
 html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tabs button,
 html.glass-ui .user-settings.is-mobile.g-settings .shop-chip {
   height: 34px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.07);
   color: var(--g-t2);
   border: 0;
@@ -90,7 +90,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tab {
   min-height: 34px;
   height: 34px;
   padding: 0 14px;
-  border-radius: 17px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.07);
   color: var(--g-t2);
   border: 0;
@@ -117,7 +117,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link {
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head {
@@ -147,7 +147,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head span {
 
 html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-field {
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 0 12px;
   display: flex;
   align-items: center;
@@ -168,7 +168,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-actions button 
   flex: 1;
   height: 40px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -266,7 +266,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-shop-count {
   align-items: center;
   height: 28px;
   padding: 0 12px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
   color: var(--g-t2);
   font-size: 12px;

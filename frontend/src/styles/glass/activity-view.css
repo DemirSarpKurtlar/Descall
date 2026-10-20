@@ -1,7 +1,7 @@
 html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-status {
   margin: 0 16px 14px;
   padding: 16px;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   background: rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
 }
@@ -27,7 +27,7 @@ html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-vis {
   gap: 4px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.08);
   font-size: 12px;
   color: var(--g-t2);
@@ -88,7 +88,7 @@ html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-set {
   margin-top: 14px;
   height: 42px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
   color: #fff;
   font-weight: 700;
@@ -101,14 +101,14 @@ html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg {
   height: 40px;
   margin: 0 16px 14px;
   padding: 3px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
 }
 
 html.glass-ui .app-root.g-shell[data-view="activity"] .g-activity-seg button {
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--g-t2);
   font-weight: 650;
@@ -143,14 +143,14 @@ html.glass-ui .app-root.g-shell[data-view="activity"] .activity-sidebar {
 html.glass-ui .app-root.g-shell[data-view="activity"] .activity-current-card {
   background: rgba(255, 255, 255, 0.06);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
 }
 
 html.glass-ui .app-root.g-shell[data-view="activity"] .activity-friend-row,
 html.glass-ui .app-root.g-shell[data-view="activity"] .activity-row {
   min-height: 76px;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
 }
 
 /* "Mikrofon zorunlu" is wider than the row. The control stays; the label is

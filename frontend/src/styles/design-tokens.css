@@ -72,12 +72,20 @@
 
   /* 📏 Border Radius */
   --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-3xl: 20px;
-  --radius-full: 9999px;
+  /* Corner radius: five tokens (approved 2026-10-19, ai-look 03-radius-tokens).
+     4, 6, 8 -> sm · 10, 12, 14 -> md · 16, 17, 18, 20 -> lg · 22, 24, 26, 28 -> xl.
+     Nested surfaces stay concentric: inner = outer - padding. */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+  --radius-md: var(--r-sm);
+  --radius-lg: var(--r-sm);
+  --radius-xl: var(--r-md);
+  --radius-2xl: var(--r-lg);
+  --radius-3xl: var(--r-lg);
+  --radius-full: var(--r-pill);
 
   /* 🔠 Typography */
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;

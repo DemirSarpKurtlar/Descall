@@ -326,7 +326,7 @@ html.glass-desktop .main-panel.is-floating-header .panel-header .header-right {
 html.glass-desktop .main-panel.is-floating-header .header-right .icon-btn {
   width: 40px;
   height: 40px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   transition: background-color 120ms ease, color 120ms ease;
 }
 

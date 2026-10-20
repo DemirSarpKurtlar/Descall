@@ -19,7 +19,7 @@ import {
   Star,
   LogIn,
   X
-} from 'lucide-react';
+} from "../ui/Icon.jsx";
 import GoogleSignInButton from '../auth/GoogleSignInButton';
 import { isGoogleSignInOffered } from '../../lib/googleSignInOffer';
 import LegalContentModal from '../legal/LegalContentModal';

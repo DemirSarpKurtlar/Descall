@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Calendar, Clock, Wrench, Globe, Monitor, Smartphone, Megaphone, Shield, Bell,
   Eye, History, X, Edit3, ChevronDown, AlertTriangle, Timer, Square,
-} from "lucide-react";
+} from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
 import {

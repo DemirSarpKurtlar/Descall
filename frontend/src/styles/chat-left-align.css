@@ -4,8 +4,8 @@
 .message-bubble.own.is-left {
   margin-left: 60px;
   margin-right: 0;
-  border-bottom-right-radius: 12px;
-  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: var(--r-md);
+  border-bottom-left-radius: var(--r-sm);
 }
 .message-bubble.own.is-left.compact {
   margin-left: 60px;
@@ -14,18 +14,18 @@
 html.glass-ui .app-root.g-shell .message-bubble.own.is-left {
   margin-left: 46px !important;
   margin-right: 0;
-  border-top-left-radius: 6px;
-  border-top-right-radius: 18px;
-  border-bottom-right-radius: 18px;
-  border-bottom-left-radius: 18px;
+  border-top-left-radius: var(--r-sm);
+  border-top-right-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-lg);
+  border-bottom-left-radius: var(--r-lg);
 }
 html.glass-ui .app-root.g-shell .message-bubble.own.is-left.compact {
-  border-top-left-radius: 18px;
-  border-bottom-left-radius: 6px;
+  border-top-left-radius: var(--r-lg);
+  border-bottom-left-radius: var(--r-sm);
 }
 html.glass-desktop .message-bubble.own.is-left {
-  border-top-left-radius: 6px;
-  border-top-right-radius: 18px;
+  border-top-left-radius: var(--r-sm);
+  border-top-right-radius: var(--r-lg);
 }
 .message-swipe-wrap.is-left {
   justify-content: flex-start;

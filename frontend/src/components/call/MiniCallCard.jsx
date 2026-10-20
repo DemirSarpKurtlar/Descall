@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, Users } from "lucide-react";
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, Users } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import useVoiceActivity from "../../hooks/useVoiceActivity";
 import {
