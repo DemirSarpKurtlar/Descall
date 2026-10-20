@@ -93,8 +93,9 @@ const TABS = [
   { id: "moderation", label: "admin.moderation", icon: Shield },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
-  { id: "maintenance", label: "admin.maintenance", icon: Wrench },
   { id: "audit", label: "admin.audit", icon: FileText },
+  // Bakım sits last: an occasional, high-impact tool, kept out of the daily path.
+  { id: "maintenance", label: "admin.maintenance", icon: Wrench },
 ];
 
 export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername }) {
