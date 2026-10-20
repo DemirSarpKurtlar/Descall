@@ -419,9 +419,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         await onEquippedChange?.(item.category, isEquipped ? null : item.id);
         hapticSuccess();
       });
+      return true;
     } catch (err) {
       hapticError();
       setNotice(err.message || t("Could not update equipped item."));
+      return false;
     } finally {
       setBusyItemId(null);
       setBusyAction(null);
@@ -447,7 +449,14 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   const inventoryById = useMemo(() => new Map(inventory.map((row) => [row.itemId, row])), [inventory]);
   const itemsById = useMemo(() => new Map(items.map((row) => [row.id, row])), [items]);
-  const purchaseItem = purchaseItemId ? itemsById.get(purchaseItemId) || inventoryById.get(purchaseItemId)?.item || null : null;
+  // A silent reload (after a buy or an equip) can briefly drop the open item from the
+  // lists; keep the last resolved object so the modal does not unmount mid-flow
+  // (that lost the success state and "Geri al" with it).
+  const purchaseLookup = purchaseItemId ? itemsById.get(purchaseItemId) || inventoryById.get(purchaseItemId)?.item || null : null;
+  const purchaseSnapRef = useRef(null);
+  if (purchaseLookup) purchaseSnapRef.current = purchaseLookup;
+  else if (!purchaseItemId) purchaseSnapRef.current = null;
+  const purchaseItem = purchaseLookup || (purchaseSnapRef.current?.id === purchaseItemId ? purchaseSnapRef.current : null);
   const openPurchase = (item) => {
     if (!item?.id || !usesPurchaseModal(item.category)) return;
     setNotice("");
