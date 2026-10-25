@@ -157,7 +157,7 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
     const check = () => {
       const root = document.documentElement;
       const bar = document.querySelector(selector);
-      const hidden = root.classList.contains("kb-open") || document.hidden;
+      const hidden = root.classList.contains("kb-bar-hidden") || document.hidden;
       const next = hidden || barCovered(bar, bar?.getBoundingClientRect?.(), (x, y) => document.elementFromPoint(x, y));
       setCovered((prev) => (prev === next ? prev : next));
     };

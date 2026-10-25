@@ -133,9 +133,11 @@ for (const [inner, vvh] of [[726, 726], [794, 726], [726, 700]]) {
   assert.equal(safariToolbar.height, inner);
   assert.equal(safariToolbar.gap, 0);
 }
-// A real keyboard with nothing focused (iOS keeps it up briefly after blur)
-// is still seen from innerHeight, as before the fixed-box measurement.
-assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 500, editing: false, fixedBottom: 874 }).open, true);
+// Nothing focused never opens on web, whatever the geometry (iOS 26 leaves a
+// short visual viewport after dismiss, Safari's expanded toolbar is ~145pt).
+// That path hid the tab bar on a real iPhone after #268.
+assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 500, editing: false, fixedBottom: 874 }).open, false);
+assert.equal(mobileViewportBox({ innerHeight: 956, vvHeight: 811, editing: false, fixedBottom: 956 }).hideBar, false);
 // Native app: the UIKit inset still opens it without focus.
 assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 844, editing: false, nativeInset: 336, fixedBottom: 844 }).open, true);
 

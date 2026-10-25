@@ -84,20 +84,28 @@ export function useMobileKeyboard(enabled = true) {
     let lastOpen = false;
     let closeAnimTimer = 0;
     const probe = createFixedProbe();
+    // Tallest visual viewport seen at rest (nothing focused) for this width.
+    // Keyboard size is measured against it, so browser toolbars cancel out.
+    let rest = { w: 0, h: 0 };
 
     const apply = () => {
       const layoutH = window.innerHeight || root.clientHeight || 0;
       const layoutW = window.innerWidth || root.clientWidth || 0;
       const vvH = vv?.height ?? layoutH;
       const vvW = vv?.width ?? layoutW;
+      const editing = isTextEditing(document.activeElement);
+      const w = Math.round(vvW);
+      if (rest.w !== w) rest = { w, h: 0 };
+      if (!editing && !nativeKeyboardInset && vvH > rest.h) rest.h = Math.round(vvH);
       const box = mobileViewportBox({
         innerHeight: layoutH,
         vvHeight: vvH,
         offsetTop: vv?.offsetTop ?? 0,
         offsetLeft: vv?.offsetLeft ?? 0,
-        editing: isTextEditing(document.activeElement),
+        editing,
         nativeInset: nativeKeyboardInset,
         fixedBottom: readFixedBottom(probe),
+        restHeight: rest.h,
       });
       const open = box.open;
 
@@ -122,7 +130,10 @@ export function useMobileKeyboard(enabled = true) {
       root.style.setProperty("--vv-offset-left", `${open ? box.left : 0}px`);
       root.style.setProperty("--kb-inset", `${box.kb}px`);
       root.style.setProperty("--kb-gap", `${box.gap || 0}px`);
+      root.style.setProperty("--g-vv-lift", `${box.lift || 0}px`);
       root.classList.toggle("kb-open", open);
+      // The only switch that hides the tab bar: focused field + real keyboard.
+      root.classList.toggle("kb-bar-hidden", Boolean(box.hideBar));
 
       if (open !== lastOpen) {
         lastOpen = open;
@@ -210,7 +221,9 @@ export function useMobileKeyboard(enabled = true) {
       nativeKeyboardListeners.delete(onNativeKeyboard);
       root.classList.remove("mobile-keyboard-lock");
       root.classList.remove("kb-open");
+      root.classList.remove("kb-bar-hidden");
       root.classList.remove("kb-closing");
+      root.style.removeProperty("--g-vv-lift");
       root.style.removeProperty("--vv-height");
       root.style.removeProperty("--vv-width");
       root.style.removeProperty("--vv-offset-top");

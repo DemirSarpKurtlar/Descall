@@ -11,7 +11,11 @@
 html.glass-ui .app-root.g-shell {
   /* Bar floats 24pt above the bottom on Face ID iPhones (home indicator 34 − 10),
      12pt on Home-button iPhones. */
-  --g-bar-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px));
+  /* Mobile web: when Safari 26 lays fixed boxes out under its floating
+     toolbar, --g-vv-lift (measured in useMobileKeyboard) is that strip and
+     every bottom-docked surface (tab bar, composer, call bar) floats 8pt
+     above the toolbar instead of behind it. 0 everywhere else. */
+  --g-bar-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px), calc(var(--g-vv-lift, 0px) + 8px));
   --g-tab-h: 64px;
   --g-list-bottom: calc(var(--g-bar-bottom) + var(--g-tab-h) + 24px);
   --g-head-top: calc(var(--g-chrome-top) + 162px); /* 222: content under toolbar + title + search */
@@ -750,9 +754,10 @@ html.glass-ui.native-tabbar .g-edge-bot {
   -webkit-backdrop-filter: none !important;
 }
 
-/* Keyboard up: the bar never hangs above the keyboard. */
-html.glass-ui.kb-open .g-tabbar,
-html.glass-ui.kb-open .g-edge-bot {
+/* Real keyboard up (a field is focused and the visual viewport lost >150pt):
+   the bar never hangs above the keyboard. Nothing else hides it on web. */
+html.glass-ui.kb-bar-hidden .g-tabbar,
+html.glass-ui.kb-bar-hidden .g-edge-bot {
   display: none;
 }
 
