@@ -58,7 +58,7 @@ const css = readFileSync(new URL("../styles/glass/shell.css", import.meta.url), 
 const hideRules = css.match(/^[^{}]*\.g-tabbar[^{}]*\{[^}]*(opacity:\s*0|display:\s*none|visibility:\s*hidden)[^}]*\}/gm) || [];
 for (const rule of hideRules) {
   const sel = rule.split("{")[0];
-  assert.ok(/is-native|kb-open/.test(sel), `unexpected web tab bar hide rule: ${sel.trim()}`);
+  assert.ok(/is-native|kb-bar-hidden/.test(sel), `unexpected web tab bar hide rule: ${sel.trim()}`);
 }
 const shell = readFileSync(new URL("../components/layout/glass/GlassShell.jsx", import.meta.url), "utf8");
 assert.match(shell, /nativeActive \? " is-native" : ""/);

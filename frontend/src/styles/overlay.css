@@ -212,9 +212,11 @@ html.glass-ui:is(.a11y-solid, .a11y-contrast) :is(.g-tabbar, .g-searchbar) { bac
 
 /* Landscape iPhone (finding B1): the nav rail (z 100) and the floating tab bar
    (z 320) sat above the glass scrims (z 70-80), sharp, with a seam, and cut
-   the sheet. While any scrim is open the chrome drops below it. */
+   the sheet. While any scrim is open the chrome drops below it, but only just
+   below (scrims are 70-80): at 0 it fell under the list and vanished instead
+   of showing frosted through the scrim. */
 html.glass-ui:has(:is(.g-scrim, .g-msg-scrim, .g-attach-scrim, .g-giphy-scrim, .add-modal-backdrop, .grp-menu-catcher)) :is(.nav-rail, .g-tabbar) {
-  z-index: 0 !important;
+  z-index: 60 !important;
 }
 
 /* Old WebKit (iOS 15.0–16.1) drops color-mix() entirely: give store dialog and

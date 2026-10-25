@@ -69,7 +69,7 @@ match(layout, /const glassShell = Boolean\(glassUi && isMobile\)/, "shell only o
 /* 7. CSS: shell wired + scoped; hidden rail; keyboard; Stage 3 DM-header contract. */
 match(index, /@import '\.\/shell\.css';/, "shell.css imported");
 match(css, /\.app-root\.g-shell \.app-sidebar-shell > \.nav-rail \{\s*display: none !important;/, "rail column hidden only in the glass shell");
-match(css, /html\.glass-ui\.kb-open \.g-tabbar/, "bar hidden with the keyboard");
+match(css, /html\.glass-ui\.kb-bar-hidden \.g-tabbar/, "bar hidden with the keyboard");
 match(css, /\.g-peer-name-text \{[^}]*white-space: nowrap;[^}]*text-overflow: ellipsis;/, "Stage 3 peer name: one line + ellipsis");
 match(css, /\.g-peer-name \.dsc-admin-badge--inline \.dsc-admin-badge-label \{\s*display: none;/, "Stage 3 admin badge: icon-only on narrow iPhones");
 match(css, /\.g-peer \{\s*flex: 1 1 auto;\s*min-width: 0;/, "Stage 3 peer capsule can shrink");
