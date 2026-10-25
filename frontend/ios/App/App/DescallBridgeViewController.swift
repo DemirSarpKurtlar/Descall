@@ -16,6 +16,42 @@ class DescallBridgeViewController: CAPBridgeViewController {
     /// Glass light theme asks for black via DescallDisplay.setStatusBarStyle.
     private var statusBarDarkContent = false
     private var keyboardObservers: [NSObjectProtocol] = []
+    /// iOS 26 Liquid Glass tab bar over the WebView (DescallGlassTabBar).
+    let glassTabBarPlugin = DescallGlassTabBarPlugin()
+
+    override open func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        glassTabBarPlugin.relayout()
+        #if DEBUG
+        showGlassTabBarDemoIfAsked()
+        #endif
+    }
+
+    #if DEBUG
+    /// `-DescallGlassTabBarDemo` (Debug builds only): shows the native bar with
+    /// the app's six tabs and sample badges, so CI can screenshot it on the
+    /// iOS 26 simulator without signing in.
+    private var glassTabBarDemoShown = false
+    private func showGlassTabBarDemoIfAsked() {
+        guard !glassTabBarDemoShown,
+              ProcessInfo.processInfo.arguments.contains("-DescallGlassTabBarDemo"),
+              view.window != nil else { return }
+        glassTabBarDemoShown = true
+        if #available(iOS 26.0, *) {
+            let bar = DescallGlassTabBarView()
+            bar.overrideUserInterfaceStyle = .dark
+            bar.setItems([
+                .init(id: "chat", title: "Sohbetler", symbol: "bubble.left.and.bubble.right.fill", badge: "3"),
+                .init(id: "groups", title: "Gruplar", symbol: "person.3"),
+                .init(id: "servers", title: "Sunucular", symbol: "server.rack"),
+                .init(id: "friends", title: "Arkadaşlar", symbol: "person.badge.plus", badge: "1"),
+                .init(id: "activity", title: "Aktivite", symbol: "bolt"),
+                .init(id: "calls", title: "Aramalar", symbol: "phone"),
+            ], selected: "chat")
+            bar.attach(to: view)
+        }
+    }
+    #endif
 
     override open func viewDidLoad() {
         super.viewDidLoad()
@@ -93,6 +129,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(AppleSignInPlugin())
         bridge?.registerPluginInstance(DescallCallKitPlugin())
         bridge?.registerPluginInstance(DescallDisplayPlugin())
+        bridge?.registerPluginInstance(glassTabBarPlugin)
         bridge?.registerPluginInstance(DescallKeychainPlugin())
     }
 

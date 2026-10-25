@@ -25,6 +25,7 @@ import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
 import LegalContentModal from "../legal/LegalContentModal";
+import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
 
 const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
 const UserPanel = lazy(() => import("./UserPanel"));
@@ -443,6 +444,15 @@ export default function AppLayout({
     () => ({ ...navBadges, friends: pendingFriendCount }),
     [navBadges, pendingFriendCount]
   );
+  // iOS 26 app: Apple's Liquid Glass UITabBar over the WebView. True only
+  // while the native bar is confirmed on screen; otherwise the web bar shows.
+  const nativeTabBarActive = useNativeGlassTabBar({
+    enabled: glassShell && showMobileTabBar,
+    items: glassTabItems,
+    activeId: userPanelOpen ? null : activeView,
+    badges: glassTabBadges,
+    onSelect: handleViewChange,
+  });
   const glassShellValue = useMemo(
     () =>
       glassShell
@@ -776,6 +786,7 @@ export default function AppLayout({
               activeId={userPanelOpen ? null : activeView}
               onSelect={handleViewChange}
               badges={glassTabBadges}
+              nativeActive={nativeTabBarActive}
             />
           </>
         ) : null
