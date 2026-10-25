@@ -1,3 +1,5 @@
+import { compareListItems } from "./listOrder.js";
+
 /** Sort/filter DM list rows from per-peer pin/mute/hide/unread prefs. */
 
 export function emptyDmPref(peerId) {
@@ -68,7 +70,8 @@ export function mergePrefIntoMap(map, pref) {
 
 /**
  * Hide closed chats, overlay mark-unread, pin to top (newest pin first),
- * then last activity.
+ * then latest activity (last message or, for a new friend, when the
+ * friendship started).
  */
 export function applyDmListPrefs(dms, prefsByPeer = {}) {
   const list = Array.isArray(dms) ? dms : [];
@@ -84,19 +87,5 @@ export function applyDmListPrefs(dms, prefsByPeer = {}) {
         unreadCount: unread > 0 ? unread : pref?.markedUnread ? 1 : 0,
       };
     })
-    .sort((a, b) => {
-      const pa = a.pinned ? 1 : 0;
-      const pb = b.pinned ? 1 : 0;
-      if (pb !== pa) return pb - pa;
-      if (pa && pb) {
-        const ta = Date.parse(prefsByPeer[a.id]?.pinnedAt || "") || 0;
-        const tb = Date.parse(prefsByPeer[b.id]?.pinnedAt || "") || 0;
-        if (tb !== ta) return tb - ta;
-      }
-      const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
-      const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
-      if (tb !== ta) return tb - ta;
-      if ((b.unreadCount || 0) !== (a.unreadCount || 0)) return (b.unreadCount || 0) - (a.unreadCount || 0);
-      return String(a.username || "").localeCompare(String(b.username || ""));
-    });
+    .sort((a, b) => compareListItems(a, b, (x) => prefsByPeer[x.id]?.pinnedAt));
 }

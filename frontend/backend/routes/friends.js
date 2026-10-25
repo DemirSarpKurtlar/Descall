@@ -3,6 +3,7 @@ const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { pendingRequests, usernameById } = require("../runtime/sharedState");
 const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
+const friendSince = require("../lib/friendSince");
 
 const router = express.Router();
 
@@ -106,6 +107,7 @@ router.post("/request", requireAuth, async (req, res) => {
     // Sync socket memory so real-time accept/reject works
     const senderUsername = req.user.username || usernameById.get(userId) || "Unknown";
     ensurePending(targetUser.id).set(userId, { id: userId, username: senderUsername });
+    friendSince.markRequestNow(userId, targetUser.id);
     usernameById.set(userId, senderUsername);
 
     const io = req.app.get("io");
@@ -187,6 +189,7 @@ router.post("/accept", requireAuth, async (req, res) => {
     if (!friendsMap.has(fromUserId)) friendsMap.set(fromUserId, new Set());
     friendsMap.get(userId).add(fromUserId);
     friendsMap.get(fromUserId).add(userId);
+    friendSince.markFriendsNow(fromUserId, userId);
     refreshPresence(userId, fromUserId);
 
     // Also update pendingRequests map
@@ -274,6 +277,7 @@ router.post("/remove", requireAuth, async (req, res) => {
     const { friends: friendsMap } = require("../runtime/sharedState");
     friendsMap.get(userId)?.delete(friendId);
     friendsMap.get(friendId)?.delete(userId);
+    friendSince.forgetFriendship(userId, friendId);
     refreshPresence(userId, friendId);
     const io = req.app.get("io");
     await emitFriendState(io, userId, { requests: false });
@@ -293,7 +297,7 @@ router.get("/list", requireAuth, async (req, res) => {
 
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id, friend_id")
+      .select("user_id, friend_id, created_at")
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq("status", "accepted");
 
@@ -306,6 +310,7 @@ router.get("/list", requireAuth, async (req, res) => {
     for (const row of (rows || [])) {
       const otherId = row.user_id === userId ? row.friend_id : row.user_id;
       if (otherId && !friendIds.includes(otherId)) friendIds.push(otherId);
+      if (otherId) friendSince.rememberFriendSince(userId, otherId, row.created_at);
     }
 
     if (friendIds.length === 0) return res.json({ friends: [] });
@@ -336,9 +341,10 @@ router.get("/list", requireAuth, async (req, res) => {
       is_admin: Boolean(u.is_admin),
       isAdmin: Boolean(u.is_admin),
       status: "offline",
+      friendsSince: friendSince.friendSinceFor(userId, u.id),
     }));
 
-    res.json({ friends: formattedFriends });
+    res.json({ friends: friendSince.newestFirst(formattedFriends, "friendsSince") });
   } catch (err) {
     console.error("Get friends error:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -352,7 +358,7 @@ router.get("/requests", requireAuth, async (req, res) => {
 
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id")
+      .select("user_id, created_at")
       .eq("friend_id", userId)
       .eq("status", "pending");
 
@@ -364,6 +370,7 @@ router.get("/requests", requireAuth, async (req, res) => {
     if (!rows || rows.length === 0) return res.json({ requests: [] });
 
     const senderIds = rows.map((r) => r.user_id);
+    for (const r of rows) friendSince.rememberRequest(r.user_id, userId, r.created_at);
     const { data: users, error: usersError } = await supabase
       .from("users")
       .select("id, username, avatar_url, display_name, updated_at")
@@ -382,9 +389,10 @@ router.get("/requests", requireAuth, async (req, res) => {
       avatarUrl: u.avatar_url || null,
       avatar_url: u.avatar_url || null,
       updated_at: u.updated_at || null,
+      requestedAt: friendSince.requestSinceFor(u.id, userId),
     }));
 
-    res.json({ requests: formattedRequests });
+    res.json({ requests: friendSince.newestFirst(formattedRequests, "requestedAt") });
   } catch (err) {
     console.error("Get friend requests error:", err);
     res.status(500).json({ error: "Internal server error" });
