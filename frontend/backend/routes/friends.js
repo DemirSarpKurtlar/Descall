@@ -1,7 +1,7 @@
 const express = require("express");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
-const { pendingRequests, presence, usernameById } = require("../runtime/sharedState");
+const { pendingRequests, usernameById } = require("../runtime/sharedState");
 const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
 
 const router = express.Router();
@@ -11,9 +11,29 @@ function ensurePending(userId) {
   return pendingRequests.get(userId);
 }
 
+// Every device of the user. Sockets join `user:<id>` on connect; presence
+// only remembers the newest socket, so a phone app + web tab missed events.
 function emitToUserViaIo(io, userId, event, payload) {
-  const p = presence.get(userId);
-  if (p?.socketId) io.to(p.socketId).emit(event, payload);
+  if (!io || !userId) return;
+  io.to(`user:${userId}`).emit(event, payload);
+}
+
+function refreshPresence(a, b) {
+  try {
+    require("../runtime/presenceFanoutInstance").refreshPresenceFor(a, b);
+  } catch {
+    /* presence fan-out is best effort */
+  }
+}
+
+// Lazy: socket/handlers pulls in the whole realtime layer.
+async function emitFriendState(io, userId, opts) {
+  if (!io || !userId) return;
+  try {
+    await require("../socket/handlers").emitFriendState(io, userId, opts);
+  } catch (err) {
+    console.warn("[Friends] friend state emit skipped:", err?.message || err);
+  }
 }
 
 // Send friend request
@@ -93,6 +113,8 @@ router.post("/request", requireAuth, async (req, res) => {
       emitToUserViaIo(io, targetUser.id, "friend:request:incoming", {
         from: { id: userId, username: senderUsername },
       });
+      // Full pending list too, a device that missed the event still converges.
+      await emitFriendState(io, targetUser.id);
     }
     try {
       const { sendFriendRequestPush } = require("../lib/webPush");
@@ -165,6 +187,7 @@ router.post("/accept", requireAuth, async (req, res) => {
     if (!friendsMap.has(fromUserId)) friendsMap.set(fromUserId, new Set());
     friendsMap.get(userId).add(fromUserId);
     friendsMap.get(fromUserId).add(userId);
+    refreshPresence(userId, fromUserId);
 
     // Also update pendingRequests map
     const { pendingRequests } = require("../runtime/sharedState");
@@ -176,11 +199,11 @@ router.post("/accept", requireAuth, async (req, res) => {
     // Notify both sides to refresh their friend list
     const io = req.app.get("io");
     if (io) {
-      // Prefer durable user rooms (multi-tab safe)
-      io.to(`user:${userId}`).emit("friend:accepted", { by: { id: fromUserId } });
-      io.to(`user:${fromUserId}`).emit("friend:accepted", { by: { id: userId } });
+      // Once per user room (the old extra presence emit doubled the refetch).
       emitToUserViaIo(io, userId, "friend:accepted", { by: { id: fromUserId } });
       emitToUserViaIo(io, fromUserId, "friend:accepted", { by: { id: userId } });
+      await emitFriendState(io, userId);
+      await emitFriendState(io, fromUserId);
     }
 
     console.log("[Friends] Request accepted:", { fromUserId, userId });
@@ -213,6 +236,13 @@ router.post("/decline", requireAuth, async (req, res) => {
       return res.status(500).json({ error: "Failed to decline friend request" });
     }
 
+    const pendingForUser = pendingRequests.get(userId);
+    if (pendingForUser?.has(fromUserId)) {
+      pendingForUser.delete(fromUserId);
+      if (pendingForUser.size === 0) pendingRequests.delete(userId);
+    }
+    await emitFriendState(req.app.get("io"), userId);
+
     res.json({ success: true, message: "Friend request declined" });
   } catch (err) {
     console.error("Decline friend error:", err);
@@ -239,6 +269,15 @@ router.post("/remove", requireAuth, async (req, res) => {
     if (deleteError) {
       return res.status(500).json({ error: "Failed to remove friend" });
     }
+
+    // Server memory and both people's devices, same as the socket path.
+    const { friends: friendsMap } = require("../runtime/sharedState");
+    friendsMap.get(userId)?.delete(friendId);
+    friendsMap.get(friendId)?.delete(userId);
+    refreshPresence(userId, friendId);
+    const io = req.app.get("io");
+    await emitFriendState(io, userId, { requests: false });
+    await emitFriendState(io, friendId, { requests: false });
 
     res.json({ success: true, message: "Friend removed" });
   } catch (err) {

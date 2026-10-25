@@ -548,6 +548,7 @@ export default function AppLayout({
                 friendPresence={activity.friendPresence}
                 onlineUsers={onlineUsers}
                 onRefresh={onRefresh}
+                isMobile={isMobile}
                 onAddFriend={() => handleAddClick("friend")}
                 onFriendSelect={handleDmSelect}
                 me={me}

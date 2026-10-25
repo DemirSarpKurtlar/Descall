@@ -41,6 +41,7 @@ import { OwnerLeaveSheet, OwnershipTransferModal } from "./OwnershipTransfer";
 import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import PullToRefresh from "../ui/PullToRefresh";
 
 const TEMPLATE_ICONS = {
   Gamepad2,
@@ -90,6 +91,7 @@ export default function ServersSidebar({
   serverVoice = null,
   onMobileClose,
   isMobile = false,
+  onRefresh,
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -1633,6 +1635,7 @@ export default function ServersSidebar({
         </div>
 
         <div className="sidebar-content">
+          <PullToRefresh enabled={isMobile && !serverListReorderMode} onRefresh={() => onRefresh?.()}>
           {!serversLoaded ? (
             <ServerListSkeleton count={6} label={t("Loading servers")} />
           ) : servers.length === 0 ? (
@@ -1729,6 +1732,7 @@ export default function ServersSidebar({
               ) : null}
             </div>
           )}
+          </PullToRefresh>
         </div>
       </div>
 
