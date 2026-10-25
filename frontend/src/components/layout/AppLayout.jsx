@@ -69,6 +69,7 @@ export default function AppLayout({
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
+  onGroupMemberAdded,
   onGroupAvatarChanged,
   onRefresh,
   friendNotice,
@@ -612,6 +613,7 @@ export default function AppLayout({
             onGroupCreated={onGroupCreated}
             onGroupLeft={onGroupLeft}
             onGroupRenamed={onGroupRenamed}
+            onGroupMemberAdded={onGroupMemberAdded}
             onGroupAvatarChanged={onGroupAvatarChanged}
             onRefresh={onRefresh}
             friendRequests={friendRequests}
@@ -682,6 +684,7 @@ export default function AppLayout({
                 onGroupAvatarChanged={onGroupAvatarChanged}
                 onGroupLeft={onGroupLeft}
                 onGroupRenamed={onGroupRenamed}
+                onGroupMemberAdded={onGroupMemberAdded}
                 activeView={activeView}
                 activeDmUser={activeDmUser}
                 activeGroup={activeGroup}

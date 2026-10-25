@@ -66,8 +66,10 @@ function matchesOrGroups(row, groups) {
 }
 
 class FakeQuery {
-  constructor(table, mode) {
+  constructor(table, mode, opts = {}, name = "") {
     this.table = table;
+    this.opts = opts || {};
+    this.name = name;
     this.mode = mode; // "select" | "insert" | "update" | "delete"
     this.filters = [];
     this.payload = null;
@@ -171,6 +173,10 @@ class FakeQuery {
   _run() {
     const rows = this.table.rows;
     if (this.mode === "insert") {
+      const keys = this.opts.uniqueKeys?.[this.name];
+      if (keys && rows.some((r) => keys.every((k) => r[k] === this.payload[k]))) {
+        return { data: null, error: { code: "23505", message: `duplicate key value violates unique constraint "${this.name}_pkey"` } };
+      }
       const row = {
         id: crypto.randomUUID(),
         created_at: new Date().toISOString(),
@@ -232,6 +238,11 @@ class FakeQuery {
       if (matched.length === 0) {
         return this.maybe ? { data: null, error: null } : { data: null, error: { message: "not found" } };
       }
+      // Real PostgREST: .single()/.maybeSingle() over several rows is an error
+      // with data = null (PGRST116). Opt-in so older tests keep their shape.
+      if (this.opts.strictSingle && matched.length > 1) {
+        return { data: null, error: { code: "PGRST116", message: "JSON object requested, multiple (or no) rows returned" } };
+      }
       return { data: matched[0], error: null };
     }
     const total = matched.length;
@@ -251,7 +262,13 @@ class FakeQuery {
   }
 }
 
-function createFakeSupabase(seed = {}) {
+/**
+ * @param {object} seed  table name → rows
+ * @param {{ strictSingle?: boolean, uniqueKeys?: Record<string, string[]> }} [opts]
+ *   strictSingle: .single()/.maybeSingle() over >1 row errors like PostgREST.
+ *   uniqueKeys: per-table unique columns; a conflicting insert returns 23505.
+ */
+function createFakeSupabase(seed = {}, opts = {}) {
   const tables = {};
   for (const [name, rows] of Object.entries(seed)) {
     tables[name] = { rows: rows.map((r) => ({ ...r })) };
@@ -303,7 +320,7 @@ function createFakeSupabase(seed = {}) {
     storage,
     from(name) {
       if (!tables[name]) tables[name] = { rows: [] };
-      return new FakeQuery(tables[name], null);
+      return new FakeQuery(tables[name], null, opts, name);
     },
   };
 }

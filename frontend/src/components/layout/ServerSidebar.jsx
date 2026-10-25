@@ -65,6 +65,7 @@ export default function ServerSidebar({
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
+  onGroupMemberAdded,
   onGroupAvatarChanged,
   friendRequests,
   messageRequests,
@@ -450,6 +451,7 @@ export default function ServerSidebar({
               onGroupSelect={onGroupSelect}
               onGroupLeft={onGroupLeft}
               onGroupRenamed={onGroupRenamed}
+              onGroupMemberAdded={onGroupMemberAdded}
               onGroupAvatarChanged={onGroupAvatarChanged}
               isMobile={isMobile}
               unreadById={groupUnread}
@@ -1659,7 +1661,14 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
         open={Boolean(addMemberGroup)}
         friends={friends}
         onClose={() => setAddMemberGroup(null)}
-        onMemberAdded={(friend) => onMemberAdded?.(addMemberGroup?.id, friend)}
+        onMemberAdded={(friend, body) => {
+          const groupId = addMemberGroup?.id;
+          if (!groupId) return;
+          // Server group (fresh members[] + count) when the response has it,
+          // otherwise the friend row; the socket echo is idempotent.
+          onMemberAdded?.(groupId, { user: body?.user || friend, group: body?.group || null });
+          setAddMemberGroup((cur) => (cur?.id === groupId && body?.group?.members ? { ...cur, ...body.group } : cur));
+        }}
       />
 
       <GroupInviteModal
@@ -1673,7 +1682,7 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
   return { run, element, actionError: "", groupPhoto };
 }
 
-function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
+function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupMemberAdded, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
   const t = useT();
   const { locale } = useLocale();
   const safeGroups = Array.isArray(groups) ? groups : [];
@@ -1684,7 +1693,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const menuRef = useRef(null);
   const dotBtnRefs = useRef({});
   // Same handlers drive the row menu, the swipe actions and the group info sheet.
-  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged });
+  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded: onGroupMemberAdded });
 
   // The portaled menu closes itself on outside pointerdown / Esc. A row-level
   // mousedown listener used to close it before taps on its items registered.

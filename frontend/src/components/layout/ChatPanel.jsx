@@ -44,6 +44,7 @@ export default function ChatPanel({
   onGroupAvatarChanged,
   onGroupLeft,
   onGroupRenamed,
+  onGroupMemberAdded,
   activeView,
   activeDmUser,
   activeGroup,
@@ -102,7 +103,7 @@ export default function ChatPanel({
   const [showPinned, setShowPinned] = useState(false);
   const pinButtonRef = useRef(null);
   // Same handlers as the sidebar swipe actions / row menu.
-  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged });
+  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded: onGroupMemberAdded });
   const groupPhoto = groupActions.groupPhoto;
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   useEffect(() => { setGroupInfoOpen(false); }, [activeGroup?.id]);

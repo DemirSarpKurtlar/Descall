@@ -32,8 +32,10 @@ export default function GroupAddMemberSheet({ group, open, friends, onClose, onM
     () => new Set((group?.members || []).map((m) => m?.id).filter(Boolean)),
     [group?.members],
   );
-  const added = Object.values(state).filter((s) => s === "done").length;
-  const count = (group?.memberCount || memberIds.size || 0) + added;
+  // Rows added in this sheet that the group object does not list yet (the
+  // parent refreshes `group` from the server response, so never count twice).
+  const added = Object.entries(state).filter(([id, s]) => s === "done" && !memberIds.has(id)).length;
+  const count = Math.max(group?.memberCount || 0, memberIds.size) + added;
   const full = count >= MAX_GROUP_SIZE;
 
   const rows = useMemo(() => {
@@ -42,24 +44,26 @@ export default function GroupAddMemberSheet({ group, open, friends, onClose, onM
       if (!q) return true;
       return [f.username, f.displayName, resolveDisplayName(f)].some((s) => String(s || "").toLocaleLowerCase("tr").includes(q));
     });
-    // Not-yet-members first, then alphabetical.
+    // Not-yet-members first, then alphabetical. A row added in this sheet
+    // keeps its place (the refreshed group lists it as a member now).
+    const settled = (id) => memberIds.has(id) && state[id] !== "done";
     return list.sort((a, b) => {
-      const am = memberIds.has(a.id) ? 1 : 0;
-      const bm = memberIds.has(b.id) ? 1 : 0;
+      const am = settled(a.id) ? 1 : 0;
+      const bm = settled(b.id) ? 1 : 0;
       if (am !== bm) return am - bm;
       return resolveDisplayName(a).localeCompare(resolveDisplayName(b), "tr");
     });
-  }, [friends, query, memberIds]);
+  }, [friends, query, memberIds, state]);
 
   const add = async (friend) => {
     if (!group?.id || state[friend.id]) return;
     setError("");
     setState((s) => ({ ...s, [friend.id]: "busy" }));
     try {
-      await addMemberToGroup(group.id, friend.id);
+      const body = await addMemberToGroup(group.id, friend.id);
       hapticSuccess();
       setState((s) => ({ ...s, [friend.id]: "done" }));
-      onMemberAdded?.(friend);
+      onMemberAdded?.(friend, body);
     } catch (err) {
       hapticError();
       setState((s) => {
@@ -134,10 +138,10 @@ export default function GroupAddMemberSheet({ group, open, friends, onClose, onM
                   <span className="gs-row-title">{name}</span>
                   {friend.username && friend.username !== name ? <span className="gs-row-sub">@{friend.username}</span> : null}
                 </span>
-                {inGroup ? (
-                  <span className="gs-pill is-muted" aria-disabled="true">{t("In group")}</span>
-                ) : st === "done" ? (
+                {st === "done" ? (
                   <span className="gs-pill is-done"><Check size={15} strokeWidth={2.6} />{t("Added")}</span>
+                ) : inGroup ? (
+                  <span className="gs-pill is-muted" aria-disabled="true">{t("In group")}</span>
                 ) : (
                   <button
                     type="button"

@@ -125,6 +125,7 @@ import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner"
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
 import { applyGroupRename } from "./lib/groupRename";
+import { applyGroupMemberAdded, upsertInvitedGroup } from "./lib/groupMembers";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
@@ -1975,7 +1976,18 @@ export default function App() {
     // Add new group to list when invited or when you create one via socket broadcast
     socket.on("group:invited", ({ group } = {}) => {
       if (!group?.id) return;
-      setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [...prev, group]);
+      setMyGroups((prev) => upsertInvitedGroup(prev, group));
+      // Into the group room for live messages / call banners (the server also
+      // joins our sockets; this covers a reconnect race).
+      socket.emit("groups:rejoin", [group.id]);
+    });
+
+    // A member was added by anyone (this tab, another device, another member):
+    // sidebar row, chat header count, members panel and info sheet update live.
+    socket.on("group:member:added", ({ groupId, user, memberCount } = {}) => {
+      if (!groupId || !user?.id) return;
+      setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, { user, memberCount }));
+      setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, { user, memberCount })[0] : cur));
     });
 
     // Group photo changed by any member (or removed).
@@ -4848,6 +4860,11 @@ export default function App() {
           onGroupRenamed={(groupId, newName) => {
             setMyGroups((prev) => applyGroupRename(prev, groupId, newName));
             setActiveGroup((cur) => (cur?.id === groupId ? { ...cur, name: newName } : cur));
+          }}
+          onGroupMemberAdded={(groupId, payload) => {
+            if (!groupId) return;
+            setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, payload));
+            setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, payload)[0] : cur));
           }}
           friendRequests={friendRequests}
           messageRequests={messageRequests}

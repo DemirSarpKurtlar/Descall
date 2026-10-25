@@ -161,6 +161,30 @@ async function loadUserGroups(userId, db = defaultDb()) {
   return assembleGroupList({ memberships, groups, memberRows, users, lastRows });
 }
 
+/**
+ * One group in the GET /groups/my shape (members[], memberIds, memberCount,
+ * lastMessage). Used after a membership change so clients get the fresh list
+ * without reloading every group of the user.
+ */
+async function loadGroupById(groupId, db = defaultDb()) {
+  if (!groupId) return null;
+  const [groups, memberRows] = await Promise.all([
+    selectIn(db, "groups", "id", [groupId], "id, name, avatar_url, created_by, created_at"),
+    selectIn(db, "group_members", "group_id", [groupId], "group_id, user_id, joined_at"),
+  ]);
+  if (!groups.length) return null;
+  const userIds = [...new Set(memberRows.map((row) => row.user_id).filter(Boolean))];
+  const [users, lastRows] = await Promise.all([
+    userIds.length
+      ? selectIn(db, "users", "id", userIds, "id, username, avatar_url, status, is_admin")
+      : Promise.resolve([]),
+    loadLastMessages(db, [groupId]),
+  ]);
+  const [group] = assembleGroupList({ memberships: [], groups, memberRows, users, lastRows });
+  if (group) delete group.joinedAt;
+  return group || null;
+}
+
 function getUserGroups(userId, db = defaultDb()) {
   if (!userId) return Promise.resolve([]);
   return flight.run(`groups:${userId}`, () => loadUserGroups(userId, db));
@@ -170,6 +194,7 @@ module.exports = {
   formatGroupListPreview,
   assembleGroupList,
   loadUserGroups,
+  loadGroupById,
   getUserGroups,
   LAST_MESSAGE_LIMIT,
 };
