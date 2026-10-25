@@ -5,7 +5,11 @@
  * Counts only assets referenced by /features HTML (script + modulepreload),
  * which is what the browser downloads before interaction.
  *
- * Usage: node scripts/perf-budget.mjs [--max-kb 220]
+ * Usage: node scripts/perf-budget.mjs [--max-kb 235]
+ *
+ * 235 KB since the react-router 6 -> 7 security upgrade (GHSA-wrjc-x8rr-h8h6 has no 6.x fix):
+ * react-router 7 adds about 16 KB raw to the entry chunk (215.1 KB -> 231.6 KB on the same tree).
+ * Everything else in the marketing first paint is unchanged; do not spend the headroom.
  */
 import fs from "fs";
 import path from "path";
@@ -18,7 +22,7 @@ const maxKb = Number(
   maxKbArg?.split("=")[1] ||
     (process.argv.includes("--max-kb")
       ? process.argv[process.argv.indexOf("--max-kb") + 1]
-      : 220)
+      : 235)
 );
 
 function fileSize(rel) {
