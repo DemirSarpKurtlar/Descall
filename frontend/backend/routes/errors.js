@@ -162,7 +162,6 @@ router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
 console.log("[ERRORS-JS] Registering POST /feedback route...");
 router.post("/feedback", (req, res, next) => {
   console.log("[ROUTE-MATCH] POST /api/errors/feedback - Route matched!");
-  console.log("[ROUTE-MATCH] Body:", JSON.stringify(req.body));
   next();
 }, requireAuth, async (req, res) => {
   console.log("[Feedback] ========== START ==========");
@@ -172,7 +171,7 @@ router.post("/feedback", (req, res, next) => {
     const { category, priority, message, attachments = [] } = req.body;
     const user = req.user;
     
-    console.log("[Feedback] Step 2: Got user:", JSON.stringify(user));
+    console.log("[Feedback] Step 2: Got user id:", user?.id);
     console.log("[Feedback] Step 3: Body data:", { category, priority, messageLength: message?.length, attachmentsCount: attachments?.length });
 
     if (!category || !priority || !message) {
@@ -247,7 +246,7 @@ router.post("/feedback", (req, res, next) => {
 
     console.log("[Feedback] Step 9: Supabase response received");
     console.log("[Feedback] Step 9a: Error object:", JSON.stringify(error));
-    console.log("[Feedback] Step 9b: Data object:", JSON.stringify(data));
+    console.log("[Feedback] Step 9b: Row id:", data?.[0]?.id ?? data?.id);
     
     if (error) {
       console.error("[Feedback] Step 9c: Supabase ERROR details:");
@@ -263,7 +262,7 @@ router.post("/feedback", (req, res, next) => {
       console.log("[Feedback] This usually means RLS blocked the insert or trigger failed silently");
     }
 
-    console.log("[Feedback] Step 10: Supabase success, data:", JSON.stringify(data));
+    console.log("[Feedback] Step 10: Supabase success");
 
     console.log("[Feedback] Step 11: Adding to in-memory state");
     const feedback = state.addFeedback(
@@ -295,7 +294,7 @@ router.post("/feedback", (req, res, next) => {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     
-    console.log("[Feedback] Sending JSON response:", JSON.stringify(responseBody).slice(0, 200));
+    console.log("[Feedback] Sending JSON response");
     return res.status(200).json(responseBody);
     
   } catch (error) {
