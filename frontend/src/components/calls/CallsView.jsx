@@ -124,6 +124,7 @@ export default function CallsView({
   compact = false,
   query: queryProp,
   onQueryChange,
+  refreshRef,
 }) {
   const t = useT();
   const glass = useGlassUi();
@@ -197,6 +198,15 @@ export default function CallsView({
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Parent pull-to-refresh / header button.
+  useEffect(() => {
+    if (!refreshRef) return undefined;
+    refreshRef.current = () => refresh();
+    return () => {
+      refreshRef.current = null;
+    };
+  }, [refreshRef, refresh]);
 
   useEffect(() => {
     if (!notice) return undefined;

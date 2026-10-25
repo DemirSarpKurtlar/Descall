@@ -582,6 +582,7 @@ export const phrases = {
   "Calls": "Aramalar",
   "Search": "Ara",
   "Refresh": "Yenile",
+  "Refreshing…": "Yenileniyor…",
   "System default": "Sistem varsayılanı",
   "My Account": "Hesabım",
   "Voice & Video": "Ses ve Görüntü",

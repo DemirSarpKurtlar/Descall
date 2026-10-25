@@ -306,6 +306,18 @@ function emitToUser(io, userId, event, payload) {
   }
 }
 
+/**
+ * Fresh friend list + pending requests to every device of `userId`
+ * (`user:<id>` room). REST routes use this; they have no socket of their own.
+ */
+async function emitFriendState(io, userId, { requests = true } = {}) {
+  if (!io || !userId) return;
+  await loadFriendsFromDB(userId);
+  await ensureCosmeticsCached([...(friends.get(userId) || [])]).catch(() => {});
+  io.to(`user:${userId}`).emit("friend:list", getFriendList(userId));
+  if (requests) io.to(`user:${userId}`).emit("friend:requests", getPendingList(userId));
+}
+
 async function buildSyncState(userId) {
   const dmMap = ensureDmUnreadMap(userId);
   const dmUnreadByPeer = {};
@@ -894,10 +906,11 @@ function registerSocketHandlers(io) {
         meta: { userId: myId },
       });
 
-      socket.emit("friend:accepted", { by: { id: fromUserId } });
-      socket.emit("friend:list", getFriendList(myId));
-      socket.emit("friend:requests", getPendingList(myId));
-      emitSyncState(io, myId, socket);
+      // Every device of the acceptor (phone app + web tab), not just this socket.
+      emitToUser(io, myId, "friend:accepted", { by: { id: fromUserId } });
+      emitToUser(io, myId, "friend:list", getFriendList(myId));
+      emitToUser(io, myId, "friend:requests", getPendingList(myId));
+      emitSyncState(io, myId);
       emitToUser(io, fromUserId, "friend:list", getFriendList(fromUserId));
       emitToUser(io, fromUserId, "friend:requests", getPendingList(fromUserId));
       emitSyncState(io, fromUserId);
@@ -937,8 +950,8 @@ function registerSocketHandlers(io) {
         // Update friend list for the sender to remove pending status
         io.to(`user:${fromUserId}`).emit("friend:list", getFriendList(fromUserId));
         
-        socket.emit("friend:requests", getPendingList(myId));
-        socket.emit("friend:list", getFriendList(myId));
+        emitToUser(io, myId, "friend:requests", getPendingList(myId));
+        emitToUser(io, myId, "friend:list", getFriendList(myId));
         
         console.log("[Friends] Request declined:", { fromUserId, by: myId });
       } catch (err) {
@@ -982,12 +995,12 @@ function registerSocketHandlers(io) {
         socket.emit("dm:requests", await listMessageRequests(supabase, myId));
         return;
       }
-      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
-      socket.emit("friend:list", getFriendList(myId));
-      socket.emit("friend:accepted", { by: { id: fromId, username: removed.username } });
+      emitToUser(io, myId, "dm:requests", await listMessageRequests(supabase, myId));
+      emitToUser(io, myId, "friend:list", getFriendList(myId));
+      emitToUser(io, myId, "friend:accepted", { by: { id: fromId, username: removed.username } });
       emitToUser(io, fromId, "dm:request:accepted", { byUserId: myId, username: me.username });
       emitToUser(io, fromId, "friend:list", getFriendList(fromId));
-      emitSyncState(io, myId, socket);
+      emitSyncState(io, myId);
       emitSyncState(io, fromId);
     });
 
@@ -995,7 +1008,7 @@ function registerSocketHandlers(io) {
       const fromId = String(fromUserId || "").trim();
       if (!fromId) return;
       await deleteMessageRequest(supabase, fromId, myId);
-      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+      emitToUser(io, myId, "dm:requests", await listMessageRequests(supabase, myId));
       emitToUser(io, fromId, "dm:request:declined", { byUserId: myId });
     });
 
@@ -1012,8 +1025,8 @@ function registerSocketHandlers(io) {
       // Remove friendship from database
       await removeFriendshipFromDB(myId, friendId);
       
-      socket.emit("friend:list", getFriendList(myId));
-      emitSyncState(io, myId, socket);
+      emitToUser(io, myId, "friend:list", getFriendList(myId));
+      emitSyncState(io, myId);
       emitToUser(io, friendId, "friend:list", getFriendList(friendId));
       emitSyncState(io, friendId);
     });
@@ -2472,4 +2485,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout, pushNotification };
+module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout, pushNotification, emitFriendState };

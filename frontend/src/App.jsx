@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
+import { mergeRestFriends } from "./lib/friendListMerge";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
@@ -2855,7 +2856,7 @@ export default function App() {
     }
   };
 
-  const fetchFriends = useCallback(async () => {
+  const fetchFriends = useCallback(async ({ force = false } = {}) => {
     if (!getToken()) return;
     try {
       const [listRes, reqRes] = await Promise.all([
@@ -2869,6 +2870,10 @@ export default function App() {
         setFriends(list.map((u) => normalizeUser(u)));
         listCommitRef.current.friends = true;
         setFriendsLoaded(true);
+      } else if (force) {
+        // Pulled refresh: the database decides who is a friend (a socket
+        // event may have been missed), live presence/previews are kept.
+        setFriends((prev) => mergeRestFriends(prev, list.map((u) => normalizeUser(u))));
       }
       setFriendRequests(requests.map((u) => normalizeUser(u)));
     } catch (err) {
@@ -2974,23 +2979,36 @@ export default function App() {
   }, [t]);
   refreshGroupRestRef.current = refreshGroupMessages;
 
-  const handleRefresh = useCallback(() => {
+  // Resolves when the server has answered (REST lists + the socket
+  // friend:list round trip, capped), so pull-to-refresh can hold its spinner.
+  // `force`: a pulled refresh, REST friend membership overrides socket state.
+  const handleRefresh = useCallback((opts) => {
+    const force = opts?.force === true;
     const s = socketRef.current;
 
     // Always refresh durable lists over REST, works even if socket is down.
-    fetchGroups();
-    fetchFriends();
-    fetchServers();
-    fetchDmPreviews();
+    const work = [fetchGroups(), fetchFriends({ force }), fetchServers(), fetchDmPreviews()];
 
     const dmPeer = activeDmRef.current;
     if (dmPeer?.id) {
       loadDmMessagesRest(dmPeer.id);
     }
 
-    if (!s?.connected) return;
+    if (!s?.connected) return Promise.allSettled(work);
 
     // Friends & global state (socket, presence + DM previews)
+    work.push(
+      new Promise((resolve) => {
+        let timer = 0;
+        const done = () => {
+          clearTimeout(timer);
+          s.off("friend:list", done);
+          resolve();
+        };
+        timer = setTimeout(done, 4000);
+        s.once("friend:list", done);
+      }),
+    );
     s.emit("friend:list");
     s.emit("sync:state");
 
@@ -3005,6 +3023,7 @@ export default function App() {
       s.emit("group:join", grp.id);
       refreshGroupMessages(grp.id);
     }
+    return Promise.allSettled(work);
   }, [fetchGroups, fetchFriends, fetchServers, fetchDmPreviews, loadDmMessagesRest, refreshGroupMessages]);
 
   // Prefer socket live updates. Catch up on reconnect/focus.
