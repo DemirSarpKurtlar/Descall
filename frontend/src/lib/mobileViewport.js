@@ -26,12 +26,19 @@ export function mobileViewportBox({
   offsetLeft = 0,
   editing = false,
   nativeInset = 0,
+  fixedBottom = 0,
 } = {}) {
   const layoutH = Math.max(0, Math.round(Number(innerHeight) || 0));
+  // Bottom edge of the box fixed elements are laid out in (measured). iOS can
+  // report an innerHeight that already shrank with the keyboard, or one that
+  // differs from that box by the toolbar. Fixed things lift from this bottom,
+  // so the covered strip is measured against it, not against innerHeight.
+  const fixedH = Math.max(0, Math.round(Number(fixedBottom) || 0));
+  const refH = fixedH > 0 ? fixedH : layoutH;
   const visibleH = Math.max(0, Math.round(Number(vvHeight) || layoutH));
   const top = Math.max(0, Math.round(Number(offsetTop) || 0));
   const left = Math.max(0, Math.round(Number(offsetLeft) || 0));
-  const gap = Math.max(0, layoutH - visibleH - top);
+  const gap = Math.max(0, refH - visibleH - top);
   // UIKit overlap when WKWebView does not shrink for the keyboard. Already
   // included in `gap` when the visual viewport did shrink, never add both.
   const native = Math.max(0, Math.round(Number(nativeInset) || 0));
@@ -45,7 +52,7 @@ export function mobileViewportBox({
   }
 
   const extra = Math.max(0, native - gap);
-  const base = Math.min(visibleH > 0 ? visibleH : layoutH, Math.max(160, layoutH - top));
+  const base = Math.min(visibleH > 0 ? visibleH : refH, Math.max(160, refH - top));
   const height = Math.max(160, base - extra);
   return {
     open: true,
@@ -53,7 +60,7 @@ export function mobileViewportBox({
     left,
     height,
     kb: Math.max(covered, top),
-    // Lift from the layout bottom. A pan (offsetTop) is not added again.
+    // Lift from the fixed-box bottom. A pan (offsetTop) is not added again.
     gap: covered,
   };
 }

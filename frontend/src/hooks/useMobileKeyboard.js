@@ -44,6 +44,33 @@ function resetScroll() {
 const KB_CLOSE_ANIM_MS = 280;
 
 /**
+ * Invisible fixed box (top:0, bottom:0). Its bottom edge is the edge that
+ * fixed elements such as the composer lift from, read straight from layout
+ * instead of trusting window.innerHeight (iOS sometimes shrinks it along with
+ * the keyboard, which reported no keyboard and left the composer behind it).
+ */
+function createFixedProbe() {
+  if (typeof document === "undefined" || !document.body) return null;
+  const el = document.createElement("div");
+  el.setAttribute("aria-hidden", "true");
+  el.dataset.kbProbe = "";
+  el.style.cssText =
+    "position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none;";
+  document.body.appendChild(el);
+  return el;
+}
+
+function readFixedBottom(probe) {
+  if (!probe || !probe.isConnected) return 0;
+  try {
+    const r = probe.getBoundingClientRect();
+    return r.bottom > 0 ? r.bottom : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Keep the mobile shell aligned to the visual viewport while the keyboard
  * is open, and smooth-reset when it closes (composer slides down with the KB).
  */
@@ -56,6 +83,7 @@ export function useMobileKeyboard(enabled = true) {
     let raf = 0;
     let lastOpen = false;
     let closeAnimTimer = 0;
+    const probe = createFixedProbe();
 
     const apply = () => {
       const layoutH = window.innerHeight || root.clientHeight || 0;
@@ -69,6 +97,7 @@ export function useMobileKeyboard(enabled = true) {
         offsetLeft: vv?.offsetLeft ?? 0,
         editing: isTextEditing(document.activeElement),
         nativeInset: nativeKeyboardInset,
+        fixedBottom: readFixedBottom(probe),
       });
       const open = box.open;
 
@@ -188,6 +217,7 @@ export function useMobileKeyboard(enabled = true) {
       root.style.removeProperty("--vv-offset-left");
       root.style.removeProperty("--kb-inset");
       root.style.removeProperty("--kb-gap");
+      probe?.remove();
       resetScroll();
     };
   }, [enabled]);

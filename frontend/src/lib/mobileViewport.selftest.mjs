@@ -75,12 +75,67 @@ assert.equal(tinyPan.open, false);
 assert.equal(tinyPan.top, 0);
 assert.equal(tinyPan.height, 844);
 
+// iOS reported an innerHeight that shrank with the keyboard (== visual
+// viewport). Without the measured fixed box this read as "no keyboard" and
+// left the composer at the layout bottom, behind the keys.
+const shrunkInner = mobileViewportBox({
+  innerHeight: 508,
+  vvHeight: 508,
+  offsetTop: 0,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(shrunkInner.open, true);
+assert.equal(shrunkInner.gap, 336);
+assert.equal(shrunkInner.height, 508);
+
+// Same, with iOS panning the visual viewport down while focusing.
+const shrunkPanned = mobileViewportBox({
+  innerHeight: 508,
+  vvHeight: 508,
+  offsetTop: 60,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(shrunkPanned.open, true);
+assert.equal(shrunkPanned.top, 60);
+assert.equal(shrunkPanned.gap, 276); // 844 - 508 - 60: composer bottom = vv bottom
+assert.equal(shrunkPanned.height, 508);
+
+// innerHeight off by the Safari toolbar: lift from the real fixed bottom.
+const toolbar = mobileViewportBox({
+  innerHeight: 794,
+  vvHeight: 508,
+  offsetTop: 0,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(toolbar.gap, 336);
+
+// Closed keyboard: the measured box never makes the shell taller or opens it.
+const closedMeasured = mobileViewportBox({
+  innerHeight: 844,
+  vvHeight: 844,
+  offsetTop: 0,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(closedMeasured.open, false);
+assert.equal(closedMeasured.height, 844);
+
+// No measurement (0) falls back to innerHeight, as before.
+assert.deepEqual(
+  mobileViewportBox({ innerHeight: 844, vvHeight: 430, editing: true, fixedBottom: 0 }),
+  mobileViewportBox({ innerHeight: 844, vvHeight: 430, editing: true }),
+);
+
 const hook = readFileSync(new URL("../hooks/useMobileKeyboard.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../styles/glass/chat.css", import.meta.url), "utf8");
 const composer = readFileSync(new URL("../components/chat/MessageComposer.jsx", import.meta.url), "utf8");
 const swift = readFileSync(new URL("../../ios/App/App/DescallBridgeViewController.swift", import.meta.url), "utf8");
 assert.match(hook, /--kb-gap/);
 assert.match(hook, /__descallNativeKeyboard/);
+assert.match(hook, /fixedBottom: readFixedBottom\(probe\)/);
 assert.match(swift, /__descallNativeKeyboard/);
 assert.match(composer, /onScroll/);
 assert.match(css, /html\.glass-ui\.kb-open \.app-root\.g-shell\.in-conversation \.composer-container \{\s*bottom: calc\(var\(--kb-gap, 0px\) \+ 8px\);/);
