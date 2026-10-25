@@ -27,8 +27,8 @@
     "release:major": "node release.cjs --major"
   },
   "devDependencies": {
-    "electron": "28.3.3",
-    "electron-builder": "24.13.3"
+    "electron": "42.11.18",
+    "electron-builder": "26.18.0"
   },
   "dependencies": {
     "electron-updater": "^6.3.9",
