@@ -69,7 +69,9 @@ services:
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
       - key: NODE_VERSION
-        value: "20"
+        # Node 20 is end-of-life (2026-04-30). 24 = Active/Maintenance LTS until 2028-04-30;
+        # Render picks the newest 24.x patch at build time.
+        value: "24"
       - key: PORT
         value: "3000"
       - key: ALLOW_ALL_ORIGINS
@@ -148,7 +150,9 @@ services:
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
       - key: NODE_VERSION
-        value: "20"
+        # Node 20 is end-of-life (2026-04-30). 24 = Active/Maintenance LTS until 2028-04-30;
+        # Render picks the newest 24.x patch at build time.
+        value: "24"
       - key: PORT
         value: "3000"
       - key: ALLOW_ALL_ORIGINS
