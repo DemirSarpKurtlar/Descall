@@ -18,6 +18,7 @@ import {
 import { RAIL_ACCENT } from "./railIcons";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
+import { glassStatusAnchor, glassStatusMenuStyle } from "../../lib/statusMenuAnchor";
 import { UVP_STATUS_EVENT } from "../../lib/userVoicePanel";
 import useMaterialize from "../../hooks/useMaterialize";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
@@ -156,6 +157,8 @@ function RailButton({
   );
 }
 
+
+
 export default function NavigationRail({
   activeView,
   onViewChange,
@@ -183,6 +186,8 @@ export default function NavigationRail({
   const avatarBtnRef = useRef(null);
   const menuRef = useRef(null);
   const glassLensRef = useRef(null);
+  // Where the toolbar avatar is, so the status menu opens right under it.
+  const [glassAnchor, setGlassAnchor] = useState(null);
   /** Anchor rect when the bottom user panel's avatar opened the picker. */
   const uvpAnchorRef = useRef(null);
 
@@ -288,7 +293,10 @@ export default function NavigationRail({
   // Glass toolbar avatar (GlassMeButton) opens this same picker.
   useEffect(() => {
     if (!glass) return undefined;
-    const open = () => setStatusOpen(true);
+    const open = () => {
+      setGlassAnchor(glassStatusAnchor());
+      setStatusOpen(true);
+    };
     window.addEventListener(GLASS_STATUS_EVENT, open);
     return () => window.removeEventListener(GLASS_STATUS_EVENT, open);
   }, [glass]);
@@ -371,7 +379,7 @@ export default function NavigationRail({
             if (glass) statusMat.ref.current = node;
           }}
           className={glass ? "status-picker g-status-menu g-glass g-heavy g-materialize" : "status-picker status-picker-portal"}
-          style={glass ? { "--g-mat-origin": "32px 0%" } : { top: menuPos.top, left: menuPos.left }}
+          style={glass ? glassStatusMenuStyle(glassAnchor) : { top: menuPos.top, left: menuPos.left }}
           role="menu"
           aria-label={t("Status")}
           initial={glass ? false : { opacity: 0, scale: 0.96 }}
