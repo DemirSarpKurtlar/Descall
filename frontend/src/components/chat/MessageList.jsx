@@ -48,6 +48,7 @@ import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
 import { useOffscreenRows } from "../../hooks/useOffscreenRows";
+import { attachStickToBottom } from "../../lib/stickToBottom";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
@@ -121,21 +122,9 @@ function formatDayLabel(iso, t) {
 }
 
 
-const STICK_TO_BOTTOM_PX = 100;
-
 function getMessagesScroller(fromEl) {
   if (!fromEl) return null;
   return fromEl.closest?.(".messages-container") || fromEl.parentElement;
-}
-
-function isNearBottom(el, threshold = STICK_TO_BOTTOM_PX) {
-  if (!el) return true;
-  return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
-}
-
-function scrollScrollerToBottom(el) {
-  if (!el) return;
-  el.scrollTop = el.scrollHeight;
 }
 
 /**
@@ -189,7 +178,6 @@ export default function MessageList({
   const listRef = useRef(null);
   useOffscreenRows(listRef, messages?.length || 0);
   const galleryItems = useMemo(() => galleryItemsFrom(messages), [messages]);
-  const stickToBottomRef = useRef(true);
   const prevLastIdRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   // Messages from people I blocked are collapsed until tapped ("Show").
@@ -273,39 +261,37 @@ export default function MessageList({
     return getMessagesScroller(listRef.current) || getMessagesScroller(messagesEndRef.current);
   }, []);
 
-  useEffect(() => {
-    stickToBottomRef.current = true;
+  useLayoutEffect(() => {
     prevLastIdRef.current = null;
   }, [conversationId]);
 
-  useEffect(() => {
+  // Pinned-to-bottom controller (lib/stickToBottom.js): follows the scroller's
+  // own size (iOS keyboard / visual viewport / composer) as well as the
+  // content, so the newest messages stay visible while typing. Someone who
+  // scrolled up to read history is never pulled down.
+  const pinRef = useRef(null);
+  const pinEnabledRef = useRef(true);
+  pinEnabledRef.current = !isSearching && !loading;
+  // Layout effect, declared before the messages one, so the controller exists
+  // when the first messages are laid out (no flash at the top).
+  useLayoutEffect(() => {
     const scroller = resolveScroller();
     if (!scroller) return undefined;
-    const onScroll = () => {
-      stickToBottomRef.current = isNearBottom(scroller);
-    };
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => scroller.removeEventListener("scroll", onScroll);
-  }, [conversationId, resolveScroller]);
-
-  useEffect(() => {
-    const scroller = resolveScroller();
-    const list = listRef.current;
-    if (!scroller || !list || typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(() => {
-      if (stickToBottomRef.current && !isSearching && !loading) {
-        scrollScrollerToBottom(scroller);
-      }
+    const pin = attachStickToBottom(scroller, {
+      content: listRef.current,
+      enabled: () => pinEnabledRef.current,
     });
-    ro.observe(list);
-    return () => ro.disconnect();
-  }, [conversationId, isSearching, loading, resolveScroller]);
+    pinRef.current = pin;
+    return () => {
+      pin?.destroy();
+      if (pinRef.current === pin) pinRef.current = null;
+    };
+  }, [conversationId, loading, resolveScroller]);
 
   useLayoutEffect(() => {
     if (loading || isSearching) return;
-    const scroller = resolveScroller();
-    if (!scroller) return;
+    const pin = pinRef.current;
+    if (!pin) return;
 
     const msgs = Array.isArray(messages) ? messages : [];
     const last = msgs[msgs.length - 1];
@@ -320,10 +306,8 @@ export default function MessageList({
       || String(last.id || "").startsWith("temp-")
     );
 
-    if (!(stickToBottomRef.current || lastIsOwn || prevLastId == null)) return;
-    if (lastIsOwn) stickToBottomRef.current = true;
-    scrollScrollerToBottom(scroller);
-  }, [messages, loading, isSearching, myId, resolveScroller]);
+    pin.onMessages({ own: lastIsOwn && lastId !== prevLastId, initial: prevLastId == null });
+  }, [messages, loading, isSearching, myId]);
 
   const searchedMessages = useMemo(() => {
     const msgs = Array.isArray(messages) ? messages : [];
