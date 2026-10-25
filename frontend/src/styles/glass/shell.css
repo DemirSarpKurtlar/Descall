@@ -821,15 +821,18 @@ html.glass-ui .g-status-me {
   z-index: 100080;
 }
 
+/* Hangs from the toolbar avatar (top-left): left-aligned with it, 8px under
+   it (NavigationRail measures it into --g-status-left / --g-status-top; the
+   fallback is the same toolbar metrics: chrome top + 44px avatar + 8px). */
 html.glass-ui .status-picker.g-status-menu {
   position: fixed;
-  left: 16px;
-  bottom: calc(var(--g-bar-bottom, 24px) + 76px); /* 100: 12 above the bar */
-  top: auto;
+  left: var(--g-status-left, 16px);
+  top: var(--g-status-top, calc(var(--g-chrome-top, 12px) + 52px));
+  bottom: auto;
   width: 280px;
   min-width: 0;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - var(--g-chrome-top) - 160px);
+  max-height: calc(var(--vv-height, 100dvh) - var(--g-status-top, calc(var(--g-chrome-top, 12px) + 52px)) - 16px - env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   padding: 8px;
   border: 0;
