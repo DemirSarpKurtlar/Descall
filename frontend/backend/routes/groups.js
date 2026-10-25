@@ -5,7 +5,8 @@ const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser } = require("../runtime/sharedState");
-const { getUserGroups } = require("../lib/groupList");
+const { getUserGroups, loadGroupById } = require("../lib/groupList");
+const { areAcceptedFriends, isUniqueViolation, publicMember, isSafeId } = require("../lib/groupMembership");
 const { parseSince } = require("../lib/messagePage");
 const { attachReactions } = require("../lib/dmMessages");
 
@@ -251,14 +252,19 @@ router.post("/create", requireAuth, async (req, res) => {
     // Socket bildirimi - diger uyelere grup olustugunu bildir
     const io = req.app.get("io");
     if (io) {
-      memberIds.forEach(memberId => {
-        const memberSocketId = getUserSocketId(memberId);
-        if (memberSocketId) {
-          io.to(memberSocketId).emit("group:invited", {
-            group: { ...group, memberCount: allMembers.length },
-            invitedBy: req.user.id
-          });
+      // Every device of every member (the `user:<id>` room), not just the
+      // first socket found, and straight into the group room.
+      allMembers.forEach((memberId) => {
+        try {
+          io.in?.(`user:${memberId}`)?.socketsJoin?.(`group:${group.id}`);
+        } catch {
+          /* best effort: groups:rejoin on the client covers it */
         }
+        if (memberId === userId) return;
+        io.to(`user:${memberId}`).emit("group:invited", {
+          group: { ...group, memberCount: allMembers.length },
+          invitedBy: req.user.id
+        });
       });
     }
     
@@ -710,35 +716,59 @@ router.post("/invites/:inviteId/respond", requireAuth, async (req, res) => {
 });
 
 // Add member directly (friends only, no invite flow)
+//
+// Contract (all clients): 200 { message, user, group, alreadyMember? }.
+// - user  = the added member in the `members[]` shape of GET /groups/my
+// - group = the group in the GET /groups/my shape (fresh members[],
+//           memberIds, memberCount, lastMessage)
+// Sockets: `group:member:added` { groupId, user, memberCount, addedBy } to
+// the group room (existing members, every tab), `group:invited` { group } to
+// the new member's `user:<id>` room (every device), and the new member's
+// sockets join `group:<id>` so messages / calls reach them without a reload.
 router.post("/:groupId/members", requireAuth, async (req, res) => {
   try {
     const requesterId = req.user.id;
     const { groupId } = req.params;
-    const { userId: targetUserId } = req.body;
+    const targetUserId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
 
-    if (!targetUserId) return res.status(400).json({ error: "userId required" });
+    if (!targetUserId || !isSafeId(targetUserId)) return res.status(400).json({ error: "userId required" });
+    if (targetUserId === requesterId) return res.status(400).json({ error: "You are already a member" });
 
     // Requester must be a member
-    const { data: requesterMembership } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .eq("group_id", groupId)
-      .eq("user_id", requesterId)
-      .maybeSingle();
+    if (!(await isGroupMember(groupId, requesterId))) {
+      return res.status(403).json({ error: "Not a member of this group", code: "NOT_MEMBER" });
+    }
 
-    if (!requesterMembership) return res.status(403).json({ error: "Not a member of this group" });
+    // Target must be an accepted friend of the requester. Friendship rows can
+    // exist in both directions; `.maybeSingle()` used to fail on those pairs
+    // and answer 403 for real friends.
+    if (!(await areAcceptedFriends(requesterId, targetUserId))) {
+      return res.status(403).json({ error: "You can only add your friends", code: "NOT_FRIENDS" });
+    }
 
-    // Target must be an accepted friend of the requester
-    const { data: friendship } = await supabase
-      .from("friendships")
-      .select("id")
-      .or(
-        `and(user_id.eq.${requesterId},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${requesterId})`
-      )
-      .eq("status", "accepted")
-      .maybeSingle();
+    const loadAdded = async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("id, username, avatar_url, status, is_admin")
+        .eq("id", targetUserId)
+        .maybeSingle();
+      return publicMember(data);
+    };
+    const loadGroup = async () => {
+      try {
+        return await loadGroupById(groupId);
+      } catch (err) {
+        console.warn("[Groups] Add member: group reload failed:", err?.message || err);
+        return null;
+      }
+    };
 
-    if (!friendship) return res.status(403).json({ error: "You can only add your friends" });
+    // Already a member: idempotent success so a stale client (double tap,
+    // second device, old list) repairs its state instead of showing an error.
+    if (await isGroupMember(groupId, targetUserId)) {
+      const [user, group] = await Promise.all([loadAdded(), loadGroup()]);
+      return res.json({ message: "User is already a member", alreadyMember: true, user, group });
+    }
 
     // Check group capacity
     const { count } = await supabase
@@ -746,45 +776,41 @@ router.post("/:groupId/members", requireAuth, async (req, res) => {
       .select("*", { count: "exact", head: true })
       .eq("group_id", groupId);
 
-    if (count >= MAX_GROUP_SIZE) {
-      return res.status(400).json({ error: "Group is full (max 15 members)" });
+    if ((count || 0) >= MAX_GROUP_SIZE) {
+      return res.status(400).json({ error: "Group is full (max 15 members)", code: "GROUP_FULL" });
     }
 
-    // Check not already a member
-    const { data: existing } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .eq("group_id", groupId)
-      .eq("user_id", targetUserId)
-      .maybeSingle();
-
-    if (existing) return res.status(409).json({ error: "User is already a member" });
-
-    // Add directly
     const { error: insertError } = await supabase
       .from("group_members")
       .insert({ group_id: groupId, user_id: targetUserId });
 
-    if (insertError) throw insertError;
+    if (insertError && !isUniqueViolation(insertError)) throw insertError;
 
-    // Fetch added user info for response
-    const { data: addedUser } = await supabase
-      .from("users")
-      .select("id, username, avatar_url")
-      .eq("id", targetUserId)
-      .single();
+    const [user, group] = await Promise.all([loadAdded(), loadGroup()]);
+    const memberCount = group?.memberCount ?? ((count || 0) + 1);
 
-    // Notify group members via socket
     const io = req.app.get("io");
     if (io) {
+      // Existing members (all their tabs/devices are in the group room).
       io.to(`group:${groupId}`).emit("group:member:added", {
         groupId,
-        user: addedUser,
+        user,
+        memberCount,
         addedBy: requesterId,
+      });
+      // The new member: every device, and into the room for live messages.
+      try {
+        io.in?.(`user:${targetUserId}`)?.socketsJoin?.(`group:${groupId}`);
+      } catch (err) {
+        console.warn("[Groups] Add member: socketsJoin failed:", err?.message || err);
+      }
+      io.to(`user:${targetUserId}`).emit("group:invited", {
+        group: group || { id: groupId, memberCount },
+        invitedBy: requesterId,
       });
     }
 
-    res.json({ message: "Member added", user: addedUser });
+    res.json({ message: "Member added", user, group });
   } catch (err) {
     console.error("[Groups] Add member error:", err);
     res.status(500).json({ error: "Failed to add member" });
