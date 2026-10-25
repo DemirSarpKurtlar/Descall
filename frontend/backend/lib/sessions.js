@@ -1,6 +1,7 @@
 "use strict";
 
-const { v4: uuidv4 } = require("uuid");
+// Session ids: RFC 4122 v4 from node:crypto (same format the uuid package produced).
+const { randomUUID } = require("node:crypto");
 const supabase = require("../db/supabase");
 
 const MAX_SESSIONS_PER_USER = 10;
@@ -49,7 +50,7 @@ function clientIp(req) {
  */
 async function createSession(userId, { userAgent, ip } = {}) {
   const session = {
-    id: uuidv4(),
+    id: randomUUID(),
     device: describeDevice(userAgent),
     ip: ip || "unknown",
     userAgent: String(userAgent || "").slice(0, 300),
