@@ -33,7 +33,11 @@ export function mobileViewportBox({
   // report an innerHeight that already shrank with the keyboard, or one that
   // differs from that box by the toolbar. Fixed things lift from this bottom,
   // so the covered strip is measured against it, not against innerHeight.
-  const fixedH = Math.max(0, Math.round(Number(fixedBottom) || 0));
+  // Only while a field is focused: with nothing focused, Safari 26's floating
+  // toolbar is the strip between the fixed box (it runs on under the toolbar)
+  // and the visual viewport. Counting it read as an open keyboard, which hid
+  // the tab bar and cut the shell short on mobile web.
+  const fixedH = editing ? Math.max(0, Math.round(Number(fixedBottom) || 0)) : 0;
   const refH = fixedH > 0 ? fixedH : layoutH;
   const visibleH = Math.max(0, Math.round(Number(vvHeight) || layoutH));
   const top = Math.max(0, Math.round(Number(offsetTop) || 0));
