@@ -76,8 +76,14 @@
     "concurrently": "^8.2.2",
     "electron": "^42.11.18",
     "electron-builder": "^26.18.0",
+    "typescript": "~5.9.3",
     "vite": "^6.4.5",
     "wait-on": "^7.2.0"
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
   },
   "build": {
     "appId": "com.descall.app",
