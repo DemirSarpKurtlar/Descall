@@ -6,6 +6,8 @@
  * the new member at once, on every platform.
  */
 
+import { stampArrival } from "./listOrder.js";
+
 function memberId(m) {
   return m && typeof m === "object" ? m.id : m;
 }
@@ -68,7 +70,8 @@ export function upsertInvitedGroup(list, group) {
   const safe = Array.isArray(list) ? list : [];
   if (!group?.id) return list;
   const idx = safe.findIndex((g) => g?.id === group.id);
-  if (idx === -1) return [...safe, group];
+  // New to me: stamp the join so it sorts to the top of the groups list.
+  if (idx === -1) return [...safe, stampArrival(group, "joinedAt")];
   if (!Array.isArray(group.members)) return list;
   const merged = mergeGroupMember(safe[idx], { group });
   if (merged === safe[idx]) return list;

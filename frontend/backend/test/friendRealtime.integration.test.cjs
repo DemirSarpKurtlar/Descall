@@ -32,7 +32,7 @@ const USERS = {
 
 const fakeSupabase = createFakeSupabase({
   users: Object.values(USERS).map((u) => ({ ...u, blocked_users: [], active_sessions: [{ id: `s-${u.username}` }] })),
-  friendships: [{ id: "f1", user_id: USERS.alice.id, friend_id: USERS.carol.id, status: "accepted" }],
+  friendships: [{ id: "f1", user_id: USERS.alice.id, friend_id: USERS.carol.id, status: "accepted", created_at: "2026-01-01T00:00:00Z" }],
   message_requests: [],
 });
 // Builder methods some boot paths use that the shared fake lacks: no-op filters.
@@ -120,6 +120,13 @@ async function rest(as, route, body) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${signToken({ id: u.id, username: u.username, sid: `s-${u.username}` })}` },
     body: JSON.stringify(body),
+  });
+  return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+async function restGet(as, route) {
+  const u = USERS[as];
+  const res = await fetch(`http://127.0.0.1:${port}/api/friends/${route}`, {
+    headers: { Authorization: `Bearer ${signToken({ id: u.id, username: u.username, sid: `s-${u.username}` })}` },
   });
   return { status: res.status, body: await res.json().catch(() => ({})) };
 }
@@ -214,6 +221,36 @@ async function run() {
     bobPhone.s.emit("friend:decline", { fromUserId: USERS.alice.id });
     await settle();
     assert(got(bobWeb, "friend:requests", listLacks(USERS.alice.id)).length >= 1, "bobWeb got friend:requests without alice after socket decline");
+
+    // 8. Ordering data: a fresh friendship carries friendsSince = accept time
+    //    (newer than an old friendship), REST lists come newest first, and
+    //    friend requests come newest first.
+    r = await rest("bob", "request", { username: "alice" });
+    assert(r.status === 200, "REST request 4 ok");
+    await settle();
+    for (const d of [alicePhone, aliceWeb]) d.clear();
+    const acceptedAt = Date.now();
+    r = await rest("alice", "accept", { fromUserId: USERS.bob.id });
+    assert(r.status === 200, "REST accept 2 ok");
+    await settle();
+    const live = got(aliceWeb, "friend:list", listHas(USERS.bob.id)).pop()?.payload || [];
+    const liveBob = live.find((u) => u.id === USERS.bob.id);
+    const liveCarol = live.find((u) => u.id === USERS.carol.id);
+    assert(Date.parse(liveBob.friendsSince) >= acceptedAt - 5, `socket friend:list friendsSince for a new friend is the accept time (${liveBob.friendsSince})`);
+    assert(liveCarol.friendsSince === "2026-01-01T00:00:00.000Z", `old friendship keeps its DB time (${liveCarol.friendsSince})`);
+    const list = await restGet("alice", "list");
+    assert(list.status === 200, "GET list ok");
+    assert(list.body.friends.map((u) => u.id).join(",") === `${USERS.bob.id},${USERS.carol.id}`, `GET list newest friendship first (${list.body.friends.map((u) => u.username)})`);
+
+    r = await rest("dave", "request", { username: "carol" });
+    assert(r.status === 200, "REST request dave->carol ok");
+    await sleep(15);
+    r = await rest("bob", "request", { username: "carol" });
+    assert(r.status === 200, "REST request bob->carol ok");
+    const reqs = await restGet("carol", "requests");
+    assert(reqs.status === 200, "GET requests ok");
+    assert(reqs.body.requests.map((u) => u.id).join(",") === `${USERS.bob.id},${USERS.dave.id}`, `GET requests newest first (${reqs.body.requests.map((u) => u.username)})`);
+    assert(reqs.body.requests.every((u) => typeof u.requestedAt === "string"), "requests carry requestedAt");
 
     console.log("friendRealtime.integration.test.cjs: ok");
   } finally {

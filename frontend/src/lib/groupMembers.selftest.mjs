@@ -57,6 +57,8 @@ assert.equal(applyGroupMemberAdded(null, "g1", { user: veli }), null);
 const invited = { id: "g3", name: "Yeni", members: [owner, veli], memberIds: ["u1", "u3"], memberCount: 2 };
 const withNew = upsertInvitedGroup(list, invited);
 assert.equal(withNew.length, 3);
+assert.ok(Date.parse(withNew[2].joinedAt) > Date.now() - 5000, "a group I was just added to is stamped joined now (sorts to the top)");
+assert.equal(upsertInvitedGroup(list, { ...invited, joinedAt: "2026-01-01T00:00:00Z" })[2].joinedAt, "2026-01-01T00:00:00Z", "server join time kept");
 assert.equal(upsertInvitedGroup(withNew, { id: "g3", name: "Yeni" }), withNew);
 const refreshed = upsertInvitedGroup(list, fresh);
 assert.equal(refreshed.length, 2);

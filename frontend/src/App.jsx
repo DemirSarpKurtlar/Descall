@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
+import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "./lib/listOrder";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
@@ -1739,8 +1740,8 @@ export default function App() {
     socket.on("friend:requests", (list) => setFriendRequests((list ?? []).map((u) => normalizeUser(u))));
     socket.on("friend:request:incoming", ({ from }) => {
       if (!from) return;
-      const normalized = normalizeUser(from);
-      setFriendRequests((prev) => prev.some((req) => req.id === normalized.id) ? prev : [...prev, normalized]);
+      const normalized = stampArrival(normalizeUser(from), "requestedAt");
+      setFriendRequests((prev) => prev.some((req) => req.id === normalized.id) ? prev : [normalized, ...prev]);
       // Notification for incoming friend request
       notificationService.friendRequest({ from: from.username, fromId: from.id });
     });
@@ -1770,7 +1771,7 @@ export default function App() {
     });
     socket.on("dm:request:incoming", ({ request } = {}) => {
       if (!request) return;
-      const normalized = normalizeUser(request);
+      const normalized = stampArrival(normalizeUser(request), "createdAt");
       if (!normalized?.id) return;
       setMessageRequests((prev) => (
         prev.some((row) => row.id === normalized.id)
@@ -4025,14 +4026,17 @@ export default function App() {
         unreadCount: groupUnread[g.id] || 0,
       };
     });
-    return list.sort((a, b) => {
-      const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
-      const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
-      if (tb !== ta) return tb - ta;
-      if ((b.unreadCount || 0) !== (a.unreadCount || 0)) return (b.unreadCount || 0) - (a.unreadCount || 0);
-      return (a.name || "").localeCompare(b.name || "");
-    });
+    // Pinned first, then latest of last message / created / I joined.
+    return sortListItems(list);
   }, [myGroups, groupLastActivity, groupPreviews, groupUnread, groupMessagesById, t]);
+
+  // Friends tab and requests: same Discord order as the chats.
+  const orderedFriends = useMemo(
+    () => orderFriends(friends, dmPrefs, dmLastActivity),
+    [friends, dmPrefs, dmLastActivity],
+  );
+  const orderedFriendRequests = useMemo(() => newestRequestsFirst(friendRequests), [friendRequests]);
+  const orderedMessageRequests = useMemo(() => newestRequestsFirst(messageRequests), [messageRequests]);
 
   useEffect(() => {
     if (!me?.id || !getToken()) return undefined;
@@ -4776,7 +4780,7 @@ export default function App() {
           }}
           groups={sortedGroups}
           dms={sortedDms}
-          friends={friends}
+          friends={orderedFriends}
           friendsLoaded={friendsLoaded}
           groupsLoaded={groupsLoaded}
           servers={myServers}
@@ -4866,7 +4870,7 @@ export default function App() {
           onRefreshGroups={fetchGroups}
           onRefresh={handleRefresh}
           onGroupCreated={(group) => {
-            setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [...prev, group]);
+            setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [stampArrival(group, "joinedAt"), ...prev]);
           }}
           onGroupLeft={(groupId) => {
             setMyGroups((prev) => prev.filter((g) => g.id !== groupId));
@@ -4885,8 +4889,8 @@ export default function App() {
             setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, payload));
             setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, payload)[0] : cur));
           }}
-          friendRequests={friendRequests}
-          messageRequests={messageRequests}
+          friendRequests={orderedFriendRequests}
+          messageRequests={orderedMessageRequests}
           onAcceptFriend={handleAcceptFriend}
           onDeclineFriend={handleDeclineFriend}
           onAcceptMessageRequest={handleAcceptMessageRequest}

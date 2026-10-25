@@ -3,6 +3,7 @@
 const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const iosPushContext = require("../lib/iosPushContext");
+const friendSince = require("../lib/friendSince");
 const {
   loadUserProfile,
   savePresenceStatus,
@@ -277,6 +278,7 @@ function getFriendList(userId) {
       ...enrichFriendEntry(fid),
       lastMessage: formatDmPreview(last),
       lastActivity: last?.timestamp || last?.created_at || null,
+      friendsSince: friendSince.friendSinceFor(userId, fid),
     });
   }
   return out.sort((a, b) =>
@@ -287,7 +289,14 @@ function getFriendList(userId) {
 function getPendingList(userId) {
   const m = pendingRequests.get(userId);
   if (!m) return [];
-  return Array.from(m.keys()).map((id) => enrichFriendEntry(id));
+  // Newest request first.
+  return friendSince.newestFirst(
+    Array.from(m.keys()).map((id) => ({
+      ...enrichFriendEntry(id),
+      requestedAt: friendSince.requestSinceFor(id, userId),
+    })),
+    "requestedAt",
+  );
 }
 
 function emitToUser(io, userId, event, payload) {
@@ -362,7 +371,7 @@ async function loadFriendsFromDB(userId) {
     // Fetch all accepted friendship rows involving this user
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id, friend_id")
+      .select("user_id, friend_id, created_at")
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq("status", "accepted");
 
@@ -375,7 +384,10 @@ async function loadFriendsFromDB(userId) {
     const friendIds = [];
     for (const row of (rows || [])) {
       const otherId = row.user_id === userId ? row.friend_id : row.user_id;
-      if (otherId && otherId !== userId) friendIds.push(otherId);
+      if (otherId && otherId !== userId) {
+        friendIds.push(otherId);
+        friendSince.rememberFriendSince(userId, otherId, row.created_at);
+      }
     }
 
     if (friendIds.length === 0) {
@@ -420,7 +432,7 @@ async function loadPendingRequestsFromDB(userId) {
   try {
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id")
+      .select("user_id, created_at")
       .eq("friend_id", userId)
       .eq("status", "pending");
 
@@ -430,6 +442,7 @@ async function loadPendingRequestsFromDB(userId) {
     }
 
     if (!rows || rows.length === 0) return;
+    for (const r of rows) friendSince.rememberRequest(r.user_id, userId, r.created_at);
 
     const senderIds = rows.map((r) => r.user_id);
     const { data: users, error: usersError } = await supabase
@@ -474,7 +487,10 @@ async function saveFriendshipToDB(requesterId, acceptorId) {
       console.error("[FRIENDS] Error accepting friendship in DB:", error);
       return false;
     }
-    if (Array.isArray(data) && data.length > 0) return true;
+    if (Array.isArray(data) && data.length > 0) {
+      friendSince.markFriendsNow(requesterId, acceptorId);
+      return true;
+    }
 
     // No pending row (e.g. socket-only legacy request) — upsert accepted friendship.
     const { error: upsertError } = await supabase.from("friendships").upsert(
@@ -489,6 +505,7 @@ async function saveFriendshipToDB(requesterId, acceptorId) {
       console.error("[FRIENDS] Error upserting accepted friendship:", upsertError);
       return false;
     }
+    friendSince.markFriendsNow(requesterId, acceptorId);
     return true;
   } catch (e) {
     console.error("[FRIENDS] Error in saveFriendshipToDB:", e);
@@ -549,6 +566,7 @@ async function removeFriendshipFromDB(userId, friendId) {
       .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
 
     if (error) console.error("[FRIENDS] Error removing friendship from DB:", error);
+    else friendSince.forgetFriendship(userId, friendId);
     return !error;
   } catch (e) {
     console.error("[FRIENDS] Error in removeFriendshipFromDB:", e);
@@ -814,6 +832,7 @@ function registerSocketHandlers(io) {
         }
 
         theirPending.set(myId, { id: myId, username: me.username, avatarUrl: me.avatar_url || null });
+        friendSince.markRequestNow(myId, target.id);
         usernameById.set(myId, me.username);
         emitToUser(io, target.id, "friend:request:incoming", {
           from: enrichFriendEntry(myId),
