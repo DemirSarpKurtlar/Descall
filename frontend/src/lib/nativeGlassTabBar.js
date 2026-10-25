@@ -1,0 +1,219 @@
+/**
+ * iOS 26 Liquid Glass tab bar (DescallGlassTabBarPlugin.swift).
+ *
+ * The native bar is a real UITabBar over the WebView: Apple's glass and press
+ * lens. It is only ever used when it is ACTUALLY on screen: the plugin has to
+ * exist (iOS app), report iOS 26+, and resolve `show` with `shown: true`.
+ * Anything else (mobile web, Android, desktop, iOS < 26, a plugin error, a
+ * timeout) leaves `active` false and the web CSS glass bar renders as before.
+ * The web bar stays in the DOM under the native one (invisible), so tab
+ * layout, safe-area padding and the "is something covering the bar" check
+ * keep working from the same element.
+ */
+import { useEffect, useRef, useState } from "react";
+
+/** SF Symbols for the app's tabs (same meaning as tabBarIcons.jsx). */
+export const TAB_SYMBOLS = Object.freeze({
+  chat: "bubble.left.and.bubble.right",
+  groups: "person.3",
+  servers: "server.rack",
+  friends: "person.2",
+  activity: "bolt",
+  calls: "phone",
+});
+
+export const NATIVE_TABBAR_CLASS = "native-tabbar";
+const SHOW_TIMEOUT_MS = 2500;
+const COVER_POLL_MS = 250;
+
+/** Badge as the native side shows it: "" for none, "99+" above 99. */
+export function badgeLabel(value) {
+  const n = Number(value) || 0;
+  if (n <= 0) return "";
+  return n > 99 ? "99+" : String(Math.floor(n));
+}
+
+/** `items` ({ id, label }) + `badges` (id → count) → plugin `tabs`. */
+export function nativeTabsPayload(items, badges = {}) {
+  return (Array.isArray(items) ? items : [])
+    .filter((it) => it && it.id)
+    .map((it) => ({
+      id: String(it.id),
+      title: String(it.label ?? it.id),
+      symbol: TAB_SYMBOLS[it.id] || "circle",
+      badge: badgeLabel(badges?.[it.id]),
+    }));
+}
+
+export function badgesPayload(items, badges = {}) {
+  const out = {};
+  for (const it of Array.isArray(items) ? items : []) if (it?.id) out[it.id] = badgeLabel(badges?.[it.id]);
+  return out;
+}
+
+/** "dark" | "light" for the native bar from the glass theme's --g-scheme. */
+export function barStyleFor(scheme) {
+  return String(scheme || "").trim() === "light" ? "light" : "dark";
+}
+
+/**
+ * True when something other than the web bar is on top of it at its own
+ * centre line (a sheet, menu or overlay). The native bar would float over that
+ * overlay, so it hides while covered. `rect` is the bar's client rect.
+ */
+export function barCovered(bar, rect, hitTest) {
+  if (!bar || !rect || rect.width <= 0 || rect.height <= 0) return true;
+  const y = rect.top + rect.height / 2;
+  const xs = [rect.left + rect.width * 0.12, rect.left + rect.width / 2, rect.right - rect.width * 0.12];
+  for (const x of xs) {
+    const hit = hitTest(x, y);
+    if (!hit || !(hit === bar || bar.contains(hit))) return true;
+  }
+  return false;
+}
+
+function isIosApp() {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    return Boolean(cap?.isNativePlatform?.() && cap.getPlatform?.() === "ios");
+  } catch {
+    return false;
+  }
+}
+
+let pluginPromise = null;
+function loadPlugin() {
+  if (!pluginPromise) {
+    pluginPromise = import("@capacitor/core")
+      .then(({ registerPlugin }) => registerPlugin("DescallGlassTabBar"))
+      .catch(() => null);
+  }
+  return pluginPromise;
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(null), ms))]);
+}
+
+function readScheme() {
+  try {
+    return getComputedStyle(document.documentElement).getPropertyValue("--g-scheme");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Drives the native bar. `selector` finds the web bar (kept rendered).
+ * Returns true only while the native bar is confirmed on screen.
+ */
+export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelect, selector = ".g-tabbar" }) {
+  const [available, setAvailable] = useState(false);
+  const [active, setActive] = useState(false);
+  const [covered, setCovered] = useState(false);
+  const pluginRef = useRef(null);
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const latest = useRef({ items, activeId, badges });
+  latest.current = { items, activeId, badges };
+
+  // Plugin presence + iOS 26 check, once. Web never loads the plugin.
+  useEffect(() => {
+    if (!isIosApp()) return undefined;
+    let cancelled = false;
+    const subs = [];
+    (async () => {
+      const plugin = await loadPlugin();
+      if (!plugin || cancelled) return;
+      const res = await withTimeout(plugin.isAvailable?.().catch(() => null), SHOW_TIMEOUT_MS);
+      if (cancelled || !res?.available) return;
+      pluginRef.current = plugin;
+      try {
+        subs.push(await plugin.addListener("select", (e) => e?.id && onSelectRef.current?.(e.id)));
+        subs.push(
+          await plugin.addListener("layout", (e) => {
+            const h = Math.max(0, Number(e?.height) || 0);
+            document.documentElement.style.setProperty("--native-tabbar-h", `${Math.round(h)}px`);
+          })
+        );
+      } catch {
+        /* listeners are best-effort; show() still decides `active` */
+      }
+      if (!cancelled) setAvailable(true);
+    })();
+    return () => {
+      cancelled = true;
+      subs.forEach((s) => s?.remove?.());
+    };
+  }, []);
+
+  // Hide the native bar while an overlay covers the web bar or the keyboard is up.
+  const wanted = available && enabled;
+  useEffect(() => {
+    if (!wanted) {
+      setCovered(false);
+      return undefined;
+    }
+    const check = () => {
+      const root = document.documentElement;
+      const bar = document.querySelector(selector);
+      const hidden = root.classList.contains("kb-open") || document.hidden;
+      const next = hidden || barCovered(bar, bar?.getBoundingClientRect?.(), (x, y) => document.elementFromPoint(x, y));
+      setCovered((prev) => (prev === next ? prev : next));
+    };
+    check();
+    const id = setInterval(check, COVER_POLL_MS);
+    return () => clearInterval(id);
+  }, [wanted, selector]);
+
+  const show = wanted && !covered;
+  const tabsKey = JSON.stringify(nativeTabsPayload(items).map((t) => [t.id, t.title, t.symbol]));
+
+  useEffect(() => {
+    const plugin = pluginRef.current;
+    if (!plugin) return undefined;
+    let cancelled = false;
+    if (!show) {
+      setActive(false);
+      plugin.hide?.().catch?.(() => {});
+      return undefined;
+    }
+    const { items: its, activeId: sel, badges: b } = latest.current;
+    withTimeout(
+      plugin
+        .show({ tabs: nativeTabsPayload(its, b), selected: sel ?? null, style: barStyleFor(readScheme()) })
+        .catch(() => null),
+      SHOW_TIMEOUT_MS
+    ).then((res) => {
+      if (!cancelled) setActive(Boolean(res?.shown));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [show, tabsKey]);
+
+  // Selection, badges and theme follow without re-creating the tabs.
+  const badgeKey = JSON.stringify(badgesPayload(items, badges));
+  useEffect(() => {
+    const plugin = pluginRef.current;
+    if (!plugin || !active) return;
+    plugin
+      .update({ selected: activeId ?? null, badges: JSON.parse(badgeKey), style: barStyleFor(readScheme()) })
+      .catch(() => setActive(false));
+  }, [active, activeId, badgeKey]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle(NATIVE_TABBAR_CLASS, active);
+    return () => root.classList.remove(NATIVE_TABBAR_CLASS);
+  }, [active]);
+
+  useEffect(
+    () => () => {
+      pluginRef.current?.hide?.().catch?.(() => {});
+    },
+    []
+  );
+
+  return active;
+}

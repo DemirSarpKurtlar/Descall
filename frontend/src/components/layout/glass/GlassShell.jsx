@@ -255,7 +255,7 @@ export function GlassToolbarMenu({ open, onClose, items }) {
  * split across the bar). A tap still selects instantly. A hold or a
  * horizontal drag lifts the lens, tracks the finger, and snaps to a tab.
  */
-export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
+export function GlassTabBar({ items, activeId, onSelect, badges = {}, nativeActive = false }) {
   const activeIndex = Math.max(0, items.findIndex((it) => it.id === activeId));
   const hasActive = items.some((it) => it.id === activeId);
   const n = items.length || 1;
@@ -275,8 +275,11 @@ export function GlassTabBar({ items, activeId, onSelect, badges = {} }) {
   return (
     <nav
       ref={navRef}
-      className="g-tabbar g-glass"
+      className={`g-tabbar g-glass${nativeActive ? " is-native" : ""}`}
       data-gid="tabbar"
+      // iOS 26 app: Apple's UITabBar is drawn on top; this one stays laid out
+      // (hit-testing, safe-area padding) but invisible and out of the a11y tree.
+      aria-hidden={nativeActive ? "true" : undefined}
       style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, "--g-tab-n": n, touchAction: "pan-y" }}
       aria-label="Primary"
     >

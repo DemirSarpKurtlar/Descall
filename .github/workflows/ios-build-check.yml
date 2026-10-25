@@ -86,3 +86,84 @@ jobs:
           APP="$(find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 2 -name 'App.app' | head -n 1)"
           test -d "$APP/Frameworks/WebRTC.framework" && echo "WebRTC.framework embedded"
           /usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$APP/Info.plist"
+
+  glass-tabbar-sim:
+    # iOS 26 Liquid Glass tab bar (DescallGlassTabBarView) on the simulator:
+    # Debug build, launched with -DescallGlassTabBarDemo, screenshot uploaded as
+    # an artifact. Simulator only: nothing is signed or uploaded to Apple.
+    name: Liquid Glass tab bar (iOS 26 simulator screenshot)
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      XCODE_APP: /Applications/Xcode_26.6.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          if [ -d "$XCODE_APP" ]; then sudo xcode-select -s "$XCODE_APP"; fi
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install, build web, sync iOS
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build:prod
+          npx cap sync ios
+
+      - name: Pick an iOS 26 iPhone simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          c = [(rt, x) for rt, xs in d.items() if "iOS-26" in rt for x in xs if x["name"].startswith("iPhone") and "Pro Max" not in x["name"] and "Plus" not in x["name"]]
+          c.sort(key=lambda p: (p[0], p[1]["name"]), reverse=True)
+          print(c[0][1]["udid"] if c else "")')"
+          test -n "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Build (Debug, simulator)
+        working-directory: frontend/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/dds" \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/sim-build.log" | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" "$RUNNER_TEMP/sim-build.log"
+
+      - name: Launch with the native glass tab bar and screenshot
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          APP="$(find "$RUNNER_TEMP/dds/Build/Products/Debug-iphonesimulator" -maxdepth 1 -name 'App.app' | head -n 1)"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p "$RUNNER_TEMP/shots"
+          xcrun simctl launch "$UDID" com.descall.app -DescallGlassTabBarDemo
+          sleep 25
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/glass-tabbar-ios26.png"
+          xcrun simctl ui "$UDID" appearance light
+          sleep 4
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/glass-tabbar-ios26-light.png"
+          ls -la "$RUNNER_TEMP/shots"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: glass-tabbar-ios26
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: warn

@@ -740,6 +740,16 @@ html.glass-ui .g-dotb {
   box-shadow: 0 0 0 2px rgba(20, 22, 32, 0.9);
 }
 
+/* iOS 26 app: the native Liquid Glass UITabBar (DescallGlassTabBar) is on
+   screen over this one. Only `.is-native` (set after the plugin confirmed the
+   bar is shown) hides the web bar; web and older iOS never get it. */
+html.glass-ui .g-tabbar.is-native,
+html.glass-ui.native-tabbar .g-edge-bot {
+  opacity: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Keyboard up: the bar never hangs above the keyboard. */
 html.glass-ui.kb-open .g-tabbar,
 html.glass-ui.kb-open .g-edge-bot {
