@@ -123,6 +123,22 @@ const closedMeasured = mobileViewportBox({
 assert.equal(closedMeasured.open, false);
 assert.equal(closedMeasured.height, 844);
 
+// Safari 26 on iPhone, nothing focused: the fixed box runs on under the
+// floating toolbar (fixed bottom 874) while innerHeight and the visual
+// viewport stop above it (726). That strip is the toolbar, not a keyboard:
+// the keyboard must not count as open (it hid the tab bar and cut the shell).
+for (const [inner, vvh] of [[726, 726], [794, 726], [726, 700]]) {
+  const safariToolbar = mobileViewportBox({ innerHeight: inner, vvHeight: vvh, offsetTop: 0, editing: false, fixedBottom: 874 });
+  assert.equal(safariToolbar.open, false, `toolbar strip is not a keyboard (${inner}/${vvh})`);
+  assert.equal(safariToolbar.height, inner);
+  assert.equal(safariToolbar.gap, 0);
+}
+// A real keyboard with nothing focused (iOS keeps it up briefly after blur)
+// is still seen from innerHeight, as before the fixed-box measurement.
+assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 500, editing: false, fixedBottom: 874 }).open, true);
+// Native app: the UIKit inset still opens it without focus.
+assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 844, editing: false, nativeInset: 336, fixedBottom: 844 }).open, true);
+
 // No measurement (0) falls back to innerHeight, as before.
 assert.deepEqual(
   mobileViewportBox({ innerHeight: 844, vvHeight: 430, editing: true, fixedBottom: 0 }),
