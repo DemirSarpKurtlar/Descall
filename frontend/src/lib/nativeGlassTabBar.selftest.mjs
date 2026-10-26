@@ -8,6 +8,7 @@ import {
   barStyleFor,
   barCovered,
   useNativeGlassTabBar,
+  loadPluginBox,
 } from "./nativeGlassTabBar.js";
 
 // Same six tabs as the web bar, each with an SF Symbol.
@@ -79,5 +80,25 @@ assert.match(swiftPlugin, /guard #available\(iOS 26\.0, \*\) else \{\s*call\.res
 assert.match(bridge, /registerPluginInstance\(glassTabBarPlugin\)/);
 assert.equal((pbx.match(/DescallGlassTabBarPlugin\.swift in Sources/g) || []).length, 2);
 assert.equal((pbx.match(/DescallGlassTabBarView\.swift in Sources/g) || []).length, 2);
+
+// Capacitor plugin proxies answer every property, `then` included (with a
+// method wrapper that never calls back for a method the plugin lacks).
+// Resolving a promise with the proxy itself therefore never settles; that
+// kept the native bar off in 2.13.11. The loader must box it.
+function fakeCapacitorProxy() {
+  return new Proxy({}, {
+    get(_, prop) {
+      if (prop === "$$typeof") return undefined;
+      return () => Promise.reject(new Error(`"${String(prop)}" not implemented`)).catch(() => {});
+    },
+  });
+}
+const fakeCore = async () => ({ registerPlugin: () => fakeCapacitorProxy() });
+const settle = (p) => Promise.race([p.then(() => "settled", () => "settled"), new Promise((r) => setTimeout(() => r("hung"), 200))]);
+assert.equal(await settle(fakeCore().then(({ registerPlugin }) => registerPlugin("X"))), "hung", "fake proxy reproduces the thenable trap");
+const boxed = await loadPluginBox(fakeCore);
+assert.ok(boxed && boxed.plugin, "loader resolves { plugin } instead of hanging");
+assert.deepEqual(await loadPluginBox(async () => { throw new Error("no core"); }), { plugin: null });
+assert.doesNotMatch(src, /\.then\(\(\{ registerPlugin \}\) => registerPlugin\(/, "never resolve a promise with a plugin proxy");
 
 console.log("nativeGlassTabBar.selftest ok");

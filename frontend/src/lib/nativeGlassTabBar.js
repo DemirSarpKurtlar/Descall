@@ -81,13 +81,23 @@ function isIosApp() {
   }
 }
 
+/**
+ * Resolves `{ plugin }`, never the plugin itself. A Capacitor plugin proxy
+ * answers every property, `then` included, so resolving a promise with it
+ * makes the promise adopt it as a thenable: it calls the native "then"
+ * method, which does not exist, and the promise never settles. That kept
+ * `available` false and the web bar on screen in 2.13.11.
+ */
+export function loadPluginBox(importCore = () => import("@capacitor/core")) {
+  return Promise.resolve()
+    .then(importCore)
+    .then(({ registerPlugin }) => ({ plugin: registerPlugin("DescallGlassTabBar") }))
+    .catch(() => ({ plugin: null }));
+}
+
 let pluginPromise = null;
 function loadPlugin() {
-  if (!pluginPromise) {
-    pluginPromise = import("@capacitor/core")
-      .then(({ registerPlugin }) => registerPlugin("DescallGlassTabBar"))
-      .catch(() => null);
-  }
+  if (!pluginPromise) pluginPromise = loadPluginBox();
   return pluginPromise;
 }
 
@@ -123,7 +133,7 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
     let cancelled = false;
     const subs = [];
     (async () => {
-      const plugin = await loadPlugin();
+      const { plugin } = (await withTimeout(loadPlugin(), SHOW_TIMEOUT_MS)) || {};
       if (!plugin || cancelled) return;
       const res = await withTimeout(plugin.isAvailable?.().catch(() => null), SHOW_TIMEOUT_MS);
       if (cancelled || !res?.available) return;
