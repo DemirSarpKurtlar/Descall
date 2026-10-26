@@ -31,6 +31,7 @@ const errorRoutes = require("./routes/errors");
 const callsRoutes = require("./routes/calls");
 const webPushRoutes = require("./routes/webPush");
 const shopRoutes = require("./routes/shop");
+const promoRoutes = require("./routes/promo");
 const publicFeatureRoutes = require("./routes/publicFeatures");
 const analyticsRoutes = require("./routes/analytics");
 const dmPrefsRoutes = require("./routes/dmPrefs");
@@ -155,6 +156,7 @@ if (isVercel) {
 
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/shop", shopRoutes);
+app.use("/api/promo", promoRoutes);
 app.use("/api/dimaai", goneRouter("This feature has been removed."));
 // 2.13.0: the game tab, its Riot account link and lobbies were removed. Installed
 // older apps get a clean 410 instead of an HTML 404.

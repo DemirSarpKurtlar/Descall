@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { applyDocumentTheme, applyInlineAccent, clearInlineAccent } from "../../lib/themeDocument";
 import { copyText } from "../../lib/copyText";
@@ -52,6 +52,7 @@ import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
 import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
+const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, BadgeIcon, CountryBadge } from "../ui/Cosmetics";
 import {
@@ -285,6 +286,7 @@ const NAV_GROUPS_DEF = [
     labelKey: "settings.personalization",
     items: [
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
+      { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
     ],
   },
 ];
@@ -301,6 +303,7 @@ const TAB_TITLE_KEYS = {
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
+  promo: "settings.promo",
 };
 
 /** What the settings sheet covers: the open list drawer on a root tab, else the main page. */
@@ -354,7 +357,12 @@ const UserPanel = forwardRef(function UserPanel({
   const deviceDefault = useMemo(() => detectDefaultLocale(), []);
 
   useEffect(() => {
-    if (initialTab && TAB_TITLE_KEYS[initialTab]) setActiveTab(initialTab);
+    if (initialTab && TAB_TITLE_KEYS[initialTab]) {
+      setActiveTab(initialTab);
+      // Deep links like /settings/shop or /settings/promo open the page itself on phones, not the menu.
+      if (isMobile && initialTab !== "overview") setMobileDetail(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTab]);
 
   useEffect(() => {
@@ -2093,6 +2101,13 @@ const UserPanel = forwardRef(function UserPanel({
               />
             </Suspense>
           </div>
+        );
+
+      case "promo":
+        return (
+          <Suspense fallback={null}>
+            <PromoSettingsTab />
+          </Suspense>
         );
 
       case "appearance":

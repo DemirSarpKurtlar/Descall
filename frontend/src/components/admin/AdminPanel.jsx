@@ -15,7 +15,7 @@ import {
   MousePointer, Pause, Square, Maximize2, Minimize2, Copy,
   ExternalLink, FileDown, Printer, Share2, Star, ThumbsUp,
   ThumbsDown, Upload, Video, ZoomIn, ZoomOut, Megaphone,
-  Coins, DollarSign, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard
+  Coins, DollarSign, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard, Ticket
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
@@ -25,6 +25,7 @@ import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedback from "./AdminFeedback";
 import AdminShop from "./AdminShop";
+import PromoCodesTab from "./PromoCodesTab";
 import AdminDescoinReconcile from "./AdminDescoinReconcile";
 import AdminModeration from "./AdminModeration";
 import AdminLivePopup from "./AdminLivePopup";
@@ -89,6 +90,7 @@ const TABS = [
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
   { id: "shop", label: "admin.shop", icon: ShoppingBag },
+  { id: "promo", label: "admin.promoCodes", icon: Ticket },
   { id: "announcements", label: "admin.announcements", icon: Megaphone },
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
@@ -1548,6 +1550,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         )}
 
         {tab === "maintenance" && <MaintenanceTab socket={socket} />}
+
+        {tab === "promo" && <PromoCodesTab />}
 
         {tab === "system" && (
           <section className="admin-section admin-system">

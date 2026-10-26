@@ -59,6 +59,7 @@ router.use(requireAuth, requireAdmin);
 router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
 router.use(require("./adminMaintenance"));
+router.use(require("./adminPromo"));
 
 router.get("/directory", async (req, res) => {
   try {

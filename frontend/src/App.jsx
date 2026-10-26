@@ -135,6 +135,7 @@ const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
+const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
@@ -4695,6 +4696,16 @@ export default function App() {
             <DesCoinGiftPopup gift={descoinGift} onDismiss={() => setDescoinGift(null)} />
           </Suspense>
         )}
+
+        <Suspense fallback={null}>
+          <PromoHost
+            socket={socketApi}
+            enabled={Boolean(me?.id)}
+            onOpenShop={() => navigate("/settings/shop")}
+            onOpenProfile={() => navigate("/settings/profile")}
+            onBalance={(balance) => setMe((prev) => (prev ? { ...prev, descoinBalance: balance } : prev))}
+          />
+        </Suspense>
 
         {adminPopupQueue[0] && (
           <Suspense fallback={null}>

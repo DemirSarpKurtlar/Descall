@@ -1,7 +1,9 @@
 /** Auto-generated + curated en locale */
 import { MAINT_EN } from "./maintenance.en.js";
+import { PROMO_EN } from "./promo.en.js";
 export const nested = {
   maint: MAINT_EN,
+  promo: PROMO_EN,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Danger zone",
@@ -160,6 +162,8 @@ export const nested = {
     "personalization": "Personalization",
     "shop": "Shop",
     "shopHint": "Banners, avatar effects & backgrounds",
+    "promo": "Promo Code",
+    "promoHint": "Use a code",
     "darkMode": "Dark Mode",
     "accentColor": "Accent Color",
     "fontSize": "Font Size",
@@ -260,6 +264,7 @@ export const nested = {
     "errors": "Error Logs",
     "feedback": "Feedback",
     "shop": "Shop",
+    "promoCodes": "Promo Codes",
     "announcements": "Announcements",
     "livePopup": "Live popup",
     "casino": "Casino",

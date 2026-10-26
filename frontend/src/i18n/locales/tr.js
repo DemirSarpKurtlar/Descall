@@ -5,8 +5,10 @@ import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
 import { TR_APPROVED_UI } from "./trApprovedUi.js";
 
 import { MAINT_TR } from "./maintenance.tr.js";
+import { PROMO_TR } from "./promo.tr.js";
 export const nested = {
   maint: MAINT_TR,
+  promo: PROMO_TR,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Tehlikeli bölge",
@@ -165,6 +167,8 @@ export const nested = {
     "personalization": "Kişiselleştirme",
     "shop": "Mağaza",
     "shopHint": "Banner, avatar efekti ve arka planlar",
+    "promo": "Promosyon Kodu",
+    "promoHint": "Kod kullan",
     "darkMode": "Karanlık Mod",
     "accentColor": "Vurgu Rengi",
     "fontSize": "Yazı Boyutu",
@@ -265,6 +269,7 @@ export const nested = {
     "errors": "Hata Kayıtları",
     "feedback": "Geri Bildirim",
     "shop": "Mağaza",
+    "promoCodes": "Promosyon Kodları",
     "announcements": "Duyurular",
     "livePopup": "Canlı popup",
     "casino": "Casino",

@@ -229,6 +229,7 @@ import {
   TextT as PTextT,
   ThumbsDown as PThumbsDown,
   ThumbsUp as PThumbsUp,
+  Ticket as PTicket,
   Timer as PTimer,
   Trash as PTrash,
   TreeStructure as PTreeStructure,
@@ -436,6 +437,7 @@ export const LayoutGrid = make(PSquaresFour, "LayoutGrid");
 export const LayoutDashboard = make(PLayout, "LayoutDashboard");
 export const Layers2 = make(PStack, "Layers2");
 export const Keyboard = make(PKeyboard, "Keyboard");
+export const Ticket = make(PTicket, "Ticket");
 export const ImageOff = make(PImageBroken, "ImageOff");
 export const HelpCircle = make(PQuestion, "HelpCircle");
 export const Heart = make(PHeart, "Heart");
@@ -710,6 +712,7 @@ const BY_NAME = {
   LayoutDashboard,
   Layers2,
   Keyboard,
+  Ticket,
   ImageOff,
   HelpCircle,
   Heart,
