@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "../components/ui/Icon.jsx";
 import { Avatar } from "../components/ui/Avatar";
 import StatusBadge from "../components/ui/StatusBadge";
+import { nativeToastSupported, showPresenceCapsule } from "../lib/nativeToast.js";
+import { getLocale } from "../i18n/runtime.js";
 
 const ToastContext = createContext(null);
 
@@ -20,9 +22,7 @@ export function ToastProvider({ children }) {
     setToasts((prev) => (prev || []).filter((x) => x.id !== id));
   }, []);
 
-  const push = useCallback((message, type = "info", meta = null) => {
-    const allowed = ["info", "success", "error", "warning", "presence"];
-    const t = allowed.includes(type) ? type : "info";
+  const pushWeb = useCallback((message, t, meta) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setToasts((prev) => [...prev, { id, message, type: t, meta }]);
     const duration = meta && Object.prototype.hasOwnProperty.call(meta, "duration")
@@ -34,6 +34,20 @@ export function ToastProvider({ children }) {
       }, duration);
     }
   }, []);
+
+  const push = useCallback((message, type = "info", meta = null) => {
+    const allowed = ["info", "success", "error", "warning", "presence"];
+    const t = allowed.includes(type) ? type : "info";
+    // 3.0.0 (#07): on iOS a friend coming online is the native glass capsule;
+    // the web card is only the fallback (older builds, plugin missing).
+    if (t === "presence" && nativeToastSupported()) {
+      showPresenceCapsule({ name: meta?.name || message, user: meta?.user || null, locale: getLocale() })
+        .then((shown) => { if (!shown) pushWeb(message, t, meta); })
+        .catch(() => pushWeb(message, t, meta));
+      return;
+    }
+    pushWeb(message, t, meta);
+  }, [pushWeb]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined;

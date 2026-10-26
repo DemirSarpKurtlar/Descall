@@ -94,13 +94,14 @@ function repositionAll() {
  * @param {function} opts.onClick
  * @param {function} opts.onAccept
  * @param {function} opts.onDecline
+ * @param {object|null} opts.model   describeNotification() result (capsule content)
  */
 function showNotificationWindow({
   title, body, type = 'default', avatarUrl = null, appIcon = false, from = null,
-  duration = DEFAULT_DURATION, onClick, onAccept, onDecline, count = 1,
+  duration = DEFAULT_DURATION, onClick, onAccept, onDecline, count = 1, model = null,
 } = {}) {
   const isCall = type === 'call';
-  const winHeight = cardHeightFor(type);
+  const winHeight = cardHeightFor(type, model ? model.kind : (isCall ? 'call' : 'notice'));
   // No wall of toasts: keep at most MAX_VISIBLE on screen.
   for (const old of evictionsFor(activeNotifications)) {
     const close = closers.get(old.win);
@@ -109,12 +110,12 @@ function showNotificationWindow({
   const area = getAnchorWorkArea();
   const probe = { type, height: winHeight };
   const planned = stackPositions(area, [...activeNotifications, probe]).find((p) => p.entry === probe);
-  const { x, y } = planned;
+  const { x, y, width: capsuleW } = planned;
 
   // Same contract as the splash: the OS must not paint a square behind the
   // rounded card. Window material and the OS shadow are that square.
   const winOptions = {
-    width: NOTIF_WIDTH + SHADOW_PAD * 2,
+    width: capsuleW + SHADOW_PAD * 2,
     height: winHeight + SHADOW_PAD * 2,
     x,
     y,
@@ -158,6 +159,7 @@ function showNotificationWindow({
     appIcon,
     from,
     count,
+    model,
     duration: isCall ? 0 : duration,
   });
 

@@ -4,6 +4,7 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "./storage";
 import { getLocale } from "../i18n/runtime";
+import { clearNotifyActionToken, refreshNotifyActionToken } from "./notifyActionToken.js";
 
 /**
  * Native push (Capacitor @capacitor/push-notifications).
@@ -148,6 +149,8 @@ async function uploadFcmToken(token) {
   uploadedFor = key;
   if (IS_IOS) {
     window.dispatchEvent(new CustomEvent("descall:ios-push-token", { detail: { token } }));
+    // 3.0.0 (A4): quick reply / reactions from the notification itself.
+    refreshNotifyActionToken(auth).catch(() => {});
   }
   return true;
 }
@@ -191,6 +194,12 @@ function ensureListeners() {
     // Push text follows the app language: re-upload when it changes.
     window.addEventListener("descall:locale", () => {
       if (lastToken) uploadFcmToken(lastToken).catch(() => {});
+    });
+    // The notification token lives 72 h; refresh it (at most every 12 h) on resume.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      const auth = getToken();
+      if (auth) refreshNotifyActionToken(auth).catch(() => {});
     });
   }
 }
@@ -236,6 +245,7 @@ export async function initNativePush() {
   const permission = await getNativePushPermission();
   if (permission === "granted" && getToken()) {
     PushNotifications.register().catch(() => {});
+    refreshNotifyActionToken(getToken()).catch(() => {});
   }
   return permission;
 }
@@ -261,6 +271,7 @@ export async function unregisterNativePushToken(authToken) {
   if (!pushAllowedHere()) return;
   const token = lastToken || (IS_IOS ? readStoredIosToken() : "");
   uploadedFor = "";
+  if (IS_IOS) await clearNotifyActionToken();
   if (!authToken || !token) return;
   await deleteServerToken(authToken, token);
 }

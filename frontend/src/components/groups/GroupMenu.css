@@ -98,3 +98,19 @@ html.a11y-solid .grp-menu { -webkit-backdrop-filter: none; backdrop-filter: none
 @media (prefers-reduced-motion: reduce) {
   .grp-menu-item { transition: none; }
 }
+
+/* GlassActionMenu (chat header / profile ⋯, A2 #05). */
+.g-action-menu-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.g-action-menu-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--g-brand, #587af6);
+}

@@ -44,32 +44,30 @@ assert.equal(resolveMark({ appIcon: true, title: "Descall" }).kind, "app");
 assert.equal(resolveMark({ title: "Friend Request", from: "Ege" }).letter, "E");
 
 for (const html of [system, message, call]) {
-  assert.match(html, /backdrop-filter:\s*blur\(40px\) saturate\(180%\)/);
-assert.match(html, /rgba\(18, 20, 30, 0\.97\)/, "card base is near-opaque (separate window, nothing to blur)");
-  assert.match(html, /-webkit-line-clamp:\s*2/);
-  assert.match(html, /white-space:\s*normal/);
+  // 3.0.0 (mockup 33): Liquid Glass capsule, near-opaque tinted base, no
+  // backdrop-filter (separate window: nothing to sample; avoids the dark box).
+  assert.match(html, /border-radius: 999px/);
+  assert.match(html, /rgba\(30, 32, 44, 0\.965\)/);
+  assert.doesNotMatch(html, /backdrop-filter:\s*blur/);
   assert.match(html, /prefers-reduced-motion:\s*reduce/);
   assert.match(html, /prefers-reduced-transparency:\s*reduce/);
   assert.match(html, /prefers-contrast:\s*more/);
-  assert.match(html, /const omega = \(2 \* Math\.PI\) \/ 0\.34/);
-  assert.match(html, /mouseenter/);
-  assert.match(html, /notifAPI\?\.pause\(\)/);
-  assert.match(html, /fadeOut/);
-  assert.doesNotMatch(html, /blur\(4px\)/, "exit must not blur the backdrop-filter card (dark box bug)");
-  assert.doesNotMatch(html, /filter 200ms/, "exit transitions only opacity + transform");
-  assert.match(html, /\.card\.leaving \{[^}]*backdrop-filter: none/, "glass dropped while leaving");
+  assert.match(html, /const omega = \(2 \* Math\.PI\) \/ 0\.35/, "spring 1.0 / 0.35 like mobile #07");
+  assert.match(html, /mouseenter|data-duration="0"/);
+  assert.match(html, /leaveUp/);
+  assert.doesNotMatch(html, /class="progress"/, "no progress bar in the capsule");
   assert.doesNotMatch(html, /border-left/);
   assert.doesNotMatch(html, /#1e1f22/);
 }
+assert.match(system, /notifAPI\?\.pause\(\)/);
 
 assert.match(system, /class="mark app"/);
 assert.match(system, /data:image\/png;base64,/);
 assert.doesNotMatch(system, /class="mark letter"/);
-assert.match(message, /class="mark letter">C</);
+assert.match(system, /class="card notice"/, "app notice may wrap to two lines");
+assert.match(message, /class="mark letter" style="background:#[0-9A-F]{6}">C</);
 assert.match(call, /class="accept"/);
 assert.match(call, /class="decline"/);
-assert.doesNotMatch(call, /class="progress"/);
-assert.match(system, /class="progress"/);
 const mention = buildNotificationHtml({
   title: "Ege mentioned you",
   body: "design",
@@ -77,16 +75,14 @@ const mention = buildNotificationHtml({
   from: "Ege",
   duration: 0,
 });
-assert.match(mention, /class="progress"/);
-assert.match(mention, /--accent:#ffd60a/);
 assert.match(mention, /data-duration="0"/);
 
 const gallery = buildNotificationGallery([
   { title: "Descall", body: "Background", appIcon: true },
-  { title: "Ege", body: "Hello", from: "Ege", type: "mention" },
+  { title: "Ege", body: "Hello", data: { type: "mention", from: "Ege", groupId: "g1" } },
 ]);
 assert.match(gallery, /class="mark app"/);
-assert.match(gallery, /--accent:#ffd60a/);
+assert.match(gallery, /ctx mention">seni etiketledi</);
 
 assert.match(windowSrc, /frame:\s*false/);
 assert.match(windowSrc, /thickFrame:\s*false/);

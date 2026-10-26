@@ -1724,7 +1724,7 @@ export default function App() {
       if (first) {
         playUiSound("notification");
         const name = resolveDisplayName(first);
-        notificationService.friendOnline({ username: name });
+        notificationService.friendOnline({ username: name, userId: first.id || null, avatarUrl: first.avatarUrl || first.avatar_url || null });
         toast(name, "presence", {
           user: first,
           name,
@@ -2006,7 +2006,9 @@ export default function App() {
               from: normalizedMsg.from?.username || 'Birisi',
               text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
               preview: message.text?.substring(0, 100),
-              conversationId: convWith
+              conversationId: convWith,
+              fromId: normalizedMsg.from?.id || convWith,
+              avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
         } else {
@@ -2024,7 +2026,9 @@ export default function App() {
               from: normalizedMsg.from?.username || 'Birisi',
               text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
               preview: message.text?.substring(0, 100),
-              conversationId: convWith
+              conversationId: convWith,
+              fromId: normalizedMsg.from?.id || convWith,
+              avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
         }
@@ -2214,6 +2218,8 @@ export default function App() {
           from: normalized.from.username,
           text: normalized.text,
           groupId,
+          fromId: normalized.from?.id || null,
+          avatarUrl: normalized.from?.avatarUrl || null,
         });
       } else if (!isFromMe) {
         // Open group but window hidden / in tray / unfocused: still notify.
@@ -2223,6 +2229,8 @@ export default function App() {
           from: normalized.from.username,
           text: normalized.text,
           groupId,
+          fromId: normalized.from?.id || null,
+          avatarUrl: normalized.from?.avatarUrl || null,
         });
       }
     });
@@ -5522,6 +5530,10 @@ export default function App() {
             friends={friends}
             onlineUsers={onlineUsers}
             onStartDm={(user) => setActiveDmUser(user)}
+            onStartCall={(user, type = "voice") => {
+              if (groupCall?.isInCall) return;
+              if (user && call?.startCall) call.startCall(user, type);
+            }}
             onReply={(msg) => {
               if (editingMessage?.id) cancelMessageEdit(editingMessage.id);
               setEditingMessage(null);

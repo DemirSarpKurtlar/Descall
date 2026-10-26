@@ -457,6 +457,8 @@ app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
 app.use("/api/me", require("./routes/meAppearance"));
 app.use("/api/special-badges", require("./routes/specialBadges"));
+// 3.0.0 (A4): iOS notification quick reply / reactions / read (scoped notify token).
+app.use("/api/messages", require("./routes/notifyActions"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/reports", reportsRoutes);

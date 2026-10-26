@@ -64,7 +64,7 @@ const spm = readFileSync(join(here, "store-purchase-modal.css"), "utf8");
 assert.ok(Number("0" + spm.match(/--heavy:\s*rgba\([^)]*,\s*0?(\.[0-9]+)\)/)[1]) >= 0.85, "purchase modal base >= 0.85");
 assert.ok(backdrops.includes(".spm-scrim"), "store purchase scrim uses the shared backdrop");
 const card = readFileSync(join(src, "..", "electron", "notificationCard.cjs"), "utf8");
-assert.ok(alpha(card, /rgba\(\s*18,\s*20,\s*30,\s*([0-9.]+)\)/) >= 0.94, "Electron notification card >= 0.94");
+assert.ok(alpha(card, /rgba\(\s*30,\s*32,\s*44,\s*([0-9.]+)\)/) >= 0.94, "Electron notification capsule >= 0.94");
 const splash = readFileSync(join(src, "..", "electron", "splash.html"), "utf8");
 assert.ok(alpha(splash, /rgba\(\s*20,\s*21,\s*30,\s*([0-9.]+)\)/) >= 0.94, "splash card >= 0.94");
 console.log("overlay alpha checks ok");

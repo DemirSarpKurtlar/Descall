@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu,
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
+const { describeNotification } = require('./notificationCard.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
 const { autoUpdater } = require('electron-updater');
@@ -1941,10 +1942,14 @@ function showAppNotification({ title, options = {} } = {}) {
   const duration  = isCall || requireInteraction ? 0 : 5000;
   const APP_KINDS = new Set(['friend-online', 'announcement']);
   const appIcon = !avatarUrl && (!data?.type || APP_KINDS.has(data.type));
-  // DM call card: the caller's name as the title, "Sesli arama" below.
-  const cardTitle = data?.type === 'call'
-    ? (data.callerName || data.from || title || 'Descall')
-    : (title || 'Descall');
+  // 3.0.0 (mockup 33): capsule content — name + group / "şimdi", one-line
+  // preview, status dot or group badge, "Mesaj" pill; calls "Ayşe arıyor...".
+  const model = describeNotification({ title, body, data, appIcon, avatarUrl });
+  const cardTitle = model.name;
+  // "Mesaj" on "Mert çevrimiçi" opens that DM.
+  const clickData = (d) => (d?.type === 'friend-online' && d.userId
+    ? { type: 'dm', conversationId: d.userId, fromId: d.userId, from: d.username || '' }
+    : (d || {}));
 
   // Grouping: another message for the same chat updates the visible toast
   // (new text + count chip, timer restarts) instead of closing and
@@ -1952,7 +1957,7 @@ function showAppNotification({ title, options = {} } = {}) {
   const existing = activeNotifByTag.get(tag);
   if (existing && !isCall) {
     const count = (existing.count || 1) + 1;
-    if (updateShownNotification(existing.win, { title: cardTitle, body: body || '', count })) {
+    if (updateShownNotification(existing.win, { title: cardTitle, body: model.preview || '', context: model.context || '', count })) {
       existing.count = count;
       existing.data = data || {};
       return existing.win;
@@ -1966,12 +1971,13 @@ function showAppNotification({ title, options = {} } = {}) {
   const entry = { win: null, count: 1, data: data || {} };
   const win = showNotificationWindow({
     title: cardTitle,
-    body: body || (data?.type === 'call' ? 'Sesli arama' : ''),
+    body: model.preview || '',
     type: notifType,
     avatarUrl: avatarUrl || data?.avatarUrl || null,
     appIcon,
     from: data?.from || data?.username || null,
     duration,
+    model,
     onClick: () => {
       showMainWindow();
       // Always send a consistent envelope so the renderer can route by data.type
@@ -1980,7 +1986,7 @@ function showAppNotification({ title, options = {} } = {}) {
         title,
         body,
         tag,
-        data: entry.data || {},
+        data: clickData(entry.data),
       });
     },
     onAccept: isCall ? () => {
