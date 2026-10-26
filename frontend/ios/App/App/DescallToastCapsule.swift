@@ -172,7 +172,11 @@ final class DescallToastCapsule: UIView {
             pill.heightAnchor.constraint(equalToConstant: 39),
         ])
         pill.setContentCompressionResistancePriority(.required, for: .horizontal)
-        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        // Labels keep their natural width (the stack is otherwise only as wide as
+        // its widest *resistant* label and the title truncated); the pill wins
+        // when space runs out.
+        titleLabel.setContentCompressionResistancePriority(.defaultHigh - 1, for: .horizontal)
+        subLabel.setContentCompressionResistancePriority(.defaultHigh - 2, for: .horizontal)
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(panned(_:)))
         shadowHost.addGestureRecognizer(pan)
