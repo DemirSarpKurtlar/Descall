@@ -53,13 +53,18 @@ function psqlAsync(url, sql, { vars = {} } = {}) {
 }
 
 /** Fresh database named promo_<tag>_<pid>; returns its URL. */
-function freshDb(tag) {
+/** `migrations`: extra files from supabase/migrations loaded after the promo one, in order. */
+function freshDb(tag, { migrations = [] } = {}) {
   const name = `promo_${String(tag).replace(/[^a-z0-9]/gi, "").toLowerCase()}_${process.pid}`;
   const admin = withDb(BASE_URL, "postgres");
   psqlSync(admin, `DROP DATABASE IF EXISTS ${name} WITH (FORCE);\nCREATE DATABASE ${name};`);
   const url = withDb(BASE_URL, name);
   psqlSync(url, fs.readFileSync(FIXTURE, "utf8"));
   psqlSync(url, fs.readFileSync(MIGRATION, "utf8"));
+  for (const file of migrations) {
+    if (!/^[0-9a-z_]+\.sql$/.test(file)) throw new Error("bad migration name");
+    psqlSync(url, fs.readFileSync(path.join(path.dirname(MIGRATION), file), "utf8"));
+  }
   return {
     url,
     drop() {

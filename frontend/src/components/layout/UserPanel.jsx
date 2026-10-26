@@ -13,6 +13,8 @@ import { getToken, setUser } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { normalizeUser } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
+import "../../styles/promo-mycodes.css"; // Promosyon Kodu nav row badge
+import { PROMO_AVAILABLE_EVENT, PROMO_NUDGE_EVENT, PROMO_REDEEMED_EVENT, summaryOf } from "../../lib/promoAvailable";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { uploadAvatar, uploadFile } from "../../api/media";
 import { getMe } from "../../api/auth";
@@ -337,6 +339,31 @@ const UserPanel = forwardRef(function UserPanel({
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileDetail, setMobileDetail] = useState(false);
   const stored = loadSettings();
+  // Promosyon Kodu row: badge = codes you haven't seen yet, mobile hint = codes you can use now.
+  // Only numbers come back (GET /api/promo/available?summary=1), never the codes.
+  const [promoSummary, setPromoSummary] = useState({ count: 0, unseen: 0 });
+  useEffect(() => {
+    let live = true;
+    const refresh = () => {
+      import("../../api/promo")
+        .then((m) => m.getPromoAvailableSummary())
+        .then((d) => { if (live) setPromoSummary(summaryOf(d)); })
+        .catch(() => {});
+    };
+    refresh();
+    const onList = (e) => setPromoSummary(summaryOf(e.detail));
+    window.addEventListener(PROMO_AVAILABLE_EVENT, onList);
+    window.addEventListener(PROMO_NUDGE_EVENT, refresh);
+    window.addEventListener(PROMO_REDEEMED_EVENT, refresh);
+    return () => {
+      live = false;
+      window.removeEventListener(PROMO_AVAILABLE_EVENT, onList);
+      window.removeEventListener(PROMO_NUDGE_EVENT, refresh);
+      window.removeEventListener(PROMO_REDEEMED_EVENT, refresh);
+    };
+  }, []);
+  const promoCount = promoSummary.count;
+  const promoUnseen = promoSummary.unseen;
 
   const navGroups = useMemo(
     () =>
@@ -2906,8 +2933,9 @@ const UserPanel = forwardRef(function UserPanel({
                     </span>
                     <span className="us-nav-copy">
                       <span className="us-nav-label">{item.label}</span>
-                      {isMobile && <span className="us-nav-hint">{item.hint}</span>}
+                      {isMobile && <span className={`us-nav-hint${item.id === "promo" && promoCount ? " is-promo-new" : ""}`}>{item.id === "promo" && promoCount ? (promoCount === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoCount })) : item.hint}</span>}
                     </span>
+                    {item.id === "promo" && promoUnseen ? <span className="us-nav-count tnum" aria-label={promoUnseen === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoUnseen })}>{promoUnseen}</span> : null}
                     {isMobile && glassShell && item.id === "language" ? (
                       <span className="us-nav-value">{locale === "tr" ? "Türkçe" : "English"}</span>
                     ) : isMobile ? (

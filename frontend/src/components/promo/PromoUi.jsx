@@ -226,7 +226,7 @@ function errorText(err, t, locale) {
  * Redeem flow: idle → (error | rate countdown) → success reveal.
  * onDone(result) runs after a successful redeem (balance also arrives over the socket).
  */
-export function RedeemSheet({ initialCode = "", onClose, onGoShop, onWearBadge, onDone }) {
+export function RedeemSheet({ initialCode = "", initialResult = null, onClose, onGoShop, onWearBadge, onDone }) {
   const { t, locale } = useLocale();
   const reduce = useReducedMotion();
   const [value, setValue] = useState(normalizeCode(initialCode));
@@ -234,7 +234,7 @@ export function RedeemSheet({ initialCode = "", onClose, onGoShop, onWearBadge, 
   const [error, setError] = useState(null);
   const [lockUntil, setLockUntil] = useState(() => readLock());
   const [now, setNow] = useState(() => Date.now());
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(initialResult);
   const inputRef = useRef(null);
   const left = lockLeft(lockUntil, now);
   const locked = left > 0;

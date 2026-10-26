@@ -49,3 +49,10 @@ export const adminPromoRedemptions = (id, { q, limit = 50, offset = 0 } = {}) =>
   if (q) p.set("q", q);
   return adminFetch(`/promo-codes/${encodeURIComponent(id)}/redemptions?${p}`);
 };
+
+/** Codes this account can use right now (the server filters eligibility; never lists anyone else's). */
+export const getPromoAvailable = () => authedRequest("/api/promo/available");
+/** Settings badge numbers only: { count, unseen } (no codes). */
+export const getPromoAvailableSummary = () => authedRequest("/api/promo/available?summary=1");
+export const markPromoAvailableSeen = (ids) =>
+  authedRequest("/api/promo/available/seen", { method: "POST", body: { ids } });

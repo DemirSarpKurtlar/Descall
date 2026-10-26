@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPromoPopup, markPromoPopup } from "../../api/promo";
-import { PROMO_REDEEM_EVENT } from "../../lib/promoBus";
+import { PROMO_CELEBRATE_EVENT, PROMO_REDEEM_EVENT } from "../../lib/promoBus";
 import { getPromoBadges } from "../../lib/promoBadges";
+import { PROMO_NUDGE_EVENT } from "../../lib/promoAvailable";
 import { PromoGiftPopup, RedeemSheet } from "./PromoUi.jsx";
 
 /**
@@ -32,15 +33,28 @@ export default function PromoHost({ socket, enabled, onOpenShop, onOpenProfile, 
 
   useEffect(() => {
     if (!socket || !enabled) return undefined;
-    const onNudge = () => fetchPopup();
+    const onNudge = () => {
+      fetchPopup();
+      window.dispatchEvent(new CustomEvent(PROMO_NUDGE_EVENT)); // Ayarlar → Kodlarım + its badge refresh
+    };
     socket.on("promo:popup", onNudge);
     return () => socket.off("promo:popup", onNudge);
   }, [socket, enabled, fetchPopup]);
 
   useEffect(() => {
     const onOpen = (e) => { setPopup(null); setSheet({ code: e?.detail?.code || "", key: Date.now() }); };
+    const onCelebrate = (e) => {
+      const result = e?.detail?.result;
+      if (!result?.reward) return;
+      setPopup(null);
+      setSheet({ code: "", result, key: Date.now() });
+    };
     window.addEventListener(PROMO_REDEEM_EVENT, onOpen);
-    return () => window.removeEventListener(PROMO_REDEEM_EVENT, onOpen);
+    window.addEventListener(PROMO_CELEBRATE_EVENT, onCelebrate);
+    return () => {
+      window.removeEventListener(PROMO_REDEEM_EVENT, onOpen);
+      window.removeEventListener(PROMO_CELEBRATE_EVENT, onCelebrate);
+    };
   }, []);
 
   const mark = (snooze) => {
@@ -61,6 +75,7 @@ export default function PromoHost({ socket, enabled, onOpenShop, onOpenProfile, 
         <RedeemSheet
           key={sheet.key}
           initialCode={sheet.code}
+          initialResult={sheet.result || null}
           onClose={() => setSheet(null)}
           onGoShop={() => { setSheet(null); onOpenShop?.(); }}
           onWearBadge={getPromoBadges()?.onWear || onOpenProfile ? () => { setSheet(null); const w = getPromoBadges()?.onWear; if (w) w(); else onOpenProfile(); } : undefined}

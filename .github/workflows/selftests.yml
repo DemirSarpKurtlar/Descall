@@ -169,6 +169,7 @@ jobs:
           node src/lib/groupRename.selftest.mjs
           node src/components/layout/ContextMenu.parity.selftest.mjs
           node src/lib/promoPeoplePicker.selftest.mjs
+          node src/lib/promoAvailable.selftest.mjs
           node src/components/admin/adminTabs.selftest.mjs
       - name: Install frontend dependencies (render selftests)
         run: npm ci --no-audit --no-fund
@@ -222,6 +223,8 @@ jobs:
           node test/promo.integration.test.cjs
           node test/promo.unit.test.cjs
           node test/promoUserSearch.test.cjs
+          node test/promoAvailable.db.test.cjs
+          node test/promoAvailable.integration.test.cjs
 
   # Special badges: grant / take-back / equip / #001 rules live in Postgres functions, so run
   # the migration (on top of the promo migration) and its tests against a throwaway Postgres.

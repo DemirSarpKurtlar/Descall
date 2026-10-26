@@ -107,6 +107,54 @@ async function popupFor(userId) {
   return (await rpc("promo_popup_for", { p_user_id: userId })) || null;
 }
 
+const SCOPES = new Set(["personal", "group", "everyone"]);
+const REWARD_TYPES = new Set(["descoin", "shop_item", "special_badge"]);
+
+/** One listed code, whitelisted field by field (the SQL decides who sees what; this keeps the shape tight). */
+function cleanAvailableItem(x) {
+  if (!x || typeof x !== "object") return null;
+  const code = normalizeCode(x.code);
+  const r = x.reward && typeof x.reward === "object" ? x.reward : {};
+  if (code.length !== CODE_LENGTH || !REWARD_TYPES.has(r.type)) return null;
+  const reward = { type: r.type };
+  if (r.type === "descoin") reward.amount = Number(r.amount) || 0;
+  if (r.type === "shop_item") {
+    reward.itemId = r.itemId ?? null;
+    reward.name = r.name ?? null;
+    reward.category = r.category ?? null;
+  }
+  if (r.type === "special_badge") reward.badgeId = r.badgeId ?? null;
+  return {
+    id: String(x.id),
+    code,
+    scope: SCOPES.has(x.scope) ? x.scope : "everyone",
+    reward,
+    message: typeof x.message === "string" && x.message ? x.message : null,
+    expiresAt: x.expiresAt || null,
+    remaining: x.remaining == null ? null : Math.max(0, Number(x.remaining) || 0),
+    seen: x.seen === true,
+  };
+}
+
+/** Codes this account can redeem right now (GET /api/promo/available). */
+async function available(userId) {
+  const res = (await rpc("promo_available_for", { p_user_id: userId })) || {};
+  const items = (Array.isArray(res.items) ? res.items : []).map(cleanAvailableItem).filter(Boolean);
+  return {
+    items,
+    count: items.length,
+    unseen: items.filter((i) => !i.seen).length,
+    serverNow: res.serverNow || new Date().toISOString(),
+  };
+}
+
+async function markAvailableSeen(userId, ids) {
+  const clean = [...new Set((Array.isArray(ids) ? ids : []).map((v) => String(v).toLowerCase()).filter((v) => /^[0-9a-f-]{36}$/.test(v)))].slice(0, 50);
+  if (!clean.length) return { ok: true, marked: 0 };
+  const res = await rpc("promo_available_mark_seen", { p_user_id: userId, p_code_ids: clean });
+  return { ok: true, marked: Number(res?.marked) || 0, unseen: Number(res?.unseen) || 0 };
+}
+
 async function markPopup(userId, codeId, snooze) {
   const res = await rpc("promo_popup_mark", { p_user_id: userId, p_code_id: codeId, p_snooze: Boolean(snooze) });
   if (!res?.ok) throw new PromoError(res?.error || "not_found", statusFor(res?.error || "not_found"));
@@ -134,7 +182,7 @@ function cleanCreateInput(body = {}) {
   if (expiresAt && Number.isNaN(expiresAt.getTime())) throw new PromoError("invalid_input");
   if (maxUses != null && (!Number.isFinite(maxUses) || maxUses <= 0)) throw new PromoError("invalid_input");
   const targetUserIds = Array.isArray(body.targetUserIds)
-    ? [...new Set(body.targetUserIds.map(String).filter((v) => /^[0-9a-f-]{36}$/i.test(v)))].slice(0, 500)
+    ? [...new Set(body.targetUserIds.map((v) => String(v).toLowerCase()).filter((v) => /^[0-9a-f-]{36}$/.test(v)))].slice(0, 500)
     : [];
   return {
     code,
@@ -218,6 +266,9 @@ module.exports = {
   history,
   popupFor,
   markPopup,
+  available,
+  markAvailableSeen,
+  cleanAvailableItem,
   adminCreate,
   adminUpdate,
   adminOverview,
