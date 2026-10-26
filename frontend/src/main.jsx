@@ -120,7 +120,9 @@ try {
 const bootLocale = resolveInitialLocale();
 const statusEl = document.getElementById("boot-status");
 // Keep status for screen readers only, splash UI is logo + thin bar (no STARTING wall).
-if (statusEl) statusEl.textContent = translate(bootLocale, "Loading");
+// The inline splash already wrote "Yükleniyor" (window.__descallBootTr). Catalogs
+// are still loading here, so translate() would flip it to English "Loading" (B2).
+if (statusEl && !window.__descallBootTr) statusEl.textContent = translate(bootLocale, "Loading");
 
 /**
  * Progressive marketing hydration: paint #seo-static first (LCP / crawlers),

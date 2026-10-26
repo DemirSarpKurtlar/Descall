@@ -1504,7 +1504,7 @@
                 var wait = Math.max(0, minMs - elapsed);
                 if (maxMs >= 0) wait = Math.min(wait, Math.max(0, maxMs - elapsed));
                 var status = document.getElementById("boot-status");
-                if (status) status.textContent = "Ready";
+                if (status) status.textContent = window.__descallBootTr ? "Hazır" : "Ready";
                 window.setTimeout(function () {
                   if (window.__descallBootHolds > 0) return;
                   root.classList.add("boot-splash--hide");
@@ -1583,6 +1583,7 @@
               try { bootTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz) {}
               bootTr = bootLang.indexOf("tr") === 0 || bootLang.slice(-3) === "-tr" || bootTz === "Europe/Istanbul";
             } catch (eBoot) {}
+            window.__descallBootTr = bootTr;
             if (bootTr) bootLabel.textContent = "Yükleniyor";
           }
         }
@@ -1752,7 +1753,7 @@
           if (maxMs >= 0) wait = Math.min(wait, Math.max(0, maxMs - elapsed));
           if (maxMs >= 0 && elapsed >= maxMs) wait = 0;
           var status = document.getElementById("boot-status");
-          if (status && !status.classList.contains("boot-status--visible")) status.textContent = "Ready";
+          if (status && !status.classList.contains("boot-status--visible")) status.textContent = window.__descallBootTr ? "Hazır" : "Ready";
           window.setTimeout(function () {
             if (!root || root.classList.contains("boot-splash--hide")) return;
             if (root.getAttribute("data-boot-failed") === "1" && !force) return;
