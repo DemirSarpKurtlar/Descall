@@ -87,6 +87,19 @@ button.server-channel-row {
   display: block;
 }
 
+/* A3 perf: phones/tablets render the full chat list (300+ swipe rows,
+   ~10k nodes). Off-screen rows skip style/layout/paint so tab switches
+   and list scroll stay inside the frame budget (iPhone 4x CPU: tab switch
+   back to Sohbetler 370ms -> 91ms). Rows clip their own swipe track
+   already (.group-swipe-viewport overflow:hidden), so paint containment
+   changes nothing visible; the focused / swiped / menu row is excluded so
+   focus rings and open swipe actions are never clipped. `auto` keeps the
+   real measured height once a row has rendered (stable scrollbar). */
+.conv-list > .conv-group-wrap.is-swipeable:not(.swipe-open):not(.menu-open):not(:focus-within) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 80px;
+}
+
 .conv-group-wrap.is-desktop > .dm-item,
 .conv-group-wrap.is-desktop > .group-item,
 .conv-group-wrap.is-desktop > button.conv-row,

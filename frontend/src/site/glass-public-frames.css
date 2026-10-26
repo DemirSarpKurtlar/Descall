@@ -438,7 +438,7 @@
 }
 
 .mkt .legal-doc-card,
-body:has(.mkt) .legal-doc-card {
+body.has-mkt .legal-doc-card {
   border: none;
   border-radius: var(--r-lg);
   padding: 18px 20px;
@@ -447,13 +447,13 @@ body:has(.mkt) .legal-doc-card {
 }
 
 .mkt .legal-doc-layout,
-body:has(.mkt) .legal-doc-layout {
+body.has-mkt .legal-doc-layout {
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 40px;
 }
 
 .mkt .legal-doc-toc,
-body:has(.mkt) .legal-doc-toc {
+body.has-mkt .legal-doc-toc {
   position: sticky;
   top: 100px;
   border: none;
@@ -464,14 +464,14 @@ body:has(.mkt) .legal-doc-toc {
 }
 
 .mkt .legal-doc-toc a.is-current,
-body:has(.mkt) .legal-doc-toc a.is-current {
+body.has-mkt .legal-doc-toc a.is-current {
   background: rgba(88, 122, 246, 0.22);
   color: #fff;
   box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.4);
 }
 
 .mkt .legal-doc-section,
-body:has(.mkt) .legal-doc-section {
+body.has-mkt .legal-doc-section {
   border: none;
   border-radius: var(--r-xl);
   padding: 28px 32px;
@@ -481,7 +481,7 @@ body:has(.mkt) .legal-doc-section {
 }
 
 .mkt .legal-doc-section.is-rights,
-body:has(.mkt) .legal-doc-section.is-rights {
+body.has-mkt .legal-doc-section.is-rights {
   box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.35), 0 18px 48px rgba(0, 0, 0, 0.4);
 }
 
@@ -602,35 +602,35 @@ body:has(.mkt) .legal-doc-section.is-rights {
   letter-spacing: -0.02em;
 }
 
-body:has(.mkt) .login-modal {
+body.has-mkt .login-modal {
   width: min(460px, calc(100% - 32px));
   padding: 28px 24px 24px;
 }
 
-body:has(.mkt) .login-modal h2 {
+body.has-mkt .login-modal h2 {
   font-size: 26px;
   font-weight: 740;
   letter-spacing: -0.03em;
 }
 
-body:has(.mkt) .login-modal input:focus,
-body:has(.mkt) .login-modal textarea:focus {
+body.has-mkt .login-modal input:focus,
+body.has-mkt .login-modal textarea:focus {
   outline: none;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1.5px rgba(143, 166, 255, 0.85), 0 0 0 5px rgba(88, 122, 246, 0.22);
 }
 
-body:has(.mkt) .auth-otp {
+body.has-mkt .auth-otp {
   position: relative;
 }
 
-body:has(.mkt) .auth-otp-cells {
+body.has-mkt .auth-otp-cells {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin-top: 8px;
 }
 
-body:has(.mkt) .auth-otp-cells span {
+body.has-mkt .auth-otp-cells span {
   height: 58px;
   border-radius: var(--r-lg);
   display: flex;
@@ -643,11 +643,11 @@ body:has(.mkt) .auth-otp-cells span {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
 }
 
-body:has(.mkt) .auth-otp-cells span.is-on {
+body.has-mkt .auth-otp-cells span.is-on {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1.5px rgba(143, 166, 255, 0.85), 0 0 0 5px rgba(88, 122, 246, 0.22);
 }
 
-body:has(.mkt) .auth-otp .auth-otp-input {
+body.has-mkt .auth-otp .auth-otp-input {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -698,7 +698,7 @@ body:has(.mkt) .auth-otp .auth-otp-input {
 .mkt :focus-visible,
 .dc-consent :focus-visible,
 .invite-landing :focus-visible,
-body:has(.mkt) .login-modal :focus-visible {
+body.has-mkt .login-modal :focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px #0d0e13, 0 0 0 4px #8fa6ff;
 }
@@ -791,7 +791,7 @@ body:has(.mkt) .login-modal :focus-visible {
   .mkt .seo-landing .seo-hero:has(.seo-product-preview),
   .mkt .mkt-faq-layout,
   .mkt .legal-doc-layout,
-  body:has(.mkt) .legal-doc-layout {
+  body.has-mkt .legal-doc-layout {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -829,7 +829,7 @@ body:has(.mkt) .login-modal :focus-visible {
 
   .mkt .mkt-faq-nav,
   .mkt .legal-doc-toc,
-  body:has(.mkt) .legal-doc-toc {
+  body.has-mkt .legal-doc-toc {
     position: static;
   }
 
@@ -1047,12 +1047,12 @@ body:has(.mkt) .login-modal :focus-visible {
     border-radius: var(--r-xl);
   }
 
-  body:has(.mkt) .login-modal-overlay {
+  body.has-mkt .login-modal-overlay {
     align-items: flex-end;
     padding: 0;
   }
 
-  body:has(.mkt) .login-modal {
+  body.has-mkt .login-modal {
     width: 100%;
     max-width: none;
     margin: 0;
@@ -1061,20 +1061,20 @@ body:has(.mkt) .login-modal :focus-visible {
     padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px));
   }
 
-  body:has(.mkt) .login-modal h2 {
+  body.has-mkt .login-modal h2 {
     padding-right: 0;
     text-align: center;
   }
 
-  body:has(.mkt) .login-modal form,
-  body:has(.mkt) .login-modal .google-signin-wrap,
-  body:has(.mkt) .login-modal .mkt-auth-divider {
+  body.has-mkt .login-modal form,
+  body.has-mkt .login-modal .google-signin-wrap,
+  body.has-mkt .login-modal .mkt-auth-divider {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
-  body:has(.mkt) .login-modal::before {
+  body.has-mkt .login-modal::before {
     content: "";
     display: block;
     width: 40px;
@@ -1539,7 +1539,7 @@ body:has(.mkt) .login-modal :focus-visible {
 
 .mkt .mkt-footer-copy { grid-column: 1 / -1; margin-top: 10px; }
 
-body:has(.mkt) .login-modal .mkt-auth-logo {
+body.has-mkt .login-modal .mkt-auth-logo {
   display: block;
   width: 56px;
   height: 56px;
@@ -1548,10 +1548,10 @@ body:has(.mkt) .login-modal .mkt-auth-logo {
   box-shadow: 0 10px 28px rgba(88, 122, 246, 0.45);
 }
 
-body:has(.mkt) .login-modal input:-webkit-autofill,
-body:has(.mkt) .login-modal input:-webkit-autofill:hover,
-body:has(.mkt) .login-modal input:-webkit-autofill:focus,
-body:has(.mkt) .login-modal input:-webkit-autofill:active {
+body.has-mkt .login-modal input:-webkit-autofill,
+body.has-mkt .login-modal input:-webkit-autofill:hover,
+body.has-mkt .login-modal input:-webkit-autofill:focus,
+body.has-mkt .login-modal input:-webkit-autofill:active {
   -webkit-text-fill-color: rgba(255, 255, 255, 0.96);
   caret-color: #fff;
   border-radius: var(--r-md);
@@ -1561,7 +1561,7 @@ body:has(.mkt) .login-modal input:-webkit-autofill:active {
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
 }
 
-body:has(.mkt) .login-modal h2 {
+body.has-mkt .login-modal h2 {
   margin-top: 16px;
   font-size: 26px;
   font-weight: 740;
@@ -1596,8 +1596,8 @@ body:has(.mkt) .login-modal h2 {
 }
 
 /* Auth fields: one rounded edge. The focus ring is that edge, not a second box. */
-body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]),
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper {
+body.has-mkt .login-modal form > input:not([type="checkbox"]):not([type="radio"]),
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper {
   border: 0;
   border-radius: var(--r-lg);
   background: rgba(0, 0, 0, 0.28);
@@ -1605,7 +1605,7 @@ body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper {
   outline: none;
 }
 
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper {
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
@@ -1614,7 +1614,7 @@ body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper {
   overflow: hidden;
 }
 
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper .input-icon {
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper .input-icon {
   position: relative;
   z-index: 1;
   margin: 0;
@@ -1624,9 +1624,9 @@ body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper .input-icon {
   pointer-events: none;
 }
 
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input,
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input:focus,
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input:focus-visible {
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper input,
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper input:focus,
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper input:focus-visible {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1643,9 +1643,9 @@ body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper input:focus-vis
   appearance: none;
 }
 
-body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
-body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
-body:has(.mkt) .login-modal .forgot-password-flow .input-wrapper:focus-within {
+body.has-mkt .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
+body.has-mkt .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
   outline: none;
   outline-offset: 0;
   border: 0;

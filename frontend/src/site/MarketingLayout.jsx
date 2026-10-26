@@ -8,6 +8,7 @@ import { isTrPath, withTrPrefix, stripLocalePrefix, TR_MIRROR_PATHS, enPathForHr
 import EmailCapture from "./components/EmailCapture";
 import { APP_STORE_URL } from "./appStoreLink";
 import { useIsAppleMobile } from "./useIsAppleMobile";
+import { useDocumentMarker } from "../hooks/useDocumentMarker";
 import "./site.css";
 import "./glass-public.css";
 import "./glass-public-frames.css";
@@ -62,6 +63,9 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   const { locale, setLocale } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
+  // Page markers as classes, not body:has(.mkt) (A3: whole-document restyles).
+  useDocumentMarker("has-mkt", true, "body");
+  useDocumentMarker("has-mkt", true, "html");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathIsTr = isTrPath(location.pathname);

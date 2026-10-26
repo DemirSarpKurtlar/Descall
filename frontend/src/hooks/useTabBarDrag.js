@@ -64,6 +64,7 @@ export function useTabBarDrag({
   const ownedRef = useRef(false);
   const hotRef = useRef(null);
   const metricsRef = useRef({ stride: 1 });
+  const measuredKeyRef = useRef(null);
   const paintRef = useRef(() => {});
   countRef.current = count;
   activeRef.current = activeIndex;
@@ -133,7 +134,16 @@ export function useTabBarDrag({
       if (hotRef.current != null) markHot(hotRef.current);
       return;
     }
-    measure();
+    // A tab tap commits the new route in the same task, so measuring here
+    // forces a synchronous layout of that whole route before paint (~50ms
+    // per switch on a 4x-throttled phone). The pitch only changes with the
+    // tab count, mode or bar size, and the ResizeObserver below re-measures
+    // on size changes, so a plain index change reuses the cached stride.
+    const key = `${count}|${enabled ? 1 : 0}|${modeRef.current}`;
+    if (measuredKeyRef.current !== key || !metricsRef.current.stride) {
+      measure();
+      measuredKeyRef.current = key;
+    }
     const lens = lensRef.current;
     if (reducedRef.current || !lens?.dataset.ready) {
       xAnim.set(activeIndex);

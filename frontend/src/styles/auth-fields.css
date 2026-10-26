@@ -168,10 +168,10 @@ html.glass-ui .g-auth .auth-form .input-wrapper .auth-password-toggle {
 .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
 .login-modal .form-group input:not([type="checkbox"]):not([type="radio"]):focus,
 .login-modal .form-group input:not([type="checkbox"]):not([type="radio"]):focus-visible,
-body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
-body:has(.mkt) .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
-body:has(.mkt) .login-modal input:not([type="checkbox"]):not([type="radio"]):focus,
-body:has(.mkt) .login-modal input:not([type="checkbox"]):not([type="radio"]):focus-visible {
+body.has-mkt .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus,
+body.has-mkt .login-modal form > input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+body.has-mkt .login-modal input:not([type="checkbox"]):not([type="radio"]):focus,
+body.has-mkt .login-modal input:not([type="checkbox"]):not([type="radio"]):focus-visible {
   outline: none;
   outline-offset: 0;
   border: 0;

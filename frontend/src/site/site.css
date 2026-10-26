@@ -34,15 +34,15 @@
 }
 
 /* Marketing React shell, never inherit app overflow:hidden / 100% height lock. */
-html:has(.mkt):not([data-app-shell="1"]),
-html:has(.mkt):not([data-app-shell="1"]) body {
+html.has-mkt:not([data-app-shell="1"]),
+html.has-mkt:not([data-app-shell="1"]) body {
   height: auto !important;
   min-height: 100%;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   font-family: var(--mkt-font-body);
 }
-html:has(.mkt):not([data-app-shell="1"]) #root {
+html.has-mkt:not([data-app-shell="1"]) #root {
   height: auto !important;
   min-height: 100%;
   overflow: visible !important;

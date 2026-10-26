@@ -214,7 +214,31 @@ export function shouldUseGlassDesktopLite({
   return false;
 }
 
-function snapshotInputs(w, remoteOverride) {
+function sameInputs(a, b) {
+  if (!a || !b) return false;
+  for (const k of Object.keys(a)) if (a[k] !== b[k]) return false;
+  return true;
+}
+
+function snapshotInputs(w, remoteOverride, prev) {
+  // Client navigation only changes the path (and maybe the stored flags).
+  // Reading innerWidth/innerHeight forces a synchronous layout of the
+  // freshly committed route (~100ms per tab switch on a 4x-throttled phone),
+  // so a route sync reuses the viewport facts the resize/media watchers keep
+  // current and re-reads only the cheap inputs.
+  if (prev && watching) {
+    const cachedRemote = readStorage(w, GLASS_DESKTOP_REMOTE_KEY);
+    let remoteFlag = null;
+    if (cachedRemote === "0") remoteFlag = false;
+    else if (cachedRemote === "1") remoteFlag = true;
+    return {
+      ...prev,
+      surfaceOk: isGlassDesktopSurface(w?.location?.pathname),
+      buildFlag: readBuildFlag(),
+      remoteFlag,
+      override: readStorage(w, GLASS_DESKTOP_OVERRIDE_KEY),
+    };
+  }
   const platform = nativeShellPlatform(w);
   const isElectron = Boolean(w?.electronAPI?.isElectron);
   const width = Number(w?.innerWidth) || 0;
@@ -427,7 +451,10 @@ function sampleFrameRate(w) {
 export function syncGlassDesktop(win) {
   const w = currentWindow(win);
   if (!w) return enabled;
-  inputs = snapshotInputs(w);
+  const next = snapshotInputs(w, undefined, inputs);
+  // Same inputs -> same decision; skip the matchMedia re-reads and class writes.
+  if (sameInputs(next, inputs)) return enabled;
+  inputs = next;
   setEnabled(shouldEnableGlassDesktop(inputs), w);
   return enabled;
 }

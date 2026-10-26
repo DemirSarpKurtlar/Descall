@@ -8,10 +8,12 @@ import JsonLd, { buildEntityGraphLd } from "../JsonLd";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { APP_STORE_URL } from "../appStoreLink";
 import { useIsAppleMobile } from "../useIsAppleMobile";
+import { useDocumentMarker } from "../../hooks/useDocumentMarker";
 import ProductFrame from "../components/ProductFrame";
 import { IconAndroid, IconApple, IconBrowser, IconWindows } from "../icons";
 
 export default function HomePage({ onSignIn, onSignUp }) {
+  useDocumentMarker("has-mkt-hh"); // was body:has(.mkt-hh), see lib/documentMarker.js
   const { t, locale } = useLocale();
   const href = useMarketingHref();
   const openRegister = onSignUp || onSignIn;
