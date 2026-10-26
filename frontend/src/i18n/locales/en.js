@@ -303,6 +303,8 @@ export const nested = {
     "errors": "Error Logs",
     "feedback": "Feedback",
     "shop": "Shop",
+    "sections": "Sections",
+    "sectionsCount": "{n} sections",
     "promoCodes": "Promo Codes",
     "announcements": "Announcements",
     "livePopup": "Live popup",

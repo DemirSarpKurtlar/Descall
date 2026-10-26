@@ -24,7 +24,7 @@ for (const must of [
   ".pinned-popover", ".slash-command-menu", ".attachment-menu", ".emoji-picker", ".g-alert",
   ".conv-confirm-card", ".server-voice-device-menu", ".call-device-menu", ".toast-item",
   ".g-menu", ".server-member-menu", ".server-channel-menu", ".img-crop-modal", ".user-hover-card",
-  ".g-react-bar", ".o3-transfer", ".o3-leave-sheet",
+  ".g-react-bar", ".o3-transfer", ".o3-leave-sheet", ".pc-suggest",
 ]) assert.ok(surfaces.includes(must), `${must} must be frosted`);
 // Layout wrappers must not be frosted: .g-msg-pop is the full-screen long-press
 // layer; frosting it drew an opaque box behind the lifted bubble (2.11.17).

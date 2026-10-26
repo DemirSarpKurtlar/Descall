@@ -1,18 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Coins, ShoppingBag, Award, RefreshCw, Copy, Search, Calendar, Eye, Plus, ChevronDown, Check,
-  Megaphone, Users, Clock, Gift, Shield, Ticket, Keyboard, X, Pause, Play,
+  Megaphone, Users, Clock, Gift, Shield, Ticket, Keyboard, Pause, Play,
 } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
 import { copyText } from "../../lib/copyText";
 import {
-  adminPromoOverview, adminPromoShopItems, adminPromoUsers, adminPromoCreate, adminPromoUpdate, adminPromoRedemptions,
+  adminPromoOverview, adminPromoShopItems, adminPromoCreate, adminPromoUpdate, adminPromoRedemptions,
 } from "../../api/promo";
 import { normalizeCode, codeGroups, generateCode, shortWhen, fmtNum } from "../../lib/promoCode";
 import { toTrtInputs, fromTrtInputs, dottedDate } from "../../lib/maintenance";
 import { describePromoBadge, getPromoBadges, onPromoBadgesChange } from "../../lib/promoBadges";
 import { PromoGiftPopup, BadgeGlyph } from "../promo/PromoUi.jsx";
+import PromoPeoplePicker from "./PromoPeoplePicker.jsx";
 import "../../styles/maintenance.css";
 import "../../styles/promo.css";
 
@@ -78,52 +79,6 @@ function useBadgeRegistry() {
   const [reg, setReg] = useState(() => getPromoBadges());
   useEffect(() => onPromoBadgesChange(setReg), []);
   return reg;
-}
-
-/** "Seçilenler": username search → chips. Server checks the ids again. */
-function PeoplePicker({ value, onChange, t }) {
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState([]);
-  const seq = useRef(0);
-  useEffect(() => {
-    const term = q.trim();
-    if (term.length < 2) { setHits([]); return undefined; }
-    const my = ++seq.current;
-    const id = setTimeout(async () => {
-      try {
-        const data = await adminPromoUsers(term);
-        if (my === seq.current) setHits((data?.users || []).filter((u) => !value.some((v) => v.id === u.id)));
-      } catch { if (my === seq.current) setHits([]); }
-    }, 180);
-    return () => clearTimeout(id);
-  }, [q, value]);
-  return (
-    <div className="mt-f">
-      <span>{t("promo.pickPeople")}</span>
-      <div className="mt-in pc-chips">
-        {value.map((u) => (
-          <span className="pc-chip" key={u.id}>
-            <Avatar name={u.display_name || u.username} size={20} user={{ id: u.id, username: u.username, avatarUrl: u.avatar_url }} animate="none" />
-            @{u.username}
-            <button type="button" aria-label={t("promo.removePerson", { name: u.username })} onClick={() => onChange(value.filter((v) => v.id !== u.id))}><X size={12} /></button>
-          </span>
-        ))}
-        <input value={q} placeholder={value.length ? "" : t("promo.pickPeoplePh")} aria-label={t("promo.pickPeople")} onChange={(e) => setQ(e.target.value)} />
-        {hits.length ? (
-          <ul className="pc-suggest" role="listbox">
-            {hits.map((u) => (
-              <li key={u.id}>
-                <button type="button" role="option" aria-selected="false" onClick={() => { onChange([...value, u]); setQ(""); setHits([]); }}>
-                  <Avatar name={u.display_name || u.username} size={24} user={{ id: u.id, username: u.username, avatarUrl: u.avatar_url }} animate="none" />
-                  <b>{u.display_name || u.username}</b><span>@{u.username}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 function PromoForm({ overview, onCreated, t }) {
@@ -272,7 +227,7 @@ function PromoForm({ overview, onCreated, t }) {
             onChange={(id) => set({ audience: f.audience === id ? "none" : id })} />
         </div>
       </div>
-      {f.audience === "selected" ? <PeoplePicker value={f.targets} onChange={(targets) => set({ targets })} t={t} /> : null}
+      {f.audience === "selected" ? <PromoPeoplePicker value={f.targets} onChange={(targets) => set({ targets })} t={t} /> : null}
       <div className="mt-row first">
         <Shield size={16} color="#6cb6ff" className="mt-i" />
         <div className="mt-row-copy"><b>{t("promo.oncePerUser")}</b><div className="mt-muted">{t("promo.oncePerUserHint")}</div></div>

@@ -720,6 +720,29 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         </motion.div>
       )}
 
+      {/* Phones: one native picker lists every section (the scrolling strip
+          hid 13 of 16 tabs, incl. Promosyon Kodları, with no scroll cue). */}
+      <label className="admin-tab-picker">
+        {(() => {
+          const cur = tabs.find((x) => x.id === tab) || tabs[0];
+          const CurIcon = cur.icon;
+          return (
+            <span className="admin-tab-picker-face" aria-hidden="true">
+              <CurIcon size={16} />
+              <b>{t(cur.label)}</b>
+              <span className="admin-tab-picker-n">{t("admin.sectionsCount", { n: tabs.length })}</span>
+              <ChevronDown size={16} />
+            </span>
+          );
+        })()}
+        <select aria-label={t("admin.sections")} value={tab} onChange={(e) => setTab(e.target.value)}>
+          {tabs.map((tabDef) => (
+            <option key={tabDef.id} value={tabDef.id}>
+              {t(tabDef.label)}{tabDef.id === "reports" && openReportCount > 0 ? ` (${openReportCount > 99 ? "99+" : openReportCount})` : ""}
+            </option>
+          ))}
+        </select>
+      </label>
       <nav className="admin-tabs">
         {tabs.map((tabDef) => {
           const Icon = tabDef.icon;

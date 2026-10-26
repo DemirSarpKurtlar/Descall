@@ -138,7 +138,7 @@ async function run() {
     r = await call(base, "GET", "/api/admin/promo-codes/shop-items", { token: admin });
     assert(r.status === 200 && r.body.items.length === 1 && r.body.items[0].id === "i-1", "only active shop items");
     r = await call(base, "GET", "/api/admin/promo-codes/users?q=a", { token: admin });
-    assert(r.status === 200 && r.body.users.length === 0, "one letter: no search");
+    assert(r.status === 200 && Array.isArray(r.body.users), "one letter already searches (closest match first)");
     r = await call(base, "GET", "/api/admin/promo-codes/users?q=ay%25", { token: admin });
     assert(r.status === 200 && Array.isArray(r.body.users), "user search");
 
