@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS public.descoin_admin_audit (
   id           BIGSERIAL PRIMARY KEY,
   admin_id     UUID REFERENCES public.users(id) ON DELETE SET NULL,
   target_user  UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  action       TEXT NOT NULL CHECK (action IN ('trust', 'untrust', 'note', 'run_job', 'release')),
+  action       TEXT NOT NULL CHECK (action IN ('trust', 'untrust', 'note', 'run_job', 'release', 'watch_add', 'watch_update', 'watch_remove')),
   note         TEXT CHECK (note IS NULL OR char_length(note) <= 1000),
   meta         JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()

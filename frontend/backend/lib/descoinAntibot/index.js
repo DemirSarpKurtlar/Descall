@@ -28,6 +28,7 @@ const risk = require("./risk");
 const hashing = require("./hashing");
 const store = require("./store");
 const alerts = require("./alerts");
+const watch = require("./watch");
 
 function db() {
   return require("../../db/supabase");
@@ -532,7 +533,7 @@ const JOB_BATCH = 100;
 async function scoreBatch(chunk, now, alertDeps) {
   const [prevRes, links] = await Promise.all([
     store.run("descoin_risk", "select", (s) =>
-      s.from("descoin_risk").select("user_id, score, signals, trusted").in("user_id", chunk)
+      s.from("descoin_risk").select("user_id, score, reasons, signals, trusted").in("user_id", chunk)
     ),
     linksFor(chunk, now).catch((err) => {
       console.warn("[antibot] links:", String(err?.message || err).slice(0, 200));
@@ -543,14 +544,15 @@ async function scoreBatch(chunk, now, alertDeps) {
   await loadMeta(chunk);
   const refRes = await db().from("referral_rewards").select("inviter_id, invitee_id").in("invitee_id", chunk);
   const inviterOf = new Map((refRes?.data || []).map((r) => [r.invitee_id, r.inviter_id]));
-  const prev = new Map((prevRes.data || []).map((r) => [r.user_id, r]));
+  // Shallow copies: the "before" values stay intact for the watch rules after the upsert.
+  const prev = new Map((prevRes.data || []).map((r) => [r.user_id, { ...r }]));
   const upserts = [];
   const crossings = [];
   let atHalf = 0;
   let atZero = 0;
   for (const id of chunk) {
     const prevRow = prev.get(id);
-    const merged = users.has(id) ? mergeSignals(prevRow?.signals, signalsFor(id)) : prevRow?.signals || {};
+    const merged = users.has(id) ? mergeSignals(prevRow?.signals, signalsFor(id)) : { ...(prevRow?.signals || {}) }; // copy: prev stays the "before" for watch rules
     const meta = metaCache.get(id);
     const linked = links.get(id) || new Set();
     const inviter = inviterOf.get(id);
@@ -580,12 +582,94 @@ async function scoreBatch(chunk, now, alertDeps) {
     const s = users.get(id);
     if (s) s.dirty = false;
   }
+  const watchRules = await loadWatchRules(chunk);
+  if (watchRules.length) await attachClusters(watchRules, upserts, links);
   await store.run("descoin_risk", "upsert", (s) => s.from("descoin_risk").upsert(upserts, { onConflict: "user_id" }));
+  const watchFires = await runWatchRules(watchRules, upserts, prev, alertDeps).catch((err) => {
+    console.warn("[antibot] watch:", String(err?.message || err).slice(0, 200));
+    return 0;
+  });
   const alertRes = await alerts.processCrossings(crossings, alertDeps).catch((err) => {
     console.warn("[antibot] alerts:", String(err?.message || err).slice(0, 200));
     return { recorded: 0 };
   });
-  return { users: upserts.length, atHalf, atZero, alerts: alertRes.recorded || 0 };
+  return { users: upserts.length, atHalf, atZero, alerts: (alertRes.recorded || 0) + watchFires };
+}
+
+// --- watch list rules (admin tab "İzleme listesi") ------------------------
+
+async function loadWatchRules(ids) {
+  const r = await store.run("descoin_watch_rules", "select", (s) =>
+    s.from("descoin_watch_rules").select("id, user_id, kind, threshold, fired_key").in("user_id", ids)
+  );
+  return r.error || r.skipped ? [] : r.data || [];
+}
+
+/** Two-hop link neighbourhood for accounts with a cluster_join rule (stored as signals.cluster_2hop). */
+async function attachClusters(rules, upserts, links) {
+  const want = new Set(rules.filter((r) => r.kind === "cluster_join").map((r) => r.user_id));
+  if (!want.size) return;
+  for (const row of upserts) {
+    if (!want.has(row.user_id)) continue;
+    const direct = [...(links.get(row.user_id) || [])].slice(0, 50);
+    const two = new Set(direct);
+    if (direct.length) {
+      const [a, b] = await Promise.all([
+        store.run("descoin_account_links", "select", (s) => s.from("descoin_account_links").select("user_a, user_b").in("user_a", direct).limit(500)),
+        store.run("descoin_account_links", "select", (s) => s.from("descoin_account_links").select("user_a, user_b").in("user_b", direct).limit(500)),
+      ]);
+      for (const l of [...(a.data || []), ...(b.data || [])]) {
+        two.add(l.user_a);
+        two.add(l.user_b);
+      }
+    }
+    two.delete(row.user_id);
+    row.signals.cluster_2hop = [...two].slice(0, 100);
+  }
+}
+
+function heldOf(signals) {
+  let n = 0;
+  for (const day of Object.values(signals?.shadow && typeof signals.shadow === "object" ? signals.shadow : {})) n += Number(day?.would_withhold) || 0;
+  return n;
+}
+
+async function runWatchRules(rules, upserts, prev, alertDeps) {
+  if (!rules.length) return 0;
+  const facts = new Map();
+  for (const row of upserts) {
+    const p = prev.get(row.user_id);
+    const ps = p?.signals || null;
+    facts.set(row.user_id, {
+      score: row.score,
+      prevScore: p ? p.score ?? 0 : null,
+      held: heldOf(row.signals),
+      prevHeld: p ? heldOf(ps) : null,
+      linked: row.signals.linked_with || [],
+      // No previous row = first score: that is the baseline, nothing is "new" yet.
+      prevLinked: ps && Array.isArray(ps.linked_with) ? ps.linked_with : p ? [] : row.signals.linked_with || [],
+      cluster: row.signals.cluster_2hop || [],
+      prevCluster: ps && Array.isArray(ps.cluster_2hop) ? ps.cluster_2hop : row.signals.cluster_2hop || [],
+      reasons: row.reasons || [],
+      prevReasons: p && Array.isArray(p.reasons) ? p.reasons : null,
+    });
+  }
+  const fires = watch.evaluateRules(rules, facts);
+  if (!fires.length) return 0;
+  const nowIso = new Date().toISOString();
+  const ins = await store.run("descoin_admin_alerts", "insert", (s) =>
+    s.from("descoin_admin_alerts").insert(
+      fires.map((f) => ({ user_id: f.rule.user_id, rule_id: f.rule.id, kind: f.kind, severity: f.severity, body: f.body }))
+    )
+  );
+  if (ins.error || ins.skipped) return 0;
+  for (const f of fires) {
+    await store.run("descoin_watch_rules", "update", (s) =>
+      s.from("descoin_watch_rules").update({ fired_key: f.firedKey, last_fired_at: nowIso }).eq("id", f.rule.id)
+    );
+  }
+  await alerts.notifyWatchFires(fires.length, alertDeps).catch(() => {});
+  return fires.length;
 }
 
 /** Recompute links + risk for users seen in memory (or the given ids). */
@@ -653,6 +737,7 @@ async function runRetention(now = Date.now()) {
     ["descoin_device_seen", "last_seen", R],
     ["descoin_account_links", "last_seen", R],
     ["descoin_risk_alerts", "created_at", R],
+    ["descoin_admin_alerts", "created_at", R],
     ["descoin_message_fingerprints", "created_at", config.MESSAGE_FP_RETENTION_DAYS],
   ];
   for (const [table, col, days] of jobs) {
@@ -722,6 +807,7 @@ module.exports = {
   warmRiskCache,
   setTrustedLocal,
   runRetention,
+  heldOf,
   startAntibotScheduler,
   stopAntibotScheduler,
   status,

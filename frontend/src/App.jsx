@@ -539,6 +539,10 @@ export default function App() {
   const [loadingOlderDm, setLoadingOlderDm] = useState(false);
   const [reconnectState, setReconnectState] = useState("idle");
   const [adminOpen, setAdminOpen] = useState(false);
+  // "moderator" (from /me or the staff:role socket event): admin panel limited to Şüpheli Davranışlar.
+  const [staffRoleLive, setStaffRole] = useState(undefined);
+  const isFullAdmin = Boolean(me?.is_admin || me?.username === "admin");
+  const isModerator = !isFullAdmin && (staffRoleLive === undefined ? me?.staffRole === "moderator" : staffRoleLive === "moderator");
   const [adminChanged, setAdminChanged] = useState(false);
   const [myGroups, setMyGroups] = useState([]);
   const [groupMessagesById, setGroupMessagesById] = useState({});
@@ -1407,9 +1411,12 @@ export default function App() {
       if (user) applyProfileUpdate(user);
     };
     socketApi.on("user:profile:updated", handleProfileUpdated);
+    const handleStaffRole = (p) => setStaffRole(p?.role === "moderator" ? "moderator" : null);
+    socketApi.on("staff:role", handleStaffRole);
     return () => {
       socketApi.off("user:updated", handleUserUpdated);
       socketApi.off("user:profile:updated", handleProfileUpdated);
+      socketApi.off("staff:role", handleStaffRole);
     };
   }, [socketApi, commitSessionUser, applyProfileUpdate]);
 
@@ -4760,9 +4767,9 @@ export default function App() {
         <Suspense fallback={null}>
           <MaintenanceGate socket={socketApi} isAdmin={Boolean(me?.is_admin || me?.username === "admin")} />
         </Suspense>
-        {(me?.is_admin || me?.username === "admin") && adminOpen && (
+        {(isFullAdmin || isModerator) && adminOpen && (
           <Suspense fallback={null}>
-            <AdminPanel socket={socketApi} viewerUsername={me?.username} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
+            <AdminPanel socket={socketApi} viewerUsername={me?.username} moderatorOnly={!isFullAdmin} onClose={() => setAdminOpen(false)} onAdminChanged={() => setAdminChanged(true)} />
           </Suspense>
         )}
 
@@ -4920,7 +4927,7 @@ export default function App() {
           myStatus={myStatus}
           onStatusChange={handleStatusChange}
           onAdminClick={() => setAdminOpen(true)}
-          isAdmin={me?.is_admin || me?.username === "admin"}
+          isAdmin={isFullAdmin || isModerator}
           onDmSelect={(dm) => {
             setReplyTo(null);
             if (!dm) {

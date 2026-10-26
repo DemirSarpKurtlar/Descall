@@ -201,6 +201,7 @@ import {
   ShareNetwork as PShareNetwork,
   Shield as PShield,
   ShieldCheck as PShieldCheck,
+  ShieldWarning as PShieldWarning,
   ShoppingBag as PShoppingBag,
   SignIn as PSignIn,
   SignOut as PSignOut,
@@ -330,6 +331,7 @@ export const Zap = make(PLightning, "Zap");
 export const XCircle = make(PXCircle, "XCircle");
 export const Square = make(PSquare, "Square");
 export const ShieldCheck = make(PShieldCheck, "ShieldCheck");
+export const ShieldWarning = make(PShieldWarning, "ShieldWarning");
 export const Pin = make(PPushPin, "Pin");
 export const Phone = make(PPhone, "Phone");
 export const Pencil = make(PPencilSimple, "Pencil");

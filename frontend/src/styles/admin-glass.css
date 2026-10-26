@@ -3941,3 +3941,8 @@ button.overview-kpi:hover {
 
 
 
+
+/* Wallet-freeze shortcut from "Şüpheli Davranışlar": point at the existing button, never press it. */
+.dossier-act.is-hinted{animation:dossier-hint 0.8s ease-in-out 3;outline:2px solid rgba(191,90,242,.7);outline-offset:2px}
+@keyframes dossier-hint{50%{box-shadow:0 0 0 6px rgba(191,90,242,.25)}}
+@media (prefers-reduced-motion:reduce){.dossier-act.is-hinted{animation:none}}

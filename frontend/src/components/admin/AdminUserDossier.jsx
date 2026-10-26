@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle, Ban, Clock, Coins, Flag, Globe, History, Lock, LockOpen,
   LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
@@ -46,7 +46,7 @@ function riskTone(level) {
   return "low";
 }
 
-export default function AdminUserDossier({ userId, onRefreshInbox, highlightReportId = null }) {
+export default function AdminUserDossier({ userId, onRefreshInbox, highlightReportId = null, intent = null }) {
   const { t, locale } = useLocale();
   const [dossier, setDossier] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -55,6 +55,9 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState(null);
   const [message, setMessage] = useState("");
+  const walletBtnRef = useRef(null);
+  const [walletHint, setWalletHint] = useState(false);
+  const usedIntent = useRef(null);
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -70,6 +73,19 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
       setLoading(false);
     }
   }, [userId, t]);
+
+  // Shortcut from "Şüpheli Davranışlar": open the matching tool pre-selected. Nothing runs by itself.
+  useEffect(() => {
+    if (!intent || !dossier || usedIntent.current === intent.at) return undefined;
+    usedIntent.current = intent.at;
+    if (intent.intent === "timeout" || intent.intent === "ban") setAction(intent.intent);
+    if (intent.intent === "freeze") {
+      setWalletHint(true);
+      walletBtnRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      walletBtnRef.current?.focus?.({ preventScroll: true });
+    }
+    return undefined;
+  }, [intent, dossier]);
 
   useEffect(() => {
     load().catch(() => {});
@@ -192,7 +208,8 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
               </button>
               <button
                 type="button"
-                className={`dossier-act ${wallet.frozen ? "green" : "violet"}`}
+                ref={walletBtnRef}
+                className={`dossier-act ${wallet.frozen ? "green" : "violet"}${walletHint ? " is-hinted" : ""}`}
                 disabled={busy}
                 onClick={() =>
                   act(

@@ -2,6 +2,7 @@
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
 import { BADGES_EN } from "./badges.en.js";
+import { ANTIBOT_EN } from "./antibot.en.js";
 export const nested = {
   maint: MAINT_EN,
   promo: PROMO_EN,
@@ -43,6 +44,8 @@ export const nested = {
     unmadeAdmin: "{name} is no longer a group admin.",
   },
   badges: BADGES_EN,
+  // Admin · Şüpheli Davranışlar (Oct 2026)
+  sx: ANTIBOT_EN,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Danger zone",

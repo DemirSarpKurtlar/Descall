@@ -561,6 +561,7 @@ router.patch("/users/:id", async (req, res) => {
         io?.to(`user:${req.params.id}`)?.emit("user:updated", { is_admin: role === "admin" });
       }
       audit(req.user, "user_role", req.params.id, { role });
+      getIo(req)?.to(`user:${req.params.id}`)?.emit("staff:role", { role: role === "mod" ? "moderator" : null });
     }
     notifyAdminRoom(getIo(req), { type: "user_patch", id: req.params.id });
     res.json({ ok: true });
