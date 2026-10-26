@@ -144,7 +144,7 @@ export function inviteActive(inv, now = Date.now()) {
 export function inviteCodeFromInput(raw) {
   const s = String(raw || "").trim();
   if (!s) return { kind: null, value: "" };
-  const m = s.match(/(?:^|\/)(?:i|invite|servers\/join)\/([A-Za-z0-9_-]+)/);
+  const m = s.match(/(?:^|\/)(?:invite\/s|servers\/join|invite|i)\/([A-Za-z0-9_-]+)/);
   if (m) return { kind: "invite", value: m[1] };
   const v = s.match(/(?:^|\/)s\/([a-z0-9-]+)/i);
   if (v) return { kind: "vanity", value: v[1].toLowerCase() };
@@ -300,4 +300,10 @@ export function inviteUsesLabel(n, s) {
 }
 export function vanityValid(slug) {
   return /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(String(slug || ""));
+}
+
+/** Same rule as the backend's confirmName check (cleanName + toLowerCase), so the green tick never lies. */
+export function confirmNameMatches(typed, name) {
+  const c = (v) => String(v || "").trim().replace(/\s+/g, " ").toLowerCase();
+  return c(typed).length > 0 && c(typed) === c(name);
 }

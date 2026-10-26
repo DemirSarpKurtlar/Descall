@@ -74,7 +74,6 @@ export function useRouteDraft(route, init) {
  */
 export function PageFrame({ route, title, right, left, children, scrollStyle, noScroll }) {
   const hub = useHub();
-  const { s } = hub;
   const leftNode = left !== undefined ? left : hub.backFor(route);
   return (
     <>

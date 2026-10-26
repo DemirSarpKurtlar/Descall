@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import { ActionSheet, Act, AlertBox, Av, Btn, Chip, Field, Foot, Group, I, Nav, PRESENCE_DOT, Row, Scroll, Sec, Spinner } from "./kit";
 import { DoneBtn, PageFrame, Rich, useHub, useRouteDraft, useRun } from "./hubCore";
-import { usePerms } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";
 import { copyText } from "../../../lib/copyText";
 import { promptAction } from "../../../lib/glassConfirm";
@@ -20,8 +19,7 @@ import {
 } from "../../../lib/serverPermissions";
 import {
   EVERYONE_LOCKED_KEYS, ROLE_PERM_ORDER, ROLE_SWATCHES, TIMEOUT_OPTIONS, colorToHex, durationLabel, hexToColor, memberAge, memberName,
-  memberRoleLine, orderKeys, presenceOf, roleHex, sortMembers, timeLeftLabel,
-} from "./hubData";
+  memberRoleLine, orderKeys, presenceOf, roleHex, sortMembers, timeLeftLabel, confirmNameMatches } from "./hubData";
 
 const lower = (v) => String(v || "").toLocaleLowerCase("tr");
 const matches = (m, q) => !q || [m.nickname, m.displayName, m.username].some((x) => x && lower(x).includes(q));
@@ -226,7 +224,7 @@ export function MemberBody({ userId }) {
       </div>
       <div className="svh-pillrow" style={{ margin: "16px 0 4px" }}>
         <Act i="msg" label={s.aMessage} disabled={isSelf || !deps.onStartDm} onClick={() => leaveTo(() => deps.onStartDm?.(user))} />
-        <Act i="phone" label={s.aCall} disabled={isSelf || !deps.onStartCall} onClick={() => leaveTo(() => deps.onStartCall?.(user, "audio"))} />
+        <Act i="phone" label={s.aCall} disabled={isSelf || !deps.onStartCall} onClick={() => leaveTo(() => deps.onStartCall?.(user, "voice"))} />
         <Act i="user" label={s.aProfile} onClick={() => leaveTo(() => (deps.onOpenProfile ? deps.onOpenProfile(user) : window.dispatchEvent(new CustomEvent("descall:open-profile", { detail: { userId: m.userId, user } }))))} />
         <Act i="more" label={s.aMore} onClick={() => setSheet("more")} />
       </div>
@@ -677,7 +675,7 @@ export function TransferConfirmPage({ route }) {
   const target = (data.members || []).find((m) => String(m.userId) === String(route.userId));
   const tn = target ? memberName(target) : "";
   const serverName = String(server?.name || "");
-  const nameOk = serverName.length > 0 && d.name.trim().toLocaleLowerCase("tr") === serverName.trim().toLocaleLowerCase("tr");
+  const nameOk = confirmNameMatches(d.name, serverName);
   const canSubmit = Boolean(target) && nameOk && (!pwRequired || d.password.length > 0) && !busy;
   const submit = async () => {
     if (!canSubmit || busyRef.current) return;

@@ -364,6 +364,7 @@ export function MenuItems({ items }) {
   return items.map((it, i) => {
     if (it === "-") return <div key={`s${i}`} className="svh-msep" />;
     if (!it) return null;
+    if (it.node) return <div key={it.key || `n${i}`} className="svh-mnode">{it.node}</div>;
     return (
       <button key={it.key || it.t} type="button" className={cx("svh-mi", "svh-tap", it.red && "red", it.hl && "hl")} data-press-scale="1" onClick={it.onClick} disabled={it.disabled} role="menuitem">
         {it.lead || null}

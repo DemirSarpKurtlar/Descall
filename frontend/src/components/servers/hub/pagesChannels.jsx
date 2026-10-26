@@ -1,7 +1,7 @@
 /* Kanallar list, 06 Kanal oluştur, 07 Kategori oluştur, 08 Kanal ayarları, 09 silme uyarısı, 10 Kanal erişimi. */
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri, NavText } from "./kit";
+import { AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from "./kit";
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import { usePerms } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";

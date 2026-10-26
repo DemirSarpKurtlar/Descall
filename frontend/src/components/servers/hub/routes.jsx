@@ -73,6 +73,7 @@ export function sectionOf(stack, top) {
   const list = [...(stack || [])].reverse();
   if (top && !list.includes(top)) list.unshift(top);
   for (const r of list) {
+    if (r.nosel) return null;
     if (r.id === "mod") return r.tab === "audit" ? "au" : "bn";
     if (SECTION[r.id]) return SECTION[r.id];
   }

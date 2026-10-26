@@ -1,7 +1,7 @@
 /* 04 Genel bakış, 16 Topluluk ve Keşif, Kurallar, 19 Bildirimler, Klasör. */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { ActionSheet, Chip, Field, Foot, Group, I, Row, Sec, Sq, Toggle, NavText } from "./kit";
+import { ActionSheet, Chip, Field, Foot, Group, I, Row, Sec, Sq } from "./kit";
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import Cropper from "./Cropper";
 import { usePerms, levelLabel } from "./pagesHub";
@@ -11,7 +11,7 @@ import { readFileAsDataUrl } from "../../../lib/cropImage";
 import { updateServer, updateServerNotificationLevel, createServerFolder } from "../../../api/servers";
 import { isChannelMuted, setChannelMutedAsync } from "../../../lib/serverChannelMutes";
 import { getServerMute, setServerMute, clearServerMute, MUTE_DURATIONS, subscribeServerMutes } from "./serverMute";
-import { AFK_TIMEOUT_OPTIONS, VERIFICATION_LEVELS, channelIcon, channelLabel, durationLabel, isTextLike, isVoiceLike, longDate, memberName, rulesList, vanityValid } from "./hubData";
+import { AFK_TIMEOUT_OPTIONS, VERIFICATION_LEVELS, channelIcon, channelLabel, durationLabel, isTextLike, longDate, memberName, rulesList, vanityValid } from "./hubData";
 import { hapticSelection } from "../../../lib/fluid/haptics";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

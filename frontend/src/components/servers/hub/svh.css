@@ -204,3 +204,4 @@ input.svh-range::-moz-range-thumb{width:26px;height:26px;border-radius:50%;backg
 .svh-ri{position:relative;background:transparent;border-radius:12px}
 .svh-ri+.svh-ri>.svh-row:before,.svh-ri+.svh-row:before,.svh-row+.svh-ri>.svh-row:before{content:"";position:absolute;top:0;right:0;left:var(--inset,56px);height:.5px;background:rgba(255,255,255,.12)}
 .svh-grip{cursor:grab}
+.svh-mi+.svh-mnode,.svh-mnode+.svh-mi{position:relative}.svh-mnode+.svh-mi:before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:rgba(255,255,255,.1)}

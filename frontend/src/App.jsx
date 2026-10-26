@@ -3277,6 +3277,22 @@ export default function App() {
     };
   }, [activeView, activeServer?.id, activeChannel?.id, activeChannel?.type]);
 
+  // A5: "Okundu olarak işaretle" from the server/folder long-press menus.
+  useEffect(() => {
+    const onMarkRead = (e) => {
+      const ids = (e?.detail?.channelIds || []).map(String);
+      if (!ids.length) return;
+      setChannelUnread((prev) => {
+        if (!ids.some((id) => prev[id])) return prev;
+        const next = { ...prev };
+        for (const id of ids) delete next[id];
+        return next;
+      });
+    };
+    window.addEventListener("descall:server-mark-read", onMarkRead);
+    return () => window.removeEventListener("descall:server-mark-read", onMarkRead);
+  }, []);
+
   // Clear unread when opening a channel + persist read state
   useEffect(() => {
     if (!activeChannel?.id || activeChannel.type !== "text" || !activeServer?.id) return;
@@ -4782,7 +4798,7 @@ export default function App() {
     if (location.pathname !== nextPath) navigate(nextPath);
   };
 
-  const handleCreateChannel = async ({ name, type, parentId, topic, slowmodeSeconds }) => {
+  const handleCreateChannel = async ({ name, type, parentId, topic, slowmodeSeconds, beforeOpen }) => {
     if (!activeServer?.id) return;
     const { channel } = await createChannel(activeServer.id, {
       name,
@@ -4793,10 +4809,13 @@ export default function App() {
     });
     if (!channel) return;
     patchServerChannels(activeServer.id, (channels) => [...channels, channel]);
+    // A5: e.g. "Özel kanal" writes its overwrites before the channel opens.
+    if (beforeOpen) await beforeOpen(channel);
     if (channel.type !== "category") {
       setActiveChannel(channel);
       navigate(serverPath(activeServer, channel));
     }
+    return channel;
   };
 
   const handleUpdateChannel = async (channelId, patch) => {
