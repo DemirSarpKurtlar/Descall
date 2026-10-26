@@ -730,6 +730,13 @@ function MessageBubble({
   const t = useT();
   const { toast } = useToast();
   const glass = useGlassUi();
+  // A mouse-only device (desktop/Electron) has no swipe-to-reply: framer's drag
+  // would set user-select:none on the bubble and a double click on the text
+  // could never select the word (A2). Touch devices keep the swipe.
+  const mouseOnly = useMemo(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(pointer: fine)").matches && !window.matchMedia("(any-pointer: coarse)").matches;
+  }, []);
   const bubbleRef = useRef(null);
   const pressDetach = useRef(null);
   const pressGate = useRef(null);
@@ -1294,7 +1301,7 @@ function MessageBubble({
           ease: [0.16, 1, 0.3, 1],
         }}
         style={{ x }}
-        drag={glass || mediaOnly ? false : "x"}
+        drag={glass || mediaOnly || mouseOnly ? false : "x"}
         dragDirectionLock
         dragSnapToOrigin
         dragConstraints={{ left: 0, right: 72 }}
@@ -1309,6 +1316,7 @@ function MessageBubble({
           if (shouldReply) triggerReply();
         }}
         data-no-swipe-back=""
+        data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
         className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
@@ -1996,8 +2004,10 @@ function GlassMessageMenu({
             s.active = false;
             const i = chipIndexAt(ev.clientX, ev.clientY);
             setLensIdx(-1);
-            if (i >= 0 && i !== s.start) {
-              // Slid onto another emoji: pick it (the start chip's click is ignored).
+            if (i >= 0) {
+              // Released on an emoji (the one pressed, or another one slid
+              // onto): pick it here. The lens re-render replaced the chip's
+              // pressToActivate handlers, so its click must not also run.
               s.picked = true;
               beginClose();
               onReact(quick[i]);

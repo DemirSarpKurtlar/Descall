@@ -302,7 +302,9 @@ function touchEvent(type, clientX, clientY, extra = {}) {
   assert.match(list, /data-no-swipe-back=""/);
   // 2.12.0: every message sits on the left (Discord-style), so reply swipe is always to the right.
   assert.match(list, /getDirection: \(\) => "right"/);
-  assert.match(list, /drag=\{glass \|\| mediaOnly \? false : "x"\}/);
+  // A2: mouse-only devices drop the drag so a double click selects the word.
+  assert.match(list, /drag=\{glass \|\| mediaOnly \|\| mouseOnly \? false : "x"\}/);
+  assert.match(list, /\(pointer: fine\)"\)\.matches && !window\.matchMedia\("\(any-pointer: coarse\)"\)/);
   assert.match(list, /dragConstraints=\{\{ left: 0, right: 72 \}\}/);
   assert.match(list, /cancelSwipeBackIfPending/);
   assert.match(hook, /machine\.state\.phase !== PHASE\.PENDING/);
