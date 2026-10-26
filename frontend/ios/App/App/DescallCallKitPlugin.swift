@@ -31,6 +31,7 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
         CAPPluginMethod(name: "getNativeCall", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "nativeHangup", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "nativeSetMuted", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "drainNativeTelemetry", returnType: CAPPluginReturnPromise),
     ]
 
     private var manager: DescallCallManager { DescallCallManager.shared }
@@ -114,6 +115,13 @@ public class DescallCallKitPlugin: CAPPlugin, CAPBridgedPlugin, DescallCallEvent
             var state = DescallNativeCall.shared.state()
             state["lastMetrics"] = DescallNativeCall.lastMetrics()
             call.resolve(state)
+        }
+    }
+
+    /// 3.0.0 (A0): native call summaries that could not be sent natively.
+    @objc func drainNativeTelemetry(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            call.resolve(["items": DescallNativeCall.drainPendingTelemetry()])
         }
     }
 

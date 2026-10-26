@@ -26,6 +26,19 @@ export function refreshNativeCall() {
     .catch(() => store.get());
 }
 
+/**
+ * 3.0.0 (A0): native call summaries the Swift engine could not send (its
+ * socket was down at hang up). Already sanitised there; the sender whitelists
+ * them again.
+ */
+export function drainNativeTelemetry() {
+  if (!IOS_NATIVE || typeof callKitPlugin.drainNativeTelemetry !== "function") return Promise.resolve([]);
+  return callKitPlugin
+    .drainNativeTelemetry()
+    .then((res) => (Array.isArray(res?.items) ? res.items : []))
+    .catch(() => []);
+}
+
 export function nativeHangup() {
   const s = store.get();
   if (!IOS_NATIVE || !s.active) return Promise.resolve();

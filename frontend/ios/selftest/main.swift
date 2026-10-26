@@ -82,6 +82,17 @@ check(tl.answerToAudioMs == 750, "answer → audio")
 check(tl.summary == "push=0 answered=1500 firstAudio=2250", "summary \(tl.summary)")
 check((tl.dictionary["answerToAudioMs"] as? Int) == 750, "dictionary")
 
+// Telemetry (3.0.0 A0): aggregate tags only, no ids
+let tel = L.telemetry(tl, video: false, result: L.telemetryResult(tl, failure: nil), turn: true)
+check((tel["path"] as? String) == "native" && (tel["entry"] as? String) == "callkit" && (tel["push"] as? String) == "voip", "telemetry tags")
+check((tel["result"] as? String) == "done" && (tel["callType"] as? String) == "voice" && (tel["turn"] as? Bool) == true, "telemetry result")
+check((tel["answerToAudioMs"] as? Int) == 750 && tel["callerId"] == nil && tel["uuid"] == nil, "telemetry marks, no ids")
+check(L.telemetryResult(L.Timeline(start: 0), failure: nil) == "no-audio", "no audio result")
+check(L.telemetryResult(tl, failure: "lost") == "lost", "failure result")
+var pending: [[String: Any]] = []
+for i in 0..<12 { pending = L.appendPending(pending, ["n": i]) }
+check(pending.count == 10 && (pending.first?["n"] as? Int) == 2, "pending queue capped at 10")
+
 // Backoff
 check(L.reconnectDelay(attempt: 0) == 0.5 && L.reconnectDelay(attempt: 99) == 8, "backoff")
 

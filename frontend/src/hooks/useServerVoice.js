@@ -67,6 +67,8 @@ import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
 import { primeVoiceActivity } from "../lib/voiceActivity";
+import { createCallTelemetrySender } from "../lib/callTelemetry";
+import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
 
 let liveKitApiPromise = null;
 function loadLiveKit() {
@@ -403,6 +405,16 @@ export function useServerVoice(socket) {
     return liveKitConfigRef.current;
   }, []);
 
+  // 3.0.0 (A0): one aggregate setup summary per voice join (no ids).
+  const voiceTelemetryRef = useRef(null);
+  if (!voiceTelemetryRef.current) {
+    const sender = createCallTelemetrySender({ getSocket: () => socketRef.current });
+    voiceTelemetryRef.current = createGroupCallTelemetry({
+      send: (summary) => sender.send(summary),
+      context: () => ({ platform: IOS_NATIVE ? "ios-app" : "web" }),
+    });
+  }
+
   const getLiveKitToken = useCallback(async (channelId) => {
     const token = getToken();
     if (!token || !channelId) return { enabled: false };
@@ -415,7 +427,9 @@ export function useServerVoice(socket) {
     );
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body?.error || "Could not prepare SFU voice.");
+      const err = new Error(body?.error || "Could not prepare SFU voice.");
+      err.code = `http-${res.status === 401 || res.status === 403 ? "auth" : res.status >= 500 ? "server" : "client"}`;
+      throw err;
     }
     return res.json();
   }, []);
@@ -493,6 +507,7 @@ export function useServerVoice(socket) {
           return;
         }
         if (role === "mic") {
+          voiceTelemetryRef.current?.mark("lkFirstAudioMs");
           attachRemoteAudio(userId, new MediaStream([mediaTrack]));
           return;
         }
@@ -537,6 +552,7 @@ export function useServerVoice(socket) {
       });
       room.on(RoomEvent.Reconnecting, () => {
         if (liveKitRoomRef.current !== room) return;
+        voiceTelemetryRef.current?.countReconnect();
         setLiveKitLink("reconnecting");
       });
       room.on(RoomEvent.Reconnected, () => {
@@ -549,7 +565,10 @@ export function useServerVoice(socket) {
       });
       const livekitUrls = tokenData.livekitUrls?.length ? tokenData.livekitUrls : [tokenData.livekitUrl];
       const livekitUrl = (await pickFastestLiveKitUrl(livekitUrls)) || tokenData.livekitUrl;
+      voiceTelemetryRef.current?.mark("urlProbeMs");
       await room.connect(livekitUrl, tokenData.token);
+      voiceTelemetryRef.current?.mark("lkConnectMs");
+      voiceTelemetryRef.current?.set("media", "sfu");
       liveKitRoomRef.current = room;
       setLiveKitLink("connected");
       sfuModeRef.current = true;
@@ -557,6 +576,7 @@ export function useServerVoice(socket) {
       const audioTrack = stream?.getAudioTracks?.()[0] || null;
       if (audioTrack && canPublishVoice()) {
         await room.localParticipant.publishTrack(audioTrack, liveKitMicPublishOptions(Track.Source.Microphone));
+        voiceTelemetryRef.current?.mark("published");
       }
       return true;
     },
@@ -604,6 +624,7 @@ export function useServerVoice(socket) {
   }, []);
 
   const cleanupAll = useCallback(() => {
+    voiceTelemetryRef.current?.finish("ended");
     emitVoiceLeave();
     const leavingChannelId = activeChannelIdRef.current || lastVoiceChannelIdRef.current;
     const leavingServerId = activeServerIdRef.current;
@@ -878,12 +899,18 @@ export function useServerVoice(socket) {
       // Fetch media-config while the microphone starts (cached after the
       // first join) instead of serially after the join emit.
       const mediaConfigPromise = getMediaConfig();
+      const telemetry = voiceTelemetryRef.current;
+      telemetry?.finish("ended");
+      telemetry?.begin("server", "outgoing", "voice");
+      telemetry?.mark("gumStart");
       try {
         const nextChannelType = channel.type === "stage" ? "stage" : "voice";
         const isStage = nextChannelType === "stage";
         const stream = isStage
           ? new MediaStream()
           : await acquireVoiceMicStream(micConstraints());
+        telemetry?.mark("gumEnd");
+        telemetry?.watch(() => Array.from(pcMapRef.current.entries()).map(([key, peer]) => [key, peer?.pc]));
         if (!stillJoining()) {
           stream.getTracks().forEach((track) => track.stop());
           return;
@@ -928,7 +955,11 @@ export function useServerVoice(socket) {
                 await new Promise((r) => setTimeout(r, 350));
                 if (!stillJoining()) return;
               }
-              const tokenData = await getLiveKitToken(channel.id);
+              const tokenData = await getLiveKitToken(channel.id).catch((tokenErr) => {
+                telemetry?.set("tokenError", tokenErr?.code || "network");
+                throw tokenErr;
+              });
+              telemetry?.mark("tokenMs");
               if (!stillJoining()) return;
               if (!tokenData?.enabled) {
                 lastSfuErr = new Error(tokenData?.error || "LiveKit token unavailable");
@@ -966,6 +997,7 @@ export function useServerVoice(socket) {
         }
       } catch (err) {
         if (!stillJoining()) return;
+        telemetry?.finish(isVoiceMicError(err) ? "mic-error" : "failed");
         cleanupAll();
         const msg = isVoiceMicError(err)
           ? voiceMicErrorCopy(err)

@@ -67,6 +67,8 @@ final class DescallNativeCall: NSObject {
         /// the caller's candidates arrive with the offer).
         var iceConnected = false
         var inboundLogged = false
+        /// fail(reason) for telemetry; nil = a normal hang up.
+        var failure: String?
 
         init(info: DescallCallManager.CallInfo, apiBase: String) {
             uuid = info.uuid
@@ -593,6 +595,7 @@ final class DescallNativeCall: NSObject {
 
     private func fail(_ s: Session, reason: String) {
         NSLog("[DescallNativeCall] failed: \(reason) \(s.timeline.summary)")
+        s.failure = reason
         if s.answered {
             s.socket?.emit("call:end", ["toUserId": s.callerId])
             teardown(s, notifyCallKit: .failed)
@@ -622,10 +625,18 @@ final class DescallNativeCall: NSObject {
         s.audioTrack?.isEnabled = false
         s.pc?.close()
         s.pc = nil
-        s.socket?.close()
-        s.socket = nil
         if wasAnswered {
             s.timeline.mark("ended", at: Date().timeIntervalSince1970)
+        }
+        let socket = s.socket
+        s.socket = nil
+        if wasAnswered, sendTelemetry(s, socket: socket) {
+            // Let the telemetry frame flush before closing the socket.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { socket?.close() }
+        } else {
+            socket?.close()
+        }
+        if wasAnswered {
             persistMetrics(s)
             let rtc = RTCAudioSession.sharedInstance()
             rtc.isAudioEnabled = false
@@ -696,6 +707,33 @@ final class DescallNativeCall: NSObject {
         d["at"] = Int(Date().timeIntervalSince1970)
         d["turn"] = DescallNativeCallLogic.hasTurn(s.iceServers ?? [])
         UserDefaults.standard.set(d, forKey: "descall.nativeCallMetrics")
+    }
+
+    private static let pendingTelemetryKey = "descall.nativeCallTelemetryPending"
+
+    /// 3.0.0 (A0): one aggregate summary per natively answered call over the
+    /// native socket (path "native"); queued in UserDefaults when offline and
+    /// drained by the web app on its next socket connect. Returns true when sent.
+    private func sendTelemetry(_ s: Session, socket: DescallSignalSocket?) -> Bool {
+        let payload = DescallNativeCallLogic.telemetry(
+            s.timeline,
+            video: s.video,
+            result: DescallNativeCallLogic.telemetryResult(s.timeline, failure: s.failure),
+            turn: DescallNativeCallLogic.hasTurn(s.iceServers ?? [])
+        )
+        if let socket = socket, socket.connected {
+            socket.emit("call:telemetry", payload)
+            return true
+        }
+        let list = UserDefaults.standard.array(forKey: Self.pendingTelemetryKey) as? [[String: Any]] ?? []
+        UserDefaults.standard.set(DescallNativeCallLogic.appendPending(list, payload), forKey: Self.pendingTelemetryKey)
+        return false
+    }
+
+    static func drainPendingTelemetry() -> [[String: Any]] {
+        let list = UserDefaults.standard.array(forKey: pendingTelemetryKey) as? [[String: Any]] ?? []
+        UserDefaults.standard.removeObject(forKey: pendingTelemetryKey)
+        return list
     }
 
     static func lastMetrics() -> [String: Any] {

@@ -1778,14 +1778,10 @@ function registerSocketHandlers(io) {
     // setup so failed iOS calls show up in the Render logs.
     let telemetryCount = 0;
     socket.on("call:telemetry", (summary = {}) => {
-      if (!summary || typeof summary !== "object" || ++telemetryCount > 30) return;
-      const pick = {};
-      for (const k of ["direction", "callType", "result", "platform", "pair", "gum", "offerSent", "answerRecv", "answerSent", "ice", "out", "in", "heard", "iceFailed", "iceCfgTurn", "iceCfgStunOnly", "answerToAudioMs"]) {
-        const v = summary[k];
-        if (v == null) continue;
-        if (typeof v === "number" && Number.isFinite(v)) pick[k] = Math.round(v);
-        else if (typeof v === "string") pick[k] = v.slice(0, 40);
-      }
+      const { sanitizeCallTelemetry, MAX_PER_SOCKET } = require("../lib/callTelemetry");
+      if (!summary || typeof summary !== "object" || ++telemetryCount > MAX_PER_SOCKET) return;
+      const pick = sanitizeCallTelemetry(summary);
+      if (!pick) return;
       console.log("[CallTelemetry]", JSON.stringify(pick));
     });
 
@@ -1928,9 +1924,7 @@ function registerSocketHandlers(io) {
 
     // Emoji Reactions
     socket.on("reaction:add", async ({ messageId, conversationType, conversationId, emoji } = {}) => {
-      console.log("[reaction:add] Received:", { messageId, conversationType, conversationId, emoji, myId });
       if (!messageId || !conversationType || !conversationId || !emoji) {
-        console.log("[reaction:add] Missing params, returning");
         return;
       }
       
@@ -1942,7 +1936,6 @@ function registerSocketHandlers(io) {
         if (typeof conversationId === "string" && conversationId.includes("::")) {
           const ids = conversationId.split("::");
           if (ids.length !== 2) {
-            console.log("[reaction:add] Invalid conversationId format");
             return;
           }
           otherId = ids[0] === myId ? ids[1] : ids[0];
@@ -1951,25 +1944,19 @@ function registerSocketHandlers(io) {
           otherId = conversationId;
           dmKey = convKey(myId, otherId);
         }
-        console.log("[reaction:add] otherId:", otherId, "isFriend:", friends.get(myId)?.has(otherId));
         if (!otherId || otherId === myId) {
-          console.log("[reaction:add] Invalid DM peer, returning");
           return;
         }
         // Soft-check friendship: still allow if already in an open DM thread
         const knownThread = dmHistory.has(dmKey);
         if (!friends.get(myId)?.has(otherId) && !knownThread) {
-          console.log("[reaction:add] Not friends / no DM thread, returning");
           return;
         }
         conversationId = dmKey;
       } else if (conversationType === "group") {
         // Check group membership - room has 'group:' prefix
         const roomId = `group:${conversationId}`;
-        console.log("[reaction:add] Checking group membership, roomId:", roomId);
-        console.log("[reaction:add] socket.rooms:", Array.from(socket.rooms));
         const isMember = socket.rooms.has(roomId);
-        console.log("[reaction:add] isMember:", isMember);
         if (!isMember) {
           // Fallback: allow if user is in the group's member list in DB / previously joined
           try {
@@ -1980,12 +1967,10 @@ function registerSocketHandlers(io) {
               .eq("user_id", myId)
               .maybeSingle();
             if (!mem) {
-              console.log("[reaction:add] Not a member of this group, returning");
               return;
             }
             socket.join(roomId);
           } catch {
-            console.log("[reaction:add] Not a member of this group, returning");
             return;
           }
         }
@@ -1998,7 +1983,6 @@ function registerSocketHandlers(io) {
           // needs READ_MESSAGE_HISTORY (you can only react to what you can read).
           const { channel, permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
           if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) {
-            console.log("[reaction:add] Missing READ_MESSAGE_HISTORY, returning");
             return;
           }
           // Timed-out members are refused inside assertTextChannelAccess(ADD_REACTIONS);
@@ -2015,18 +1999,15 @@ function registerSocketHandlers(io) {
               .eq("server_id", channel.server_id)
               .maybeSingle();
             if (!msg) {
-              console.log("[reaction:add] Message not in this channel, returning");
               return;
             }
           }
           // No socket.join here: a reaction never grants live-room membership
           // (K1, 2026-10-18). Only server:channel:join / rejoin do, after VIEW_CHANNEL.
         } catch (err) {
-          console.log("[reaction:add] Server channel access denied:", err?.message || err);
           return;
         }
       } else {
-        console.log("[reaction:add] Unknown conversationType:", conversationType);
         return;
       }
 
@@ -2047,7 +2028,6 @@ function registerSocketHandlers(io) {
           throw error;
         }
 
-        console.log("[reaction:add] Saved to DB:", data);
 
         // Broadcast to all users in conversation
         const reactionData = {
@@ -2059,21 +2039,16 @@ function registerSocketHandlers(io) {
           conversationId,
         };
 
-        console.log("[reaction:add] Broadcasting:", reactionData);
 
         if (conversationType === "dm" && otherId) {
           const otherPresence = presence.get(otherId);
-          console.log("[reaction:add] Other user presence:", otherPresence);
           emitToUser(io, otherId, "reaction:update", reactionData);
-          console.log("[reaction:add] Emitted to other user:", otherId);
         } else if (conversationType === "server") {
           io.to(`server-channel:${conversationId}`).emit("reaction:update", reactionData);
         } else {
           io.to(`group:${conversationId}`).emit("reaction:update", reactionData);
-          console.log("[reaction:add] Emitted to group room:", `group:${conversationId}`);
         }
         socket.emit("reaction:update", reactionData);
-        console.log("[reaction:add] Emitted to sender");
       } catch (err) {
         console.error("[reaction:add] Error:", err);
       }

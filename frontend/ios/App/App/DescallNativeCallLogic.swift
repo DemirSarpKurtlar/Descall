@@ -243,6 +243,36 @@ enum DescallNativeCallLogic {
         }
     }
 
+    // MARK: - Telemetry (3.0.0 A0)
+
+    /// Aggregate `call:telemetry` payload for a natively answered call: the
+    /// timeline marks plus fixed tags. No ids, names or uuids.
+    static func telemetry(_ t: Timeline, video: Bool, result: String, turn: Bool) -> [String: Any] {
+        var d = t.dictionary
+        d["kind"] = "dm"
+        d["direction"] = "incoming"
+        d["path"] = "native"
+        d["entry"] = "callkit"
+        d["push"] = "voip"
+        d["platform"] = "ios-app"
+        d["callType"] = video ? "video" : "voice"
+        d["result"] = result
+        d["turn"] = turn
+        if let a = t.ms("answered"), let v = t.ms("mediaVerified") { d["mediaVerifiedMs"] = max(0, v - a) }
+        return d
+    }
+
+    /// "done" once audio flowed, otherwise the failure reason (or "ended").
+    static func telemetryResult(_ t: Timeline, failure: String?) -> String {
+        if let failure = failure { return failure }
+        return t.ms("firstAudio") != nil ? "done" : "no-audio"
+    }
+
+    /// Offline queue for summaries the native socket could not send (max 10).
+    static func appendPending(_ list: [[String: Any]], _ item: [String: Any], max: Int = 10) -> [[String: Any]] {
+        Array((list + [item]).suffix(max))
+    }
+
     // MARK: - Signaling payloads
 
     static func candidatePayload(sdp: String, sdpMid: String?, sdpMLineIndex: Int32) -> [String: Any] {
