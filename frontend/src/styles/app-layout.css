@@ -1715,7 +1715,11 @@ button.header-avatar {
   margin-bottom: 0;
   position: relative;
   bottom: auto;
-  z-index: 2;
+  /* Above everything in the message list (status dots, a bubble lifted to
+     z 25 while its menu is open, the inline picker at 30), so the composer's
+     in-place + / emoji / slash menus are never covered by chat content.
+     Still under the reaction picker's click-away layer (80). */
+  z-index: 50;
 }
 
 /* ─── User Panel (Right Sidebar) ─── */

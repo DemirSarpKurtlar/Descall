@@ -294,7 +294,9 @@ html.glass-desktop .attachment-item:nth-child(3) .attachment-icon {
 
 html.glass-desktop .emoji-picker {
   width: 372px;
-  max-height: 420px;
+  /* Never taller than the room above the composer: in a short window the
+     420px picker ran up under the title bar and off the window top. */
+  max-height: min(420px, calc(100vh - var(--electron-titlebar-h, 0px) - var(--electron-bottom-inset, 0px) - 180px));
   border-radius: var(--r-xl) !important;
   padding: 14px 14px 12px !important;
 }
