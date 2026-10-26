@@ -13,8 +13,7 @@ import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
 import { installFlagFont } from "./lib/countryFlags";
 import { startErrorReporting } from "./lib/sentry";
-import { readStoredSettings } from "./lib/appearancePrefs";
-import { applyStoredAppearance, installFontShortcuts } from "./lib/appearanceSync";
+import { applyDocumentTheme } from "./lib/themeDocument";
 
 // On-device viewport readout (?vpdebug=1 / ?vpdebug=0). Loaded only when asked.
 try {
@@ -98,12 +97,19 @@ const Router =
     : BrowserRouter;
 
 try {
-  /* Settings › Görünüm before the first paint: theme (dark / light / auto),
-     accent (also the Liquid Glass --g-brand), text size, reduce motion and
-     reduce transparency. lib/appearanceSync.js keeps it on the account. */
-  const settings = readStoredSettings();
-  applyStoredAppearance({ premium: settings.premiumThemeKey || null });
-  installFontShortcuts();
+  /* Cheap first-paint theme (marketing pages and the boot splash). The full
+     Settings › Görünüm (auto theme, text size, reduce motion / transparency)
+     is applied by lib/appearanceSync.js before the app renders, see
+     prefetchAppChunk(). Kept out of this entry so the marketing JS budget
+     holds. */
+  const raw =
+    localStorage.getItem("descall_user_settings") ||
+    localStorage.getItem("descall_settings") ||
+    "{}";
+  const settings = JSON.parse(raw);
+  const theme = settings.premiumThemeKey || (settings.darkMode === false ? "light" : "dark");
+  const accentColor = settings.premiumThemeKey ? null : settings.accentColor;
+  applyDocumentTheme(document.documentElement, theme, { accentColor });
 } catch {
   document.documentElement.setAttribute("data-theme", "dark");
 }
@@ -258,7 +264,16 @@ async function bootApp() {
 let appChunkPromise = null;
 /** Start downloading / parsing the app bundle once; lazy() reuses the promise. */
 function prefetchAppChunk() {
-  if (!appChunkPromise) appChunkPromise = import("./App.jsx");
+  if (!appChunkPromise) {
+    // Görünüm lands before the first app frame; App.jsx keeps it in sync after.
+    const appearance = Promise.all([import("./lib/appearanceSync.js"), import("./lib/appearancePrefs.js")])
+      .then(([sync, prefs]) => {
+        sync.applyStoredAppearance({ premium: prefs.readStoredSettings().premiumThemeKey || null });
+        sync.installFontShortcuts();
+      })
+      .catch(() => {});
+    appChunkPromise = Promise.all([import("./App.jsx"), appearance]).then(([mod]) => mod);
+  }
   return appChunkPromise;
 }
 

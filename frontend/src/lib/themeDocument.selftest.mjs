@@ -25,7 +25,10 @@ assert.equal(themeAccentAction("dark", ""), "clear");
 // lib/appearanceSync -> applyDocumentTheme with the equipped shop theme.
 assert.match(app, /applyStoredAppearance\(\{ premium: themeKey \}\)/);
 assert.match(panel, /applyStoredAppearance\(\{ premium: premiumKey \|\| null \}\)/);
-assert.match(main, /applyStoredAppearance\(\{ premium: settings\.premiumThemeKey \|\| null \}\)/);
+assert.match(main, /applyStoredAppearance\(\{ premium: prefs\.readStoredSettings\(\)\.premiumThemeKey \|\| null \}\)/);
+// ...but lazily, before App renders, so the marketing first-paint entry stays in budget.
+assert.doesNotMatch(main, /^import .*appearanceSync/m);
+assert.match(main, /Promise\.all\(\[import\("\.\/App\.jsx"\), appearance\]\)/);
 
 // The accent also drives the Liquid Glass tokens (--g-brand*).
 function fakeRoot() {
