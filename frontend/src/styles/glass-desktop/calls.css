@@ -504,3 +504,272 @@ html.glass-desktop .gd-mosaic-expand video {
     padding: 10px 12px 6px !important;
   }
 }
+
+/* ── 3.0.0 S14: iPad incoming call — #01 glass language as a centred sheet ──
+   Full-screen layer: the caller's photo blurred behind a glass sheet with the
+   round photo, the name, "@username · Descall", Sessize al and Reddet / Kabul et.
+   Centred with inset + flex (never translateX: Framer Motion owns transform). */
+html.glass-desktop .incoming-call-card.gd-incoming {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px))
+    max(24px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  text-align: center;
+  background:
+    radial-gradient(70% 45% at 50% 30%, rgba(79, 124, 255, 0.28), transparent 70%),
+    radial-gradient(60% 40% at 80% 90%, rgba(143, 92, 255, 0.22), transparent 70%),
+    linear-gradient(180deg, #10121c, #0b0c12);
+  color: var(--gd-t1);
+  z-index: 10000;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-backdrop {
+  position: absolute;
+  inset: -60px;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-backdrop.has-photo {
+  filter: blur(60px) saturate(140%) brightness(0.55);
+  transform: scale(1.15);
+}
+
+html.glass-desktop .gd-incoming .g-incoming-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 9, 14, 0.25) 0%, rgba(8, 9, 14, 0.5) 60%, rgba(8, 9, 14, 0.75) 100%);
+}
+
+html.glass-desktop .gd-incoming .gd-incoming-sheet {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 36px 40px 40px;
+  border-radius: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 30px 80px rgba(0, 0, 0, 0.5);
+}
+
+html.glass-desktop .gd-incoming .incoming-call-meta {
+  display: contents;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-kind {
+  order: 0;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gd-t1);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+html.glass-desktop .gd-incoming .incoming-call-avatar-wrap {
+  order: 1;
+  width: 212px;
+  height: 212px;
+  margin-top: 24px;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-avatar {
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-avatar-wrap .ui-avatar {
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.16),
+    0 0 0 5px rgba(255, 255, 255, 0.10),
+    0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+html.glass-desktop .gd-incoming .incoming-call-ring {
+  animation: none;
+  border-style: solid;
+  opacity: 1;
+  transform: none;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-ring--a {
+  inset: 26px;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+html.glass-desktop .gd-incoming .incoming-call-ring--b,
+html.glass-desktop .gd-incoming .incoming-call-ring--c {
+  display: none;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-name {
+  order: 2;
+  margin-top: 16px;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.026em;
+  line-height: 42px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .gd-incoming .incoming-call-sub {
+  order: 3;
+  margin-top: 6px;
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  justify-content: center;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-extras {
+  order: 4;
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-pill {
+  height: 42px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 21px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gd-t1);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-pill.is-done {
+  opacity: 0.6;
+  cursor: default;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-actions {
+  order: 5;
+  margin-top: 32px;
+  display: flex;
+  gap: 88px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+}
+
+html.glass-desktop .gd-incoming .g-incoming-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 40px;
+  border: 0;
+  color: #fff;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-btn svg {
+  width: 30px;
+  height: 30px;
+}
+
+html.glass-desktop .gd-incoming .incoming-call-btn--decline {
+  background: linear-gradient(180deg, #ff5a50, #e8352c);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(255, 69, 58, 0.42);
+}
+
+html.glass-desktop .gd-incoming .incoming-call-btn--accept {
+  background: linear-gradient(180deg, #3ddc6a, #26b752);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(48, 209, 88, 0.42);
+}
+
+html.glass-desktop .gd-incoming .g-incoming-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* Landscape / short screens: tighter so the sheet never scrolls on iPad. */
+@media (max-height: 860px) {
+  html.glass-desktop .gd-incoming .gd-incoming-sheet {
+    padding: 28px 36px 32px;
+  }
+  html.glass-desktop .gd-incoming .incoming-call-avatar-wrap {
+    width: 172px;
+    height: 172px;
+    margin-top: 18px;
+  }
+  html.glass-desktop .gd-incoming .incoming-call-avatar-wrap .ui-avatar {
+    transform: scale(0.86);
+  }
+  html.glass-desktop .gd-incoming .g-incoming-extras {
+    margin-top: 22px;
+  }
+  html.glass-desktop .gd-incoming .g-incoming-actions {
+    margin-top: 24px;
+  }
+}
+
+html.glass-desktop.gd-lite .incoming-call-card.gd-incoming {
+  background: #0b0c12 !important;
+}
+
+html.glass-desktop.gd-lite .gd-incoming .gd-incoming-sheet,
+html.glass-desktop.gd-contrast .gd-incoming .gd-incoming-sheet {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid-heavy);
+}
