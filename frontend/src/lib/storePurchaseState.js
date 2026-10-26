@@ -9,7 +9,6 @@ export const PURCHASE_MODAL_CATEGORIES = [
   "avatar_effect",
   "profile_background",
   "theme",
-  "profile_badge",
   "name_effect",
   "chat_bubble",
   "presence_flare",

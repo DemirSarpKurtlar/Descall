@@ -28,7 +28,7 @@ const fake = createFakeSupabase({
   descoin_ledger: [],
   shop_items: [
     { id: "item-banner", sku: "banner-a", name: "Banner", category: "banner", price_descoin: 200, active: true },
-    { id: "item-badge", sku: "badge-a", name: "Badge", category: "profile_badge", price_descoin: 100, active: true },
+    { id: "item-badge", sku: "badge-a", name: "Badge", category: "theme", price_descoin: 100, active: true },
   ],
   user_inventory: [{ user_id: "u-eq", item_id: "item-banner", acquired_via: "purchase" }],
   shop_purchases: [],
@@ -125,9 +125,9 @@ async function run() {
       return { status: res.status, body: await res.json().catch(() => ({})) };
     };
     try {
-      const bad = await post({ category: "profile_badge", itemId: "item-banner" });
+      const bad = await post({ category: "theme", itemId: "item-banner" });
       assert.equal(bad.status, 400, JSON.stringify(bad.body));
-      assert.ok(!rows("users").find((u) => u.id === "u-eq").equipped_badge_id);
+      assert.ok(!rows("users").find((u) => u.id === "u-eq").equipped_theme_id);
       const ok = await post({ category: "banner", itemId: "item-banner" });
       assert.equal(ok.status, 200, JSON.stringify(ok.body));
       assert.equal(rows("users").find((u) => u.id === "u-eq").equipped_banner_id, "item-banner");

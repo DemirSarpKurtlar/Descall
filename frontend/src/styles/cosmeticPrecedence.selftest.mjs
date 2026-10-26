@@ -36,7 +36,7 @@ const tabs = [...tabsSrc.slice(0, tabsSrc.indexOf("]);")).matchAll(/id: "([a-z_]
 assert.equal(tabs.includes("avatar_frame"), false, "no Çerçeveler tab");
 assert.deepEqual(tabs.slice(0, 2), ["banner", "avatar_effect"], "Avatar efektleri takes the second slot");
 const shopLib = read("../../backend/lib/shop.js");
-assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title"\]\)/);
+assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title", "profile_badge"\]\)/);
 assert.match(shopLib, /RETIRED_SHOP_CATEGORIES = new Set\(\["sound_pack", \.\.\.REMOVED_COSMETIC_CATEGORIES\]\)/, "frames leave the catalog and cannot be bought");
 assert.match(shopLib, /avatarFrame: null, \/\/ frames removed/, "profiles never return an equipped frame");
 assert.match(shopLib, /avatarFrameId: null,/);

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HeadphoneOff, Mic, MicOff, VideoOff, Wifi, WifiOff } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import AdminBadge from "../social/AdminBadge";
-import { BadgeIcon, NameEffectText } from "../ui/Cosmetics";
+import { NameEffectText } from "../ui/Cosmetics";
 import { resolveAvatarUrl } from "../../lib/avatar";
 import { resolveDisplayName } from "../../lib/userProfile";
 import {
@@ -108,7 +108,6 @@ function ConnectingPlaceholder({ username, user, status }) {
       <div className="participant-tile-identity">
         <span className="participant-tile-identity-name">
           <NameEffectText user={user}>{displayName}</NameEffectText>
-          <BadgeIcon user={user} />
         </span>
         <AdminBadge user={user} variant="chip" />
         <ConnectionBadge status={status || "connecting"} />
@@ -266,7 +265,6 @@ export default function DmRemoteParticipantSlot({
               <div className="participant-tile-identity">
                 <span className="participant-tile-identity-name">
                   <NameEffectText user={user}>{username}</NameEffectText>
-                  <BadgeIcon user={user} />
                 </span>
                 <AdminBadge user={user} variant="chip" />
                 {/* One source of truth (2.13.6): the chip follows the tile's
@@ -325,7 +323,6 @@ export default function DmRemoteParticipantSlot({
                 }}
               >
                 <NameEffectText user={user}>{username}</NameEffectText>
-                <BadgeIcon user={user} />
               </span>
             </div>
             {isMuted && (

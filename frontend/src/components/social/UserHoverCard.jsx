@@ -5,7 +5,7 @@ import { Avatar } from "../ui/Avatar";
 import { pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import AdminBadge from "./AdminBadge";
-import { BadgeIcon, NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
+import { NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
 import { useT } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
 
@@ -118,7 +118,6 @@ export default function UserHoverCard({ user, anchor }) {
         <div className="uhc-text">
           <div className="uhc-name">
             <NameEffectText user={user}>{display}</NameEffectText>
-            <BadgeIcon user={user} />
             <AdminBadge user={user} variant="inline" />
           </div>
           <div className="uhc-handle">@{user.username || t("user")}</div>

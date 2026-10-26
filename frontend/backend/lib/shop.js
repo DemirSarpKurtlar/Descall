@@ -21,7 +21,12 @@ const supabase = require("../db/supabase");
  * frames: owned rows and the backup of who had one equipped stay in the
  * database; the API never sells, equips, lists or returns them.
  */
-const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame", "profile_title"]);
+/**
+ * Shop profile badges ("Rozetler" tab) are removed (2026-10-26): buyers were refunded with
+ * shop_refund and their inventory rows were deleted. Special badges (lib/specialBadges.js)
+ * are a separate system and are not affected.
+ */
+const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame", "profile_title", "profile_badge"]);
 const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack", ...REMOVED_COSMETIC_CATEGORIES]);
 
 const EQUIP_COLUMN_BY_CATEGORY = {
@@ -619,7 +624,7 @@ function equippedRecord(user, byId) {
     banner: pick("equipped_banner_id"),
     background: pick("equipped_background_id"),
     theme: pick("equipped_theme_id"),
-    badge: pick("equipped_badge_id"),
+    badge: null, // shop profile badges removed 2026-10-26; the stored id is ignored
     title: null, // titles retired in 2.13.0; the stored id is ignored
     nameEffect: pick("equipped_name_effect_id"),
     avatarEffect: pick("equipped_avatar_effect_id"),
@@ -693,7 +698,7 @@ async function getEquippedForUsers(userIds) {
       bannerId: u.equipped_banner_id,
       backgroundId: u.equipped_background_id,
       themeId: u.equipped_theme_id,
-      badgeId: u.equipped_badge_id,
+      badgeId: null,
       titleId: null,
       nameEffectId: u.equipped_name_effect_id,
       avatarEffectId: u.equipped_avatar_effect_id,

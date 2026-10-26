@@ -7,7 +7,7 @@ import OverlayPortal from "../../ui/OverlayPortal.jsx";
 // DesCoin rules as the cards. This file only renders and sequences them.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from "framer-motion";
-import { Check, CircleDot, Crown, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus, Package, Palette, Phone, Smile, Sparkles, Sun, Type, UserPlus, X, Play } from "../../ui/Icon.jsx";
+import { Check, CircleDot, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus, Package, Palette, Phone, Smile, Sparkles, Sun, Type, UserPlus, X, Play } from "../../ui/Icon.jsx";
 import { purchaseCopy } from "../../../lib/storePurchaseCopy";
 import { localizeShopItem } from "../../../lib/shopItemI18n";
 import {
@@ -16,7 +16,7 @@ import {
 import { PurchasePreview, PurchaseThumb } from "./StorePurchasePreviews";
 
 const CAT_ICON = {
-  banner: ImageIcon, avatar_effect: Sparkles, profile_background: ImageIcon, theme: Palette, profile_badge: Crown,
+  banner: ImageIcon, avatar_effect: Sparkles, profile_background: ImageIcon, theme: Palette,
   name_effect: Type, chat_bubble: MessageCircle, presence_flare: CircleDot, profile_aura: Sun, typing_flare: Ellipsis,
   reaction_burst: Smile, call_overlay: Phone,
 };

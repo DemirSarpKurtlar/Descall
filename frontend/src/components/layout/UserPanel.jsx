@@ -55,7 +55,7 @@ const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
-import { NameEffectText, BadgeIcon, CountryBadge } from "../ui/Cosmetics";
+import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import {
   getNoiseSuppressionEngine,
   preloadNoiseSuppression,
@@ -640,7 +640,6 @@ const UserPanel = forwardRef(function UserPanel({
       bannerId: me?.equippedBanner?.id || null,
       backgroundId: me?.equippedBackground?.id || null,
       themeId: me?.equippedTheme?.id || null,
-      badgeId: me?.equippedBadge?.id || null,
       countryId: me?.equippedCountry?.id || null,
       nameEffectId: me?.equippedNameEffect?.id || null,
       avatarEffectId: me?.equippedAvatarEffect?.id || null,
@@ -656,7 +655,6 @@ const UserPanel = forwardRef(function UserPanel({
       me?.equippedBanner?.id,
       me?.equippedBackground?.id,
       me?.equippedTheme?.id,
-      me?.equippedBadge?.id,
       me?.equippedCountry?.id,
       me?.equippedNameEffect?.id,
       me?.equippedAvatarEffect?.id,
@@ -1363,7 +1361,6 @@ const UserPanel = forwardRef(function UserPanel({
                 <div className="us-hero-meta">
                   <h3 style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "4px 6px" }}>
                     <NameEffectText user={me}>{displayName || me?.username || "User"}</NameEffectText>
-                    <BadgeIcon user={me} />
                   </h3>
                   <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
                   <div className="user-profile-badges">
@@ -1527,7 +1524,6 @@ const UserPanel = forwardRef(function UserPanel({
                 <div className="us-pe-meta">
                   <h3>
                     <NameEffectText user={me}>{(displayName || "").trim() || me?.username || "User"}</NameEffectText>
-                    <BadgeIcon user={me} />
                   </h3>
                   <span className="us-username-value">
                     <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>

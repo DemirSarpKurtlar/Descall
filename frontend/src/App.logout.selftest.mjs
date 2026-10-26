@@ -26,7 +26,7 @@ assert(/isModuleLoadError/.test(boundary), "ErrorBoundary must recognize Safari 
 assert(/recoverFromModuleLoadError/.test(boundary), "ErrorBoundary must auto-reload once on chunk load failure");
 assert(/clearModuleLoadRecovery/.test(main), "successful boot must clear the module-reload latch");
 assert(/SHOP_ICON_BY_EMOJI/.test(shopIcons) && /resolveShopBadgeIcon/.test(shopIcons), "shopIcons must map emoji + keys to Lucide");
-assert(/ShopBadgeIcon/.test(cosmetics), "Cosmetics BadgeIcon must use Lucide ShopBadgeIcon");
+assert(!/export function BadgeIcon/.test(cosmetics), "shop profile badges were removed on 2026-10-26: no badge next to names");
 assert(/CountryBadge/.test(cosmetics) && !/ShopTitleTag/.test(cosmetics), "Cosmetics shows the country flag; titles were retired in 2.13.0");
 
 const meBlock = app.split("if (!me) {").pop() || "";

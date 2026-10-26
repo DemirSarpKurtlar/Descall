@@ -9,7 +9,7 @@ import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
 import AdminBadge from "./AdminBadge";
-import { BadgeIcon, NameEffectText } from "../ui/Cosmetics";
+import { NameEffectText } from "../ui/Cosmetics";
 import { ProfileBadgeRow } from "../badges/BadgeVault.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
@@ -372,7 +372,6 @@ function UserProfileModal({
                     <span className="g-profile-name-text">
                       <NameEffectText user={fetched}>{displayName}</NameEffectText>
                     </span>
-                    <BadgeIcon user={fetched} />
                   </div>
                   <div className="g-profile-handle">
                     @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
@@ -561,7 +560,6 @@ function UserProfileModal({
               <div className="user-profile-identity">
                 <div className="user-profile-name-row">
                   <NameEffectText user={fetched}>{displayName}</NameEffectText>
-                  <BadgeIcon user={fetched} />
                 </div>
                 {displayName !== displayUsername && (
                   <div style={{ fontSize: 13, color: "var(--text-muted)" }}>

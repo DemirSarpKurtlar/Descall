@@ -102,6 +102,7 @@ async function run() {
     let r = await req(base, "GET", "/api/shop/catalog", { token: pay });
     assert(r.status === 200, "catalog loads");
     assert(r.body.retiredCategories.includes("profile_title"), "titles are announced as retired to installed apps");
+    assert(r.body.retiredCategories.includes("profile_badge"), "shop profile badges are announced as retired to installed apps");
     assert(!r.body.items.some((i) => i.category === "profile_title"), "no titles in the catalog");
     const tr = r.body.items.find((i) => i.sku === "country-tr");
     assert(tr && tr.country_code === "TR" && tr.price_descoin === 250 && tr.badge_icon === "🇹🇷", "country items carry code + emoji + price");
@@ -144,7 +145,7 @@ async function run() {
     assert(r.status === 200 && payer.equipped_country_id === "item-country-tr", "equip a flag");
     r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "countries", itemId: "item-country-jp" } });
     assert(r.status === 200 && payer.equipped_country_id === "item-country-jp", "the second flag replaces the first");
-    r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "profile_badge", itemId: "item-country-jp" } });
+    r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "theme", itemId: "item-country-jp" } });
     assert(r.status === 400 && r.body.code === "category_mismatch", "a flag cannot go into another slot");
     r = await req(base, "POST", "/api/shop/equip", { token: gift, body: { category: "countries", itemId: "item-country-jp" } });
     assert(r.status === 403, "cannot equip a flag you do not own");

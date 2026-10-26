@@ -87,14 +87,11 @@ assert.equal(
   localizeShopItem({ sku: "banner-obsidian-rift", name: "Obsidian Rift", description: "Premium profile banner — Obsidian Rift. Crafted gradient with cinematic depth." }, "tr").description,
   "Premium profil bannerı: Obsidyen Yarık. Sinematik derinlikte işlenmiş bir geçiş.",
 );
-assert.equal(
-  localizeShopItem({ sku: "badge-wolf", name: "Wolf Badge", description: "Premium profile badge — Wolf. Shows next to your display name." }, "tr").description,
-  "Premium profil rozeti: Kurt. Görünen adının yanında durur.",
-);
 // A template description the map does not know stays English rather than wrong.
 assert.equal(localizeShopItem({ sku: "banner-obsidian-rift", name: "Obsidian Rift", description: "Changed upstream." }, "tr").description, "Changed upstream.");
 assert.equal(localizedShopItemName({ sku: "call-aurora-dome", name: "Aurora Dome" }, "tr"), "Aurora Kubbesi");
-assert.ok(Object.keys(SHOP_ITEM_TR).length >= 420, "every seeded store row has a Turkish name");
+// 2026-10-26: the 55 shop profile badge names left with the Rozetler tab.
+assert.ok(Object.keys(SHOP_ITEM_TR).length >= 360, "every seeded store row has a Turkish name");
 for (const [sku, entry] of Object.entries(SHOP_ITEM_TR)) {
   assert.ok(Array.isArray(entry) && typeof entry[0] === "string" && entry[0].trim(), `${sku}: Turkish name`);
 }
@@ -104,7 +101,7 @@ const seeds = [
   "../../backend/scripts/seedCatalogMega.js", "../../backend/lib/nameEffectCatalog.js",
   "../../backend/lib/chatBubbleCatalog.js", "../../backend/lib/glassThemeCatalog.js",
 ];
-const RETIRED = /^(country-|frame-|avatar-frame-|sound-|title-|profile-title-)/;
+const RETIRED = /^(country-|frame-|avatar-frame-|sound-|title-|profile-title-|badge-)/; // badge-: shop profile badges removed 2026-10-26
 const missing = new Set();
 for (const rel of seeds) {
   let src = "";

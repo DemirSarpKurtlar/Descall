@@ -14,7 +14,6 @@ const CATEGORIES = [
   { id: "banner", label: "Banner" },
   { id: "profile_background", label: "Profile Background" },
   { id: "theme", label: "Premium Theme" },
-  { id: "profile_badge", label: "Profile Badge" },
   { id: "countries", label: "Country" },
   { id: "name_effect", label: "Name Effect" },
   { id: "avatar_effect", label: "Avatar Effect" },

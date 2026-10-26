@@ -458,7 +458,6 @@
   height: auto;
 }
 
-.user-settings.is-mobile .shop-item-card[data-category="profile_badge"] .shop-item-preview,
 .user-settings.is-mobile .shop-item-card[data-category="profile_title"] .shop-item-preview,
 .user-settings.is-mobile .shop-item-card[data-category="name_effect"] .shop-item-preview,
 .user-settings.is-mobile .shop-item-card[data-category="avatar_effect"] .shop-item-preview {
@@ -556,7 +555,6 @@
   object-fit: contain;
 }
 
-.shop-item-card[data-category="profile_badge"] .shop-item-preview,
 .shop-item-card[data-category="profile_title"] .shop-item-preview,
 .shop-item-card[data-category="name_effect"] .shop-item-preview,
 .shop-item-card[data-category="avatar_effect"] .shop-item-preview {
@@ -570,18 +568,6 @@
   padding: 16px 14px;
   overflow: visible;
   background: radial-gradient(circle at 30% 20%, #1c2333 0%, #0b0f18 100%);
-}
-
-.shop-badge-preview {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-1, #f4f6fb);
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
-}
-.shop-badge-preview svg {
-  width: 44px;
-  height: 44px;
 }
 
 .shop-title-preview {
