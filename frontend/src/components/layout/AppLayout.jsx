@@ -601,6 +601,12 @@ export default function AppLayout({
             serverVoice={serverVoice}
             onMobileClose={isMobile ? closeMobileDrawer : undefined}
             isMobile={isMobile}
+            me={me}
+            friends={friends}
+            onlineUsers={onlineUsers}
+            onStartDm={handleOpenChatFromCalls}
+            onStartCall={handleStartCall}
+            onSendDm={socket ? (toUserId, text) => socket.emit("dm:send", { toUserId, text }) : undefined}
           />
         ) : (
           <ServerSidebar

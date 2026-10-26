@@ -3741,6 +3741,20 @@ export default function App() {
     pendingCallTapRef.current = null;
   }, []);
   const applyCallTapRef = useRef(null);
+  // A5 (#31): who is in the call, since when, and the mic default for the presets.
+  const groupJoinCard = (r) => {
+    const gc = groupCallRef.current;
+    const live = [gc?.incomingCall, gc?.activeCallBanner].find((x) => x && String(x.groupId) === String(r.groupId)) || null;
+    const banner = gc?.activeCallBanner && String(gc.activeCallBanner.groupId) === String(r.groupId) ? gc.activeCallBanner : null;
+    const group = myGroups.find((g) => String(g.id) === String(r.groupId)) || null;
+    const people = [...(group?.members || []), ...friendsRef.current];
+    const ids = (banner?.participants || (live?.fromUser?.id ? [live.fromUser.id] : [])).filter((id) => String(id) !== String(me?.id));
+    const participants = ids.map((id) => people.find((u) => String(u?.id) === String(id)) || (String(live?.fromUser?.id) === String(id) ? live.fromUser : null)).filter(Boolean);
+    return {
+      kind: "group-join", groupId: r.groupId, groupName: r.groupName || group?.name || "", callType: r.callType,
+      participants, startTime: banner?.startTime || null, micOn: !gc?.isMuted,
+    };
+  };
   applyCallTapRef.current = (r, data) => {
     const friendFor = (peerId) =>
       friendsRef.current.find((f) => f.id === peerId) || { id: peerId, username: data.from || "User" };
@@ -3749,8 +3763,11 @@ export default function App() {
       setCallTapCard({
         kind: "ended",
         peerId,
+        peer: friend,
         peerName: resolveDisplayName(friend) || friend.username || "",
         callType: r.callType,
+        reason: "missed",
+        startedAt: Number(data?.startedAt) || null,
       });
     };
     switch (r.action) {
@@ -3776,7 +3793,7 @@ export default function App() {
         return;
       }
       case "group-join":
-        setCallTapCard({ kind: "group-join", groupId: r.groupId, groupName: r.groupName, callType: r.callType });
+        setCallTapCard(groupJoinCard(r));
         return;
       case "group-await":
         window.setTimeout(() => {
@@ -3796,6 +3813,26 @@ export default function App() {
       default:
     }
   };
+
+  // A5 (#32): after a connected DM call ends, touch devices get the "Arama sona erdi" screen.
+  const endedCallRef = useRef(null);
+  useEffect(() => {
+    const ending = call?.ending;
+    if (ending && call?.mode === "active" && call?.peer?.id && !endedCallRef.current) {
+      const peer = call.peer;
+      endedCallRef.current = {
+        kind: "ended", peerId: peer.id, peer, peerName: resolveDisplayName(peer) || peer.username || "",
+        callType: call.callType, duration: Number(call.duration) || 0, endedAt: ending.at || Date.now(),
+        reason: ending.reason === "remote" ? "remote" : ending.reason === "local" ? "local" : "drop",
+      };
+    } else if (!ending && !call?.mode && endedCallRef.current) {
+      const card = endedCallRef.current;
+      endedCallRef.current = null;
+      let touch = false;
+      try { touch = Boolean(window.matchMedia?.("(hover: none) and (pointer: coarse)").matches); } catch { touch = false; }
+      if (touch && card.duration > 0) setCallTapCard(card);
+    }
+  }, [call?.ending, call?.mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A tapped DM ring whose offer arrives after the tap connects directly.
   useEffect(() => {
@@ -5612,18 +5649,36 @@ export default function App() {
         <CallTapCard
           card={callTapCard}
           onClose={() => setCallTapCard(null)}
-          onJoin={() => {
+          onJoin={async (presets) => {
             const card = callTapCard;
             setCallTapCard(null);
             if (!card?.groupId) return;
+            // #31 presets: applied once the call is up (the hook primes mic/camera from the call type).
+            const applyPresets = () => window.setTimeout(() => {
+              const gc = groupCallRef.current;
+              if (!gc?.isInCall || !presets) return;
+              if (presets.micOn === Boolean(gc.isMuted)) gc.toggleMute?.();
+              if (presets.cameraOn !== Boolean(gc.isCameraOn)) gc.toggleCamera?.();
+            }, 400);
             const ic = groupCallRef.current?.incomingCall;
             if (ic?.groupId === card.groupId) {
-              groupCallRef.current?.acceptGroupCall?.(ic.groupId, ic.callType, ic.fromUser);
+              await groupCallRef.current?.acceptGroupCall?.(ic.groupId, ic.callType, ic.fromUser);
+              applyPresets();
               return;
             }
             const banner = groupCallRef.current?.activeCallBanner;
-            if (banner?.groupId === card.groupId) groupCallRef.current?.joinActiveCall?.(banner);
-            else setCallTapCard({ ...card, kind: "ended" });
+            if (banner?.groupId === card.groupId) {
+              await groupCallRef.current?.joinActiveCall?.(banner);
+              applyPresets();
+            } else setCallTapCard({ ...card, kind: "ended", reason: "group" });
+          }}
+          onMessage={() => {
+            const card = callTapCard;
+            setCallTapCard(null);
+            if (card?.peerId) {
+              const friend = friendsRef.current.find((f) => f.id === card.peerId) || card.peer || { id: card.peerId, username: card.peerName || "User" };
+              handleOpenDm(friend);
+            } else if (card?.groupId) navigate(groupPath(card.groupId));
           }}
           onCallBack={() => {
             const card = callTapCard;

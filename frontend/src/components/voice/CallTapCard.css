@@ -1,0 +1,37 @@
+/* 3.0.0 mockups 31 (Aramaya katıl) + 32 (Arama sona erdi). Heavy glass, never see-through. */
+.ctc-root{position:fixed;inset:0;z-index:10050;color:#fff;font-family:inherit}
+.ctc-dim{position:absolute;inset:0;background:rgba(6,7,12,.5)}
+.ctc-card{position:absolute;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:430px;margin:0 auto;border-radius:34px;padding:18px 18px 16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),rgba(22,24,36,.9);-webkit-backdrop-filter:blur(40px) saturate(200%);backdrop-filter:blur(40px) saturate(200%);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.2),0 -10px 40px rgba(0,0,0,.35);touch-action:none}
+.ctc-grab{width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);margin:-8px auto 12px}
+.ctc-live{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650;color:#30D158;background:rgba(48,209,88,.14);padding:4px 10px;border-radius:12px;font-variant-numeric:tabular-nums}
+.ctc-live:before{content:"";width:7px;height:7px;border-radius:50%;background:#30D158;box-shadow:0 0 0 3px rgba(48,209,88,.25)}
+.ctc-avs{display:flex;justify-content:center;margin:16px 0 10px}
+.ctc-avs .w{margin:0 -6px;border-radius:50%;padding:3px;background:rgba(22,24,36,1);position:relative;display:flex}
+.ctc-avs .w.sp{box-shadow:0 0 0 2.5px #30D158}
+.ctc-avs .w i{position:absolute;right:0;bottom:0;width:20px;height:20px;border-radius:50%;background:#FF453A;display:grid;place-items:center;box-shadow:0 0 0 2px rgba(22,24,36,1)}
+.ctc-more{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14);font-weight:650;font-size:17px}
+.ctc-t{text-align:center;font-size:21px;font-weight:700}
+.ctc-s{text-align:center;font-size:14.5px;color:rgba(235,238,255,.6);margin-top:3px}
+.ctc-tg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0 12px}
+.ctc-tg button{height:50px;border-radius:16px;background:rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14.5px;font-weight:550;color:#fff;border:0;font-family:inherit;cursor:pointer}
+.ctc-tg button.off{color:rgba(235,238,255,.55)}
+.ctc-btn{width:100%;height:54px;border-radius:27px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:650;border:0;font-family:inherit;cursor:pointer}
+.ctc-btn.g{background:#30D158;color:#05230F}
+.ctc-btn.gr{background:rgba(255,255,255,.1);color:rgba(235,238,255,.85);height:46px;font-size:16px;font-weight:550;margin-top:8px}
+.ctc-tap{transition:transform .12s ease,filter .12s ease;-webkit-tap-highlight-color:transparent}
+.ctc-tap:active{transform:scale(.97);filter:brightness(1.12)}
+.ctc-end{position:fixed;inset:0;z-index:10050;color:#fff;background:radial-gradient(90% 60% at 50% 25%,rgba(88,122,246,.35),transparent 70%),rgba(12,13,20,.9);-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%)}
+.ctc-end-in{position:absolute;inset:0;max-width:430px;margin:0 auto;display:flex;flex-direction:column;align-items:center;padding-top:150px}
+.ctc-end h2{margin:20px 0 0;font-size:30px;font-weight:700;letter-spacing:-.02em}
+.ctc-end .st{margin-top:8px;font-size:16px;color:rgba(235,238,255,.6);display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.ctc-end .st b{color:#FF6B60;font-weight:600}
+.ctc-log{position:absolute;top:470px;left:28px;right:28px;border-radius:18px;padding:12px 14px;background:rgba(255,255,255,.07);display:flex;gap:12px;align-items:center;font-size:14px;text-align:left}
+.ctc-log .r{font-size:13px;color:rgba(235,238,255,.55)}
+.ctc-row{position:absolute;bottom:70px;left:28px;right:28px;display:flex;justify-content:space-around}
+.ctc-rb{display:flex;flex-direction:column;align-items:center;gap:9px;font-size:13.5px;color:rgba(235,238,255,.8);background:none;border:0;font-family:inherit;cursor:pointer;padding:0}
+.ctc-rb span{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);box-shadow:inset 0 .5px 0 rgba(255,255,255,.25);color:#fff}
+.ctc-rb.g span{background:#30D158;color:#05230F}
+@media (max-height:700px){.ctc-end-in{padding-top:calc(80px + env(safe-area-inset-top,0px))}.ctc-log{top:auto;bottom:calc(170px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:reduce){.ctc-tap{transition:none}}
