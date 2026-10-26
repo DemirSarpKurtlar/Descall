@@ -181,6 +181,44 @@ jobs:
           swiftc -o "$RUNNER_TEMP/ncl" ios/App/App/DescallNativeCallLogic.swift ios/selftest/main.swift
           "$RUNNER_TEMP/ncl"
 
+  # Promo codes: the redemption logic lives in Postgres functions, so run the migration
+  # and the atomic/race tests against a throwaway Postgres (never Supabase).
+  promo-postgres:
+    name: Promo codes (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: promo
+          POSTGRES_PASSWORD: promo
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U promo" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PROMO_TEST_PG_URL: postgresql://promo:promo@127.0.0.1:5432/postgres
+    defaults:
+      run:
+        working-directory: frontend/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/backend/package-lock.json
+      - name: Install backend dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Promo migration + redemption tests
+        run: |
+          set -euo pipefail
+          node test/promo.db.test.cjs
+          node test/promo.race.test.cjs
+          node test/promo.integration.test.cjs
+          node test/promo.unit.test.cjs
+
   # 2.11.11: boot the real Electron app from a production build whose HTML has CRLF line
   # endings (what the Windows runner used to check out) and require the main window to
   # paint with the splash gone and no inline script blocked by the CSP. The Windows
