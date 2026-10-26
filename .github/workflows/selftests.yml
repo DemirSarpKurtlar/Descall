@@ -323,3 +323,10 @@ jobs:
         run: |
           xvfb-run -a -s "-screen 0 1920x1200x24" npx electron electron/e2e/mediaViewerMenus.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-media.log"
           grep -q "\[e2e-media\] OK" "$RUNNER_TEMP/e2e-media.log"
+      # 3.0.0 notification capsule (mockup 33): real notification windows at the top centre,
+      # blur → sharp entrance settles, Mesaj opens the chat, × and swipe-up dismiss without
+      # opening, grouped update in place, call Kabul et reaches main, auto-dismiss.
+      - name: Electron notification capsule e2e
+        run: |
+          xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/notificationCapsule.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-capsule.log"
+          grep -q "\[e2e-capsule\] OK" "$RUNNER_TEMP/e2e-capsule.log"
