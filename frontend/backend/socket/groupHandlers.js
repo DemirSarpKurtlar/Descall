@@ -12,6 +12,7 @@ const { sendGroupCallPush } = require("../lib/webPush");
 const { assertGroupMember, bothInGroupCall } = require("../lib/groupCallMembership");
 const descoin = require("../lib/descoin");
 const { shouldCreditMessage } = require("../lib/descoinMessageGuard");
+const descoinAntibot = require("../lib/descoinAntibot");
 const { toUtcIso } = require("../lib/datetime");
 const clock = require("../lib/callClock");
 const { markGroupParticipantJoined } = require("../lib/callSummary");
@@ -350,6 +351,8 @@ function registerGroupHandlers(io, socket, state) {
       }
     }
 
+    // Anti-bot monitor (Faz 0): shadow evaluation only; earning below is unchanged.
+    if (trimmedContent) void descoinAntibot.observeMessage({ userId: myId, convKey: `group:${groupId}`, text: trimmedContent });
     if (trimmedContent && shouldCreditMessage(myId, trimmedContent)) {
       descoin
         .creditCapped(myId, 1, "message_activity", { context: "group", groupId })

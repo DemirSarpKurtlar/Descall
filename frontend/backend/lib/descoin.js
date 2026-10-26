@@ -258,7 +258,7 @@ async function creditCapped(userId, amount, reason, meta = {}) {
   const caps = CAPS[reason];
   if (!caps) throw new Error(`Unknown capped DesCoin reason: ${reason}`);
 
-  return withUserQueue(userId, async () => {
+  const result = await withUserQueue(userId, async () => {
     if (await isWalletFrozen(userId)) {
       return { credited: 0, capped: "frozen", balance: await getBalance(userId) };
     }
@@ -281,6 +281,21 @@ async function creditCapped(userId, amount, reason, meta = {}) {
     const { balance } = await applyDeltaWithLedger(userId, room, reason, meta);
     return { credited: room, capped: null, balance };
   });
+  observeForAntibot(userId, reason, result);
+  return result;
+}
+
+/**
+ * DesCoin anti-bot Faz 0 (monitor only): report the *finished* credit
+ * decision so cap hits and "would withhold" amounts can be counted. Runs after
+ * the credit, never changes `result`, and can never throw into the caller.
+ */
+function observeForAntibot(userId, reason, result) {
+  try {
+    require("./descoinAntibot").observeCredit(userId, reason, result?.credited || 0, result?.capped || null);
+  } catch {
+    /* monitoring must never affect earning */
+  }
 }
 
 async function getLedger(userId, { limit = 50 } = {}) {

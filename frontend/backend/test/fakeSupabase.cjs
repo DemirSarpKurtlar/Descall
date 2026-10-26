@@ -26,6 +26,8 @@ function matches(row, filters) {
     if (type === "in") return Array.isArray(val) && val.includes(rowVal);
     if (type === "gt") return rowVal > val;
     if (type === "gte") return rowVal >= val;
+    if (type === "lt") return rowVal < val;
+    if (type === "lte") return rowVal <= val;
     return true;
   });
 }
@@ -60,6 +62,7 @@ function matchesOrGroups(row, groups) {
     group.every(({ col, op, val }) => {
       const rowVal = row[col];
       if (op === "eq") return String(rowVal) === String(val);
+      if (op === "gte") return Number(rowVal) >= Number(val);
       return true;
     })
   );
@@ -151,6 +154,17 @@ class FakeQuery {
     this.filters.push({ type: "gte", col, val });
     return this;
   }
+  lt(col, val) {
+    this.filters.push({ type: "lt", col, val });
+    return this;
+  }
+  lte(col, val) {
+    this.filters.push({ type: "lte", col, val });
+    return this;
+  }
+  _missing() {
+    return { data: null, error: { code: "PGRST205", message: `Could not find the table 'public.${this.name}' in the schema cache` } };
+  }
   update(obj) {
     this.mode = "update";
     this.payload = obj;
@@ -172,6 +186,21 @@ class FakeQuery {
 
   _run() {
     const rows = this.table.rows;
+    // Array payloads (bulk insert / upsert) run row by row, like PostgREST.
+    if ((this.mode === "insert" || this.mode === "upsert") && Array.isArray(this.payload)) {
+      if (this.opts.missingTables?.includes(this.name)) return this._missing();
+      const out = [];
+      for (const item of this.payload) {
+        const q = new FakeQuery(this.table, this.mode, this.opts, this.name);
+        q.payload = item;
+        q.upsertOpts = this.upsertOpts;
+        const res = q._run();
+        if (res.error) return { data: null, error: res.error };
+        out.push(...(Array.isArray(res.data) ? res.data : [res.data]));
+      }
+      return { data: out, error: null };
+    }
+    if (this.opts.missingTables?.includes(this.name)) return this._missing();
     if (this.mode === "insert") {
       const keys = this.opts.uniqueKeys?.[this.name];
       if (keys && rows.some((r) => keys.every((k) => r[k] === this.payload[k]))) {
@@ -267,6 +296,7 @@ class FakeQuery {
  * @param {{ strictSingle?: boolean, uniqueKeys?: Record<string, string[]> }} [opts]
  *   strictSingle: .single()/.maybeSingle() over >1 row errors like PostgREST.
  *   uniqueKeys: per-table unique columns; a conflicting insert returns 23505.
+ *   missingTables: table names that answer like an unapplied migration (PGRST205).
  */
 function createFakeSupabase(seed = {}, opts = {}) {
   const tables = {};

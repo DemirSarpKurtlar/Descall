@@ -11,6 +11,7 @@ const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCac
 const { toUtcIso } = require("../lib/datetime");
 const descoin = require("../lib/descoin");
 const { shouldCreditMessage } = require("../lib/descoinMessageGuard");
+const descoinAntibot = require("../lib/descoinAntibot");
 const { recordFirstMessage } = require("../lib/userAnalyticsStore");
 const {
   Permissions,
@@ -1130,6 +1131,8 @@ function registerServerChannelHandlers(io, socket) {
         markSlowmodeSend(channelId, myId);
         void recordFirstMessage(myId);
 
+        // Anti-bot monitor (Faz 0): shadow evaluation only; earning below is unchanged.
+        if (trimmedContent) void descoinAntibot.observeMessage({ userId: myId, convKey: `channel:${channelId}`, text: trimmedContent });
         if (trimmedContent && shouldCreditMessage(myId, trimmedContent)) {
           descoin
             .creditCapped(myId, 1, "message_activity", {

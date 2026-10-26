@@ -100,6 +100,10 @@ const { screenShareSessions } = require("../runtime/sharedState");
 // and skip paying out messages that are exact repeats of the sender's last
 // message (classic "spam the same text for coins" bot behavior).
 const { shouldCreditMessage } = require("../lib/descoinMessageGuard");
+// DesCoin anti-bot Faz 0 (monitor only): observes messages / heartbeats /
+// connects and scores risk in the background. It never changes a credit.
+const descoinAntibot = require("../lib/descoinAntibot");
+const { socketIp } = require("../middleware/socketAuth");
 const descoinHeartbeatLastAt = new Map(); // `${userId}:${reason}` -> ms
 const DESCOIN_HEARTBEAT_MIN_INTERVAL_MS = 15_000;
 // DM calls have no DB-backed screen-share session (unlike group calls' own
@@ -586,6 +590,27 @@ function registerSocketHandlers(io) {
       socket.disconnect(true);
       return;
     }
+
+    try {
+      descoinAntibot.onSocketConnect(socket, myId, socketIp(socket));
+    } catch {
+      /* monitoring must never affect the connection */
+    }
+    // Optional client hints for the anti-bot monitor (webdriver / headless /
+    // device fingerprint, hashed on arrival). At most 3 per connection, small
+    // payloads only; nothing is sent back.
+    let antibotSignalsLeft = 3;
+    socket.on("antibot:signals", (payload) => {
+      if (antibotSignalsLeft <= 0) return;
+      antibotSignalsLeft -= 1;
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) return;
+      try {
+        if (JSON.stringify(payload).length > 2048) return;
+      } catch {
+        return;
+      }
+      descoinAntibot.onClientSignals(myId, payload);
+    });
 
     // Liveness probe used by clients right after returning to the foreground
     // (zombie-socket detection). Registered first, answers immediately.
@@ -1282,6 +1307,16 @@ function registerSocketHandlers(io) {
       // server-driven (no client heartbeat) since it fires only after the
       // message actually persisted; a repeat of the same text within 60s
       // (copy/paste spam bots) earns nothing.
+      // Anti-bot monitor (Faz 0): shadow evaluation only, never awaited, never
+      // changes whether / how much this message earns.
+      if (!isVoice) {
+        void descoinAntibot.observeMessage({
+          userId: myId,
+          convKey: `dm:${[myId, toUserId].sort().join(":")}`,
+          dmPeerId: toUserId,
+          text: storedText,
+        });
+      }
       if (shouldCreditMessage(myId, storedText)) {
         descoin
           .creditCapped(myId, 1, "message_activity", { context: "dm", toUserId })
@@ -1809,7 +1844,7 @@ function registerSocketHandlers(io) {
     // while the mic is genuinely producing speech (or a screen share is on).
     // Every check here is against server-owned state; the client can only
     // ever *ask* to be credited, never assert the amount or the fact.
-    socket.on("descoin:heartbeat", async ({ context, peerId, groupId, type, speaking } = {}) => {
+    socket.on("descoin:heartbeat", async ({ context, peerId, groupId, type, speaking, antibot } = {}) => {
       try {
         if (type !== "voice" && type !== "screenshare") return;
 
@@ -1828,6 +1863,23 @@ function registerSocketHandlers(io) {
         const lastAt = descoinHeartbeatLastAt.get(throttleKey) || 0;
         if (Date.now() - lastAt < DESCOIN_HEARTBEAT_MIN_INTERVAL_MS) return;
         descoinHeartbeatLastAt.set(throttleKey, Date.now());
+
+        // Anti-bot monitor (Faz 0): records activity (+ media shadow rules when
+        // a newer client sends hints). Does not change the amount below.
+        try {
+          descoinAntibot.observeHeartbeat({
+            userId: myId,
+            type,
+            ctxKey: context === "dm" ? `dm:${[myId, peerId].sort().join(":")}` : `group:${groupId}`,
+            others:
+              context === "dm"
+                ? [peerId]
+                : [...(activeGroupCalls.get(groupId)?.participants?.keys?.() || [])].filter((id) => id !== myId),
+            beat: antibot && typeof antibot === "object" && !Array.isArray(antibot) ? antibot : null,
+          });
+        } catch {
+          /* monitoring must never affect earning */
+        }
 
         const reason = type === "voice" ? "voice_activity" : "screenshare_activity";
         const amount = type === "voice" ? 1 : 2;
