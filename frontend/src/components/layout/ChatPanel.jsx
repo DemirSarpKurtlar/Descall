@@ -3,8 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
   Search, MessageSquare, X, ChevronDown, ChevronRight, Menu, ChevronLeft,
-  UserPlus, Plus, Crown, Pin, PinOff, Timer, ImagePlus, ShieldCheck,
-  MoreHorizontal, Bell, BellOff, Flag, Ban, User,
+  UserPlus, Plus, Crown, Pin, Timer, ImagePlus, ShieldCheck,
 } from "../ui/Icon.jsx";
 import { useGroupMemberMenu, GroupRemovedBanner } from "../groups/GroupMemberRemoval";
 import { groupRoleOf } from "../../lib/groupMembers";
@@ -23,10 +22,7 @@ import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/prese
 import { resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
 import { displayText } from "../../lib/profanity";
-import { useBlockedUserIds, confirmToggleBlock } from "../../lib/blockedUsers";
-import GlassActionMenu from "../ui/GlassActionMenu";
-import ReportUserModal from "../social/ReportUserModal";
-import { useToast } from "../../context/ToastContext";
+import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
 import AdminBadge from "../social/AdminBadge";
 import UserProfileModal from "../social/UserProfileModal";
@@ -102,11 +98,8 @@ export default function ChatPanel({
   activeTimeout = null,
   children,
   serverVoice = null,
-  dms = [],
-  onDmPrefAction,
 }) {
   const t = useT();
-  const { toast } = useToast();
   const glass = useGlassUi();
   const messagesRef = useRef(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -115,9 +108,6 @@ export default function ChatPanel({
   const [showPinned, setShowPinned] = useState(false);
   const pinButtonRef = useRef(null);
   // DM header "⋯" (A2, mockup #05): pinned messages, pin chat, mute, report, block.
-  const dmMenuRef = useRef(null);
-  const [dmMenuOpen, setDmMenuOpen] = useState(false);
-  const [dmReportOpen, setDmReportOpen] = useState(false);
   // Same handlers as the sidebar swipe actions / row menu.
   const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded: onGroupMemberAdded });
   const groupPhoto = groupActions.groupPhoto;
@@ -230,22 +220,7 @@ export default function ChatPanel({
     setShowPinned(false);
     setShowMembers(false);
     setProfileTarget(null);
-    setDmMenuOpen(false);
-    setDmReportOpen(false);
   }, [activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
-
-  const headerDmPref = useMemo(() => {
-    const id = activeDmUser?.id;
-    if (!id) return null;
-    return (dms || []).find((d) => d?.id === id) || null;
-  }, [dms, activeDmUser?.id]);
-  const runDmPref = (action) => {
-    if (!onDmPrefAction || !activeDmUser?.id) return;
-    const dm = { ...(headerDmPref || {}), id: activeDmUser.id, pinned: Boolean(headerDmPref?.pinned), muted: Boolean(headerDmPref?.muted) };
-    Promise.resolve(onDmPrefAction(dm, action)).catch(() => {
-      toast(t("Something went wrong."), "error", { duration: 2600 });
-    });
-  };
 
   const togglePinnedPanel = () => {
     const next = !showPinned;
@@ -606,7 +581,7 @@ export default function ChatPanel({
               <Users size={20} />
             </button>
           )}
-          {(headerGroup || (!headerDm && activeView === "servers" && activeChannel?.type === "text")) && (
+          {(headerDm || headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
             <button
               ref={pinButtonRef}
               className={`icon-btn ${showPinned ? "active" : ""}`}
@@ -624,7 +599,7 @@ export default function ChatPanel({
           )}
           {(headerGroup || (headerDm && !dmBlockedByMe)) && (
             <>
-              <span className="header-actions-sep" aria-hidden="true" />
+              {headerDm ? null : <span className="header-actions-sep" aria-hidden="true" />}
               <button 
                 className="icon-btn" 
                 title={t("Voice Call")}
@@ -645,24 +620,17 @@ export default function ChatPanel({
               </button>
             </>
           )}
-          {headerDm?.id && (
-            <button
-              ref={(el) => { dmMenuRef.current = el; pinButtonRef.current = el; }}
-              type="button"
-              className={`icon-btn header-more-btn ${dmMenuOpen || showPinned ? "active" : ""}`}
-              title={t("Chat options")}
-              aria-label={t("Chat options")}
-              aria-haspopup="menu"
-              aria-expanded={dmMenuOpen}
-              data-testid="dm-header-more"
-              onClick={() => { setDmMenuOpen((v) => !v); setShowPinned(false); }}
-            >
-              <MoreHorizontal size={20} />
-              {pinnedMessages.length > 0 && (
-                <span className="icon-btn-badge">{pinnedMessages.length}</span>
-              )}
-            </button>
-          )}
+          {/* Mockup #29/#30: DM actions are one pill — search, pin, call, video, block.
+              Profile (avatar/title) carries share, nickname, report; the DM list carries pin/mute chat. */}
+          {headerDm?.id && headerDm.id !== me?.id ? (
+            <BlockUserButton
+              userId={headerDm.id}
+              username={headerDm.username}
+              className={`icon-btn header-block-btn${dmBlockedByMe ? " active" : ""}`}
+              iconSize={20}
+              compact
+            />
+          ) : null}
         </div>
       </header>
 
@@ -1101,59 +1069,6 @@ export default function ChatPanel({
       )}
     </AnimatePresence>
     {memberMenu.layer}
-
-    {headerDm?.id ? (
-      <GlassActionMenu
-        open={dmMenuOpen}
-        anchorRef={dmMenuRef}
-        onClose={() => setDmMenuOpen(false)}
-        ariaLabel={t("Chat options")}
-        testId="dm-header-menu"
-        sections={[
-          [
-            headerDm.id !== me?.id ? { id: "profile", label: t("View profile"), icon: User, onSelect: () => setProfileTarget(headerDm) } : null,
-            { id: "pinned", label: t("Pinned messages"), icon: Pin, badge: pinnedMessages.length || null, onSelect: () => togglePinnedPanel() },
-            onDmPrefAction ? {
-              id: "pin",
-              label: headerDmPref?.pinned ? t("Unpin this chat") : t("Pin chat"),
-              icon: headerDmPref?.pinned ? PinOff : Pin,
-              onSelect: () => runDmPref("pin"),
-            } : null,
-            onDmPrefAction ? {
-              id: "mute",
-              label: headerDmPref?.muted ? t("Unmute chat") : t("Mute chat"),
-              icon: headerDmPref?.muted ? Bell : BellOff,
-              onSelect: () => runDmPref("mute"),
-            } : null,
-          ],
-          headerDm.id !== me?.id ? [
-            { id: "report", label: t("Report user"), icon: Flag, danger: true, onSelect: () => setDmReportOpen(true) },
-            {
-              id: "block",
-              label: dmBlockedByMe ? t("Unblock user") : t("Block user"),
-              icon: Ban,
-              danger: !dmBlockedByMe,
-              onSelect: () => {
-                confirmToggleBlock({ userId: headerDm.id, username: headerDm.username, t })
-                  .catch((err) => toast(err?.message || t("Something went wrong."), "error", { duration: 2600 }));
-              },
-            },
-          ] : [],
-        ]}
-      />
-    ) : null}
-    {headerDm?.id && headerDm.id !== me?.id ? (
-      <ReportUserModal
-        open={dmReportOpen}
-        onClose={() => setDmReportOpen(false)}
-        targetId={headerDm.id}
-        targetUsername={headerDm.username}
-        targetDisplayName={resolveDisplayName(headerDm)}
-        targetUser={headerDm}
-        contextType="dm"
-        contextId={headerDm.id}
-      />
-    ) : null}
 
     {/* Pinned messages: glass popover under the header pin button (2.10.109). */}
     <PinnedMessagesPopover

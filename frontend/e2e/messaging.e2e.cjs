@@ -514,24 +514,43 @@ async function runDevice(browser, base, dev) {
     await sleep(400);
   }
 
-  // --- header ⋯ menu ---
-  if (await tapSel('[data-testid="dm-header-more"]')) {
-    const hm = await waitFor(page, 'header menu', () => { const m = document.querySelector('[data-testid="dm-header-menu"]'); return { ok: !!m, items: m ? [...m.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent.trim()) : [] }; }, null, 3000).catch(() => ({ ok: false, items: [] }));
-    check(hm.ok, `header ⋯ opens a menu (${JSON.stringify(hm.items)})`);
-    check(hm.items[0] === 'Profili gör' && hm.items.some((x) => /Şikayet/.test(x)) && hm.items.some((x) => /Engelle/.test(x)), 'header menu has profile, report and block');
-    await shot(page, `${dev}-06-header-menu`);
+  // --- header action pill (mockup #29/#30): search, pin, call, video, block; no ⋯ ---
+  const hp = await page.evaluate(() => {
+    const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+    const right = [...document.querySelectorAll('.header-right')].find(vis);
+    if (!right) return null;
+    const btns = [...right.querySelectorAll('button')].filter(vis);
+    const tops = btns.map((e) => Math.round(e.getBoundingClientRect().top));
+    return {
+      labels: btns.map((e) => e.getAttribute('aria-label')),
+      rows: new Set(tops).size,
+      seps: [...right.querySelectorAll('.header-actions-sep')].filter(vis).length,
+      more: !!document.querySelector('[data-testid="dm-header-more"], .header-more-btn'),
+      blockColor: (() => { const e = right.querySelector('.header-block-btn'); const s = right.querySelector('button'); return e && s ? [getComputedStyle(e).color, getComputedStyle(s).color] : null; })(),
+    };
+  });
+  check(hp && JSON.stringify(hp.labels) === JSON.stringify(['Ara', 'Sabitlenmiş mesajlar', 'Sesli Arama', 'Görüntülü Arama', 'Engelle']), `header pill is search, pin, call, video, block (${JSON.stringify(hp && hp.labels)})`);
+  check(hp && hp.rows === 1 && hp.seps === 0, `header pill is one row with no separators (rows ${hp && hp.rows}, seps ${hp && hp.seps})`);
+  check(hp && !hp.more, 'no separate ⋯ button in the DM header');
+  check(hp && hp.blockColor && hp.blockColor[0] === hp.blockColor[1], `block icon has the same tone as the others (${JSON.stringify(hp && hp.blockColor)})`);
+  await shot(page, `${dev}-06-header`);
+  if (await tapSel('.header-right button[aria-label="Sabitlenmiş mesajlar"]')) {
+    await sleep(500);
+    const pp = await page.evaluate(() => !!document.querySelector('.pinned-popover, [data-testid="pinned-popover"], [role="dialog"][aria-label="Sabitlenmiş mesajlar"]'));
+    check(pp, 'header pin opens the pinned messages popover');
     await page.keyboard.press('Escape');
-    await sleep(300);
-    await page.evaluate(() => { const m = document.querySelector('[data-testid="dm-header-menu"]'); if (m) document.querySelector('.g-action-menu-catcher, .grp-menu-catcher')?.click(); });
-    await sleep(300);
-  } else problems.push(`${dev}: no header ⋯ button`);
+    await sleep(400);
+  }
+  if (await tapSel('.header-right button[aria-label="Engelle"]')) {
+    const cf = await waitFor(page, 'block confirm', () => ({ ok: [...document.querySelectorAll('button')].some((e) => e.getBoundingClientRect().width > 0 && /^(İptal|Vazgeç)$/.test(e.textContent.trim())) }), null, 2500).then(() => true, () => false);
+    check(cf, 'header block asks for confirmation first');
+    await tapSel('button', 'İptal') || await tapSel('button', 'Vazgeç');
+    await sleep(500);
+  }
 
   // --- profile sheet (#29) ---
   const openProfile = async () => {
-    if (await tapSel('[data-testid="dm-header-more"]')) {
-      await sleep(350);
-      await tapSel('[data-testid="dm-header-menu"] [role="menuitem"]', 'Profili gör');
-    }
+    await tapSel('.header-title-block.is-dm');
     return waitFor(page, 'profile sheet', () => ({ ok: !!document.querySelector('[data-testid="profile-sheet"]') }), null, 4000).then(() => true, () => false);
   };
   if (await openProfile()) {
