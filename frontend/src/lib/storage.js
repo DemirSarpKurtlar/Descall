@@ -1,4 +1,4 @@
-import { isIosKeychainShell, planSecureTokenHydration, SECURE_TOKEN_KEY } from "./secureToken.js";
+import { isIosKeychainShell, planSecureTokenHydration, SECURE_TOKEN_KEY, SIGNED_OUT_KEY } from "./secureToken.js";
 
 const TOKEN_KEY = SECURE_TOKEN_KEY;
 const USER_KEY = "descall_user";
@@ -72,64 +72,140 @@ function withTimeout(promise, ms) {
   });
 }
 
+function readSignedOut() {
+  const storage = getStorage();
+  try {
+    return storage?.getItem(SIGNED_OUT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeSignedOut(on) {
+  const storage = getStorage();
+  try {
+    if (on) storage?.setItem(SIGNED_OUT_KEY, "1");
+    else storage?.removeItem(SIGNED_OUT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+let importCapacitorCore = () => import("@capacitor/core");
+
+/**
+ * Resolves `{ plugin }`, never the plugin itself: a Capacitor plugin proxy
+ * answers `then` too, so resolving a promise with it calls a native "then"
+ * that does not exist and the promise never settles (every iOS launch from
+ * 2.11 to 2.13.11 waited out KEYCHAIN_TIMEOUT_MS here and never used the
+ * Keychain). A failed load is not cached, so the next call retries.
+ */
 function loadKeychainPlugin() {
   if (!keychainPluginPromise) {
-    keychainPluginPromise = import("@capacitor/core").then(({ registerPlugin }) =>
-      registerPlugin("DescallKeychain")
-    );
+    keychainPluginPromise = Promise.resolve()
+      .then(() => importCapacitorCore())
+      .then(({ registerPlugin }) => ({ plugin: registerPlugin("DescallKeychain") }))
+      .catch(() => {
+        keychainPluginPromise = null;
+        return { plugin: null };
+      });
   }
   return keychainPluginPromise;
 }
 
+/** `{ plugin }` again: an async function returning the proxy would hang the same way. */
+async function keychainPluginBox() {
+  const box = await withTimeout(loadKeychainPlugin(), KEYCHAIN_TIMEOUT_MS);
+  if (!box?.plugin) throw new Error("keychain-unavailable");
+  return box;
+}
+
+async function readKeychain(plugin) {
+  const res = await withTimeout(plugin.get({ key: TOKEN_KEY }), KEYCHAIN_TIMEOUT_MS);
+  return res && typeof res.value === "string" && res.value ? res.value : null;
+}
+
+/** Write, then read back. True only when the Keychain really holds `token`. */
+async function writeKeychainVerified(plugin, token) {
+  try {
+    await withTimeout(plugin.set({ key: TOKEN_KEY, value: token }), KEYCHAIN_TIMEOUT_MS);
+    return (await readKeychain(plugin)) === token;
+  } catch {
+    return false;
+  }
+}
+
+let lastKeychainSync = Promise.resolve(null);
+
 /**
- * Fill the in-memory token from the iOS Keychain before app boot.
- * No-op on web, Android, and Electron. A missing plugin or a timeout leaves
- * localStorage in place so login still works.
+ * Fill the in-memory token before app boot (iOS app only; web, Android and
+ * Electron return immediately).
+ *
+ * Never logs anyone out: localStorage keeps its copy in this release, the
+ * Keychain copy is written and read back in the background, and any plugin
+ * error or timeout falls back to localStorage exactly as before.
  */
 export async function hydrateSecureToken() {
   if (!isIosKeychainShell()) return { store: "local" };
   const local = readLocalToken();
-  let keychainValue = null;
   let plugin = null;
+  let keychainValue = null;
   try {
-    plugin = await withTimeout(loadKeychainPlugin(), KEYCHAIN_TIMEOUT_MS);
-    const res = await withTimeout(plugin.get({ key: TOKEN_KEY }), KEYCHAIN_TIMEOUT_MS);
-    keychainValue = res && typeof res.value === "string" ? res.value : null;
+    ({ plugin } = await keychainPluginBox());
+    keychainValue = await readKeychain(plugin);
   } catch {
     iosHydrated = false;
     return { store: "local" };
   }
-  const plan = planSecureTokenHydration({ keychainValue, localValue: local });
+  const plan = planSecureTokenHydration({ keychainValue, localValue: local, signedOut: readSignedOut() });
   iosMemory = plan.memory;
-  if (plan.writeKeychain) {
-    try {
-      await withTimeout(plugin.set({ key: TOKEN_KEY, value: plan.writeKeychain }), KEYCHAIN_TIMEOUT_MS);
-      removeLocalToken();
-    } catch {
-      writeLocalToken(plan.writeKeychain);
-    }
-  } else if (plan.clearLocal) {
-    removeLocalToken();
-  }
   iosHydrated = true;
-  return { store: "keychain" };
+  if (plan.restoreLocal) writeLocalToken(plan.restoreLocal);
+  if (plan.writeKeychain) {
+    lastKeychainSync = writeKeychainVerified(plugin, plan.writeKeychain);
+  } else if (plan.removeKeychain) {
+    lastKeychainSync = withTimeout(plugin.remove({ key: TOKEN_KEY }), KEYCHAIN_TIMEOUT_MS).then(
+      () => true,
+      () => false
+    );
+  } else {
+    lastKeychainSync = Promise.resolve(null);
+  }
+  return { store: "keychain", migrating: Boolean(plan.writeKeychain) };
 }
 
 function persistIosToken(token) {
-  // Keep the local copy until the Keychain write is confirmed, so a kill
-  // during the write still migrates on the next launch.
+  // localStorage first (fallback for this release), then a verified Keychain copy.
   writeLocalToken(token);
-  loadKeychainPlugin()
-    .then((plugin) => withTimeout(plugin.set({ key: TOKEN_KEY, value: token }), KEYCHAIN_TIMEOUT_MS))
-    .then(() => removeLocalToken())
-    .catch(() => {});
+  writeSignedOut(false);
+  lastKeychainSync = keychainPluginBox()
+    .then(({ plugin }) => writeKeychainVerified(plugin, token))
+    .catch(() => false);
 }
 
 function clearIosToken() {
-  loadKeychainPlugin()
-    .then((plugin) => plugin.remove({ key: TOKEN_KEY }))
-    .catch(() => {});
+  writeSignedOut(true);
+  lastKeychainSync = keychainPluginBox()
+    .then(({ plugin }) => withTimeout(plugin.remove({ key: TOKEN_KEY }), KEYCHAIN_TIMEOUT_MS))
+    .then(() => true)
+    .catch(() => false);
 }
+
+/** Selftests only (storage.selftest.mjs). */
+export const __keychainForTests = {
+  setCoreImporter(fn) {
+    importCapacitorCore = fn;
+    keychainPluginPromise = null;
+  },
+  reset() {
+    iosMemory = null;
+    iosHydrated = false;
+    keychainPluginPromise = null;
+    lastKeychainSync = Promise.resolve(null);
+  },
+  lastSync: () => lastKeychainSync,
+  timeoutMs: KEYCHAIN_TIMEOUT_MS,
+};
 
 export function getToken() {
   if (iosHydrated) return iosMemory || null;
