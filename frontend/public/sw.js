@@ -153,7 +153,10 @@ self.addEventListener("message", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};
-  const clickAction = event.action || data.action || "open";
+  // 3.0.0 (C3): a body tap on a call notification is "call-tap" (the app
+  // resolves it); only the Answer / Join buttons accept directly.
+  const isCallPush = data.type === "call" || data.type === "group-call";
+  const clickAction = event.action || (isCallPush ? "call-tap" : data.action || "open");
   const deepLink = new URL(data.deepLink || "/", self.location.origin).href;
   const message = {
     type: "descall:notification-click",

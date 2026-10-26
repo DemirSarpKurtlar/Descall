@@ -90,6 +90,9 @@ async function sendGroupCallPush(userIds, payload = {}) {
     groupName: payload.groupName,
     fromName: payload.from,
     callType: payload.callType,
+    callUuid: payload.callUuid,
+    callKind: "group",
+    startedAt: payload.startedAt,
   });
 }
 
@@ -111,6 +114,9 @@ async function sendIncomingCallPush(userIds, payload = {}) {
     fromId: payload.fromId,
     fromName: payload.from,
     callType: payload.callType,
+    callUuid: payload.callUuid,
+    callKind: "dm",
+    startedAt: payload.startedAt,
   });
 }
 

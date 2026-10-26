@@ -87,6 +87,18 @@ function fmt(template, vars = {}) {
   return String(template).replace(/\{(\w+)\}/g, (_, k) => (vars[k] == null ? "" : String(vars[k])));
 }
 
+const CALL_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 3.0.0 (C3): ring id, kind and start time for the push tap resolver (no names). */
+function callTapFields(event, kind) {
+  const out = { callKind: kind };
+  const uuid = String(event?.callUuid || "");
+  if (CALL_UUID_RE.test(uuid)) out.callUuid = uuid.toLowerCase();
+  const startedAt = Math.floor(Number(event?.startedAt) || 0);
+  if (startedAt > 0) out.startedAt = startedAt;
+  return out;
+}
+
 function clip(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
@@ -260,6 +272,7 @@ function describeEvent(event = {}, lang = "tr") {
         fromId: event.fromId,
         from,
         callType: video ? "video" : "voice",
+        ...callTapFields(event, "dm"),
       },
     };
   }
@@ -277,6 +290,7 @@ function describeEvent(event = {}, lang = "tr") {
         groupName,
         from,
         callType: event.callType === "video" ? "video" : "voice",
+        ...callTapFields(event, "group"),
       },
     };
   }

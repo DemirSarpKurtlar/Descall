@@ -149,6 +149,8 @@ const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
+import CallTapCard from "./components/voice/CallTapCard";
+import { isCallTap, resolveCallTap } from "./lib/callTap";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -3693,6 +3695,94 @@ export default function App() {
     socketRef.current?.emit("dm:set_active", { withUserId: friend.id });
   };
 
+  // 3.0.0 (C3): call notification body taps (lib/callTap.js).
+  const [callTapCard, setCallTapCard] = useState(null);
+  const pendingCallTapRef = useRef(null); // { peerId, callUuid, callType, timer }
+  const clearPendingCallTap = useCallback(() => {
+    const p = pendingCallTapRef.current;
+    if (p?.timer) clearTimeout(p.timer);
+    pendingCallTapRef.current = null;
+  }, []);
+  const applyCallTapRef = useRef(null);
+  applyCallTapRef.current = (r, data) => {
+    const friendFor = (peerId) =>
+      friendsRef.current.find((f) => f.id === peerId) || { id: peerId, username: data.from || "User" };
+    const endedCard = (peerId) => {
+      const friend = friendFor(peerId);
+      setCallTapCard({
+        kind: "ended",
+        peerId,
+        peerName: resolveDisplayName(friend) || friend.username || "",
+        callType: r.callType,
+      });
+    };
+    switch (r.action) {
+      case "accept":
+        setCallTapCard(null);
+        callRef.current?.acceptIncoming?.({ entry: "notification" });
+        return;
+      case "ended":
+        endedCard(r.peerId);
+        return;
+      case "await-ring": {
+        // Cold start / asleep socket: the offer is on its way (or replayed by
+        // the server). Accept as soon as it shows up; otherwise it ended.
+        clearPendingCallTap();
+        const timer = setTimeout(() => {
+          if (pendingCallTapRef.current?.peerId !== r.peerId) return;
+          pendingCallTapRef.current = null;
+          if (callRef.current?.mode == null || callRef.current?.mode === "idle") endedCard(r.peerId);
+        }, 8_000);
+        pendingCallTapRef.current = { peerId: r.peerId, callUuid: r.callUuid, callType: r.callType, timer };
+        const sock = socketRef.current;
+        if (sock?.connected) sock.emit("call:ring-status", { fromUserId: r.peerId, callUuid: r.callUuid || null });
+        return;
+      }
+      case "group-join":
+        setCallTapCard({ kind: "group-join", groupId: r.groupId, groupName: r.groupName, callType: r.callType });
+        return;
+      case "group-await":
+        window.setTimeout(() => {
+          const again = resolveCallTap({
+            data: { ...data, startedAt: 1 },
+            now: Date.now(),
+            groupBanner: groupCallRef.current?.activeCallBanner || null,
+            groupIncoming: groupCallRef.current?.incomingCall || null,
+          });
+          if (again.action === "group-join") applyCallTapRef.current?.(again, data);
+          else setCallTapCard({ kind: "ended", groupId: r.groupId, groupName: r.groupName, callType: r.callType });
+        }, 2_500);
+        return;
+      case "group-ended":
+        setCallTapCard({ kind: "ended", groupId: r.groupId, groupName: r.groupName, callType: r.callType });
+        return;
+      default:
+    }
+  };
+
+  // A tapped DM ring whose offer arrives after the tap connects directly.
+  useEffect(() => {
+    const p = pendingCallTapRef.current;
+    if (!p || call?.mode !== "incoming" || String(call?.peer?.id || "") !== String(p.peerId)) return;
+    clearPendingCallTap();
+    call.acceptIncoming?.({ entry: "notification" });
+  }, [call?.mode, call?.peer?.id, clearPendingCallTap]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The server says the tapped ring is over → "Arama sona erdi".
+  useEffect(() => {
+    const sock = socketApi;
+    if (!sock?.on) return undefined;
+    const onStatus = ({ fromUserId, state } = {}) => {
+      const p = pendingCallTapRef.current;
+      if (!p || String(fromUserId || "") !== String(p.peerId) || state !== "ended") return;
+      if (callRef.current?.mode === "incoming") return;
+      clearPendingCallTap();
+      applyCallTapRef.current?.({ action: "ended", peerId: p.peerId, callType: p.callType }, {});
+    };
+    sock.on("call:ring-status:result", onStatus);
+    return () => sock.off("call:ring-status:result", onStatus);
+  }, [socketApi, clearPendingCallTap]);
+
   // Desktop/web notification click → open the related DM or group
   useEffect(() => {
     const onNotifClick = (event) => {
@@ -3701,6 +3791,28 @@ export default function App() {
       const data = detail?.data && typeof detail.data === "object" ? detail.data : detail;
       if (!data || typeof data !== "object") return;
       const type = data.type;
+
+      // A call push that arrived in the foreground: the socket ring handles it.
+      if ((type === "call" || type === "group-call") && data.action === "received") return;
+
+      // 3.0.0 (C3): body tap on a call notification → resolveCallTap.
+      if (isCallTap(data)) {
+        const r = resolveCallTap({
+          data,
+          now: Date.now(),
+          dm: {
+            mode: callRef.current?.mode || null,
+            peerId: callRef.current?.peer?.id || null,
+            callUuid: callRef.current?.callUuid || null,
+          },
+          groupBanner: groupCallRef.current?.activeCallBanner || null,
+          groupIncoming: groupCallRef.current?.incomingCall || null,
+        });
+        if (r.action === "none") return;
+        onNotifClick({ detail: { ...data, action: "open" } });
+        applyCallTapRef.current?.(r, data);
+        return;
+      }
 
       if (type === "dm" || type === "missed-call" || type === "call") {
         const peerId = data.conversationId || data.fromId;
@@ -5453,6 +5565,31 @@ export default function App() {
             />
           </Suspense>
         ) : null}
+        <CallTapCard
+          card={callTapCard}
+          onClose={() => setCallTapCard(null)}
+          onJoin={() => {
+            const card = callTapCard;
+            setCallTapCard(null);
+            if (!card?.groupId) return;
+            const ic = groupCallRef.current?.incomingCall;
+            if (ic?.groupId === card.groupId) {
+              groupCallRef.current?.acceptGroupCall?.(ic.groupId, ic.callType, ic.fromUser);
+              return;
+            }
+            const banner = groupCallRef.current?.activeCallBanner;
+            if (banner?.groupId === card.groupId) groupCallRef.current?.joinActiveCall?.(banner);
+            else setCallTapCard({ ...card, kind: "ended" });
+          }}
+          onCallBack={() => {
+            const card = callTapCard;
+            setCallTapCard(null);
+            if (!card?.peerId) return;
+            const friend =
+              friendsRef.current.find((f) => f.id === card.peerId) || { id: card.peerId, username: card.peerName || "User" };
+            callRef.current?.startCall?.(friend, card.callType === "video" ? "video" : "voice");
+          }}
+        />
         {IOS_NATIVE && me?.id ? (
           <Suspense fallback={null}>
             <NativeCallCard />

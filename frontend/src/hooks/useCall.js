@@ -97,6 +97,7 @@ import {
 } from "../lib/callRingSync";
 import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLevel";
 import { createMediaFlowGate } from "../lib/mediaFlowGate";
+import { emitWithAck } from "../lib/signalAck";
 
 /** Hang-up → overlay gone. The UI plays the leave transition inside this window. */
 export const CALL_ENDING_MS = 1100;
@@ -155,6 +156,8 @@ export function useCall(socket, callOccupancyRef = null) {
   // never send the flag and count as sending.
   const [remoteSending, setRemoteSending] = useState(true);
   const mediaFlowGateRef = useRef(null);
+  // Last initial offer (re-sent when the backend lost the ring, C3).
+  const lastOfferRef = useRef(null);
   const localSendingRef = useRef(false);
   const [localStream, setLocalStream] = useState(null);
   // Server-assigned id of the current ring (CallKit call UUID on native iOS).
@@ -576,6 +579,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setPeerConnectionState("idle");
     setRemoteMediaReady(false);
     mediaFlowGateRef.current?.stop();
+    lastOfferRef.current = null;
     setMediaFlow("idle");
     setRemoteSending(true);
     localSendingRef.current = false;
@@ -1121,11 +1125,28 @@ export function useCall(socket, callOccupancyRef = null) {
       if (typeof document !== "undefined" && document.visibilityState === "visible") ask();
     };
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+    // 3.0.0 (C3): the server has no record of this ring (it restarted while
+    // ringing) → send the same offer again so the callee keeps ringing.
+    // "ended": the decline / missed signal was lost while we were away.
+    const onResumeResult = ({ toUserId, state } = {}) => {
+      if (modeRef.current !== "outgoing" || String(toUserId || "") !== String(peerRef.current?.id || "")) return;
+      if (state === "unknown" && lastOfferRef.current && pcRef.current) {
+        const pc = pcRef.current;
+        emitWithAck(() => socketRef.current, "call:offer", lastOfferRef.current, {
+          shouldRetry: () => modeRef.current === "outgoing" && pcRef.current === pc,
+        });
+      } else if (state === "ended") {
+        audioManager.play("callReject");
+        gracefulEnd("remote");
+      }
+    };
+    socket.on("call:caller-resume:result", onResumeResult);
     return () => {
       socket.off("connect", ask);
+      socket.off("call:caller-resume:result", onResumeResult);
       if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [mode, socket]);
+  }, [mode, socket, gracefulEnd]);
 
   // 3.0.0 (A0): call summaries queued while the socket was down go out now.
   useEffect(() => {
@@ -1367,7 +1388,8 @@ export function useCall(socket, callOccupancyRef = null) {
 
     // Answer to call:ring-status after this socket reconnected mid-ring.
     const onRingStatus = ({ fromUserId, callUuid: askedUuid, state } = {}) => {
-      if (state === "ringing") return;
+      // "unknown": the backend lost its ring record (restart); the caller re-sends.
+      if (state === "ringing" || state === "unknown") return;
       stopRingLocallyRef.current?.({ fromUserId, callUuid: askedUuid });
     };
 
@@ -1568,11 +1590,16 @@ export function useCall(socket, callOccupancyRef = null) {
         cleanup();
         return;
       }
-      socketRef.current.emit("call:offer", {
+      // 3.0.0 (C3): acked; re-sent after 3 s while still dialing this pc.
+      const offerPayload = {
         toUserId: String(peerId),
         offer: pc.localDescription,
         callType: type,
         renegotiate: false,
+      };
+      lastOfferRef.current = offerPayload;
+      emitWithAck(() => socketRef.current, "call:offer", offerPayload, {
+        shouldRetry: () => modeRef.current === "outgoing" && pcRef.current === pc,
       });
       setupTimelineRef.current?.mark("offerSent");
     } catch (err) {
@@ -1647,7 +1674,9 @@ export function useCall(socket, callOccupancyRef = null) {
         cleanup();
         return;
       }
-      socketRef.current.emit("call:answer", { toUserId: currentPeer.id, answer: pc.localDescription });
+      emitWithAck(() => socketRef.current, "call:answer", { toUserId: currentPeer.id, answer: pc.localDescription }, {
+        shouldRetry: () => pcRef.current === pc && pc.connectionState !== "connected" && pc.connectionState !== "closed",
+      });
       ringChannelRef.current?.post("handled", { fromUserId: currentPeer.id, callUuid: callUuidRef.current || null });
       timeline?.mark("answerSent");
       timeline?.watch(pc);
@@ -1668,11 +1697,10 @@ export function useCall(socket, callOccupancyRef = null) {
     else if (modeRef.current === "active") audioManager.play("channelLeave");
     if (targetId && sock?.connected) {
       const currentMode = modeRef.current;
-      if (currentMode === 'outgoing') {
-        sock.emit('call:cancel', { toUserId: targetId });
-      } else {
-        sock.emit('call:end', { toUserId: targetId });
-      }
+      // 3.0.0 (C3): acked + re-sent until delivered, unless a new call began.
+      emitWithAck(() => socketRef.current, currentMode === "outgoing" ? "call:cancel" : "call:end", { toUserId: targetId }, {
+        shouldRetry: () => !pcRef.current && (modeRef.current == null || modeRef.current === "active"),
+      });
     }
     gracefulEnd(reason);
   }, [gracefulEnd]);

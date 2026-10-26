@@ -572,6 +572,7 @@ module.exports = {
   _resetDmCallStateForTests,
   trackOffer,
   getPendingCall,
+  endedRecently,
   bufferCallerIce,
   listRingingForCallee,
   callStateByUuid,
