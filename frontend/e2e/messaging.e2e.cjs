@@ -240,6 +240,9 @@ async function runDevice(browser, base, dev) {
   await ctx.route('**/*', (r) => (/^(data|blob):/.test(r.request().url()) || r.request().url().startsWith(base) ? r.continue() : r.abort()));
   await ctx.addInitScript(([api, me]) => {
     window.__DESCALL_API_URL__ = api; window.__DESCALL_SOCKET_URL__ = api;
+    // CI runners have 2-4 cores, which turns on the opaque glass-lite fallback
+    // (gd-lite); report a real device's core count so the frosted path is tested.
+    try { Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { get: () => 8 }); } catch { /* ignore */ }
     localStorage.setItem('descall_language', 'tr');
     localStorage.setItem('descall:ios-pwa-install-dismissed', '1');
     localStorage.setItem('descall:cookie_consent_v1', JSON.stringify({ choice: 'rejected', at: new Date().toISOString() }));
@@ -508,14 +511,16 @@ async function runDevice(browser, base, dev) {
     const pf = await page.evaluate(() => {
       const s = document.querySelector('[data-testid="profile-sheet"]'); const txt = (q) => [...s.querySelectorAll(q)].map((x) => x.textContent.trim());
       const cs = getComputedStyle(s);
-      return { name: txt('[data-testid="profile-name"]')[0], acts: txt('[data-testid="profile-actions"] .pfs-act'), about: txt('[data-testid="profile-about"] .pfs-row'), safety: txt('[data-testid="profile-safety"] .pfs-row'), foot: txt('.pfs-foot')[0], bf: cs.backdropFilter || cs.webkitBackdropFilter, bg: cs.backgroundColor, closeLeft: (() => { const c = s.querySelector('[data-testid="profile-close"]').getBoundingClientRect(); const m = s.querySelector('[data-testid="profile-more"]').getBoundingClientRect(); return c.left < m.left; })(), focused: document.activeElement && document.activeElement.tagName };
+      return { name: txt('[data-testid="profile-name"]')[0], acts: txt('[data-testid="profile-actions"] .pfs-act'), about: txt('[data-testid="profile-about"] .pfs-row'), safety: txt('[data-testid="profile-safety"] .pfs-row'), foot: txt('.pfs-foot')[0], bf: cs.backdropFilter || cs.webkitBackdropFilter, bg: cs.backgroundColor, lite: document.documentElement.classList.contains('gd-lite') || document.documentElement.classList.contains('a11y-solid'), closeLeft: (() => { const c = s.querySelector('[data-testid="profile-close"]').getBoundingClientRect(); const m = s.querySelector('[data-testid="profile-more"]').getBoundingClientRect(); return c.left < m.left; })(), focused: document.activeElement && document.activeElement.tagName };
     });
     check(pf.name === 'Ayşe', `profile shows the name (${pf.name})`);
     check(JSON.stringify(pf.acts) === JSON.stringify(['Mesaj', 'Ara', 'Görüntülü', 'Arkadaş']), `profile tiles Mesaj/Ara/Görüntülü/Arkadaş (${JSON.stringify(pf.acts)})`);
     check(pf.about.some((x) => /Üyelik tarihi.*22 Şub 2025/.test(x)) && pf.about.some((x) => /Ortak sunucular\s*2/.test(x)) && pf.about.some((x) => /Ortak arkadaşlar\s*3/.test(x)), `HAKKINDA rows (${JSON.stringify(pf.about)})`);
     check(JSON.stringify(pf.safety) === JSON.stringify(['Şikayet et', "Ayşe'yi engelle"]), `bottom buttons Şikayet et / Ayşe'yi engelle (${JSON.stringify(pf.safety)})`);
     check(/Ayşe'ye bildirim gitmez/.test(pf.foot || ''), `block footnote (${pf.foot})`);
-    check(/blur\(40px\)/.test(pf.bf || ''), `heavy frosted glass (backdrop ${pf.bf}, bg ${pf.bg})`);
+    // Frosted (blur 40px) normally; the lite / solid fallback (slow GPU, reduced
+    // transparency) must still be fully opaque, never see-through.
+    check(pf.lite ? /^rgb\(/.test(pf.bg || '') : /blur\(40px\)/.test(pf.bf || ''), `heavy frosted glass (${pf.lite ? 'lite fallback, ' : ''}backdrop ${pf.bf}, bg ${pf.bg})`);
     check(pf.closeLeft, 'close on the left, ⋯ on the right');
     await shot(page, `${dev}-07-profile`);
     await dumpRects(page, 'profile', ['.pfs-hero', '.pfs-av', '.pfs-name', '.pfs-h', '.pfs-badges', '.cosmetic-country-badge', '.pfs-acts', '.pfs-sec', '.pfs-group', '.pfs-row', '.pfs-foot', '.pfs-sheet', '.pfs-form', '.pfs-cb']);
