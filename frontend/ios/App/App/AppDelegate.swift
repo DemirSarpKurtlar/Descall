@@ -34,11 +34,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if #available(iOS 15.0, *) {
             actions = [
                 UNNotificationAction(identifier: DescallNotify.Action.read, title: strings.markRead, options: [],
-                                     icon: UNNotificationActionIcon(systemImageName: "checkmark.message")),
+                                     icon: UNNotificationActionIcon(templateImageName: "NotifyRead")),
                 UNNotificationAction(identifier: DescallNotify.Action.mute, title: strings.mute, options: [],
                                      icon: UNNotificationActionIcon(systemImageName: "bell.slash")),
                 UNNotificationAction(identifier: DescallNotify.Action.open, title: strings.openChat, options: [.foreground],
-                                     icon: UNNotificationActionIcon(systemImageName: "bubble.left")),
+                                     icon: UNNotificationActionIcon(systemImageName: "message")),
             ]
         } else {
             actions = [

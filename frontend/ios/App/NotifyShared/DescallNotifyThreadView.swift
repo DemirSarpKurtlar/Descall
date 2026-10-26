@@ -25,6 +25,7 @@ final class DescallNotifyThreadView: UIView {
     private let replyPlaceholder = UILabel()
     private let sendButton = UIButton(type: .system)
     private let statusLabel = UILabel()
+    private let divider = UIView()
     private var showsSenderNames = true
 
     override init(frame: CGRect) {
@@ -50,25 +51,25 @@ final class DescallNotifyThreadView: UIView {
         backgroundColor = .clear
 
         avatarView.translatesAutoresizingMaskIntoConstraints = false
-        avatarView.layer.cornerRadius = 18
+        avatarView.layer.cornerRadius = 20
         avatarView.clipsToBounds = true
         avatarView.contentMode = .scaleAspectFill
 
         badgeView.translatesAutoresizingMaskIntoConstraints = false
         badgeView.backgroundColor = UIColor(red: 0.12, green: 0.13, blue: 0.25, alpha: 1)
-        badgeView.layer.cornerRadius = 4
+        badgeView.layer.cornerRadius = 5
         badgeView.layer.borderWidth = 1
         badgeView.layer.borderColor = UIColor(white: 0, alpha: 0.35).cgColor
-        let link = UIImageView(image: UIImage(systemName: "link", withConfiguration: UIImage.SymbolConfiguration(pointSize: 8, weight: .bold)))
+        let link = UIImageView(image: UIImage(systemName: "link", withConfiguration: UIImage.SymbolConfiguration(pointSize: 9, weight: .bold)))
         link.tintColor = UIColor(red: 0.45, green: 0.55, blue: 1, alpha: 1)
         link.translatesAutoresizingMaskIntoConstraints = false
         badgeView.addSubview(link)
 
-        nameLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        nameLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         nameLabel.textColor = .label
-        lineLabel.font = .systemFont(ofSize: 12)
+        lineLabel.font = .systemFont(ofSize: 13)
         lineLabel.textColor = .secondaryLabel
-        timeLabel.font = .systemFont(ofSize: 12)
+        timeLabel.font = .systemFont(ofSize: 13)
         timeLabel.textColor = .secondaryLabel
         timeLabel.setContentHuggingPriority(.required, for: .horizontal)
         timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -85,29 +86,39 @@ final class DescallNotifyThreadView: UIView {
         }
 
         bubbles.axis = .vertical
-        bubbles.spacing = 6
+        bubbles.spacing = 7
 
         reactionBar.backgroundColor = Self.barFill
-        reactionBar.layer.cornerRadius = 18
+        reactionBar.layer.cornerRadius = 25
         reactionStack.axis = .horizontal
         reactionStack.distribution = .fillEqually
         reactionStack.translatesAutoresizingMaskIntoConstraints = false
         reactionBar.addSubview(reactionStack)
         for emoji in DescallNotify.quickReactions {
+            // Each emoji sits in a 42pt circle (the selected one is filled), centred in an equal slot.
+            let slot = UIView()
             let button = UIButton(type: .custom)
             button.setTitle(emoji, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 21)
-            button.layer.cornerRadius = 15
+            button.titleLabel?.font = .systemFont(ofSize: 25)
+            button.layer.cornerRadius = 21
             button.accessibilityLabel = emoji
             button.addTarget(self, action: #selector(reactionTapped(_:)), for: .touchUpInside)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            slot.addSubview(button)
+            NSLayoutConstraint.activate([
+                button.centerXAnchor.constraint(equalTo: slot.centerXAnchor),
+                button.centerYAnchor.constraint(equalTo: slot.centerYAnchor),
+                button.widthAnchor.constraint(equalToConstant: 42),
+                button.heightAnchor.constraint(equalToConstant: 42),
+            ])
             reactionButtons.append(button)
-            reactionStack.addArrangedSubview(button)
+            reactionStack.addArrangedSubview(slot)
         }
 
         replyField.backgroundColor = Self.fieldFill
-        replyField.layer.cornerRadius = 15
+        replyField.layer.cornerRadius = 18.5
         replyField.addTarget(self, action: #selector(replyTapped), for: .touchUpInside)
-        replyPlaceholder.font = .systemFont(ofSize: 13)
+        replyPlaceholder.font = .systemFont(ofSize: 15)
         replyPlaceholder.textColor = .tertiaryLabel
         replyPlaceholder.translatesAutoresizingMaskIntoConstraints = false
         replyPlaceholder.isUserInteractionEnabled = false
@@ -115,8 +126,8 @@ final class DescallNotifyThreadView: UIView {
 
         sendButton.backgroundColor = Self.accent
         sendButton.tintColor = .white
-        sendButton.layer.cornerRadius = 14
-        sendButton.setImage(UIImage(systemName: "paperplane.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)), for: .normal)
+        sendButton.layer.cornerRadius = 17
+        sendButton.setImage(UIImage(systemName: "paperplane", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)), for: .normal)
         sendButton.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
 
         let replyRow = UIView()
@@ -133,24 +144,33 @@ final class DescallNotifyThreadView: UIView {
 
         let column = UIStackView(arrangedSubviews: [header, bubbles, reactionBar, replyRow, statusLabel])
         column.axis = .vertical
-        column.spacing = 10
-        column.setCustomSpacing(12, after: header)
+        column.spacing = 12
+        column.setCustomSpacing(27, after: header)  // hairline sits in the middle of this gap
+        column.setCustomSpacing(16, after: bubbles)
         column.translatesAutoresizingMaskIntoConstraints = false
         addSubview(column)
+        // Full-width hairline under the header (mockup 28).
+        divider.backgroundColor = UIColor.separator
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(divider)
 
         NSLayoutConstraint.activate([
-            column.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            column.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            column.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            column.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            column.topAnchor.constraint(equalTo: topAnchor, constant: 14),
+            column.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            column.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            column.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
+            divider.leadingAnchor.constraint(equalTo: leadingAnchor),
+            divider.trailingAnchor.constraint(equalTo: trailingAnchor),
+            divider.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 13),
+            divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
 
             avatarView.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             avatarView.topAnchor.constraint(equalTo: header.topAnchor),
             avatarView.bottomAnchor.constraint(lessThanOrEqualTo: header.bottomAnchor),
-            avatarView.widthAnchor.constraint(equalToConstant: 36),
-            avatarView.heightAnchor.constraint(equalToConstant: 36),
-            badgeView.widthAnchor.constraint(equalToConstant: 14),
-            badgeView.heightAnchor.constraint(equalToConstant: 14),
+            avatarView.widthAnchor.constraint(equalToConstant: 40),
+            avatarView.heightAnchor.constraint(equalToConstant: 40),
+            badgeView.widthAnchor.constraint(equalToConstant: 18),
+            badgeView.heightAnchor.constraint(equalToConstant: 18),
             badgeView.trailingAnchor.constraint(equalTo: avatarView.trailingAnchor, constant: 3),
             badgeView.bottomAnchor.constraint(equalTo: avatarView.bottomAnchor, constant: 3),
             link.centerXAnchor.constraint(equalTo: badgeView.centerXAnchor),
@@ -162,45 +182,59 @@ final class DescallNotifyThreadView: UIView {
             titles.trailingAnchor.constraint(lessThanOrEqualTo: timeLabel.leadingAnchor, constant: -8),
             timeLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor),
             timeLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 2),
-            header.heightAnchor.constraint(greaterThanOrEqualToConstant: 38),
+            header.heightAnchor.constraint(greaterThanOrEqualToConstant: 42),
 
-            reactionBar.heightAnchor.constraint(equalToConstant: 38),
+            reactionBar.heightAnchor.constraint(equalToConstant: 50),
             reactionStack.leadingAnchor.constraint(equalTo: reactionBar.leadingAnchor, constant: 6),
             reactionStack.trailingAnchor.constraint(equalTo: reactionBar.trailingAnchor, constant: -6),
-            reactionStack.topAnchor.constraint(equalTo: reactionBar.topAnchor, constant: 4),
-            reactionStack.bottomAnchor.constraint(equalTo: reactionBar.bottomAnchor, constant: -4),
+            reactionStack.topAnchor.constraint(equalTo: reactionBar.topAnchor),
+            reactionStack.bottomAnchor.constraint(equalTo: reactionBar.bottomAnchor),
 
-            replyRow.heightAnchor.constraint(equalToConstant: 30),
+            replyRow.heightAnchor.constraint(equalToConstant: 37),
             replyField.leadingAnchor.constraint(equalTo: replyRow.leadingAnchor),
             replyField.topAnchor.constraint(equalTo: replyRow.topAnchor),
             replyField.bottomAnchor.constraint(equalTo: replyRow.bottomAnchor),
-            replyField.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -8),
-            replyPlaceholder.leadingAnchor.constraint(equalTo: replyField.leadingAnchor, constant: 12),
+            replyField.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -10),
+            replyPlaceholder.leadingAnchor.constraint(equalTo: replyField.leadingAnchor, constant: 14),
             replyPlaceholder.trailingAnchor.constraint(lessThanOrEqualTo: replyField.trailingAnchor, constant: -12),
             replyPlaceholder.centerYAnchor.constraint(equalTo: replyField.centerYAnchor),
             sendButton.trailingAnchor.constraint(equalTo: replyRow.trailingAnchor),
             sendButton.centerYAnchor.constraint(equalTo: replyRow.centerYAnchor),
-            sendButton.widthAnchor.constraint(equalToConstant: 28),
-            sendButton.heightAnchor.constraint(equalToConstant: 28),
+            sendButton.widthAnchor.constraint(equalToConstant: 34),
+            sendButton.heightAnchor.constraint(equalToConstant: 34),
         ])
-        for button in reactionButtons {
-            button.widthAnchor.constraint(lessThanOrEqualToConstant: 60).isActive = true
-        }
     }
 
     // MARK: Content
 
     func setHeader(name: String, line: String?, time: String, avatar: UIImage?) {
         nameLabel.text = name
-        lineLabel.text = line
-        lineLabel.isHidden = (line ?? "").isEmpty
+        setHeaderLine(line)
         timeLabel.text = time
         avatarView.image = avatar
     }
 
+    /// The group line comes as "👥 Hafta Sonu Ekibi · 4 üye"; draw the people
+    /// glyph as the outline SF Symbol (mockup 28) instead of the emoji.
     func setHeaderLine(_ line: String?) {
-        lineLabel.text = line
-        lineLabel.isHidden = (line ?? "").isEmpty
+        let text = line ?? ""
+        lineLabel.isHidden = text.isEmpty
+        let groupPrefix = "👥 "
+        guard text.hasPrefix(groupPrefix),
+              let people = UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .regular))?
+                .withTintColor(.secondaryLabel, renderingMode: .alwaysOriginal) else {
+            lineLabel.attributedText = nil
+            lineLabel.text = text
+            return
+        }
+        let attachment = NSTextAttachment()
+        attachment.image = people
+        attachment.bounds = CGRect(x: 0, y: -1.5, width: people.size.width, height: people.size.height)
+        let result = NSMutableAttributedString(attachment: attachment)
+        result.append(NSAttributedString(string: "  " + String(text.dropFirst(groupPrefix.count))))
+        result.addAttributes([.font: lineLabel.font as Any, .foregroundColor: UIColor.secondaryLabel], range: NSRange(location: 0, length: result.length))
+        lineLabel.attributedText = result
+        lineLabel.accessibilityLabel = String(text.dropFirst(groupPrefix.count))
     }
 
     func setReplyPlaceholder(_ text: String) {
@@ -246,24 +280,24 @@ final class DescallNotifyThreadView: UIView {
         let row = UIView()
         let box = UIView()
         box.translatesAutoresizingMaskIntoConstraints = false
-        box.layer.cornerRadius = 12
+        box.layer.cornerRadius = 14
         box.backgroundColor = message.mine ? Self.accent : Self.incomingFill
         row.addSubview(box)
 
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 1
+        stack.spacing = 2
         stack.translatesAutoresizingMaskIntoConstraints = false
         box.addSubview(stack)
         if !message.mine, showsSenderNames, !message.fromName.isEmpty {
             let name = UILabel()
-            name.font = .systemFont(ofSize: 10, weight: .medium)
+            name.font = .systemFont(ofSize: 11, weight: .semibold)
             name.textColor = .secondaryLabel
             name.text = message.fromName
             stack.addArrangedSubview(name)
         }
         let text = UILabel()
-        text.font = .systemFont(ofSize: 13)
+        text.font = .systemFont(ofSize: 15)
         text.numberOfLines = 3
         text.textColor = message.mine ? .white : .label
         text.text = message.display(strings)
@@ -273,10 +307,10 @@ final class DescallNotifyThreadView: UIView {
             box.topAnchor.constraint(equalTo: row.topAnchor),
             box.bottomAnchor.constraint(equalTo: row.bottomAnchor),
             box.widthAnchor.constraint(lessThanOrEqualTo: row.widthAnchor, multiplier: 0.72),
-            stack.topAnchor.constraint(equalTo: box.topAnchor, constant: 6),
-            stack.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -6),
-            stack.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 10),
-            stack.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -10),
+            stack.topAnchor.constraint(equalTo: box.topAnchor, constant: 7),
+            stack.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -7),
+            stack.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -12),
             message.mine
                 ? box.trailingAnchor.constraint(equalTo: row.trailingAnchor)
                 : box.leadingAnchor.constraint(equalTo: row.leadingAnchor),
@@ -320,7 +354,7 @@ final class DescallNotifyReplyBar: UIView, UITextFieldDelegate {
         send.backgroundColor = DescallNotifyThreadView.accent
         send.tintColor = .white
         send.layer.cornerRadius = 16
-        send.setImage(UIImage(systemName: "paperplane.fill"), for: .normal)
+        send.setImage(UIImage(systemName: "paperplane", withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)), for: .normal)
         send.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
         addSubview(field)
         addSubview(send)

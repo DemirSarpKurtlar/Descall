@@ -20,7 +20,7 @@ enum DescallNotifyDemo {
 
         let card = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.layer.cornerRadius = 22
+        card.layer.cornerRadius = 24
         card.clipsToBounds = true
         backdrop.addSubview(card)
 
@@ -31,11 +31,11 @@ enum DescallNotifyDemo {
             name: "Mert",
             line: "👥 Hafta Sonu Ekibi · \(strings.members(4))",
             time: strings.now,
-            avatar: DescallNotifyImages.letterAvatar(name: "Mert", seed: "u-mert")
+            avatar: DescallNotifyImages.letterAvatar(name: "Mert", seed: "demo-mert4") // teal, as in mockup 28
         )
         thread.setMessages([
             .init(id: "1", fromName: "Ayşe", text: "Kim geliyor bu akşam?", mine: false),
-            .init(id: "2", fromName: "", text: "Ben varım 👋", mine: true),
+            .init(id: "2", fromName: "", text: "Ben varım 🙋‍♂️", mine: true),
             .init(id: "3", fromName: "Mert", text: "Bu akşam 21:00'de sesli kanalda buluşuyoruz, gelen?", mine: false),
         ], strings: strings, senderNames: true)
         thread.setSelectedReaction("😂")
@@ -43,28 +43,31 @@ enum DescallNotifyDemo {
 
         let menu = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         menu.translatesAutoresizingMaskIntoConstraints = false
-        menu.layer.cornerRadius = 14
+        menu.layer.cornerRadius = 16
         menu.clipsToBounds = true
         backdrop.addSubview(menu)
         let rows = UIStackView()
         rows.axis = .vertical
         rows.translatesAutoresizingMaskIntoConstraints = false
         menu.contentView.addSubview(rows)
-        let items = [(strings.markRead, "checkmark.message"), (strings.mute, "bell.slash"), (strings.openChat, "bubble.left")]
+        let items = [(strings.markRead, "NotifyRead"), (strings.mute, "bell.slash"), (strings.openChat, "message")]
         for (index, item) in items.enumerated() {
             let row = UIView()
             let label = UILabel()
             label.text = item.0
-            label.font = .systemFont(ofSize: 15)
+            label.font = .systemFont(ofSize: 17)
             label.textColor = .label
-            let icon = UIImageView(image: UIImage(systemName: item.1))
+            let icon = UIImageView(image: UIImage(named: item.1)?.withRenderingMode(.alwaysTemplate) ?? UIImage(systemName: item.1))
+            icon.contentMode = .scaleAspectFit
             icon.tintColor = .label
             [label, icon].forEach {
                 $0.translatesAutoresizingMaskIntoConstraints = false
                 row.addSubview($0)
             }
             NSLayoutConstraint.activate([
-                row.heightAnchor.constraint(equalToConstant: 44),
+                row.heightAnchor.constraint(equalToConstant: 48),
+                icon.widthAnchor.constraint(equalToConstant: 22),
+                icon.heightAnchor.constraint(equalToConstant: 22),
                 label.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 16),
                 label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
                 icon.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
@@ -82,13 +85,13 @@ enum DescallNotifyDemo {
         let guide = backdrop.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: guide.topAnchor, constant: 40),
-            card.leadingAnchor.constraint(equalTo: backdrop.leadingAnchor, constant: 10),
-            card.trailingAnchor.constraint(equalTo: backdrop.trailingAnchor, constant: -10),
+            card.leadingAnchor.constraint(equalTo: backdrop.leadingAnchor, constant: 12),
+            card.trailingAnchor.constraint(equalTo: backdrop.trailingAnchor, constant: -12),
             thread.topAnchor.constraint(equalTo: card.contentView.topAnchor),
             thread.leadingAnchor.constraint(equalTo: card.contentView.leadingAnchor),
             thread.trailingAnchor.constraint(equalTo: card.contentView.trailingAnchor),
             thread.bottomAnchor.constraint(equalTo: card.contentView.bottomAnchor),
-            menu.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 10),
+            menu.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 48),
             menu.leadingAnchor.constraint(equalTo: card.leadingAnchor),
             menu.trailingAnchor.constraint(equalTo: card.trailingAnchor),
             rows.topAnchor.constraint(equalTo: menu.contentView.topAnchor),

@@ -214,20 +214,41 @@ enum DescallNotifyMute {
 // MARK: - Avatars
 
 enum DescallNotifyAvatar {
-    /// Letter avatar colours (teal, orange, gold, violet, blue, pink, green).
+    /// Same fallback as the app (src/lib/avatarFallback.js): AVATAR_PALETTE[crc32(user id) % 8],
+    /// up to two initials, Turkish upper case. Order must match the JS palette.
     static let palette: [(r: Double, g: Double, b: Double)] = [
-        (0.12, 0.55, 0.58), (0.86, 0.45, 0.16), (0.78, 0.60, 0.16),
-        (0.48, 0.36, 0.86), (0.23, 0.48, 0.90), (0.84, 0.30, 0.55), (0.20, 0.62, 0.38),
-    ]
+        0x2868FF, 0x228359, 0xBA590E, 0xDB2C5B, 0x7E59EE, 0x177E96, 0x926F16, 0xDA362C,
+    ].map { hex in
+        (r: Double((hex >> 16) & 0xFF) / 255, g: Double((hex >> 8) & 0xFF) / 255, b: Double(hex & 0xFF) / 255)
+    }
 
+    /// "Ayşe Yılmaz" → "AY", "cinar.baskin" → "CB", "Zeynep" → "Z", "" → "?" (avatarInitials).
     static func initial(_ name: String) -> String {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let first = trimmed.first(where: { $0.isLetter || $0.isNumber }) else { return "?" }
-        return String(first).uppercased(with: Locale(identifier: "tr_TR"))
+        var trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        while trimmed.hasPrefix("@") { trimmed.removeFirst() }
+        let separators = CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "._-"))
+        // Leading non letters/digits of each part are dropped; its first letter/digit counts.
+        let parts = trimmed.components(separatedBy: separators).compactMap { part in
+            part.first(where: { $0.isLetter || $0.isNumber })
+        }
+        guard !parts.isEmpty else { return "?" }
+        let letters = String(parts.prefix(2))
+        return letters.uppercased(with: Locale(identifier: "tr_TR"))
     }
 
     static func colorIndex(_ seed: String) -> Int {
-        Int(fnv1a(seed.isEmpty ? "?" : seed) % UInt64(palette.count))
+        guard !seed.isEmpty else { return 0 }
+        return Int(crc32(seed) % UInt32(palette.count))
+    }
+
+    /// CRC-32 (IEEE, same as zlib.crc32) of the UTF-8 bytes.
+    static func crc32(_ text: String) -> UInt32 {
+        var crc: UInt32 = 0xFFFF_FFFF
+        for byte in text.utf8 {
+            crc ^= UInt32(byte)
+            for _ in 0..<8 { crc = (crc & 1) != 0 ? (0xEDB8_8320 ^ (crc >> 1)) : (crc >> 1) }
+        }
+        return crc ^ 0xFFFF_FFFF
     }
 
     /// Stable file name for a cached avatar.

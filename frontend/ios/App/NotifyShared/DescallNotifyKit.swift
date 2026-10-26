@@ -226,7 +226,7 @@ enum DescallNotifyImages {
         return UIColor(red: CGFloat(c.r), green: CGFloat(c.g), blue: CGFloat(c.b), alpha: 1)
     }
 
-    /// Round letter avatar ("M" on teal) when the sender has no photo.
+    /// Round letter avatar (app fallback colours, e.g. "M" on teal) when the sender has no photo.
     static func letterAvatar(name: String, seed: String, side: CGFloat = 120) -> UIImage {
         let size = CGSize(width: side, height: side)
         let format = UIGraphicsImageRendererFormat()
@@ -235,7 +235,7 @@ enum DescallNotifyImages {
             color(seed.isEmpty ? name : seed).setFill()
             UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).fill()
             let text = DescallNotifyAvatar.initial(name) as NSString
-            let font = UIFont.systemFont(ofSize: side * 0.44, weight: .semibold)
+            let font = UIFont.systemFont(ofSize: side * (text.length > 1 ? 0.38 : 0.44), weight: .semibold)
             let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.white]
             let box = text.size(withAttributes: attrs)
             text.draw(at: CGPoint(x: (side - box.width) / 2, y: (side - box.height) / 2), withAttributes: attrs)
