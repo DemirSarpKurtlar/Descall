@@ -6,6 +6,8 @@ import ServerHub from "./ServerHub";
 import { CreateServerSheet, JoinServerSheet, RulesGateSheet, LeaveAlert, OwnerLeaveSheet, DeleteServerSheet } from "./sheets";
 import { VoiceMemberMenu, ServerLongPressMenu, FolderLongPressMenu } from "./menus";
 import { DeleteChannelAlert } from "./pagesChannels";
+import { onlineCountOf } from "./pagesHub";
+import { getServerMembers } from "../../../api/servers";
 import { AlertBox } from "./kit";
 import { useSvh } from "./useSvh";
 import { applyServerMute } from "./pagesGeneral";
@@ -36,6 +38,19 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
   const [delCh, setDelCh] = useState(null); // channel (from the sidebar row menu)
   const [delFolder, setDelFolder] = useState(null);
 
+  // Mockup 24: "128 üye · 23 çevrimiçi". /servers/my has no per-server online count, so the
+  // long-press menu loads that server's members once (cached for the session) and counts
+  // them against live presence, like the hub hero does.
+  const [menuMembers, setMenuMembers] = useState(() => new Map());
+  const menuServerId = b.serverMenu?.server?.id;
+  useEffect(() => {
+    if (menuServerId == null) return undefined;
+    let alive = true;
+    getServerMembers(menuServerId).then((r) => {
+      if (alive && Array.isArray(r?.members)) setMenuMembers((m) => new Map(m).set(String(menuServerId), r.members));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [menuServerId]);
   const byId = useCallback((id) => (servers || []).find((x) => same(x.id, id)) || (same(activeServer?.id, id) ? activeServer : null), [servers, activeServer]);
   const hubServer = hub ? (same(activeServer?.id, hub.serverId) ? activeServer : byId(hub.serverId)) : null;
 
@@ -238,7 +253,7 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
     const close = () => b.setServerMenu(null);
     const safe = (fn) => async (...a) => { try { await fn(...a); } catch (err) { toast(err?.message || s.failed, "error"); } };
     return (
-      <ServerLongPressMenu key={`sm-${sv.id}`} rect={sm.rect} server={sv} unread={isServerMuted(sv.id) ? 0 : unread} online={sm.online ?? null}
+      <ServerLongPressMenu key={`sm-${sv.id}`} rect={sm.rect} server={sv} unread={isServerMuted(sv.id) ? 0 : unread} online={onlineCountOf(menuMembers.get(String(sv.id)), onlineUsers, me)}
         folders={serverFolders} canInvite={serverHasPermission(sv, "CREATE_INSTANT_INVITE")} onClose={close}
         onMarkRead={safe(() => markRead([sv]))}
         onMute={safe(async (id) => { await applyServerMute(sv, MUTE_DURATIONS[id], { onServerUpdated: cb.onServerUpdated }); toast(s.mutedDone, "success"); })}
