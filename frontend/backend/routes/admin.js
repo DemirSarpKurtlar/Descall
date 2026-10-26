@@ -45,6 +45,7 @@ const {
 } = require("../lib/adminOverview");
 const { loadSystemSettings, persistSystemConfig, applySystemConfigToState, publicFeatureFlags } = require("../lib/systemSettings");
 const insights = require("../lib/adminInsightsStore");
+const fb = require("../lib/feedbackAdmin");
 const {
   parseDirectoryQuery,
   mapDirectoryUser,
@@ -1575,210 +1576,137 @@ router.post("/errors/archive", (req, res) => {
 });
 
 // ========== USER FEEDBACK SYSTEM ==========
+// 3.0 Geri Bildirim: one list call carries every row (newest first, capped)
+// with the sender card, PLATFORM / SÜRÜM / CİHAZ and the thread; the panel
+// filters and counts on the client. Admin-only via router.use(requireAdmin).
 
-// Get all feedback (Admin only - from Supabase)
-router.get("/feedback", requireAuth, requireAdmin, async (req, res) => {
+async function loadFeedbackUsers(rows) {
+  const ids = [...new Set(rows.map((f) => String(f.user_id || "")).filter(Boolean))];
+  const users = new Map();
+  const counts = new Map();
+  if (!ids.length) return { users, counts };
   try {
-    const { category, priority, status, q, sort = "newest" } = req.query;
-    
-    // Build query
+    const { data } = await supabase.from("users").select("id, username, display_name, avatar_url, created_at").in("id", ids);
+    for (const u of data || []) users.set(String(u.id), u);
+  } catch { /* card falls back to the stored username */ }
+  try {
+    const { data } = await supabase.from("user_feedback").select("user_id").in("user_id", ids);
+    for (const r of data || []) counts.set(String(r.user_id), (counts.get(String(r.user_id)) || 0) + 1);
+  } catch { /* count falls back to 1 */ }
+  return { users, counts };
+}
+
+router.get("/feedback", async (req, res) => {
+  try {
+    const { category, priority, status, sort = "newest" } = req.query;
     let query = supabase.from("user_feedback").select("*");
-    
-    // Apply filters
-    if (category && category !== "all") {
-      query = query.eq("category", category);
-    }
-    if (priority && priority !== "all") {
-      query = query.eq("priority", priority);
-    }
-    if (status && status !== "all") {
-      query = query.eq("status", status);
-    }
-    if (q) {
-      query = query.or(`message.ilike.%${q}%,username.ilike.%${q}%`);
-    }
-    
-    // Sort
-    if (sort === "newest") query = query.order("created_at", { ascending: false });
-    else if (sort === "oldest") query = query.order("created_at", { ascending: true });
-    else if (sort === "priority") query = query.order("priority", { ascending: true });
-    
-    const { data: feedbacks, error } = await query;
-    
+    if (fb.CATEGORIES.includes(category)) query = query.eq("category", category);
+    if (fb.PRIORITIES.includes(priority)) query = query.eq("priority", priority);
+    if (fb.STATUSES.includes(status)) query = query.eq("status", status);
+    const q = fb.safeSearch(req.query.q || "");
+    if (q) query = query.or(`message.ilike.%${q}%,username.ilike.%${q}%`);
+    query = query.order("created_at", { ascending: sort === "oldest" }).limit(500);
+    const { data: rows, error } = await query;
     if (error) throw error;
-    
-    // Calculate stats
-    const byStatus = {};
-    const byCategory = {};
-    feedbacks?.forEach(f => {
-      byStatus[f.status] = (byStatus[f.status] || 0) + 1;
-      byCategory[f.category] = (byCategory[f.category] || 0) + 1;
-    });
-    
-    // Transform to match frontend format
-    const transformed = feedbacks?.map(f => ({
-      id: f.id,
-      user: { id: f.user_id, username: f.username },
-      category: f.category,
-      priority: f.priority,
-      message: f.message,
-      attachments: f.attachments || [],
-      status: f.status,
-      viewed: f.viewed,
-      created_at: f.created_at,
-      updated_at: f.updated_at,
-      replies: f.admin_replies || [],
-    })) || [];
-    
-    res.json({
-      feedbacks: transformed,
-      total: transformed.length,
-      stats: { byStatus, byCategory },
-    });
+    const { users, counts } = await loadFeedbackUsers(rows || []);
+    const feedbacks = (rows || []).map((f) => fb.shapeFeedback(f, users, counts));
+    res.json({ feedbacks, total: feedbacks.length, stats: fb.statsOf(feedbacks) });
   } catch (error) {
-    console.error("[Admin] Failed to load feedback:", error);
-    res.status(500).json({ error: "Failed to load feedback." });
+    console.error("[Admin] Failed to load feedback:", error?.message || error);
+    res.status(500).json({ error: "Geri bildirimler yüklenemedi." });
   }
 });
 
-// Get feedback statistics (from Supabase)
-router.get("/feedback/stats", requireAuth, requireAdmin, async (req, res) => {
+router.get("/feedback/stats", async (req, res) => {
   try {
-    const { data: feedbacks, error } = await supabase
-      .from("user_feedback")
-      .select("status, category, priority, viewed");
-    
+    const { data, error } = await supabase.from("user_feedback").select("status, category, priority, viewed");
     if (error) throw error;
-    
-    const byStatus = {};
-    const byCategory = {};
-    const byPriority = {};
-    
-    feedbacks?.forEach(f => {
-      byStatus[f.status] = (byStatus[f.status] || 0) + 1;
-      byCategory[f.category] = (byCategory[f.category] || 0) + 1;
-      byPriority[f.priority] = (byPriority[f.priority] || 0) + 1;
-    });
-    
-    res.json({
-      total: feedbacks?.length || 0,
-      byStatus,
-      byCategory,
-      byPriority,
-      new: feedbacks?.filter(f => f.status === "new" && !f.viewed).length || 0,
-    });
+    res.json(fb.statsOf(data || []));
   } catch (error) {
-    console.error("[Admin] Failed to load feedback stats:", error);
-    res.status(500).json({ error: "Failed to load feedback stats." });
+    console.error("[Admin] Failed to load feedback stats:", error?.message || error);
+    res.status(500).json({ error: "İstatistikler yüklenemedi." });
   }
 });
 
-// Update feedback (in Supabase)
-router.patch("/feedback/:id", requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    const { data, error } = await supabase
-      .from("user_feedback")
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: "Feedback not found." });
-    
-    res.json(data);
-  } catch (error) {
-    console.error("[Admin] Failed to update feedback:", error);
-    res.status(500).json({ error: "Failed to update feedback." });
-  }
-});
+async function reloadFeedback(id) {
+  const { data, error } = await supabase.from("user_feedback").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  const { users, counts } = await loadFeedbackUsers([data]);
+  return fb.shapeFeedback(data, users, counts);
+}
 
-// Mark feedback as viewed (in Supabase)
-router.post("/feedback/:id/view", requireAuth, requireAdmin, async (req, res) => {
+// Status / priority / category only; each change leaves a system line in the thread.
+router.patch("/feedback/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const { error } = await supabase
-      .from("user_feedback")
-      .update({ viewed: true, viewed_at: new Date().toISOString() })
-      .eq("id", id);
-    
-    if (error) throw error;
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error("[Admin] Failed to mark feedback as viewed:", error);
-    res.status(500).json({ error: "Failed to mark as viewed." });
-  }
-});
-
-// Reply to feedback (in Supabase)
-router.post("/feedback/:id/reply", requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { text, attachments } = req.body;
-    
-    // Get current feedback
-    const { data: feedback, error: getError } = await supabase
-      .from("user_feedback")
-      .select("admin_replies")
-      .eq("id", id)
-      .single();
-    
+    const patch = fb.sanitizePatch(req.body);
+    if (!Object.keys(patch).length) return res.status(400).json({ error: "Geçerli bir değişiklik yok." });
+    const { data: cur, error: getError } = await supabase
+      .from("user_feedback").select("id, status, priority, admin_replies").eq("id", req.params.id).maybeSingle();
     if (getError) throw getError;
-    if (!feedback) return res.status(404).json({ error: "Feedback not found." });
-    
-    const reply = {
-      id: Math.random().toString(36).slice(2),
-      text,
-      attachments: attachments || [],
-      isAdmin: true,
-      adminId: req.user.id,
-      adminUsername: req.user.username,
-      created_at: new Date().toISOString(),
-    };
-    
-    const replies = [...(feedback.admin_replies || []), reply];
-    
-    const { data, error } = await supabase
-      .from("user_feedback")
-      .update({ 
-        admin_replies: replies,
-        status: "in_progress",
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", id)
-      .select()
-      .single();
-    
+    if (!cur) return res.status(404).json({ error: "Geri bildirim bulunamadı." });
+    const lines = fb.systemLines(cur, patch, req.user.username);
+    const update = { ...patch, updated_at: new Date().toISOString() };
+    if (lines.length) update.admin_replies = [...(Array.isArray(cur.admin_replies) ? cur.admin_replies : []), ...lines];
+    const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
     if (error) throw error;
-    
-    res.json(reply);
+    res.json({ feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
-    console.error("[Admin] Failed to send reply:", error);
-    res.status(500).json({ error: "Failed to send reply." });
+    console.error("[Admin] Failed to update feedback:", error?.message || error);
+    res.status(500).json({ error: "Geri bildirim güncellenemedi." });
   }
 });
 
-// Delete feedback (from Supabase)
-router.delete("/feedback/:id", requireAuth, requireAdmin, async (req, res) => {
+router.post("/feedback/:id/view", async (req, res) => {
   try {
-    const { id } = req.params;
-    
     const { error } = await supabase
-      .from("user_feedback")
-      .delete()
-      .eq("id", id);
-    
+      .from("user_feedback").update({ viewed: true, viewed_at: new Date().toISOString() }).eq("id", req.params.id);
     if (error) throw error;
-    
     res.json({ success: true });
   } catch (error) {
-    console.error("[Admin] Failed to delete feedback:", error);
-    res.status(500).json({ error: "Failed to delete feedback." });
+    console.error("[Admin] Failed to mark feedback as viewed:", error?.message || error);
+    res.status(500).json({ error: "Okundu olarak işaretlenemedi." });
+  }
+});
+
+// "Kullanıcıya yanıt" (the sender gets a live feedback:reply event) or "Dahili not" (admins only).
+router.post("/feedback/:id/reply", async (req, res) => {
+  try {
+    const text = String(req.body?.text || "").trim().slice(0, 4000);
+    const internal = req.body?.internal === true;
+    if (!text) return res.status(400).json({ error: "Yanıt boş olamaz." });
+    const { data: cur, error: getError } = await supabase
+      .from("user_feedback").select("id, user_id, status, admin_replies").eq("id", req.params.id).maybeSingle();
+    if (getError) throw getError;
+    if (!cur) return res.status(404).json({ error: "Geri bildirim bulunamadı." });
+    const reply = {
+      id: fb.newId(), text, internal, isAdmin: true,
+      adminId: req.user.id, adminUsername: req.user.username, created_at: new Date().toISOString(),
+    };
+    const update = {
+      admin_replies: [...(Array.isArray(cur.admin_replies) ? cur.admin_replies : []), reply],
+      updated_at: new Date().toISOString(),
+    };
+    if (!internal && cur.status === "new") update.status = "in_progress";
+    const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
+    if (error) throw error;
+    if (!internal && cur.user_id) {
+      getIo(req)?.to(`user:${cur.user_id}`)?.emit("feedback:reply", { feedbackId: cur.id, text: text.slice(0, 200) });
+    }
+    res.json({ reply: fb.shapeReply(reply), feedback: await reloadFeedback(req.params.id) });
+  } catch (error) {
+    console.error("[Admin] Failed to send reply:", error?.message || error);
+    res.status(500).json({ error: "Yanıt gönderilemedi." });
+  }
+});
+
+router.delete("/feedback/:id", async (req, res) => {
+  try {
+    const { error } = await supabase.from("user_feedback").delete().eq("id", req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    console.error("[Admin] Failed to delete feedback:", error?.message || error);
+    res.status(500).json({ error: "Geri bildirim silinemedi." });
   }
 });
 

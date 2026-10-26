@@ -1863,6 +1863,11 @@ export default function App() {
     socket.on("dm:request:declined", () => {
       toast(t("Message request declined"), "info");
     });
+    // Yönetici Paneli › Geri Bildirim: an admin answered this user's feedback.
+    socket.on("feedback:reply", ({ text } = {}) => {
+      const clipped = String(text || "").slice(0, 140);
+      if (clipped) toast(t("Your feedback got a reply: {text}", { text: clipped }), "info");
+    });
     socket.on("dm:request:error", ({ message, fromUserId } = {}) => {
       if (fromUserId) {
         setMessageRequests((prev) => prev.filter((row) => row.id !== fromUserId));

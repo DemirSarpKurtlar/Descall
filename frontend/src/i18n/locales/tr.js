@@ -3067,6 +3067,7 @@ export const phrases = {
   "Message request": "Mesaj isteği",
   "Message request sent": "Mesaj isteği gönderildi",
   "Message request accepted": "Mesaj isteği kabul edildi",
+  "Your feedback got a reply: {text}": "Geri bildirimine yanıt geldi: {text}",
   "Message request declined": "Mesaj isteği reddedildi",
   "Accept message request": "Mesaj isteğini kabul et",
   "Decline message request": "Mesaj isteğini reddet",
