@@ -98,10 +98,14 @@
   justify-content: center;
   line-height: 0;
   overflow: visible;
+  isolation: isolate;
 }
 
 .message-avatar .status-badge {
-  /* Sit on the photo corner; frame/effect rings may extend past this box */
+  /* Sit on the photo corner; frame/effect rings may extend past this box.
+     The z-index only orders the dot against the avatar's own frame rings:
+     .message-avatar isolates it, so the dot never rises over the composer's
+     + / emoji / slash menus (2.13.14 fix). */
   right: -1px;
   bottom: -1px;
   z-index: 4;
@@ -674,7 +678,14 @@
   background: rgba(14, 15, 22, 0.94);
   -webkit-backdrop-filter: blur(48px) saturate(160%); backdrop-filter: blur(48px) saturate(160%);
   touch-action: none; user-select: none; -webkit-user-select: none;
-  padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+  /* Start under the Electron custom title bar (40px there, 0 on web/mobile)
+     and above a Windows taskbar overlap, so the top glass bar is never clipped. */
+  padding:
+    calc(var(--electron-titlebar-h, 0px) + max(14px, env(safe-area-inset-top, 0px)))
+    max(16px, env(safe-area-inset-right, 0px))
+    calc(var(--electron-bottom-inset, 0px) + max(14px, env(safe-area-inset-bottom, 0px)))
+    max(16px, env(safe-area-inset-left, 0px));
+  justify-content: flex-start;
   box-sizing: border-box; gap: 12px;
 }
 .mv-root .g-glass-heavy {
@@ -695,9 +706,20 @@
 .mv-btn:hover { background: rgba(255, 255, 255, 0.08); }
 .mv-btn:active { transform: scale(0.94); }
 .mv-btn-label { font-size: 11px; color: rgba(235, 235, 245, 0.75); }
-.mv-stage { position: relative; flex: 1; width: 100%; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+/* The image is sized from the stage (the space left between the top bar and
+   the zoom pill / hint), not from 100vh, so it always fits whatever chrome
+   the window has. Fallback for engines without container units: viewport
+   minus title bar, top bar, pill, hint and gaps. */
+.mv-stage { position: relative; flex: 1 1 0; width: 100%; min-height: 0; display: grid; place-items: center; overflow: hidden; container-type: size; }
 .mv-frame { max-width: min(1100px, 100%); max-height: 100%; padding: 14px; border-radius: 22px; box-sizing: border-box; overflow: hidden; display: grid; place-items: center; will-change: transform; }
-.mv-img { display: block; max-width: 100%; max-height: calc(100vh - 220px); border-radius: 12px; object-fit: contain; will-change: transform; transform-origin: center; }
+.mv-img {
+  display: block; max-width: 100%;
+  max-height: calc(100vh - 236px - var(--electron-titlebar-h, 0px) - var(--electron-bottom-inset, 0px));
+  border-radius: 12px; object-fit: contain; will-change: transform; transform-origin: center;
+}
+@supports (height: 1cqh) {
+  .mv-img { max-width: min(calc(1100px - 28px), calc(100cqw - 28px)); max-height: calc(100cqh - 28px); }
+}
 .mv-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border-radius: 50%; color: #fff; display: grid; place-items: center; cursor: pointer; z-index: 2; transition: transform 140ms ease; }
 .mv-nav:active { transform: translateY(-50%) scale(0.92); }
 .mv-prev { left: 18px; }
@@ -717,7 +739,12 @@
   .mv-btn-label, .mv-hint, .mv-nav { display: none; }
   .mv-top { border-radius: 22px; }
   .mv-frame { padding: 0; background: transparent !important; border: 0 !important; box-shadow: none !important; }
-  .mv-img { max-height: calc(100vh - 170px); border-radius: 0; }
+  .mv-img { max-height: calc(100vh - 170px - var(--electron-titlebar-h, 0px) - var(--electron-bottom-inset, 0px)); border-radius: 0; }
+}
+@supports (height: 1cqh) {
+  @media (max-width: 768px) {
+    .mv-img { max-width: 100cqw; max-height: 100cqh; }
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .mv-root *, .mv-root { transition: none !important; }
