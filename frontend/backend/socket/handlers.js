@@ -631,6 +631,8 @@ function registerSocketHandlers(io) {
     if (!userRoles.has(myId)) {
       userRoles.set(myId, me.username === "admin" || me.is_admin ? "admin" : "user");
     }
+    // Moderators get the admin panel entry with the "Şüpheli Davranışlar" tab only.
+    if (userRoles.get(myId) === "mod") socket.emit("staff:role", { role: "moderator" });
     userSessionStartMs.set(myId, Date.now());
 
     usernameById.set(myId, me.username);

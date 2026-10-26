@@ -52,6 +52,7 @@ const STRINGS = {
     ownerTitle: "Sunucu sahipliği",
     antibotTitle: "Anti-bot uyarısı",
     antibotBody: "{count} hesap risk eşiğini geçti (en yüksek {topScore})",
+    antibotWatchBody: "İzleme listesinde {count} yeni uyarı",
   },
   en: {
     someone: "Someone",
@@ -70,6 +71,7 @@ const STRINGS = {
     ownerTitle: "Server ownership",
     antibotTitle: "Anti-bot alert",
     antibotBody: "{count} accounts crossed the risk threshold (top {topScore})",
+    antibotWatchBody: "{count} new watch list alerts",
   },
 };
 
@@ -290,6 +292,18 @@ function describeEvent(event = {}, lang = "tr") {
       title: s.antibotTitle,
       body: fmt(s.antibotBody, { count: String(count), topScore: String(topScore) }),
       data: { type: "admin-antibot", count, topScore },
+    };
+  }
+  // Admin-only watch list rule digest. Counts only.
+  if (type === "admin-antibot-watch") {
+    const count = Math.max(0, Math.floor(Number(event.count) || 0));
+    return {
+      ...base,
+      threadId: "admin-antibot",
+      collapseId: "admin-antibot-watch",
+      title: s.antibotTitle,
+      body: fmt(s.antibotWatchBody, { count: String(count) }),
+      data: { type: "admin-antibot-watch", count },
     };
   }
   return null;

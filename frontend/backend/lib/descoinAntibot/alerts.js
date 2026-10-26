@@ -111,6 +111,60 @@ async function processCrossings(rows, deps = {}) {
   return { recorded: inserted.skipped ? 0 : fresh.length, emailed, pushed };
 }
 
+let lastWatchEmailAt = 0;
+let lastWatchPushAt = 0;
+let pendingWatch = 0;
+
+function buildWatchEmail(count, env = process.env) {
+  const subject = `Descall anti-bot: izleme listesinde ${count} yeni uyarı`;
+  const text = [
+    `İzleme listesindeki hesaplarda ${count} uyarı kuralı tetiklendi.`,
+    "İzleme modu (Faz 0): hiçbir kazanç veya bakiye değişmedi.",
+    `Detaylar admin panelinde (Şüpheli Davranışlar · İzleme listesi): ${adminUrl(env)}`,
+  ].join("\n");
+  return { to: recipient(env), subject, text };
+}
+
+/**
+ * Watch list rule alerts (already recorded in descoin_admin_alerts by the risk
+ * job). Same flags, recipient and 30-minute digest as the score alerts; the
+ * email / push carry only a count. Admins only (never moderators).
+ */
+async function notifyWatchFires(count, deps = {}) {
+  if (!count) return { emailed: false, pushed: false };
+  const flags = config.getAlertFlags();
+  const now = deps.now ? deps.now() : Date.now();
+  pendingWatch += count;
+  let emailed = false;
+  let pushed = false;
+  if (flags.email && now - lastWatchEmailAt >= DIGEST_MS) {
+    const sendEmail = deps.sendEmail || require("../mailer").sendEmail;
+    try {
+      const res = await sendEmail(buildWatchEmail(pendingWatch));
+      emailed = Boolean(res?.sent);
+      lastWatchEmailAt = now;
+    } catch (err) {
+      console.warn("[antibot] watch alert email failed:", String(err?.message || err).slice(0, 200));
+    }
+  }
+  if (flags.push && now - lastWatchPushAt >= DIGEST_MS) {
+    try {
+      const listAdminIds = deps.listAdminIds || defaultAdminIds;
+      const adminIds = await listAdminIds();
+      if (adminIds.length) {
+        const sendPush = deps.sendPush || require("../iosAlertPush").sendIosAlertToUsers;
+        await sendPush(adminIds, { type: "admin-antibot-watch", count: pendingWatch });
+        pushed = true;
+      }
+      lastWatchPushAt = now;
+    } catch (err) {
+      console.warn("[antibot] watch alert push failed:", String(err?.message || err).slice(0, 200));
+    }
+  }
+  if (emailed || pushed || (!flags.email && !flags.push)) pendingWatch = 0;
+  return { emailed, pushed };
+}
+
 /** Admin accounts only (is_admin), never moderators or regular users. */
 async function defaultAdminIds() {
   const { data, error } = await require("../../db/supabase").from("users").select("id").eq("is_admin", true).limit(20);
@@ -122,6 +176,9 @@ function _reset() {
   lastEmailAt = 0;
   lastPushAt = 0;
   pending = { count: 0, topScore: 0 };
+  lastWatchEmailAt = 0;
+  lastWatchPushAt = 0;
+  pendingWatch = 0;
 }
 
-module.exports = { processCrossings, buildEmail, recipient, DIGEST_MS, _reset };
+module.exports = { processCrossings, notifyWatchFires, buildEmail, buildWatchEmail, recipient, DIGEST_MS, _reset };
