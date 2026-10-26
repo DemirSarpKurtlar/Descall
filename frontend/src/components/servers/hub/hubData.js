@@ -164,7 +164,7 @@ export function auditCategory(action) {
 }
 const AUDIT_ICON = {
   MEMBER_BAN: ["ban", "red"], MEMBER_UNBAN: ["ban", "gray"], MEMBER_KICK: ["boot", "red"], MEMBER_TIMEOUT: ["clock", "orange"], MEMBER_TIMEOUT_CLEAR: ["clock", "gray"],
-  MEMBER_ROLE_ADD: ["shield", "yellow"], MEMBER_ROLE_REMOVE: ["shield", "gray"], MEMBER_JOIN: ["user", "green"], MEMBER_LEAVE: ["out", "gray"], MEMBER_NICKNAME: ["pen", "gray"],
+  MEMBER_ROLE_ADD: ["shield", "yellow"], MEMBER_ROLE_REMOVE: ["shield", "gray"], MEMBER_JOIN: ["user", "green"], MEMBER_LEAVE: ["out", "gray"], MEMBER_NICKNAME: ["pen", "gray"], MEMBER_NICKNAME_SELF: ["pen", "gray"],
   ROLE_CREATE: ["shield", "yellow"], ROLE_UPDATE: ["shield", "yellow"], ROLE_DELETE: ["shield", "red"],
   CHANNEL_CREATE: ["hash", "brand"], CHANNEL_UPDATE: ["hash", "brand"], CHANNEL_DELETE: ["hash", "red"], CHANNEL_OVERRIDE_SET: ["lock", "gray"], CHANNEL_OVERRIDE_DELETE: ["lock", "gray"], CHANNEL_OVERRIDE_CLEAR: ["lock", "gray"],
   INVITE_CREATE: ["link", "blue"], INVITE_DELETE: ["link", "gray"], OWNERSHIP_TRANSFER: ["crown", "yellow"], RULES_ACCEPT: ["book", "teal"], SERVER_CREATE: ["gear", "gray"], SERVER_UPDATE: ["gear", "gray"],
@@ -177,7 +177,9 @@ const AUDIT_ICON = {
 export function auditRow(log, ctx) {
   const { s, cases, names } = ctx;
   const ch = log?.changes && typeof log.changes === "object" ? log.changes : {};
-  const action = String(log?.action || "");
+  const raw = String(log?.action || "");
+  // Backend writes MEMBER_NICKNAME_UPDATE (someone else) / MEMBER_NICKNAME_SELF (own nickname).
+  const action = raw === "MEMBER_NICKNAME_UPDATE" ? "MEMBER_NICKNAME" : raw;
   const actor = log?.actorDisplayName || log?.actorUsername || names?.get(String(log?.actorId)) || s.someone;
   const targetName = names?.get(String(log?.targetId)) || ch.username || ch.displayName || s.aMember;
   const role = ch.roleName || ch.name || ctx.roleName?.(ch.roleId || log?.targetId) || s.aRole;
