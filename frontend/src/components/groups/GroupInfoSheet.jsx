@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
-import { X, Link2, UserRoundPlus, Edit3, ImagePlus, LogOut, Crown } from "../ui/Icon.jsx";
+import { X, Link2, UserRoundPlus, Edit3, ImagePlus, LogOut, Crown, ShieldCheck } from "../ui/Icon.jsx";
+import { groupRoleOf } from "../../lib/groupMembers";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import GroupIcon from "./GroupIcon";
@@ -20,7 +21,7 @@ const ICONS = { invite: Link2, add: UserRoundPlus, rename: Edit3, photo: ImagePl
  * (offset or velocity). Desktop: centred glass card. Same action handlers as
  * the sidebar swipe actions / row menu (`onAction(action)`).
  */
-export default function GroupInfoSheet({ open, group, onClose, onAction, onlineUsers = [], onOpenProfile, t }) {
+export default function GroupInfoSheet({ open, group, onClose, onAction, onlineUsers = [], onOpenProfile, onMemberMenu = null, menuMemberId = null, t }) {
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
   const dismissV = useRef(0);
@@ -134,6 +135,7 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
             </div>
 
             <div className="group-info-body">
+              {group.removed ? null : (
               <div className="group-info-actions" role="group" aria-label={t("Group actions")}>
                 {GROUP_INFO_ACTIONS.filter((a) => a.id !== "leave").map((a) => {
                   const Icon = ICONS[a.id];
@@ -145,6 +147,7 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
                   );
                 })}
               </div>
+              )}
 
               <section className="group-info-members" aria-label={t("Members")}>
                 <h3 className="group-info-section-title">
@@ -157,8 +160,14 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
                       <button
                         key={m.id || m.username}
                         type="button"
-                        className="group-info-member"
-                        onClick={() => {
+                        className={`group-info-member${menuMemberId === m.id ? " is-menu-open" : ""}`}
+                        aria-haspopup={onMemberMenu ? "menu" : undefined}
+                        onContextMenu={onMemberMenu ? (e) => onMemberMenu(m, e) : undefined}
+                        onClick={(e) => {
+                          if (onMemberMenu) {
+                            onMemberMenu(m, e);
+                            return;
+                          }
                           if (!onOpenProfile) return;
                           onClose?.();
                           onOpenProfile(m);
@@ -171,7 +180,11 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
                         <span className="group-info-member-text">
                           <span className="group-info-member-name">{resolveDisplayName(m)}</span>
                           <span className="group-info-member-role">
-                            {m._isOwner ? (<><Crown size={11} /> {t("Owner")}</>) : t("Member")}
+                            {m._isOwner
+                              ? (<><Crown size={11} /> {t("Owner")}</>)
+                              : groupRoleOf(group, m.id) === "admin"
+                                ? (<><ShieldCheck size={11} /> {t("gk.adminBadge")}</>)
+                                : t("Member")}
                             {m._online ? <i className="is-on"> · {t("Online")}</i> : null}
                           </span>
                         </span>
@@ -182,10 +195,12 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
                 </div>
               </section>
 
-              <button type="button" className="group-info-leave" onClick={() => act("leave")}>
-                <LogOut size={16} />
-                <span>{t("Leave Group")}</span>
-              </button>
+              {group.removed ? null : (
+                <button type="button" className="group-info-leave" onClick={() => act("leave")}>
+                  <LogOut size={16} />
+                  <span>{t("Leave Group")}</span>
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>

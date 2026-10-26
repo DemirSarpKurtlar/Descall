@@ -1,3 +1,5 @@
+import { localizeMemberEventPreview } from "./groupMemberEvents.js";
+
 /** English system previews the API stores on DM and group rows. */
 const LIST_PREVIEW_KEYS = ["📞 Call", "📷 Photo", "🎤 Voice message", "📎 Attachment"];
 
@@ -15,6 +17,8 @@ function localizePreviewBody(body, t) {
 export function localizeListPreview(preview, t = (key) => key) {
   const raw = String(preview ?? "");
   if (!raw) return "";
+  const memberEvent = localizeMemberEventPreview(raw, t);
+  if (memberEvent) return memberEvent;
   const splitAt = raw.indexOf(": ");
   if (splitAt > 0 && splitAt <= 64) {
     const name = raw.slice(0, splitAt);

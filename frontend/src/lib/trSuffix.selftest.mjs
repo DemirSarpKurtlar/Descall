@@ -2,7 +2,7 @@
 // Run: node src/lib/trSuffix.selftest.mjs
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { trDative, trGenitive } from "./trSuffix.js";
+import { trDative, trGenitive, trAccusative, trLocativeTime } from "./trSuffix.js";
 
 const require = createRequire(import.meta.url);
 const backend = require("../../backend/lib/trSuffix.js");
@@ -26,6 +26,19 @@ for (const [name, want] of Object.entries(genitive)) {
   assert.equal(trGenitive(name), want, `genitive ${name}`);
   assert.equal(backend.trGenitive(name), want, `backend genitive ${name}`);
 }
+// Group member removal (Oct 2026): "Demir, Can'ı gruptan çıkardı", "21:58'de".
+const accusative = {
+  Can: "Can'ı", Ali: "Ali'yi", Doğa: "Doğa'yı", Gönül: "Gönül'ü", Umut: "Umut'u",
+  Zeynep: "Zeynep'i", Ordu: "Ordu'yu", Ayşe: "Ayşe'yi", "Takım 3": "Takım 3'ü", XYZ: "XYZ'i",
+};
+for (const [name, want] of Object.entries(accusative)) assert.equal(trAccusative(name), want, `accusative ${name}`);
+const locative = {
+  "21:58": "21:58'de", "21:40": "21:40'ta", "09:30": "09:30'da", "12:03": "12:03'te",
+  "10:04": "10:04'te", "18:05": "18:05'te", "20:00": "20:00'de", "10:00": "10:00'da",
+  "00:00": "00:00'da", "13:06": "13:06'da", "14:09": "14:09'da", "07:50": "07:50'de",
+};
+for (const [time, want] of Object.entries(locative)) assert.equal(trLocativeTime(time), want, `locative ${time}`);
+assert.equal(trAccusative(""), "");
 assert.equal(trDative(""), "");
 assert.equal(trGenitive("  "), "");
 console.log("trSuffix selftest ok");

@@ -127,7 +127,15 @@ import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner"
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
 import { applyGroupRename } from "./lib/groupRename";
-import { applyGroupMemberAdded, upsertInvitedGroup } from "./lib/groupMembers";
+import {
+  applyGroupMemberAdded,
+  upsertInvitedGroup,
+  applyGroupMemberGone,
+  applyGroupRole,
+  markGroupRemoved,
+} from "./lib/groupMembers";
+import { dismissRemovedGroup } from "./api/groups";
+import { segmentsText, memberEventSegments, memberEventFromMessage } from "./lib/groupMemberEvents";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
@@ -275,6 +283,19 @@ function normalizeGroupMessage(m) {
     }
   }
 
+  // Member removed / left (Oct 2026): centered system row; content is JSON
+  // { actorId, actorName, targetId?, targetName? }, never a reason.
+  if (m.message_type === "member_removed" || m.message_type === "member_left") {
+    return {
+      id: m.id,
+      from: { id: m.sender?.id || m.sender_id, username: m.sender?.username || null },
+      text: "",
+      memberEvent: typeof m.content === "string" ? m.content : JSON.stringify(m.content || {}),
+      timestamp: parseAppDate(m.created_at)?.toISOString() || new Date().toISOString(),
+      type: m.message_type,
+      groupId: m.group_id,
+    };
+  }
   if (m.sender_id === "game-bot" || m.message_type?.startsWith?.("game_")) {
     return {
       id: m.id,
@@ -334,8 +355,12 @@ function previewMediaBody(msg, t = (k) => k) {
 }
 
 /** Sidebar preview text for a normalized group message (username: body). */
-function formatGroupPreviewFromMsg(msg, t = (k) => k) {
+function formatGroupPreviewFromMsg(msg, t = (k) => k, meId = null) {
   if (!msg) return null;
+  if (msg.type === "member_removed" || msg.type === "member_left") {
+    const ev = memberEventFromMessage(msg, { meId });
+    return ev ? segmentsText(memberEventSegments(ev, t)).slice(0, 80) : null;
+  }
   if (msg.type === "call_summary") {
     const who = msg.from?.username || msg.username || null;
     const body = t("📞 Call");
@@ -1983,6 +2008,8 @@ export default function App() {
       // Into the group room for live messages / call banners (the server also
       // joins our sockets; this covers a reconnect race).
       socket.emit("groups:rejoin", [group.id]);
+      // Re-added after a removal: pull what was said while I was out.
+      if (groupMessagesRef.current?.[group.id]) refreshGroupRestRef.current?.(group.id);
     });
 
     // A member was added by anyone (this tab, another device, another member):
@@ -1991,6 +2018,63 @@ export default function App() {
       if (!groupId || !user?.id) return;
       setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, { user, memberCount }));
       setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, { user, memberCount })[0] : cur));
+    });
+
+    // Member removal / leave / roles (Oct 2026). System rows ride along so the
+    // open chat shows "Demir, Can’ı gruptan çıkardı" without a refetch.
+    const appendGroupSystemRow = (groupId, raw) => {
+      const row = raw ? normalizeGroupMessage(raw) : null;
+      if (!groupId || !row?.id) return;
+      setGroupMessagesById((prev) => {
+        const cur = prev[groupId];
+        if (cur === undefined || cur.some((m) => m.id === row.id)) return prev;
+        return { ...prev, [groupId]: sortMessagesChronologically([...cur, row]) };
+      });
+      setGroupLastActivity((prev) => ({ ...prev, [groupId]: row.timestamp }));
+      const preview = formatGroupPreviewFromMsg(row, t, myIdRef.current);
+      if (preview) setGroupPreviews((prev) => ({ ...prev, [groupId]: preview }));
+    };
+    const markRemovedHere = (groupId, info = {}) => {
+      setMyGroups((prev) => prev.map((g) => (g?.id === groupId ? markGroupRemoved(applyGroupMemberGone([g], groupId, myIdRef.current)[0], info) : g)));
+      setActiveGroup((cur) => (cur?.id === groupId ? markGroupRemoved(applyGroupMemberGone([cur], groupId, myIdRef.current)[0], info) : cur));
+      // Out of a running call in that group (the server already dropped us).
+      const gc = groupCallRef.current;
+      if (gc?.isInCall && gc.activeGroupId === groupId) {
+        try { gc.leaveCall?.(); } catch { /* ignore */ }
+      }
+    };
+    socket.on("group:member:removed", ({ groupId, userId, by, message, memberCount } = {}) => {
+      if (!groupId || !userId) return;
+      if (userId === myIdRef.current) {
+        markRemovedHere(groupId, { by, removedAt: message?.created_at, readUntil: message?.created_at });
+      } else {
+        setMyGroups((prev) => applyGroupMemberGone(prev, groupId, userId, { memberCount }));
+        setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberGone([cur], groupId, userId, { memberCount })[0] : cur));
+      }
+      appendGroupSystemRow(groupId, message);
+    });
+    // Only to the removed person's devices. No push, no toast (owner decision).
+    socket.on("group:removed", ({ groupId, by, byUsername, byName, reason, removedAt, readUntil, message } = {}) => {
+      if (!groupId) return;
+      markRemovedHere(groupId, { by, byUsername, byName, reason, removedAt, readUntil });
+      appendGroupSystemRow(groupId, message);
+    });
+    socket.on("group:member:left", ({ groupId, userId, message, memberCount, ownerId } = {}) => {
+      if (!groupId || !userId || userId === myIdRef.current) return;
+      setMyGroups((prev) => applyGroupMemberGone(prev, groupId, userId, { memberCount, ownerId }));
+      setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberGone([cur], groupId, userId, { memberCount, ownerId })[0] : cur));
+      appendGroupSystemRow(groupId, message);
+    });
+    // I left / dropped the chat on another device.
+    socket.on("group:left", ({ groupId } = {}) => {
+      if (!groupId) return;
+      setMyGroups((prev) => prev.filter((g) => g?.id !== groupId));
+      setActiveGroup((cur) => (cur?.id === groupId ? null : cur));
+    });
+    socket.on("group:member:role", ({ groupId, userId, role } = {}) => {
+      if (!groupId || !userId) return;
+      setMyGroups((prev) => prev.map((g) => (g?.id === groupId ? applyGroupRole(g, userId, role) : g)));
+      setActiveGroup((cur) => (cur?.id === groupId ? applyGroupRole(cur, userId, role) : cur));
     });
 
     // Group photo changed by any member (or removed).
@@ -2968,7 +3052,7 @@ export default function App() {
           [groupId]: reconcileHistoryWindow(prev[groupId] || [], normalized, { incremental }),
         }));
         const last = normalized[normalized.length - 1];
-        const preview = formatGroupPreviewFromMsg(last, t);
+        const preview = formatGroupPreviewFromMsg(last, t, myIdRef.current);
         if (preview) setGroupPreviews((prev) => ({ ...prev, [groupId]: preview }));
         if (last?.timestamp) {
           setGroupLastActivity((prev) => ({ ...prev, [groupId]: last.timestamp }));
@@ -4017,7 +4101,7 @@ export default function App() {
       const cached = groupMessagesById[g.id];
       const lastCached =
         Array.isArray(cached) && cached.length > 0 ? cached[cached.length - 1] : null;
-      const cachedPreview = formatGroupPreviewFromMsg(lastCached, t);
+      const cachedPreview = formatGroupPreviewFromMsg(lastCached, t, myIdRef.current);
       const cachedActivity = lastCached?.timestamp || lastCached?.created_at || null;
       return {
         ...g,
@@ -4899,6 +4983,32 @@ export default function App() {
             if (!groupId) return;
             setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, payload));
             setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, payload)[0] : cur));
+          }}
+          onGroupMemberRemoved={(groupId, userId, res = {}) => {
+            if (!groupId || !userId) return;
+            setMyGroups((prev) => applyGroupMemberGone(prev, groupId, userId, { memberCount: res.memberCount }));
+            setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberGone([cur], groupId, userId, { memberCount: res.memberCount })[0] : cur));
+            const row = res.systemMessage ? normalizeGroupMessage(res.systemMessage) : null;
+            if (row?.id) {
+              setGroupMessagesById((prev) => {
+                const cur = prev[groupId];
+                if (cur === undefined || cur.some((m) => m.id === row.id)) return prev;
+                return { ...prev, [groupId]: sortMessagesChronologically([...cur, row]) };
+              });
+            }
+          }}
+          onGroupRoleChanged={(groupId, userId, role) => {
+            setMyGroups((prev) => prev.map((g) => (g?.id === groupId ? applyGroupRole(g, userId, role) : g)));
+            setActiveGroup((cur) => (cur?.id === groupId ? applyGroupRole(cur, userId, role) : cur));
+          }}
+          onRemovedGroupDismiss={async (groupId) => {
+            try {
+              await dismissRemovedGroup(groupId);
+              setMyGroups((prev) => prev.filter((g) => g?.id !== groupId));
+              setActiveGroup((cur) => (cur?.id === groupId ? null : cur));
+            } catch {
+              toast(t("gk.errDismiss"), "error");
+            }
           }}
           friendRequests={orderedFriendRequests}
           messageRequests={orderedMessageRequests}

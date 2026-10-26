@@ -56,4 +56,39 @@ export function trGenitive(name) {
   return `${printed}'${endsVowel ? "n" : ""}${i}n`;
 }
 
+/** "Can" → "Can'ı", "Ali" → "Ali'yi", "Doğa" → "Doğa'yı", "Gönül" → "Gönül'ü". */
+export function trAccusative(name) {
+  const { printed, sound } = soundOf(name);
+  if (!printed) return "";
+  const v = lastVowel(sound);
+  const i = v === "a" || v === "ı" ? "ı" : v === "o" || v === "u" ? "u" : v === "ö" || v === "ü" ? "ü" : "i";
+  const endsVowel = VOWELS.includes(sound.slice(-1));
+  return `${printed}'${endsVowel ? "y" : ""}${i}`;
+}
+
+const UNIT_WORDS = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"];
+const TEN_WORDS = ["", "on", "yirmi", "otuz", "kırk", "elli"];
+const HARD = "fstkçşhp";
+
+/** The spoken last word of a clock time: 21:58 → "sekiz", 21:40 → "kırk", 21:00 → "bir". */
+function lastSpokenWord(time) {
+  const m = String(time || "").match(/(\d{1,2})[:.](\d{2})/);
+  if (!m) return "";
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  const pick = (n) => (n % 10 ? UNIT_WORDS[n % 10] : n ? TEN_WORDS[Math.floor(n / 10)] : "");
+  return pick(min) || pick(h) || "sıfır";
+}
+
+/** "21:58" → "21:58'de", "21:40" → "21:40'ta", "09:30" → "09:30'da", "12:03" → "12:03'te". */
+export function trLocativeTime(time) {
+  const printed = String(time || "").trim();
+  const word = lastSpokenWord(printed);
+  if (!word) return printed;
+  const v = lastVowel(word);
+  const a = v && BACK.includes(v) ? "a" : "e";
+  const d = HARD.includes(word.slice(-1)) ? "t" : "d";
+  return `${printed}'${d}${a}`;
+}
+
 export const __test = { soundOf, lastVowel, FRONT };

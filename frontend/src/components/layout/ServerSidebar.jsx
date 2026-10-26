@@ -1763,7 +1763,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                   const isActive = activeGroup?.id === group.id;
                   const unread = group.unreadCount || unreadById[group.id] || 0;
                   const timeLabel = formatConversationTime(group.lastActivity, t, locale);
-                  const preview = group.lastMessage || t("No messages yet");
+                  const preview = group.lastMessage || (group.removed ? t("gk.previewRemovedMe") : t("No messages yet"));
                   const swipeOpen = isMobile && swipeOpenId === group.id;
 
                   return (

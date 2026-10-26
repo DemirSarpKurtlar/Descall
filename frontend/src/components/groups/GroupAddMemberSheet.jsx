@@ -71,7 +71,11 @@ export default function GroupAddMemberSheet({ group, open, friends, onClose, onM
         delete next[friend.id];
         return next;
       });
-      setError(err?.message ? t(err.message) : t("Could not add member. Try again."));
+      if (err?.code === "REMOVAL_COOLDOWN") {
+        setError(t("gk.errCooldown", { seconds: Math.max(1, Math.ceil((err.retryAfterMs || 5000) / 1000)) }));
+      } else {
+        setError(err?.message ? t(err.message) : t("Could not add member. Try again."));
+      }
     }
   };
 

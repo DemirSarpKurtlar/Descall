@@ -105,7 +105,13 @@ export async function addMemberToGroup(groupId, userId) {
     body: JSON.stringify({ userId }),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || "Failed to add member");
+  if (!res.ok) {
+    throw Object.assign(new Error(body.error || "Failed to add member"), {
+      status: res.status,
+      code: body.code || null,
+      retryAfterMs: body.retryAfterMs ?? null,
+    });
+  }
   return body;
 }
 
@@ -170,4 +176,39 @@ export async function setGroupAvatar(groupId, avatarUrl) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || "Failed to update group photo");
   return body;
+}
+
+async function groupRequest(path, init) {
+  const res = await fetch(`${BASE}${path}`, { ...init, headers: getHeaders() });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(body?.error || `HTTP ${res.status}`);
+    err.status = res.status;
+    err.code = body?.code || null;
+    err.retryAfterMs = body?.retryAfterMs || null;
+    throw err;
+  }
+  return body;
+}
+
+/** Owner / group admin removes a member. `reason` (≤140) is shown only to them. */
+export function removeGroupMember(groupId, userId, reason = "") {
+  const trimmed = String(reason || "").trim();
+  return groupRequest(`/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/remove`, {
+    method: "POST",
+    body: JSON.stringify(trimmed ? { reason: trimmed } : {}),
+  });
+}
+
+/** Owner makes / unmakes a group admin. */
+export function setGroupMemberRole(groupId, userId, role) {
+  return groupRequest(`/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+/** The removed person drops the read-only chat ("Sohbetten kaldır"). */
+export function dismissRemovedGroup(groupId) {
+  return groupRequest(`/${encodeURIComponent(groupId)}/removed-view`, { method: "DELETE" });
 }

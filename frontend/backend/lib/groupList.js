@@ -7,6 +7,7 @@
  */
 
 const { createSingleflight } = require("./singleflight");
+const { isMemberEventType, parseMemberEvent } = require("./groupRoles");
 
 function defaultDb() {
   return require("../db/supabase");
@@ -15,13 +16,40 @@ function defaultDb() {
 const flight = createSingleflight();
 const LAST_MESSAGE_LIMIT = 800;
 
-function formatGroupListPreview(msg) {
+/**
+ * Member-event rows (member_removed / member_left) as an English sentence the
+ * client localizes (lib/listPreview.js): "demir removed can",
+ * "demir removed you", "can left the group". Never the reason.
+ */
+function formatMemberEventPreview(msg, viewerId) {
+  const type = msg.message_type || msg.type;
+  const ev = parseMemberEvent(msg.content) || {};
+  const raw = (() => {
+    try {
+      return JSON.parse(msg.content);
+    } catch {
+      return {};
+    }
+  })();
+  const actor = raw?.actorName || msg.sender?.username || null;
+  const target = raw?.targetName || null;
+  if (type === "member_left") return actor ? `${actor} left the group` : null;
+  if (!actor) return null;
+  if (viewerId && ev.targetId === viewerId) return `${actor} removed you`;
+  return target ? `${actor} removed ${target}` : null;
+}
+
+function formatGroupListPreview(msg, viewerId = null) {
   if (!msg) return null;
   const username = msg.sender?.username || msg.sender_username || null;
   const mediaType = msg.media_type || msg.mediaType || null;
   const messageType = msg.message_type || msg.type || null;
   let body = null;
 
+  if (isMemberEventType(messageType)) {
+    const sentence = formatMemberEventPreview(msg, viewerId);
+    return sentence ? sentence.slice(0, 80) : null;
+  }
   if (messageType === "call_summary") {
     body = "📞 Call";
   } else {
@@ -63,8 +91,22 @@ async function selectIn(db, table, column, ids, columns) {
   return parts.flat();
 }
 
+const MEMBER_COLUMNS = "group_id, user_id, joined_at, role";
+const MEMBER_COLUMNS_LEGACY = "group_id, user_id, joined_at";
+
+/** group_members rows incl. role; without role while the migration is pending. */
+async function selectMemberRows(db, groupIds) {
+  try {
+    return await selectIn(db, "group_members", "group_id", groupIds, MEMBER_COLUMNS);
+  } catch (err) {
+    const { isMissingSchema } = require("./groupRemovals");
+    if (!isMissingSchema(err)) throw err;
+    return selectIn(db, "group_members", "group_id", groupIds, MEMBER_COLUMNS_LEGACY);
+  }
+}
+
 /** Pure assembly so tests can check the list shape without a database. */
-function assembleGroupList({ memberships, groups, memberRows, users, lastRows }) {
+function assembleGroupList({ memberships, groups, memberRows, users, lastRows, viewerId = null }) {
   const membersByGroup = new Map();
   for (const row of memberRows || []) {
     if (!membersByGroup.has(row.group_id)) membersByGroup.set(row.group_id, []);
@@ -81,6 +123,9 @@ function assembleGroupList({ memberships, groups, memberRows, users, lastRows })
   return (groups || []).map((group) => {
     const groupMembers = membersByGroup.get(group.id) || [];
     const memberIds = groupMembers.map((m) => m.user_id).filter(Boolean);
+    const adminIds = groupMembers
+      .filter((m) => m.role === "admin" && m.user_id && m.user_id !== group.created_by)
+      .map((m) => m.user_id);
     const members = memberIds.map((id) => usersById.get(id)).filter(Boolean);
     const last = lastByGroup.get(group.id) || null;
     return {
@@ -88,9 +133,10 @@ function assembleGroupList({ memberships, groups, memberRows, users, lastRows })
       avatarUrl: group.avatar_url || null,
       memberCount: groupMembers.length,
       memberIds,
+      adminIds,
       members,
       joinedAt: joinedAt.get(group.id),
-      lastMessage: formatGroupListPreview(last),
+      lastMessage: formatGroupListPreview(last, viewerId),
       lastActivity: last?.created_at || group.created_at || null,
     };
   });
@@ -147,7 +193,7 @@ async function loadUserGroups(userId, db = defaultDb()) {
   const groupIds = memberships.map((m) => m.group_id).filter(Boolean);
   const [groups, memberRows] = await Promise.all([
     selectIn(db, "groups", "id", groupIds, "id, name, avatar_url, created_by, created_at"),
-    selectIn(db, "group_members", "group_id", groupIds, "group_id, user_id, joined_at"),
+    selectMemberRows(db, groupIds),
   ]);
 
   const userIds = [...new Set(memberRows.map((row) => row.user_id).filter(Boolean))];
@@ -158,7 +204,63 @@ async function loadUserGroups(userId, db = defaultDb()) {
     loadLastMessages(db, groupIds),
   ]);
 
-  return assembleGroupList({ memberships, groups, memberRows, users, lastRows });
+  return assembleGroupList({ memberships, groups, memberRows, users, lastRows, viewerId: userId });
+}
+
+/**
+ * Groups the user was removed from and still keeps in the list (owner
+ * decision: removed members keep reading old messages). Same shape as
+ * GET /groups/my plus `removed`; the preview stops at read_until so nothing
+ * written after the removal leaks.
+ */
+async function loadRemovedGroups(userId, removals, db = defaultDb()) {
+  const open = (removals || []).filter((r) => r?.group_id);
+  if (!open.length) return [];
+  const groupIds = open.map((r) => r.group_id);
+  const actorIds = open.map((r) => r.removed_by).filter(Boolean);
+  const [groups, memberRows] = await Promise.all([
+    selectIn(db, "groups", "id", groupIds, "id, name, avatar_url, created_by, created_at"),
+    selectMemberRows(db, groupIds),
+  ]);
+  const userIds = [...new Set([...memberRows.map((row) => row.user_id), ...actorIds].filter(Boolean))];
+  const users = userIds.length
+    ? await selectIn(db, "users", "id", userIds, "id, username, avatar_url, status, is_admin")
+    : [];
+  const lastRows = (
+    await Promise.all(
+      open.map(async (removal) => {
+        const { data, error } = await db
+          .from("group_messages")
+          .select("group_id, content, media_type, media_url, message_type, created_at, sender:sender_id (id, username)")
+          .eq("group_id", removal.group_id)
+          .lte("created_at", removal.read_until || removal.removed_at)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        return (data || [])[0] || null;
+      })
+    )
+  ).filter(Boolean);
+  const usersById = new Map(users.map((u) => [u.id, u]));
+  const byGroup = new Map(open.map((r) => [r.group_id, r]));
+  return assembleGroupList({ memberships: [], groups, memberRows, users, lastRows, viewerId: userId }).map((group) => {
+    const removal = byGroup.get(group.id);
+    delete group.joinedAt;
+    return {
+      ...group,
+      removed: {
+        by: removal.removed_by || null,
+        byUsername: usersById.get(removal.removed_by)?.username || null,
+        byName: usersById.get(removal.removed_by)?.display_name || null,
+        reason: removal.reason || null,
+        removedAt: removal.removed_at,
+        readUntil: removal.read_until || removal.removed_at,
+      },
+      lastActivity: group.lastActivity && removal.read_until && group.lastActivity > removal.read_until
+        ? removal.read_until
+        : group.lastActivity,
+    };
+  });
 }
 
 /**
@@ -170,7 +272,7 @@ async function loadGroupById(groupId, db = defaultDb()) {
   if (!groupId) return null;
   const [groups, memberRows] = await Promise.all([
     selectIn(db, "groups", "id", [groupId], "id, name, avatar_url, created_by, created_at"),
-    selectIn(db, "group_members", "group_id", [groupId], "group_id, user_id, joined_at"),
+    selectMemberRows(db, [groupId]),
   ]);
   if (!groups.length) return null;
   const userIds = [...new Set(memberRows.map((row) => row.user_id).filter(Boolean))];
@@ -192,6 +294,8 @@ function getUserGroups(userId, db = defaultDb()) {
 
 module.exports = {
   formatGroupListPreview,
+  formatMemberEventPreview,
+  loadRemovedGroups,
   assembleGroupList,
   loadUserGroups,
   loadGroupById,

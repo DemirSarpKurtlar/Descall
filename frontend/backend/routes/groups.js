@@ -5,13 +5,70 @@ const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser } = require("../runtime/sharedState");
-const { getUserGroups, loadGroupById } = require("../lib/groupList");
+const { getUserGroups, loadGroupById, loadRemovedGroups } = require("../lib/groupList");
+const {
+  ROLES,
+  canRemoveMember,
+  canSetRole,
+  normalizeReason,
+  createRateLimiter,
+} = require("../lib/groupRoles");
+const removals = require("../lib/groupRemovals");
 const { areAcceptedFriends, isUniqueViolation, publicMember, isSafeId } = require("../lib/groupMembership");
 const { parseSince } = require("../lib/messagePage");
 const { attachReactions } = require("../lib/dmMessages");
 
 const router = express.Router();
 const MAX_GROUP_SIZE = 15;
+const takeRemoveSlot = createRateLimiter();
+
+/** 429 body when a removed person is added back inside the 5 s cooldown. */
+async function readdBlocked(groupId, userId) {
+  const wait = await removals.readdWaitMs(groupId, userId);
+  if (wait <= 0) return null;
+  return {
+    error: "This person was just removed. Try again in a few seconds.",
+    code: "REMOVAL_COOLDOWN",
+    retryAfterMs: wait,
+  };
+}
+
+/** Insert a member_removed / member_left row; returns the stored row or null. */
+async function insertMemberEvent({ groupId, type, actorId, actorName, targetId, targetName }) {
+  const content = JSON.stringify({
+    actorId,
+    actorName: actorName || null,
+    ...(targetId ? { targetId, targetName: targetName || null } : {}),
+  });
+  const { data, error } = await supabase
+    .from("group_messages")
+    .insert({ group_id: groupId, sender_id: actorId, content, message_type: type })
+    .select(GROUP_MESSAGE_COLUMNS)
+    .single();
+  if (error) {
+    console.warn(`[Groups] ${type} row insert failed:`, error.message || error);
+    return null;
+  }
+  return data || null;
+}
+
+/** Take a user out of the live group: call, socket room. */
+function detachFromGroupLive(io, groupId, userId) {
+  if (!io) return;
+  try {
+    const { removeUserFromGroupCall } = require("../socket/groupCallLifecycle");
+    Promise.resolve(removeUserFromGroupCall(io, groupId, userId)).catch((err) => {
+      console.warn("[Groups] call detach failed:", err?.message || err);
+    });
+  } catch (err) {
+    console.warn("[Groups] call detach failed:", err?.message || err);
+  }
+  try {
+    io.in?.(`user:${userId}`)?.socketsLeave?.(`group:${groupId}`);
+  } catch (err) {
+    console.warn("[Groups] socketsLeave failed:", err?.message || err);
+  }
+}
 const INVITE_CODE_LENGTH = 8;
 
 function generateInviteCode() {
@@ -153,6 +210,9 @@ router.post("/invite-links/:code/join", requireAuth, async (req, res) => {
       return res.json({ success: true, alreadyMember: true, group });
     }
 
+    const cooldown = await readdBlocked(invite.group_id, userId);
+    if (cooldown) return res.status(429).json(cooldown);
+
     const { count } = await supabase
       .from("group_members")
       .select("user_id", { count: "exact", head: true })
@@ -168,6 +228,7 @@ router.post("/invite-links/:code/join", requireAuth, async (req, res) => {
       console.error("[Groups] invite join insert:", joinError);
       return res.status(500).json({ error: "Failed to join group" });
     }
+    await removals.markReadded(invite.group_id, userId).catch(() => {});
 
     const nextUses = (invite.uses || 0) + 1;
     if (invite.max_uses != null && nextUses >= invite.max_uses) {
@@ -206,9 +267,20 @@ router.get("/my", requireAuth, async (req, res) => {
   const started = Date.now();
   try {
     const userId = req.user.id;
-    const groups = await getUserGroups(userId);
-    console.log(`[Groups API] Found groups: ${groups.length} in ${Date.now() - started}ms`);
-    res.json({ groups });
+    const [groups, open] = await Promise.all([getUserGroups(userId), removals.listActiveRemovals(userId)]);
+    const memberOf = new Set(groups.map((g) => g.id));
+    let removedGroups = [];
+    const pending = open.filter((r) => !memberOf.has(r.group_id));
+    if (pending.length) {
+      try {
+        removedGroups = await loadRemovedGroups(userId, pending);
+      } catch (err) {
+        console.warn("[Groups API] removed groups failed:", err?.message || err);
+      }
+    }
+    const all = [...groups, ...removedGroups];
+    console.log(`[Groups API] Found groups: ${all.length} in ${Date.now() - started}ms`);
+    res.json({ groups: all });
   } catch (err) {
     console.error("[Groups API] Error:", err);
     res.status(500).json({ error: "Failed to fetch groups" });
@@ -401,27 +473,35 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
       .eq("user_id", userId)
       .maybeSingle();
     
-    if (!member) return res.status(403).json({ error: "Not a member of this group" });
+    // Removed members keep reading the history up to their removal.
+    let readUntil = null;
+    if (!member) {
+      const removal = await removals.getActiveRemoval(groupId, userId);
+      if (!removal) return res.status(403).json({ error: "Not a member of this group" });
+      readUntil = removal.read_until || removal.removed_at;
+    }
 
     let messages;
     let incremental = false;
     if (sinceIso && !before) {
       incremental = true;
+      let createdQ = supabase
+        .from("group_messages")
+        .select(GROUP_MESSAGE_COLUMNS)
+        .eq("group_id", groupId)
+        .gt("created_at", sinceIso);
+      let editedQ = supabase
+        .from("group_messages")
+        .select(GROUP_MESSAGE_COLUMNS)
+        .eq("group_id", groupId)
+        .gt("edited_at", sinceIso);
+      if (readUntil) {
+        createdQ = createdQ.lte("created_at", readUntil);
+        editedQ = editedQ.lte("created_at", readUntil).lte("edited_at", readUntil);
+      }
       const [createdRes, editedRes] = await Promise.all([
-        supabase
-          .from("group_messages")
-          .select(GROUP_MESSAGE_COLUMNS)
-          .eq("group_id", groupId)
-          .gt("created_at", sinceIso)
-          .order("created_at", { ascending: true })
-          .limit(pageSize),
-        supabase
-          .from("group_messages")
-          .select(GROUP_MESSAGE_COLUMNS)
-          .eq("group_id", groupId)
-          .gt("edited_at", sinceIso)
-          .order("edited_at", { ascending: false })
-          .limit(pageSize),
+        createdQ.order("created_at", { ascending: true }).limit(pageSize),
+        editedQ.order("edited_at", { ascending: false }).limit(pageSize),
       ]);
       if (createdRes.error) throw createdRes.error;
       const byId = new Map();
@@ -435,6 +515,7 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
         .order("created_at", { ascending: false })
         .limit(pageSize);
       if (before) query = query.lt("created_at", before);
+      if (readUntil) query = query.lte("created_at", readUntil);
       const { data, error } = await query;
       if (error) throw error;
       messages = data;
@@ -477,7 +558,12 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
     });
     const withReactions = await attachReactions(normalized, "group", groupId);
     console.log(`[Groups] messages ${withReactions.length} in ${Date.now() - started}ms`);
-    res.json({ messages: withReactions, incremental, reactionsIncluded: true });
+    res.json({
+      messages: withReactions,
+      incremental,
+      reactionsIncluded: true,
+      ...(readUntil ? { removed: true, readUntil } : {}),
+    });
   } catch (err) {
     console.error("[Groups] Messages error:", err);
     res.status(500).json({ error: "Failed to fetch messages" });
@@ -572,18 +658,28 @@ router.get("/:groupId/members", requireAuth, async (req, res) => {
     
     if (!myMembership) return res.status(403).json({ error: "Not a member" });
     
-    const { data: members, error } = await supabase
+    let { data: members, error } = await supabase
       .from("group_members")
       .select(`
         joined_at,
+        role,
         user:user_id (id, username, avatar_url)
       `)
       .eq("group_id", groupId);
+    if (error && removals.isMissingSchema(error)) {
+      ({ data: members, error } = await supabase
+        .from("group_members")
+        .select(`
+          joined_at,
+          user:user_id (id, username, avatar_url)
+        `)
+        .eq("group_id", groupId));
+    }
     
     if (error) throw error;
     
     res.json({ 
-      members: members.map(m => ({ ...m.user, joinedAt: m.joined_at })),
+      members: members.map(m => ({ ...m.user, joinedAt: m.joined_at, role: m.role === ROLES.ADMIN ? ROLES.ADMIN : ROLES.MEMBER })),
       isFull: members.length >= MAX_GROUP_SIZE
     });
   } catch (err) {
@@ -701,10 +797,13 @@ router.post("/invites/:inviteId/respond", requireAuth, async (req, res) => {
     }
     
     // Accept - add to group
+    const cooldown = await readdBlocked(invite.group_id, userId);
+    if (cooldown) return res.status(429).json(cooldown);
     await supabase.from("group_members").insert({
       group_id: invite.group_id,
       user_id: userId,
     });
+    await removals.markReadded(invite.group_id, userId).catch(() => {});
     
     await supabase.from("group_invites").update({ status: "accepted" }).eq("id", inviteId);
     
@@ -770,6 +869,11 @@ router.post("/:groupId/members", requireAuth, async (req, res) => {
       return res.json({ message: "User is already a member", alreadyMember: true, user, group });
     }
 
+    // Owner decision: a removed person can be added back right away, after
+    // a 5 second cooldown (stops a remove/add flicker loop).
+    const cooldown = await readdBlocked(groupId, targetUserId);
+    if (cooldown) return res.status(429).json(cooldown);
+
     // Check group capacity
     const { count } = await supabase
       .from("group_members")
@@ -785,6 +889,9 @@ router.post("/:groupId/members", requireAuth, async (req, res) => {
       .insert({ group_id: groupId, user_id: targetUserId });
 
     if (insertError && !isUniqueViolation(insertError)) throw insertError;
+    await removals.markReadded(groupId, targetUserId).catch((err) => {
+      console.warn("[Groups] Add member: readded mark failed:", err?.message || err);
+    });
 
     const [user, group] = await Promise.all([loadAdded(), loadGroup()]);
     const memberCount = group?.memberCount ?? ((count || 0) + 1);
@@ -818,37 +925,62 @@ router.post("/:groupId/members", requireAuth, async (req, res) => {
 });
 
 // Leave group
+//
+// Sockets: `group:member:left` { groupId, userId, message, memberCount,
+// ownerId } to the group room (the system row "Can gruptan ayrıldı" rides
+// along), `group:left` { groupId } to the leaver's own devices. The leaver is
+// taken out of a running group call and out of the socket room.
 router.post("/:groupId/leave", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { groupId } = req.params;
-    
+
     const { data: group } = await supabase
       .from("groups")
       .select("created_by")
       .eq("id", groupId)
       .single();
-    
+
+    if (!(await isGroupMember(groupId, userId))) {
+      // Leaving a group you were removed from = drop it from your list.
+      await removals.dismissRemoval(groupId, userId).catch(() => {});
+      return res.json({ message: "Left group", notMember: true });
+    }
+
+    let ownerId = group?.created_by || null;
     if (group?.created_by === userId) {
-      // Find remaining members (excluding the creator)
-      const { data: remaining } = await supabase
+      // Remaining members (excluding the creator): a group admin takes over
+      // first, otherwise the earliest-joined member.
+      let { data: remaining, error: remainingError } = await supabase
         .from("group_members")
-        .select("user_id, joined_at")
+        .select("user_id, joined_at, role")
         .eq("group_id", groupId)
         .neq("user_id", userId)
         .order("joined_at", { ascending: true })
-        .limit(1);
+        .limit(MAX_GROUP_SIZE);
+      if (remainingError && removals.isMissingSchema(remainingError)) {
+        ({ data: remaining } = await supabase
+          .from("group_members")
+          .select("user_id, joined_at")
+          .eq("group_id", groupId)
+          .neq("user_id", userId)
+          .order("joined_at", { ascending: true })
+          .limit(MAX_GROUP_SIZE));
+      }
 
       if (!remaining || remaining.length === 0) {
         // No other members — delete the group entirely
         await supabase.from("group_members").delete().eq("group_id", groupId);
         await supabase.from("groups").delete().eq("id", groupId);
+        const io = req.app.get("io");
+        if (io) io.to(`user:${userId}`).emit("group:left", { groupId, deleted: true });
+        detachFromGroupLive(io, groupId, userId);
         return res.json({ message: "Left group", deleted: true });
       }
 
-      // Transfer ownership to the earliest-joined remaining member
-      const newOwner = remaining[0].user_id;
-      await supabase.from("groups").update({ created_by: newOwner }).eq("id", groupId);
+      const heir = remaining.find((m) => m.role === ROLES.ADMIN) || remaining[0];
+      ownerId = heir.user_id;
+      await supabase.from("groups").update({ created_by: ownerId }).eq("id", groupId);
     }
 
     await supabase
@@ -857,10 +989,222 @@ router.post("/:groupId/leave", requireAuth, async (req, res) => {
       .eq("group_id", groupId)
       .eq("user_id", userId);
 
-    res.json({ message: "Left group" });
+    const message = await insertMemberEvent({
+      groupId,
+      type: "member_left",
+      actorId: userId,
+      actorName: req.user.username,
+    });
+    const { count } = await supabase
+      .from("group_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("group_id", groupId);
+
+    const io = req.app.get("io");
+    if (io) {
+      detachFromGroupLive(io, groupId, userId);
+      io.to(`group:${groupId}`).emit("group:member:left", {
+        groupId,
+        userId,
+        message,
+        memberCount: count ?? null,
+        ownerId,
+      });
+      io.to(`user:${userId}`).emit("group:left", { groupId });
+    }
+
+    res.json({ message: "Left group", ownerId });
   } catch (err) {
     console.error("[Groups] Leave error:", err);
     res.status(500).json({ error: "Failed to leave" });
+  }
+});
+
+// Remove a member (owner decisions 25.10.2026)
+//
+// Owner removes anyone but themself; a group admin removes plain members.
+// Body: { reason? } ≤ 140 chars, shown only to the removed person (never in
+// the system row). The removed person keeps reading the history up to this
+// moment and gets no push or in-app notification; their open chat turns
+// read-only through `group:removed`.
+// Sockets: `group:member:removed` { groupId, userId, by, message, memberCount }
+// to the group room, `group:removed` { groupId, by, byUsername, reason,
+// removedAt, readUntil } to the removed person's devices.
+router.post("/:groupId/members/:userId/remove", requireAuth, async (req, res) => {
+  try {
+    const actorId = req.user.id;
+    const { groupId } = req.params;
+    const targetId = String(req.params.userId || "").trim();
+    if (!isSafeId(groupId) || !isSafeId(targetId)) return res.status(400).json({ error: "Invalid id" });
+
+    const parsed = normalizeReason(req.body?.reason);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: "Reason must be 140 characters or fewer", code: parsed.code });
+    }
+
+    const { data: group } = await supabase
+      .from("groups")
+      .select("id, created_by")
+      .eq("id", groupId)
+      .maybeSingle();
+    if (!group) return res.status(404).json({ error: "Group not found", code: "NOT_FOUND" });
+
+    const [actor, target] = await Promise.all([
+      removals.getMemberRole(groupId, actorId),
+      targetId === actorId ? Promise.resolve(null) : removals.getMemberRole(groupId, targetId),
+    ]);
+    const verdict = canRemoveMember({
+      actorId,
+      targetId,
+      ownerId: group.created_by,
+      actorRole: actor?.role,
+      targetRole: target?.role,
+      actorIsMember: Boolean(actor),
+      targetIsMember: Boolean(target),
+    });
+    if (!verdict.ok) {
+      const messages = {
+        NOT_MEMBER: "Not a member of this group",
+        CANNOT_REMOVE_SELF: "Use leave to exit the group",
+        NOT_ALLOWED: "You can't remove this member",
+        CANNOT_REMOVE_OWNER: "The owner can't be removed",
+        NOT_FOUND: "Not a member of this group",
+      };
+      return res.status(verdict.status).json({ error: messages[verdict.code] || "Not allowed", code: verdict.code });
+    }
+
+    const wait = takeRemoveSlot(actorId);
+    if (wait > 0) {
+      res.set("Retry-After", String(Math.ceil(wait / 1000)));
+      return res.status(429).json({ error: "Too many removals. Try again in a minute.", code: "RATE_LIMITED", retryAfterMs: wait });
+    }
+
+    const { data: deleted, error: deleteError } = await supabase
+      .from("group_members")
+      .delete()
+      .eq("group_id", groupId)
+      .eq("user_id", targetId)
+      .select("user_id");
+    if (deleteError) throw deleteError;
+    if (Array.isArray(deleted) && deleted.length === 0) {
+      return res.status(404).json({ error: "Not a member of this group", code: "NOT_FOUND" });
+    }
+
+    const { data: targetUser } = await supabase
+      .from("users")
+      .select("id, username")
+      .eq("id", targetId)
+      .maybeSingle();
+
+    const message = await insertMemberEvent({
+      groupId,
+      type: "member_removed",
+      actorId,
+      actorName: req.user.username,
+      targetId,
+      targetName: targetUser?.username || null,
+    });
+    const removedAt = message?.created_at || new Date().toISOString();
+    await removals
+      .recordRemoval({
+        groupId,
+        userId: targetId,
+        removedBy: actorId,
+        reason: parsed.reason,
+        removedAt,
+        readUntil: removedAt,
+      })
+      .catch((err) => console.warn("[Groups] removal record failed:", err?.message || err));
+
+    const { count } = await supabase
+      .from("group_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("group_id", groupId);
+
+    const io = req.app.get("io");
+    if (io) {
+      detachFromGroupLive(io, groupId, targetId);
+      io.to(`group:${groupId}`).emit("group:member:removed", {
+        groupId,
+        userId: targetId,
+        by: actorId,
+        message,
+        memberCount: count ?? null,
+      });
+      io.to(`user:${targetId}`).emit("group:removed", {
+        groupId,
+        by: actorId,
+        byUsername: req.user.username || null,
+        byName: req.user.display_name || req.user.displayName || null,
+        reason: parsed.reason,
+        removedAt,
+        readUntil: removedAt,
+        message,
+      });
+    }
+
+    res.json({ message: "Member removed", userId: targetId, memberCount: count ?? null, systemMessage: message });
+  } catch (err) {
+    console.error("[Groups] Remove member error:", err);
+    res.status(500).json({ error: "Failed to remove member" });
+  }
+});
+
+// Make / unmake a group admin. Owner only. Body: { role: "admin" | "member" }.
+// Socket: `group:member:role` { groupId, userId, role } to the group room.
+router.patch("/:groupId/members/:userId/role", requireAuth, async (req, res) => {
+  try {
+    const actorId = req.user.id;
+    const { groupId } = req.params;
+    const targetId = String(req.params.userId || "").trim();
+    if (!isSafeId(groupId) || !isSafeId(targetId)) return res.status(400).json({ error: "Invalid id" });
+    const role = req.body?.role;
+
+    const { data: group } = await supabase
+      .from("groups")
+      .select("id, created_by")
+      .eq("id", groupId)
+      .maybeSingle();
+    if (!group) return res.status(404).json({ error: "Group not found", code: "NOT_FOUND" });
+
+    const target = await removals.getMemberRole(groupId, targetId);
+    const verdict = canSetRole({ actorId, targetId, ownerId: group.created_by, role, targetIsMember: Boolean(target) });
+    if (!verdict.ok) return res.status(verdict.status).json({ error: "Not allowed", code: verdict.code });
+
+    const { error } = await supabase
+      .from("group_members")
+      .update({ role })
+      .eq("group_id", groupId)
+      .eq("user_id", targetId);
+    if (error) {
+      if (removals.isMissingSchema(error)) {
+        return res.status(503).json({ error: "Group roles are not available yet", code: "ROLES_UNAVAILABLE" });
+      }
+      throw error;
+    }
+
+    const io = req.app.get("io");
+    if (io) io.to(`group:${groupId}`).emit("group:member:role", { groupId, userId: targetId, role });
+    res.json({ userId: targetId, role });
+  } catch (err) {
+    console.error("[Groups] Role error:", err);
+    res.status(500).json({ error: "Failed to change role" });
+  }
+});
+
+// The removed person drops the read-only chat ("Sohbetten kaldır").
+router.delete("/:groupId/removed-view", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { groupId } = req.params;
+    if (!isSafeId(groupId)) return res.status(400).json({ error: "Invalid id" });
+    await removals.dismissRemoval(groupId, userId);
+    const io = req.app.get("io");
+    if (io) io.to(`user:${userId}`).emit("group:left", { groupId });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[Groups] Removed view error:", err);
+    res.status(500).json({ error: "Failed to remove chat" });
   }
 });
 
