@@ -75,7 +75,7 @@ if (existsSync(iosWf)) {
 
 // 5. Server side: frames are retired and announced to installed builds.
 const shopLib = read("backend/lib/shop.js");
-assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title"\]\)/);
+assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title", "profile_badge"\]\)/);
 const shopRoute = read("backend/routes/shop.js");
 assert.match(shopRoute, /retiredCategories:\s*\[\.\.\.shop\.RETIRED_SHOP_CATEGORIES\]/);
 // 6. 2.13.0: titles retired, countries take their tab slot.
@@ -86,5 +86,18 @@ assert.match(shopRoute, /retiredCategories:\s*\[\.\.\.shop\.RETIRED_SHOP_CATEGOR
   assert.equal(ids.includes("profile_title"), false, "no Titles tab");
   assert.ok(removed2.includes("profile_title"), "titles are retired on every platform");
   assert.deepEqual(vis2([{ category: "profile_title" }, { category: "countries" }]).map((i) => i.category), ["countries"]);
+}
+// 7. 2026-10-26: shop profile badges ("Rozetler" tab) removed; special badges are separate.
+{
+  const { SHOP_CATEGORY_TABS: tabs3, REMOVED_SHOP_CATEGORIES: removed3, visibleShopItems: vis3, visibleShopTabs: vt3 } = await import("./shopCategories.js");
+  assert.equal(tabs3.some((tab) => tab.id === "profile_badge"), false, "no shop Rozetler tab");
+  assert.ok(removed3.includes("profile_badge"), "shop badges are retired on every platform");
+  assert.deepEqual(vis3([{ category: "profile_badge" }, { category: "countries" }]).map((i) => i.category), ["countries"]);
+  assert.equal(vt3([{ id: "profile_badge" }], { showEmpty: true }).length, 0, "a stale tab list still hides it");
+  const lib = read("backend/lib/shop.js");
+  assert.match(lib, /badge: null, \/\/ shop profile badges removed/, "profiles never return an equipped shop badge");
+  assert.match(lib, /badgeId: null,/);
+  const cosmetics = read("src/components/ui/Cosmetics.jsx");
+  assert.doesNotMatch(cosmetics, /export function BadgeIcon/, "no shop badge next to names");
 }
 console.log("shopCategories selftest OK");

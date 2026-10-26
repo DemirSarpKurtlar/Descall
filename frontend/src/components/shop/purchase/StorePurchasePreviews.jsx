@@ -3,7 +3,6 @@
 // flare-*, aura-*, typing-*, burst-chip-*, overlay-*, [data-theme]) so what the modal
 // shows is what the app draws. `item` null means "nothing worn" (the Şu an side).
 import { Mic, MonitorUp, PhoneOff, Plus, ShieldCheck, SmilePlus, Video } from "../../ui/Icon.jsx";
-import { ShopBadgeIcon } from "../../../lib/shopIcons";
 import { CountryBadge } from "../CountryFlag";
 
 // Absolute path: the Electron build uses base "./", which would resolve under /settings/.
@@ -48,10 +47,6 @@ function AvatarEffect({ item, delay }) {
 function Name({ item, children }) {
   if (!item) return <span>{children}</span>;
   return <span className={`cosmetic-name-effect effect-${keyOf(item)}`}>{children}</span>;
-}
-function Badge({ item, size = 15 }) {
-  if (!item) return null;
-  return <ShopBadgeIcon item={item} size={size} />;
 }
 
 const S = {
@@ -136,22 +131,6 @@ const S = {
             <div className="spm-comp">{c.sendTo("Selin")}</div>
           </div>
           <span className="spm-sr">{name}</span>
-        </div>
-      </div>
-    );
-  },
-  profile_badge({ item, me, c }) {
-    const { name, at } = meNames(me);
-    return (
-      <div className="spm-stage">
-        <div className="spm-nb">
-          <div className="spm-top"><Av me={me} /><div><div className="spm-nm">{name}<Badge item={item} size={24} /></div><div className="spm-at">{at}</div></div></div>
-          <div className="spm-bot">
-            <div className="spm-where"><div className="spm-cap2">{c.inChat}</div>
-              <div className="spm-msg"><Av me={me} className="spm-mini-av" /><div className="spm-body"><div className="spm-h">{name}<Badge item={item} /><time>17:35</time></div><p>{c.lines.badge}</p></div></div></div>
-            <div className="spm-where"><div className="spm-cap2">{c.inMembers}</div>
-              <div className="spm-mem spm-hl spm-mem-32"><Av me={me} className="spm-av-24" /> {name}<Badge item={item} /></div></div>
-          </div>
         </div>
       </div>
     );
@@ -299,8 +278,6 @@ export function PurchaseThumb({ category, item, me }) {
       return <div className="spm-th-av"><Av me={me}><AvatarEffect item={item} delay="-2.2s" /></Av></div>;
     case "theme":
       return <div className={`spm-th-swatch shop-theme-swatch theme-${item.theme_key || "default"}`} data-theme-preview={item.theme_key} />;
-    case "profile_badge":
-      return <><div className="spm-th-glow" /><span className="spm-th-crown"><ShopBadgeIcon item={item} size={50} /></span></>;
     case "name_effect":
       return <span className={`spm-th-text cosmetic-name-effect effect-${k}`}>Aa</span>;
     case "chat_bubble":

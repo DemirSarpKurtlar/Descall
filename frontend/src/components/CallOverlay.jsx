@@ -9,7 +9,7 @@ import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
-import { BadgeIcon, NameEffectText } from "./ui/Cosmetics";
+import { NameEffectText } from "./ui/Cosmetics";
 import DmRemoteParticipantSlot from "./voice/DmRemoteParticipantSlot";
 import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
 import { resolveAvatarUrl } from "../lib/avatar";
@@ -1319,7 +1319,6 @@ function ParticipantTile({
             <div className="participant-tile-identity">
               <span className="participant-tile-identity-name">
                 <NameEffectText user={user}>{displayName}</NameEffectText>
-                <BadgeIcon user={user} />
               </span>
               <AdminBadge user={user} variant="chip" />
               <ParticipantStateIcons
@@ -1359,7 +1358,6 @@ function ParticipantTile({
           <span className="speaking-dot" />
           <span className="participant-tile-name">
             <NameEffectText user={user}>{displayName}</NameEffectText>
-            <BadgeIcon user={user} />
           </span>
           {muted && <MicOff size={14} aria-label={t("Muted")} title={t("Muted")} />}
           {deafened && <HeadphoneOff size={14} aria-label={t("Deafened")} title={t("Deafened")} />}
@@ -1455,7 +1453,6 @@ function CallRingingTile({ user, label }) {
         <div className="participant-tile-identity">
           <span className="participant-tile-identity-name">
             <NameEffectText user={user}>{displayName}</NameEffectText>
-            <BadgeIcon user={user} />
           </span>
           <AdminBadge user={user} variant="chip" />
           <span className="call-ring-status">

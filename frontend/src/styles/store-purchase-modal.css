@@ -241,8 +241,6 @@
 .spm-root .spm-nb .spm-bot { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
 .spm-root .compact .spm-nb .spm-bot { grid-template-columns: 1fr; }
 .spm-root .compact .spm-nb .spm-bot .spm-where:last-child { display: none; }
-.spm-root .cosmetic-badge-icon .spm-ic { width: 15px; height: 15px; stroke-width: 2; }
-.spm-root .spm-nb .spm-top .cosmetic-badge-icon .spm-ic { width: 24px; height: 24px; }
 .spm-root .spm-mini-av { width: 30px; height: 30px; font-size: 12px; }
 .spm-root .spm-conv { position: absolute; inset: 0; padding: 16px 18px; display: flex; flex-direction: column; gap: 9px; }
 .spm-root .spm-cb { max-width: 74%; padding: 9px 13px; border-radius: var(--r-lg); font: 500 13.5px/1.38 var(--spm-font); }
@@ -305,8 +303,6 @@
 .spm-root .spm-th-av .spm-av { width: 100%; height: 100%; font-size: 23px; }
 .spm-root .spm-th-swatch { position: absolute !important; inset: 0; width: 100%; height: 100%; border-radius: 0; }
 .spm-root .spm-th-text { font: 850 40px/1 var(--spm-font); letter-spacing: -.03em; }
-.spm-root .spm-th-crown { color: #fff; filter: drop-shadow(0 0 14px rgba(251,191,36,.7)); }
-.spm-root .spm-th-crown .spm-ic { width: 50px; height: 50px; stroke-width: 1.8; }
 .spm-root .spm-th-glow { position: absolute; inset: 0; background: radial-gradient(50% 50% at 50% 50%, rgba(251,191,36,.28), transparent 70%); }
 .spm-root .spm-th-bubble { padding: 9px 13px; border-radius: var(--r-lg) var(--r-lg) var(--r-sm) var(--r-lg); font: 650 13px/1 var(--spm-font); }
 .spm-root .spm-th-dot { position: relative; width: 26px; height: 26px; border-radius: 50%; background: #23a55a; }
@@ -416,8 +412,6 @@
 .spm-root .spm-ccb { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,.08); }
 .spm-root .spm-th-typing { padding: 0 12px; height: 30px; align-self: center; }
 .spm-root .spm-th-call-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 20px; background: rgba(0,0,0,.3); }
-.spm-root .spm-th-crown .cosmetic-badge-icon, .spm-root .spm-th-crown svg { display: block; }
-.spm-root .spm-nb .spm-nm .cosmetic-badge-icon { display: inline-flex; color: #fff; }
 .spm-root .spm-m-head .spm-eyebrow { min-width: 0; }
 
 /* Short windows (Electron at 600–800 px): the whole card stays inside the window.

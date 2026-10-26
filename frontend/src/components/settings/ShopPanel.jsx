@@ -2,7 +2,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Award,
   CheckCircle2,
   CircleDot,
   Coins,
@@ -24,7 +23,6 @@ import {
   ChevronRight,
   Gift,
 } from "../ui/Icon.jsx";
-import { ShopBadgeIcon } from "../../lib/shopIcons";
 import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
 import RippleButton from "../ui/RippleButton";
 import ErrorBoundary from "../ErrorBoundary";
@@ -60,7 +58,6 @@ const CATEGORY_ICONS = {
   avatar_effect: Sparkles,
   profile_background: Wallpaper,
   theme: Palette,
-  profile_badge: Award,
   countries: Globe,
   name_effect: Type,
   chat_bubble: MessageSquare,
@@ -94,7 +91,6 @@ const CATEGORY_HEADING = {
   avatar_frame: "Avatar Frames",
   profile_background: "Profile Backgrounds",
   theme: "Premium Themes",
-  profile_badge: "Profile Badges",
   countries: "Countries",
   name_effect: "Name Effects",
   avatar_effect: "Avatar Effects",
@@ -109,9 +105,6 @@ const CATEGORY_HEADING = {
 function ShopItemPreview({ category, item, t, name }) {
   if (category === "theme") {
     return <div className={`shop-theme-swatch theme-${item.theme_key || "default"}`} />;
-  }
-  if (category === "profile_badge") {
-    return <ShopBadgeIcon item={item} size={44} className="shop-badge-preview" />;
   }
   if (category === "name_effect") {
     return (
@@ -437,7 +430,6 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     if (category === "banner") return equipped?.bannerId;
     if (category === "profile_background") return equipped?.backgroundId;
     if (category === "theme") return equipped?.themeId;
-    if (category === "profile_badge") return equipped?.badgeId;
     if (category === "countries") return equipped?.countryId;
     if (category === "name_effect") return equipped?.nameEffectId;
     if (category === "avatar_effect") return equipped?.avatarEffectId;

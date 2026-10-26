@@ -11,7 +11,6 @@ const CATEGORY_LABEL = {
   avatar_frame: "Avatar Frame",
   profile_background: "Profile Background",
   theme: "Premium Theme",
-  profile_badge: "Profile Badge",
   profile_title: "Profile Title",
   countries: "Country",
   name_effect: "Name Effect",

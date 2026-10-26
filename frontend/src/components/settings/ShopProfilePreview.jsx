@@ -3,7 +3,7 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import ParallaxBanner from "../ui/ParallaxBanner";
 import AdminBadge from "../social/AdminBadge";
-import { BadgeIcon, NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
+import { NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
 import { cssUrl } from "../../lib/cssUrl";
 
 const EQUIPPED_SLOTS = [
@@ -11,7 +11,6 @@ const EQUIPPED_SLOTS = [
   { id: "avatar_effect", label: "Avatar Effects", pick: (user) => user?.equippedAvatarEffect },
   { id: "profile_background", label: "Backgrounds", pick: (user) => user?.equippedBackground },
   { id: "theme", label: "Themes", pick: (user) => user?.equippedTheme },
-  { id: "profile_badge", label: "Badges", pick: (user) => user?.equippedBadge },
   { id: "countries", label: "Countries", pick: (user) => user?.equippedCountry },
   { id: "name_effect", label: "Name Effects", pick: (user) => user?.equippedNameEffect },
   { id: "chat_bubble", label: "Bubbles", pick: (user) => user?.equippedChatBubble },
@@ -80,7 +79,6 @@ export default function ShopProfilePreview({ me, t }) {
           <div className="user-profile-identity">
             <div className="user-profile-name-row">
               <NameEffectText user={me}>{displayName}</NameEffectText>
-              <BadgeIcon user={me} />
             </div>
             <div className="shop-live-handle">@{String(username).toLowerCase()}</div>
             <div className="user-profile-badges">
