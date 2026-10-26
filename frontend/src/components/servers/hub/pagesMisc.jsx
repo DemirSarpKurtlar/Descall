@@ -228,7 +228,7 @@ function BansTab() {
                 const name = b.displayName || b.username || "?";
                 const sub = [b.reason, b.moderatorDisplayName || b.moderatorUsername, b.createdAt ? shortDate(b.createdAt, locale) : null].filter(Boolean).join(" · ");
                 return (
-                  <Row key={b.userId} av={<Av user={{ ...b, id: b.userId }} name={name} s={36} />} t={b.username || name} sub={sub} inset={62}
+                  <Row key={b.userId} av={<Av user={{ ...b, id: b.userId }} name={name} s={36} />} t={name} sub={sub} inset={62}
                     tail={<Btn variant="gray" sm style={{ height: 30, fontSize: 14, padding: "0 12px", color: "#8FA6FF" }} disabled={busyId === b.userId} onClick={() => unban(b)}>{s.unban}</Btn>} />
                 );
               })}

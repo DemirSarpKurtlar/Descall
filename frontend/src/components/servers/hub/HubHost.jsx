@@ -63,7 +63,7 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
       b.setChannelModal(null);
       if (m.mode === "create") {
         if (m.defaultType === "category") openHub(sv, [{ id: "catCreate", standalone: true, cancel: true }]);
-        else openHub(sv, [{ id: "chCreate", defaultType: m.defaultType || "text", parentId: m.parentId || null, ...(phone ? { cancel: true } : null) }]);
+        else openHub(sv, [{ id: "chCreate", defaultType: m.defaultType || "text", parentId: m.parentId || undefined, ...(phone ? { cancel: true } : null) }]);
       } else if (m.mode === "edit" && m.channel) openHub(sv, P({ id: "chEdit", channelId: m.channel.id }));
       else if (m.mode === "delete" && m.channel) setDelCh(m.channel);
     }

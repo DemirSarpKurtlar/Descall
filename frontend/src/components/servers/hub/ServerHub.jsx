@@ -55,11 +55,13 @@ export default function ServerHub({ server, mode, initial, onClose, deps }) {
     });
   }, [drafts, onClose]);
   const reset = useCallback((r) => { setDir(0); drafts.clear(); setStack([withKey(r)]); }, [drafts]);
+  // Standalone sheets opened from inside the hub (e.g. #07 Kategori oluştur) return to the saved stack.
+  const restore = useCallback((st) => { setDir(-1); setStack(st.map(withKey)); }, []);
   const replaceTop = useCallback((r) => { setDir(1); setStack((st) => [...st.slice(0, -1), withKey(r)]); }, []);
   const update = useCallback((patch) => setStack((st) => st.map((r, i) => (i === st.length - 1 ? { ...r, ...patch } : r))), []);
   const updateRoute = useCallback((key, patch) => setStack((st) => st.map((r) => (r.key === key ? { ...r, ...patch } : r))), []);
 
-  const ctxBase = { server, ...svh, tablet, phone: !tablet, deps: deps || {}, data, setData, load, push, pop, reset, replaceTop, update, updateRoute, drafts, close: onClose, stack };
+  const ctxBase = { server, ...svh, tablet, phone: !tablet, deps: deps || {}, data, setData, load, push, pop, reset, restore, replaceTop, update, updateRoute, drafts, close: onClose, stack };
   const titleOf = (r) => {
     const def = ROUTES[r.id];
     if (!def) return "";
@@ -67,12 +69,13 @@ export default function ServerHub({ server, mode, initial, onClose, deps }) {
   };
   const backFor = (r) => {
     const i = stack.findIndex((x) => x.key === r.key);
+    if (i > 0 && r.cancel) return <NavText onClick={() => pop(stack.length - i)}>{r.cancel === true ? svh.s.cancel : r.cancel}</NavText>;
     if (i > 0) {
       const prev = stack[i - 1];
       const lab = prev.id === "root" ? svh.s.server : titleOf(prev) || svh.s.back;
       return <Back label={lab} onClick={() => pop(stack.length - i)} />;
     }
-    if (r.cancel) return <NavText onClick={onClose}>{r.cancel === true ? svh.s.cancel : r.cancel}</NavText>;
+    if (r.cancel) return <NavText onClick={r.returnTo ? () => restore(r.returnTo) : onClose}>{r.cancel === true ? svh.s.cancel : r.cancel}</NavText>;
     return null;
   };
   const ctx = { ...ctxBase, titleOf, backFor };

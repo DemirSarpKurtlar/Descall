@@ -43,6 +43,7 @@ export function useHubMode(isMobile) {
     return () => m.removeEventListener?.("change", on);
   }, []);
   if (glassShell && isMobile) return "phone";
-  if (glassDesktop && tablet && !isMobile) return "tablet";
+  // iPad UAs report isMobile (useMobile matches "ipad"), but they get the desktop layout.
+  if (glassDesktop && tablet && (!isMobile || (typeof window !== "undefined" && window.innerWidth > 768))) return "tablet";
   return null;
 }

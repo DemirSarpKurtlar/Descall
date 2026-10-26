@@ -152,6 +152,9 @@ export default function ServersSidebar({
     return {
       onPointerDown: (e) => {
         if (e.button > 0) return;
+        // Innermost long-press target wins (a voice member inside a channel row).
+        if (e.nativeEvent?.svhLongPress) return;
+        if (e.nativeEvent) e.nativeEvent.svhLongPress = true;
         const el = e.currentTarget;
         clearTimeout(longPressRef.current?.timer);
         const lp = { x: e.clientX, y: e.clientY, fired: false };
@@ -169,6 +172,16 @@ export default function ServersSidebar({
       },
     };
   };
+  // A5 #14: touch long-press on a voice member opens the voice member menu (iOS fires no contextmenu).
+  const voicePress = hubMode
+    ? (m, channelId) => longPress((el) => {
+      const r = el?.getBoundingClientRect?.();
+      setVoiceMenu({
+        user: m, channelId, isSelf: me?.id != null && String(m.id) === String(me.id),
+        x: r ? r.left + Math.min(r.width / 2, 120) : 0, y: r ? r.bottom : 0,
+      });
+    })
+    : null;
   const rectOf = (el) => {
     const r = el?.getBoundingClientRect?.();
     return r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null;
@@ -1370,7 +1383,9 @@ export default function ServersSidebar({
                             setChannelMenuId(null);
                             setChannelModal({ mode: "delete", channel: ch });
                           }}
-                          onVoiceUserMenu={(user, channelId, event, isSelf) => {
+                          voicePress={voicePress}
+                  rowPress={hubMode ? longPress : null}
+                  onVoiceUserMenu={(user, channelId, event, isSelf) => {
                             event?.preventDefault?.();
                             event?.stopPropagation?.();
                             setVoiceMenu({
@@ -1439,6 +1454,8 @@ export default function ServersSidebar({
                     setChannelMenuId(null);
                     setChannelModal({ mode: "delete", channel: node });
                   }}
+                  voicePress={voicePress}
+                  rowPress={hubMode ? longPress : null}
                   onVoiceUserMenu={(user, channelId, event, isSelf) => {
                     event?.preventDefault?.();
                     event?.stopPropagation?.();
@@ -1476,6 +1493,8 @@ export default function ServersSidebar({
                   serverVoice={serverVoice}
                   draggable={false}
                   onSelect={() => {}}
+                  voicePress={voicePress}
+                  rowPress={hubMode ? longPress : null}
                   onVoiceUserMenu={(user, channelId, event, isSelf) => {
                     event?.preventDefault?.();
                     event?.stopPropagation?.();
@@ -1956,7 +1975,7 @@ function resolveMemberVoiceStream(member, { joinedHere, myUserId, localStream, p
   return member.stream || null;
 }
 
-function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = "", onContextMenu }) {
+function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = "", onContextMenu, pressProps = null }) {
   const t = useT();
   const [rowEl, setRowEl] = useState(null);
   const name = resolveDisplayName(member) || member?.username || "User";
@@ -1980,6 +1999,7 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = ""
       onClick={(e) => {
         if (e.detail >= 2) onContextMenu?.(e);
       }}
+      {...(pressProps || {})}
     >
       <div className="server-voice-user-avatar-shell" aria-hidden={!speaking}>
         <div className={`server-voice-speak-ring ring-a${speaking ? " is-active" : ""}`} />
@@ -2061,6 +2081,8 @@ function ChannelRow({
   onEdit,
   onDelete,
   onVoiceUserMenu,
+  voicePress = null,
+  rowPress = null,
 }) {
   const t = useT();
   const menuBtnRef = useRef(null);
@@ -2152,6 +2174,15 @@ function ChannelRow({
       className={`server-channel-row-wrap ${active ? "active" : ""} ${joinedHere ? "is-joined-voice" : ""} ${muted ? "is-muted-channel" : ""} ${unreadCount > 0 ? "has-unread" : ""} ${dragging ? "is-dragging" : ""} ${dragOver ? "is-drag-over" : ""}`}
       draggable={rowDraggable}
       title={rowDraggable ? dragReorderTitle : undefined}
+      {...(rowPress && showMenu
+        ? rowPress((el) => {
+          // A5: iOS fires no contextmenu on long-press; open the channel menu under the row instead.
+          const r = el?.getBoundingClientRect?.();
+          if (r) setCursorPoint({ x: r.left + Math.min(r.width / 2, 120), y: r.bottom });
+          if (onOpenMenuAt) onOpenMenuAt();
+          else if (!menuOpen) onOpenMenu?.();
+        })
+        : null)}
       onContextMenu={(e) => {
         if (!showMenu) return;
         hapticImpactMedium();
@@ -2297,6 +2328,7 @@ function ChannelRow({
                 member={m}
                 stream={stream}
                 linkQuality={joinedHere ? serverVoice?.linkQualityByUser?.[String(m.id)] || "" : ""}
+                pressProps={voicePress ? voicePress(m, channel.id) : null}
                 onContextMenu={(e) =>
                   onVoiceUserMenu?.(
                     m,

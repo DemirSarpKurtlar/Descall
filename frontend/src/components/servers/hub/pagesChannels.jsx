@@ -73,7 +73,7 @@ export function ChannelsPage({ route }) {
       <Sec first>{""}</Sec>
       <Group>
         <Row t={s.createChannel} blue onClick={() => hub.push({ id: "chCreate" })} />
-        <Row t={s.createCategory} blue onClick={() => hub.push({ id: "catCreate" })} />
+        <Row t={s.createCategory} blue onClick={() => hub.reset({ id: "catCreate", standalone: true, cancel: true, returnTo: hub.stack.map(({ key, ...r }) => r) })} />
       </Group>
       {loose.length ? <><Sec>{cats.length ? s.noCategory : s.rChannels}</Sec><Group>{loose.map(row)}</Group></> : null}
       {cats.map((cat) => {
@@ -94,12 +94,21 @@ export function ChannelsPage({ route }) {
 }
 
 /* ───────────────────────── 06 Kanal oluştur ───────────────────────── */
+// Without an explicit target, a new channel lands in the first category that already holds
+// channels of the same kind (Metin Kanalları for text, Ses Kanalları for voice), else uncategorised.
+export function defaultCategoryFor(server, type) {
+  const all = server?.channels || [];
+  const kind = (t) => (t === "voice" || t === "stage" ? "voice" : "text");
+  const cats = all.filter((c) => c.type === "category").sort(byPos);
+  const hit = cats.find((c) => all.some((ch) => ch.type !== "category" && String(ch.parentId) === String(c.id) && kind(ch.type) === kind(type)));
+  return hit ? hit.id : null;
+}
 export function ChannelCreatePage({ route }) {
   const hub = useHub();
   const { s, server, deps, data } = hub;
   const p = usePerms(server);
   const cats = (server?.channels || []).filter((c) => c.type === "category").sort(byPos);
-  const [d, setD] = useRouteDraft(route, () => ({ type: route.defaultType && route.defaultType !== "category" ? route.defaultType : "text", name: "", parentId: route.parentId ?? null, priv: false }));
+  const [d, setD] = useRouteDraft(route, () => ({ type: route.defaultType && route.defaultType !== "category" ? route.defaultType : "text", name: "", parentId: route.parentId !== undefined ? route.parentId : defaultCategoryFor(server, route.defaultType && route.defaultType !== "category" ? route.defaultType : "text"), priv: false }));
   const [run, busy] = useRun();
   const textLike = d.type === "text" || d.type === "announcement";
   const name = d.name.trim();
@@ -152,7 +161,7 @@ export function CategoryCreatePage({ route }) {
       name, type: "category", parentId: null,
       beforeOpen: d.priv ? (ch) => makePrivate(server, ch, data.roles, deps.me) : undefined,
     }), { ok: s.categoryCreated });
-    if (ok) { if (hub.stack.length > 1) hub.pop(); else hub.close(); }
+    if (ok) { if (route.returnTo) hub.restore(route.returnTo); else if (hub.stack.length > 1) hub.pop(); else hub.close(); }
   };
   return (
     <PageFrame route={route} title={s.createCategory} right={<DoneBtn label={s.create} onClick={create} disabled={!name || busy} />}>

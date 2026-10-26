@@ -138,7 +138,7 @@ export function inviteSub(inv, creatorName, s, now = Date.now()) {
 export function inviteActive(inv, now = Date.now()) {
   if (!inv) return false;
   if (inv.expiresAt && new Date(inv.expiresAt).getTime() <= now) return false;
-  if (inv.maxUses != null && (inv.uses || 0) >= inv.maxUses) return false;
+  if (Number(inv.maxUses) > 0 && (inv.uses || 0) >= Number(inv.maxUses)) return false;
   return true;
 }
 export function inviteCodeFromInput(raw) {

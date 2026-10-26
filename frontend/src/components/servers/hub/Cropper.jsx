@@ -126,7 +126,7 @@ export default function Cropper({ src, kind = "icon", onCancel, onConfirm, busy 
         <div style={{ position: "absolute", top: phone ? 64 : 36, left: 0, right: 0, textAlign: "center", fontSize: 17, fontWeight: 650, pointerEvents: "none" }}>{icon ? s.cropTitle : s.bannerCropTitle}</div>
         <div style={{ position: "absolute", top: phone ? 88 : 60, left: 0, right: 0, textAlign: "center", fontSize: 13.5, color: "rgba(235,238,255,.6)", pointerEvents: "none" }}>{icon ? s.cropSub : s.bannerCropSub}</div>
         {icon ? (
-          <div className="svh-heavy" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: phone ? 112 : 96, display: "flex", gap: 16, alignItems: "center", padding: "10px 16px", borderRadius: 22, pointerEvents: "none", whiteSpace: "nowrap" }}>
+          <div className="svh-heavy" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: phone ? 112 : 96, display: "flex", gap: 16, alignItems: "center", padding: "10px 16px", borderRadius: 22, pointerEvents: "none" }}>
             <Sq txt="" s={44} bg={prev(44)} /><Sq txt="" s={32} bg={prev(32)} /><Sq txt="" s={22} bg={prev(22)} />
             <span style={{ fontSize: 13, color: "rgba(235,238,255,.6)" }}>{s.cropPreview}</span>
           </div>

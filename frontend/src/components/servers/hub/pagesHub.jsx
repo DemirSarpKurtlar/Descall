@@ -145,7 +145,7 @@ export function RootPage() {
         <div className="svh-pillrow" style={{ margin: "14px 0 2px" }}>
           <Act i="user" label={s.qInvite} onClick={() => hub.push({ id: "iv" })} disabled={!p.invites} />
           <Act i="bell" label={s.qNotif} onClick={() => hub.push({ id: "nt" })} />
-          <Act i="plus" label={s.qAddChannel} onClick={() => hub.push({ id: "chCreate" })} disabled={!p.channels} />
+          <Act i="plus" label={s.qAddChannel} onClick={() => hub.push({ id: "chCreate", ...(hub.phone ? { cancel: true } : null) })} disabled={!p.channels} />
           <Act i="search" label={s.qSearch} onClick={() => hub.push({ id: "search" })} />
         </div>
         <HubRows firstSec={false} />

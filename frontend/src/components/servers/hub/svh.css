@@ -17,7 +17,7 @@
 .svh-nav .l,.svh-nav .r{font-size:17px;color:#8FA6FF;display:flex;align-items:center;gap:2px}
 .svh-nav .r{justify-content:flex-end;font-weight:600}
 .svh-nav .r.dim{color:rgba(235,238,255,.3)}
-.svh-xbtn{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;color:rgba(235,238,255,.7)}
+.svh-xbtn{width:30px;height:30px;min-height:0;min-width:0;padding:0;flex:none;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;color:rgba(235,238,255,.7)}
 .svh-scroll{flex:1;overflow:auto;padding:0 16px 24px;min-height:0}
 .svh-large{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:2px 4px 12px}
 /* grouped list */
@@ -113,8 +113,8 @@
 /* ---------- app behaviour (not in the static mockup) ---------- */
 .svh-root{pointer-events:auto;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;text-align:left}
 .svh-root input,.svh-root textarea{-webkit-user-select:text;user-select:text}
-.svh-root button{font:inherit;color:inherit;letter-spacing:inherit;background:none;border:0;padding:0;margin:0;text-align:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
-.svh-root button:disabled{cursor:default}
+:where(.svh-root) button{font:inherit;color:inherit;letter-spacing:inherit;background:none;border:0;padding:0;margin:0;text-align:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+:where(.svh-root) button:disabled{cursor:default}
 .svh-root :focus{outline:none}
 .svh-root :focus-visible{outline:2px solid rgba(143,166,255,.9);outline-offset:-2px}
 .svh-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
@@ -143,7 +143,7 @@
 .svh-alert .bt>button[data-pressed],.svh-alert .bt>button:active{background:rgba(255,255,255,.1)}
 .svh-row:disabled,.svh-mi:disabled{opacity:.45}
 .svh-row{width:100%;text-align:left}
-.svh-nav .l>button,.svh-nav .r>button{display:flex;align-items:center;gap:2px;color:inherit;font:inherit;min-height:44px}
+:where(.svh-nav .l,.svh-nav .r)>button{display:flex;align-items:center;gap:2px;color:inherit;font:inherit;min-height:44px}
 .svh-nav .l>button:disabled,.svh-nav .r>button:disabled{color:rgba(235,238,255,.3)}
 .svh-nav .t{overflow:hidden;text-overflow:ellipsis;max-width:min(62vw,420px)}
 .svh-xbtn{transition:background-color .15s}
@@ -205,3 +205,5 @@ input.svh-range::-moz-range-thumb{width:26px;height:26px;border-radius:50%;backg
 .svh-ri+.svh-ri>.svh-row:before,.svh-ri+.svh-row:before,.svh-row+.svh-ri>.svh-row:before{content:"";position:absolute;top:0;right:0;left:var(--inset,56px);height:.5px;background:rgba(255,255,255,.12)}
 .svh-grip{cursor:grab}
 .svh-mi+.svh-mnode,.svh-mnode+.svh-mi{position:relative}.svh-mnode+.svh-mi:before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:rgba(255,255,255,.1)}
+/* the field draws the focus ring; the inner control never adds its own (global input:focus styles) */
+.svh-field input,.svh-field textarea,.svh-field input:focus,.svh-field textarea:focus,.svh-field input:focus-visible,.svh-field textarea:focus-visible{outline:none;box-shadow:none;border:0;border-radius:0;background:transparent;-webkit-appearance:none;appearance:none}

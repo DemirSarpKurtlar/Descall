@@ -15,7 +15,7 @@ import "./CallTapCard.css";
  *    (type · time, why it ended) and Geri ara / Mesaj / Kapat.
  * Portal to body; centred with margins (never translateX(-50%)).
  */
-const STR = {
+export const CALL_TAP_STR = {
   tr: {
     live: "Grup araması sürüyor", liveVideo: "Görüntülü grup araması sürüyor", micOn: "Mikrofon açık", micOff: "Mikrofon kapalı", camOn: "Kamera açık", camOff: "Kamera kapalı",
     join: "Aramaya katıl", notNow: "Şimdi değil", ended: "Arama sona erdi", voiceCall: "Sesli arama", videoCall: "Görüntülü arama",
@@ -33,6 +33,7 @@ const STR = {
     group: "Group", dialog: "Call",
   },
 };
+const STR = CALL_TAP_STR;
 const fmt = (tpl, v) => String(tpl).replace(/\{(\w+)\}/g, (_, k) => (v[k] != null ? v[k] : ""));
 
 export function formatClock(totalSec) {
