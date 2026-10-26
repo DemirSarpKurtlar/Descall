@@ -185,7 +185,7 @@ function applyWebGlassFallback(w) {
     manual: readStorage(w, GLASS_DESKTOP_LITE_KEY),
   });
   doc.classList.toggle("glass-lite", lite);
-  doc.classList.toggle("a11y-solid", reducedTransparency || forcedColors);
+  doc.classList.toggle("a11y-solid", reducedTransparency || forcedColors || readStorage(w, "descall:reduce-transparency") === "1");
   doc.classList.toggle("a11y-contrast", contrastMore);
 }
 

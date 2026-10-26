@@ -13,7 +13,8 @@ import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
 import { installFlagFont } from "./lib/countryFlags";
 import { startErrorReporting } from "./lib/sentry";
-import { applyDocumentTheme } from "./lib/themeDocument";
+import { readStoredSettings } from "./lib/appearancePrefs";
+import { applyStoredAppearance, installFontShortcuts } from "./lib/appearanceSync";
 
 // On-device viewport readout (?vpdebug=1 / ?vpdebug=0). Loaded only when asked.
 try {
@@ -97,23 +98,12 @@ const Router =
     : BrowserRouter;
 
 try {
-  const raw =
-    localStorage.getItem("descall_user_settings") ||
-    localStorage.getItem("descall_settings") ||
-    "{}";
-  const settings = JSON.parse(raw);
-  const theme = settings.premiumThemeKey || (settings.darkMode === false ? "light" : "dark");
-  const accentColor = settings.premiumThemeKey ? null : settings.accentColor;
-  applyDocumentTheme(document.documentElement, theme, { accentColor });
-  if (settings.chatFontSize) {
-    document.documentElement.style.setProperty("--chat-font-size", `${settings.chatFontSize}px`);
-  }
-  if (settings.uiDensity) {
-    document.documentElement.setAttribute("data-density", settings.uiDensity);
-  }
-  if (settings.bubbleStyle) {
-    document.documentElement.setAttribute("data-bubble", settings.bubbleStyle);
-  }
+  /* Settings › Görünüm before the first paint: theme (dark / light / auto),
+     accent (also the Liquid Glass --g-brand), text size, reduce motion and
+     reduce transparency. lib/appearanceSync.js keeps it on the account. */
+  const settings = readStoredSettings();
+  applyStoredAppearance({ premium: settings.premiumThemeKey || null });
+  installFontShortcuts();
 } catch {
   document.documentElement.setAttribute("data-theme", "dark");
 }

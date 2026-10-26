@@ -73,9 +73,12 @@ const avatar = readFileSync(join(here, "../avatar.css"), "utf8");
 assert.match(avatar, /\.ui-avatar-inner \{[\s\S]*var\(--primary/);
 assert.equal(avatar.includes("#4f72f6"), false);
 const panel = readFileSync(join(here, "../../components/layout/UserPanel.jsx"), "utf8");
-assert.match(panel, /applyDocumentTheme\(root, nextTheme, \{ accentColor \}\)/);
+// 3.0: theme + accent go through one path (lib/appearancePrefs via applyStoredAppearance).
+assert.match(panel, /applyStoredAppearance\(/);
 const app = readFileSync(join(here, "../../App.jsx"), "utf8");
-assert.match(app, /applyDocumentTheme\(root, nextTheme, \{ accentColor: settings\.accentColor \}\)/);
+assert.match(app, /applyStoredAppearance\(\{ premium: themeKey \}\)/);
+const prefs = readFileSync(join(here, "../../lib/appearancePrefs.js"), "utf8");
+assert.match(prefs, /applyDocumentTheme\(doc, theme, \{ accentColor: premiumThemeKey \? null : p\.accentColor \}\)/);
 
 for (const key of ["lagoon", "grove", "hanami", "emberfall", "borealis", "starwell", "chromeveil", "iriscape"]) {
   assert.match(themes, new RegExp(`html\\.glass-desktop\\[data-theme="${key}"\\]`));

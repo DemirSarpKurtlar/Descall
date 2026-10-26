@@ -466,6 +466,25 @@ export function applyRemoteGlassDesktopFlag(value, win) {
   return enabled;
 }
 
+/**
+ * Settings › Görünüm › "Şeffaflığı azalt" (synced to the account).
+ * true = force lite; false = back to automatic (drops only a forced "1",
+ * a manual "0" from the 2.x low-performance switch stays).
+ */
+export function setGlassDesktopLitePreference(on, win) {
+  const w = currentWindow(win);
+  if (!w) return lite;
+  try {
+    if (on) w.localStorage?.setItem(GLASS_DESKTOP_LITE_KEY, "1");
+    else if (w.localStorage?.getItem(GLASS_DESKTOP_LITE_KEY) === "1") w.localStorage.removeItem(GLASS_DESKTOP_LITE_KEY);
+  } catch {
+    /* ignore */
+  }
+  if (enabled) refreshPresentation(w);
+  else notify();
+  return lite;
+}
+
 /** Settings › Görünüm. true = force lite, false = force full (a11y still wins). */
 export function setGlassDesktopLiteManual(on, win) {
   const w = currentWindow(win);
