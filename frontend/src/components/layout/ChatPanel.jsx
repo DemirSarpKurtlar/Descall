@@ -483,7 +483,7 @@ export default function ChatPanel({
         {floatingHeader ? <div className="chat-scroll-edge" aria-hidden="true" /> : null}
         <header className={glassConv ? "panel-header g-conv" : "panel-header"}>
         <div className="header-left">
-          {isMobile && (
+          {isMobile && (showMobileBack || onMenuClick) && (
             <button
               type="button"
               className="icon-btn mobile-nav-btn"

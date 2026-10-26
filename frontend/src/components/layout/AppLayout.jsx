@@ -26,6 +26,7 @@ import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
 import LegalContentModal from "../legal/LegalContentModal";
 import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
+import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib/bottomTabBar";
 
 const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
 const UserPanel = lazy(() => import("./UserPanel"));
@@ -185,11 +186,11 @@ export default function AppLayout({
   // B2 black flash), and in WebKit its exit animation could stall, leaving
   // the open chat dark. The classic 340px drawer keeps its backdrop.
   const [drawerIsPage, setDrawerIsPage] = useState(() => {
-    try { return Boolean(window.matchMedia?.("(max-width: 768px)")?.matches); } catch { return false; }
+    try { return Boolean(window.matchMedia?.(PHONE_LAYOUT_QUERY)?.matches); } catch { return false; }
   });
   useEffect(() => {
     let mq = null;
-    try { mq = window.matchMedia?.("(max-width: 768px)") || null; } catch { mq = null; }
+    try { mq = window.matchMedia?.(PHONE_LAYOUT_QUERY) || null; } catch { mq = null; }
     if (!mq) return undefined;
     const sync = () => setDrawerIsPage(Boolean(mq.matches));
     sync();
@@ -373,7 +374,10 @@ export default function AppLayout({
   // show on root tabs. Inner screens (open DM / group / channel, settings) hide
   // it. Only those screens
   // get the iOS edge swipe-back; it runs the same back handler as their ‹ button.
-  const showMobileTabBar = isMobile && !inConversation && (!userPanelOpen || glassShell);
+  // iPad (iPad UA, >768px): tablet layout, the rail navigates; no bottom bar.
+  const [screenShort] = useState(() => screenShortSide());
+  const tabBarFits = bottomTabBarFits({ phoneLayout: drawerIsPage, screenShort });
+  const showMobileTabBar = isMobile && tabBarFits && !inConversation && (!userPanelOpen || glassShell);
   const mobileNavHidden = isMobile && !mobileDrawerOpen && !showMobileTabBar;
   const mainSlotRef = useRef(null);
   const sidebarShellRef = useRef(null);
@@ -767,9 +771,11 @@ export default function AppLayout({
                 onCancelEdit={onCancelEdit}
                 onSaveEdit={onSaveEdit}
                 isMobile={isMobile}
-                onMenuClick={openMobileDrawer}
+                // Tablet layout keeps rail + list on screen (mockups): no
+                // drawer menu / back chevron there.
+                onMenuClick={tabBarFits ? openMobileDrawer : undefined}
                 onMobileBack={handleMobileBack}
-                showMobileBack={isMobile && inConversation}
+                showMobileBack={isMobile && inConversation && tabBarFits}
                 onAddClick={handleAddClick}
                 onViewChange={handleViewChange}
                 onStartCall={handleStartCall}
