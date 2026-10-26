@@ -2408,6 +2408,8 @@ export const phrases = {
   "Start a conversation": "Bir sohbet başlat",
   "Say hello": "Merhaba de",
   "Be the first to message": "İlk mesajı sen yaz",
+  "Couldn't send reaction": "Tepki gönderilemedi",
+  "Couldn't remove reaction": "Tepki kaldırılamadı",
   "Scroll to bottom": "Alta kaydır",
   "Jump to present": "Şimdiye atla",
   "Load older messages": "Eski mesajları yükle",

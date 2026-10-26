@@ -2417,6 +2417,8 @@ export const phrases = {
   "Start a conversation": "Start a conversation",
   "Say hello": "Say hello",
   "Be the first to message": "Be the first to message",
+  "Couldn't send reaction": "Couldn't send reaction",
+  "Couldn't remove reaction": "Couldn't remove reaction",
   "Scroll to bottom": "Scroll to bottom",
   "Jump to present": "Jump to present",
   "Load older messages": "Load older messages",
