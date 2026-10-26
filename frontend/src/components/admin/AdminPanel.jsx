@@ -23,7 +23,8 @@ import AdminVersionBadge from "./AdminVersionBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
-import AdminFeedback from "./AdminFeedback";
+import AdminFeedbackV3, { FB3_NAV } from "./feedback3/AdminFeedbackV3.jsx";
+import { isTabletLayout } from "../../lib/appearancePrefs";
 import AdminShop from "./AdminShop";
 import PromoCodesTab from "./PromoCodesTab";
 import SpecialBadgesAdminTab from "../badges/SpecialBadgesAdminTab.jsx";
@@ -89,6 +90,7 @@ const TABS = [
   { id: "maintenance", label: "admin.maintenance", icon: Wrench },
   { id: "directory", label: "admin.users", icon: Users },
   { id: "analytics", label: "admin.analytics", icon: Activity },
+  // Kayıt İstatistikleri opens in its own window (Electron) or an in-app window (web / iPad).
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
@@ -109,11 +111,32 @@ const TABS = [
 /** Moderators open the panel with the "Şüpheli Davranışlar" tab only. */
 export const MODERATOR_TABS = ["suspicious"];
 
+/** "phone" (iPhone glass / narrow window), "ipad", or "desktop" for the 3.0 admin screens. */
+function readAdminLayout() {
+  if (typeof window === "undefined") return "desktop";
+  const html = document.documentElement;
+  if (html.classList.contains("glass-ui") || window.innerWidth < 720) return "phone";
+  return isTabletLayout(window) ? "ipad" : "desktop";
+}
+
+function useAdminLayout() {
+  const [layout, setLayout] = useState(readAdminLayout);
+  useEffect(() => {
+    const on = () => setLayout(readAdminLayout());
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return layout;
+}
+
 export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, moderatorOnly = false }) {
   const { t, locale } = useLocale();
   const [tab, setTab] = useState(moderatorOnly ? "suspicious" : "overview");
   const tabs = moderatorOnly ? TABS.filter((x) => MODERATOR_TABS.includes(x.id)) : TABS;
   const [dossierUserId, setDossierUserId] = useState(null);
+  const adminLayout = useAdminLayout();
+  /** Every section switch goes through here. */
+  const selectTab = useCallback((id) => setTab(id), []);
   // Ban / timeout / wallet-freeze shortcuts from the suspicious tab open the existing dossier tools.
   const [dossierIntent, setDossierIntent] = useState(null);
   const [openReportCount, setOpenReportCount] = useState(0);
@@ -145,17 +168,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [autoRefreshErrors, setAutoRefreshErrors] = useState(true);
   const errorLogEndRef = useRef(null);
   
-  // User Feedback States
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [feedbackFilter, setFeedbackFilter] = useState("all");
-  const [feedbackStatus, setFeedbackStatus] = useState("all");
-  const [selectedFeedback, setSelectedFeedback] = useState(null);
-  const [feedbackReply, setFeedbackReply] = useState("");
-  const [feedbackStats, setFeedbackStats] = useState(null);
-  const [newFeedbackCount, setNewFeedbackCount] = useState(0);
-  const [feedbackCategories, setFeedbackCategories] = useState([]);
-  const [feedbackPriority, setFeedbackPriority] = useState("all");
-
   // Announcements States
   const [announcements, setAnnouncements] = useState([]);
   const [announcementDraft, setAnnouncementDraft] = useState({
@@ -663,6 +675,25 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     [users]
   );
 
+  if (tab === "feedback" && !moderatorOnly) {
+    const shown = new Set(FB3_NAV.map(([id]) => id));
+    return (
+      <>
+      <AdminFeedbackV3
+        socket={socket}
+        layout={adminLayout}
+        extraNav={tabs.filter((x) => !shown.has(x.id)).map((x) => [x.id, t(x.label)])}
+        onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")}
+        onClose={onClose}
+        onOpenProfile={(id) => {
+          setDossierUserId(id);
+          setTab("people");
+        }}
+      />
+      </>
+    );
+  }
+
   return (
     <motion.div
       className="admin-shell"
@@ -746,7 +777,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             </span>
           );
         })()}
-        <select aria-label={t("admin.sections")} value={tab} onChange={(e) => setTab(e.target.value)}>
+        <select aria-label={t("admin.sections")} value={tab} onChange={(e) => selectTab(e.target.value)}>
           {tabs.map((tabDef) => (
             <option key={tabDef.id} value={tabDef.id}>
               {t(tabDef.label)}{tabDef.id === "reports" && openReportCount > 0 ? ` (${openReportCount > 99 ? "99+" : openReportCount})` : ""}
@@ -762,7 +793,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               key={tabDef.id}
               type="button"
               className={`admin-tab ${tab === tabDef.id ? "active" : ""}`}
-              onClick={() => setTab(tabDef.id)}
+              onClick={() => selectTab(tabDef.id)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -777,12 +808,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       </nav>
 
       <div className="admin-body">
-        {tab === "feedback" && (
-          <section className="admin-section admin-section-full">
-            <AdminFeedback socket={socket} />
-          </section>
-        )}
-
         {tab === "shop" && (
           <section className="admin-section admin-section-full">
             <AdminDescoinReconcile />

@@ -2833,6 +2833,7 @@ export const phrases = {
   "Message request": "Message request",
   "Message request sent": "Message request sent",
   "Message request accepted": "Message request accepted",
+  "Your feedback got a reply: {text}": "Your feedback got a reply: {text}",
   "Message request declined": "Message request declined",
   "Accept message request": "Accept message request",
   "Decline message request": "Decline message request",
