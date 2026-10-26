@@ -5,7 +5,7 @@ import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
 import AdminUserDossier from "./AdminUserDossier";
 
-export default function AdminPeople({ selectedUserId, onSelectUser, onRefreshInbox }) {
+export default function AdminPeople({ selectedUserId, onSelectUser, onRefreshInbox, dossierIntent = null }) {
   const t = useT();
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState([]);
@@ -80,7 +80,7 @@ export default function AdminPeople({ selectedUserId, onSelectUser, onRefreshInb
       {searching ? <p className="muted">{t("common.loading")}</p> : null}
 
       {selectedUserId ? (
-        <AdminUserDossier userId={selectedUserId} onRefreshInbox={onRefreshInbox} />
+        <AdminUserDossier userId={selectedUserId} onRefreshInbox={onRefreshInbox} intent={dossierIntent} />
       ) : (
         <div className="people-empty">
           <FolderSearch size={28} />

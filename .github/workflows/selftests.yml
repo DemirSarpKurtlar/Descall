@@ -64,6 +64,7 @@ jobs:
           set -euo pipefail
           node src/lib/callHistoryCache.selftest.mjs
           node src/components/admin/adminTabOrder.selftest.mjs
+          node src/lib/antibotTab.selftest.mjs
           node electron/peArch.selftest.mjs
           node electron/updateRecover.selftest.mjs
           node electron/main.trayUpdater.selftest.mjs

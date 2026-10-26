@@ -36,6 +36,8 @@ import AdminUserDirectory from "./AdminUserDirectory";
 import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import MaintenanceTab from "./MaintenanceTab";
+import SuspiciousTab from "./SuspiciousTab";
+import { ShieldWarning } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import {
@@ -97,16 +99,23 @@ const TABS = [
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
   { id: "moderation", label: "admin.moderation", icon: Shield },
+  // Şüpheli Davranışlar: admins + moderators (moderators see only this tab; writes are admin-only server-side).
+  { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
   { id: "audit", label: "admin.audit", icon: FileText },
 ];
 
-export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername }) {
+/** Moderators open the panel with the "Şüpheli Davranışlar" tab only. */
+export const MODERATOR_TABS = ["suspicious"];
+
+export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, moderatorOnly = false }) {
   const { t, locale } = useLocale();
-  const [tab, setTab] = useState("overview");
-  const tabs = TABS;
+  const [tab, setTab] = useState(moderatorOnly ? "suspicious" : "overview");
+  const tabs = moderatorOnly ? TABS.filter((x) => MODERATOR_TABS.includes(x.id)) : TABS;
   const [dossierUserId, setDossierUserId] = useState(null);
+  // Ban / timeout / wallet-freeze shortcuts from the suspicious tab open the existing dossier tools.
+  const [dossierIntent, setDossierIntent] = useState(null);
   const [openReportCount, setOpenReportCount] = useState(0);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -556,13 +565,14 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   };
 
   useEffect(() => {
+    if (moderatorOnly) return;
     adminFetch("/snapshot")
       .then(setSnapshot)
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || moderatorOnly) return;
     const onSync = (p) => setSnapshot(p);
     const onUp = (p) => {
       setSnapshot((s) => (s ? { ...s, lastEvent: p } : s));
@@ -585,14 +595,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       socket.off("admin:sync", onSync);
       socket.off("admin:update", onUp);
     };
-  }, [socket, loadStats, loadMemberPulse, loadReportSummary]);
+  }, [socket, loadStats, loadMemberPulse, loadReportSummary, moderatorOnly]);
 
   useEffect(() => {
     // Overview owns its own banner. A failed background stats read must not
     // paint a second "bağlantı gecikti" line above the tabs.
+    if (moderatorOnly) return;
     loadStats().catch(() => {});
     loadReportSummary().catch(() => {});
-  }, [loadStats, loadReportSummary]);
+  }, [loadStats, loadReportSummary, moderatorOnly]);
 
   useEffect(() => {
     if (tab === "moderation") loadAllUsers().catch((e) => setErr(e.message));
@@ -1464,8 +1475,27 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "people" && (
           <AdminPeople
             selectedUserId={dossierUserId}
-            onSelectUser={setDossierUserId}
+            onSelectUser={(id) => {
+              setDossierIntent(null);
+              setDossierUserId(id);
+            }}
             onRefreshInbox={loadReportSummary}
+            dossierIntent={dossierIntent}
+          />
+        )}
+
+        {tab === "suspicious" && (
+          <SuspiciousTab
+            role={moderatorOnly ? "moderator" : "admin"}
+            onOpenTool={
+              moderatorOnly
+                ? undefined
+                : (id, intent) => {
+                    setDossierUserId(id);
+                    setDossierIntent({ intent, at: Date.now() });
+                    setTab("people");
+                  }
+            }
           />
         )}
 
