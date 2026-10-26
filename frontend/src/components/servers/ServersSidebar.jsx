@@ -186,6 +186,12 @@ export default function ServersSidebar({
     const r = el?.getBoundingClientRect?.();
     return r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null;
   };
+  // iPhone / iPad: the server row menu anchors to the row (mockup 24); a long-press already opened it.
+  const openServerMenuTouch = (e, server) => {
+    if (longPressRef.current?.fired) return;
+    const el = e.currentTarget.querySelector(".server-list-item") || e.currentTarget;
+    setServerMenu({ server, x: e.clientX, y: e.clientY, rect: rectOf(el) });
+  };
 
   const canCreate = ownedCount < maxOwned;
   const permissionsReady = serverPermissionsLoaded(activeServer) || Boolean(activeServer?.isOwner);
@@ -553,12 +559,7 @@ export default function ServersSidebar({
         e.preventDefault();
         e.stopPropagation();
         setFolderMenu(null);
-        if (hubMode) {
-          if (longPressRef.current?.fired) return;
-          const el = e.currentTarget.querySelector(".server-list-item") || e.currentTarget;
-          setServerMenu({ server, x: e.clientX, y: e.clientY, rect: rectOf(el) });
-          return;
-        }
+        if (hubMode) return openServerMenuTouch(e, server);
         setServerMenu({ server, x: e.clientX, y: e.clientY });
       }}
       {...longPress((el) => {

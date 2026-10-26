@@ -108,10 +108,10 @@ function JoinCard({ card, S, onJoin, onClose, reduced }) {
         <div className="ctc-t">{card.groupName || S.group}</div>
         <div className="ctc-s">{people.length ? fmt(S.talking, { names: joinNames(people.map((u) => u.displayName || u.username), S) }) : (video ? S.groupVideo : S.groupVoice)}</div>
         <div className="ctc-tg">
-          <button type="button" className={`ctc-tap${mic ? "" : " off"}`} aria-pressed={mic} onClick={() => setMic((v) => !v)}>
+          <button type="button" className={`ctc-tap${mic ? "" : " off"}`} aria-pressed={mic} aria-label={mic ? S.micOn : S.micOff} onClick={() => setMic((v) => !v)}>
             <I n={mic ? "volume" : "micoff"} s={19} w={2} />{mic ? S.micOn : S.micOff}
           </button>
-          <button type="button" className={`ctc-tap${cam ? "" : " off"}`} aria-pressed={cam} onClick={() => setCam((v) => !v)}>
+          <button type="button" className={`ctc-tap${cam ? "" : " off"}`} aria-pressed={cam} aria-label={cam ? S.camOn : S.camOff} onClick={() => setCam((v) => !v)}>
             <I n="cam" s={19} w={2} />{cam ? S.camOn : S.camOff}
           </button>
         </div>

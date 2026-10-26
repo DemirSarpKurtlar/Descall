@@ -107,7 +107,7 @@ export function OverviewPage({ route }) {
           <button type="button" className="svh-tap" data-press-scale="1" onClick={() => tapImage("icon")} aria-label={s.changeIcon} style={{ borderRadius: 22, position: "relative" }}>
             <Sq server={preview} s={72} />
           </button>
-          <button type="button" className="svh-tap" data-press-scale="1" onClick={() => tapImage("icon")} style={{ paddingBottom: 4, color: "#8FA6FF", fontSize: 15, fontWeight: 500 }}>
+          <button type="button" className="svh-tap" data-press-scale="1" onClick={() => tapImage("icon")} aria-label={uploading === "icon" ? s.uploading : s.changeIcon} style={{ paddingBottom: 4, color: "#8FA6FF", fontSize: 15, fontWeight: 500 }}>
             {uploading === "icon" ? s.uploading : s.changeIcon}
           </button>
         </div>

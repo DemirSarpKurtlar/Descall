@@ -129,7 +129,7 @@ export function CreateServerSheet({ mode, me, ownedCount = 0, maxOwned = 10, onC
         <Field value={name} onChange={setName} placeholder={placeholder || s.serverNameSec} autoFocus maxLength={100} onEnter={create} autoCapitalize="words" />
         <Foot>{s.createFoot}</Foot>
         <Btn style={{ marginTop: 22 }} onClick={create} disabled={busy || uploading || name.trim().length < 2}>{busy ? <Spinner /> : s.create}</Btn>
-        {iconUrl ? <div style={{ textAlign: "center", marginTop: 14 }}><button type="button" className="svh-tap" style={{ color: "#8FA6FF", fontSize: 16 }} onClick={() => setIconUrl("")}>{s.removeIcon}</button></div> : null}
+        {iconUrl ? <div style={{ textAlign: "center", marginTop: 14 }}><button type="button" className="svh-tap" style={{ color: "#8FA6FF", fontSize: 16 }} aria-label={s.removeIcon} onClick={() => setIconUrl("")}>{s.removeIcon}</button></div> : null}
       </Scroll>
     </>
   ) : null;
