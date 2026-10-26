@@ -96,6 +96,7 @@ import {
   ringEventMatches,
 } from "../lib/callRingSync";
 import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLevel";
+import { createMediaFlowGate } from "../lib/mediaFlowGate";
 
 /** Hang-up → overlay gone. The UI plays the leave transition inside this window. */
 export const CALL_ENDING_MS = 1100;
@@ -148,6 +149,13 @@ export function useCall(socket, callOccupancyRef = null) {
   const [connectionQuality, setConnectionQuality] = useState("unknown");
   const [peerConnectionState, setPeerConnectionState] = useState("idle");
   const [remoteMediaReady, setRemoteMediaReady] = useState(false);
+  // 3.0.0 (C2): "idle" | "connecting" | "verified" | "retry" (lib/mediaFlowGate.js).
+  const [mediaFlow, setMediaFlow] = useState("idle");
+  // Peer's own outbound audio flows (call:media-state `sending`); old clients
+  // never send the flag and count as sending.
+  const [remoteSending, setRemoteSending] = useState(true);
+  const mediaFlowGateRef = useRef(null);
+  const localSendingRef = useRef(false);
   const [localStream, setLocalStream] = useState(null);
   // Server-assigned id of the current ring (CallKit call UUID on native iOS).
   const [callUuid, setCallUuid] = useState(null);
@@ -567,6 +575,10 @@ export function useCall(socket, callOccupancyRef = null) {
     setConnectionQuality("unknown");
     setPeerConnectionState("idle");
     setRemoteMediaReady(false);
+    mediaFlowGateRef.current?.stop();
+    setMediaFlow("idle");
+    setRemoteSending(true);
+    localSendingRef.current = false;
     if (cleanupTimerRef.current) {
       clearTimeout(cleanupTimerRef.current);
       cleanupTimerRef.current = null;
@@ -826,6 +838,7 @@ export function useCall(socket, callOccupancyRef = null) {
       if (conn === "connected") {
         startInboundProbe(pc);
         remoteAudioKeeperRef.current?.start();
+        if (mediaFlowGateRef.current?.state === "idle") mediaFlowGateRef.current.start();
       }
       if (conn === "connected" || ice === "connected" || ice === "completed") {
         iceRestartAttemptedRef.current = false;
@@ -1309,8 +1322,10 @@ export function useCall(socket, callOccupancyRef = null) {
       cameraOn: peerCameraOn,
       deafened: peerDeafened,
       requestState,
+      sending: peerSending,
     } = {}) => {
       if (!fromUserId || String(fromUserId) !== String(peerRef.current?.id || "")) return;
+      if (typeof peerSending === "boolean") setRemoteSending(peerSending);
       setRemoteMuted(Boolean(peerMuted));
       setRemoteCameraOn(Boolean(peerCameraOn));
       setRemoteDeafened(Boolean(peerDeafened));
@@ -1432,6 +1447,36 @@ export function useCall(socket, callOccupancyRef = null) {
 
   const toastRef = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
+
+  // 3.0.0 (C2): verify that audio flows both ways before the call leaves
+  // "Bağlanıyor…"; 6 s → one automatic recovery, 15 s → "Yeniden dene".
+  if (!mediaFlowGateRef.current) {
+    mediaFlowGateRef.current = createMediaFlowGate({
+      getPc: () => pcRef.current,
+      onState: (next) => {
+        setMediaFlow(next);
+        if (next === "verified") setupTimelineRef.current?.mark("mediaVerified");
+        if (next === "retry") setupTimelineRef.current?.mark("retryShown");
+      },
+      onSending: (next) => {
+        localSendingRef.current = next;
+        emitLocalMediaStateRef.current?.();
+      },
+      onRecover: ({ manual } = {}) => {
+        if (modeRef.current !== "active") return;
+        setupTimelineRef.current?.mark("recovered");
+        if (!manual) toastRef.current?.(tRuntime("Restoring the audio connection"), "info");
+        iceRestartQueuedRef.current = true;
+        void negotiateRef.current?.({ iceRestart: true });
+        if (micGuardRef.current) void micGuardRef.current.refresh("media-flow");
+        setTimeout(() => remoteAudioKeeperRef.current?.rebind("media-flow"), 150);
+      },
+    });
+  }
+  const retryMediaFlow = useCallback(() => {
+    if (modeRef.current !== "active") return;
+    mediaFlowGateRef.current?.retry();
+  }, []);
 
   // Mic (+ camera) for a DM call. Native iOS retries a capture that collides
   // with CallKit activating the audio session (NotReadableError).
@@ -1680,6 +1725,7 @@ export function useCall(socket, callOccupancyRef = null) {
     s.emit("call:media-state", {
       toUserId,
       ...localMediaStateRef.current,
+      sending: localSendingRef.current,
       ...(opts.requestState ? { requestState: true } : {}),
     });
   }, []);
@@ -2369,6 +2415,9 @@ export function useCall(socket, callOccupancyRef = null) {
     networkStats,
     peerConnectionState,
     remoteMediaReady,
+    mediaFlow,
+    remoteSending,
+    retryMediaFlow,
     localStream,
     remoteStream,
     remoteScreenStream,

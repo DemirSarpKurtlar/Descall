@@ -1905,7 +1905,7 @@ function registerSocketHandlers(io) {
     // show muted/camera-off status instead of inferring it from a frozen track.
     // `deafened` and `requestState` (ask the peer to re-send its state, e.g.
     // after this client connected or its socket reconnected) are optional.
-    socket.on("call:media-state", ({ toUserId, muted, cameraOn, deafened, requestState } = {}) => {
+    socket.on("call:media-state", ({ toUserId, muted, cameraOn, deafened, requestState, sending } = {}) => {
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:media-state", {
         fromUserId: myId,
@@ -1913,6 +1913,8 @@ function registerSocketHandlers(io) {
         cameraOn: Boolean(cameraOn),
         deafened: Boolean(deafened),
         requestState: Boolean(requestState),
+        // 3.0.0 (C2): sender's outbound audio verified flowing; omitted by old clients.
+        ...(typeof sending === "boolean" ? { sending } : {}),
       });
     });
 

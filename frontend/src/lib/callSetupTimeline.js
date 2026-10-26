@@ -157,8 +157,10 @@ export function createCallSetupTimeline({
             if (st.totalAudioEnergy > 0 || st.audioLevel > 0) mark("heard");
           }
         });
+        // Both counters rose since the first sample (not just "> 0": a stale
+        // receiver/sender reports a frozen non-zero count).
         if (tl.last && sent > tl.last.sent && received > tl.last.received) mark("mediaVerified");
-        tl.last = { sent, received };
+        if (!tl.last) tl.last = { sent, received };
         if (pairId && !tl.pair) {
           const pair = stats.get?.(pairId);
           const loc = pair && stats.get?.(pair.localCandidateId);
