@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Smile, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
@@ -106,10 +106,23 @@ export default function MessageReactions({
     [messageId, conversationType, conversationId, currentUserId, socket, onReact]
   );
 
+  // An equipped reaction burst plays once when one of my reactions lands
+  // (double tap, menu pick or chip tap); the chip glow is not permanent.
+  const mineKey = Object.keys(groupedReactions).filter((e) => groupedReactions[e].hasMine).sort().join("|");
+  const prevMine = useRef(null);
+  useEffect(() => {
+    const prev = prevMine.current;
+    prevMine.current = mineKey;
+    if (prev === null || !burstKey) return;
+    const before = new Set(prev ? prev.split("|") : []);
+    const added = (mineKey ? mineKey.split("|") : []).find((e) => !before.has(e));
+    if (added) triggerBurst(added);
+  }, [mineKey, burstKey, triggerBurst]);
+
   const handleReactionClick = (emoji) => {
     if (typeof onToggle === "function") {
       const op = onToggle(emoji);
-      if (op === "add") triggerBurst(emoji);
+      if (op === "add" && !burstKey) triggerBurst(emoji);
       return;
     }
     const hasReacted = groupedReactions[emoji]?.hasMine;
@@ -158,7 +171,7 @@ export default function MessageReactions({
           <motion.button
             key={emoji}
             className={`reaction-chip ${data.hasMine ? "reaction-mine" : ""}${
-              data.hasMine && burstKey ? ` burst-chip-${burstKey}` : ""
+              data.hasMine && burstKey && burst?.emoji === emoji ? ` burst-chip-${burstKey}` : ""
             }`}
             onClick={() => handleReactionClick(emoji)}
             whileHover={{ scale: 1.05 }}

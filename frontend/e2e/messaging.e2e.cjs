@@ -270,7 +270,16 @@ async function runDevice(browser, base, dev) {
   let opened = false;
   for (let attempt = 0; attempt < 5 && !opened; attempt += 1) {
     await tapDmRow();
-    opened = await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 6000).then(() => true, () => false);
+    // Loaded is not enough: on a cold start the iPhone list can stay on top of
+    // the loaded chat, so also require the newest bubble to be hit-testable.
+    opened = await waitFor(page, `${dev} messages`, () => {
+      const bs = document.querySelectorAll('.message-bubble[data-message-id]');
+      if (bs.length < 30) return { ok: false };
+      const b = bs[bs.length - 1];
+      const r = b.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10));
+      return { ok: !!hit && b.contains(hit) };
+    }, null, 6000).then(() => true, () => false);
   }
   if (!opened) await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 2000);
   // On iPhone the chat slides in over the list; wait until the newest bubble
@@ -306,10 +315,29 @@ async function runDevice(browser, base, dev) {
     check(r && r.includes('❤️1*'), `double ${d.touch ? 'tap' : 'click'} on padding adds ❤️ at once (${JSON.stringify(r)})`);
     await sleep(400);
     check(state.events.slice(before).some((e) => e.kind === 'add' && e.emoji === '❤️' && e.messageId === peerId), 'server got reaction:add ❤️');
+    // The pill hangs off the bubble's bottom edge and never widens it (#16).
+    const pill = await page.evaluate(([id, touch]) => {
+      const b = [...document.querySelectorAll('.message-bubble[data-message-id]')].find((n) => n.getAttribute('data-message-id') === id);
+      const row = b && b.querySelector(':scope > .message-reactions');
+      if (!row) return null;
+      const br = b.getBoundingClientRect();
+      const chips = [...row.querySelectorAll('.reaction-chip')].map((c) => c.getBoundingClientRect());
+      const add = row.querySelector('.reaction-add-btn');
+      const addShown = !!add && add.getBoundingClientRect().width > 0;
+      const cs = getComputedStyle(row.querySelector('.reaction-chip'));
+      return { bw: Math.round(br.width), left: Math.round(chips[0].left - br.left), top: Math.round(chips[0].top - br.bottom), bottom: Math.round(chips[0].bottom - br.bottom), oneRow: chips.every((c) => Math.abs(c.top - chips[0].top) < 1), addShown, touch, shadow: cs.boxShadow };
+    }, [peerId, !!d.touch]);
+    check(pill && Math.abs(pill.bw - Math.round(box.w)) <= 1, `a reaction does not widen the bubble (${box && Math.round(box.w)} → ${pill && pill.bw}px)`);
+    check(pill && pill.top < 0 && pill.bottom > 8 && pill.left >= 4 && pill.left <= 16 && pill.oneRow, `the pill hangs off the bubble's bottom-left edge in one row (${JSON.stringify(pill)})`);
+    check(pill && (d.touch ? !pill.addShown : true), `no always-on add-reaction smiley on touch (${pill && pill.addShown})`);
+    check(pill && !/255, 214, 10|250, 204, 21/.test(pill.shadow), `no lingering gold burst outline (${pill && pill.shadow})`);
     await shot(page, `${dev}-02-heart`);
     await sleep(500);
-    if (d.touch) await touchDoubleTap(cdp, px, py);
-    else await page.mouse.dblclick(px, py);
+    // The pill adds room under the bubble, so a list pinned to the bottom
+    // shifts up a little: aim at where the bubble is now.
+    box = await bubbleBox(page, peerId);
+    if (d.touch) await touchDoubleTap(cdp, box.r - 5, box.t + box.h / 2);
+    else await page.mouse.dblclick(box.r - 5, box.t + box.h / 2);
     await sleep(500);
     r = await reactionsOf(page, peerId);
     check(r && !r.some((x) => x.startsWith('❤️')), `second double ${d.touch ? 'tap' : 'click'} removes my ❤️ (${JSON.stringify(r)})`);
