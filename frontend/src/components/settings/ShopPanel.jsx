@@ -22,6 +22,7 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  Gift,
 } from "../ui/Icon.jsx";
 import { ShopBadgeIcon } from "../../lib/shopIcons";
 import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
@@ -50,6 +51,8 @@ import { SHOP_CATEGORY_TABS, visibleShopTabs, visibleShopItems } from "../../lib
 import { localizeShopItem } from "../../lib/shopItemI18n.js";
 import { usesPurchaseModal } from "../../lib/storePurchaseState.js";
 import StorePurchaseModal from "../shop/purchase/StorePurchaseModal";
+import { openPromoRedeem } from "../../lib/promoBus";
+import "../../styles/promo.css";
 
 /** Short tab labels, same pattern as admin top nav. Source: lib/shopCategories.js. */
 const CATEGORY_ICONS = {
@@ -514,6 +517,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         <span>{balance.toLocaleString()}</span>
         <span className="shop-wallet-label">DesCoin</span>
       </div>
+      <button type="button" className="shop-redeem-btn" aria-haspopup="dialog" onClick={() => openPromoRedeem()}><Gift size={15} /> {t("promo.shopButton")}</button>
       {chromeSlot ? null : viewSwitch}
       {glassShell && isMobile && activeTabMeta && view === "store" ? (
         <span className="g-shop-count">{t(activeTabMeta.label)} · {visibleItems.length}</span>
