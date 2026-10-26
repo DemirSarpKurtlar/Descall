@@ -585,6 +585,7 @@ const EMPTY_EQUIPPED = {
   reactionBurst: null,
   callOverlay: null,
   country: null,
+  specialBadge: null,
 };
 
 /** Resolves one user's equip slots (all cosmetic categories) into full item records. */
@@ -665,10 +666,12 @@ async function getEquippedCosmeticsForUsers(userIds) {
       .in("id", [...itemIds]);
     for (const item of shopRows || []) byId.set(item.id, normalizeItem(item));
   }
+  // Special badge worn next to the country flag (tolerant: empty before its migration).
+  const specialById = await require("./specialBadges").equippedForUsers(ids).catch(() => new Map());
   const seen = new Set();
   for (const user of users) {
     seen.add(user.id);
-    out.set(user.id, equippedRecord(user, byId));
+    out.set(user.id, { ...equippedRecord(user, byId), specialBadge: specialById.get(user.id) || null });
   }
   for (const id of ids) {
     if (!seen.has(id)) out.set(id, { ...EMPTY_EQUIPPED });

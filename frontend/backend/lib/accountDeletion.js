@@ -87,6 +87,11 @@ async function anonymizeUser(userId) {
   await q;
   await supabase.from("group_members").delete().eq("user_id", userId);
 
+  // Special badges go back (a held #001 becomes free for someone else). History rows stay.
+  await require("./specialBadges").releaseUser(userId).catch((err) => {
+    console.warn("[accountDeletion] special badges:", err?.message || err);
+  });
+
   for (const [table, column] of OWN_ROWS) {
     const { error } = await supabase.from(table).delete().eq(column, userId);
     if (error && !/does not exist|schema cache/i.test(error.message || "")) {

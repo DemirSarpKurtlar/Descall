@@ -676,6 +676,7 @@ async function loadProfileCard(ctx, base) {
       equippedBanner: pub.equippedBanner || null,
       equippedTitle: pub.equippedTitle || null,
       equippedCountry: pub.equippedCountry || null,
+      equippedSpecialBadge: pub.equippedSpecialBadge || null,
       isAdmin: Boolean(u.is_admin),
     },
     nickname: u.member?.nickname || null,
