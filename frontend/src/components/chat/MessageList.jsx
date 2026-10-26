@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore } from "react";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
@@ -47,10 +47,13 @@ import useGlassUi from "../../hooks/useGlassUi";
 import GlassConfirm from "../ui/GlassConfirm";
 import { trackMessageDelete } from "../../lib/messageDeleteFeedback";
 import useMaterialize from "../../hooks/useMaterialize";
-import { hapticImpactMedium, hapticLight, primeHaptics } from "../../lib/haptics";
+import { hapticImpactMedium, hapticLight, hapticSelection, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
 import { useOffscreenRows } from "../../hooks/useOffscreenRows";
 import { attachStickToBottom } from "../../lib/stickToBottom";
+import { applyPending, getPendingSnapshot, subscribePending, toggleReaction } from "../../lib/reactionsOptimistic";
+import { createDoubleTapDetector, hasTextSelection, isIgnoredTapTarget, pointIsOverText } from "../../lib/doubleTap";
+import { useToast } from "../../context/ToastContext";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
@@ -725,7 +728,15 @@ function MessageBubble({
   reactionBurstKey = null,
 }) {
   const t = useT();
+  const { toast } = useToast();
   const glass = useGlassUi();
+  // A mouse-only device (desktop/Electron) has no swipe-to-reply: framer's drag
+  // would set user-select:none on the bubble and a double click on the text
+  // could never select the word (A2). Touch devices keep the swipe.
+  const mouseOnly = useMemo(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(pointer: fine)").matches && !window.matchMedia("(any-pointer: coarse)").matches;
+  }, []);
   const bubbleRef = useRef(null);
   const pressDetach = useRef(null);
   const pressGate = useRef(null);
@@ -772,7 +783,14 @@ function MessageBubble({
     [0, 20, 56],
     [0, 0.4, 1]
   );
-  const reactions = Array.isArray(message.reactions) ? message.reactions : [];
+  const serverReactions = Array.isArray(message.reactions) ? message.reactions : [];
+  // Optimistic overlay: my in-flight taps show in the same frame (PR-6).
+  const pendingAll = useSyncExternalStore(subscribePending, getPendingSnapshot, getPendingSnapshot);
+  const pendingMine = message?.id ? pendingAll[message.id] || null : null;
+  const reactions = useMemo(
+    () => applyPending(serverReactions, pendingMine, currentUserId, message?.id ?? null),
+    [serverReactions, pendingMine, currentUserId, message?.id],
+  );
   const reply = message.replyTo || message.reply_to || null;
   const isPinned = Boolean(message.pinnedAt);
   const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
@@ -1171,28 +1189,90 @@ function MessageBubble({
     });
   }, [glass, mediaOnly, x]);
 
-  const emitReact = useCallback((emoji) => {
-    if (!message?.id || !conversationType || !conversationId || !emoji) return;
-    if (String(message.id).startsWith("temp-")) return;
-
-    const mine = reactions.some((r) => r.emoji === emoji && r.userId === currentUserId);
-    if (mine) {
-      socket?.emit("reaction:remove", {
-        messageId: message.id,
-        conversationType,
-        conversationId,
-        emoji,
-      });
-    } else {
-      socket?.emit("reaction:add", {
-        messageId: message.id,
-        conversationType,
-        conversationId,
-        emoji,
-      });
-    }
+  const serverReactionsRef = useRef(serverReactions);
+  serverReactionsRef.current = serverReactions;
+  // Optimistic toggle: the chip lands now; a rejected ack / 5 s timeout rolls
+  // it back and says so (Master Update A2 §4.2).
+  const emitReact = useCallback((emoji, { keepMenu = false } = {}) => {
+    if (!message?.id || !conversationType || !conversationId || !emoji) return null;
+    const op = toggleReaction({
+      socket,
+      messageId: message.id,
+      conversationType,
+      conversationId,
+      emoji,
+      userId: currentUserId,
+      baseReactions: serverReactionsRef.current,
+      onFail: (failedOp) => {
+        toast(t(failedOp === "remove" ? "Couldn't remove reaction" : "Couldn't send reaction"), "error", { duration: 2600 });
+      },
+    });
     setPickerOpen(false);
-  }, [message?.id, conversationType, conversationId, reactions, currentUserId, socket]);
+    // The glass long-press menu runs its own fly-back close (beginClose).
+    if (!keepMenu) setMenuOpen(false);
+    return op;
+  }, [message?.id, conversationType, conversationId, currentUserId, socket, toast, t]);
+
+  // ── Double tap / double click → ❤️ toggle ────────────────────────────────
+  const [heartPop, setHeartPop] = useState(null);
+  const tapDetector = useRef(null);
+  if (!tapDetector.current) tapDetector.current = createDoubleTapDetector();
+  const lastTouchHeartAt = useRef(0);
+  const heartToggle = useCallback((clientX, clientY) => {
+    if (editing) return;
+    const op = emitReact("❤️");
+    if (!op) return;
+    hapticLight();
+    if (op === "add") {
+      const box = bubbleRef.current?.getBoundingClientRect?.();
+      const x = box && Number.isFinite(clientX) ? clientX - box.left : (box ? box.width / 2 : 0);
+      const y = box && Number.isFinite(clientY) ? clientY - box.top : (box ? box.height / 2 : 0);
+      setHeartPop({ id: Date.now(), x, y });
+    }
+  }, [emitReact, editing]);
+  useEffect(() => {
+    if (!heartPop) return undefined;
+    const id = heartPop.id;
+    const timer = setTimeout(() => setHeartPop((h) => (h?.id === id ? null : h)), 700);
+    return () => clearTimeout(timer);
+  }, [heartPop]);
+  const onBubblePointerDownTap = useCallback((e) => {
+    if (e.pointerType === "mouse") return;
+    if (isIgnoredTapTarget(e.target)) { tapDetector.current.cancel(); return; }
+    tapDetector.current.down(e.clientX, e.clientY, e.timeStamp || performance.now());
+  }, []);
+  const onBubblePointerMoveTap = useCallback((e) => {
+    if (e.pointerType === "mouse") return;
+    tapDetector.current.move(e.clientX, e.clientY);
+  }, []);
+  const onBubblePointerUpTap = useCallback((e) => {
+    if (e.pointerType === "mouse") return;
+    if (isIgnoredTapTarget(e.target)) return;
+    if (tapDetector.current.up(e.clientX, e.clientY, e.timeStamp || performance.now())) {
+      lastTouchHeartAt.current = Date.now();
+      // The first tap may have toggled the tap-menu (hover:none); keep it shut.
+      setMenuOpen(false);
+      setPickerOpen(false);
+      heartToggle(e.clientX, e.clientY);
+    }
+  }, [heartToggle]);
+  const overTextAt = useCallback((x, y) => {
+    const root = bubbleRef.current?.querySelector?.(".message-text") || null;
+    return root ? pointIsOverText(root, x, y) : false;
+  }, []);
+  const onBubbleMouseDownTap = useCallback((e) => {
+    // Second press of a double-click on padding: stop the browser from
+    // selecting a nearby word. On text we leave selection alone.
+    if (e.detail >= 2 && !isIgnoredTapTarget(e.target) && !overTextAt(e.clientX, e.clientY)) {
+      e.preventDefault();
+    }
+  }, [overTextAt]);
+  const onBubbleDoubleClick = useCallback((e) => {
+    if (Date.now() - lastTouchHeartAt.current < 600) return; // touch already handled it
+    if (isIgnoredTapTarget(e.target)) return;
+    if (overTextAt(e.clientX, e.clientY) || hasTextSelection()) return; // word selection wins
+    heartToggle(e.clientX, e.clientY);
+  }, [heartToggle, overTextAt]);
 
   if (hideCasino) return null;
 
@@ -1221,7 +1301,7 @@ function MessageBubble({
           ease: [0.16, 1, 0.3, 1],
         }}
         style={{ x }}
-        drag={glass || mediaOnly ? false : "x"}
+        drag={glass || mediaOnly || mouseOnly ? false : "x"}
         dragDirectionLock
         dragSnapToOrigin
         dragConstraints={{ left: 0, right: 72 }}
@@ -1236,14 +1316,21 @@ function MessageBubble({
           if (shouldReply) triggerReply();
         }}
         data-no-swipe-back=""
+        data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
         className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
+          onBubblePointerDownTap(e);
           if (e.target.closest("a, button, video, img, .message-media, .message-reactions, .slash-embed")) return;
           beginMenuPress(e, { pressed: true });
         }}
+        onPointerMove={onBubblePointerMoveTap}
+        onPointerUp={onBubblePointerUpTap}
+        onPointerCancel={() => tapDetector.current.cancel()}
+        onMouseDown={onBubbleMouseDownTap}
+        onDoubleClick={onBubbleDoubleClick}
         onClick={(e) => {
           // Touch / click toggle for devices without hover. Glass uses long-press.
           if (e.target.closest("a, button, video, img, .message-media, .message-hover-bar, .message-reactions, .slash-embed")) return;
@@ -1462,12 +1549,31 @@ function MessageBubble({
           />
         )}
 
+        <AnimatePresence>
+          {heartPop && (
+            <motion.span
+              key={heartPop.id}
+              className="msg-heart-pop"
+              aria-hidden="true"
+              style={{ left: heartPop.x, top: heartPop.y }}
+              initial={prefersReducedMotionNow() ? { opacity: 0, scale: 1 } : { opacity: 0, scale: 0.3 }}
+              animate={prefersReducedMotionNow()
+                ? { opacity: [0, 1, 0], scale: 1 }
+                : { opacity: [0, 1, 1, 0], scale: [0.3, 1.18, 1, 0.92], y: [0, 0, -6, -18] }}
+              transition={{ duration: 0.62, times: prefersReducedMotionNow() ? [0, 0.3, 1] : [0, 0.32, 0.7, 1], ease: [0.16, 1, 0.3, 1] }}
+            >
+              ❤️
+            </motion.span>
+          )}
+        </AnimatePresence>
+
         {reactions.length > 0 && (
           <MessageReactions
             messageId={message.id}
             conversationType={conversationType}
             conversationId={conversationId}
             reactions={reactions}
+            onToggle={emitReact}
             currentUserId={currentUserId}
             socket={socket}
             burstKey={isOwn ? reactionBurstKey : null}
@@ -1685,7 +1791,7 @@ function MessageBubble({
             isOwn={false}
             onClose={() => { setMenuOpen(false); setPickerOpen(false); }}
             quick={QUICK_EMOJIS}
-            onReact={emitReact}
+            onReact={(e) => emitReact(e, { keepMenu: true })}
             onMore={() => { setMenuOpen(false); setPickerOpen(false); setEmojiSheetOpen(true); }}
             onReply={triggerReply}
             onCopy={message.text ? copyText : null}
@@ -1754,6 +1860,16 @@ function GlassMessageMenu({
   onReply, onCopy, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const [closing, setClosing] = useState(false);
+  // #06 lens: the emoji under the finger grows inside a clear glass lens;
+  // sliding along the bar moves it, releasing on another emoji picks that one.
+  const [lensIdx, setLensIdx] = useState(-1);
+  const scrub = useRef({ active: false, start: -1, lens: -1, picked: false });
+  const chipIndexAt = (x, y) => {
+    const el = typeof document !== "undefined" ? document.elementFromPoint(x, y) : null;
+    const chip = el?.closest?.(".g-react-bar .emoji-chip");
+    const i = chip ? Number(chip.getAttribute("data-i")) : -1;
+    return Number.isFinite(i) ? i : -1;
+  };
   const bar = useMaterialize(!closing);
   const menu = useMaterialize(!closing);
   const act = (fn) => pressToActivate(fn);
@@ -1869,6 +1985,35 @@ function GlassMessageMenu({
           ref={bar.ref}
           className="g-react-bar g-glass g-heavy g-materialize"
           role="toolbar"
+          onPointerDown={(ev) => {
+            const i = chipIndexAt(ev.clientX, ev.clientY);
+            scrub.current = { active: i >= 0, start: i, lens: i, picked: false };
+            setLensIdx(i);
+          }}
+          onPointerMove={(ev) => {
+            if (!scrub.current.active) return;
+            const i = chipIndexAt(ev.clientX, ev.clientY);
+            if (i === scrub.current.lens) return;
+            scrub.current.lens = i;
+            if (i >= 0) hapticSelection();
+            setLensIdx(i);
+          }}
+          onPointerUp={(ev) => {
+            const s = scrub.current;
+            if (!s.active) return;
+            s.active = false;
+            const i = chipIndexAt(ev.clientX, ev.clientY);
+            setLensIdx(-1);
+            if (i >= 0) {
+              // Released on an emoji (the one pressed, or another one slid
+              // onto): pick it here. The lens re-render replaced the chip's
+              // pressToActivate handlers, so its click must not also run.
+              s.picked = true;
+              beginClose();
+              onReact(quick[i]);
+            }
+          }}
+          onPointerCancel={() => { scrub.current.active = false; setLensIdx(-1); }}
           style={{
             top: layout.barTop,
             left: layout.barLeft,
@@ -1876,8 +2021,19 @@ function GlassMessageMenu({
             ["--g-mat-origin"]: `${isOwn ? "100%" : "0%"} ${layout.barFromBelow ? "100%" : "0%"}`,
           }}
         >
-          {quick.map((e) => (
-            <button key={e} type="button" className="emoji-chip" aria-label={`${t(QUICK_EMOJI_NAMES[e] || "React")} ${e}`} {...act(() => onReact(e))}>{e}</button>
+          {quick.map((e, i) => (
+            <button
+              key={e}
+              type="button"
+              data-i={i}
+              className={`emoji-chip${lensIdx === i ? " is-lens" : ""}`}
+              aria-label={`${t(QUICK_EMOJI_NAMES[e] || "React")} ${e}`}
+              {...act(() => {
+                if (scrub.current.picked) { scrub.current.picked = false; return; }
+                beginClose();
+                onReact(e);
+              })}
+            >{e}</button>
           ))}
           <span className="g-react-sep" aria-hidden="true" />
           <button type="button" className="hover-bar-btn g-react-more" aria-label={t("More reactions")} {...act(onMore)}>

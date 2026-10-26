@@ -749,3 +749,21 @@
 @media (prefers-reduced-motion: reduce) {
   .mv-root *, .mv-root { transition: none !important; }
 }
+
+/* Double tap / double click → ❤️ (Master Update A2, PR-6). Sits over the
+   bubble at the tap point; pointer-events none so it never eats a tap. */
+.message-bubble .msg-heart-pop {
+  position: absolute;
+  z-index: 5;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  font-size: 44px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+  user-select: none;
+  -webkit-user-select: none;
+}

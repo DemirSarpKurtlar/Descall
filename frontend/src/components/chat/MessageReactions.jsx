@@ -21,6 +21,9 @@ export default function MessageReactions({
   currentUserId,
   socket,
   onReact,
+  /** Optimistic toggle from the bubble (PR-6). When set, `reactions` already
+   *  carries my pending taps and the parent owns ack / rollback / toast. */
+  onToggle = null,
   burstKey = null,
 }) {
   const t = useT();
@@ -32,7 +35,8 @@ export default function MessageReactions({
     setLocalReactions(reactions);
   }, [reactions]);
 
-  const groupedReactions = (Array.isArray(localReactions) ? localReactions : []).reduce((acc, reaction) => {
+  const source = typeof onToggle === "function" ? reactions : localReactions;
+  const groupedReactions = (Array.isArray(source) ? source : []).reduce((acc, reaction) => {
     const emoji = reaction?.emoji;
     const userId = reaction?.userId;
     if (!emoji || !userId) return acc;
@@ -57,6 +61,12 @@ export default function MessageReactions({
 
   const handleAddReaction = useCallback(
     (emoji) => {
+      if (typeof onToggle === "function") {
+        setShowPicker(false);
+        const mine = (Array.isArray(reactions) ? reactions : []).some((r) => r?.emoji === emoji && r?.userId === currentUserId);
+        if (!mine && onToggle(emoji) === "add") triggerBurst(emoji);
+        return;
+      }
       const reactionData = {
         messageId,
         conversationType,
@@ -76,7 +86,7 @@ export default function MessageReactions({
       onReact?.(reactionData);
       setShowPicker(false);
     },
-    [messageId, conversationType, conversationId, currentUserId, socket, onReact, triggerBurst]
+    [messageId, conversationType, conversationId, currentUserId, socket, onReact, triggerBurst, onToggle, reactions]
   );
 
   const handleRemoveReaction = useCallback(
@@ -97,6 +107,11 @@ export default function MessageReactions({
   );
 
   const handleReactionClick = (emoji) => {
+    if (typeof onToggle === "function") {
+      const op = onToggle(emoji);
+      if (op === "add") triggerBurst(emoji);
+      return;
+    }
     const hasReacted = groupedReactions[emoji]?.hasMine;
     if (hasReacted) {
       handleRemoveReaction(emoji);

@@ -1956,9 +1956,14 @@ function registerSocketHandlers(io) {
     // group/server/voice rooms in their own handlers).
 
     // Emoji Reactions
-    socket.on("reaction:add", async ({ messageId, conversationType, conversationId, emoji } = {}) => {
+    socket.on("reaction:add", async (payload = {}, ack) => {
+      // Optional ack (Master Update A2): the client rolls its optimistic chip
+      // back on ok:false or a 5 s timeout. Old clients pass no callback.
+      const reply = (res) => { if (typeof ack === "function") { try { ack(res); } catch { /* client gone */ } } };
+      const refuse = (error) => { reply({ ok: false, error }); };
+      let { messageId, conversationType, conversationId, emoji } = payload || {};
       if (!messageId || !conversationType || !conversationId || !emoji) {
-        return;
+        return refuse("rejected");
       }
       
       // Verify user is part of this conversation
@@ -1969,7 +1974,7 @@ function registerSocketHandlers(io) {
         if (typeof conversationId === "string" && conversationId.includes("::")) {
           const ids = conversationId.split("::");
           if (ids.length !== 2) {
-            return;
+            return refuse("rejected");
           }
           otherId = ids[0] === myId ? ids[1] : ids[0];
           dmKey = convKey(myId, otherId);
@@ -1978,12 +1983,16 @@ function registerSocketHandlers(io) {
           dmKey = convKey(myId, otherId);
         }
         if (!otherId || otherId === myId) {
-          return;
+          return refuse("rejected");
         }
         // Soft-check friendship: still allow if already in an open DM thread
         const knownThread = dmHistory.has(dmKey);
         if (!friends.get(myId)?.has(otherId) && !knownThread) {
-          return;
+          return refuse("rejected");
+        }
+        // A block (either way) also stops reactions, not just messages and calls.
+        if (dmBlockPairs.has(dmKey) || await isBlockedEitherWay(myId, otherId)) {
+          return refuse("blocked");
         }
         conversationId = dmKey;
       } else if (conversationType === "group") {
@@ -2000,11 +2009,11 @@ function registerSocketHandlers(io) {
               .eq("user_id", myId)
               .maybeSingle();
             if (!mem) {
-              return;
+              return refuse("rejected");
             }
             socket.join(roomId);
           } catch {
-            return;
+            return refuse("rejected");
           }
         }
       } else if (conversationType === "server") {
@@ -2016,7 +2025,7 @@ function registerSocketHandlers(io) {
           // needs READ_MESSAGE_HISTORY (you can only react to what you can read).
           const { channel, permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
           if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) {
-            return;
+            return refuse("rejected");
           }
           // Timed-out members are refused inside assertTextChannelAccess(ADD_REACTIONS);
           // removing your own reaction stays allowed.
@@ -2032,16 +2041,16 @@ function registerSocketHandlers(io) {
               .eq("server_id", channel.server_id)
               .maybeSingle();
             if (!msg) {
-              return;
+              return refuse("rejected");
             }
           }
           // No socket.join here: a reaction never grants live-room membership
           // (K1, 2026-10-18). Only server:channel:join / rejoin do, after VIEW_CHANNEL.
         } catch (err) {
-          return;
+          return refuse("rejected");
         }
       } else {
-        return;
+        return refuse("rejected");
       }
 
       try {
@@ -2082,13 +2091,20 @@ function registerSocketHandlers(io) {
           io.to(`group:${conversationId}`).emit("reaction:update", reactionData);
         }
         socket.emit("reaction:update", reactionData);
+        reply({ ok: true });
       } catch (err) {
         console.error("[reaction:add] Error:", err);
+        refuse("failed");
       }
     });
 
-    socket.on("reaction:remove", async ({ messageId, conversationType, conversationId, emoji } = {}) => {
-      if (!messageId || !conversationType || !conversationId || !emoji) return;
+    socket.on("reaction:remove", async (payload = {}, ack) => {
+      // Optional ack (Master Update A2): the client rolls its optimistic chip
+      // back on ok:false or a 5 s timeout. Old clients pass no callback.
+      const reply = (res) => { if (typeof ack === "function") { try { ack(res); } catch { /* client gone */ } } };
+      const refuse = (error) => { reply({ ok: false, error }); };
+      let { messageId, conversationType, conversationId, emoji } = payload || {};
+      if (!messageId || !conversationType || !conversationId || !emoji) return refuse("rejected");
 
       // Get otherId for DM
       let otherId = null;
@@ -2108,9 +2124,9 @@ function registerSocketHandlers(io) {
           const { assertTextChannelAccess } = require("./serverChannelHandlers");
           const { Permissions, hasPermission } = require("../lib/serverPermissions");
           const { permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
-          if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) return;
+          if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) return refuse("rejected");
         } catch {
-          return;
+          return refuse("rejected");
         }
       } else if (conversationType === "group") {
         // Same membership gate as reaction:add, so an outsider cannot push
@@ -2123,13 +2139,13 @@ function registerSocketHandlers(io) {
               .eq("group_id", conversationId)
               .eq("user_id", myId)
               .maybeSingle();
-            if (!mem) return;
+            if (!mem) return refuse("rejected");
           } catch {
-            return;
+            return refuse("rejected");
           }
         }
       } else {
-        return;
+        return refuse("rejected");
       }
 
       try {
@@ -2160,8 +2176,10 @@ function registerSocketHandlers(io) {
           io.to(`group:${conversationId}`).emit("reaction:update", reactionData);
         }
         socket.emit("reaction:update", reactionData);
+        reply({ ok: true });
       } catch (err) {
         console.error("[reaction:remove] Error:", err);
+        refuse("failed");
       }
     });
 

@@ -1486,6 +1486,31 @@ html.glass-ui .g-react-bar .emoji-chip {
   padding: 0;
 }
 
+/* #06 lens (PR-6): the emoji under the finger grows inside a clear glass
+   lens, like the tab bar's selection lens. Reduced motion: no growth. */
+html.glass-ui .g-react-bar .emoji-chip {
+  position: relative;
+  transition: transform 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.2), background-color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.glass-ui .g-react-bar .emoji-chip.is-lens,
+html.glass-ui .g-react-bar .emoji-chip:active {
+  transform: scale(1.32) translateY(-4px);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.12),
+    0 6px 16px rgba(0, 0, 0, 0.32);
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass-ui .g-react-bar .emoji-chip { transition: background-color 0.12s ease; }
+  html.glass-ui .g-react-bar .emoji-chip.is-lens,
+  html.glass-ui .g-react-bar .emoji-chip:active { transform: none; }
+}
+
 html.glass-ui .g-react-bar .hover-bar-btn {
   width: 40px;
   height: 40px;
