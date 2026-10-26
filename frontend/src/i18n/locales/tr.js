@@ -1611,6 +1611,8 @@ export const phrases = {
   "Join the call": "Aramaya katıl",
   "Group voice call in progress": "Grup sesli araması sürüyor",
   "Group video call in progress": "Grup görüntülü araması sürüyor",
+  "Silence": "Sessize al",
+  "Ringtone silenced": "Zil sesi kapatıldı",
   "Connecting…": "Bağlanıyor…",
   "Connected": "Bağlandı",
   "Disconnected": "Bağlantı kesildi",

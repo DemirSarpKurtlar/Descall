@@ -1650,6 +1650,8 @@ export const phrases = {
   "Group voice call in progress": "Group voice call in progress",
   "Group video call in progress": "Group video call in progress",
   "Call back": "Call back",
+  "Silence": "Silence",
+  "Ringtone silenced": "Ringtone silenced",
   "Connecting…": "Connecting…",
   "Connected": "Connected",
   "Disconnected": "Disconnected",

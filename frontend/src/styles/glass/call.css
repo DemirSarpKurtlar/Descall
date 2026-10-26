@@ -264,7 +264,8 @@ html.glass-ui .g-call-grid.is-group .participant-tile-avatar-core > .ui-avatar {
   font-size: 72px !important;
 }
 
-/* Control capsule, equal slots, End on the right. */
+/* 3.0.0 (mockup 02): one glass capsule with equal slots, and End as its own
+   red circle beside it. The bar itself is only the row. */
 html.glass-ui .g-call .call-control-bar.g-call-ctrl {
   position: absolute !important;
   left: 12px !important;
@@ -272,21 +273,38 @@ html.glass-ui .g-call .call-control-bar.g-call-ctrl {
   bottom: var(--g-bar-bottom) !important;
   width: auto !important;
   height: 76px;
-  border-radius: 38px;
-  padding: 0 10px !important;
-  gap: 0 !important;
-  display: grid !important;
-  grid-auto-flow: column !important;
-  grid-auto-columns: 1fr !important;
+  padding: 0 !important;
+  gap: 10px !important;
+  display: flex !important;
   align-items: center !important;
-  justify-items: center !important;
-  justify-content: stretch !important;
+  justify-content: center !important;
+  background: none !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+html.glass-ui .g-call .call-control-bar.g-call-ctrl > .call-ctrl-capsule {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 76px;
+  border-radius: 38px;
+  padding: 0 10px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: center;
+  justify-items: center;
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
-    var(--g-tint-base) !important;
+    var(--g-tint-base);
   -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
   backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.34),
+    0 2px 6px rgba(0, 0, 0, 0.22);
 }
 
 html.glass-ui .g-call-qchip,
@@ -454,14 +472,6 @@ html.glass-ui .g-call .participant-tile-avatar-core > .ui-avatar .ui-avatar-fram
   height: 132% !important;
 }
 
-html.glass-ui .g-call .call-control-bar.g-call-ctrl > :first-child {
-  justify-self: start;
-}
-
-html.glass-ui .g-call .call-control-bar.g-call-ctrl > .g-cb.is-end,
-html.glass-ui .g-call .call-control-bar.g-call-ctrl > :last-child {
-  justify-self: end;
-}
 
 html.glass-ui .g-call .g-call-audio-slot {
   position: absolute !important;
@@ -487,7 +497,10 @@ html.glass-ui .g-call .g-cb.is-on {
 }
 
 html.glass-ui .g-call .g-cb.is-end {
-  width: 64px !important;
+  flex: 0 0 auto;
+  width: 66px !important;
+  height: 66px !important;
+  border-radius: 50% !important;
   background: linear-gradient(180deg, #ff5a50, #e8352c) !important;
   color: #fff !important;
   box-shadow: 0 8px 22px rgba(255, 69, 58, 0.42);
@@ -581,7 +594,7 @@ html.glass-ui .incoming-call-card.g-incoming {
   align-items: center;
   justify-content: flex-start;
   gap: 0;
-  padding: 148px 24px calc(72px + env(safe-area-inset-bottom, 0px));
+  padding: calc(64px + env(safe-area-inset-top, 0px)) 24px calc(64px + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   text-align: center;
   background:
@@ -595,6 +608,32 @@ html.glass-ui .incoming-call-card.g-incoming {
 
 html.glass-ui .incoming-call-card.g-incoming * {
   font-family: var(--g-font) !important;
+}
+
+/* 3.0.0 (mockup 01): the caller's photo, blurred, fills the screen. */
+html.glass-ui .g-incoming .g-incoming-backdrop {
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+}
+
+html.glass-ui .g-incoming .g-incoming-backdrop.has-photo {
+  filter: blur(48px) saturate(140%) brightness(0.55);
+  transform: scale(1.15);
+}
+
+html.glass-ui .g-incoming .g-incoming-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 9, 14, 0.30) 0%, rgba(8, 9, 14, 0.55) 55%, rgba(8, 9, 14, 0.82) 100%);
+}
+
+html.glass-ui .incoming-call-card.g-incoming {
+  isolation: isolate;
 }
 
 html.glass-ui .g-incoming .incoming-call-meta {
@@ -611,24 +650,36 @@ html.glass-ui .g-incoming .incoming-call-kind {
   gap: 6px;
   margin: 0;
   font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--g-t2);
-  background: rgba(255, 255, 255, 0.10);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--g-t1);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   -webkit-backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
   backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
 }
 
 html.glass-ui .g-incoming .incoming-call-avatar-wrap {
   order: 1;
-  width: 228px;
-  height: 228px;
-  margin-top: 0;
+  width: 212px;
+  height: 212px;
+  margin-top: 28px;
+}
+
+/* .ui-avatar is a square box; the ring belongs on the round photo (the
+   2.13 square-frame bug painted it on the 120x125 box). */
+html.glass-ui .g-incoming .incoming-call-avatar {
+  border-radius: 50%;
+  box-shadow: none;
 }
 
 html.glass-ui .g-incoming .incoming-call-avatar-wrap .ui-avatar {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.88);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.16),
+    0 0 0 5px rgba(255, 255, 255, 0.10),
+    0 18px 48px rgba(0, 0, 0, 0.45);
 }
 
 html.glass-ui .g-incoming .incoming-call-ring {
@@ -639,21 +690,14 @@ html.glass-ui .g-incoming .incoming-call-ring {
 }
 
 html.glass-ui .g-incoming .incoming-call-ring--a {
-  inset: 54px;
-  border-width: 2px;
-  border-color: rgba(var(--g-brand-rgb), 0.45);
-}
-
-html.glass-ui .g-incoming .incoming-call-ring--b {
-  inset: 36px;
-  border-width: 1.5px;
-  border-color: rgba(var(--g-brand-rgb), 0.22);
-}
-
-html.glass-ui .g-incoming .incoming-call-ring--c {
-  inset: 18px;
+  inset: 26px;
   border-width: 1px;
-  border-color: rgba(var(--g-brand-rgb), 0.10);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+html.glass-ui .g-incoming .incoming-call-ring--b,
+html.glass-ui .g-incoming .incoming-call-ring--c {
+  display: none;
 }
 
 html.glass-ui .g-incoming .incoming-call-badge {
@@ -668,8 +712,8 @@ html.glass-ui .g-incoming .incoming-call-badge {
 
 html.glass-ui .g-incoming .incoming-call-name {
   order: 2;
-  margin-top: 0;
-  font-size: 32px;
+  margin-top: 18px;
+  font-size: 34px;
   font-weight: 700;
   letter-spacing: -0.026em;
   line-height: 38px;
@@ -688,11 +732,46 @@ html.glass-ui .g-incoming .incoming-call-sub {
   justify-content: center;
 }
 
-html.glass-ui .g-incoming .g-incoming-actions {
+html.glass-ui .g-incoming .g-incoming-extras {
   order: 4;
   margin-top: auto;
   display: flex;
-  gap: 64px;
+  justify-content: center;
+  gap: 12px;
+}
+
+html.glass-ui .g-incoming .g-incoming-pill {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--g-t1);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
+  backdrop-filter: blur(var(--g-blur-chip)) saturate(var(--g-saturate-chip));
+  cursor: pointer;
+}
+
+html.glass-ui .g-incoming .g-incoming-pill.is-done {
+  opacity: 0.6;
+  cursor: default;
+}
+
+html.glass-ui .g-incoming .g-incoming-extras + .g-incoming-actions {
+  margin-top: 32px;
+}
+
+html.glass-ui .g-incoming .g-incoming-actions {
+  order: 5;
+  margin-top: auto;
+  display: flex;
+  gap: 96px;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -955,22 +1034,35 @@ html.glass-ui .call-banner-card {
 }
 
 /* Surfaces that set their own backdrop-filter need their own a11y rules. */
-html.glass-ui.a11y-solid .g-call .call-control-bar.g-call-ctrl,
+html.glass-ui.a11y-solid .g-call .call-control-bar.g-call-ctrl > .call-ctrl-capsule,
 html.glass-ui.a11y-solid .g-call-menu,
 html.glass-ui.a11y-solid .g-call-sheet,
 html.glass-ui.a11y-solid .call-overlay-minimized.g-call-min,
 html.glass-ui.a11y-solid .g-call .participant-tile-label,
 html.glass-ui.a11y-solid .g-call-qchip,
 html.glass-ui.a11y-solid .g-incoming .incoming-call-kind,
+html.glass-ui.a11y-solid .g-incoming .g-incoming-pill,
 html.glass-ui.a11y-solid .call-banner-card {
   background: var(--g-solid);
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
 
-html.glass-ui.a11y-contrast .g-call .call-control-bar.g-call-ctrl,
+html.glass-ui.a11y-contrast .g-call .call-control-bar.g-call-ctrl > .call-ctrl-capsule,
 html.glass-ui.a11y-contrast .g-call-menu,
 html.glass-ui.a11y-contrast .g-call .participant-tile-label,
 html.glass-ui.a11y-contrast .g-incoming .incoming-call-kind {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+/* 3.0.0 (mockup 02): with End outside, five 56px slots no longer fit a
+   390px phone; the capsule's buttons are a size down. */
+html.glass-ui .g-call .call-ctrl-capsule .g-cb {
+  width: 50px !important;
+  height: 50px !important;
+}
+
+html.glass-ui .g-call .call-ctrl-capsule .g-cb svg {
+  width: 22px;
+  height: 22px;
 }

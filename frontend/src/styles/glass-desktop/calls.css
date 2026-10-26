@@ -124,24 +124,46 @@ html.glass-desktop .participant-tile-label {
   font-weight: 600;
 }
 
+/* 3.0.0 (mockup 09): the capsule stays centred and End is its own red
+   circle beside it. The bar is a transparent row centred with left/right
+   margins (no translateX). */
 html.glass-desktop .call-control-bar {
-  left: 50% !important;
-  right: auto !important;
-  width: max-content !important;
-  max-width: calc(100% - 32px) !important;
+  left: 16px !important;
+  right: 16px !important;
+  width: auto !important;
+  max-width: none !important;
   bottom: 20px !important;
   height: 76px;
-  padding: 0 12px !important;
-  border-radius: 38px;
-  transform: translateX(-50%);
+  padding: 0 !important;
   justify-content: center !important;
-  gap: 10px !important;
+  gap: 12px !important;
+  background: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+html.glass-desktop .call-control-bar > * {
+  pointer-events: auto;
+}
+
+html.glass-desktop .call-control-bar > .call-ctrl-capsule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: calc(100% - 92px);
+  height: 76px;
+  padding: 0 12px;
+  border-radius: 38px;
+  box-sizing: border-box;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
-    var(--gd-heavy-base) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
-  backdrop-filter: blur(40px) saturate(200%) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55) !important;
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14), 0 24px 64px rgba(0, 0, 0, 0.55);
 }
 
 html.glass-desktop .gd-call-btn {
@@ -162,8 +184,11 @@ html.glass-desktop .gd-call-btn.is-off {
 }
 
 html.glass-desktop .gd-call-btn.is-end {
-  width: 72px !important;
-  border-radius: var(--r-xl) !important;
+  flex: 0 0 auto;
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 10px 28px rgba(255, 69, 58, 0.42) !important;
   background: #ff453a !important;
   color: #fff !important;
 }
@@ -265,7 +290,7 @@ html.glass-desktop .call-quality-hud {
 }
 
 html.glass-desktop.gd-lite .call-top-bar > div,
-html.glass-desktop.gd-lite .call-control-bar,
+html.glass-desktop.gd-lite .call-control-bar > .call-ctrl-capsule,
 html.glass-desktop.gd-lite .incoming-call-card,
 html.glass-desktop.gd-lite .screen-quality-panel,
 html.glass-desktop.gd-lite .participant-tile-label {

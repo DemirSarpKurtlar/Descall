@@ -4,6 +4,7 @@ import IncomingCallCard from "./voice/IncomingCallCard";
 import { useT } from "../context/LocaleContext";
 import { hapticImpactLight } from "../lib/fluid/haptics";
 import { resolveDisplayName } from "../lib/userProfile";
+import audioManager from "../lib/audioManager";
 
 /**
  * Floating incoming group call modal, FaceTime-style avatar rings.
@@ -40,6 +41,7 @@ export default function GroupCallIncomingModal({ incomingCall, onAccept, onDecli
           callType={incomingCall.callType}
           isGroup
           subtitle={t("Group call")}
+          onSilence={() => audioManager.stop("incomingCall")}
           onDecline={() => {
             hapticImpactLight();
             onDecline?.(

@@ -48,6 +48,7 @@ import {
 import { ReconnectOverlay } from "./voice/DmRemoteParticipantSlot";
 import { useVideoPresence } from "../hooks/useVideoPresence";
 import { copyText } from "../lib/copyText";
+import audioManager from "../lib/audioManager";
 import GlassVolumeSlider from "./ui/GlassVolumeSlider";
 
 /*
@@ -327,6 +328,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             callType={callType}
             onDecline={() => { hapticImpactLight(); call.declineIncoming?.(); }}
             onAccept={() => { hapticImpactLight(); call.acceptIncoming?.(); }}
+            onSilence={() => { hapticImpactLight(); audioManager.stop("incomingCall"); }}
           />
         </AnimatePresence>
       </>
@@ -679,7 +681,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
 
       {/* ====== BOTTOM CONTROL BAR ====== */}
       <div
-        className={glass ? "call-control-bar g-call-ctrl g-glass" : "call-control-bar"}
+        className={glass ? "call-control-bar g-call-ctrl" : "call-control-bar"}
         style={{
           position: "absolute",
           bottom: 0,
@@ -711,6 +713,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           </>
         ) : (
           <>
+            {/* 3.0.0 (mockups 02 / 09): on glass the controls sit in one capsule and
+                End is its own red circle beside it. Elsewhere the wrapper is layout-neutral. */}
+            <div className={glass ? "call-ctrl-capsule g-glass" : "call-ctrl-capsule"} style={glass || glassDesktop ? undefined : { display: "contents" }}>
             {/* Mic → input menu, deafen → output menu (chevron, long press, right click). */}
             <DockDeviceSlot
               menuLabel={t("Choose microphone")}
@@ -985,6 +990,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+
             </div>
 
             <CircleBtn
