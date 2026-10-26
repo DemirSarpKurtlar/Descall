@@ -175,6 +175,14 @@ jobs:
           ENT="frontend/ios/App/App/App.release.entitlements"
           find "$APP/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) -print0 2>/dev/null |
             while IFS= read -r -d '' fw; do codesign --force --sign - --timestamp=none "$fw"; done
+          # 3.0.0 (A4): notification extensions (App Group) are signed first, inside-out.
+          for EXT in NotificationService NotificationContent; do
+            APPEX="$APP/PlugIns/$EXT.appex"
+            test -d "$APPEX" || { echo "::error::$EXT.appex missing from the archive"; exit 1; }
+            codesign --force --sign - --timestamp=none \
+              --entitlements "frontend/ios/App/$EXT/$EXT.entitlements" --generate-entitlement-der "$APPEX"
+            codesign -d --entitlements - --xml "$APPEX" 2>/dev/null | plutil -p -
+          done
           codesign --force --sign - --timestamp=none --entitlements "$ENT" --generate-entitlement-der "$APP"
           codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p -
 
@@ -234,6 +242,21 @@ jobs:
           [ "$aps" = "production" ] || { echo "::error::aps-environment is '$aps', expected production"; ok=0; }
           [ "$siwa" = "Default" ] || { echo "::error::Sign in with Apple entitlement missing ('$siwa')"; ok=0; }
           [ "$gta" != "true" ] || { echo "::error::get-task-allow is true (development signature)"; ok=0; }
+          comm="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.usernotifications.communication' "$WORK/ent.plist" 2>/dev/null || true)"
+          group="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/ent.plist" 2>/dev/null || true)"
+          [ "$comm" = "true" ] || { echo "::error::Communication Notifications entitlement missing ('$comm')"; ok=0; }
+          [ "$group" = "group.com.descall.app" ] || { echo "::error::App Group missing on the app ('$group')"; ok=0; }
+          for EXT in NotificationService NotificationContent; do
+            APPEX="$APP/PlugIns/$EXT.appex"
+            [ -d "$APPEX" ] || { echo "::error::$EXT.appex missing from the IPA"; ok=0; continue; }
+            codesign -dvv "$APPEX" 2>&1 | grep -E '^(Authority|Identifier)=' || true
+            codesign -d --entitlements - --xml "$APPEX" > "$WORK/$EXT.plist" 2>/dev/null || true
+            eg="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/$EXT.plist" 2>/dev/null || true)"
+            [ "$eg" = "group.com.descall.app" ] || { echo "::error::$EXT has no App Group ('$eg')"; ok=0; }
+            ev="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APPEX/Info.plist")"
+            av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+            [ "$ev" = "$av" ] || { echo "::error::$EXT CFBundleVersion $ev != app $av"; ok=0; }
+          done
           [ "$ok" -eq 1 ]
           echo "Entitlements OK for App Store distribution."
 

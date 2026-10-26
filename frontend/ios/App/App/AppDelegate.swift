@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import UserNotifications
+import Intents
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,24 +9,53 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        registerCallNotificationCategories()
+        registerNotificationCategories()
         // PushKit + CallKit must exist before the first VoIP push is delivered,
         // which can be right after a background launch, before any web JS runs.
         DescallCallManager.shared.start()
         return true
     }
 
-    /// Accept / Decline match the action ids already handled by nativePush.js.
-    private func registerCallNotificationCategories() {
+    /// INCOMING_CALL: Accept / Decline match the action ids handled by nativePush.js.
+    /// MESSAGE (3.0.0, A4): rich message notifications. The content extension
+    /// draws the thread, reactions and reply field; these are the menu actions
+    /// under it. Lock-screen previews follow the iOS setting only.
+    private func registerNotificationCategories() {
         let accept = UNNotificationAction(identifier: "accept", title: "Accept", options: [.foreground])
         let decline = UNNotificationAction(identifier: "decline", title: "Decline", options: [.destructive, .foreground])
-        let category = UNNotificationCategory(
-            identifier: "INCOMING_CALL",
+        let call = UNNotificationCategory(
+            identifier: DescallNotify.callCategory,
             actions: [accept, decline],
             intentIdentifiers: [],
             options: []
         )
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        let strings = DescallNotifyStrings(lang: DescallNotifyLang.current())
+        let actions: [UNNotificationAction]
+        if #available(iOS 15.0, *) {
+            actions = [
+                UNNotificationAction(identifier: DescallNotify.Action.read, title: strings.markRead, options: [],
+                                     icon: UNNotificationActionIcon(systemImageName: "checkmark.message")),
+                UNNotificationAction(identifier: DescallNotify.Action.mute, title: strings.mute, options: [],
+                                     icon: UNNotificationActionIcon(systemImageName: "bell.slash")),
+                UNNotificationAction(identifier: DescallNotify.Action.open, title: strings.openChat, options: [.foreground],
+                                     icon: UNNotificationActionIcon(systemImageName: "bubble.left")),
+            ]
+        } else {
+            actions = [
+                UNNotificationAction(identifier: DescallNotify.Action.read, title: strings.markRead, options: []),
+                UNNotificationAction(identifier: DescallNotify.Action.mute, title: strings.mute, options: []),
+                UNNotificationAction(identifier: DescallNotify.Action.open, title: strings.openChat, options: [.foreground]),
+            ]
+        }
+        let message = UNNotificationCategory(
+            identifier: DescallNotify.messageCategory,
+            actions: actions,
+            intentIdentifiers: [INSendMessageIntentIdentifier],
+            hiddenPreviewsBodyPlaceholder: strings.hiddenPreview,
+            categorySummaryFormat: strings.summaryFormat,
+            options: []
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([call, message])
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

@@ -46,6 +46,13 @@ jobs:
           swiftc -o "$RUNNER_TEMP/ncl" App/App/DescallNativeCallLogic.swift selftest/main.swift
           "$RUNNER_TEMP/ncl"
 
+      - name: Notification logic selftest (Swift)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/nl" App/NotifyShared/DescallNotifyLogic.swift selftest/notify/main.swift
+          "$RUNNER_TEMP/nl"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -86,6 +93,16 @@ jobs:
           APP="$(find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 2 -name 'App.app' | head -n 1)"
           test -d "$APP/Frameworks/WebRTC.framework" && echo "WebRTC.framework embedded"
           /usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$APP/Info.plist"
+          # 3.0.0 (A4): both notification extensions are embedded with the right ids.
+          for EXT in NotificationService NotificationContent; do
+            APPEX="$APP/PlugIns/$EXT.appex"
+            test -d "$APPEX" || { echo "::error::$EXT.appex not embedded"; exit 1; }
+            ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APPEX/Info.plist")"
+            POINT="$(/usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$APPEX/Info.plist")"
+            echo "$EXT: $ID ($POINT)"
+            test "$ID" = "com.descall.app.$EXT"
+          done
+          /usr/libexec/PlistBuddy -c 'Print :NSUserActivityTypes' "$APP/Info.plist" | grep -q INSendMessageIntent
 
   glass-tabbar-sim:
     # iOS 26 Liquid Glass tab bar (DescallGlassTabBarView) on the simulator:
@@ -159,6 +176,12 @@ jobs:
           xcrun simctl ui "$UDID" appearance light
           sleep 4
           xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/glass-tabbar-ios26-light.png"
+          # 3.0.0 (A4): expanded message notification view (content extension, mockup 28).
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl terminate "$UDID" com.descall.app || true
+          xcrun simctl launch "$UDID" com.descall.app -DescallNotifyDemo
+          sleep 12
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/notify-expanded-ios26.png"
           ls -la "$RUNNER_TEMP/shots"
 
       - uses: actions/upload-artifact@v4

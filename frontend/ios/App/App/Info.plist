@@ -58,6 +58,7 @@
 		<string>INStartCallIntent</string>
 		<string>INStartAudioCallIntent</string>
 		<string>INStartVideoCallIntent</string>
+		<string>INSendMessageIntent</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
