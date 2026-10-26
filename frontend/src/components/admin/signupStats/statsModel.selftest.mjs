@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import * as m from "./statsModel.js";
+
+assert.equal(m.rangeLabel("2026-09-27", "2026-10-26"), "27 Eyl – 26 Eki 2026");
+assert.equal(m.rangeLabel("2025-12-01", "2026-01-05"), "1 Ara 2025 – 5 Oca 2026");
+assert.equal(m.rangeCaption("2026-09-27", "2026-10-26", "2026-10-26"), "son 30 gün");
+assert.equal(m.rangeCaption("2026-09-27", "2026-10-20", "2026-10-26"), "27 Eyl – 20 Eki 2026");
+assert.equal(m.sinceText("2026-04-18"), "18 Nis 2026'dan beri");
+assert.equal(m.sinceText("2030-01-02"), "2 Oca 2030'dan beri");
+assert.deepEqual(m.kpiDelta("today", { dir: "up", value: 2 }), { mark: "▲ 2", cls: "", rest: " dünden fazla" });
+assert.equal(m.kpiDelta("week", { dir: "up", value: 14 }).rest, " geçen haftaya göre");
+assert.equal(m.kpiDelta("month", { dir: "up", value: null }).rest, "önceki 30 günde kayıt yoktu");
+assert.equal(m.kpiDelta("week", { dir: "down", value: 3 }).mark, "▼ %3");
+assert.deepEqual(m.tickIndexes(30), [0, 7, 14, 21, 29]);
+assert.equal(m.niceMax(9), 10);
+assert.equal(m.niceMax(11), 20);
+assert.equal(m.niceMax(41), 50);
+assert.equal(m.niceMax(120), 200);
+assert.equal(m.dec1(5.2857), "5,3");
+assert.equal(m.num(1234), "1.234");
+assert.equal(m.peakIndex([{ count: 2 }, { count: 9 }, { count: 9 }]), 1);
+assert.equal(m.flag("TR"), "🇹🇷");
+assert.equal(m.countryRow({ code: "DE", count: 7 }, 1).label, "🇩🇪 Almanya");
+assert.equal(m.countryRow({ code: "TR", count: 7 }, 0).label, "🇹🇷 Türkiye");
+assert.equal(m.countryRow({ code: "unknown", count: 7 }, 3).muted, true);
+console.log("statsModel.selftest ok");

@@ -7,7 +7,8 @@ const { requireAuth } = require("../middleware/auth");
 const { revokedSessionIds, authCodeAttempts, userRoles } = require("../runtime/sharedState");
 const { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL } = require("../lib/mailer");
 const { notifyTeamNewSignup } = require("../lib/signupReport");
-const { buildUserAttributionColumns, isMissingColumnError } = require("../lib/signupAttribution");
+const { buildUserAttributionColumns, isMissingColumnError, countryFromHeaders } = require("../lib/signupAttribution");
+const { trackSignupAttempt } = require("../lib/signupStats");
 const { sanitizeVisitorKey } = require("../lib/userAnalytics");
 const { recordSignupAnalytics, flagSuspiciousSignup, recordAppOpened, recordAnalyticsEvent } = require("../lib/userAnalyticsStore");
 const { hashCode, verifyStoredCode, isCodeFresh } = require("../lib/authCodes");
@@ -459,6 +460,8 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
 }
 
 router.post("/register", async (req, res) => {
+  // Kayıt İstatistikleri: completed / failed outcome, hashed key only.
+  trackSignupAttempt(req, res, { method: "email", countryFromHeaders });
   try {
     const ip = clientIp(req);
     if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;

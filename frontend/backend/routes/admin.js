@@ -57,6 +57,8 @@ const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
 router.use(requireAuth, requireAdmin);
+// Kayıt İstatistikleri (3.0.0), admin-only like everything below.
+router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
 router.use(require("./adminMaintenance"));

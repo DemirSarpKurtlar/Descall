@@ -314,6 +314,7 @@ export const nested = {
     "sections": "Bölümler",
     "sectionsCount": "{n} bölüm",
     "promoCodes": "Promosyon Kodları",
+    "signupStats": "Kayıt İstatistikleri",
     "announcements": "Duyurular",
     "livePopup": "Canlı popup",
     "casino": "Casino",

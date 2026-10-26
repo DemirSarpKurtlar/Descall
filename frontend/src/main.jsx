@@ -50,6 +50,9 @@ if (isCapacitorNativeShell()) {
 const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
 const isElectronDesktop =
   typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+// Yönetici › Kayıt İstatistikleri window (Electron opens it as its own BrowserWindow):
+// boot only that page, not the whole app (no socket, no second session shell).
+const isSignupStatsWindow = /^\/admin\/signup-stats\/?$/.test(path);
 // Native Capacitor app (iOS/Android), the landing page is web-only.
 const isNativeApp = isCapacitorNativeShell();
 
@@ -218,7 +221,9 @@ async function bootApp() {
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
     ]);
 
-  const RootApp = lazy(() => prefetchAppChunk());
+  const RootApp = isSignupStatsWindow
+    ? lazy(() => import("./components/admin/signupStats/SignupStatsPage.jsx"))
+    : lazy(() => prefetchAppChunk());
 
   ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
@@ -244,7 +249,7 @@ async function bootApp() {
   // reload. Clearing on a bare timer turned a chunk that keeps failing into an
   // endless reload loop behind "Yükleniyor" (2.11.9); now the second failure
   // reaches the ErrorBoundary's error screen with its retry button.
-  prefetchAppChunk()
+  (isSignupStatsWindow ? Promise.resolve() : prefetchAppChunk())
     .then(() => window.setTimeout(() => clearModuleLoadRecovery(), 4000))
     .catch(() => {});
 
@@ -281,12 +286,12 @@ async function boot() {
   // Native shells and the desktop app always boot the app (never the
   // marketing shell): fetch the big App chunk while the Keychain read runs,
   // instead of after it and after the provider wave (cold-start waterfall).
-  if (isNativeApp || isElectronDesktop) prefetchAppChunk().catch(() => {});
+  if ((isNativeApp || isElectronDesktop) && !isSignupStatsWindow) prefetchAppChunk().catch(() => {});
   // iOS: copy the Keychain token into memory before any getToken() / render.
   // Web, Android, and Electron return immediately and keep their existing store.
   await hydrateSecureToken();
   const hasSession = Boolean(getToken());
-  const preferMarketingShell = shouldBootMarketingShell({
+  const preferMarketingShell = !isSignupStatsWindow && shouldBootMarketingShell({
     pathname: path,
     search: typeof window !== "undefined" ? window.location.search || "" : "",
     hasSession,
