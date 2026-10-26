@@ -65,19 +65,25 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-easy-crop": "^6.2.3",
-    "react-router-dom": "^6.22.0",
+    "react-router-dom": "^7.18.4",
     "socket.io-client": "^4.8.1",
-    "vite": "^5.4.10",
+    "vite": "^6.4.5",
     "web-vitals": "^4.2.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^8.2.2",
-    "electron": "^41.2.1",
-    "electron-builder": "^24.13.3",
-    "vite": "^5.4.10",
+    "electron": "^42.11.18",
+    "electron-builder": "^26.18.0",
+    "typescript": "~5.9.3",
+    "vite": "^6.4.5",
     "wait-on": "^7.2.0"
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
   },
   "build": {
     "appId": "com.descall.app",

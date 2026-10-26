@@ -229,7 +229,10 @@ async function bootApp() {
       <ErrorBoundary>
         <ToastProvider>
           <LocaleProvider>
-            <Router>
+            {/* react-router 7 wraps router updates in React.startTransition by
+                default; v6 rendered them synchronously. Keep the v6 behaviour so a
+                route change paints before the next click (same UX as before the upgrade). */}
+            <Router useTransitions={false}>
               <Suspense fallback={<AppBootSkeleton />}>
                 <RootApp />
               </Suspense>

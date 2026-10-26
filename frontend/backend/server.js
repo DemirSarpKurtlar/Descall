@@ -502,8 +502,8 @@ app.post("/api/feedback/submit", requireAuth, async (req, res) => {
       .single();
     
     if (error) {
-      console.error("[FEEDBACK] Error:", error);
-      return res.status(500).json({ success: false, error: error.message });
+      console.error("[FEEDBACK] Error:", error?.message || error);
+      return res.status(500).json({ success: false, error: "Could not save feedback" });
     }
     
     console.log("[FEEDBACK] SUCCESS! ID:", data?.id);
@@ -543,108 +543,19 @@ app.post("/api/feedback/submit", requireAuth, async (req, res) => {
     });
     
   } catch (err) {
-    console.error("[FEEDBACK] ERROR:", err);
-    return res.status(500).json({ success: false, error: err.message });
+    console.error("[FEEDBACK] ERROR:", err?.message || err);
+    return res.status(500).json({ success: false, error: "Could not save feedback" });
   }
 });
 
-// List feedback - GET /api/feedback/list
-app.get("/api/feedback/list", requireAuth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("user_feedback")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (error) {
-      return res.status(500).json({ success: false, error: error.message });
-    }
-    
-    return res.status(200).json({ success: true, feedback: data || [] });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
+// 500 responses never echo database / exception messages to the client.
+function sendServerError(req, res, err) {
+  console.error(`[api] ${req.method} ${req.path} failed:`, err?.message || err);
+  return res.status(500).json({ success: false, error: "Internal server error" });
+}
 
-// Mark as viewed - POST /api/feedback/:id/view
-app.post("/api/feedback/:id/view", requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const { data, error } = await supabase
-      .from("user_feedback")
-      .update({ viewed: true, viewed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select()
-      .single();
-    
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
-    return res.status(200).json({ success: true, feedback: data });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Admin reply - POST /api/feedback/:id/reply
-app.post("/api/feedback/:id/reply", requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { message } = req.body;
-    
-    if (!message || message.trim().length === 0) {
-      return res.status(400).json({ success: false, error: "Reply message required" });
-    }
-    
-    // Get current
-    const { data: current, error: fetchError } = await supabase
-      .from("user_feedback")
-      .select("admin_replies")
-      .eq("id", id)
-      .single();
-    
-    if (fetchError) return res.status(500).json({ success: false, error: fetchError.message });
-    
-    // Add reply
-    const replies = current?.admin_replies || [];
-    replies.push({
-      id: Date.now().toString(),
-      admin_id: req.user.id,
-      admin_username: req.user.username,
-      message: message.trim(),
-      created_at: new Date().toISOString()
-    });
-    
-    // Update
-    const { data, error } = await supabase
-      .from("user_feedback")
-      .update({ admin_replies: replies, status: "in_progress", updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select()
-      .single();
-    
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
-    return res.status(200).json({ success: true, feedback: data });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Delete feedback - DELETE /api/feedback/:id
-app.delete("/api/feedback/:id", requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const { error } = await supabase.from("user_feedback").delete().eq("id", id);
-    
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    
-    return res.status(200).json({ success: true, message: "Feedback deleted" });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
+// List / view / reply / delete - admin only (routes/legacyFeedbackAdmin.js)
+app.use("/api/feedback", require("./routes/legacyFeedbackAdmin"));
 
 // ========== PROFILE SETTINGS ENDPOINTS ==========
 
@@ -677,7 +588,7 @@ app.put("/api/user/profile", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
 
     cacheUserProfile(data);
     const io = req.app.get("io");
@@ -685,7 +596,7 @@ app.put("/api/user/profile", requireAuth, async (req, res) => {
 
     return res.json({ success: true, user: toPublicUser(cacheUserProfile(data)) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -800,7 +711,7 @@ app.get("/api/announcements", async (req, res) => {
     require("./lib/edgeConfig").publicCache(res, { maxAge: 30, sMaxAge: 60 });
     return res.json({ success: true, announcements: data || [] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -842,7 +753,7 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
     
     // Broadcast to all connected users
     const io = req.app.get("io");
@@ -850,7 +761,7 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
     
     return res.json({ success: true, announcement: data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -879,14 +790,14 @@ app.patch("/api/admin/announcements/:id", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
 
     const io = req.app.get("io");
     io.emit("announcement:updated", data);
 
     return res.json({ success: true, announcement: data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -911,7 +822,7 @@ app.delete("/api/admin/announcements/:id", requireAuth, async (req, res) => {
       .update({ is_active: false })
       .eq("id", req.params.id);
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
     
     // Broadcast deletion
     const io = req.app.get("io");
@@ -919,7 +830,7 @@ app.delete("/api/admin/announcements/:id", requireAuth, async (req, res) => {
     
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -934,11 +845,11 @@ app.post("/api/announcements/:id/read", requireAuth, async (req, res) => {
         read_at: new Date().toISOString(),
       }, { onConflict: ["user_id", "announcement_id"] });
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
     
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -951,7 +862,7 @@ app.get("/api/announcements/unread/count", requireAuth, async (req, res) => {
       .select("id")
       .eq("is_active", true);
     
-    if (annError) return res.status(500).json({ success: false, error: annError.message });
+    if (annError) return sendServerError(req, res, annError);
     
     // Get read announcements for this user
     const { data: reads, error: readError } = await supabase
@@ -959,14 +870,14 @@ app.get("/api/announcements/unread/count", requireAuth, async (req, res) => {
       .select("announcement_id")
       .eq("user_id", req.user.id);
     
-    if (readError) return res.status(500).json({ success: false, error: readError.message });
+    if (readError) return sendServerError(req, res, readError);
     
     const readIds = new Set((reads || []).map((r) => r.announcement_id));
     const unreadCount = (announcements || []).filter((a) => !readIds.has(a.id)).length;
     
     return res.json({ success: true, count: unreadCount });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -997,7 +908,7 @@ app.put("/api/admin/make-admin/:userId", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
     
     // Notify the user via Socket.IO to refresh their data
     const io = req.app.get("io");
@@ -1005,7 +916,7 @@ app.put("/api/admin/make-admin/:userId", requireAuth, async (req, res) => {
     
     return res.json({ success: true, user: data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -1034,11 +945,11 @@ app.put("/api/admin/remove-admin/:userId", requireAuth, async (req, res) => {
       .select()
       .single();
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
     
     return res.json({ success: true, user: data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 
@@ -1070,7 +981,7 @@ app.get("/api/admin/users", requireAuth, async (req, res) => {
       .select("id, username, avatar_url, is_admin, created_at", { count: "exact" })
       .order("username", { ascending: true });
     
-    if (error) return res.status(500).json({ success: false, error: error.message });
+    if (error) return sendServerError(req, res, error);
     
     // Add online status from Socket.IO presence
     const state = require("./runtime/sharedState");
@@ -1088,7 +999,7 @@ app.get("/api/admin/users", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[ADMIN-USERS] Error:", err);
-    return res.status(500).json({ success: false, error: err.message });
+    return sendServerError(req, res, err);
   }
 });
 

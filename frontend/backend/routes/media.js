@@ -8,6 +8,7 @@ const { cacheUserProfile, broadcastUserProfileUpdate, toPublicUser } = require("
 const privateMedia = require("../lib/privateMedia");
 const { recordFailure } = require("../lib/rateLimit");
 const voiceTranscode = require("../lib/voiceTranscode");
+const { safeExtension, uploadConcurrencyGate } = require("../lib/uploadGuard");
 
 const router = express.Router();
 
@@ -42,10 +43,13 @@ const ALLOWED_ALL = [...ALLOWED_IMAGE, ...ALLOWED_VIDEO, ...ALLOWED_AUDIO, ...AL
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 const storage = multer.memoryStorage();
+// Files are buffered in memory: at most 2 uploads in flight per user.
+const uploadGate = uploadConcurrencyGate({ maxPerUser: 2 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: MAX_FILE_SIZE },
+  // One file per request, a handful of small text fields (e.g. purpose).
+  limits: { fileSize: MAX_FILE_SIZE, files: 1, fields: 20, fieldSize: 64 * 1024, parts: 25 },
   fileFilter: (_req, file, cb) => {
     // Browsers may send "audio/webm;codecs=opus": compare the base type only.
     const base = voiceTranscode.baseMime(file.mimetype);
@@ -146,7 +150,7 @@ router.post("/voice-compat", express.json({ limit: "16kb" }), async (req, res) =
 
 // Upload file to Supabase Storage
 async function uploadPrivate(file, folder) {
-  const ext = file.originalname.split(".").pop();
+  const ext = safeExtension(file.originalname);
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
   const filePath = `${folder}/${filename}`;
   const { error } = await supabase.storage
@@ -157,7 +161,7 @@ async function uploadPrivate(file, folder) {
 }
 
 async function uploadToSupabase(file, folder = "files") {
-  const ext = file.originalname.split('.').pop();
+  const ext = safeExtension(file.originalname);
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
   const filePath = `${folder}/${filename}`;
 
@@ -177,7 +181,7 @@ async function uploadToSupabase(file, folder = "files") {
   return { url: publicUrl, path: filePath };
 }
 
-router.post("/upload", upload.single("file"), async (req, res) => {
+router.post("/upload", uploadGate, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded." });
 
@@ -226,7 +230,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
 const MAX_AVATAR_SIZE = 8 * 1024 * 1024;
 
-router.post("/avatar", upload.single("avatar"), async (req, res) => {
+router.post("/avatar", uploadGate, upload.single("avatar"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No avatar uploaded." });
     if (!ALLOWED_IMAGE.includes(req.file.mimetype)) {
@@ -265,7 +269,7 @@ router.post("/avatar", upload.single("avatar"), async (req, res) => {
   }
 });
 
-router.post("/banner", upload.single("banner"), async (req, res) => {
+router.post("/banner", uploadGate, upload.single("banner"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No banner uploaded." });
     if (!ALLOWED_IMAGE.includes(req.file.mimetype)) {
