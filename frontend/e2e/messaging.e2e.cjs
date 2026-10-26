@@ -270,7 +270,16 @@ async function runDevice(browser, base, dev) {
   let opened = false;
   for (let attempt = 0; attempt < 5 && !opened; attempt += 1) {
     await tapDmRow();
-    opened = await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 6000).then(() => true, () => false);
+    // Loaded is not enough: on a cold start the iPhone list can stay on top of
+    // the loaded chat, so also require the newest bubble to be hit-testable.
+    opened = await waitFor(page, `${dev} messages`, () => {
+      const bs = document.querySelectorAll('.message-bubble[data-message-id]');
+      if (bs.length < 30) return { ok: false };
+      const b = bs[bs.length - 1];
+      const r = b.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10));
+      return { ok: !!hit && b.contains(hit) };
+    }, null, 6000).then(() => true, () => false);
   }
   if (!opened) await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 2000);
   // On iPhone the chat slides in over the list; wait until the newest bubble
@@ -306,10 +315,29 @@ async function runDevice(browser, base, dev) {
     check(r && r.includes('❤️1*'), `double ${d.touch ? 'tap' : 'click'} on padding adds ❤️ at once (${JSON.stringify(r)})`);
     await sleep(400);
     check(state.events.slice(before).some((e) => e.kind === 'add' && e.emoji === '❤️' && e.messageId === peerId), 'server got reaction:add ❤️');
+    // The pill hangs off the bubble's bottom edge and never widens it (#16).
+    const pill = await page.evaluate(([id, touch]) => {
+      const b = [...document.querySelectorAll('.message-bubble[data-message-id]')].find((n) => n.getAttribute('data-message-id') === id);
+      const row = b && b.querySelector(':scope > .message-reactions');
+      if (!row) return null;
+      const br = b.getBoundingClientRect();
+      const chips = [...row.querySelectorAll('.reaction-chip')].map((c) => c.getBoundingClientRect());
+      const add = row.querySelector('.reaction-add-btn');
+      const addShown = !!add && add.getBoundingClientRect().width > 0;
+      const cs = getComputedStyle(row.querySelector('.reaction-chip'));
+      return { bw: Math.round(br.width), left: Math.round(chips[0].left - br.left), top: Math.round(chips[0].top - br.bottom), bottom: Math.round(chips[0].bottom - br.bottom), oneRow: chips.every((c) => Math.abs(c.top - chips[0].top) < 1), addShown, touch, shadow: cs.boxShadow };
+    }, [peerId, !!d.touch]);
+    check(pill && Math.abs(pill.bw - Math.round(box.w)) <= 1, `a reaction does not widen the bubble (${box && Math.round(box.w)} → ${pill && pill.bw}px)`);
+    check(pill && pill.top < 0 && pill.bottom > 8 && pill.left >= 4 && pill.left <= 16 && pill.oneRow, `the pill hangs off the bubble's bottom-left edge in one row (${JSON.stringify(pill)})`);
+    check(pill && (d.touch ? !pill.addShown : true), `no always-on add-reaction smiley on touch (${pill && pill.addShown})`);
+    check(pill && !/255, 214, 10|250, 204, 21/.test(pill.shadow), `no lingering gold burst outline (${pill && pill.shadow})`);
     await shot(page, `${dev}-02-heart`);
     await sleep(500);
-    if (d.touch) await touchDoubleTap(cdp, px, py);
-    else await page.mouse.dblclick(px, py);
+    // The pill adds room under the bubble, so a list pinned to the bottom
+    // shifts up a little: aim at where the bubble is now.
+    box = await bubbleBox(page, peerId);
+    if (d.touch) await touchDoubleTap(cdp, box.r - 5, box.t + box.h / 2);
+    else await page.mouse.dblclick(box.r - 5, box.t + box.h / 2);
     await sleep(500);
     r = await reactionsOf(page, peerId);
     check(r && !r.some((x) => x.startsWith('❤️')), `second double ${d.touch ? 'tap' : 'click'} removes my ❤️ (${JSON.stringify(r)})`);
@@ -486,24 +514,43 @@ async function runDevice(browser, base, dev) {
     await sleep(400);
   }
 
-  // --- header ⋯ menu ---
-  if (await tapSel('[data-testid="dm-header-more"]')) {
-    const hm = await waitFor(page, 'header menu', () => { const m = document.querySelector('[data-testid="dm-header-menu"]'); return { ok: !!m, items: m ? [...m.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent.trim()) : [] }; }, null, 3000).catch(() => ({ ok: false, items: [] }));
-    check(hm.ok, `header ⋯ opens a menu (${JSON.stringify(hm.items)})`);
-    check(hm.items[0] === 'Profili gör' && hm.items.some((x) => /Şikayet/.test(x)) && hm.items.some((x) => /Engelle/.test(x)), 'header menu has profile, report and block');
-    await shot(page, `${dev}-06-header-menu`);
+  // --- header action pill (mockup #29/#30): search, pin, call, video, block; no ⋯ ---
+  const hp = await page.evaluate(() => {
+    const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+    const right = [...document.querySelectorAll('.header-right')].find(vis);
+    if (!right) return null;
+    const btns = [...right.querySelectorAll('button')].filter(vis);
+    const tops = btns.map((e) => Math.round(e.getBoundingClientRect().top));
+    return {
+      labels: btns.map((e) => e.getAttribute('aria-label')),
+      rows: new Set(tops).size,
+      seps: [...right.querySelectorAll('.header-actions-sep')].filter(vis).length,
+      more: !!document.querySelector('[data-testid="dm-header-more"], .header-more-btn'),
+      blockColor: (() => { const e = right.querySelector('.header-block-btn'); const s = right.querySelector('button'); return e && s ? [getComputedStyle(e).color, getComputedStyle(s).color] : null; })(),
+    };
+  });
+  check(hp && JSON.stringify(hp.labels) === JSON.stringify(['Ara', 'Sabitlenmiş mesajlar', 'Sesli Arama', 'Görüntülü Arama', 'Engelle']), `header pill is search, pin, call, video, block (${JSON.stringify(hp && hp.labels)})`);
+  check(hp && hp.rows === 1 && hp.seps === 0, `header pill is one row with no separators (rows ${hp && hp.rows}, seps ${hp && hp.seps})`);
+  check(hp && !hp.more, 'no separate ⋯ button in the DM header');
+  check(hp && hp.blockColor && hp.blockColor[0] === hp.blockColor[1], `block icon has the same tone as the others (${JSON.stringify(hp && hp.blockColor)})`);
+  await shot(page, `${dev}-06-header`);
+  if (await tapSel('.header-right button[aria-label="Sabitlenmiş mesajlar"]')) {
+    await sleep(500);
+    const pp = await page.evaluate(() => !!document.querySelector('.pinned-popover, [data-testid="pinned-popover"], [role="dialog"][aria-label="Sabitlenmiş mesajlar"]'));
+    check(pp, 'header pin opens the pinned messages popover');
     await page.keyboard.press('Escape');
-    await sleep(300);
-    await page.evaluate(() => { const m = document.querySelector('[data-testid="dm-header-menu"]'); if (m) document.querySelector('.g-action-menu-catcher, .grp-menu-catcher')?.click(); });
-    await sleep(300);
-  } else problems.push(`${dev}: no header ⋯ button`);
+    await sleep(400);
+  }
+  if (await tapSel('.header-right button[aria-label="Engelle"]')) {
+    const cf = await waitFor(page, 'block confirm', () => ({ ok: [...document.querySelectorAll('button')].some((e) => e.getBoundingClientRect().width > 0 && /^(İptal|Vazgeç)$/.test(e.textContent.trim())) }), null, 2500).then(() => true, () => false);
+    check(cf, 'header block asks for confirmation first');
+    await tapSel('button', 'İptal') || await tapSel('button', 'Vazgeç');
+    await sleep(500);
+  }
 
   // --- profile sheet (#29) ---
   const openProfile = async () => {
-    if (await tapSel('[data-testid="dm-header-more"]')) {
-      await sleep(350);
-      await tapSel('[data-testid="dm-header-menu"] [role="menuitem"]', 'Profili gör');
-    }
+    await tapSel('.header-title-block.is-dm');
     return waitFor(page, 'profile sheet', () => ({ ok: !!document.querySelector('[data-testid="profile-sheet"]') }), null, 4000).then(() => true, () => false);
   };
   if (await openProfile()) {
