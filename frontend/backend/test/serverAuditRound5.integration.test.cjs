@@ -48,7 +48,7 @@ const ts = (i) => new Date(Date.UTC(2026, 9, 1, 0, 0, i)).toISOString();
 const IMG = "https://placeholder.supabase.co/storage/v1/object/public/media/images/icon.png";
 
 const userIds = ["owner", "admin", "guild", "chanmod", "member", "victim", "owner2", "outsider", "racer", "dup",
-  "maker", "folderer", "joiner", "flooder", "looker", "spammer", "leaver", "heir", "owner3", "stranger", "bmember"];
+  "maker", "maker2", "folderer", "joiner", "flooder", "looker", "spammer", "leaver", "heir", "owner3", "stranger", "bmember"];
 const users = userIds.map((id) => ({ id, username: id, display_name: id.toUpperCase(), active_sessions: [{ id: `s-${id}` }] }));
 users.find((u) => u.id === "owner3").password_hash = bcrypt.hashSync("pw-123", 4);
 
@@ -84,6 +84,7 @@ const servers = [
   { id: "pub-bad", owner_id: "owner2", name: "shit club", description: "fck this", is_public: true, created_at: ts(6), updated_at: ts(9) },
 ];
 for (let i = 0; i < 9; i++) servers.push({ id: `maker-${i}`, owner_id: "maker", name: `M${i}`, created_at: ts(20 + i) });
+for (let i = 0; i < 9; i++) servers.push({ id: `maker2-${i}`, owner_id: "maker2", name: `N${i}`, created_at: ts(40 + i) });
 for (const u of ["owner2", "member", "victim"]) addMember("pub-big", u);
 for (const u of ["owner2"]) addMember("pub-small", u);
 for (const u of ["owner2", "member"]) addMember("pub-bad", u);
@@ -402,6 +403,26 @@ async function run() {
       hook.used = true;
       const owned = rows("servers").filter((s) => s.owner_id === "maker").length;
       assert.equal(owned, 10, `owned ${owned}; statuses ${res.map((r) => r.status)}`);
+    });
+    await check("#9 a create that commits late with an older timestamp cannot overfill", async () => {
+      // CI flake on #305 (owned 11 vs 10): the first create re-counted before the second
+      // committed and kept its row; the second then landed with an earlier created_at,
+      // ranked inside the cap, and was kept too. Force exactly that interleaving.
+      const order = new Map();
+      const nth = (p) => (p && p.owner_id === "maker2" ? (order.has(p) || order.set(p, order.size + 1), order.get(p)) : 0);
+      // 1st insert: held 30 ms so both requests pass the pre-count, then re-counts alone.
+      hooks.push({ table: "servers", mode: "insert", persist: true, delayMs: 30, match: (p) => nth(p) === 1 });
+      // 2nd insert: commits after that re-count but carries an older created_at.
+      hooks.push({ table: "servers", mode: "insert", persist: true, delayMs: 200, match: (p) => {
+        if (nth(p) !== 2) return false;
+        p.created_at = ts(0);
+        return true;
+      } });
+      const res = await Promise.all([1, 2].map((i) => call("maker2", "POST", `/servers`, { name: `Late ${i}`, templateId: "blank" })));
+      const owned = rows("servers").filter((s) => s.owner_id === "maker2").length;
+      assert.equal(owned, 10, `owned ${owned}; statuses ${res.map((r) => r.status)}`);
+      assert.deepEqual(res.map((r) => r.status).sort(), [201, 400]);
+      assert.equal(res.find((r) => r.status === 400).body.code, "MAX_OWNED_SERVERS");
     });
     await check("#9 a ban landing during the join removes the fresh membership", async () => {
       hooks.push({ table: "server_members", mode: "insert", match: (p) => p && p.user_id === "racer", run: () => { rows("server_bans").push({ server_id: A, user_id: "racer", moderator_id: "owner", created_at: ts(1) }); return null; } });
