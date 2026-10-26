@@ -40,6 +40,8 @@ import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS } from "../../lib/singleActiveHover";
 import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
 import { getLocale } from "../../i18n/runtime";
+import { GroupMemberEventRow } from "../groups/GroupMemberRemoval";
+import { memberEventFromMessage } from "../../lib/groupMemberEvents";
 import { formatMessageClock, formatMessageDate, intlLocaleTag, parseAppDate } from "../../lib/datetime";
 import useGlassUi from "../../hooks/useGlassUi";
 import GlassConfirm from "../ui/GlassConfirm";
@@ -365,6 +367,12 @@ export default function MessageList({
         grouped.push({ isSummary: true, summary: summaryMsg, id: summaryMsg.id });
         return;
       }
+      // Member removed / left: centered system row, never grouped.
+      if (msg.type === "member_removed" || msg.type === "member_left") {
+        flush();
+        grouped.push({ isMemberEvent: true, eventMsg: msg, id: msg.id });
+        return;
+      }
       if (msg.type === "active_call") {
         flush();
         grouped.push({ isActiveBanner: true, banner: msg, id: msg.id });
@@ -447,6 +455,15 @@ export default function MessageList({
         }
         if (group.isSummary) {
           return <CallSummaryBubble key={group.id || `summary-${groupIndex}`} summary={group.summary} />;
+        }
+        if (group.isMemberEvent) {
+          return (
+            <GroupMemberEventRow
+              key={group.id || `member-event-${groupIndex}`}
+              event={memberEventFromMessage(group.eventMsg, { meId: myId, members: activeGroup?.members })}
+              timestamp={group.eventMsg.timestamp}
+            />
+          );
         }
         if (group.isActiveBanner) {
           return (

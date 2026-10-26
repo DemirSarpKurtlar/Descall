@@ -3,8 +3,10 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
   Search, MessageSquare, X, ChevronDown, ChevronRight, Menu, ChevronLeft,
-  UserPlus, Plus, Crown, Pin, PinOff, Timer, ImagePlus
+  UserPlus, Plus, Crown, Pin, PinOff, Timer, ImagePlus, ShieldCheck
 } from "../ui/Icon.jsx";
+import { useGroupMemberMenu, GroupRemovedBanner } from "../groups/GroupMemberRemoval";
+import { groupRoleOf } from "../../lib/groupMembers";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import MessageList from "../chat/MessageList";
@@ -45,6 +47,9 @@ export default function ChatPanel({
   onGroupLeft,
   onGroupRenamed,
   onGroupMemberAdded,
+  onGroupMemberRemoved,
+  onGroupRoleChanged,
+  onRemovedGroupDismiss,
   activeView,
   activeDmUser,
   activeGroup,
@@ -110,6 +115,21 @@ export default function ChatPanel({
   const reduceMotion = useReducedMotion();
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [profileTarget, setProfileTarget] = useState(null);
+  const groupRemoved = Boolean(activeGroup?.removed);
+  const memberMenu = useGroupMemberMenu({
+    group: activeGroup,
+    me,
+    friends,
+    onOpenProfile: (user) => setProfileTarget(user),
+    onStartDm,
+    onRemoved: onGroupMemberRemoved,
+    onRoleChanged: onGroupRoleChanged,
+    onClose: () => {
+      setGroupInfoOpen(false);
+      if (isMobile) setShowMembers(false);
+    },
+  });
+  const [dismissBusy, setDismissBusy] = useState(false);
   useEffect(() => {
     const openProfile = (event) => {
       const user = event.detail?.user;
@@ -584,6 +604,7 @@ export default function ChatPanel({
                 title={t("Voice Call")}
                 aria-label={t("Voice Call")}
                 onClick={() => headerGroup ? onGroupVoiceCall?.() : onVoiceCall?.()}
+                disabled={Boolean(headerGroup?.removed)}
               >
                 <Phone size={20} />
               </button>
@@ -592,6 +613,7 @@ export default function ChatPanel({
                 title={t("Video Call")}
                 aria-label={t("Video Call")}
                 onClick={() => headerGroup ? onGroupVideoCall?.() : onVideoCall?.()}
+                disabled={Boolean(headerGroup?.removed)}
               >
                 <Video size={20} />
               </button>
@@ -783,6 +805,20 @@ export default function ChatPanel({
               />
             </div>
           )}
+          {groupRemoved ? (
+            <GroupRemovedBanner
+              group={activeGroup}
+              busy={dismissBusy}
+              onDismiss={async () => {
+                setDismissBusy(true);
+                try {
+                  await onRemovedGroupDismiss?.(activeGroup.id);
+                } finally {
+                  setDismissBusy(false);
+                }
+              }}
+            />
+          ) : (
           <div className="composer-container">
             {/* Typing pill rides on the composer (absolute, bottom: 100%), so it
                 always sits just above it, even when the composer is
@@ -828,6 +864,7 @@ export default function ChatPanel({
               recentMessages={messages}
             />
           </div>
+          )}
         </>
       )}
     </main>
@@ -898,6 +935,7 @@ export default function ChatPanel({
                     _status: status,
                     _online: isVisiblyOnline(onlineUsers, m.id),
                     _isOwner: ownerId != null && m.id === ownerId,
+                    _isGroupAdmin: Boolean(activeGroup) && groupRoleOf(activeGroup, m.id) === "admin",
                   };
                 });
                 const online = decorated
@@ -910,10 +948,25 @@ export default function ChatPanel({
                 const renderRow = (m) => {
                   const name = resolveDisplayName(m);
                   const statusLabel = t(STATUS_META[m._status]?.label || "Offline");
+                  const menuable = Boolean(activeGroup) && !groupRemoved;
                   return (
                     <div
                       key={m.id}
-                      className={`member-row${m._online ? "" : " is-offline"}`}
+                      className={`member-row${m._online ? "" : " is-offline"}${menuable ? " is-menuable" : ""}${memberMenu.menuMemberId === m.id ? " is-menu-open" : ""}`}
+                      data-username={m.username || undefined}
+                      {...(menuable
+                        ? {
+                            role: "button",
+                            tabIndex: 0,
+                            "aria-haspopup": "menu",
+                            "aria-expanded": memberMenu.menuMemberId === m.id,
+                            onClick: (e) => memberMenu.openFor(m, e),
+                            onContextMenu: (e) => memberMenu.openFor(m, e),
+                            onKeyDown: (e) => {
+                              if (e.key === "Enter" || e.key === " " || e.key === "ContextMenu") memberMenu.openFor(m, e);
+                            },
+                          }
+                        : {})}
                     >
                       <div className="member-avatar-wrap">
                         <Avatar name={name} size={36} user={m} />
@@ -927,6 +980,12 @@ export default function ChatPanel({
                             <span className="member-owner-badge" title={t("Owner")}>
                               <Crown size={11} strokeWidth={2.25} aria-hidden="true" />
                               <span className="member-owner-text">{t("Owner")}</span>
+                            </span>
+                          )}
+                          {m._isGroupAdmin && (
+                            <span className="member-owner-badge is-group-admin" title={t("gk.adminBadge")}>
+                              <ShieldCheck size={11} strokeWidth={2.25} aria-hidden="true" />
+                              <span className="member-owner-text">{t("gk.adminBadge")}</span>
                             </span>
                           )}
                         </div>
@@ -1008,6 +1067,7 @@ export default function ChatPanel({
         </>
       )}
     </AnimatePresence>
+    {memberMenu.layer}
 
     {/* Pinned messages: glass popover under the header pin button (2.10.109). */}
     <PinnedMessagesPopover
@@ -1028,6 +1088,8 @@ export default function ChatPanel({
       onAction={(action) => groupActions.run(activeGroup, action)}
       onlineUsers={onlineUsers}
       onOpenProfile={(user) => setProfileTarget(user)}
+      onMemberMenu={activeGroup && !activeGroup.removed ? memberMenu.openFor : null}
+      menuMemberId={memberMenu.menuMemberId}
       t={t}
     />
     </div>

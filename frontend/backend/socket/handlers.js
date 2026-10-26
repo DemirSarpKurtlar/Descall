@@ -1098,6 +1098,8 @@ function registerSocketHandlers(io) {
       if (context === "dm" && typeof toUserId === "string") {
         emitToUser(io, toUserId, "typing:update", { context: "dm", fromUser, typing: true });
       } else if (context === "group" && typeof groupId === "string") {
+        // Only sockets in the group room (removed / left members are taken out).
+        if (!socket.rooms?.has?.(`group:${groupId}`)) return;
         socket.to(`group:${groupId}`).emit("typing:update", { context: "group", groupId, fromUser, typing: true });
       } else if (context === "server" && typeof channelId === "string") {
         // Only from a VIEW-checked live room, with SEND_MESSAGES and not timed out

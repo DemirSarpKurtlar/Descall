@@ -71,6 +71,9 @@ export default function AppLayout({
   onGroupLeft,
   onGroupRenamed,
   onGroupMemberAdded,
+  onGroupMemberRemoved,
+  onGroupRoleChanged,
+  onRemovedGroupDismiss,
   onGroupAvatarChanged,
   onRefresh,
   friendNotice,
@@ -696,6 +699,9 @@ export default function AppLayout({
                 onGroupLeft={onGroupLeft}
                 onGroupRenamed={onGroupRenamed}
                 onGroupMemberAdded={onGroupMemberAdded}
+                onGroupMemberRemoved={onGroupMemberRemoved}
+                onGroupRoleChanged={onGroupRoleChanged}
+                onRemovedGroupDismiss={onRemovedGroupDismiss}
                 activeView={activeView}
                 activeDmUser={activeDmUser}
                 activeGroup={activeGroup}

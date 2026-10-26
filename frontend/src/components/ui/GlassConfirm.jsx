@@ -113,6 +113,9 @@ export default function GlassConfirm({
               id="g-alert-input"
               value={draft}
               placeholder={input.placeholder || ""}
+              maxLength={input.maxLength || undefined}
+              autoComplete="off"
+              enterKeyHint="done"
               autoFocus
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
