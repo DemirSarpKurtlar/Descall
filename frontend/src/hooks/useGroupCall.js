@@ -73,6 +73,16 @@ import {
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
+import {
+  cameraVideoConstraints,
+  captureFacingCamera,
+  getPreferredFacing,
+  nextFacing,
+  setPreferredFacing,
+  shouldMirrorLocal,
+  streamCameraTrack,
+  tagCameraTrack,
+} from "../lib/cameraFacing";
 
 /** Build / merge a group-call participant row, keeping shop cosmetics. */
 function buildCallParticipant(user, extras = {}) {
@@ -926,7 +936,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       const stream = await acquirePreferredMic(
         acquireVoiceMicStream,
         type === "video"
-          ? { video: { width: 1280, height: 720, facingMode: "user" } }
+          ? { video: cameraVideoConstraints() }
           : { video: false },
         IOS_NATIVE ? "" : readAudioPrefs().input
       );
@@ -1016,7 +1026,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       const stream = await acquirePreferredMic(
         acquireVoiceMicStream,
         type === "video"
-          ? { video: { width: 1280, height: 720, facingMode: "user" } }
+          ? { video: cameraVideoConstraints() }
           : { video: false },
         IOS_NATIVE ? "" : readAudioPrefs().input
       );
@@ -1283,7 +1293,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           const videoStream = await navigator.mediaDevices.getUserMedia({
             video: videoDeviceId
               ? { deviceId: { exact: videoDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-              : { width: 1280, height: 720, facingMode: "user" },
+              : cameraVideoConstraints(),
           });
           videoTrack = videoStream.getVideoTracks()[0];
 
@@ -2230,7 +2240,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         const stream = await acquirePreferredMic(
           acquireVoiceMicStream,
           existingCallType === "video"
-            ? { video: { width: 1280, height: 720, facingMode: "user" } }
+            ? { video: cameraVideoConstraints() }
             : { video: false },
           IOS_NATIVE ? "" : readAudioPrefs().input
         );
@@ -2528,7 +2538,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         audio: false,
         video: id
           ? { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { width: 1280, height: 720, facingMode: "user" },
+          : cameraVideoConstraints(),
       });
       const newTrack = videoStream.getVideoTracks()[0];
       if (!newTrack) return;
@@ -2553,6 +2563,72 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       setLocalStream(local);
     } catch (err) {
       console.warn("[GroupCall] setVideoInput failed:", err);
+    }
+  }, [isCameraOn]);
+
+  // 3.0.0 D2: one flip button. Front camera mirrored locally only; the sent
+  // track is never mirrored, so the other side always sees it the right way.
+  const [cameraFacing, setCameraFacing] = useState(() => getPreferredFacing());
+  const [localMirror, setLocalMirror] = useState(true);
+  useEffect(() => {
+    const track = streamCameraTrack(localStreamRef.current);
+    if (!track) {
+      setLocalMirror(true);
+      return;
+    }
+    if (track.__descallFacing == null && !videoInputIdRef.current) tagCameraTrack(track, getPreferredFacing());
+    setLocalMirror(shouldMirrorLocal(track));
+  }, [localStream, isCameraOn, cameraFacing, selectedVideoInput]);
+
+  const flipCamera = useCallback(async () => {
+    const local = localStreamRef.current;
+    if (!isCameraOn || !local) return false;
+    const facing = nextFacing(getPreferredFacing());
+    const gum = (c) => navigator.mediaDevices.getUserMedia(c);
+    const old = local.getVideoTracks()[0] || null;
+    try {
+      let res;
+      try {
+        res = await captureFacingCamera(gum, facing);
+      } catch (err) {
+        // Some phones can't open a second camera while one is live.
+        if (!old || (err?.name !== "NotReadableError" && err?.name !== "AbortError")) throw err;
+        old.stop();
+        res = await captureFacingCamera(gum, facing);
+      }
+      const newTrack = res.track;
+      if (!newTrack) return false;
+      if (old) {
+        newTrack.enabled = old.enabled !== false || old.readyState === "ended";
+        local.removeTrack(old);
+        old.stop();
+      }
+      local.addTrack(newTrack);
+      await Promise.all((() => {
+        const replacements = [];
+        pcMapRef.current.forEach((peerData) => {
+          const sender = peerData.pc?.getSenders?.().find(
+            (item) => item !== peerData.screenSender && item.track?.kind === "video"
+          );
+          if (sender) replacements.push(sender.replaceTrack(newTrack));
+        });
+        return replacements;
+      })());
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = local;
+        localVideoRef.current.play().catch(() => {});
+      }
+      videoInputIdRef.current = "";
+      setSelectedVideoInput("");
+      setPreferredFacing(facing);
+      setCameraFacing(facing);
+      setLocalMirror(shouldMirrorLocal(newTrack));
+      setLocalStream(local);
+      return true;
+    } catch (err) {
+      console.warn("[GroupCall] flipCamera failed:", err?.name || err);
+      toastRef.current?.(tRuntime("Couldn't switch the camera."), "error");
+      return false;
     }
   }, [isCameraOn]);
 
@@ -2594,7 +2670,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       const stream = await acquirePreferredMic(
         acquireVoiceMicStream,
         type === "video"
-          ? { video: { width: 1280, height: 720, facingMode: "user" } }
+          ? { video: cameraVideoConstraints() }
           : { video: false },
         IOS_NATIVE ? "" : readAudioPrefs().input
       );
@@ -2748,6 +2824,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     setAudioInput,
     setAudioOutput,
     setVideoInput,
+    flipCamera,
+    cameraFacing,
+    localMirror,
     setParticipantVolume,
     toggleParticipantMute,
   };

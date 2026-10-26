@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff,
+  Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff, SwitchCamera,
   Minus, Maximize2, Users, MessageSquare, MoreVertical, Check, X as XIcon,
   Volume2, ChevronUp, ChevronDown, Mic2, SlidersHorizontal,
 } from "./ui/Icon.jsx";
@@ -48,6 +48,8 @@ import {
 import { ReconnectOverlay } from "./voice/DmRemoteParticipantSlot";
 import { useVideoPresence } from "../hooks/useVideoPresence";
 import { copyText } from "../lib/copyText";
+import audioManager from "../lib/audioManager";
+import { canFlipCamera } from "../lib/cameraFacing";
 import GlassVolumeSlider from "./ui/GlassVolumeSlider";
 
 /*
@@ -327,6 +329,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             callType={callType}
             onDecline={() => { hapticImpactLight(); call.declineIncoming?.(); }}
             onAccept={() => { hapticImpactLight(); call.acceptIncoming?.(); }}
+            onSilence={() => { hapticImpactLight(); audioManager.stop("incomingCall"); }}
           />
         </AnimatePresence>
       </>
@@ -679,7 +682,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
 
       {/* ====== BOTTOM CONTROL BAR ====== */}
       <div
-        className={glass ? "call-control-bar g-call-ctrl g-glass" : "call-control-bar"}
+        className={glass ? "call-control-bar g-call-ctrl" : "call-control-bar"}
         style={{
           position: "absolute",
           bottom: 0,
@@ -711,6 +714,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           </>
         ) : (
           <>
+            {/* 3.0.0 (mockups 02 / 09): on glass the controls sit in one capsule and
+                End is its own red circle beside it. Elsewhere the wrapper is layout-neutral. */}
+            <div className={glass ? "call-ctrl-capsule g-glass" : "call-ctrl-capsule"} style={glass || glassDesktop ? undefined : { display: "contents" }}>
             {/* Mic → input menu, deafen → output menu (chevron, long press, right click). */}
             <DockDeviceSlot
               menuLabel={t("Choose microphone")}
@@ -985,6 +991,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+
             </div>
 
             <CircleBtn
@@ -1263,6 +1271,8 @@ function ParticipantTile({
   mosaicChip = false,
   reconnecting = false,
   levelProbe = null,
+  mirror = false,
+  onFlipCamera = null,
 }) {
   const t = useT();
   const glass = useGlassUi();
@@ -1337,11 +1347,45 @@ function ParticipantTile({
             height: "100%",
             objectFit: "cover",
             display: "block",
-            // Local preview behaves like a mirror; remote video and shared
-            // screens preserve their actual orientation.
-            transform: isLocal ? "scaleX(-1)" : undefined,
+            // Only the local FRONT camera is mirrored (lib/cameraFacing.js);
+            // the back camera, remote video and shared screens never are.
+            transform: isLocal && mirror ? "scaleX(-1)" : undefined,
           }}
         />
+      ) : null}
+      {isLocal && showVideo && onFlipCamera ? (
+        <button
+          type="button"
+          className="call-flip-camera"
+          title={t("Flip camera")}
+          aria-label={t("Flip camera")}
+          onClick={(event) => {
+            event.stopPropagation();
+            hapticSelection();
+            onFlipCamera();
+          }}
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            zIndex: 5,
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            border: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            background: "rgba(20, 21, 30, 0.45)",
+            WebkitBackdropFilter: "blur(16px) saturate(160%)",
+            backdropFilter: "blur(16px) saturate(160%)",
+            boxShadow: "inset 0 0 0 0.5px rgba(255,255,255,0.22)",
+            cursor: "pointer",
+          }}
+        >
+          <SwitchCamera size={18} />
+        </button>
       ) : null}
       {showVideo ? null : (
         <div className="participant-tile-avatar-stack tile-avatar-layer">
@@ -1446,6 +1490,20 @@ function ParticipantTile({
 /* ─────────────────────────────────────────────────────────────────
    ParticipantGrid, adaptive grid layout when no screen share
    ───────────────────────────────────────────────────────────────── */
+/** Front camera mirrored locally only (hooks' localMirror; older shapes mirror). */
+function localTileMirror(isDm, call, groupCall) {
+  return (isDm ? call?.localMirror : groupCall?.localMirror) !== false;
+}
+
+/** The single flip button: only with two or more cameras (or a phone). */
+function localTileFlip(isDm, call, groupCall) {
+  const hook = isDm ? call : groupCall;
+  if (typeof hook?.flipCamera !== "function") return null;
+  const phone = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent || "");
+  if (!phone && !canFlipCamera(hook.videoInputDevices)) return null;
+  return hook.flipCamera;
+}
+
 function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, user = null, levelProbe = null }) {
   const localStream = isDm ? call?.localStream : groupCall?.localStream;
 
@@ -1479,6 +1537,8 @@ function LocalVideoTile({ isDm, call, groupCall, hasVideo, username, avatarUrl, 
       hasVideo={hasVideo}
       isLocal
       stream={localStream}
+      mirror={localTileMirror(isDm, call, groupCall)}
+      onFlipCamera={localTileFlip(isDm, call, groupCall)}
       muted={Boolean(isDm ? call?.muted : groupCall?.isMuted)}
       deafened={Boolean(isDm ? call?.deafened : groupCall?.deafened)}
       cameraOn={Boolean(isDm ? call?.cameraOn : groupCall?.isCameraOn)}
@@ -1880,6 +1940,8 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                   stream={tile.stream}
                   hasVideo={tile.hasVideo}
                   isLocal={tile.isLocal}
+                  mirror={tile.isLocal && localTileMirror(isDm, call, groupCall)}
+                  onFlipCamera={tile.isLocal ? localTileFlip(isDm, call, groupCall) : null}
                   muted={tile.muted}
                   deafened={tile.deafened}
                   cameraOn={tile.cameraOn}
@@ -2145,6 +2207,8 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                 stream={tile.stream}
                 hasVideo={tile.hasVideo}
                 isLocal={tile.isLocal}
+                mirror={tile.isLocal && localTileMirror(isDm, call, groupCall)}
+                onFlipCamera={tile.isLocal ? localTileFlip(isDm, call, groupCall) : null}
                 muted={tile.muted}
                 deafened={tile.deafened}
                 cameraOn={tile.cameraOn}

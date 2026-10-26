@@ -98,6 +98,16 @@ import {
 import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLevel";
 import { createMediaFlowGate } from "../lib/mediaFlowGate";
 import { emitWithAck } from "../lib/signalAck";
+import {
+  cameraVideoConstraints,
+  captureFacingCamera,
+  getPreferredFacing,
+  nextFacing,
+  setPreferredFacing,
+  shouldMirrorLocal,
+  streamCameraTrack,
+  tagCameraTrack,
+} from "../lib/cameraFacing";
 
 /** Hang-up → overlay gone. The UI plays the leave transition inside this window. */
 export const CALL_ENDING_MS = 1100;
@@ -1504,7 +1514,7 @@ export function useCall(socket, callOccupancyRef = null) {
   // with CallKit activating the audio session (NotReadableError).
   const acquireCallMicStream = useCallback((type) => {
     const base = type === "video"
-      ? { video: { width: 1280, height: 720, facingMode: "user" } }
+      ? { video: cameraVideoConstraints() }
       : { video: false };
     // The saved microphone; a missing device falls back to the default.
     const preferred = IOS_NATIVE ? "" : selectedAudioInputRef.current || "";
@@ -1873,7 +1883,7 @@ export function useCall(socket, callOccupancyRef = null) {
           const videoStream = await navigator.mediaDevices.getUserMedia({
             video: videoDeviceId
               ? { deviceId: { exact: videoDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-              : { width: 1280, height: 720, facingMode: "user" },
+              : cameraVideoConstraints(),
           });
           videoTrack = videoStream.getVideoTracks()[0];
           if (localStreamRef.current) {
@@ -2221,7 +2231,7 @@ export function useCall(socket, callOccupancyRef = null) {
         audio: false,
         video: id
           ? { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { width: 1280, height: 720, facingMode: "user" },
+          : cameraVideoConstraints(),
       });
       const newTrack = videoStream.getVideoTracks()[0];
       if (!newTrack) return;
@@ -2243,6 +2253,68 @@ export function useCall(socket, callOccupancyRef = null) {
       setLocalStream(local);
     } catch (err) {
       console.warn("[Call] setVideoInput failed:", err);
+    }
+  }, [cameraOn]);
+
+  // 3.0.0 D2: one flip button. Front camera mirrored locally only; the sent
+  // track is never mirrored, so the other side always sees it the right way.
+  const [cameraFacing, setCameraFacing] = useState(() => getPreferredFacing());
+  const [localMirror, setLocalMirror] = useState(true);
+  useEffect(() => {
+    const track = streamCameraTrack(localStreamRef.current);
+    if (!track) {
+      setLocalMirror(true);
+      return;
+    }
+    if (track.__descallFacing == null && !videoInputIdRef.current) tagCameraTrack(track, getPreferredFacing());
+    setLocalMirror(shouldMirrorLocal(track));
+  }, [localStream, cameraOn, cameraFacing, selectedVideoInput]);
+
+  const flipCamera = useCallback(async () => {
+    const local = localStreamRef.current;
+    if (!cameraOn || !local) return false;
+    const facing = nextFacing(getPreferredFacing());
+    const gum = (c) => navigator.mediaDevices.getUserMedia(c);
+    const old = local.getVideoTracks()[0] || null;
+    try {
+      let res;
+      try {
+        res = await captureFacingCamera(gum, facing);
+      } catch (err) {
+        // Some phones can't open a second camera while one is live.
+        if (!old || (err?.name !== "NotReadableError" && err?.name !== "AbortError")) throw err;
+        old.stop();
+        res = await captureFacingCamera(gum, facing);
+      }
+      const newTrack = res.track;
+      if (!newTrack) return false;
+      if (old) {
+        newTrack.enabled = old.enabled !== false || old.readyState === "ended";
+        local.removeTrack(old);
+        old.stop();
+      }
+      local.addTrack(newTrack);
+      await (async () => {
+        const sender = pcRef.current?.getSenders().find(
+          (item) => item !== screenSenderRef.current && item.track?.kind === "video"
+        );
+        if (sender) await sender.replaceTrack(newTrack);
+      })();
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = local;
+        localVideoRef.current.play().catch(() => {});
+      }
+      videoInputIdRef.current = "";
+      setSelectedVideoInput("");
+      setPreferredFacing(facing);
+      setCameraFacing(facing);
+      setLocalMirror(shouldMirrorLocal(newTrack));
+      setLocalStream(local);
+      return true;
+    } catch (err) {
+      console.warn("[Call] flipCamera failed:", err?.name || err);
+      toastRef.current?.(tRuntime("Couldn't switch the camera."), "error");
+      return false;
     }
   }, [cameraOn]);
 
@@ -2487,6 +2559,9 @@ export function useCall(socket, callOccupancyRef = null) {
     onCallAudioSessionActivated,
     ensureRemoteAudio,
     setVideoInput,
+    flipCamera,
+    cameraFacing,
+    localMirror,
     setParticipantVolume,
     toggleParticipantMute,
   };
