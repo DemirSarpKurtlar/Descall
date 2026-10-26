@@ -37,6 +37,7 @@ import { DockDeviceSlot } from "../call/DevicePicker";
 import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
+import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
 
 function TileFullscreenVideo({ stream }) {
   const ref = useRef(null);
@@ -195,7 +196,7 @@ const VoiceTile = memo(function VoiceTile({
       {mountVideo ? (
         <video
           ref={videoRef}
-          className={`server-voice-tile-video tile-video-layer${showVideo ? " is-shown" : ""}${tile.isLocal ? " is-local-mirror" : ""}`}
+          className={`server-voice-tile-video tile-video-layer${showVideo ? " is-shown" : ""}${tile.isLocal && shouldMirrorLocal(streamCameraTrack(cameraStream)) ? " is-local-mirror" : ""}`}
           aria-hidden={showVideo ? undefined : "true"}
           autoPlay
           playsInline

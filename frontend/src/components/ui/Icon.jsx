@@ -27,6 +27,7 @@ import {
   Bell as PBell,
   BellRinging as PBellRinging,
   BellSlash as PBellSlash,
+  CameraRotate as PCameraRotate,
   Binoculars as PBinoculars,
   Bird as PBird,
   Bluetooth as PBluetooth,
@@ -465,6 +466,7 @@ export const Bug = make(PBug, "Bug");
 export const Box = make(PCube, "Box");
 export const BookOpen = make(PBookOpen, "BookOpen");
 export const BellOff = make(PBellSlash, "BellOff");
+export const SwitchCamera = make(PCameraRotate, "SwitchCamera");
 export const ArchiveRestore = make(PArrowCounterClockwise, "ArchiveRestore");
 export const Anchor = make(PAnchor, "Anchor");
 export const ArrowRightLeft = make(PArrowsLeftRight, "ArrowRightLeft");
@@ -740,6 +742,7 @@ const BY_NAME = {
   Box,
   BookOpen,
   BellOff,
+  SwitchCamera,
   ArchiveRestore,
   Anchor,
   ArrowRightLeft,

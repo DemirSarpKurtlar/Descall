@@ -1613,6 +1613,8 @@ export const phrases = {
   "Group video call in progress": "Grup görüntülü araması sürüyor",
   "Silence": "Sessize al",
   "Ringtone silenced": "Zil sesi kapatıldı",
+  "Couldn't switch the camera.": "Kamera değiştirilemedi.",
+  "Flip camera": "Kamerayı çevir",
   "Connecting…": "Bağlanıyor…",
   "Connected": "Bağlandı",
   "Disconnected": "Bağlantı kesildi",

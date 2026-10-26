@@ -1652,6 +1652,8 @@ export const phrases = {
   "Call back": "Call back",
   "Silence": "Silence",
   "Ringtone silenced": "Ringtone silenced",
+  "Couldn't switch the camera.": "Couldn't switch the camera.",
+  "Flip camera": "Flip camera",
   "Connecting…": "Connecting…",
   "Connected": "Connected",
   "Disconnected": "Disconnected",
