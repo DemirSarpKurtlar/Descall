@@ -91,12 +91,26 @@ function watchTheme() {
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
 }
 
+function userWantsSolid() {
+  try {
+    return globalThis.localStorage?.getItem("descall:reduce-transparency") === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Re-applies the display classes (Settings › Görünüm toggled "Şeffaflığı azalt"). */
+export function refreshDisplayClasses() {
+  apply();
+}
+
 function apply() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   const tier = deviceTier(state.machine);
   const reasons = liteReasons({ lowPower: state.lowPower, thermal: state.thermal, tier, jank });
-  root.classList.toggle(DISPLAY_CLASSES.solid, Boolean(state.reduceTransparency));
+  // Settings › Görünüm › "Şeffaflığı azalt" forces the same solid material.
+  root.classList.toggle(DISPLAY_CLASSES.solid, Boolean(state.reduceTransparency) || userWantsSolid());
   root.classList.toggle(DISPLAY_CLASSES.contrast, Boolean(state.darkerColors));
   root.classList.toggle(DISPLAY_CLASSES.lite, reasons.length > 0);
   root.classList.toggle(DISPLAY_CLASSES.tierLow, tier === "low");

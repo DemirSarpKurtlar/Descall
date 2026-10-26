@@ -2,7 +2,10 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
-import { applyDocumentTheme, applyInlineAccent, clearInlineAccent } from "../../lib/themeDocument";
+import AppearancePane from "../settings/AppearancePane";
+import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
+import { isTabletLayout, readStoredSettings } from "../../lib/appearancePrefs";
+import { applyStoredAppearance, setPremiumThemeKey } from "../../lib/appearanceSync";
 import { copyText } from "../../lib/copyText";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
@@ -37,8 +40,7 @@ import { confirmAction } from "../../lib/glassConfirm";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
-import { useGlassDesktop, useGlassDesktopLite } from "../../hooks/useGlassDesktop";
-import { setGlassDesktopLiteManual } from "../../lib/glassDesktop";
+import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import { useLocale } from "../../context/LocaleContext";
 import LegalContentModal from "../legal/LegalContentModal";
 import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
@@ -52,6 +54,7 @@ import { detectDefaultLocale } from "../../i18n/detect";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
+import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
@@ -80,21 +83,15 @@ const loadSettings = () => {
 };
 
 const saveSettings = (obj) => {
-  const json = JSON.stringify(obj);
+  // Merge: Settings › Görünüm (lib/appearanceSync.js) owns theme, accent,
+  // text size and the accessibility keys in the same object.
+  const json = JSON.stringify({ ...loadSettings(), ...obj });
   localStorage.setItem(SETTINGS_KEY, json);
   // Keep legacy key in sync for boot-theme + older readers
   localStorage.setItem(LEGACY_SETTINGS_KEY, json);
 };
 
-const ACCENT_SWATCHES = [
-  { id: "blurple", hex: "#5865F2" },
-  { id: "indigo", hex: "#4752C4" },
-  { id: "green", hex: "#23A55A" },
-  { id: "teal", hex: "#1ABC9C" },
-  { id: "fuchsia", hex: "#EB459E" },
-  { id: "gold", hex: "#F0B232" },
-  { id: "red", hex: "#ED4245" },
-];
+
 
 
 const STATUS_EMOJIS = ["😀", "🎮", "💼", "🎵", "📚", "☕", "🍿", "💤"];
@@ -113,19 +110,9 @@ function splitStatusEmoji(value) {
 // accent back to the default/custom color and made premium themes look
 // broken. When a premium theme is equipped we now clear the inline accent
 // overrides instead of (re)applying them, so the theme's own CSS wins.
-export function applyAppearanceSettings({ accentColor, chatFontSize, uiDensity, bubbleStyle, premiumTheme } = {}) {
-  const root = document.documentElement;
-  if (accentColor && !premiumTheme) applyInlineAccent(root, accentColor);
-  else clearInlineAccent(root);
-  if (chatFontSize) {
-    root.style.setProperty("--chat-font-size", `${chatFontSize}px`);
-  }
-  if (uiDensity) {
-    root.setAttribute("data-density", uiDensity);
-  }
-  if (bubbleStyle) {
-    root.setAttribute("data-bubble", bubbleStyle);
-  }
+export function applyAppearanceSettings({ premiumTheme } = {}) {
+  // Kept for older imports; Settings › Görünüm now lives in lib/appearanceSync.
+  return applyStoredAppearance({ premium: premiumTheme ? readStoredSettings().premiumThemeKey || null : null });
 }
 
 function Toggle({ value, onChange, label }) {
@@ -295,6 +282,23 @@ const NAV_GROUPS_DEF = [
   },
 ];
 
+/* 3.0 settings sidebar (desktop + iPad): colored icon tiles, mockup 34/36. */
+const S3_NAV_TILES = {
+  overview: ["user", "gray"],
+  profile: ["pen", "gray"],
+  security: ["shield", "gray"],
+  privacy: ["lock", "gray"],
+  appearance: ["palette", "brand"],
+  notifications: ["bell", "red"],
+  language: ["globe", "blue"],
+  licenses: ["book", "gray"],
+  voice: ["volume", "green"],
+  sound: ["music", "teal"],
+  shop: ["bag", "purple"],
+  badges: ["award", "yellow"],
+  promo: ["ticket", "pink"],
+};
+
 const TAB_TITLE_KEYS = {
   overview: "settings.myAccount",
   profile: "settings.profile",
@@ -320,6 +324,22 @@ function settingsUnderlay() {
   );
 }
 
+/** iPad (landscape or any width ≥ 900px): Settings opens as the desktop form sheet. */
+function readIpadSettingsSheet(enabled) {
+  if (!enabled || typeof window === "undefined") return false;
+  return isTabletLayout(window) && (window.innerWidth || 0) >= 900;
+}
+function useIpadSettingsSheet(enabled) {
+  const [on, setOn] = useState(() => readIpadSettingsSheet(enabled));
+  useEffect(() => {
+    const sync = () => setOn(readIpadSettingsSheet(enabled));
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, [enabled]);
+  return on;
+}
+
 const UserPanel = forwardRef(function UserPanel({
   me,
   onClose,
@@ -331,10 +351,12 @@ const UserPanel = forwardRef(function UserPanel({
   onTabChange,
   activity = {},
 }, ref) {
-  const { isMobile } = useMobile();
+  const { isMobile: isMobileViewport } = useMobile();
   const glassShell = useGlassShell();
   const glassDesktop = useGlassDesktop();
-  const glassDesktopLite = useGlassDesktopLite();
+  // 3.0: a wide iPad gets the desktop form sheet (sidebar + detail, mockup 36), not the phone stack.
+  const ipadSheet = useIpadSettingsSheet(isMobileViewport && !glassShell);
+  const isMobile = isMobileViewport && !ipadSheet;
   const { t, locale, setLocale, locales } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -696,11 +718,6 @@ const UserPanel = forwardRef(function UserPanel({
   );
 
   /* ── Appearance ── */
-  const [darkMode, setDarkMode] = useState(stored.darkMode !== false);
-  const [accentColor, setAccentColor] = useState(stored.accentColor || "#5865F2");
-  const [chatFontSize, setChatFontSize] = useState(stored.chatFontSize || 14);
-  const [uiDensity, setUiDensity] = useState(stored.uiDensity || "comfortable");
-  const [bubbleStyle, setBubbleStyle] = useState(stored.bubbleStyle || "modern");
   const [ownedThemes, setOwnedThemes] = useState([]);
 
   const loadOwnedThemes = useCallback(async () => {
@@ -738,27 +755,28 @@ const UserPanel = forwardRef(function UserPanel({
   // picking Dark or Light explicitly clears it (see handlePickBaseTheme).
   const equippedThemeKey = me?.equippedTheme?.theme_key || null;
 
-  const applyThemeWithCrossfade = useCallback((nextTheme) => {
+  const applyThemeWithCrossfade = useCallback((premiumKey) => {
     const root = document.documentElement;
     const prev = root.getAttribute("data-theme");
-    /* Catalog themes own --primary. Passing the stored accent here still
-       clears it; only dark/light keep an inline accent. Settings is not
-       always mounted, so App.jsx applies the same helper on login. */
-    applyDocumentTheme(root, nextTheme, { accentColor });
-    if (prev !== nextTheme) {
+    /* Catalog themes own --primary (the inline accent is cleared); dark /
+       light / auto keep the account accent. App.jsx does the same on login. */
+    setPremiumThemeKey(premiumKey || null);
+    const applied = applyStoredAppearance({ premium: premiumKey || null });
+    if (prev !== applied?.theme) {
       root.classList.add("theme-crossfade");
       window.setTimeout(() => root.classList.remove("theme-crossfade"), 320);
     }
-  }, [accentColor]);
+  }, []);
 
   useEffect(() => {
-    applyThemeWithCrossfade(equippedThemeKey || (darkMode ? "dark" : "light"));
-  }, [darkMode, equippedThemeKey, applyThemeWithCrossfade]);
+    applyThemeWithCrossfade(equippedThemeKey);
+  }, [equippedThemeKey, applyThemeWithCrossfade]);
 
   const handlePickBaseTheme = useCallback(
-    async (wantDark) => {
-      setDarkMode(wantDark);
+    async () => {
+      // Picking Koyu / Açık / Otomatik takes off an equipped shop theme.
       if (equippedThemeKey) {
+        applyThemeWithCrossfade(null);
         try {
           await equipShopItem("theme", null);
           await refreshMeFromServer();
@@ -767,7 +785,7 @@ const UserPanel = forwardRef(function UserPanel({
         }
       }
     },
-    [equippedThemeKey, refreshMeFromServer]
+    [equippedThemeKey, refreshMeFromServer, applyThemeWithCrossfade]
   );
 
   const handlePickPremiumTheme = useCallback(
@@ -782,10 +800,6 @@ const UserPanel = forwardRef(function UserPanel({
     },
     [refreshMeFromServer, applyThemeWithCrossfade]
   );
-
-  useEffect(() => {
-    applyAppearanceSettings({ accentColor, chatFontSize, uiDensity, bubbleStyle, premiumTheme: !!equippedThemeKey });
-  }, [accentColor, chatFontSize, uiDensity, bubbleStyle, equippedThemeKey]);
 
   /* ── Notifications ── */
   const [msgNotifications, setMsgNotifications] = useState(stored.msgNotifications !== false);
@@ -853,11 +867,6 @@ const UserPanel = forwardRef(function UserPanel({
 
   useEffect(() => {
     saveSettings({
-      darkMode,
-      accentColor,
-      chatFontSize,
-      uiDensity,
-      bubbleStyle,
       premiumThemeKey: equippedThemeKey,
       msgNotifications,
       callNotifications,
@@ -869,11 +878,6 @@ const UserPanel = forwardRef(function UserPanel({
       language: locale,
     });
   }, [
-    darkMode,
-    accentColor,
-    chatFontSize,
-    uiDensity,
-    bubbleStyle,
     equippedThemeKey,
     msgNotifications,
     callNotifications,
@@ -2145,201 +2149,14 @@ const UserPanel = forwardRef(function UserPanel({
 
       case "appearance":
         return (
-          <div className="us-tab">
-            <p className="us-lead">{t("Choose how Descall looks on this device.")}</p>
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Theme")}</h4>
-              <div className="us-theme-grid">
-                <button
-                  type="button"
-                  className={`us-theme-card dark ${darkMode && !equippedThemeKey ? "selected" : ""}`}
-                  onClick={() => handlePickBaseTheme(true)}
-                >
-                  <div className="us-theme-swatch dark" />
-                  <div className="us-theme-meta">
-                    <Moon size={15} />
-                    <span>{t("Dark")}</span>
-                  </div>
-                  {darkMode && !equippedThemeKey && <Check size={14} className="us-theme-check" />}
-                </button>
-                <button
-                  type="button"
-                  className={`us-theme-card light ${!darkMode && !equippedThemeKey ? "selected" : ""}`}
-                  onClick={() => handlePickBaseTheme(false)}
-                >
-                  <div className="us-theme-swatch light" />
-                  <div className="us-theme-meta">
-                    <Sun size={15} />
-                    <span>{t("Light")}</span>
-                  </div>
-                  {!darkMode && !equippedThemeKey && <Check size={14} className="us-theme-check" />}
-                </button>
-                {ownedThemes.map((themeItem) => {
-                  const selected = equippedThemeKey === themeItem.theme_key;
-                  return (
-                    <button
-                      type="button"
-                      key={themeItem.id}
-                      className={`us-theme-card premium theme-${themeItem.theme_key} ${selected ? "selected" : ""}`}
-                      onClick={() => handlePickPremiumTheme(themeItem)}
-                    >
-                      <div className={`us-theme-swatch theme-${themeItem.theme_key}`} />
-                      <div className="us-theme-meta">
-                        <Palette size={15} />
-                        <span>{themeItem.name}</span>
-                      </div>
-                      {selected && <Check size={14} className="us-theme-check" />}
-                    </button>
-                  );
-                })}
-                {!ownedThemes.length && (
-                  <button
-                    type="button"
-                    className="us-theme-card us-theme-card-shop-link"
-                    onClick={() => setActiveTab("shop")}
-                  >
-                    <div className="us-theme-meta">
-                      <ShoppingBag size={15} />
-                      <span>{t("Get more in Shop")}</span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </section>
-
-            {glassDesktop && (
-              <section className="us-section">
-                <h4 className="us-section-label">{t("Low performance mode")}</h4>
-                <div className="us-row">
-                  <div>
-                    <p className="us-lead">{t("Turns off glass blur so Descall stays smooth on older computers.")}</p>
-                  </div>
-                  <Toggle
-                    value={glassDesktopLite}
-                    label={t("Low performance mode")}
-                    onChange={(on) => setGlassDesktopLiteManual(on)}
-                  />
-                </div>
-              </section>
-            )}
-
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Accent color")}</h4>
-              <div className="us-accent-grid">
-                {ACCENT_SWATCHES.map((swatch) => (
-                  <button
-                    key={swatch.id}
-                    type="button"
-                    className={`us-accent-swatch ${accentColor.toLowerCase() === swatch.hex.toLowerCase() ? "selected" : ""}`}
-                    style={{ background: swatch.hex, color: swatch.hex }}
-                    aria-label={swatch.id}
-                    onClick={() => setAccentColor(swatch.hex)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Chat font size")}</h4>
-              <div className="us-font-size-row">
-                <Type size={14} />
-                <input
-                  type="range"
-                  min={12}
-                  max={18}
-                  step={1}
-                  value={chatFontSize}
-                  onChange={(e) => setChatFontSize(Number(e.target.value))}
-                  aria-label={t("Chat font size")}
-                />
-                <span style={{ fontSize: 12, color: "var(--text-muted)", width: 36 }}>{chatFontSize}px</span>
-              </div>
-              <div className="us-font-preview" style={{ marginTop: 10 }}>
-                {t("The quick brown fox jumps over the lazy dog")}
-              </div>
-            </section>
-
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Density")}</h4>
-              <div className="us-segmented">
-                {[
-                  { id: "compact", label: t("Compact") },
-                  { id: "comfortable", label: t("Comfortable") },
-                  { id: "spacious", label: t("Spacious") },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    className={`us-segment ${uiDensity === opt.id ? "selected" : ""}`}
-                    onClick={() => setUiDensity(opt.id)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Message bubbles")}</h4>
-              <div className="us-segmented">
-                {[
-                  { id: "modern", label: t("Modern") },
-                  { id: "classic", label: t("Classic") },
-                  { id: "minimal", label: t("Minimal") },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    className={`us-segment ${bubbleStyle === opt.id ? "selected" : ""}`}
-                    onClick={() => setBubbleStyle(opt.id)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className={`us-bubble-preview bubble-${bubbleStyle}`}>
-                <div className="us-bubble-demo other">{t("Hey, how’s it going?")}</div>
-                <div className="us-bubble-demo own">{t("Pretty good! You?")}</div>
-              </div>
-            </section>
-
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Status")}</h4>
-              <div className="us-card stack">
-                {["online", "idle", "dnd", "invisible"].map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`status-picker-item ${myStatus === key ? "active" : ""}`}
-                    onClick={() => onStatusChange?.(key)}
-                    style={{ position: "relative" }}
-                  >
-                    <span
-                      className="status-picker-dot"
-                      style={{
-                        background:
-                          key === "online"
-                            ? "var(--success)"
-                            : key === "idle"
-                            ? "var(--warning)"
-                            : key === "dnd"
-                            ? "var(--danger)"
-                            : "var(--text-muted)",
-                      }}
-                    />
-                    {key === "online"
-                      ? t("Online")
-                      : key === "idle"
-                      ? t("Idle")
-                      : key === "dnd"
-                      ? t("Do Not Disturb")
-                      : t("Invisible")}
-                    {myStatus === key && <Check size={14} style={{ marginLeft: "auto" }} />}
-                  </button>
-                ))}
-              </div>
-            </section>
-          </div>
+          <AppearancePane
+            layout={isMobile ? "iphone" : isTabletLayout() ? "ipad" : "desktop"}
+            ownedThemes={ownedThemes}
+            equippedThemeKey={equippedThemeKey}
+            onPickBaseTheme={handlePickBaseTheme}
+            onPickPremiumTheme={handlePickPremiumTheme}
+            onOpenShop={() => openTab("shop")}
+          />
         );
 
       case "notifications":
@@ -2854,7 +2671,7 @@ const UserPanel = forwardRef(function UserPanel({
   return (
     <motion.div
       ref={ref}
-      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}`}
+      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}${glassShell && isMobile && mobileDetail && activeTab === "appearance" ? " s3-phone-shell" : ""}`}
       variants={shellVariants}
       initial="hidden"
       animate="visible"
@@ -2863,7 +2680,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}${isMobile && glassShell && activeTab === "appearance" && mobileDetail ? " s3-phone-sheet" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -2871,6 +2688,63 @@ const UserPanel = forwardRef(function UserPanel({
       onClick={(e) => e.stopPropagation()}
     >
       {/* Sidebar / mobile menu */}
+      {!isMobile ? (
+      <aside ref={menuPaneRef} className="us-sidebar s3 s3-side visible">
+        <div className="s3-side-pad" aria-hidden="true" />
+        <div className="s3-side-scroll">
+          <button type="button" className="s3-hero" onClick={() => openTab("overview")}>
+            <Avatar name={me?.username || t("User")} size={64} user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }} />
+            <span className="n">{displayName || me?.username || t("User")}</span>
+            <span className="m">
+              @{me?.username?.toLowerCase() || "user"}
+              {isUserAdmin(me) ? ` · ${locale === "tr" ? "Yönetici" : "Admin"}` : ""}
+            </span>
+          </button>
+          <nav aria-label={t("Settings sections")}>
+            {navGroups.map((group) => (
+              <div key={group.label} className="s3-side-group">
+                <div className="s3-sec">{group.label}</div>
+                <div className="s3-group">
+                  {group.items.map((item) => {
+                    const [icon, color] = S3_NAV_TILES[item.id] || ["settings", "gray"];
+                    const active = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`s3-row${active ? " sel" : ""}`}
+                        data-nav={item.id}
+                        aria-current={active ? "page" : undefined}
+                        onClick={() => openTab(item.id)}
+                      >
+                        <span className={`s3-ico c-${color}`} aria-hidden="true">
+                          <S3Glyph name={icon} size={18} stroke={2.1} />
+                        </span>
+                        <span className="lab">
+                          <b>{item.label}</b>
+                        </span>
+                        {item.id === "promo" && promoUnseen ? (
+                          <span className="s3-count tnum" aria-label={promoUnseen === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoUnseen })}>{promoUnseen}</span>
+                        ) : null}
+                        {item.id === "language" ? <span className="val">{locale === "tr" ? "Türkçe" : "English"}</span> : null}
+                        {active ? null : <S3Chevron />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <div className="s3-group s3-side-out">
+            <button type="button" className="s3-row noico tone-red center" onClick={handleLogoutClick}>
+              <span className="lab">
+                <b>{t("settings.logOut")}</b>
+              </span>
+            </button>
+          </div>
+        </div>
+      </aside>
+      ) : (
       <aside ref={menuPaneRef} className={`us-sidebar ${showMenu ? "visible" : "hidden"}`}>
         <div className="us-sidebar-top">
           <div className="us-sidebar-brand">
@@ -2955,9 +2829,27 @@ const UserPanel = forwardRef(function UserPanel({
           </button>
         </div>
       </aside>
+      )}
 
       {/* Detail pane */}
       <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
+        {activeTab === "appearance" ? (
+          <>
+            {isMobile ? <div className="s3-grab" aria-hidden="true" /> : null}
+            <header className="us-main-header s3-nav">
+              <span className="l">
+                {isMobile ? (
+                  <button type="button" className="s3-back" onClick={backToMenu}>
+                    <S3Glyph name="chevl" size={22} stroke={2.4} />
+                    <span>{locale === "tr" ? "Ayarlar" : "Settings"}</span>
+                  </button>
+                ) : null}
+              </span>
+              <h3 className="t">{tabTitles[activeTab]}</h3>
+              <span className="r" />
+            </header>
+          </>
+        ) : (
         <header className="us-main-header">
           {glassProfileEdit ? (
             <button type="button" className="g-profile-cancel" onClick={backToMenu}>
@@ -2988,6 +2880,7 @@ const UserPanel = forwardRef(function UserPanel({
             </button>
           )}
         </header>
+        )}
 
         {glassShell && isMobile && activeTab === "shop" && mobileDetail ? (
           <div className="g-shop-chrome" />
@@ -3003,7 +2896,7 @@ const UserPanel = forwardRef(function UserPanel({
               transition={{ duration: 0.16 }}
               className="us-main-scroll"
             >
-              {!isMobile && activeTab !== "overview" && (
+              {!isMobile && activeTab !== "overview" && activeTab !== "appearance" && (
                 <h3 className="us-page-title">{tabTitles[activeTab]}</h3>
               )}
               <ErrorBoundary scope="pane" resetKey={activeTab}>

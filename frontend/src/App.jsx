@@ -35,7 +35,7 @@ import {
   setServerFolder,
 } from "./api/servers";
 import { syncChannelMutesFromServer } from "./lib/serverChannelMutes";
-import { applyDocumentTheme } from "./lib/themeDocument";
+import { applyStoredAppearance, pullAccountAppearance } from "./lib/appearanceSync";
 import { applyDmListPrefs, prefsMapFromList, mergePrefIntoMap, applyLocalPrefPatch } from "./lib/dmConversationPrefs";
 import {
   hydrateChatCache,
@@ -1033,13 +1033,14 @@ export default function App() {
       const json = JSON.stringify(nextSettings);
       localStorage.setItem("descall_user_settings", json);
       localStorage.setItem("descall_settings", json);
-      const nextTheme = themeKey || (settings.darkMode === false ? "light" : "dark");
       const root = document.documentElement;
       const prev = root.getAttribute("data-theme");
       /* Settings is not mounted on the chat screen, so this is the path
          that actually applies an equipped theme. Clearing the inline accent
-         here is what lets the theme color reach buttons and letter avatars. */
-      applyDocumentTheme(root, nextTheme, { accentColor: settings.accentColor });
+         here is what lets the theme color reach buttons and letter avatars.
+         Without a shop theme: dark / light / auto + accent (appearanceSync). */
+      const applied = applyStoredAppearance({ premium: themeKey });
+      const nextTheme = applied?.theme || themeKey || "dark";
       if (prev !== nextTheme) {
         root.classList.add("theme-crossfade");
         window.setTimeout(() => root.classList.remove("theme-crossfade"), 320);
@@ -1048,6 +1049,18 @@ export default function App() {
       if (themeKey) document.documentElement.setAttribute("data-theme", themeKey);
     }
   }, [me, me?.equippedTheme?.theme_key]);
+
+  // Settings › Görünüm lives on the account: pull on sign-in and when the
+  // window comes back, so a change on another device shows up here.
+  useEffect(() => {
+    if (!me?.id) return undefined;
+    pullAccountAppearance();
+    const onVisible = () => {
+      if (!document.hidden) pullAccountAppearance();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [me?.id]);
 
   useEffect(() => {
     const sync = () => {

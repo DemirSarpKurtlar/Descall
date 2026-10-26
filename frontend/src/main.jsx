@@ -97,6 +97,11 @@ const Router =
     : BrowserRouter;
 
 try {
+  /* Cheap first-paint theme (marketing pages and the boot splash). The full
+     Settings › Görünüm (auto theme, text size, reduce motion / transparency)
+     is applied by lib/appearanceSync.js before the app renders, see
+     prefetchAppChunk(). Kept out of this entry so the marketing JS budget
+     holds. */
   const raw =
     localStorage.getItem("descall_user_settings") ||
     localStorage.getItem("descall_settings") ||
@@ -105,15 +110,6 @@ try {
   const theme = settings.premiumThemeKey || (settings.darkMode === false ? "light" : "dark");
   const accentColor = settings.premiumThemeKey ? null : settings.accentColor;
   applyDocumentTheme(document.documentElement, theme, { accentColor });
-  if (settings.chatFontSize) {
-    document.documentElement.style.setProperty("--chat-font-size", `${settings.chatFontSize}px`);
-  }
-  if (settings.uiDensity) {
-    document.documentElement.setAttribute("data-density", settings.uiDensity);
-  }
-  if (settings.bubbleStyle) {
-    document.documentElement.setAttribute("data-bubble", settings.bubbleStyle);
-  }
 } catch {
   document.documentElement.setAttribute("data-theme", "dark");
 }
@@ -268,7 +264,16 @@ async function bootApp() {
 let appChunkPromise = null;
 /** Start downloading / parsing the app bundle once; lazy() reuses the promise. */
 function prefetchAppChunk() {
-  if (!appChunkPromise) appChunkPromise = import("./App.jsx");
+  if (!appChunkPromise) {
+    // Görünüm lands before the first app frame; App.jsx keeps it in sync after.
+    const appearance = Promise.all([import("./lib/appearanceSync.js"), import("./lib/appearancePrefs.js")])
+      .then(([sync, prefs]) => {
+        sync.applyStoredAppearance({ premium: prefs.readStoredSettings().premiumThemeKey || null });
+        sync.installFontShortcuts();
+      })
+      .catch(() => {});
+    appChunkPromise = Promise.all([import("./App.jsx"), appearance]).then(([mod]) => mod);
+  }
   return appChunkPromise;
 }
 
