@@ -162,7 +162,7 @@ final class DescallNotifyThreadView: UIView {
             divider.leadingAnchor.constraint(equalTo: leadingAnchor),
             divider.trailingAnchor.constraint(equalTo: trailingAnchor),
             divider.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 13),
-            divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
+            divider.heightAnchor.constraint(equalToConstant: 0.5),
 
             avatarView.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             avatarView.topAnchor.constraint(equalTo: header.topAnchor),

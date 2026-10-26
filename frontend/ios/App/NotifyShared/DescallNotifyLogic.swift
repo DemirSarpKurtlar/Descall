@@ -216,10 +216,14 @@ enum DescallNotifyMute {
 enum DescallNotifyAvatar {
     /// Same fallback as the app (src/lib/avatarFallback.js): AVATAR_PALETTE[crc32(user id) % 8],
     /// up to two initials, Turkish upper case. Order must match the JS palette.
-    static let palette: [(r: Double, g: Double, b: Double)] = [
-        0x2868FF, 0x228359, 0xBA590E, 0xDB2C5B, 0x7E59EE, 0x177E96, 0x926F16, 0xDA362C,
-    ].map { hex in
-        (r: Double((hex >> 16) & 0xFF) / 255, g: Double((hex >> 8) & 0xFF) / 255, b: Double(hex & 0xFF) / 255)
+    static let paletteHex: [UInt32] = [0x2868FF, 0x228359, 0xBA590E, 0xDB2C5B, 0x7E59EE, 0x177E96, 0x926F16, 0xDA362C]
+    static let palette: [(r: Double, g: Double, b: Double)] = paletteHex.map(rgb)
+
+    static func rgb(_ hex: UInt32) -> (r: Double, g: Double, b: Double) {
+        let r: Double = Double((hex >> 16) & 0xFF) / 255
+        let g: Double = Double((hex >> 8) & 0xFF) / 255
+        let b: Double = Double(hex & 0xFF) / 255
+        return (r: r, g: g, b: b)
     }
 
     /// "Ayşe Yılmaz" → "AY", "cinar.baskin" → "CB", "Zeynep" → "Z", "" → "?" (avatarInitials).
