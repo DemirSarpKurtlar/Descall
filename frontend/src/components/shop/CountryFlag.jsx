@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { EquippedSpecialBadge } from "../badges/SpecialBadge.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { countryCode, countryName, flagEmoji, installFlagFont, isCountryItem } from "../../lib/countryFlags";
 
@@ -38,19 +39,28 @@ export function CountryFlag({ item, code, size = 20, className = "", decorative 
  * card, profile modal, shop preview). Compact: flag only, name in the tooltip
  * and accessible label (member list, message header).
  */
-export function CountryBadge({ user, item: itemProp, compact = false, className = "" }) {
+/**
+ * Country badge plus, next to it, the one special badge the person wears (2026-10-26:
+ * special badges sit beside the country badge, never in place of it). `special={false}`
+ * keeps it to the country (country shop previews, the profile row that draws its own).
+ */
+export function CountryBadge({ user, item: itemProp, compact = false, className = "", special = true }) {
   const { locale } = useLocale();
   const item = itemProp || user?.equippedCountry;
-  if (!isCountryItem(item)) return null;
+  const hasCountry = isCountryItem(item);
+  const extra = special && user ? <EquippedSpecialBadge user={user} compact={compact} /> : null;
+  if (!hasCountry) return extra;
   if (compact) {
-    return <CountryFlag item={item} size={14} className={`cosmetic-country-flag ${className}`.trim()} />;
+    const flag = <CountryFlag item={item} size={14} className={`cosmetic-country-flag ${className}`.trim()} />;
+    return extra ? <>{flag}{extra}</> : flag;
   }
-  return (
+  const badge = (
     <span className={`cosmetic-country-badge ${className}`.trim()}>
       <CountryFlag item={item} size={15} decorative />
       <span className="cosmetic-country-name">{countryName(item, locale)}</span>
     </span>
   );
+  return extra ? <>{badge}{extra}</> : badge;
 }
 
 export default CountryFlag;

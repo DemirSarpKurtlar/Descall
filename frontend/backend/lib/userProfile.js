@@ -13,6 +13,7 @@ const CHAT_COSMETIC_KEYS = [
   "equippedBadge",
   "equippedTitle",
   "equippedCountry",
+  "equippedSpecialBadge",
   "equippedNameEffect",
   "equippedAvatarEffect",
   "equippedChatBubble",
@@ -27,6 +28,7 @@ const ALL_COSMETIC_KEYS = [
   "equippedBadge",
   "equippedTitle",
   "equippedCountry",
+  "equippedSpecialBadge",
   "equippedNameEffect",
   "equippedAvatarEffect",
   "equippedChatBubble",
@@ -71,6 +73,7 @@ function cosmeticsFromEquipped(equipped) {
     equippedBadge: equipped.badge || null,
     equippedTitle: equipped.title || null,
     equippedCountry: equipped.country || null,
+    equippedSpecialBadge: equipped.specialBadge || null,
     equippedNameEffect: equipped.nameEffect || null,
     equippedAvatarEffect: equipped.avatarEffect || null,
     equippedChatBubble: equipped.chatBubble || null,
@@ -132,6 +135,7 @@ function toPublicUser(profile) {
     equippedBadge: profile.equippedBadge || null,
     equippedTitle: profile.equippedTitle || null,
     equippedCountry: profile.equippedCountry || null,
+    equippedSpecialBadge: profile.equippedSpecialBadge || null,
     equippedNameEffect: profile.equippedNameEffect || null,
     equippedAvatarEffect: profile.equippedAvatarEffect || null,
     equippedChatBubble: profile.equippedChatBubble || null,
@@ -173,6 +177,7 @@ function cosmeticsAlreadyCached(cached) {
     cached.equippedAvatarFrame ||
     cached.equippedBadge ||
     cached.equippedCountry ||
+    cached.equippedSpecialBadge ||
     cached.equippedNameEffect ||
     cached.equippedChatBubble
   ) {

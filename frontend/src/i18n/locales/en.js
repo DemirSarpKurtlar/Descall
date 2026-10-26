@@ -1,6 +1,7 @@
 /** Auto-generated + curated en locale */
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
+import { BADGES_EN } from "./badges.en.js";
 export const nested = {
   maint: MAINT_EN,
   promo: PROMO_EN,
@@ -41,6 +42,7 @@ export const nested = {
     madeAdmin: "{name} is now a group admin.",
     unmadeAdmin: "{name} is no longer a group admin.",
   },
+  badges: BADGES_EN,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Danger zone",

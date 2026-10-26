@@ -6,6 +6,7 @@ import { TR_APPROVED_UI } from "./trApprovedUi.js";
 
 import { MAINT_TR } from "./maintenance.tr.js";
 import { PROMO_TR } from "./promo.tr.js";
+import { BADGES_TR } from "./badges.tr.js";
 export const nested = {
   maint: MAINT_TR,
   promo: PROMO_TR,
@@ -46,6 +47,7 @@ export const nested = {
     madeAdmin: "{name} artık grup yöneticisi.",
     unmadeAdmin: "{name} artık grup yöneticisi değil.",
   },
+  badges: BADGES_TR,
   // O3 ownership transfer (2.12.2)
   o3: {
     dangerZone: "Tehlikeli bölge",

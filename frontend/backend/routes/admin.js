@@ -60,6 +60,7 @@ router.use(require("./adminPeople"));
 router.use(require("./adminOverview"));
 router.use(require("./adminMaintenance"));
 router.use(require("./adminPromo"));
+router.use(require("./adminSpecialBadges"));
 
 router.get("/directory", async (req, res) => {
   try {

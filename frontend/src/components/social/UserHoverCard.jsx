@@ -122,7 +122,7 @@ export default function UserHoverCard({ user, anchor }) {
             <AdminBadge user={user} variant="inline" />
           </div>
           <div className="uhc-handle">@{user.username || t("user")}</div>
-          <CountryBadge user={user} />
+          <span className="uhc-badges"><CountryBadge user={user} /></span>
           <div className={`uhc-status ${statusClass}`}>
             <span className="uhc-dot" /> {statusLabel}
           </div>

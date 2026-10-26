@@ -455,6 +455,7 @@ app.use("/api/app", appReleaseRoutes);
 app.use("/api/calls", callsRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
+app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/reports", reportsRoutes);

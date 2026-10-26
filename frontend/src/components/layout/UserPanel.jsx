@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { applyDocumentTheme, applyInlineAccent, clearInlineAccent } from "../../lib/themeDocument";
 import { copyText } from "../../lib/copyText";
@@ -53,6 +53,7 @@ import AdminBadge from "../social/AdminBadge";
 import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
+const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, BadgeIcon, CountryBadge } from "../ui/Cosmetics";
 import {
@@ -286,6 +287,7 @@ const NAV_GROUPS_DEF = [
     labelKey: "settings.personalization",
     items: [
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
+      { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
     ],
   },
@@ -303,6 +305,7 @@ const TAB_TITLE_KEYS = {
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
+  badges: "badges.navTitle",
   promo: "settings.promo",
 };
 
@@ -2101,6 +2104,13 @@ const UserPanel = forwardRef(function UserPanel({
               />
             </Suspense>
           </div>
+        );
+
+      case "badges":
+        return (
+          <Suspense fallback={null}>
+            <BadgeSettingsTab me={me} />
+          </Suspense>
         );
 
       case "promo":

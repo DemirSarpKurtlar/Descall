@@ -103,6 +103,8 @@ import {
 } from "./lib/nativePush";
 import { useToast } from "./context/ToastContext";
 import { useLocale } from "./context/LocaleContext";
+import SpecialBadgeHost from "./components/badges/SpecialBadgeHost.jsx";
+import { noteEquipped as noteSpecialBadge } from "./lib/specialBadges";
 import { t as tRuntime } from "./i18n/runtime";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
@@ -1067,6 +1069,11 @@ export default function App() {
     const normalized = normalizeUser(user);
     if (!normalized?.id) return;
     const { id } = normalized;
+    // The worn special badge can go back to null; the merge below keeps old truthy values,
+    // so the live badge store gets the raw value (only when the payload carries the key).
+    if (user && Object.prototype.hasOwnProperty.call(user, "equippedSpecialBadge")) {
+      noteSpecialBadge(id, user.equippedSpecialBadge ?? null);
+    }
     const stored = getUser();
     const existingSelf = me?.id === id ? me : stored?.id === id ? stored : null;
     // Prefer incoming avatar, but never clear a known photo with an empty patch.
@@ -1085,6 +1092,7 @@ export default function App() {
       equippedBadge: normalized.equippedBadge,
       equippedTitle: normalized.equippedTitle,
       equippedCountry: normalized.equippedCountry,
+      equippedSpecialBadge: normalized.equippedSpecialBadge,
       equippedNameEffect: normalized.equippedNameEffect,
       equippedAvatarEffect: normalized.equippedAvatarEffect,
       equippedChatBubble: normalized.equippedChatBubble,
@@ -4780,6 +4788,8 @@ export default function App() {
             <DesCoinGiftPopup gift={descoinGift} onDismiss={() => setDescoinGift(null)} />
           </Suspense>
         )}
+
+        <SpecialBadgeHost socket={socketApi} meId={me?.id || null} />
 
         <Suspense fallback={null}>
           <PromoHost

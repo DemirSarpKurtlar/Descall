@@ -3005,6 +3005,9 @@ router.get("/:id/members", requireAuth, async (req, res) => {
       }
     }
 
+    // Special badge worn next to the flag (one lookup; empty before its migration).
+    const specialByUser = await require("../lib/specialBadges").equippedForUsers(userIds).catch(() => new Map());
+
     const { data: server } = await supabase
       .from("servers")
       .select("owner_id")
@@ -3042,6 +3045,7 @@ router.get("/:id/members", requireAuth, async (req, res) => {
         displayName: u.display_name || null,
         avatarUrl: u.avatar_url || null,
         equippedCountry: countryById.get(u.equipped_country_id) || null,
+        equippedSpecialBadge: specialByUser.get(m.user_id) || null,
         nickname: m.nickname || null,
         joinedAt: m.joined_at,
         timeoutUntil: m.timeout_until || null,

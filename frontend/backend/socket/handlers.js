@@ -762,6 +762,11 @@ function registerSocketHandlers(io) {
         })
         .catch((err) => console.warn("[shop] failed to deliver pending gifts:", err.message));
 
+      // Special badges granted or taken back while this person was offline.
+      require("../lib/specialBadgeNotify")
+        .deliverPending(io, myId, { socket })
+        .catch((err) => console.warn("[special-badges] failed to deliver pending:", err.message));
+
       // Same deferred-delivery pattern for admin DesCoin grants that carried
       // a message (the recipient was offline when the admin sent it).
       descoin
