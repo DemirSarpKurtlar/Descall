@@ -162,7 +162,8 @@
 
 /* Phones (iPhone web, Capacitor): table becomes cards, detail becomes a full-screen glass page. */
 @media (max-width: 760px){
-  .sx-kpis .mt-kpi-value{font-size:17px;flex-wrap:wrap;white-space:normal}
+  .sx-kpis .mt-kpi-value{font-size:14px;gap:6px;letter-spacing:-.01em}
+  .sx-kpis .mt-kpi{padding:11px 10px}
   .sx-tabs{flex-wrap:wrap}
   .sx-views{width:100%}.sx-views button{flex:1;justify-content:center}
   .sx-filter{margin-left:0;width:100%;overflow-x:auto;scrollbar-width:none}.sx-filter::-webkit-scrollbar{display:none}
