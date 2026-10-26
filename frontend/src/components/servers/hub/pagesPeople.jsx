@@ -418,7 +418,7 @@ export function RolesPage({ route }) {
   const { s } = hub;
   if (hub.tablet) {
     const sel = route.sel || defaultRoleId(hub.data);
-    if (!sel) return <><Nav /><Scroll form><Spinner /></Scroll></>;
+    if (!sel || !hub.data.editable) return <><Nav /><Scroll form>{hub.data.rolesError ? <div className="svh-err">{hub.data.rolesError}</div> : <Spinner />}</Scroll></>;
     return <RoleEditor key={`${route.key}:${sel}`} route={route} roleId={sel} draftKey={`${route.key}:${sel}`} />;
   }
   return (
@@ -429,6 +429,9 @@ export function RolesPage({ route }) {
 }
 
 export function RoleEditPage({ route }) {
+  const hub = useHub();
+  // Wait for editablePermissions: a draft seeded from an empty key list would save the role with no permissions.
+  if (!hub.data.editable) return <><Nav left={hub.backFor(route)} /><Scroll form={hub.tablet}>{hub.data.rolesError ? <div className="svh-err">{hub.data.rolesError}</div> : <Spinner />}</Scroll></>;
   return <RoleEditor route={route} roleId={route.roleId} draftKey={route.key} />;
 }
 

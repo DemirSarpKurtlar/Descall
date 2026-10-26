@@ -237,6 +237,13 @@ t("every hub page renders on iPhone and iPad", () => {
     try { has(html, ...needles); } catch (e) { e.message = `${mode} ${r.id}: ${e.message}`; throw e; }
   }
 });
+t("role editor waits for editablePermissions (no empty-flag draft that could wipe a role on save)", () => {
+  for (const mode of ["phone", "tablet"]) {
+    const initial = mode === "phone" ? [{ id: "root" }, { id: "role", roleId: "r2" }] : [{ id: "rl", sel: "r2" }];
+    const html = unent(R("ServerHub", { server: server(), mode, initial, onClose() {}, deps }));
+    assert.ok(!html.includes("İzinler") && !html.includes("Rolü sil"), `${mode}: editor must not mount before editable keys load`);
+  }
+});
 t("hub respects permissions: a plain member sees no admin rows", () => {
   const sv = server({ isOwner: false, ownerId: "u9", myPermissions: { bits: "0", flags: {}, isOwner: false, highestPosition: 0 } });
   const html = R("ServerHub", { server: sv, mode: "phone", initial: [{ id: "root" }], onClose() {}, deps });
