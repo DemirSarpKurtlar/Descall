@@ -22,10 +22,10 @@
 .ctc-btn.gr{background:rgba(255,255,255,.1);color:rgba(235,238,255,.85);height:46px;font-size:16px;font-weight:550;margin-top:8px}
 .ctc-tap{transition:transform .12s ease,filter .12s ease;-webkit-tap-highlight-color:transparent}
 .ctc-tap:active{transform:scale(.97);filter:brightness(1.12)}
-.ctc-end{position:fixed;inset:0;z-index:10050;color:#fff;background:radial-gradient(90% 60% at 50% 25%,rgba(88,122,246,.35),transparent 70%),rgba(12,13,20,.9);-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%)}
+.ctc-end{position:fixed;inset:0;z-index:10050;color:#fff;background:radial-gradient(90% 60% at 50% 25%,rgba(88,122,246,.35),transparent 70%),#0c0d14;-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%)}
 .ctc-end-in{position:absolute;inset:0;max-width:430px;margin:0 auto;display:flex;flex-direction:column;align-items:center;padding-top:150px}
 .ctc-end h2{margin:20px 0 0;font-size:30px;font-weight:700;letter-spacing:-.02em}
-.ctc-end .st{margin-top:8px;font-size:16px;color:rgba(235,238,255,.6);display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.ctc-end .st{margin:8px 0 0;text-transform:none;letter-spacing:normal;font-size:16px;color:rgba(235,238,255,.6);display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
 .ctc-end .st b{color:#FF6B60;font-weight:600}
 .ctc-log{position:absolute;top:470px;left:28px;right:28px;border-radius:18px;padding:12px 14px;background:rgba(255,255,255,.07);display:flex;gap:12px;align-items:center;font-size:14px;text-align:left}
 .ctc-log .r{font-size:13px;color:rgba(235,238,255,.55)}

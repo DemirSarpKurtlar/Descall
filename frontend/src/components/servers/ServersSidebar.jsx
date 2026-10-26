@@ -963,6 +963,17 @@ export default function ServersSidebar({
                     aria-label={server.name}
                     aria-current={String(server.id) === String(activeServer.id) ? "page" : undefined}
                     onClick={() => onSelectServer?.(server)}
+                    onContextMenu={(e) => {
+                      if (!hubMode) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setFolderMenu(null);
+                      openServerMenuTouch(e, server);
+                    }}
+                    {...longPress((el) => {
+                      setFolderMenu(null);
+                      setServerMenu({ server, rect: rectOf(el) });
+                    })}
                   >
                     <ServerAvatar server={server} />
                   </button>
