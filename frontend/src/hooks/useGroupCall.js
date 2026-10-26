@@ -71,6 +71,8 @@ import {
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
+import { createCallTelemetrySender } from "../lib/callTelemetry";
+import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
 
 /** Build / merge a group-call participant row, keeping shop cosmetics. */
 function buildCallParticipant(user, extras = {}) {
@@ -251,6 +253,21 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       window.removeEventListener("focus", resumeAfterBackground);
     };
   }, [isInCall, toast]);
+
+  // 3.0.0 (A0): one aggregate setup summary per group call (no ids).
+  const groupTelemetryRef = useRef(null);
+  if (!groupTelemetryRef.current) {
+    const sender = createCallTelemetrySender({ getSocket: () => socketRef.current });
+    groupTelemetryRef.current = createGroupCallTelemetry({
+      send: (summary) => sender.send(summary),
+      context: () => ({ platform: IOS_NATIVE ? "ios-app" : "web" }),
+    });
+  }
+  const groupTelemetry = groupTelemetryRef.current;
+  const groupTelemetryPeers = useCallback(
+    () => Array.from(pcMapRef.current.entries()).map(([key, peerData]) => [key, peerData?.pc]),
+    []
+  );
 
   const isScreenSharingRef = useRef(false);
   useEffect(() => {
@@ -456,6 +473,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   }, [isInCall]);
 
   const cleanup = useCallback(() => {
+    groupTelemetryRef.current?.finish("ended");
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -903,6 +921,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     const hangout = Boolean(options?.hangout);
     
     try {
+      groupTelemetry.begin("group", "outgoing", type);
+      groupTelemetry.mark("gumStart");
       const stream = await acquirePreferredMic(
         acquireVoiceMicStream,
         type === "video"
@@ -910,6 +930,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           : { video: false },
         IOS_NATIVE ? "" : readAudioPrefs().input
       );
+      groupTelemetry.mark("gumEnd");
+      groupTelemetry.watch(groupTelemetryPeers);
       localStreamRef.current = stream;
       setLocalStream(stream);
       
@@ -974,6 +996,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       });
 
     } catch (err) {
+      groupTelemetryRef.current?.finish("failed");
       toast(tRuntime(voiceMicErrorCopy(err)), "error");
       cleanup();
     }
@@ -988,6 +1011,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       acceptCueAtRef.current = Date.now();
       audioManager.play("callAccept");
 
+      groupTelemetry.begin("group", "incoming", type);
+      groupTelemetry.mark("gumStart");
       const stream = await acquirePreferredMic(
         acquireVoiceMicStream,
         type === "video"
@@ -995,6 +1020,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           : { video: false },
         IOS_NATIVE ? "" : readAudioPrefs().input
       );
+      groupTelemetry.mark("gumEnd");
+      groupTelemetry.watch(groupTelemetryPeers);
       localStreamRef.current = stream;
       setLocalStream(stream);
       
@@ -1046,6 +1073,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       });
 
     } catch (err) {
+      groupTelemetryRef.current?.finish("failed");
       toast(tRuntime(voiceMicErrorCopy(err)), "error");
       cleanup();
     }
@@ -2561,6 +2589,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       participantCount,
     } = banner;
     try {
+      groupTelemetry.begin("group", "incoming", type);
+      groupTelemetry.mark("gumStart");
       const stream = await acquirePreferredMic(
         acquireVoiceMicStream,
         type === "video"
@@ -2568,6 +2598,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           : { video: false },
         IOS_NATIVE ? "" : readAudioPrefs().input
       );
+      groupTelemetry.mark("gumEnd");
+      groupTelemetry.watch(groupTelemetryPeers);
       localStreamRef.current = stream;
       setLocalStream(stream);
       const mutedNow = primeCapturedMic(stream);

@@ -48,7 +48,7 @@ import {
   writeParticipantGain,
 } from "../lib/voiceProfile";
 import { getUser } from "../lib/storage";
-import { getNativeCallSnapshot } from "../lib/iosNativeCall";
+import { drainNativeTelemetry, getNativeCallSnapshot } from "../lib/iosNativeCall";
 import { nativeOfferVerdict } from "../lib/iosNativeCallState";
 import useConnectionStats from "./useConnectionStats";
 import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding, applyAdaptiveJitterBuffer } from "../lib/adaptiveBitrate";
@@ -86,6 +86,7 @@ import {
 } from "../lib/callAudioDevices";
 import { createRemoteAudioKeeper, inboundAudioVerdict, pickInboundAudio } from "../lib/remoteAudioKeeper";
 import { createCallSetupTimeline } from "../lib/callSetupTimeline";
+import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { hapticCallConnected, resetCallHaptic } from "../lib/fluid/haptics";
 import { notifyCallAudioSession } from "../lib/voiceActivity";
 import { createCallRecovery } from "../lib/callConnectionMachine";
@@ -98,6 +99,13 @@ import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLeve
 
 /** Hang-up → overlay gone. The UI plays the leave transition inside this window. */
 export const CALL_ENDING_MS = 1100;
+
+// Telemetry tags for an answer: where it came from and which push woke us.
+function incomingEntryMeta(opts) {
+  if (opts?.fromCallKit === true) return { entry: "callkit", push: "voip" };
+  if (opts?.entry === "notification") return { entry: "notification", push: "alert" };
+  return { entry: "inapp", push: "none" };
+}
 
 function callPlatformTag() {
   if (IOS_NATIVE) return "ios-app";
@@ -297,17 +305,16 @@ export function useCall(socket, callOccupancyRef = null) {
   const localLevelProbeRef = useRef(null);
   // Tap → audio timeline, logged once per call (lib/callSetupTimeline.js).
   const setupTimelineRef = useRef(null);
+  // 3.0.0 (A0): summaries wait in a small sessionStorage queue while offline.
+  const telemetrySenderRef = useRef(null);
+  if (!telemetrySenderRef.current) {
+    telemetrySenderRef.current = createCallTelemetrySender({ getSocket: () => socketRef.current });
+  }
   if (!setupTimelineRef.current) {
     setupTimelineRef.current = createCallSetupTimeline({
       report: reportDiagnostic,
       context: () => ({ platform: callPlatformTag() }),
-      onSummary: (summary) => {
-        try {
-          if (socketRef.current?.connected) socketRef.current.emit("call:telemetry", summary);
-        } catch {
-          /* ignore */
-        }
-      },
+      onSummary: (summary) => telemetrySenderRef.current?.send(summary),
     });
   }
 
@@ -808,6 +815,9 @@ export function useCall(socket, callOccupancyRef = null) {
       const conn = pc.connectionState;
       const ice = pc.iceConnectionState;
       if (ice === "connected" || ice === "completed") setupTimelineRef.current?.mark("ice");
+      if ((conn === "disconnected" || conn === "failed") && modeRef.current === "active") {
+        setupTimelineRef.current?.count("reconnects");
+      }
       if (conn === "connected" && modeRef.current !== "active") {
         hapticCallConnected();
         setMode("active");
@@ -1104,6 +1114,20 @@ export function useCall(socket, callOccupancyRef = null) {
     };
   }, [mode, socket]);
 
+  // 3.0.0 (A0): call summaries queued while the socket was down go out now.
+  useEffect(() => {
+    if (!socket) return undefined;
+    const flush = () => {
+      telemetrySenderRef.current?.flush();
+      if (IOS_NATIVE) {
+        void drainNativeTelemetry().then((items) => items.forEach((item) => telemetrySenderRef.current?.send(item)));
+      }
+    };
+    socket.on("connect", flush);
+    if (socket.connected) flush();
+    return () => socket.off("connect", flush);
+  }, [socket]);
+
   // Signaling health for the link recovery machine while connected.
   useEffect(() => {
     if (mode !== "active" || !socket) return undefined;
@@ -1136,6 +1160,7 @@ export function useCall(socket, callOccupancyRef = null) {
       const isRenegotiation = Boolean(pc) && samePeer && (renegotiate === true || modeRef.current === "active");
       
       if (isRenegotiation) {
+        setupTimelineRef.current?.count("reneg");
         // Identity rides with the offer so ontrack can classify before any
         // "latest video" guess. Apply it before setRemoteDescription.
         if (screen) noteRemoteScreenAnnouncement(screen);
@@ -1443,12 +1468,15 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     try {
       callDirectionRef.current = "outgoing";
-      setupTimelineRef.current?.start("outgoing", type);
+      setupTimelineRef.current?.start("outgoing", type, { entry: "tap", push: "none" });
       micGuardRef.current?.noteCaptureStart();
       // Fresh TURN credentials in parallel with the mic prompt (see iceConfig).
-      const icePromise = ensureIceServersForCall();
+      setupTimelineRef.current?.mark("iceCfgStart");
+      const icePromise = ensureIceServersForCall().finally(() => setupTimelineRef.current?.mark("iceCfgEnd"));
+      setupTimelineRef.current?.mark("gumStart");
       const stream = await acquireCallMicStream(type);
       setupTimelineRef.current?.mark("gum");
+      setupTimelineRef.current?.mark("gumEnd");
       localStreamRef.current = stream;
       setLocalStream(stream);
       const mutedNow = primeCapturedMic(stream);
@@ -1518,7 +1546,7 @@ export function useCall(socket, callOccupancyRef = null) {
     if (opts?.fromCallKit === true && tlState && !tlState.done && tlState.direction === "incoming") {
       timeline.mark("callKitReady"); // in-app Accept answered via CallKit first
     } else if (modeRef.current === "incoming") {
-      timeline?.start("incoming", incomingCallTypeRef.current || "voice");
+      timeline?.start("incoming", incomingCallTypeRef.current || "voice", incomingEntryMeta(opts));
     }
     if (IOS_NATIVE && opts?.fromCallKit !== true && modeRef.current === "incoming" && interceptUiAnswer()) {
       return;
@@ -1534,9 +1562,12 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     try {
       micGuardRef.current?.noteCaptureStart();
-      const icePromise = ensureIceServersForCall();
+      timeline?.mark("iceCfgStart");
+      const icePromise = ensureIceServersForCall().finally(() => timeline?.mark("iceCfgEnd"));
+      timeline?.mark("gumStart");
       const stream = await acquireCallMicStream(type);
       timeline?.mark("gum");
+      timeline?.mark("gumEnd");
       const iceServers = await icePromise;
       timeline?.mark(iceServersHaveTurn(iceServers) ? "iceCfgTurn" : "iceCfgStunOnly");
       // The ring may have ended while the capture was pending (iOS defers
