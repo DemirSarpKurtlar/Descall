@@ -41,7 +41,13 @@ const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const log = (...a) => console.log('[e2e-msg]', ...a);
 
 const ME = { id: '00000000-0000-4000-8000-0000000000e1', username: 'demir', displayName: 'Demir', display_name: 'Demir', birthDate: '2000-05-05', emailVerified: true, language: 'tr', blockedUsers: [], status: 'online' };
-const PEER = { id: '00000000-0000-4000-8000-0000000000e2', username: 'ayse', displayName: 'Ayşe', display_name: 'Ayşe', status: 'online', avatarUrl: null };
+const PEER = { id: '00000000-0000-4000-8000-0000000000e2', username: 'ayse', displayName: 'Ayşe', display_name: 'Ayşe', status: 'online', avatarUrl: null, createdAt: '2025-02-22T10:00:00.000Z', equippedCountry: { category: 'countries', country_code: 'TR', name: '🇹🇷 Türkiye' } };
+const MUTUAL_FRIENDS = [
+  { id: '00000000-0000-4000-8000-0000000000f1', username: 'mert', displayName: 'Mert' },
+  { id: '00000000-0000-4000-8000-0000000000f2', username: 'zeynep', displayName: 'Zeynep' },
+  { id: '00000000-0000-4000-8000-0000000000f3', username: 'can', displayName: 'Can' },
+];
+const MUTUAL_SERVERS = [{ id: 's-e2e-1', name: 'Oyun Gecesi', iconUrl: null }, { id: 's-e2e-2', name: 'Kampüs', iconUrl: null }];
 const sender = (u) => ({ id: u.id, username: u.username, displayName: u.displayName, display_name: u.displayName, avatarUrl: null });
 const LINES = ['Bu akşam oyun gecesine geliyor musun?', 'Tabii, saat kaçta?', "21:00'de, önce sesli kanalda toplanırız.", 'Tamam 👍', 'Mert ve Zeynep de gelecek.', 'Süper!', 'Geçen haftaki klibi gördün mü?', 'Gördüm, efsaneydi 😂', 'Bu sefer takımları ben kurayım mı?', 'Olur, sen kur.'];
 let seq = 0;
@@ -55,8 +61,12 @@ function freshMessages() {
 
 // ---- mock server ------------------------------------------------------------------------
 const state = { failReactions: false, events: [], sockets: new Set() };
-function api(p) {
+function api(p, method = 'GET') {
   if (/\/auth\/me$/.test(p)) return { user: ME };
+  if (/\/friends\/mutual\//.test(p)) return { mutualFriends: MUTUAL_FRIENDS, mutualServers: MUTUAL_SERVERS };
+  if (method === 'POST' && /\/api\/reports$/.test(p)) { state.events.push({ kind: 'report' }); return { ok: true, id: 'r-e2e-1' }; }
+  if (method === 'POST' && /\/friends\/block$/.test(p)) { state.events.push({ kind: 'block' }); return { ok: true, blockedUsers: [PEER.id] }; }
+  if (method === 'POST' && /\/friends\/unblock$/.test(p)) { state.events.push({ kind: 'unblock' }); return { ok: true, blockedUsers: [] }; }
   if (/\/promo\/popup$/.test(p)) return { popup: null };
   if (/\/dm\/[^/]+\/messages$/.test(p)) return { withUserId: PEER.id, messages: state.messages, hasMore: false };
   if (/\/dm\/previews$/.test(p)) return { dmPreviewsByPeer: { [PEER.id]: 'Olur, sen kur.' }, dmLastActivityByPeer: { [PEER.id]: new Date().toISOString() }, previews: {} };
@@ -84,7 +94,7 @@ function serve(req, res) {
   }
   if (API_RE.test(url.pathname) && !accept.startsWith('text/html')) {
     res.writeHead(200, { 'content-type': 'application/json' });
-    return res.end(JSON.stringify(api(url.pathname)));
+    return res.end(JSON.stringify(api(url.pathname, req.method)));
   }
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
   fs.createReadStream(path.join(DIST, 'index.html')).pipe(res);
@@ -134,6 +144,8 @@ const IPAD_UA = 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1
 const DEV = {
   iphone: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, userAgent: IPHONE_UA, touch: true },
   ipad: { viewport: { width: 1024, height: 1366 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: IPAD_UA, touch: true },
+  // Landscape iPad (the size of mockup #29's iPad frame); opt-in via DESCALL_E2E_DEVICES.
+  'ipad-land': { viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: IPAD_UA, touch: true },
   desktop: { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, isMobile: false, hasTouch: false, touch: false },
 };
 
@@ -162,6 +174,11 @@ const metrics = new Function(`const sc = ${SCROLLER}; if (!sc) return { ok: fals
     jump: !!btn && getComputedStyle(btn).opacity !== '0', count: cnt ? cnt.textContent.trim() : '',
     rows: document.querySelectorAll('.message-bubble').length };`);
 
+async function dumpRects(page, label, sels) {
+  if (!process.env.DESCALL_E2E_RECTS) return;
+  const out = await page.evaluate((sels) => sels.map((s) => [s, [...document.querySelectorAll(s)].slice(0, 12).map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join(' '); })]), sels);
+  for (const [s, rs] of out) log(`rects ${label} ${s.padEnd(12)} ${rs.join(' | ')}`);
+}
 async function bubbleBox(page, id) {
   return page.evaluate((id) => {
     const b = [...document.querySelectorAll('.message-bubble[data-message-id]')].find((n) => n.getAttribute('data-message-id') === id);
@@ -223,6 +240,9 @@ async function runDevice(browser, base, dev) {
   await ctx.route('**/*', (r) => (/^(data|blob):/.test(r.request().url()) || r.request().url().startsWith(base) ? r.continue() : r.abort()));
   await ctx.addInitScript(([api, me]) => {
     window.__DESCALL_API_URL__ = api; window.__DESCALL_SOCKET_URL__ = api;
+    // CI runners have 2-4 cores, which turns on the opaque glass-lite fallback
+    // (gd-lite); report a real device's core count so the frosted path is tested.
+    try { Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { get: () => 8 }); } catch { /* ignore */ }
     localStorage.setItem('descall_language', 'tr');
     localStorage.setItem('descall:ios-pwa-install-dismissed', '1');
     localStorage.setItem('descall:cookie_consent_v1', JSON.stringify({ choice: 'rejected', at: new Date().toISOString() }));
@@ -253,6 +273,16 @@ async function runDevice(browser, base, dev) {
     opened = await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 6000).then(() => true, () => false);
   }
   if (!opened) await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 2000);
+  // On iPhone the chat slides in over the list; wait until the newest bubble
+  // is actually on top (hit-testable) before touching anything.
+  await waitFor(page, `${dev} chat on top`, () => {
+    const bs = document.querySelectorAll('.message-bubble[data-message-id]');
+    const b = bs[bs.length - 1];
+    if (!b) return { ok: false };
+    const r = b.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10));
+    return { ok: !!hit && b.contains(hit) };
+  }, null, 8000).catch(() => null);
   await sleep(900);
   let m = await page.evaluate(metrics);
   check(m.dist <= 4, `opens at the newest message (distance ${m.dist})`);
@@ -384,6 +414,170 @@ async function runDevice(browser, base, dev) {
   await sleep(900);
   m = await page.evaluate(metrics);
   check(m.dist <= 4, `pinned at the bottom, a new message keeps you there (distance ${m.dist})`);
+
+  // --- composer: no autofocus, enterkeyhint, grow, Enter / Shift+Enter, IME ---
+  const TA = '.composer-input';
+  await page.evaluate(() => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); });
+  const tapSel = async (sel, text) => {
+    const pt = await page.evaluate(([sel, text]) => {
+      const el = [...document.querySelectorAll(sel)].find((e) => (!text || e.textContent.trim() === text) && e.getBoundingClientRect().width > 0);
+      if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }, [sel, text || '']);
+    if (!pt) return false;
+    if (d.touch) await touchTap(cdp, pt.x, pt.y); else await page.mouse.click(pt.x, pt.y);
+    return true;
+  };
+  const taInfo = () => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const cs = getComputedStyle(e); return { h: Math.round(e.getBoundingClientRect().height), lh: parseFloat(cs.lineHeight), py: parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), by: parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth), scroll: e.scrollHeight > e.clientHeight + 1, oy: cs.overflowY, val: e.value, focused: document.activeElement === e, ek: e.getAttribute('enterkeyhint') }; }, TA);
+  let ti = await taInfo();
+  check(ti && !ti.focused, 'the composer does not take focus by itself');
+  check(ti && ti.ek === 'send', `composer has enterkeyhint="send" (${ti && ti.ek})`);
+  await page.focus(TA);
+  const hs = [];
+  for (let i = 1; i <= 11; i++) {
+    await page.keyboard.type(`Satır ${i}`);
+    if (i < 11) { await page.keyboard.down('Shift'); await page.keyboard.press('Enter'); await page.keyboard.up('Shift'); }
+    await sleep(40);
+    hs.push((await taInfo()).h);
+  }
+  ti = await taInfo();
+  const lines = dev === 'iphone' ? 5 : dev.startsWith('ipad') ? 8 : null;
+  const cap = lines ? Math.round(ti.lh * lines + ti.py + ti.by) : 120;
+  check(ti.val.split('\n').length === 11, `Shift+Enter adds a line (${ti.val.split('\n').length} lines)`);
+  check(hs[1] > hs[0] && hs[2] > hs[1], `composer grows with the text (${hs.slice(0, 4).join(',')})`);
+  check(Math.abs(ti.h - cap) <= 3, `composer stops at ${lines ? `${lines} lines` : '120px'} (${ti.h}px, cap ${cap}px, heights ${hs.join(',')})`);
+  check(ti.scroll && /auto|scroll/.test(ti.oy), `past the cap it scrolls inside (${ti.oy})`);
+  await shot(page, `${dev}-05-composer`);
+  // IME: Enter during composition does not send.
+  const sends0 = state.events.filter((e) => e.kind === 'send').length;
+  await page.evaluate((s) => { const e = document.querySelector(s); e.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 229, isComposing: true, bubbles: true, cancelable: true })); }, TA);
+  await sleep(250);
+  check(state.events.filter((e) => e.kind === 'send').length === sends0 && (await taInfo()).val.length > 0, 'Enter inside an IME composition does not send');
+  await page.keyboard.press('Enter');
+  await sleep(500);
+  const sent = state.events.filter((e) => e.kind === 'send');
+  check(sent.length === sends0 + 1 && /Satır 1\nSatır 2/.test(sent[sent.length - 1].text || ''), 'Enter sends the multi-line message');
+  ti = await taInfo();
+  check(ti.val === '' && ti.h <= hs[0] + 2, `after send the composer is empty and back to one line (${ti.h}px)`);
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await sleep(300);
+
+  // --- "Yanıtla" focuses the composer ---
+  box = await bubbleBox(page, peerId);
+  await sleep(300);
+  box = (await bubbleBox(page, peerId)) || box;
+  if (box) {
+    // iPhone: long-press opens the glass message menu. iPad/desktop: the
+    // hover toolbar (tap on iPad, hover on desktop) carries the reply button.
+    if (dev === 'iphone') await longPress(cdp, box.l + 20, box.t + box.h / 2);
+    else if (d.touch) await touchTap(cdp, box.l + 20, box.t + box.h / 2);
+    else await page.mouse.move(box.l + 20, box.t + box.h / 2);
+    await sleep(500);
+    const replied = dev === 'iphone'
+      ? await tapSel('button, [role="menuitem"]', 'Yanıtla')
+      : await tapSel('button[aria-label="Yanıtla"]');
+    if (!replied) log(`${dev}: menu texts: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('button, [role="menuitem"]')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.textContent.trim()).filter(Boolean).slice(-30)))}`);
+    check(replied, '"Yanıtla" is in the message menu');
+    await sleep(600);
+    ti = await taInfo();
+    check(ti && ti.focused, '"Yanıtla" puts the cursor in the composer');
+    await page.evaluate(() => { const x = document.querySelector('.reply-preview-close, .reply-bar button, [aria-label="Yanıtı iptal et"]'); if (x) x.click(); });
+    await page.evaluate(() => document.activeElement && document.activeElement.blur());
+    await page.keyboard.press('Escape');
+    await sleep(400);
+  }
+
+  // --- header ⋯ menu ---
+  if (await tapSel('[data-testid="dm-header-more"]')) {
+    const hm = await waitFor(page, 'header menu', () => { const m = document.querySelector('[data-testid="dm-header-menu"]'); return { ok: !!m, items: m ? [...m.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent.trim()) : [] }; }, null, 3000).catch(() => ({ ok: false, items: [] }));
+    check(hm.ok, `header ⋯ opens a menu (${JSON.stringify(hm.items)})`);
+    check(hm.items[0] === 'Profili gör' && hm.items.some((x) => /Şikayet/.test(x)) && hm.items.some((x) => /Engelle/.test(x)), 'header menu has profile, report and block');
+    await shot(page, `${dev}-06-header-menu`);
+    await page.keyboard.press('Escape');
+    await sleep(300);
+    await page.evaluate(() => { const m = document.querySelector('[data-testid="dm-header-menu"]'); if (m) document.querySelector('.g-action-menu-catcher, .grp-menu-catcher')?.click(); });
+    await sleep(300);
+  } else problems.push(`${dev}: no header ⋯ button`);
+
+  // --- profile sheet (#29) ---
+  const openProfile = async () => {
+    if (await tapSel('[data-testid="dm-header-more"]')) {
+      await sleep(350);
+      await tapSel('[data-testid="dm-header-menu"] [role="menuitem"]', 'Profili gör');
+    }
+    return waitFor(page, 'profile sheet', () => ({ ok: !!document.querySelector('[data-testid="profile-sheet"]') }), null, 4000).then(() => true, () => false);
+  };
+  if (await openProfile()) {
+    await sleep(700);
+    const pf = await page.evaluate(() => {
+      const s = document.querySelector('[data-testid="profile-sheet"]'); const txt = (q) => [...s.querySelectorAll(q)].map((x) => x.textContent.trim());
+      const cs = getComputedStyle(s);
+      return { name: txt('[data-testid="profile-name"]')[0], acts: txt('[data-testid="profile-actions"] .pfs-act'), about: txt('[data-testid="profile-about"] .pfs-row'), safety: txt('[data-testid="profile-safety"] .pfs-row'), foot: txt('.pfs-foot')[0], bf: cs.backdropFilter || cs.webkitBackdropFilter, bg: cs.backgroundColor, lite: document.documentElement.classList.contains('gd-lite') || document.documentElement.classList.contains('a11y-solid'), closeLeft: (() => { const c = s.querySelector('[data-testid="profile-close"]').getBoundingClientRect(); const m = s.querySelector('[data-testid="profile-more"]').getBoundingClientRect(); return c.left < m.left; })(), focused: document.activeElement && document.activeElement.tagName };
+    });
+    check(pf.name === 'Ayşe', `profile shows the name (${pf.name})`);
+    check(JSON.stringify(pf.acts) === JSON.stringify(['Mesaj', 'Ara', 'Görüntülü', 'Arkadaş']), `profile tiles Mesaj/Ara/Görüntülü/Arkadaş (${JSON.stringify(pf.acts)})`);
+    check(pf.about.some((x) => /Üyelik tarihi.*22 Şub 2025/.test(x)) && pf.about.some((x) => /Ortak sunucular\s*2/.test(x)) && pf.about.some((x) => /Ortak arkadaşlar\s*3/.test(x)), `HAKKINDA rows (${JSON.stringify(pf.about)})`);
+    check(JSON.stringify(pf.safety) === JSON.stringify(['Şikayet et', "Ayşe'yi engelle"]), `bottom buttons Şikayet et / Ayşe'yi engelle (${JSON.stringify(pf.safety)})`);
+    check(/Ayşe'ye bildirim gitmez/.test(pf.foot || ''), `block footnote (${pf.foot})`);
+    // Frosted (blur 40px) normally; the lite / solid fallback (slow GPU, reduced
+    // transparency) must still be fully opaque, never see-through.
+    check(pf.lite ? /^rgb\(/.test(pf.bg || '') : /blur\(40px\)/.test(pf.bf || ''), `heavy frosted glass (${pf.lite ? 'lite fallback, ' : ''}backdrop ${pf.bf}, bg ${pf.bg})`);
+    check(pf.closeLeft, 'close on the left, ⋯ on the right');
+    await shot(page, `${dev}-07-profile`);
+    await dumpRects(page, 'profile', ['.pfs-hero', '.pfs-av', '.pfs-name', '.pfs-h', '.pfs-badges', '.cosmetic-country-badge', '.pfs-acts', '.pfs-sec', '.pfs-group', '.pfs-row', '.pfs-foot', '.pfs-sheet', '.pfs-form', '.pfs-cb']);
+    // Mutual servers sub-page and back.
+    if (await tapSel('[data-testid="profile-row-servers"]')) {
+      const sub = await waitFor(page, 'servers page', () => { const s = document.querySelector('[data-testid="profile-sheet"]'); const t = s && s.textContent; return { ok: !!t && /Oyun Gecesi/.test(t) && /Kampüs/.test(t) }; }, null, 2500).then(() => true, () => false);
+      check(sub, 'Ortak sunucular opens the list');
+      await tapSel('[data-testid="profile-sub-back"]');
+      await sleep(400);
+    }
+    // ⋯ menu.
+    await tapSel('[data-testid="profile-more"]');
+    const pm = await waitFor(page, 'profile menu', () => { const m = document.querySelector('[data-testid="profile-menu"]'); return { ok: !!m, items: m ? [...m.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent.trim()) : [], ios: m && m.classList.contains('g-action-menu--ios'), on: document.querySelector('[data-testid="profile-more"]').classList.contains('is-on') }; }, null, 3000).catch(() => ({ ok: false, items: [] }));
+    check(JSON.stringify(pm.items) === JSON.stringify(['Profili paylaş', 'Kullanıcı adını kopyala', 'Takma ad ver', 'Şikayet et', 'Engelle']), `profile ⋯ menu items (${JSON.stringify(pm.items)})`);
+    check(pm.ios && pm.on, 'menu uses the iOS style and ⋯ shows pressed');
+    await sleep(350);
+    await shot(page, `${dev}-08-profile-menu`);
+    await dumpRects(page, 'menu', ['[data-testid="profile-menu"]', '[data-testid="profile-menu"] [role="menuitem"]']);
+    // Report from the menu → #30 sheet.
+    await tapSel('[data-testid="profile-menu"] [role="menuitem"]', 'Şikayet et');
+    const rs = await waitFor(page, 'report sheet', () => { const s = document.querySelector('[data-testid="report-sheet"]'); return { ok: !!s, txt: s && s.textContent }; }, null, 3000).catch(() => ({ ok: false }));
+    check(rs.ok && /Ayşe'yi neden şikayet ediyorsun\?/.test(rs.txt) && /Ayşe kimin şikayet ettiğini görmez\./.test(rs.txt), 'report sheet asks "Ayşe\'yi neden şikayet ediyorsun?"');
+    const reasons = await page.evaluate(() => [...document.querySelectorAll('[data-testid="report-sheet"] [role="radio"]')].map((x) => `${x.textContent.trim()}${x.getAttribute('aria-checked') === 'true' ? '*' : ''}`));
+    check(JSON.stringify(reasons) === JSON.stringify(['Taciz veya zorbalık*', 'Nefret söylemi', 'Tehdit', 'Spam veya dolandırıcılık', 'Başkasını taklit ediyor', 'Cinsel içerik', 'Kişisel bilgilerimi paylaştı', 'Başka bir şey']), `eight reasons, first picked (${JSON.stringify(reasons)})`);
+    const rf = await page.evaluate(() => document.activeElement && document.activeElement.tagName);
+    check(rf !== 'TEXTAREA', 'report sheet does not pop the keyboard');
+    await sleep(400);
+    await shot(page, `${dev}-09-report`);
+    await dumpRects(page, 'report', ['[data-testid="report-sheet"]', '.pfs-grab', '.pfs-nav', '.rps-head', '.rps-head .av', '.rps-head .ttl', '.rps-head .sub', '.pfs-sec', '.pfs-group', '.pfs-row', '.rps-field']);
+    await tapSel('[data-testid="report-reason-spam"]');
+    await sleep(150);
+    const picked = await page.evaluate(() => document.querySelector('[data-testid="report-reason-spam"]').getAttribute('aria-checked'));
+    check(picked === 'true', 'tapping a reason picks it');
+    const reports0 = state.events.filter((e) => e.kind === 'report').length;
+    await tapSel('[data-testid="report-submit"]');
+    const done = await waitFor(page, 'report done', () => { const s = document.querySelector('[data-testid="report-sheet"]'); const a = document.querySelector('[data-testid="report-block-offer"]'); return { ok: !!s && /Şikayetin alındı/.test(s.textContent) && !!a, alert: a && a.textContent }; }, null, 4000).catch(() => ({ ok: false }));
+    check(state.events.filter((e) => e.kind === 'report').length === reports0 + 1, 'Gönder posts the report');
+    check(done.ok && /Bu kişiyi engellemek ister misin\?/.test(done.alert) && /Şimdi değil/.test(done.alert), `done sheet + "Bu kişiyi engellemek ister misin?" (${done.alert})`);
+    await sleep(450);
+    await shot(page, `${dev}-10-report-block`);
+    await dumpRects(page, 'done', ['[data-testid="report-sheet"]', '.pfs-nav', '.rps-done', '.rps-done .ck', '.rps-done h3', '.rps-done p', '.rps-alert', '.rps-alert .bd', '.rps-alert .bt']);
+    const blocks0 = state.events.filter((e) => e.kind === 'block').length;
+    await tapSel('[data-testid="report-block-confirm"]');
+    await sleep(700);
+    check(state.events.filter((e) => e.kind === 'block').length === blocks0 + 1, 'Engelle in the alert blocks');
+    const after = await page.evaluate(() => ({ alert: !!document.querySelector('[data-testid="report-block-offer"]'), done: !!document.querySelector('[data-testid="report-done"]') }));
+    check(!after.alert && after.done, 'alert closes, the done sheet stays');
+    await tapSel('[data-testid="report-done"]');
+    await sleep(500);
+    const unb = await page.evaluate(() => [...document.querySelectorAll('[data-testid="profile-safety"] .pfs-row')].map((x) => x.textContent.trim()));
+    check(unb.some((x) => /engelini kaldır/.test(x)), `profile now offers "Ayşe'nin engelini kaldır" (${JSON.stringify(unb)})`);
+    const hit = await page.evaluate(() => { const b = document.querySelector('[data-testid="profile-close"]'); const r = b.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); if (b.contains(h)) return 'ok'; const path = []; for (let e = h; e && path.length < 6; e = e.parentElement) path.push(`${e.tagName.toLowerCase()}.${String(e.className || '').split(' ').join('.')}${e.dataset && e.dataset.testid ? `[${e.dataset.testid}]` : ''}`); return path.join(' < ').slice(0, 300); });
+    check(hit === 'ok', `close button is not covered (${hit})`);
+    await tapSel('[data-testid="profile-close"]');
+    await sleep(900);
+    check(await page.evaluate(() => !document.querySelector('[data-testid="profile-sheet"]')), 'close button dismisses the profile');
+  } else problems.push(`${dev}: profile sheet did not open`);
 
   } catch (err) {
     await shot(page, `${dev}-fail`).catch(() => {});

@@ -1,3 +1,4 @@
+import { getNickname } from "./friendNicknames.js";
 /**
  * Single source of truth for user profile fields (especially avatar + display name).
  * Always use normalizeUser() when storing user objects in state or localStorage.
@@ -74,6 +75,9 @@ export function resolveAvatarUrl(user) {
 
 export function resolveDisplayName(user) {
   if (!user) return "Unknown";
+  // A private nickname you gave them (profile ⋯ → Takma ad ver) wins.
+  const nickname = user.id != null ? getNickname(user.id) : "";
+  if (nickname) return nickname;
   return (
     cleanDisplayName(user.displayName ?? user.display_name) ||
     user.username ||

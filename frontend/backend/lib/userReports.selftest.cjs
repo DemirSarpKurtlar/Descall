@@ -4,6 +4,8 @@ process.env.SUPABASE_URL = process.env.SUPABASE_URL || "https://placeholder.supa
 process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
 
 const {
+  reporterNotice,
+  normalizeReason: normalizeReasonA2,
   sanitizeSnippet,
   sanitizeNote,
   normalizeReason,
@@ -91,5 +93,21 @@ assert(
   ) === false,
   "different message is a new report"
 );
+
+// Master Update A2: the reporter hears the outcome ("sonuç Bildirimler'e gelir").
+{
+  const done = reporterNotice("actioned");
+  const none = reporterNotice("dismissed");
+  assert(done.type === "report_result" && none.type === "report_result", "reporter notice type");
+  assert(done.body !== none.body, "actioned and dismissed read differently");
+  for (const n of [done, none]) {
+    assert(/Şikayetin/.test(n.title) && n.body.length > 10, "reporter notice is Turkish, sen form");
+    assert(!/\{|undefined/.test(n.title + n.body), "no template leftovers");
+  }
+  // The 8 reasons of the mockup #30 sheet are all accepted as-is.
+  for (const r of ["harassment", "hate_speech", "threats", "spam", "impersonation", "nsfw", "doxxing", "other"]) {
+    assert(normalizeReasonA2(r) === r, `reason ${r} is accepted`);
+  }
+}
 
 console.log("userReports.selftest.cjs ok");

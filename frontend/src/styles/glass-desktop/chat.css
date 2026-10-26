@@ -449,7 +449,8 @@ html.glass-desktop .composer-row {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 8px;
-  align-items: center;
+  /* The field grows upward (A2 §4.4); + and send stay on its last line. */
+  align-items: end;
   width: 100%;
 }
 
@@ -501,7 +502,7 @@ html.glass-desktop .composer-send-btn {
 
 html.glass-desktop .composer-input {
   min-height: 52px !important;
-  height: 52px;
+  /* height / max-height: auto-grow inline (8 lines on iPad, 120 px desktop). */
   border: none !important;
   border-radius: var(--r-xl) !important;
   padding: 14px 132px 14px 20px !important;

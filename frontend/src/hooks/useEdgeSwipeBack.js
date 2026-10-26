@@ -80,6 +80,8 @@ export const SWIPE_BACK_BLOCKERS = [
   ".g-profile-scrim",
   ".g-alert-scrim",
   ".g-profile-sheet",
+  ".pfs-scrim",
+  ".rps-overlay",
   ".user-settings-shell",
 ].join(",");
 

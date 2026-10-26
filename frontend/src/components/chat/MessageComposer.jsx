@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -28,6 +28,8 @@ import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
+import { registerComposerInput } from "../../lib/composerFocus";
+import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 
@@ -162,13 +164,64 @@ export default function MessageComposer({
     return undefined;
   }, [glass, editingMessage]);
 
+  // 3.0.0 (A2 §4.5): no autofocus when a chat opens, on any device. Only
+  // "Yanıtla" focuses the field; MessageList does that inside the tap
+  // (focusComposerForReply) so iOS opens the keyboard. This effect is the
+  // fallback for replies started from a keyboard shortcut / desktop menu.
   useEffect(() => {
-    // Autofocus on mobile opens the iOS keyboard and often leaves the shell
-    // stuck elevated after dismiss, only autofocus desktop / large screens.
-    const isNarrow = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
-    if (isNarrow) return;
-    inputRef.current?.focus();
-  }, [activeDmUser?.id, activeGroup?.id, replyTo?.id]);
+    if (!replyTo?.id) return;
+    const el = inputRef.current;
+    if (!el || document.activeElement === el) return;
+    try { el.focus({ preventScroll: true }); } catch { /* ignore */ }
+  }, [replyTo?.id]);
+
+  // Reply focus registry (lib/composerFocus).
+  const setInputEl = useCallback((el) => {
+    inputRef.current = el;
+    if (el) registerComposerInput(el);
+  }, []);
+
+  // IME composition (Japanese/Chinese/Korean, dead keys): Enter commits the
+  // candidate and must never send.
+  const composingRef = useRef(false);
+
+  // 3.0.0 (A2 §4.4): auto-grow to 5 lines (iPhone) / 8 (iPad) / 120 px
+  // (desktop), then scroll inside. The extra height is published as
+  // --composer-grow so the floating glass list keeps its last line visible.
+  const composerDevice = useMemo(() => {
+    let coarse = false;
+    try { coarse = Boolean(window.matchMedia?.("(any-pointer: coarse)").matches); } catch { /* ignore */ }
+    return composerDeviceClass({ glass, coarse });
+  }, [glass]);
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el || typeof window === "undefined") return;
+    const cs = window.getComputedStyle(el);
+    const lineHeight = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 16) * 1.5;
+    const paddingY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const borderY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+    const minHeight = parseFloat(cs.minHeight) || 0;
+    const maxHeight = maxComposerHeight({ device: composerDevice, lineHeight, paddingY, borderY });
+    const prevScroll = el.scrollTop;
+    el.style.height = "auto";
+    const { height, scroll } = composerHeight({ scrollHeight: el.scrollHeight, minHeight, maxHeight, borderY });
+    el.style.height = `${height}px`;
+    el.style.maxHeight = `${maxHeight}px`;
+    el.style.overflowY = scroll ? "auto" : "hidden";
+    if (scroll) {
+      // Keep the caret in view when it sits at the end (typing / paste).
+      const atEnd = el.selectionEnd == null || el.selectionEnd >= el.value.length;
+      el.scrollTop = atEnd ? el.scrollHeight : prevScroll;
+    } else if (el.scrollTop) {
+      el.scrollTop = 0;
+    }
+    const oneLine = Math.max(minHeight, lineHeight + paddingY + borderY);
+    const grow = Math.max(0, Math.round(height - oneLine));
+    document.documentElement.style.setProperty("--composer-grow", `${grow}px`);
+  }, [message, composerDevice]);
+  useEffect(() => () => {
+    try { document.documentElement.style.removeProperty("--composer-grow"); } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     const el = inputRef.current;
@@ -588,6 +641,8 @@ export default function MessageComposer({
   };
 
   const handleKeyDown = (e) => {
+    // Enter inside an IME composition commits the candidate; never send.
+    if (e.key === "Enter" && (composingRef.current || isImeEnter(e))) return;
     if (slashMenuOpen) {
       if ((e.metaKey || e.ctrlKey) && /^[1-5]$/.test(e.key)) {
         e.preventDefault();
@@ -655,7 +710,8 @@ export default function MessageComposer({
         return;
       }
     }
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Enter sends (iPhone keyboard "Gönder" too); Shift+Enter is a newline.
+    if (shouldSendOnEnter(e, { composing: composingRef.current })) {
       e.preventDefault();
       handleSend();
     }
@@ -1286,27 +1342,22 @@ export default function MessageComposer({
           </div>
         ) : (
           <textarea
-            ref={inputRef}
+            ref={setInputEl}
             onPaste={onPaste}
             value={message}
             onChange={(e) => {
-              if (e.target.scrollTop) e.target.scrollTop = 0;
               setMessage(e.target.value);
               if (e.target.value) emitTypingStart();
               else emitTypingStop();
             }}
-            onScroll={(e) => {
-              // iOS scrolls the caret inside a one-line field and hides the text.
-              if (e.target.scrollTop) e.target.scrollTop = 0;
-            }}
-            onFocus={(e) => {
-              if (e.target.scrollTop) e.target.scrollTop = 0;
-            }}
+            onCompositionStart={() => { composingRef.current = true; }}
+            onCompositionEnd={() => { composingRef.current = false; }}
             onKeyDown={handleKeyDown}
+            enterKeyHint="send"
             placeholder={dragOver ? t("Drop file to attach…") : (glass && activeChannel?.name && !activeDmUser && !activeGroup ? t("Message #{name}…", { name: activeChannel.name }) : t("Message…"))}
             className="composer-input"
             rows={1}
-            style={{ minHeight: "44px", maxHeight: "120px", resize: "none" }}
+            style={{ minHeight: "44px", resize: "none" }}
           />
         )}
       </div>

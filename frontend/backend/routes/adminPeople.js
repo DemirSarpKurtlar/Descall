@@ -190,10 +190,25 @@ async function applyFromReport(req, res, kind) {
       resolution: kind,
       markAllOpenForTarget: true,
     });
+    notifyReporters(io, resolved);
     res.json({ ok: true, ...resolved });
   } catch (err) {
     console.error(`[reports] ${kind}:`, err);
     res.status(500).json({ error: err.message || "Action failed." });
+  }
+}
+
+function notifyReporters(io, resolved) {
+  const ids = Array.isArray(resolved?.reporterIds) ? resolved.reporterIds : [];
+  if (!io || ids.length === 0) return;
+  try {
+    const { pushNotification } = require("../socket/handlers");
+    const notice = reports.reporterNotice(resolved.status);
+    for (const id of ids) {
+      pushNotification(io, id, { ...notice, meta: { reportId: resolved.reportId, status: resolved.status } });
+    }
+  } catch (err) {
+    console.warn("[reports] reporter notification failed:", err?.message || err);
   }
 }
 
@@ -207,6 +222,7 @@ router.post("/reports/:id/dismiss", async (req, res) => {
     });
     audit(req.user, "report_dismiss", resolved.targetId, { reportId: req.params.id });
     notifyAdminRoom(getIo(req), { type: "report_dismiss", reportId: req.params.id, targetId: resolved.targetId });
+    notifyReporters(getIo(req), resolved);
     res.json({ ok: true, ...resolved });
   } catch (err) {
     if (err.code === "NOT_FOUND") return res.status(404).json({ error: err.message });

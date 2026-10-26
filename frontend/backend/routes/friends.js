@@ -399,6 +399,29 @@ router.get("/requests", requireAuth, async (req, res) => {
   }
 });
 
+// Servers both users belong to (temporary guest seats do not count).
+async function mutualServersFor(myId, targetId) {
+  const { data: rows, error } = await supabase
+    .from("server_members")
+    .select("server_id, user_id, temporary")
+    .in("user_id", [myId, targetId]);
+  if (error || !rows) return [];
+  const mine = new Set();
+  const theirs = new Set();
+  for (const r of rows) {
+    if (r.temporary) continue;
+    if (r.user_id === myId) mine.add(r.server_id);
+    else if (r.user_id === targetId) theirs.add(r.server_id);
+  }
+  const shared = [...mine].filter((id) => theirs.has(id));
+  if (shared.length === 0) return [];
+  const { data: servers } = await supabase
+    .from("servers")
+    .select("id, name, icon_url")
+    .in("id", shared);
+  return (servers || []).map((s) => ({ id: s.id, name: s.name, iconUrl: s.icon_url || null }));
+}
+
 // Get mutual friends with a target user
 router.get("/mutual/:username", requireAuth, async (req, res) => {
   try {
@@ -416,8 +439,10 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
     }
 
     if (targetUser.id === myId) {
-      return res.json({ mutualFriends: [], count: 0 });
+      return res.json({ mutualFriends: [], count: 0, mutualServers: [] });
     }
+
+    const mutualServers = await mutualServersFor(myId, targetUser.id).catch(() => []);
 
     // Fetch accepted friends of current user
     const { data: myRows } = await supabase
@@ -444,7 +469,7 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
     const mutualIds = [...myFriendIds].filter((id) => theirFriendIds.has(id));
 
     if (mutualIds.length === 0) {
-      return res.json({ mutualFriends: [], count: 0 });
+      return res.json({ mutualFriends: [], count: 0, mutualServers });
     }
 
     const { data: mutualUsers } = await supabase
@@ -458,7 +483,7 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
       avatarUrl: u.avatar_url || null,
     }));
 
-    res.json({ mutualFriends, count: mutualFriends.length });
+    res.json({ mutualFriends, count: mutualFriends.length, mutualServers });
   } catch (err) {
     console.error("Mutual friends error:", err);
     res.status(500).json({ error: "Internal server error" });

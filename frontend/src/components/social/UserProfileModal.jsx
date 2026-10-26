@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import OverlayPortal from "../ui/OverlayPortal";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
-import { X, UserPlus, MessageSquare, Check, UserMinus, Flag } from "../ui/Icon.jsx";
+import { X, UserPlus, MessageSquare, Check, UserMinus, Flag, Ban, MoreHorizontal } from "../ui/Icon.jsx";
+import GlassActionMenu from "../ui/GlassActionMenu";
+import { confirmToggleBlock, useIsBlocked } from "../../lib/blockedUsers";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { API_BASE_URL } from "../../config/api";
@@ -16,7 +18,7 @@ import { useGlassShell } from "../layout/glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
-import { isUserAdmin } from "../../lib/userProfile";
+import { isUserAdmin, resolveDisplayName } from "../../lib/userProfile";
 import {
   acceptProfilePayload,
   friendStateFor,
@@ -30,8 +32,14 @@ import { cssUrl } from "../../lib/cssUrl";
 import { useLocale } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
 import ReportUserModal from "./ReportUserModal";
-import BlockUserButton from "./BlockUserButton";
-import { confirmAction } from "../../lib/glassConfirm";
+import { confirmAction, promptAction } from "../../lib/glassConfirm";
+import { trAccusative, trDative, trGenitive } from "../../lib/trSuffix";
+import { useNickname, setNickname, NICKNAME_MAX } from "../../lib/friendNicknames";
+import { copyText } from "../../lib/copyText";
+import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
+import { useToast } from "../../context/ToastContext";
+import "./ProfileSheet.css";
+import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUser, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -57,6 +65,7 @@ function generateBannerGradient(username) {
 }
 
 const STATUS_COLOR = { online: "#23a55a", offline: "#80848e", idle: "#f0b232", dnd: "#f23f43" };
+const MENU_FORM_OFFSET = { x: 10, y: -8 };
 
 function ProfileGlassSkeleton({ label }) {
   return (
@@ -79,6 +88,7 @@ function UserProfileModal({
   friends = [],
   onlineUsers = [],
   onStartDm,
+  onStartCall,
   onFriendSent,
 }) {
   const t = useT();
@@ -93,14 +103,84 @@ function UserProfileModal({
   const [friendOverride, setFriendOverride] = useState(null);
   const [friendLoading, setFriendLoading] = useState(false);
   const [friendError, setFriendError] = useState({ userId: null, message: "" });
-  const [mutualState, setMutualState] = useState({ forId: null, list: [] });
+  const [mutualState, setMutualState] = useState({ forId: null, list: [], servers: [] });
+  // Pushed page inside the sheet: "servers" | "friends" | null.
+  const [page, setPage] = useState(null);
+  const nickname = useNickname(userId);
+  const { toast } = useToast();
   const [reportFor, setReportFor] = useState(null);
+  // A2 §4.6: Engelle / Şikayet et live in a "⋯" menu at the top AND as red
+  // buttons at the bottom of the profile.
+  const moreRef = useRef(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [blockError, setBlockError] = useState("");
+  const blockedByMe = useIsBlocked(userId);
 
   const isSelf = sameUserId(me?.id, userId);
   const status = getPresenceStatus(onlineUsers, userId);
   const friendState = friendStateFor(userId, friends, friendOverride);
   const friendErrorText = sameUserId(friendError.userId, userId) ? friendError.message : "";
   const reportOpen = sameUserId(reportFor, userId);
+  const toggleBlock = async () => {
+    setBlockError("");
+    try {
+      const next = await confirmToggleBlock({ userId, username: profile?.username || username, t });
+      if (next) setFriendOverride({ userId, state: "none" });
+    } catch (err) {
+      setBlockError(err?.message || t("Something went wrong."));
+    }
+  };
+  const profileHandle = () => profile?.username || username || "";
+  const shareProfile = async () => {
+    const handle = profileHandle();
+    if (!handle) return;
+    const url = toPublicShareUrl(buildFriendInviteUrl(handle));
+    const data = { title: "Descall", text: t("profile.shareText", { username: handle }), url };
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        let payload = data;
+        try {
+          if (navigator.canShare && !navigator.canShare(data)) payload = { title: data.title, url };
+        } catch {
+          payload = { title: data.title, url };
+        }
+        await navigator.share(payload);
+        return;
+      } catch (err) {
+        if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
+      }
+    }
+    const ok = await copyText(url);
+    toast(ok ? t("profile.linkCopied") : t("Something went wrong."), ok ? "success" : "error", { duration: 1800 });
+  };
+  const copyUsername = async () => {
+    const handle = profileHandle();
+    if (!handle) return;
+    const ok = await copyText(handle);
+    toast(ok ? t("profile.usernameCopied") : t("Something went wrong."), ok ? "success" : "error", { duration: 1800 });
+  };
+  const editNickname = async () => {
+    const base = profile?.displayName || profile?.display_name || displayNameProp || profileHandle();
+    const value = await promptAction({
+      title: t("profile.nicknameTitle"),
+      message: t("profile.nicknameBody"),
+      defaultValue: nickname,
+      placeholder: base,
+      confirmLabel: t("Save"),
+      cancelLabel: t("Cancel"),
+    });
+    if (value == null) return;
+    const saved = setNickname(userId, String(value).slice(0, NICKNAME_MAX));
+    toast(saved ? t("profile.nicknameSaved") : t("profile.nicknameCleared"), "success", { duration: 1600 });
+  };
+  const moreSections = [[
+    { id: "share", label: t("profile.share"), icon: MIShare, onSelect: shareProfile },
+    { id: "copy", label: t("profile.copyUsername"), icon: MICopy, onSelect: copyUsername },
+    { id: "nickname", label: t("profile.nickname"), icon: MIPen, onSelect: editNickname },
+  ], [
+    { id: "report", label: t("Report user"), icon: MIFlag, danger: true, onSelect: () => setReportFor(userId) },
+    { id: "block", label: blockedByMe ? t("Unblock user") : t("Block user"), icon: MIBan, danger: !blockedByMe, onSelect: toggleBlock },
+  ]];
 
   useEffect(() => {
     if (!open || !userId) return undefined;
@@ -148,15 +228,19 @@ function UserProfileModal({
         });
         if (!active) return;
         if (!res.ok) {
-          setMutualState({ forId: requestedId, list: [] });
+          setMutualState({ forId: requestedId, list: [], servers: [] });
           return;
         }
         const data = await res.json();
         if (!active) return;
-        setMutualState({ forId: requestedId, list: data.mutualFriends || [] });
+        setMutualState({
+          forId: requestedId,
+          list: data.mutualFriends || [],
+          servers: Array.isArray(data.mutualServers) ? data.mutualServers : [],
+        });
       } catch (err) {
         if (err?.name === "AbortError" || !active) return;
-        setMutualState({ forId: requestedId, list: [] });
+        setMutualState({ forId: requestedId, list: [], servers: [] });
       }
     })();
     return () => {
@@ -166,6 +250,12 @@ function UserProfileModal({
   }, [open, userId, username, isSelf]);
 
   useEffect(() => {
+    if (open) return;
+    setPage(null);
+    setMoreOpen(false);
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return undefined;
     hapticImpactLight();
     return undefined;
@@ -173,10 +263,12 @@ function UserProfileModal({
 
   useEffect(() => {
     if (!open) return;
+    // The report sheet and the ⋯ menu handle their own Escape (top layer first).
+    if (reportOpen || moreOpen) return;
     const handler = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open, onClose, reportOpen, moreOpen]);
 
   const noteFriendError = (forId, message) => {
     setFriendError({ userId: forId, message });
@@ -266,7 +358,7 @@ function UserProfileModal({
 
   const displayUsername = viewUser?.username || username || t("Unknown");
   const displayName =
-    viewUser?.displayName || viewUser?.display_name || displayNameProp || displayUsername;
+    nickname || viewUser?.displayName || viewUser?.display_name || displayNameProp || displayUsername;
   const displayAvatar = viewUser?.avatarUrl ?? avatarUrl ?? null;
   const equippedBannerUrl = fetched?.equippedBanner?.asset_url || fetched?.bannerUrl || fetched?.banner_url || null;
   const equippedBackgroundUrl = fetched?.equippedBackground?.asset_url || null;
@@ -279,17 +371,207 @@ function UserProfileModal({
   }[status] || t("Offline");
   const statusClass = status === "online" ? "is-on" : status === "idle" ? "is-idle" : status === "dnd" ? "is-dnd" : "is-off";
 
-  if (glassShell) {
+  if (glassShell || glassDesktop) {
+    const layout = glassShell ? "sheet" : "form";
     const dismissSheet = (velocity = 0) => {
       dismissV.current = Number.isFinite(velocity) ? velocity : 0;
       onClose?.();
     };
+    const nameAcc = locale === "tr" ? trAccusative(displayName) : displayName;
+    const nameDat = locale === "tr" ? trDative(displayName) : displayName;
+    const nameGen = locale === "tr" ? trGenitive(displayName) : displayName;
+    const statusKey = statusClass;
+    const canCall = typeof onStartCall === "function" && !isSelf;
+    const callTarget = { id: userId, username: displayUsername, avatarUrl: displayAvatar, displayName };
+    const tiles = isSelf ? [] : [
+      { id: "message", icon: MIMsg, label: t("profile.tileMessage"), onClick: () => { onStartDm?.({ id: userId, username: displayUsername, avatarUrl: displayAvatar }); onClose(); } },
+      canCall ? { id: "call", icon: MIPhone, label: t("profile.tileCall"), disabled: blockedByMe, onClick: () => { onClose(); onStartCall(callTarget, "voice"); } } : null,
+      canCall ? { id: "video", icon: MICam, label: t("profile.tileVideo"), disabled: blockedByMe, onClick: () => { onClose(); onStartCall(callTarget, "video"); } } : null,
+      {
+        id: "friend",
+        icon: friendState === "friend" ? MIUser : friendState === "sent" ? MICheck : MIUserPlus,
+        label: friendState === "friend" ? t("profile.tileFriend") : friendState === "sent" ? t("Sent") : t("profile.tileAdd"),
+        disabled: friendLoading || friendState === "sent" || (friendState === "none" && blockedByMe),
+        onClick: friendState === "friend" ? handleRemoveFriend : handleAddFriend,
+      },
+    ].filter(Boolean);
+    const mutualServers = ownedList(mutualState.forId, userId, mutualState.servers || []);
+    const mutualReady = sameUserId(mutualState.forId, userId);
+    const chev = (
+      <svg className="chev" viewBox="0 0 8 13" aria-hidden="true"><path d="M1.5 1.5 6.5 6.5 1.5 11.5" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    );
+    const countRow = (id, label, list) => {
+      const n = list.length;
+      const value = !mutualReady ? <span className="pfs-skel" aria-label={t("Loading…")} /> : <span className="val">{n}</span>;
+      if (!mutualReady || n === 0) {
+        return <div className="pfs-row" data-testid={`profile-row-${id}`}><span className="lab">{label}</span>{value}</div>;
+      }
+      return (
+        <button type="button" className="pfs-row" data-testid={`profile-row-${id}`} onClick={() => setPage(id)}>
+          <span className="lab">{label}</span>{value}{chev}
+        </button>
+      );
+    };
+    const heroStyle = equippedBannerUrl ? { backgroundImage: cssUrl(equippedBannerUrl) } : undefined;
+    const startDrag = (event) => {
+      if (layout !== "sheet" || reduceMotion) return;
+      if (event.target.closest("button, a, input, textarea")) return;
+      dragControls.start(event);
+    };
+    const listPage = page === "servers" || page === "friends" ? (
+      <>
+        <div className="pfs-grab" aria-hidden="true" />
+        <div className="pfs-nav">
+          <button type="button" className="l" onClick={() => setPage(null)} data-testid="profile-sub-back">
+            <MIChevL />
+            <span>{t("profile.back")}</span>
+          </button>
+          <span className="t">{page === "servers" ? t("profile.mutualServers") : t("profile.mutualFriends")}</span>
+          <span />
+        </div>
+        <div className="pfs-scroll">
+          <div className="pfs-group" style={{ "--inset": "60px" }}>
+            {(page === "servers" ? mutualServers : mutualFriends).map((item) => (
+              <div className="pfs-row" key={item.id} style={{ minHeight: 54 }}>
+                {page === "servers" ? (
+                  <span className="pfs-srv" style={{ width: 34, height: 34, borderRadius: 10, flex: "none", display: "grid", placeItems: "center", background: item.iconUrl ? `${cssUrl(item.iconUrl)} center/cover` : "#587AF6", fontWeight: 700, fontSize: 14 }}>
+                    {item.iconUrl ? null : String(item.name || "?").slice(0, 1).toUpperCase()}
+                  </span>
+                ) : (
+                  <Avatar name={item.displayName || item.username} size={34} user={item} />
+                )}
+                <span className="lab">{page === "servers" ? item.name : resolveDisplayName(item)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    ) : null;
+    const body = (
+      <>
+        <div className="pfs-top">
+          <button type="button" className="pfs-cb" onClick={() => dismissSheet(0)} aria-label={t("Close")} data-testid="profile-close">
+            <MIX />
+          </button>
+          {!isSelf ? (
+            <button
+              ref={moreRef}
+              type="button"
+              className={`pfs-cb${moreOpen ? " is-on" : ""}`}
+              data-testid="profile-more"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-label={t("Profile options")}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+            >
+              <MIMore />
+            </button>
+          ) : <span />}
+        </div>
+        <div className="pfs-scroll" style={{ paddingTop: 0 }}>
+          <div className="pfs-hero" style={heroStyle} onPointerDown={startDrag}>
+            <div className="pfs-av">
+              <Avatar key={userId || "profile"} name={displayName} size={92} user={viewUser} />
+              <i className={`pfs-av-dot ${statusKey}`} aria-hidden="true" />
+            </div>
+          </div>
+          <div className="pfs-name" data-testid="profile-name">
+            <NameEffectText user={fetched}>{displayName}</NameEffectText>
+          </div>
+          <div className="pfs-h">
+            @{displayUsername} · <b className={statusKey}>{statusLabel}</b>
+          </div>
+          <div className="pfs-badges">
+            <ProfileBadgeRow user={badgeUser} me={me} />
+            {isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
+          </div>
+          {fetched?.bio ? <p className="pfs-bio">{fetched.bio}</p> : null}
+          {tiles.length ? (
+            <div className="pfs-acts" style={{ "--n": tiles.length }} data-testid="profile-actions">
+              {tiles.map((tile) => {
+                const Icon = tile.icon;
+                return (
+                  <button key={tile.id} type="button" className="pfs-act" data-testid={`profile-act-${tile.id}`} disabled={tile.disabled} onClick={tile.onClick}>
+                    <Icon />
+                    <span>{tile.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {friendErrorText ? <p className="pfs-err" role="alert">{friendErrorText}</p> : null}
+          <div className="pfs-sec">{t("profile.about")}</div>
+          <div className="pfs-group is-plain" data-testid="profile-about">
+            <div className="pfs-row">
+              <span className="lab">{t("profile.memberSince")}</span>
+              {showMemberSkeleton ? <span className="pfs-skel" aria-label={t("Loading…")} /> : <span className="val">{memberSince ? formatMemberSince(memberSince, t, locale) : t("Unknown")}</span>}
+            </div>
+            {customStatus ? (
+              <div className="pfs-row"><span className="lab">{t("Custom status")}</span><span className="val">{customStatus}</span></div>
+            ) : null}
+            {!isSelf ? countRow("servers", t("profile.mutualServers"), mutualServers) : null}
+            {!isSelf ? countRow("friends", t("profile.mutualFriends"), mutualFriends) : null}
+          </div>
+          {!isSelf ? (
+            <>
+              <div className="pfs-sec" aria-hidden="true" />
+              <div className="pfs-group" data-testid="profile-safety">
+                <button type="button" className="pfs-row is-red" data-testid="profile-safety-report" onClick={() => setReportFor(userId)}>
+                  <span className="pfs-ico"><MIFlag /></span>
+                  <span className="lab">{t("Report user")}</span>
+                </button>
+                <button type="button" className="pfs-row is-red" data-testid="profile-safety-block" aria-pressed={blockedByMe} onClick={toggleBlock}>
+                  <span className="pfs-ico"><MIBan /></span>
+                  <span className="lab">{blockedByMe ? t("profile.unblockName", { nameGen }) : t("profile.blockName", { nameAcc })}</span>
+                </button>
+              </div>
+              <div className="pfs-foot">{t("profile.blockFoot", { nameDat })}</div>
+              {blockError ? <p className="pfs-err" role="alert">{blockError}</p> : null}
+            </>
+          ) : null}
+        </div>
+      </>
+    );
+    const surfaceMotion = layout === "sheet"
+      ? {
+          variants: {
+            initial: reduceMotion ? { opacity: 0 } : { y: 60, opacity: 0 },
+            animate: reduceMotion
+              ? { opacity: 1, transition: REDUCED_MOTION_FADE }
+              : { y: 0, opacity: 1, transition: framerSpring(SPRINGS.sheet) },
+            exit: (velocity) => (
+              reduceMotion
+                ? { opacity: 0, transition: REDUCED_MOTION_FADE }
+                : { y: 700, opacity: 0, transition: framerSpring(SPRINGS.sheet, Number.isFinite(velocity) ? velocity : undefined) }
+            ),
+          },
+          drag: reduceMotion ? false : "y",
+          dragControls,
+          dragListener: false,
+          dragConstraints: { top: 0, bottom: 0 },
+          dragElastic: { top: 0.04, bottom: 0.55 },
+          dragMomentum: false,
+          onDragEnd: (_, info) => {
+            if (info.offset.y > 88 || info.velocity.y > 750) {
+              hapticImpactLight();
+              dismissSheet(info.velocity.y);
+            }
+          },
+        }
+      : {
+          variants: {
+            initial: reduceMotion ? { opacity: 0 } : { scale: 0.96, opacity: 0, y: 10 },
+            animate: reduceMotion ? { opacity: 1, transition: REDUCED_MOTION_FADE } : { scale: 1, opacity: 1, y: 0, transition: framerSpring(SPRINGS.sheet) },
+            exit: reduceMotion ? { opacity: 0, transition: REDUCED_MOTION_FADE } : { scale: 0.97, opacity: 0, y: 6, transition: framerSpring(SPRINGS.sheet) },
+          },
+        };
     const tree = (
       <>
         <AnimatePresence custom={dismissV.current}>
           {open && (
             <motion.div
-              className="g-profile-scrim"
+              className={`pfs-scrim${layout === "form" ? " is-form" : ""}`}
+              data-testid="profile-scrim"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -298,156 +580,19 @@ function UserProfileModal({
             >
               <motion.div
                 key={userId || "profile"}
-                className="g-profile-sheet g-glass g-heavy"
+                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy`}
+                data-testid="profile-sheet"
                 custom={dismissV.current}
-                variants={{
-                  initial: reduceMotion ? { opacity: 0 } : { y: 40, opacity: 0 },
-                  animate: reduceMotion
-                    ? { opacity: 1, transition: REDUCED_MOTION_FADE }
-                    : { y: 0, opacity: 1, transition: framerSpring(SPRINGS.sheet) },
-                  exit: (velocity) => (
-                    reduceMotion
-                      ? { opacity: 0, transition: REDUCED_MOTION_FADE }
-                      : {
-                          y: 560,
-                          opacity: 0,
-                          transition: framerSpring(SPRINGS.sheet, Number.isFinite(velocity) ? velocity : undefined),
-                        }
-                  ),
-                }}
                 initial="initial"
                 animate="animate"
                 exit="exit"
-                drag={reduceMotion ? false : "y"}
-                dragControls={dragControls}
-                dragListener={false}
-                dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={{ top: 0.04, bottom: 0.55 }}
-                dragMomentum={false}
-                onDragEnd={(_, info) => {
-                  if (info.offset.y > 88 || info.velocity.y > 750) {
-                  hapticImpactLight();
-                  dismissSheet(info.velocity.y);
-                }
-                }}
+                {...surfaceMotion}
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
+                aria-modal="true"
                 aria-label={displayName}
               >
-                <div
-                  className="g-profile-banner"
-                  onPointerDown={(event) => {
-                    if (reduceMotion) return;
-                    if (event.target.closest("button, a, input, textarea")) return;
-                    dragControls.start(event);
-                  }}
-                  style={equippedBannerUrl ? {
-                    backgroundImage: cssUrl(equippedBannerUrl),
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  } : { background: bannerGradient }}
-                >
-                  <div className="g-profile-grabber" aria-hidden="true" />
-                  <button
-                    type="button"
-                    className="g-profile-close g-chip"
-                    onClick={() => dismissSheet(0)}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    aria-label={t("Close")}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="g-profile-body">
-                  <div className="g-profile-avatar" style={{ "--av-size": "88px" }}>
-                    <Avatar
-                      key={userId || "profile"}
-                      name={displayName}
-                      size={88}
-                      user={viewUser}
-                    />
-                    <StatusBadge status={status} />
-                  </div>
-                  <div className="g-profile-name">
-                    <span className="g-profile-name-text">
-                      <NameEffectText user={fetched}>{displayName}</NameEffectText>
-                    </span>
-                  </div>
-                  <div className="g-profile-handle">
-                    @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
-                  </div>
-                  <ProfileBadgeRow user={badgeUser} me={me} size="ios" className="g-profile-badges" />
-                  {isUserAdmin(viewUser) && (
-                    <div className="g-profile-chips">
-                      <AdminBadge user={viewUser} variant="chip" />
-                    </div>
-                  )}
-                  {fetched?.bio ? <p className="g-profile-bio">{fetched.bio}</p> : null}
-                  {!isSelf && (
-                    <div className="g-profile-actions">
-                      <button
-                        type="button"
-                        className="is-brand"
-                        onClick={() => {
-                          onStartDm?.({ id: userId, username: displayUsername, avatarUrl: displayAvatar });
-                          onClose();
-                        }}
-                      >
-                        <MessageSquare size={16} />
-                        <span>{t("Send Message")}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="is-fill"
-                        disabled={friendLoading || friendState === "sent"}
-                        onClick={friendState === "friend" ? handleRemoveFriend : handleAddFriend}
-                      >
-                        {friendState === "friend" ? <UserMinus size={16} /> : friendState === "sent" ? <Check size={16} /> : <UserPlus size={16} />}
-                        <span>{friendState === "friend" ? t("Friends") : friendState === "sent" ? t("Sent") : t("Add Friend")}</span>
-                      </button>
-                    </div>
-                  )}
-                  <div className="g-profile-group">
-                    {showMemberSkeleton ? (
-                      <ProfileGlassSkeleton label={t("Loading…")} />
-                    ) : memberSince ? (
-                      <div className="g-profile-grow">
-                        <b>{t("Member Since")}</b>
-                        <span>{formatMemberSince(memberSince, t, locale)}</span>
-                      </div>
-                    ) : null}
-                    {showMutualSkeleton ? (
-                      <ProfileGlassSkeleton label={t("Loading…")} />
-                    ) : !isSelf && mutualFriends.length > 0 ? (
-                      <div className="g-profile-grow">
-                        <b>{t("Mutual Friends")}</b>
-                        <span>{mutualFriends.length}</span>
-                      </div>
-                    ) : null}
-                    {customStatus ? (
-                      <div className="g-profile-grow">
-                        <b>{t("Custom status")}</b>
-                        <span>{customStatus}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                  {friendErrorText ? <p className="g-profile-bio">{friendErrorText}</p> : null}
-                  {!isSelf && (
-                    <div className="g-profile-safety">
-                      <BlockUserButton
-                        userId={userId}
-                        username={displayUsername}
-                        onChange={(nowBlocked) => {
-                          if (nowBlocked) setFriendOverride({ userId, state: "none" });
-                        }}
-                      />
-                      <button type="button" className="user-profile-report-btn" onClick={() => setReportFor(userId)}>
-                        <Flag size={13} />
-                        <span>{t("report.action")}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                {listPage || body}
               </motion.div>
             </motion.div>
           )}
@@ -457,8 +602,25 @@ function UserProfileModal({
           onClose={() => setReportFor(null)}
           targetId={userId}
           targetUsername={displayUsername}
+          targetDisplayName={displayName}
+          targetUser={viewUser}
           contextType="profile"
+          onBlocked={() => setFriendOverride({ userId, state: "none" })}
         />
+        {!isSelf ? (
+          <GlassActionMenu
+            open={open && moreOpen}
+            anchorRef={moreRef}
+            onClose={() => setMoreOpen(false)}
+            sections={moreSections}
+            ariaLabel={t("Profile options")}
+            testId="profile-menu"
+            zIndex={100066}
+            variant="ios"
+            // Mockup #29 (iPad): the menu hangs from the ⋯ button, 10px past its right edge.
+            offset={layout === "form" ? MENU_FORM_OFFSET : undefined}
+          />
+        ) : null}
       </>
     );
     if (typeof document === "undefined") return tree;
@@ -522,6 +684,20 @@ function UserProfileModal({
             <button type="button" className="user-profile-close" onClick={onClose} aria-label={t("Close")}>
               <X size={14} />
             </button>
+            {!isSelf && (
+              <button
+                ref={moreRef}
+                type="button"
+                className="user-profile-close user-profile-more"
+                data-testid="profile-more"
+                onClick={() => setMoreOpen((v) => !v)}
+                aria-label={t("Profile options")}
+                aria-haspopup="menu"
+                aria-expanded={moreOpen}
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            )}
 
             {/* Banner */}
             <ParallaxBanner
@@ -817,22 +993,20 @@ function UserProfileModal({
               )}
 
               {!isSelf && (
-                <div className="user-profile-safety-row">
-                  <BlockUserButton
-                    userId={userId}
-                    username={displayUsername}
-                    onChange={(nowBlocked) => {
-                      if (nowBlocked) setFriendOverride({ userId, state: "none" });
-                    }}
-                  />
+                <div className="user-profile-safety-row" data-testid="profile-safety">
+                  <button type="button" className="user-profile-report-btn is-danger" aria-pressed={blockedByMe} onClick={toggleBlock}>
+                    <Ban size={13} />
+                    <span>{blockedByMe ? t("Unblock user") : t("Block user")}</span>
+                  </button>
                   <button
                     type="button"
-                    className="user-profile-report-btn"
+                    className="user-profile-report-btn is-danger"
                     onClick={() => setReportFor(userId)}
                   >
                     <Flag size={13} />
-                    <span>{t("report.action")}</span>
+                    <span>{t("Report user")}</span>
                   </button>
+                  {blockError ? <p className="auth-field-hint" role="alert" style={{ color: "var(--danger)" }}>{blockError}</p> : null}
                 </div>
               )}
 
@@ -862,8 +1036,20 @@ function UserProfileModal({
         targetId={userId}
         targetUsername={displayUsername}
         contextType="profile"
+        onBlocked={() => setFriendOverride({ userId, state: "none" })}
       />
     </AnimatePresence>
+      {!isSelf ? (
+        <GlassActionMenu
+          open={open && moreOpen}
+          anchorRef={moreRef}
+          onClose={() => setMoreOpen(false)}
+          sections={moreSections}
+          ariaLabel={t("Profile options")}
+          testId="profile-menu"
+          zIndex={10030}
+        />
+      ) : null}
     </OverlayPortal>
   );
 }

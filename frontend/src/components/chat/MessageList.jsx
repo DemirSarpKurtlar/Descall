@@ -11,6 +11,7 @@ import VoiceMessagePlayer from "./VoiceMessagePlayer";
 import ActiveCallBanner from "../ActiveCallBanner";
 import UserProfileModal from "../social/UserProfileModal";
 import ReportUserModal from "../social/ReportUserModal";
+import { focusComposerForReply } from "../../lib/composerFocus";
 import GameMessageBubble from "./GameMessageBubble";
 import MessageReactions from "./MessageReactions";
 import EmojiPickerSheet from "./EmojiPickerSheet";
@@ -166,6 +167,7 @@ export default function MessageList({
   friends,
   onlineUsers,
   onStartDm,
+  onStartCall,
   socket,
   activeGroup,
   activeDmUser = null,
@@ -744,12 +746,15 @@ export default function MessageList({
         friends={friends}
         onlineUsers={onlineUsers}
         onStartDm={onStartDm}
+        onStartCall={onStartCall}
       />
       <ReportUserModal
         open={!!reportTarget}
         onClose={() => setReportTarget(null)}
         targetId={reportTarget?.id}
         targetUsername={reportTarget?.username}
+        targetDisplayName={reportTarget ? resolveDisplayName(reportTarget) : undefined}
+        targetUser={reportTarget}
         snippet={reportTarget?.snippet}
         contextType={reportTarget?.contextType || conversationType}
         contextId={reportTarget?.contextId}
@@ -1075,9 +1080,15 @@ function MessageBubble({
     setPickerOpen(false);
   }, []);
 
+  // Touch browsers fire a compat mouseenter right before the click of the same
+  // tap; without this the click would toggle the just-opened bar shut again.
+  const menuOpenedAt = useRef(0);
+  const menuOpenRef = useRef(menuOpen);
+  menuOpenRef.current = menuOpen;
   const openMenu = () => {
     clearHide();
     if (!messageHoverToolbar.activate(hoverKey.current, closeFromOwner)) return;
+    if (!menuOpenRef.current) menuOpenedAt.current = Date.now();
     setMenuOpen(true);
   };
 
@@ -1206,6 +1217,9 @@ function MessageBubble({
     setMenuOpen(false);
     setPickerOpen(false);
     resetSwipe();
+    // A2 §4.5: "Yanıtla" is the one action that opens the keyboard. Focus
+    // inside this tap/swipe so iOS honours it (an effect would be too late).
+    focusComposerForReply();
   }, [message, onReply, resetSwipe]);
 
   const copyText = useCallback(() => {
@@ -1396,6 +1410,7 @@ function MessageBubble({
           if (e.target.closest("a, button, video, img, .message-media, .message-hover-bar, .message-reactions, .slash-embed")) return;
           if (!messageMenuOpensOnTap(glass) ) return;
           if (window.matchMedia("(hover: none)").matches) {
+            if (Date.now() - menuOpenedAt.current < 450) { setMenuOpen(true); return; }
             setMenuOpen((v) => !v);
             setPickerOpen(false);
           }
