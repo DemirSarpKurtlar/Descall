@@ -178,6 +178,25 @@ export default function AppLayout({
 
   const activity = useActivity({ socket, me, friends });
 
+  // Phone Liquid Glass: at <=768px the "drawer" is the full-screen list page
+  // (glass/shell.css), not a side drawer, so its dimming backdrop has nothing
+  // to dim. It only ever showed while the list slid away or back: a 55% black
+  // + blur layer faded over the conversation on every chat open/back (the
+  // B2 black flash), and in WebKit its exit animation could stall, leaving
+  // the open chat dark. The classic 340px drawer keeps its backdrop.
+  const [drawerIsPage, setDrawerIsPage] = useState(() => {
+    try { return Boolean(window.matchMedia?.("(max-width: 768px)")?.matches); } catch { return false; }
+  });
+  useEffect(() => {
+    let mq = null;
+    try { mq = window.matchMedia?.("(max-width: 768px)") || null; } catch { mq = null; }
+    if (!mq) return undefined;
+    const sync = () => setDrawerIsPage(Boolean(mq.matches));
+    sync();
+    mq.addEventListener?.("change", sync);
+    return () => mq.removeEventListener?.("change", sync);
+  }, []);
+
   const closeMobileDrawer = useCallback(() => setMobileDrawerOpen(false), []);
   const openMobileDrawer = useCallback(() => setMobileDrawerOpen(true), []);
 
@@ -522,7 +541,7 @@ export default function AppLayout({
 
       {/* Mobile drawer backdrop */}
       <AnimatePresence>
-        {isMobile && mobileDrawerOpen && (
+        {isMobile && mobileDrawerOpen && !(glassShell && drawerIsPage) && (
           <motion.button
             type="button"
             className="mobile-drawer-backdrop"
