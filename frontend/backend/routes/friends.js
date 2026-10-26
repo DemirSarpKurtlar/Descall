@@ -1,8 +1,9 @@
 const express = require("express");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
-const { pendingRequests, presence, usernameById } = require("../runtime/sharedState");
+const { pendingRequests, usernameById } = require("../runtime/sharedState");
 const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
+const friendSince = require("../lib/friendSince");
 
 const router = express.Router();
 
@@ -11,9 +12,29 @@ function ensurePending(userId) {
   return pendingRequests.get(userId);
 }
 
+// Every device of the user. Sockets join `user:<id>` on connect; presence
+// only remembers the newest socket, so a phone app + web tab missed events.
 function emitToUserViaIo(io, userId, event, payload) {
-  const p = presence.get(userId);
-  if (p?.socketId) io.to(p.socketId).emit(event, payload);
+  if (!io || !userId) return;
+  io.to(`user:${userId}`).emit(event, payload);
+}
+
+function refreshPresence(a, b) {
+  try {
+    require("../runtime/presenceFanoutInstance").refreshPresenceFor(a, b);
+  } catch {
+    /* presence fan-out is best effort */
+  }
+}
+
+// Lazy: socket/handlers pulls in the whole realtime layer.
+async function emitFriendState(io, userId, opts) {
+  if (!io || !userId) return;
+  try {
+    await require("../socket/handlers").emitFriendState(io, userId, opts);
+  } catch (err) {
+    console.warn("[Friends] friend state emit skipped:", err?.message || err);
+  }
 }
 
 // Send friend request
@@ -86,6 +107,7 @@ router.post("/request", requireAuth, async (req, res) => {
     // Sync socket memory so real-time accept/reject works
     const senderUsername = req.user.username || usernameById.get(userId) || "Unknown";
     ensurePending(targetUser.id).set(userId, { id: userId, username: senderUsername });
+    friendSince.markRequestNow(userId, targetUser.id);
     usernameById.set(userId, senderUsername);
 
     const io = req.app.get("io");
@@ -93,6 +115,8 @@ router.post("/request", requireAuth, async (req, res) => {
       emitToUserViaIo(io, targetUser.id, "friend:request:incoming", {
         from: { id: userId, username: senderUsername },
       });
+      // Full pending list too, a device that missed the event still converges.
+      await emitFriendState(io, targetUser.id);
     }
     try {
       const { sendFriendRequestPush } = require("../lib/webPush");
@@ -165,6 +189,8 @@ router.post("/accept", requireAuth, async (req, res) => {
     if (!friendsMap.has(fromUserId)) friendsMap.set(fromUserId, new Set());
     friendsMap.get(userId).add(fromUserId);
     friendsMap.get(fromUserId).add(userId);
+    friendSince.markFriendsNow(fromUserId, userId);
+    refreshPresence(userId, fromUserId);
 
     // Also update pendingRequests map
     const { pendingRequests } = require("../runtime/sharedState");
@@ -176,11 +202,11 @@ router.post("/accept", requireAuth, async (req, res) => {
     // Notify both sides to refresh their friend list
     const io = req.app.get("io");
     if (io) {
-      // Prefer durable user rooms (multi-tab safe)
-      io.to(`user:${userId}`).emit("friend:accepted", { by: { id: fromUserId } });
-      io.to(`user:${fromUserId}`).emit("friend:accepted", { by: { id: userId } });
+      // Once per user room (the old extra presence emit doubled the refetch).
       emitToUserViaIo(io, userId, "friend:accepted", { by: { id: fromUserId } });
       emitToUserViaIo(io, fromUserId, "friend:accepted", { by: { id: userId } });
+      await emitFriendState(io, userId);
+      await emitFriendState(io, fromUserId);
     }
 
     console.log("[Friends] Request accepted:", { fromUserId, userId });
@@ -213,6 +239,13 @@ router.post("/decline", requireAuth, async (req, res) => {
       return res.status(500).json({ error: "Failed to decline friend request" });
     }
 
+    const pendingForUser = pendingRequests.get(userId);
+    if (pendingForUser?.has(fromUserId)) {
+      pendingForUser.delete(fromUserId);
+      if (pendingForUser.size === 0) pendingRequests.delete(userId);
+    }
+    await emitFriendState(req.app.get("io"), userId);
+
     res.json({ success: true, message: "Friend request declined" });
   } catch (err) {
     console.error("Decline friend error:", err);
@@ -240,6 +273,16 @@ router.post("/remove", requireAuth, async (req, res) => {
       return res.status(500).json({ error: "Failed to remove friend" });
     }
 
+    // Server memory and both people's devices, same as the socket path.
+    const { friends: friendsMap } = require("../runtime/sharedState");
+    friendsMap.get(userId)?.delete(friendId);
+    friendsMap.get(friendId)?.delete(userId);
+    friendSince.forgetFriendship(userId, friendId);
+    refreshPresence(userId, friendId);
+    const io = req.app.get("io");
+    await emitFriendState(io, userId, { requests: false });
+    await emitFriendState(io, friendId, { requests: false });
+
     res.json({ success: true, message: "Friend removed" });
   } catch (err) {
     console.error("Remove friend error:", err);
@@ -254,7 +297,7 @@ router.get("/list", requireAuth, async (req, res) => {
 
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id, friend_id")
+      .select("user_id, friend_id, created_at")
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq("status", "accepted");
 
@@ -267,6 +310,7 @@ router.get("/list", requireAuth, async (req, res) => {
     for (const row of (rows || [])) {
       const otherId = row.user_id === userId ? row.friend_id : row.user_id;
       if (otherId && !friendIds.includes(otherId)) friendIds.push(otherId);
+      if (otherId) friendSince.rememberFriendSince(userId, otherId, row.created_at);
     }
 
     if (friendIds.length === 0) return res.json({ friends: [] });
@@ -297,9 +341,10 @@ router.get("/list", requireAuth, async (req, res) => {
       is_admin: Boolean(u.is_admin),
       isAdmin: Boolean(u.is_admin),
       status: "offline",
+      friendsSince: friendSince.friendSinceFor(userId, u.id),
     }));
 
-    res.json({ friends: formattedFriends });
+    res.json({ friends: friendSince.newestFirst(formattedFriends, "friendsSince") });
   } catch (err) {
     console.error("Get friends error:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -313,7 +358,7 @@ router.get("/requests", requireAuth, async (req, res) => {
 
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id")
+      .select("user_id, created_at")
       .eq("friend_id", userId)
       .eq("status", "pending");
 
@@ -325,6 +370,7 @@ router.get("/requests", requireAuth, async (req, res) => {
     if (!rows || rows.length === 0) return res.json({ requests: [] });
 
     const senderIds = rows.map((r) => r.user_id);
+    for (const r of rows) friendSince.rememberRequest(r.user_id, userId, r.created_at);
     const { data: users, error: usersError } = await supabase
       .from("users")
       .select("id, username, avatar_url, display_name, updated_at")
@@ -343,9 +389,10 @@ router.get("/requests", requireAuth, async (req, res) => {
       avatarUrl: u.avatar_url || null,
       avatar_url: u.avatar_url || null,
       updated_at: u.updated_at || null,
+      requestedAt: friendSince.requestSinceFor(u.id, userId),
     }));
 
-    res.json({ requests: formattedRequests });
+    res.json({ requests: friendSince.newestFirst(formattedRequests, "requestedAt") });
   } catch (err) {
     console.error("Get friend requests error:", err);
     res.status(500).json({ error: "Internal server error" });

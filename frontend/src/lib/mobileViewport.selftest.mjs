@@ -75,12 +75,85 @@ assert.equal(tinyPan.open, false);
 assert.equal(tinyPan.top, 0);
 assert.equal(tinyPan.height, 844);
 
+// iOS reported an innerHeight that shrank with the keyboard (== visual
+// viewport). Without the measured fixed box this read as "no keyboard" and
+// left the composer at the layout bottom, behind the keys.
+const shrunkInner = mobileViewportBox({
+  innerHeight: 508,
+  vvHeight: 508,
+  offsetTop: 0,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(shrunkInner.open, true);
+assert.equal(shrunkInner.gap, 336);
+assert.equal(shrunkInner.height, 508);
+
+// Same, with iOS panning the visual viewport down while focusing.
+const shrunkPanned = mobileViewportBox({
+  innerHeight: 508,
+  vvHeight: 508,
+  offsetTop: 60,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(shrunkPanned.open, true);
+assert.equal(shrunkPanned.top, 60);
+assert.equal(shrunkPanned.gap, 276); // 844 - 508 - 60: composer bottom = vv bottom
+assert.equal(shrunkPanned.height, 508);
+
+// innerHeight off by the Safari toolbar: lift from the real fixed bottom.
+const toolbar = mobileViewportBox({
+  innerHeight: 794,
+  vvHeight: 508,
+  offsetTop: 0,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(toolbar.gap, 336);
+
+// Closed keyboard: the measured box never makes the shell taller or opens it.
+const closedMeasured = mobileViewportBox({
+  innerHeight: 844,
+  vvHeight: 844,
+  offsetTop: 0,
+  editing: true,
+  fixedBottom: 844,
+});
+assert.equal(closedMeasured.open, false);
+assert.equal(closedMeasured.height, 844);
+
+// Safari 26 on iPhone, nothing focused: the fixed box runs on under the
+// floating toolbar (fixed bottom 874) while innerHeight and the visual
+// viewport stop above it (726). That strip is the toolbar, not a keyboard:
+// the keyboard must not count as open (it hid the tab bar and cut the shell).
+for (const [inner, vvh] of [[726, 726], [794, 726], [726, 700]]) {
+  const safariToolbar = mobileViewportBox({ innerHeight: inner, vvHeight: vvh, offsetTop: 0, editing: false, fixedBottom: 874 });
+  assert.equal(safariToolbar.open, false, `toolbar strip is not a keyboard (${inner}/${vvh})`);
+  assert.equal(safariToolbar.height, inner);
+  assert.equal(safariToolbar.gap, 0);
+}
+// Nothing focused never opens on web, whatever the geometry (iOS 26 leaves a
+// short visual viewport after dismiss, Safari's expanded toolbar is ~145pt).
+// That path hid the tab bar on a real iPhone after #268.
+assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 500, editing: false, fixedBottom: 874 }).open, false);
+assert.equal(mobileViewportBox({ innerHeight: 956, vvHeight: 811, editing: false, fixedBottom: 956 }).hideBar, false);
+// Native app: the UIKit inset still opens it without focus.
+assert.equal(mobileViewportBox({ innerHeight: 844, vvHeight: 844, editing: false, nativeInset: 336, fixedBottom: 844 }).open, true);
+
+// No measurement (0) falls back to innerHeight, as before.
+assert.deepEqual(
+  mobileViewportBox({ innerHeight: 844, vvHeight: 430, editing: true, fixedBottom: 0 }),
+  mobileViewportBox({ innerHeight: 844, vvHeight: 430, editing: true }),
+);
+
 const hook = readFileSync(new URL("../hooks/useMobileKeyboard.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../styles/glass/chat.css", import.meta.url), "utf8");
 const composer = readFileSync(new URL("../components/chat/MessageComposer.jsx", import.meta.url), "utf8");
 const swift = readFileSync(new URL("../../ios/App/App/DescallBridgeViewController.swift", import.meta.url), "utf8");
 assert.match(hook, /--kb-gap/);
 assert.match(hook, /__descallNativeKeyboard/);
+assert.match(hook, /fixedBottom: readFixedBottom\(probe\)/);
 assert.match(swift, /__descallNativeKeyboard/);
 assert.match(composer, /onScroll/);
 assert.match(css, /html\.glass-ui\.kb-open \.app-root\.g-shell\.in-conversation \.composer-container \{\s*bottom: calc\(var\(--kb-gap, 0px\) \+ 8px\);/);

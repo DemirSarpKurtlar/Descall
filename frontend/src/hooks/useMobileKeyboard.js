@@ -44,6 +44,33 @@ function resetScroll() {
 const KB_CLOSE_ANIM_MS = 280;
 
 /**
+ * Invisible fixed box (top:0, bottom:0). Its bottom edge is the edge that
+ * fixed elements such as the composer lift from, read straight from layout
+ * instead of trusting window.innerHeight (iOS sometimes shrinks it along with
+ * the keyboard, which reported no keyboard and left the composer behind it).
+ */
+function createFixedProbe() {
+  if (typeof document === "undefined" || !document.body) return null;
+  const el = document.createElement("div");
+  el.setAttribute("aria-hidden", "true");
+  el.dataset.kbProbe = "";
+  el.style.cssText =
+    "position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none;";
+  document.body.appendChild(el);
+  return el;
+}
+
+function readFixedBottom(probe) {
+  if (!probe || !probe.isConnected) return 0;
+  try {
+    const r = probe.getBoundingClientRect();
+    return r.bottom > 0 ? r.bottom : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Keep the mobile shell aligned to the visual viewport while the keyboard
  * is open, and smooth-reset when it closes (composer slides down with the KB).
  */
@@ -56,19 +83,29 @@ export function useMobileKeyboard(enabled = true) {
     let raf = 0;
     let lastOpen = false;
     let closeAnimTimer = 0;
+    const probe = createFixedProbe();
+    // Tallest visual viewport seen at rest (nothing focused) for this width.
+    // Keyboard size is measured against it, so browser toolbars cancel out.
+    let rest = { w: 0, h: 0 };
 
     const apply = () => {
       const layoutH = window.innerHeight || root.clientHeight || 0;
       const layoutW = window.innerWidth || root.clientWidth || 0;
       const vvH = vv?.height ?? layoutH;
       const vvW = vv?.width ?? layoutW;
+      const editing = isTextEditing(document.activeElement);
+      const w = Math.round(vvW);
+      if (rest.w !== w) rest = { w, h: 0 };
+      if (!editing && !nativeKeyboardInset && vvH > rest.h) rest.h = Math.round(vvH);
       const box = mobileViewportBox({
         innerHeight: layoutH,
         vvHeight: vvH,
         offsetTop: vv?.offsetTop ?? 0,
         offsetLeft: vv?.offsetLeft ?? 0,
-        editing: isTextEditing(document.activeElement),
+        editing,
         nativeInset: nativeKeyboardInset,
+        fixedBottom: readFixedBottom(probe),
+        restHeight: rest.h,
       });
       const open = box.open;
 
@@ -93,7 +130,10 @@ export function useMobileKeyboard(enabled = true) {
       root.style.setProperty("--vv-offset-left", `${open ? box.left : 0}px`);
       root.style.setProperty("--kb-inset", `${box.kb}px`);
       root.style.setProperty("--kb-gap", `${box.gap || 0}px`);
+      root.style.setProperty("--g-vv-lift", `${box.lift || 0}px`);
       root.classList.toggle("kb-open", open);
+      // The only switch that hides the tab bar: focused field + real keyboard.
+      root.classList.toggle("kb-bar-hidden", Boolean(box.hideBar));
 
       if (open !== lastOpen) {
         lastOpen = open;
@@ -181,13 +221,16 @@ export function useMobileKeyboard(enabled = true) {
       nativeKeyboardListeners.delete(onNativeKeyboard);
       root.classList.remove("mobile-keyboard-lock");
       root.classList.remove("kb-open");
+      root.classList.remove("kb-bar-hidden");
       root.classList.remove("kb-closing");
+      root.style.removeProperty("--g-vv-lift");
       root.style.removeProperty("--vv-height");
       root.style.removeProperty("--vv-width");
       root.style.removeProperty("--vv-offset-top");
       root.style.removeProperty("--vv-offset-left");
       root.style.removeProperty("--kb-inset");
       root.style.removeProperty("--kb-gap");
+      probe?.remove();
       resetScroll();
     };
   }, [enabled]);

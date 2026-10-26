@@ -3,6 +3,7 @@
 const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const iosPushContext = require("../lib/iosPushContext");
+const friendSince = require("../lib/friendSince");
 const {
   loadUserProfile,
   savePresenceStatus,
@@ -277,6 +278,7 @@ function getFriendList(userId) {
       ...enrichFriendEntry(fid),
       lastMessage: formatDmPreview(last),
       lastActivity: last?.timestamp || last?.created_at || null,
+      friendsSince: friendSince.friendSinceFor(userId, fid),
     });
   }
   return out.sort((a, b) =>
@@ -287,7 +289,14 @@ function getFriendList(userId) {
 function getPendingList(userId) {
   const m = pendingRequests.get(userId);
   if (!m) return [];
-  return Array.from(m.keys()).map((id) => enrichFriendEntry(id));
+  // Newest request first.
+  return friendSince.newestFirst(
+    Array.from(m.keys()).map((id) => ({
+      ...enrichFriendEntry(id),
+      requestedAt: friendSince.requestSinceFor(id, userId),
+    })),
+    "requestedAt",
+  );
 }
 
 function emitToUser(io, userId, event, payload) {
@@ -304,6 +313,18 @@ function emitToUser(io, userId, event, payload) {
   if (p?.socketId) {
     io.to(p.socketId).emit(event, payload);
   }
+}
+
+/**
+ * Fresh friend list + pending requests to every device of `userId`
+ * (`user:<id>` room). REST routes use this; they have no socket of their own.
+ */
+async function emitFriendState(io, userId, { requests = true } = {}) {
+  if (!io || !userId) return;
+  await loadFriendsFromDB(userId);
+  await ensureCosmeticsCached([...(friends.get(userId) || [])]).catch(() => {});
+  io.to(`user:${userId}`).emit("friend:list", getFriendList(userId));
+  if (requests) io.to(`user:${userId}`).emit("friend:requests", getPendingList(userId));
 }
 
 async function buildSyncState(userId) {
@@ -350,7 +371,7 @@ async function loadFriendsFromDB(userId) {
     // Fetch all accepted friendship rows involving this user
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id, friend_id")
+      .select("user_id, friend_id, created_at")
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq("status", "accepted");
 
@@ -363,7 +384,10 @@ async function loadFriendsFromDB(userId) {
     const friendIds = [];
     for (const row of (rows || [])) {
       const otherId = row.user_id === userId ? row.friend_id : row.user_id;
-      if (otherId && otherId !== userId) friendIds.push(otherId);
+      if (otherId && otherId !== userId) {
+        friendIds.push(otherId);
+        friendSince.rememberFriendSince(userId, otherId, row.created_at);
+      }
     }
 
     if (friendIds.length === 0) {
@@ -408,7 +432,7 @@ async function loadPendingRequestsFromDB(userId) {
   try {
     const { data: rows, error } = await supabase
       .from("friendships")
-      .select("user_id")
+      .select("user_id, created_at")
       .eq("friend_id", userId)
       .eq("status", "pending");
 
@@ -418,6 +442,7 @@ async function loadPendingRequestsFromDB(userId) {
     }
 
     if (!rows || rows.length === 0) return;
+    for (const r of rows) friendSince.rememberRequest(r.user_id, userId, r.created_at);
 
     const senderIds = rows.map((r) => r.user_id);
     const { data: users, error: usersError } = await supabase
@@ -462,7 +487,10 @@ async function saveFriendshipToDB(requesterId, acceptorId) {
       console.error("[FRIENDS] Error accepting friendship in DB:", error);
       return false;
     }
-    if (Array.isArray(data) && data.length > 0) return true;
+    if (Array.isArray(data) && data.length > 0) {
+      friendSince.markFriendsNow(requesterId, acceptorId);
+      return true;
+    }
 
     // No pending row (e.g. socket-only legacy request) — upsert accepted friendship.
     const { error: upsertError } = await supabase.from("friendships").upsert(
@@ -477,6 +505,7 @@ async function saveFriendshipToDB(requesterId, acceptorId) {
       console.error("[FRIENDS] Error upserting accepted friendship:", upsertError);
       return false;
     }
+    friendSince.markFriendsNow(requesterId, acceptorId);
     return true;
   } catch (e) {
     console.error("[FRIENDS] Error in saveFriendshipToDB:", e);
@@ -537,6 +566,7 @@ async function removeFriendshipFromDB(userId, friendId) {
       .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
 
     if (error) console.error("[FRIENDS] Error removing friendship from DB:", error);
+    else friendSince.forgetFriendship(userId, friendId);
     return !error;
   } catch (e) {
     console.error("[FRIENDS] Error in removeFriendshipFromDB:", e);
@@ -802,6 +832,7 @@ function registerSocketHandlers(io) {
         }
 
         theirPending.set(myId, { id: myId, username: me.username, avatarUrl: me.avatar_url || null });
+        friendSince.markRequestNow(myId, target.id);
         usernameById.set(myId, me.username);
         emitToUser(io, target.id, "friend:request:incoming", {
           from: enrichFriendEntry(myId),
@@ -894,10 +925,11 @@ function registerSocketHandlers(io) {
         meta: { userId: myId },
       });
 
-      socket.emit("friend:accepted", { by: { id: fromUserId } });
-      socket.emit("friend:list", getFriendList(myId));
-      socket.emit("friend:requests", getPendingList(myId));
-      emitSyncState(io, myId, socket);
+      // Every device of the acceptor (phone app + web tab), not just this socket.
+      emitToUser(io, myId, "friend:accepted", { by: { id: fromUserId } });
+      emitToUser(io, myId, "friend:list", getFriendList(myId));
+      emitToUser(io, myId, "friend:requests", getPendingList(myId));
+      emitSyncState(io, myId);
       emitToUser(io, fromUserId, "friend:list", getFriendList(fromUserId));
       emitToUser(io, fromUserId, "friend:requests", getPendingList(fromUserId));
       emitSyncState(io, fromUserId);
@@ -937,8 +969,8 @@ function registerSocketHandlers(io) {
         // Update friend list for the sender to remove pending status
         io.to(`user:${fromUserId}`).emit("friend:list", getFriendList(fromUserId));
         
-        socket.emit("friend:requests", getPendingList(myId));
-        socket.emit("friend:list", getFriendList(myId));
+        emitToUser(io, myId, "friend:requests", getPendingList(myId));
+        emitToUser(io, myId, "friend:list", getFriendList(myId));
         
         console.log("[Friends] Request declined:", { fromUserId, by: myId });
       } catch (err) {
@@ -982,12 +1014,12 @@ function registerSocketHandlers(io) {
         socket.emit("dm:requests", await listMessageRequests(supabase, myId));
         return;
       }
-      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
-      socket.emit("friend:list", getFriendList(myId));
-      socket.emit("friend:accepted", { by: { id: fromId, username: removed.username } });
+      emitToUser(io, myId, "dm:requests", await listMessageRequests(supabase, myId));
+      emitToUser(io, myId, "friend:list", getFriendList(myId));
+      emitToUser(io, myId, "friend:accepted", { by: { id: fromId, username: removed.username } });
       emitToUser(io, fromId, "dm:request:accepted", { byUserId: myId, username: me.username });
       emitToUser(io, fromId, "friend:list", getFriendList(fromId));
-      emitSyncState(io, myId, socket);
+      emitSyncState(io, myId);
       emitSyncState(io, fromId);
     });
 
@@ -995,7 +1027,7 @@ function registerSocketHandlers(io) {
       const fromId = String(fromUserId || "").trim();
       if (!fromId) return;
       await deleteMessageRequest(supabase, fromId, myId);
-      socket.emit("dm:requests", await listMessageRequests(supabase, myId));
+      emitToUser(io, myId, "dm:requests", await listMessageRequests(supabase, myId));
       emitToUser(io, fromId, "dm:request:declined", { byUserId: myId });
     });
 
@@ -1012,8 +1044,8 @@ function registerSocketHandlers(io) {
       // Remove friendship from database
       await removeFriendshipFromDB(myId, friendId);
       
-      socket.emit("friend:list", getFriendList(myId));
-      emitSyncState(io, myId, socket);
+      emitToUser(io, myId, "friend:list", getFriendList(myId));
+      emitSyncState(io, myId);
       emitToUser(io, friendId, "friend:list", getFriendList(friendId));
       emitSyncState(io, friendId);
     });
@@ -2472,4 +2504,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout, pushNotification };
+module.exports = { registerSocketHandlers, loadFriendsFromDB, finishDmCall, getRingFanout, pushNotification, emitFriendState };

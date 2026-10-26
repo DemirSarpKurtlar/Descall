@@ -576,6 +576,7 @@ export const phrases = {
   "Calls": "Calls",
   "Search": "Search",
   "Refresh": "Refresh",
+  "Refreshing…": "Refreshing…",
   "System default": "System default",
   "My Account": "My Account",
   "Voice & Video": "Voice & Video",

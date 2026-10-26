@@ -1,5 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
+import { mergeRestFriends } from "./lib/friendListMerge";
+import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "./lib/listOrder";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import AuthView from "./components/AuthView";
@@ -125,6 +127,7 @@ import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner"
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
 import { applyGroupRename } from "./lib/groupRename";
+import { applyGroupMemberAdded, upsertInvitedGroup } from "./lib/groupMembers";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
@@ -1737,8 +1740,8 @@ export default function App() {
     socket.on("friend:requests", (list) => setFriendRequests((list ?? []).map((u) => normalizeUser(u))));
     socket.on("friend:request:incoming", ({ from }) => {
       if (!from) return;
-      const normalized = normalizeUser(from);
-      setFriendRequests((prev) => prev.some((req) => req.id === normalized.id) ? prev : [...prev, normalized]);
+      const normalized = stampArrival(normalizeUser(from), "requestedAt");
+      setFriendRequests((prev) => prev.some((req) => req.id === normalized.id) ? prev : [normalized, ...prev]);
       // Notification for incoming friend request
       notificationService.friendRequest({ from: from.username, fromId: from.id });
     });
@@ -1768,7 +1771,7 @@ export default function App() {
     });
     socket.on("dm:request:incoming", ({ request } = {}) => {
       if (!request) return;
-      const normalized = normalizeUser(request);
+      const normalized = stampArrival(normalizeUser(request), "createdAt");
       if (!normalized?.id) return;
       setMessageRequests((prev) => (
         prev.some((row) => row.id === normalized.id)
@@ -1975,7 +1978,18 @@ export default function App() {
     // Add new group to list when invited or when you create one via socket broadcast
     socket.on("group:invited", ({ group } = {}) => {
       if (!group?.id) return;
-      setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [...prev, group]);
+      setMyGroups((prev) => upsertInvitedGroup(prev, group));
+      // Into the group room for live messages / call banners (the server also
+      // joins our sockets; this covers a reconnect race).
+      socket.emit("groups:rejoin", [group.id]);
+    });
+
+    // A member was added by anyone (this tab, another device, another member):
+    // sidebar row, chat header count, members panel and info sheet update live.
+    socket.on("group:member:added", ({ groupId, user, memberCount } = {}) => {
+      if (!groupId || !user?.id) return;
+      setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, { user, memberCount }));
+      setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, { user, memberCount })[0] : cur));
     });
 
     // Group photo changed by any member (or removed).
@@ -2843,7 +2857,7 @@ export default function App() {
     }
   };
 
-  const fetchFriends = useCallback(async () => {
+  const fetchFriends = useCallback(async ({ force = false } = {}) => {
     if (!getToken()) return;
     try {
       const [listRes, reqRes] = await Promise.all([
@@ -2857,6 +2871,10 @@ export default function App() {
         setFriends(list.map((u) => normalizeUser(u)));
         listCommitRef.current.friends = true;
         setFriendsLoaded(true);
+      } else if (force) {
+        // Pulled refresh: the database decides who is a friend (a socket
+        // event may have been missed), live presence/previews are kept.
+        setFriends((prev) => mergeRestFriends(prev, list.map((u) => normalizeUser(u))));
       }
       setFriendRequests(requests.map((u) => normalizeUser(u)));
     } catch (err) {
@@ -2962,23 +2980,36 @@ export default function App() {
   }, [t]);
   refreshGroupRestRef.current = refreshGroupMessages;
 
-  const handleRefresh = useCallback(() => {
+  // Resolves when the server has answered (REST lists + the socket
+  // friend:list round trip, capped), so pull-to-refresh can hold its spinner.
+  // `force`: a pulled refresh, REST friend membership overrides socket state.
+  const handleRefresh = useCallback((opts) => {
+    const force = opts?.force === true;
     const s = socketRef.current;
 
     // Always refresh durable lists over REST, works even if socket is down.
-    fetchGroups();
-    fetchFriends();
-    fetchServers();
-    fetchDmPreviews();
+    const work = [fetchGroups(), fetchFriends({ force }), fetchServers(), fetchDmPreviews()];
 
     const dmPeer = activeDmRef.current;
     if (dmPeer?.id) {
       loadDmMessagesRest(dmPeer.id);
     }
 
-    if (!s?.connected) return;
+    if (!s?.connected) return Promise.allSettled(work);
 
     // Friends & global state (socket, presence + DM previews)
+    work.push(
+      new Promise((resolve) => {
+        let timer = 0;
+        const done = () => {
+          clearTimeout(timer);
+          s.off("friend:list", done);
+          resolve();
+        };
+        timer = setTimeout(done, 4000);
+        s.once("friend:list", done);
+      }),
+    );
     s.emit("friend:list");
     s.emit("sync:state");
 
@@ -2993,6 +3024,7 @@ export default function App() {
       s.emit("group:join", grp.id);
       refreshGroupMessages(grp.id);
     }
+    return Promise.allSettled(work);
   }, [fetchGroups, fetchFriends, fetchServers, fetchDmPreviews, loadDmMessagesRest, refreshGroupMessages]);
 
   // Prefer socket live updates. Catch up on reconnect/focus.
@@ -3994,14 +4026,17 @@ export default function App() {
         unreadCount: groupUnread[g.id] || 0,
       };
     });
-    return list.sort((a, b) => {
-      const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
-      const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
-      if (tb !== ta) return tb - ta;
-      if ((b.unreadCount || 0) !== (a.unreadCount || 0)) return (b.unreadCount || 0) - (a.unreadCount || 0);
-      return (a.name || "").localeCompare(b.name || "");
-    });
+    // Pinned first, then latest of last message / created / I joined.
+    return sortListItems(list);
   }, [myGroups, groupLastActivity, groupPreviews, groupUnread, groupMessagesById, t]);
+
+  // Friends tab and requests: same Discord order as the chats.
+  const orderedFriends = useMemo(
+    () => orderFriends(friends, dmPrefs, dmLastActivity),
+    [friends, dmPrefs, dmLastActivity],
+  );
+  const orderedFriendRequests = useMemo(() => newestRequestsFirst(friendRequests), [friendRequests]);
+  const orderedMessageRequests = useMemo(() => newestRequestsFirst(messageRequests), [messageRequests]);
 
   useEffect(() => {
     if (!me?.id || !getToken()) return undefined;
@@ -4745,7 +4780,7 @@ export default function App() {
           }}
           groups={sortedGroups}
           dms={sortedDms}
-          friends={friends}
+          friends={orderedFriends}
           friendsLoaded={friendsLoaded}
           groupsLoaded={groupsLoaded}
           servers={myServers}
@@ -4835,7 +4870,7 @@ export default function App() {
           onRefreshGroups={fetchGroups}
           onRefresh={handleRefresh}
           onGroupCreated={(group) => {
-            setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [...prev, group]);
+            setMyGroups((prev) => prev.some((g) => g.id === group.id) ? prev : [stampArrival(group, "joinedAt"), ...prev]);
           }}
           onGroupLeft={(groupId) => {
             setMyGroups((prev) => prev.filter((g) => g.id !== groupId));
@@ -4849,8 +4884,13 @@ export default function App() {
             setMyGroups((prev) => applyGroupRename(prev, groupId, newName));
             setActiveGroup((cur) => (cur?.id === groupId ? { ...cur, name: newName } : cur));
           }}
-          friendRequests={friendRequests}
-          messageRequests={messageRequests}
+          onGroupMemberAdded={(groupId, payload) => {
+            if (!groupId) return;
+            setMyGroups((prev) => applyGroupMemberAdded(prev, groupId, payload));
+            setActiveGroup((cur) => (cur?.id === groupId ? applyGroupMemberAdded([cur], groupId, payload)[0] : cur));
+          }}
+          friendRequests={orderedFriendRequests}
+          messageRequests={orderedMessageRequests}
           onAcceptFriend={handleAcceptFriend}
           onDeclineFriend={handleDeclineFriend}
           onAcceptMessageRequest={handleAcceptMessageRequest}

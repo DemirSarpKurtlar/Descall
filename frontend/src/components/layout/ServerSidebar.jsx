@@ -11,6 +11,7 @@ import SwipeRevealRow, { swipeActionsWidth } from "./SwipeRevealRow";
 import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import CallsView from "../calls/CallsView";
+import PullToRefresh from "../ui/PullToRefresh";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
@@ -62,9 +63,11 @@ export default function ServerSidebar({
   addTab: addTabProp,
   setAddTab: setAddTabProp,
   onRefreshGroups,
+  onRefresh,
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
+  onGroupMemberAdded,
   onGroupAvatarChanged,
   friendRequests,
   messageRequests,
@@ -88,6 +91,15 @@ export default function ServerSidebar({
   const t = useT();
   const glassShell = useGlassShell();
   const [searchQuery, setSearchQuery] = useState("");
+  // Calls history lives in CallsView; it hands us its refetch.
+  const callsRefreshRef = useRef(null);
+  // Pull-to-refresh / header refresh: real server refetch for this list.
+  const refreshList = () => {
+    const work = [Promise.resolve(onRefresh?.({ force: true }))];
+    if (activeView === "groups") work.push(Promise.resolve(onRefreshGroups?.()));
+    if (activeView === "calls" && callsRefreshRef.current) work.push(Promise.resolve(callsRefreshRef.current()));
+    return Promise.allSettled(work);
+  };
   const [expandedSections, setExpandedSections] = useState({
     dms: true,
     groups: true,
@@ -333,7 +345,7 @@ export default function ServerSidebar({
               activeView === "calls"
                 ? [
                     { id: "search", icon: Search, label: t("Search") },
-                    { id: "refresh", icon: RefreshCw, label: t("Refresh"), onClick: () => glassShell.onRefresh?.() },
+                    { id: "refresh", icon: RefreshCw, label: t("Refresh"), onClick: () => refreshList() },
                   ]
                 : [
                     { id: "search", icon: Search, label: t("Search") },
@@ -424,6 +436,7 @@ export default function ServerSidebar({
 
         {/* Content */}
         <div className="sidebar-content">
+          <PullToRefresh enabled={isMobile} onRefresh={refreshList}>
           {(activeView === "chat" || activeView === "dms") && (
             <DMList
               dms={filteredDms}
@@ -450,6 +463,7 @@ export default function ServerSidebar({
               onGroupSelect={onGroupSelect}
               onGroupLeft={onGroupLeft}
               onGroupRenamed={onGroupRenamed}
+              onGroupMemberAdded={onGroupMemberAdded}
               onGroupAvatarChanged={onGroupAvatarChanged}
               isMobile={isMobile}
               unreadById={groupUnread}
@@ -508,6 +522,7 @@ export default function ServerSidebar({
               onStartGroupCall={onStartGroupCall}
               onOpenChat={onOpenChatFromCalls}
               onOpenGroup={onOpenGroupFromCalls}
+              refreshRef={callsRefreshRef}
             />
           ) : activeView === "calls" && (
             <FriendsList
@@ -532,6 +547,7 @@ export default function ServerSidebar({
               onQuickAdd={() => { setAddTab("quickadd"); setShowAddModal(true); }}
             />
           )}
+          </PullToRefresh>
         </div>
 
         {/* Add Friend / Create Group Modal, portal to body (sidebar contain traps fixed) */}
@@ -1659,7 +1675,14 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
         open={Boolean(addMemberGroup)}
         friends={friends}
         onClose={() => setAddMemberGroup(null)}
-        onMemberAdded={(friend) => onMemberAdded?.(addMemberGroup?.id, friend)}
+        onMemberAdded={(friend, body) => {
+          const groupId = addMemberGroup?.id;
+          if (!groupId) return;
+          // Server group (fresh members[] + count) when the response has it,
+          // otherwise the friend row; the socket echo is idempotent.
+          onMemberAdded?.(groupId, { user: body?.user || friend, group: body?.group || null });
+          setAddMemberGroup((cur) => (cur?.id === groupId && body?.group?.members ? { ...cur, ...body.group } : cur));
+        }}
       />
 
       <GroupInviteModal
@@ -1673,7 +1696,7 @@ export function useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupA
   return { run, element, actionError: "", groupPhoto };
 }
 
-function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
+function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSelect, onGroupLeft, onGroupRenamed, onGroupMemberAdded, onGroupAvatarChanged, isMobile, unreadById = {}, loading = false, onCreateGroup }) {
   const t = useT();
   const { locale } = useLocale();
   const safeGroups = Array.isArray(groups) ? groups : [];
@@ -1684,7 +1707,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const menuRef = useRef(null);
   const dotBtnRefs = useRef({});
   // Same handlers drive the row menu, the swipe actions and the group info sheet.
-  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged });
+  const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded: onGroupMemberAdded });
 
   // The portaled menu closes itself on outside pointerdown / Esc. A row-level
   // mousedown listener used to close it before taps on its items registered.

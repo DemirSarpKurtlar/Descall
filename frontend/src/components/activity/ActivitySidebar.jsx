@@ -18,6 +18,7 @@ import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
 import ActivityHistoryRow, { localizeActivityLabel } from "./ActivityHistoryRow";
 import { TYPE_PRIORITY } from "../../lib/processDatabase";
+import PullToRefresh from "../ui/PullToRefresh";
 import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/glass/GlassShell";
 
 const TYPE_COLOR = {
@@ -106,6 +107,8 @@ export default function ActivitySidebar({
   history = [],
   currentActivity = null,
   privacy = "friends",
+  onRefresh,
+  isMobile = false,
 }) {
   const t = useT();
   const glassShell = useGlassShell();
@@ -183,6 +186,7 @@ export default function ActivitySidebar({
         )}
 
         <div className="sidebar-content activity-sidebar-content">
+          <PullToRefresh enabled={isMobile} onRefresh={() => onRefresh?.({ force: true })}>
           {glassShell && (
             <>
               <div className="g-activity-status">
@@ -302,6 +306,7 @@ export default function ActivitySidebar({
               )}
             </div>
           )}
+          </PullToRefresh>
         </div>
       </div>
     </aside>

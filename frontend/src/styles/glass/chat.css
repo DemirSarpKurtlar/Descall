@@ -413,7 +413,16 @@ html.glass-ui .app-root.g-shell .group-swipe-btn.invite svg { background: #587AF
 html.glass-ui .app-root.g-shell .group-swipe-btn.add svg { background: #30D158; }
 html.glass-ui .app-root.g-shell .group-swipe-btn.rename svg { background: #ff9f0a; color: #fff; }
 
-/* ── Conversation header capsule (03) ── */
+/* ── Conversation header capsule (03) ──
+   Compact, like an iOS 26 navigation bar: 44pt controls right under the
+   safe area (--g-chrome-top), and the thread starts 8pt below them, so the
+   band above the first message is no taller than the status bar + bar. */
+html.glass-ui .app-root.g-shell.in-conversation {
+  --g-conv-head-h: 44px;
+  --g-conv-gap: 8px;
+  --g-conv-top: calc(var(--g-chrome-top) + var(--g-conv-head-h) + var(--g-conv-gap));
+}
+
 html.glass-ui .app-root.g-shell.in-conversation .chat-top-chrome {
   height: 0;
   min-height: 0;
@@ -428,8 +437,8 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv {
   top: var(--g-chrome-top);
   left: 12px;
   right: 12px;
-  height: 48px;
-  min-height: 48px;
+  height: var(--g-conv-head-h);
+  min-height: var(--g-conv-head-h);
   padding: 0 !important;
   margin: 0;
   gap: 8px;
@@ -452,10 +461,10 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-lef
 }
 
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .mobile-nav-btn {
-  width: 48px !important;
-  height: 48px !important;
-  min-width: 48px !important;
-  min-height: 48px !important;
+  width: var(--g-conv-head-h) !important;
+  height: var(--g-conv-head-h) !important;
+  min-width: var(--g-conv-head-h) !important;
+  min-height: var(--g-conv-head-h) !important;
   margin: 0;
   border-radius: var(--r-xl);
   color: var(--g-t1);
@@ -472,7 +481,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
-  height: 48px;
+  height: var(--g-conv-head-h);
   border-radius: var(--r-xl);
   gap: 10px;
   padding: 0 14px 0 6px;
@@ -547,7 +556,7 @@ html.glass-ui .app-root.g-shell.in-conversation .g-peer-status.is-dim {
 
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right {
   flex: 0 0 auto;
-  height: 48px;
+  height: var(--g-conv-head-h);
   border-radius: var(--r-xl);
   padding: 0 3px;
   gap: 0;
@@ -563,8 +572,8 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-rig
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .icon-btn {
   width: 36px !important;
   min-width: 36px !important;
-  height: 48px !important;
-  min-height: 48px !important;
+  height: var(--g-conv-head-h) !important;
+  min-height: var(--g-conv-head-h) !important;
   border-radius: 0 !important;
   background: transparent !important;
   color: var(--g-t1);
@@ -629,7 +638,7 @@ html.glass-ui .app-root.g-shell.in-conversation .icon-btn-badge {
    over the status bar. */
 html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar {
   position: fixed;
-  top: calc(var(--g-chrome-top) + 56px);
+  top: var(--g-conv-top);
   left: 12px;
   right: 12px;
   z-index: 58;
@@ -696,7 +705,7 @@ html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn {
 
 @media (max-width: 400px) {
   html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar {
-    top: calc(var(--g-chrome-top) + 52px);
+    top: var(--g-conv-top);
     left: 8px;
     right: 8px;
   }
@@ -704,7 +713,7 @@ html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn {
 
 /* ── Messages (03) ── */
 html.glass-ui .app-root.g-shell.in-conversation .messages-container {
-  padding: calc(var(--g-chrome-top) + 62px) 14px calc(var(--g-bar-bottom) + 78px) !important;
+  padding: var(--g-conv-top) 14px calc(var(--g-bar-bottom) + 78px) !important;
   background-color: transparent !important;
 }
 
@@ -716,7 +725,8 @@ html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-slowmo
 }
 
 html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.chat-search-bar) .messages-container {
-  padding-top: calc(var(--g-chrome-top) + 112px) !important;
+  /* search bar (44) + gap under it */
+  padding-top: calc(var(--g-conv-top) + 44px + var(--g-conv-gap)) !important;
 }
 
 html.glass-ui .app-root.g-shell .message-list {

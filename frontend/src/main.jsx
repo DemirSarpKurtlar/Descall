@@ -15,6 +15,20 @@ import { installFlagFont } from "./lib/countryFlags";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
 
+// On-device viewport readout (?vpdebug=1 / ?vpdebug=0). Loaded only when asked.
+try {
+  if (typeof window !== "undefined" && (/[?&]vpdebug=/.test(window.location.search) || window.localStorage?.getItem("descall:vpdebug") === "1")) {
+    import("./lib/viewportDebug.js").then((m) => {
+      if (!m.viewportDebugWanted(window.location.search, window.localStorage)) return;
+      const go = () => m.installViewportDebug();
+      if (document.body) go();
+      else window.addEventListener("DOMContentLoaded", go, { once: true });
+    });
+  }
+} catch {
+  /* debug only */
+}
+
 // Crash/error reporting (prod only, lazy-loaded after first paint, buffers earlier errors).
 startErrorReporting();
 

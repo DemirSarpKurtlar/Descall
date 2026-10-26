@@ -186,3 +186,13 @@ self.addEventListener("pushsubscriptionchange", (event) => {
     }
   })());
 });
+
+/* No fetch handler on purpose: the app shell and bundles always come from the
+   network (HTML is max-age=0), so this worker can never serve a stale build.
+   A new worker still takes over right away so push / ring fixes ship at once. */
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});

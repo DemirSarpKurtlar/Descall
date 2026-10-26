@@ -11,7 +11,11 @@
 html.glass-ui .app-root.g-shell {
   /* Bar floats 24pt above the bottom on Face ID iPhones (home indicator 34 − 10),
      12pt on Home-button iPhones. */
-  --g-bar-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px));
+  /* Mobile web: when Safari 26 lays fixed boxes out under its floating
+     toolbar, --g-vv-lift (measured in useMobileKeyboard) is that strip and
+     every bottom-docked surface (tab bar, composer, call bar) floats 8pt
+     above the toolbar instead of behind it. 0 everywhere else. */
+  --g-bar-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px), calc(var(--g-vv-lift, 0px) + 8px));
   --g-tab-h: 64px;
   --g-list-bottom: calc(var(--g-bar-bottom) + var(--g-tab-h) + 24px);
   --g-head-top: calc(var(--g-chrome-top) + 162px); /* 222: content under toolbar + title + search */
@@ -740,9 +744,20 @@ html.glass-ui .g-dotb {
   box-shadow: 0 0 0 2px rgba(20, 22, 32, 0.9);
 }
 
-/* Keyboard up: the bar never hangs above the keyboard. */
-html.glass-ui.kb-open .g-tabbar,
-html.glass-ui.kb-open .g-edge-bot {
+/* iOS 26 app: the native Liquid Glass UITabBar (DescallGlassTabBar) is on
+   screen over this one. Only `.is-native` (set after the plugin confirmed the
+   bar is shown) hides the web bar; web and older iOS never get it. */
+html.glass-ui .g-tabbar.is-native,
+html.glass-ui.native-tabbar .g-edge-bot {
+  opacity: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Real keyboard up (a field is focused and the visual viewport lost >150pt):
+   the bar never hangs above the keyboard. Nothing else hides it on web. */
+html.glass-ui.kb-bar-hidden .g-tabbar,
+html.glass-ui.kb-bar-hidden .g-edge-bot {
   display: none;
 }
 
@@ -821,15 +836,18 @@ html.glass-ui .g-status-me {
   z-index: 100080;
 }
 
+/* Hangs from the toolbar avatar (top-left): left-aligned with it, 8px under
+   it (NavigationRail measures it into --g-status-left / --g-status-top; the
+   fallback is the same toolbar metrics: chrome top + 44px avatar + 8px). */
 html.glass-ui .status-picker.g-status-menu {
   position: fixed;
-  left: 16px;
-  bottom: calc(var(--g-bar-bottom, 24px) + 76px); /* 100: 12 above the bar */
-  top: auto;
+  left: var(--g-status-left, 16px);
+  top: var(--g-status-top, calc(var(--g-chrome-top, 12px) + 52px));
+  bottom: auto;
   width: 280px;
   min-width: 0;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - var(--g-chrome-top) - 160px);
+  max-height: calc(var(--vv-height, 100dvh) - var(--g-status-top, calc(var(--g-chrome-top, 12px) + 52px)) - 16px - env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   padding: 8px;
   border: 0;

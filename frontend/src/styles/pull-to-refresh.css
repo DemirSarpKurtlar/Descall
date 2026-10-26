@@ -1,0 +1,92 @@
+/* Pull-to-refresh (components/ui/PullToRefresh.jsx, lib/pullToRefresh.js).
+   The spinner is UIActivityIndicatorView's 8 spokes: they draw in while you
+   pull, then turn in 8 steps while the refetch runs. No transitions here;
+   every frame is written by the gesture or the spring. */
+
+.ptr {
+  position: relative;
+  min-height: 100%;
+}
+
+.ptr-track {
+  position: relative;
+}
+
+.ptr-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, -14px, 0);
+  color: var(--g-t2, rgba(235, 235, 245, 0.6));
+}
+
+.ptr-spinner {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.ptr-spoke {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 8px;
+  margin: -4px 0 0 -1.5px;
+  border-radius: 1.5px;
+  background: currentColor;
+  opacity: 0;
+  transform: rotate(calc(var(--i) * 45deg)) translateY(-8.5px);
+}
+
+.ptr-indicator[data-spokes="1"] .ptr-spoke:nth-child(-n + 1),
+.ptr-indicator[data-spokes="2"] .ptr-spoke:nth-child(-n + 2),
+.ptr-indicator[data-spokes="3"] .ptr-spoke:nth-child(-n + 3),
+.ptr-indicator[data-spokes="4"] .ptr-spoke:nth-child(-n + 4),
+.ptr-indicator[data-spokes="5"] .ptr-spoke:nth-child(-n + 5),
+.ptr-indicator[data-spokes="6"] .ptr-spoke:nth-child(-n + 6),
+.ptr-indicator[data-spokes="7"] .ptr-spoke:nth-child(-n + 7),
+.ptr-indicator[data-spokes="8"] .ptr-spoke {
+  opacity: 1;
+}
+
+/* Refreshing: the head (spoke 0) leads clockwise, the tail fades behind it
+   (spoke 7 next brightest, spoke 1 dimmest), one spoke per step. */
+.ptr-indicator[data-state="refreshing"] .ptr-spoke {
+  opacity: var(--o);
+}
+.ptr-indicator[data-state="refreshing"] .ptr-spinner {
+  animation: ptr-turn 0.8s steps(8, end) infinite;
+}
+
+@keyframes ptr-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ptr-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptr-indicator[data-state="refreshing"] .ptr-spinner {
+    animation: ptr-breathe 1.2s ease-in-out infinite;
+  }
+}
+
+.ptr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

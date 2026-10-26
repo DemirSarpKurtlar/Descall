@@ -25,6 +25,7 @@ import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
 import LegalContentModal from "../legal/LegalContentModal";
+import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
 
 const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
 const UserPanel = lazy(() => import("./UserPanel"));
@@ -69,6 +70,7 @@ export default function AppLayout({
   onGroupCreated,
   onGroupLeft,
   onGroupRenamed,
+  onGroupMemberAdded,
   onGroupAvatarChanged,
   onRefresh,
   friendNotice,
@@ -442,6 +444,15 @@ export default function AppLayout({
     () => ({ ...navBadges, friends: pendingFriendCount }),
     [navBadges, pendingFriendCount]
   );
+  // iOS 26 app: Apple's Liquid Glass UITabBar over the WebView. True only
+  // while the native bar is confirmed on screen; otherwise the web bar shows.
+  const nativeTabBarActive = useNativeGlassTabBar({
+    enabled: glassShell && showMobileTabBar,
+    items: glassTabItems,
+    activeId: userPanelOpen ? null : activeView,
+    badges: glassTabBadges,
+    onSelect: handleViewChange,
+  });
   const glassShellValue = useMemo(
     () =>
       glassShell
@@ -547,6 +558,7 @@ export default function AppLayout({
                 friendPresence={activity.friendPresence}
                 onlineUsers={onlineUsers}
                 onRefresh={onRefresh}
+                isMobile={isMobile}
                 onAddFriend={() => handleAddClick("friend")}
                 onFriendSelect={handleDmSelect}
                 me={me}
@@ -612,6 +624,7 @@ export default function AppLayout({
             onGroupCreated={onGroupCreated}
             onGroupLeft={onGroupLeft}
             onGroupRenamed={onGroupRenamed}
+            onGroupMemberAdded={onGroupMemberAdded}
             onGroupAvatarChanged={onGroupAvatarChanged}
             onRefresh={onRefresh}
             friendRequests={friendRequests}
@@ -682,6 +695,7 @@ export default function AppLayout({
                 onGroupAvatarChanged={onGroupAvatarChanged}
                 onGroupLeft={onGroupLeft}
                 onGroupRenamed={onGroupRenamed}
+                onGroupMemberAdded={onGroupMemberAdded}
                 activeView={activeView}
                 activeDmUser={activeDmUser}
                 activeGroup={activeGroup}
@@ -772,6 +786,7 @@ export default function AppLayout({
               activeId={userPanelOpen ? null : activeView}
               onSelect={handleViewChange}
               badges={glassTabBadges}
+              nativeActive={nativeTabBarActive}
             />
           </>
         ) : null
