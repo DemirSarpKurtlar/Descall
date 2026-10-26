@@ -107,15 +107,24 @@ async function startFrames(cdp, dir) {
 async function scrollGesture(cdp, dev, x, y, dy, speed = 1800) {
   await cdp.send('Input.synthesizeScrollGesture', { x: Math.round(x), y: Math.round(y), yDistance: -dy, speed, gestureSourceType: 'mouse', repeatCount: 1 });
 }
+const SYNTHETIC = new Set();
 async function tap(page, cdp, dev, sel, { text, index = 0 } = {}) {
   const box = await page.evaluate(([sel, text, index]) => {
     const els = [...document.querySelectorAll(sel)].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && (!text || `${e.getAttribute('aria-label') || ''} ${e.getAttribute('title') || ''} ${e.textContent.trim()}`.includes(text)); });
-    const e = els[index];
-    if (!e) return null;
-    const r = e.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    // Only points where the element is really on top: on the iPad viewport an
+    // unpositioned .mobile-tab-bar sits over the list and would eat a centre tap.
+    const hit = (e) => { const r = e.getBoundingClientRect(); for (const [fx, fy] of [[0.5, 0.5], [0.15, 0.5], [0.5, 0.25], [0.5, 0.8], [0.85, 0.5]]) { const x = r.left + r.width * fx, y = r.top + r.height * fy; const t = document.elementFromPoint(x, y); if (t && (t === e || e.contains(t))) return { x, y }; } return null; };
+    const hits = els.map(hit).filter(Boolean);
+    return hits[index] || null;
   }, [sel, text || null, index]);
-  if (!box) throw new Error(`tap: no ${sel} ${text || ''}`);
+  if (!box) {
+    // Nothing hittable (iPad 1024px: a stretched in-flow .mobile-tab-bar covers the
+    // app, see jank-index.md). Fall back to a programmatic click and flag the run.
+    const clicked = await page.evaluate(([sel, text, index]) => { const els = [...document.querySelectorAll(sel)].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && (!text || `${e.getAttribute('aria-label') || ''} ${e.getAttribute('title') || ''} ${e.textContent.trim()}`.includes(text)); }); const e = els[index]; if (!e) return false; e.click(); return true; }, [sel, text || null, index]);
+    if (!clicked) throw new Error(`tap: no ${sel} ${text || ''}`);
+    SYNTHETIC.add(dev);
+    return null;
+  }
   if (DEV[dev].touch) {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x, y: box.y, id: 1 }] });
     await sleep(50);
@@ -189,6 +198,8 @@ async function runDevice(browser, base, dev, res) {
   await sleep(2500);
   if (bootStop) await bootStop([]);
   log(`${dev} boot ${res.bootMs}ms (cpu x${cpu})`);
+  await page.screenshot({ path: path.join(OUT, `${dev}-boot.png`) }).catch(() => {});
+  if (args.shotOnly) return;
   await page.evaluate(() => window.__jank || null);
 
   const tabSel = TABS[dev];
@@ -326,6 +337,7 @@ async function runDevice(browser, base, dev, res) {
   try {
     for (const dev of DEVICES) {
       all.results[dev] = {}; try { await runDevice(browser, base, dev, all.results[dev]); } catch (e) { all.results[dev].error = e.stack; log(dev, 'FAIL', e.message); }
+      if (SYNTHETIC.has(dev)) { all.results[dev].syntheticClicks = true; log(dev, 'NOTE: some taps fell back to element.click() (nothing hittable at the target)'); }
     }
   } finally { await browser.close().catch(() => {}); srv.close(); }
   fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(all, null, 1));
