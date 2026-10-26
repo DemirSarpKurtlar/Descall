@@ -307,4 +307,21 @@ t("server long-press menu counts online members like the hub hero", () => {
   assert.match(host, /getServerMembers\(menuServerId\)/);
 });
 
+t("ended call card: opaque backdrop, status not caught by the global .st rule", () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../voice/CallTapCard.css"), "utf8");
+  const end = css.match(/\.ctc-end\{([^}]*)\}/)[1];
+  assert.doesNotMatch(end, /rgba\([^)]*,\s*\.\d+\)\s*;/, "end card backdrop must be opaque");
+  const st = css.match(/\.ctc-end \.st\{([^}]*)\}/)[1];
+  assert.match(st, /text-transform:none/);
+  assert.match(st, /margin:8px 0 0/);
+});
+
+t("iPhone in-server rail buttons open the server long-press menu (mockups 20, 22)", () => {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../ServersSidebar.jsx"), "utf8");
+  const rail = src.slice(src.indexOf('className={`g-server-rail-btn'), src.indexOf('className="g-server-rail-add"'));
+  assert.match(rail, /onContextMenu=\{\(e\) => \{\s*if \(!hubMode\) return;/);
+  assert.match(rail, /openServerMenuTouch\(e, server\)/);
+  assert.match(rail, /\{\.\.\.longPress\(\(el\) => \{[\s\S]*setServerMenu\(\{ server, rect: rectOf\(el\) \}\)/);
+});
+
 console.log(`serverHub.selftest: ${n} checks passed`);
