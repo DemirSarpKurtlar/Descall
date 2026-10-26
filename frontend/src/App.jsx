@@ -4655,8 +4655,8 @@ export default function App() {
     }
   };
 
-  const handleCreateServer = async ({ name, iconUrl, templateId }) => {
-    const { server, ownedCount, maxOwned } = await createServer({ name, iconUrl, templateId });
+  const handleCreateServer = async ({ name, iconUrl, templateId, starterLocale }) => {
+    const { server, ownedCount, maxOwned } = await createServer({ name, iconUrl, templateId, starterLocale });
     if (server) {
       setMyServers((prev) => (prev.some((s) => s.id === server.id) ? prev : [...prev, server]));
       setOwnedServerCount(ownedCount ?? ((ownedServerCount || 0) + 1));
