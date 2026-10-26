@@ -273,30 +273,35 @@ class NotificationService {
 
   // ─── Typed notification helpers ───────────────────────────────────────────
 
-  async dm({ from, text, conversationId }) {
+  async dm({ from, text, conversationId, fromId = null, avatarUrl = null }) {
     if (isDndMuted()) return;
     if (readUserSettings().msgNotifications === false) return;
     await this.show({
       title: from,
       body: text?.substring(0, 120) || t("New message"),
       tag: `dm-${conversationId}`,
-      data: { type: 'dm', conversationId, from },
+      avatarUrl,
+      // fromId: letter-avatar colour (same as the app); avatarUrl: desktop capsule photo.
+      data: { type: 'dm', conversationId, from, fromId: fromId || conversationId, avatarUrl },
     });
   }
 
   // Legacy alias used in existing App.jsx calls
-  async newMessage({ from, text, preview, conversationId }) {
-    await this.dm({ from, text: preview || text, conversationId });
+  async newMessage({ from, text, preview, conversationId, fromId, avatarUrl }) {
+    await this.dm({ from, text: preview || text, conversationId, fromId, avatarUrl });
   }
 
-  async groupMessage({ groupName, from, text, groupId }) {
+  async groupMessage({ groupName, from, text, groupId, fromId = null, avatarUrl = null }) {
     if (isDndMuted()) return;
     if (readUserSettings().msgNotifications === false) return;
+    const preview = (text || t("New message")).substring(0, 100);
     await this.show({
       title: groupName,
-      body: `${from}: ${(text || t("New message")).substring(0, 100)}`,
+      body: `${from}: ${preview}`,
       tag: `group-${groupId}`,
-      data: { type: 'group', groupId, from, groupName },
+      avatarUrl,
+      // preview: the text alone (desktop capsule shows "Mert  Hafta Sonu Ekibi" above it).
+      data: { type: 'group', groupId, from, groupName, preview, fromId, avatarUrl },
     });
   }
 
@@ -432,14 +437,16 @@ class NotificationService {
     });
   }
 
-  async friendOnline({ username }) {
+  async friendOnline({ username, userId = null, avatarUrl = null }) {
     if (isDndMuted()) return;
     await this.show({
       title: t("Descall"),
       body: t("{username} is now online", { username }),
       tag: `online-${username}`,
       silent: true,
-      data: { type: 'friend-online', username },
+      avatarUrl,
+      // userId: the desktop capsule's "Mesaj" opens this DM.
+      data: { type: 'friend-online', username, userId, fromId: userId, avatarUrl },
     });
   }
 
