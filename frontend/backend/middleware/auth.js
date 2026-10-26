@@ -1,6 +1,7 @@
 const { verifyToken } = require("../config/jwt");
 const { bannedUserIds, banDetailsByUser, revokedSessionIds, usernameById } = require("../runtime/sharedState");
 const { touchLastSeen } = require("../lib/presenceTouch");
+const { recordActiveDay } = require("../lib/signupStats");
 const ageGate = require("../lib/ageGate");
 const { sessionAllowed } = require("../lib/sessionGuard");
 
@@ -61,6 +62,7 @@ async function requireAuth(req, res, next) {
       sid: decoded.sid || null,
     };
     touchLastSeen(req.user.id).catch(() => {});
+    recordActiveDay(req.user.id).catch(() => {});
     if (childCheckExempt(req)) return next();
     ageGate.enforceChildClosure(req.user.id).then((block) => {
       if (!block) return next();

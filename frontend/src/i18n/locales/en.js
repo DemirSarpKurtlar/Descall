@@ -309,6 +309,7 @@ export const nested = {
     "sections": "Sections",
     "sectionsCount": "{n} sections",
     "promoCodes": "Promo Codes",
+    "signupStats": "Signup Stats",
     "announcements": "Announcements",
     "livePopup": "Live popup",
     "casino": "Casino",

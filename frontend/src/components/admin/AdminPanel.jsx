@@ -24,6 +24,7 @@ import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedbackV3, { FB3_NAV } from "./feedback3/AdminFeedbackV3.jsx";
+import SignupStatsWindow, { openSignupStatsWindow } from "./signupStats/SignupStatsWindow.jsx";
 import { isTabletLayout } from "../../lib/appearancePrefs";
 import AdminShop from "./AdminShop";
 import PromoCodesTab from "./PromoCodesTab";
@@ -91,6 +92,7 @@ const TABS = [
   { id: "directory", label: "admin.users", icon: Users },
   { id: "analytics", label: "admin.analytics", icon: Activity },
   // Kayıt İstatistikleri opens in its own window (Electron) or an in-app window (web / iPad).
+  { id: "signupStats", label: "admin.signupStats", icon: BarChart3 },
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
@@ -135,8 +137,20 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const tabs = moderatorOnly ? TABS.filter((x) => MODERATOR_TABS.includes(x.id)) : TABS;
   const [dossierUserId, setDossierUserId] = useState(null);
   const adminLayout = useAdminLayout();
-  /** Every section switch goes through here. */
-  const selectTab = useCallback((id) => setTab(id), []);
+  const [statsOpen, setStatsOpen] = useState(false);
+  /** Every section switch goes through here: Kayıt İstatistikleri is a window, not a tab. */
+  const selectTab = useCallback(
+    (id) => {
+      if (id === "signupStats") {
+        if (!openSignupStatsWindow(adminLayout)) setStatsOpen(true);
+        return;
+      }
+      setTab(id);
+    },
+    [adminLayout],
+  );
+  const statsWindow =
+    statsOpen && !moderatorOnly ? <SignupStatsWindow layout={adminLayout} onClose={() => setStatsOpen(false)} /> : null;
   // Ban / timeout / wallet-freeze shortcuts from the suspicious tab open the existing dossier tools.
   const [dossierIntent, setDossierIntent] = useState(null);
   const [openReportCount, setOpenReportCount] = useState(0);
@@ -690,6 +704,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           setTab("people");
         }}
       />
+      {statsWindow}
       </>
     );
   }
@@ -702,6 +717,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
     >
+      {statsWindow}
       <motion.div
         className="admin-container"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}

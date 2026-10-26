@@ -456,6 +456,8 @@ app.use("/api/calls", callsRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
 app.use("/api/me", require("./routes/meAppearance"));
+// Kayıt İstatistikleri: ~400 day retention for user_active_days / signup_attempts.
+require("./lib/signupStats").startRetention();
 app.use("/api/special-badges", require("./routes/specialBadges"));
 // 3.0.0 (A4): iOS notification quick reply / reactions / read (scoped notify token).
 app.use("/api/messages", require("./routes/notifyActions"));

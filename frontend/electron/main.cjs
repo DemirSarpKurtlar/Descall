@@ -58,6 +58,7 @@ const {
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile } = require('./appProtocolPath.cjs');
+const { isSignupStatsUrl, signupStatsWindowOptions } = require('./adminStatsWindow.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -725,6 +726,8 @@ function resolvePrelaunch(outcome) {
 
 // Paths
 const isDev = process.env.NODE_ENV === 'development';
+/** Yönetici › Kayıt İstatistikleri window (electron/adminStatsWindow.cjs). */
+let signupStatsWindow = null;
 const isPackaged = app.isPackaged;
 
 let mainWindow = null;
@@ -1214,16 +1217,21 @@ function createMainWindow() {
   });
 
   // IPC handlers for window controls
-  ipcMain.on('window:minimize', () => {
-    mainWindow?.minimize();
+  // A secondary app window (Kayıt İstatistikleri) drives its own controls; everything else is the main window.
+  const controlledWindow = (event) => {
+    const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    return w && w !== mainWindow && w === signupStatsWindow ? w : mainWindow;
+  };
+  ipcMain.on('window:minimize', (event) => {
+    controlledWindow(event)?.minimize();
   });
 
-  ipcMain.on('window:maximize', () => {
-    toggleMaximize(mainWindow);
+  ipcMain.on('window:maximize', (event) => {
+    toggleMaximize(controlledWindow(event));
   });
 
-  ipcMain.on('window:close', () => {
-    mainWindow?.close();
+  ipcMain.on('window:close', (event) => {
+    controlledWindow(event)?.close();
   });
 
   const publishBox = () => publishContentBox(mainWindow);
@@ -1621,6 +1629,18 @@ function createMainWindow() {
 
   // Handle external links — Descall Setup assets download in-app so we can prune older installers
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Yönetici › Kayıt İstatistikleri: its own window (one at a time).
+    if (isSignupStatsUrl(url, { isDev })) {
+      if (signupStatsWindow && !signupStatsWindow.isDestroyed()) {
+        if (signupStatsWindow.isMinimized()) signupStatsWindow.restore();
+        signupStatsWindow.focus();
+        return { action: 'deny' };
+      }
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: signupStatsWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
+      };
+    }
     if (isDescallSetupDownloadUrl(url)) {
       downloadDescallSetupViaElectron({
         webContents: mainWindow.webContents,
@@ -1632,6 +1652,24 @@ function createMainWindow() {
     }
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('did-create-window', (win, { url }) => {
+    if (!isSignupStatsUrl(url, { isDev })) return;
+    signupStatsWindow = win;
+    win.setMenu(null);
+    win.on('closed', () => {
+      if (signupStatsWindow === win) signupStatsWindow = null;
+    });
+    win.on('maximize', () => win.webContents.send('window:maximized', true));
+    win.on('unmaximize', () => win.webContents.send('window:maximized', false));
+    win.webContents.setWindowOpenHandler(({ url: next }) => {
+      if (/^https?:/i.test(next)) shell.openExternal(next);
+      return { action: 'deny' };
+    });
+    win.webContents.on('will-navigate', (event, next) => {
+      if (!isSignupStatsUrl(next, { isDev })) event.preventDefault();
+    });
   });
 
   // Security: Prevent navigation to external sites
