@@ -182,6 +182,19 @@ async function run() {
     r = await call(base, "POST", "/api/admin/special-badges/facebook/grant", { token: admin, body: { userId: USER } });
     assert(r.status === 500 && r.body.error === "server_error" && !JSON.stringify(r.body).includes("secret"), "500 hides detail");
 
+    // --- promo codes can only carry promo-grantable badges (Facebook / held #001 refused before the database)
+    next.special_badge_catalog = CATALOG;
+    next.promo_admin_create = { ok: true, id: "cccccccc-0000-4000-8000-000000000001", code: "BETA2026BETA2026" };
+    const promoBody = (rewardRef) => ({ code: "BETA2026BETA2026", rewardType: "special_badge", rewardRef, maxUses: 10, expiresAt: new Date(Date.now() + 864e5).toISOString(), popupAudience: "none" });
+    for (const id of ["facebook", "no001", "nope"]) {
+      const n = calls.length;
+      r = await call(base, "POST", "/api/admin/promo-codes", { token: admin, body: promoBody(id) });
+      assert(r.status === 400 && r.body.error === "reward_badge", `promo code for ${id} refused: ${r.status} ${JSON.stringify(r.body)}`);
+      assert(!calls.slice(n).some((c) => c.name === "promo_admin_create"), `${id} never reaches promo_admin_create`);
+    }
+    r = await call(base, "POST", "/api/admin/promo-codes", { token: admin, body: promoBody("beta") });
+    assert(calls.some((c) => c.name === "promo_admin_create"), "beta code goes through to the database");
+
     // --- no purchase path: the shop cannot sell a special badge
     const before = calls.length;
     for (const itemId of ["facebook", "no001", "beta"]) {

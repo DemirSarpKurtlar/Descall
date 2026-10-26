@@ -60,6 +60,9 @@ class PromoError extends Error {
 async function rpc(name, args) {
   const { data, error } = await supabase.rpc(name, args);
   if (error) {
+    // The special-badge trigger refuses codes for badges that cannot be given by code
+    // (Facebook, a held #001, a full or switched-off badge).
+    if (/special_badge:not_promo_grantable/.test(String(error.message || ""))) throw new PromoError("reward_badge", 400);
     const err = new PromoError("server_error", 500);
     err.cause = error;
     throw err;
@@ -151,6 +154,9 @@ function cleanCreateInput(body = {}) {
 
 async function adminCreate(adminId, body) {
   const input = cleanCreateInput(body);
+  if (input.rewardType === "special_badge" && (await require("./specialBadges").promoGrantable(input.rewardRef)) === false) {
+    throw new PromoError("reward_badge", statusFor("reward_badge"));
+  }
   const res = await rpc("promo_admin_create", { p_admin_id: adminId, p: input });
   if (!res?.ok) adminFail(res);
   return { id: res.id, code: res.code, audience: input.popupAudience, targetUserIds: input.targetUserIds, active: input.active };

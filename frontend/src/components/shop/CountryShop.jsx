@@ -179,7 +179,7 @@ function PurchaseDialog({ item, me, balance, hasVoucher, currentItem, onCancel, 
             </div>
           </div>
           <div className="user-profile-badges">
-            <CountryBadge user={previewUser} />
+            <CountryBadge user={previewUser} special={false} />
             <AdminBadge user={me} variant="chip" />
           </div>
         </div>

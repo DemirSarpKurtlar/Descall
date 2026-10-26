@@ -33,7 +33,7 @@ export function meNames(me) {
 function BadgeRow({ me, c }) {
   return (
     <div className="spm-badge-row">
-      {me?.equippedCountry ? <span className="spm-bdg spm-bdg-country"><CountryBadge user={me} /></span> : null}
+      {me?.equippedCountry ? <span className="spm-bdg spm-bdg-country"><CountryBadge user={me} special={false} /></span> : null}
       {me?.isAdmin ? (
         <span className="spm-bdg spm-admin"><ShieldCheck size={11} />{c.locale === "tr" ? "YÖNETİCİ" : "ADMIN"}</span>
       ) : null}

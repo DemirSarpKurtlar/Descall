@@ -508,7 +508,7 @@ export default function ServerMembersPanel({
           <span className="member-name" style={m._color ? { color: m._color } : undefined}>
             {m._name}
           </span>
-          <CountryBadge item={m.user?.equippedCountry || m.equippedCountry} compact />
+          <CountryBadge user={m.user || m} item={m.user?.equippedCountry || m.equippedCountry} compact />
           <AdminBadge user={m.user} variant="inline" />
           {m.isOwner && (
             <span className="member-owner-badge" title={t("Owner")}>

@@ -170,7 +170,10 @@ async function overview() {
  */
 async function promoGrantable(badgeId) {
   if (!isBadgeId(badgeId)) return false;
-  const row = (await catalog({ fresh: true })).find((b) => b.id === badgeId);
+  const rows = await catalog({ fresh: true });
+  // Catalog not installed (migration not applied yet): let the database answer badges_unavailable.
+  if (!rows.length) return null;
+  const row = rows.find((b) => b.id === badgeId);
   if (!row || row.active === false || row.grantMode !== "promo") return false;
   if (row.maxHolders != null && Number(row.holders) >= Number(row.maxHolders)) return false;
   return true;

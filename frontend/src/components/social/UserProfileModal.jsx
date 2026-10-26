@@ -9,7 +9,8 @@ import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
 import AdminBadge from "./AdminBadge";
-import { BadgeIcon, NameEffectText, CountryBadge } from "../ui/Cosmetics";
+import { BadgeIcon, NameEffectText } from "../ui/Cosmetics";
+import { ProfileBadgeRow } from "../badges/BadgeVault.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
@@ -255,6 +256,7 @@ function UserProfileModal({
     createdAt: createdAtProp || known?.createdAt || known?.created_at || null,
   });
   const viewUser = visibleProfile(profile, userId, seed);
+  const badgeUser = fetched ? { ...fetched, id: fetched.id || userId } : { id: userId };
   const pending = Boolean(open && userId && !sameUserId(settledFor, userId));
   const mutualFriends = ownedList(mutualState.forId, userId, mutualState.list);
   const memberSince = memberSinceIso(userId, [fetched, seed, known]);
@@ -371,11 +373,11 @@ function UserProfileModal({
                       <NameEffectText user={fetched}>{displayName}</NameEffectText>
                     </span>
                     <BadgeIcon user={fetched} />
-                    <CountryBadge user={fetched} />
                   </div>
                   <div className="g-profile-handle">
                     @{displayUsername} · <span className={statusClass}>{statusLabel}</span>
                   </div>
+                  <ProfileBadgeRow user={badgeUser} me={me} size="ios" className="g-profile-badges" />
                   {isUserAdmin(viewUser) && (
                     <div className="g-profile-chips">
                       <AdminBadge user={viewUser} variant="chip" />
@@ -566,14 +568,13 @@ function UserProfileModal({
                     @{displayUsername}
                   </div>
                 )}
-                {(fetched?.equippedCountry || isUserAdmin(viewUser)) && (
-                  <div className="user-profile-badges">
-                    <CountryBadge user={fetched} />
-                    {isUserAdmin(viewUser) && (
-                      <AdminBadge user={viewUser} variant="chip" />
-                    )}
-                  </div>
-                )}
+                <div className="user-profile-badges">
+                  <ProfileBadgeRow
+                    user={badgeUser}
+                    me={me}
+                    trailing={isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
+                  />
+                </div>
                 <div
                   className="user-profile-status-line"
                   style={{ color: STATUS_COLOR[status] || STATUS_COLOR.offline }}
