@@ -2652,7 +2652,13 @@ html[data-bubble="minimal"] .message-bubble {
   border-radius: 40% 60% 55% 45%;
   background: radial-gradient(circle at 30% 30%, var(--primary-soft), transparent 70%);
   filter: blur(2px);
-  animation: emptyBlob 8s ease-in-out infinite;
+  /* A3: two slow breaths, then rest on the first keyframe (identical to the
+     static look). Endless, it kept the desktop main panel's two 40px backdrop
+     blurs recompositing every frame while idle (15 fps headless, idle GPU). */
+  animation: emptyBlob 8s ease-in-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .empty-illu-blob { animation: none; }
 }
 .empty-illu-blob.secondary {
   inset: 22%;

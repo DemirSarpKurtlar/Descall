@@ -5,6 +5,7 @@ import { getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "./analyt
 import { Funnel } from "./analytics";
 import { useT } from "../context/localeContextInstance";
 import { IconCookie, IconGear } from "./icons";
+import { useDocumentMarker } from "../hooks/useDocumentMarker";
 import "./cookie-consent.css";
 
 /**
@@ -26,6 +27,9 @@ export default function CookieConsentBanner({ variant = "marketing", onOpenPriva
   useEffect(() => {
     setVisible(!getCookieConsent());
   }, []);
+  // Classes instead of body:has(.dc-consent) (A3: whole-document restyles).
+  useDocumentMarker("has-dc-consent", visible);
+  useDocumentMarker("has-dc-consent-site", visible && !app);
 
   if (!visible || typeof document === "undefined") return null;
 

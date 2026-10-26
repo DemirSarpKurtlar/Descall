@@ -312,13 +312,13 @@
   color: var(--gp-t2);
 }
 
-body:has(.mkt) .login-modal-overlay {
+body.has-mkt .login-modal-overlay {
   background: rgba(5, 6, 10, 0.52);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
-body:has(.mkt) .login-modal {
+body.has-mkt .login-modal {
   border: none !important;
   border-radius: 32px !important;
   background:
@@ -330,8 +330,8 @@ body:has(.mkt) .login-modal {
   color: rgba(255, 255, 255, 0.96);
 }
 
-body:has(.mkt) .login-modal input,
-body:has(.mkt) .login-modal textarea {
+body.has-mkt .login-modal input,
+body.has-mkt .login-modal textarea {
   border: none;
   border-radius: var(--r-md);
   background: rgba(0, 0, 0, 0.26);
@@ -398,7 +398,7 @@ body:has(.mkt) .login-modal textarea {
 @media (prefers-reduced-transparency: reduce) {
   .mkt .mkt-header,
   .mkt .mkt-footer,
-  body:has(.mkt) .login-modal,
+  body.has-mkt .login-modal,
   .invite-landing-card {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

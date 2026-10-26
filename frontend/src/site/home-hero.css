@@ -2,7 +2,7 @@
    Flat dark background with one soft light from the top, no orbs or grid,
    plain-colour title, real app screen in heavy frosted glass. */
 
-body:has(.mkt-hh) .mkt-bg {
+body.has-mkt-hh .mkt-bg {
   background:
     radial-gradient(120% 70% at 70% -10%, #1a2240 0%, rgba(14, 17, 32, 0.9) 48%, rgba(10, 12, 20, 0) 78%),
     #0a0c14;

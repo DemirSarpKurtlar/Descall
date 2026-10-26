@@ -193,6 +193,7 @@ export default function MessageComposer({
     try { coarse = Boolean(window.matchMedia?.("(any-pointer: coarse)").matches); } catch { /* ignore */ }
     return composerDeviceClass({ glass, coarse });
   }, [glass]);
+  const growRef = useRef({ host: null, value: null });
   useLayoutEffect(() => {
     const el = inputRef.current;
     if (!el || typeof window === "undefined") return;
@@ -217,10 +218,20 @@ export default function MessageComposer({
     }
     const oneLine = Math.max(minHeight, lineHeight + paddingY + borderY);
     const grow = Math.max(0, Math.round(height - oneLine));
-    document.documentElement.style.setProperty("--composer-grow", `${grow}px`);
+    // A3: published on the chat's own .main-panel (the only reader is its
+    // .messages-container), not on <html>, and only when it changes. A custom
+    // property on the root re-styles every element of the app (40 ms desktop,
+    // 110 ms iPhone profile, unthrottled) and this runs on every keystroke.
+    const host = el.closest(".main-panel") || document.documentElement;
+    const prev = growRef.current;
+    if (prev.host !== host || prev.value !== grow) {
+      if (prev.host && prev.host !== host) prev.host.style.removeProperty("--composer-grow");
+      host.style.setProperty("--composer-grow", `${grow}px`);
+      growRef.current = { host, value: grow };
+    }
   }, [message, composerDevice]);
   useEffect(() => () => {
-    try { document.documentElement.style.removeProperty("--composer-grow"); } catch { /* ignore */ }
+    try { growRef.current.host?.style.removeProperty("--composer-grow"); } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {

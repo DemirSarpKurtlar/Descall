@@ -181,10 +181,10 @@
   }
   .dc-consent > .dc-consent-acts .dc-btn { height: 44px; font-size: 14.5px; padding: 0 12px; }
   .dc-consent-prefs { margin-top: 16px; }
-  body:has(.dc-consent) .mkt-sticky-cta { display: none; }
+  body.has-dc-consent .mkt-sticky-cta { display: none; }
 }
 
-body:has(.dc-consent.is-site) .mkt { padding-bottom: 96px; }
+body.has-dc-consent-site .mkt { padding-bottom: 96px; }
 
 @media (prefers-reduced-motion: reduce) {
   .dc-consent { animation: dc-consent-fade 200ms ease-out both; }
