@@ -238,14 +238,21 @@ async function runDevice(browser, base, dev) {
 
   try {
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
-  // Open the DM.
-  await waitFor(page, `${dev} DM row`, () => {
+  // Open the DM. A tap that lands before the list hydrates does nothing (slow
+  // CI runners), so tap again until the conversation shows.
+  const tapDmRow = () => page.evaluate(() => {
     const el = [...document.querySelectorAll('.dm-name, .dm-item, button, [role="button"]')].find((e) => e.textContent.trim().startsWith('Ayşe') && e.getBoundingClientRect().width > 0);
-    if (!el) return { ok: false };
+    if (!el) return false;
     (el.closest('button, [role="button"], .dm-item') || el).click();
-    return { ok: true };
-  }, null, 30000);
-  await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 20000);
+    return true;
+  });
+  await waitFor(page, `${dev} DM row`, () => ({ ok: [...document.querySelectorAll('.dm-name, .dm-item, button, [role="button"]')].some((e) => e.textContent.trim().startsWith('Ayşe') && e.getBoundingClientRect().width > 0) }), null, 30000);
+  let opened = false;
+  for (let attempt = 0; attempt < 5 && !opened; attempt += 1) {
+    await tapDmRow();
+    opened = await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 6000).then(() => true, () => false);
+  }
+  if (!opened) await waitFor(page, `${dev} messages`, () => ({ ok: document.querySelectorAll('.message-bubble').length >= 30 }), null, 2000);
   await sleep(900);
   let m = await page.evaluate(metrics);
   check(m.dist <= 4, `opens at the newest message (distance ${m.dist})`);
