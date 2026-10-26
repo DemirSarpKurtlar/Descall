@@ -23,8 +23,8 @@ export const INLINE_SCRIPT_HASHES = [
   "sha256-8O6fXtGVKTVzWNUD8da/uLiptJqxgFDfLe0FJkarXGw=",
   "sha256-eSNFUNqALkZczatvPjUNWi4Zl3/adLqQoBwvL1fvHqo=",
   "sha256-iR5Yf/pUtwXjT8aHwnroPZWD2DpFRRmis1Ng4dJfFXA=",
-  "sha256-4zeQ0a6Zva8udw26XngEAu7R+YFuCpFjoEtJYflfD88=",
-  "sha256-AoCYD6fcGiKRjWdR6UeNQOo0OuaKaJ71WFc96VAirOE=",
+  "sha256-w5TRuBRQjVUeNvSHfbx1bYlVy0FyoYG973mBR3cgQ7s=",
+  "sha256-bAY9b6730reqBpCIG+eUKp4bNdOa/HzO/xeyreQnUNE=",
   "sha256-uTUWQ7h7HJ1YJi/9oCc8AwDTUAvj+dsZ7s0p5cNMUcs=",
   // @csp-hashes-end
 ];

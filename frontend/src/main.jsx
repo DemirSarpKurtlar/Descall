@@ -120,7 +120,14 @@ try {
 const bootLocale = resolveInitialLocale();
 const statusEl = document.getElementById("boot-status");
 // Keep status for screen readers only, splash UI is logo + thin bar (no STARTING wall).
-if (statusEl) statusEl.textContent = translate(bootLocale, "Loading");
+// Catalogs load async (loadI18nCatalogs), so translate() still returns the English
+// key here. For Turkish that replaced the inline "Yükleniyor" with "Loading" on the
+// visible phone splash (B2 boot flicker). Only overwrite with a real translation.
+if (statusEl) {
+  const bootLabel = translate(bootLocale, "Loading");
+  if (bootLocale !== "tr" || bootLabel !== "Loading") statusEl.textContent = bootLabel;
+  else if (!statusEl.textContent.trim() || statusEl.textContent === "Loading") statusEl.textContent = "Yükleniyor";
+}
 
 /**
  * Progressive marketing hydration: paint #seo-static first (LCP / crawlers),
