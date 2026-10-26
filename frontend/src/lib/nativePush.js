@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { notificationTapAction } from "./callTap.js";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "./storage";
@@ -170,22 +171,19 @@ function ensureListeners() {
   PushNotifications.addListener("pushNotificationReceived", (notification) => {
     // Foreground delivery, route into in-app handlers when it's a call.
     const data = notification?.data || {};
+    // Never "answer" here: the payload's default action must not accept a
+    // call nobody tapped (3.0.0, C3). The app only refreshes the ring.
     if (data.type === "call" || data.type === "group-call") {
-      dispatchNotificationAction({ ...data, action: data.action || "open" });
+      dispatchNotificationAction({ ...data, action: "received" });
     }
   });
 
   PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
     const data = event?.notification?.data || {};
-    const actionId = event?.actionId;
-    const action =
-      actionId === "accept" || actionId === "answer" || actionId === "JOIN"
-        ? "answer"
-        : actionId === "decline" || actionId === "DECLINE"
-          ? "decline"
-          : IS_IOS
-            ? "open"
-            : data.action || "open";
+    // 3.0.0 (C3): a body tap on a call push is "call-tap" (App resolves it:
+    // a DM ring connects, a group call opens the join card, an old one shows
+    // "Arama sona erdi"); only the Answer / Join buttons accept directly.
+    const action = notificationTapAction({ actionId: event?.actionId, data, ios: IS_IOS });
     dispatchNotificationAction({ ...data, action });
   });
 

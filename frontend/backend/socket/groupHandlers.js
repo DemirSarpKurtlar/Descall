@@ -548,7 +548,11 @@ function registerGroupHandlers(io, socket, state) {
       });
 
     // Track this call as active
+    // 3.0.0 (C3): per-call id + start time for the push tap resolver.
+    const groupCallUuid = require("crypto").randomUUID();
+    const groupCallStartedAt = clock.now();
     activeGroupCalls.set(groupId, {
+      callUuid: groupCallUuid,
       initiatorId: myId,
       initiatorUsername: socket.user.username,
       initiatorAvatarUrl: resolveSocketAvatar(socket),
@@ -604,6 +608,9 @@ function registerGroupHandlers(io, socket, state) {
           tag: `group-call-${groupId}`,
           deepLink: `/?group=${encodeURIComponent(groupId)}`,
           action: "join",
+          callUuid: groupCallUuid,
+          callKind: "group",
+          startedAt: groupCallStartedAt,
         });
       })().catch((err) => console.warn("[GroupCall] push failed:", err?.message || err));
       socket.to(`group:${groupId}`).emit("group:call:incoming", payload);

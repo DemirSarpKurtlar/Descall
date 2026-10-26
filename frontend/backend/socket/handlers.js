@@ -73,6 +73,7 @@ const {
   isActiveDmCall,
   finalizeCall,
   getPendingCall,
+  endedRecently,
   bufferCallerIce,
   listRingingForCallee,
   callStateByUuid,
@@ -1546,7 +1547,9 @@ function registerSocketHandlers(io) {
       emitToUser(io, myId, "notifications:sync", { notifications: getNotifications(myId) });
     });
 
-    socket.on("call:offer", async ({ toUserId, offer, callType, renegotiate, screen } = {}) => {
+    socket.on("call:offer", async ({ toUserId, offer, callType, renegotiate, screen } = {}, ack) => {
+      // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
+      if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string" || !offer) return;
       const targetId = toUserId.trim();
       if (!targetId) return;
@@ -1646,6 +1649,9 @@ function registerSocketHandlers(io) {
           title: `${fromUser.displayName || fromUser.display_name || me.username} arıyor`,
           body: (callType || "voice") === "video" ? "Görüntülü arama" : "Sesli arama",
           callUuid,
+          // 3.0.0 (C3): the tap resolver tells a live ring from an old one.
+          callKind: "dm",
+          startedAt: Date.now(),
           tag: `call-${myId}`,
           deepLink: `/?dm=${encodeURIComponent(myId)}&call=1`,
           action: "answer",
@@ -1665,7 +1671,9 @@ function registerSocketHandlers(io) {
       }
     });
 
-    socket.on("call:answer", ({ toUserId, answer } = {}) => {
+    socket.on("call:answer", ({ toUserId, answer } = {}, ack) => {
+      // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
+      if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string" || !answer) return;
       const ringing = getPendingCall(toUserId, myId);
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
@@ -1709,7 +1717,9 @@ function registerSocketHandlers(io) {
       });
     });
 
-    socket.on("call:end", async ({ toUserId } = {}) => {
+    socket.on("call:end", async ({ toUserId } = {}, ack) => {
+      // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
+      if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:ended", { fromUserId: myId });
       // Hung up before the callee answered (older caller clients send end,
@@ -1722,7 +1732,9 @@ function registerSocketHandlers(io) {
       }
     });
 
-    socket.on("call:cancel", async ({ toUserId } = {}) => {
+    socket.on("call:cancel", async ({ toUserId } = {}, ack) => {
+      // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
+      if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string") return;
       emitToUser(io, toUserId, "call:cancelled", { fromUserId: myId });
       getRingFanout(io).endRingByPair(myId, toUserId, "cancelled");
@@ -1734,7 +1746,9 @@ function registerSocketHandlers(io) {
       }
     });
 
-    socket.on("call:decline", async ({ toUserId } = {}) => {
+    socket.on("call:decline", async ({ toUserId } = {}, ack) => {
+      // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
+      if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string") return;
       const ringing = getPendingCall(toUserId, myId);
       if (ringing?.status === "ringing" && ringing.calleeId === myId) {
@@ -1767,6 +1781,20 @@ function registerSocketHandlers(io) {
       if (typeof toUserId !== "string" || !toUserId) return;
       getRingFanout(io).callerSocketsBack(myId);
       const replay = answerReplayForCaller(myId, toUserId);
+      // 3.0.0 (C3): tell the caller what the server knows about its ring.
+      // "unknown" = no record at all (backend restarted mid-ring): the caller
+      // re-sends its offer so the callee's ring survives the restart.
+      const known = getPendingCall(myId, toUserId);
+      socket.emit("call:caller-resume:result", {
+        toUserId,
+        state: known
+          ? known.status === "active"
+            ? "active"
+            : "ringing"
+          : endedRecently(myId, toUserId)
+            ? "ended"
+            : "unknown",
+      });
       if (!replay) return;
       socket.emit("call:answer", { fromUserId: toUserId, answer: replay.answer, resumed: true });
       for (const candidate of replay.candidates) {
@@ -1818,7 +1846,10 @@ function registerSocketHandlers(io) {
     socket.on("call:ring-status", ({ fromUserId, callUuid } = {}) => {
       if (typeof fromUserId !== "string" || !fromUserId) return;
       const pending = getPendingCall(fromUserId, myId);
-      let state = "ended";
+      // "unknown" (3.0.0, C3): no record and not recently ended, i.e. the
+      // backend restarted mid-ring. The callee keeps ringing; the caller
+      // re-sends its offer (call:caller-resume:result).
+      let state = pending || endedRecently(fromUserId, myId) ? "ended" : "unknown";
       if (pending && pending.calleeId === myId) {
         if (pending.status === "active") state = "active";
         else if (pending.status === "ringing" && (!callUuid || !pending.callUuid || pending.callUuid === callUuid)) {
