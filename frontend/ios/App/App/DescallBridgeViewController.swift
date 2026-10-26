@@ -25,6 +25,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
         #if DEBUG
         showGlassTabBarDemoIfAsked()
         DescallNotifyDemo.showIfAsked(in: view)
+        DescallToastDemo.showIfAsked(in: view)
         #endif
     }
 
@@ -133,6 +134,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(glassTabBarPlugin)
         bridge?.registerPluginInstance(DescallKeychainPlugin())
         bridge?.registerPluginInstance(DescallNotifyPlugin())
+        bridge?.registerPluginInstance(DescallToastPlugin())
         // After Capacitor set its notification delegate (3.0.0, A4).
         DescallNotificationDelegateProxy.install()
     }

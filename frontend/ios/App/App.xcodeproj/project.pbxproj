@@ -36,6 +36,9 @@
 		A4A000102F60000100D35C0A /* DescallNotifyThreadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000032F60000100D35C0A /* DescallNotifyThreadView.swift */; };
 		A4A000112F60000100D35C0A /* DescallNotifyPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000042F60000100D35C0A /* DescallNotifyPlugin.swift */; };
 		A4A000122F60000100D35C0A /* DescallNotifyDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000052F60000100D35C0A /* DescallNotifyDemo.swift */; };
+		A4B000112F60000100D35C0A /* DescallToastLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000012F60000100D35C0A /* DescallToastLogic.swift */; };
+		A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000022F60000100D35C0A /* DescallToastCapsule.swift */; };
+		A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000032F60000100D35C0A /* DescallToastPlugin.swift */; };
 		A4A000132F60000100D35C0A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000062F60000100D35C0A /* NotificationService.swift */; };
 		A4A000142F60000100D35C0A /* DescallNotifyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000012F60000100D35C0A /* DescallNotifyLogic.swift */; };
 		A4A000152F60000100D35C0A /* DescallNotifyKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000022F60000100D35C0A /* DescallNotifyKit.swift */; };
@@ -113,6 +116,9 @@
 		A4A000032F60000100D35C0A /* DescallNotifyThreadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyThreadView.swift; sourceTree = "<group>"; };
 		A4A000042F60000100D35C0A /* DescallNotifyPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyPlugin.swift; sourceTree = "<group>"; };
 		A4A000052F60000100D35C0A /* DescallNotifyDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyDemo.swift; sourceTree = "<group>"; };
+		A4B000012F60000100D35C0A /* DescallToastLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastLogic.swift; sourceTree = "<group>"; };
+		A4B000022F60000100D35C0A /* DescallToastCapsule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastCapsule.swift; sourceTree = "<group>"; };
+		A4B000032F60000100D35C0A /* DescallToastPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastPlugin.swift; sourceTree = "<group>"; };
 		A4A000062F60000100D35C0A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A4A000072F60000100D35C0A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A4A000082F60000100D35C0A /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
@@ -190,6 +196,9 @@
 				B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */,
 				A4A000042F60000100D35C0A /* DescallNotifyPlugin.swift */,
 				A4A000052F60000100D35C0A /* DescallNotifyDemo.swift */,
+				A4B000012F60000100D35C0A /* DescallToastLogic.swift */,
+				A4B000022F60000100D35C0A /* DescallToastCapsule.swift */,
+				A4B000032F60000100D35C0A /* DescallToastPlugin.swift */,
 				C1B2C3D41FED79650016851F /* App.debug.entitlements */,
 				C1B2C3D51FED79650016851F /* App.release.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
@@ -402,6 +411,9 @@
 				A4A000102F60000100D35C0A /* DescallNotifyThreadView.swift in Sources */,
 				A4A000112F60000100D35C0A /* DescallNotifyPlugin.swift in Sources */,
 				A4A000122F60000100D35C0A /* DescallNotifyDemo.swift in Sources */,
+				A4B000112F60000100D35C0A /* DescallToastLogic.swift in Sources */,
+				A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */,
+				A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -52,6 +52,8 @@ jobs:
           set -euo pipefail
           swiftc -o "$RUNNER_TEMP/nl" App/NotifyShared/DescallNotifyLogic.swift selftest/notify/main.swift
           "$RUNNER_TEMP/nl"
+          swiftc -o "$RUNNER_TEMP/tl" App/App/DescallToastLogic.swift App/NotifyShared/DescallNotifyLogic.swift selftest/toast/main.swift
+          "$RUNNER_TEMP/tl"
 
       - uses: actions/setup-node@v4
         with:
@@ -182,6 +184,11 @@ jobs:
           xcrun simctl launch "$UDID" com.descall.app -DescallNotifyDemo
           sleep 12
           xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/notify-expanded-ios26.png"
+          # native glass #07: friend-online capsule under the Dynamic Island
+          xcrun simctl terminate "$UDID" com.descall.app || true
+          xcrun simctl launch "$UDID" com.descall.app -DescallToastDemo
+          sleep 12
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/toast-capsule-ios26.png"
           ls -la "$RUNNER_TEMP/shots"
 
       - uses: actions/upload-artifact@v4
