@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, cre
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal } from "../ui/Icon.jsx";
+import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
@@ -50,7 +50,7 @@ import useMaterialize from "../../hooks/useMaterialize";
 import { hapticImpactMedium, hapticLight, hapticSelection, primeHaptics } from "../../lib/haptics";
 import { attachReplySwipe } from "../../lib/messageReplySwipe";
 import { useOffscreenRows } from "../../hooks/useOffscreenRows";
-import { attachStickToBottom } from "../../lib/stickToBottom";
+import { attachStickToBottom, JUMP_BUTTON_PX } from "../../lib/stickToBottom";
 import { applyPending, getPendingSnapshot, subscribePending, toggleReaction } from "../../lib/reactionsOptimistic";
 import { createDoubleTapDetector, hasTextSelection, isIgnoredTapTarget, pointIsOverText } from "../../lib/doubleTap";
 import { useToast } from "../../context/ToastContext";
@@ -136,6 +136,8 @@ function getMessagesScroller(fromEl) {
  * Discord-style message list with day / unread separators.
  */
 const MediaGalleryContext = createContext([]);
+/** The list's pin controller ref, for bubbles that jump programmatically. */
+const PinControlContext = createContext(null);
 
 function galleryItemsFrom(messages) {
   const out = [];
@@ -277,21 +279,35 @@ export default function MessageList({
   const pinRef = useRef(null);
   const pinEnabledRef = useRef(true);
   pinEnabledRef.current = !isSearching && !loading;
+  // What the last controller knew, so a re-attach (loading flip, scroller
+  // swap) keeps a reader where they were instead of starting pinned.
+  const pinMemoRef = useRef({ conversationId: null, pinned: true });
+  const wasSearchingRef = useRef(false);
+  // #04 jump-to-bottom button state (PR-7).
+  const [jump, setJump] = useState({ show: false, unseen: 0 });
   // Layout effect, declared before the messages one, so the controller exists
   // when the first messages are laid out (no flash at the top).
   useLayoutEffect(() => {
     const scroller = resolveScroller();
     if (!scroller) return undefined;
+    const memo = pinMemoRef.current;
     const pin = attachStickToBottom(scroller, {
       content: listRef.current,
       enabled: () => pinEnabledRef.current,
+      initialPinned: memo.conversationId === conversationId ? memo.pinned : true,
+      onChange: ({ pinned, distance, unseen }) => {
+        const show = !pinned && (distance > JUMP_BUTTON_PX || unseen > 0);
+        setJump((prev) => (prev.show === show && prev.unseen === unseen ? prev : { show, unseen }));
+      },
     });
     pinRef.current = pin;
     return () => {
+      pinMemoRef.current = { conversationId, pinned: pin ? pin.pinned : true };
       pin?.destroy();
       if (pinRef.current === pin) pinRef.current = null;
     };
   }, [conversationId, loading, resolveScroller]);
+  useEffect(() => { setJump({ show: false, unseen: 0 }); }, [conversationId]);
 
   useLayoutEffect(() => {
     if (loading || isSearching) return;
@@ -311,8 +327,18 @@ export default function MessageList({
       || String(last.id || "").startsWith("temp-")
     );
 
-    pin.onMessages({ own: lastIsOwn && lastId !== prevLastId, initial: prevLastId == null });
+    const appended = lastId !== prevLastId;
+    const searchEnded = wasSearchingRef.current;
+    wasSearchingRef.current = false;
+    // In-place updates (reaction, edit, delivered) keep the same last id and
+    // must never scroll (PR-7). Leaving search returns to the newest message.
+    pin.onMessages({
+      own: lastIsOwn && appended,
+      initial: prevLastId == null || searchEnded,
+      appended: appended && prevLastId != null,
+    });
   }, [messages, loading, isSearching, myId]);
+  useEffect(() => { if (isSearching) wasSearchingRef.current = true; }, [isSearching]);
 
   const searchedMessages = useMemo(() => {
     const msgs = Array.isArray(messages) ? messages : [];
@@ -435,6 +461,7 @@ export default function MessageList({
 
   return (
     <MediaGalleryContext.Provider value={galleryItems}>
+    <PinControlContext.Provider value={pinRef}>
     <div className="message-list" ref={listRef}>
       {isSearching && (
         <div className="message-search-result-count">
@@ -653,6 +680,35 @@ export default function MessageList({
       })}
       <div ref={messagesEndRef} />
 
+      {/* #04 jump to the newest message (PR-7): sticky at the scroller's
+          bottom edge, so it rides with the composer and the keyboard. */}
+      <div className="msg-jump-dock">
+        <AnimatePresence>
+          {jump.show && !isSearching ? (
+            <motion.button
+              key="jump"
+              type="button"
+              className="msg-jump-btn g-glass g-heavy"
+              aria-label={jump.unseen > 0 ? t("{count} new messages, scroll to bottom", { count: jump.unseen }) : t("Scroll to bottom")}
+              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
+              transition={prefersReducedMotionNow() ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => {
+                hapticLight();
+                pinRef.current?.jumpToBottom?.();
+              }}
+            >
+              <ChevronDown size={22} />
+              {jump.unseen > 0 ? (
+                <span className="msg-jump-count">{jump.unseen > 99 ? "99+" : jump.unseen}</span>
+              ) : null}
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
       {hoverUser && hoverPos && (
         <UserHoverCard user={hoverUser} anchor={hoverPos} />
       )}
@@ -700,6 +756,7 @@ export default function MessageList({
         occurredAt={reportTarget?.occurredAt}
       />
     </div>
+    </PinControlContext.Provider>
     </MediaGalleryContext.Provider>
   );
 }
@@ -936,10 +993,13 @@ function MessageBubble({
     serverId,
   ]);
 
+  const pinControl = useContext(PinControlContext);
   useEffect(() => {
     if (!isEditTarget) return;
+    // A programmatic jump: the pin must not pull us back down (PR-7).
+    pinControl?.current?.suspendPin?.(1500);
     bubbleRef.current?.scrollIntoView({ block: "center", inline: "nearest" });
-  }, [isEditTarget]);
+  }, [isEditTarget, pinControl]);
   const canPin =
     conversationType === "server" ? canManageMessages : Boolean(conversationId);
 
