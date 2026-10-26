@@ -50,6 +50,8 @@ const STRINGS = {
     groupCallTitle: "{groupName} — Grup Araması",
     groupCallBody: "{from} grup araması başlattı",
     ownerTitle: "Sunucu sahipliği",
+    antibotTitle: "Anti-bot uyarısı",
+    antibotBody: "{count} hesap risk eşiğini geçti (en yüksek {topScore})",
   },
   en: {
     someone: "Someone",
@@ -66,6 +68,8 @@ const STRINGS = {
     groupCallTitle: "{groupName} — Group Call",
     groupCallBody: "{from} started a group call",
     ownerTitle: "Server ownership",
+    antibotTitle: "Anti-bot alert",
+    antibotBody: "{count} accounts crossed the risk threshold (top {topScore})",
   },
 };
 
@@ -272,6 +276,20 @@ function describeEvent(event = {}, lang = "tr") {
         from,
         callType: event.callType === "video" ? "video" : "voice",
       },
+    };
+  }
+  // Admin-only DesCoin anti-bot digest (lib/descoinAntibot/alerts.js). Counts
+  // only: no usernames or ids leave the server in the push.
+  if (type === "admin-antibot") {
+    const count = Math.max(0, Math.floor(Number(event.count) || 0));
+    const topScore = Math.max(0, Math.min(100, Math.floor(Number(event.topScore) || 0)));
+    return {
+      ...base,
+      threadId: "admin-antibot",
+      collapseId: "admin-antibot",
+      title: s.antibotTitle,
+      body: fmt(s.antibotBody, { count: String(count), topScore: String(topScore) }),
+      data: { type: "admin-antibot", count, topScore },
     };
   }
   return null;

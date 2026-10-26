@@ -74,4 +74,4 @@ function socketAuthMiddleware(socket, next) {
   }
 }
 
-module.exports = { socketAuthMiddleware };
+module.exports = { socketAuthMiddleware, socketIp };

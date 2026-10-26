@@ -11,8 +11,8 @@ const LAST_UPDATED = "10 Ekim 2026";
 const LAST_UPDATED_EN = "October 10, 2026";
 // Privacy Policy revised separately (2.9.141: calls are never recorded, full list of
 // third-party services incl. PostHog, GIPHY, LiveKit; AI assistant removed).
-const PRIVACY_LAST_UPDATED = "10 Ekim 2026";
-const PRIVACY_LAST_UPDATED_EN = "October 10, 2026";
+const PRIVACY_LAST_UPDATED = "26 Ekim 2026";
+const PRIVACY_LAST_UPDATED_EN = "October 26, 2026";
 
 export const TERMS_CONTENT = {
   tr: {
@@ -391,6 +391,7 @@ export const PRIVACY_CONTENT = {
         paragraphs: [
           "Verilerinizi, hesabınız aktif olduğu sürece ve Hizmet'i sağlamak için gerekli olduğu ölçüde saklarız. Hesabınızı kapattığınızda silme talebi kaydedilir; 14 günlük süre sonunda mesaj geçmişi, DesCoin bakiyesi ve mağaza envanteri dahil kişisel verileriniz, yasal saklama yükümlülüklerimiz dışında silinir veya anonimleştirilir. Analitik verileri, onayı geri çekene kadar tutulur. Ürün güncellemeleri listesindeki e-posta, abonelikten çıkana kadar tutulur.",
           "Güvenlik günlükleri ve hile tespiti amacıyla tutulan etkinlik kayıtları, kötüye kullanımın araştırılması amacıyla sınırlı bir süre daha saklanabilir.",
+          "DesCoin hile tespiti için IP adresinizi veya cihaz kimliğinizi açık hâliyle saklamayız: IP adresi ağ bloğuna (IPv4 için /24, IPv6 için /64) indirgenir ve cihaz bilgileriyle birlikte yalnızca geri çevrilemeyen, anahtarlı bir özet (hash) olarak tutulur. Bu özetler ve bunlardan çıkarılan hesap bağlantıları en fazla 90 gün saklanır ve ardından otomatik olarak silinir; mesaj benzerlik özetleri (mesaj metni olmadan) 7 gün sonra silinir.",
         ],
       },
       {
@@ -504,6 +505,7 @@ export const PRIVACY_CONTENT = {
         paragraphs: [
           "We retain your data for as long as your account is active and as necessary to provide the Service. When you close your account, deletion is requested and, after a 14-day period, your personal data, including message history, DesCoin balance, and shop inventory, is deleted or anonymized, except where we have a legal obligation to retain it. Analytics data is kept until you withdraw consent. An email on the product-update list is kept until you unsubscribe.",
           "Security logs and activity records kept for cheat detection purposes may be retained for a limited additional period for the purpose of investigating abuse.",
+          "For DesCoin cheat detection we do not store your IP address or device identifier in readable form: the IP address is reduced to its network block (/24 for IPv4, /64 for IPv6) and, like device information, kept only as an irreversible keyed hash. These hashes and the account links derived from them are kept for at most 90 days and then deleted automatically; message-similarity fingerprints (without the message text) are deleted after 7 days.",
         ],
       },
       {
