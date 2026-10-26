@@ -424,6 +424,9 @@ app.get("*", (req, res, next) => {
 
 // Register main routes (both with and without /api prefix)
 app.use("/auth", authRoutes);
+// DesCoin anti-bot (Faz 0, monitor only). Before adminRoutes: moderators may read it.
+const adminAntibotRoutes = require("./routes/adminAntibot");
+app.use("/admin/antibot", adminAntibotRoutes);
 app.use("/admin", adminRoutes);
 app.use("/media", mediaRoutes);
 app.use("/groups", groupRoutes);
@@ -435,6 +438,7 @@ app.use("/calls", callsRoutes);
 // /api/* aliases — frontend calls mix /api/... and /... so support both
 app.use("/api/auth", authRoutes);
 require("./lib/accountDeletion").startDeletionSweeper();
+app.use("/api/admin/antibot", adminAntibotRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/media", mediaRoutes);
@@ -1135,6 +1139,12 @@ async function runBoot() {
     require("./lib/descoinReconcile").startReconcileScheduler();
   } catch (e) {
     console.warn("[boot] descoin reconcile scheduler failed:", e.message);
+  }
+  try {
+    // DesCoin anti-bot (Faz 0): monitor-only risk scoring; never changes balances or earning.
+    if (process.env.NODE_ENV !== "test") require("./lib/descoinAntibot").startAntibotScheduler();
+  } catch (e) {
+    console.warn("[boot] descoin antibot scheduler failed:", e.message);
   }
   try {
     const { loadModerationStateFromDb } = require("./lib/moderation");
