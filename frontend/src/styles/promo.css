@@ -70,6 +70,10 @@ table.mt-h th.r,table.mt-h td.r{text-align:right}
 .pc-gift,.pc-sheet{position:relative;width:min(400px,calc(100vw - 48px));padding:28px 20px 0;text-align:center;overflow:visible}
 .pc-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:0;display:grid;place-items:center;color:rgba(235,238,255,.62);background:rgba(255,255,255,.07);cursor:pointer}
 .pc-x::after{content:"";position:absolute;inset:-6px}
+/* The card is a .g-glass, and `html.glass-ui .g-glass > *` (0,2,1) makes every
+   direct child position:relative, which dropped the X into the flow at the
+   top-left (iPhone, 2.13.10). Pin it top-right with a 16px inset, 44pt target. */
+.g-alert > .pc-x.pc-x,.g-glass > .pc-x.pc-x{position:absolute;top:16px;right:16px;left:auto;z-index:5;margin:0}
 .pc-gift-ico,.pc-sheet-ico{width:60px;height:60px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;color:#fff;
  background:linear-gradient(160deg,#6f8dff 0%,#4766e8 100%);box-shadow:0 10px 26px rgba(71,102,232,.42),inset 0 1px 0 rgba(255,255,255,.35)}
 .pc-sheet-ico{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.08);color:#9fb4ff;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16)}
@@ -153,16 +157,62 @@ table.mt-h th.r,table.mt-h td.r{text-align:right}
 .pc-amount-in input{border:0;background:transparent;color:inherit;font:inherit;outline:none}
 .pc-form .mt-in input[type="number"]{-moz-appearance:textfield}
 .pc-form .mt-in input[type="number"]::-webkit-inner-spin-button,.pc-form .mt-in input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-.pc-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:36px;height:auto!important;padding:4px 8px!important;position:relative}
-.pc-chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 4px 0 4px;border-radius:var(--r-pill,999px);background:rgba(255,255,255,.08);font-size:12.5px;font-weight:600}
-.pc-chip button{width:22px;height:22px;border-radius:50%;border:0;display:grid;place-items:center;background:transparent;color:rgba(244,246,251,.6);cursor:pointer}
-.pc-chip button:hover{background:rgba(255,255,255,.1);color:#fff}
-.pc-chips input{flex:1;min-width:120px;border:0;background:transparent;color:inherit;font:inherit;outline:none}
-.pc-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;list-style:none;margin:0;padding:4px;border-radius:12px;
- background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.05)),rgba(24,25,34,.94);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:0 12px 32px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.14)}
-.pc-suggest li button{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:4px 8px;border:0;border-radius:9px;background:transparent;color:inherit;font:inherit;font-size:13px;text-align:left;cursor:pointer}
-.pc-suggest li button:hover,.pc-suggest li button:focus-visible{background:rgba(255,255,255,.08);outline:none}
-.pc-suggest li span{color:rgba(244,246,251,.5);font-size:12px}
+/* People picker (components/admin/PromoPeoplePicker.jsx). The field holds the
+   chips; the suggestion list is a body-level popover whose frosted material
+   comes from frost.css (heavy blur + high-opacity dark base, opaque fallback). */
+.pc-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:36px;height:auto!important;padding:4px 8px 4px 10px!important;position:relative;cursor:text}
+.pc-chips-ic{flex:none;color:rgba(244,246,251,.42)}
+.pc-chips:focus-within .pc-chips-ic{color:rgba(244,246,251,.7)}
+.pc-chips-spin{flex:none;color:rgba(244,246,251,.55);animation:pc-spin .8s linear infinite}
+@keyframes pc-spin{to{transform:rotate(360deg)}}
+.pc-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;height:28px;padding:0 2px 0 4px;border-radius:var(--r-pill,999px);background:rgba(255,255,255,.09);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.12);font-size:12.5px;font-weight:600;color:#f4f6fb;animation:pc-chip-in .22s cubic-bezier(.2,0,0,1)}
+.pc-chip-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-chip button{position:relative;flex:none;width:22px;height:22px;border-radius:50%;border:0;display:grid;place-items:center;background:transparent;color:rgba(244,246,251,.6);cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .12s ease}
+.pc-chip button::after{content:"";position:absolute;inset:-6px}
+.pc-chip button:hover{background:rgba(255,255,255,.12);color:#fff}
+.pc-chip button:active{transform:scale(.96)}
+@keyframes pc-chip-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.pc-chips input{flex:1 1 120px;min-width:120px;height:28px!important;border:0;background:transparent;color:inherit;font:inherit;outline:none}
+.pc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.pc-suggest{position:fixed;z-index:100002;display:flex;flex-direction:column;box-sizing:border-box;min-width:220px;overflow:hidden;padding:5px;border-radius:14px;color:#f4f6fb;
+ /* the admin panel is dark in every theme: keep the dark frost material */
+ --frost-base:var(--frost-base-dark);--frost-solid:var(--frost-solid-dark);--frost-sheen:var(--frost-sheen-dark);
+ background:var(--frost-sheen),linear-gradient(var(--frost-base-dark),var(--frost-base-dark));background-color:var(--frost-base-dark);
+ -webkit-backdrop-filter:blur(48px) saturate(180%);backdrop-filter:blur(48px) saturate(180%);
+ box-shadow:0 18px 48px rgba(0,0,0,.5),0 4px 14px rgba(0,0,0,.3),inset 0 0 0 .5px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.08);
+ transform-origin:top center;animation:pc-sg-in .18s cubic-bezier(.2,0,0,1)}
+.pc-suggest.is-above{transform-origin:bottom center;flex-direction:column-reverse}
+.pc-suggest.is-above .pc-sg-foot{border-top:0;border-bottom:.5px solid rgba(255,255,255,.1);margin:0 0 4px}
+@keyframes pc-sg-in{from{opacity:0;transform:scale(.97);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.pc-suggest ul{list-style:none;margin:0;padding:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;min-height:0;flex:1 1 auto}
+.pc-suggest li{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 9px;border-radius:9px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color .12s ease}
+.pc-suggest li.on{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1)}
+.pc-suggest li:active{background:rgba(255,255,255,.14)}
+.pc-sg-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.pc-sg-t b{font-size:13.5px;font-weight:600;color:rgba(244,246,251,.86);letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-sg-t span{font-size:12px;font-weight:500;color:rgba(244,246,251,.56);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-suggest mark{background:transparent;color:#fff;font-weight:700}
+.pc-sg-t span mark{color:rgba(244,246,251,.92);font-weight:600}
+.pc-sg-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:12px 14px;text-align:center;font-size:13px;color:rgba(244,246,251,.72)}
+.pc-sg-empty:has(svg){flex-direction:row;gap:8px}
+.pc-sg-empty b{font-weight:600;color:#f4f6fb}
+.pc-sg-empty span{font-size:12px;color:rgba(244,246,251,.52)}
+.pc-sg-foot{flex:none;display:flex;align-items:center;gap:4px;margin:4px 0 0;padding:7px 8px 3px;border-top:.5px solid rgba(255,255,255,.1);font-size:11px;color:rgba(244,246,251,.5)}
+.pc-sg-foot kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:5px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14);font:600 10px/1 var(--font-ui,system-ui);color:rgba(244,246,251,.75)}
+.pc-sg-foot kbd + kbd{margin-left:-1px}
+.pc-sg-foot kbd:not(:first-child):not(kbd + kbd){margin-left:8px}
+@media (pointer:coarse){
+  .pc-sg-foot{display:none}
+  .pc-suggest li{min-height:52px;padding:6px 10px}
+  .pc-chip{height:32px}
+  .pc-chips{min-height:44px}
+}
+@media (prefers-reduced-motion:reduce){
+  .pc-suggest,.pc-chip{animation:pc-fade .15s ease}
+  .pc-chips-spin{animation-duration:2s}
+}
+@keyframes pc-fade{from{opacity:0}to{opacity:1}}
 .pc-uses.is-all{max-height:360px;overflow:auto;overscroll-behavior:contain}
 .pc-uses-rw.is-held{color:rgba(244,246,251,.5);font-weight:600;font-size:11.5px}
 .pc-h3-act{margin-left:4px;height:26px!important;padding:0 9px!important;font-size:12px!important}
@@ -211,7 +261,8 @@ table.mt-h th.r,table.mt-h td.r{text-align:right}
   .pc-codein-g{padding:0 4px;height:48px}
   .pc-codein-c{width:13px;font-size:15px}
   .pc-gift-meta{flex-wrap:wrap;row-gap:6px}
-  .pc-x{width:36px;height:36px;top:8px;right:8px}
+  .pc-x{width:36px;height:36px}
+  .pc-x::after{inset:-4px}
   .pc-actions .g-alert-btn{min-height:44px}
 }
 @media (max-width:360px){

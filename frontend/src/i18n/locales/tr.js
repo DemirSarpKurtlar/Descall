@@ -308,6 +308,8 @@ export const nested = {
     "errors": "Hata Kayıtları",
     "feedback": "Geri Bildirim",
     "shop": "Mağaza",
+    "sections": "Bölümler",
+    "sectionsCount": "{n} bölüm",
     "promoCodes": "Promosyon Kodları",
     "announcements": "Duyurular",
     "livePopup": "Canlı popup",

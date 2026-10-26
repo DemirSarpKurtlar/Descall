@@ -34,7 +34,13 @@ export const markPromoPopup = (id, snooze = false) =>
 export const adminPromoOverview = () => adminFetch("/promo-codes");
 export const adminPromoGenerate = () => adminFetch("/promo-codes/generate");
 export const adminPromoShopItems = () => adminFetch("/promo-codes/shop-items");
-export const adminPromoUsers = (q) => adminFetch(`/promo-codes/users?q=${encodeURIComponent(q)}`);
+/** People picker: closest match first; `exclude` = already picked ids (max 100). */
+export const adminPromoUsers = (q, { exclude = [], signal } = {}) => {
+  const qs = new URLSearchParams({ q: String(q ?? "") });
+  const ids = exclude.filter(Boolean).slice(0, 100);
+  if (ids.length) qs.set("exclude", ids.join(","));
+  return adminFetch(`/promo-codes/users?${qs.toString()}`, { signal });
+};
 export const adminPromoCreate = (body) => adminFetch("/promo-codes", { method: "POST", body: JSON.stringify(body) });
 export const adminPromoUpdate = (id, body) =>
   adminFetch(`/promo-codes/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(body) });

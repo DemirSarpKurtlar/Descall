@@ -9,6 +9,8 @@
 const express = require("express");
 const supabase = require("../db/supabase");
 const promo = require("../lib/promo");
+const userSearch = require("../lib/promoUserSearch");
+const rateLimit = require("../lib/rateLimit");
 
 const router = express.Router();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -48,17 +50,47 @@ router.get("/promo-codes/shop-items", async (_req, res) => {
   }
 });
 
+// People picker for "Seçilenler". Ranked closest match first (exact, then
+// prefix, then contains, then letters in order), Turkish-folded and case
+// insensitive, leading @ ignored, banned/deleted accounts skipped. Per-admin
+// rate limit; only id / username / display_name / avatar_url are returned.
+const SEARCH_WINDOW_MS = 60 * 1000;
+const SEARCH_MAX = 120;
+const MISSING_FN = new Set(["PGRST202", "42883"]);
+
+async function searchUsers(q, exclude, limit) {
+  const { data, error } = await supabase.rpc("promo_admin_user_search", {
+    p_q: q,
+    p_exclude: exclude,
+    p_limit: limit,
+  });
+  if (!error) return (data || []).map(userSearch.publicUser);
+  if (!MISSING_FN.has(error.code) && !/promo_admin_user_search/.test(error.message || "")) {
+    throw Object.assign(new Error("users"), { status: 500, cause: error });
+  }
+  // Function not deployed yet: same ranking in JS over the active accounts.
+  const all = await supabase
+    .from("users")
+    .select("id, username, display_name, avatar_url, deleted_at, is_banned")
+    .is("deleted_at", null)
+    .limit(5000);
+  if (all.error) throw Object.assign(new Error("users"), { status: 500, cause: all.error });
+  return userSearch.rankUsers(all.data, q, { exclude, limit });
+}
+
 router.get("/promo-codes/users", async (req, res) => {
   try {
-    const q = String(req.query.q || "").trim().replace(/[%_,()]/g, "").slice(0, 32);
-    if (q.length < 2) return res.json({ users: [] });
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, username, display_name, avatar_url")
-      .ilike("username", `${q}%`)
-      .limit(8);
-    if (error) throw Object.assign(new Error("users"), { status: 500 });
-    res.json({ users: data || [] });
+    res.set("Cache-Control", "no-store");
+    const limited = rateLimit.recordFailure(`promo-user-search:${req.user.id}`, {
+      windowMs: SEARCH_WINDOW_MS,
+      max: SEARCH_MAX,
+    });
+    if (rateLimit.rejectIfLimited(res, [limited])) return;
+    const q = userSearch.cleanQuery(req.query.q);
+    if (!q) return res.json({ users: [] });
+    const exclude = userSearch.cleanExclude(req.query.exclude);
+    const limit = userSearch.clampLimit(req.query.limit);
+    res.json({ users: await searchUsers(q, exclude, limit) });
   } catch (err) {
     send(res, err);
   }

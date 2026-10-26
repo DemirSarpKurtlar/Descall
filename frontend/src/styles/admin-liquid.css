@@ -481,3 +481,71 @@
     padding: 4px 14px 20px;
   }
 }
+
+/* Every admin section must be reachable without guessing. The old single-row
+   strip scrolled horizontally with a hidden scrollbar, so on phones 13 of 16
+   tabs (Promosyon Kodları included) were off-screen with no cue, and narrow
+   desktop windows cut off the tail. Desktop now wraps; phones get one native
+   section picker. Guarded by adminTabs.selftest.mjs. */
+.admin-tab-picker { display: none; }
+@media (min-width: 901px) {
+  .admin-shell .admin-tabs,
+  .admin-tabs {
+    flex-wrap: wrap;
+    overflow: visible;
+    row-gap: 4px;
+  }
+}
+@media (max-width: 900px) {
+  .admin-shell .admin-tabs,
+  .admin-tabs { display: none !important; }
+  .admin-tab-picker {
+    display: block;
+    position: relative;
+    flex: 0 0 auto;
+    margin: 4px 12px 10px;
+    min-height: 48px;
+    border-radius: var(--r-md, 14px);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 6px 18px rgba(0, 0, 0, 0.22);
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .admin-tab-picker-face {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 14px;
+    pointer-events: none;
+  }
+  .admin-tab-picker-face b {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-tab-picker-n {
+    font-size: 12px;
+    color: rgba(244, 246, 251, 0.6);
+    white-space: nowrap;
+  }
+  .admin-tab-picker select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    font-size: 16px; /* no iOS focus zoom */
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+  }
+  .admin-tab-picker:focus-within {
+    box-shadow: inset 0 0 0 2px rgba(120, 170, 255, 0.7), 0 6px 18px rgba(0, 0, 0, 0.22);
+  }
+}
