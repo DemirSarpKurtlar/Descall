@@ -19,20 +19,30 @@ export function isIosKeychainShell(win) {
   }
 }
 
+/** Set on sign-out so a Keychain copy is never resurrected after logout. */
+export const SIGNED_OUT_KEY = "descall_token_signed_out";
+
 /**
  * Decide what the memory cache should hold after a Keychain read.
- * keychain wins. A localStorage value with an empty Keychain is migrated.
- * clearLocal is true only when the Keychain already has the token.
- * writeKeychain is the value to store when migrating.
+ *
+ * 2.13.12 migration release: localStorage stays the source of truth and is
+ * never cleared here (kept as a fallback for one release). Every write goes to
+ * localStorage first, so when both exist and differ, localStorage is newer.
+ *
+ * - local present: memory = local; copy it to the Keychain if the Keychain
+ *   does not already hold the same value.
+ * - local empty, Keychain present: restore it (WebKit storage eviction), unless
+ *   the user signed out, in which case the stale Keychain copy is removed.
+ * - neither: no session.
  */
-export function planSecureTokenHydration({ keychainValue = null, localValue = null } = {}) {
+export function planSecureTokenHydration({ keychainValue = null, localValue = null, signedOut = false } = {}) {
   const keychain = typeof keychainValue === "string" && keychainValue ? keychainValue : null;
   const local = typeof localValue === "string" && localValue ? localValue : null;
-  if (keychain) {
-    return { memory: keychain, clearLocal: Boolean(local), writeKeychain: null };
-  }
   if (local) {
-    return { memory: local, clearLocal: false, writeKeychain: local };
+    return { memory: local, writeKeychain: keychain === local ? null : local, restoreLocal: null, removeKeychain: false };
   }
-  return { memory: null, clearLocal: false, writeKeychain: null };
+  if (keychain && !signedOut) {
+    return { memory: keychain, writeKeychain: null, restoreLocal: keychain, removeKeychain: false };
+  }
+  return { memory: null, writeKeychain: null, restoreLocal: null, removeKeychain: Boolean(keychain) };
 }

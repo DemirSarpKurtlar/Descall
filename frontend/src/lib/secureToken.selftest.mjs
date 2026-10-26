@@ -10,26 +10,18 @@ import { isIosKeychainShell, planSecureTokenHydration } from "./secureToken.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-assert.deepEqual(planSecureTokenHydration({ keychainValue: "kc", localValue: "old" }), {
-  memory: "kc",
-  clearLocal: true,
-  writeKeychain: null,
-});
-assert.deepEqual(planSecureTokenHydration({ keychainValue: "kc", localValue: null }), {
-  memory: "kc",
-  clearLocal: false,
-  writeKeychain: null,
-});
-assert.deepEqual(planSecureTokenHydration({ keychainValue: null, localValue: "local" }), {
-  memory: "local",
-  clearLocal: false,
-  writeKeychain: "local",
-});
-assert.deepEqual(planSecureTokenHydration({ keychainValue: "", localValue: "" }), {
-  memory: null,
-  clearLocal: false,
-  writeKeychain: null,
-});
+const plan = (o) => planSecureTokenHydration(o);
+const none = { writeKeychain: null, restoreLocal: null, removeKeychain: false };
+// localStorage is written first on every login, so it wins and is never cleared (2.13.12).
+assert.deepEqual(plan({ keychainValue: "kc", localValue: "newer" }), { ...none, memory: "newer", writeKeychain: "newer" });
+assert.deepEqual(plan({ keychainValue: "same", localValue: "same" }), { ...none, memory: "same" });
+// Empty Keychain + localStorage token: stays logged in, token is migrated.
+assert.deepEqual(plan({ keychainValue: null, localValue: "local" }), { ...none, memory: "local", writeKeychain: "local" });
+// localStorage evicted by WebKit: restored from the Keychain.
+assert.deepEqual(plan({ keychainValue: "kc", localValue: null }), { ...none, memory: "kc", restoreLocal: "kc" });
+// Signed out: a leftover Keychain copy is removed, never resurrected.
+assert.deepEqual(plan({ keychainValue: "kc", localValue: null, signedOut: true }), { ...none, memory: null, removeKeychain: true });
+assert.deepEqual(plan({ keychainValue: "", localValue: "" }), { ...none, memory: null });
 
 const ios = {
   Capacitor: {
