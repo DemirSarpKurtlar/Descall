@@ -29,6 +29,9 @@ const SPA_PREFIXES = [
   "/app",
   "/login",
   "/register",
+  // Turkish auth entry points (MarketingApp opens the same login/register dialog).
+  "/tr/login",
+  "/tr/register",
   "/i",
   "/s",
 ];
@@ -38,6 +41,11 @@ const PERMANENT_REDIRECTS = {
   "/discord-alternative-turkey": "/tr/discord-alternatifi",
   "/tr/discord-alternative": "/tr/discord-alternatifi",
   "/tr/contact": "/iletisim",
+  "/founder": "/who-owns-descall",
+  "/owner": "/who-owns-descall",
+  "/kurucu": "/descall-sahibi",
+  "/sahip": "/descall-sahibi",
+  "/tr/who-owns-descall": "/descall-sahibi",
 };
 
 /** Removed surfaces: old links land on the home page (kept in sync with _redirects). */

@@ -256,6 +256,22 @@
       "destination": "/index.html"
     },
     {
+      "source": "/tr/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tr/login/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tr/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tr/register/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/i",
       "destination": "/index.html"
     },

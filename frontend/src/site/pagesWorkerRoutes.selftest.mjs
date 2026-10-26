@@ -1,0 +1,66 @@
+/**
+ * Cloudflare Pages worker routes (descall.com) match vercel.json and the app's own links.
+ * /tr/login and /tr/register 404'd in production because only vercel.json knew them.
+ * Run: node src/site/pagesWorkerRoutes.selftest.mjs
+ */
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import worker from "../../public/_worker.js";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
+const redirectsFile = fs.readFileSync(path.join(root, "public/_redirects"), "utf8");
+
+const SHELL = "<!doctype html><title>shell</title>";
+const FILES = new Set(["/", "/404.html", "/tr/download.html"]);
+const env = {
+  ASSETS: {
+    async fetch(request) {
+      const { pathname } = new URL(request.url);
+      if (pathname === "/index.html") return new Response(null, { status: 308, headers: { location: "/" } });
+      if (FILES.has(pathname)) return new Response(pathname === "/" ? SHELL : "page", { status: 200, headers: { "content-type": "text/html" } });
+      return new Response("missing", { status: 404 });
+    },
+  },
+};
+
+async function get(pathname) {
+  return worker.fetch(new Request(`https://descall.com${pathname}`), env);
+}
+
+for (const p of ["/login", "/register", "/tr/login", "/tr/register", "/tr/login/", "/tr/register/abc", "/tr/register?ref=x"]) {
+  const res = await get(p);
+  assert.equal(res.status, 200, `${p} must serve the app shell`);
+  assert.equal(await res.text(), SHELL, `${p} must serve the root shell`);
+}
+assert.equal((await get("/tr/loginx")).status, 404, "prefix match must not swallow other paths");
+
+const owner = {
+  "/founder": "/who-owns-descall",
+  "/owner": "/who-owns-descall",
+  "/kurucu": "/descall-sahibi",
+  "/sahip": "/descall-sahibi",
+  "/tr/who-owns-descall": "/descall-sahibi",
+};
+for (const [from, to] of Object.entries(owner)) {
+  const res = await get(from);
+  assert.equal(res.status, 301, `${from} must redirect`);
+  assert.equal(res.headers.get("location"), `https://descall.com${to}`);
+  assert.ok(redirectsFile.includes(`${from} ${to} 301`), `_redirects must list ${from}`);
+  assert.ok(vercel.redirects.some((r) => r.source === from && r.destination === to), `vercel.json must list ${from}`);
+}
+
+// Every SPA rewrite on Vercel has a matching shell route on Cloudflare Pages.
+const sources = vercel.rewrites.map((r) => r.source).filter((s) => !s.startsWith("/api"));
+for (const source of sources) {
+  const sample = source.replace("/:path*", "/x");
+  const res = await get(sample);
+  assert.equal(res.status, 200, `Pages worker must serve ${sample} like vercel.json (${source})`);
+}
+for (const p of ["/tr/login", "/tr/register"]) {
+  assert.ok(sources.includes(p) && sources.includes(`${p}/:path*`), `vercel.json must rewrite ${p}`);
+}
+
+console.log("pagesWorkerRoutes selftest ok");
