@@ -148,6 +148,16 @@
   background: rgba(0, 0, 0, 0.62);
 }
 
+/* A2 §4.6: "⋯" (Şikayet et / Engelle) sits left of the close button. */
+.user-profile-close.user-profile-more {
+  right: 48px;
+}
+
+.user-profile-safety-row .user-profile-report-btn.is-danger {
+  color: var(--danger, #f23f43);
+  border-color: color-mix(in srgb, var(--danger, #f23f43) 35%, transparent);
+}
+
 .user-profile-identity {
   display: flex;
   flex-direction: column;

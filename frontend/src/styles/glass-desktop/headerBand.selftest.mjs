@@ -272,7 +272,8 @@ assert.match(panelJsx, /"main-panel is-floating-header"/);
 assert.match(panelJsx, /<div className="chat-panel-bg" aria-hidden="true" \/>/);
 assert.match(panelJsx, /<div className="chat-scroll-edge" aria-hidden="true" \/>/);
 assert.match(panelJsx, /chrome\.dataset\.scrolled/);
-assert.equal((panelJsx.match(/className="header-actions-sep"/g) || []).length, 2);
-assert.match(panelJsx, /header-block-btn/);
+// A2 #05: DM block moved into the header "⋯" menu (one separator before calls).
+assert.equal((panelJsx.match(/className="header-actions-sep"/g) || []).length, 1);
+assert.match(panelJsx, /header-more-btn/);
 
 console.log("headerBand.selftest ok");

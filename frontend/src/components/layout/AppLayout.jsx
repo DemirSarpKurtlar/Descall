@@ -695,6 +695,8 @@ export default function AppLayout({
             <div className="app-chat-keep">
               <ErrorBoundary scope="pane">
               <ChatPanel
+                dms={dms}
+                onDmPrefAction={onDmPrefAction}
                 onGroupAvatarChanged={onGroupAvatarChanged}
                 onGroupLeft={onGroupLeft}
                 onGroupRenamed={onGroupRenamed}

@@ -5509,6 +5509,10 @@ export default function App() {
             friends={friends}
             onlineUsers={onlineUsers}
             onStartDm={(user) => setActiveDmUser(user)}
+            onStartCall={(user, type = "voice") => {
+              if (groupCall?.isInCall) return;
+              if (user && call?.startCall) call.startCall(user, type);
+            }}
             onReply={(msg) => {
               if (editingMessage?.id) cancelMessageEdit(editingMessage.id);
               setEditingMessage(null);

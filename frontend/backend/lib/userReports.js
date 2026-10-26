@@ -437,6 +437,17 @@ async function resolveReport(reportId, { actorId, status, resolution, markAllOpe
     updated_at: now,
   };
 
+  // Everyone whose report this closes hears back in Bildirimler.
+  let reporterIds = row.status === "open" && row.reporter_id ? [row.reporter_id] : [];
+  if (markAllOpenForTarget) {
+    const { data: openRows } = await supabase
+      .from("user_reports")
+      .select("reporter_id")
+      .eq("target_id", row.target_id)
+      .eq("status", "open");
+    reporterIds = [...new Set([...reporterIds, ...(openRows || []).map((r) => r.reporter_id).filter(Boolean)])];
+  }
+
   let query = supabase.from("user_reports").update(patch);
   if (markAllOpenForTarget) {
     query = query.eq("target_id", row.target_id).eq("status", "open");
@@ -446,10 +457,19 @@ async function resolveReport(reportId, { actorId, status, resolution, markAllOpe
   const { error: updErr } = await query;
   if (updErr) throw new Error(updErr.message);
 
-  return { reportId, targetId: row.target_id, reason: row.reason, status, resolution: patch.resolution };
+  return { reportId, targetId: row.target_id, reason: row.reason, status, resolution: patch.resolution, reporterIds };
+}
+
+/** Bildirimler entry the reporter gets when their report is closed. */
+function reporterNotice(status) {
+  if (status === "actioned") {
+    return { type: "report_result", title: "Şikayetin incelendi", body: "Şikayet ettiğin hesap hakkında işlem yapıldı. Teşekkürler." };
+  }
+  return { type: "report_result", title: "Şikayetin incelendi", body: "Şikayetini inceledik ve kurallara aykırı bir şey bulmadık. Teşekkürler." };
 }
 
 module.exports = {
+  reporterNotice,
   AUTO_DOSSIER_THRESHOLD,
   USER_REASONS,
   sanitizeSnippet,

@@ -32,14 +32,15 @@ assert.ok(polish.includes(".composer-row {\n  display: flex;"), "non-glass row s
 
 for (const piece of [
   "flex-direction: column",
-  ".composer-row {\n  display: flex;\n  align-items: center;",
-  "height: 52px;",
+  // A2 §4.4: the row grows upward with the field; + and send stay at the bottom.
+  ".composer-row {\n  display: flex;\n  align-items: flex-end;",
+  "min-height: 52px;",
   "position: relative;",
   ".composer-reply-bar {\n  align-items: center;",
   "text-overflow: ellipsis;",
   "white-space: nowrap;",
   ".composer-reply-bar .composer-reply-clear",
-  "padding-bottom: calc(var(--g-bar-bottom) + 142px)",
+  "padding-bottom: calc(var(--g-bar-bottom) + 142px + var(--composer-grow, 0px))",
 ]) {
   assert.ok(chat.includes(piece), `glass chat.css missing ${piece.split("\n")[0]}`);
 }

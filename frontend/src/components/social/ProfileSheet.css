@@ -1,0 +1,453 @@
+/* Profile sheet (#29) and report flow (#30), approved mockups
+   master-update/mockups/29-profil-menu.png + 30-sikayet-akisi.png.
+   Values are the mockup's (dev/static/mu.css + dev/after/social.cjs).
+   Heavy frosted rule: blur(40px) saturate(200%) over a >= .88 tinted base,
+   nothing behind stays readable. iPhone = html.glass-ui bottom sheet,
+   iPad / desktop = centred form. */
+
+.pfs-scrim,
+.rps-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100060;
+  background: rgba(6, 7, 12, 0.46);
+  -webkit-app-region: no-drag;
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.96);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+}
+.pfs-scrim *, .rps-overlay * { box-sizing: border-box; }
+.rps-overlay { z-index: 100070; }
+.pfs-scrim.is-form,
+.rps-overlay.is-form { background: rgba(6, 7, 12, 0.6); }
+
+.pfs-heavy {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    rgba(24, 25, 36, 0.88);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+/* Sheet (iPhone): from just under the chat header to the bottom edge. */
+.pfs-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 54px);
+  border-radius: 38px 38px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+.pfs-sheet.is-medium { top: auto; height: min(420px, calc(100% - env(safe-area-inset-top, 0px) - 54px)); }
+/* Form (iPad / desktop): centred card. */
+.pfs-scrim.is-form, .rps-overlay.is-form { display: grid; place-items: center; }
+.pfs-form {
+  position: relative;
+  width: min(var(--w, 560px), calc(100vw - 48px));
+  height: min(var(--h, 760px), calc(100vh - 48px));
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+.pfs-form.is-medium { --h: 420px; }
+.pfs-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.pfs-scroll::-webkit-scrollbar { display: none; }
+.pfs-form .pfs-scroll { padding: 0 22px 24px; }
+
+/* Hero */
+.pfs-hero {
+  position: relative;
+  height: 150px;
+  margin: 0 -16px;
+  background:
+    radial-gradient(120% 120% at 20% 0%, #2C6E8F 0%, transparent 60%),
+    radial-gradient(100% 100% at 100% 0%, #3A3FA8 0%, transparent 60%),
+    #1B2440;
+  background-size: cover;
+  background-position: center;
+  touch-action: none;
+}
+.pfs-form .pfs-hero { margin: 0 -22px; }
+.pfs-top {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 3;
+  pointer-events: none;
+}
+.pfs-cb {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 22, 34, 0.55);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s;
+}
+.pfs-cb::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; }
+.pfs-cb.is-on { background: rgba(255, 255, 255, 0.24); }
+.pfs-cb:focus-visible { outline: 2px solid rgba(143, 166, 255, 0.9); outline-offset: 2px; }
+.pfs-av {
+  position: absolute;
+  left: 16px;
+  bottom: -46px;
+  border-radius: 50%;
+  padding: 4px;
+  background: rgba(24, 25, 36, 1);
+  line-height: 0;
+}
+.pfs-form .pfs-av { left: 22px; }
+.pfs-av-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #30D158;
+  box-shadow: 0 0 0 4px rgba(24, 25, 36, 1);
+}
+.pfs-av-dot.is-idle { background: #FFD60A; }
+.pfs-av-dot.is-dnd { background: #FF453A; }
+.pfs-av-dot.is-off { background: #8E8E93; }
+.pfs-name {
+  margin: 54px 4px 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.pfs-h { margin: 2px 4px 12px; font-size: 15px; color: rgba(235, 238, 255, 0.55); overflow-wrap: anywhere; }
+.pfs-h b { color: #30D158; font-weight: 500; }
+.pfs-h b.is-idle { color: #FFD60A; }
+.pfs-h b.is-dnd { color: #FF453A; }
+.pfs-h b.is-off { color: rgba(235, 238, 255, 0.55); }
+.pfs-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 4px 12px; }
+.pfs-badges:empty { display: none; }
+.pfs-bio { margin: 0 4px 12px; font-size: 15px; line-height: 1.38; color: rgba(235, 238, 255, 0.8); overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* Action tiles */
+.pfs-acts { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 8px; margin-bottom: 4px; }
+.pfs-act {
+  height: 62px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.075);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font: inherit;
+  font-size: 12.5px;
+  color: #8FA6FF;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.12s;
+}
+.pfs-act:active { background: rgba(255, 255, 255, 0.12); transform: scale(0.97); }
+.pfs-act:disabled { opacity: 0.45; cursor: default; transform: none; }
+.pfs-act:focus-visible { outline: 2px solid rgba(143, 166, 255, 0.9); outline-offset: 2px; }
+
+/* Grouped list (iOS) */
+.pfs-sec {
+  font-size: 13px;
+  color: rgba(235, 238, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 22px 16px 7px;
+  font-weight: 500;
+}
+.pfs-foot { font-size: 13px; color: rgba(235, 238, 255, 0.46); margin: 7px 16px 0; line-height: 1.38; }
+.pfs-group { background: rgba(255, 255, 255, 0.075); border-radius: 14px; overflow: hidden; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.07); }
+.pfs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  position: relative;
+  font: inherit;
+  font-size: 16px;
+  color: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+}
+button.pfs-row { cursor: pointer; }
+button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+.pfs-row + .pfs-row::before { content: ""; position: absolute; top: 0; right: 0; left: var(--inset, 56px); height: 0.5px; background: rgba(255, 255, 255, 0.12); }
+.pfs-group.is-plain .pfs-row { --inset: 14px; }
+.pfs-row .lab { flex: 1; min-width: 0; font-weight: 500; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pfs-row .lab.wrap { white-space: normal; overflow-wrap: anywhere; padding: 12px 0; font-weight: 400; color: rgba(235, 238, 255, 0.85); }
+.pfs-row .val { color: rgba(235, 238, 255, 0.5); font-size: 16px; white-space: nowrap; }
+.pfs-row .chev { width: 8px; height: 13px; flex: none; opacity: 0.32; }
+.pfs-row.is-red { color: #FF453A; }
+.pfs-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; background: #F0453A; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3); }
+.pfs-skel { display: inline-block; width: 64px; height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); }
+.pfs-err { margin: 10px 16px 0; font-size: 13px; color: #FF6961; line-height: 1.38; }
+
+/* Pushed list page (Ortak sunucular / arkadaşlar) */
+.pfs-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 52px;
+  padding: 0 16px;
+  flex: none;
+}
+.pfs-nav .t { font-weight: 650; font-size: 17px; text-align: center; white-space: nowrap; padding: 0 8px; }
+.pfs-nav .l, .pfs-nav .r {
+  font: inherit;
+  font-size: 17px;
+  color: #8FA6FF;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pfs-nav .l { justify-self: start; }
+.pfs-nav .r { justify-self: end; font-weight: 600; }
+.pfs-nav .r:disabled { color: rgba(235, 238, 255, 0.3); cursor: default; }
+.pfs-grab { width: 36px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.28); margin: 7px auto 0; flex: none; }
+.pfs-form .pfs-grab { display: none; }
+
+/* Report sheet (#30) */
+.rps-head { text-align: center; margin: 4px 0 6px; }
+.rps-head .ttl { font-weight: 650; font-size: 17px; margin-top: 8px; }
+.rps-head .sub { font-size: 13.5px; color: rgba(235, 238, 255, 0.55); margin-top: 3px; }
+/* Mockup #30 keeps the 56pt avatar on the leading edge above the centred title. */
+.rps-head .av { display: block; width: 56px; line-height: 0; }
+.rps-snippet { margin: 12px 4px 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 14px; color: rgba(235, 238, 255, 0.75); overflow-wrap: anywhere; }
+.rps-radio { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3); flex: none; }
+.rps-radio.is-on { background: #587AF6; box-shadow: none; display: grid; place-items: center; }
+.rps-radio.is-on::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.rps-reasons .pfs-row { --inset: 48px; }
+.rps-field {
+  display: block;
+  width: 100%;
+  height: 74px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.075);
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: inherit;
+  color: rgba(255, 255, 255, 0.96);
+  resize: none;
+  outline: none;
+}
+.rps-field::placeholder { color: rgba(235, 238, 255, 0.4); }
+.rps-field:focus { box-shadow: 0 0 0 2px rgba(88, 122, 246, 0.85); }
+.rps-done { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 28px 26px 8px; }
+.rps-done .ck { width: 64px; height: 64px; border-radius: 50%; background: rgba(48, 209, 88, 0.18); color: #30D158; display: grid; place-items: center; margin-bottom: 14px; }
+.rps-done h3 { margin: 0; font-size: 21px; font-weight: 700; }
+.rps-done p { margin: 6px 0 0; font-size: 15px; color: rgba(235, 238, 255, 0.6); line-height: 1.4; }
+.rps-alert-dim { position: fixed; inset: 0; z-index: 1; background: rgba(6, 7, 12, 0.6); display: grid; place-items: center; }
+.rps-alert {
+  position: relative;
+  width: 290px;
+  max-width: calc(100vw - 32px);
+  border-radius: 24px;
+  overflow: hidden;
+  text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(30, 31, 44, 0.9);
+}
+.rps-alert .bd { padding: 20px 18px 16px; }
+.rps-alert h4 { margin: 0 0 5px; font-size: 17px; font-weight: 650; }
+.rps-alert p { margin: 0; font-size: 13.5px; line-height: 1.4; color: rgba(235, 238, 255, 0.75); }
+.rps-alert p.err { margin-top: 8px; color: #FF6961; }
+.rps-alert .bt { display: grid; grid-template-columns: 1fr 1fr; border-top: 0.5px solid rgba(255, 255, 255, 0.14); }
+.rps-alert .bt > button {
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 17px;
+  color: #8FA6FF;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.rps-alert .bt > button + button { border-left: 0.5px solid rgba(255, 255, 255, 0.14); }
+.rps-alert .bt > button:active { background: rgba(255, 255, 255, 0.08); }
+.rps-alert .bt .red { color: #FF453A; font-weight: 600; }
+.rps-alert .bt > button:disabled { opacity: 0.5; }
+
+/* Profile ⋯ menu: iOS context menu of the mockup (both platforms). */
+:root:root:root:root:root .grp-menu.g-action-menu--ios {
+  width: 254px;
+  border-radius: 22px;
+  padding: 5px 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(30, 31, 44, 0.9) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+}
+:root .grp-menu.g-action-menu--ios .grp-menu-section + .grp-menu-section {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+  box-shadow: none;
+}
+:root .grp-menu.g-action-menu--ios .grp-menu-section + .grp-menu-section::before {
+  content: "";
+  display: block;
+  height: 7px;
+  margin: 4px 0;
+  background: rgba(0, 0, 0, 0.18);
+}
+:root .grp-menu.g-action-menu--ios .grp-menu-item {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 16px;
+  gap: 10px;
+  border-radius: 0;
+  font-size: 16.5px;
+  line-height: 20px;
+  letter-spacing: -0.015em;
+}
+:root .grp-menu.g-action-menu--ios .grp-menu-item + .grp-menu-item::before {
+  display: block;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.1);
+}
+:root .grp-menu.g-action-menu--ios .grp-menu-item:hover,
+:root .grp-menu.g-action-menu--ios .grp-menu-item:focus-visible,
+:root .grp-menu.g-action-menu--ios .grp-menu-item:active { background: rgba(255, 255, 255, 0.1); color: inherit; }
+:root .grp-menu.g-action-menu--ios .grp-menu-item.is-danger { color: #FF453A; }
+:root .grp-menu.g-action-menu--ios .grp-menu-item.is-danger:hover { background: rgba(255, 69, 58, 0.14); color: #FF453A; }
+:root .grp-menu.g-action-menu--ios .grp-menu-item svg { width: 19px; height: 19px; opacity: 0.92; }
+:root .grp-menu.g-action-menu--ios .g-action-menu-label { white-space: nowrap; }
+
+/* Reduced transparency / solid mode: same layout, opaque material. */
+:root:root:root:root:root:is(.a11y-solid, .gd-lite) :is(.pfs-heavy, .rps-alert, .grp-menu.g-action-menu--ios) {
+  background: rgb(30, 31, 44) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root:root:root:root:root :is(.pfs-heavy, .rps-alert, .grp-menu.g-action-menu--ios) {
+    background: rgb(30, 31, 44) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .pfs-heavy, .rps-alert { background: rgb(28, 29, 41); }
+}
+
+/* Light theme: same layout, light material. */
+:root[data-theme="light"] :is(.pfs-scrim, .rps-overlay) { color: rgba(10, 12, 24, 0.94); }
+:root[data-theme="light"] .pfs-heavy {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4)), rgba(244, 245, 250, 0.9);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22), inset 0 0.5px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="light"] :is(.pfs-group, .pfs-act, .rps-field) { background: rgba(0, 0, 0, 0.05); }
+:root[data-theme="light"] :is(.pfs-h, .pfs-sec, .pfs-foot, .pfs-row .val, .rps-head .sub, .rps-done p) { color: rgba(20, 24, 40, 0.55); }
+:root[data-theme="light"] .pfs-row + .pfs-row::before { background: rgba(0, 0, 0, 0.1); }
+:root[data-theme="light"] .pfs-row .chev path { stroke: #000; }
+:root[data-theme="light"] :is(.pfs-act, .pfs-nav .l, .pfs-nav .r, .rps-alert .bt > button) { color: #3E5BDB; }
+:root[data-theme="light"] .rps-alert .bt .red { color: #E5352B; }
+:root[data-theme="light"] .rps-field { color: rgba(10, 12, 24, 0.94); }
+:root[data-theme="light"] .rps-field::placeholder { color: rgba(20, 24, 40, 0.4); }
+:root[data-theme="light"] .rps-alert { background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4)), rgba(244, 245, 250, 0.92); }
+:root[data-theme="light"] .rps-alert p { color: rgba(20, 24, 40, 0.7); }
+:root[data-theme="light"] .pfs-av { background-color: rgb(244, 245, 250); }
+:root[data-theme="light"] .pfs-av-dot { box-shadow: 0 0 0 4px rgb(244, 245, 250); }
+:root:root:root:root:root[data-theme="light"] .grp-menu.g-action-menu--ios {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4)), rgba(244, 245, 250, 0.92) !important;
+  color: rgba(10, 12, 24, 0.94);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22), 0 4px 14px rgba(0, 0, 0, 0.1), inset 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .grp-menu.g-action-menu--ios .grp-menu-item { color: rgba(10, 12, 24, 0.94); }
+:root[data-theme="light"] .grp-menu.g-action-menu--ios .grp-menu-item.is-danger { color: #E5352B; }
+:root[data-theme="light"] .grp-menu.g-action-menu--ios .grp-menu-item + .grp-menu-item::before { background: rgba(0, 0, 0, 0.1); }
+:root[data-theme="light"] .grp-menu.g-action-menu--ios .grp-menu-section + .grp-menu-section::before { background: rgba(0, 0, 0, 0.06); }
+:root[data-theme="light"] .grp-menu.g-action-menu--ios .grp-menu-item:is(:hover, :focus-visible, :active) { background: rgba(0, 0, 0, 0.06); }
+
+/* Mockup #29: the ⋯ menu dims the sheet only slightly (.18, no blur). The
+   house B4 scrim (.6 + blur 32) is for full-screen menus over busy lists. */
+:root:not(.a11y-solid):not(.a11y-contrast) .grp-menu-catcher.grp-menu-catcher--ios:not(.g-msg-scrim) {
+  background: rgba(6, 7, 12, 0.18) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Mockup type rhythm (mu-root): tight tracking, tabular numbers. */
+:is(.pfs-scrim, .rps-overlay, .grp-menu.g-action-menu--ios) {
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+:is(.pfs-scrim, .rps-overlay) *, :is(.pfs-scrim, .rps-overlay) *::before, :is(.pfs-scrim, .rps-overlay) *::after { box-sizing: border-box; }
+/* Country chip as in the mockup (pf-chip): flat pill, regular weight. */
+.pfs-badges .cosmetic-country-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 400;
+  color: inherit;
+  letter-spacing: inherit;
+}
+.pfs-badges .cosmetic-country-badge .cosmetic-country-name { font: inherit; color: inherit; }
+:root[data-theme="light"] .pfs-badges .cosmetic-country-badge { background: rgba(0, 0, 0, 0.06); }

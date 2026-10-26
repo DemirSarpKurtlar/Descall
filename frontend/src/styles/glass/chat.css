@@ -713,7 +713,7 @@ html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn {
 
 /* ── Messages (03) ── */
 html.glass-ui .app-root.g-shell.in-conversation .messages-container {
-  padding: var(--g-conv-top) 14px calc(var(--g-bar-bottom) + 78px) !important;
+  padding: var(--g-conv-top) 14px calc(var(--g-bar-bottom) + 78px + var(--composer-grow, 0px)) !important;
   background-color: transparent !important;
 }
 
@@ -721,7 +721,7 @@ html.glass-ui .app-root.g-shell.in-conversation .messages-container {
 html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-reply-bar) .messages-container,
 html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-attach-preview) .messages-container,
 html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.composer-slowmode-hint) .messages-container {
-  padding-bottom: calc(var(--g-bar-bottom) + 142px) !important;
+  padding-bottom: calc(var(--g-bar-bottom) + 142px + var(--composer-grow, 0px)) !important;
 }
 
 html.glass-ui .app-root.g-shell.in-conversation .main-panel:has(.chat-search-bar) .messages-container {
@@ -1052,15 +1052,16 @@ html.glass-ui .app-root.g-shell .message-composer {
   min-width: 0;
 }
 
-/* Capsule stays 52px. The reply strip is a sibling above it, so the send
-   cluster (absolute inside this row) never shares a box with the cancel ×. */
+/* Capsule is 52px for one line and grows upward to 5 lines (A2 §4.4). The
+   reply strip is a sibling above it, so the send cluster (absolute inside
+   this row, pinned to the bottom) never shares a box with the cancel ×. */
 html.glass-ui .app-root.g-shell .composer-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   flex: 0 0 auto;
   width: 100%;
-  height: 52px;
+  height: auto;
   min-height: 52px;
   min-width: 0;
   position: relative;
@@ -1177,11 +1178,12 @@ html.glass-ui .app-root.g-shell .composer-left .composer-action-btn svg {
 html.glass-ui .app-root.g-shell .composer-input-wrapper {
   flex: 1 1 auto;
   min-width: 0;
-  height: 52px;
+  height: auto;
+  min-height: 52px;
   border-radius: var(--r-xl);
   display: flex;
-  align-items: center;
-  padding: 0 124px 0 18px;
+  align-items: flex-end;
+  padding: 14px 124px 14px 18px;
   background:
     linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
     var(--g-tint-base);
@@ -1194,8 +1196,9 @@ html.glass-ui .app-root.g-shell .composer-input-wrapper {
 html.glass-ui .app-root.g-shell .composer-input {
   flex: 1;
   min-height: 24px !important;
-  height: 24px !important;
-  max-height: 24px !important;
+  /* height / max-height / overflow-y are set inline by the auto-grow
+     (MessageComposer): 24px per line, up to 5 lines, then it scrolls. */
+  max-height: 120px;
   padding: 0 !important;
   margin: 0;
   border: 0 !important;
@@ -1207,7 +1210,13 @@ html.glass-ui .app-root.g-shell .composer-input {
   line-height: 24px !important;
   letter-spacing: -0.012em;
   resize: none;
-  overflow: hidden !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+html.glass-ui .app-root.g-shell .composer-input::-webkit-scrollbar {
+  display: none;
 }
 
 html.glass-ui .app-root.g-shell .composer-input::placeholder {
@@ -1217,7 +1226,7 @@ html.glass-ui .app-root.g-shell .composer-input::placeholder {
 html.glass-ui .app-root.g-shell .composer-right {
   position: absolute;
   right: 6px;
-  top: 6px;
+  bottom: 6px;
   height: 40px;
   display: flex;
   align-items: center;

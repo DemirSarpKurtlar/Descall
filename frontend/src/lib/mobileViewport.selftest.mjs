@@ -155,10 +155,13 @@ assert.match(hook, /--kb-gap/);
 assert.match(hook, /__descallNativeKeyboard/);
 assert.match(hook, /fixedBottom: readFixedBottom\(probe\)/);
 assert.match(swift, /__descallNativeKeyboard/);
-assert.match(composer, /onScroll/);
+// A2 §4.4: the field auto-grows (5 lines iPhone / 8 iPad) and scrolls inside;
+// the old one-line scrollTop=0 lock is gone, Enter key shows "Gönder".
+assert.doesNotMatch(composer, /e\.target\.scrollTop = 0/);
+assert.match(composer, /enterKeyHint="send"/);
+assert.match(composer, /--composer-grow/);
 assert.match(css, /html\.glass-ui\.kb-open \.app-root\.g-shell\.in-conversation \.composer-container \{\s*bottom: calc\(var\(--kb-gap, 0px\) \+ 8px\);/);
-assert.match(css, /overflow: hidden !important;/);
-assert.match(composer, /e\.target\.scrollTop = 0/);
+assert.match(css, /overscroll-behavior: contain;/, "the grown field scrolls inside without chaining to the list");
 assert.match(swift, /FormAccessory/);
 assert.match(swift, /viewDidAppear/);
 
