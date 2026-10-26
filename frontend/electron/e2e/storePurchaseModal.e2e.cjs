@@ -337,7 +337,7 @@ async function run(win) {
   // 4. Short Electron window: modal fits the viewport.
   win.setContentSize(1200, 700); // main.cjs minimum window size
   await sleep(600);
-  const sm = await openModal(win, PICKS[11][0]);
+  const sm = await openModal(win, PICKS[PICKS.length - 1][0]);
   checkPlacement(sm, 'short window');
   await shot(win, 'purchase-5-short-window.png');
   await js(win, ESC);
