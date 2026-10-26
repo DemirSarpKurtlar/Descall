@@ -20,6 +20,13 @@
 /tr/discord-alternative /tr/discord-alternatifi 301
 /tr/contact /iletisim 301
 
+# Owner pages (kept in sync with vercel.json and _worker.js).
+/founder /who-owns-descall 301
+/owner /who-owns-descall 301
+/kurucu /descall-sahibi 301
+/sahip /descall-sahibi 301
+/tr/who-owns-descall /descall-sahibi 301
+
 # No /api/* rule here: Pages cannot proxy to an external origin (it served the
 # SPA HTML instead). The apps call https://des-call.onrender.com directly.
 
