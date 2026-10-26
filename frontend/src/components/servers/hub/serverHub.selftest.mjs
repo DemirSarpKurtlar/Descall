@@ -284,6 +284,13 @@ t("call cards render (31 join, 32 ended)", () => {
     onCallBack() {}, onMessage() {}, onClose() {} });
   has(ended, "Ayşe", "Arama sona erdi", "12:34", "Sesli arama", "Bağlantı kesildi (Ayşe ayrıldı)", "Geri ara", "Mesaj", "Kapat");
 });
+t("audit log names the real backend nickname actions", () => {
+  const S = M.strings.SVH_TR, cases = M.strings.caseHelpers("tr");
+  const row = (action) => M.data.auditRow({ action, actorDisplayName: "Mert", targetId: "u4", changes: { username: "zeynep" }, createdAt: "2026-10-26T17:30:00Z" }, { s: S, cases, names: new Map([["u4", "Zeynep"]]) });
+  assert.equal(row("MEMBER_NICKNAME_UPDATE").sub, "Zeynep'in takma adını değiştirdi");
+  assert.equal(row("MEMBER_NICKNAME_SELF").sub, "Takma adını değiştirdi");
+  assert.equal(row("MEMBER_BAN").ico, "ban");
+});
 t("hub section highlighting ignores routes opened without a selection", () => {
   assert.equal(M.sectionOf([{ id: "ov", nosel: true }], { id: "ov", nosel: true }), null);
   assert.equal(M.sectionOf([{ id: "ov" }, { id: "chEdit", channelId: "c1" }], { id: "chEdit" }), "ch");
