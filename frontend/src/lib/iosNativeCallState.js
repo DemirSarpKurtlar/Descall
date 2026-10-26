@@ -25,6 +25,9 @@ export function normalizeNativeCall(raw) {
     phase,
     muted: raw.muted === true,
     connectedAt: Number.isFinite(connectedAt) && connectedAt > 0 ? connectedAt : null,
+    // 3.0.0 (C2): native stats verified audio both ways. Builds before 3.0.0
+    // never send the flag and count as verified.
+    mediaVerified: raw.mediaVerified !== false,
     metrics: raw.metrics && typeof raw.metrics === "object" ? { ...raw.metrics } : {},
   });
 }
@@ -33,7 +36,7 @@ export function normalizeNativeCall(raw) {
 export function nativeCallStatusLabel(state, nowMs = Date.now()) {
   if (!state?.active) return "";
   if (state.phase === "reconnecting") return "Yeniden bağlanıyor…";
-  if (state.phase !== "connected" || !state.connectedAt) return "Bağlanıyor…";
+  if (state.phase !== "connected" || !state.connectedAt || state.mediaVerified === false) return "Bağlanıyor…";
   return formatCallDuration(nowMs - state.connectedAt);
 }
 

@@ -89,6 +89,9 @@ check((tel["result"] as? String) == "done" && (tel["callType"] as? String) == "v
 check((tel["answerToAudioMs"] as? Int) == 750 && tel["callerId"] == nil && tel["uuid"] == nil, "telemetry marks, no ids")
 check(L.telemetryResult(L.Timeline(start: 0), failure: nil) == "no-audio", "no audio result")
 check(L.telemetryResult(tl, failure: "lost") == "lost", "failure result")
+check(L.mediaVerified(sent: 20, received: 9, baseSent: 10, baseReceived: 5), "media verified both rising")
+check(!L.mediaVerified(sent: 20, received: 5, baseSent: 10, baseReceived: 5), "inbound frozen not verified")
+check(!L.mediaVerified(sent: 10, received: 9, baseSent: 10, baseReceived: 5), "outbound frozen not verified")
 var pending: [[String: Any]] = []
 for i in 0..<12 { pending = L.appendPending(pending, ["n": i]) }
 check(pending.count == 10 && (pending.first?["n"] as? Int) == 2, "pending queue capped at 10")

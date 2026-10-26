@@ -125,6 +125,8 @@ final class DescallNativeCall: NSObject {
             "muted": s.muted,
             "video": s.video,
             "metrics": s.timeline.dictionary,
+            // 3.0.0 (C2): audio verified flowing both ways (stats probe).
+            "mediaVerified": s.timeline.ms("mediaVerified") != nil,
         ]
         if let at = s.connectedAt { d["connectedAt"] = Int(at.timeIntervalSince1970 * 1000) }
         return d
@@ -655,6 +657,9 @@ final class DescallNativeCall: NSObject {
     private func startStatsProbe(_ s: Session) {
         guard s.statsTimer == nil else { return }
         var ticks = 0
+        // 3.0.0 (C2): first-sample baselines; verified when both counters rise.
+        var baseSent: Int? = nil
+        var baseReceived: Int? = nil
         let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self, weak s] timer in
             guard let self = self, let s = s, self.session === s, let pc = s.pc else { timer.invalidate(); return }
             ticks += 1
@@ -671,21 +676,42 @@ final class DescallNativeCall: NSObject {
             }
             pc.statistics { report in
                 var packets = 0
+                var sent = 0
                 var level: Double = 0
                 var samples = 0
-                for stat in report.statistics.values where stat.type == "inbound-rtp" {
-                    if (stat.values["kind"] as? String) == "audio" {
+                for stat in report.statistics.values where (stat.values["kind"] as? String) == "audio" {
+                    if stat.type == "inbound-rtp" {
                         packets += (stat.values["packetsReceived"] as? NSNumber)?.intValue ?? 0
                         level = max(level, (stat.values["audioLevel"] as? NSNumber)?.doubleValue ?? 0)
                         samples += (stat.values["totalSamplesReceived"] as? NSNumber)?.intValue ?? 0
+                    } else if stat.type == "outbound-rtp" {
+                        sent += (stat.values["packetsSent"] as? NSNumber)?.intValue ?? 0
                     }
                 }
-                guard packets > 0 else { return }
                 DispatchQueue.main.async {
-                    guard self.session === s, s.timeline.ms("firstAudio") == nil else { return }
+                    guard self.session === s else { return }
+                    if s.timeline.ms("mediaVerified") == nil {
+                        if let bs = baseSent, let br = baseReceived {
+                            if DescallNativeCallLogic.mediaVerified(sent: sent, received: packets, baseSent: bs, baseReceived: br) {
+                                s.timeline.mark("mediaVerified", at: Date().timeIntervalSince1970)
+                                self.emitState()
+                            }
+                        } else {
+                            baseSent = sent
+                            baseReceived = packets
+                        }
+                    }
+                    let audioDone = s.timeline.ms("firstAudio") != nil
+                    if audioDone && s.timeline.ms("mediaVerified") != nil {
+                        s.statsTimer?.invalidate()
+                        s.statsTimer = nil
+                    }
+                    guard packets > 0, !audioDone else { return }
                     s.timeline.mark("firstAudio", at: Date().timeIntervalSince1970)
-                    s.statsTimer?.invalidate()
-                    s.statsTimer = nil
+                    if s.timeline.ms("mediaVerified") != nil {
+                        s.statsTimer?.invalidate()
+                        s.statsTimer = nil
+                    }
                     let rtc = RTCAudioSession.sharedInstance()
                     if !rtc.isAudioEnabled && DescallCallManager.shared.callKitAudioActive {
                         // Packets arrive but the audio unit is off: nothing would play.

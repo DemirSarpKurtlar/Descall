@@ -26,6 +26,11 @@ const UUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
   assert.equal(nativeCallStatusLabel(s, 1000 + 65_000), "01:05");
   assert.equal(nativeCallStatusLabel({ ...s, phase: "connecting", connectedAt: null }), "Bağlanıyor…");
   assert.equal(nativeCallStatusLabel({ ...s, phase: "reconnecting" }), "Yeniden bağlanıyor…");
+  // 3.0.0 C2: connected but audio not verified both ways → still "Bağlanıyor…".
+  const unverified = normalizeNativeCall({ active: true, uuid: UUID, phase: "connected", connectedAt: 1000, mediaVerified: false });
+  assert.equal(unverified.mediaVerified, false);
+  assert.equal(nativeCallStatusLabel(unverified, 5000), "Bağlanıyor…");
+  assert.equal(s.mediaVerified, true, "pre-3.0.0 native builds (no flag) count as verified");
   assert.equal(formatCallDuration(3_725_000), "1:02:05");
   assert.equal(nativeOfferVerdict(s, "u1"), "ignore", "the native call's own offers are not rings");
   assert.equal(nativeOfferVerdict(s, "u2"), "decline", "another caller while in a native call = busy");

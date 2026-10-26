@@ -214,11 +214,44 @@ export async function preloadIceServers() {
  * carrier-grade NAT no host/srflx pair works and ICE failed every time.
  * Every call path now awaits this (bounded) before creating the pc.
  */
+/**
+ * Pure (3.0.0 C1): can a call dial with the cached list right now? True while
+ * the credentials are still valid for at least CALL_MARGIN_MS more (the
+ * half-TTL background refresh used to make every call wait for a fetch even
+ * though the cached TURN credentials had hours left).
+ */
+export const CALL_MARGIN_MS = 60 * 1000;
+export function cachedUsableForCall({ cached, cachedAt: at, refreshMs, expiresAt, cachedToken: tok, token, hasTurn, now }) {
+  if (!cached || !cached.length) return false;
+  if ((token || null) !== (tok || null)) return false;
+  if (token && !hasTurn) return false; // signed in but STUN-only: worth a fetch
+  if (expiresAt) return now < expiresAt - CALL_MARGIN_MS;
+  // No explicit expiry: refreshMs is half the credential lifetime.
+  const lifeMs = Math.max(0, (refreshMs || 0) * 2);
+  return now - at < lifeMs - CALL_MARGIN_MS;
+}
+
 export async function ensureIceServersForCall({ timeoutMs = 3500 } = {}) {
   const now = Date.now();
   const expired = cachedExpiresAt && now >= cachedExpiresAt;
   const signedIn = Boolean(currentToken());
   if (cachedServers && !expired && !isStale(now) && (!signedIn || iceServersHaveTurn(cachedServers))) {
+    return cachedServers;
+  }
+  if (
+    cachedUsableForCall({
+      cached: cachedServers,
+      cachedAt,
+      refreshMs: cachedRefreshMs,
+      expiresAt: cachedExpiresAt,
+      cachedToken,
+      token: currentToken(),
+      hasTurn: iceServersHaveTurn(cachedServers),
+      now,
+    })
+  ) {
+    // Still valid: dial now, refresh for the next call in the background.
+    preloadIceServers().catch(() => {});
     return cachedServers;
   }
   let timer = null;

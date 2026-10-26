@@ -204,6 +204,50 @@ function pluginStub() {
   assert.ok(reasons.includes("silent-track-muted"), `reasons=${reasons.join(",")}`);
 }
 
+// ── 3.0.0 C2: energy moves but no RTP leaves the sender → refreshed ──
+
+{
+  const clock = createClock();
+  const { guard, reasons, pc } = makeGuard(clock);
+  let energy = 0.1;
+  pc.getStats = async () => {
+    energy += 0.05;
+    return new Map([
+      ["src", { type: "media-source", kind: "audio", totalAudioEnergy: energy, audioLevel: 0.2, trackIdentifier: "old" }],
+      ["out", { type: "outbound-rtp", kind: "audio", packetsSent: 7, mediaSourceId: "src" }],
+    ]);
+  };
+  guard.noteCaptureStart();
+  guard.startMonitoring();
+  for (let i = 0; i < 4; i += 1) {
+    clock.advance(1000);
+    await flush();
+  }
+  assert.ok(reasons.includes("silent-packets-stalled"), `reasons=${reasons.join(",")}`);
+}
+
+// ── 3.0.0 C2: packets rising + energy rising is healthy (no refresh) ──
+
+{
+  const clock = createClock();
+  const { guard, reasons, pc } = makeGuard(clock);
+  let n = 0;
+  pc.getStats = async () => {
+    n += 1;
+    return new Map([
+      ["src", { type: "media-source", kind: "audio", totalAudioEnergy: n * 0.1, audioLevel: 0.2, trackIdentifier: "old" }],
+      ["out", { type: "outbound-rtp", kind: "audio", packetsSent: n * 50, mediaSourceId: "src" }],
+    ]);
+  };
+  guard.noteCaptureStart();
+  guard.startMonitoring();
+  for (let i = 0; i < 5; i += 1) {
+    clock.advance(1000);
+    await flush();
+  }
+  assert.equal(reasons.filter((r) => r.startsWith("silent-")).length, 0, `reasons=${reasons.join(",")}`);
+}
+
 // ── Killed app: activation is queued before the offer; accept waits for both ──
 
 {

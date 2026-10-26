@@ -254,7 +254,11 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       ? t("Call ended")
       : call?.peerConnectionState === "reconnecting"
       ? t("Reconnecting…")
-      : call?.peerConnectionState === "connecting" || (call?.mode === "active" && !call?.remoteMediaReady)
+      : call?.mode === "active" && (call?.mediaFlow === "connecting" || call?.mediaFlow === "retry") && call?.remoteSending === false
+      ? t("Their microphone is connecting…")
+      : call?.peerConnectionState === "connecting" ||
+        (call?.mode === "active" && !call?.remoteMediaReady) ||
+        (call?.mode === "active" && (call?.mediaFlow === "connecting" || call?.mediaFlow === "retry"))
       ? t("Connecting…")
       : callType === "video"
       ? t("Video call")
@@ -524,6 +528,58 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         </div>
       </div>
       )}
+
+      {isDm && mode === "active" && call?.mediaFlow === "retry" && !call?.ending ? (
+        <div
+          className="call-media-retry"
+          role="status"
+          style={{
+            position: "absolute",
+            top: "calc(96px + env(safe-area-inset-top, 0px))",
+            left: 16,
+            right: 16,
+            zIndex: 12,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "8px 8px 8px 16px",
+              borderRadius: 999,
+              background: "rgba(20,22,28,0.72)",
+              backdropFilter: "blur(18px)",
+              WebkitBackdropFilter: "blur(18px)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              color: "#fff",
+              fontSize: 14,
+              pointerEvents: "auto",
+            }}
+          >
+          <span>{t("Audio isn't coming through yet.")}</span>
+          <button
+            type="button"
+            onClick={() => call?.retryMediaFlow?.()}
+            style={{
+              border: 0,
+              borderRadius: 999,
+              padding: "8px 14px",
+              background: "#34c759",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            {t("Retry audio connection")}
+          </button>
+        </div>
+        </div>
+      ) : null}
 
       {/* ====== MAIN CONTENT AREA ====== */}
       {/* Reserve real control-bar height so screen share never sits under the buttons */}

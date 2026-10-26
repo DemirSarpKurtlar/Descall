@@ -97,6 +97,7 @@ export function createMicGuard({
       monitorStartedAt: 0,
       silentSamples: 0,
       lastEnergy: null,
+      lastPackets: null,
       statsRefreshDone: false,
       unrecoverableSent: false,
       reported: new Set(),
@@ -369,6 +370,7 @@ export function createMicGuard({
     if (!track.enabled || track.readyState !== "live") {
       s.silentSamples = 0;
       s.lastEnergy = null;
+      s.lastPackets = null;
       return;
     }
     let stats;
@@ -379,10 +381,19 @@ export function createMicGuard({
     }
     const energy = typeof stats.source?.totalAudioEnergy === "number" ? stats.source.totalAudioEnergy : null;
     const level = typeof stats.source?.audioLevel === "number" ? stats.source.audioLevel : null;
-    const zeroEnergy = energy != null && s.lastEnergy != null && energy === s.lastEnergy && !level;
+    const prevEnergy = s.lastEnergy;
+    const zeroEnergy = energy != null && prevEnergy != null && energy === prevEnergy && !level;
     s.lastEnergy = energy;
-    const silent = Boolean(track.muted) || zeroEnergy;
-    if (!silent && energy != null && s.lastEnergy != null && energy > s.lastEnergy && !s.loggedSending) {
+    // 3.0.0 (C2): the old check was blind when the capture looked alive
+    // (energy moving, or not reported at all) but nothing left the sender.
+    // On a connected pc a live, enabled track always produces RTP packets.
+    const packets = typeof stats.outbound?.packetsSent === "number" ? stats.outbound.packetsSent : null;
+    const prevPackets = s.lastPackets;
+    s.lastPackets = packets;
+    const pcConnected = !pc.connectionState || pc.connectionState === "connected";
+    const packetsStalled = pcConnected && packets != null && prevPackets != null && packets <= prevPackets;
+    const silent = Boolean(track.muted) || zeroEnergy || packetsStalled;
+    if (!silent && energy != null && prevEnergy != null && energy > prevEnergy && !s.loggedSending) {
       s.loggedSending = true;
       log("outbound mic energy", {
         energy,
@@ -394,7 +405,7 @@ export function createMicGuard({
     const needed = now() - s.monitorStartedAt < STATS_START_WINDOW_MS ? SILENT_SAMPLES_START : SILENT_SAMPLES;
     if (s.silentSamples < needed) return;
     s.silentSamples = 0;
-    const why = track.muted ? "track-muted" : "zero-energy";
+    const why = track.muted ? "track-muted" : zeroEnergy ? "zero-energy" : "packets-stalled";
     void reportOnce("ios_call_mic_silent", {
       reason: why,
       energyAvailable: energy != null,
@@ -424,6 +435,7 @@ export function createMicGuard({
     s.monitorStartedAt = now();
     s.silentSamples = 0;
     s.lastEnergy = null;
+    s.lastPackets = null;
     scheduleSample();
   }
 

@@ -564,7 +564,10 @@ export function useServerVoice(socket) {
         setLiveKitLink("disconnected");
       });
       const livekitUrls = tokenData.livekitUrls?.length ? tokenData.livekitUrls : [tokenData.livekitUrl];
-      const livekitUrl = (await pickFastestLiveKitUrl(livekitUrls)) || tokenData.livekitUrl;
+      let probed = false;
+      const livekitUrl =
+        (await pickFastestLiveKitUrl(livekitUrls, { onProbe: () => { probed = true; } })) || tokenData.livekitUrl;
+      if (!probed) voiceTelemetryRef.current?.set("urlProbeSkipped", true);
       voiceTelemetryRef.current?.mark("urlProbeMs");
       await room.connect(livekitUrl, tokenData.token);
       voiceTelemetryRef.current?.mark("lkConnectMs");
@@ -903,6 +906,13 @@ export function useServerVoice(socket) {
       telemetry?.finish("ended");
       telemetry?.begin("server", "outgoing", "voice");
       telemetry?.mark("gumStart");
+      // 3.0.0 (C1): LiveKit token + SDK load run in parallel with the mic
+      // (stage channels keep the serial path: their role is set by the join).
+      const earlyToken =
+        channel.type !== "stage" && (liveKitConfigRef.current?.sfu || liveKitConfigRef.current?.preferSfu || !liveKitConfigRef.current)
+          ? getLiveKitToken(channel.id).then((data) => ({ data }), (error) => ({ error }))
+          : null;
+      if (earlyToken) loadLiveKit().catch(() => {});
       try {
         const nextChannelType = channel.type === "stage" ? "stage" : "voice";
         const isStage = nextChannelType === "stage";
@@ -955,10 +965,12 @@ export function useServerVoice(socket) {
                 await new Promise((r) => setTimeout(r, 350));
                 if (!stillJoining()) return;
               }
-              const tokenData = await getLiveKitToken(channel.id).catch((tokenErr) => {
+              const early = attempt === 0 && earlyToken ? await earlyToken : null;
+              if (early?.error) throw early.error;
+              const tokenData = early?.data || (await getLiveKitToken(channel.id).catch((tokenErr) => {
                 telemetry?.set("tokenError", tokenErr?.code || "network");
                 throw tokenErr;
-              });
+              }));
               telemetry?.mark("tokenMs");
               if (!stillJoining()) return;
               if (!tokenData?.enabled) {
@@ -984,6 +996,7 @@ export function useServerVoice(socket) {
               if (!stillJoining()) return;
               sfuConnected = true;
             } catch (sfuErr) {
+              if (sfuErr?.code) telemetry?.set("tokenError", sfuErr.code);
               lastSfuErr = sfuErr;
               disconnectLiveKit();
             }

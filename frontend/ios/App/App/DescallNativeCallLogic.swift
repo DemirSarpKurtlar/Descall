@@ -268,6 +268,13 @@ enum DescallNativeCallLogic {
         return t.ms("firstAudio") != nil ? "done" : "no-audio"
     }
 
+    /// 3.0.0 (C2): audio flows both ways once outbound packetsSent and inbound
+    /// packetsReceived both rose above their first sample (a frozen non-zero
+    /// counter is not flowing audio).
+    static func mediaVerified(sent: Int, received: Int, baseSent: Int, baseReceived: Int) -> Bool {
+        sent > baseSent && received > baseReceived
+    }
+
     /// Offline queue for summaries the native socket could not send (max 10).
     static func appendPending(_ list: [[String: Any]], _ item: [String: Any], max: Int = 10) -> [[String: Any]] {
         Array((list + [item]).suffix(max))

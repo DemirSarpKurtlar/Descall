@@ -440,29 +440,47 @@ export function liveKitMicPublishOptions(source) {
   };
 }
 
-export async function pickFastestLiveKitUrl(urls, { fetchImpl, now = () => Date.now(), timeoutMs = 700 } = {}) {
+// 3.0.0 (C1): the winner is remembered for a while so the next join skips the
+// probe, and the first endpoint that answers wins (no waiting for the slowest).
+export const LIVEKIT_PICK_TTL_MS = 10 * 60 * 1000;
+let liveKitPick = null; // { key, url, at }
+
+export function _resetLiveKitPickForTests() {
+  liveKitPick = null;
+}
+
+export async function pickFastestLiveKitUrl(urls, { fetchImpl, now = () => Date.now(), timeoutMs = 700, onProbe } = {}) {
   const list = [...new Set((urls || []).map((url) => String(url || "").trim()).filter(Boolean))];
   if (list.length <= 1) return list[0] || "";
+  const key = list.join("|");
+  if (liveKitPick && liveKitPick.key === key && now() - liveKitPick.at < LIVEKIT_PICK_TTL_MS) return liveKitPick.url;
   const probe = fetchImpl || (typeof fetch === "function" ? fetch : null);
   if (!probe) return list[0];
-  const attempts = list.map(async (url) => {
-    const started = now();
-    const httpUrl = url.replace(/^ws/i, "http");
-    let timer = 0;
-    try {
+  onProbe?.();
+  const winner = await new Promise((resolve) => {
+    let left = list.length;
+    const timers = [];
+    const done = (url) => {
+      timers.forEach((t) => clearTimeout(t));
+      resolve(url);
+    };
+    for (const url of list) {
+      const httpUrl = url.replace(/^ws/i, "http");
       const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-      timer = setTimeout(() => ctrl?.abort(), timeoutMs);
-      await probe(httpUrl, { method: "GET", mode: "no-cors", signal: ctrl?.signal });
-      return { url, ms: now() - started };
-    } catch {
-      return { url, ms: timeoutMs + 1 };
-    } finally {
-      clearTimeout(timer);
+      timers.push(setTimeout(() => ctrl?.abort(), timeoutMs));
+      Promise.resolve()
+        .then(() => probe(httpUrl, { method: "GET", mode: "no-cors", signal: ctrl?.signal }))
+        .then(
+          () => done(url),
+          () => {
+            left -= 1;
+            if (left === 0) done("");
+          }
+        );
     }
   });
-  const ranked = await Promise.all(attempts);
-  ranked.sort((a, b) => a.ms - b.ms);
-  return ranked[0]?.url || list[0];
+  if (winner) liveKitPick = { key, url: winner, at: now() };
+  return winner || list[0];
 }
 
 export function claimVoiceAudioSession() {
