@@ -922,15 +922,6 @@ html.glass-ui .app-root.g-shell .message-status {
   justify-content: flex-end;
 }
 
-html.glass-ui .app-root.g-shell .message-reactions {
-  margin-left: 46px;
-}
-
-html.glass-ui .app-root.g-shell .message-group.own .message-reactions {
-  margin-left: 0;
-  justify-content: flex-end;
-}
-
 html.glass-ui .app-root.g-shell .reaction-chip {
   height: 26px;
   padding: 0 9px;
