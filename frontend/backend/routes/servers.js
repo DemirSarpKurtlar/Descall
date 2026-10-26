@@ -51,6 +51,7 @@ const { starterChannelNames } = require("../lib/starterChannelNames");
 const router = express.Router();
 
 const MAX_OWNED_SERVERS = 10;
+const { acquireCapLock } = require("../lib/capLock");
 const MAX_CHANNELS_PER_SERVER = 500;
 const MAX_ROLES_PER_SERVER = 50;
 const MAX_SERVER_FOLDERS = 50;
@@ -742,25 +743,22 @@ function publicRole(row) {
 
 /**
  * Compensating check for count-then-insert limits (no row lock available through
- * PostgREST): after inserting row `id`, the oldest `cap` rows win; true means ours is
- * past the cap and must be undone. Parallel inserts can no longer both slip through,
- * and at most the late ones are rejected.
+ * PostgREST): true means the cap is exceeded after our insert and ours must be undone.
  */
-async function insertedOverCap(table, column, value, id, cap) {
-  const { data, error } = await supabase
+async function insertedOverCap(table, column, value, _id, cap) {
+  // Re-count after our insert. Over the cap means a parallel create on another
+  // instance slipped past the pre-count: undo ours. (Ranking rows by created_at used
+  // to pick a "winner", but a request that had already kept its row never saw a later
+  // commit with an earlier timestamp, so the total could end at cap + 1. Undoing
+  // whenever we see too many can only under-fill, never overfill.) Same-instance
+  // creates are serialized by acquireCapLock, so this is the cross-instance backstop
+  // (audit round 5 #9).
+  const { count, error } = await supabase
     .from(table)
-    .select("id, created_at")
-    .eq(column, value)
-    .order("created_at", { ascending: true })
-    .limit(cap + 50);
+    .select("id", { count: "exact", head: true })
+    .eq(column, value);
   if (error) throw error;
-  const rows = [...(data || [])].sort((a, b) => {
-    const t = String(a.created_at || "").localeCompare(String(b.created_at || ""));
-    return t || String(a.id).localeCompare(String(b.id));
-  });
-  if (rows.length <= cap) return false;
-  const idx = rows.findIndex((r) => String(r.id) === String(id));
-  return idx === -1 || idx >= cap;
+  return (count || 0) > cap;
 }
 
 async function countOwnedServers(userId) {
@@ -1432,6 +1430,7 @@ router.get("/me/folders", requireAuth, async (req, res) => {
  * POST /servers/me/folders — create folder.
  */
 router.post("/me/folders", requireAuth, async (req, res) => {
+  let releaseCap = null;
   try {
     const userId = req.user.id;
     const name = String(req.body?.name || "").trim().slice(0, 100);
@@ -1442,6 +1441,7 @@ router.post("/me/folders", requireAuth, async (req, res) => {
     {
       const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
       if (rejectIfLimited(res, [recordFailure(`server-folder-create:user:${userId}`, { windowMs: 10 * 60 * 1000, max: 30 })])) return;
+      releaseCap = await acquireCapLock(`folders:${userId}`);
       const { count, error: cntErr } = await supabase
         .from("server_folders")
         .select("id", { count: "exact", head: true })
@@ -1491,6 +1491,8 @@ router.post("/me/folders", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[SERVERS] POST /me/folders error:", err);
     return res.status(500).json({ error: "Failed to create folder." });
+  } finally {
+    releaseCap?.();
   }
 });
 
@@ -1664,6 +1666,7 @@ router.get("/templates", requireAuth, (_req, res) => {
  * Legacy: omitted / "default" keeps a simple Discord-like starter layout.
  */
 router.post("/", requireAuth, async (req, res) => {
+  let releaseCap = null;
   try {
     const userId = req.user.id;
     const name = cleanName(req.body?.name);
@@ -1699,6 +1702,7 @@ router.post("/", requireAuth, async (req, res) => {
       }
     }
 
+    releaseCap = await acquireCapLock(`owned:${userId}`);
     const owned = await countOwnedServers(userId);
     if (owned >= MAX_OWNED_SERVERS) {
       return res.status(400).json({
@@ -1886,6 +1890,8 @@ router.post("/", requireAuth, async (req, res) => {
     }
     console.error("[SERVERS] POST / error:", err);
     return res.status(500).json({ error: "Failed to create server." });
+  } finally {
+    releaseCap?.();
   }
 });
 
@@ -3107,6 +3113,7 @@ router.get("/:id/roles", requireAuth, async (req, res) => {
  * POST /servers/:id/roles — create role (owner only)
  */
 router.post("/:id/roles", requireAuth, async (req, res) => {
+  let releaseCap = null;
   try {
     const serverId = req.params.id;
     const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
@@ -3119,6 +3126,7 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Cannot create another @everyone role." });
     }
 
+    releaseCap = await acquireCapLock(`roles:${serverId}`);
     const { count, error: countErr } = await supabase
       .from("server_roles")
       .select("id", { count: "exact", head: true })
@@ -3200,6 +3208,8 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/roles error:", err);
     return res.status(status).json({ error: err.message || "Failed to create role.", code: err.code });
+  } finally {
+    releaseCap?.();
   }
 });
 
@@ -3975,6 +3985,7 @@ router.get("/:id/audit-logs", requireAuth, async (req, res) => {
  * Create text | voice | category. Owner or MANAGE_CHANNELS.
  */
 router.post("/:id/channels", requireAuth, async (req, res) => {
+  let releaseCap = null;
   try {
     const serverId = req.params.id;
     const type = String(req.body?.type || "text").toLowerCase();
@@ -3993,6 +4004,7 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
       });
     }
 
+    releaseCap = await acquireCapLock(`channels:${serverId}`);
     const { count, error: countErr } = await supabase
       .from("server_channels")
       .select("id", { count: "exact", head: true })
@@ -4067,6 +4079,8 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/channels error:", err);
     return res.status(status).json({ error: err.message || "Failed to create channel.", code: err.code });
+  } finally {
+    releaseCap?.();
   }
 });
 
