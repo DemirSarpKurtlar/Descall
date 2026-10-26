@@ -263,7 +263,7 @@ const avDisc = block(fh, "html.glass-desktop .main-panel.is-floating-header .hea
 assert.match(avDisc, /width:\s*var\(--fh-avatar\) !important/, "disc size = slot size, never the 40px !important default in a smaller slot");
 assert.match(block(fh, "html.glass-desktop .main-panel.is-floating-header .header-identity .header-avatar img,"), /object-fit:\s*cover/);
 assert.match(block(fh, "html.glass-desktop .main-panel.is-floating-header .header-identity .header-title-text,"), /text-overflow:\s*ellipsis/);
-assert.match(fh, /\.header-block-btn \{\s*color:\s*#ff8a80/);
+assert.match(fh, /\.header-block-btn\.active \{\s*color:\s*#ff8a80/);
 assert.match(fh, /html\.glass-desktop\.gd-lite \.main-panel\.is-floating-header \.panel-header \.header-identity,[^{]*\{\s*background:\s*var\(--gd-solid\) !important/);
 assert.match(fh, /html\.glass-desktop\.gd-contrast \{[^}]*0\.80/);
 assert.match(fh, /prefers-contrast:\s*more/);
@@ -272,8 +272,11 @@ assert.match(panelJsx, /"main-panel is-floating-header"/);
 assert.match(panelJsx, /<div className="chat-panel-bg" aria-hidden="true" \/>/);
 assert.match(panelJsx, /<div className="chat-scroll-edge" aria-hidden="true" \/>/);
 assert.match(panelJsx, /chrome\.dataset\.scrolled/);
-// A2 #05: DM block moved into the header "⋯" menu (one separator before calls).
+// Mockup #29/#30: DM header is one pill (search, pin, call, video, block) with no "⋯".
 assert.equal((panelJsx.match(/className="header-actions-sep"/g) || []).length, 1);
-assert.match(panelJsx, /header-more-btn/);
+assert.match(panelJsx, /\{headerDm \? null : <span className="header-actions-sep"/);
+assert.doesNotMatch(panelJsx, /header-more-btn|dm-header-more/);
+assert.match(panelJsx, /className=\{`icon-btn header-block-btn\$\{dmBlockedByMe \? " active" : ""\}`\}/);
+assert.match(panelJsx, /\(headerDm \|\| headerGroup \|\| \(activeView === "servers"/);
 
 console.log("headerBand.selftest ok");

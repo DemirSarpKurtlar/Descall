@@ -363,11 +363,13 @@ html.glass-desktop .main-panel.is-floating-header .header-right .header-actions-
   display: none;
 }
 
-html.glass-desktop .main-panel.is-floating-header .header-right .header-block-btn {
+/* Mockup #29/#30: the block icon sits in the pill in the same tone as the
+   other actions; it turns red only while the user is blocked. */
+html.glass-desktop .main-panel.is-floating-header .header-right .header-block-btn.active {
   color: #ff8a80;
 }
 
-html.glass-desktop[data-theme="light"] .main-panel.is-floating-header .header-right .header-block-btn {
+html.glass-desktop[data-theme="light"] .main-panel.is-floating-header .header-right .header-block-btn.active {
   color: #c62828;
 }
 
