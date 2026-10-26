@@ -36,7 +36,7 @@ export function reorderMyServers(serverIds) {
 }
 
 /** Create a server (max 10 owned). Optional templateId: blank | gaming | friends | … */
-export function createServer({ name, iconUrl, description, templateId } = {}) {
+export function createServer({ name, iconUrl, description, templateId, starterLocale } = {}) {
   return serversRequest("/api/servers", {
     method: "POST",
     body: {
@@ -44,6 +44,7 @@ export function createServer({ name, iconUrl, description, templateId } = {}) {
       iconUrl,
       description,
       ...(templateId ? { templateId } : {}),
+      ...(starterLocale ? { starterLocale } : {}),
     },
   });
 }
@@ -122,6 +123,11 @@ export function deleteChannel(serverId, channelId) {
   return serversRequest(`/api/servers/${serverId}/channels/${channelId}`, {
     method: "DELETE",
   });
+}
+
+/** { messageCount } for the delete-channel confirmation. */
+export function getChannelMessageCount(serverId, channelId) {
+  return serversRequest(`/api/servers/${serverId}/channels/${channelId}/message-count`);
 }
 
 /** Channel permission overrides (role/member allow/deny). */

@@ -37,6 +37,8 @@ const {
   updateMemberNickname,
 } = require("../lib/slashCommands");
 const { postWelcomeMessage } = require("../lib/serverMemberJoin");
+const { invitePreviewExtras } = require("../lib/invitePreviewExtras");
+const { presence: livePresence } = require("../runtime/sharedState");
 const { planDetachFromCategory, applyDetachPlan, materializeIfSynced } = require("../lib/categoryDetach");
 const {
   BLANK_ID,
@@ -45,6 +47,7 @@ const {
   seedServerFromTemplate,
 } = require("../lib/serverTemplates");
 
+const { starterChannelNames } = require("../lib/starterChannelNames");
 const router = express.Router();
 
 const MAX_OWNED_SERVERS = 10;
@@ -1761,6 +1764,7 @@ router.post("/", requireAuth, async (req, res) => {
       seededChannels = seeded.channels || [];
     } else {
       // Legacy simple starter (compat)
+      const starterNames = starterChannelNames(req.body?.starterLocale);
       const { data: everyoneRole, error: rErr } = await supabase
         .from("server_roles")
         .insert({
@@ -1784,7 +1788,7 @@ router.post("/", requireAuth, async (req, res) => {
         .from("server_channels")
         .insert({
           server_id: server.id,
-          name: "Text Channels",
+          name: starterNames.textCategory,
           type: "category",
           position: 0,
         })
@@ -1799,7 +1803,7 @@ router.post("/", requireAuth, async (req, res) => {
         .from("server_channels")
         .insert({
           server_id: server.id,
-          name: "general",
+          name: starterNames.text,
           type: "text",
           position: 1,
           parent_id: category.id,
@@ -1815,7 +1819,7 @@ router.post("/", requireAuth, async (req, res) => {
         .from("server_channels")
         .insert({
           server_id: server.id,
-          name: "Voice Channels",
+          name: starterNames.voiceCategory,
           type: "category",
           position: 2,
         })
@@ -1830,7 +1834,7 @@ router.post("/", requireAuth, async (req, res) => {
         .from("server_channels")
         .insert({
           server_id: server.id,
-          name: "General",
+          name: starterNames.voice,
           type: "voice",
           position: 3,
           parent_id: voiceCat.id,
@@ -2093,10 +2097,17 @@ router.get("/invites/:code", requireAuth, async (req, res) => {
       .eq("server_id", server.id);
 
     const membership = await getMembership(server.id, req.user.id);
+    const extras = await invitePreviewExtras(supabase, {
+      serverId: server.id,
+      creatorId: invite.creator_id || null,
+      presence: livePresence,
+      io: req.app.get("io"),
+    });
 
     return res.json({
-      invite: publicInvite(invite, req),
+      invite: { ...publicInvite(invite, req), inviter: extras.inviter },
       server: publicServer(server, {
+        onlineCount: extras.onlineCount,
         memberCount: count || 1,
         isMember: Boolean(membership),
         isOwner: server.owner_id === req.user.id,
@@ -2320,10 +2331,12 @@ router.get("/vanity/:slug", requireAuth, async (req, res) => {
       .eq("server_id", server.id);
 
     const membership = await getMembership(server.id, req.user.id);
+    const extras = await invitePreviewExtras(supabase, { serverId: server.id, presence: livePresence, io: req.app.get("io") });
 
     return res.json({
       vanity: { slug, url: publicVanityUrl(req, slug) },
       server: publicServer(server, {
+        onlineCount: extras.onlineCount,
         memberCount: count || 1,
         isMember: Boolean(membership),
         isOwner: server.owner_id === req.user.id,
@@ -4240,6 +4253,42 @@ async function assertInheritChangeAllowed(serverId, actorId, channel, newParentI
  * Categories: children first take the category's overrides as their own (effective
  * permissions unchanged, 409 if that is impossible), are unparented, then the category is removed.
  */
+/**
+ * GET /servers/:id/channels/:channelId/message-count
+ * Message count for the delete-channel confirmation ("Kanaldaki 214 mesaj…").
+ * Same gate as deleting the channel.
+ */
+router.get("/:id/channels/:channelId/message-count", requireAuth, async (req, res) => {
+  try {
+    const serverId = req.params.id;
+    const channelId = req.params.channelId;
+    await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_CHANNELS);
+    const { data: existing, error: findErr } = await supabase
+      .from("server_channels")
+      .select("id, type")
+      .eq("id", channelId)
+      .eq("server_id", serverId)
+      .maybeSingle();
+    if (findErr) throw findErr;
+    if (!existing) return res.status(404).json({ error: "Channel not found." });
+    await assertChannelManageable(serverId, req.user.id, existing.id);
+    if (existing.type === "category" || existing.type === "voice" || existing.type === "stage") {
+      return res.json({ channelId, messageCount: 0 });
+    }
+    const { count, error } = await supabase
+      .from("server_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("channel_id", channelId)
+      .eq("server_id", serverId);
+    if (error) throw error;
+    return res.json({ channelId, messageCount: Number(count) || 0 });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("[SERVERS] message-count error:", err);
+    return res.status(status).json({ error: err.message || "Failed to count messages.", code: err.code });
+  }
+});
+
 router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;

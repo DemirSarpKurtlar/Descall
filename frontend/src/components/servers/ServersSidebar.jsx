@@ -42,6 +42,9 @@ import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import PullToRefresh from "../ui/PullToRefresh";
+import HubHost from "./hub/HubHost";
+import { useHubMode } from "./hub/useHubMode";
+import { isServerMuted, subscribeServerMutes } from "./hub/serverMute";
 
 const TEMPLATE_ICONS = {
   Gamepad2,
@@ -92,6 +95,12 @@ export default function ServersSidebar({
   onMobileClose,
   isMobile = false,
   onRefresh,
+  me = null,
+  friends = [],
+  onlineUsers = [],
+  onStartDm,
+  onStartCall,
+  onSendDm,
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -129,6 +138,60 @@ export default function ServersSidebar({
   const [serverIconBusy, setServerIconBusy] = useState(false);
   const [rulesPrompt, setRulesPrompt] = useState(false);
   const serverIconFileRef = useRef(null);
+  // A5 (3.0.0): iPhone / iPad use the new server hub, sheets and long-press menus; desktop keeps the modals.
+  const hubMode = useHubMode(isMobile);
+  const [serverMuteTick, setServerMuteTick] = useState(0);
+  useEffect(() => subscribeServerMutes(() => setServerMuteTick((n) => n + 1)), []);
+  const longPressRef = useRef(null);
+  const longPress = (fire) => {
+    if (!hubMode || serverListReorderMode) return {};
+    const cancel = () => {
+      const lp = longPressRef.current;
+      if (lp && !lp.fired) { clearTimeout(lp.timer); longPressRef.current = null; }
+    };
+    return {
+      onPointerDown: (e) => {
+        if (e.button > 0) return;
+        // Innermost long-press target wins (a voice member inside a channel row).
+        if (e.nativeEvent?.svhLongPress) return;
+        if (e.nativeEvent) e.nativeEvent.svhLongPress = true;
+        const el = e.currentTarget;
+        clearTimeout(longPressRef.current?.timer);
+        const lp = { x: e.clientX, y: e.clientY, fired: false };
+        lp.timer = setTimeout(() => { lp.fired = true; hapticImpactMedium(); fire(el); }, 450);
+        longPressRef.current = lp;
+      },
+      onPointerMove: (e) => {
+        const lp = longPressRef.current;
+        if (lp && !lp.fired && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 8) cancel();
+      },
+      onPointerUp: cancel,
+      onPointerCancel: cancel,
+      onClickCapture: (e) => {
+        if (longPressRef.current?.fired) { e.preventDefault(); e.stopPropagation(); longPressRef.current = null; }
+      },
+    };
+  };
+  // A5 #14: touch long-press on a voice member opens the voice member menu (iOS fires no contextmenu).
+  const voicePress = hubMode
+    ? (m, channelId) => longPress((el) => {
+      const r = el?.getBoundingClientRect?.();
+      setVoiceMenu({
+        user: m, channelId, isSelf: me?.id != null && String(m.id) === String(me.id),
+        x: r ? r.left + Math.min(r.width / 2, 120) : 0, y: r ? r.bottom : 0,
+      });
+    })
+    : null;
+  const rectOf = (el) => {
+    const r = el?.getBoundingClientRect?.();
+    return r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null;
+  };
+  // iPhone / iPad: the server row menu anchors to the row (mockup 24); a long-press already opened it.
+  const openServerMenuTouch = (e, server) => {
+    if (longPressRef.current?.fired) return;
+    const el = e.currentTarget.querySelector(".server-list-item") || e.currentTarget;
+    setServerMenu({ server, x: e.clientX, y: e.clientY, rect: rectOf(el) });
+  };
 
   const canCreate = ownedCount < maxOwned;
   const permissionsReady = serverPermissionsLoaded(activeServer) || Boolean(activeServer?.isOwner);
@@ -301,6 +364,8 @@ export default function ServersSidebar({
     const map = {};
     for (const server of servers) {
       let sum = 0;
+      // A5: a muted server shows no badge (mockup 24 "Sessize al").
+      if (isServerMuted(server.id)) continue;
       for (const ch of server.channels || []) {
         if (ch.type !== "text") continue;
         sum += Number(channelUnread[ch.id]) || 0;
@@ -308,7 +373,7 @@ export default function ServersSidebar({
       if (sum > 0) map[server.id] = sum;
     }
     return map;
-  }, [servers, channelUnread]);
+  }, [servers, channelUnread, serverMuteTick]); // eslint-disable-line react-hooks/exhaustive-deps
   const categories = useMemo(
     () => (activeServer?.channels || []).filter((c) => c.type === "category").sort((a, b) => a.position - b.position),
     [activeServer?.channels]
@@ -494,8 +559,13 @@ export default function ServersSidebar({
         e.preventDefault();
         e.stopPropagation();
         setFolderMenu(null);
+        if (hubMode) return openServerMenuTouch(e, server);
         setServerMenu({ server, x: e.clientX, y: e.clientY });
       }}
+      {...longPress((el) => {
+        setFolderMenu(null);
+        setServerMenu({ server, rect: rectOf(el.querySelector(".server-list-item") || el) });
+      })}
     >
       <button
         type="button"
@@ -802,6 +872,38 @@ export default function ServersSidebar({
     else await onLeaveServer?.(server.id, confirmName);
   };
 
+  const hubCallbacks = {
+    onServerUpdated, onSelectServer, onSelectChannel, onCreateChannel, onUpdateChannel, onDeleteChannel, onRolesChanged,
+    onLeaveServer, onDeleteServer, onCreateServer, onJoinServer, onServerFoldersChange,
+    onMoveServerToFolder,
+    onChannelMuteChanged: () => setMutedChannelTick((n) => n + 1),
+    onStartDm, onStartCall, onSendDm,
+  };
+  const renderHubHost = () => (
+    <HubHost
+      mode={hubMode}
+      servers={servers}
+      activeServer={activeServer}
+      serverFolders={serverFolders}
+      channelUnread={channelUnread}
+      onlineUsers={onlineUsers}
+      me={me}
+      friends={friends}
+      ownedCount={ownedCount}
+      maxOwned={maxOwned}
+      serverVoice={serverVoice}
+      voiceCount={voiceNow}
+      b={{
+        menuOpen, setMenuOpen, showSettings, setShowSettings, showRoles, setShowRoles, showInvite, setShowInvite,
+        showCommunity, setShowCommunity, showModeration, setShowModeration, channelModal, setChannelModal,
+        channelAccess, setChannelAccess, transfer, setTransfer, confirm, setConfirm, showCreate, setShowCreate,
+        showJoin, setShowJoin, rulesPrompt, setRulesPrompt, needsRulesAccept, voiceMenu, setVoiceMenu,
+        serverMenu, setServerMenu, folderMenu, setFolderMenu, canMoveMembers, canMuteMembers, canDeafenMembers,
+      }}
+      cb={hubCallbacks}
+    />
+  );
+
   const renderGlassServerChrome = () => (
     <>
       <GlassListHeader
@@ -935,7 +1037,7 @@ export default function ServersSidebar({
             </div>
           </div>
 
-          <ServerMenuFrame glass={Boolean(glassShell)} open={menuOpen} onClose={() => setMenuOpen(false)}>
+          <ServerMenuFrame glass={Boolean(glassShell)} open={!hubMode && menuOpen} onClose={() => setMenuOpen(false)}>
             {glassShell ? (
               <>
                 <div className="g-grabber" aria-hidden="true" />
@@ -1282,7 +1384,9 @@ export default function ServersSidebar({
                             setChannelMenuId(null);
                             setChannelModal({ mode: "delete", channel: ch });
                           }}
-                          onVoiceUserMenu={(user, channelId, event, isSelf) => {
+                          voicePress={voicePress}
+                  rowPress={hubMode ? longPress : null}
+                  onVoiceUserMenu={(user, channelId, event, isSelf) => {
                             event?.preventDefault?.();
                             event?.stopPropagation?.();
                             setVoiceMenu({
@@ -1351,6 +1455,8 @@ export default function ServersSidebar({
                     setChannelMenuId(null);
                     setChannelModal({ mode: "delete", channel: node });
                   }}
+                  voicePress={voicePress}
+                  rowPress={hubMode ? longPress : null}
                   onVoiceUserMenu={(user, channelId, event, isSelf) => {
                     event?.preventDefault?.();
                     event?.stopPropagation?.();
@@ -1388,6 +1494,8 @@ export default function ServersSidebar({
                   serverVoice={serverVoice}
                   draggable={false}
                   onSelect={() => {}}
+                  voicePress={voicePress}
+                  rowPress={hubMode ? longPress : null}
                   onVoiceUserMenu={(user, channelId, event, isSelf) => {
                     event?.preventDefault?.();
                     event?.stopPropagation?.();
@@ -1415,9 +1523,11 @@ export default function ServersSidebar({
           </GlassWrap>
         </div>
 
-        {renderLeaveDeleteConfirm()}
+        {hubMode ? null : renderLeaveDeleteConfirm()}
         {renderCategoryMenu()}
 
+        {hubMode ? renderHubHost() : (
+        <>
         <AnimatePresence>
           {channelModal?.mode === "create" && (
             <ChannelFormModal
@@ -1542,6 +1652,8 @@ export default function ServersSidebar({
             }}
             onClose={() => setVoiceMenu(null)}
           />
+        )}
+        </>
         )}
 
         {/* Must live in the in-server tree, early return above skips the list-view inputs. */}
@@ -1673,8 +1785,13 @@ export default function ServersSidebar({
                         e.preventDefault();
                         e.stopPropagation();
                         setServerMenu(null);
-                        setFolderMenu({ folder, x: e.clientX, y: e.clientY });
+                        if (hubMode && longPressRef.current?.fired) return;
+                        setFolderMenu({ folder, x: e.clientX, y: e.clientY, rect: hubMode ? rectOf(e.currentTarget) : null });
                       }}
+                      {...longPress((el) => {
+                        setServerMenu(null);
+                        setFolderMenu({ folder, rect: rectOf(el) });
+                      })}
                       onDragOver={(e) => {
                         if (!serverListDraggable) return;
                         e.preventDefault();
@@ -1736,12 +1853,13 @@ export default function ServersSidebar({
         </div>
       </div>
 
-      {renderServerRowMenu()}
-      {renderFolderMenu()}
-      {renderLeaveDeleteConfirm()}
+      {hubMode ? null : renderServerRowMenu()}
+      {hubMode ? null : renderFolderMenu()}
+      {hubMode ? null : renderLeaveDeleteConfirm()}
 
+      {hubMode ? renderHubHost() : null}
       <AnimatePresence>
-        {showCreate && (
+        {!hubMode && showCreate && (
           <CreateServerModal
             canCreate={canCreate}
             maxOwned={maxOwned}
@@ -1752,7 +1870,7 @@ export default function ServersSidebar({
             }}
           />
         )}
-        {showJoin && (
+        {!hubMode && showJoin && (
           <JoinServerModal
             onClose={() => setShowJoin(false)}
             onJoined={(server) => {
@@ -1858,7 +1976,7 @@ function resolveMemberVoiceStream(member, { joinedHere, myUserId, localStream, p
   return member.stream || null;
 }
 
-function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = "", onContextMenu }) {
+function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = "", onContextMenu, pressProps = null }) {
   const t = useT();
   const [rowEl, setRowEl] = useState(null);
   const name = resolveDisplayName(member) || member?.username || "User";
@@ -1882,6 +2000,7 @@ function ServerVoiceUserRow({ member, stream = null, size = 22, linkQuality = ""
       onClick={(e) => {
         if (e.detail >= 2) onContextMenu?.(e);
       }}
+      {...(pressProps || {})}
     >
       <div className="server-voice-user-avatar-shell" aria-hidden={!speaking}>
         <div className={`server-voice-speak-ring ring-a${speaking ? " is-active" : ""}`} />
@@ -1963,6 +2082,8 @@ function ChannelRow({
   onEdit,
   onDelete,
   onVoiceUserMenu,
+  voicePress = null,
+  rowPress = null,
 }) {
   const t = useT();
   const menuBtnRef = useRef(null);
@@ -2054,6 +2175,15 @@ function ChannelRow({
       className={`server-channel-row-wrap ${active ? "active" : ""} ${joinedHere ? "is-joined-voice" : ""} ${muted ? "is-muted-channel" : ""} ${unreadCount > 0 ? "has-unread" : ""} ${dragging ? "is-dragging" : ""} ${dragOver ? "is-drag-over" : ""}`}
       draggable={rowDraggable}
       title={rowDraggable ? dragReorderTitle : undefined}
+      {...(rowPress && showMenu
+        ? rowPress((el) => {
+          // A5: iOS fires no contextmenu on long-press; open the channel menu under the row instead.
+          const r = el?.getBoundingClientRect?.();
+          if (r) setCursorPoint({ x: r.left + Math.min(r.width / 2, 120), y: r.bottom });
+          if (onOpenMenuAt) onOpenMenuAt();
+          else if (!menuOpen) onOpenMenu?.();
+        })
+        : null)}
       onContextMenu={(e) => {
         if (!showMenu) return;
         hapticImpactMedium();
@@ -2199,6 +2329,7 @@ function ChannelRow({
                 member={m}
                 stream={stream}
                 linkQuality={joinedHere ? serverVoice?.linkQualityByUser?.[String(m.id)] || "" : ""}
+                pressProps={voicePress ? voicePress(m, channel.id) : null}
                 onContextMenu={(e) =>
                   onVoiceUserMenu?.(
                     m,
