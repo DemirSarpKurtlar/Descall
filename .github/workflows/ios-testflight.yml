@@ -256,6 +256,10 @@ jobs:
             ev="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APPEX/Info.plist")"
             av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
             [ "$ev" = "$av" ] || { echo "::error::$EXT CFBundleVersion $ev != app $av"; ok=0; }
+            es="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APPEX/Info.plist")"
+            as="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+            [ "$es" = "$as" ] || { echo "::error::$EXT CFBundleShortVersionString $es != app $as"; ok=0; }
+            echo "$EXT: $es ($ev) matches app $as ($av)"
           done
           [ "$ok" -eq 1 ]
           echo "Entitlements OK for App Store distribution."
