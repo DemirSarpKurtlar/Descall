@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -25,6 +25,7 @@ export * as strings from ${J("components/servers/hub/strings.js")};
 export * as mute from ${J("components/servers/hub/serverMute.js")};
 export * as call from ${J("components/voice/CallTapCard.jsx")};
 export { ROUTES, sectionOf } from ${J("components/servers/hub/routes.jsx")};
+export { onlineCountOf } from ${J("components/servers/hub/pagesHub.jsx")};
 import ServerHub from ${J("components/servers/hub/ServerHub.jsx")};
 import * as sheets from ${J("components/servers/hub/sheets.jsx")};
 import * as menus from ${J("components/servers/hub/menus.jsx")};
@@ -294,6 +295,16 @@ t("audit log names the real backend nickname actions", () => {
 t("hub section highlighting ignores routes opened without a selection", () => {
   assert.equal(M.sectionOf([{ id: "ov", nosel: true }], { id: "ov", nosel: true }), null);
   assert.equal(M.sectionOf([{ id: "ov" }, { id: "chEdit", channelId: "c1" }], { id: "chEdit" }), "ch");
+});
+
+t("server long-press menu counts online members like the hub hero", () => {
+  const members = [{ userId: "me" }, { userId: "a" }, { userId: "b" }, { userId: "c" }, { userId: "d" }];
+  const online = [{ id: "a", status: "online" }, { id: "b", status: "idle" }, { id: "c", status: "invisible" }];
+  assert.equal(M.onlineCountOf(members, online, { id: "me" }), 3);
+  assert.equal(M.onlineCountOf(undefined, online, { id: "me" }), null);
+  const host = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "HubHost.jsx"), "utf8");
+  assert.match(host, /<ServerLongPressMenu[^>]*online=\{onlineCountOf\(menuMembers\.get\(String\(sv\.id\)\)/);
+  assert.match(host, /getServerMembers\(menuServerId\)/);
 });
 
 console.log(`serverHub.selftest: ${n} checks passed`);
