@@ -20,6 +20,14 @@
  * - Text is localized per device (token locale, then users.language), TR first.
  * - 410 / BadDeviceToken / Unregistered / DeviceTokenNotForTopic delete the
  *   token; 429 / 5xx / network errors never do.
+ * - 3.0.0 (A4): message pushes (dm, group, server-message, mention) are rich:
+ *   title = sender, subtitle = "👥 group" / "# channel · server",
+ *   `mutable-content: 1` + category MESSAGE so the Notification Service
+ *   Extension adds the sender photo (Communication Notification), a picture
+ *   thumbnail and quick actions. The full text is always sent; the lock
+ *   screen preview follows the iOS "Show Previews" setting only.
+ *   IOS_COMM_NOTIFICATIONS=0 turns the Communication Notification part off
+ *   (the extension then keeps a standard notification with the attachment).
  */
 
 const apns = require("./apnsClient");
@@ -28,9 +36,12 @@ const { maskProfanity } = require("./profanity");
 const IOS_ALERT_PLATFORM = "ios";
 const VOIP_PLATFORM = "ios_voip";
 const CALL_TYPES = new Set(["call", "group-call"]);
+const MESSAGE_TYPES = new Set(["dm", "group", "server-message", "mention"]);
+const MESSAGE_CATEGORY = "MESSAGE";
 const MAX_TITLE = 80;
 const MAX_BODY = 180;
 const MAX_PREVIEW = 140;
+const MAX_PAYLOAD_BYTES = 4000;
 const CHUNK = 150;
 const CONCURRENCY = 8;
 
@@ -40,8 +51,11 @@ const STRINGS = {
     newMessage: "Yeni mesaj",
     voice: "🎤 Sesli mesaj",
     media: "📎 Dosya gönderdi",
+    photo: "📷 Fotoğraf",
+    video: "🎬 Video",
     group: "Grup",
     mentioned: "{from} senden bahsetti",
+    mentionedShort: "Senden bahsetti",
     friendTitle: "Arkadaşlık İsteği",
     friendBody: "{from} seni arkadaş olarak eklemek istiyor",
     calling: "{from} arıyor",
@@ -59,8 +73,11 @@ const STRINGS = {
     newMessage: "New message",
     voice: "🎤 Voice message",
     media: "📎 Sent an attachment",
+    photo: "📷 Photo",
+    video: "🎬 Video",
     group: "Group",
     mentioned: "{from} mentioned you",
+    mentionedShort: "Mentioned you",
     friendTitle: "Friend Request",
     friendBody: "{from} wants to add you as a friend",
     calling: "{from} is calling",
@@ -118,16 +135,22 @@ function stringifyData(payload) {
  * besides title/body/threadId is copied as top-level custom data.
  */
 function buildApnsBody(payload = {}) {
-  const { threadId, title: rawTitle, body: rawBody, ...rest } = payload || {};
+  const { threadId, title: rawTitle, body: rawBody, subtitle: rawSubtitle, rich, ...rest } = payload || {};
   const title = rawTitle || "Descall";
   const body = rawBody || "";
   const isCall = String(rest.type || "").includes("call");
+  const alert = { title, body };
+  if (rawSubtitle) alert.subtitle = String(rawSubtitle);
   const aps = {
-    alert: { title, body },
+    alert,
     sound: "default",
   };
   if (threadId) aps["thread-id"] = String(threadId);
   if (isCall) aps.category = "INCOMING_CALL";
+  else if (rich) {
+    aps.category = MESSAGE_CATEGORY;
+    aps["mutable-content"] = 1;
+  }
   const data = stringifyData(rest);
   data.title = title;
   data.body = body;
@@ -139,8 +162,49 @@ function previewFor(event, s) {
   if (kind === "voice") return s.voice;
   // Bad words are masked with *** in iOS notification text (App Review).
   const text = clip(maskProfanity(event.text), MAX_PREVIEW);
-  if (kind === "media") return text || s.media;
+  if (kind === "media") {
+    const mediaKind = String(event.mediaKind || "");
+    const label = mediaKind === "image" ? s.photo : mediaKind === "video" ? s.video : "";
+    if (label) return text ? `${label} · ${text}` : label;
+    return text || s.media;
+  }
   return text || s.newMessage;
+}
+
+/** Subtitle line under the sender: "👥 Hafta Sonu Ekibi" / "# genel · Oyun Gecesi". */
+function groupSubtitle(event, s) {
+  return `👥 ${clip(event.groupName, 60) || s.group}`;
+}
+
+function channelSubtitle(event) {
+  const server = clip(event.serverName, 40);
+  const channel = clip(event.channelName, 40);
+  if (channel && server) return `# ${channel} · ${server}`;
+  if (channel) return `# ${channel}`;
+  return server;
+}
+
+/** Sender / media / conversation fields the Notification Service Extension reads. */
+function richFields(event, from, chatKey) {
+  const out = {
+    rich: true,
+    conv: chatKey || null,
+    senderId: event.senderId || event.fromId || event.excludeUserId || null,
+    senderName: from,
+    senderAvatar: httpsOrNull(event.senderAvatarUrl),
+  };
+  const thumb = httpsOrNull(event.mediaThumbUrl);
+  if (thumb && (event.mediaKind === "image" || event.mediaKind === "video")) {
+    out.mediaThumb = thumb;
+    out.mediaKind = event.mediaKind;
+  }
+  if (event.comm !== false) out.comm = "1";
+  return out;
+}
+
+function httpsOrNull(value) {
+  const v = String(value || "").trim();
+  return /^https:\/\/[^\s]{4,1024}$/.test(v) ? v : null;
 }
 
 function channelLabel(event) {
@@ -172,7 +236,7 @@ function chatKeyFor(event = {}) {
  */
 function describeEvent(event = {}, lang = "tr") {
   const s = STRINGS[pickLang(lang)];
-  const from = clip(event.fromName, 48) || s.someone;
+  const from = clip(event.senderDisplayName, 48) || clip(event.fromName, 48) || s.someone;
   const type = String(event.type || "");
   const chatKey = chatKeyFor(event);
   const base = { threadId: chatKey || type || "descall", priority: 10, expiresInSec: 24 * 3600, collapseId: "" };
@@ -182,55 +246,73 @@ function describeEvent(event = {}, lang = "tr") {
       ...base,
       title: from,
       body: previewFor(event, s),
-      data: { type: "dm", conversationId: event.fromId, fromId: event.fromId, from, messageId: event.messageId },
+      data: {
+        type: "dm",
+        conversationId: event.fromId,
+        fromId: event.fromId,
+        from,
+        messageId: event.messageId,
+        ...richFields(event, from, chatKey),
+      },
     };
   }
   if (type === "group") {
     const groupName = clip(event.groupName, 60) || s.group;
     return {
       ...base,
-      title: groupName,
-      body: `${from}: ${previewFor(event, s)}`,
-      data: { type: "group", groupId: event.groupId, groupName, from, messageId: event.messageId },
+      title: from,
+      subtitle: groupSubtitle(event, s),
+      body: previewFor(event, s),
+      data: {
+        type: "group",
+        groupId: event.groupId,
+        groupName,
+        from,
+        messageId: event.messageId,
+        ...richFields(event, from, chatKey),
+      },
     };
   }
   if (type === "server-message") {
     return {
       ...base,
-      title: channelLabel(event) || from,
-      body: `${from}: ${previewFor(event, s)}`,
+      title: from,
+      subtitle: channelSubtitle(event) || channelLabel(event),
+      body: previewFor(event, s),
       data: {
+        ...richFields(event, from, chatKey),
         type: "server-message",
         serverId: event.serverId,
         channelId: event.channelId,
-        serverName: event.serverName || null,
-        channelName: event.channelName || null,
+        serverName: clip(event.serverName, 60) || null,
+        channelName: clip(event.channelName, 60) || null,
         from,
         messageId: event.messageId,
       },
     };
   }
   if (type === "mention") {
-    const where = event.channelId ? channelLabel(event) : event.groupId ? clip(event.groupName, 60) || s.group : "";
+    const where = event.channelId ? channelSubtitle(event) : event.groupId ? groupSubtitle(event, s) : "";
     const preview = previewFor(event, s);
-    const data = { type: "mention", from, messageId: event.messageId };
+    const data = { type: "mention", from, messageId: event.messageId, ...richFields(event, from, chatKey) };
     if (event.channelId) {
       Object.assign(data, {
         serverId: event.serverId,
         channelId: event.channelId,
-        serverName: event.serverName || null,
-        channelName: event.channelName || null,
+        serverName: clip(event.serverName, 60) || null,
+        channelName: clip(event.channelName, 60) || null,
       });
     } else if (event.groupId) {
-      Object.assign(data, { groupId: event.groupId, groupName: event.groupName || null });
+      Object.assign(data, { groupId: event.groupId, groupName: clip(event.groupName, 60) || null });
     } else {
       const peer = event.dmConversationId || event.fromId;
       Object.assign(data, { dmConversationId: peer, conversationId: peer, fromId: event.fromId });
     }
     return {
       ...base,
-      title: fmt(s.mentioned, { from }),
-      body: where ? `${where}: ${preview}` : preview,
+      title: from,
+      subtitle: where ? `${where} · ${s.mentionedShort}` : s.mentionedShort,
+      body: preview,
       data,
     };
   }
@@ -329,9 +411,15 @@ function buildAlertRequest(event, lang) {
   const body = buildApnsBody({
     ...d.data,
     title: clip(d.title, MAX_TITLE),
+    subtitle: d.subtitle ? clip(d.subtitle, MAX_TITLE) : undefined,
     body: clip(d.body, MAX_BODY),
     threadId: d.threadId,
   });
+  // APNs rejects bodies over 4 KB: drop the optional rich extras first.
+  for (const key of ["mediaThumb", "mediaKind", "senderAvatar"]) {
+    if (Buffer.byteLength(JSON.stringify(body)) <= MAX_PAYLOAD_BYTES) break;
+    delete body[key];
+  }
   return { body, priority: d.priority, expiresInSec: d.expiresInSec, collapseId: d.collapseId };
 }
 
@@ -347,6 +435,39 @@ function buildAlertHeaders(cfg, token, jwtToken, req, nowMs = Date.now()) {
   };
   if (req.collapseId) headers["apns-collapse-id"] = req.collapseId;
   return headers;
+}
+
+function commEnabled(env = process.env) {
+  return String(env.IOS_COMM_NOTIFICATIONS ?? "1").trim() !== "0";
+}
+
+function messageTableFor(event = {}) {
+  const type = event.type;
+  if (type === "dm") return "dm_messages";
+  if (type === "group") return "group_messages";
+  if (type === "server-message") return "server_messages";
+  if (type === "mention") return event.channelId ? "server_messages" : event.groupId ? "group_messages" : "dm_messages";
+  return "";
+}
+
+function mediaKindOf(row = {}) {
+  const t = String(row.media_type || "").toLowerCase();
+  const mime = String(row.mime_type || "").toLowerCase();
+  if (t === "voice" || t === "audio") return "voice";
+  if (t === "image" || t === "gif" || mime.startsWith("image/")) return "image";
+  if (t === "video" || mime.startsWith("video/")) return "video";
+  return "file";
+}
+
+/** Private refs (sb://media-private/...) become short-lived signed URLs. */
+function publicUrl(value) {
+  if (!value) return null;
+  try {
+    const out = require("./privateMedia").rewriteOutgoing(String(value));
+    return httpsOrNull(out);
+  } catch {
+    return httpsOrNull(value);
+  }
 }
 
 function chunk(list, size) {
@@ -450,6 +571,61 @@ function createIosAlertPusher(deps = {}) {
     return out;
   }
 
+  /**
+   * Sender photo / display name and a picture thumbnail for message pushes.
+   * One lookup per event (not per device); any failure keeps the plain push.
+   */
+  async function loadRichContext(event) {
+    try {
+      return await lookupRich(event);
+    } catch (err) {
+      log.warn("[APNs] rich lookup failed:", err?.message || err);
+      return { comm: commEnabled() };
+    }
+  }
+
+  async function lookupRich(event) {
+    const out = { comm: commEnabled() };
+    const senderId = String(event.fromId || event.excludeUserId || "");
+    const db = getDb();
+    const tasks = [];
+    if (senderId) {
+      tasks.push(
+        db
+          .from("users")
+          .select("id, avatar_url, display_name")
+          .eq("id", senderId)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (!data) return;
+            out.senderId = senderId;
+            out.senderAvatarUrl = publicUrl(data.avatar_url);
+            if (data.display_name) out.senderDisplayName = String(data.display_name);
+          })
+      );
+    }
+    const table = messageTableFor(event);
+    if (table && event.messageId && String(event.previewKind || "") === "media") {
+      const cols = table === "dm_messages" ? "id, media_url, media_type, mime_type" : "id, media_url, media_type";
+      tasks.push(
+        db
+          .from(table)
+          .select(cols)
+          .eq("id", String(event.messageId))
+          .maybeSingle()
+          .then(({ data }) => {
+            if (!data?.media_url) return;
+            const kind = mediaKindOf(data);
+            if (kind !== "image" && kind !== "video") return;
+            out.mediaKind = kind;
+            if (kind === "image") out.mediaThumbUrl = publicUrl(data.media_url);
+          })
+      );
+    }
+    await Promise.all(tasks.map((t) => Promise.resolve(t).catch((err) => log.warn("[APNs] rich lookup failed:", err?.message || err))));
+    return out;
+  }
+
   async function dropToken(token) {
     const { error } = await getDb().from("device_push_tokens").delete().eq("token", token);
     if (error) log.warn("[APNs] token cleanup failed:", error.message);
@@ -481,6 +657,7 @@ function createIosAlertPusher(deps = {}) {
       const voipUsers = event.type === "call" ? await usersWithVoipTokens(targetUsers) : new Set();
       const chatKey = chatKeyFor(event);
       const at = now();
+      const richEvent = MESSAGE_TYPES.has(event.type) ? { ...event, ...(await loadRichContext(event)) } : event;
 
       const deliver = targets.filter((t) => {
         const m = meta.get(t.userId);
@@ -501,7 +678,7 @@ function createIosAlertPusher(deps = {}) {
       const byLang = new Map();
       await runPool(deliver, CONCURRENCY, async (t) => {
         const lang = pickLang(t.locale, meta.get(t.userId)?.language);
-        if (!byLang.has(lang)) byLang.set(lang, buildAlertRequest(event, lang));
+        if (!byLang.has(lang)) byLang.set(lang, buildAlertRequest(richEvent, lang));
         const req = byLang.get(lang);
         try {
           const res = await transport({
@@ -555,6 +732,11 @@ function usersWithIosAlertTokens(userIds) {
 }
 
 module.exports = {
+  MESSAGE_CATEGORY,
+  MESSAGE_TYPES,
+  commEnabled,
+  mediaKindOf,
+  messageTableFor,
   IOS_ALERT_PLATFORM,
   VOIP_PLATFORM,
   STRINGS,

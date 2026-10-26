@@ -24,6 +24,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
         glassTabBarPlugin.relayout()
         #if DEBUG
         showGlassTabBarDemoIfAsked()
+        DescallNotifyDemo.showIfAsked(in: view)
         #endif
     }
 
@@ -131,6 +132,9 @@ class DescallBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(DescallDisplayPlugin())
         bridge?.registerPluginInstance(glassTabBarPlugin)
         bridge?.registerPluginInstance(DescallKeychainPlugin())
+        bridge?.registerPluginInstance(DescallNotifyPlugin())
+        // After Capacitor set its notification delegate (3.0.0, A4).
+        DescallNotificationDelegateProxy.install()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
