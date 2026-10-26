@@ -2419,6 +2419,7 @@ export const phrases = {
   "Be the first to message": "Be the first to message",
   "Couldn't send reaction": "Couldn't send reaction",
   "Couldn't remove reaction": "Couldn't remove reaction",
+  "{count} new messages, scroll to bottom": "{count} new messages, scroll to bottom",
   "Scroll to bottom": "Scroll to bottom",
   "Jump to present": "Jump to present",
   "Load older messages": "Load older messages",

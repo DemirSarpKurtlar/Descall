@@ -2410,6 +2410,7 @@ export const phrases = {
   "Be the first to message": "İlk mesajı sen yaz",
   "Couldn't send reaction": "Tepki gönderilemedi",
   "Couldn't remove reaction": "Tepki kaldırılamadı",
+  "{count} new messages, scroll to bottom": "{count} yeni mesaj, alta kaydır",
   "Scroll to bottom": "Alta kaydır",
   "Jump to present": "Şimdiye atla",
   "Load older messages": "Eski mesajları yükle",
