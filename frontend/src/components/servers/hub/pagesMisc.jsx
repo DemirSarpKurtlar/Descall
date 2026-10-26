@@ -123,9 +123,9 @@ export function InvitePage({ route }) {
           ) : null}
           <Sec>{s.linkSettings}</Sec>
           <Group>
-            <Row t={s.expiry} val={inviteAgeLabel(st.maxAgeSeconds, s)} chev onClick={pickAge} />
-            <Row t={s.useLimit} val={inviteUsesLabel(st.maxUses, s)} chev onClick={pickUses} />
-            <Row t={s.temporary} tg={Boolean(st.temporary)} onClick={() => { hapticSelection(); setSt((x) => ({ ...x, temporary: !x.temporary })); }} />
+            <Row ico="clock" t={s.expiry} val={inviteAgeLabel(st.maxAgeSeconds, s)} chev onClick={pickAge} />
+            <Row ico="users" t={s.useLimit} val={inviteUsesLabel(st.maxUses, s)} chev onClick={pickUses} />
+            <Row ico="user" t={s.temporary} tg={Boolean(st.temporary)} onClick={() => { hapticSelection(); setSt((x) => ({ ...x, temporary: !x.temporary })); }} />
           </Group>
           <Sec>{s.activeInvites}</Sec>
           {!Array.isArray(data.invites) ? <Spinner /> : active.length ? (

@@ -60,7 +60,8 @@ export function VoiceMemberMenu({ mode, menu, presence, channels, canMute, canDe
     const W = window.innerWidth, H = window.innerHeight, w = el.offsetWidth, h = el.offsetHeight;
     const left = Math.max(12, Math.min((menu?.x || 12) + 4, W - w - 12));
     let top = (menu?.y || 12) + 10;
-    if (top + h > H - 12) top = Math.max(12, (menu?.y || H) - h - 10);
+    // #14: when it doesn't fit below, keep the menu beside the pressed member (iOS-style shift) instead of flipping to the top edge.
+    if (top + h > H - 12) top = Math.max(12, Math.min((menu?.y || H) - Math.round(h * 0.35), H - h - 12));
     setPos({ left, top });
   }, [tablet, menu?.x, menu?.y, moving]);
 
