@@ -24,5 +24,6 @@
       "shortDescription": "Redesigned calls, rich notifications and more",
       "longDescription": "Discover redesigned calls, rich notifications with quick reply, a new chat header, Appearance settings and more."
     }
-  }
+  },
+  "deepLink": ""
 }

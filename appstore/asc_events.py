@@ -98,6 +98,8 @@ def event_apply(asc, app_id, log, warn, rel, excluded):
     attrs = {"referenceName": ev["referenceName"], "badge": ev["badge"], "priority": ev["priority"],
              "purpose": ev["purpose"], "primaryLocale": ev["primaryLocale"],
              "purchaseRequirement": ev["purchaseRequirement"], "territorySchedules": schedule(asc, ev, excluded)}
+    if ev.get("deepLink"):
+        attrs["deepLink"] = ev["deepLink"]  # required by App Review; the iOS app has no URL scheme / universal links yet
     if e and e["attributes"].get("eventState") not in EDITABLE:
         raise RuntimeError(f"event {e['id']} is {e['attributes'].get('eventState')} and can't be edited")
     if e:
