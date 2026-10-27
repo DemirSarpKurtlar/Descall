@@ -37,6 +37,7 @@ import UserHoverCard from "../social/UserHoverCard";
 import AdminBadge from "../social/AdminBadge";
 import { CountryBadge, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
+import { enrichSender, senderAvatarUrl, senderName } from "../../lib/mediaViewerHeader";
 import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS } from "../../lib/singleActiveHover";
 import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
@@ -83,16 +84,8 @@ function dmConversationId(a, b) {
 }
 
 /** Fill / preserve avatar fields from friends / presence / me so letters don't stick. */
-function enrichAvatarUser(user, { me, friends, onlineUsers, currentUser } = {}) {
-  if (!user) return user;
-  const id = user.id;
-  const fromMe =
-    id && (me?.id === id || currentUser?.id === id)
-      ? me || currentUser
-      : null;
-  const fromFriend = id && Array.isArray(friends) ? friends.find((f) => f.id === id) : null;
-  const fromOnline = id && Array.isArray(onlineUsers) ? onlineUsers.find((u) => u.id === id) : null;
-  return mergeUserProfiles(user, fromOnline, fromFriend, fromMe) || user;
+function enrichAvatarUser(user, ctx = {}) {
+  return enrichSender(user, ctx);
 }
 
 function hoverAnchorFromRect(rect) {
@@ -140,18 +133,21 @@ const MediaGalleryContext = createContext([]);
 /** The list's pin controller ref, for bubbles that jump programmatically. */
 const PinControlContext = createContext(null);
 
-function galleryItemsFrom(messages) {
+/** Sender profile lookup for media bubbles (same merge as the row avatar). */
+const SenderLookupContext = createContext((user) => user);
+
+function galleryItemsFrom(messages, senderFor = (u) => u) {
   const out = [];
   for (const m of Array.isArray(messages) ? messages : []) {
     const prev = visualMediaPreview(m);
     if (!prev || prev.isGif) continue;
-    const from = m.from || {};
+    const from = senderFor(m.from || {}) || m.from || {};
     out.push({
       id: String(m.id ?? m.tempId ?? out.length),
       raw: m.mediaUrl || m.media_url,
       name: m.originalName || m.original_name || "",
-      sender: from.displayName || from.display_name || from.username || m.username || "",
-      avatar: from.avatarUrl || from.avatar_url || "",
+      sender: senderName(from, m.username || ""),
+      avatar: senderAvatarUrl(from),
       at: m.timestamp || m.created_at || m.createdAt || null,
     });
   }
@@ -186,7 +182,11 @@ export default function MessageList({
   const messagesEndRef = useRef(null);
   const listRef = useRef(null);
   useOffscreenRows(listRef, messages?.length || 0);
-  const galleryItems = useMemo(() => galleryItemsFrom(messages), [messages]);
+  const senderFor = useCallback(
+    (user) => enrichAvatarUser(user, { me, friends, onlineUsers, currentUser }),
+    [me, friends, onlineUsers, currentUser]
+  );
+  const galleryItems = useMemo(() => galleryItemsFrom(messages, senderFor), [messages, senderFor]);
   const prevLastIdRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   // Messages from people I blocked are collapsed until tapped ("Show").
@@ -463,6 +463,7 @@ export default function MessageList({
 
   return (
     <MediaGalleryContext.Provider value={galleryItems}>
+    <SenderLookupContext.Provider value={senderFor}>
     <PinControlContext.Provider value={pinRef}>
     <div className="message-list" ref={listRef}>
       {isSearching && (
@@ -762,6 +763,7 @@ export default function MessageList({
       />
     </div>
     </PinControlContext.Provider>
+    </SenderLookupContext.Provider>
     </MediaGalleryContext.Provider>
   );
 }
@@ -821,6 +823,7 @@ function MessageBubble({
   const [swiping, setSwiping] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const galleryItems = useContext(MediaGalleryContext);
+  const senderFor = useContext(SenderLookupContext);
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.text || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1619,7 +1622,8 @@ function MessageBubble({
             onClose={closeLightbox}
             items={isGif ? null : galleryItems}
             startId={String(message.id ?? message.tempId ?? "")}
-            sender={message.from?.displayName || message.from?.username || ""}
+            sender={senderName(senderFor(message.from) || message.from, message.username || "")}
+            avatar={senderAvatarUrl(senderFor(message.from) || message.from)}
             at={message.timestamp || message.created_at || null}
           />
         )}
