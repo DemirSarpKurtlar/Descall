@@ -11,6 +11,8 @@ Modes:
   submit  read-only verify first; only if it reports no errors and no warnings, submit the version
           for review (manual release). Resubmits an UNRESOLVED_ISSUES submission (items marked
           resolved) or creates/uses a READY_FOR_REVIEW one. Requires --build.
+  event   create/update the In-App Event in in-app-event/event.json and upload its media (no submit);
+          submit adds it to the same review submission as the version when submitWithVersion matches.
   withdraw  cancel ONE review submission (--submission <id>) that is WAITING_FOR_REVIEW, so its
           version becomes editable again. Touches nothing else. Run only after the owner confirms.
 
@@ -24,6 +26,8 @@ from pathlib import Path
 
 import jwt
 import requests
+
+import asc_events
 
 API = "https://api.appstoreconnect.apple.com"
 HERE = Path(__file__).resolve().parent
@@ -489,7 +493,7 @@ def listing_text_check(asc, ver):
 
 
 @step("Submit for review")
-def submit(asc, app_id, ver, pin, subs):
+def submit(asc, app_id, ver, pin, subs, event=None):
     blockers = list(errors) + list(warnings)
     if not pin:
         blockers.append("--build is required for submit")
@@ -530,8 +534,20 @@ def submit(asc, app_id, ver, pin, subs):
             asc.req("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
                     "relationships": {"reviewSubmission": rel("reviewSubmissions", sub["id"]), "appStoreVersion": rel("appStoreVersions", ver["id"])}}})
             log(f"  added version item to submission {sub['id']}")
+    ev = event
+    if ev and ev["attributes"].get("eventState") in ("DRAFT", "READY_FOR_REVIEW", "REJECTED"):
+        try:
+            asc.req("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
+                    "relationships": {"reviewSubmission": rel("reviewSubmissions", sub["id"]), "appEvent": rel("appEvents", ev["id"])}}})
+            log(f"  added in-app event {ev['id']} to submission {sub['id']}")
+        except Exception as e:  # the version still goes to review; report the event problem
+            err(f"in-app event {ev['id']} could not be added to the submission: {e}")
+    elif ev:
+        log(f"  in-app event {ev['id']} is {ev['attributes'].get('eventState')}; not added")
     asc.req("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {"type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
     sa = asc.get(f"/v1/reviewSubmissions/{sub['id']}")["data"]["attributes"]
+    for it in asc.get_all(f"/v1/reviewSubmissions/{sub['id']}/items"):
+        log(f"  submission item {it['id']} state={it['attributes'].get('state')}")
     va = asc.get(f"/v1/appStoreVersions/{ver['id']}")["data"]["attributes"]
     log(f"  review submission {sub['id']} state={sa.get('state')} submittedDate={sa.get('submittedDate')}")
     log(f"  version {va.get('versionString')} state={va.get('appVersionState') or va.get('appStoreState')}")
@@ -595,7 +611,7 @@ def readback(asc, app_id, ver, meta):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto", "withdraw"], default="apply")
+    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto", "withdraw", "event"], default="apply")
     ap.add_argument("--submission", default="", help="review submission id to cancel (withdraw mode)")
     ap.add_argument("--wait-build-minutes", type=int, default=0)
     ap.add_argument("--build", default="", help="exact build number to attach (blank = latest VALID)")
@@ -633,6 +649,23 @@ def main():
         listing_text_check(asc, ver)
     subs = review_submissions(asc, app_id, ver)
 
+    event = None
+    if a.mode == "event":
+        try:
+            log("\n=== In-App Event (write)")
+            asc_events.event_apply(asc, app_id, log, warn, rel, EXCLUDED_TERRITORIES)
+        except Exception as e:
+            err(f"In-App Event: {e}")
+    try:
+        log("\n=== In-App Event (report)")
+        ev_cfg = asc_events.load()
+        strict = a.mode == "submit" and ev_cfg and ev_cfg.get("submitWithVersion") == version
+        event = asc_events.event_report(asc, app_id, log, warn, strict=bool(strict))
+        if not strict:
+            event = None
+    except Exception as e:
+        err(f"In-App Event report: {e}")
+
     if a.mode == "release-auto":
         if ver:
             asc.req("PATCH", f"/v1/appStoreVersions/{ver['id']}", {"data": {"type": "appStoreVersions", "id": ver["id"],
@@ -646,7 +679,7 @@ def main():
 
     if a.mode == "submit":
         if ver:
-            submit(asc, app_id, ver, a.build.strip(), subs)
+            submit(asc, app_id, ver, a.build.strip(), subs, event)
         else:
             err("submit requested but the version is missing")
 

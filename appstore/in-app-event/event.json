@@ -1,0 +1,28 @@
+{
+  "_note": "In-App Event for the 3.0.0 release, pushed by appstore/asc_events.py (mode=event) and submitted with the version (mode=submit).",
+  "referenceName": "Descall 3.0 Master Update",
+  "badge": "MAJOR_UPDATE",
+  "priority": "NORMAL",
+  "purpose": "APPROPRIATE_FOR_ALL_USERS",
+  "purchaseRequirement": "NO_COST_ASSOCIATED",
+  "primaryLocale": "tr",
+  "durationDays": 21,
+  "startDelayHours": 2,
+  "submitWithVersion": "3.0.0",
+  "media": {
+    "EVENT_CARD": "event-card-1920x1080.png",
+    "EVENT_DETAILS_PAGE": "event-details-1080x1920.png"
+  },
+  "locales": {
+    "tr": {
+      "name": "Descall 3.0 — Büyük Güncelleme",
+      "shortDescription": "Yenilenen aramalar, zengin bildirimler ve fazlası",
+      "longDescription": "Yenilenen aramalar, fotoğraflı bildirimler, yeni sohbet başlığı, Görünüm ayarları ve yeni sunucu ekranlarını keşfet."
+    },
+    "en-US": {
+      "name": "Descall 3.0 — The Big Update",
+      "shortDescription": "Redesigned calls, rich notifications and more",
+      "longDescription": "Discover redesigned calls, rich notifications with quick reply, a new chat header, Appearance settings and more."
+    }
+  }
+}
