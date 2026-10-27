@@ -2,23 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X, Download, Copy, ExternalLink, ChevronLeft, ChevronRight, Plus, Minus } from "../ui/Icon.jsx";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
+import { formatViewerTime } from "../../lib/mediaViewerHeader";
 import { usePrivateMediaUrl } from "../../lib/privateMediaUrls";
 import {
   DOUBLE_TAP_SCALE, MAX_SCALE, clampPan, rubberBand, shouldDismiss, swipeStep, zoomAt,
 } from "../../lib/mediaViewerMath";
 
 const FIT = { scale: 1, x: 0, y: 0 };
-
-function formatTime(at, t) {
-  if (!at) return "";
-  const d = new Date(at);
-  if (Number.isNaN(d.getTime())) return "";
-  const hm = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  const today = new Date();
-  if (d.toDateString() === today.toDateString()) return `${t("Today")} ${hm}`;
-  return `${d.toLocaleDateString()} ${hm}`;
-}
 
 async function toPngBlob(blob) {
   if (blob.type === "image/png") return blob;
@@ -35,10 +26,11 @@ async function toPngBlob(blob) {
  * + velocity), gallery arrows / swipe / ←→, download / copy / open original,
  * sender + time header, Esc. `items` = [{ id, raw, name, sender, avatar, at }].
  */
-export default function MessageMediaLightbox({ open, src, alt = "", onClose, items = null, startId = null, sender = "", at = null }) {
+export default function MessageMediaLightbox({ open, src, alt = "", onClose, items = null, startId = null, sender = "", avatar = "", at = null }) {
   const t = useT();
+  const { locale } = useLocale();
   const reduce = useReducedMotion();
-  const list = useMemo(() => (items && items.length ? items : [{ id: "single", raw: src, name: alt, sender, at }]), [items, src, alt, sender, at]);
+  const list = useMemo(() => (items && items.length ? items : [{ id: "single", raw: src, name: alt, sender, avatar, at }]), [items, src, alt, sender, avatar, at]);
   const [index, setIndex] = useState(0);
   useEffect(() => {
     if (!open) return;
@@ -52,6 +44,8 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
   const [view, setView] = useState(FIT);
   const [drag, setDrag] = useState({ dx: 0, dy: 0, active: false, mode: null });
   const [toast, setToast] = useState("");
+  // A broken avatar URL falls back to the letter (per URL, so the next item retries).
+  const [failedAvatar, setFailedAvatar] = useState("");
   const stageRef = useRef(null);
   const imgRef = useRef(null);
   const pointers = useRef(new Map());
@@ -233,10 +227,12 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
         >
           <div className="mv-top g-glass-heavy" onPointerDown={seal}>
             <div className="mv-who">
-              {item?.avatar ? <img className="mv-avatar" src={item.avatar} alt="" /> : <span className="mv-avatar mv-avatar-fallback">{String(item?.sender || "?").slice(0, 1).toUpperCase()}</span>}
+              {item?.avatar && failedAvatar !== item.avatar
+                ? <img className="mv-avatar" src={item.avatar} alt="" onError={() => setFailedAvatar(item.avatar)} />
+                : <span className="mv-avatar mv-avatar-fallback">{String(item?.sender || "?").slice(0, 1).toUpperCase()}</span>}
               <div className="mv-who-text">
                 <strong>{item?.sender || ""}</strong>
-                <span>{formatTime(item?.at, t)}</span>
+                <span>{formatViewerTime(item?.at, locale, t)}</span>
               </div>
             </div>
             <div className="mv-actions">
