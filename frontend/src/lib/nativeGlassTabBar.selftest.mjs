@@ -9,6 +9,7 @@ import {
   barCovered,
   useNativeGlassTabBar,
   loadPluginBox,
+  nativeBarInUse,
 } from "./nativeGlassTabBar.js";
 
 // Same six tabs as the web bar, each with an SF Symbol.
@@ -49,7 +50,24 @@ assert.equal(barCovered(null, rect, () => bar), true);
 // Web / no plugin: the hook never touches the plugin and reports inactive.
 const src = readFileSync(new URL("./nativeGlassTabBar.js", import.meta.url), "utf8");
 assert.match(src, /if \(!isIosApp\(\)\) return undefined;/);
-assert.match(src, /setActive\(Boolean\(res\?\.shown\)\)/, "active only after show() confirms");
+assert.match(src, /const shown = Boolean\(res\?\.shown\);\s*setActive\(shown\);\s*setEngaged\(shown\);/, "active / engaged only after show() confirms");
+
+// 3.0.0 iPhone: long-pressing a server hid the native bar for the menu and the
+// old web bar flashed under the scrim and after closing. While the native bar
+// is in use (confirmed once, not given up on), stepping aside keeps the web bar
+// hidden; only a failed show()/update() brings it back.
+assert.equal(nativeBarInUse({ wanted: true, active: true, engaged: true }), true, "on screen");
+assert.equal(nativeBarInUse({ wanted: true, active: false, engaged: true }), true, "hidden for a menu / sheet / keyboard, or show() pending");
+assert.equal(nativeBarInUse({ wanted: true, active: false, engaged: false }), false, "never shown / show() failed: web bar");
+assert.equal(nativeBarInUse({ wanted: false, active: false, engaged: true }), false, "no plugin or a screen without the bar");
+assert.equal(nativeBarInUse(), false);
+assert.match(src, /return inUse;\s*\}\s*$/, "the hook reports in-use, not only on-screen");
+assert.match(src, /classList\.toggle\(NATIVE_TABBAR_CLASS, inUse\)/);
+{
+  const hideBranch = src.match(/if \(!show\) \{([\s\S]*?)return undefined;/)?.[1] || "";
+  assert.ok(hideBranch.includes("plugin.hide"), "native bar still hides while covered");
+  assert.ok(!/setEngaged\(false\)/.test(hideBranch), "a cover must not hand the screen back to the web bar");
+}
 assert.match(src, /!res\?\.available/);
 assert.equal(typeof useNativeGlassTabBar, "function");
 

@@ -51,6 +51,20 @@ export function badgesPayload(items, badges = {}) {
   return out;
 }
 
+/**
+ * Whether the native bar is "in use": confirmed shown at least once
+ * (`engaged`) and wanted on this screen. While in use the web bar stays
+ * invisible (`.is-native`) even when the native bar is momentarily hidden for
+ * a sheet / long-press menu / keyboard, and until `show()` confirms it is back.
+ * The web bar must only paint when the native bar is really unavailable
+ * (show() said no, an update failed, web, iOS < 26). Before this the hide for
+ * a cover dropped `.is-native`, and the old web bar flashed under the server
+ * long-press menu and again after it closed (iPhone, 3.0.0).
+ */
+export function nativeBarInUse({ wanted = false, active = false, engaged = false } = {}) {
+  return Boolean(wanted && (active || engaged));
+}
+
 /** "dark" | "light" for the native bar from the glass theme's --g-scheme. */
 export function barStyleFor(scheme) {
   return String(scheme || "").trim() === "light" ? "light" : "dark";
@@ -115,11 +129,15 @@ function readScheme() {
 
 /**
  * Drives the native bar. `selector` finds the web bar (kept rendered).
- * Returns true only while the native bar is confirmed on screen.
+ * Returns true while the native bar is in use (see nativeBarInUse): the web
+ * bar stays hidden, including while the native one steps aside for an overlay.
  */
 export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelect, selector = ".g-tabbar" }) {
   const [available, setAvailable] = useState(false);
   const [active, setActive] = useState(false);
+  // Native bar confirmed shown once and not given up on since (show() said no
+  // or update() failed). Only that brings the web bar back.
+  const [engaged, setEngaged] = useState(false);
   const [covered, setCovered] = useState(false);
   const pluginRef = useRef(null);
   const onSelectRef = useRef(onSelect);
@@ -184,6 +202,8 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
     if (!plugin) return undefined;
     let cancelled = false;
     if (!show) {
+      // Stepping aside (overlay, keyboard, a screen without the bar) keeps
+      // `engaged`: the web bar stays hidden and the native one comes back.
       setActive(false);
       plugin.hide?.().catch?.(() => {});
       return undefined;
@@ -195,7 +215,10 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
         .catch(() => null),
       SHOW_TIMEOUT_MS
     ).then((res) => {
-      if (!cancelled) setActive(Boolean(res?.shown));
+      if (cancelled) return;
+      const shown = Boolean(res?.shown);
+      setActive(shown);
+      setEngaged(shown);
     });
     return () => {
       cancelled = true;
@@ -209,14 +232,19 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
     if (!plugin || !active) return;
     plugin
       .update({ selected: activeId ?? null, badges: JSON.parse(badgeKey), style: barStyleFor(readScheme()) })
-      .catch(() => setActive(false));
+      .catch(() => {
+        setActive(false);
+        setEngaged(false);
+      });
   }, [active, activeId, badgeKey]);
+
+  const inUse = nativeBarInUse({ wanted, active, engaged });
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle(NATIVE_TABBAR_CLASS, active);
+    root.classList.toggle(NATIVE_TABBAR_CLASS, inUse);
     return () => root.classList.remove(NATIVE_TABBAR_CLASS);
-  }, [active]);
+  }, [inUse]);
 
   useEffect(
     () => () => {
@@ -225,5 +253,5 @@ export function useNativeGlassTabBar({ enabled, items, activeId, badges, onSelec
     []
   );
 
-  return active;
+  return inUse;
 }
