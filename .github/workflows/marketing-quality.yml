@@ -76,3 +76,21 @@ jobs:
           npx --yes @axe-core/cli http://127.0.0.1:4173/features $AXE_ARGS
           npx --yes @axe-core/cli http://127.0.0.1:4173/ $AXE_ARGS
           npx --yes @axe-core/cli http://127.0.0.1:4173/faq $AXE_ARGS
+
+      # Render builds with the real VITE_* values baked into the entry chunk; this job's
+      # build above has none. 3.0.0 passed here at 234.9 KB but failed every Render
+      # deploy at 235.1-235.3 KB, so production kept an old backend for 15 merges.
+      # Rebuild with placeholder values of production length and re-check the budget.
+      - name: Perf budget with production-shaped VITE env (what Render builds)
+        env:
+          VITE_API_BASE_URL: https://des-call.onrender.com
+          VITE_GOOGLE_CLIENT_ID: 000000000000-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.apps.googleusercontent.com
+          VITE_WEB_PUSH_PUBLIC_KEY: BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          VITE_GA_MEASUREMENT_ID: G-AAAAAAAAAA
+          VITE_CLARITY_ID: aaaaaaaaaa
+          VITE_PUBLIC_POSTHOG_KEY: phc_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          VITE_PUBLIC_POSTHOG_HOST: https://eu.i.posthog.com
+          VITE_GOOGLE_ADS_ID: AW-000000000
+          VITE_GOOGLE_ADS_SIGNUP_LABEL: aaaaaaaaaaaaaaaaaaaa
+          VITE_APP_STORE_URL: https://apps.apple.com/app/descall/id0000000000
+        run: npm run build:prod

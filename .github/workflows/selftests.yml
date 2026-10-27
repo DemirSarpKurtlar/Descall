@@ -81,6 +81,12 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
           DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots
         run: node e2e/messaging.e2e.cjs
+      - name: Kayıt İstatistikleri retry e2e (iPhone)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+          DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/signup-stats
+        run: node e2e/signupStatsRetry.e2e.cjs --dist=dist-e2e
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

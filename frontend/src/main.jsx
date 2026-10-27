@@ -11,7 +11,7 @@ import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installAndroidBack } from "./lib/androidBack";
-import { installFlagFont } from "./lib/countryFlags";
+import { installFlagFont } from "./lib/flagFont.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
 
