@@ -17,6 +17,7 @@
 # mode=submit   read-only verify, then submits for review only if verify is clean.
 # mode=event   creates/updates the In-App Event (appstore/in-app-event/event.json) and its media. Never submits;
 #               mode=submit adds it to the same review submission as the version.
+# mode=event-submit  submits the In-App Event on its own review submission (after the version was submitted).
 # mode=withdraw  cancels the one review submission given in `submission` (Remove from review).
 # mode=release-auto  only sets the version release type to "automatically release after approval".
 #               Requires the exact build number. Run it only after the owner confirms.
@@ -34,7 +35,7 @@ on:
       mode:
         description: "apply = write metadata (no submit), verify = read-only report, submit = verify then submit for review"
         type: choice
-        options: [verify, apply, submit, release-auto, withdraw, event]
+        options: [verify, apply, submit, release-auto, withdraw, event, event-submit]
         default: verify
       build:
         description: "Exact build number to attach, e.g. 20261008.2053 (blank = latest VALID build of the version)"

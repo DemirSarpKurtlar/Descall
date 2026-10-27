@@ -74,7 +74,16 @@ class ASC:
             return None
         detail = ""
         try:
-            detail = "; ".join(f"{e.get('code')}: {e.get('detail') or e.get('title')}" for e in r.json().get("errors", []))
+            def one(e):
+                d = f"{e.get('code')}: {e.get('detail') or e.get('title')}"
+                src = (e.get("source") or {}).get("pointer")
+                if src:
+                    d += f" [{src}]"
+                assoc = (e.get("meta") or {}).get("associatedErrors") or {}
+                for where, errs in assoc.items():
+                    d += " {" + where + ": " + "; ".join(one(x) for x in errs) + "}"
+                return d
+            detail = "; ".join(one(e) for e in r.json().get("errors", []))
         except Exception:
             detail = r.text[:500]
         raise RuntimeError(f"{method} {path} -> HTTP {r.status_code}: {detail}")
@@ -611,7 +620,7 @@ def readback(asc, app_id, ver, meta):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto", "withdraw", "event"], default="apply")
+    ap.add_argument("--mode", choices=["apply", "verify", "submit", "release-auto", "withdraw", "event", "event-submit"], default="apply")
     ap.add_argument("--submission", default="", help="review submission id to cancel (withdraw mode)")
     ap.add_argument("--wait-build-minutes", type=int, default=0)
     ap.add_argument("--build", default="", help="exact build number to attach (blank = latest VALID)")
@@ -676,6 +685,29 @@ def main():
                 err(f"releaseType is {rt}, expected AFTER_APPROVAL")
         else:
             err("release-auto requested but the version is missing")
+
+    if a.mode == "event-submit":
+        ev_cfg = asc_events.load()
+        e = asc_events.find(asc, app_id, ev_cfg) if ev_cfg else None
+        if not e:
+            err("event-submit: event not found")
+        else:
+            try:
+                log("\n=== Submit In-App Event for review (separate submission)")
+                subs_all = subs or []
+                ready = [s for s, i in subs_all if s["attributes"].get("state") == "READY_FOR_REVIEW"]
+                sub = ready[0] if ready else asc.req("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSubmissions",
+                        "attributes": {"platform": "IOS"}, "relationships": {"app": rel("apps", app_id)}}})["data"]
+                log(f"  submission {sub['id']} ({'existing' if ready else 'new'})")
+                asc.req("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
+                        "relationships": {"reviewSubmission": rel("reviewSubmissions", sub["id"]), "appEvent": rel("appEvents", e["id"])}}})
+                log(f"  added in-app event {e['id']}")
+                asc.req("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {"type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
+                sa = asc.get(f"/v1/reviewSubmissions/{sub['id']}")["data"]["attributes"]
+                log(f"  review submission {sub['id']} state={sa.get('state')} submittedDate={sa.get('submittedDate')}")
+                asc_events.event_report(asc, app_id, log, warn)
+            except Exception as ex:
+                err(f"event-submit: {ex}")
 
     if a.mode == "submit":
         if ver:
