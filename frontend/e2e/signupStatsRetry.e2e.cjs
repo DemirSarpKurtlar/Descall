@@ -96,6 +96,8 @@ async function main() {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e.message || e)));
     await page.goto(base + '/', { waitUntil: 'load' });
+    // CI's Chrome shows the "turn on notifications" banner over the toolbar; it is not under test.
+    await page.addStyleTag({ content: '.app-notif-banner{display:none!important}' });
     await page.locator('.g-me-btn').first().click({ timeout: 20000 });
     await page.getByRole('menuitem', { name: /Yönetici|Admin/ }).first().click({ timeout: 10000 });
     // The phone admin panel picks sections from a <select> (desktop/iPad: a tab list).
