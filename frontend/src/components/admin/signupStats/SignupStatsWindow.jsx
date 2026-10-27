@@ -637,8 +637,8 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
               : "İstatistikler yüklenemedi."}
           {error === "error" ? (
             <div style={{ marginTop: 10 }}>
-              <button type="button" onClick={reload}>
-                Tekrar dene
+              <button type="button" onClick={reload} disabled={loading} aria-busy={loading || undefined}>
+                {loading ? "Yükleniyor…" : "Tekrar dene"}
               </button>
             </div>
           ) : null}
