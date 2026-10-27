@@ -137,7 +137,20 @@ export const nested = {
     "v2937": { "title": "Ayarlar cilası", "body": "Ayarlar arka plan bulanıklığı ve alt boşluk masaüstünde daha temiz." },
     "v2938": { "title": "Ortalanmış pencereler", "body": "Arkadaş ekle, duyurular ve üye pencereleri ortada açılır." },
     "v2939": { "title": "Electron modal düzeltmesi", "body": "Masaüstü modalları açıldıktan sonra zıplamaz." },
-    "v2948": { "title": "Ortalanmış Roller ve pencereler", "body": "Sunucu Roller paneli ve diğer tam ekran paneller artık tüm pencerenin ortasında bulanık arka planlı modal olarak açılır, kenara yapışık kart kalmaz." }
+    "v2948": { "title": "Ortalanmış Roller ve pencereler", "body": "Sunucu Roller paneli ve diğer tam ekran paneller artık tüm pencerenin ortasında bulanık arka planlı modal olarak açılır, kenara yapışık kart kalmaz." },
+    "v300": {
+      "title": "Descall 3.0'daki yenilikler",
+      "lead": "Descall 3.0 ile gelen her şey burada.",
+      "n1": { "title": "Yenilenen aramalar", "body": "Baştan tasarlanan, daha şık ve akıcı arama ekranı." },
+      "n2": { "title": "Mesajlaşmada yenilikler", "body": "Mesaja çift dokunarak kalp tepkisi ver, tek dokunuşla en alta in, yeni mesaj yazma alanını ve profil menüsünü keşfet." },
+      "n3": { "title": "Yeni sohbet başlığı", "body": "Sohbette ara, mesaj sabitle, sesli veya görüntülü ara, engelle; hepsi tek yerde." },
+      "n4": { "title": "Bildir ve engelle", "body": "Bir kullanıcıyı bildirdikten sonra tek adımda engelleyebilirsin." },
+      "n5": { "title": "Zengin bildirimler", "body": "Profil fotoğraflı bildirimler ve bildirimden hızlı yanıt." },
+      "n6": { "title": "Cam bildirim kapsülü", "body": "Uygulama içinde yeni cam bildirim kapsülü." },
+      "n7": { "title": "Görünüm ayarları", "body": "Yeni Görünüm ayarlarıyla uygulamayı kendine göre düzenle." },
+      "n8": { "title": "Yeni sunucu ekranları", "body": "Sunucu oluşturma ve katılma, kanallar, roller, izinler, moderasyon ve klasörler yeniden tasarlandı." },
+      "n9": { "title": "Daha akıcı", "body": "Daha akıcı geçişler, daha iyi performans ve birçok hata düzeltmesi." }
+    }
   },
   "updateToast": {
     "kicker": "Masaüstü güncelleme",

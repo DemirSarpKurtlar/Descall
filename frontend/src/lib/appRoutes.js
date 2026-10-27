@@ -10,6 +10,7 @@ const VIEW_PATHS = {
 const APP_PREFIXES = ["/direct", "/groups", "/servers", "/friends", "/calls", "/activity", "/settings"];
 
 export function isAuthenticatedAppPath(pathname = "/") {
+  if (String(pathname || "").replace(/\/+$/, "").toLowerCase() === "/app/whats-new") return true;
   return APP_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
@@ -31,6 +32,11 @@ export function parseAppRoute(pathname = "/") {
     };
   }
   if (section === "settings") return { view: "chat", settingsTab: target || "overview" };
+  // 3.0.1: landing target of the App Store in-app event (descall://whats-new,
+  // https://descall.com/app/whats-new). App.jsx opens the 3.0 notes, then home.
+  if (section === "app" && String(target || "").toLowerCase() === "whats-new") {
+    return { view: "chat", whatsNew: true };
+  }
   if (section === "friends" || section === "calls" || section === "activity") {
     return { view: section, settingsTab: null };
   }

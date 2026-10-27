@@ -411,6 +411,23 @@ const hasFrontend = fs.existsSync(indexPath);
 // Sec-Fetch-Mode: navigate and/or an Accept header that actually lists
 // text/html (fetch()'s default Accept is "*/*", never text/html, unless a
 // caller sets it explicitly).
+// 3.0.1: iOS universal links. express.static skips dot-folders, so serve the
+// apple-app-site-association JSON explicitly (200, application/json, no redirect).
+// Production descall.com is Cloudflare Pages (public/_worker.js does the same).
+const AASA_FILES = [
+  path.join(distPath, ".well-known", "apple-app-site-association"),
+  path.join(__dirname, "..", "public", ".well-known", "apple-app-site-association"),
+];
+app.get(["/.well-known/apple-app-site-association", "/apple-app-site-association"], (req, res, next) => {
+  const file = AASA_FILES.find((candidate) => fs.existsSync(candidate));
+  if (!file) return next();
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  return res.sendFile(file, { dotfiles: "allow" }, (err) => {
+    if (err) next();
+  });
+});
+
 const { shouldServeSpaShell } = require("./lib/spaNavigation");
 // Same SPA-vs-API disambiguation on Vercel and elsewhere. vercel.json also
 // rewrites document navigations to /index.html, but the function can still
