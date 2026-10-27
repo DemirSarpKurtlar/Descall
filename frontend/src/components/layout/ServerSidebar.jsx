@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
+import { memo, useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -958,6 +958,38 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
     }
   };
 
+  // Rows are memoized so opening a chat, settings, or any App-level state
+  // change does not re-render every DM row (that work sat between the tap and
+  // the page transition). Rows call back through this always-current ref.
+  const rowApiRef = useRef(null);
+  rowApiRef.current = {
+    select: (dm) => onDmSelect?.(dm),
+    runAction,
+    closeMenu,
+    dotBtnRefs,
+    prefetch: (id) => requestChatPrefetch("dm", id),
+    contextMenu: (dm, e) => {
+      if (isMobile) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Native feel: the menu opens right under the cursor.
+      setMenuPoint({ id: dm.id, x: e.clientX, y: e.clientY });
+      setOpenMenuId(dm.id);
+    },
+    swipeOpenChange: (dm, open) => {
+      setSwipeOpenId(open ? dm.id : null);
+      if (open) closeMenu();
+    },
+    closeOthers: (dm) => {
+      if (swipeOpenId && swipeOpenId !== dm.id) setSwipeOpenId(null);
+    },
+    toggleMenu: (dm) => {
+      setMenuPoint(null);
+      setOpenMenuId(openMenuId === dm.id ? null : dm.id);
+    },
+  };
+  const rowApi = rowApiRef;
+
   const confirmCloseChat = async () => {
     const dm = confirmClose;
     setConfirmClose(null);
@@ -1012,87 +1044,23 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
           ) : (
             <div className="conv-list">
               {safeDms.map((dm) => {
-                const isOnline = isVisiblyOnline(onlineUsers, dm.id);
-                const isActive = activeDmUser?.id === dm.id;
                 const unread = dm.unreadCount || unreadById[dm.id] || 0;
-                const timeLabel = formatConversationTime(dm.lastActivity, t, locale);
-                const swipeOpen = isMobile && swipeOpenId === dm.id;
-
                 return (
-                  <motion.div
+                  <DmListRow
                     key={dm.id}
-                    /* layout animations projected DM avatars across the chat header */
-                    layout={false}
-                    ref={openMenuId === dm.id ? menuRef : null}
-                    className={`conv-group-wrap${isMobile ? " is-swipeable" : " is-desktop"}${swipeOpen ? " swipe-open" : ""}${openMenuId === dm.id ? " menu-open" : ""}${isActive ? " is-active-row" : ""}`}
-                    transition={LIST_LAYOUT_TRANSITION}
-                    style={{ position: "relative" }}
-                    onMouseEnter={() => requestChatPrefetch("dm", dm.id)}
-                    onContextMenu={(e) => {
-                      if (isMobile) return;
-                      e.preventDefault();
-                      e.stopPropagation();
-                      // Native feel: the menu opens right under the cursor.
-                      setMenuPoint({ id: dm.id, x: e.clientX, y: e.clientY });
-                      setOpenMenuId(dm.id);
-                    }}
-                  >
-                    {isMobile ? (
-                      <SwipeableDmRow
-                        dm={dm}
-                        isActive={isActive}
-                        unread={unread}
-                        timeLabel={timeLabel}
-                        onlineUsers={onlineUsers}
-                        isOnline={isOnline}
-                        swipeOpen={swipeOpen}
-                        onOpen={() => onDmSelect?.(dm)}
-                        onAction={(action) => runAction(dm, action)}
-                        onSwipeOpenChange={(open) => {
-                          setSwipeOpenId(open ? dm.id : null);
-                          if (open) closeMenu();
-                        }}
-                        onCloseOthers={() => {
-                          if (swipeOpenId && swipeOpenId !== dm.id) setSwipeOpenId(null);
-                        }}
-                      />
-                    ) : (
-                      <>
-                        <DmRowFront
-                          dm={dm}
-                          isActive={isActive}
-                          unread={unread}
-                          timeLabel={timeLabel}
-                          onlineUsers={onlineUsers}
-                          isOnline={isOnline}
-                          isMobile={false}
-                          swipeOpen={false}
-                          onOpen={() => onDmSelect?.(dm)}
-                        />
-                        <ConvMoreButton
-                          buttonRef={(el) => { dotBtnRefs.current[dm.id] = el; }}
-                          open={openMenuId === dm.id}
-                          label={t("More")}
-                          onToggle={() => {
-                            setMenuPoint(null);
-                            setOpenMenuId(openMenuId === dm.id ? null : dm.id);
-                          }}
-                        />
-                        <AnimatePresence>
-                          {openMenuId === dm.id && (
-                            <DmContextMenu
-                              dm={dm}
-                              unread={unread}
-                              onClose={closeMenu}
-                              onAction={(action) => runAction(dm, action)}
-                              anchorRef={{ current: dotBtnRefs.current[dm.id] }}
-                              anchorPoint={menuPoint?.id === dm.id ? menuPoint : null}
-                            />
-                          )}
-                        </AnimatePresence>
-                      </>
-                    )}
-                  </motion.div>
+                    dm={dm}
+                    isActive={activeDmUser?.id === dm.id}
+                    unread={unread}
+                    presence={onlineUsers?.find((u) => u.id === dm.id)?.status || null}
+                    isOnline={isVisiblyOnline(onlineUsers, dm.id)}
+                    isMobile={isMobile}
+                    swipeOpen={isMobile && swipeOpenId === dm.id}
+                    menuOpen={openMenuId === dm.id}
+                    menuPoint={menuPoint?.id === dm.id ? menuPoint : null}
+                    menuRef={openMenuId === dm.id ? menuRef : null}
+                    locale={locale}
+                    rowApi={rowApi}
+                  />
                 );
               })}
             </div>
@@ -1127,10 +1095,96 @@ const DM_SWIPE_WIDTH = 248;
 // Four glass actions per row (DM: pin/mute/unread/close; group: invite/add/more/leave).
 const GLASS_SWIPE_WIDTH = swipeActionsWidth(4);
 
-function DmRowContent({ dm, unread, timeLabel, onlineUsers, isOnline }) {
+// One DM row. Memoized: it re-renders only when its own data changes, and its
+// handlers go through the list's always-current rowApi ref.
+const DmListRow = memo(function DmListRow({ dm, isActive, unread, presence, isOnline, isMobile, swipeOpen, menuOpen, menuPoint, menuRef, locale, rowApi }) {
+  const t = useT();
+  const timeLabel = useMemo(() => formatConversationTime(dm.lastActivity, t, locale), [dm.lastActivity, t, locale]);
+  const api = () => rowApi.current;
+  return (
+    <motion.div
+      /* layout animations projected DM avatars across the chat header */
+      layout={false}
+      ref={menuRef}
+      className={`conv-group-wrap${isMobile ? " is-swipeable" : " is-desktop"}${swipeOpen ? " swipe-open" : ""}${menuOpen ? " menu-open" : ""}${isActive ? " is-active-row" : ""}`}
+      transition={LIST_LAYOUT_TRANSITION}
+      style={{ position: "relative" }}
+      onMouseEnter={() => api().prefetch(dm.id)}
+      onContextMenu={(e) => api().contextMenu(dm, e)}
+    >
+      {isMobile ? (
+        <SwipeableDmRow
+          dm={dm}
+          isActive={isActive}
+          unread={unread}
+          timeLabel={timeLabel}
+          presence={presence}
+          isOnline={isOnline}
+          swipeOpen={swipeOpen}
+          onOpen={() => api().select(dm)}
+          onAction={(action) => api().runAction(dm, action)}
+          onSwipeOpenChange={(open) => api().swipeOpenChange(dm, open)}
+          onCloseOthers={() => api().closeOthers(dm)}
+        />
+      ) : (
+        <>
+          <DmRowFront
+            dm={dm}
+            isActive={isActive}
+            unread={unread}
+            timeLabel={timeLabel}
+            presence={presence}
+            isOnline={isOnline}
+            isMobile={false}
+            swipeOpen={false}
+            onOpen={() => api().select(dm)}
+          />
+          <ConvMoreButton
+            buttonRef={(el) => { rowApi.current.dotBtnRefs.current[dm.id] = el; }}
+            open={menuOpen}
+            label={t("More")}
+            onToggle={() => api().toggleMenu(dm)}
+          />
+          <AnimatePresence>
+            {menuOpen && (
+              <DmContextMenu
+                dm={dm}
+                unread={unread}
+                onClose={() => api().closeMenu()}
+                onAction={(action) => api().runAction(dm, action)}
+                anchorRef={{ current: rowApi.current.dotBtnRefs.current[dm.id] }}
+                anchorPoint={menuPoint}
+              />
+            )}
+          </AnimatePresence>
+        </>
+      )}
+    </motion.div>
+  );
+}, sameDmRowProps);
+
+// The DM list is rebuilt (new objects) whenever any chat's cache, preview, or
+// unread count changes, so compare the row's dm by its fields, not identity.
+function shallowSame(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  for (const k of ka) if (a[k] !== b[k]) return false;
+  return true;
+}
+function sameDmRowProps(prev, next) {
+  for (const k in next) {
+    if (k === "dm") { if (!shallowSame(prev.dm, next.dm)) return false; }
+    else if (prev[k] !== next[k]) return false;
+  }
+  return true;
+}
+
+function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isOnline }) {
   const t = useT();
   const glass = useGlassUi();
-  const presence = onlineUsers?.find((u) => u.id === dm.id)?.status || (isOnline ? "online" : "offline");
+  const presence = rawPresence || (isOnline ? "online" : "offline");
   const preview = displayText(localizeListPreview(dm.lastMessage, t)) || t("No messages yet");
   const typing = glass && /yazıyor|typing/i.test(String(preview));
   return (
@@ -1176,7 +1230,7 @@ function SwipeableDmRow({
   isActive,
   unread,
   timeLabel,
-  onlineUsers,
+  presence,
   isOnline,
   swipeOpen,
   onOpen,
@@ -1208,7 +1262,7 @@ function SwipeableDmRow({
             dm={dm}
             unread={isActive ? 0 : unread}
             timeLabel={timeLabel}
-            onlineUsers={onlineUsers}
+            presence={presence}
             isOnline={isOnline}
           />
         </button>
@@ -1242,7 +1296,7 @@ function DmRowFront({
   isActive,
   unread,
   timeLabel,
-  onlineUsers,
+  presence,
   isOnline,
   isMobile,
   swipeOpen,
@@ -1269,7 +1323,7 @@ function DmRowFront({
         dm={dm}
         unread={isActive ? 0 : unread}
         timeLabel={timeLabel}
-        onlineUsers={onlineUsers}
+        presence={presence}
         isOnline={isOnline}
       />
     </motion.button>

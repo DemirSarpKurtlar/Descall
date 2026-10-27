@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
@@ -273,6 +273,27 @@ export default function MessageList({
   useLayoutEffect(() => {
     prevLastIdRef.current = null;
   }, [conversationId]);
+  // Bubbles mounted in this window after a chat opens skip their enter
+  // animation (see MessageBubble). Set during render so the first commit sees it.
+  const quietRef = useRef({ conversationId: undefined });
+  const quietUntilRef = useRef(0);
+  if (quietRef.current.conversationId !== conversationId) {
+    quietRef.current = { conversationId };
+    // Only when the chat opens with messages already cached; a cold open
+    // keeps the fade-in for the list that arrives from the network.
+    quietUntilRef.current = Array.isArray(messages) && messages.length ? nowMs() + OPEN_QUIET_MS : 0;
+    // Tail first: a chat that opens with a long cached history renders the
+    // newest screenful in the tap's commit (so the page transition starts
+    // right away) and the older rows once the transition is over.
+    quietRef.current.tail = Array.isArray(messages) && messages.length > openTailCount() && unreadCount < openTailCount() ? openTailCount() : 0;
+  }
+  const [fullFor, setFullFor] = useState(null);
+  const tailLimit = quietRef.current.tail && fullFor !== conversationId && !isSearching ? quietRef.current.tail : 0;
+  useEffect(() => {
+    if (!tailLimit) return undefined;
+    const id = setTimeout(() => startTransition(() => setFullFor(conversationId)), OPEN_TAIL_MS);
+    return () => clearTimeout(id);
+  }, [tailLimit, conversationId]);
 
   // Pinned-to-bottom controller (lib/stickToBottom.js): follows the scroller's
   // own size (iOS keyboard / visual viewport / composer) as well as the
@@ -344,7 +365,7 @@ export default function MessageList({
 
   const searchedMessages = useMemo(() => {
     const msgs = Array.isArray(messages) ? messages : [];
-    if (!isSearching) return msgs;
+    if (!isSearching) return tailLimit && msgs.length > tailLimit ? msgs.slice(-tailLimit) : msgs;
 
     if (conversationType === "server" && trimmedSearch.length >= 2 && serverSearchResults?.length) {
       return serverSearchResults;
@@ -352,7 +373,7 @@ export default function MessageList({
 
     const needle = trimmedSearch.toLowerCase();
     return msgs.filter((m) => typeof m?.text === "string" && m.text.toLowerCase().includes(needle));
-  }, [messages, isSearching, trimmedSearch, conversationType, serverSearchResults]);
+  }, [messages, isSearching, trimmedSearch, conversationType, serverSearchResults, tailLimit]);
 
   const groupedMessages = useMemo(() => {
     const msgs = searchedMessages;
@@ -649,6 +670,7 @@ export default function MessageList({
                   isOwn={isOwn}
                   isCompact={group.isCompact}
                   isFresh={isFresh}
+                  quietUntil={quietUntilRef.current}
                   currentUserId={currentUser?.id || me?.id}
                   socket={socket}
                   conversationType={conversationType}
@@ -773,6 +795,7 @@ function MessageBubble({
   isOwn,
   isCompact,
   isFresh = false,
+  quietUntil = 0,
   currentUserId,
   socket,
   conversationType,
@@ -794,6 +817,10 @@ function MessageBubble({
   const t = useT();
   const { toast } = useToast();
   const glass = useGlassUi();
+  // History that is already there when a chat opens is drawn in place: 50
+  // bubble enter animations ran on the main thread while the page slid in.
+  // Messages that arrive later (or were just sent) still animate in.
+  const [animateIn] = useState(() => isFresh || nowMs() > quietUntil);
   // A mouse-only device (desktop/Electron) has no swipe-to-reply: framer's drag
   // would set user-select:none on the bubble and a double click on the text
   // could never select the word (A2). Touch devices keep the swipe.
@@ -1367,11 +1394,11 @@ function MessageBubble({
 
       <motion.div
         ref={bubbleRef}
-        initial={{
+        initial={animateIn ? {
           opacity: 0,
           y: isOwn && isFresh ? 14 : 8,
           scale: isOwn && isFresh ? 0.96 : 0.99,
-        }}
+        } : false}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{
           duration: isOwn && isFresh ? 0.28 : 0.2,
@@ -2155,6 +2182,19 @@ function GlassMessageMenu({
     </>,
     document.body
   );
+}
+
+// How long after a chat opens its existing messages count as history.
+const OPEN_QUIET_MS = 700;
+// The older rows of a long chat mount after the open transition (0.38s).
+const OPEN_TAIL_MS = 450;
+// Enough rows to overfill the visible list (a one-line bubble is ~34px).
+function openTailCount() {
+  const h = typeof window !== "undefined" ? window.innerHeight || 800 : 800;
+  return Math.min(60, Math.max(16, Math.ceil(h / 30)));
+}
+function nowMs() {
+  return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
 }
 
 function formatTimestamp(iso) {

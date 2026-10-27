@@ -139,6 +139,7 @@ import {
 import { dismissRemovedGroup } from "./api/groups";
 import { segmentsText, memberEventSegments, memberEventFromMessage } from "./lib/groupMemberEvents";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
+import { mergeServerDetail } from "./lib/serverDetail";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
@@ -3588,16 +3589,24 @@ export default function App() {
           if (!still()) return;
           if (!data?.server || String(data.server.id) !== String(routeServerId)) return;
           const fresh = data.server;
+          // Keep the old objects when nothing changed: activeServer and
+          // myServers are deps of this effect, so a new object every time
+          // re-ran it and re-fetched this server in an endless loop.
           setActiveServer((prev) =>
             !prev || String(prev.id) !== String(fresh.id)
               ? prev
-              : { ...prev, ...fresh }
+              : mergeServerDetail(prev, fresh)
           );
-          setMyServers((prev) =>
-            prev.map((s) =>
-              String(s.id) === String(fresh.id) ? { ...s, ...fresh } : s
-            )
-          );
+          setMyServers((prev) => {
+            let changed = false;
+            const next = prev.map((s) => {
+              if (String(s.id) !== String(fresh.id)) return s;
+              const merged = mergeServerDetail(s, fresh);
+              if (merged !== s) changed = true;
+              return merged;
+            });
+            return changed ? next : prev;
+          });
           if (routeChannelId) {
             const channel = (fresh.channels || []).find(
               (c) => c.id === routeChannelId && c.type !== "category"

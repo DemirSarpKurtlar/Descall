@@ -53,16 +53,36 @@ export function appDateMs(value) {
   return d ? d.getTime() : NaN;
 }
 
+// toLocaleTimeString builds a new ICU formatter on every call, which is slow
+// when a list renders hundreds of clocks. Same output, one formatter per locale.
+const clockFormatters = new Map();
+const dateFormatters = new Map();
+function clockFormatter(locale) {
+  const key = locale == null ? "" : String(locale);
+  let f = clockFormatters.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
+    clockFormatters.set(key, f);
+  }
+  return f;
+}
+
 export function formatMessageClock(value, locale) {
   const d = parseAppDate(value);
   if (!d) return "";
-  return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  return clockFormatter(locale).format(d);
 }
 
 export function formatMessageDate(value, locale, options) {
   const d = parseAppDate(value);
   if (!d) return "";
-  return d.toLocaleDateString(locale, options);
+  const key = `${locale == null ? "" : String(locale)}|${options ? JSON.stringify(options) : ""}`;
+  let f = dateFormatters.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(locale, options);
+    dateFormatters.set(key, f);
+  }
+  return f.format(d);
 }
 
 export function formatAppDateTime(value, locale, options = {}) {
