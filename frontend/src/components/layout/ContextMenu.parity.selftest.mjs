@@ -19,13 +19,15 @@ function assert(condition, message) {
 const count = (haystack, needle) => haystack.split(needle).length - 1;
 
 // ── DM list ────────────────────────────────────────────────────────────────
-const dmList = convos.slice(convos.indexOf("function DMList("), convos.indexOf("const DM_SWIPE_WIDTH"));
-assert(/onContextMenu=\{\(e\) => \{[\s\S]{0,320}setOpenMenuId\(dm\.id\)/.test(dmList), "right-click on a DM row must open its menu");
+// DMList plus its memoized DmListRow (the row's handlers live in DMList's rowApi).
+const dmList = convos.slice(convos.indexOf("function DMList("), convos.indexOf("function shallowSame("));
+assert(dmList.includes("onContextMenu={(e) => api().contextMenu(dm, e)}"), "a DM row must handle right-click");
+assert(/contextMenu: \(dm, e\) => \{[\s\S]{0,320}setOpenMenuId\(dm\.id\)/.test(dmList), "right-click on a DM row must open its menu");
 assert(/setMenuPoint\(\{ id: dm\.id, x: e\.clientX, y: e\.clientY \}\)/.test(dmList), "the DM right-click menu must open at the pointer");
 // One menu component for both entry points → identical action sets.
 assert(count(dmList, "<DmContextMenu") === 1, "kebab and right-click must share one DM menu (no divergent action list)");
 assert(dmList.includes("<ConvMoreButton"), "the DM kebab button must still exist");
-assert(/anchorPoint=\{menuPoint\?\.id === dm\.id \? menuPoint : null\}/.test(dmList), "the DM menu must receive the pointer anchor");
+assert(/menuPoint=\{menuPoint\?\.id === dm\.id \? menuPoint : null\}/.test(dmList) && dmList.includes("anchorPoint={menuPoint}"), "the DM menu must receive the pointer anchor");
 
 // ── group list ─────────────────────────────────────────────────────────────
 const groupList = convos.slice(convos.indexOf("function GroupList("), convos.indexOf("const GROUP_SWIPE_WIDTH"));

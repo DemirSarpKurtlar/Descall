@@ -49,16 +49,16 @@ const SERVERS = Array.from({ length: 60 }, (_, i) => {
     const parent = `${id}-cat-${c - (c % 15)}`;
     channels.push({ id: `${id}-ch-${c}`, serverId: id, name: c % 5 === 4 ? `ses-${c}` : `kanal-${c}`, type: c % 5 === 4 ? 'voice' : 'text', position: c, parentId: parent, topic: null, slowmodeSeconds: 0, nsfw: false });
   }
-  return { id, name: i === 0 ? 'Büyük Sunucu' : `Sunucu ${i}`, iconUrl: null, ownerId: ME.id, isOwner: true, memberCount: 40 + i, listPosition: i, notificationLevel: 'all', channels, roles: [{ id: `${id}-everyone`, name: '@everyone', isEveryone: true, permissions: '0', position: 0 }], myPermissions: '8' };
+  return { id, name: i === 0 ? 'Büyük Sunucu' : `Sunucu ${i}`, iconUrl: null, ownerId: ME.id, isOwner: true, memberCount: 40 + i, listPosition: i, notificationLevel: 'all', channels, roles: [{ id: `${id}-everyone`, name: '@everyone', isEveryone: true, permissions: '0', position: 0 }], myPermissions: { bits: '8', isOwner: true, flags: { ADMINISTRATOR: true, VIEW_CHANNEL: true, SEND_MESSAGES: true, MANAGE_CHANNELS: true } } };
 });
 const GROUPS = Array.from({ length: 40 }, (_, i) => ({ id: `g-perf-${i}`, name: `Grup ${i + 1}`, ownerId: ME.id, members: [sender(ME), sender(FRIENDS[i + 1]), sender(FRIENDS[i + 2])], memberIds: [ME.id, FRIENDS[i + 1].id, FRIENDS[i + 2].id], avatarUrl: null, createdAt: '2025-03-01T10:00:00.000Z', lastMessage: 'Görüşürüz', lastActivity: new Date(Date.now() - i * 3600000).toISOString() }));
 
 const state = { messages: makeMessages(Number(process.env.DESCALL_PERF_MESSAGES || 1000)), sockets: new Set() };
 
-function api(p, method = 'GET') {
+function api(p, method = 'GET', q = new URLSearchParams()) {
   if (/\/auth\/me$/.test(p)) return { user: ME };
   if (/\/promo\/popup$/.test(p)) return { popup: null };
-  if (/\/dm\/[^/]+\/messages$/.test(p)) return { withUserId: PEER.id, messages: state.messages, hasMore: false };
+  if (/\/dm\/[^/]+\/messages$/.test(p)) { const lim = Number(q.get('limit')) || state.messages.length; return { withUserId: PEER.id, messages: state.messages.slice(-lim), hasMore: lim < state.messages.length }; }
   if (/\/dm\/previews$/.test(p)) {
     const byPeer = {}; const act = {};
     FRIENDS.forEach((f, i) => { byPeer[f.id] = LINES[i % LINES.length]; act[f.id] = new Date(Date.now() - i * 600000).toISOString(); });
@@ -97,7 +97,7 @@ function start({ dist, port = 5371 }) {
     }
     if (API_RE.test(url.pathname) && !accept.startsWith('text/html')) {
       res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify(api(url.pathname, req.method)));
+      return res.end(JSON.stringify(api(url.pathname, req.method, url.searchParams)));
     }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     fs.createReadStream(path.join(dist, 'index.html')).pipe(res);
