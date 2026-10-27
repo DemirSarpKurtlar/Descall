@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "../context/LocaleContext";
 import Modal from "./ui/Modal";
 import pkg from "../../package.json";
@@ -30,6 +30,31 @@ export const UPDATE_NOTES = [
     bodyKey: "updateNotes.v2948.body",
   },
 ];
+
+/**
+ * 3.0.1: the "what's new in 3.0" list opened on demand by the App Store
+ * in-app event deep link (descall://whats-new, /app/whats-new). Same copy as
+ * the 3.0.0 App Store "What's New". Not part of the first-open popup.
+ */
+export const RELEASE_3_0_VERSION = "3.0";
+export const RELEASE_3_0_NOTES = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({
+  version: RELEASE_3_0_VERSION,
+  titleKey: `updateNotes.v300.n${n}.title`,
+  bodyKey: `updateNotes.v300.n${n}.body`,
+}));
+
+export const OPEN_WHATS_NEW_EVENT = "descall:open-whats-new";
+
+/** Open the 3.0 notes (deep link target). */
+export function openWhatsNew() {
+  if (typeof window === "undefined") return;
+  try {
+    window.__descallWhatsNewPending = true;
+    window.dispatchEvent(new CustomEvent(OPEN_WHATS_NEW_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
 
 const LAST_SEEN_KEY = "descall:last-seen-version";
 
@@ -72,6 +97,22 @@ export default function UpdateNotes() {
   const [missed, setMissed] = useState([]);
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState("");
+  const [release, setRelease] = useState(false);
+  const releaseRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const show = () => {
+      window.__descallWhatsNewPending = false;
+      releaseRef.current = true;
+      setRelease(true);
+      setMissed(RELEASE_3_0_NOTES);
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_WHATS_NEW_EVENT, show);
+    if (window.__descallWhatsNewPending) show();
+    return () => window.removeEventListener(OPEN_WHATS_NEW_EVENT, show);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -109,7 +150,7 @@ export default function UpdateNotes() {
         }
         return;
       }
-      if (!cancelled) {
+      if (!cancelled && !releaseRef.current) {
         setMissed(list);
         setOpen(true);
       }
@@ -121,6 +162,7 @@ export default function UpdateNotes() {
   }, []);
 
   const title = useMemo(() => {
+    if (release) return t("updateNotes.v300.title");
     if (missed.length === 1) {
       return t("What's new in {version}", { version: missed[0].version });
     }
@@ -128,10 +170,12 @@ export default function UpdateNotes() {
       count: missed.length,
       version: current || missed[missed.length - 1]?.version || "",
     });
-  }, [missed, current, t]);
+  }, [missed, current, release, t]);
 
   const dismiss = () => {
     setOpen(false);
+    releaseRef.current = false;
+    setRelease(false);
     try {
       if (current) localStorage.setItem(LAST_SEEN_KEY, current);
     } catch {
@@ -144,11 +188,11 @@ export default function UpdateNotes() {
   return (
     <Modal open={open} onClose={dismiss} title={title} wide className="update-notes-dialog">
       <div className="update-notes-modal">
-        <p className="update-notes-lead">{t("updateNotes.lead")}</p>
+        <p className="update-notes-lead">{t(release ? "updateNotes.v300.lead" : "updateNotes.lead")}</p>
         <ol className="update-notes-list">
           {missed.map((n) => (
-            <li key={n.version} className="update-notes-item">
-              <div className="update-notes-version">v{n.version}</div>
+            <li key={n.titleKey} className="update-notes-item">
+              {release ? null : <div className="update-notes-version">v{n.version}</div>}
               <div className="update-notes-item-title">{t(n.titleKey)}</div>
               <p className="update-notes-item-body">{t(n.bodyKey)}</p>
             </li>

@@ -63,4 +63,28 @@ for (const p of ["/tr/login", "/tr/register"]) {
   assert.ok(sources.includes(p) && sources.includes(`${p}/:path*`), `vercel.json must rewrite ${p}`);
 }
 
+// 3.0.1 universal links: AASA is served as JSON, 200, no redirect, never the SPA shell.
+const aasaBody = fs.readFileSync(path.join(root, "public/.well-known/apple-app-site-association"), "utf8");
+const aasaEnv = {
+  ASSETS: {
+    async fetch(request) {
+      const { pathname } = new URL(request.url);
+      if (pathname === "/.well-known/apple-app-site-association") {
+        return new Response(aasaBody, { status: 200, headers: { "content-type": "application/octet-stream" } });
+      }
+      return env.ASSETS.fetch(request);
+    },
+  },
+};
+for (const p of ["/.well-known/apple-app-site-association", "/apple-app-site-association"]) {
+  const res = await worker.fetch(new Request(`https://descall.com${p}`), aasaEnv);
+  assert.equal(res.status, 200, `${p} must be 200`);
+  assert.equal(res.headers.get("location"), null, `${p} must not redirect`);
+  assert.match(res.headers.get("content-type") || "", /^application\/json/, `${p} must be JSON`);
+  assert.deepEqual(JSON.parse(await res.text()), JSON.parse(aasaBody));
+}
+const aasaHeaders = vercel.headers.find((h) => h.source === "/.well-known/apple-app-site-association");
+assert.ok(aasaHeaders?.headers.some((h) => h.key === "Content-Type" && h.value === "application/json"), "vercel.json AASA content-type");
+assert.ok(!vercel.rewrites.some((r) => r.source.startsWith("/.well-known")), "no rewrite may swallow /.well-known");
+
 console.log("pagesWorkerRoutes selftest ok");

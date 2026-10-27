@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["Q9R78TPNXS.com.descall.app"],
+        "components": [
+          { "/": "/app/whats-new", "comment": "3.0 notes (App Store in-app event)" },
+          { "/": "/direct", "comment": "DM list" },
+          { "/": "/direct/*", "comment": "DM by username" },
+          { "/": "/groups", "comment": "Groups" },
+          { "/": "/groups/*", "comment": "Group by id" },
+          { "/": "/servers", "comment": "Servers" },
+          { "/": "/servers/*", "comment": "Server / channel by id" },
+          { "/": "/friends" },
+          { "/": "/calls" },
+          { "/": "/activity" },
+          { "/": "/settings" },
+          { "/": "/settings/*" }
+        ]
+      }
+    ]
+  }
+}

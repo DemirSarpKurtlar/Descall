@@ -246,6 +246,11 @@ jobs:
           group="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/ent.plist" 2>/dev/null || true)"
           [ "$comm" = "true" ] || { echo "::error::Communication Notifications entitlement missing ('$comm')"; ok=0; }
           [ "$group" = "group.com.descall.app" ] || { echo "::error::App Group missing on the app ('$group')"; ok=0; }
+          # 3.0.1: universal links (https://descall.com) need Associated Domains in the signed app.
+          ad="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.associated-domains:0' "$WORK/ent.plist" 2>/dev/null || true)"
+          [ "$ad" = "applinks:descall.com" ] || { echo "::error::Associated Domains missing on the app ('$ad')"; ok=0; }
+          urlscheme="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist" 2>/dev/null || true)"
+          [ "$urlscheme" = "descall" ] || { echo "::error::descall:// URL scheme missing from Info.plist ('$urlscheme')"; ok=0; }
           for EXT in NotificationService NotificationContent; do
             APPEX="$APP/PlugIns/$EXT.appex"
             [ -d "$APPEX" ] || { echo "::error::$EXT.appex missing from the IPA"; ok=0; continue; }

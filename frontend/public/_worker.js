@@ -115,6 +115,19 @@ export default {
 
     const path = barePath(url.pathname);
 
+    // 3.0.1: iOS universal links. Apple fetches this exact path (no redirect,
+    // JSON). The asset has no extension, so set the type here.
+    if (path === "/.well-known/apple-app-site-association" || path === "/apple-app-site-association") {
+      const res = await readAsset(env, request, "/.well-known/apple-app-site-association");
+      if (res.ok) {
+        const headers = new Headers();
+        headers.set("content-type", "application/json");
+        headers.set("cache-control", "public, max-age=3600");
+        applySecurityHeaders(headers);
+        return new Response(res.body, { status: 200, headers });
+      }
+    }
+
     if (PERMANENT_REDIRECTS[path]) {
       const headers = new Headers();
       applySecurityHeaders(headers);

@@ -132,7 +132,20 @@ export const nested = {
     "v2937": { "title": "Settings polish", "body": "Settings backdrop blur and bottom inset feel cleaner on desktop." },
     "v2938": { "title": "Centered popups", "body": "Add Friend, announcements, and member popups open centered." },
     "v2939": { "title": "Electron modal fix", "body": "Desktop modals no longer jump after opening." },
-    "v2948": { "title": "Centered Roles & popups", "body": "Server Roles (Roller) and other full-page panels open as centered blur modals over the whole window, no more left-docked cards stuck in the sidebar." }
+    "v2948": { "title": "Centered Roles & popups", "body": "Server Roles (Roller) and other full-page panels open as centered blur modals over the whole window, no more left-docked cards stuck in the sidebar." },
+    "v300": {
+      "title": "What's new in Descall 3.0",
+      "lead": "Here is everything that came with Descall 3.0.",
+      "n1": { "title": "Redesigned calls", "body": "A fresh, cleaner and smoother call screen." },
+      "n2": { "title": "Better messaging", "body": "Double-tap a message to react with a heart, jump to the latest message in one tap, plus a new composer and profile menu." },
+      "n3": { "title": "New chat header", "body": "Search the chat, pin messages, start a voice or video call, or block, all in one place." },
+      "n4": { "title": "Report and block", "body": "After reporting someone, you can block them in one step." },
+      "n5": { "title": "Rich notifications", "body": "Notifications with profile photos and quick reply right from the notification." },
+      "n6": { "title": "Glass notification capsule", "body": "A new in-app glass notification capsule." },
+      "n7": { "title": "Appearance settings", "body": "New Appearance settings to make the app your own." },
+      "n8": { "title": "Redesigned server screens", "body": "Create and join servers, channels, roles, permissions, moderation and folders, all redesigned." },
+      "n9": { "title": "Smoother everywhere", "body": "Smoother transitions, better performance and lots of bug fixes." }
+    }
   },
   "updateToast": {
     "kicker": "Desktop update",

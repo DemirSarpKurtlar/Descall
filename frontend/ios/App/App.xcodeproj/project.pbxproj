@@ -39,6 +39,7 @@
 		A4B000112F60000100D35C0A /* DescallToastLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000012F60000100D35C0A /* DescallToastLogic.swift */; };
 		A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000022F60000100D35C0A /* DescallToastCapsule.swift */; };
 		A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000032F60000100D35C0A /* DescallToastPlugin.swift */; };
+		A4B000142F60000100D35C0A /* DescallDeepLinkPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */; };
 		A4A000132F60000100D35C0A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000062F60000100D35C0A /* NotificationService.swift */; };
 		A4A000142F60000100D35C0A /* DescallNotifyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000012F60000100D35C0A /* DescallNotifyLogic.swift */; };
 		A4A000152F60000100D35C0A /* DescallNotifyKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000022F60000100D35C0A /* DescallNotifyKit.swift */; };
@@ -119,6 +120,7 @@
 		A4B000012F60000100D35C0A /* DescallToastLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastLogic.swift; sourceTree = "<group>"; };
 		A4B000022F60000100D35C0A /* DescallToastCapsule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastCapsule.swift; sourceTree = "<group>"; };
 		A4B000032F60000100D35C0A /* DescallToastPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastPlugin.swift; sourceTree = "<group>"; };
+		A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDeepLinkPlugin.swift; sourceTree = "<group>"; };
 		A4A000062F60000100D35C0A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A4A000072F60000100D35C0A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A4A000082F60000100D35C0A /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
@@ -199,6 +201,7 @@
 				A4B000012F60000100D35C0A /* DescallToastLogic.swift */,
 				A4B000022F60000100D35C0A /* DescallToastCapsule.swift */,
 				A4B000032F60000100D35C0A /* DescallToastPlugin.swift */,
+				A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */,
 				C1B2C3D41FED79650016851F /* App.debug.entitlements */,
 				C1B2C3D51FED79650016851F /* App.release.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
@@ -414,6 +417,7 @@
 				A4B000112F60000100D35C0A /* DescallToastLogic.swift in Sources */,
 				A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */,
 				A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */,
+				A4B000142F60000100D35C0A /* DescallDeepLinkPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -605,7 +609,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -628,7 +632,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -652,7 +656,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -677,7 +681,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -702,7 +706,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -727,7 +731,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

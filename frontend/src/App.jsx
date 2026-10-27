@@ -119,7 +119,8 @@ import { applyRemoteGlassDesktopFlag, shouldPreviewDesktopAuth, syncGlassDesktop
 import { parseAppDate } from "./lib/datetime";
 import { preloadWhenIdle } from "./lib/preloadIdle";
 import TitleBar from "./components/TitleBar";
-import UpdateNotes from "./components/UpdateNotes";
+import UpdateNotes, { openWhatsNew } from "./components/UpdateNotes";
+import { startNativeDeepLinks } from "./lib/nativeDeepLinks";
 import ElectronUpdateToast from "./components/ElectronUpdateToast";
 import MessageList from "./components/chat/MessageList";
 import { profanityMaskingActive, setExtraProfanityWords } from "./lib/profanity";
@@ -694,6 +695,12 @@ export default function App() {
   useEffect(() => {
     preloadIceServers().catch(() => {});
   }, []);
+
+  // 3.0.1: descall:// and https://descall.com links opened on iOS route here
+  // (DescallDeepLinkPlugin). The route effect below does the rest.
+  const deepLinkNavigateRef = useRef(navigate);
+  deepLinkNavigateRef.current = navigate;
+  useEffect(() => startNativeDeepLinks((path) => deepLinkNavigateRef.current(path)), []);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -3494,6 +3501,13 @@ export default function App() {
       }
     } catch {
       /* ignore */
+    }
+
+    if (requestedRoute.whatsNew) {
+      // 3.0.1 deep link target (in-app event): show the 3.0 notes over home.
+      openWhatsNew();
+      navigate("/direct", { replace: true });
+      return;
     }
 
     if (requestedRoute.unknown) {
