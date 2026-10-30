@@ -172,6 +172,7 @@ jobs:
           node backend/lib/presenceFanout.selftest.cjs
           node backend/lib/platformPolicy.selftest.cjs
           node backend/lib/adminAuditStore.selftest.cjs
+          node backend/middleware/adminRateLimit.selftest.cjs
           node backend/middleware/gzipJson.selftest.cjs
           node src/lib/onlineRoster.unit.test.mjs
           node backend/lib/edgeConfig.selftest.cjs

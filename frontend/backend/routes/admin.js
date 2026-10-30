@@ -54,10 +54,11 @@ const {
 } = require("../lib/adminDirectory");
 
 const adminAuditStore = require("../lib/adminAuditStore");
+const { adminRateLimit } = require("../middleware/adminRateLimit");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
-router.use(requireAuth, requireAdmin);
+router.use(requireAuth, requireAdmin, adminRateLimit);
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
