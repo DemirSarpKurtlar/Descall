@@ -282,7 +282,7 @@ function isMacLike() {
   return typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 }
 
-export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav = [], onGoto, onClose, onOpenProfile, onUnread }) {
+export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav = [], onGoto, onClose, onOpenProfile, onUnread, embedded = false }) {
   const phone = layout === "phone";
   const ipad = layout === "ipad";
   const [items, setItems] = useState([]);
@@ -351,13 +351,13 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
         e.preventDefault();
         searchRef.current?.focus();
         searchRef.current?.select();
-      } else if (e.key === "Escape" && !confirmDel && !menu && !zoom) {
+      } else if (e.key === "Escape" && !embedded && !confirmDel && !menu && !zoom) {
         onClose?.();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phone, confirmDel, menu, zoom, onClose]);
+  }, [phone, embedded, confirmDel, menu, zoom, onClose]);
 
   const merge = (f) => f && setItems((prev) => prev.map((x) => (x.id === f.id ? f : x)));
 
@@ -510,8 +510,8 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
   if (phone) {
     const inDetail = pushed && sel;
     return (
-      <div className="fb3 fb3-phone" data-fb3="phone">
-        <div className="fb3-dim" />
+      <div className={`fb3 fb3-phone${embedded ? " is-embedded" : ""}`} data-fb3="phone">
+        {embedded ? null : <div className="fb3-dim" />}
         {inDetail ? (
           <div className="fb3-fp fb3-heavy">
             <div className="fb3-nv">
@@ -527,14 +527,14 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
         ) : (
           <div className="fb3-fp fb3-heavy">
             <div className="fb3-nv">
-              <span className="l"><button type="button" onClick={() => onGoto?.("overview")}><I name="chevl" size={22} stroke={2.4} /><span>Yönetici</span></button></span>
+              <span className="l">{embedded ? null : <button type="button" onClick={() => onGoto?.("overview")}><I name="chevl" size={22} stroke={2.4} /><span>Yönetici</span></button>}</span>
               <span />
               <span className="r" style={{ gap: 14 }}>
                 <button type="button" aria-label="Sırala" onClick={() => setMenu("sort")}><I name="down" size={20} stroke={2.2} /></button>
                 <button type="button" aria-label="Diğer" onClick={() => setMenu("more")}><I name="more" size={20} stroke={2.2} /></button>
               </span>
             </div>
-            <div className="lt">Geri Bildirim{sample ? <span className="ex">ÖRNEK</span> : null}</div>
+            {embedded ? null : <div className="lt">Geri Bildirim{sample ? <span className="ex">ÖRNEK</span> : null}</div>}
             <div className="tb">{toolbar}</div>
             {rows}
             {menu === "more" ? (
@@ -546,6 +546,22 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
             ) : null}
           </div>
         )}
+        {overlays}
+      </div>
+    );
+  }
+
+  // Inside the 3.1 admin shell (its sidebar lists every section): list + detail only.
+  if (embedded) {
+    return (
+      <div className="fb3 is-embedded" data-fb3={layout}>
+        <div className="fb3-body">
+          <div className="fb3-col" style={{ "--lw": ipad ? "360px" : "420px" }}>
+            <div className="fb3-tb">{toolbar}</div>
+            {rows}
+          </div>
+          <div className="fb3-det">{detail || <div className="fb3-empty" style={{ margin: "auto" }}>{loaded ? "Bir geri bildirim seç." : ""}</div>}</div>
+        </div>
         {overlays}
       </div>
     );

@@ -7,7 +7,7 @@ import {
   Ban, Trash2, Eye, EyeOff, Lock, Unlock, Wifi, WifiOff, Zap,
   Database, Server, Clock, Calendar, MapPin, Smartphone,
   Mail, Send, Image, Paperclip, X, CheckCircle, AlertTriangle,
-  Info, MoreHorizontal, ChevronDown, ChevronUp, Terminal, Cpu,
+  Info, MoreHorizontal, ChevronUp, Terminal, Cpu,
   HardDrive, Network, TrendingUp, TrendingDown, UserCheck,
   UserX, MessageCircle, Volume2, VolumeX, Flag, FlagOff,
   History, RotateCcw, Save, Edit3, Layers, Grid, List, PieChart,
@@ -19,12 +19,12 @@ import {
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
-import AdminVersionBadge from "./AdminVersionBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
-import AdminFeedbackV3, { FB3_NAV } from "./feedback3/AdminFeedbackV3.jsx";
-import SignupStatsWindow, { openSignupStatsWindow } from "./signupStats/SignupStatsWindow.jsx";
+import AdminFeedbackV3 from "./feedback3/AdminFeedbackV3.jsx";
+import SignupStatsWindow from "./signupStats/SignupStatsWindow.jsx";
+import AdminShell from "./AdminShell.jsx";
 import { isTabletLayout } from "../../lib/appearancePrefs";
 import AdminShop from "./AdminShop";
 import PromoCodesTab from "./PromoCodesTab";
@@ -131,26 +131,15 @@ function useAdminLayout() {
   return layout;
 }
 
-export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, moderatorOnly = false }) {
+export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, moderatorOnly = false, standalone = false }) {
   const { t, locale } = useLocale();
   const [tab, setTab] = useState(moderatorOnly ? "suspicious" : "overview");
   const tabs = moderatorOnly ? TABS.filter((x) => MODERATOR_TABS.includes(x.id)) : TABS;
   const [dossierUserId, setDossierUserId] = useState(null);
   const adminLayout = useAdminLayout();
-  const [statsOpen, setStatsOpen] = useState(false);
-  /** Every section switch goes through here: Kayıt İstatistikleri is a window, not a tab. */
-  const selectTab = useCallback(
-    (id) => {
-      if (id === "signupStats") {
-        if (!openSignupStatsWindow(adminLayout)) setStatsOpen(true);
-        return;
-      }
-      setTab(id);
-    },
-    [adminLayout],
-  );
-  const statsWindow =
-    statsOpen && !moderatorOnly ? <SignupStatsWindow layout={adminLayout} onClose={() => setStatsOpen(false)} /> : null;
+  /** Every section switch goes through here (Kayıt İstatistikleri is a section since 3.1). */
+  const selectTab = useCallback((id) => setTab(id), []);
+  const [feedbackUnread, setFeedbackUnread] = useState(0);
   // Ban / timeout / wallet-freeze shortcuts from the suspicious tab open the existing dossier tools.
   const [dossierIntent, setDossierIntent] = useState(null);
   const [openReportCount, setOpenReportCount] = useState(0);
@@ -689,140 +678,92 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     [users]
   );
 
-  if (tab === "feedback" && !moderatorOnly) {
-    const shown = new Set(FB3_NAV.map(([id]) => id));
-    return (
-      <>
-      <AdminFeedbackV3
-        socket={socket}
-        layout={adminLayout}
-        extraNav={tabs.filter((x) => !shown.has(x.id)).map((x) => [x.id, t(x.label)])}
-        onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")}
-        onClose={onClose}
-        onOpenProfile={(id) => {
-          setDossierUserId(id);
-          setTab("people");
-        }}
-      />
-      {statsWindow}
-      </>
-    );
-  }
-
-  return (
-    <motion.div
-      className="admin-shell"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
-      {statsWindow}
-      <motion.div
-        className="admin-container"
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      >
-        <header className="admin-top">
-          <div className="admin-top-bar">
-            <div className="admin-header-content">
-              <div className="admin-header-icon">
-                <Shield size={22} strokeWidth={2.1} />
-              </div>
-              <div>
-                <h1>{t("admin.title")}</h1>
-                <p className="admin-sub">{t("admin.subtitle")}</p>
-                <AdminVersionBadge t={t} />
-              </div>
-            </div>
-            <button type="button" className="admin-close" onClick={onClose} aria-label={t("Close")}>
-              <X size={18} strokeWidth={2.4} />
-            </button>
-          </div>
-          <AnimatePresence>
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="admin-success-banner"
-              >
-                <CheckCircle size={16} />
-                <span>{successMessage}</span>
-              </motion.div>
-            )}
-            {errorMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="admin-error-banner"
-              >
-                <AlertCircle size={16} />
-                <span>{errorMessage}</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-      </header>
-
+  const shellBadges = { reports: openReportCount, feedback: feedbackUnread };
+  const banner = (
+    <>
+      <AnimatePresence>
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="admin-success-banner"
+          >
+            <CheckCircle size={16} />
+            <span>{successMessage}</span>
+          </motion.div>
+        )}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="admin-error-banner"
+          >
+            <AlertCircle size={16} />
+            <span>{errorMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {err && (
-        <motion.div 
-          className="admin-error"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div className="admin-error" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <AlertTriangle size={16} />
           {err}
         </motion.div>
       )}
+    </>
+  );
+  // Electron: the whole panel is its own window (standalone); elsewhere the scrim + card host it.
+  const frame = (node) =>
+    standalone ? node : (
+      <motion.div
+        className={`admin-shell${adminLayout === "phone" ? " is-phone" : ""}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <motion.div
+          className="admin-container has-adm"
+          initial={{ opacity: 0, scale: 0.97, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: 12 }}
+          transition={{ type: "spring", damping: 26, stiffness: 300 }}
+        >
+          {node}
+        </motion.div>
+      </motion.div>
+    );
 
-      {/* Phones: one native picker lists every section (the scrolling strip
-          hid 13 of 16 tabs, incl. Promosyon Kodları, with no scroll cue). */}
-      <label className="admin-tab-picker">
-        {(() => {
-          const cur = tabs.find((x) => x.id === tab) || tabs[0];
-          const CurIcon = cur.icon;
-          return (
-            <span className="admin-tab-picker-face" aria-hidden="true">
-              <CurIcon size={16} />
-              <b>{t(cur.label)}</b>
-              <span className="admin-tab-picker-n">{t("admin.sectionsCount", { n: tabs.length })}</span>
-              <ChevronDown size={16} />
-            </span>
-          );
-        })()}
-        <select aria-label={t("admin.sections")} value={tab} onChange={(e) => selectTab(e.target.value)}>
-          {tabs.map((tabDef) => (
-            <option key={tabDef.id} value={tabDef.id}>
-              {t(tabDef.label)}{tabDef.id === "reports" && openReportCount > 0 ? ` (${openReportCount > 99 ? "99+" : openReportCount})` : ""}
-            </option>
-          ))}
-        </select>
-      </label>
-      <nav className="admin-tabs">
-        {tabs.map((tabDef) => {
-          const Icon = tabDef.icon;
-          return (
-            <motion.button
-              key={tabDef.id}
-              type="button"
-              className={`admin-tab ${tab === tabDef.id ? "active" : ""}`}
-              onClick={() => selectTab(tabDef.id)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Icon size={16} />
-              {t(tabDef.label)}
-              {tabDef.id === "reports" && openReportCount > 0 ? (
-                <span className="admin-tab-badge">{openReportCount > 99 ? "99+" : openReportCount}</span>
-              ) : null}
-            </motion.button>
-          );
-        })}
-      </nav>
-
+  return frame(
+    <AdminShell
+      tabs={tabs}
+      current={tab}
+      onSelect={selectTab}
+      badges={shellBadges}
+      layout={adminLayout}
+      standalone={standalone}
+      onClose={onClose}
+      viewer={viewerUsername}
+      moderatorOnly={moderatorOnly}
+      banner={banner}
+    >
+      {tab === "feedback" && !moderatorOnly ? (
+        <AdminFeedbackV3
+          embedded
+          socket={socket}
+          layout={adminLayout}
+          onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")}
+          onClose={onClose}
+          onUnread={setFeedbackUnread}
+          onOpenProfile={(id) => {
+            setDossierUserId(id);
+            setTab("people");
+          }}
+        />
+      ) : tab === "signupStats" && !moderatorOnly ? (
+        <SignupStatsWindow embedded layout={adminLayout} />
+      ) : (
       <div className="admin-body">
         {tab === "shop" && (
           <section className="admin-section admin-section-full">
@@ -1498,7 +1439,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "overview" && (
           <AdminOverview
             onOpenPerson={setDossierUserId}
-            onGoto={setTab}
+            onGoto={selectTab}
           />
         )}
 
@@ -1889,7 +1830,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           </section>
         )}
       </div>
-      </motion.div>
-    </motion.div>
+      )}
+    </AdminShell>
   );
 }

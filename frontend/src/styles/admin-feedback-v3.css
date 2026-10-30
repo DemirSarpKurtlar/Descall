@@ -146,3 +146,9 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-fp .fb3-cmp{margin-bottom:max(14px,env(safe-area-inset-bottom,0px))}
 .fb3 .fb3-phone .fb3-dim{background:rgba(8,9,14,.9)}
 html.reduce-motion .fb3 *{transition:none!important;animation:none!important}
+
+/* 3.1: embedded in the admin shell (AdminShell lists every section, no own window). */
+.fb3.is-embedded{position:relative;inset:auto;z-index:auto;flex:1;min-height:0;display:flex;flex-direction:column}
+.fb3.is-embedded .fb3-body{border-radius:0}
+.fb3.fb3-phone.is-embedded .fb3-fp{position:relative;inset:auto;flex:1;min-height:0;padding-top:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;overflow-y:auto}
+.fb3.fb3-phone.is-embedded .fb3-fp .fb3-nv{padding-top:4px}

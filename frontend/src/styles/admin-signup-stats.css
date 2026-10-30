@@ -84,3 +84,10 @@
 .st3 .st-narrow .st-g2{grid-template-columns:1fr!important}
 html.reduce-transparency .st3 .st-win,html.reduce-transparency .st3 .st-menu{-webkit-backdrop-filter:none;backdrop-filter:none;background:#1a1b25}
 html.reduce-motion .st3 *{transition:none!important;animation:none!important}
+
+/* 3.1: a section inside the admin shell (AdminShell), no window of its own. */
+.st3.st3-embedded{position:relative;inset:auto;z-index:auto;flex:1;min-height:0;display:flex;flex-direction:column}
+.st3.st3-embedded .st-win{position:relative;inset:auto;flex:1;min-height:0;border-radius:0;box-shadow:none;background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.st3.st3-embedded.st3-phone .st-win{top:auto;border-radius:0}
+.st3.st3-embedded .st-body{padding:18px 22px 22px}
+.st3.st3-embedded.st3-phone .st-body{padding:4px 12px 24px}

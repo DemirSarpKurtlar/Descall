@@ -153,6 +153,7 @@ const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
 import CallTapCard from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
+import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -5143,7 +5144,7 @@ export default function App() {
           onlineUsers={onlineUsers}
           myStatus={myStatus}
           onStatusChange={handleStatusChange}
-          onAdminClick={() => setAdminOpen(true)}
+          onAdminClick={() => { if (!openAdminPanelWindow()) setAdminOpen(true); }}
           isAdmin={isFullAdmin || isModerator}
           onDmSelect={(dm) => {
             setReplyTo(null);

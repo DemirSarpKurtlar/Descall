@@ -24,8 +24,8 @@ assert.match(close, /justify-content:\s*center/);
 assert.match(close, /width:\s*36px/);
 assert.match(close, /height:\s*36px/);
 
-assert.match(panel, /<button type="button" className="admin-close"/);
-assert.match(panel, /className="admin-top-bar"/);
+// 3.1: the panel chrome (close, menu) lives in AdminShell, not a top bar.
+assert.match(panel, /<AdminShell/);
 assert.doesNotMatch(panel, /RippleButton[\s\S]{0,80}admin-close/);
 assert.match(panel, /role="switch"/);
 assert.match(panel, /onClick=\{\(\) => onChange\(!checked\)\}/);

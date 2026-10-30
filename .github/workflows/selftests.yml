@@ -223,6 +223,10 @@ jobs:
           node src/lib/promoPeoplePicker.selftest.mjs
           node src/lib/promoAvailable.selftest.mjs
           node src/components/admin/adminTabs.selftest.mjs
+          node src/components/admin/adminNav.selftest.mjs
+          node src/components/admin/adminOverviewModel.selftest.mjs
+          node src/styles/admin-liquid.selftest.mjs
+          node electron/adminStatsWindow.selftest.mjs
       - name: Install frontend dependencies (render selftests)
         run: npm ci --no-audit --no-fund
       - name: Server voice channel render selftest

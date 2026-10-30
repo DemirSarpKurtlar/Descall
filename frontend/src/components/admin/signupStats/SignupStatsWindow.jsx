@@ -531,7 +531,7 @@ async function downloadCsv(query) {
 
 // ---- window ----------------------------------------------------------------------
 
-export default function SignupStatsWindow({ layout = "desktop", onClose, standalone = false }) {
+export default function SignupStatsWindow({ layout = "desktop", onClose, standalone = false, embedded = false }) {
   const { query, setQuery, data, error, loading, reload } = useSignupStats();
   const winRef = useRef(null);
   const W = useWidth(winRef);
@@ -554,11 +554,11 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape" && !standalone) close();
+      if (e.key === "Escape" && !standalone && !embedded) close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [close, standalone]);
+  }, [close, standalone, embedded]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -655,6 +655,18 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
           W={W}
           controls={<Controls data={data} query={query} setQuery={setQuery} onCsv={onCsv} csvBusy={csvBusy} />}
         />
+      </div>
+    );
+  }
+
+  // 3.1: a section inside the admin shell, no window chrome of its own.
+  if (embedded) {
+    return (
+      <div className={`st3 st3-embedded${layout === "phone" ? " st3-phone" : ""}`} aria-label="Kayıt İstatistikleri">
+        <div ref={winRef} className="st-win">
+          <div className="st-body">{body}</div>
+        </div>
+        {toast ? <div className="st-toast" role="status">{toast}</div> : null}
       </div>
     );
   }

@@ -1,0 +1,273 @@
+/* Yönetici Paneli › Genel Bakış (3.1, onaylı taslak). Scoped under .aov; the
+   colours come from the .adm shell (admin-shell.css). Colour sits on data:
+   presence, deltas and the to-do state, not on chrome. */
+
+.aov {
+  --aov-r: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
+  color: var(--adm-t1, #f4f6fb);
+}
+:where(.aov) button { font: inherit; color: inherit; }
+
+/* No backdrop-filter on the cards: the panel window behind them is already the
+   frosted layer, and a blur per card is GPU work for no visible gain. */
+.aov-glass {
+  background: var(--adm-glass, rgba(26, 28, 40, 0.58));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 1px var(--adm-hair, rgba(255, 255, 255, 0.075));
+}
+
+/* ── Head ── */
+.aov-head { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.aov-head h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.aov-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--adm-t3); }
+.aov-head-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.aov-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.28);
+}
+.aov-health-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--adm-ok); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18); }
+.aov-health.is-watch { color: #fcd34d; background: rgba(251, 191, 36, 0.1); box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.3); }
+.aov-health.is-watch .aov-health-dot { background: var(--adm-warn); box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.18); }
+.aov-health.is-high,
+.aov-health.is-critical { color: #fca5a5; background: rgba(248, 113, 113, 0.1); box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.32); }
+.aov-health.is-high .aov-health-dot,
+.aov-health.is-critical .aov-health-dot { background: var(--adm-bad); box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18); }
+.aov-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px var(--adm-hair2);
+  cursor: pointer;
+}
+.aov-btn svg { color: var(--adm-t2); }
+.aov-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.aov-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* ── KPI boxes (owner rule: these six stay) ── */
+.aov-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.aov-kpi {
+  min-width: 0;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 13px 15px;
+  border: 0;
+  border-radius: var(--aov-r);
+  text-align: left;
+}
+button.aov-kpi { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.15s ease; }
+button.aov-kpi:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 0 0 1px var(--adm-hair2); }
+button.aov-kpi:active { transform: scale(0.985); }
+button.aov-kpi:focus-visible { outline: 2px solid rgba(var(--adm-brand), 0.8); outline-offset: 2px; }
+.aov-kpi.is-hue { background: linear-gradient(180deg, rgba(var(--adm-brand), 0.16), rgba(var(--adm-brand), 0.04)), var(--adm-glass); }
+.aov-kpi-l { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12.5px; font-weight: 500; color: var(--adm-t2); }
+.aov-kpi-l svg { color: var(--adm-t4); flex: none; }
+.aov-kpi-v { margin-top: 6px; font-size: 30px; font-weight: 600; letter-spacing: -0.025em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aov-kpi-s { margin-top: auto; padding-top: 8px; font-size: 12px; line-height: 1.35; color: var(--adm-t3); }
+.aov-kpi-s b { font-weight: 600; color: var(--adm-t2); }
+.aov-kpi-s b.is-up { color: var(--adm-ok); }
+.aov-kpi-s b.is-down { color: var(--adm-bad); }
+.aov-bar { display: flex; gap: 2px; height: 5px; margin-bottom: 6px; border-radius: 3px; overflow: hidden; }
+.aov-bar i { display: block; min-width: 3px; }
+.aov-bar .is-online { background: var(--adm-ok); }
+.aov-bar .is-idle { background: #f59e0b; }
+.aov-bar .is-dnd { background: #ef4444; }
+.aov-bar .is-invisible { background: #8b90a3; }
+
+/* ── Main grid ── */
+.aov-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 340px;
+  gap: 12px;
+  align-items: start;
+}
+.aov-rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.aov-panel { min-width: 0; border-radius: 18px; display: flex; flex-direction: column; overflow: hidden; }
+.aov-ph { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; }
+.aov-ph h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+.aov-ph p { margin: 2px 0 0; font-size: 12px; color: var(--adm-t3); }
+.aov-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--adm-t2);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--adm-hair2);
+  white-space: nowrap;
+}
+.aov-count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fcd34d;
+  box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.35);
+}
+.aov-seg { flex: none; display: inline-flex; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--adm-hair); }
+.aov-seg button {
+  height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--adm-t3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.aov-seg button.is-on { background: rgba(255, 255, 255, 0.09); color: var(--adm-t1); }
+.aov-seg b { font-weight: 600; color: var(--adm-t2); }
+
+.aov-rows { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow-y: auto; scrollbar-width: thin; }
+.aov-rows li + li .aov-row { border-top: 1px solid var(--adm-hair); }
+.aov-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 48px;
+  padding: 7px 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.aov-row:hover { background: rgba(255, 255, 255, 0.035); }
+.aov-row:focus-visible { outline: 2px solid rgba(var(--adm-brand), 0.8); outline-offset: -2px; }
+.aov-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.aov-row-main b { font-size: 13.5px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aov-row-main b small { margin-left: 5px; font-size: 12px; font-weight: 400; color: var(--adm-t3); }
+.aov-row-main em { font-style: normal; font-size: 12px; color: var(--adm-t3); display: flex; align-items: center; gap: 6px; }
+.aov-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: #8b90a3; }
+.aov-dot.is-online { background: var(--adm-ok); }
+.aov-dot.is-idle { background: #f59e0b; }
+.aov-dot.is-dnd { background: #ef4444; }
+.aov-src.is-google_organic,
+.aov-src.is-google_ads { color: #93c5fd; }
+.aov-src.is-direct { color: #c4b5fd; }
+.aov-src.is-referral { color: #86efac; }
+.aov-row-when { flex: none; text-align: right; font-size: 12px; line-height: 1.35; color: var(--adm-t3); }
+.aov-row-when b { display: block; font-weight: 500; color: var(--adm-t2); }
+.aov-empty { margin: 0; padding: 14px 16px 16px; font-size: 12.5px; color: var(--adm-t3); }
+.aov-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 38px;
+  margin-top: auto;
+  border: 0;
+  border-top: 1px solid var(--adm-hair);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--adm-t2);
+  cursor: pointer;
+}
+.aov-more:hover { color: var(--adm-t1); background: rgba(255, 255, 255, 0.03); }
+
+/* To-do */
+.aov-todo-list { list-style: none; margin: 0; padding: 0; }
+.aov-todo-list li + li .aov-todo-row { border-top: 1px solid var(--adm-hair); }
+.aov-todo-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+button.aov-todo-row { cursor: pointer; }
+button.aov-todo-row:hover { background: rgba(255, 255, 255, 0.035); }
+.aov-todo-ic { flex: none; }
+.is-ok .aov-todo-ic { color: var(--adm-ok); }
+.is-warn .aov-todo-ic { color: var(--adm-warn); }
+.is-bad .aov-todo-ic { color: var(--adm-bad); }
+.is-warn .aov-todo-row { background: linear-gradient(90deg, rgba(251, 191, 36, 0.08), transparent 70%); }
+.is-bad .aov-todo-row { background: linear-gradient(90deg, rgba(248, 113, 113, 0.1), transparent 70%); }
+.aov-todo-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.aov-todo-tx b { font-size: 13.5px; font-weight: 500; }
+.is-ok .aov-todo-tx b { color: var(--adm-t2); }
+.aov-todo-tx em { font-style: normal; font-size: 12px; color: var(--adm-t3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.aov-todo-go { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 12.5px; font-weight: 600; color: #fcd34d; }
+.is-bad .aov-todo-go { color: #fca5a5; }
+
+/* Audit */
+.aov-audit-list { list-style: none; margin: 0; padding: 0 0 6px; }
+.aov-audit-list li { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 8px 16px; }
+.aov-audit-list li:not(:last-child)::after { content: ""; position: absolute; left: 19px; top: 20px; bottom: -8px; width: 1px; background: var(--adm-hair2); }
+.aov-audit-dot { flex: none; width: 7px; height: 7px; margin-top: 6px; border-radius: 50%; background: rgba(var(--adm-brand), 0.9); box-shadow: 0 0 0 3px rgba(var(--adm-brand), 0.15); }
+.aov-audit-tx { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.45; color: var(--adm-t3); overflow-wrap: anywhere; }
+.aov-audit-tx b { color: var(--adm-t1); font-weight: 500; }
+.aov-audit-at { flex: none; font-size: 12px; color: var(--adm-t4); }
+
+/* ── Narrower windows ── */
+@media (max-width: 1360px) {
+  .aov-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1180px) {
+  .aov-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .aov-rail { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* ── Phone (AdminShell layout="phone") ── */
+.adm-phone .aov { gap: 12px; }
+.adm-phone .aov-head { display: none; }
+.adm-phone .aov-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.adm-phone .aov-kpi { min-height: 104px; padding: 12px 13px; }
+.adm-phone .aov-kpi-v { font-size: 26px; }
+.adm-phone .aov-kpi[data-kpi="online"] { grid-column: 1 / -1; min-height: 98px; }
+.adm-phone .aov-kpi[data-kpi="uptime"] { grid-column: 1 / -1; min-height: 0; flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px; }
+.adm-phone .aov-kpi[data-kpi="uptime"] .aov-kpi-v { margin: 0; font-size: 20px; }
+.adm-phone .aov-kpi[data-kpi="uptime"] .aov-kpi-s { margin: 0 0 0 auto; padding: 0; }
+.adm-phone .aov-grid { display: flex; flex-direction: column; gap: 12px; }
+.adm-phone .aov-rail { display: contents; }
+.adm-phone .aov-todo { order: -2; }
+.adm-phone .aov-active { order: -1; }
+.adm-phone .aov-rows { max-height: none; }
+.adm-phone .aov-row { min-height: 52px; padding: 8px 14px; }
+.adm-phone .aov-todo-row { padding: 11px 14px; min-height: 52px; }
+.adm-phone .aov-ph { padding: 13px 14px 9px; }
+
+@media (prefers-reduced-motion: reduce) {
+  button.aov-kpi { transition: none; }
+  button.aov-kpi:active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .aov-glass { background: #1a1c27; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+:root:is(.a11y-solid, .gd-lite) .aov-glass { background: #1a1c27; -webkit-backdrop-filter: none; backdrop-filter: none; }
