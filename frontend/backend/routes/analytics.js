@@ -12,11 +12,10 @@ const router = express.Router();
 const hits = new Map();
 const MAX_PER_MIN = 40;
 
+// req.ip is the visitor behind Render + Cloudflare (trust proxy, lib/clientIp.js);
+// the first X-Forwarded-For value is client-controlled and is not used.
 function clientIp(req) {
-  const xf = String(req.headers["x-forwarded-for"] || "")
-    .split(",")[0]
-    .trim();
-  return xf || String(req.ip || "unknown");
+  return String(req.ip || "unknown");
 }
 
 function rateLimited(req) {

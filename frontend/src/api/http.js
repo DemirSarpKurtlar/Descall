@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config/api";
+import { deviceHeaders } from "../lib/deviceId";
 import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
 
 function httpLocaleMessage(tr, en) {
@@ -29,6 +30,7 @@ export async function httpRequest(path, options = {}) {
         ...options,
         headers: {
           "Content-Type": "application/json",
+          ...deviceHeaders(),
           ...(options.headers || {}),
         },
       }),

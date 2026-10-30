@@ -93,8 +93,10 @@ app.set("io", io);
 // 2.11.2: private message media. Every outgoing Socket.IO payload / JSON body gets its
 // sb://media-private/... refs replaced with short-lived signed URLs.
 require("./lib/privateMedia").installPrivateMediaHooks({ io, express });
-// Needed so req.protocol / x-forwarded-* are correct behind Render/Vercel proxies.
-app.set("trust proxy", 1);
+// Needed so req.protocol / x-forwarded-* / req.ip are correct behind Render +
+// Cloudflare: skip our own proxy hops, the first other address is the visitor
+// (lib/clientIp.js; `1` returned Render's internal 10.x hop before 3.5.0).
+app.set("trust proxy", require("./lib/clientIp").TRUSTED_PROXIES);
 
 const { canonicalHostMiddleware } = require("./middleware/canonicalHost");
 

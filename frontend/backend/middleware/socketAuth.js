@@ -4,13 +4,27 @@ const ageGate = require("../lib/ageGate");
 const { sessionAllowed } = require("../lib/sessionGuard");
 const { peek, recordFailure } = require("../lib/rateLimit");
 
+/** Visitor IP behind Render + Cloudflare or the edge hub (lib/clientIp.js). */
 function socketIp(socket) {
-  const fwd = socket.handshake?.headers?.["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd.length) {
-    const parts = fwd.split(",").map((s) => s.trim()).filter(Boolean);
-    if (parts.length) return parts[parts.length - 1];
+  return require("../lib/clientIp").ipOfSocket(socket);
+}
+
+async function accessCheck(socket, decoded) {
+  try {
+    const accessBans = require("../lib/accessBans");
+    const row = await require("../lib/adminPermissions").loadRow(decoded.sub).catch(() => null);
+    const isAdmin = Boolean(row?.is_admin) || row?.username === "admin" || decoded.username === "admin";
+    const hit = await accessBans.check({
+      ip: socketIp(socket),
+      deviceId: socket.handshake?.auth?.device,
+      action: "socket",
+      userId: decoded.sub,
+      isAdmin,
+    });
+    return Boolean(hit);
+  } catch {
+    return false; // a failing ban lookup never blocks a connection
   }
-  return socket.handshake?.address || "unknown";
 }
 
 function socketAuthMiddleware(socket, next) {
@@ -58,8 +72,12 @@ function socketAuthMiddleware(socket, next) {
             ids.forEach((sid) => revokedSessionIds.add(sid));
             return next(new Error("Authentication failed: account closed because the account holder is under 13."));
           }
-          assign();
-          next();
+          // Erişim yasağı (3.5.0): banned IP / network / device, admins exempt.
+          return accessCheck(socket, decoded).then((blocked) => {
+            if (blocked) return next(new Error("Authentication failed: Bu cihazdan veya ağdan Descall'a erişim engellendi."));
+            assign();
+            next();
+          });
         });
       })
       .catch(() => {

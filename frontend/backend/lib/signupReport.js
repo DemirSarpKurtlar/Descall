@@ -39,11 +39,9 @@ function shortUa(ua) {
   return `${mobile ? "Mobil" : "Desktop"} · ${browser}`;
 }
 
+// req.ip = visitor (trust proxy, lib/clientIp.js); never the client-written first XFF value.
 function clientIp(req) {
-  const xf = String(req?.headers?.["x-forwarded-for"] || "")
-    .split(",")[0]
-    .trim();
-  return xf || String(req?.ip || "").trim() || "";
+  return String(req?.ip || "").trim() || "";
 }
 
 function buildSignupSubject({ username, email }) {
