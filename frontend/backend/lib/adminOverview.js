@@ -517,9 +517,14 @@ function mergeAuditEntries(memoryEntries, dbEntries, limit) {
       target: row.target || row.target_user_id || null,
       meta: row.meta && typeof row.meta === "object" ? row.meta : {},
     });
-    if (out.length >= cap) break;
   }
-  return out;
+  // 3.1.3: memory, the durable admin_audit table and moderation_actions are
+  // interleaved by time (newest first), not concatenated.
+  const t = (e) => {
+    const ms = Date.parse(e.at || "");
+    return Number.isFinite(ms) ? ms : -Infinity;
+  };
+  return out.sort((a, b) => t(b) - t(a)).slice(0, cap);
 }
 
 module.exports = {

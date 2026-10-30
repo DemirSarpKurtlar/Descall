@@ -46,6 +46,7 @@ function feedbackFocusRow(res) {
   };
 }
 
+const adminAuditStore = require("../lib/adminAuditStore");
 const router = express.Router();
 
 function getIo(req) {
@@ -151,6 +152,7 @@ router.get("/overview", async (req, res) => {
       ),
     ]);
     applySystemConfigToState(state, settings.config);
+    const durableAudit = await withTimeout(adminAuditStore.list({ limit: 8 }), QUERY_MS, null);
 
     if (joinedRes.error && isMissingColumnError(joinedRes.error)) {
       joinedRes = await withTimeout(
@@ -249,7 +251,7 @@ router.get("/overview", async (req, res) => {
       newlyJoined,
       recentlyActive,
       recentAudit: mergeAuditEntries(
-        (state.auditLog || []).slice(0, 8).map((e) => ({
+        (durableAudit || []).concat(state.auditLog || []).slice(0, 16).map((e) => ({
           id: e.id,
           at: e.at,
           actor: e.actorUsername,
