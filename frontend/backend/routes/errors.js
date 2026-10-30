@@ -4,6 +4,7 @@ const supabase = require("../db/supabase");
 const state = require("../runtime/sharedState");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin } = require("../middleware/requireAdmin");
+const { requireAdmin2fa, requireStepUp } = require("../middleware/adminSecondFactor");
 const { verifyToken } = require("../config/jwt");
 const { sessionAllowed } = require("../lib/sessionGuard");
 const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
@@ -105,7 +106,7 @@ router.post("/", async (req, res) => {
 });
 
 // Get all errors (admin only)
-router.get("/", requireAuth, requireAdmin, async (req, res) => {
+router.get("/", requireAuth, requireAdmin, requireAdmin2fa, requireStepUp, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("error_logs")
@@ -123,7 +124,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Mark error as resolved
-router.patch("/:id/resolve", requireAuth, requireAdmin, async (req, res) => {
+router.patch("/:id/resolve", requireAuth, requireAdmin, requireAdmin2fa, requireStepUp, async (req, res) => {
   try {
     const { error } = await supabase
       .from("error_logs")
@@ -140,7 +141,7 @@ router.patch("/:id/resolve", requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Delete error
-router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
+router.delete("/:id", requireAuth, requireAdmin, requireAdmin2fa, requireStepUp, async (req, res) => {
   try {
     const { error } = await supabase
       .from("error_logs")

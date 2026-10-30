@@ -6,6 +6,7 @@ const { signToken, signPending2faToken, verifyToken } = require("../config/jwt")
 const { requireAuth } = require("../middleware/auth");
 const { revokedSessionIds, authCodeAttempts, userRoles, systemConfig } = require("../runtime/sharedState");
 const platformPolicy = require("../lib/platformPolicy");
+const twoFactor = require("../lib/twoFactorService");
 const { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL } = require("../lib/mailer");
 const { notifyTeamNewSignup } = require("../lib/signupReport");
 const { buildUserAttributionColumns, isMissingColumnError, countryFromHeaders } = require("../lib/signupAttribution");
@@ -46,6 +47,50 @@ function guard(res, ipKey, accountKey, opts, accountOpts) {
   const checks = [peek(ipKey, opts)];
   if (accountKey) checks.push(peek(accountKey, accountOpts || opts));
   return rejectIfLimited(res, checks);
+}
+
+/**
+ * Second sign-in step (3.2.0): authenticator app first, else the e-mail code.
+ * Used by password, Google and Apple sign-in for existing accounts. Responds
+ * and returns true when a code is required; false = issue the session now.
+ */
+async function secondFactorGate(res, user) {
+  let row = null;
+  try {
+    row = await twoFactor.loadTotp(user.id);
+  } catch {
+    row = null;
+  }
+  const method = twoFactor.methodFor(user, row);
+  if (!method) return false;
+  const pendingToken = signPending2faToken({ id: user.id, username: user.username });
+  if (method === "totp") {
+    res.status(200).json({
+      message: "Two-factor code required.",
+      requires2fa: true,
+      method: "totp",
+      pendingToken,
+      recoveryAvailable: Array.isArray(row?.totp_recovery_hashes) && row.totp_recovery_hashes.length > 0,
+    });
+    return true;
+  }
+  const result = await issueAndSendCode({
+    userId: user.id,
+    email: user.email,
+    username: user.username,
+    purpose: "2fa_login",
+    column: "reauthentication_token",
+    sentAtColumn: "reauthentication_sent_at",
+    title: "Your Descall sign-in code",
+    footer: "Enter this code to finish signing in to Descall.",
+  }).catch(() => ({ sent: false, error: "send_failed" }));
+  if (!result.sent) {
+    console.error("[AUTH] 2FA code email failed", result.error);
+    res.status(503).json({ error: "Could not send your sign-in code. Please try again shortly." });
+    return true;
+  }
+  res.status(200).json({ message: "Two-factor code sent.", requires2fa: true, method: "email", pendingToken, emailHint: maskEmail(user.email) });
+  return true;
 }
 
 async function insertUserWithAttribution(basePayload, selectCols, attribution, authMethod, extra = {}) {
@@ -671,30 +716,7 @@ router.post("/login", async (req, res) => {
     if (await rejectIfChildAccount(req, res, user)) return;
     await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
-    if (user.two_factor_enabled && user.email_confirmed_at && user.email) {
-      const result = await issueAndSendCode({
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-        purpose: "2fa_login",
-        column: "reauthentication_token",
-        sentAtColumn: "reauthentication_sent_at",
-        title: "Your Descall sign-in code",
-        footer: "Enter this code to finish signing in to Descall.",
-      }).catch(() => ({ sent: false, error: "send_failed" }));
-
-      if (!result.sent) {
-        console.error("[AUTH] 2FA code email failed", result.error);
-        return res.status(503).json({ error: "Could not send your sign-in code. Please try again shortly." });
-      }
-
-      return res.status(200).json({
-        message: "Two-factor code sent.",
-        requires2fa: true,
-        pendingToken: signPending2faToken({ id: user.id, username: user.username }),
-        emailHint: maskEmail(user.email),
-      });
-    }
+    if (await secondFactorGate(res, user)) return;
 
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
@@ -753,16 +775,35 @@ router.post("/2fa/verify-login", async (req, res) => {
     const accountKey = isReviewDemo(user.username) ? null : `2fa:acct:${user.id}`;
     if (accountKey && guard(res, null, accountKey, { max: 30 })) return;
 
-    const verdict = await judgeCode({
-      userId: user.id,
-      purpose: "2fa_login",
-      code,
-      storedHash: user.reauthentication_token,
-      sentAtIso: user.reauthentication_sent_at,
-    });
+    // Authenticator app (3.2.0): a 6-digit app code or a single-use recovery code.
+    let totpRow = null;
+    try {
+      totpRow = await twoFactor.loadTotp(user.id);
+    } catch {
+      totpRow = null;
+    }
+    let verdict;
+    if (twoFactor.methodFor(user, totpRow) === "totp") {
+      const v = await twoFactor.verifySecondFactor(user.id, code, { row: totpRow });
+      verdict = v.ok ? { ok: true, via: v.via } : { ok: false, reason: v.reason === "replay" ? "replay" : "mismatch", totp: true };
+    } else {
+      verdict = await judgeCode({
+        userId: user.id,
+        purpose: "2fa_login",
+        code,
+        storedHash: user.reauthentication_token,
+        sentAtIso: user.reauthentication_sent_at,
+      });
+    }
     if (!verdict.ok) {
       recordFailure(`2fa:ip:${ip}`, { max: 40 });
       if (accountKey) recordFailure(accountKey, { max: 30 });
+      if (verdict.totp) {
+        return res.status(401).json({
+          error: verdict.reason === "replay" ? "Bu kod zaten kullanıldı. Bir sonraki kodu bekle." : "Kod yanlış. Doğrulama uygulamandaki güncel kodu ya da bir yedek kodu gir.",
+          code: verdict.reason,
+        });
+      }
       const message =
         verdict.reason === "expired"
           ? "Code expired. Please log in again to request a new one."
@@ -785,7 +826,7 @@ router.post("/2fa/verify-login", async (req, res) => {
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
     void recordAppOpened(user.id);
-    void recordAnalyticsEvent({ userId: user.id, event: "login", props: { method: "2fa" } });
+    void recordAnalyticsEvent({ userId: user.id, event: "login", props: { method: verdict.via ? `2fa_${verdict.via}` : "2fa" } });
 
     return res.status(200).json({
       message: "Login successful.",
@@ -984,6 +1025,9 @@ router.post("/google", async (req, res) => {
         attribution: attributionColumns,
       });
     }
+
+    // Existing accounts with two-factor finish with a code (3.2.0); new ones have none yet.
+    if (!isNewUser && (await secondFactorGate(res, user))) return;
 
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
@@ -1195,6 +1239,8 @@ router.post("/apple", async (req, res) => {
         attribution: attributionColumns,
       });
     }
+
+    if (!isNewUser && (await secondFactorGate(res, user))) return;
 
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
@@ -2238,5 +2284,8 @@ router.post("/password/confirm", requireAuth, async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
+
+// Authenticator app (3.2.0): /2fa/status, /2fa/totp/*, /2fa/recovery/regenerate.
+router.use(require("./twoFactor"));
 
 module.exports = router;

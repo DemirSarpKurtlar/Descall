@@ -173,6 +173,9 @@ jobs:
           node backend/lib/platformPolicy.selftest.cjs
           node backend/lib/adminAuditStore.selftest.cjs
           node backend/middleware/adminRateLimit.selftest.cjs
+          node backend/lib/totp.selftest.cjs
+          node backend/lib/twoFactorService.selftest.cjs
+          node src/lib/adminStepUp.selftest.mjs
           node backend/middleware/gzipJson.selftest.cjs
           node src/lib/onlineRoster.unit.test.mjs
           node backend/lib/edgeConfig.selftest.cjs

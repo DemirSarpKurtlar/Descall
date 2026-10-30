@@ -27,7 +27,7 @@ function socketAuthMiddleware(socket, next) {
 
   try {
     const decoded = verifyToken(token);
-    if (decoded.pending2fa) {
+    if (decoded.pending2fa || decoded.stepUp) {
       return next(new Error("Authentication failed: two-factor verification required."));
     }
     if (bannedUserIds.has(decoded.sub)) {

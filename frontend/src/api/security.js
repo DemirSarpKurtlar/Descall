@@ -11,6 +11,14 @@ export const verifyEmailCode = (code) => authedRequest("/api/auth/email/verify",
 export const enable2fa = () => authedRequest("/api/auth/2fa/enable", { method: "POST" });
 export const disable2fa = (password) => authedRequest("/api/auth/2fa/disable", { method: "POST", body: { password } });
 
+// Authenticator app (3.2.0)
+export const getTwoFactorStatus = () => authedRequest("/api/auth/2fa/status");
+export const startTotpSetup = () => authedRequest("/api/auth/2fa/totp/setup", { method: "POST" });
+export const enableTotp = (code) => authedRequest("/api/auth/2fa/totp/enable", { method: "POST", body: { code } });
+export const disableTotp = ({ code, password } = {}) =>
+  authedRequest("/api/auth/2fa/totp/disable", { method: "POST", body: { code, ...(password ? { password } : {}) } });
+export const regenerateRecoveryCodes = (code) => authedRequest("/api/auth/2fa/recovery/regenerate", { method: "POST", body: { code } });
+
 // Password reset (authenticated, Settings)
 export const requestPasswordResetCode = () =>
   authedRequest("/api/auth/password/request", { method: "POST" });

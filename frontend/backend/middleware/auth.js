@@ -21,7 +21,8 @@ async function requireAuth(req, res, next) {
 
   try {
     const decoded = verifyToken(token);
-    if (decoded.pending2fa) {
+    // Pending sign-in and admin step-up tokens are never session tokens.
+    if (decoded.pending2fa || decoded.stepUp) {
       return res.status(401).json({ error: "Two-factor verification required." });
     }
     const session = await sessionAllowed(decoded);

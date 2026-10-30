@@ -31,6 +31,7 @@ const store = require("../lib/descoinAntibot/store");
 const watch = require("../lib/descoinAntibot/watch");
 const moderation = require("../lib/moderation");
 
+const { requireAdmin2fa, requireStepUp } = require("../middleware/adminSecondFactor");
 const router = express.Router();
 
 const ID_RE = /^[0-9A-Za-z-]{1,64}$/;
@@ -135,7 +136,7 @@ async function writeAudit(req, targetUserId, action, note, meta = {}) {
   return !res.error && !res.skipped;
 }
 
-router.use(requireAuth, requireViewer, limit("read", { windowMs: MINUTE, max: 120 }));
+router.use(requireAuth, requireViewer, requireAdmin2fa, requireStepUp, limit("read", { windowMs: MINUTE, max: 120 }));
 
 router.get("/status", (req, res) => {
   res.json({ ...antibot.status(), role: req.antibotRole, thresholds: config.RISK, retentionDays: config.RETENTION_DAYS });

@@ -105,6 +105,8 @@ export default function MarketingBoot() {
         // extra = { termsAccepted, birthDate, invitedBy } from the Register tab or the
         // Terms + date-of-birth step for a new Google account.
         const res = await apiGoogleLogin(credential, extra);
+        // Account with two-factor (3.2.0): the modal asks for the code first.
+        if (res?.requires2fa || (res?.pendingToken && !res?.token)) return res;
         if (res?.token) setToken(res.token);
         if (res?.user) setUser(res.user);
         if (res?.isNewUser) {

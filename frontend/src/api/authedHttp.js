@@ -1,9 +1,16 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
 import { isTransientHttpStatus, transientFailureError, withReadRetry } from "./transportRetry";
+import { isAdminApiPath, runWithStepUp } from "../lib/adminStepUp";
 
 /** Authenticated JSON request helper, shared by the security/blocking/shop API modules. */
-export async function authedRequest(path, { method = "GET", body, signal } = {}) {
+export async function authedRequest(path, opts = {}) {
+  // Admin API (shop gifts, DesCoin grants...): fresh-code step-up like adminFetch (3.2.0).
+  if (isAdminApiPath(path)) return runWithStepUp((extra) => authedRequestOnce(path, opts, extra));
+  return authedRequestOnce(path, opts, {});
+}
+
+async function authedRequestOnce(path, { method = "GET", body, signal } = {}, extraHeaders = {}) {
   const token = getToken();
   const send = () =>
     fetch(`${API_BASE_URL}${path}`, {
@@ -13,6 +20,7 @@ export async function authedRequest(path, { method = "GET", body, signal } = {})
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...extraHeaders,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });

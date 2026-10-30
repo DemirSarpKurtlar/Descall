@@ -55,10 +55,14 @@ const {
 
 const adminAuditStore = require("../lib/adminAuditStore");
 const { adminRateLimit } = require("../middleware/adminRateLimit");
+const { requireAdmin2fa, requireStepUp, stepUpHandler } = require("../middleware/adminSecondFactor");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
-router.use(requireAuth, requireAdmin, adminRateLimit);
+router.use(requireAuth, requireAdmin, adminRateLimit, requireAdmin2fa);
+// Yönetici güvenliği (3.2.0): a fresh code for every change; see middleware/adminSecondFactor.js.
+router.post("/step-up", stepUpHandler);
+router.use(requireStepUp);
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));

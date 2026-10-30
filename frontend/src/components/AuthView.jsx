@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff } from "./ui/Icon.jsx";
+import { Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff, KeyRound } from "./ui/Icon.jsx";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import { isNativeIOS } from "../lib/platform";
@@ -80,6 +80,16 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
+  // Password, Google and Apple sign-in all land here when the account has 2FA (3.2.0).
+  const openTwoFa = (result) => {
+    if (!result?.requires2fa) return false;
+    setTwoFa({ pendingToken: result.pendingToken, emailHint: result.emailHint, method: result.method || "email", recoveryAvailable: Boolean(result.recoveryAvailable) });
+    setCode("");
+    setTwoFaError("");
+    setUseRecovery(false);
+    return true;
+  };
   useEffect(() => {
     if (error || twoFaError) hapticError();
   }, [error, twoFaError]);
@@ -104,11 +114,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     if (!username.trim() || !password) return;
     if (mode === "login") {
       const result = await onLogin({ username: username.trim(), password });
-      if (result?.requires2fa) {
-        setTwoFa({ pendingToken: result.pendingToken, emailHint: result.emailHint });
-        setCode("");
-        setTwoFaError("");
-      }
+      openTwoFa(result);
       return;
     }
     if (!termsAccepted || !isEligibleBirthDate(birthDate)) return;
@@ -166,8 +172,11 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     }
   };
 
+  const totpMode = twoFa?.method === "totp";
   const subtitle = twoFa
-    ? t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })
+    ? totpMode
+      ? (useRecovery ? t("tfa.loginRecoveryLead") : t("tfa.loginTotpLead"))
+      : t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })
     : socialSignup
       ? t("Finish creating your account")
       : mode === "forgot"
@@ -203,12 +212,14 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             <input
               id="auth-2fa-code"
               type="text"
-              inputMode="numeric"
+              inputMode={useRecovery ? "text" : "numeric"}
               autoComplete="one-time-code"
-              placeholder={t("Verification code")}
+              autoCapitalize="off"
+              spellCheck={false}
+              placeholder={useRecovery ? "abcde-fghij" : t("Verification code")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              maxLength={8}
+              maxLength={useRecovery ? 16 : 8}
               autoFocus
               required
               aria-invalid={twoFaError || error || formError ? "true" : undefined}
@@ -225,6 +236,17 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           <button type="submit" className="auth-submit" disabled={verifying || !code.trim()} aria-busy={verifying}>
             {verifying ? <span>{t("Please wait...")}</span> : <span>{t("Verify")}</span>}
           </button>
+
+          {totpMode ? (
+            <button
+              type="button"
+              className="auth-tab auth-back-btn"
+              onClick={() => { setUseRecovery((v) => !v); setCode(""); setTwoFaError(""); }}
+            >
+              <KeyRound size={16} />
+              <span>{useRecovery ? t("tfa.loginUseApp") : t("tfa.loginUseRecovery")}</span>
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -290,11 +312,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           if (needsTerms) return;
           const invitedBy = inviteRef || peekInviteRef();
           try {
-            await onAppleLogin?.(apple, {
+            const res = await onAppleLogin?.(apple, {
               termsAccepted: mode === "register",
               ...(mode === "register" ? { birthDate } : {}),
               ...(invitedBy ? { invitedBy } : {}),
             });
+            openTwoFa(res);
           } catch (err) {
             if (isSocialSignupRequired(err)) {
               const fromName = usernameFromName([apple?.givenName, apple?.familyName].filter(Boolean).join(""));
@@ -312,11 +335,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           if (needsTerms) return;
           const invitedBy = inviteRef || peekInviteRef();
           try {
-            await onGoogleLogin?.(credential, {
+            const res = await onGoogleLogin?.(credential, {
               termsAccepted: mode === "register",
               ...(mode === "register" ? { birthDate } : {}),
               ...(invitedBy ? { invitedBy } : {}),
             });
+            openTwoFa(res);
           } catch (err) {
             // New Google account (also from the Login tab): Terms + date of birth first.
             if (isSocialSignupRequired(err)) {
