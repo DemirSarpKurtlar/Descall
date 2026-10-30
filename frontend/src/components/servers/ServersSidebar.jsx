@@ -2523,9 +2523,9 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
     >
       <motion.form
         className="server-modal"
-        initial={{ scale: 0.94, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.94, opacity: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
       >
@@ -2836,9 +2836,9 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
     >
       <motion.div
         className={`server-modal server-create-wizard${step === "templates" ? " is-wide" : ""}`}
-        initial={{ scale: 0.94, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.94, opacity: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
