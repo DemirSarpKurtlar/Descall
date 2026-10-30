@@ -60,6 +60,8 @@ import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
+import { getVoiceBusy } from "./lib/voiceBusy";
+import { shouldPlayDisconnectSound } from "./lib/connectionSound";
 import {
   clearToken,
   clearUser,
@@ -1559,7 +1561,8 @@ export default function App() {
       groupRejoinKeyRef.current = "";
       setIsConnected(false);
       setReconnectState(reason === "io client disconnect" ? "idle" : "disconnected");
-      if (reason !== "io client disconnect") audioManager.play("disconnect");
+      // Only in a call / voice channel: idle drops (background resume, deploy) reconnect silently.
+      if (shouldPlayDisconnectSound(reason, getVoiceBusy())) audioManager.play("disconnect");
     });
 
     socket.io.on("reconnect_attempt", (attempt) => {
