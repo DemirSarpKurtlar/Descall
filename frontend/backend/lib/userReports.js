@@ -142,6 +142,8 @@ function groupReportsByTarget(rows) {
         targetAvatarUrl: row.targetAvatarUrl || null,
         openCount: 0,
         totalCount: 0,
+        assigneeId: null,
+        assigneeUsername: null,
         latestAt: null,
         reports: [],
       });
@@ -149,7 +151,14 @@ function groupReportsByTarget(rows) {
     const bucket = map.get(key);
     bucket.reports.push(row);
     bucket.totalCount += 1;
-    if (row.status === "open") bucket.openCount += 1;
+    if (row.status === "open") {
+      bucket.openCount += 1;
+      // The case owner: every open report of an account shares one assignee.
+      if (!bucket.assigneeId && (row.assigneeId || row.assignee_id)) {
+        bucket.assigneeId = row.assigneeId || row.assignee_id;
+        bucket.assigneeUsername = row.assigneeUsername || null;
+      }
+    }
     const ts = row.createdAt || row.created_at;
     if (ts && (!bucket.latestAt || String(ts) > String(bucket.latestAt))) {
       bucket.latestAt = ts;
@@ -187,6 +196,7 @@ function publicReport(row, usersById = {}) {
   if (!row) return null;
   const reporter = usersById[row.reporter_id] || {};
   const target = usersById[row.target_id] || {};
+  const assignee = row.assignee_id ? usersById[row.assignee_id] || {} : null;
   return {
     id: row.id,
     reporterId: row.reporter_id,
@@ -208,6 +218,10 @@ function publicReport(row, usersById = {}) {
     resolution: row.resolution || null,
     resolvedBy: row.resolved_by || null,
     resolvedAt: row.resolved_at || null,
+    // 3.4.0 rapor iş akışı (null until the migration is applied)
+    assigneeId: row.assignee_id || null,
+    assigneeUsername: assignee?.username || null,
+    assignedAt: row.assigned_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -339,16 +353,18 @@ async function createReport({
   };
 }
 
-async function listReports({ status = "open", targetId = null, limit = 80 } = {}) {
+async function listReports({ status = "open", targetId = null, limit = 80, assignee = null, actorId = null } = {}) {
   const capped = Math.min(200, Math.max(1, Number(limit) || 80));
   let q = supabase.from("user_reports").select("*").order("created_at", { ascending: false }).limit(capped);
   if (status && status !== "all" && STATUSES.has(status)) q = q.eq("status", status);
   if (targetId) q = q.eq("target_id", targetId);
+  if (assignee === "me" && actorId) q = q.eq("assignee_id", actorId);
+  else if (assignee === "none") q = q.is("assignee_id", null);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   const rows = data || [];
   const usersById = await loadUsersById(
-    rows.flatMap((r) => [r.reporter_id, r.target_id, r.resolved_by])
+    rows.flatMap((r) => [r.reporter_id, r.target_id, r.resolved_by, r.assignee_id])
   );
   return rows.map((row) => publicReport(row, usersById));
 }

@@ -9,6 +9,7 @@ const descoin = require("../lib/descoin");
 const { listSessions } = require("../lib/sessions");
 const { buildDossier } = require("../lib/userDossier");
 const reports = require("../lib/userReports");
+const workflow = require("../lib/reportWorkflow");
 
 const router = express.Router();
 
@@ -113,10 +114,13 @@ router.get("/reports", async (req, res) => {
   try {
     const status = String(req.query.status || "open");
     const targetId = req.query.targetId || null;
+    const assignee = ["me", "none"].includes(String(req.query.assignee)) ? String(req.query.assignee) : null;
     const rows = await reports.listReports({
       status,
       targetId,
       limit: req.query.limit,
+      assignee,
+      actorId: req.user.id,
     });
     const groups = reports.groupReportsByTarget(rows);
     const summary = await reports.summarizeInbox();
@@ -190,6 +194,7 @@ async function applyFromReport(req, res, kind) {
       resolution: kind,
       markAllOpenForTarget: true,
     });
+    workflow.noteResolution({ targetId, reportId: row.id, actor: req.user, resolution: kind });
     notifyReporters(io, resolved);
     res.json({ ok: true, ...resolved });
   } catch (err) {
@@ -221,12 +226,84 @@ router.post("/reports/:id/dismiss", async (req, res) => {
       markAllOpenForTarget: false,
     });
     audit(req.user, "report_dismiss", resolved.targetId, { reportId: req.params.id });
+    workflow.noteResolution({ targetId: resolved.targetId, reportId: req.params.id, actor: req.user, resolution: "dismissed" });
     notifyAdminRoom(getIo(req), { type: "report_dismiss", reportId: req.params.id, targetId: resolved.targetId });
     notifyReporters(getIo(req), resolved);
     res.json({ ok: true, ...resolved });
   } catch (err) {
     if (err.code === "NOT_FOUND") return res.status(404).json({ error: err.message });
     res.status(500).json({ error: err.message || "Dismiss failed." });
+  }
+});
+
+/* ---------- 3.4.0 rapor iş akışı: atama + not zaman çizelgesi ---------- */
+
+function workflowError(res, err, fallback) {
+  const status = err?.status || (err?.code === "WORKFLOW_UNAVAILABLE" ? 503 : 500);
+  return res.status(status).json({ error: err?.message || fallback, code: err?.code });
+}
+
+router.get("/reports/assignees", async (_req, res) => {
+  try {
+    res.json({ assignees: await workflow.listAssignees() });
+  } catch (err) {
+    workflowError(res, err, "Yöneticiler yüklenemedi.");
+  }
+});
+
+router.post("/reports/target/:targetId/assign", async (req, res) => {
+  const { targetId } = req.params;
+  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Geçersiz hesap." });
+  const raw = req.body?.assigneeId;
+  const assigneeId = raw === "me" ? req.user.id : raw || null;
+  try {
+    const result = await workflow.assignTarget({ targetId, assigneeId, actor: req.user });
+    if (result.changed) {
+      audit(req.user, assigneeId ? "report_assign" : "report_unassign", targetId, { assignee: result.assignee?.username || null, count: result.count });
+      const io = getIo(req);
+      notifyAdminRoom(io, { type: "report_assign", targetId, assigneeId: result.assignee?.id || null });
+      if (result.assignee && result.assignee.id !== req.user.id) {
+        try {
+          const { pushNotification } = require("../socket/handlers");
+          pushNotification(io, result.assignee.id, {
+            type: "admin_report_assigned",
+            title: "Sana bir rapor atandı",
+            body: `${req.user.username} bir hesabın raporlarını sana atadı (${result.count} açık rapor).`,
+            meta: { targetId },
+          });
+        } catch {
+          /* notification is best effort */
+        }
+      }
+    }
+    res.json({ ok: true, assigneeId: result.assignee?.id || null, assigneeUsername: result.assignee?.username || null, count: result.count });
+  } catch (err) {
+    workflowError(res, err, "Atama yapılamadı.");
+  }
+});
+
+router.get("/reports/target/:targetId/notes", async (req, res) => {
+  const { targetId } = req.params;
+  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Geçersiz hesap." });
+  try {
+    res.set("Cache-Control", "no-store");
+    res.json(await workflow.listNotes(targetId));
+  } catch (err) {
+    workflowError(res, err, "Notlar yüklenemedi.");
+  }
+});
+
+router.post("/reports/target/:targetId/notes", async (req, res) => {
+  const { targetId } = req.params;
+  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Geçersiz hesap." });
+  const reportId = workflow.isUuid(req.body?.reportId) ? req.body.reportId : null;
+  try {
+    const note = await workflow.insertNote({ targetId, reportId, actor: req.user, kind: "note", body: req.body?.body });
+    audit(req.user, "report_note", targetId, { length: note.body.length });
+    notifyAdminRoom(getIo(req), { type: "report_note", targetId });
+    res.status(201).json({ ok: true, note });
+  } catch (err) {
+    workflowError(res, err, "Not eklenemedi.");
   }
 });
 
