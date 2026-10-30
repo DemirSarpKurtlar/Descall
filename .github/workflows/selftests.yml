@@ -213,6 +213,7 @@ jobs:
           node src/lib/pinnedPopover.selftest.mjs
           node src/lib/appVersion.selftest.mjs
           node src/lib/singleActiveHover.selftest.mjs
+          node src/lib/connectionSound.selftest.mjs
           node src/lib/groupPhoto.selftest.mjs
           node src/lib/sidebarWidth.selftest.mjs
           node src/lib/swipeReveal.selftest.mjs
