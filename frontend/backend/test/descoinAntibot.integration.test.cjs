@@ -7,7 +7,7 @@
  *     and a risk score of 100 as with it off (monitor only, balances untouched)
  *   - socket signals → risk job → descoin_risk / links / alerts rows; no raw IP,
  *     no message text stored
- *   - admin API: roles (user 403, moderator read-only, admin trust), release
+ *   - admin API: roles (user 403, admin without the section 403, section admin reads + notes, admin trust), release
  *     is a 409 stub, rate limits, device data only as counts
  *   - an unapplied migration (missing tables) is tolerated everywhere
  */
@@ -31,7 +31,8 @@ const fake = createFakeSupabase(
   {
     users: [
       { id: "u-admin", username: "boss", is_admin: true, active_sessions: [{ id: "s-admin" }], created_at: new Date(now - 400 * 24 * HOUR).toISOString() },
-      { id: "u-mod", username: "moddy", is_admin: false, active_sessions: [{ id: "s-mod" }], created_at: new Date(now - 300 * 24 * HOUR).toISOString() },
+      { id: "u-lim", username: "limited", is_admin: true, admin_permissions: ["reports"], active_sessions: [{ id: "s-lim" }] },
+      { id: "u-mod", username: "moddy", is_admin: true, admin_permissions: ["suspicious"], active_sessions: [{ id: "s-mod" }], created_at: new Date(now - 300 * 24 * HOUR).toISOString() },
       { id: "u-user", username: "plain", is_admin: false, active_sessions: [{ id: "s-user" }], created_at: new Date(now - 200 * 24 * HOUR).toISOString() },
       { id: "u-bot1", username: "farm1", display_name: "Farm 1", is_admin: false, descoin_balance: 0, created_at: new Date(now - 2 * HOUR).toISOString(), email_confirmed_at: null, auth_provider: "email" },
       { id: "u-bot2", username: "farm2", is_admin: false, descoin_balance: 0, created_at: new Date(now - 1 * HOUR).toISOString(), email_confirmed_at: null, auth_provider: "email" },
@@ -80,6 +81,7 @@ async function req(method, path, { token, body } = {}) {
 const tok = {
   admin: signToken({ id: "u-admin", username: "boss", sid: "s-admin" }),
   mod: signToken({ id: "u-mod", username: "moddy", sid: "s-mod" }),
+  lim: signToken({ id: "u-lim", username: "limited", sid: "s-lim" }),
   user: signToken({ id: "u-user", username: "plain", sid: "s-user" }),
 };
 
@@ -178,7 +180,6 @@ test("admin API: start server", async () => {
   server = http.createServer(app);
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${server.address().port}`;
-  state.userRoles.set("u-mod", "mod");
 });
 
 test("admin API: no token 401, regular user 403", async () => {
@@ -187,10 +188,10 @@ test("admin API: no token 401, regular user 403", async () => {
   assert.strictEqual((await req("GET", "/api/admin/antibot/flagged", { token: tok.user })).status, 403);
 });
 
-test("admin API: moderator can view flagged list and detail (counts only)", async () => {
+test("admin API: an admin granted Şüpheli Davranışlar views the flagged list and detail (counts only)", async () => {
   const st = await req("GET", "/api/admin/antibot/status", { token: tok.mod });
   assert.strictEqual(st.status, 200);
-  assert.strictEqual(st.body.role, "moderator");
+  assert.strictEqual(st.body.role, "admin");
   assert.strictEqual(st.body.phase, "faz0-monitor");
   assert.strictEqual(st.body.flags.withhold, false);
 
@@ -209,7 +210,6 @@ test("admin API: moderator can view flagged list and detail (counts only)", asyn
   assert.strictEqual(d.body.device.subnet.sharedWithAccounts, 1);
   assert.strictEqual(d.body.device.fp.distinct, 1);
   assert.strictEqual(d.body.links[0].user.username, "farm2");
-  assert.strictEqual(d.body.signals.conversationPartners7d.top, undefined, "moderators do not see who someone talks to");
   const blob = JSON.stringify(d.body);
   for (const row of tableRows("descoin_device_seen")) assert.ok(!blob.includes(row.hash), "no hashes in API output");
   assert.ok(!blob.includes("203.0.113"));
@@ -218,10 +218,12 @@ test("admin API: moderator can view flagged list and detail (counts only)", asyn
   assert.strictEqual(bad.status, 400);
 });
 
-test("admin API: moderator cannot trust, release or run; can add a note", async () => {
-  assert.strictEqual((await req("POST", "/api/admin/antibot/users/u-bot1/trust", { token: tok.mod, body: { trusted: true } })).status, 403);
-  assert.strictEqual((await req("POST", "/api/admin/antibot/users/u-bot1/release", { token: tok.mod })).status, 403);
-  assert.strictEqual((await req("POST", "/api/admin/antibot/run", { token: tok.mod })).status, 403);
+test("admin API: an admin without the section gets 403; the section admin can add a note", async () => {
+  for (const [m, path] of [["GET", "/status"], ["GET", "/flagged"], ["POST", "/users/u-bot1/trust"], ["POST", "/users/u-bot1/release"], ["POST", "/run"], ["POST", "/users/u-bot1/note"]]) {
+    const r = await req(m, `/api/admin/antibot${path}`, m === "GET" ? { token: tok.lim } : { token: tok.lim, body: { trusted: true, note: "x" } });
+    assert.strictEqual(r.status, 403, path);
+    assert.strictEqual(r.body.code, "ADMIN_PERMISSION_DENIED", path);
+  }
   const n = await req("POST", "/api/admin/antibot/users/u-bot1/note", { token: tok.mod, body: { note: "aynı ağdan iki yeni hesap" } });
   assert.strictEqual(n.status, 200);
   assert.strictEqual((await req("POST", "/api/admin/antibot/users/u-bot1/note", { token: tok.mod, body: { note: "" } })).status, 400);

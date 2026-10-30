@@ -12,10 +12,11 @@ const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin } = require("../middleware/requireAdmin");
 const { requireAdmin2fa, requireStepUp } = require("../middleware/adminSecondFactor");
+const { requireSection } = require("../lib/adminPermissions");
 
 const router = express.Router();
 
-router.use(requireAuth, requireAdmin, requireAdmin2fa, requireStepUp);
+router.use(requireAuth, requireAdmin, requireAdmin2fa, requireStepUp, requireSection("feedback"));
 
 function fail(res, tag, err) {
   console.error(`[FEEDBACK] ${tag} failed:`, err?.message || err);

@@ -43,11 +43,10 @@ export default function AdminPanelPage() {
   }, []);
 
   const isFullAdmin = Boolean(me?.is_admin || me?.username === "admin");
-  const isModerator = !isFullAdmin && me?.staffRole === "moderator";
 
   // Live admin updates (admin:sync / feedback:new). The panel also works without it.
   useEffect(() => {
-    if (!isFullAdmin && !isModerator) return undefined;
+    if (!isFullAdmin) return undefined;
     const token = getToken();
     if (!token) return undefined;
     let s = null;
@@ -60,12 +59,12 @@ export default function AdminPanelPage() {
     return () => {
       try { s?.disconnect?.(); } catch { /* window closing */ }
     };
-  }, [isFullAdmin, isModerator]);
+  }, [isFullAdmin]);
 
   if (me === undefined) {
     return <div className="adm adm-desktop is-standalone adm-state" role="status">{t("Loading...")}</div>;
   }
-  if (!isFullAdmin && !isModerator) {
+  if (!isFullAdmin) {
     return (
       <div className="adm adm-desktop is-standalone adm-state" role="alert">
         <p>{me ? t("admin.windowForbidden") : t("admin.windowSignIn")}</p>
@@ -78,7 +77,6 @@ export default function AdminPanelPage() {
       standalone
       socket={socket}
       viewerUsername={me?.username}
-      moderatorOnly={!isFullAdmin}
       onClose={closeWindow}
     />
   );

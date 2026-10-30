@@ -41,7 +41,8 @@ import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import MaintenanceTab from "./MaintenanceTab";
 import SuspiciousTab from "./SuspiciousTab";
-import { ShieldWarning } from "../ui/Icon.jsx";
+import { ShieldWarning, UserGear } from "../ui/Icon.jsx";
+import AdminStaff from "./AdminStaff.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import {
@@ -105,15 +106,43 @@ const TABS = [
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
   { id: "moderation", label: "admin.moderation", icon: Shield },
-  // Şüpheli Davranışlar: admins + moderators (moderators see only this tab; writes are admin-only server-side).
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
   { id: "audit", label: "admin.audit", icon: FileText },
+  // Yöneticiler (3.3.0): owner only; grants sections to the other admins.
+  { id: "staff", label: "admin.staff", icon: UserGear },
 ];
 
-/** Moderators open the panel with the "Şüpheli Davranışlar" tab only. */
-export const MODERATOR_TABS = ["suspicious"];
+/**
+ * Sections this admin may open (GET /admin/me/permissions, 3.3.0). The server
+ * checks every request too; this only hides what would answer 403. Until the
+ * answer arrives only Genel Bakış is listed.
+ */
+export function visibleTabs(sections) {
+  const allow = new Set(Array.isArray(sections) ? sections : ["overview"]);
+  allow.add("overview");
+  return TABS.filter((x) => allow.has(x.id));
+}
+
+function useAdminPermissions(socket) {
+  const [perm, setPerm] = useState({ sections: null, owner: false });
+  const load = useCallback(() => {
+    adminFetch("/me/permissions")
+      .then((d) => setPerm({ sections: Array.isArray(d?.sections) ? d.sections : ["overview"], owner: Boolean(d?.owner) }))
+      .catch(() => setPerm((p) => (p.sections ? p : { sections: ["overview"], owner: false })));
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+  useEffect(() => {
+    if (!socket) return undefined;
+    const on = () => load();
+    socket.on("admin:permissions", on);
+    return () => socket.off("admin:permissions", on);
+  }, [socket, load]);
+  return [perm, load];
+}
 
 /** "phone" (iPhone glass / narrow window), "ipad", or "desktop" for the 3.0 admin screens. */
 function readAdminLayout() {
@@ -133,10 +162,16 @@ function useAdminLayout() {
   return layout;
 }
 
-export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, moderatorOnly = false, standalone = false }) {
+export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, standalone = false }) {
   const { t, locale } = useLocale();
-  const [tab, setTab] = useState(moderatorOnly ? "suspicious" : "overview");
-  const tabs = moderatorOnly ? TABS.filter((x) => MODERATOR_TABS.includes(x.id)) : TABS;
+  const [tab, setTab] = useState("overview");
+  const [perm] = useAdminPermissions(socket);
+  const tabs = useMemo(() => visibleTabs(perm.sections), [perm.sections]);
+  const can = useCallback((id) => Array.isArray(perm.sections) && perm.sections.includes(id), [perm.sections]);
+  // A section taken away while open falls back to Genel Bakış.
+  useEffect(() => {
+    if (perm.sections && !tabs.some((x) => x.id === tab)) setTab("overview");
+  }, [perm.sections, tabs, tab]);
   // 3.2.0: every admin call 403s with ADMIN_2FA_REQUIRED until the app is set up.
   const [admin2faRequired, setAdmin2faRequired] = useAdmin2faGate();
   const [panelEpoch, setPanelEpoch] = useState(0);
@@ -584,15 +619,16 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     }
   };
 
+  const canSystem = can("system");
   useEffect(() => {
-    if (moderatorOnly) return;
+    if (!canSystem) return;
     adminFetch("/snapshot")
       .then(setSnapshot)
       .catch(() => {});
-  }, []);
+  }, [canSystem]);
 
   useEffect(() => {
-    if (!socket || moderatorOnly) return;
+    if (!socket) return;
     const onSync = (p) => setSnapshot(p);
     const onUp = (p) => {
       setSnapshot((s) => (s ? { ...s, lastEvent: p } : s));
@@ -615,15 +651,15 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       socket.off("admin:sync", onSync);
       socket.off("admin:update", onUp);
     };
-  }, [socket, loadStats, loadMemberPulse, loadReportSummary, moderatorOnly]);
+  }, [socket, loadStats, loadMemberPulse, loadReportSummary]);
 
   useEffect(() => {
     // Overview owns its own banner. A failed background stats read must not
     // paint a second "bağlantı gecikti" line above the tabs.
-    if (moderatorOnly) return;
+    if (!perm.sections) return;
     loadStats().catch(() => {});
-    loadReportSummary().catch(() => {});
-  }, [loadStats, loadReportSummary, moderatorOnly]);
+    if (can("reports")) loadReportSummary().catch(() => {});
+  }, [loadStats, loadReportSummary, perm.sections, can]);
 
   useEffect(() => {
     if (tab === "moderation") loadAllUsers().catch((e) => setErr(e.message));
@@ -750,14 +786,14 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       standalone={standalone}
       onClose={onClose}
       viewer={viewerUsername}
-      moderatorOnly={moderatorOnly}
+      owner={perm.owner}
       banner={banner}
     >
       <AdminStepUpHost />
       <Fragment key={panelEpoch}>
       {admin2faRequired ? (
         <Admin2faGate onReady={() => { setAdmin2faRequired(false); setPanelEpoch((n) => n + 1); }} />
-      ) : tab === "feedback" && !moderatorOnly ? (
+      ) : tab === "feedback" ? (
         <AdminFeedbackV3
           embedded
           socket={socket}
@@ -770,7 +806,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             setTab("people");
           }}
         />
-      ) : tab === "signupStats" && !moderatorOnly ? (
+      ) : tab === "signupStats" ? (
         <SignupStatsWindow embedded layout={adminLayout} />
       ) : (
       <div className="admin-body">
@@ -784,6 +820,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
 
         {tab === "livepopup" && <AdminLivePopup />}
+
+        {tab === "staff" && perm.owner && <AdminStaff tabs={TABS} />}
 
         {tab === "announcements" && (
           <section className="admin-section admin-section-full">
@@ -1477,9 +1515,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
         {tab === "suspicious" && (
           <SuspiciousTab
-            role={moderatorOnly ? "moderator" : "admin"}
+            role="admin"
             onOpenTool={
-              moderatorOnly
+              !can("people")
                 ? undefined
                 : (id, intent) => {
                     setDossierUserId(id);

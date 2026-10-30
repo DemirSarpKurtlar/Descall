@@ -18,10 +18,11 @@ assert.equal(tabs.length, entries, "every TABS entry parsed");
 for (const must of ["overview", "maintenance", "directory", "promo", "shop", "security", "audit"]) {
   assert.ok(tabs.some((x) => x.id === must), `tab ${must} registered`);
 }
-// Admins get every tab, ungated. The only filter is the moderator mode (decisions 25 Oct 2026):
-// moderators open the panel with "Şüpheli Davranışlar" alone, and the server enforces it too.
-assert.ok(/const tabs = moderatorOnly \? TABS\.filter\(\(x\) => MODERATOR_TABS\.includes\(x\.id\)\) : TABS;/.test(src), "tabs are not filtered/gated client-side for admins");
-assert.ok(/MODERATOR_TABS = \["suspicious"\]/.test(src), "moderator mode shows only the suspicious tab");
+// 3.3.0: no moderator mode. Each admin sees the sections the owner granted
+// (GET /admin/me/permissions); the server checks the same list on every request.
+assert.ok(!/moderatorOnly|MODERATOR_TABS/.test(src), "moderator mode is gone");
+assert.ok(/const tabs = useMemo\(\(\) => visibleTabs\(perm\.sections\), \[perm\.sections\]\);/.test(src), "tabs follow the granted sections");
+assert.ok(tabs.some((x) => x.id === "staff"), "Yöneticiler section registered");
 for (const { label } of tabs) {
   const key = label.split(".").pop();
   if (label.startsWith("admin.")) {

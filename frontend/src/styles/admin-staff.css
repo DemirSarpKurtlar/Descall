@@ -1,0 +1,150 @@
+/* Yönetici Paneli › Yöneticiler (3.3.0). Scoped under .ast; colours from the
+   .adm shell (admin-shell.css). Same card material as Genel Bakış (.aov-glass):
+   the panel window is already the frosted layer, cards add no extra blur. */
+
+.ast {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--adm-t1, #f4f6fb);
+  max-width: 980px;
+}
+:where(.ast) button { font: inherit; color: inherit; cursor: pointer; }
+:where(.ast) button:disabled { cursor: default; opacity: 0.5; }
+
+.ast-head { display: flex; align-items: center; gap: 12px; }
+.ast-head h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.ast-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--adm-t3); max-width: 62ch; }
+.ast-head-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: rgb(var(--adm-brand, 99, 102, 241));
+  background: rgba(var(--adm-brand, 99, 102, 241), 0.14);
+  box-shadow: inset 0 0 0 1px rgba(var(--adm-brand, 99, 102, 241), 0.3);
+}
+
+.ast-card,
+.ast-add {
+  border-radius: 16px;
+  background: var(--adm-glass, rgba(26, 28, 40, 0.58));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 1px var(--adm-hair, rgba(255, 255, 255, 0.075));
+}
+
+/* add admin */
+.ast-add { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ast-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 11px;
+  color: var(--adm-t3);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--adm-hair2, rgba(255, 255, 255, 0.1));
+}
+.ast-search:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--adm-brand, 99, 102, 241), 0.7); }
+.ast-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--adm-t1); font: inherit; font-size: 14px; }
+.ast-search button { border: 0; background: none; padding: 4px; color: var(--adm-t3); display: grid; }
+.ast-cands { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ast-cands li { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 8px; border-radius: 10px; }
+.ast-cands li:hover { background: rgba(255, 255, 255, 0.04); }
+
+/* avatar + name */
+.ast-av { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; }
+.ast-av.is-letter {
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 14px;
+  background: rgba(var(--adm-brand, 99, 102, 241), 0.22);
+  color: var(--adm-t1);
+}
+.ast-who { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ast-who b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ast-who span { font-size: 12px; color: var(--adm-t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* admin cards */
+.ast-list { display: flex; flex-direction: column; gap: 10px; }
+.ast-card { padding: 12px 14px; }
+.ast-card.is-owner { background: linear-gradient(180deg, rgba(var(--adm-brand, 99, 102, 241), 0.12), rgba(var(--adm-brand, 99, 102, 241), 0.03)), var(--adm-glass, rgba(26, 28, 40, 0.58)); }
+.ast-card-head { display: flex; align-items: center; gap: 10px; }
+.ast-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ast-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ast-chip.is-owner { color: rgb(var(--adm-brand, 99, 102, 241)); background: rgba(var(--adm-brand, 99, 102, 241), 0.14); }
+.ast-chip.is-ok { color: #6ee7b7; background: rgba(52, 211, 153, 0.1); }
+.ast-chip.is-warn { color: #fcd34d; background: rgba(251, 191, 36, 0.1); }
+.ast-summary { margin: 8px 0 0 46px; font-size: 12.5px; color: var(--adm-t2); }
+
+.ast-toggle,
+.ast-ghost,
+.ast-primary,
+.ast-danger,
+.ast-quick button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, transform 0.12s ease;
+}
+.ast-toggle,
+.ast-ghost,
+.ast-quick button { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px var(--adm-hair2, rgba(255, 255, 255, 0.1)); }
+.ast-toggle:hover,
+.ast-ghost:hover:not(:disabled),
+.ast-quick button:hover { background: rgba(255, 255, 255, 0.1); }
+.ast-primary { color: #fff; background: rgb(var(--adm-brand, 99, 102, 241)); }
+.ast-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.ast-danger { color: #fca5a5; background: rgba(248, 113, 113, 0.1); box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.28); }
+.ast-danger:hover:not(:disabled) { background: rgba(248, 113, 113, 0.18); }
+:where(.ast) button:active:not(:disabled) { transform: scale(0.97); }
+:where(.ast) button:focus-visible { outline: 2px solid rgba(var(--adm-brand, 99, 102, 241), 0.8); outline-offset: 2px; }
+
+.ast-edit { margin: 12px 0 2px; padding-top: 12px; border-top: 1px solid var(--adm-hair, rgba(255, 255, 255, 0.075)); display: flex; flex-direction: column; gap: 12px; }
+.ast-quick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ast-quick span { font-size: 12px; color: var(--adm-t3); }
+.ast-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.ast-group { margin: 0; padding: 8px 10px 6px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, 0.03); box-shadow: inset 0 0 0 1px var(--adm-hair, rgba(255, 255, 255, 0.075)); }
+.ast-group legend { padding: 0; margin-bottom: 4px; float: left; width: 100%; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--adm-t3); }
+.ast-opt { display: flex; align-items: center; gap: 9px; min-height: 34px; font-size: 13.5px; cursor: pointer; clear: both; }
+.ast-actions { display: flex; align-items: center; gap: 8px; }
+.ast-sp { flex: 1; }
+.ast-err { margin: 0; font-size: 12.5px; color: #fca5a5; }
+.ast-muted { margin: 0; font-size: 13px; color: var(--adm-t3); }
+
+@media (max-width: 720px) {
+  .ast-card-head { flex-wrap: wrap; }
+  .ast-chips { order: 3; width: 100%; padding-left: 46px; }
+  .ast-summary { margin-left: 0; }
+  .ast-toggle,
+  .ast-ghost,
+  .ast-primary,
+  .ast-danger,
+  .ast-quick button { height: 44px; padding: 0 14px; }
+  .ast-opt { min-height: 44px; }
+  .ast-groups { grid-template-columns: 1fr; }
+  .ast-actions { flex-wrap: wrap; }
+  .ast-actions .ast-danger { width: 100%; order: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.ast) button { transition: none; }
+  :where(.ast) button:active:not(:disabled) { transform: none; }
+}

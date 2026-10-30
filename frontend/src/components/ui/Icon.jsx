@@ -203,6 +203,7 @@ import {
   Shield as PShield,
   ShieldCheck as PShieldCheck,
   ShieldWarning as PShieldWarning,
+  UserGear as PUserGear,
   ShoppingBag as PShoppingBag,
   SignIn as PSignIn,
   SignOut as PSignOut,
@@ -333,6 +334,7 @@ export const XCircle = make(PXCircle, "XCircle");
 export const Square = make(PSquare, "Square");
 export const ShieldCheck = make(PShieldCheck, "ShieldCheck");
 export const ShieldWarning = make(PShieldWarning, "ShieldWarning");
+export const UserGear = make(PUserGear, "UserGear");
 export const Pin = make(PPushPin, "Pin");
 export const Phone = make(PPhone, "Phone");
 export const Pencil = make(PPencilSimple, "Pencil");

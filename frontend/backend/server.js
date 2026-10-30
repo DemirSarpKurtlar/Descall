@@ -910,127 +910,8 @@ app.get("/api/announcements/unread/count", requireAuth, async (req, res) => {
   }
 });
 
-// ========== ADMIN ENDPOINTS ==========
-
-// Make user admin - PUT /api/admin/make-admin/:userId
-app.put("/api/admin/make-admin/:userId", requireAuth, async (req, res) => {
-  try {
-    // Check if requester is admin (by username or is_admin field)
-    const { data: requester } = await supabase
-      .from("users")
-      .select("username, is_admin")
-      .eq("id", req.user.id)
-      .single();
-    
-    const isAdmin = requester?.is_admin || req.user.username === "admin";
-    
-    if (!isAdmin) {
-      return res.status(403).json({ success: false, error: "Not authorized" });
-    }
-    
-    const { userId } = req.params;
-    
-    const { data, error } = await supabase
-      .from("users")
-      .update({ is_admin: true })
-      .eq("id", userId)
-      .select()
-      .single();
-    
-    if (error) return sendServerError(req, res, error);
-    
-    // Notify the user via Socket.IO to refresh their data
-    const io = req.app.get("io");
-    io.to(`user:${userId}`).emit("user:updated", { is_admin: true });
-    
-    return res.json({ success: true, user: data });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Remove admin - PUT /api/admin/remove-admin/:userId
-app.put("/api/admin/remove-admin/:userId", requireAuth, async (req, res) => {
-  try {
-    // Check if requester is admin (by username or is_admin field)
-    const { data: requester } = await supabase
-      .from("users")
-      .select("username, is_admin")
-      .eq("id", req.user.id)
-      .single();
-    
-    const isAdmin = requester?.is_admin || req.user.username === "admin";
-    
-    if (!isAdmin) {
-      return res.status(403).json({ success: false, error: "Not authorized" });
-    }
-    
-    const { userId } = req.params;
-    
-    const { data, error } = await supabase
-      .from("users")
-      .update({ is_admin: false })
-      .eq("id", userId)
-      .select()
-      .single();
-    
-    if (error) return sendServerError(req, res, error);
-    
-    return res.json({ success: true, user: data });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Get all users - GET /api/admin/users
-app.get("/api/admin/users", requireAuth, async (req, res) => {
-  try {
-    console.log("[ADMIN-USERS] Request from user ID:", req.user.id);
-    console.log("[ADMIN-USERS] Token username:", req.user.username);
-    
-    // Check if requester is admin (by username or is_admin field)
-    const { data: requester } = await supabase
-      .from("users")
-      .select("username, is_admin")
-      .eq("id", req.user.id)
-      .single();
-    
-    console.log("[ADMIN-USERS] Requester from DB:", requester);
-    
-    // Use token username if DB lookup fails
-    const isAdmin = requester?.is_admin || req.user.username === "admin";
-    
-    if (!isAdmin) {
-      console.log("[ADMIN-USERS] Authorization failed - is_admin:", requester?.is_admin, "username:", req.user.username);
-      return res.status(403).json({ success: false, error: "Not authorized" });
-    }
-    
-    const { data, error, count } = await supabase
-      .from("users")
-      .select("id, username, avatar_url, is_admin, created_at", { count: "exact" })
-      .order("username", { ascending: true });
-    
-    if (error) return sendServerError(req, res, error);
-    
-    // Add online status from Socket.IO presence
-    const state = require("./runtime/sharedState");
-    const usersWithStatus = (data || []).map(user => ({
-      ...user,
-      isOnline: state.presence.has(user.id),
-      status: state.presence.get(user.id)?.status || "offline"
-    }));
-    
-    console.log("[ADMIN-USERS] Returning", usersWithStatus.length, "users");
-    return res.json({
-      success: true,
-      users: usersWithStatus,
-      total: count ?? usersWithStatus.length,
-    });
-  } catch (err) {
-    console.error("[ADMIN-USERS] Error:", err);
-    return sendServerError(req, res, err);
-  }
-});
+// Admin role changes and the user list live in routes/admin.js (owner-only make/remove-admin,
+// section permissions); the old duplicates here were shadowed by that router and are gone.
 
 console.log("[SERVER] Routes registered:");
 console.log("  - /auth");
@@ -1044,9 +925,6 @@ console.log("  - /api/user/profile");
 console.log("  - /api/user/notifications");
 console.log("  - /api/user/privacy");
 console.log("  - /api/user/regional");
-console.log("  - /api/admin/make-admin/:userId");
-console.log("  - /api/admin/remove-admin/:userId");
-console.log("  - /api/admin/users");
 console.log("  - /api/test (no auth)");
 console.log("  - /api/status");
 console.log("  - /health");
