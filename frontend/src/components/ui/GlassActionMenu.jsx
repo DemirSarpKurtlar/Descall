@@ -13,7 +13,7 @@ import "../groups/GroupMenu.css";
  *
  * sections: [[{ id, label, icon: Icon, onSelect, danger?, badge? }], ...]
  */
-export default function GlassActionMenu({ open, anchorRef, onClose, sections = [], ariaLabel, testId, zIndex, variant, offset }) {
+export default function GlassActionMenu({ open, anchorRef, onClose, sections = [], ariaLabel, testId, zIndex, variant, offset, align = "right" }) {
   if (typeof document === "undefined") return null;
   return createPortal(
     <AnimatePresence>
@@ -28,6 +28,7 @@ export default function GlassActionMenu({ open, anchorRef, onClose, sections = [
           zIndex={zIndex}
           variant={variant}
           offset={offset}
+          align={align}
         />
       ) : null}
     </AnimatePresence>,
@@ -35,7 +36,7 @@ export default function GlassActionMenu({ open, anchorRef, onClose, sections = [
   );
 }
 
-function MenuBody({ anchorRef, onClose, sections, ariaLabel, testId, zIndex, variant, offset }) {
+function MenuBody({ anchorRef, onClose, sections, ariaLabel, testId, zIndex, variant, offset, align }) {
   const reduceMotion = useReducedMotion();
   const menuRef = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0, origin: "top right", visibility: "hidden" });
@@ -57,13 +58,16 @@ function MenuBody({ anchorRef, onClose, sections, ariaLabel, testId, zIndex, var
       let below = true;
       if (top + h > window.innerHeight - pad) { top = r.top - h - 6; below = false; }
       top = Math.max(pad, Math.min(top, window.innerHeight - h - pad));
-      const left = Math.max(pad, Math.min(r.right - w + dx, window.innerWidth - w - pad));
-      setPos({ top, left, origin: below ? "top right" : "bottom right", visibility: "visible" });
+      // align "left": left edges aligned (menus that open from a chip at the start of a row).
+      const fromLeft = align === "left" && Number.isFinite(r.left);
+      const left = Math.max(pad, Math.min((fromLeft ? r.left : r.right - w) + dx, window.innerWidth - w - pad));
+      const side = fromLeft ? "left" : "right";
+      setPos({ top, left, origin: below ? `top ${side}` : `bottom ${side}`, visibility: "visible" });
     };
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [anchorRef, offset?.x, offset?.y]);
+  }, [anchorRef, offset?.x, offset?.y, align]);
 
   useEffect(() => {
     const outside = (e) => {

@@ -6,10 +6,14 @@ import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import AdminUserDossier from "./AdminUserDossier";
+import { AssigneeButton, CaseTimeline } from "./ReportCase.jsx";
+import "../../styles/report-case.css";
 
 export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUser }) {
   const { t, locale } = useLocale();
   const [status, setStatus] = useState("open");
+  // 3.4.0: "" = everyone's, "me" = assigned to me, "none" = nobody works it yet.
+  const [assignee, setAssignee] = useState("");
   const [payload, setPayload] = useState(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -20,14 +24,16 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
     setBusy(true);
     setError("");
     try {
-      const data = await adminFetch(`/reports?status=${encodeURIComponent(status)}`);
+      const q = new URLSearchParams({ status });
+      if (assignee) q.set("assignee", assignee);
+      const data = await adminFetch(`/reports?${q.toString()}`);
       setPayload(data);
     } catch (err) {
       setError(err.message || t("admin.reportsLoadError"));
     } finally {
       setBusy(false);
     }
-  }, [status, t]);
+  }, [status, assignee, t]);
 
   useEffect(() => {
     load().catch(() => {});
@@ -86,6 +92,14 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
         ))}
       </div>
 
+      <div className="rc-filter" role="group" aria-label={t("admin.caseFilter")}>
+        {[["", "admin.caseFilterAll"], ["me", "admin.caseFilterMine"], ["none", "admin.caseFilterNone"]].map(([id, key]) => (
+          <button key={id || "all"} type="button" className={`rc-seg${assignee === id ? " is-on" : ""}`} aria-pressed={assignee === id} onClick={() => setAssignee(id)}>
+            {t(key)}
+          </button>
+        ))}
+      </div>
+
       {error ? (
         <div className="admin-error-banner">
           <AlertTriangle size={16} /> {error}
@@ -136,6 +150,11 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
                     <FolderOpen size={14} /> {t("admin.openDossier")}
                   </button>
                 </header>
+                {g.openCount > 0 ? (
+                  <div className="rc-row">
+                    <AssigneeButton group={g} t={t} onChanged={load} />
+                  </div>
+                ) : null}
                 <ul>
                   {(g.reports || []).map((r) => (
                     <li key={r.id}>
@@ -194,6 +213,7 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
                     </li>
                   ))}
                 </ul>
+                <CaseTimeline targetId={g.targetId} latestReportId={g.reports?.[0]?.id} t={t} locale={locale} />
               </article>
             ))}
           </div>
