@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { occlusionInsets, fillsWorkArea, clientBounds, fitBoundsToWorkArea } = require("./windowOcclusion.cjs");
+const { occlusionInsets, fillsWorkArea, clientBounds, fitBoundsToWorkArea, measureWindowOcclusion } = require("./windowOcclusion.cjs");
 
 const work = { x: 0, y: 0, width: 1920, height: 1040 };
 
@@ -108,4 +108,40 @@ test("minimum size cannot exceed a short work area", () => {
 test("fillsWorkArea allows a 2px DPI slop", () => {
   assert.equal(fillsWorkArea({ x: 0, y: 1, width: 1921, height: 1039 }, work), true);
   assert.equal(fillsWorkArea({ x: 100, y: 100, width: 1400, height: 900 }, work), false);
+});
+
+// Fake electron.screen so measureWindowOcclusion sees a 1920x1040 work area
+// above a 40px taskbar (the real module is not loadable under node --test).
+function withFakeScreen(fn) {
+  const Module = require("node:module");
+  const original = Module._load;
+  Module._load = function (request, ...rest) {
+    if (request === "electron") {
+      return { screen: { getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }) } };
+    }
+    return original.call(this, request, ...rest);
+  };
+  try { return fn(); } finally { Module._load = original; }
+}
+function fakeWin({ maximized = false, bounds }) {
+  return {
+    isDestroyed: () => false,
+    isMaximized: () => maximized,
+    isFullScreen: () => false,
+    getBounds: () => bounds,
+    getContentBounds: () => bounds,
+  };
+}
+
+test("a restored window dragged over the taskbar is not squeezed (it overflows the screen)", () => {
+  // Bottom edge 250px below the work area, i.e. under the taskbar and off screen.
+  const win = fakeWin({ bounds: { x: 20, y: 390, width: 1400, height: 900 } });
+  const insets = withFakeScreen(() => measureWindowOcclusion(win));
+  assert.deepEqual(insets, { bottomInset: 0, topInset: 0, leftInset: 0, rightInset: 0 });
+});
+
+test("a maximized window whose client crosses the taskbar still gets the inset", () => {
+  const win = fakeWin({ maximized: true, bounds: { x: 0, y: 0, width: 1920, height: 1080 } });
+  const insets = withFakeScreen(() => measureWindowOcclusion(win));
+  assert.equal(insets.bottomInset, 40);
 });

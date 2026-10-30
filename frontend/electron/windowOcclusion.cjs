@@ -104,9 +104,24 @@ function fitBoundsToWorkArea(bounds, workArea, limits = {}) {
   };
 }
 
+function isPinnedToScreen(win) {
+  try {
+    return Boolean(
+      (typeof win.isMaximized === "function" && win.isMaximized())
+      || (typeof win.isFullScreen === "function" && win.isFullScreen())
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
 function measureWindowOcclusion(win) {
   const empty = { bottomInset: 0, topInset: 0, leftInset: 0, rightInset: 0 };
   if (!win || (typeof win.isDestroyed === "function" && win.isDestroyed())) return empty;
+  // Only a maximized / fullscreen window can hang under the taskbar by itself.
+  // A restored window the user drags toward the taskbar must overflow the
+  // screen like any other window; insetting it squeezed the page (3.0.3).
+  if (!isPinnedToScreen(win)) return empty;
   try {
     const { screen } = require("electron");
     const windowBounds = win.getBounds();
