@@ -102,6 +102,21 @@ router.post("/people/:id/revoke-sessions", async (req, res) => {
   }
 });
 
+// KVKK veri dışa aktarma, admin side (3.6.0): the same file the account owner gets.
+router.get("/people/:id/export", async (req, res) => {
+  const id = String(req.params.id || "");
+  if (!workflow.isUuid(id)) return res.status(400).json({ error: "Geçersiz kullanıcı." });
+  try {
+    const { filename, data } = await require("../lib/dataExport").buildExport(id, { requestedBy: `admin:${req.user.username}` });
+    audit(req.user, "data_export", id, { username: data.account?.username || null });
+    res.set("Cache-Control", "no-store");
+    res.set("Content-Disposition", `attachment; filename="${filename}"`);
+    res.json(data);
+  } catch (err) {
+    res.status(err?.status || 500).json({ error: err?.status === 404 ? err.message : "Dışa aktarma hazırlanamadı." });
+  }
+});
+
 router.get("/reports/summary", async (_req, res) => {
   try {
     res.json(await reports.summarizeInbox());

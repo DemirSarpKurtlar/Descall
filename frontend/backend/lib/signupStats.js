@@ -325,8 +325,7 @@ function failureReason(status) {
 /** Express helper: call at the top of POST /auth/register; records the outcome when the response ends. */
 function trackSignupAttempt(req, res, { method = "email", countryFromHeaders } = {}) {
   const day = istDay(new Date());
-  const xf = String(req.headers?.["x-forwarded-for"] || "").split(",")[0].trim();
-  const key = attemptKey(xf || req.ip || "", String(req.headers?.["user-agent"] || "").slice(0, 300), day);
+  const key = attemptKey(req.ip || "", String(req.headers?.["user-agent"] || "").slice(0, 300), day);
   let country = null;
   try {
     const c = countryFromHeaders ? countryFromHeaders(req.headers || {}) : "";

@@ -48,11 +48,20 @@ function clientIp(req) {
  * instant revocation is layered on top via an in-memory set (see
  * runtime/sharedState.revokedSessionIds) checked on every request.
  */
-async function createSession(userId, { userAgent, ip } = {}) {
+async function createSession(userId, { userAgent, ip, deviceId } = {}) {
+  // 3.5.0: keyed hash of the app's device id, so an admin can ban this device
+  // (lib/accessBans.js). Never sent back to clients (routes/auth.js strips it).
+  let deviceHash = null;
+  try {
+    deviceHash = require("./accessBans").fingerprintOf({ deviceId }).device;
+  } catch {
+    deviceHash = null;
+  }
   const session = {
     id: randomUUID(),
     device: describeDevice(userAgent),
     ip: ip || "unknown",
+    ...(deviceHash ? { deviceHash } : {}),
     userAgent: String(userAgent || "").slice(0, 300),
     createdAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),

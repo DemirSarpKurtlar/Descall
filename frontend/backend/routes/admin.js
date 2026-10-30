@@ -67,6 +67,7 @@ router.use(requireStepUp);
 // Yetkili yöneticiler (3.3.0): each admin only opens the sections the owner granted.
 router.use(adminPermissions.requireAdminSection);
 router.use(require("./adminStaff"));
+router.use(require("./adminAccess"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));

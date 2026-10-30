@@ -93,8 +93,10 @@ app.set("io", io);
 // 2.11.2: private message media. Every outgoing Socket.IO payload / JSON body gets its
 // sb://media-private/... refs replaced with short-lived signed URLs.
 require("./lib/privateMedia").installPrivateMediaHooks({ io, express });
-// Needed so req.protocol / x-forwarded-* are correct behind Render/Vercel proxies.
-app.set("trust proxy", 1);
+// Needed so req.protocol / x-forwarded-* / req.ip are correct behind Render +
+// Cloudflare: skip our own proxy hops, the first other address is the visitor
+// (lib/clientIp.js; `1` returned Render's internal 10.x hop before 3.5.0).
+app.set("trust proxy", require("./lib/clientIp").TRUSTED_PROXIES);
 
 const { canonicalHostMiddleware } = require("./middleware/canonicalHost");
 
@@ -473,6 +475,8 @@ app.use("/api/calls", callsRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);
 app.use("/api/me", require("./routes/meAppearance"));
+// KVKK veri dışa aktarma (3.6.0)
+app.use("/api/me", require("./routes/dataExport"));
 // Kayıt İstatistikleri: ~400 day retention for user_active_days / signup_attempts.
 require("./lib/signupStats").startRetention();
 app.use("/api/special-badges", require("./routes/specialBadges"));

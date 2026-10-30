@@ -1,3 +1,4 @@
+import { getDeviceId } from "./lib/deviceId";
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "./config/api";
 import { getDmMessages } from "./api/dm";
@@ -90,9 +91,10 @@ export function createSocket(token, options = {}) {
     // app = platform for the edge rollout (2.11.6).
     // Function form: re-read on every (re)connect so the boot-diet hash is current.
     auth: (cb) => {
+      // device: install id for Erişim yasakları (3.5.0, lib/deviceId.js).
       const base = isNativeIOS()
-        ? { token, platform: "ios", presence: 2, app: "ios" }
-        : { token, presence: 2, app: appPlatform() };
+        ? { token, platform: "ios", presence: 2, app: "ios", device: getDeviceId() }
+        : { token, presence: 2, app: appPlatform(), device: getDeviceId() };
       const bootFriends = bootHashByToken.get(token);
       cb(bootFriends ? { ...base, bootFriends } : base);
     },

@@ -18,6 +18,7 @@ const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts } = require("../lib
 const { checkNewPassword } = require("../lib/passwordPolicy");
 const { peek, recordFailure, rejectIfLimited, isReviewDemo } = require("../lib/rateLimit");
 const { noteDroppedSessions } = require("../lib/sessionGuard");
+const accessBans = require("../lib/accessBans");
 const { createSession, listSessions, removeSession, removeOtherSessions, clearAllSessions, clientIp } = require("../lib/sessions");
 const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
@@ -505,6 +506,19 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
   };
 }
 
+/**
+ * Erişim yasakları (3.5.0, lib/accessBans.js): a banned IP, network or device
+ * cannot sign in, sign up or finish a Google / Apple sign-in. Admin accounts
+ * are exempt (a ban on a shared network must not lock the team out).
+ */
+async function accessGate(req, res, { action, user = null }) {
+  const isAdmin = Boolean(user?.is_admin) || user?.username === "admin";
+  const hit = await accessBans.check({ ip: clientIp(req), deviceId: req.get("x-descall-device"), action, userId: user?.id || null, isAdmin });
+  if (!hit) return false;
+  res.status(403).json(hit.publicBody);
+  return true;
+}
+
 router.post("/register", async (req, res) => {
   // Kayıt İstatistikleri: completed / failed outcome, hashed key only.
   trackSignupAttempt(req, res, { method: "email", countryFromHeaders });
@@ -514,6 +528,7 @@ router.post("/register", async (req, res) => {
       const closed = platformPolicy.checkRegistration({ config: systemConfig });
       if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
     }
+    if (await accessGate(req, res, { action: "register" })) return;
     const ip = clientIp(req);
     if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;
     recordFailure(`register:ip:${ip}`, { max: 20 });
@@ -638,6 +653,7 @@ router.post("/register", async (req, res) => {
       const { session } = await createSession(newUser.id, {
         userAgent: req.headers["user-agent"],
         ip: clientIp(req),
+        deviceId: req.get("x-descall-device"),
       });
       token = signToken({ id: newUser.id, username: newUser.username, sid: session.id });
       sessionId = session.id;
@@ -716,11 +732,13 @@ router.post("/login", async (req, res) => {
     if (await rejectIfChildAccount(req, res, user)) return;
     await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
+    if (await accessGate(req, res, { action: "login", user })) return;
     if (await secondFactorGate(res, user)) return;
 
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
+      deviceId: req.get("x-descall-device"),
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
 
@@ -819,9 +837,11 @@ router.post("/2fa/verify-login", async (req, res) => {
       .update({ reauthentication_token: null, reauthentication_sent_at: null })
       .eq("id", user.id);
 
+    if (await accessGate(req, res, { action: "login", user })) return;
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
+      deviceId: req.get("x-descall-device"),
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
@@ -842,6 +862,8 @@ router.post("/2fa/verify-login", async (req, res) => {
 
 router.post("/google", async (req, res) => {
   try {
+    // Erişim yasağı (3.5.0): a new account from a banned device / network is never created.
+    if (req.body?.termsAccepted && (await accessGate(req, res, { action: "register" }))) return;
     const ip = clientIp(req);
     if (guard(res, `oauth:ip:${ip}`, null, { max: 60 })) return;
     if (!googleClient || !GOOGLE_CLIENT_ID) {
@@ -1029,9 +1051,11 @@ router.post("/google", async (req, res) => {
     // Existing accounts with two-factor finish with a code (3.2.0); new ones have none yet.
     if (!isNewUser && (await secondFactorGate(res, user))) return;
 
+    if (await accessGate(req, res, { action: "oauth", user })) return;
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
+      deviceId: req.get("x-descall-device"),
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
@@ -1064,6 +1088,8 @@ router.post("/google", async (req, res) => {
  */
 router.post("/apple", async (req, res) => {
   try {
+    // Erişim yasağı (3.5.0): a new account from a banned device / network is never created.
+    if (req.body?.termsAccepted && (await accessGate(req, res, { action: "register" }))) return;
     const ip = clientIp(req);
     if (guard(res, `oauth:ip:${ip}`, null, { max: 60 })) return;
     const { identityToken, authorizationCode, givenName, familyName, nonce, invitedBy, attribution } = req.body ?? {};
@@ -1242,9 +1268,11 @@ router.post("/apple", async (req, res) => {
 
     if (!isNewUser && (await secondFactorGate(res, user))) return;
 
+    if (await accessGate(req, res, { action: "oauth", user })) return;
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
       ip: clientIp(req),
+      deviceId: req.get("x-descall-device"),
     });
     const token = signToken({ id: user.id, username: user.username, sid: session.id });
     await touchLastSeen(user.id, { force: true });
@@ -1924,7 +1952,7 @@ router.get("/sessions", requireAuth, async (req, res) => {
   try {
     const sessions = await listSessions(req.user.id);
     return res.json({
-      sessions: sessions.map((s) => ({ ...s, current: s.id === req.user.sid })),
+      sessions: sessions.map(({ deviceHash: _deviceHash, ...s }) => ({ ...s, current: s.id === req.user.sid })),
     });
   } catch (err) {
     console.error("[AUTH] /sessions error:", err);

@@ -1,0 +1,24 @@
+/* Ayarlar › Gizlilik › Verilerin (3.6.0). Theme tokens like two-factor.css. */
+.dex-confirm { display: flex; flex-direction: column; gap: 10px; padding: 4px 14px 14px; }
+.dex-field { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: color-mix(in srgb, var(--text-0, #fff) 62%, transparent); }
+.dex-field input {
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text-0, #fff);
+  background: color-mix(in srgb, var(--text-0, #fff) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-0, #fff) 12%, transparent);
+  outline: none;
+}
+.dex-field input:focus-visible { box-shadow: inset 0 0 0 2px var(--primary, #5865f2); }
+.dex-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.dex-ok,
+.dex-err { margin: 0; padding: 0 14px 12px; font-size: 12.5px; }
+.dex-ok { color: #6ee7b7; }
+.dex-err { color: #fca5a5; }
+@media (max-width: 720px) {
+  .dex-actions .us-btn { flex: 1; min-height: 44px; justify-content: center; }
+}
