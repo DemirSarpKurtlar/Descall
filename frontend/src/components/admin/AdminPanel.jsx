@@ -1,5 +1,5 @@
 import AdminEdgeRealtime from "./AdminEdgeRealtime";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
   Shield, Users, MessageSquare, Activity, AlertCircle, Settings, 
@@ -24,7 +24,9 @@ import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
 import AdminFeedbackV3 from "./feedback3/AdminFeedbackV3.jsx";
 import SignupStatsWindow from "./signupStats/SignupStatsWindow.jsx";
+import { adminRawFetch } from "../../lib/adminStepUp";
 import AdminShell from "./AdminShell.jsx";
+import { AdminStepUpHost, Admin2faGate, useAdmin2faGate } from "./AdminStepUpHost.jsx";
 import { isTabletLayout } from "../../lib/appearancePrefs";
 import AdminShop from "./AdminShop";
 import PromoCodesTab from "./PromoCodesTab";
@@ -135,6 +137,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const { t, locale } = useLocale();
   const [tab, setTab] = useState(moderatorOnly ? "suspicious" : "overview");
   const tabs = moderatorOnly ? TABS.filter((x) => MODERATOR_TABS.includes(x.id)) : TABS;
+  // 3.2.0: every admin call 403s with ADMIN_2FA_REQUIRED until the app is set up.
+  const [admin2faRequired, setAdmin2faRequired] = useAdmin2faGate();
+  const [panelEpoch, setPanelEpoch] = useState(0);
   const [dossierUserId, setDossierUserId] = useState(null);
   const adminLayout = useAdminLayout();
   /** Every section switch goes through here (Kayıt İstatistikleri is a section since 3.1). */
@@ -313,7 +318,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       console.log("[ADMIN] Loading users, token:", !!token);
       console.log("[ADMIN] API_BASE_URL:", API_BASE_URL);
       
-      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      const res = await adminRawFetch(`${API_BASE_URL}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const d = await res.json();
@@ -748,7 +753,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       moderatorOnly={moderatorOnly}
       banner={banner}
     >
-      {tab === "feedback" && !moderatorOnly ? (
+      <AdminStepUpHost />
+      <Fragment key={panelEpoch}>
+      {admin2faRequired ? (
+        <Admin2faGate onReady={() => { setAdmin2faRequired(false); setPanelEpoch((n) => n + 1); }} />
+      ) : tab === "feedback" && !moderatorOnly ? (
         <AdminFeedbackV3
           embedded
           socket={socket}
@@ -979,7 +988,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         setAnnouncementError("");
                         try {
                           const token = getToken();
-                          const res = await fetch(`${API_BASE_URL}/api/admin/announcements`, {
+                          const res = await adminRawFetch(`${API_BASE_URL}/api/admin/announcements`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                             body: JSON.stringify(announcementDraft),
@@ -1067,7 +1076,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                             onClick={async () => {
                               try {
                                 const token = getToken();
-                                const res = await fetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
+                                const res = await adminRawFetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
                                   method: "PATCH",
                                   headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                                   body: JSON.stringify({ pinned: !a.pinned }),
@@ -1098,7 +1107,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                             onClick={async () => {
                               try {
                                 const token = getToken();
-                                const res = await fetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
+                                const res = await adminRawFetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
                                   method: "DELETE",
                                   headers: { Authorization: `Bearer ${token}` },
                                 });
@@ -1831,6 +1840,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         )}
       </div>
       )}
+      </Fragment>
     </AdminShell>
   );
 }

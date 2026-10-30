@@ -41,6 +41,7 @@ import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
+import TwoFactorCard from "../settings/TwoFactorCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import LegalContentModal from "../legal/LegalContentModal";
 import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
@@ -1990,59 +1991,68 @@ const UserPanel = forwardRef(function UserPanel({
             <section className="us-section">
               <h4 className="us-section-label">{t("Two-Factor Authentication")}</h4>
               <div className="us-card stack">
-                <SettingRow
-                  icon={Shield}
-                  title={t("Two-Factor Authentication")}
-                  description={
-                    emailVerified
-                      ? t("Get a sign-in code emailed to you on every new login.")
-                      : t("Verify your email above to unlock this.")
-                  }
-                >
-                  <Toggle
-                    value={twoFactorOn}
-                    onChange={handleToggle2fa}
-                    label={t("Two-Factor Authentication")}
-                  />
-                </SettingRow>
-
-                <AnimatePresence>
-                  {show2faPasswordPrompt && (
-                    <motion.div
-                      className="us-email-verify-flow"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}
+                {/* 3.2.0: authenticator app first; the e-mail code stays as the
+                    second option while the app is off. */}
+                <TwoFactorCard
+                  onChanged={refreshMeFromServer}
+                  emailRow={(
+                    <>
+                    <SettingRow
+                      icon={Shield}
+                      title={t("tfa.emailTitle")}
+                      description={
+                        emailVerified
+                          ? t("Get a sign-in code emailed to you on every new login.")
+                          : t("Verify your email above to unlock this.")
+                      }
                     >
-                      <p className="us-inline-notice">{t("Enter your password to turn off two-factor authentication.")}</p>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input
-                          type="password"
-                          className="us-inline-input"
-                          placeholder={t("Password")}
-                          value={disable2faPassword}
-                          onChange={(e) => setDisable2faPassword(e.target.value)}
-                        />
-                        <button
-                          type="button"
-                          className="us-btn primary"
-                          onClick={confirmDisable2fa}
-                          disabled={twoFaBusy || !disable2faPassword}
+                      <Toggle
+                        value={twoFactorOn}
+                        onChange={handleToggle2fa}
+                        label={t("tfa.emailTitle")}
+                      />
+                    </SettingRow>
+    
+                    <AnimatePresence>
+                      {show2faPasswordPrompt && (
+                        <motion.div
+                          className="us-email-verify-flow"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}
                         >
-                          {t("Confirm")}
-                        </button>
-                        <button
-                          type="button"
-                          className="us-link-btn"
-                          onClick={() => { setShow2faPasswordPrompt(false); setDisable2faPassword(""); }}
-                        >
-                          {t("Cancel")}
-                        </button>
-                      </div>
-                    </motion.div>
+                          <p className="us-inline-notice">{t("Enter your password to turn off two-factor authentication.")}</p>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <input
+                              type="password"
+                              className="us-inline-input"
+                              placeholder={t("Password")}
+                              value={disable2faPassword}
+                              onChange={(e) => setDisable2faPassword(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              className="us-btn primary"
+                              onClick={confirmDisable2fa}
+                              disabled={twoFaBusy || !disable2faPassword}
+                            >
+                              {t("Confirm")}
+                            </button>
+                            <button
+                              type="button"
+                              className="us-link-btn"
+                              onClick={() => { setShow2faPasswordPrompt(false); setDisable2faPassword(""); }}
+                            >
+                              {t("Cancel")}
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    </>
                   )}
-                </AnimatePresence>
+                />
               </div>
             </section>
 

@@ -67,6 +67,14 @@ function signPending2faToken(payload) {
   return sign({ sub: payload.id, username: payload.username, pending2fa: true }, "10m");
 }
 
+/**
+ * Admin step-up (3.2.0): proof that this session entered a fresh second-factor
+ * code. Bound to the session id; requireAuth / socket auth reject it as a login.
+ */
+function signStepUpToken({ id, sid }) {
+  return sign({ sub: id, sid: sid || null, stepUp: true }, "15m");
+}
+
 function headerAlg(token) {
   try {
     const head = JSON.parse(Buffer.from(String(token).split(".")[0] || "", "base64url").toString("utf8"));
@@ -92,6 +100,7 @@ function publicJwks() {
 module.exports = {
   signToken,
   signPending2faToken,
+  signStepUpToken,
   verifyToken,
   publicJwks,
   signAlg,

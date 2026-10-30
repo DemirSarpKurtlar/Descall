@@ -60,6 +60,16 @@ function AuthModal({
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
+  // Password and Google sign-in land here when the account has 2FA (3.2.0).
+  const openTwoFa = (result) => {
+    if (!result?.requires2fa) return false;
+    setTwoFa({ pendingToken: result.pendingToken, emailHint: result.emailHint, method: result.method || "email" });
+    setCode("");
+    setTwoFaError("");
+    setUseRecovery(false);
+    return true;
+  };
   // New Google account (also from "Sign in"): the backend created nothing and wants
   // Terms + date of birth first. { provider: "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
@@ -131,11 +141,7 @@ function AuthModal({
         );
       } else {
         const result = await onLogin?.({ username, password });
-        if (result?.requires2fa) {
-          setTwoFa({ pendingToken: result.pendingToken, emailHint: result.emailHint });
-          setCode("");
-          setTwoFaError("");
-        }
+        openTwoFa(result);
       }
     } finally {
       setIsSubmitting(false);
@@ -194,7 +200,11 @@ function AuthModal({
             {twoFa ? (
               <>
                 <h2>{t("Two-Factor Verification")}</h2>
-                <p>{t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })}</p>
+                <p>
+                  {twoFa.method === "totp"
+                    ? (useRecovery ? t("Enter one of the recovery codes you saved during setup (e.g. abcde-fghij).") : t("Enter the 6-digit code from your authenticator app."))
+                    : t("Enter the code we sent to {email}", { email: twoFa.emailHint || t("your email") })}
+                </p>
                 {(twoFaError || authError) && (
                   <div id="mkt-auth-2fa-error" className="auth-error" role="alert">
                     {twoFaError || authError}
@@ -206,27 +216,34 @@ function AuthModal({
                       id="mkt-auth-2fa"
                       className="auth-otp-input"
                       type="text"
-                      inputMode="numeric"
+                      inputMode={useRecovery ? "text" : "numeric"}
                       autoComplete="one-time-code"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      placeholder={t("Verification code")}
-                      maxLength={8}
+                      placeholder={useRecovery ? "abcde-fghij" : t("Verification code")}
+                      maxLength={useRecovery ? 16 : 8}
                       autoFocus
                       required
                       aria-invalid={twoFaError || authError ? "true" : undefined}
                       aria-describedby={twoFaError || authError ? "mkt-auth-2fa-error" : undefined}
                     />
-                    <div className="auth-otp-cells" aria-hidden="true">
+                    {useRecovery ? null : <div className="auth-otp-cells" aria-hidden="true">
                       {Array.from({ length: 6 }, (_, i) => (
                         <span key={i} className={code.length === i ? "is-on" : ""}>{code[i] || ""}</span>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                   <button type="submit" disabled={verifying || !code.trim()} aria-busy={verifying}>
                     {verifying ? t("Please wait...") : t("Verify")}
                   </button>
                 </form>
+                {twoFa.method === "totp" ? (
+                  <button type="button" className="auth-switch" onClick={() => { setUseRecovery((v) => !v); setCode(""); setTwoFaError(""); }}>
+                    {useRecovery ? t("Use the app code") : t("Use a recovery code")}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="auth-switch"
@@ -303,7 +320,7 @@ function AuthModal({
                     if (signupBlocked) return;
                     setIsSubmitting(true);
                     try {
-                      await onGoogleLogin?.(credential, withInvite({ termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) }));
+                      openTwoFa(await onGoogleLogin?.(credential, withInvite({ termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) })));
                     } catch (err) {
                       if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
                       /* other errors: authError shows them */

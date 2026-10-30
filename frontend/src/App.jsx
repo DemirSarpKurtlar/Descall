@@ -2753,7 +2753,7 @@ export default function App() {
       // the UI: handleLogin just kept going and called setToken(undefined),
       // so the login screen looked like it silently did nothing.
       if (data.requires2fa) {
-        return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint };
+        return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
       }
       transportFallbackStepRef.current = 0;
       setToken(data.token);
@@ -2815,6 +2815,10 @@ export default function App() {
         username: extra?.username,
       });
       if (invitedBy) consumeInviteRef();
+      // Existing account with two-factor (3.2.0): finish with a code, no session yet.
+      if (data.requires2fa) {
+        return { requires2fa: true, pendingToken: data.pendingToken, emailHint: data.emailHint, method: data.method || "email", recoveryAvailable: Boolean(data.recoveryAvailable) };
+      }
       transportFallbackStepRef.current = 0;
       setToken(data.token);
       commitSessionUser(data.user);

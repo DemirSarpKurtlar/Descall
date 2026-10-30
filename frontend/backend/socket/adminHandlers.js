@@ -78,6 +78,8 @@ function disconnectAll(io, actorId, actorUsername) {
   notifyAdminRoom(io, { type: "disconnect_all" });
 }
 
+const { verifyToken } = require("../config/jwt");
+
 function setupAdminSocket(io, socket) {
   // Privileged admin events trust only the verified JWT username. is_admin is
   // loaded from the database on connect (socket/handlers.js loadUserProfile)
@@ -98,9 +100,20 @@ function setupAdminSocket(io, socket) {
     socket.emit("admin:sync", buildSnapshot(io));
   });
 
-  socket.on("admin:kick_user", ({ userId, reason } = {}) => {
+  // 3.2.0: changes need the same fresh-code step-up token as the HTTP admin API.
+  const stepUpOk = (token) => {
+    try {
+      const t = verifyToken(String(token || ""));
+      return Boolean(t.stepUp) && t.sub === socket.user.id;
+    } catch {
+      return false;
+    }
+  };
+
+  socket.on("admin:kick_user", ({ userId, reason, stepUp } = {}) => {
     if (socket.user.username !== "admin") return;
     if (typeof userId !== "string") return;
+    if (!stepUpOk(stepUp)) return socket.emit("admin:error", { code: "STEP_UP_REQUIRED" });
     kickUser(io, {
       actorId: socket.user.id,
       actorUsername: socket.user.username,
@@ -110,8 +123,9 @@ function setupAdminSocket(io, socket) {
     socket.emit("admin:sync", buildSnapshot(io));
   });
 
-  socket.on("admin:broadcast", ({ text } = {}) => {
+  socket.on("admin:broadcast", ({ text, stepUp } = {}) => {
     if (socket.user.username !== "admin") return;
+    if (!stepUpOk(stepUp)) return socket.emit("admin:error", { code: "STEP_UP_REQUIRED" });
     const t = String(text || "").trim();
     if (!t) return;
     io.emit("server:announcement", {

@@ -24,6 +24,6 @@ assert.equal(call("POST", "a2").passed, true, "per admin, not global");
 for (let i = 0; i < LIMITS.read.max; i++) call("GET", "a3");
 assert.equal(call("GET", "a3").status, 429);
 assert.equal(LIMITS.write.max, 60);
-assert.match(fs.readFileSync(path.join(__dirname, "../routes/admin.js"), "utf8"), /router\.use\(requireAuth, requireAdmin, adminRateLimit\);/);
+assert.ok(fs.readFileSync(path.join(__dirname, "../routes/admin.js"), "utf8").includes("router.use(requireAuth, requireAdmin, adminRateLimit, requireAdmin2fa);"), "admin router is rate limited");
 resetLimits();
 console.log("adminRateLimit.selftest ok");
