@@ -6,6 +6,8 @@
  */
 
 const supabase = require("../db/supabase");
+const { systemConfig } = require("../runtime/sharedState");
+const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { toUtcIso } = require("../lib/datetime");
@@ -957,6 +959,15 @@ function registerServerChannelHandlers(io, socket) {
             message: "Channel does not belong to this server.",
           });
           return;
+        }
+
+        {
+          // Yönetici Paneli switches (3.1.3): freeze, global slow mode, per-minute cap.
+          const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: isPlatformAdmin(socket), kind: "server" });
+          if (!verdict.ok) {
+            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: verdict.message, code: verdict.code, retryAfterMs: verdict.retryAfterMs });
+            return;
+          }
         }
 
         if (mediaUrl) {

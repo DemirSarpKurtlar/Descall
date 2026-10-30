@@ -1,0 +1,183 @@
+/* "X şimdi çevrimiçi" (3.1.2, owner request): appears only when a friend comes
+   online, top right just under the chat header pills (search, members) so it
+   never covers them, in the theme's glass: under html.glass-desktop the same
+   material as the chat list and the bottom-left user panel; elsewhere a dark
+   frost. Click opens the DM, x closes. iPhone keeps its native capsule
+   (ToastContext → showPresenceCapsule); this is the web / Electron card. */
+
+.presence-toasts {
+  position: fixed;
+  top: 84px;
+  right: 24px;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: min(300px, calc(100vw - 32px));
+  pointer-events: none;
+}
+body.electron-app .presence-toasts {
+  top: calc(var(--electron-titlebar-h, 40px) + 84px);
+}
+
+.presence-toast {
+  --pt-ink: var(--text-0, #fff);
+  --pt-ink-2: var(--text-2, rgba(235, 238, 255, 0.7));
+  --pt-hover: rgba(255, 255, 255, 0.06);
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 18px;
+  color: var(--pt-ink);
+  background:
+    linear-gradient(180deg, rgba(var(--g-brand-rgb, 88, 101, 242), 0.12), rgba(var(--g-brand-rgb, 88, 101, 242), 0.05)),
+    rgba(24, 25, 34, 0.86);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  backdrop-filter: blur(40px) saturate(170%);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  isolation: isolate;
+}
+html.glass-desktop .presence-toast {
+  --pt-ink: var(--gd-t1);
+  --pt-ink-2: var(--gd-t2);
+  --pt-hover: var(--gd-chip-hover, rgba(255, 255, 255, 0.06));
+  border-radius: var(--gd-r-panel, 18px);
+  background:
+    linear-gradient(180deg, rgba(var(--g-brand-rgb), 0.13) 0%, rgba(var(--g-brand-rgb), 0.06) 100%),
+    var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+}
+html.glass-desktop .presence-toast::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.1) 18%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.06) 82%, rgba(255, 255, 255, 0.18) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+:root[data-theme="light"]:not(.glass-desktop) .presence-toast {
+  --pt-ink: #15161c;
+  --pt-ink-2: rgba(21, 22, 28, 0.66);
+  --pt-hover: rgba(0, 0, 0, 0.05);
+  background: rgba(248, 248, 252, 0.9);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+/* Opaque where blur is off or missing (Reduce Transparency, lite mode). */
+html.a11y-solid .presence-toast,
+html.gd-lite .presence-toast {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid, rgb(28, 28, 36));
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .presence-toast { background: rgb(28, 28, 36); }
+}
+
+.presence-toast-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 6px 10px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: inherit;
+  transition: background-color 0.15s ease;
+}
+.presence-toast-main:disabled { cursor: default; }
+.presence-toast.is-actionable .presence-toast-main:hover { background: var(--pt-hover); }
+.presence-toast-main:focus-visible,
+.presence-toast-x:focus-visible {
+  outline: 2px solid rgba(var(--g-brand-rgb, 88, 101, 242), 0.85);
+  outline-offset: -2px;
+}
+
+.presence-toast-av {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+}
+.presence-toast-av .status-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
+  border-width: 2px;
+}
+
+.presence-toast-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.presence-toast-copy b {
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--pt-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.presence-toast-copy span {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--pt-ink-2);
+}
+
+.presence-toast-x {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border: 0;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--pt-ink-2);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.presence-toast-x:hover { background: var(--pt-hover); color: var(--pt-ink); }
+.presence-toast-main:active,
+.presence-toast-x:active { transform: scale(0.97); }
+
+/* Phone-width web: centred at the top, out of the composer's way. */
+@media (max-width: 600px) {
+  .presence-toasts {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    right: 12px;
+    left: 12px;
+    width: auto;
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .presence-toast-main,
+  .presence-toast-x { transition: none; }
+  .presence-toast-main:active,
+  .presence-toast-x:active { transform: none; }
+}

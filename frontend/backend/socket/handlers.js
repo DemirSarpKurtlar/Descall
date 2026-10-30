@@ -1,5 +1,6 @@
 "use strict";
 
+const { checkMessageSend } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const iosPushContext = require("../lib/iosPushContext");
@@ -1189,6 +1190,13 @@ function registerSocketHandlers(io) {
         return socket.emit("dm:error", { message: "Rate limited.", tempId: tempId || null, toUserId });
       }
       rateLimitDm.set(myId, now);
+      {
+        // Yönetici Paneli switches (3.1.3): freeze, DMs off, slow mode, per-minute cap.
+        const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", kind: "dm", now });
+        if (!verdict.ok) {
+          return socket.emit("dm:error", { message: verdict.message, code: verdict.code, retryAfterMs: verdict.retryAfterMs, tempId: tempId || null, toUserId });
+        }
+      }
 
       if (mediaUrl) {
         // 2.11.2: attachments are private; store the stable ref, never a public URL.

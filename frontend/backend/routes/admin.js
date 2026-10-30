@@ -53,10 +53,12 @@ const {
   loadDirectoryPage,
 } = require("../lib/adminDirectory");
 
+const adminAuditStore = require("../lib/adminAuditStore");
+const { adminRateLimit } = require("../middleware/adminRateLimit");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
-router.use(requireAuth, requireAdmin);
+router.use(requireAuth, requireAdmin, adminRateLimit);
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
@@ -1266,6 +1268,9 @@ router.get("/audit", async (req, res) => {
   try {
     const limit = Math.min(500, parseInt(req.query.limit || "200", 10) || 200);
     const memory = (state.auditLog || []).slice(0, limit);
+    // 3.1.3: durable admin_audit rows survive restarts; memory only fills a gap
+    // (table missing, or a write still in flight).
+    const durable = (await withTimeout(adminAuditStore.list({ limit }), 5000, null)) || [];
     const dbRes = await withTimeout(
       supabase
         .from("moderation_actions")
@@ -1287,7 +1292,7 @@ router.get("/audit", async (req, res) => {
       for (const u of queryRows(usersRes, "audit-actors")) usersById[u.id] = u;
     }
     const dbEntries = dbRows.map((row) => mapModerationActionToAudit(row, usersById)).filter(Boolean);
-    res.json({ entries: mergeAuditEntries(memory, dbEntries, limit) });
+    res.json({ entries: mergeAuditEntries(durable.concat(memory), dbEntries, limit), durable: durable.length > 0 });
   } catch (error) {
     const limit = Math.min(500, parseInt(req.query.limit || "200", 10) || 200);
     res.json({ entries: (state.auditLog || []).slice(0, limit) });

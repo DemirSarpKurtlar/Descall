@@ -4,7 +4,8 @@ const { normalizeGroupName, canRenameGroup } = require("../lib/groupRename");
 const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { requireAuth } = require("../middleware/auth");
-const { socketToUser } = require("../runtime/sharedState");
+const { socketToUser, systemConfig } = require("../runtime/sharedState");
+const { checkGroupCreate } = require("../lib/platformPolicy");
 const { getUserGroups, loadGroupById, loadRemovedGroups } = require("../lib/groupList");
 const {
   ROLES,
@@ -291,6 +292,15 @@ router.get("/my", requireAuth, async (req, res) => {
 router.post("/create", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
+    {
+      // Yönetici Paneli › Güvenlik: "Grup oluşturmaya izin ver" (3.1.3); admins exempt.
+      const verdict = checkGroupCreate({ config: systemConfig, isAdmin: req.user.username === "admin" });
+      if (!verdict.ok) {
+        // Only when the switch is off: one lookup so platform admins stay exempt.
+        const { data: row } = await supabase.from("users").select("is_admin").eq("id", userId).maybeSingle();
+        if (!row?.is_admin) return res.status(403).json({ error: verdict.message, code: verdict.code });
+      }
+    }
     const { name, memberIds = [] } = req.body;
     
     if (!name || name.trim().length < 2 || name.length > 50) {

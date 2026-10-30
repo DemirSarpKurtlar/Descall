@@ -88,6 +88,12 @@ function appendAudit(actorId, actorUsername, action, target, meta = {}) {
   };
   auditLog.unshift(entry);
   if (auditLog.length > MAX_AUDIT) auditLog.length = MAX_AUDIT;
+  // 3.1.3: durable copy (admin_audit table); never blocks or fails the action.
+  try {
+    require("../lib/adminAuditStore").persist(entry);
+  } catch {
+    /* store unavailable */
+  }
   return entry;
 }
 

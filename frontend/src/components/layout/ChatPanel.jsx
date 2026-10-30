@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement, lazy, Suspense } from "react";
+import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
@@ -10,8 +10,6 @@ import { groupRoleOf } from "../../lib/groupMembers";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import MessageList from "../chat/MessageList";
-
-const ActiveNowPanel = lazy(() => import("../activity/ActiveNowPanel.jsx"));
 import MessageComposer from "../chat/MessageComposer";
 import ActiveCallBanner from "../ActiveCallBanner";
 import ActivityView from "../activity/ActivityView";
@@ -316,9 +314,6 @@ export default function ChatPanel({
       && (activeView === "servers" ? activeChannel?.type === "text" : Boolean(headerDm || headerGroup))
   );
   const chromeRef = useRef(null);
-  // "Şu an aktif" (3.1): online friends, top right of the chat home (desktop/web).
-  const showActiveNow = !isMobile && !activeDmUser && !activeGroup
-    && (activeView === "chat" || activeView === "friends" || activeView === "groups");
   const headerConversationKey = headerGroup
     ? `group:${headerGroup.id}`
     : headerDm
@@ -774,7 +769,7 @@ export default function ChatPanel({
         )
       ) : (
       <div
-        className={showActiveNow ? "messages-container has-active-now" : "messages-container"}
+        className="messages-container"
         ref={messagesRef}
         key={activeDmUser?.id || activeGroup?.id || "messages"}
       >
@@ -783,26 +778,14 @@ export default function ChatPanel({
             ? cloneElement(children, { searchQuery: showSearch ? searchQuery : "" })
             : children
         ) : (
-          <>
-            <EmptyState
-              icon={emptyCopy.icon || MessageSquare}
-              title={emptyCopy.title}
-              body={emptyCopy.body}
-              illustration={emptyCopy.illustration || "chat"}
-              primary={emptyCopy.primary}
-              secondary={emptyCopy.secondary}
-            />
-            {showActiveNow ? (
-              <Suspense fallback={null}>
-                <ActiveNowPanel
-                  friends={friends}
-                  friendPresence={activity?.friendPresence}
-                  onlineUsers={onlineUsers}
-                  onSelect={onStartDm}
-                />
-              </Suspense>
-            ) : null}
-          </>
+          <EmptyState
+            icon={emptyCopy.icon || MessageSquare}
+            title={emptyCopy.title}
+            body={emptyCopy.body}
+            illustration={emptyCopy.illustration || "chat"}
+            primary={emptyCopy.primary}
+            secondary={emptyCopy.secondary}
+          />
         )}
       </div>
       )}
