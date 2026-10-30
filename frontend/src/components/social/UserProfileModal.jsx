@@ -482,7 +482,7 @@ function UserProfileModal({
             @{displayUsername} · <b className={statusKey}>{statusLabel}</b>
           </div>
           <div className="pfs-badges">
-            <ProfileBadgeRow user={badgeUser} me={me} />
+            <ProfileBadgeRow user={badgeUser} me={me} size={glassShell ? "ios" : "md"} />
             {isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
           </div>
           {fetched?.bio ? <p className="pfs-bio">{fetched.bio}</p> : null}
