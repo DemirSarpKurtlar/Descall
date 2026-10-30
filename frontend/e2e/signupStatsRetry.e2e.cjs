@@ -100,12 +100,12 @@ async function main() {
     await page.addStyleTag({ content: '.app-notif-banner{display:none!important}' });
     await page.locator('.g-me-btn').first().click({ timeout: 20000 });
     await page.getByRole('menuitem', { name: /Yönetici|Admin/ }).first().click({ timeout: 10000 });
-    // The phone admin panel picks sections from a <select> (desktop/iPad: a tab list).
-    const picker = page.locator('select:has(option[value="signupStats"])').first();
-    await picker.waitFor({ state: 'attached', timeout: 20000 }).catch(() => {});
-    if (await picker.isVisible().catch(() => false)) await picker.selectOption('signupStats');
-    else if (await picker.count()) await picker.selectOption('signupStats', { force: true });
-    else await page.locator('button:visible, [role="tab"]:visible').filter({ hasText: 'Kayıt İstatistikleri' }).first().click({ timeout: 10000 });
+    // 3.1: the phone admin panel lists every section in a full-screen menu
+    // (AdminShell drawer); desktop/iPad keep the side menu open.
+    const menuBtn = page.locator('.adm-topbar .adm-icon-btn').first();
+    await page.locator('.adm').first().waitFor({ timeout: 20000 });
+    if (await menuBtn.isVisible().catch(() => false)) await menuBtn.click();
+    await page.locator('.adm-nav-item[data-tab="signupStats"]:visible').first().click({ timeout: 10000 });
 
     await page.getByText('İstatistikler yüklenemedi.').waitFor({ timeout: 20000 });
     const retry = page.getByRole('button', { name: 'Tekrar dene' });
