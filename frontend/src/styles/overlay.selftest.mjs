@@ -26,6 +26,12 @@ for (const must of [".modal-backdrop", ".user-profile-scrim", ".add-modal-backdr
 for (const menu of [".g-msg-scrim", ".reaction-picker-backdrop", ".g-attach-scrim", ".server-voice-menu-backdrop"]) {
   assert.ok(!backdrops.includes(menu), `${menu} is a menu click-catcher, not a modal backdrop`);
 }
+// In-component hover layers are not window backdrops: the backdrop rule makes
+// them position:fixed + inset:0, so inside a modal they cover the whole card,
+// swallow every hover/click and blur it (3.0.2 create-server modal bug).
+for (const layer of [".server-icon-picker-overlay"]) {
+  assert.ok(!backdrops.includes(layer) && !css.includes(layer), `${layer} is a hover layer inside a modal, not a backdrop`);
+}
 assert.equal((css.match(/\(/g) || []).length, (css.match(/\)/g) || []).length, "balanced parentheses (a stray one drops the rule when minified)");
 assert.match(css, /position:\s*fixed !important;\s*inset:\s*0 !important/);
 assert.match(css, /backdrop-filter:\s*blur\(var\(--overlay-blur\)\)/);
