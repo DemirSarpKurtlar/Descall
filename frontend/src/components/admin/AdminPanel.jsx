@@ -41,9 +41,10 @@ import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import MaintenanceTab from "./MaintenanceTab";
 import SuspiciousTab from "./SuspiciousTab";
-import { ShieldWarning, UserGear } from "../ui/Icon.jsx";
+import { ShieldWarning, UserGear, Bug } from "../ui/Icon.jsx";
 import AdminStaff from "./AdminStaff.jsx";
 import AccessBansTab from "./AccessBansTab.jsx";
+import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import {
@@ -111,6 +112,7 @@ const TABS = [
   { id: "accessBans", label: "admin.accessBans", icon: Ban },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
+  { id: "errors", label: "admin.errors", icon: Bug },
   { id: "audit", label: "admin.audit", icon: FileText },
   // Yöneticiler (3.3.0): owner only; grants sections to the other admins.
   { id: "staff", label: "admin.staff", icon: UserGear },
@@ -826,6 +828,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "staff" && perm.owner && <AdminStaff tabs={TABS} />}
 
         {tab === "accessBans" && <AccessBansTab />}
+
+        {tab === "errors" && <ErrorIssuesTab />}
 
         {tab === "announcements" && (
           <section className="admin-section admin-section-full">

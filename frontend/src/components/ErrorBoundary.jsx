@@ -177,6 +177,8 @@ export default class ErrorBoundary extends React.Component {
         message: `[${this.state.supportCode || "unknown"}] ${error?.message || "Unknown error"}`,
         name: error?.name || "Error",
         stack: error?.stack || "",
+        // 3.7.0: the release, so Hata Kayıtları can say which version is affected.
+        appVersion: typeof __DESCALL_VERSION__ !== "undefined" ? __DESCALL_VERSION__ : null,
         componentStack: errorInfo?.componentStack || "",
         
         // Categorization
@@ -186,7 +188,6 @@ export default class ErrorBoundary extends React.Component {
         // User details
         userId: userData.id,
         username: userData.username,
-        userEmail: userData.email,
         userRole: userData.role,
         sessionId: userData.sessionId,
         

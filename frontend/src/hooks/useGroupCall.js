@@ -471,9 +471,13 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       } catch (err) {
       }
     };
+    // 3.6.1: some WebViews / insecure contexts have no navigator.mediaDevices
+    // (or no EventTarget on it); that threw on mount and crashed the screen.
+    const md = typeof navigator !== "undefined" ? navigator.mediaDevices : null;
+    if (!md || typeof md.addEventListener !== "function") return undefined;
     getDevices();
-    navigator.mediaDevices.addEventListener('devicechange', getDevices);
-    return () => navigator.mediaDevices.removeEventListener('devicechange', getDevices);
+    md.addEventListener('devicechange', getDevices);
+    return () => md.removeEventListener('devicechange', getDevices);
   }, []);
 
   useEffect(() => {

@@ -9,6 +9,7 @@ const { requireSection } = require("../lib/adminPermissions");
 const { verifyToken } = require("../config/jwt");
 const { sessionAllowed } = require("../lib/sessionGuard");
 const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+const errorGroups = require("../lib/errorGroups");
 
 console.log("[ERRORS-JS] File loaded! Routes being registered...");
 
@@ -56,22 +57,29 @@ router.post("/", async (req, res) => {
     const username = reporter?.username ? clipText(reporter.username, 80) : null;
     const message = clipText(req.body?.message, 4000) || "Unknown client error";
 
-    // Store error in Supabase
-    const { data, error } = await supabase
-      .from("error_logs")
-      .insert({
-        message,
-        stack: clipText(stack, 12000),
-        component_stack: clipText(componentStack, 12000),
-        url: clipText(url, 2000),
-        user_agent: clipText(userAgent, 1000),
-        user_id: clipText(userId, 80) || "anonymous",
-        timestamp: safeTimestamp(timestamp),
-        resolved: false,
-        severity: clipText(severity, 32) || "error",
-        source: clipText(source, 64) || "frontend",
-      })
-      .select();
+    // Store error in Supabase (3.7.0: with its issue fingerprint, see lib/errorGroups.js)
+    const row = {
+      message,
+      stack: clipText(stack, 12000),
+      component_stack: clipText(componentStack, 12000),
+      url: clipText(url, 2000),
+      user_agent: clipText(userAgent, 1000),
+      user_id: clipText(userId, 80) || "anonymous",
+      timestamp: safeTimestamp(timestamp),
+      resolved: false,
+      severity: clipText(severity, 32) || "error",
+      source: clipText(source, 64) || "frontend",
+    };
+    const grouped = {
+      ...row,
+      fingerprint: errorGroups.fingerprint(row.message, row.stack),
+      platform: errorGroups.platformOf(row.user_agent, row.source),
+      app_version: clipText(req.body?.appVersion, 32),
+    };
+    let { data, error } = await supabase.from("error_logs").insert(grouped).select("id");
+    if (error && /fingerprint|platform|app_version/.test(String(error.message || ""))) {
+      ({ data, error } = await supabase.from("error_logs").insert(row).select("id"));
+    }
 
     if (error) throw error;
 

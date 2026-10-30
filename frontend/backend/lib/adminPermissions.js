@@ -32,6 +32,7 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "casino",
   "system",
   "security",
+  "errors",
   "audit",
 ]);
 
@@ -57,6 +58,7 @@ const RULES = [
   [/^\/(popup|broadcast)(\/|$)/, "livepopup"],
   [/^\/antibot(\/|$)/, "suspicious"],
   [/^\/access-bans(\/|$)/, "accessBans"],
+  [/^\/error-groups(\/|$)/, "errors"],
   [/^\/feedback(\/|$)/, "feedback"],
   [/^\/(audit)(\/|$)/, "audit"],
   [/^\/(errors|security-logs)(\/|$)/, "security"],
