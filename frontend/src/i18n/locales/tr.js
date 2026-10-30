@@ -267,6 +267,16 @@ export const nested = {
     "noAnswer": "Cevap yok",
     "reconnect": "Yeniden bağlanıyor…"
   },
+  "activeNow": {
+    "title": "Şu an aktif",
+    "emptyTitle": "Şimdilik sessiz",
+    "emptyBody": "Bir arkadaşın çevrimiçi olduğunda veya oyun, müzik gibi bir şeyle meşgul olduğunda burada görünür.",
+    "justNow": "az önce başladı",
+    "minutes": "{m} dk",
+    "hours": "{h} sa",
+    "hoursMinutes": "{h} sa {m} dk",
+    "more": "ve {n} kişi daha"
+  },
   "admin": {
     "title": "Yönetici Paneli",
     "subtitle": "Sistem yönetimi ve moderasyon",

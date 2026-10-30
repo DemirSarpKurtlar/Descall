@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createSingleActive, HOVER_TOOLBAR_GRACE_MS } from "./singleActiveHover.js";
+import { createSingleActive, HOVER_TOOLBAR_GRACE_MS, AIM_DELAY_MS, AIM_MAX_MS, headingToward } from "./singleActiveHover.js";
 
 function fakeTimers() {
   let now = 0; let seq = 0; const q = new Map();
@@ -92,6 +92,66 @@ assert.ok(HOVER_TOOLBAR_GRACE_MS >= 100 && HOVER_TOOLBAR_GRACE_MS <= 150);
   assert.match(src, /messageHoverToolbar\.setLocked\(hoverKey\.current, pickerOpen(?: \|\| moreOpen)?\)/);
   assert.match(src, /messageHoverToolbar\.forget\(/);
   assert.doesNotMatch(src, /setTimeout\(\(\) => \{\s*setMenuOpen\(false\);\s*setPickerOpen\(false\);\s*\}, 180\)/);
+}
+
+// Aim (3.1): heading toward the open pill across a neighbour does not swap it.
+{
+  const bar = { left: 500, top: 100, right: 600, bottom: 136 };
+  const pts = (...xy) => xy.map(([x, y], i) => ({ x, y, t: i * 20 }));
+  assert.equal(headingToward(pts([520, 220], [525, 190], [530, 160]), bar), true, "straight up into the pill");
+  assert.equal(headingToward(pts([300, 220], [380, 190], [460, 160]), bar), true, "diagonal toward the pill");
+  assert.equal(headingToward(pts([520, 160], [520, 190], [520, 220]), bar), false, "moving away");
+  assert.equal(headingToward(pts([520, 180], [521, 180]), bar), false, "still pointer is not aiming");
+  assert.equal(headingToward(pts([100, 400], [100, 420]), bar), false, "unrelated movement");
+  assert.equal(headingToward(pts([530, 120], [531, 121]), bar), true, "inside the pill");
+
+  let t = 0;
+  const timers = (() => {
+    let seq = 0; const q = new Map();
+    return {
+      setTimer: (fn, ms) => { const id = ++seq; q.set(id, { fn, at: t + ms }); return id; },
+      clearTimer: (id) => q.delete(id),
+      advance(ms) { const end = t + ms; while (true) { const next = [...q].filter(([, v]) => v.at <= end).sort((a, b) => a[1].at - b[1].at)[0]; if (!next) break; t = next[1].at; q.delete(next[0]); next[1].fn(); } t = end; },
+    };
+  })();
+  const s = createSingleActive({ setTimer: timers.setTimer, clearTimer: timers.clearTimer, now: () => t });
+  const open = new Set();
+  const mk = (id, rect) => ({
+    enter() {
+      const ok = s.activate(id, () => open.delete(id), { getRect: () => rect, onGrant: () => open.add(id) });
+      if (ok) open.add(id);
+    },
+    leave() { s.scheduleRelease(id); },
+  });
+  const a = mk("a", bar);
+  const b = mk("b", { left: 500, top: 140, right: 600, bottom: 176 });
+  a.enter();
+  // Pointer leaves "a" upward and crosses "b" on the way to a's pill.
+  s.track(520, 230, t); timers.advance(20); s.track(522, 205, t); a.leave();
+  timers.advance(20); s.track(524, 180, t); b.enter();
+  assert.deepEqual([...open], ["a"], "neighbour does not take over while aiming");
+  assert.equal(s.getPendingId(), "b");
+  timers.advance(HOVER_TOOLBAR_GRACE_MS + 10);
+  assert.deepEqual([...open], ["a"], "open pill survives its grace while aimed at");
+  s.track(526, 130, t); a.enter(); // reached the pill (its own enter)
+  assert.equal(s.getPendingId(), null);
+  timers.advance(AIM_MAX_MS + 50);
+  assert.deepEqual([...open], ["a"], "reaching the pill keeps it");
+
+  // Stopping on the neighbour hands over after the aim delay.
+  b.enter();
+  s.track(526, 130, t); timers.advance(20); s.track(526, 150, t); timers.advance(20); s.track(526, 150, t);
+  timers.advance(AIM_DELAY_MS + 5);
+  assert.deepEqual([...open], ["b"], "pointer rests on the neighbour: it takes over");
+
+  // Endless circling toward the pill still hands over after AIM_MAX_MS.
+  const c = mk("c", { left: 500, top: 300, right: 600, bottom: 336 });
+  const s2 = s;
+  let y = 400;
+  c.enter(); // a different one is active ("b"); aiming check uses b's rect
+  for (let i = 0; i < 60; i++) { y -= 1; s2.track(520, y, t); timers.advance(15); }
+  assert.equal(s.getActiveId(), "c", "aiming forever still hands over after AIM_MAX_MS");
+  assert.ok(open.has("c") && !open.has("b"));
 }
 
 console.log("singleActiveHover.selftest ok");

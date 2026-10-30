@@ -262,6 +262,16 @@ export const nested = {
     "noAnswer": "No answer",
     "reconnect": "Reconnecting…"
   },
+  "activeNow": {
+    "title": "Active now",
+    "emptyTitle": "It's quiet for now",
+    "emptyBody": "When a friend comes online or starts a game, music or another app, they show up here.",
+    "justNow": "just started",
+    "minutes": "{m} min",
+    "hours": "{h} h",
+    "hoursMinutes": "{h} h {m} min",
+    "more": "and {n} more"
+  },
   "admin": {
     "title": "Admin Panel",
     "subtitle": "System administration & moderation",
