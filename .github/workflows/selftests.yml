@@ -226,7 +226,7 @@ jobs:
           node src/components/admin/adminTabs.selftest.mjs
           node src/components/admin/adminNav.selftest.mjs
           node src/components/admin/adminOverviewModel.selftest.mjs
-          node src/components/activity/ActiveNowPanel.selftest.mjs
+          node src/styles/presenceToast.selftest.mjs
           node src/lib/hoverToolbarPlacement.selftest.mjs
           node src/lib/singleActiveHover.selftest.mjs
           node src/styles/admin-liquid.selftest.mjs

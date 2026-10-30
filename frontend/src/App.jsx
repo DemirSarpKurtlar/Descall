@@ -1741,6 +1741,8 @@ export default function App() {
           user: first,
           name,
           subtitle: t("is now online"),
+          dismissLabel: t("Close"),
+          onOpen: () => navigate(directPath(first)),
         });
       }
 

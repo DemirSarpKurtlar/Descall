@@ -5,6 +5,7 @@ import { Avatar } from "../components/ui/Avatar";
 import StatusBadge from "../components/ui/StatusBadge";
 import { nativeToastSupported, showPresenceCapsule } from "../lib/nativeToast.js";
 import { getLocale } from "../i18n/runtime.js";
+import "../styles/presence-toast.css";
 
 const ToastContext = createContext(null);
 
@@ -63,41 +64,50 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ toast: push }}>
       {children}
+      {/* Friend came online (3.1.2): its own stack, top right under the chat
+          header pills, in the theme's glass (styles/presence-toast.css). */}
+      <div className="presence-toasts" aria-live="polite">
+        <AnimatePresence initial={false}>
+          {toasts.filter((t) => t.type === "presence").map((t) => {
+            const user = t.meta?.user || null;
+            const name = t.meta?.name || t.message;
+            const open = t.meta?.onOpen;
+            return (
+              <motion.div
+                key={t.id}
+                layout
+                className={`presence-toast${open ? " is-actionable" : ""}`}
+                initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.16 } }}
+                transition={{ type: "spring", stiffness: 520, damping: 34 }}
+              >
+                <button
+                  type="button"
+                  className="presence-toast-main"
+                  disabled={!open}
+                  onClick={() => { dismiss(t.id); open?.(); }}
+                >
+                  <span className="presence-toast-av">
+                    <Avatar name={name} size={32} user={user} animate="always" />
+                    <StatusBadge status="online" />
+                  </span>
+                  <span className="presence-toast-copy">
+                    <b>{name}</b>
+                    <span>{t.meta?.subtitle || "Online"}</span>
+                  </span>
+                </button>
+                <button type="button" className="presence-toast-x" aria-label={t.meta?.dismissLabel || "Dismiss"} onClick={() => dismiss(t.id)}>
+                  <X size={13} />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
       <div className="toast-stack" aria-live="polite">
         <AnimatePresence>
-          {toasts.map((t) => {
-            if (t.type === "presence") {
-              const user = t.meta?.user || null;
-              const name = t.meta?.name || t.message;
-              return (
-                <motion.div
-                  key={t.id}
-                  className="toast-item toast-presence"
-                  initial={{ opacity: 0, y: 16, scale: 0.96, x: 12 }}
-                  animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 40 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 28 }}
-                >
-                  <div className="toast-presence-avatar">
-                    <Avatar name={name} size={36} user={user} animate="always" />
-                    <StatusBadge status="online" />
-                  </div>
-                  <div className="toast-presence-copy">
-                    <span className="toast-presence-title">{name}</span>
-                    <span className="toast-presence-sub">{t.meta?.subtitle || "Online"}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="toast-dismiss"
-                    aria-label="Dismiss"
-                    onClick={() => dismiss(t.id)}
-                  >
-                    <X size={14} />
-                  </button>
-                </motion.div>
-              );
-            }
-
+          {toasts.filter((t) => t.type !== "presence").map((t) => {
             const Icon = ICONS[t.type] || Info;
             return (
               <motion.div
