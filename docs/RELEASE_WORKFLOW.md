@@ -31,13 +31,18 @@ Fallback installer URL'leri sabit `Descall-Setup.exe` (versiyonsuz) olduğu içi
 - **CI yeşil** olunca `squash` ile merge et. Kırmızıyken asla merge etme; önce düzelt.
 - PR açıklaması: Türkçe, değişiklik + doğrulama.
 
-## 5. Tag → Windows + TestFlight
-- Merge edilmiş `main` HEAD'ine tag at:
+## 5. Release'i tetikle → Windows + TestFlight
+
+İki yol var:
+
+**A. Cloud oturumu (tag push edilemez — tercih edilen):** `release.yml` ve `ios-testflight.yml` artık `workflow_dispatch` destekliyor, yani tag'siz, API'den (`actions_run_trigger` → `run_workflow`) `ref: main` ile tetiklenir. Sürüm boş bırakılırsa `frontend/package.json`'dan okunur; `release.yml`'in publish adımı tag'i (`vX.Y.Z`) built commit'te kendisi oluşturur (var olan release'in üstüne yazmaz). İki workflow'u da ayrı ayrı dispatch et.
+
+**B. Yerel (tag push yetkisi olan ortam):**
 ```bash
 git fetch origin main && git checkout main && git pull --ff-only origin main
 git tag vX.Y.Z && git push origin vX.Y.Z
 ```
-- Tag `v*` push'u tetikler:
+- Her iki yol da tetikler:
   - `.github/workflows/release.yml` → Windows `Descall-Setup-X.Y.Z.exe` + blockmap + `latest.yml` (electron-updater).
   - `.github/workflows/ios-testflight.yml` → Capacitor iOS build, ASC API key ile imza, **TestFlight**'a yükleme. `CFBundleShortVersionString = frontend/package.json`, `CFBundleVersion = UTC YYYYMMDD.HHMM` (her build daha yüksek).
 - **CI yeşil olana kadar** sürümü "çıktı" diye raporlama.
