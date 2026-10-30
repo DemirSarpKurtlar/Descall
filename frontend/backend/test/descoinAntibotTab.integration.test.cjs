@@ -3,7 +3,7 @@
 /**
  * "Şüpheli Davranışlar" admin tab API (decisions 25 Oct 2026), against the
  * in-memory Supabase fake:
- *   - roles: no token 401, user 403, moderator reads, only admins write the
+ *   - roles: no token 401, user 403, admin without the section 403, section admin reads; writes the
  *     watch list / trust / release (server-side)
  *   - KPIs, account list (earned from the ledger, held = Faz 0 shadow), detail
  *     extras (7-day earnings, graph, masked hashes for admins only)
@@ -35,7 +35,8 @@ const fake = createFakeSupabase(
   {
     users: [
       { id: "u-admin", username: "demir", is_admin: true, active_sessions: [{ id: "s-admin" }] },
-      { id: "u-mod", username: "moddy", is_admin: false, active_sessions: [{ id: "s-mod" }] },
+      { id: "u-mod", username: "moddy", is_admin: true, admin_permissions: ["suspicious"], active_sessions: [{ id: "s-mod" }] },
+      { id: "u-lim", username: "limited", is_admin: true, admin_permissions: ["reports"], active_sessions: [{ id: "s-lim" }] },
       { id: "u-user", username: "plain", is_admin: false, active_sessions: [{ id: "s-user" }] },
       { id: "u-k34", username: "kral_farm34", display_name: "kral_farm34", descoin_balance: 50, created_at: iso(now - 6 * DAY), email_confirmed_at: null, auth_provider: "email" },
       { id: "u-k35", username: "kral_farm35", descoin_balance: 0, created_at: iso(now - 6 * DAY), email_confirmed_at: null, auth_provider: "email" },
@@ -88,6 +89,7 @@ const rowsOf = (t) => (fake._tables[t] ? fake._tables[t].rows : []);
 const tok = {
   admin: signToken({ id: "u-admin", username: "demir", sid: "s-admin" }),
   mod: signToken({ id: "u-mod", username: "moddy", sid: "s-mod" }),
+  lim: signToken({ id: "u-lim", username: "limited", sid: "s-lim" }),
   user: signToken({ id: "u-user", username: "plain", sid: "s-user" }),
 };
 let base;
@@ -114,20 +116,20 @@ test("start server", async () => {
   server = http.createServer(app);
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${server.address().port}`;
-  state.userRoles.set("u-mod", "mod");
 });
 
-test("roles: 401 without token, 403 for users, moderators read, writes are admin-only", async () => {
+test("roles: 401 without token, 403 for users and admins without the section, section admins read", async () => {
   const reads = ["/overview", "/accounts", "/users/u-k34/extra", "/watchlist", "/feed"];
   for (const p of reads) {
     assert.strictEqual((await req("GET", p)).status, 401, p);
     assert.strictEqual((await req("GET", p, { token: tok.user })).status, 403, p);
+    assert.strictEqual((await req("GET", p, { token: tok.lim })).status, 403, p);
     assert.strictEqual((await req("GET", p, { token: tok.mod })).status, 200, p);
   }
-  assert.strictEqual((await req("PUT", "/watch/u-k34", { token: tok.mod, body: { note: "x", rules: [] } })).status, 403);
-  assert.strictEqual((await req("DELETE", "/watch/u-k34", { token: tok.mod })).status, 403);
-  assert.strictEqual((await req("POST", "/users/u-k34/trust", { token: tok.mod, body: { trusted: true } })).status, 403);
-  assert.strictEqual((await req("POST", "/users/u-k34/release", { token: tok.mod })).status, 403);
+  assert.strictEqual((await req("PUT", "/watch/u-k34", { token: tok.lim, body: { note: "x", rules: [] } })).status, 403);
+  assert.strictEqual((await req("DELETE", "/watch/u-k34", { token: tok.lim })).status, 403);
+  assert.strictEqual((await req("POST", "/users/u-k34/trust", { token: tok.lim, body: { trusted: true } })).status, 403);
+  assert.strictEqual((await req("POST", "/users/u-k34/release", { token: tok.lim })).status, 403);
   assert.strictEqual((await req("PUT", "/watch/u-k34", { token: tok.user, body: { rules: [] } })).status, 403);
   assert.strictEqual(rowsOf("descoin_watchlist").length, 0);
 });
@@ -163,12 +165,12 @@ test("accounts: earned from the ledger (activity only, 7 days), held, status, fi
   assert.deepStrictEqual((await req("GET", "/accounts?status=trusted", { token: tok.mod })).body.items.map((i) => i.user.id), ["u-deniz"]);
   assert.deepStrictEqual((await req("GET", "/accounts?q=deniz", { token: tok.mod })).body.items.map((i) => i.user.id), ["u-deniz"]);
   assert.deepStrictEqual((await req("GET", "/accounts?q=Koç", { token: tok.mod })).body.items.map((i) => i.user.id), ["u-deniz"]);
-  // Device digest search: admins only.
+  // Device digest search (masked prefix).
   assert.deepStrictEqual((await req("GET", "/accounts?q=9f2c", { token: tok.admin })).body.items.map((i) => i.user.id).sort(), ["u-k34", "u-k35"]);
-  assert.deepStrictEqual((await req("GET", "/accounts?q=9f2c", { token: tok.mod })).body.items, []);
+  assert.strictEqual((await req("GET", "/accounts?q=9f2c", { token: tok.lim })).status, 403);
 });
 
-test("detail extras: 7-day earnings, average, graph, uncounted, hashes masked for admins only", async () => {
+test("detail extras: 7-day earnings, average, graph, uncounted, hashes masked", async () => {
   const a = await req("GET", "/users/u-k34/extra", { token: tok.admin });
   assert.strictEqual(a.status, 200);
   assert.strictEqual(a.body.earnings.days.length, 7);
@@ -184,7 +186,8 @@ test("detail extras: 7-day earnings, average, graph, uncounted, hashes masked fo
   assert.strictEqual(a.body.hashes.subnet, "4be1·····07c3");
   assert.ok(a.body.timeline.some((t) => t.kind === "signup") && a.body.timeline.some((t) => t.kind === "link" && t.user === "kral_farm35"));
   const m = await req("GET", "/users/u-k34/extra", { token: tok.mod });
-  assert.strictEqual(m.body.hashes, null, "moderators never see digests");
+  assert.strictEqual(m.body.hashes.fp, "9f2c·····e41a", "a section admin sees the same masked digest");
+  assert.strictEqual((await req("GET", "/users/u-k34/extra", { token: tok.lim })).status, 403);
   for (const body of [a.body, m.body]) {
     const blob = JSON.stringify(body);
     assert.ok(!blob.includes(HASH_FP) && !blob.includes(HASH_NET), "full hashes never leave the server");
@@ -192,7 +195,7 @@ test("detail extras: 7-day earnings, average, graph, uncounted, hashes masked fo
   assert.strictEqual((await req("GET", "/users/bad%20id/extra", { token: tok.admin })).status, 400);
 });
 
-test("clusters: linked accounts grouped, strongest first, readable by moderators", async () => {
+test("clusters: linked accounts grouped, strongest first, readable with the section", async () => {
   const r = await req("GET", "/clusters", { token: tok.mod });
   assert.strictEqual(r.status, 200);
   assert.ok(r.body.items.length >= 1);

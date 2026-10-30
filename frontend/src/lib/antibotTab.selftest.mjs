@@ -85,10 +85,9 @@ for (const k of Object.keys(tr)) {
 assert(!/\b(siz|sizin|sizi|lütfen|ediniz|yapınız|edin)\b/i.test(JSON.stringify(ANTIBOT_TR)), "sen dili");
 for (const k of Object.keys(DEFAULT_WEIGHTS)) assert(tr[`sig.${k}`] && en[`sig.${k}`], `signal label ${k}`);
 
-// The tab is wired: admin panel lists it, moderators get only this tab, no emoji in pills.
+// The tab is wired: admin panel lists it, no emoji in pills.
 const panel = readFileSync(new URL("../components/admin/AdminPanel.jsx", import.meta.url), "utf8");
 assert(panel.includes('id: "suspicious"'), "tab registered");
-assert(/moderatorOnly/.test(panel), "moderator mode");
 const tab = readFileSync(new URL("../components/admin/SuspiciousTab.jsx", import.meta.url), "utf8");
 assert(!/[\u{1F300}-\u{1FAFF}]/u.test(tab), "no emoji");
 assert(!/\/admin\/(ban|timeout)|wallet-freeze/.test(tab), "shortcuts route to the existing tools, no new calls");
@@ -102,18 +101,18 @@ assert.equal(nodeBadge(""), "?");
 assert.deepEqual(nodeLabels(["kral_farm34", "kral_farm35", "kral_farm37"]), ["farm34", "farm35", "farm37"]);
 assert.deepEqual(nodeLabels(["efe.ref", "nazli_ref"]), ["efe.ref", "nazli_ref"]);
 assert.equal(nodeLabels(["averyveryverylongname", "x"])[0], "averyveryv…");
-// moderators: panel limited to this tab; shortcuts route to the existing dossier tools
+// 3.3.0: no moderator role; shortcuts route to the existing dossier tools when the admin may open Kişiler
 {
   const rd = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
   const panel = rd("../components/admin/AdminPanel.jsx");
-  assert.match(panel, /MODERATOR_TABS = \["suspicious"\]/);
+  assert.doesNotMatch(panel, /MODERATOR_TABS|moderatorOnly/);
+  assert.match(panel, /!can\("people"\)/);
   assert.match(panel, /setDossierIntent\(\{ intent, at: Date\.now\(\) \}\)/);
   const app = rd("../App.jsx");
-  assert.match(app, /socketApi\.on\("staff:role"/);
-  assert.match(app, /moderatorOnly=\{!isFullAdmin\}/);
+  assert.doesNotMatch(app, /staff:role|isModerator|moderatorOnly/);
   const dossier = rd("../components/admin/AdminUserDossier.jsx");
   assert.match(dossier, /intent\.intent === "timeout" \|\| intent\.intent === "ban"\) setAction\(intent\.intent\)/);
   assert.equal(/intent[^\n]*toggleWalletFreeze|freeze[^\n]*adminFetch/.test(dossier.split("Shortcut from")[1]?.split("useEffect(() => {\n    load()")[0] || ""), false, "freeze shortcut must not run by itself");
-  assert.match(rd("../../backend/routes/auth.js"), /staffRole: userRoles\?\.get\?\.\(user\.id\) === "mod"/);
+  assert.doesNotMatch(rd("../../backend/routes/auth.js"), /staffRole/);
 }
 console.log("antibot tab selftest: ok");

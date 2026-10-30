@@ -56,6 +56,7 @@ const {
 const adminAuditStore = require("../lib/adminAuditStore");
 const { adminRateLimit } = require("../middleware/adminRateLimit");
 const { requireAdmin2fa, requireStepUp, stepUpHandler } = require("../middleware/adminSecondFactor");
+const adminPermissions = require("../lib/adminPermissions");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
@@ -63,6 +64,9 @@ router.use(requireAuth, requireAdmin, adminRateLimit, requireAdmin2fa);
 // Yönetici güvenliği (3.2.0): a fresh code for every change; see middleware/adminSecondFactor.js.
 router.post("/step-up", stepUpHandler);
 router.use(requireStepUp);
+// Yetkili yöneticiler (3.3.0): each admin only opens the sections the owner granted.
+router.use(adminPermissions.requireAdminSection);
+router.use(require("./adminStaff"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
@@ -552,25 +556,17 @@ router.post("/users", async (req, res) => {
 router.patch("/users/:id", async (req, res) => {
   try {
     const { role } = req.body || {};
-    if (role && ["user", "mod", "admin"].includes(role)) {
-      if (role === "admin" || role === "user") {
-        if (!(await userIsSuperAdmin(req))) {
-          return res.status(403).json({ error: "Only the super admin can change admin roles." });
-        }
+    // 3.3.0: no moderator role. "admin" / "user" go through the owner-only
+    // make-admin / remove-admin flow so section grants stay consistent.
+    if (role === "mod") {
+      return res.status(400).json({ error: "Moderatör rolü kaldırıldı. Yönetici yap ve bölüm yetkisi ver.", code: "ROLE_REMOVED" });
+    }
+    if (role === "admin" || role === "user") {
+      if (!(await userIsSuperAdmin(req))) {
+        return res.status(403).json({ error: "Only the super admin can change admin roles." });
       }
-      state.userRoles.set(req.params.id, role);
-      // Persist admin flag to DB — in-memory role alone does not grant AdminPanel access
-      if (role === "admin" || role === "user") {
-        const { error } = await supabase
-          .from("users")
-          .update({ is_admin: role === "admin" })
-          .eq("id", req.params.id);
-        if (error) return res.status(500).json({ error: "Could not update role." });
-        const io = getIo(req);
-        io?.to(`user:${req.params.id}`)?.emit("user:updated", { is_admin: role === "admin" });
-      }
-      audit(req.user, "user_role", req.params.id, { role });
-      getIo(req)?.to(`user:${req.params.id}`)?.emit("staff:role", { role: role === "mod" ? "moderator" : null });
+      const result = await setAdminFlag(req, req.params.id, role === "admin");
+      if (!result.ok) return res.status(result.status).json({ error: result.error });
     }
     notifyAdminRoom(getIo(req), { type: "user_patch", id: req.params.id });
     res.json({ ok: true });
@@ -579,50 +575,48 @@ router.patch("/users/:id", async (req, res) => {
   }
 });
 
+/**
+ * Owner-only: grant or remove admin. A new admin starts with only Genel Bakış;
+ * the owner grants sections in Yöneticiler (routes/adminStaff.js).
+ */
+async function setAdminFlag(req, userId, makeAdmin) {
+  if (!makeAdmin && userId === req.user.id) return { ok: false, status: 400, error: "Cannot remove your own admin." };
+  const { data: target } = await supabase.from("users").select("username, is_admin").eq("id", userId).maybeSingle();
+  if (!target) return { ok: false, status: 404, error: "User not found." };
+  if (!makeAdmin && target.username === "admin") return { ok: false, status: 400, error: "The owner account stays admin." };
+  // Re-making an existing admin keeps their sections.
+  const patch = makeAdmin && target.is_admin ? { is_admin: true } : { is_admin: makeAdmin, admin_permissions: makeAdmin ? [] : null };
+  let res = await supabase.from("users").update(patch).eq("id", userId).select("id, username, avatar_url, is_admin").single();
+  if (res.error && /admin_permissions/.test(String(res.error.message || ""))) {
+    res = await supabase.from("users").update({ is_admin: makeAdmin }).eq("id", userId).select("id, username, avatar_url, is_admin").single();
+  }
+  if (res.error || !res.data) return { ok: false, status: 500, error: "Could not update admin role." };
+  state.userRoles.set(userId, makeAdmin ? "admin" : "user");
+  adminPermissions.invalidate(userId);
+  audit(req.user, makeAdmin ? "make_admin" : "remove_admin", userId, { username: res.data.username });
+  const io = getIo(req);
+  io?.to(`user:${userId}`)?.emit("user:updated", { is_admin: makeAdmin });
+  notifyAdminRoom(io, { type: "user_admin", id: userId, is_admin: makeAdmin });
+  return { ok: true, user: res.data };
+}
+
 // Durable make/remove admin — used by AdminPanel Users tab
 router.put("/make-admin/:userId", requireSuperAdmin, async (req, res) => {
   try {
-    const userId = req.params.userId;
-    if (!userId) return res.status(400).json({ success: false, error: "Missing userId" });
-    const { data, error } = await supabase
-      .from("users")
-      .update({ is_admin: true })
-      .eq("id", userId)
-      .select("id, username, avatar_url, is_admin")
-      .single();
-    if (error) return res.status(500).json({ success: false, error: "Could not update admin role." });
-    state.userRoles.set(userId, "admin");
-    audit(req.user, "make_admin", userId, {});
-    const io = getIo(req);
-    io?.to(`user:${userId}`)?.emit("user:updated", { is_admin: true });
-    notifyAdminRoom(io, { type: "user_admin", id: userId, is_admin: true });
-    return res.json({ success: true, user: data });
-  } catch (err) {
+    const result = await setAdminFlag(req, req.params.userId, true);
+    if (!result.ok) return res.status(result.status).json({ success: false, error: result.error });
+    return res.json({ success: true, user: result.user });
+  } catch {
     return res.status(500).json({ success: false, error: "Could not update admin role." });
   }
 });
 
 router.put("/remove-admin/:userId", requireSuperAdmin, async (req, res) => {
   try {
-    const userId = req.params.userId;
-    if (!userId) return res.status(400).json({ success: false, error: "Missing userId" });
-    if (userId === req.user.id) {
-      return res.status(400).json({ success: false, error: "Cannot remove your own admin." });
-    }
-    const { data, error } = await supabase
-      .from("users")
-      .update({ is_admin: false })
-      .eq("id", userId)
-      .select("id, username, avatar_url, is_admin")
-      .single();
-    if (error) return res.status(500).json({ success: false, error: "Could not update admin role." });
-    state.userRoles.set(userId, "user");
-    audit(req.user, "remove_admin", userId, {});
-    const io = getIo(req);
-    io?.to(`user:${userId}`)?.emit("user:updated", { is_admin: false });
-    notifyAdminRoom(io, { type: "user_admin", id: userId, is_admin: false });
-    return res.json({ success: true, user: data });
-  } catch (err) {
+    const result = await setAdminFlag(req, req.params.userId, false);
+    if (!result.ok) return res.status(result.status).json({ success: false, error: result.error });
+    return res.json({ success: true, user: result.user });
+  } catch {
     return res.status(500).json({ success: false, error: "Could not update admin role." });
   }
 });

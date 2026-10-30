@@ -77,14 +77,14 @@ function SearchBox({ value, onChange, inputRef, t, hint }) {
   );
 }
 
-function Me({ viewer, moderatorOnly, t }) {
+function Me({ viewer, owner, t }) {
   if (!viewer) return null;
   return (
     <div className="adm-me">
       <span className="adm-me-av" aria-hidden="true">{String(viewer).slice(0, 1).toUpperCase()}</span>
       <div>
         <b>{viewer}</b>
-        <span>{moderatorOnly ? t("admin.roleModerator") : t("admin.roleAdmin")}</span>
+        <span>{owner ? t("admin.roleOwner") : t("admin.roleAdmin")}</span>
       </div>
     </div>
   );
@@ -120,7 +120,7 @@ export default function AdminShell({
   standalone = false,
   onClose,
   viewer,
-  moderatorOnly = false,
+  owner = false,
   banner = null,
   children,
 }) {
@@ -189,7 +189,7 @@ export default function AdminShell({
               <nav className="adm-nav" aria-label={t("admin.sections")}>
                 <NavList tabs={tabs} current={current} onPick={pick} badges={badges} query={query} t={t} big />
               </nav>
-              <Me viewer={viewer} moderatorOnly={moderatorOnly} t={t} />
+              <Me viewer={viewer} owner={owner} t={t} />
             </aside>
           </div>
         ) : null}
@@ -207,7 +207,7 @@ export default function AdminShell({
           <nav className="adm-nav" aria-label={t("admin.sections")}>
             <NavList tabs={tabs} current={current} onPick={pick} badges={badges} query={query} t={t} />
           </nav>
-          <Me viewer={viewer} moderatorOnly={moderatorOnly} t={t} />
+          <Me viewer={viewer} owner={owner} t={t} />
         </aside>
         <main ref={mainRef} className="adm-main" data-tab={current}>
           {banner}

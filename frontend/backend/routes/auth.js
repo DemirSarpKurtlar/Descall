@@ -4,7 +4,7 @@ const { OAuth2Client } = require("google-auth-library");
 const supabase = require("../db/supabase");
 const { signToken, signPending2faToken, verifyToken } = require("../config/jwt");
 const { requireAuth } = require("../middleware/auth");
-const { revokedSessionIds, authCodeAttempts, userRoles, systemConfig } = require("../runtime/sharedState");
+const { revokedSessionIds, authCodeAttempts, systemConfig } = require("../runtime/sharedState");
 const platformPolicy = require("../lib/platformPolicy");
 const twoFactor = require("../lib/twoFactorService");
 const { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL } = require("../lib/mailer");
@@ -1301,8 +1301,6 @@ router.get("/me", requireAuth, async (req, res) => {
         emailVerified: Boolean(user.email_confirmed_at),
         twoFactorEnabled: Boolean(user.two_factor_enabled),
         blockedUsers: Array.isArray(user.blocked_users) ? user.blocked_users : [],
-        // Moderators get the admin panel with only "Şüpheli Davranışlar" (read-only there).
-        staffRole: userRoles?.get?.(user.id) === "mod" ? "moderator" : null,
         equippedAvatarFrame: equipped.avatarFrame || null,
         equippedBanner: equipped.banner || null,
         equippedBackground: equipped.background || null,

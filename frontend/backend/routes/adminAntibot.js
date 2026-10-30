@@ -3,19 +3,17 @@
 /**
  * DesCoin anti-bot admin API (Faz 0, monitor only) — the data the upcoming
  * "Şüpheli davranışlar" admin tab reads. Mounted at /api/admin/antibot (and
- * /admin/antibot) *before* the main admin router so moderators can read.
+ * /admin/antibot) before the main admin router.
  *
- * Roles (decisions 25 Oct 2026):
- *   - view (status, flagged list, account detail, notes): admins + moderators
- *   - "güvenilir işaretle" (trust) and "serbest bırak" (release): admins only
+ * Access (3.3.0): admins the owner granted the "suspicious" section
+ * (lib/adminPermissions.js); there is no moderator role any more.
  * No endpoint here bans, mutes, freezes or changes a balance. Release is a
  * stub in Faz 0 (nothing is ever withheld) and answers 409.
  *
  * Privacy: device / network data is returned as counts ("shared with N other
- * accounts"), never as addresses. The "Şüpheli Davranışlar" tab shows admins
- * (not moderators) a masked hash (first 4 + last 4 characters), never the
- * full value. Moderators do not
- * see who an account talks to (counterpart ids); admins see usernames only.
+ * accounts"), never as addresses. The "Şüpheli Davranışlar" tab shows a
+ * masked hash (first 4 + last 4 characters), never the full value, and
+ * counterparts as usernames only.
  * All queries go through supabase-js (parameterized). Per-user rate limits.
  */
 
@@ -32,28 +30,21 @@ const watch = require("../lib/descoinAntibot/watch");
 const moderation = require("../lib/moderation");
 
 const { requireAdmin2fa, requireStepUp } = require("../middleware/adminSecondFactor");
+const perms = require("../lib/adminPermissions");
 const router = express.Router();
 
 const ID_RE = /^[0-9A-Za-z-]{1,64}$/;
 const MINUTE = 60_000;
 
-async function roleOf(user) {
-  if (!user?.id) return null;
-  if (user.username === "admin") return "admin";
-  try {
-    const { data } = await supabase.from("users").select("is_admin").eq("id", user.id).maybeSingle();
-    if (data?.is_admin) return "admin";
-  } catch {
-    /* fall through */
-  }
-  return state.userRoles.get(user.id) === "mod" ? "moderator" : null;
-}
-
+// 3.3.0: no moderator role. Any admin the owner granted "suspicious" may read
+// and act here (sections: lib/adminPermissions.js).
 async function requireViewer(req, res, next) {
   try {
-    const role = await roleOf(req.user);
-    if (!role) return res.status(403).json({ error: "Admin or moderator access required." });
-    req.antibotRole = role;
+    const row = await perms.loadRow(req.user.id);
+    if (!perms.canOpen(req.user, row, "suspicious")) {
+      return res.status(403).json({ error: "Bu bölüm için yetkin yok.", code: "ADMIN_PERMISSION_DENIED", section: "suspicious" });
+    }
+    req.antibotRole = "admin";
     return next();
   } catch {
     return res.status(500).json({ error: "Internal server error" });
@@ -345,8 +336,7 @@ router.post("/run", requireAdminRole, limit("run", { windowMs: 10 * MINUTE, max:
 // ---------------------------------------------------------------------------
 // "Şüpheli Davranışlar" tab (decisions 25 Oct 2026): KPIs, account list with
 // earnings, rich detail, watch list + rules, alert feed.
-// Viewers (admins + moderators) read; watch list writes, trust and release are
-// admins only. Nothing here bans, mutes, freezes or changes a balance: those
+// Admins with the "suspicious" section read and act. Nothing here bans, mutes, freezes or changes a balance: those
 // shortcuts open the existing admin tools in the client.
 // ---------------------------------------------------------------------------
 
@@ -795,4 +785,3 @@ router.get("/feed", async (req, res) => {
 });
 
 module.exports = router;
-module.exports._roleOf = roleOf;
