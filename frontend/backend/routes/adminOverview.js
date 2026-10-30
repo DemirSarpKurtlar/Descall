@@ -32,6 +32,20 @@ const JOINED_COLS = "id, username, display_name, avatar_url, created_at, signup_
 const JOINED_COLS_FALLBACK = "id, username, display_name, avatar_url, created_at, last_seen";
 const ACTIVE_COLS = "id, username, display_name, avatar_url, created_at, last_seen";
 
+/** Newest in-progress feedback for the overview to-do list; only what the row needs. */
+function feedbackFocusRow(res) {
+  const row = !res?.error && Array.isArray(res?.data) ? res.data[0] : null;
+  if (!row) return null;
+  const text = String(row.message || "").replace(/\s+/g, " ").trim();
+  return {
+    id: row.id,
+    username: row.username || "",
+    category: row.category || null,
+    priority: row.priority || null,
+    excerpt: text.length > 90 ? `${text.slice(0, 89)}…` : text,
+  };
+}
+
 const router = express.Router();
 
 function getIo(req) {
@@ -90,7 +104,7 @@ router.get("/overview", async (req, res) => {
     const nowIso = new Date().toISOString();
     const emptyInbox = { openCount: 0, uniqueTargets: 0, autoOpenUserId: null, hotTargets: [] };
     const emptyAudit = { data: [], error: { message: "timeout" } };
-    let [joinedRes, activeRes, signupRes, feedbackRes, inbox, durable, auditRes, dbOnline, settings] = await Promise.all([
+    let [joinedRes, activeRes, signupRes, feedbackRes, inbox, durable, auditRes, dbOnline, settings, feedbackActiveRes] = await Promise.all([
       withTimeout(
         supabase.from("users").select(JOINED_COLS).order("created_at", { ascending: false }).limit(ROSTER_LIMIT),
         QUERY_MS,
@@ -124,6 +138,17 @@ router.get("/overview", async (req, res) => {
       ),
       fetchRecentOnlineRows(supabase, { timeoutMs: QUERY_MS }),
       loadSystemSettings(supabase, { timeoutMs: QUERY_MS }),
+      // Genel Bakış › Yapılacaklar: the feedback an admin is working on (3.1).
+      withTimeout(
+        supabase
+          .from("user_feedback")
+          .select("id, username, category, priority, message", { count: "exact" })
+          .eq("status", "in_progress")
+          .order("updated_at", { ascending: false })
+          .limit(1),
+        QUERY_MS,
+        { data: [], count: 0, error: { message: "timeout" } }
+      ),
     ]);
     applySystemConfigToState(state, settings.config);
 
@@ -202,6 +227,8 @@ router.get("/overview", async (req, res) => {
         signupsToday,
         sparkline,
         newFeedback: feedbackRes.error ? 0 : feedbackRes.count || 0,
+        feedbackInProgress: feedbackActiveRes.error ? 0 : feedbackActiveRes.count || 0,
+        feedbackFocus: feedbackFocusRow(feedbackActiveRes),
       },
       safety: {
         openReports: inbox.openCount || 0,

@@ -8,8 +8,10 @@
  */
 
 const STATS_PATH = '/admin/signup-stats';
+/** 3.1: the whole Yönetici Paneli opens in its own window; the main window stays usable. */
+const ADMIN_PANEL_PATH = '/admin/panel';
 
-function isSignupStatsUrl(url, { isDev = false } = {}) {
+function isAppRoute(url, routePath, { isDev = false } = {}) {
   let u;
   try {
     u = new URL(String(url || ''));
@@ -17,7 +19,15 @@ function isSignupStatsUrl(url, { isDev = false } = {}) {
     return false;
   }
   const appOrigin = (u.protocol === 'descall:' && u.host === 'app') || (isDev && u.origin === 'http://localhost:5173');
-  return appOrigin && u.pathname.replace(/\/+$/, '') === STATS_PATH && !u.username && !u.password;
+  return appOrigin && u.pathname.replace(/\/+$/, '') === routePath && !u.username && !u.password;
+}
+
+function isSignupStatsUrl(url, opts = {}) {
+  return isAppRoute(url, STATS_PATH, opts);
+}
+
+function isAdminPanelUrl(url, opts = {}) {
+  return isAppRoute(url, ADMIN_PANEL_PATH, opts);
 }
 
 /** BrowserWindow options: 1240×856 like the mockup, same frameless chrome as the main window. */
@@ -44,4 +54,23 @@ function signupStatsWindowOptions({ preload, icon, platform = process.platform }
   };
 }
 
-module.exports = { STATS_PATH, isSignupStatsUrl, signupStatsWindowOptions };
+/** Yönetici Paneli window: 1440×900 like the approved mockup, same frameless chrome. */
+function adminPanelWindowOptions({ preload, icon, platform = process.platform } = {}) {
+  return {
+    ...signupStatsWindowOptions({ preload, icon, platform }),
+    width: 1440,
+    height: 900,
+    minWidth: 960,
+    minHeight: 640,
+    title: 'Descall Yönetici',
+  };
+}
+
+module.exports = {
+  STATS_PATH,
+  ADMIN_PANEL_PATH,
+  isSignupStatsUrl,
+  isAdminPanelUrl,
+  signupStatsWindowOptions,
+  adminPanelWindowOptions,
+};

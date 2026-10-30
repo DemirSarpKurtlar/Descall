@@ -33,7 +33,8 @@ assert.equal(formatVersionLine({ version: "" }), "");
 }
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
-assert.match(read("../components/admin/AdminPanel.jsx"), /<AdminVersionBadge t=\{t\} \/>/);
+// 3.1: the version badge sits in the AdminShell side menu header.
+assert.match(read("../components/admin/AdminShell.jsx"), /<AdminVersionBadge t=\{t\} \/>/);
 assert.match(read("../i18n/locales/tr.js"), /"App version \{version\}": "Sürüm \{version\}"/);
 assert.match(read("../../ios/App/App/DescallDisplayPlugin.swift"), /CFBundleShortVersionString/);
 assert.match(read("../../electron/main.cjs"), /ipcMain\.handle\('app-version'/);

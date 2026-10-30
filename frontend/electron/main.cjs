@@ -58,7 +58,7 @@ const {
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile } = require('./appProtocolPath.cjs');
-const { isSignupStatsUrl, signupStatsWindowOptions } = require('./adminStatsWindow.cjs');
+const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -728,6 +728,8 @@ function resolvePrelaunch(outcome) {
 const isDev = process.env.NODE_ENV === 'development';
 /** Yönetici › Kayıt İstatistikleri window (electron/adminStatsWindow.cjs). */
 let signupStatsWindow = null;
+/** Yönetici Paneli window (3.1): the whole admin panel, main window stays usable. */
+let adminPanelWindow = null;
 const isPackaged = app.isPackaged;
 
 let mainWindow = null;
@@ -1217,10 +1219,10 @@ function createMainWindow() {
   });
 
   // IPC handlers for window controls
-  // A secondary app window (Kayıt İstatistikleri) drives its own controls; everything else is the main window.
+  // A secondary app window (Kayıt İstatistikleri, Yönetici Paneli) drives its own controls; everything else is the main window.
   const controlledWindow = (event) => {
     const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
-    return w && w !== mainWindow && w === signupStatsWindow ? w : mainWindow;
+    return w && w !== mainWindow && (w === signupStatsWindow || w === adminPanelWindow) ? w : mainWindow;
   };
   ipcMain.on('window:minimize', (event) => {
     controlledWindow(event)?.minimize();
@@ -1641,6 +1643,18 @@ function createMainWindow() {
         overrideBrowserWindowOptions: signupStatsWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
       };
     }
+    // Yönetici Paneli: its own window (one at a time), the main window stays usable.
+    if (isAdminPanelUrl(url, { isDev })) {
+      if (adminPanelWindow && !adminPanelWindow.isDestroyed()) {
+        if (adminPanelWindow.isMinimized()) adminPanelWindow.restore();
+        adminPanelWindow.focus();
+        return { action: 'deny' };
+      }
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: adminPanelWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
+      };
+    }
     if (isDescallSetupDownloadUrl(url)) {
       downloadDescallSetupViaElectron({
         webContents: mainWindow.webContents,
@@ -1655,11 +1669,16 @@ function createMainWindow() {
   });
 
   mainWindow.webContents.on('did-create-window', (win, { url }) => {
-    if (!isSignupStatsUrl(url, { isDev })) return;
-    signupStatsWindow = win;
+    const isStats = isSignupStatsUrl(url, { isDev });
+    const isPanel = !isStats && isAdminPanelUrl(url, { isDev });
+    if (!isStats && !isPanel) return;
+    if (isStats) signupStatsWindow = win;
+    else adminPanelWindow = win;
+    const ownRoute = isStats ? isSignupStatsUrl : isAdminPanelUrl;
     win.setMenu(null);
     win.on('closed', () => {
       if (signupStatsWindow === win) signupStatsWindow = null;
+      if (adminPanelWindow === win) adminPanelWindow = null;
     });
     win.on('maximize', () => win.webContents.send('window:maximized', true));
     win.on('unmaximize', () => win.webContents.send('window:maximized', false));
@@ -1668,7 +1687,7 @@ function createMainWindow() {
       return { action: 'deny' };
     });
     win.webContents.on('will-navigate', (event, next) => {
-      if (!isSignupStatsUrl(next, { isDev })) event.preventDefault();
+      if (!ownRoute(next, { isDev })) event.preventDefault();
     });
   });
 

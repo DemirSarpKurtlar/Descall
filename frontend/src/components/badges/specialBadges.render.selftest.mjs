@@ -182,7 +182,7 @@ assert.equal(m.promoLockReason({ grantMode: "promo", active: false }), "inactive
 m.registerSpecialPromoBadges("tr");
 assert.equal(m.describePromoBadge("facebook").name, "Facebook");
 assert.equal(m.describePromoBadge("facebook").tierLabel, "Nadir");
-assert.equal(m.describePromoBadge("demironayli").name, "Demir Onaylı");
+assert.equal(m.describePromoBadge("demironayli").name, "Admin Onaylı");
 
 // ---- profile row
 const me = { id: ME, username: "demir", displayName: "Demir", equippedCountry: { id: "country-tr", code: "TR" } };

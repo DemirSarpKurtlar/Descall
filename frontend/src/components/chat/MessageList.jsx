@@ -39,7 +39,7 @@ import { CountryBadge, NameEffectText, profileAuraClass } from "../ui/Cosmetics"
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { enrichSender, senderAvatarUrl, senderName } from "../../lib/mediaViewerHeader";
 import { useT } from "../../context/LocaleContext";
-import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS } from "../../lib/singleActiveHover";
+import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS, installHoverTrail } from "../../lib/singleActiveHover";
 import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
 import { getLocale } from "../../i18n/runtime";
 import { GroupMemberEventRow } from "../groups/GroupMemberRemoval";
@@ -1115,11 +1115,17 @@ function MessageBubble({
   const menuOpenedAt = useRef(0);
   const menuOpenRef = useRef(menuOpen);
   menuOpenRef.current = menuOpen;
-  const openMenu = () => {
-    clearHide();
-    if (!messageHoverToolbar.activate(hoverKey.current, closeFromOwner)) return;
+  const barRect = useCallback(() => bubbleRef.current?.querySelector(":scope > .message-hover-bar")?.getBoundingClientRect() || null, []);
+  const grantMenu = useCallback(() => {
     if (!menuOpenRef.current) menuOpenedAt.current = Date.now();
     setMenuOpen(true);
+  }, []);
+  const openMenu = () => {
+    clearHide();
+    // While the pointer is on its way to another message's open pill, this
+    // request waits (grantMenu runs once it stops aiming there).
+    if (!messageHoverToolbar.activate(hoverKey.current, closeFromOwner, { getRect: barRect, onGrant: grantMenu })) return;
+    grantMenu();
   };
 
   const scheduleClose = () => {
@@ -1129,15 +1135,18 @@ function MessageBubble({
 
   useEffect(() => {
     const key = hoverKey.current;
-    if (menuOpen) messageHoverToolbar.activate(key, closeFromOwner);
+    if (menuOpen) messageHoverToolbar.activate(key, closeFromOwner, { getRect: barRect });
     else messageHoverToolbar.forget(key);
-  }, [menuOpen, closeFromOwner]);
+  }, [menuOpen, closeFromOwner, barRect]);
 
   useEffect(() => {
     messageHoverToolbar.setLocked(hoverKey.current, pickerOpen || moreOpen);
   }, [pickerOpen, moreOpen, menuOpen]);
 
-  useEffect(() => () => messageHoverToolbar.forget(hoverKey.current), []);
+  useEffect(() => {
+    installHoverTrail();
+    return () => messageHoverToolbar.forget(hoverKey.current);
+  }, []);
 
   // Desktop hover toolbar placement (lib/hoverToolbarPlacement.js): the pill is
   // anchored directly above the hovered bubble (left-aligned, ~6px gap) inside the visible chat column, never on the
@@ -1179,12 +1188,22 @@ function MessageBubble({
       ...row.querySelectorAll(":scope > .message-header .message-avatar, :scope > .message-header .message-meta > *"),
       ...document.querySelectorAll(".chat-top-chrome .header-left, .chat-top-chrome .header-right"),
     ].map(rect).filter((r) => r.width > 0 && r.height > 0);
-    // Anchored to the hovered bubble: directly above it, left-aligned.
-    const p = placeHoverToolbar({
-      bubble: rect(el), clip, obstacles,
-      fullW: fullWidth, compactW, barH: bar.offsetHeight || 44,
-    });
+    // Other messages near this one (bubbles, cards, other rows' headers): the
+    // pill never lands on them (3.1), it moves beside the bubble instead.
     const b = rect(el);
+    const barH = bar.offsetHeight || 44;
+    const others = [
+      ...[...list.querySelectorAll(".message-bubble")].filter((n) => n !== el && !el.contains(n) && !n.contains(el)),
+      ...[...list.querySelectorAll(".message-group > .message-header")].filter((n) => !row.contains(n)),
+    ];
+    const content = others
+      .map(rect)
+      .filter((r) => r.width > 0 && r.height > 0 && r.bottom > b.top - barH - 24 && r.top < b.bottom + 24);
+    // Anchored to the hovered bubble: above it, or beside it when that would cover another message.
+    const p = placeHoverToolbar({
+      bubble: b, clip, obstacles, content,
+      fullW: fullWidth, compactW, barH,
+    });
     el.style.setProperty("--mhb-shift", `${Math.round(p.right - b.right)}px`);
     el.style.setProperty("--mhb-top", `${Math.round(p.top - b.top)}px`);
     bar.dataset.place = p.where;

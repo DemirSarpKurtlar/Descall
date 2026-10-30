@@ -1,0 +1,271 @@
+/* "Şu an aktif" (3.1): online friends, top right of the chat home.
+   Under html.glass-desktop it is the same material as the chat list and the
+   bottom-left user panel (glass fill + faint theme wash, edge highlight), so
+   it follows every theme; elsewhere a dark frost card. Hidden when the chat
+   area is too narrow to keep the empty state readable beside it. */
+
+.messages-container.has-active-now {
+  position: relative;
+  container-type: inline-size;
+  container-name: chat-home;
+}
+
+.active-now {
+  --an-ink: var(--text-1, rgba(255, 255, 255, 0.95));
+  --an-ink-2: var(--text-2, rgba(235, 238, 255, 0.7));
+  --an-ink-3: var(--text-3, rgba(235, 238, 255, 0.5));
+  --an-hair: rgba(255, 255, 255, 0.08);
+  --an-chip: rgba(255, 255, 255, 0.06);
+  --an-chip-hover: rgba(255, 255, 255, 0.1);
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  z-index: 2;
+  width: 340px;
+  max-height: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  color: var(--an-ink);
+  background: linear-gradient(180deg, rgba(var(--g-brand-rgb, 88, 101, 242), 0.1), rgba(var(--g-brand-rgb, 88, 101, 242), 0.04)), rgba(24, 25, 34, 0.82);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  backdrop-filter: blur(40px) saturate(170%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+html.glass-desktop .active-now {
+  --an-ink: var(--gd-t1);
+  --an-ink-2: var(--gd-t2);
+  --an-ink-3: var(--gd-t3);
+  --an-hair: color-mix(in srgb, var(--g-t1) 10%, transparent);
+  --an-chip: var(--gd-chip);
+  --an-chip-hover: var(--gd-chip-hover);
+  border-radius: var(--gd-r-panel);
+  background:
+    linear-gradient(180deg, rgba(var(--g-brand-rgb), 0.11) 0%, rgba(var(--g-brand-rgb), 0.06) 100%),
+    var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+html.glass-desktop .active-now::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.1) 18%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.06) 82%, rgba(255, 255, 255, 0.18) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+/* Opaque where blur is missing, off or too expensive. */
+html.a11y-solid .active-now,
+html.gd-lite .active-now,
+html.glass-desktop.a11y-solid .active-now,
+html.glass-desktop.gd-lite .active-now {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid, rgb(28, 28, 36));
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .active-now { background: rgb(28, 28, 36); }
+}
+:root[data-theme="light"]:not(.glass-desktop) .active-now {
+  --an-ink: #15161c;
+  --an-ink-2: rgba(21, 22, 28, 0.7);
+  --an-ink-3: rgba(21, 22, 28, 0.5);
+  --an-hair: rgba(0, 0, 0, 0.08);
+  --an-chip: rgba(0, 0, 0, 0.04);
+  --an-chip-hover: rgba(0, 0, 0, 0.07);
+  background: rgba(248, 248, 252, 0.86);
+}
+
+.active-now-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px 10px;
+}
+.active-now-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--an-ink);
+}
+.active-now-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--an-ink);
+  background: rgba(var(--g-brand-rgb, 88, 101, 242), 0.22);
+}
+
+.active-now-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 10px 12px;
+  scrollbar-width: thin;
+}
+
+.active-now-list,
+.active-now-idle {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.active-now-idle { gap: 1px; }
+
+.active-now-card,
+.active-now-row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.12s ease;
+}
+.active-now-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--an-chip);
+  box-shadow: inset 0 0 0 1px var(--an-hair);
+}
+.active-now-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 12px;
+}
+.active-now-card:hover,
+.active-now-row:hover { background: var(--an-chip-hover); }
+.active-now-card:active,
+.active-now-row:active { transform: scale(0.985); }
+.active-now-card:focus-visible,
+.active-now-row:focus-visible {
+  outline: 2px solid rgba(var(--g-brand-rgb, 88, 101, 242), 0.85);
+  outline-offset: 2px;
+}
+
+.active-now-av {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+}
+.active-now-av .status-badge,
+.active-now-av [class*="status-badge"] {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+}
+
+.active-now-tx {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.active-now-tx b,
+.active-now-row b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--an-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.active-now-row b { flex: 1; min-width: 0; }
+.active-now-app {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--an-ink-2);
+}
+.active-now-app svg { flex: none; color: rgb(var(--g-brand-rgb, 88, 101, 242)); }
+.active-now-app span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.active-now-since,
+.active-now-st {
+  font-size: 12px;
+  color: var(--an-ink-3);
+  white-space: nowrap;
+}
+
+.active-now-label {
+  margin: 14px 10px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--an-ink-3);
+}
+.active-now-more {
+  padding: 6px 10px 0;
+  font-size: 12px;
+  color: var(--an-ink-3);
+}
+
+.active-now-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 24px 26px;
+  text-align: center;
+}
+.active-now-empty-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--g-brand-rgb, 88, 101, 242));
+  background: rgba(var(--g-brand-rgb, 88, 101, 242), 0.14);
+}
+.active-now-empty b { font-size: 14px; font-weight: 600; color: var(--an-ink); }
+.active-now-empty span:last-child { font-size: 13px; line-height: 1.45; color: var(--an-ink-2); }
+
+/* Keep the centered empty state centered in the free space beside the panel;
+   a slimmer panel on mid widths, none when the chat area is phone-narrow. */
+@container chat-home (min-width: 860px) {
+  .messages-container.has-active-now > .empty-state { padding-right: 356px; }
+}
+@container chat-home (min-width: 600px) and (max-width: 859.98px) {
+  .active-now { width: 280px; right: 12px; }
+  .messages-container.has-active-now > .empty-state { padding-right: 292px; }
+}
+@container chat-home (max-width: 599.98px) {
+  .active-now { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active-now-card,
+  .active-now-row { transition: none; }
+  .active-now-card:active,
+  .active-now-row:active { transform: none; }
+}
