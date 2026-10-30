@@ -170,6 +170,7 @@ jobs:
           node backend/lib/dmSlashCommands.selftest.cjs
           node src/lib/slashCommands.selftest.mjs
           node backend/lib/presenceFanout.selftest.cjs
+          node backend/lib/platformPolicy.selftest.cjs
           node backend/middleware/gzipJson.selftest.cjs
           node src/lib/onlineRoster.unit.test.mjs
           node backend/lib/edgeConfig.selftest.cjs

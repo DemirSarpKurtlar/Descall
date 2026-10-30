@@ -4,7 +4,8 @@ const { OAuth2Client } = require("google-auth-library");
 const supabase = require("../db/supabase");
 const { signToken, signPending2faToken, verifyToken } = require("../config/jwt");
 const { requireAuth } = require("../middleware/auth");
-const { revokedSessionIds, authCodeAttempts, userRoles } = require("../runtime/sharedState");
+const { revokedSessionIds, authCodeAttempts, userRoles, systemConfig } = require("../runtime/sharedState");
+const platformPolicy = require("../lib/platformPolicy");
 const { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL } = require("../lib/mailer");
 const { notifyTeamNewSignup } = require("../lib/signupReport");
 const { buildUserAttributionColumns, isMissingColumnError, countryFromHeaders } = require("../lib/signupAttribution");
@@ -463,6 +464,11 @@ router.post("/register", async (req, res) => {
   // Kayıt İstatistikleri: completed / failed outcome, hashed key only.
   trackSignupAttempt(req, res, { method: "email", countryFromHeaders });
   try {
+    {
+      // Yönetici Paneli › Güvenlik: "Kayıtlara izin ver" kapalıyken yeni hesap yok (3.1.3).
+      const closed = platformPolicy.checkRegistration({ config: systemConfig });
+      if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
+    }
     const ip = clientIp(req);
     if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;
     recordFailure(`register:ip:${ip}`, { max: 20 });
@@ -628,6 +634,10 @@ router.post("/login", async (req, res) => {
     const ip = clientIp(req);
     const accountKey = isReviewDemo(cleanUsername) ? null : `login:acct:${cleanUsername.toLowerCase()}`;
     if (guard(res, `login:ip:${ip}`, accountKey, { max: 40 }, { max: 30 })) return;
+    // Yönetici Paneli › Güvenlik: "Dakikada maksimum giriş denemesi" per account (3.1.3).
+    const minuteKey = accountKey ? `${accountKey}:min` : null;
+    const perMinute = { windowMs: 60_000, max: platformPolicy.loginAttemptsPerMinute(systemConfig) };
+    if (minuteKey && rejectIfLimited(res, [peek(minuteKey, perMinute)])) return;
 
     const { data: user, error: lookupError } = await supabase
       .from("users")
@@ -653,6 +663,7 @@ router.post("/login", async (req, res) => {
     if (!user || !user.password_hash || !passwordMatch) {
       recordFailure(`login:ip:${ip}`, { max: 40 });
       if (accountKey) recordFailure(accountKey, { max: 30 });
+      if (minuteKey) recordFailure(minuteKey, perMinute);
       return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
     }
 
@@ -905,6 +916,10 @@ router.post("/google", async (req, res) => {
         payload.given_name ||
         displayName ||
         `user${googleId.slice(-6)}`;
+      {
+        const closed = platformPolicy.checkRegistration({ config: systemConfig });
+        if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
+      }
       const username = await allocateUniqueUsername(preferred);
 
       const insertPayload = {
@@ -1118,6 +1133,10 @@ router.post("/apple", async (req, res) => {
         username = chosen;
       } else {
         username = await allocateUniqueUsername(preferred);
+      }
+      {
+        const closed = platformPolicy.checkRegistration({ config: systemConfig });
+        if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
       }
       const insertPayload = {
         username,

@@ -3,7 +3,8 @@
  * Simple, reliable, works with 2-15 people
  */
 
-const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById } = require("../runtime/sharedState");
+const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById, systemConfig } = require("../runtime/sharedState");
+const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
 const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
@@ -257,6 +258,14 @@ function registerGroupHandlers(io, socket, state) {
         code: "NOT_MEMBER",
       });
       return;
+    }
+    {
+      // Yönetici Paneli switches (3.1.3): freeze, slow mode, per-minute cap.
+      const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: isPlatformAdmin(socket), kind: "group" });
+      if (!verdict.ok) {
+        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: verdict.message, code: verdict.code, retryAfterMs: verdict.retryAfterMs });
+        return;
+      }
     }
 
     if (mediaUrl) {
