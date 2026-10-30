@@ -58,6 +58,11 @@ const state = { messages: makeMessages(Number(process.env.DESCALL_PERF_MESSAGES 
 function api(p, method = 'GET', q = new URLSearchParams()) {
   if (/\/auth\/me$/.test(p)) return { user: ME };
   if (/\/promo\/popup$/.test(p)) return { popup: null };
+  // 3.3.0: the owner account sees every admin section.
+  if (/\/admin\/me\/permissions$/.test(p)) {
+    const { GRANTABLE_SECTIONS } = require('../../backend/lib/adminPermissions');
+    return { owner: true, sections: ['overview', ...GRANTABLE_SECTIONS, 'staff'], grantable: GRANTABLE_SECTIONS };
+  }
   if (/\/dm\/[^/]+\/messages$/.test(p)) { const lim = Number(q.get('limit')) || state.messages.length; return { withUserId: PEER.id, messages: state.messages.slice(-lim), hasMore: lim < state.messages.length }; }
   if (/\/dm\/previews$/.test(p)) {
     const byPeer = {}; const act = {};
