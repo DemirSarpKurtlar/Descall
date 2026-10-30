@@ -41,6 +41,7 @@ import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
+import DataExportCard from "../settings/DataExportCard.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import LegalContentModal from "../legal/LegalContentModal";
@@ -195,6 +196,10 @@ function PrivacySettingsSection() {
             </button>
           </div>
         </div>
+      </section>
+      <section className="us-section">
+        <h4 className="us-section-label">{t("dex.section")}</h4>
+        <DataExportCard />
       </section>
       <section className="us-section">
         <h4 className="us-section-label">{t("settings.privacy")}</h4>

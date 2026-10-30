@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle, Ban, Clock, Coins, Flag, Globe, History, Lock, LockOpen,
-  LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
+  Download, LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
   Wallet,
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
+import { saveJsonFile } from "../../lib/saveFile";
 import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
@@ -237,6 +238,21 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
                 }
               >
                 <LogOut size={14} /> {t("admin.signOutSessions")}
+              </button>
+              <button
+                type="button"
+                className="dossier-act slate"
+                disabled={busy}
+                onClick={() =>
+                  act(async () => {
+                    // KVKK veri dışa aktarma (3.6.0): the same file the account owner gets.
+                    const data = await adminFetch(`/people/${userId}/export`);
+                    const day = new Date().toISOString().slice(0, 10);
+                    await saveJsonFile(`descall-verileri-${data?.account?.username || userId}-${day}.json`, data);
+                  }, t("admin.dataExported"))
+                }
+              >
+                <Download size={14} /> {t("admin.dataExport")}
               </button>
             </div>
           </header>

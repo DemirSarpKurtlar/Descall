@@ -183,6 +183,8 @@ jobs:
           node backend/lib/clientIp.selftest.cjs
           node backend/lib/accessBans.selftest.cjs
           node src/components/admin/accessBans.selftest.mjs
+          node backend/lib/dataExport.selftest.cjs
+          node src/components/settings/dataExport.selftest.mjs
           node backend/middleware/gzipJson.selftest.cjs
           node src/lib/onlineRoster.unit.test.mjs
           node backend/lib/edgeConfig.selftest.cjs
