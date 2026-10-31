@@ -191,7 +191,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   // suspension are common causes of calls silently dropping on mobile.
   useEffect(() => {
     if (isInCall) {
-      acquireCallWakeLock({ title: "Descall group call" });
+      acquireCallWakeLock({ title: tRuntime("callui.media.groupTitle") });
       // Same loudspeaker route as DM calls (headphones / Bluetooth stay put).
       void beginIosCallAudio({ video: false, owner: "group" });
     } else {

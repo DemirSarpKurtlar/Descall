@@ -6,8 +6,12 @@ import { FBK_EN } from "./feedback.en.js";
 import { BADGES_EN } from "./badges.en.js";
 import { ANTIBOT_EN } from "./antibot.en.js";
 import { SHELL_EN } from "./shell.en.js";
+import { SVH_EN } from "./svh.en.js";
+import { CALLUI_EN } from "./callui.en.js";
 export const nested = {
   shell: SHELL_EN,
+  svh: SVH_EN,
+  callui: CALLUI_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,

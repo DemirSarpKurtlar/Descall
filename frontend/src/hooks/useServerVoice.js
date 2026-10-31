@@ -1077,8 +1077,8 @@ export function useServerVoice(socket) {
     if (!canPublishVoice()) {
       setError(
         channelTypeRef.current === "stage"
-          ? "You need to be invited to speak first."
-          : "You do not have permission to speak."
+          ? "callui.voice.needInvite"
+          : "callui.voice.noSpeakPerm"
       );
       return;
     }
@@ -1270,7 +1270,7 @@ export function useServerVoice(socket) {
   const startScreenShare = useCallback(async () => {
     if (isScreenSharing || !activeChannelIdRef.current) return;
     if (!canPublishVideo()) {
-      setError("You need SPEAK and STREAM permission to share media.");
+      setError("callui.voice.needShareMedia");
       return;
     }
     try {
@@ -1402,7 +1402,7 @@ export function useServerVoice(socket) {
   const startCamera = useCallback(async () => {
     if (isCameraOn || !activeChannelIdRef.current) return;
     if (!canPublishVideo()) {
-      setError("You need SPEAK and STREAM permission to turn on camera.");
+      setError("callui.voice.needCamera");
       return;
     }
     try {
@@ -1441,7 +1441,7 @@ export function useServerVoice(socket) {
       setIsCameraOn(true);
     } catch (err) {
       if (err?.name !== "NotAllowedError") {
-        setError(err?.message || "Could not start camera.");
+        setError(err?.message || "callui.voice.cameraFailed");
       }
     }
   }, [cameraConstraints, canPublishVideo, isCameraOn, renegotiateWithPeer, socket]);
@@ -1858,7 +1858,7 @@ export function useServerVoice(socket) {
         // Already cleaned locally but still clear any leftover roster
         setParticipants((prev) => prev.filter((p) => String(p.id) !== String(meId)));
       }
-      setError("You were disconnected from the voice channel.");
+      setError("callui.voice.disconnected");
     };
 
     const onForceMoved = ({

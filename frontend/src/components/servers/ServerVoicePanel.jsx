@@ -1071,7 +1071,7 @@ export default function ServerVoicePanel({
               </DockDeviceSlot>
               {isNoiseSuppressionEnabled() ? (
                 <span className="server-voice-ns-badge" title={t("AI noise suppression")}>
-                  NS
+                  {t("callui.voice.nsBadge")}
                 </span>
               ) : null}
               {isStage && serverVoice.stageRole !== "speaker" ? (

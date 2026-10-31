@@ -11,8 +11,12 @@ import { FBK_TR } from "./feedback.tr.js";
 import { BADGES_TR } from "./badges.tr.js";
 import { ANTIBOT_TR } from "./antibot.tr.js";
 import { SHELL_TR } from "./shell.tr.js";
+import { SVH_TR } from "./svh.tr.js";
+import { CALLUI_TR } from "./callui.tr.js";
 export const nested = {
   shell: SHELL_TR,
+  svh: SVH_TR,
+  callui: CALLUI_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,

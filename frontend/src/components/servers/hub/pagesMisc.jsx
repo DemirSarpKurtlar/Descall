@@ -82,12 +82,12 @@ export function InvitePage({ route }) {
   const active = (data.invites || []).filter((inv) => inviteActive(inv));
   const pickAge = () => hub.push({
     id: "pick", title: s.expiry, value: st.maxAgeSeconds,
-    options: INVITE_AGE_OPTIONS.map((v) => ({ id: v, t: inviteAgeLabel(v, s) })),
+    options: INVITE_AGE_OPTIONS.map((v) => ({ id: v, t: inviteAgeLabel(v, f) })),
     onPick: (v) => setSt((x) => ({ ...x, maxAgeSeconds: Number(v) })),
   });
   const pickUses = () => hub.push({
     id: "pick", title: s.useLimit, value: st.maxUses,
-    options: INVITE_USE_OPTIONS.map((v) => ({ id: v, t: inviteUsesLabel(v, s) })),
+    options: INVITE_USE_OPTIONS.map((v) => ({ id: v, t: inviteUsesLabel(v, f) })),
     onPick: (v) => setSt((x) => ({ ...x, maxUses: Number(v) })),
   });
 
@@ -123,15 +123,15 @@ export function InvitePage({ route }) {
           ) : null}
           <Sec>{s.linkSettings}</Sec>
           <Group>
-            <Row ico="clock" t={s.expiry} val={inviteAgeLabel(st.maxAgeSeconds, s)} chev onClick={pickAge} />
-            <Row ico="users" t={s.useLimit} val={inviteUsesLabel(st.maxUses, s)} chev onClick={pickUses} />
+            <Row ico="clock" t={s.expiry} val={inviteAgeLabel(st.maxAgeSeconds, f)} chev onClick={pickAge} />
+            <Row ico="users" t={s.useLimit} val={inviteUsesLabel(st.maxUses, f)} chev onClick={pickUses} />
             <Row ico="user" t={s.temporary} tg={Boolean(st.temporary)} onClick={() => { hapticSelection(); setSt((x) => ({ ...x, temporary: !x.temporary })); }} />
           </Group>
           <Sec>{s.activeInvites}</Sec>
           {!Array.isArray(data.invites) ? <Spinner /> : active.length ? (
             <Group>
               {active.map((inv) => (
-                <Row key={inv.code} t={inv.code} sub={inviteSub(inv, creatorName(hub, inv), s)} chev onClick={() => hub.push({ id: "inviteDetail", code: inv.code })} />
+                <Row key={inv.code} t={inv.code} sub={inviteSub(inv, creatorName(hub, inv), f)} chev onClick={() => hub.push({ id: "inviteDetail", code: inv.code })} />
               ))}
             </Group>
           ) : <div className="svh-empty" style={{ padding: "14px 12px" }}>{s.noInvites}</div>}
@@ -143,7 +143,7 @@ export function InvitePage({ route }) {
 
 export function InviteDetailPage({ route }) {
   const hub = useHub();
-  const { s, server, data } = hub;
+  const { s, f, server, data } = hub;
   const { toast } = useToast();
   const [run, busy] = useRun();
   const inv = (data.invites || []).find((x) => x.code === route.code);
@@ -159,11 +159,11 @@ export function InviteDetailPage({ route }) {
       <Sec first>{""}</Sec>
       <Group>
         <Row t={s.inviteLink} val={prettyUrl(inv.url)} />
-        <Row t={s.expiry} val={inviteAgeLabel(inv.maxAgeSeconds, s)} />
-        <Row t={s.useLimit} val={inviteUsesLabel(inv.maxUses, s)} />
+        <Row t={s.expiry} val={inviteAgeLabel(inv.maxAgeSeconds, f)} />
+        <Row t={s.useLimit} val={inviteUsesLabel(inv.maxUses, f)} />
         <Row t={s.temporary} val={inv.temporary ? s.on : s.off} />
       </Group>
-      <Foot>{inviteSub(inv, creatorName(hub, inv), s)}</Foot>
+      <Foot>{inviteSub(inv, creatorName(hub, inv), f)}</Foot>
       <Sec>{""}</Sec>
       <Group>
         <Row t={s.copy} blue center onClick={async () => { await copyText(shareUrl(inv.url)); toast(s.copied, "success"); }} />
@@ -245,7 +245,7 @@ const FILTERS = [["all", "fAll"], ["members", "fMembers"], ["roles", "fRoles"], 
 
 function AuditTab({ route }) {
   const hub = useHub();
-  const { s, server, data, locale, dat, gen, acc } = hub;
+  const { s, f, server, data, locale, dat, gen, acc } = hub;
   const filter = route.filter || "all";
   const names = useMemo(() => {
     const m = new Map();
@@ -256,7 +256,7 @@ function AuditTab({ route }) {
   const roleName = (id) => (data.roles || []).find((r) => String(r.id) === String(id))?.name;
   const channelName = (id) => (server?.channels || []).find((c) => String(c.id) === String(id))?.name;
   const logs = (data.logs || []).filter((l) => filter === "all" || auditCategory(l.action) === filter);
-  const groups = groupByDay(logs, s, locale);
+  const groups = groupByDay(logs, f, locale);
   return (
     <>
       <div style={{ display: "flex", gap: 8, margin: "12px 0 0", overflowX: "auto", scrollbarWidth: "none" }}>
@@ -269,7 +269,7 @@ function AuditTab({ route }) {
           <Sec>{g.title}</Sec>
           <Group>
             {g.items.map((l) => {
-              const r = auditRow(l, { s, cases: { dat, gen, acc }, names, roleName, channelName });
+              const r = auditRow(l, { f, cases: { dat, gen, acc }, names, roleName, channelName });
               return <Row key={l.id} ico={r.ico} c={r.c} t={r.t} sub={r.sub} val={r.val} />;
             })}
           </Group>

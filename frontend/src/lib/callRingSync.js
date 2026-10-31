@@ -1,3 +1,5 @@
+import { t } from "../i18n/runtime.js";
+
 /**
  * Stop an incoming DM ring everywhere it is showing on this machine.
  *
@@ -26,15 +28,15 @@ export function ringEventMatches(current = {}, event = {}) {
   return Boolean(from && peer && from === peer);
 }
 
-/** Turkish copy shown when a ring stops for a reason the user did not cause here. */
+/** Copy (UI language) shown when a ring stops for a reason the user did not cause here. */
 export function ringEndedNotice(reason) {
   switch (reason) {
     case "answered_elsewhere":
-      return "Arama başka bir cihazda yanıtlandı.";
+      return t("callui.ring.answeredElsewhere");
     case "declined_elsewhere":
-      return "Arama başka bir cihazda reddedildi.";
+      return t("callui.ring.declinedElsewhere");
     case "missed":
-      return "Cevapsız arama.";
+      return t("callui.ring.missed");
     default:
       return "";
   }
