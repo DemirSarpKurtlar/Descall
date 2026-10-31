@@ -433,3 +433,96 @@ html.glass-desktop.a11y-solid .main-panel.is-floating-header .chat-scroll-edge {
     display: none;
   }
 }
+
+/* 5. Floating composer (3.7.14, owner request): no band under the list. The
+   message list runs to the bottom of the panel and scrolls under the + button
+   and the field, which are the same frosted capsules as the header pills.
+   ChatPanel writes the composer's live height to --composer-float-h, so the
+   last message still clears it at the bottom. The band between and around the
+   capsules lets clicks through to the messages. */
+html.glass-desktop .main-panel.is-floating-header > .composer-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Above every message row (a hovered / menu-open bubble lifts to z 25) so
+     rows scroll under it and its emoji / + menus are never covered. */
+  z-index: 40;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+html.glass-desktop .main-panel.is-floating-header > .composer-container > *,
+html.glass-desktop .main-panel.is-floating-header > .composer-container .message-composer > *,
+html.glass-desktop .main-panel.is-floating-header > .composer-container .composer-row > * {
+  pointer-events: auto;
+}
+html.glass-desktop .main-panel.is-floating-header > .composer-container .message-composer,
+html.glass-desktop .main-panel.is-floating-header > .composer-container .composer-row {
+  pointer-events: none;
+}
+html.glass-desktop .main-panel.is-floating-header:has(> .composer-container) > .messages-container {
+  padding-bottom: calc(var(--composer-float-h, 92px) + 10px);
+  scroll-padding-bottom: calc(var(--composer-float-h, 92px) + 10px);
+}
+
+/* Capsules: a light frost so the messages scrolling behind read as frosted
+   shapes (owner request: "arkasındaki mesajlar buzlu şekilde gözükecek"),
+   lighter than the header pills. !important + the longer selector beat the
+   lite-Electron rule in shell.css that forces --gd-glass-fill on the field. */
+html.glass-desktop .main-panel.is-floating-header > .composer-container .composer-input,
+html.glass-desktop .main-panel.is-floating-header > .composer-container .composer-left .composer-action-btn {
+  --cf-base: rgba(var(--g-edge-rgb, 18, 20, 30), 0.34);
+  background: var(--fh-pill-sheen), linear-gradient(var(--cf-base), var(--cf-base)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+  backdrop-filter: blur(18px) saturate(180%) !important;
+  box-shadow:
+    inset 0 1px 0 var(--fh-pill-spec),
+    inset 0 0 0 0.5px var(--fh-pill-hair),
+    0 8px 24px rgba(0, 0, 0, 0.22),
+    0 1px 3px rgba(0, 0, 0, 0.16);
+}
+html.glass-desktop .main-panel.is-floating-header > .composer-container .composer-input:focus {
+  box-shadow:
+    inset 0 1px 0 var(--fh-pill-spec),
+    0 0 0 2px var(--gd-brand-hi),
+    0 8px 24px rgba(0, 0, 0, 0.22);
+}
+/* Opaque where blur is off on purpose: Reduce Transparency, and the web lite
+   mode (lite Electron keeps the frost, see shell.css). */
+html.glass-desktop.a11y-solid .main-panel.is-floating-header > .composer-container .composer-input,
+html.glass-desktop.a11y-solid .main-panel.is-floating-header > .composer-container .composer-left .composer-action-btn,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel.is-floating-header > .composer-container .composer-input,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel.is-floating-header > .composer-container .composer-left .composer-action-btn {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: var(--gd-solid) !important;
+}
+
+/* Send button: centred in the 52px field, the same 6px inset on the right as
+   on top and bottom (the field used to sit 5px higher than its own buttons:
+   an inline textarea leaves a baseline gap under it). */
+html.glass-desktop .composer-input {
+  display: block;
+}
+html.glass-desktop .composer-input-wrapper {
+  align-self: end;
+  line-height: 0;
+}
+html.glass-desktop .composer-right {
+  align-self: end;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding-right: 6px;
+}
+html.glass-desktop .composer-right .composer-send-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
