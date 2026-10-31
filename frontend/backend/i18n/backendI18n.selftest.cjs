@@ -79,7 +79,7 @@ async function main() {
   // 4. bt(): language, English fallback, plurals, nested refs; draft languages never chosen.
   assert.strictEqual(i18n.bt("tr", "push.calling", { from: "Ada" }), "Ada arıyor");
   assert.strictEqual(i18n.bt("en", "push.calling", { from: "Ada" }), "Ada is calling");
-  assert.strictEqual(i18n.bt("de", "push.calling", { from: "Ada" }), "Ada is calling", "no German catalog -> English");
+  assert.strictEqual(i18n.bt("xx", "push.calling", { from: "Ada" }), "Ada is calling", "unknown language -> English");
   assert.strictEqual(i18n.bt("en", "email.common.valid", { minutes: 1 }), "Valid for 1 minute");
   assert.strictEqual(i18n.bt("en", "email.common.valid", { minutes: 10 }), "Valid for 10 minutes");
   assert.strictEqual(i18n.bt("en", "no.such.key"), "no.such.key");
