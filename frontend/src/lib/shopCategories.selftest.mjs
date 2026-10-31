@@ -23,6 +23,11 @@ assert.ok(!SHOP_CATEGORY_TABS.some((t) => t.id === "avatar_frame"), "no frame ta
 assert.ok(!SHOP_CATEGORY_TABS.some((t) => /frame/i.test(t.label)), "no 'Frames' label");
 assert.equal(SHOP_CATEGORY_TABS[0].id, "banner");
 assert.equal(SHOP_CATEGORY_TABS[1].id, "avatar_effect", "Avatar Effects took the frames slot");
+// 3.7.12: profile backgrounds removed, Kart Renkleri sits in their slot.
+assert.ok(REMOVED_SHOP_CATEGORIES.includes("profile_background"));
+assert.ok(!SHOP_CATEGORY_TABS.some((t) => t.id === "profile_background"), "no backgrounds tab");
+assert.equal(SHOP_CATEGORY_TABS[2].id, "profile_color", "Kart Renkleri took the backgrounds slot");
+assert.equal(SHOP_CATEGORY_TABS.filter((t) => t.id === "profile_color").length, 1);
 
 // 2. Filtering: frames are dropped even when a stale list / catalog still carries them.
 const withFrame = [{ id: "banner" }, { id: "avatar_frame" }, { id: "theme" }];
@@ -75,7 +80,7 @@ if (existsSync(iosWf)) {
 
 // 5. Server side: frames are retired and announced to installed builds.
 const shopLib = read("backend/lib/shop.js");
-assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title", "profile_badge"\]\)/);
+assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title", "profile_badge", "profile_background"\]\)/);
 const shopRoute = read("backend/routes/shop.js");
 assert.match(shopRoute, /retiredCategories:\s*\[\.\.\.shop\.RETIRED_SHOP_CATEGORIES\]/);
 // 6. 2.13.0: titles retired, countries take their tab slot.

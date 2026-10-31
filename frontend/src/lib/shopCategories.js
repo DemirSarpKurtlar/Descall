@@ -9,12 +9,13 @@
 // Profile titles were retired in 2.13.0 and replaced by country flags (one flag per user).
 // Shop profile badges ("Rozetler" tab) were removed on 2026-10-26 (buyers refunded); special
 // badges live in Settings → Rozetler and are a separate system.
-export const REMOVED_SHOP_CATEGORIES = Object.freeze(["avatar_frame", "sound_pack", "profile_title", "profile_badge"]);
+// Profile backgrounds were removed on 2026-10-31 (buyers refunded); Kart Renkleri took their slot.
+export const REMOVED_SHOP_CATEGORIES = Object.freeze(["avatar_frame", "sound_pack", "profile_title", "profile_badge", "profile_background"]);
 
 export const SHOP_CATEGORY_TABS = Object.freeze([
   { id: "banner", label: "Banners" },
   { id: "avatar_effect", label: "Avatar Effects" },
-  { id: "profile_background", label: "Backgrounds" },
+  { id: "profile_color", label: "Card Colors" },
   { id: "theme", label: "Themes" },
   { id: "countries", label: "Countries" },
   { id: "name_effect", label: "Name Effects" },
@@ -24,7 +25,6 @@ export const SHOP_CATEGORY_TABS = Object.freeze([
   { id: "typing_flare", label: "Typing" },
   { id: "reaction_burst", label: "Reactions" },
   { id: "call_overlay", label: "Call Overlays" },
-  { id: "profile_color", label: "Card Colors" },
 ]);
 
 /** True for a category the shop must never show (built-in removals + server-announced). */
