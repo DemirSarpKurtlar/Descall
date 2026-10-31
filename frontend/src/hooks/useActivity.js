@@ -9,7 +9,9 @@ import {
   stepActivityScan,
 } from '../../backend/lib/activitySessions.mjs';
 
-const SCAN_INTERVAL_MS    = 10_000;
+// 3.7.15 idle CPU: every scan spawns tasklist.exe (+ conhost) on Windows; 10 s plus every
+// focus was a steady cost. 30 s is well inside SESSION_GAP_MS, so sessions are unchanged.
+const SCAN_INTERVAL_MS    = 30_000;
 const DESCALL_APP_NAME    = 'Descall';
 const SETTINGS_STORAGE_KEY  = 'descall_activity_settings';
 const MANUAL_STORAGE_KEY    = 'descall_manual_status';
@@ -270,9 +272,20 @@ export function useActivity({ socket, me, friends = [] }) {
   }, []);
 
   // ─── Process scanning (Electron only) ──────────────────────────────────────
+  const lastScanAtRef = useRef(0);
   const scanAndEmit = useCallback(async () => {
     if (!isElectron || !socket) return;
     if (manualRef.current) return;  // manual override takes precedence
+    // Nothing would be shown: do not spawn the process scanner at all.
+    if (!settings.show_game_activity && !settings.show_app_activity && !settings.show_browser) {
+      if (lastDetectedRef.current) {
+        lastDetectedRef.current = null;
+        setCurrentActivity(null);
+        socket.emit('activity:clear');
+      }
+      return;
+    }
+    lastScanAtRef.current = Date.now();
 
     let processList = [];
     try {
@@ -327,7 +340,10 @@ export function useActivity({ socket, me, friends = [] }) {
     scanAndEmitRef.current();
     scanIntervalRef.current = setInterval(() => scanAndEmitRef.current(), SCAN_INTERVAL_MS);
 
-    const onFocus = () => scanAndEmitRef.current();
+    // Focus re-scan at most once per interval (alt-tab used to spawn tasklist every time).
+    const onFocus = () => {
+      if (Date.now() - lastScanAtRef.current >= SCAN_INTERVAL_MS) scanAndEmitRef.current();
+    };
     window.addEventListener('focus', onFocus);
 
     return () => {

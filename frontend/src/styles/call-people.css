@@ -1,0 +1,106 @@
+/* Call "Kişiler" side panel (CallOverlay PersonRow), 3.7.15. Was inline #1e1f23 with
+   fixed greys; now classes: a dark frost by default and, under the glass theme, the
+   app's floating glass panel (inset from the edges, rounded, theme ink and hairline). */
+.call-people-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 100vw;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) 0;
+  color: #fff;
+  background: rgba(24, 25, 32, 0.94);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+.call-people-panel.is-narrow { width: min(100%, 320px); }
+.call-people-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px 20px;
+}
+.call-people-title { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+.call-people-title em {
+  font-style: normal;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(235, 238, 255, 0.8);
+}
+.call-people-x {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: rgba(235, 238, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+}
+.call-people-x:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.call-people-x:focus-visible { outline: 2px solid rgba(var(--g-brand-rgb, 91, 108, 255), 0.85); outline-offset: 2px; }
+.call-people-list { flex: 1; overflow-y: auto; padding: 4px 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.call-people-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  transition: background-color 0.15s ease;
+}
+.call-people-row:hover { background: rgba(255, 255, 255, 0.06); }
+.call-people-who { display: flex; flex-direction: column; min-width: 0; }
+.call-people-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.call-people-host {
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #dfe5ff;
+  background: rgba(var(--g-brand-rgb, 91, 108, 255), 0.26);
+}
+
+html.glass-desktop .call-people-panel {
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  border-left: 0;
+  border-radius: var(--gd-r-panel, 22px);
+  color: var(--gd-t1);
+  background:
+    linear-gradient(180deg, rgba(var(--g-brand-rgb, 91, 108, 255), 0.1), rgba(var(--g-brand-rgb, 91, 108, 255), 0.03)),
+    var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px var(--gd-hair, rgba(255, 255, 255, 0.14)), 0 18px 44px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+}
+html.glass-desktop .call-people-title em { background: var(--gd-chip, rgba(255, 255, 255, 0.1)); color: var(--gd-t2); }
+html.glass-desktop .call-people-x { color: var(--gd-t2); background: var(--gd-chip, rgba(255, 255, 255, 0.08)); }
+html.glass-desktop .call-people-x:hover { color: var(--gd-t1); background: var(--gd-chip-hover, rgba(255, 255, 255, 0.14)); }
+html.glass-desktop .call-people-row:hover { background: var(--gd-row-hover, rgba(255, 255, 255, 0.06)); }
+html.glass-desktop[data-theme="light"] .call-people-host { color: #3e55d6; }
+html.glass-desktop.a11y-solid .call-people-panel,
+html.glass-desktop.gd-lite:not(.electron-app) .call-people-panel {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid);
+}
+@media (prefers-reduced-motion: reduce) {
+  .call-people-row { transition: none; }
+}

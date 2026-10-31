@@ -10,6 +10,9 @@ export function voiceMicErrorCopy(err) {
   if (name === "NotReadableError" || name === "TrackStartError") {
     return "Microphone is already in use by another app.";
   }
+  if (name === "OverconstrainedError") {
+    return "The selected microphone was not found.";
+  }
   return "Could not access the microphone.";
 }
 

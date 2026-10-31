@@ -263,6 +263,8 @@ jobs:
           node src/styles/updateToast.selftest.mjs
           node src/components/layout/newCreate.selftest.mjs
           node src/lib/feedbackForm.selftest.mjs
+          node src/styles/glass-desktop/voiceRoomTheme.selftest.mjs
+          node src/lib/appVisibility.selftest.mjs
           node src/lib/hoverToolbarPlacement.selftest.mjs
           node src/lib/singleActiveHover.selftest.mjs
           node src/styles/admin-liquid.selftest.mjs

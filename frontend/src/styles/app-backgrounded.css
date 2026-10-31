@@ -1,0 +1,8 @@
+/* 3.7.15: Electron window minimized / hidden to the tray (lib/appVisibility.js).
+   Nothing is on screen, so no animation needs to run; paused, not removed, so it
+   resumes where it was when the window comes back. */
+html.app-backgrounded *,
+html.app-backgrounded *::before,
+html.app-backgrounded *::after {
+  animation-play-state: paused !important;
+}

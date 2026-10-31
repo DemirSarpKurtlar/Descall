@@ -348,6 +348,7 @@ export function disposeNoiseSuppressionSession({ stopRaw = true } = {}) {
     }
   }
   activeSession = null;
+  suspendIdleContext();
 }
 
 /** Sync mute flag onto both processed + raw tracks. */
@@ -365,9 +366,26 @@ export function setNoiseSuppressedTrackEnabled(enabled) {
   }
 }
 
+/**
+ * Warm the WASM + worklets so a voice join is quick, then SUSPEND the context
+ * (3.7.15 idle CPU): a running AudioContext keeps Chromium's audio render thread
+ * and the Audio Service process busy all session, even with no call. The next
+ * session resumes it in ensureContext().
+ */
 export function preloadNoiseSuppression() {
   if (!isNoiseSuppressionEnabled()) return;
   ensureContext()
-    .then((ctx) => ensureAssets(ctx))
+    .then((ctx) => ensureAssets(ctx).then(() => suspendIdleContext()))
     .catch(() => {});
+}
+
+/** Pause the shared context when no voice session uses it. */
+export function suspendIdleContext() {
+  if (activeSession || !sharedCtx || sharedCtx.state !== "running") return;
+  try {
+    const p = sharedCtx.suspend();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {
+    /* ignore */
+  }
 }

@@ -888,6 +888,21 @@ export function useServerVoice(socket) {
     if (wasIn) audioManager.play("channelLeave");
   }, [cleanupAll, isScreenSharing]);
 
+  const acquireJoinMic = useCallback(async () => {
+    try {
+      return await acquireVoiceMicStream(micConstraints());
+    } catch (err) {
+      const savedId = audioInputIdRef.current;
+      if (!savedId || (err?.name !== "OverconstrainedError" && err?.name !== "NotFoundError")) throw err;
+      console.warn("[ServerVoice] saved microphone unavailable, using the default:", err?.name);
+      audioInputIdRef.current = "";
+      setSelectedAudioInput("");
+      writeAudioPref("input", "");
+      toastRef.current?.(tRuntime("The saved microphone was not found, using the default microphone."), "info");
+      return acquireVoiceMicStream({ video: false });
+    }
+  }, [micConstraints]);
+
   const join = useCallback(
     async (serverId, channel) => {
       if (!socket?.connected || !channel?.id || !serverId) return;
@@ -913,12 +928,15 @@ export function useServerVoice(socket) {
           ? getLiveKitToken(channel.id).then((data) => ({ data }), (error) => ({ error }))
           : null;
       if (earlyToken) loadLiveKit().catch(() => {});
+      let joinStep = "mic";
       try {
         const nextChannelType = channel.type === "stage" ? "stage" : "voice";
         const isStage = nextChannelType === "stage";
-        const stream = isStage
-          ? new MediaStream()
-          : await acquireVoiceMicStream(micConstraints());
+        // 3.7.15: the saved microphone may be gone (headset unplugged, USB mic
+        // renamed). Chromium rejects the exact deviceId with an OverconstrainedError
+        // whose message is empty, so the join used to end on the generic "Could not
+        // join voice channel." Fall back to the system default like DM calls do.
+        const stream = isStage ? new MediaStream() : await acquireJoinMic();
         telemetry?.mark("gumEnd");
         telemetry?.watch(() => Array.from(pcMapRef.current.entries()).map(([key, peer]) => [key, peer?.pc]));
         if (!stillJoining()) {
@@ -951,6 +969,7 @@ export function useServerVoice(socket) {
         setParticipants([]);
         setMuted(mutedNow);
         socket.emit("server:voice:join", { serverId, channelId: channel.id });
+        joinStep = "sfu";
         // Prefer LiveKit SFU whenever media-config reports it. Retry once on
         // transient token/connect failures before optionally falling back to mesh.
         const mediaConfig = await mediaConfigPromise;
@@ -1012,16 +1031,19 @@ export function useServerVoice(socket) {
         if (!stillJoining()) return;
         telemetry?.finish(isVoiceMicError(err) ? "mic-error" : "failed");
         cleanupAll();
-        const msg = isVoiceMicError(err)
+        // Never a silent generic error: log the real name, and say which step failed.
+        console.error("[ServerVoice] join failed:", err?.name || "", err?.message || "", err);
+        const msg = isVoiceMicError(err) || err?.name === "OverconstrainedError"
           ? voiceMicErrorCopy(err)
-          : err?.message || "Could not join voice channel.";
+          : err?.message
+            || (joinStep === "mic" ? "Could not access the microphone." : "Could not connect to the voice server.");
         setError(msg);
         if (isVoiceMicError(err)) toast(tRuntime(msg), "error");
       } finally {
         if (stillJoining()) setConnecting(false);
       }
     },
-    [cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, micConstraints, socket, toast]
+    [acquireJoinMic, cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, micConstraints, socket, toast]
   );
 
   const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
