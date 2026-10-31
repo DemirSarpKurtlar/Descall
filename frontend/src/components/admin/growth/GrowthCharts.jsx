@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { formatNumber } from "../../../i18n/format.js";
 
 /**
  * Small hand-made SVG charts for Elde tutma / Ekonomi (3.7.5). One y-axis,
@@ -17,9 +18,15 @@ export function niceMax(v) {
   return step * p;
 }
 
-export function fmtNum(n, locale = "tr") {
+export function fmtNum(n, locale) {
   if (n == null || Number.isNaN(n)) return "–";
-  return new Intl.NumberFormat(locale === "en" ? "en-US" : "tr-TR", { maximumFractionDigits: 1 }).format(n);
+  return formatNumber(n, locale, { maximumFractionDigits: 1 });
+}
+
+/** A 0-100 value as a percent in the UI locale ("%42" in Turkish, "42%" in English). */
+export function fmtPct(n, locale) {
+  if (n == null || Number.isNaN(Number(n))) return "–";
+  return formatNumber(Number(n) / 100, locale, { style: "percent", maximumFractionDigits: 1 });
 }
 
 /**

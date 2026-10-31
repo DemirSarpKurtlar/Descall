@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "../../ui/Icon.jsx";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
-import { ColumnChart, BarList, SERIES_A, SERIES_B, fmtNum } from "./GrowthCharts.jsx";
+import { ColumnChart, BarList, SERIES_A, SERIES_B, fmtNum, fmtPct } from "./GrowthCharts.jsx";
 import { RangePicker, shortDay } from "./RetentionTab.jsx";
 import "../../../styles/admin-growth.css";
 
@@ -61,11 +61,11 @@ export default function EconomyTab() {
           <div className="agr-kpis">
             <Kpi label={t("admin.ecoSupply")} value={n(k.supply)} hint={t("admin.ecoHolders", { n: k.holders })} />
             <Kpi label={t("admin.ecoMedian")} value={n(k.median)} hint={t("admin.ecoMedianHint")} />
-            <Kpi label={t("admin.ecoTop10")} value={k.top10Share == null ? "–" : `%${n(k.top10Share)}`} hint={t("admin.ecoTop10Hint")} />
+            <Kpi label={t("admin.ecoTop10")} value={fmtPct(k.top10Share, locale)} hint={t("admin.ecoTop10Hint")} />
             <Kpi label={t("admin.ecoMinted")} value={n(k.minted)} hint={t("admin.grDays", { n: days })} />
             <Kpi label={t("admin.ecoSpent")} value={n(k.spent)} hint={t("admin.grDays", { n: days })} />
             <Kpi label={t("admin.ecoNet")} value={`${k.net > 0 ? "+" : ""}${n(k.net)}`} hint={k.net > 0 ? t("admin.ecoNetUp") : t("admin.ecoNetDown")} tone={k.net > 0 ? "warn" : null} />
-            <Kpi label={t("admin.ecoSink")} value={k.sinkRatio == null ? "–" : `%${n(k.sinkRatio)}`} hint={t("admin.ecoSinkHint")} />
+            <Kpi label={t("admin.ecoSink")} value={fmtPct(k.sinkRatio, locale)} hint={t("admin.ecoSinkHint")} />
             <Kpi label={t("admin.ecoAdmin")} value={n(k.adminGranted)} hint={k.adminRevoked ? t("admin.ecoAdminBack", { n: n(k.adminRevoked) }) : t("admin.ecoAdminHint", { n: days })} />
           </div>
 
@@ -98,7 +98,7 @@ export default function EconomyTab() {
                 <thead><tr><th>#</th><th>{t("admin.ecoUser")}</th><th>{t("admin.ecoEarned")}</th><th>{t("admin.ecoShare")}</th></tr></thead>
                 <tbody>
                   {data.topHolders.map((h, i) => (
-                    <tr key={h.id}><td>{i + 1}</td><td>@{h.username || h.id.slice(0, 8)}</td><td>{n(h.earned)}</td><td>%{n(h.share)}</td></tr>
+                    <tr key={h.id}><td>{i + 1}</td><td>@{h.username || h.id.slice(0, 8)}</td><td>{n(h.earned)}</td><td>{fmtPct(h.share, locale)}</td></tr>
                   ))}
                 </tbody>
               </table>

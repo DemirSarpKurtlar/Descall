@@ -4,8 +4,19 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  presenceSegments, signupTrend, signedDelta, buildTodo, pendingCount, auditVerb, auditTargetLabel,
+  presenceSegments, signupTrend, signedDelta, buildTodo, pendingCount, auditVerb, auditTargetLabel, AUDIT_ACTIONS,
 } from "./adminOverviewModel.js";
+import { ADMINX_TR } from "../../i18n/locales/adminx.tr.js";
+import { ADMINX_EN } from "../../i18n/locales/adminx.en.js";
+import { formatMessage } from "../../i18n/message.js";
+
+const tFor = (cat) => (key, vars) => {
+  const raw = key.replace(/^adminx\./, "").split(".").reduce((o, p) => o?.[p], cat);
+  assert.equal(typeof raw, "string", `missing ${key}`);
+  return formatMessage(raw, vars);
+};
+const tTr = tFor(ADMINX_TR);
+const tEn = tFor(ADMINX_EN);
 
 // Presence bar: fixed order, zeros dropped, junk = 0.
 assert.deepEqual(presenceSegments({ dnd: 2, online: 5, idle: 0, invisible: "x" }), [["online", 5], ["dnd", 2]]);
@@ -61,11 +72,12 @@ for (const k of keys) {
 }
 
 // Audit: readable verbs, never raw codes or ids.
-assert.equal(auditVerb("ban", "tr"), "banladı");
-assert.equal(auditVerb("ban", "en"), "banned");
-assert.equal(auditVerb("antibot_rule_update", "tr"), "bot denetimi: rule update");
-assert.equal(auditVerb("shop_item.update", "en"), "shop item update");
-assert.equal(auditVerb("", "tr"), "bir işlem yaptı");
+assert.equal(auditVerb("ban", tTr), "banladı");
+assert.equal(auditVerb("ban", tEn), "banned");
+assert.equal(auditVerb("antibot_rule_update", tTr), "bot denetimi: rule update");
+assert.equal(auditVerb("shop_item.update", tEn), "shop item update");
+assert.equal(auditVerb("", tTr), "bir işlem yaptı");
+for (const code of AUDIT_ACTIONS) { tTr(`adminx.audit.${code}`); tEn(`adminx.audit.${code}`); }
 assert.equal(auditTargetLabel("3f2504e0-4f89-11d3-9a0c-0305e82c3301"), "");
 assert.equal(auditTargetLabel("1234567890"), "");
 assert.equal(auditTargetLabel("null"), "");

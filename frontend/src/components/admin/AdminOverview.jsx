@@ -4,7 +4,8 @@ import { adminFetch } from "../../api/adminHttp";
 import { isRetryableAdminError } from "../../api/adminHttpRetry";
 import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
-import { formatAppDateTime, formatTimeAgo } from "../../lib/datetime";
+import { APP_TIMEZONE, formatAppDateTime, formatTimeAgo } from "../../lib/datetime";
+import { formatNumber, formatTime } from "../../i18n/format.js";
 import { composeOverviewFromLegacy, mergeOverviewWithDb, overviewHasPeople, isOnlineNow } from "../../lib/adminOverviewFallback";
 import { SkeletonLine } from "../ui/Skeleton";
 import { PRIORITIES } from "./feedback3/fbModel.js";
@@ -58,14 +59,7 @@ function personName(user) {
 
 function clock(value, locale) {
   if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString(String(locale || "tr").startsWith("tr") ? "tr-TR" : "en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Europe/Istanbul",
-  });
+  return formatTime(value, locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: APP_TIMEZONE });
 }
 
 const OVERVIEW_CACHE_KEY = "descall:admin-overview";
@@ -187,8 +181,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
   const todo = useMemo(() => buildTodo(data), [data]);
   const pending = pendingCount(todo);
   const audit = (data?.recentAudit || []).slice(0, 5);
-  const tr = String(locale || "tr").toLowerCase().startsWith("tr");
-  const fmt1 = (v) => (v == null ? "" : Number(v).toLocaleString(tr ? "tr-TR" : "en-US", { maximumFractionDigits: 1 }));
+  const fmt1 = (v) => (v == null ? "" : formatNumber(v, locale, { maximumFractionDigits: 1 }));
 
   const openPerson = (id) => {
     if (!id) return;
@@ -300,7 +293,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
     if (item.sub?.focus) {
       const f = item.sub.focus;
       const pr = PRIORITIES[f.priority]?.[0];
-      return [f.username, tr ? pr : f.priority, f.excerpt].filter(Boolean).join(" \u00b7 ");
+      return [f.username, pr ? t(pr) : f.priority, f.excerpt].filter(Boolean).join(" \u00b7 ");
     }
     return say(item.sub);
   };
@@ -455,7 +448,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
                       <li key={e.id}>
                         <span className="aov-audit-dot" aria-hidden="true" />
                         <span className="aov-audit-tx">
-                          <b>{e.actor || "admin"}</b> {auditVerb(e.action, locale)}
+                          <b>{e.actor || t("adminx.audit.actor")}</b> {auditVerb(e.action, t)}
                           {target ? <> <b>{target}</b></> : null}
                         </span>
                         <span className="aov-audit-at">{e.at ? formatTimeAgo(e.at, t, undefined, locale) : ""}</span>

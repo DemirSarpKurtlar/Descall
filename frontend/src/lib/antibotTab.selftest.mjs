@@ -33,7 +33,7 @@ assert.equal(rawScore(farm), 105);
 assert.equal(rawScore(["linked_account", "linked_account"]), 35, "duplicates count once");
 assert.equal(Object.values(DEFAULT_WEIGHTS).length, 8);
 
-assert.equal(fmtNumber(15370), "15.370");
+assert.equal(fmtNumber(15370, "tr"), "15.370");
 assert.equal(fmtNumber(0), "0");
 
 // Hash mask: never more than 4 + 4 characters.
@@ -46,9 +46,10 @@ const ph = phasesFrom({ monitor: true, rates: false, messageRules: true, mediaRu
 assert.deepEqual(ph.map((p) => p.on), [true, true, false, false]);
 
 // Dates are Istanbul time.
-assert.equal(shortDate("2026-10-19T00:12:00Z"), "19 Eki");
-assert.equal(shortDateTime("2026-10-19T00:12:00Z"), "19 Eki 03:12");
-assert.equal(shortDateTime("2026-10-19T00:12:00Z", "en"), "Oct 19 03:12");
+assert.equal(shortDate("2026-10-19T00:12:00Z", "tr"), "19 Eki");
+assert.equal(shortDateTime("2026-10-19T00:12:00Z", "tr"), "19 Eki 03:12");
+assert.equal(shortDateTime("2026-10-19T00:12:00Z", "en"), "19 Oct 03:12", "UI locale format (en-GB), Istanbul time");
+assert.equal(fmtNumber(1234.4, "tr"), "1.234");
 assert.equal(shortDate("nope"), "");
 const now = Date.parse("2026-10-25T12:00:00Z");
 assert.deepEqual(accountAge("2026-10-19T00:12:00Z", now), { n: 6, unit: "day" });

@@ -8,23 +8,25 @@ import { grantDesCoin } from "../../api/shop";
 import RippleButton from "../ui/RippleButton";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import { Avatar } from "../ui/Avatar";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format.js";
 import { CountryFlag } from "../shop/CountryFlag";
 
+/** Label: t(`adminx.shop.cat.${id}`). */
 const CATEGORIES = [
-  { id: "banner", label: "Banner" },
-  { id: "theme", label: "Premium Theme" },
-  { id: "countries", label: "Country" },
-  { id: "name_effect", label: "Name Effect" },
-  { id: "avatar_effect", label: "Avatar Effect" },
-  { id: "chat_bubble", label: "Chat Bubble Skin" },
-  { id: "presence_flare", label: "Presence Flare" },
-  { id: "profile_aura", label: "Profile Aura" },
-  { id: "sound_pack", label: "Sound Pack" },
-  { id: "typing_flare", label: "Typing Flare" },
-  { id: "reaction_burst", label: "Reaction Burst" },
-  { id: "call_overlay", label: "Call Overlay" },
-  { id: "profile_color", label: "Card Color" },
+  { id: "banner" },
+  { id: "theme" },
+  { id: "countries" },
+  { id: "name_effect" },
+  { id: "avatar_effect" },
+  { id: "chat_bubble" },
+  { id: "presence_flare" },
+  { id: "profile_aura" },
+  { id: "sound_pack" },
+  { id: "typing_flare" },
+  { id: "reaction_burst" },
+  { id: "call_overlay" },
+  { id: "profile_color" },
 ];
 
 // Categories that render from a small piece of metadata instead of an
@@ -116,7 +118,7 @@ const RARITIES = ["common", "rare", "epic", "legendary", "mythic"];
 // see at a glance what kind of effect each premium theme applies.
 const THEME_KEY_GROUPS = [
   {
-    label: "Classic",
+    label: "adminx.shop.themeGroup.classic",
     options: [
       ["midnight", "Midnight"],
       ["crimson", "Crimson"],
@@ -127,7 +129,7 @@ const THEME_KEY_GROUPS = [
     ],
   },
   {
-    label: "Gradient",
+    label: "adminx.shop.themeGroup.gradient",
     options: [
       ["aurora", "Aurora"],
       ["sunset", "Sunset Boulevard"],
@@ -142,7 +144,7 @@ const THEME_KEY_GROUPS = [
     ],
   },
   {
-    label: "Neon",
+    label: "adminx.shop.themeGroup.neon",
     options: [
       ["neontokyo", "Neon Tokyo"],
       ["cyberpunk", "Cyberpunk"],
@@ -155,7 +157,7 @@ const THEME_KEY_GROUPS = [
     ],
   },
   {
-    label: "Glowing (animated)",
+    label: "adminx.shop.themeGroup.glowing",
     options: [
       ["phoenixfire", "Phoenix Fire"],
       ["frostbite", "Frostbite"],
@@ -182,12 +184,13 @@ const EMPTY_DRAFT = {
   rarity: "common",
 };
 
-function formatDescoin(amount) {
-  return `${(Number(amount) || 0).toLocaleString()} DesCoin`;
+function formatDescoin(amount, locale) {
+  return `${formatNumber(Number(amount) || 0, locale)} DesCoin`;
 }
 
 export default function AdminShop() {
-  const t = useT();
+  const { t, locale } = useLocale();
+  const catLabel = (id) => (CATEGORIES.some((c) => c.id === id) ? t(`adminx.shop.cat.${id}`) : id);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -223,7 +226,7 @@ export default function AdminShop() {
       const d = await adminFetch("/shop/items");
       setItems(d.items || []);
     } catch (err) {
-      setError(err.message || "Failed to load shop items.");
+      setError(err.message || t("adminx.shop.loadError"));
     } finally {
       setLoading(false);
     }
@@ -267,7 +270,7 @@ export default function AdminShop() {
       setShowCreateForm(false);
       await loadItems();
     } catch (err) {
-      setError(err.message || "Failed to create item.");
+      setError(err.message || t("adminx.shop.createError"));
     } finally {
       setCreating(false);
     }
@@ -281,7 +284,7 @@ export default function AdminShop() {
       });
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, active: !i.active } : i)));
     } catch (err) {
-      setError(err.message || "Failed to update item.");
+      setError(err.message || t("adminx.shop.updateError"));
     }
   };
 
@@ -548,7 +551,7 @@ export default function AdminShop() {
               <option value="">{t("Select an item…")}</option>
               {items.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name} ({CATEGORIES.find((c) => c.id === item.category)?.label || item.category})
+                  {item.name} ({catLabel(item.category)})
                 </option>
               ))}
             </select>
@@ -596,7 +599,7 @@ export default function AdminShop() {
           onSubmit={handleCreateItem}
         >
           <div className="admin-shop-gift-grid">
-            <input className="admin-input" placeholder="sku (e.g. banner-forest)" value={draft.sku}
+            <input className="admin-input" placeholder={t("adminx.shop.skuPlaceholder")} value={draft.sku}
               onChange={(e) => setDraft((d) => ({ ...d, sku: e.target.value }))} required />
             <input className="admin-input" placeholder={t("Name")} value={draft.name}
               onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} required />
@@ -609,7 +612,7 @@ export default function AdminShop() {
                 titleText: "",
                 effectKey: "",
               }))}>
-              {CATEGORIES.filter((c) => c.id !== "countries").map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              {CATEGORIES.filter((c) => c.id !== "countries").map((c) => <option key={c.id} value={c.id}>{catLabel(c.id)}</option>)}
             </select>
             <select className="admin-select" value={draft.rarity}
               onChange={(e) => setDraft((d) => ({ ...d, rarity: e.target.value }))}>
@@ -714,7 +717,7 @@ export default function AdminShop() {
                     ) : item.category === "profile_title" ? (
                       <ShopTitleTag item={item} size={11} className="admin-badge online" />
                     ) : item.category === "name_effect" ? (
-                      <span className={`cosmetic-name-effect effect-${item.effect_key}`} style={{ fontSize: 13, fontWeight: 700 }}>Abc</span>
+                      <span className={`cosmetic-name-effect effect-${item.effect_key}`} style={{ fontSize: 13, fontWeight: 700 }}>{t("adminx.shop.sample")}</span>
                     ) : item.category === "avatar_effect" ? (
                       <div style={{ position: "relative", width: 32, height: 32 }}>
                         <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} style={{ position: "absolute", inset: -6 }} />
@@ -756,8 +759,8 @@ export default function AdminShop() {
                       </span>
                     )}
                   </td>
-                  <td>{CATEGORIES.find((c) => c.id === item.category)?.label || item.category}</td>
-                  <td>{formatDescoin(item.price_descoin)}</td>
+                  <td>{catLabel(item.category)}</td>
+                  <td>{formatDescoin(item.price_descoin, locale)}</td>
                   <td className="mono">{item.rarity}</td>
                   <td className="admin-status">
                     {item.active ? (
