@@ -307,6 +307,11 @@ export default function CountryShop({
   onEquip,
   isMobile = false,
 }) {
+  // Electron e2e (countriesTab.e2e.cjs) breaks this render on purpose to check that the
+  // pane error boundary contains it. Never set outside that test.
+  if (typeof window !== "undefined" && window.__descallE2EBreakCountryShop) {
+    throw new Error("e2e: forced country shop render error");
+  }
   const t = useT();
   const { locale } = useLocale();
   const [query, setQuery] = useState("");

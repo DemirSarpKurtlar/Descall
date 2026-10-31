@@ -220,17 +220,10 @@ async function run(win) {
   await shot(win, 'after-2-countries-tab-30s-later.png');
 
   // 4. A render error in the tab stays inside the tab (pane error boundary).
-  await js(win, `(() => {
-    const orig = String.prototype.toLocaleUpperCase;
-    window.__e2eRestoreUpper = () => { String.prototype.toLocaleUpperCase = orig; };
-    String.prototype.toLocaleUpperCase = function (...args) {
-      // initialOf() upper-cases the first letter of every country name with an explicit
-      // locale ("tr" or "en", whatever the UI language is).
-      if (args.length && this.length <= 2) throw new Error('e2e: forced Ülkeler render error');
-      return orig.apply(this, args);
-    };
-    return true;
-  })()`);
+  // The app's CountryShop throws while this flag is set (a test-only hook). Breaking a
+  // shared helper instead (toLocaleUpperCase) also breaks components outside the pane
+  // that use it (initials, language names), which is not what this step checks.
+  await js(win, `window.__descallE2EBreakCountryShop = true; true`);
   await js(win, clickTab('/^(Bannerlar|Banners)/'));
   await sleep(400);
   await js(win, clickTab('/^(Ülkeler|Countries)/'));
@@ -241,7 +234,7 @@ async function run(win) {
   log('render error contained in the tab', JSON.stringify(pane));
   await sleep(800);
   await shot(win, 'after-3-countries-error-contained.png');
-  await js(win, `window.__e2eRestoreUpper(); true`);
+  await js(win, `window.__descallE2EBreakCountryShop = false; true`);
   await js(win, clickTab('/^(Bannerlar|Banners)/'));
   await sleep(400);
   await js(win, clickTab('/^(Ülkeler|Countries)/'));
