@@ -295,7 +295,16 @@ async function run(win) {
   result.profileHidden = await profile(win, 6);
   win.show();
   if (process.env.PERF_JSON) fs.writeFileSync(process.env.PERF_JSON, JSON.stringify(result, null, 2));
+  // Optional CI gate: PERF_MAX_IDLE_CPU / PERF_MAX_HIDDEN_CPU (percent of one core, summed over processes).
+  const maxIdle = Number(process.env.PERF_MAX_IDLE_CPU || 0);
+  const maxHidden = Number(process.env.PERF_MAX_HIDDEN_CPU || 0);
+  const over = [];
+  if (maxIdle && result.visible.cpuAvg > maxIdle) over.push(`visible idle ${result.visible.cpuAvg}% > ${maxIdle}%`);
+  if (maxHidden && result.hidden.cpuAvg > maxHidden) over.push(`hidden ${result.hidden.cpuAvg}% > ${maxHidden}%`);
+  if (maxHidden && result.minimized.cpuAvg > maxHidden) over.push(`minimized ${result.minimized.cpuAvg}% > ${maxHidden}%`);
+  if (over.length) return fail(`${over.join('; ')}; running animations: ${JSON.stringify(result.visible.snap.animations)}`);
   log('DONE');
+  console.log('[perf] OK');
   setTimeout(() => app.exit(0), 200);
 }
 
