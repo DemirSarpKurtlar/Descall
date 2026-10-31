@@ -82,13 +82,21 @@ async function run() {
     });
     assert(r.status === 400, "register without terms acceptance rejected: " + JSON.stringify(r.body));
 
-    // 2. Register without email (terms accepted)
+    // 2. 3.7.17 (owner rule): a new account needs an email.
     r = await req(base, "POST", "/register", {
       body: { username: "alice", password: "password123", termsAccepted: true, birthDate: "2000-01-15" },
     });
-    assert(r.status === 201, "register without email succeeds: " + JSON.stringify(r.body));
-    assert(r.body.needsEmailVerification === false, "no verification needed without email");
-    assert(r.body.token && r.body.sessionId, "register without email issues a session token: " + JSON.stringify(r.body));
+    assert(r.status === 400 && r.body.code === "EMAIL_REQUIRED", "register without email is rejected: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/register", {
+      body: { username: "alice", password: "password123", email: "not-an-email", termsAccepted: true, birthDate: "2000-01-15" },
+    });
+    assert(r.status === 400 && r.body.code === "EMAIL_INVALID", "invalid email rejected: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/register", {
+      body: { username: "alice", password: "password123", email: "alice@example.com", termsAccepted: true, birthDate: "2000-01-15" },
+    });
+    assert(r.status === 201, "register with email succeeds: " + JSON.stringify(r.body));
+    assert(r.body.needsEmailVerification === true, "verification code sent with the email");
+    assert(r.body.token && r.body.sessionId, "register issues a session token: " + JSON.stringify(r.body));
     assert(r.body.user?.username === "alice", "register returns the new user");
 
     // 3. Register with email
@@ -104,7 +112,7 @@ async function run() {
 
     // 4. Duplicate username rejected
     r = await req(base, "POST", "/register", {
-      body: { username: "bob", password: "password123", termsAccepted: true, birthDate: "2000-01-15" },
+      body: { username: "bob", password: "password123", email: "bob2@example.com", termsAccepted: true, birthDate: "2000-01-15" },
     });
     assert(r.status === 409, "duplicate username rejected");
 

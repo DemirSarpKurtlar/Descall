@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { signupEmailError, SIGNUP_EMAIL_HINT } from "../lib/signupEmail";
 import { Lock, Mail, User, ShieldCheck, ArrowLeft, Eye, EyeOff, KeyRound } from "./ui/Icon.jsx";
 import GoogleSignInButton from "./auth/GoogleSignInButton";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
@@ -120,6 +121,11 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     if (!termsAccepted || !isEligibleBirthDate(birthDate)) return;
     if (under13SignupBlocked() || noteUnder13BirthDate(birthDate)) {
       setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
+      return;
+    }
+    const emailError = signupEmailError(email);
+    if (emailError) {
+      setFormError(t(emailError));
       return;
     }
     const trimmedEmail = email.trim();
@@ -424,17 +430,19 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             <Mail className="input-icon" size={20} />
             <input
               type="email"
-              placeholder={t("Email (optional)")}
+              placeholder={t("Email")}
+              aria-label={t("Email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               maxLength={254}
               autoComplete="email"
+              required
             />
           </div>
         )}
         {mode === "register" && (
           <p className="auth-field-hint">
-            {t("Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings.")}
+            {t(SIGNUP_EMAIL_HINT)}
           </p>
         )}
 

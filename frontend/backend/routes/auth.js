@@ -544,9 +544,14 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: passwordCheck.error, code: passwordCheck.code });
     }
 
+    // 3.7.17 (owner rule): a new password account needs an email; it gets the
+    // verification code right away. Existing accounts without one are unchanged.
     const email = rawEmail ? String(rawEmail).trim().toLowerCase() : null;
-    if (email && !EMAIL_RE.test(email)) {
-      return res.status(400).json({ error: "Enter a valid email address." });
+    if (!email) {
+      return res.status(400).json({ error: "Email is required.", code: "EMAIL_REQUIRED" });
+    }
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({ error: "Enter a valid email address.", code: "EMAIL_INVALID" });
     }
 
     const cleanUsername = username.trim();
