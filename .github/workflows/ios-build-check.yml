@@ -243,6 +243,20 @@ jobs:
           if ! xcrun simctl list runtimes | grep -q watchOS; then xcodebuild -downloadPlatform watchOS; fi
           xcrun simctl list runtimes | grep watchOS
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install, build web, sync iOS (the project resolves the CapApp-SPM package)
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build:prod
+          npx cap sync ios
+
       - name: Pick an Apple Watch simulator
         id: sim
         run: |
