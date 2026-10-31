@@ -29,7 +29,13 @@ API = "https://api.appstoreconnect.apple.com"
 HERE = Path(__file__).resolve().parent
 EDITABLE_VERSION_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED",
                            "INVALID_BINARY", "DEVELOPER_REMOVED_FROM_SALE"}
-SCREENSHOT_SETS = [("iphone69", "APP_IPHONE_67", (1320, 2868)), ("ipad13", "APP_IPAD_PRO_3GEN_129", (2064, 2752))]
+SCREENSHOT_SETS = [
+    ("iphone69", "APP_IPHONE_67", (1320, 2868)),
+    ("ipad13", "APP_IPAD_PRO_3GEN_129", (2064, 2752)),
+    # 3.7.17+: the app embeds an Apple Watch app, so the listing needs watch screens
+    # (46 mm class, 416x496, from the watchOS simulator CI job).
+    ("watch46", "APP_WATCH_SERIES_10", (416, 496)),
+]
 EXCLUDED_TERRITORIES = {"CHN"}  # China mainland
 # Removed / hidden features that must never appear in the live listing text (case-insensitive).
 BANNED_LISTING = ["valorant", "riot", "lfg", "looking for group", "takım bul", "dimaai", "dima ai", "call recording", "record calls", "arama kayd", "görüşme kayd"]

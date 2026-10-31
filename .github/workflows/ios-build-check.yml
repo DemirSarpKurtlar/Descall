@@ -292,9 +292,10 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/watch-shots"
-          for SCREEN in chats chat reply friends status; do
+          for SCREEN in chats chat reply friends status admin reports case stepup feedback maintenance; do
             xcrun simctl terminate "$UDID" com.descall.app.watchkitapp || true
-            xcrun simctl launch "$UDID" com.descall.app.watchkitapp -DescallWatchDemo -DescallWatchDemoScreen "$SCREEN"
+            # Turkish, like the App Store listing (primary locale tr).
+            xcrun simctl launch "$UDID" com.descall.app.watchkitapp -DescallWatchDemo -DescallWatchDemoScreen "$SCREEN" -AppleLanguages "(tr)" -AppleLocale tr_TR
             sleep 8
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/watch-shots/watch-$SCREEN.png"
           done
@@ -305,6 +306,11 @@ jobs:
             n="$(basename "$f" .png)"
             sips -s format jpeg -s formatOptions 72 "$f" --out "$RUNNER_TEMP/$n.jpg" >/dev/null
             echo "WATCHSHOT $n $(base64 -i "$RUNNER_TEMP/$n.jpg" | tr -d '\n')"
+          done
+          # Full-size PNGs of the five user screens for the App Store listing
+          # (appstore/screenshots/watch46, 416x496 = APP_WATCH_SERIES_10).
+          for n in chats chat reply friends status; do
+            echo "APPSHOT $n $(base64 -i "$RUNNER_TEMP/watch-shots/watch-$n.png" | tr -d '\n')"
           done
 
       - uses: actions/upload-artifact@v4

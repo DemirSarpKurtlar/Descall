@@ -21,6 +21,7 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		72249211F2F6B8BDA50F3DD2 /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10DEFB120AAD22B53527D49 /* WatchStore.swift */; };
 		8B6E5D3AB6C65A074469BD6B /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */; };
+		8BBDE6E1ACB94C29A29D4143 /* WatchAdminModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3155CE73B2690E6CB377DE05 /* WatchAdminModels.swift */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		A1B2C3D51FED79650016851F /* CallKeepAlivePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */; };
 		A4A0000E2F60000100D35C0A /* DescallNotifyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000012F60000100D35C0A /* DescallNotifyLogic.swift */; };
@@ -50,6 +51,7 @@
 		D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */; };
 		D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */; };
 		D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
+		D8A21F0275ACCE30B3C432E1 /* WatchAdminViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B362769C1764F7EAFF85169 /* WatchAdminViews.swift */; };
 		E754B91CF80DB989C06A1667 /* DescallWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B39D1EAED19DAAEBB5DDFA2 /* DescallWatchApp.swift */; };
 		E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A022F5B000100D35C0A /* DescallCallManager.swift */; };
 		E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */; };
@@ -117,7 +119,9 @@
 
 /* Begin PBXFileReference section */
 		0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DescallWatchBridge.swift; sourceTree = "<group>"; };
+		2B362769C1764F7EAFF85169 /* WatchAdminViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchAdminViews.swift; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		3155CE73B2690E6CB377DE05 /* WatchAdminModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchAdminModels.swift; sourceTree = "<group>"; };
 		499505C2043441FAD5B20B81 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -233,6 +237,8 @@
 				F3B39CB440ED3ACD8AA4A980 /* WatchViews.swift */,
 				70D33B51A30C4F71F3946900 /* Assets.xcassets */,
 				D832932F076545664848648E /* Info.plist */,
+				3155CE73B2690E6CB377DE05 /* WatchAdminModels.swift */,
+				2B362769C1764F7EAFF85169 /* WatchAdminViews.swift */,
 			);
 			name = DescallWatch;
 			path = DescallWatch;
@@ -566,6 +572,8 @@
 				1B48A714D47C345808A99C09 /* WatchTheme.swift in Sources */,
 				CD4CB47B40DD30D85CABF425 /* WatchViews.swift in Sources */,
 				17055416BA3BEC6ADC5801A8 /* DescallWatchProtocol.swift in Sources */,
+				8BBDE6E1ACB94C29A29D4143 /* WatchAdminModels.swift in Sources */,
+				D8A21F0275ACCE30B3C432E1 /* WatchAdminViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -655,7 +663,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -791,7 +799,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -814,7 +822,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -838,7 +846,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -863,7 +871,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -888,7 +896,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -913,7 +921,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -938,7 +946,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.19;
+				MARKETING_VERSION = 3.7.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

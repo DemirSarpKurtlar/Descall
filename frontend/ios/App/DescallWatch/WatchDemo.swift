@@ -12,6 +12,25 @@ enum WatchDemo {
 
     static let chatRoute = ChatRoute(conv: "dm:demo-ayse", title: "Ayşe")
 
+    static let demoCase = AdminReportGroup(
+        targetId: "demo-troll", targetUsername: "troll42", targetDisplayName: nil, targetAvatarUrl: nil,
+        openCount: 3, totalCount: 3, assigneeUsername: nil, latestAt: iso(minutesAgo: 4),
+        reports: [
+            AdminReport(id: "r1", reporterUsername: "ayse", reason: "harassment", reasonLabel: "Taciz", note: "Sürekli küfür ediyor, sesli kanalda da.", snippet: nil, status: "open", createdAt: iso(minutesAgo: 4)),
+            AdminReport(id: "r2", reporterUsername: "mert", reason: "spam", reasonLabel: "Spam", note: nil, snippet: "Link atıp duruyor", status: "open", createdAt: iso(minutesAgo: 30)),
+        ]
+    )
+
+    static var adminPath: [AdminRoute] {
+        switch screen {
+        case "reports": return [.reports]
+        case "case": return [.reportCase(demoCase)]
+        case "feedback": return [.feedback]
+        case "maintenance": return [.maintenance]
+        default: return []
+        }
+    }
+
     static func iso(minutesAgo: Int) -> String {
         let f = ISO8601DateFormatter()
         return f.string(from: Date().addingTimeInterval(TimeInterval(-60 * minutesAgo)))
@@ -46,6 +65,31 @@ enum WatchDemo {
               {"id":"demo-sn","conv":"dm:demo-sn","name":"sn1pez53","initials":"SN","avatarUrl":null,"presence":"dnd","customStatus":null}
             ],"onlineCount":3,"offlineCount":12}
             """
+        }
+        if path.hasPrefix("/api/admin/overview") {
+            return "{\"live\":{\"connected\":42},\"product\":{\"signupsToday\":7,\"newFeedback\":2},\"safety\":{\"openReports\":3},\"health\":{\"level\":\"watch\"}}"
+        }
+        if path.hasPrefix("/api/admin/reports") {
+            return """
+            {"openCount":4,"groups":[
+              {"targetId":"demo-troll","targetUsername":"troll42","openCount":3,"latestAt":"\(iso(minutesAgo: 4))","reports":[{"id":"r1","reasonLabel":"Taciz","status":"open"}]},
+              {"targetId":"demo-spam","targetUsername":"bedava_coin","openCount":1,"latestAt":"\(iso(minutesAgo: 50))","reports":[{"id":"r9","reasonLabel":"Spam","status":"open"}]}
+            ]}
+            """
+        }
+        if path.hasPrefix("/api/admin/feedback") {
+            return path.contains("in_progress") ? "{\"feedbacks\":[]}" : """
+            {"feedbacks":[
+              {"id":"f1","user":{"username":"ayse"},"status":"new","subject":"Ses kanalında yankı var","message":"Ses kanalında yankı var, kulaklıkla da oluyor.","created_at":"\(iso(minutesAgo: 12))","replies":[]},
+              {"id":"f2","user":{"username":"mert"},"status":"new","subject":"Saat uygulaması süper","message":"Saat uygulaması süper olmuş.","created_at":"\(iso(minutesAgo: 90))","replies":[]}
+            ]}
+            """
+        }
+        if path.hasPrefix("/api/admin/maintenance/windows") {
+            return "{\"current\":{\"id\":\"w1\",\"title\":\"Acil bakım\",\"status\":\"active\",\"startsAt\":\"\(iso(minutesAgo: 10))\",\"endsAt\":\"\(iso(minutesAgo: -20))\"},\"summary\":{\"systemStatus\":\"maintenance\"}}"
+        }
+        if path.hasPrefix("/api/admin/step-up") {
+            return "{\"ok\":true,\"token\":\"demo\",\"expiresInSec\":900}"
         }
         return "{\"ok\":true}"
     }

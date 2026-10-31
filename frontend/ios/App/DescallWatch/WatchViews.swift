@@ -7,12 +7,15 @@ struct RootView: View {
     @State private var tab: Int
     @State private var chatsPath: [ChatRoute]
     @State private var friendsPath: [FriendsRoute]
+    @State private var adminPath: [AdminRoute]
 
     init() {
         let demo = WatchDemo.screen
-        _tab = State(initialValue: (demo == "friends" || demo == "status") ? 1 : 0)
+        let adminScreens: Set<String> = ["admin", "reports", "case", "stepup", "feedback", "maintenance"]
+        _tab = State(initialValue: (demo == "friends" || demo == "status") ? 1 : (adminScreens.contains(demo ?? "") ? 2 : 0))
         _chatsPath = State(initialValue: (demo == "chat" || demo == "reply") ? [WatchDemo.chatRoute] : [])
         _friendsPath = State(initialValue: demo == "status" ? [.status] : [])
+        _adminPath = State(initialValue: WatchDemo.adminPath)
     }
 
     var body: some View {
@@ -32,9 +35,23 @@ struct RootView: View {
                     }
             }
             .tag(1)
+            // Staff only: the page exists when the account may open at least one section.
+            if store.home?.adminSections != nil {
+                NavigationStack(path: $adminPath) {
+                    AdminHomeView()
+                        .navigationDestination(for: AdminRoute.self) { AdminRouteView(route: $0) }
+                }
+                .tag(2)
+            }
         }
         .tabViewStyle(.verticalPage)
-        .task { await store.loadHome() }
+        .sheet(isPresented: $store.stepUpPrompt, onDismiss: { store.cancelStepUp() }) {
+            NavigationStack { StepUpView() }
+        }
+        .task {
+            await store.loadHome()
+            if WatchDemo.screen == "stepup" { store.stepUpPrompt = true }
+        }
     }
 }
 
