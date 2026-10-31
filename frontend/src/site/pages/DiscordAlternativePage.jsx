@@ -9,6 +9,7 @@ import {
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoProductPreview from "../components/SeoProductPreview";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
+import SeoExtraContent from "../components/SeoExtraContent";
 import {
   buildBreadcrumbLd,
   buildFaqLd,
@@ -165,6 +166,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
         </div>
       </section>
 
+      <SeoExtraContent showLinks={false} />
       <SeoRelatedLinks
         title="Related Discord alternative guides"
         links={[

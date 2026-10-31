@@ -37,6 +37,18 @@ for (const p of ["/login", "/register", "/tr/login", "/tr/register", "/tr/login/
 }
 assert.equal((await get("/tr/loginx")).status, 404, "prefix match must not swallow other paths");
 
+// SEO 3.7.14: the app shell is never indexed; marketing pages have one URL (no trailing slash).
+for (const p of ["/app", "/login", "/register", "/s/abc", "/direct/x"]) {
+  assert.equal((await get(p)).headers.get("x-robots-tag"), "noindex, follow", `${p} is noindex`);
+}
+for (const [from, to] of [["/tr/", "/tr"], ["/tr/download/", "/tr/download"], ["/features/?a=1", "/features?a=1"], ["/discord-alternative-turkey/", "/tr/discord-alternatifi"]]) {
+  const res = await get(from);
+  assert.equal(res.status, 301, `${from} redirects`);
+  assert.equal(res.headers.get("location"), `https://descall.com${to}`, `${from} -> ${to}`);
+}
+assert.equal((await get("/")).status, 200, "the root is served, never redirected");
+assert.equal((await get("/")).headers.get("x-robots-tag"), null, "marketing pages stay indexable");
+
 const owner = {
   "/founder": "/who-owns-descall",
   "/owner": "/who-owns-descall",

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
+import SeoExtraContent from "../components/SeoExtraContent";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { COMPARE_FAQ, COMPARE_ROWS } from "../content/discordSeoContent";
@@ -117,6 +118,7 @@ export default function CompareDiscordPage({ onSignIn }) {
         </p>
       </section>
 
+      <SeoExtraContent showLinks={false} />
       <SeoRelatedLinks
         title="More comparisons"
         links={[

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
+import SeoExtraContent from "../components/SeoExtraContent";
 import { buildBreadcrumbLd, buildFaqLd } from "../JsonLd";
 import { ALTERNATIVES_FAQ } from "../content/discordSeoContent";
 import { useT } from "../../context/localeContextInstance";
@@ -122,6 +123,7 @@ export default function AlternativesPage() {
           </li>
         </ul>
       </section>
+      <SeoExtraContent showLinks={false} />
       <SeoRelatedLinks
         title="Related comparisons"
         links={[

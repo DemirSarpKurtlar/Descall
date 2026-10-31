@@ -144,7 +144,23 @@ export default {
     if (isSpaPath(path)) {
       // Root document is the shared shell. /index.html itself 308s to /.
       const shell = await readAsset(env, request, "/");
-      return htmlResponse(shell, 200, "no-cache");
+      const response = htmlResponse(shell, 200, "no-cache");
+      // SEO (3.7.14): the app shell carries the homepage's canonical/meta, so
+      // without this /app, /login, /register, /s/... looked like duplicate
+      // homepages to crawlers that do not run JS. The app is never a search result.
+      response.headers.set("x-robots-tag", "noindex, follow");
+      return response;
+    }
+
+    // SEO (3.7.14): one URL per page. /tr/ and /tr, /features/ and /features
+    // were indexed as two pages (Search Console) because Pages answered the
+    // slash form itself. Canonicals use the bare form, so 301 to it.
+    if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
+      const headers = new Headers();
+      applySecurityHeaders(headers);
+      headers.set("cache-control", "public, max-age=3600");
+      headers.set("location", new URL(path + url.search, url).toString());
+      return new Response(null, { status: 301, headers });
     }
 
     const found = await env.ASSETS.fetch(request);
