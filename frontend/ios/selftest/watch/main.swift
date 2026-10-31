@@ -51,5 +51,22 @@ for i in 0..<noise.count {
 }
 check(P.encodeReply(noise) == nil, "incompressible 400 KB reply is too large")
 
+// Watch copy language: the iPhone app's UI language, else the watch languages
+// (Turkish device keeps Turkish, first live locale, drafts and unknown -> English).
+typealias WL = DescallWatchLocale
+check(WL.ids == ["en", "tr", "de", "es", "fr", "pt-BR", "ru"], "same ids as src/i18n/locales.json")
+check(WL.resolve(phone: "de", preferred: ["tr-TR"]) == "de", "app UI language wins")
+check(WL.resolve(phone: nil, preferred: ["tr-TR"]) == "tr", "Turkish watch")
+check(WL.resolve(phone: nil, preferred: ["en-US", "tr-TR"]) == "tr", "any Turkish language")
+check(WL.resolve(phone: nil, preferred: ["fr-FR"]) == "en", "draft device language -> English")
+check(WL.resolve(phone: nil, preferred: ["ja-JP", "en-GB"]) == "en", "first live match")
+check(WL.resolve(phone: nil, preferred: []) == "tr", "nothing known -> Turkish (as before)")
+check(WL.resolve(phone: "zz", preferred: ["en-US"]) == "en", "unknown phone value ignored")
+check(WL.match("pt") == "pt-BR" && WL.match("ru_RU") == "ru" && WL.match("xx") == nil, "match")
+check([1, 3, 5, 21].map { WL.pluralCategory($0, "ru") } == ["one", "few", "many", "one"], "ru plural")
+check(WL.pluralCategory(0, "fr") == "one" && WL.pluralCategory(0, "en") == "other", "fr / en plural")
+check(WL.localeIdentifier("pt-BR") == "pt_BR" && WL.localeIdentifier("x") == "en_GB", "Foundation locale")
+check(P.Key.locale == "loc", "reply key for the app's UI language")
+
 if failures > 0 { print("\(failures) failure(s)"); exit(1) }
 print("watch protocol selftest ok")

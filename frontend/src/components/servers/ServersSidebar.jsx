@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, ShieldCheck, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info } from "../ui/Icon.jsx";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
-import { useLocale, useT } from "../../context/LocaleContext";
+import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
@@ -58,9 +58,9 @@ const TEMPLATE_ICONS = {
 };
 
 const NOTIF_LEVELS = [
-  { value: "all", label: "All Messages", icon: BellRing },
-  { value: "mentions", label: "Only @mentions", icon: Bell },
-  { value: "muted", label: "Nothing", icon: BellOff },
+  { value: "all", labelKey: "svh.lvlAll", icon: BellRing },
+  { value: "mentions", labelKey: "svh.lvlMentions", icon: Bell },
+  { value: "muted", labelKey: "svh.lvlNone", icon: BellOff },
 ];
 
 /**
@@ -103,7 +103,6 @@ export default function ServersSidebar({
   onSendDm,
 }) {
   const t = useT();
-  const { locale } = useLocale();
   const glassShell = useGlassShell();
   const [glassAddMenuOpen, setGlassAddMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -357,7 +356,7 @@ export default function ServersSidebar({
     (n, st) => n + (Array.isArray(st?.members) ? st.members.length : 0),
     0
   );
-  const voiceNote = voiceNow > 0 ? ` · ${voiceNow} ${locale === "tr" ? "sesli" : "in voice"}` : "";
+  const voiceNote = voiceNow > 0 ? ` · ${t("svh.sidebarInVoice", { n: voiceNow })}` : "";
   const participantStreams = serverVoice?.remoteStreams || null;
   const localVoiceStream = serverVoice?.localStream || null;
   const myVoiceUserId = serverVoice?.myUserId || null;
@@ -1117,7 +1116,7 @@ export default function ServersSidebar({
                     }}
                   >
                     {glassShell ? <UserPlus size={15} /> : <Link2 size={15} />}
-                    {glassShell && locale === "tr" ? "İnsanları davet et" : t("Invite people")}
+                    {glassShell ? t("svh.invitePeople") : t("Invite people")}
                   </button>
                 )}
                 {canManageGuild && (
@@ -1205,7 +1204,7 @@ export default function ServersSidebar({
                       onClick={() => setNotificationLevel(lvl.value)}
                     >
                       {glassShell ? null : <Icon size={15} />}
-                      <span>{t(lvl.label)}</span>
+                      <span>{t(lvl.labelKey)}</span>
                       {active ? <Check size={14} className="server-dropdown-check" /> : null}
                     </button>
                   );
@@ -2293,12 +2292,12 @@ function ChannelRow({
         <span>{channel.name}</span>
         {channel.nsfw ? (
           <span className="server-channel-nsfw" title={t("NSFW")} style={{ fontSize: 10, opacity: 0.75 }}>
-            NSFW
+            {t("svh.badgeNsfw")}
           </span>
         ) : null}
         {channel.type === "announcement" ? (
           <span className="server-channel-nsfw" title={t("Announcement")} style={{ fontSize: 10, opacity: 0.75 }}>
-            ANN
+            {t("svh.badgeAnn")}
           </span>
         ) : null}
         {muted ? <BellOff size={12} className="server-channel-mute-icon" aria-hidden /> : null}
@@ -2962,10 +2961,10 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
                   <span className="server-template-card-desc">{t(tpl.description)}</span>
                   <span className="server-template-card-meta">
                     <span>
-                      <Shield size={12} /> {tpl.roleCount} {t("roles")}
+                      <Shield size={12} /> {tpl.roleCount} {t("counts.roles", { n: tpl.roleCount })}
                     </span>
                     <span>
-                      <Hash size={12} /> {tpl.channelCount} {t("channels")}
+                      <Hash size={12} /> {tpl.channelCount} {t("counts.channels", { n: tpl.channelCount })}
                     </span>
                   </span>
                   <span className="server-template-card-tags">
@@ -3010,8 +3009,8 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
                 <div>
                   <strong>{t(selected.name)}</strong>
                   <p>
-                    {selected.roleCount} {t("roles")} · {selected.channelCount} {t("channels")} ·{" "}
-                    {selected.categoryCount} {t("categories")}
+                    {selected.roleCount} {t("counts.roles", { n: selected.roleCount })} · {selected.channelCount} {t("counts.channels", { n: selected.channelCount })} ·{" "}
+                    {selected.categoryCount} {t("counts.categories", { n: selected.categoryCount })}
                   </p>
                 </div>
               </div>

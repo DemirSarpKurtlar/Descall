@@ -9,6 +9,8 @@
  * request is retried once; ADMIN_2FA_REQUIRED opens the setup gate.
  */
 
+import { t } from "../i18n/runtime.js";
+
 const HEADER = "X-Admin-Step-Up";
 let token = null;
 let expiresAt = 0;
@@ -39,7 +41,7 @@ export function requestStepUp() {
     const detail = { resolve, reject, handled: false };
     if (typeof window === "undefined") return reject(new Error("no window"));
     window.dispatchEvent(new CustomEvent(STEP_UP_EVENT, { detail }));
-    if (!detail.handled) reject(Object.assign(new Error("Doğrulama kodu gerekli."), { code: "STEP_UP_REQUIRED" }));
+    if (!detail.handled) reject(Object.assign(new Error(t("adminx.stepUp.required")), { code: "STEP_UP_REQUIRED" }));
   }).finally(() => {
     pending = null;
   });

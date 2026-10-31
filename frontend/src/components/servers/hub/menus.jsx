@@ -9,6 +9,7 @@ import { FOLDER_COLORS, getFolderColor } from "./folderColors";
 import { levelLabel } from "./pagesHub";
 import { muteOptions } from "./pagesGeneral";
 import { getServerMute } from "./serverMute";
+import { formatNumber } from "../../../i18n/format.js";
 
 const popT = (reduced) => (reduced ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize));
 
@@ -51,7 +52,7 @@ export function VoiceMemberMenu({ mode, menu, presence, channels, canMute, canDe
   const micOff = Boolean(user?.muted || user?.serverMuted || user?.selfMuted);
   const name = user?.displayName || user?.username || "";
   const tablet = mode === "tablet";
-  const pctLabel = locale === "tr" ? `%${volume}` : `${volume}%`;
+  const pctLabel = formatNumber((Number(volume) || 0) / 100, locale, { style: "percent", maximumFractionDigits: 0 });
 
   useLayoutEffect(() => {
     if (!tablet) return;
@@ -100,7 +101,7 @@ export function VoiceMemberMenu({ mode, menu, presence, channels, canMute, canDe
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 18px 16px", color: "rgba(235,238,255,.7)" }}>
           <I n="win" s={18} />
           <VolumeSlider value={screen.value} onChange={screen.onChange} label={s.vScreen} />
-          <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{locale === "tr" ? `%${screen.value}` : `${screen.value}%`}</span>
+          <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{formatNumber((Number(screen.value) || 0) / 100, locale, { style: "percent", maximumFractionDigits: 0 })}</span>
         </div>
       ) : null}
     </>

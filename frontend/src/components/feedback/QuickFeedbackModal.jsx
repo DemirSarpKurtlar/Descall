@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { localizedField } from "../../i18n/serverText.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -417,7 +418,7 @@ export default function QuickFeedbackModal({
                 <span className="fbk-it-p">
                   {i.last ? (
                     <>
-                      <em>{i.last.fromTeam ? t("fbk.teamPrefix") : t("fbk.youPrefix")}</em> {i.last.text}
+                      <em>{i.last.fromTeam ? t("fbk.teamPrefix") : t("fbk.youPrefix")}</em> {localizedField(i.last, "text")}
                     </>
                   ) : t("fbk.waiting")}
                 </span>
@@ -489,7 +490,7 @@ export default function QuickFeedbackModal({
               return (
                 <div key={m.id} className={`fbk-msg ${m.fromTeam ? "is-team" : "is-me"}`}>
                   {m.fromTeam ? <TeamName t={t} time={relTime(m.created_at, t)} /> : null}
-                  {m.text}
+                  {localizedField(m, "text")}
                   {m.attachments?.length ? (
                     <div className="fbk-msg-shots">
                       {m.attachments.map((u) => <a key={u} href={u} target="_blank" rel="noreferrer"><img src={u} alt="" /></a>)}

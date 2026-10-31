@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Suche nach Updates…",
+    "starting": "Descall wird gestartet…",
+    "installing": "Update wird installiert…",
+    "downloading": "Update wird heruntergeladen…",
+    "upToDate": "Auf dem neuesten Stand",
+    "checkFailed": "Updates konnten nicht geprüft werden",
+    "loading": "Wird geladen"
+  },
+  "notice": {
+    "background": "Descall läuft im Hintergrund weiter. Du kannst es über den Infobereich der Taskleiste wieder öffnen."
+  },
+  "update": {
+    "downloaded": "v{version} heruntergeladen. Das Update wird still im Hintergrund installiert.",
+    "downloadedDeferred": "v{version} heruntergeladen. Das Update wird erst nach deinem Sprachchat installiert."
+  },
+  "dialog": {
+    "retry": "Erneut versuchen",
+    "quit": "Beenden",
+    "loadFailed": "Descall konnte nicht geladen werden",
+    "loadFailedDetail": "Die App-Dateien konnten nicht geöffnet werden ({detail}). Du kannst es erneut versuchen oder Descall schließen.",
+    "openFailed": "Descall konnte nicht geöffnet werden",
+    "openFailedDetail": "Die App wurde nicht rechtzeitig geladen. Prüfe deine Verbindung und versuche es erneut.",
+    "indexMissingTitle": "Ladefehler",
+    "indexMissing": "index.html wurde in den App-Dateien nicht gefunden."
+  },
+  "tray": {
+    "open": "Descall öffnen",
+    "startWithWindows": "Mit Windows starten",
+    "updateAndQuit": "Aktualisieren und beenden (v{version})",
+    "quit": "Beenden"
+  },
+  "notif": {
+    "calling": "ruft an...",
+    "voiceCall": "Sprachanruf",
+    "videoCall": "Videoanruf",
+    "groupCall": "Gruppenanruf",
+    "groupCallIn": "👥 {group} · Gruppenanruf",
+    "now": "jetzt",
+    "mentionedYou": "hat dich erwähnt",
+    "online": "{name} ist online",
+    "justConnected": "Gerade verbunden",
+    "missedCall": "verpasster Anruf",
+    "message": "Nachricht",
+    "close": "Schließen",
+    "accept": "Annehmen",
+    "decline": "Ablehnen"
+  },
+  "overlay": {
+    "connected": "Verbunden",
+    "calling": "Wird angerufen…",
+    "group": "Gruppenanruf",
+    "server": "Sprachkanal",
+    "offline": "Getrennt",
+    "mute": "Stummschalten",
+    "unmute": "Stummschaltung aufheben",
+    "deafen": "Ton aus",
+    "undeafen": "Ton an",
+    "leave": "Verlassen",
+    "end": "Anruf beenden"
+  },
+  "window": {
+    "signupStats": "Registrierungsstatistik — Descall Admin",
+    "adminPanel": "Descall Admin"
+  }
+}

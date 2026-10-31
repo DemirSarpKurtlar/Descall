@@ -16,14 +16,14 @@ const STATUSES = ["online", "idle", "dnd", "invisible"];
 const MAX_CONVERSATIONS = 30;
 const MAX_ONLINE = 40;
 const PREVIEW_MAX = 90;
-const KIND_LABEL = {
-  image: "Fotoğraf",
-  gif: "GIF",
-  video: "Video",
-  voice: "Sesli mesaj",
-  file: "Dosya",
-  poll: "Anket",
-};
+const { bt } = require("./i18n");
+
+// Media words the watch shows, in the account's language (backend/i18n/<locale>.js watch.*).
+const KIND_KEYS = { image: "watch.photo", gif: "watch.gif", video: "watch.video", voice: "watch.voice", file: "watch.file", poll: "watch.poll" };
+
+function kindLabel(kind, lang) {
+  return KIND_KEYS[kind] ? bt(lang, KIND_KEYS[kind]) : "";
+}
 
 function clip(s, n) {
   const t = String(s == null ? "" : s).replace(/\s+/g, " ").trim();
@@ -53,28 +53,28 @@ function presenceOf(status) {
 }
 
 /* formatDmPreview / formatGroupListPreview label media with an emoji + English word;
-   the watch shows a Turkish word instead (no emoji in the UI, owner rule). */
+   the watch shows a plain word in the account's language instead (no emoji in the UI, owner rule). */
 const PREVIEW_LABELS = [
-  ["\u{1F4DE} Call", "Arama"],
-  ["\u{1F4F7} Photo", "Fotoğraf"],
-  ["\u{1F3A4} Voice message", "Sesli mesaj"],
-  ["\u{1F4CE} Attachment", "Dosya"],
+  ["\u{1F4DE} Call", "watch.call"],
+  ["\u{1F4F7} Photo", "watch.photo"],
+  ["\u{1F3A4} Voice message", "watch.voice"],
+  ["\u{1F4CE} Attachment", "watch.file"],
 ];
 
-function localizePreview(text) {
+function localizePreview(text, lang = "tr") {
   let out = String(text || "");
-  for (const [from, to] of PREVIEW_LABELS) out = out.split(from).join(to);
+  for (const [from, key] of PREVIEW_LABELS) out = out.split(from).join(bt(lang, key));
   return out;
 }
 
 /** Preview text from formatDmPreview / formatGroupListPreview results (string or object). */
-function previewText(p) {
+function previewText(p, lang = "tr") {
   if (!p) return "";
-  if (typeof p === "string") return clip(localizePreview(p), PREVIEW_MAX);
+  if (typeof p === "string") return clip(localizePreview(p, lang), PREVIEW_MAX);
   const kind = p.kind || p.type || null;
   const text = p.text || p.content || p.preview || "";
-  if (text) return clip(localizePreview(text), PREVIEW_MAX);
-  return KIND_LABEL[kind] || "";
+  if (text) return clip(localizePreview(text, lang), PREVIEW_MAX);
+  return kindLabel(kind, lang);
 }
 
 function toMs(at) {
@@ -92,12 +92,12 @@ function toMs(at) {
  * @param {object[]} args.groups      getUserGroups() items
  * @param {string[]|null} args.adminSections sections the account may open, null for non-admins
  */
-function shapeHome({ me, myStatus, friends = [], previews = {}, lastActivity = {}, groups = [], adminSections = null }) {
+function shapeHome({ me, myStatus, friends = [], previews = {}, lastActivity = {}, groups = [], adminSections = null, lang = "tr" }) {
   const rows = [];
   for (const f of friends) {
     if (!f?.id) continue;
     const at = lastActivity[f.id] || null;
-    const text = previewText(previews[f.id]);
+    const text = previewText(previews[f.id], lang);
     if (!at && !text) continue;
     const name = displayName(f);
     rows.push({
@@ -121,7 +121,7 @@ function shapeHome({ me, myStatus, friends = [], previews = {}, lastActivity = {
       initials: initialsOf(name),
       avatarUrl: safeAvatar(g.avatarUrl),
       presence: null,
-      preview: previewText(g.lastMessage),
+      preview: previewText(g.lastMessage, lang),
       at: g.lastActivity || null,
     });
   }
@@ -168,7 +168,7 @@ function shapeFriends(friends = []) {
   return { online: online.slice(0, MAX_ONLINE), onlineCount: online.length, offlineCount };
 }
 
-function shapeThread(out) {
+function shapeThread(out, { lang = "tr" } = {}) {
   return {
     conv: out?.conv || null,
     title: clip(out?.title || "", 40),
@@ -177,7 +177,7 @@ function shapeThread(out) {
       id: String(m.id),
       mine: Boolean(m.mine),
       author: clip(m.fromName || "", 30),
-      text: m.text || (KIND_LABEL[m.kind] ? KIND_LABEL[m.kind] : ""),
+      text: m.text || kindLabel(m.kind, lang),
       kind: m.kind || "text",
       at: m.at || null,
     })),

@@ -98,6 +98,8 @@ final class DescallWatchBridge: NSObject, WCSessionDelegate {
                 return
             }
             var out: [String: Any] = [P.Key.status: http.statusCode]
+            // The watch copy follows the app's UI language (DescallNotifyPlugin.setUiLocale).
+            if let locale = DescallNotifyLang.storedUiLocale() { out[P.Key.locale] = locale }
             if let data, !data.isEmpty {
                 guard let encoded = P.encodeReply(data) else {
                     reply([P.Key.status: 0, P.Key.error: P.Failure.tooLarge])

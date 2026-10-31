@@ -46,8 +46,8 @@ function scrollToSection(id) {
   node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
 }
 
-export default function LegalDocument({ data, type = "privacy", locale = "en", actions = null }) {
-  const cards = summaryCards(type, data, locale);
+export default function LegalDocument({ data, enData = null, type = "privacy", locale = "en", actions = null }) {
+  const cards = summaryCards(type, data, locale, enData || data);
   const contact = contactCopy(type, locale);
   const [current, setCurrent] = useState(cards[0]?.id || "");
 
@@ -153,7 +153,7 @@ export default function LegalDocument({ data, type = "privacy", locale = "en", a
         <div className="legal-doc-main">
           {data.sections.map((section, index) => {
             const id = legalSlug(section.heading, index);
-            const rights = isRightsHeading(section.heading);
+            const rights = isRightsHeading(section.heading, index, enData);
             return (
               <section key={id} id={id} className={rights ? "legal-doc-section is-rights" : "legal-doc-section"}>
                 <h2>

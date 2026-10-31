@@ -34,60 +34,158 @@ enum DescallNotify {
 
 // MARK: - Language
 
-enum DescallNotifyLang: String {
-    case tr, en
+/// UI language of the native text (notification actions and thread, CallKit hints).
+/// Same ids as src/i18n/locales.json. The web app shares its UI language through
+/// DescallNotify.setUiLocale (App Group defaults, `uiLocaleKey`); until it has, the
+/// device languages are matched like src/i18n/detect.js: a Turkish device keeps
+/// Turkish, then the first live locale, else English (drafts only by UI choice).
+enum DescallNotifyLang: String, CaseIterable {
+    case en, tr, de, es, fr, ptBR = "pt-BR", ru
 
-    static func current(_ preferred: [String] = Locale.preferredLanguages) -> DescallNotifyLang {
-        guard let first = preferred.first?.lowercased() else { return .tr }
-        return first.hasPrefix("tr") ? .tr : .en
+    /// status "live" in src/i18n/locales.json.
+    static let live: Set<DescallNotifyLang> = [.en, .tr]
+    static let uiLocaleKey = "descall.uiLocale"
+
+    /// Registered locale for "tr-TR", "pt", "pt_BR", "de-AT"; nil when unknown.
+    static func match(_ raw: String?) -> DescallNotifyLang? {
+        let value = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-").lowercased()
+        guard !value.isEmpty else { return nil }
+        if let exact = allCases.first(where: { $0.rawValue.lowercased() == value }) { return exact }
+        let base = value.split(separator: "-").first.map(String.init) ?? value
+        return allCases.first { ($0.rawValue.lowercased().split(separator: "-").first.map(String.init) ?? "") == base }
+    }
+
+    static func current(_ preferred: [String] = Locale.preferredLanguages, app: String? = DescallNotifyLang.storedUiLocale()) -> DescallNotifyLang {
+        if let chosen = match(app) { return chosen }
+        guard !preferred.isEmpty else { return .tr }
+        let langs = preferred.map { $0.replacingOccurrences(of: "_", with: "-").lowercased() }
+        if langs.contains(where: { $0 == "tr" || $0.hasPrefix("tr-") || $0.hasSuffix("-tr") }) { return .tr }
+        for lang in langs {
+            if let hit = match(lang), live.contains(hit) { return hit }
+        }
+        return .en
+    }
+
+    /// The UI language the web app stored (DescallNotifyPlugin.setUiLocale), if any.
+    static func storedUiLocale() -> String? {
+        UserDefaults(suiteName: DescallNotify.appGroup)?.string(forKey: uiLocaleKey)
+    }
+
+    /// Locale for case mapping and formatters.
+    var locale: Locale {
+        switch self {
+        case .en: return Locale(identifier: "en_GB")
+        case .tr: return Locale(identifier: "tr_TR")
+        case .de: return Locale(identifier: "de_DE")
+        case .es: return Locale(identifier: "es_ES")
+        case .fr: return Locale(identifier: "fr_FR")
+        case .ptBR: return Locale(identifier: "pt_BR")
+        case .ru: return Locale(identifier: "ru_RU")
+        }
+    }
+
+    /// CLDR plural category for an integer count (one / few / many / other).
+    func pluralCategory(_ n: Int) -> String {
+        switch self {
+        case .fr, .ptBR: return n == 0 || n == 1 ? "one" : "other"
+        case .ru:
+            let m10 = n % 10, m100 = n % 100
+            if m10 == 1 && m100 != 11 { return "one" }
+            if (2...4).contains(m10) && !(12...14).contains(m100) { return "few" }
+            return "many"
+        default: return n == 1 ? "one" : "other"
+        }
     }
 }
 
 struct DescallNotifyStrings {
     let lang: DescallNotifyLang
 
-    var markRead: String { lang == .tr ? "Okundu olarak işaretle" : "Mark as read" }
-    var mute: String { lang == .tr ? "1 saat sessize al" : "Mute for 1 hour" }
-    var openChat: String { lang == .tr ? "Sohbeti aç" : "Open chat" }
-    var hiddenPreview: String { lang == .tr ? "Yeni mesaj" : "New message" }
+    /// key -> text per locale; English fills a missing entry. {name} placeholders.
+    static let table: [String: [DescallNotifyLang: String]] = [
+        "markRead": [.en: "Mark as read", .tr: "Okundu olarak işaretle", .de: "Als gelesen markieren", .es: "Marcar como leído", .fr: "Marquer comme lu", .ptBR: "Marcar como lida", .ru: "Отметить как прочитанное"],
+        "mute": [.en: "Mute for 1 hour", .tr: "1 saat sessize al", .de: "1 Stunde stummschalten", .es: "Silenciar 1 hora", .fr: "Mettre en sourdine 1 heure", .ptBR: "Silenciar por 1 hora", .ru: "Без звука на 1 час"],
+        "openChat": [.en: "Open chat", .tr: "Sohbeti aç", .de: "Chat öffnen", .es: "Abrir chat", .fr: "Ouvrir la discussion", .ptBR: "Abrir conversa", .ru: "Открыть чат"],
+        "hiddenPreview": [.en: "New message", .tr: "Yeni mesaj", .de: "Neue Nachricht", .es: "Nuevo mensaje", .fr: "Nouveau message", .ptBR: "Nova mensagem", .ru: "Новое сообщение"],
+        // UNNotificationCategory.categorySummaryFormat: %u is the count.
+        "summaryFormat": [.en: "+%u more messages", .tr: "+%u mesaj daha", .de: "+%u weitere Nachrichten", .es: "+%u mensajes más", .fr: "+%u autres messages", .ptBR: "+%u mensagens a mais", .ru: "Ещё сообщений: %u"],
+        "now": [.en: "now", .tr: "şimdi", .de: "jetzt", .es: "ahora", .fr: "maintenant", .ptBR: "agora", .ru: "сейчас"],
+        "sendFailed": [.en: "Couldn't send. Open the app and try again.", .tr: "Gönderilemedi. Uygulamayı açıp tekrar dene.", .de: "Senden fehlgeschlagen. Öffne die App und versuche es erneut.", .es: "No se pudo enviar. Abre la app y vuelve a intentarlo.", .fr: "Envoi impossible. Ouvre l'app et réessaie.", .ptBR: "Não foi possível enviar. Abra o app e tente de novo.", .ru: "Не удалось отправить. Откройте приложение и попробуйте ещё раз."],
+        "signedOut": [.en: "Open the app to reply.", .tr: "Yanıtlamak için uygulamayı aç.", .de: "Öffne die App, um zu antworten.", .es: "Abre la app para responder.", .fr: "Ouvre l'app pour répondre.", .ptBR: "Abra o app para responder.", .ru: "Откройте приложение, чтобы ответить."],
+        "group": [.en: "Group", .tr: "Grup", .de: "Gruppe", .es: "Grupo", .fr: "Groupe", .ptBR: "Grupo", .ru: "Группа"],
+        "kind.image": [.en: "📷 Photo", .tr: "📷 Fotoğraf", .de: "📷 Foto", .es: "📷 Foto", .fr: "📷 Photo", .ptBR: "📷 Foto", .ru: "📷 Фото"],
+        "kind.video": [.en: "🎬 Video", .tr: "🎬 Video", .de: "🎬 Video", .es: "🎬 Vídeo", .fr: "🎬 Vidéo", .ptBR: "🎬 Vídeo", .ru: "🎬 Видео"],
+        "kind.voice": [.en: "🎤 Voice message", .tr: "🎤 Sesli mesaj", .de: "🎤 Sprachnachricht", .es: "🎤 Mensaje de voz", .fr: "🎤 Message vocal", .ptBR: "🎤 Mensagem de voz", .ru: "🎤 Голосовое сообщение"],
+        "kind.file": [.en: "📎 File", .tr: "📎 Dosya", .de: "📎 Datei", .es: "📎 Archivo", .fr: "📎 Fichier", .ptBR: "📎 Arquivo", .ru: "📎 Файл"],
+        "kind.poll": [.en: "📊 Poll", .tr: "📊 Anket", .de: "📊 Umfrage", .es: "📊 Encuesta", .fr: "📊 Sondage", .ptBR: "📊 Enquete", .ru: "📊 Опрос"],
+        "members.one": [.en: "{count} member", .tr: "{count} üye", .de: "{count} Mitglied", .es: "{count} miembro", .fr: "{count} membre", .ptBR: "{count} membro", .ru: "{count} участник"],
+        "members.few": [.ru: "{count} участника"],
+        "members.many": [.ru: "{count} участников"],
+        "members.other": [.en: "{count} members", .tr: "{count} üye", .de: "{count} Mitglieder", .es: "{count} miembros", .fr: "{count} membres", .ptBR: "{count} membros", .ru: "{count} участника"],
+        "rel.minutes": [.en: "{n}m", .tr: "{n} dk", .de: "{n} Min.", .es: "{n} min", .fr: "{n} min", .ptBR: "{n} min", .ru: "{n} мин"],
+        "rel.hours": [.en: "{n}h", .tr: "{n} sa", .de: "{n} Std.", .es: "{n} h", .fr: "{n} h", .ptBR: "{n} h", .ru: "{n} ч"],
+        "rel.days": [.en: "{n}d", .tr: "{n} g", .de: "{n} T.", .es: "{n} d", .fr: "{n} j", .ptBR: "{n} d", .ru: "{n} д"],
+        "writeReply": [.en: "Write a reply...", .tr: "Yanıt yaz...", .de: "Antwort schreiben...", .es: "Escribe una respuesta...", .fr: "Écris une réponse...", .ptBR: "Escreva uma resposta...", .ru: "Напишите ответ..."],
+        // Turkish: {nameDat} = name + dative suffix ("Mert'e").
+        "replyTo": [.en: "Reply to {name}...", .tr: "{nameDat} yanıt yaz...", .de: "Antworten an {name}...", .es: "Responder a {name}...", .fr: "Répondre à {name}...", .ptBR: "Responder a {name}...", .ru: "Ответ для {name}..."],
+        "tr.replyToNoSuffix": [.tr: "{name} · yanıt yaz..."],
+        // CallKit / lock screen (DescallCallManager, AppDelegate INCOMING_CALL actions).
+        "call.openToConnect": [.en: "Open Descall to connect", .tr: "Bağlanmak için Descall'u açın", .de: "Öffne Descall, um dich zu verbinden", .es: "Abre Descall para conectarte", .fr: "Ouvre Descall pour te connecter", .ptBR: "Abra o Descall para se conectar", .ru: "Откройте Descall, чтобы подключиться"],
+        "call.unlockToJoin": [.en: "Unlock your iPhone and tap Descall to join the call.", .tr: "Aramaya bağlanmak için iPhone'un kilidini açıp Descall'a dokunun.", .de: "Entsperre dein iPhone und tippe auf Descall, um dem Anruf beizutreten.", .es: "Desbloquea tu iPhone y toca Descall para unirte a la llamada.", .fr: "Déverrouille ton iPhone et touche Descall pour rejoindre l'appel.", .ptBR: "Desbloqueie seu iPhone e toque no Descall para entrar na chamada.", .ru: "Разблокируйте iPhone и нажмите Descall, чтобы присоединиться к звонку."],
+        "call.joinFailedLocked": [.en: "Couldn't connect the call while your iPhone was locked. Open Descall to call back.", .tr: "Arama bağlanamadı: telefon kilitliyken katılınamadı. Geri aramak için Descall'u açın.", .de: "Der Anruf konnte nicht verbunden werden, solange dein iPhone gesperrt war. Öffne Descall, um zurückzurufen.", .es: "No se pudo conectar la llamada con el iPhone bloqueado. Abre Descall para devolver la llamada.", .fr: "Impossible de connecter l'appel pendant que ton iPhone était verrouillé. Ouvre Descall pour rappeler.", .ptBR: "Não foi possível conectar a chamada com o iPhone bloqueado. Abra o Descall para retornar a ligação.", .ru: "Не удалось подключить звонок, пока iPhone был заблокирован. Откройте Descall, чтобы перезвонить."],
+        "call.accept": [.en: "Accept", .tr: "Kabul et", .de: "Annehmen", .es: "Aceptar", .fr: "Accepter", .ptBR: "Aceitar", .ru: "Принять"],
+        "call.decline": [.en: "Decline", .tr: "Reddet", .de: "Ablehnen", .es: "Rechazar", .fr: "Refuser", .ptBR: "Recusar", .ru: "Отклонить"],
+    ]
+    /// Keys only some languages need (Turkish grammar, Russian plural forms).
+    static let partialKeys: Set<String> = ["members.few", "members.many", "tr.replyToNoSuffix"]
+
+    func text(_ key: String, _ vars: [String: String] = [:]) -> String {
+        let entry = Self.table[key]
+        var out = entry?[lang] ?? entry?[.en] ?? key
+        for (name, value) in vars { out = out.replacingOccurrences(of: "{\(name)}", with: value) }
+        return out
+    }
+
+    var markRead: String { text("markRead") }
+    var mute: String { text("mute") }
+    var openChat: String { text("openChat") }
+    var hiddenPreview: String { text("hiddenPreview") }
     /// UNNotificationCategory.categorySummaryFormat ("+2 mesaj daha").
-    var summaryFormat: String { lang == .tr ? "+%u mesaj daha" : "+%u more messages" }
-    var now: String { lang == .tr ? "şimdi" : "now" }
-    var sendFailed: String { lang == .tr ? "Gönderilemedi. Uygulamayı açıp tekrar dene." : "Couldn't send. Open the app and try again." }
-    var signedOut: String { lang == .tr ? "Yanıtlamak için uygulamayı aç." : "Open the app to reply." }
-    var group: String { lang == .tr ? "Grup" : "Group" }
+    var summaryFormat: String { text("summaryFormat") }
+    var now: String { text("now") }
+    var sendFailed: String { text("sendFailed") }
+    var signedOut: String { text("signedOut") }
+    var group: String { text("group") }
 
     func kindLabel(_ kind: String) -> String? {
         switch kind {
-        case "image": return lang == .tr ? "📷 Fotoğraf" : "📷 Photo"
-        case "video": return "🎬 Video"
-        case "voice": return lang == .tr ? "🎤 Sesli mesaj" : "🎤 Voice message"
-        case "file": return lang == .tr ? "📎 Dosya" : "📎 File"
-        case "poll": return lang == .tr ? "📊 Anket" : "📊 Poll"
+        case "image", "video", "voice", "file", "poll": return text("kind.\(kind)")
         default: return nil
         }
     }
 
     func members(_ count: Int) -> String {
-        lang == .tr ? "\(count) üye" : (count == 1 ? "1 member" : "\(count) members")
+        let key = "members.\(lang.pluralCategory(count))"
+        return text(Self.table[key]?[lang] != nil ? key : "members.other", ["count": "\(count)"])
     }
 
-    /// "şimdi", "2 dk", "3 sa", then "dün"/a date-less fallback.
+    /// "şimdi", "2 dk", "3 sa", then days ("4 g", "4d").
     func relative(seconds: TimeInterval) -> String {
         let s = max(0, Int(seconds))
         if s < 60 { return now }
-        if s < 3600 { return lang == .tr ? "\(s / 60) dk" : "\(s / 60)m" }
-        if s < 86_400 { return lang == .tr ? "\(s / 3600) sa" : "\(s / 3600)h" }
-        return lang == .tr ? "\(s / 86_400) g" : "\(s / 86_400)d"
+        if s < 3600 { return text("rel.minutes", ["n": "\(s / 60)"]) }
+        if s < 86_400 { return text("rel.hours", ["n": "\(s / 3600)"]) }
+        return text("rel.days", ["n": "\(s / 86_400)"])
     }
 
-    /// Reply field placeholder: "Hafta Sonu Ekibi'ne yanıt yaz...", "Mert'e yanıt yaz...".
+    /// Reply field placeholder: "Hafta Sonu Ekibi'ne yanıt yaz...", "Mert'e yanıt yaz...", "Reply to Mert...".
     func replyPlaceholder(to name: String) -> String {
         let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if clean.isEmpty { return lang == .tr ? "Yanıt yaz..." : "Write a reply..." }
-        if lang == .en { return "Reply to \(clean)..." }
-        guard let suffix = TurkishSuffix.dative(clean) else { return "\(clean) · yanıt yaz..." }
-        return "\(clean)'\(suffix) yanıt yaz..."
+        if clean.isEmpty { return text("writeReply") }
+        guard lang == .tr else { return text("replyTo", ["name": clean]) }
+        guard let suffix = TurkishSuffix.dative(clean) else { return text("tr.replyToNoSuffix", ["name": clean]) }
+        return text("replyTo", ["name": clean, "nameDat": "\(clean)'\(suffix)"])
     }
 }
 

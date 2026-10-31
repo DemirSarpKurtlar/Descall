@@ -1,160 +1,160 @@
 import { casinoHiddenOnThisDevice } from "./casinoCommands.js";
+import { getLocale, t } from "../i18n/runtime.js";
+import { formatNumber } from "../i18n/format.js";
 
 /**
  * Composer slash commands (2.12.0, design/slash-commands-2026-10-18).
- * One row per command; aliases are chips on that row. Labels are Turkish.
+ * One row per command; aliases are chips on that row. Labels, descriptions, argument
+ * hints and search keywords come from the `slash.*` catalog (i18n/locales/slash.*.js)
+ * and are read when they are used, so they follow the UI language. Command names and
+ * aliases are what users type and stay the same in every language.
  *
  * Surfaces: server text channel, group DM, and 1:1 DM (casino + `dm: true`).
  * In a server channel a command the member may not run stays in the list,
  * greyed out with a lock (`locked: true` + `lockReason`); the server checks again.
  */
 
+const withText = (obj, props) => {
+  for (const [name, get] of Object.entries(props)) Object.defineProperty(obj, name, { get, enumerable: true, configurable: true });
+  return obj;
+};
+
 export const SLASH_GROUPS = [
-  { id: "general", label: "Genel", color: "#6d8cff", gradient: "linear-gradient(160deg,#6d8cff,#4a5fe0)" },
-  { id: "moderation", label: "Moderasyon", color: "#ff7a6b", gradient: "linear-gradient(160deg,#ff7a6b,#e0455f)" },
-  { id: "games", label: "Oyunlar", color: "#b77bff", gradient: "linear-gradient(160deg,#b77bff,#7a4fe0)" },
-  { id: "credits", label: "Kredi", color: "#ffc95c", gradient: "linear-gradient(160deg,#ffc95c,#e79a2c)" },
-];
+  { id: "general", color: "#6d8cff", gradient: "linear-gradient(160deg,#6d8cff,#4a5fe0)" },
+  { id: "moderation", color: "#ff7a6b", gradient: "linear-gradient(160deg,#ff7a6b,#e0455f)" },
+  { id: "games", color: "#b77bff", gradient: "linear-gradient(160deg,#b77bff,#7a4fe0)" },
+  { id: "credits", color: "#ffc95c", gradient: "linear-gradient(160deg,#ffc95c,#e79a2c)" },
+].map((g) => withText(g, { label: () => t(`slash.group.${g.id}`) }));
 
 export const SLASH_GROUP_BY_ID = Object.fromEntries(SLASH_GROUPS.map((g) => [g.id, g]));
 
-/** Turkish labels for the permission a locked command needs. */
-export const PERMISSION_LABELS = {
-  USE_APPLICATION_COMMANDS: "Uygulama komutlarını kullan",
-  SEND_MESSAGES: "Mesaj gönder",
-  MODERATE_MEMBERS: "Üyeleri sustur",
-  KICK_MEMBERS: "Üyeleri at",
-  BAN_MEMBERS: "Üyeleri yasakla",
-  MANAGE_MESSAGES: "Mesajları yönet",
-  CHANGE_NICKNAME: "Takma ad değiştir",
-};
+const PERMISSIONS = [
+  "USE_APPLICATION_COMMANDS",
+  "SEND_MESSAGES",
+  "MODERATE_MEMBERS",
+  "KICK_MEMBERS",
+  "BAN_MEMBERS",
+  "MANAGE_MESSAGES",
+  "CHANGE_NICKNAME",
+];
 
-const a = (name, optional = false) => ({ name, optional });
+/** Labels for the permission a locked command needs (UI language). */
+export const PERMISSION_LABELS = withText(
+  {},
+  Object.fromEntries(PERMISSIONS.map((p) => [p, () => t(`slash.perm.${p}`)]))
+);
 
+/** Argument hint; `key` is a `slash.arg.*` key, `literal` is shown as written ("1–100"). */
+const a = (key, optional = false) => withText({ key, optional }, { name: () => t(`slash.arg.${key}`) });
+const lit = (text, optional = false) => ({ key: text, name: text, optional });
+
+/**
+ * `use`: usage lines as [code, noteKey]. A code that starts with "/" is shown as
+ * written, "alias:N" shows the Nth alias, anything else is a key under
+ * `slash.cmd.<name>`; noteKey is a key there too.
+ */
 export const SLASH_COMMANDS = [
-  // Genel
+  // General
   {
-    name: "poll", aliases: ["anket"], group: "general", label: "Anket", isNew: true,
-    args: [a("soru"), a("seçenekler…", true)],
-    description: "Oylanabilir anket başlat, süre ve emoji ile",
-    detail: "Soru, 2–10 seçenek (emoji ile), süre ve anonimlik seçerek oylanabilir bir anket kartı gönderir. Sonuçlar canlı güncellenir.",
-    usage: [["/poll", "↵ ile anket oluşturucu açılır"], ["/poll Soru | Evet | Hayır", "hızlı yol: doğrudan gönderir"]],
-    keywords: ["oylama", "oy", "anket", "seçim"],
-    insert: "/poll", dm: true, permission: "SEND_MESSAGES", permissionLabel: "Mesaj gönder",
+    name: "poll", aliases: ["anket"], group: "general", isNew: true,
+    args: [a("question"), a("options", true)],
+    use: [["/poll", "use1Note"], ["use2", "use2Note"]],
+    insert: "/poll", dm: true, permission: "SEND_MESSAGES",
   },
   {
-    name: "user", group: "general", label: "Kullanıcı kartı", args: [a("@kullanıcı", true)],
-    description: "Profil kartını göster: roller, rozetler, tarihler",
-    detail: "Bir üyenin profil kartını gösterir: banner, avatar çerçevesi, rozetler, sunucu rolleri ve katılım tarihleri.",
-    usage: [["/user [@kullanıcı]", "isteğe bağlı · boş bırakırsan kendi kartın"]],
-    keywords: ["kullanıcı", "profil", "kim", "üye"],
+    name: "user", group: "general", args: [a("user", true)],
+    use: [["use1", "use1Note"]],
     insert: "/user ", userArg: true, dm: true, permission: "USE_APPLICATION_COMMANDS",
   },
   {
-    name: "avatar", group: "general", label: "Avatar", args: [a("@kullanıcı", true)],
-    description: "Avatarı büyük göster, indir veya tam ekran aç",
-    detail: "Bir üyenin avatarını büyük gösterir. Tam ekran açabilir, indirebilir ya da bağlantısını kopyalayabilirsin.",
-    usage: [["/avatar [@kullanıcı]", "boş bırakırsan kendi avatarın"]],
-    keywords: ["resim", "fotoğraf", "pp", "profil", "kullanıcı"],
+    name: "avatar", group: "general", args: [a("user", true)],
+    use: [["use1", "use1Note"]],
     insert: "/avatar ", userArg: true, dm: true, permission: "USE_APPLICATION_COMMANDS",
   },
   {
-    name: "server", group: "general", label: "Sunucu bilgisi", args: [],
-    description: "Üye, kanal, rol sayısı ve sunucu sahibi",
-    detail: "Sunucunun üye, çevrimiçi, kanal ve rol sayılarını, sahibini ve oluşturulma tarihini gösterir.",
-    usage: [["/server", ""]],
-    keywords: ["sunucu", "bilgi"],
+    name: "server", group: "general", args: [],
+    use: [["/server"]],
     insert: "/server", serverOnly: true, permission: "USE_APPLICATION_COMMANDS",
   },
   {
-    name: "nick", group: "general", label: "Takma ad", args: [a("ad", true)],
-    description: "Bu sunucudaki takma adını değiştir",
-    detail: "Bu sunucudaki takma adını değiştirir. Boş bırakırsan takma adın temizlenir.",
-    usage: [["/nick Yeni ad", ""], ["/nick", "takma adı temizler"]],
-    keywords: ["isim", "takma", "ad"],
+    name: "nick", group: "general", args: [a("name", true)],
+    use: [["use1"], ["/nick", "use2Note"]],
     insert: "/nick ", serverOnly: true, permission: "CHANGE_NICKNAME",
   },
   {
-    name: "help", aliases: ["yardım"], group: "general", label: "Yardım", args: [],
-    description: "Burada kullanabileceğin komutları listele",
-    detail: "Bu kanalda ya da sohbette kullanabileceğin komutları kategorilere ayırarak listeler.",
-    usage: [["/help", ""], ["/yardım", "aynı komut"]],
-    keywords: ["yardım", "komutlar", "liste"],
+    name: "help", aliases: ["yardım"], group: "general", args: [],
+    use: [["/help"], ["alias:0", "use2Note"]],
     insert: "/help", dm: true, permission: "USE_APPLICATION_COMMANDS",
   },
-  // Moderasyon
+  // Moderation
   {
-    name: "timeout", group: "moderation", label: "Sustur", args: [a("@kullanıcı"), a("süre"), a("sebep", true)],
-    description: "Üyeyi belirli bir süre sustur",
-    detail: "Üye süre bitene kadar mesaj yazamaz, tepki veremez ve sesli kanaldan çıkarılır. En fazla 28 gün.",
-    usage: [["/timeout @kullanıcı 5m sebep", "60s · 5m · 1h · 1d · 1w"]],
-    keywords: ["sustur", "mute", "zaman aşımı", "kullanıcı"],
+    name: "timeout", group: "moderation", args: [a("user"), a("duration"), a("reason", true)],
+    use: [["use1", "use1Note"]],
     insert: "/timeout ", userArg: true, durationArg: true, serverOnly: true, permission: "MODERATE_MEMBERS",
   },
   {
-    name: "kick", group: "moderation", label: "At", args: [a("@kullanıcı"), a("sebep", true)],
-    description: "Üyeyi sunucudan at",
-    detail: "Üyeyi sunucudan çıkarır. Davet bağlantısıyla tekrar katılabilir. Denetim kaydına yazılır.",
-    usage: [["/kick @kullanıcı sebep", ""]],
-    keywords: ["at", "çıkar", "kullanıcı"],
+    name: "kick", group: "moderation", args: [a("user"), a("reason", true)],
+    use: [["use1"]],
     insert: "/kick ", userArg: true, serverOnly: true, permission: "KICK_MEMBERS",
   },
   {
-    name: "ban", group: "moderation", label: "Yasakla", args: [a("@kullanıcı"), a("sebep", true)],
-    description: "Üyeyi sunucudan yasakla",
-    detail: "Üyeyi sunucudan çıkarır ve tekrar katılmasını engeller. Göndermeden önce onay istenir.",
-    usage: [["/ban @kullanıcı sebep", ""]],
-    keywords: ["yasakla", "engelle", "kullanıcı"],
+    name: "ban", group: "moderation", args: [a("user"), a("reason", true)],
+    use: [["use1"]],
     insert: "/ban ", userArg: true, confirm: true, serverOnly: true, permission: "BAN_MEMBERS",
   },
   {
-    name: "purge", group: "moderation", label: "Toplu sil", args: [a("1–100")],
-    description: "Kanaldaki son N mesajı sil",
-    detail: "Bu kanaldaki son 1–100 mesajı siler. Silinen mesajlar geri getirilemez.",
-    usage: [["/purge 10", ""]],
-    keywords: ["sil", "temizle", "toplu"],
+    name: "purge", group: "moderation", args: [lit("1–100")],
+    use: [["/purge 10"]],
     insert: "/purge ", countArg: true, serverOnly: true, permission: "MANAGE_MESSAGES",
   },
-  // Oyunlar
+  // Games
   {
-    name: "bj", aliases: ["blackjack"], group: "games", label: "Blackjack", args: [a("bahis")],
-    description: "Kasaya karşı blackjack eli başlat", usage: [["/bj 100", ""]], keywords: ["kart", "21"],
-    insert: "/bj 100", casino: true,
+    name: "bj", aliases: ["blackjack"], group: "games", args: [a("bet")],
+    use: [["/bj 100"]], insert: "/bj 100", casino: true,
   },
   {
-    name: "slot", group: "games", label: "Slot", args: [a("bahis")],
-    description: "Beş makaralı slotu çevir", usage: [["/slot 100", ""]], keywords: ["makara", "çevir"],
-    insert: "/slot 100", casino: true,
+    name: "slot", group: "games", args: [a("bet")],
+    use: [["/slot 100"]], insert: "/slot 100", casino: true,
   },
   {
-    name: "coinflip", aliases: ["cf"], group: "games", label: "Yazı tura", args: [a("bahis"), a("yazı|tura", true)],
-    description: "Yazı tura at, kazanırsan bahsin 2× döner", usage: [["/coinflip 100 yazı", ""]], keywords: ["yazı", "tura", "para"],
-    insert: "/coinflip 100", casino: true,
+    name: "coinflip", aliases: ["cf"], group: "games", args: [a("bet"), a("side", true)],
+    use: [["use1"]], insert: "/coinflip 100", casino: true,
   },
-  // Kredi
+  // Credits
   {
-    name: "pay", aliases: ["gonder", "send", "tip"], group: "credits", label: "Gönder", args: [a("@kullanıcı"), a("miktar")],
-    description: "Birine DesCoin gönder", usage: [["/pay @kullanıcı 500", ""]], keywords: ["gönder", "para", "descoin", "kullanıcı"],
-    insert: "/pay ", userArg: true, casino: true,
+    name: "pay", aliases: ["gonder", "send", "tip"], group: "credits", args: [a("user"), a("amount")],
+    use: [["use1"]], insert: "/pay ", userArg: true, casino: true,
   },
   {
-    name: "daily", group: "credits", label: "Günlük bonus", args: [],
-    description: "Günlük bonusunu al · her gün +250", usage: [["/daily", ""]], keywords: ["günlük", "bonus", "ödül"],
-    insert: "/daily", casino: true,
+    name: "daily", group: "credits", args: [],
+    use: [["/daily"]], insert: "/daily", casino: true,
   },
   {
-    name: "credits", aliases: ["bakiye", "balance"], group: "credits", label: "Bakiye", args: [],
-    description: "DesCoin bakiyeni gör", usage: [["/credits", ""]], keywords: ["bakiye", "cüzdan", "descoin"],
-    insert: "/credits", casino: true,
+    name: "credits", aliases: ["bakiye", "balance"], group: "credits", args: [],
+    use: [["/credits"]], insert: "/credits", casino: true,
   },
   {
-    name: "top", aliases: ["lider"], group: "credits", label: "Liderlik", args: [],
-    description: "Liderlik tablosu", usage: [["/top", ""]], keywords: ["sıralama", "lider"],
-    insert: "/top", casino: true,
+    name: "top", aliases: ["lider"], group: "credits", args: [],
+    use: [["/top"]], insert: "/top", casino: true,
   },
 ];
 
+function usageCode(cmd, code) {
+  if (code.startsWith("/")) return code;
+  if (code.startsWith("alias:")) return `/${cmd.aliases[Number(code.slice(6))] || cmd.name}`;
+  return t(`slash.cmd.${cmd.name}.${code}`);
+}
+
 for (const cmd of SLASH_COMMANDS) {
+  const k = `slash.cmd.${cmd.name}`;
+  const hasDetail = cmd.group === "general" || cmd.group === "moderation";
+  withText(cmd, {
+    label: () => t(`${k}.label`),
+    description: () => t(`${k}.description`),
+    detail: () => (hasDetail ? t(`${k}.detail`) : undefined),
+    usage: () => cmd.use.map(([code, note]) => [usageCode(cmd, code), note ? t(`${k}.${note}`) : ""]),
+    keywords: () => t(`${k}.keywords`).split(",").map((s) => s.trim()).filter(Boolean),
+  });
   cmd.chatOnly = true;
   cmd.aliases = cmd.aliases || [];
   cmd.contexts = cmd.serverOnly ? ["server"] : cmd.casino || cmd.dm ? ["server", "group", "dm"] : ["server", "group"];
@@ -207,7 +207,7 @@ export function getSlashCommandsForSurface({
       hint: cmd.description,
       locked: Boolean(lock),
       lockPermission: lock,
-      lockReason: lock ? `“${PERMISSION_LABELS[lock] || lock}” yetkisi gerekiyor` : null,
+      lockReason: lock ? t("slash.lockReason", { perm: PERMISSION_LABELS[lock] || lock }) : null,
     };
   });
 }
@@ -289,7 +289,7 @@ export function slashQueryOf(message) {
 
 /**
  * Same rules as the composer picker: only a leading slash token, before arguments.
- * A command matches by its name, alias, Turkish label, keyword or description.
+ * A command matches by its name, alias, label, keyword or description (UI language).
  */
 export function filterSlashCommandMatches(commands, message) {
   if (!commands?.length) return [];
@@ -316,14 +316,14 @@ export function groupSlashMatches(matches) {
 
 /**
  * Menu sections. Without a query: category order. With one: the best hit under
- * "EN İYİ EŞLEŞME", the rest grouped by category in rank order.
+ * the "best match" label, the rest grouped by category in rank order.
  */
 export function slashMenuSections(matches, { query = "", category = "all" } = {}) {
   const list = category === "all" ? matches : matches.filter((m) => m.group === category);
   if (!list.length) return [];
   if (!foldTr(query).trim()) return groupSlashMatches(list).map((g) => ({ id: g.id, label: g.label, items: g.items }));
   const [best, ...rest] = list;
-  const sections = [{ id: "best", label: "En iyi eşleşme", items: [best] }];
+  const sections = [{ id: "best", label: t("slash.bestMatch"), items: [best] }];
   for (const g of SLASH_GROUPS) {
     const items = rest.filter((m) => m.group === g.id);
     if (items.length) sections.push({ id: g.id, label: g.label, items });
@@ -331,10 +331,10 @@ export function slashMenuSections(matches, { query = "", category = "all" } = {}
   return sections;
 }
 
-/** Commands for the empty state ("Sık kullanılanlar"). */
+/** Commands for the empty state (frequently used). */
 export const FREQUENT_COMMANDS = ["poll", "user", "avatar", "server", "help"];
 
-/** The first command name of a slash text ("/Yardım x" → "yardım"). */
+/** The first command name of a slash text, lower-cased with Turkish rules. */
 export function slashNameOf(text) {
   const trimmed = String(text || "").trim();
   if (!trimmed.startsWith("/")) return "";
@@ -353,14 +353,21 @@ export function isDmSlashCommand(text) {
   return DM_COMMAND_NAMES.has(name) || ["hit", "stand", "stay", "double", "commands", "yardim", "komutlar"].includes(name);
 }
 
+/** "5 dk." / "5 min", "1 hafta" / "1 week" in the UI language (Intl unit names). */
+export function durationLabel(value, unit, unitDisplay = "short") {
+  return formatNumber(value, getLocale(), { style: "unit", unit, unitDisplay });
+}
+
+const dur = (token, seconds, value, unit, display) => withText({ token, seconds }, { label: () => durationLabel(value, unit, display) });
+
 /** Timeout duration chips (label → server token). */
 export const TIMEOUT_DURATIONS = [
-  { label: "60 sn", token: "60s", seconds: 60 },
-  { label: "5 dk", token: "5m", seconds: 300 },
-  { label: "10 dk", token: "10m", seconds: 600 },
-  { label: "1 sa", token: "1h", seconds: 3600 },
-  { label: "1 gün", token: "1d", seconds: 86400 },
-  { label: "1 hafta", token: "1w", seconds: 604800 },
+  dur("60s", 60, 60, "second", "short"),
+  dur("5m", 300, 5, "minute", "short"),
+  dur("10m", 600, 10, "minute", "short"),
+  dur("1h", 3600, 1, "hour", "short"),
+  dur("1d", 86400, 1, "day", "long"),
+  dur("1w", 604800, 1, "week", "long"),
 ];
 
 export const PURGE_COUNTS = [10, 25, 50, 100];

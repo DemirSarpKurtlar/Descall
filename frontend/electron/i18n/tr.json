@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Güncellemeler denetleniyor…",
+    "starting": "Descall başlatılıyor…",
+    "installing": "Güncelleme yükleniyor…",
+    "downloading": "Güncelleme indiriliyor…",
+    "upToDate": "Güncel",
+    "checkFailed": "Güncellemeler denetlenemedi",
+    "loading": "Yükleniyor"
+  },
+  "notice": {
+    "background": "Descall arka planda çalışmaya devam ediyor. Simge durumundan geri açabilirsin."
+  },
+  "update": {
+    "downloaded": "v{version} indirildi. Arka planda sessizce kurulacak.",
+    "downloadedDeferred": "v{version} indirildi. Sesli sohbet bitene kadar kurulmayacak."
+  },
+  "dialog": {
+    "retry": "Tekrar dene",
+    "quit": "Çıkış",
+    "loadFailed": "Descall yüklenemedi",
+    "loadFailedDetail": "Uygulama dosyaları açılamadı ({detail}). Tekrar deneyebilir veya Descall'ı kapatabilirsin.",
+    "openFailed": "Descall açılamadı",
+    "openFailedDetail": "Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene.",
+    "indexMissingTitle": "Yükleme hatası",
+    "indexMissing": "index.html uygulama dosyalarında bulunamadı."
+  },
+  "tray": {
+    "open": "Descall'i Aç",
+    "startWithWindows": "Windows ile Başlat",
+    "updateAndQuit": "Güncelle ve Çık (v{version})",
+    "quit": "Çıkış"
+  },
+  "notif": {
+    "calling": "arıyor...",
+    "voiceCall": "Sesli arama",
+    "videoCall": "Görüntülü arama",
+    "groupCall": "Grup araması",
+    "groupCallIn": "👥 {group} · Grup araması",
+    "now": "şimdi",
+    "mentionedYou": "seni etiketledi",
+    "online": "{name} çevrimiçi",
+    "justConnected": "Az önce bağlandı",
+    "missedCall": "cevapsız arama",
+    "message": "Mesaj",
+    "close": "Kapat",
+    "accept": "Kabul et",
+    "decline": "Reddet"
+  },
+  "overlay": {
+    "connected": "Bağlı",
+    "calling": "Aranıyor…",
+    "group": "Grup araması",
+    "server": "Ses kanalı",
+    "offline": "Bağlantı yok",
+    "mute": "Mikrofonu kapat",
+    "unmute": "Mikrofonu aç",
+    "deafen": "Sağırlaştır",
+    "undeafen": "Sağırlaştırmayı kapat",
+    "leave": "Ayrıl",
+    "end": "Aramayı bitir"
+  },
+  "window": {
+    "signupStats": "Kayıt İstatistikleri — Descall Yönetici",
+    "adminPanel": "Descall Yönetici"
+  }
+}

@@ -9,6 +9,8 @@
  */
 
 import { profileColorClass, profileColorStyle } from "./profileColors.js";
+import { t as runtimeT, getLocale } from "../i18n/runtime.js";
+import { upper } from "../i18n/format.js";
 
 const TTL_MS = 60_000;
 const MAX_ENTRIES = 200;
@@ -87,18 +89,21 @@ export function hoverCardModel(user) {
   };
 }
 
-/** "12 dk", "1 sa 5 dk", "3 gün" since an ISO time; "" when unknown. Turkish, compact. */
-export function sinceLabel(iso, now = Date.now(), lang = "tr") {
-  const t = new Date(iso).getTime();
-  if (!iso || !Number.isFinite(t) || now < t) return "";
-  const min = Math.floor((now - t) / 60000);
-  const en = lang === "en";
-  if (min < 1) return en ? "just now" : "az önce";
-  if (min < 60) return en ? `${min} min` : `${min} dk`;
+/**
+ * Compact duration since an ISO time ("12 min", "1 h 5 min", "3 d"; Turkish "12 dk",
+ * "1 sa 5 dk", "3 gün"); "" when unknown. Words come from shell.since.* in the
+ * catalogs, so every UI language reads right. `translate` defaults to the runtime t().
+ */
+export function sinceLabel(iso, now = Date.now(), translate = runtimeT) {
+  const at = new Date(iso).getTime();
+  if (!iso || !Number.isFinite(at) || now < at) return "";
+  const min = Math.floor((now - at) / 60000);
+  if (min < 1) return translate("shell.since.justNow");
+  if (min < 60) return translate("shell.since.minutes", { count: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return min % 60 ? (en ? `${h} h ${min % 60} min` : `${h} sa ${min % 60} dk`) : (en ? `${h} h` : `${h} sa`);
+  if (h < 24) return min % 60 ? translate("shell.since.hoursMinutes", { hours: h, minutes: min % 60 }) : translate("shell.since.hours", { count: h });
   const d = Math.floor(h / 24);
-  return en ? `${d} d` : `${d} gün`;
+  return translate("shell.since.days", { count: d });
 }
 
 /**
@@ -107,7 +112,12 @@ export function sinceLabel(iso, now = Date.now(), lang = "tr") {
  * then the shared app / game activity (friends only, privacy-gated on the
  * server). Returns null when nothing is known.
  */
-export function currentActivity(userId, { friendPresence, voiceStatesByServer, servers } = {}, now = Date.now(), lang = "tr") {
+export function currentActivity(
+  userId,
+  { friendPresence, voiceStatesByServer, servers } = {},
+  now = Date.now(),
+  { t: translate = runtimeT, locale = getLocale() } = {}
+) {
   if (userId == null) return null;
   const id = String(userId);
   const byServer = voiceStatesByServer && typeof voiceStatesByServer === "object" ? voiceStatesByServer : {};
@@ -119,11 +129,11 @@ export function currentActivity(userId, { friendPresence, voiceStatesByServer, s
       const channel = (server?.channels || []).find((c) => c && String(c.id) === String(channelId)) || null;
       return {
         kind: "voice",
-        title: channel?.name || (lang === "en" ? "Voice channel" : "Ses kanalı"),
+        title: channel?.name || translate("shell.since.voiceChannel"),
         subtitle: server?.name || "",
         count: state.memberCount ?? members.length,
         iconUrl: server?.iconUrl || server?.icon_url || null,
-        initial: String(server?.name || "S").trim().charAt(0).toLocaleUpperCase("tr") || "S",
+        initial: upper(String(server?.name || "S").trim().charAt(0), locale) || "S",
       };
     }
   }
@@ -132,10 +142,10 @@ export function currentActivity(userId, { friendPresence, voiceStatesByServer, s
     return {
       kind: p.isManual ? "status" : p.appType === "game" ? "game" : "app",
       title: p.displayName || p.appName,
-      subtitle: sinceLabel(p.startedAt, now, lang),
+      subtitle: sinceLabel(p.startedAt, now, translate),
       count: null,
       iconUrl: null,
-      initial: String(p.appName || p.displayName || "A").trim().charAt(0).toLocaleUpperCase("tr") || "A",
+      initial: upper(String(p.appName || p.displayName || "A").trim().charAt(0), locale) || "A",
     };
   }
   return null;

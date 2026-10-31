@@ -4,6 +4,7 @@ const webpush = require("web-push");
 const supabase = require("../db/supabase");
 const { sendFcmToUsers } = require("./fcm");
 const { sendIosAlertToUsers } = require("./iosAlertPush");
+const { bt, pickLang } = require("./i18n");
 
 let configured = false;
 
@@ -57,11 +58,73 @@ async function sendWebPushToUsers(userIds, payload) {
   }));
 }
 
+/*
+ * Localized web / FCM text. A payload may carry `i18n: { title: { key, vars }, body: { key, vars } }`
+ * (keys of backend/i18n/<locale>.js); each recipient then gets the text in their
+ * users.language (live locale with a catalog, else Turkish). Literal title / body
+ * fields (user content such as a message preview) are sent as they are.
+ */
+const PUSH_FALLBACK_LANG = "tr";
+
+function ref(key, vars) {
+  return vars ? { key, vars } : { key };
+}
+
+/** payload.i18n refs, plus `defaults` for the props the caller left empty. */
+function withDefaults(payload = {}, defaults = {}) {
+  const i18n = { ...(payload.i18n || {}) };
+  for (const [prop, r] of Object.entries(defaults)) {
+    if (!i18n[prop] && !payload[prop]) i18n[prop] = r;
+  }
+  return i18n;
+}
+
+/** Payload with its i18n refs rendered in `lang` (the i18n field itself is dropped). */
+function renderPayload(payload, lang) {
+  const { i18n, ...rest } = payload || {};
+  if (!i18n) return rest;
+  for (const [prop, r] of Object.entries(i18n)) {
+    if (r && r.key) rest[prop] = bt(lang, r.key, r.vars);
+  }
+  return rest;
+}
+
+/** Recipients grouped by push language: Map<lang, userIds>. */
+async function groupByLanguage(userIds) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  const groups = new Map();
+  if (!ids.length) return groups;
+  let rows = [];
+  try {
+    const { data } = await supabase.from("users").select("id, language").in("id", ids);
+    rows = data || [];
+  } catch {
+    rows = [];
+  }
+  const langOf = new Map(rows.map((r) => [r.id, r.language]));
+  for (const id of ids) {
+    const lang = pickLang([langOf.get(id)], PUSH_FALLBACK_LANG);
+    if (!groups.has(lang)) groups.set(lang, []);
+    groups.get(lang).push(id);
+  }
+  return groups;
+}
+
+/** Web Push only, localized per recipient. */
+async function sendLocalizedWebPush(userIds, payload = {}) {
+  if (!payload.i18n) return sendWebPushToUsers(userIds, payload);
+  const groups = await groupByLanguage(userIds);
+  await Promise.allSettled([...groups].map(([lang, ids]) => sendWebPushToUsers(ids, renderPayload(payload, lang))));
+}
+
 /** Web Push + FCM (Android) get `payload`; iOS alert tokens get `iosEvent` (localized there). */
 async function deliverPush(userIds, payload = {}, iosEvent = null) {
+  const groups = payload.i18n ? await groupByLanguage(userIds) : new Map([[null, userIds]]);
   await Promise.allSettled([
-    sendWebPushToUsers(userIds, payload),
-    sendFcmToUsers(userIds, payload),
+    ...[...groups].flatMap(([lang, ids]) => {
+      const p = lang ? renderPayload(payload, lang) : payload;
+      return [sendWebPushToUsers(ids, p), sendFcmToUsers(ids, p)];
+    }),
     iosEvent ? sendIosAlertToUsers(userIds, iosEvent) : Promise.resolve(),
   ]);
 }
@@ -78,11 +141,10 @@ function previewKindOf(payload = {}) {
 async function sendGroupCallPush(userIds, payload = {}) {
   const body = {
     type: "group-call",
-    title: payload.title || "Group call",
-    body: payload.body || "Someone started a group call on Descall",
     tag: payload.tag || "group-call",
     deepLink: payload.deepLink || "/",
     ...payload,
+    i18n: withDefaults(payload, { title: ref("push.groupCall"), body: ref("push.groupCallDefaultBody") }),
   };
   await deliverPush(userIds, body, {
     type: "group-call",
@@ -103,11 +165,10 @@ async function sendGroupCallPush(userIds, payload = {}) {
 async function sendIncomingCallPush(userIds, payload = {}) {
   const body = {
     type: "call",
-    title: payload.title || "Gelen arama",
-    body: payload.body || "Descall'da biri seni arıyor",
     tag: payload.tag || "incoming-call",
     deepLink: payload.deepLink || "/",
     ...payload,
+    i18n: withDefaults(payload, { title: ref("push.incomingCall"), body: ref("push.incomingCallBody") }),
   };
   await deliverPush(userIds, body, {
     type: "call",
@@ -136,35 +197,40 @@ async function sendCallRingEndedPush(userIds, payload = {}) {
   const body = {
     type: "call-ring-ended",
     outcome,
-    title: missed ? `Cevapsız arama: ${name}` : name,
-    body:
-      outcome === "answered_elsewhere"
-        ? "Arama başka bir cihazda yanıtlandı."
-        : outcome === "declined_elsewhere"
-          ? "Arama başka bir cihazda reddedildi."
-          : "Aramayı kaçırdın.",
+    title: missed ? null : name,
     tag: payload.callerId ? `call-${payload.callerId}` : "incoming-call",
     fromId: payload.callerId || null,
     callUuid: payload.callUuid || null,
     deepLink: payload.callerId ? `/?dm=${encodeURIComponent(payload.callerId)}` : "/",
+    i18n: {
+      ...(missed ? { title: ref("push.missedCallFrom", { name }) } : {}),
+      body: ref(
+        outcome === "answered_elsewhere"
+          ? "push.answeredElsewhere"
+          : outcome === "declined_elsewhere"
+            ? "push.declinedElsewhere"
+            : "push.missedCallBody"
+      ),
+    },
   };
-  await sendWebPushToUsers(userIds, body);
+  await sendLocalizedWebPush(userIds, body);
 }
 
 /** Direct message while recipient is backgrounded / offline. */
 async function sendDmMessagePush(userIds, payload = {}) {
-  const preview = String(payload.body || payload.text || "New message").slice(0, 140);
+  const literal = String(payload.body || payload.text || "").slice(0, 140);
+  const preview = literal || bt("en", "push.newMessage");
   const body = {
     type: "dm",
-    title: payload.title || payload.from || "New message",
-    body: preview,
+    title: payload.title || payload.from || null,
     tag: payload.tag || `dm-${payload.fromId || "msg"}`,
     deepLink: payload.deepLink || (payload.fromId ? `/?dm=${encodeURIComponent(payload.fromId)}` : "/"),
     conversationId: payload.fromId || payload.conversationId || null,
     fromId: payload.fromId || null,
     from: payload.from || null,
     ...payload,
-    body: preview,
+    body: literal || null,
+    i18n: withDefaults({ ...payload, title: payload.title || payload.from, body: literal }, { title: ref("push.newMessage"), body: ref("push.newMessage") }),
   };
   await deliverPush(userIds, body, {
     type: "dm",
@@ -178,7 +244,8 @@ async function sendDmMessagePush(userIds, payload = {}) {
 
 /** @mention in a server channel or DM. */
 async function sendMentionPush(userIds, payload = {}) {
-  const preview = String(payload.body || payload.text || "mentioned you").slice(0, 140);
+  const literal = String(payload.body || payload.text || "").slice(0, 140);
+  const preview = literal || bt("en", "push.mentionedShort");
   const deepLink =
     payload.deepLink ||
     (payload.serverId && payload.channelId
@@ -188,8 +255,6 @@ async function sendMentionPush(userIds, payload = {}) {
         : "/");
   const body = {
     type: "mention",
-    title: payload.title || `${payload.from || "Someone"} mentioned you`,
-    body: preview,
     tag: payload.tag || `mention-${payload.messageId || payload.channelId || "x"}`,
     deepLink,
     serverId: payload.serverId || null,
@@ -197,8 +262,12 @@ async function sendMentionPush(userIds, payload = {}) {
     messageId: payload.messageId || null,
     from: payload.from || null,
     ...payload,
-    body: preview,
+    body: literal || null,
     deepLink,
+    i18n: withDefaults({ ...payload, body: literal }, {
+      title: payload.from ? ref("push.mentioned", { from: payload.from }) : ref("push.mentionedShort"),
+      body: ref("push.mentionedShort"),
+    }),
   };
   await deliverPush(userIds, body, {
     type: "mention",
@@ -267,14 +336,18 @@ function sendServerMessagePush(userIds, payload = {}) {
 
 /** Message request from someone who is not a friend yet. No message body is stored. */
 function sendMessageRequestPush(userId, payload = {}) {
-  const body = payload.preview
-    ? String(payload.preview).slice(0, 140)
-    : `${payload.from || "Someone"} sent you a message request`;
-  void sendWebPushToUsers([userId], {
-    title: payload.from ? `${payload.from}` : "Message request",
-    body,
+  const preview = payload.preview ? String(payload.preview).slice(0, 140) : "";
+  const fromRef = payload.from ? String(payload.from) : { key: "push.someone" };
+  const body = preview || bt("en", "push.messageRequestBody", { from: fromRef });
+  void sendLocalizedWebPush([userId], {
+    title: payload.from ? `${payload.from}` : null,
+    body: preview || null,
     tag: `dm-request-${payload.fromId || userId}`,
     data: { type: "message-request", fromId: payload.fromId || null },
+    i18n: {
+      ...(payload.from ? {} : { title: ref("push.messageRequestTitle") }),
+      ...(preview ? {} : { body: ref("push.messageRequestBody", { from: fromRef }) }),
+    },
   });
   return sendIosAlertToUsers([userId], {
     type: "message-request",

@@ -1,11 +1,33 @@
 /** Auto-generated + curated en locale */
+import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
 import { NC_EN } from "./newCreate.en.js";
 import { FBK_EN } from "./feedback.en.js";
 import { BADGES_EN } from "./badges.en.js";
 import { ANTIBOT_EN } from "./antibot.en.js";
+import { SHELL_EN } from "./shell.en.js";
+import { SVH_EN } from "./svh.en.js";
+import { CALLUI_EN } from "./callui.en.js";
+import { SHOP_EN } from "./shop.en.js";
+import { SHOP_ITEMS_EN } from "./shopItems.en.js";
+import { ADMINX_EN } from "./adminx.en.js";
+import { POLLS_EN } from "./polls.en.js";
+import { SLASH_EN } from "./slash.en.js";
+import { CHATX_EN } from "./chatx.en.js";
+import { COUNTS_EN } from "./counts.en.js";
+import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  counts: COUNTS_EN,
+  shell: SHELL_EN,
+  svh: SVH_EN,
+  callui: CALLUI_EN,
+  shop: SHOP_EN,
+  shopItems: SHOP_ITEMS_EN,
+  adminx: ADMINX_EN,
+  polls: POLLS_EN, slash: SLASH_EN, chatx: CHATX_EN,
+  core: CORE_EN,
+  bot: BOT_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,
@@ -2060,7 +2082,7 @@ export const phrases = {
   "You left the call": "You left the call",
   "No active call to join": "No active call to join",
   "Could not join the call": "Could not join the call",
-  "Kapat": "Kapat",
+  "Kapat": "Close",
   "1080p": "1080p",
   "20 FPS": "20 FPS",
   "Loading Google…": "Loading Google…",

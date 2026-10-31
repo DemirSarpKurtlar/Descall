@@ -3,6 +3,9 @@
  * Score = sum of signal weights capped at 100; earning ×0.5 at 40+, ×0 at 70+,
  * ×1 for trusted accounts. Colours: red 70+, orange 40–69, blue 0–39.
  */
+import { formatDate, formatNumber } from "../i18n/format.js";
+import { getLocale } from "../i18n/runtime.js";
+import { APP_TIMEZONE } from "./datetime.js";
 
 export const SIGNAL_ORDER = [
   "linked_account",
@@ -72,9 +75,9 @@ export function rawScore(reasons, weights = DEFAULT_WEIGHTS) {
   return sortReasons(reasons, weights).reduce((n, r) => n + (weights[r] || 0), 0);
 }
 
-const NF = new Intl.NumberFormat("tr-TR");
-export function fmtNumber(n) {
-  return NF.format(Math.round(Number(n) || 0));
+/** Whole number in the UI locale ("1.234" / "1,234"). */
+export function fmtNumber(n, locale = getLocale()) {
+  return formatNumber(Math.round(Number(n) || 0), locale);
 }
 
 /** Never show more than first 4 + last 4 characters of a hash. */
@@ -86,7 +89,7 @@ export function maskHash(h) {
   return `${s.slice(0, 4)}·····${s.slice(-4)}`;
 }
 
-/** Faz strip from /status flags. */
+/** Protection phase strip from /status flags. */
 export function phasesFrom(flags = {}) {
   const f = flags || {};
   return [
@@ -97,28 +100,18 @@ export function phasesFrom(flags = {}) {
   ];
 }
 
-const TR_MONTHS = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_MONTH = { day: "numeric", month: "short", timeZone: APP_TIMEZONE };
 
-/** Istanbul (UTC+3, no DST) date parts. */
-function trtParts(iso) {
-  const ms = Date.parse(iso);
-  if (!Number.isFinite(ms)) return null;
-  const d = new Date(ms + 3 * 3600_000);
-  return { day: d.getUTCDate(), month: d.getUTCMonth(), year: d.getUTCFullYear(), h: d.getUTCHours(), m: d.getUTCMinutes() };
+/** "19 Eki" / "19 Oct" (Istanbul day, UI locale). */
+export function shortDate(iso, locale = getLocale()) {
+  if (!Number.isFinite(Date.parse(iso))) return "";
+  return formatDate(iso, locale, DAY_MONTH);
 }
 
-export function shortDate(iso, locale = "tr") {
-  const p = trtParts(iso);
-  if (!p) return "";
-  const mon = (locale === "en" ? EN_MONTHS : TR_MONTHS)[p.month];
-  return locale === "en" ? `${mon} ${p.day}` : `${p.day} ${mon}`;
-}
-
-export function shortDateTime(iso, locale = "tr") {
-  const p = trtParts(iso);
-  if (!p) return "";
-  const hm = `${String(p.h).padStart(2, "0")}:${String(p.m).padStart(2, "0")}`;
+/** "19 Eki 03:12" (Istanbul time, UI locale). */
+export function shortDateTime(iso, locale = getLocale()) {
+  if (!Number.isFinite(Date.parse(iso))) return "";
+  const hm = formatDate(iso, locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: APP_TIMEZONE });
   return `${shortDate(iso, locale)} ${hm}`;
 }
 

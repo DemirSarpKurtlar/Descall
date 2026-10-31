@@ -1,4 +1,6 @@
 import { getServer } from "../api/servers";
+import { textI18n } from "../i18n/serverText.js";
+import { t as tRuntime } from "../i18n/runtime.js";
 import { serverPath } from "../lib/appRoutes";
 import { getUser } from "../lib/storage";
 import { trGenitive } from "../lib/trSuffix";
@@ -311,6 +313,7 @@ export function bindServerSocketHandlers(socket, ctx) {
       avatarUrl: sender?.avatarUrl,
       // Prefer rich embed UI, keep content only as fallback when no embed.
       text: voice.isVoice ? "" : hasEmbed ? "" : (message.content || ""),
+      i18n: textI18n(message.i18n),
       timestamp: parseAppDate(message.created_at)?.toISOString() || new Date().toISOString(),
       mediaUrl: message.media_url,
       mediaType: voice.isVoice ? "voice" : message.media_type,
@@ -431,14 +434,14 @@ export function bindServerSocketHandlers(socket, ctx) {
     if (!showOnActiveChannel) return;
     if (code === "SLOWMODE") {
       const wait = Math.max(1, Math.ceil(Number(retryAfterSeconds) || 1));
-      toast(`Slowmode is on. Try again in ${wait}s.`, "warning");
+      toast(tRuntime("core.server.slowmode", { wait }), "warning");
       window.dispatchEvent(
         new CustomEvent("descall:slowmode", {
           detail: { channelId, retryAfterSeconds: wait },
         })
       );
     } else if (code === "RULES_REQUIRED") {
-      toast(message || "You must accept the server rules before continuing.", "warning");
+      toast(message || tRuntime("core.server.rulesRequired"), "warning");
       window.dispatchEvent(new CustomEvent("descall:server-rules-required"));
     } else if (message) {
       toast(message, "error");

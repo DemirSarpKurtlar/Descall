@@ -4,6 +4,7 @@
  * Raporlar / Atamayı kaldır) and the account's timeline of notes, assignment
  * changes and decisions. Server: routes/adminPeople.js /reports/target/:id/*.
  */
+import { localizedField } from "../../i18n/serverText.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adminFetch } from "../../api/adminHttp";
 import GlassActionMenu from "../ui/GlassActionMenu";
@@ -151,7 +152,7 @@ export function CaseTimeline({ targetId, latestReportId, t, locale }) {
                       <span className="rc-kind">{t(KIND_LABEL[n.kind] || KIND_LABEL.note)}</span>
                       <time>{formatAppDateTime(n.createdAt, locale) || n.createdAt}</time>
                     </div>
-                    <p>{n.body}</p>
+                    <p>{localizedField(n, "body")}</p>
                   </div>
                 </li>
               ))}

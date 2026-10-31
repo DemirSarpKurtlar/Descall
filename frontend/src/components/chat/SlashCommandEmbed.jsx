@@ -1,6 +1,8 @@
 import { Avatar } from "../ui/Avatar";
+import { localizeDeep } from "../../i18n/serverText.js";
 import { casinoHiddenOnThisDevice, isCasinoEmbed, isCasinoGameCommandName } from "../../lib/casinoCommands";
 import { displayText } from "../../lib/profanity";
+import { useT } from "../../context/LocaleContext";
 
 function colorToCss(color) {
   const n = Number(color);
@@ -37,8 +39,9 @@ function renderInlineMarkdown(text) {
 }
 
 function FieldValue({ value }) {
+  const t = useT();
   if (value && typeof value === "object" && value.kind === "user") {
-    const label = value.displayName || value.username || "User";
+    const label = value.displayName || value.username || t("polls.user");
     return (
       <span className="slash-embed-user">
         <Avatar
@@ -58,8 +61,9 @@ function FieldValue({ value }) {
 /**
  * Discord-style rich embed for Descall Apps slash-command replies.
  */
-export default function SlashCommandEmbed({ embed, type }) {
-  if (!embed || typeof embed !== "object") return null;
+export default function SlashCommandEmbed({ embed: rawEmbed, type }) {
+  if (!rawEmbed || typeof rawEmbed !== "object") return null;
+  const embed = localizeDeep(rawEmbed);
   if (casinoHiddenOnThisDevice() && isCasinoEmbed(embed, type)) return null;
 
   const accent = colorToCss(embed.color);

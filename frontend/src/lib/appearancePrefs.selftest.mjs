@@ -26,7 +26,7 @@ function memStore(init = {}) {
 
 // The 7 approved swatches, Descall blue first.
 assert.deepEqual(ACCENTS.map((a) => a.hex), ["#587AF6", "#8E6CF6", "#30B05A", "#14B8A6", "#EC4899", "#F5A524", "#EF4444"]);
-assert.deepEqual(FONT_STEPS.map((s) => s.label), ["Küçük", "Varsayılan", "Büyük", "Çok büyük"]);
+assert.deepEqual(FONT_STEPS.map((s) => s.id), ["small", "default", "large", "xlarge"]);
 assert.equal(fontScale(1), 1);
 assert.ok(fontScale(0) < 1 && fontScale(3) > fontScale(2));
 
@@ -90,8 +90,12 @@ const pane = readFileSync(join(here, "../components/settings/AppearancePane.jsx"
 const panel = readFileSync(join(here, "../components/layout/UserPanel.jsx"), "utf8");
 assert.doesNotMatch(panel, /setUiDensity|setBubbleStyle|us-bubble-preview/);
 assert.doesNotMatch(pane, /status-picker|onStatusChange/);
+const shellTr = readFileSync(join(here, "../i18n/locales/shell.tr.js"), "utf8");
 for (const copy of ["Mağaza temaları", "Şeffaflığı azalt", "Hareketi azalt", "CANLI ÖNİZLEME", "Ctrl + / Ctrl − ile de değişir."]) {
-  assert.ok(pane.includes(copy), copy);
+  assert.ok(shellTr.includes(copy), copy);
+}
+for (const key of ["shell.appearance.shopThemes", "shell.appearance.reduceTransparency", "shell.appearance.reduceMotion", "shell.appearance.livePreviewBadge", "shell.appearance.textSizeFootDesktop"]) {
+  assert.ok(pane.includes(key), key);
 }
 // iPhone's 15.5px chat pin follows the text size and the own bubble the accent.
 const css = readFileSync(join(here, "../styles/settings-v3.css"), "utf8");

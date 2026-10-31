@@ -76,7 +76,7 @@ function resetLimits() {
   buckets.clear();
 }
 
-const TOO_MANY_TR = "Çok fazla deneme. Lütfen biraz sonra tekrar dene.";
+const TOO_MANY_TR = "Too many attempts. Please try again in a bit.";
 
 function rejectIfLimited(res, results) {
   const blocked = (results || []).find((r) => r && r.ok === false);

@@ -3,6 +3,7 @@
  * DM (1:1) uses a higher-quality profile; group mesh stays conservative.
  */
 import { classifyInboundMedia, guardDisplayCapture, ROLE_SCREEN } from "./screenShareIdentity.js";
+import { t } from "../i18n/runtime.js";
 
 export const GROUP_SCREEN_DEFAULT_QUALITY = {
   resolution: "720p",
@@ -149,8 +150,8 @@ function screenShareUnsupportedError() {
   const secure = typeof window === "undefined" ? true : Boolean(window.isSecureContext);
   const err = new Error(
     secure
-      ? "Screen sharing is not available in this browser."
-      : "Screen sharing requires a secure connection (HTTPS)."
+      ? t("Screen sharing is not available in this browser.")
+      : t("Screen sharing requires a secure connection (HTTPS).")
   );
   err.name = "NotSupportedError";
   err.code = "SCREEN_SHARE_UNSUPPORTED";
@@ -267,7 +268,7 @@ export function showElectronScreenPicker(sources = []) {
     });
 
     const title = document.createElement("h3");
-    title.textContent = "Share your screen";
+    title.textContent = t("core.screenPicker.title");
     Object.assign(title.style, {
       margin: "0",
       fontSize: "16px",
@@ -277,6 +278,7 @@ export function showElectronScreenPicker(sources = []) {
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "×";
+    closeBtn.setAttribute("aria-label", t("Close"));
     Object.assign(closeBtn.style, {
       width: "32px",
       height: "32px",
@@ -297,7 +299,7 @@ export function showElectronScreenPicker(sources = []) {
     header.appendChild(closeBtn);
 
     const tip = document.createElement("div");
-    tip.textContent = "Choose the screen, window, or browser tab you want to share.";
+    tip.textContent = t("core.screenPicker.tip");
     Object.assign(tip.style, {
       padding: "10px 24px",
       fontSize: "12px",
@@ -340,7 +342,7 @@ export function showElectronScreenPicker(sources = []) {
         background: "#111",
       });
       const label = document.createElement("span");
-      label.textContent = source.name || "Screen";
+      label.textContent = source.name || t("core.screenPicker.screen");
       Object.assign(label.style, {
         fontSize: "12px",
         fontWeight: "500",

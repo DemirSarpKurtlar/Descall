@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, RefreshCw, Scale, XCircle } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import RippleButton from "../ui/RippleButton";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatAppDateTime } from "../../lib/datetime";
 
 /**
  * DesCoin reconciliation (2.11.2). Read-only: shows the daily comparison of each user's
@@ -10,7 +11,7 @@ import { useT } from "../../context/LocaleContext";
  * corrects drift by hand with "Grant / revoke DesCoin" below if needed.
  */
 export default function AdminDescoinReconcile() {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
@@ -44,7 +45,7 @@ export default function AdminDescoinReconcile() {
   };
 
   const latest = data?.latest || null;
-  const when = (iso) => (iso ? new Date(iso).toLocaleString() : "-");
+  const when = (iso) => (iso ? formatAppDateTime(iso, locale) : "-");
 
   return (
     <div className="admin-card admin-descoin-reconcile" data-testid="descoin-reconcile">

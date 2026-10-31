@@ -43,7 +43,7 @@ assert.equal(w.appLooksPainted({ ...up, rootH: 20 }), false);
 assert.equal(w.appLooksPainted("snapshot failed: x"), false);
 assert.equal(w.appLooksPainted(null), false);
 assert.match(main, /step === 'reload'[\s\S]*?clearAndReloadRenderer\(win\.webContents, 'paint-watchdog'\)/);
-assert.match(main, /message: 'Descall açılamadı'[\s\S]*?buttons: \['Tekrar dene', 'Çıkış'\]/);
+assert.match(main, /message: et\('dialog\.openFailed'\)[\s\S]*?buttons: \[et\('dialog\.retry'\), et\('dialog\.quit'\)\]/);
 assert.match(main, /for \(const ev of \['show', 'restore', 'focus'\]\)[\s\S]*?invalidate\(\)/, "restore from minimized repaints");
 assert.match(main, /win\.webContents\.on\('console-message'/, "renderer warnings reach main.log");
 assert.match(main, /app\.whenReady\(\)\.then\(async \(\) => \{\s*\n(?:\s*\/\/.*\n)*\s*if \(!gotTheLock\) return;/, "lock loser never boots");

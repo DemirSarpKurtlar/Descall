@@ -69,7 +69,7 @@ export default function DiscordAlternativePage({ onSignIn, onSignUp }) {
           </li>
           <li>
             <strong>{t("Spin up a server")}</strong>
-            <span>{t("Pick a template (friends, gaming,) or start empty. Roles and channels ship ready.")}</span>
+            <span>{t("Pick a template (friends, gaming) or start empty. Roles and channels ship ready.")}</span>
           </li>
           <li>
             <strong>{t("Invite the squad")}</strong>

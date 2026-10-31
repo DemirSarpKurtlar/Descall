@@ -8,6 +8,7 @@ import { useHubMode } from "./useHubMode";
 import Cropper from "./Cropper";
 import { confirmNameMatches, countServerChannels, inviteCodeFromInput, rulesList } from "./hubData";
 import { useToast } from "../../../context/ToastContext";
+import { formatNumber } from "../../../i18n/format.js";
 import { uploadFile } from "../../../api/media";
 import { readFileAsDataUrl } from "../../../lib/cropImage";
 import {
@@ -15,7 +16,7 @@ import {
 } from "../../../api/servers";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const numFmt = (n, locale) => { try { return new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-US").format(n); } catch { return String(n); } };
+const numFmt = (n, locale) => formatNumber(n, locale);
 
 /** iPhone sheet or iPad centred form, both with the same body. */
 function Shell({ mode, onClose, phone = {}, pad = {}, label, children }) {
@@ -46,7 +47,7 @@ export function CreateServerSheet({ mode, me, ownedCount = 0, maxOwned = 10, onC
   const canCreate = ownedCount < maxOwned;
   const tablet = mode === "tablet";
   const myName = me?.displayName || me?.username || "";
-  const placeholder = myName ? f("serverNamePh", { name: locale === "tr" ? gen(myName) : myName }) : "";
+  const placeholder = myName ? f("serverNamePh", { name: myName, nameGen: gen(myName) }) : "";
 
   const pick = (id) => {
     if (!canCreate) { toast(f("ownedFull", { max: maxOwned }), "error"); return; }
@@ -341,7 +342,7 @@ export function RulesGateSheet({ mode, server, onAccepted, onClose }) {
       <Scroll form={tablet}>
         <div className="svh-hero" style={{ paddingTop: 8 }}>
           <Sq server={server} s={70} />
-          <div className="n" style={{ textAlign: "center" }}>{f("welcomeTo", { serverDat: dat(server?.name || "") })}</div>
+          <div className="n" style={{ textAlign: "center" }}>{f("welcomeTo", { server: server?.name || "", serverDat: dat(server?.name || "") })}</div>
           <div className="m" style={{ textAlign: "center", maxWidth: 300 }}>{s.gateMsg}</div>
         </div>
         <Sec>{s.serverRules}</Sec>
@@ -374,7 +375,7 @@ export function LeaveAlert({ server, onCancel, onConfirm }) {
   const { s, f, abl } = useSvh();
   const [busy, setBusy] = useState(false);
   return (
-    <AlertBox title={f("leaveTitle", { serverAbl: abl(server?.name || "") })} msg={s.leaveMsg} cancel={s.giveUp} confirm={s.leaveBtn} busy={busy}
+    <AlertBox title={f("leaveTitle", { server: server?.name || "", serverAbl: abl(server?.name || "") })} msg={s.leaveMsg} cancel={s.giveUp} confirm={s.leaveBtn} busy={busy}
       onCancel={onCancel}
       onConfirm={async () => { if (busy) return; setBusy(true); try { await onConfirm?.(); } finally { setBusy(false); } }} />
   );
@@ -383,7 +384,7 @@ export function LeaveAlert({ server, onCancel, onConfirm }) {
 export function OwnerLeaveSheet({ server, onCancel, onTransfer, onDelete }) {
   const { s, f, gen } = useSvh();
   return (
-    <ActionSheet title={f("ownerSheetTitle", { serverGen: gen(server?.name || "") })} sub={s.ownerSheetSub} cancel={s.giveUp} onCancel={onCancel}
+    <ActionSheet title={f("ownerSheetTitle", { server: server?.name || "", serverGen: gen(server?.name || "") })} sub={s.ownerSheetSub} cancel={s.giveUp} onCancel={onCancel}
       actions={[{ t: s.delTransferFirst, onClick: onTransfer }, { t: s.ownerDelLeave, color: "#FF453A", onClick: onDelete }]} />
   );
 }

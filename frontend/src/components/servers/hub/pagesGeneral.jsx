@@ -13,6 +13,7 @@ import { isChannelMuted, setChannelMutedAsync } from "../../../lib/serverChannel
 import { getServerMute, setServerMute, clearServerMute, MUTE_DURATIONS, subscribeServerMutes } from "./serverMute";
 import { AFK_TIMEOUT_OPTIONS, VERIFICATION_LEVELS, channelIcon, channelLabel, durationLabel, isTextLike, longDate, memberName, rulesList, vanityValid } from "./hubData";
 import { hapticSelection } from "../../../lib/fluid/haptics";
+import { formatDate } from "../../../i18n/format.js";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const VANITY_PREFIX = "descall.com/s/";
@@ -33,7 +34,7 @@ function useSaveServer() {
 /* ───────────────────────── 04 Genel bakış ───────────────────────── */
 export function OverviewPage({ route }) {
   const hub = useHub();
-  const { s, server, data, locale, tablet } = hub;
+  const { s, f, server, data, locale, tablet } = hub;
   const { toast } = useToast();
   const base = useMemo(() => ({
     name: server?.name || "", description: server?.description || "", iconUrl: server?.iconUrl || null, bannerUrl: server?.bannerUrl || null,
@@ -129,9 +130,9 @@ export function OverviewPage({ route }) {
           options: [{ id: "", t: s.none }, ...channels.filter((c) => c.type === "voice").map((c) => ({ id: c.id, t: c.name, ico: "volume", c: "green" }))],
           onPick: (id) => setD((x) => ({ ...x, afkChannelId: id || null })),
         })} />
-        <Row ico="clock" c="gray" t={s.afkTimeout} val={durationLabel(d.afkTimeoutSeconds, s)} chev onClick={() => hub.push({
+        <Row ico="clock" c="gray" t={s.afkTimeout} val={durationLabel(d.afkTimeoutSeconds, f)} chev onClick={() => hub.push({
           id: "pick", title: s.afkTimeout, value: d.afkTimeoutSeconds,
-          options: AFK_TIMEOUT_OPTIONS.map((n) => ({ id: n, t: durationLabel(n, s) })),
+          options: AFK_TIMEOUT_OPTIONS.map((n) => ({ id: n, t: durationLabel(n, f) })),
           onPick: (id) => setD((x) => ({ ...x, afkTimeoutSeconds: Number(id) })),
         })} />
       </Group>
@@ -269,15 +270,14 @@ export async function applyServerMute(server, durationMs, { onServerUpdated, unm
 export function muteOptions(s) {
   return [{ id: "h1", t: s.mute1h }, { id: "h8", t: s.mute8h }, { id: "h24", t: s.mute24h }, { id: "forever", t: s.muteForever }];
 }
-function mutedLabel(m, s, locale) {
+function mutedLabel(m, s, f, locale) {
   if (!m) return s.off;
   if (m.until == null) return s.mutedForever;
   const d = new Date(m.until);
   const sameDay = d.toDateString() === new Date().toDateString();
-  const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  return hub_fmt(s.mutedUntil, sameDay ? hm : `${d.getDate()}.${d.getMonth() + 1} ${hm}`);
+  const opts = sameDay ? { hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" };
+  return f("mutedUntil", { t: formatDate(d, locale, opts) });
 }
-const hub_fmt = (tpl, t) => tpl.replace("{t}", t);
 
 export function NotificationsPage({ route }) {
   const hub = useHub();
@@ -310,7 +310,7 @@ export function NotificationsPage({ route }) {
       </Group>
       <Sec>{""}</Sec>
       <Group>
-        <Row ico="belloff" c="gray" t={s.muteServer} val={mutedLabel(mute, s, hub.locale)} chev onClick={() => hub.push({
+        <Row ico="belloff" c="gray" t={s.muteServer} val={mutedLabel(mute, s, hub.f, hub.locale)} chev onClick={() => hub.push({
           id: "pick", title: s.muteServer, value: mute ? (mute.until == null ? "forever" : "") : "off",
           options: [...muteOptions(s), { id: "off", t: s.off }],
           onPick: (id) => (id === "off"

@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { et, getLocale } = require('./mainI18n.cjs');
 
 // 3.0.0 (A4, mockup 33): desktop notifications are a wide Liquid Glass capsule
 // at the top centre of the screen (same as the approved mobile #07 toast):
@@ -136,29 +137,34 @@ function describeNotification({ title = '', body = '', data = {}, appIcon = fals
   switch (type) {
     case 'call': {
       const name = d.callerName || d.from || title || 'Descall';
-      return { ...base, kind: 'call', name, from: name, context: 'arıyor...', contextTone: 'live', preview: preview(body || (d.callType === 'video' ? 'Görüntülü arama' : 'Sesli arama')), badge: null, action: null };
+      return { ...base, kind: 'call', name, from: name, context: et('notif.calling'), contextTone: 'live', preview: preview(body || et(d.callType === 'video' ? 'notif.videoCall' : 'notif.voiceCall')), badge: null, action: null };
     }
     case 'group-call': {
       const name = d.from || d.groupName || title || 'Descall';
-      return { ...base, kind: 'call', name, from: name, context: 'arıyor...', contextTone: 'live', preview: preview(d.groupName ? `👥 ${d.groupName} · Grup araması` : 'Grup araması'), badge: 'group', action: null };
+      return { ...base, kind: 'call', name, from: name, context: et('notif.calling'), contextTone: 'live', preview: preview(d.groupName ? et('notif.groupCallIn', { group: d.groupName }) : et('notif.groupCall')), badge: 'group', action: null };
     }
     case 'dm':
-      return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: 'şimdi', preview: preview(d.preview || body), badge: 'online', action: 'message' };
+      return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: et('notif.now'), preview: preview(d.preview || body), badge: 'online', action: 'message' };
     case 'group':
       return { ...base, kind: 'message', name: d.from || title, from: d.from || title, avatarKey: base.avatarKey || d.from || '', context: d.groupName || '', preview: preview(d.preview || stripSender(body, d.from)), badge: 'group', action: 'message' };
     case 'server-message':
       return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: [d.channelName ? `#${d.channelName}` : '', d.serverName || ''].filter(Boolean).join(' · '), preview: preview(d.preview || stripSender(body, d.from)), badge: 'server', action: 'message' };
     case 'mention':
-      return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: 'seni etiketledi', contextTone: 'mention', preview: preview(d.preview || body), badge: d.groupId ? 'group' : (d.serverId || d.channelId ? 'server' : 'online'), action: 'message' };
+      return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: et('notif.mentionedYou'), contextTone: 'mention', preview: preview(d.preview || body), badge: d.groupId ? 'group' : (d.serverId || d.channelId ? 'server' : 'online'), action: 'message' };
     case 'friend-online': {
       const who = d.username || d.from || '';
-      return { ...base, kind: 'online', name: `${who} çevrimiçi`, from: who, avatarKey: base.avatarKey || who, context: '', preview: 'Az önce bağlandı', badge: 'online', action: d.userId ? 'message' : null };
+      return { ...base, kind: 'online', name: et('notif.online', { name: who }), from: who, avatarKey: base.avatarKey || who, context: '', preview: et('notif.justConnected'), badge: 'online', action: d.userId ? 'message' : null };
     }
     case 'missed-call':
-      return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: 'cevapsız arama', contextTone: 'missed', preview: preview(body), badge: null, action: 'message' };
+      return { ...base, kind: 'message', name: d.from || title, from: d.from || title, context: et('notif.missedCall'), contextTone: 'missed', preview: preview(body), badge: null, action: 'message' };
     default:
       return { ...base, appIcon: Boolean(appIcon) && !base.avatarUrl, kind: 'notice', name: title || 'Descall', from: title, context: '', preview: preview(body), badge: null, action: null };
   }
+}
+
+/** <html lang> of the card pages: the active main-process language. */
+function htmlLang() {
+  return String(getLocale() || 'en').replace(/[^A-Za-z-]/g, '') || 'en';
 }
 
 function cardHeightFor(type, kind) {
@@ -459,25 +465,29 @@ function capsuleInner(model, { duration = 0, count = 1, accent = ACCENT.default 
           <div class="body-text">${preview}</div>
         </div>`;
   if (isCall) {
+    const decline = escapeHtml(et('notif.decline'));
+    const accept = escapeHtml(et('notif.accept'));
     return `
     <div class="card call" role="alertdialog" aria-label="${label}" style="--accent:${ACCENT.call}" data-duration="0">
       ${avatar}
       ${text}
       <div class="call-btns">
-        <button class="decline" type="button" title="Reddet" aria-label="Reddet" data-act="decline">${PHONE_OFF_SVG}</button>
-        <button class="accept" type="button" title="Kabul et" aria-label="Kabul et" data-act="accept">${PHONE_SVG}</button>
+        <button class="decline" type="button" title="${decline}" aria-label="${decline}" data-act="decline">${PHONE_OFF_SVG}</button>
+        <button class="accept" type="button" title="${accept}" aria-label="${accept}" data-act="accept">${PHONE_SVG}</button>
       </div>
     </div>`;
   }
+  const messageLabel = escapeHtml(et('notif.message'));
+  const closeLabel = escapeHtml(et('notif.close'));
   const pill = model.action === 'message'
-    ? `<button class="pill" type="button" data-act="click" aria-label="Mesaj">${MESSAGE_SVG}<span>Mesaj</span></button>`
+    ? `<button class="pill" type="button" data-act="click" aria-label="${messageLabel}">${MESSAGE_SVG}<span>${messageLabel}</span></button>`
     : '';
   return `
     <div class="card ${model.kind === 'notice' ? 'notice' : 'msg'}" role="status" aria-label="${label}" style="--accent:${accent}" data-duration="${Number(duration) || 0}">
       ${avatar}
       ${text}
       ${pill}
-      <button class="close-btn" type="button" data-act="close" aria-label="Kapat" title="Kapat">${CLOSE_SVG}</button>
+      <button class="close-btn" type="button" data-act="close" aria-label="${closeLabel}" title="${closeLabel}">${CLOSE_SVG}</button>
     </div>`;
 }
 
@@ -684,7 +694,7 @@ function buildNotificationHtml({
     : { ...describeNotification({ title, body, appIcon, avatarUrl }), from: from || title });
   const inner = capsuleInner(m, { duration: isCall || m.kind === 'call' ? 0 : duration, count, accent });
   const shell = preview ? inner : `<div class="stage">${inner}</div>`;
-  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${notificationCss()}</style></head>
+  return `<!DOCTYPE html><html lang="${htmlLang()}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${notificationCss()}</style></head>
     <body class="${preview ? 'preview' : ''}">${shell}${motionScript()}</body></html>`;
 }
 
@@ -695,7 +705,7 @@ function buildNotificationGallery(items) {
     const height = item.height || cardHeightFor(model.kind === 'call' ? 'call' : 'default', model.kind);
     return `<div class="slot" style="width:${NOTIF_WIDTH}px;height:${height}px">${capsuleInner(model, { duration: 0, count: item.count || 1 })}</div>`;
   }).join('');
-  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><style>${notificationCss()}
+  return `<!DOCTYPE html><html lang="${htmlLang()}"><head><meta charset="utf-8"><style>${notificationCss()}
     body.preview .slot { flex: none; }
     body.preview .slot .card { width: 100%; height: 100%; opacity: 1; transform: none; }
   </style></head><body class="preview">${cards}</body></html>`;

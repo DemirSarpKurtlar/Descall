@@ -19,6 +19,7 @@ import {
   getCallKitUiSnapshot,
 } from "../lib/iosCallKitState";
 import { notifyCallAudioSession } from "../lib/voiceActivity";
+import { t as tRuntime } from "../i18n/runtime.js";
 
 /**
  * Native iOS only: keeps CallKit in step with the DM call from useCall().
@@ -54,7 +55,7 @@ export function useIosCallKitBridge({ call, socket, meId, friends = [] }) {
       },
       onAudioReleased: () => {
         setCallKitAudioReleased(true);
-        ensureNativeCallKeepAlive({ title: "Descall call", artist: callRef.current?.peer?.username || "" });
+        ensureNativeCallKeepAlive({ title: tRuntime("core.call.mediaTitle"), artist: callRef.current?.peer?.username || "" });
         setTimeout(() => {
           void callRef.current?.refreshMicrophone?.("callkit-released", { force: true });
         }, 800);

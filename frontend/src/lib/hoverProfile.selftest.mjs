@@ -7,6 +7,15 @@ import { cachedHoverProfile, cachedMutual, clearHoverProfileCache, currentActivi
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+// Translators straight from the shell catalogs (no app boot in Node).
+const { formatMessage } = await import("../i18n/message.js");
+const { SHELL_TR } = await import("../i18n/locales/shell.tr.js");
+const { SHELL_EN } = await import("../i18n/locales/shell.en.js");
+const pick = (cat, key) => key.replace(/^shell\./, "").split(".").reduce((o, k) => o?.[k], cat);
+const trT = (key, vars) => formatMessage(pick(SHELL_TR, key), vars, "tr-TR");
+const enT = (key, vars) => formatMessage(pick(SHELL_EN, key), vars, "en-US");
+const TR = { t: trT, locale: "tr" };
+
 // Merge: full profile fills cosmetics, live presence stays from the base.
 const base = { id: "u1", username: "demir", status: "online", lastSeen: "2026-10-31T10:00:00Z", equippedCountry: { id: "tr" } };
 const full = { id: "u1", username: "demir", status: "offline", lastSeen: null, bio: "Founder", equippedBanner: { asset_url: "https://x/b.png" }, equippedProfileColor: { effect_key: "ocean" }, bannerUrl: "" };
@@ -60,19 +69,22 @@ assert.doesNotMatch(card, /\p{Extended_Pictographic}/u, "no emoji");
 
 // 3.7.13 design C: "Şu an", mutual, message box, name below the banner seam.
 const now = Date.parse("2026-10-31T12:00:00Z");
-assert.equal(sinceLabel("2026-10-31T11:48:00Z", now), "12 dk");
-assert.equal(sinceLabel("2026-10-31T10:45:00Z", now), "1 sa 15 dk");
-assert.equal(sinceLabel("2026-10-28T12:00:00Z", now), "3 gün");
+assert.equal(sinceLabel("2026-10-31T11:48:00Z", now, trT), "12 dk");
+assert.equal(sinceLabel("2026-10-31T10:45:00Z", now, trT), "1 sa 15 dk");
+assert.equal(sinceLabel("2026-10-28T12:00:00Z", now, trT), "3 gün");
 assert.equal(sinceLabel(null, now), "");
+assert.equal(sinceLabel("2026-10-31T11:59:40Z", now, trT), "az önce");
+assert.equal(sinceLabel("2026-10-31T10:45:00Z", now, enT), "1 h 15 min");
+assert.equal(sinceLabel("2026-10-28T12:00:00Z", now, enT), "3 d");
 const servers = [{ id: "s1", name: "Descall Geliştirme", channels: [{ id: "c1", name: "Genel" }] }];
 const voice = { s1: { c1: { members: [{ id: "u1" }, { id: "u2" }], memberCount: 2 } } };
-const v = currentActivity("u2", { voiceStatesByServer: voice, servers }, now);
+const v = currentActivity("u2", { voiceStatesByServer: voice, servers }, now, TR);
 assert.equal(v.kind, "voice");
 assert.equal(v.title, "Genel");
 assert.equal(v.subtitle, "Descall Geliştirme");
 assert.equal(v.count, 2);
 const fp = { u3: { displayName: "Minecraft oynuyor", appName: "Minecraft", appType: "game", startedAt: "2026-10-31T11:00:00Z" } };
-const g = currentActivity("u3", { friendPresence: fp, voiceStatesByServer: voice, servers }, now);
+const g = currentActivity("u3", { friendPresence: fp, voiceStatesByServer: voice, servers }, now, TR);
 assert.equal(g.kind, "game");
 assert.equal(g.title, "Minecraft oynuyor");
 assert.equal(g.subtitle, "1 sa");

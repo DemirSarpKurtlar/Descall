@@ -95,7 +95,8 @@ async function run() {
     assert.deepEqual(help.map((x) => x.room).sort(), ["user:alice", "user:bob"], cmd);
     assert.equal(help[0].payload.type, "app_help");
     assert.equal(help[0].payload.embed.card.kind, "help");
-    assert.equal(help[0].payload.embed.title, "Komutlar");
+    assert.equal(help[0].payload.embed.title, "Commands");
+    assert.deepEqual(help[0].payload.embed.i18n.title, { key: "bot.slash.helpTitle" });
   }
   let io;
 
@@ -120,7 +121,7 @@ async function run() {
   assert.equal(r.dmText, null);
   assert.equal(r.dmPoll.question, "Pizza mı?");
   assert.deepEqual(r.dmPoll.options.map((o) => o.text), ["Evet", "Hayır"]);
-  assert.equal(slash.formatPollContent("Pizza mı? | Evet | Hayır"), "📊 Anket: Pizza mı?\n1. Evet\n2. Hayır\nOy vermek için Descall'ı güncelle");
+  assert.equal(slash.formatPollContent("Pizza mı? | Evet | Hayır"), "📊 Poll: Pizza mı?\n1. Evet\n2. Hayır\nUpdate Descall to vote");
   assert.equal(slash.formatPollContent("only | one"), null);
 
   // Handler errors surface as dm:error, not a crash.

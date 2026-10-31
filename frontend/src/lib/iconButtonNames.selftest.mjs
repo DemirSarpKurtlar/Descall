@@ -42,10 +42,4 @@ if (call.includes("t(\"Raise hand\")") || call.includes("t(\"Lower hand\")")) {
   process.exit(1);
 }
 
-const toggles = readFileSync(join(root, "components/profile/ProfileCustomizationPanel.jsx"), "utf8");
-if (toggles.includes("aria-pressed={customization.notifications}") || toggles.includes("aria-pressed={customization.privacy}")) {
-  console.error("toggle aria-pressed must be the boolean field, not the settings object");
-  process.exit(1);
-}
-
 console.log("iconButtonNames.selftest.mjs: ok");

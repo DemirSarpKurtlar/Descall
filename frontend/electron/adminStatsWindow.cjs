@@ -7,6 +7,8 @@
  * going to the browser. Pure helpers, tested by adminStatsWindow.selftest.mjs.
  */
 
+const { et } = require('./mainI18n.cjs');
+
 const STATS_PATH = '/admin/signup-stats';
 /** 3.1: the whole Yönetici Paneli opens in its own window; the main window stays usable. */
 const ADMIN_PANEL_PATH = '/admin/panel';
@@ -39,7 +41,7 @@ function signupStatsWindowOptions({ preload, icon, platform = process.platform }
     minHeight: 620,
     show: true,
     frame: false,
-    title: 'Kayıt İstatistikleri — Descall Yönetici',
+    title: et('window.signupStats'),
     autoHideMenuBar: true,
     fullscreenable: false,
     backgroundColor: '#14151e',
@@ -62,7 +64,7 @@ function adminPanelWindowOptions({ preload, icon, platform = process.platform } 
     height: 900,
     minWidth: 960,
     minHeight: 640,
-    title: 'Descall Yönetici',
+    title: et('window.adminPanel'),
   };
 }
 

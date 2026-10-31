@@ -176,7 +176,7 @@ export default function MessageReactions({
             onClick={() => handleReactionClick(emoji)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            title={t(data.count === 1 ? "{count} reaction" : "{count} reactions", { count: data.count })}
+            title={t("chatx.reactions", { count: data.count })}
           >
             <span className="reaction-emoji">{emoji}</span>
             <span className="reaction-count">{data.count}</span>

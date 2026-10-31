@@ -1,5 +1,7 @@
 "use strict";
 
+const { bt, pickLang, availableLangs } = require("./i18n");
+
 /**
  * KVKK veri dışa aktarma (3.6.0): everything Descall keeps about one account,
  * as one JSON file (KVKK md. 11 / GDPR art. 15 + 20). Used by the account
@@ -103,13 +105,14 @@ function scrub(value, depth = 0) {
  * Build the export for one account.
  * @returns {Promise<{ filename: string, data: object }>}
  */
-async function buildExport(userId, { requestedBy = "self", now = new Date() } = {}) {
+async function buildExport(userId, { requestedBy = "self", now = new Date(), lang = "tr" } = {}) {
+  const L = pickLang([lang], "tr");
   let prof = await db().from("users").select(PROFILE_COLS.join(", ")).eq("id", userId).maybeSingle();
   if (prof.error && isMissing(prof.error)) prof = await db().from("users").select("*").eq("id", userId).maybeSingle();
   if (prof.error) throw prof.error;
   const user = prof.data;
   if (!user) {
-    const err = new Error("Kullanıcı bulunamadı.");
+    const err = new Error("User not found.");
     err.status = 404;
     throw err;
   }
@@ -215,16 +218,14 @@ async function buildExport(userId, { requestedBy = "self", now = new Date() } = 
     generatedAt: now.toISOString(),
     requestedBy,
     account: { id: user.id, username: user.username },
-    notes: {
-      tr: "Bu dosya Descall'ın hesabın hakkında tuttuğu kişisel verilerin kopyasıdır (KVKK md. 11). Gönderdiğin mesajlar burada; başkalarının sana gönderdiği mesajlar onların verisi olduğu için yok. Şifre, iki adımlı doğrulama sırları, oturum ve bildirim anahtarları güvenlik nedeniyle eklenmedi. Dolandırıcılık ve kötüye kullanım önleme kayıtları, kötüye kullanılmasın diye paylaşılmaz (KVKK md. 28/2-ç). Seni kimin şikayet ettiği gösterilmez. Sorular için: destek@descall.com",
-      en: "A copy of the personal data Descall keeps about this account (GDPR art. 15). Messages you sent are included; messages others sent you are their data and are not. Passwords, two-factor secrets, session and push keys are left out for security. Fraud and abuse prevention records are not disclosed so they cannot be gamed. Who reported you is not shown.",
-    },
+    // One note per language with a catalog (backend/i18n/<locale>.js dataExport.note).
+    notes: Object.fromEntries(availableLangs().map((id) => [id, bt(id, "dataExport.note")])),
     sections,
     sectionInfo: meta,
   };
   const day = now.toISOString().slice(0, 10);
-  const safeName = String(user.username || "hesap").replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 40);
-  return { filename: `descall-verilerim-${safeName}-${day}.json`, data };
+  const safeName = String(user.username || bt(L, "dataExport.accountFallback")).replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 40);
+  return { filename: `${bt(L, "dataExport.filePrefix")}-${safeName}-${day}.json`, data };
 }
 
 function __setDbForTests(client) {

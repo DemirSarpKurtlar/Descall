@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Procurando atualizações…",
+    "starting": "Iniciando o Descall…",
+    "installing": "Instalando a atualização…",
+    "downloading": "Baixando a atualização…",
+    "upToDate": "Tudo atualizado",
+    "checkFailed": "Não foi possível procurar atualizações",
+    "loading": "Carregando"
+  },
+  "notice": {
+    "background": "O Descall continua funcionando em segundo plano. Você pode reabri-lo pela bandeja do sistema."
+  },
+  "update": {
+    "downloaded": "v{version} baixada. Ela será instalada silenciosamente em segundo plano.",
+    "downloadedDeferred": "v{version} baixada. Ela só será instalada quando seu chat de voz terminar."
+  },
+  "dialog": {
+    "retry": "Tentar de novo",
+    "quit": "Sair",
+    "loadFailed": "Não foi possível carregar o Descall",
+    "loadFailedDetail": "Não foi possível abrir os arquivos do app ({detail}). Você pode tentar de novo ou fechar o Descall.",
+    "openFailed": "Não foi possível abrir o Descall",
+    "openFailedDetail": "O app não carregou a tempo. Verifique sua conexão e tente de novo.",
+    "indexMissingTitle": "Erro de carregamento",
+    "indexMissing": "index.html não foi encontrado nos arquivos do app."
+  },
+  "tray": {
+    "open": "Abrir o Descall",
+    "startWithWindows": "Iniciar com o Windows",
+    "updateAndQuit": "Atualizar e sair (v{version})",
+    "quit": "Sair"
+  },
+  "notif": {
+    "calling": "está ligando...",
+    "voiceCall": "Chamada de voz",
+    "videoCall": "Chamada de vídeo",
+    "groupCall": "Chamada em grupo",
+    "groupCallIn": "👥 {group} · Chamada em grupo",
+    "now": "agora",
+    "mentionedYou": "mencionou você",
+    "online": "{name} está online",
+    "justConnected": "Acabou de se conectar",
+    "missedCall": "chamada perdida",
+    "message": "Mensagem",
+    "close": "Fechar",
+    "accept": "Aceitar",
+    "decline": "Recusar"
+  },
+  "overlay": {
+    "connected": "Conectado",
+    "calling": "Chamando…",
+    "group": "Chamada em grupo",
+    "server": "Canal de voz",
+    "offline": "Desconectado",
+    "mute": "Silenciar microfone",
+    "unmute": "Ativar microfone",
+    "deafen": "Desativar áudio",
+    "undeafen": "Ativar áudio",
+    "leave": "Sair",
+    "end": "Encerrar chamada"
+  },
+  "window": {
+    "signupStats": "Estatísticas de cadastro — Descall Admin",
+    "adminPanel": "Descall Admin"
+  }
+}

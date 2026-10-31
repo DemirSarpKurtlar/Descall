@@ -24,6 +24,6 @@ const analytics = adminRoutes.slice(
   adminRoutes.indexOf('router.get("/analytics"') + 1800,
 );
 assert.match(analytics, /withTimeout\(/, "analytics reads are bounded");
-assert.match(analytics, /Analitik zaman aşımına uğradı/, "analytics timeout is Turkish");
+assert.match(analytics, /Analytics timed out\. Please try again\./, "analytics timeout is a static English phrase (translated by the app)");
 
 console.log("adminOverviewUi.selftest ok");

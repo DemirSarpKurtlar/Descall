@@ -10,12 +10,17 @@ import {
   PURCHASE_MODAL_CATEGORIES, usesPurchaseModal, purchaseView, undoTarget, applyUndo, formatCoins,
   isAnimatedItem, rarityKey, RARITY_COLORS, formatOwnedDate,
 } from "./storePurchaseState.js";
-import { localizeShopItem, localizedShopItemName, SHOP_ITEM_TR } from "./shopItemI18n.js";
+import { localizeShopItem, localizedShopItemName } from "./shopItemI18n.js";
+import { ensureLocaleLoaded } from "../i18n/index.js";
+import { SHOP_ITEMS_EN } from "../i18n/locales/shopItems.en.js";
+import { SHOP_ITEMS_TR } from "../i18n/locales/shopItems.tr.js";
 import { purchaseCopy } from "./storePurchaseCopy.js";
 import { SHOP_CATEGORY_TABS } from "./shopCategories.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (p) => readFileSync(join(here, p), "utf8");
+await ensureLocaleLoaded("tr");
+const SHOP_ITEM_TR = Object.fromEntries(Object.entries(SHOP_ITEMS_TR).filter(([k]) => k !== "_templates"));
 
 // Every store tab except Ülkeler opens the modal; Ülkeler keeps CountryShop's dialog.
 assert.deepEqual(
@@ -62,9 +67,10 @@ assert.equal(await applyUndo(undoTarget({ item: banner, previous: prev, autoWore
 assert.deepEqual(calls, [["b0", false], ["b1", true]], "re-equip previous, or take the new one off; never a refund call");
 
 // Numbers keep the 2,918 format in both languages.
-assert.equal(formatCoins(2918), "2,918");
-assert.equal(formatCoins(12345678), "12,345,678");
-assert.equal(formatCoins(-5), "0");
+assert.equal(formatCoins(2918, "en"), "2,918");
+assert.equal(formatCoins(2918, "tr"), "2.918", "UI language digits");
+assert.equal(formatCoins(12345678, "en"), "12,345,678");
+assert.equal(formatCoins(-5, "en"), "0");
 
 assert.equal(rarityKey("mythic"), "mythic");
 assert.equal(rarityKey("weird"), "common");
@@ -76,10 +82,10 @@ assert.equal(isAnimatedItem({ sku: "banner-galaxy-swirl", category: "banner" }),
 assert.equal(isAnimatedItem({ sku: "theme-borealis", category: "theme" }), true);
 assert.equal(isAnimatedItem({ sku: "theme-lagoon", category: "theme" }), false);
 assert.equal(formatOwnedDate("2026-10-12T15:20:00+03:00", "tr"), "12 Eki 2026");
-assert.equal(formatOwnedDate("2026-10-03T11:00:00+03:00", "en"), "Oct 3, 2026");
+assert.equal(formatOwnedDate("2026-10-03T11:00:00+03:00", "en"), "3 Oct 2026");
 assert.equal(formatOwnedDate(null, "tr"), "");
 
-// Catalog localization: frontend map, English fallback, no DB change.
+// Catalog localization: i18n catalogs (shopItems), database English as the fallback.
 assert.deepEqual(localizeShopItem({ sku: "banner-galaxy-swirl", name: "Galaxy Swirl", description: "x" }, "tr").name, "Galaksi Girdabı");
 assert.equal(localizeShopItem({ sku: "banner-galaxy-swirl", name: "Galaxy Swirl", description: "x" }, "en").name, "Galaxy Swirl");
 assert.deepEqual(localizeShopItem({ sku: "unknown-sku", name: "New Thing", description: "Fresh." }, "tr"), { name: "New Thing", description: "Fresh." });
@@ -93,8 +99,19 @@ assert.equal(localizedShopItemName({ sku: "call-aurora-dome", name: "Aurora Dome
 // 2026-10-26: the 55 shop profile badge names left with the Rozetler tab.
 assert.ok(Object.keys(SHOP_ITEM_TR).length >= 360, "every seeded store row has a Turkish name");
 for (const [sku, entry] of Object.entries(SHOP_ITEM_TR)) {
-  assert.ok(Array.isArray(entry) && typeof entry[0] === "string" && entry[0].trim(), `${sku}: Turkish name`);
+  assert.ok(typeof entry.name === "string" && entry.name.trim(), `${sku}: Turkish name`);
+  assert.ok(SHOP_ITEMS_EN[sku]?.name, `${sku}: English name`);
+  assert.equal(Boolean(entry.desc), Boolean(SHOP_ITEMS_EN[sku].desc), `${sku}: desc in both languages`);
 }
+// A chat bubble template uses the colour stem; other locales fall back to English.
+assert.equal(
+  localizeShopItem({ sku: "chat-bubble-midnight", name: "Midnight Bubble", description: "Chat bubble skin — Midnight. Styles your outgoing message bubbles." }, "tr").description,
+  "Mesaj balonu: Gece Yarısı. Gönderdiğin mesajların balonlarını biçimlendirir.",
+);
+assert.equal(
+  localizeShopItem({ sku: "chat-bubble-midnight", name: "Midnight Bubble", description: "Chat bubble skin — Midnight. Styles your outgoing message bubbles." }, "en").description,
+  "Chat bubble skin — Midnight. Styles your outgoing message bubbles.",
+);
 // Every seeded sku is covered (backend seeds + catalog libs).
 const seeds = [
   "../../backend/scripts/seedCosmeticsCatalog.js", "../../backend/scripts/seedPremiumCategories.js",
@@ -123,9 +140,13 @@ for (const cat of PURCHASE_MODAL_CATEGORIES) {
 }
 assert.equal(tr.cat.banner.eyebrow, "PROFİL BANNERI");
 assert.equal(tr.looks(tr.cat.name_effect.label), "İSMİNDE BÖYLE GÖRÜNÜR");
-assert.equal(tr.buyFor(formatCoins(500)), "500 DesCoin ile satın al");
+assert.equal(tr.buyFor(formatCoins(500, "tr")), "500 DesCoin ile satın al");
 assert.equal(tr.wearSub("Zümrüt Orman"), "Şu an takılı olan Zümrüt Orman çıkarılır, envanterinde kalır");
 assert.equal(tr.doneSub("Zümrüt Orman", true), "Profiline takıldı · Zümrüt Orman envanterine geri döndü");
+assert.deepEqual(tr.needMore("120"), ["", "120 DesCoin", " daha lazım"]);
+assert.equal(en.ownSub("Oct 3, 2026", "500", "1,200", "gift"), "Gifted on Oct 3, 2026 · Balance 1,200");
+assert.equal(tr.ownSub("3 Eki 2026", "500", "1,200", "purchase"), "3 Eki 2026 tarihinde 500 DesCoin'e alındı · Bakiye 1,200");
+assert.equal(en.cat.name_effect.meta(en.animated, { sku: "name-effect-sigil-rift" }), "Name effect · Sigil series · Animated");
 
 // Wiring: ShopPanel keeps the existing purchase/equip handlers and endpoints.
 const panel = read("../components/settings/ShopPanel.jsx");

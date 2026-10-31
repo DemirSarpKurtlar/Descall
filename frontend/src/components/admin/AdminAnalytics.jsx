@@ -3,7 +3,9 @@ import { motion } from "framer-motion";
 import { RefreshCw, Clock } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import RippleButton from "../ui/RippleButton";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatTime } from "../../i18n/format.js";
+import { APP_TIMEZONE } from "../../lib/datetime";
 
 const SOURCE_ORDER = [
   "google_ads",
@@ -46,7 +48,7 @@ function authLabel(key, t) {
 }
 
 export default function AdminAnalytics() {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -92,7 +94,7 @@ export default function AdminAnalytics() {
           <div className="last-updated">
             <Clock size={14} />
             <span>
-              {t("Last updated")}: {updatedAt ? updatedAt.toLocaleTimeString() : t("Never")}
+              {t("Last updated")}: {updatedAt ? formatTime(updatedAt, locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZone: APP_TIMEZONE }) : t("Never")}
             </span>
           </div>
           <RippleButton type="button" onClick={() => load()} disabled={loading} className="refresh-btn">

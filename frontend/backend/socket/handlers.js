@@ -4,6 +4,8 @@ const { checkMessageSend } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const iosPushContext = require("../lib/iosPushContext");
+const { bt } = require("../lib/i18n");
+const { put } = require("../lib/botText");
 const friendSince = require("../lib/friendSince");
 const {
   loadUserProfile,
@@ -241,13 +243,22 @@ function getNotifications(userId) {
   return notificationsByUser.get(userId) || [];
 }
 
+/**
+ * In-app notification. Pass the words as `titleKey` / `bodyKey` (+ `vars`) from the bot.notify.*
+ * catalog: the entry gets the English text plus `i18n: { title, body }` refs (lib/botText.js),
+ * so the app shows it in the user's language. Literal `title` / `body` (user content) stay as is.
+ */
 function pushNotification(io, userId, n) {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const texts = {};
+  if (n.titleKey) put(texts, "title", n.titleKey, n.vars);
+  if (n.bodyKey) put(texts, "body", n.bodyKey, n.vars);
   const entry = {
     id,
     type: n.type,
-    title: n.title,
-    body: n.body,
+    title: texts.title ?? n.title,
+    body: texts.body ?? n.body,
+    ...(texts.i18n ? { i18n: texts.i18n } : {}),
     read: false,
     createdAt: new Date().toISOString(),
     meta: n.meta || {},
@@ -873,8 +884,9 @@ function registerSocketHandlers(io) {
         emitToUser(io, target.id, "friend:requests", getPendingList(target.id));
         pushNotification(io, target.id, {
           type: "friend_request",
-          title: "Friend request",
-          body: `${me.username} sent you a friend request`,
+          titleKey: "bot.notify.friendRequestTitle",
+          bodyKey: "bot.notify.friendRequestBody",
+          vars: { from: me.username },
           meta: { fromUserId: myId },
         });
         try {
@@ -952,8 +964,9 @@ function registerSocketHandlers(io) {
       emitToUser(io, fromUserId, "friend:accepted", { by: { id: myId, username: me.username } });
       pushNotification(io, fromUserId, {
         type: "friend_accepted",
-        title: "Friend request accepted",
-        body: `${me.username} accepted your friend request`,
+        titleKey: "bot.notify.friendAcceptedTitle",
+        bodyKey: "bot.notify.friendAcceptedBody",
+        vars: { from: me.username },
         meta: { userId: myId },
       });
 
@@ -1192,7 +1205,7 @@ function registerSocketHandlers(io) {
         // Yönetici Paneli switches (3.1.3): freeze, DMs off, slow mode, per-minute cap.
         const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", kind: "dm", now });
         if (!verdict.ok) {
-          return socket.emit("dm:error", { message: verdict.message, code: verdict.code, retryAfterMs: verdict.retryAfterMs, tempId: tempId || null, toUserId });
+          return socket.emit("dm:error", { message: verdict.message, messageKey: verdict.messageKey, messageVars: verdict.messageVars, code: verdict.code, retryAfterMs: verdict.retryAfterMs, tempId: tempId || null, toUserId });
         }
       }
 
@@ -1222,7 +1235,7 @@ function registerSocketHandlers(io) {
         }
         // Polls never travel as a message request: friends only.
         if (!(await isAcceptedFriend(myId, toUserId))) {
-          return socket.emit("dm:error", { message: "Anketi yalnızca arkadaşlarına gönderebilirsin.", code: "NOT_FRIENDS", tempId: tempId || null, toUserId });
+          return socket.emit("dm:error", { message: "You can only send polls to your friends.", code: "NOT_FRIENDS", tempId: tempId || null, toUserId });
         }
         pollDraft = normalized.poll;
         text = pollFallbackText(pollDraft);
@@ -1246,8 +1259,9 @@ function registerSocketHandlers(io) {
         emitToUser(io, toUserId, "dm:requests", await listMessageRequests(supabase, toUserId));
         pushNotification(io, toUserId, {
           type: "message_request",
-          title: "Message request",
-          body: `${me.username || "Someone"} sent you a message request`,
+          titleKey: "bot.notify.messageRequestTitle",
+          bodyKey: "bot.notify.messageRequestBody",
+          vars: { from: me.username || { key: "bot.notify.someone" } },
           meta: { fromUserId: myId },
         });
         try {
@@ -1314,7 +1328,7 @@ function registerSocketHandlers(io) {
         } catch (pollErr) {
           console.error("[DM] poll create failed:", pollErr?.message || pollErr);
           await supabase.from("dm_messages").delete().eq("id", messageId).eq("from_user_id", myId);
-          return socket.emit("dm:error", { message: "Anket oluşturulamadı. Tekrar dene.", tempId: tempId || null, toUserId });
+          return socket.emit("dm:error", { message: "Could not create the poll. Try again.", tempId: tempId || null, toUserId });
         }
       }
       void recordFirstMessage(myId);
@@ -1408,19 +1422,21 @@ function registerSocketHandlers(io) {
           const muted = await dmPrefs.isMuted(toUserId, myId);
           if (!muted) {
             const { sendDmMessagePush, sendMentionPush } = require("../lib/webPush");
-            const preview =
-              isVoice
-                ? "Voice message"
-                : mediaUrl
-                  ? "Sent an attachment"
-                  : String(storedText || text || "").slice(0, 140) || "New message";
+            // Voice / attachment / empty previews are catalog text, localized per recipient (lib/webPush.js).
+            const literalPreview = isVoice || mediaUrl ? "" : String(storedText || text || "").slice(0, 140);
+            const previewKey = isVoice ? "push.voicePlain" : mediaUrl ? "push.attachmentPlain" : literalPreview ? null : "push.newMessage";
+            const preview = literalPreview || bt("en", previewKey);
             const previewKind = isVoice ? "voice" : mediaUrl ? "media" : "text";
             const rawText = isVoice ? "" : String(storedText || text || "").slice(0, 140);
+            const fromRef = me.username || { key: "push.someone" };
             if (dmMentioned) {
               void sendMentionPush([toUserId], {
-                title: `${me.username || "Someone"} mentioned you`,
-                body: preview,
+                body: literalPreview,
                 text: preview,
+                i18n: {
+                  title: { key: "push.mentioned", vars: { from: fromRef } },
+                  ...(previewKey ? { body: { key: previewKey } } : {}),
+                },
                 rawText,
                 previewKind,
                 from: me.username,
@@ -1431,8 +1447,9 @@ function registerSocketHandlers(io) {
               });
             } else {
               void sendDmMessagePush([toUserId], {
-                title: me.username || "New message",
-                body: preview,
+                title: me.username || null,
+                body: literalPreview,
+                ...(previewKey ? { i18n: { body: { key: previewKey } } } : {}),
                 rawText,
                 previewKind,
                 from: me.username,
@@ -1652,8 +1669,10 @@ function registerSocketHandlers(io) {
           fromId: myId,
           from: me.username,
           conversationId: myId,
-          title: `${fromUser.displayName || fromUser.display_name || me.username} arıyor`,
-          body: (callType || "voice") === "video" ? "Görüntülü arama" : "Sesli arama",
+          i18n: {
+            title: { key: "push.calling", vars: { from: fromUser.displayName || fromUser.display_name || me.username } },
+            body: { key: (callType || "voice") === "video" ? "push.videoCall" : "push.voiceCall" },
+          },
           callUuid,
           // 3.0.0 (C3): the tap resolver tells a live ring from an old one.
           callKind: "dm",
@@ -2203,7 +2222,7 @@ function registerSocketHandlers(io) {
       if (!friends.get(myId)?.has(toUserId)) return fail("Failed to edit message.");
       {
         const { data: kind } = await supabase.from("dm_messages").select("media_type").eq("id", messageId).eq("from_user_id", myId).maybeSingle();
-        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("Bu mesaj metin olarak düzenlenemez.");
+        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("This message can't be edited as text.");
       }
 
       const key = convKey(myId, toUserId);
@@ -2370,7 +2389,7 @@ function registerSocketHandlers(io) {
       if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to edit message.");
       {
         const { data: kind } = await supabase.from("group_messages").select("media_type").eq("id", messageId).eq("group_id", groupId).maybeSingle();
-        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("Bu mesaj metin olarak düzenlenemez.");
+        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("This message can't be edited as text.");
       }
       
       const editedAt = new Date().toISOString();

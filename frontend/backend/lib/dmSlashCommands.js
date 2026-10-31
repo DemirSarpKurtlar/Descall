@@ -15,6 +15,7 @@
  */
 
 const { resolveCasinoTarget } = require("./casinoRoomAccess");
+const { errorFields } = require("./apiError");
 
 function lazySlash() {
   return require("./slashCommands");
@@ -65,7 +66,8 @@ async function routeDmSlashCommand({ io, socket, myId, me, toUserId, tempId, tex
     return { handled: true, dmText: result?.dmText || null };
   } catch (err) {
     socket.emit("dm:error", {
-      message: err?.message || "Komut çalıştırılamadı.",
+      ...errorFields(err, "message"),
+      message: err?.message || "Could not run the command.",
       code: err?.code || "COMMAND_FAILED",
       tempId: tempId || null,
       toUserId,

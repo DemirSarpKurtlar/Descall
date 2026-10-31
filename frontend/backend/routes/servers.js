@@ -44,14 +44,17 @@ const {
   BLANK_ID,
   listTemplateSummaries,
   getTemplate,
+  localizeTemplate,
   seedServerFromTemplate,
 } = require("../lib/serverTemplates");
 
 const { starterChannelNames } = require("../lib/starterChannelNames");
+const { requestLang } = require("../lib/i18n");
 const router = express.Router();
 
 const MAX_OWNED_SERVERS = 10;
 const { acquireCapLock } = require("../lib/capLock");
+const { apiError, apiText, templatedError, errorFields } = require("../lib/apiError");
 const MAX_CHANNELS_PER_SERVER = 500;
 const MAX_ROLES_PER_SERVER = 50;
 const MAX_SERVER_FOLDERS = 50;
@@ -344,10 +347,7 @@ function cleanServerImageUrl(raw, field) {
     hostOk &&
     (!supabaseHost || url.pathname.startsWith("/storage/v1/object/public/"));
   if (!ok) {
-    const err = new Error(`${field} must be an image uploaded to Descall.`);
-    err.status = 400;
-    err.code = "INVALID_IMAGE_URL";
-    throw err;
+    throw templatedError("{field} must be an image uploaded to Descall.", { field }, { status: 400, code: "INVALID_IMAGE_URL" });
   }
   return value;
 }
@@ -1314,7 +1314,7 @@ router.put("/:id/channels/:channelId/mute", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PUT channel mute error:", err);
-    return res.status(status).json({ error: err.message || "Failed to update channel mute." });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update channel mute." });
   }
 });
 
@@ -1396,7 +1396,7 @@ router.post("/:id/channels/:channelId/read", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST channel read error:", err?.message || err);
-    return res.status(status).json({ error: err.message || "Failed to mark channel read." });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to mark channel read." });
   }
 });
 
@@ -1449,7 +1449,7 @@ router.post("/me/folders", requireAuth, async (req, res) => {
       if (cntErr) throw cntErr;
       if ((count || 0) >= MAX_SERVER_FOLDERS) {
         return res.status(400).json({
-          error: `You can have at most ${MAX_SERVER_FOLDERS} folders.`,
+          ...apiError("You can have at most {max} folders.", { max: MAX_SERVER_FOLDERS }),
           code: "MAX_FOLDERS",
           maxFolders: MAX_SERVER_FOLDERS,
         });
@@ -1475,7 +1475,7 @@ router.post("/me/folders", requireAuth, async (req, res) => {
     if (await insertedOverCap("server_folders", "user_id", userId, data.id, MAX_SERVER_FOLDERS)) {
       await supabase.from("server_folders").delete().eq("id", data.id);
       return res.status(400).json({
-        error: `You can have at most ${MAX_SERVER_FOLDERS} folders.`,
+        ...apiError("You can have at most {max} folders.", { max: MAX_SERVER_FOLDERS }),
         code: "MAX_FOLDERS",
         maxFolders: MAX_SERVER_FOLDERS,
       });
@@ -1678,7 +1678,7 @@ router.post("/", requireAuth, async (req, res) => {
     const templateKey = String(rawTemplate || "default").trim().toLowerCase();
 
     if (name.length < NAME_MIN || name.length > NAME_MAX) {
-      return res.status(400).json({ error: `Server name must be ${NAME_MIN}–${NAME_MAX} characters.` });
+      return res.status(400).json(apiError("Server name must be {min}–{max} characters.", { min: NAME_MIN, max: NAME_MAX }));
     }
 
     let templateMode = "default";
@@ -1688,7 +1688,8 @@ router.post("/", requireAuth, async (req, res) => {
     } else if (templateKey === "default" || templateKey === "") {
       templateMode = "default";
     } else {
-      template = getTemplate(templateKey);
+      // Names, topics and rules go into the database in the creator's language.
+      template = localizeTemplate(getTemplate(templateKey), req.body?.starterLocale || requestLang(req, "en"));
       if (template === undefined) {
         return res.status(400).json({
           error: "Unknown server template.",
@@ -1706,7 +1707,7 @@ router.post("/", requireAuth, async (req, res) => {
     const owned = await countOwnedServers(userId);
     if (owned >= MAX_OWNED_SERVERS) {
       return res.status(400).json({
-        error: `You can own at most ${MAX_OWNED_SERVERS} servers.`,
+        ...apiError("You can own at most {max} servers.", { max: MAX_OWNED_SERVERS }),
         code: "MAX_OWNED_SERVERS",
         ownedCount: owned,
         maxOwned: MAX_OWNED_SERVERS,
@@ -1731,7 +1732,7 @@ router.post("/", requireAuth, async (req, res) => {
     if (await insertedOverCap("servers", "owner_id", userId, server.id, MAX_OWNED_SERVERS)) {
       await deleteServerCascade(server.id);
       return res.status(400).json({
-        error: `You can own at most ${MAX_OWNED_SERVERS} servers.`,
+        ...apiError("You can own at most {max} servers.", { max: MAX_OWNED_SERVERS }),
         code: "MAX_OWNED_SERVERS",
         ownedCount: MAX_OWNED_SERVERS,
         maxOwned: MAX_OWNED_SERVERS,
@@ -1886,7 +1887,7 @@ router.post("/", requireAuth, async (req, res) => {
     });
   } catch (err) {
     if (err.status && err.status < 500) {
-      return res.status(err.status).json({ error: err.message, code: err.code });
+      return res.status(err.status).json({ ...errorFields(err), error: err.message, code: err.code });
     }
     console.error("[SERVERS] POST / error:", err);
     return res.status(500).json({ error: "Failed to create server." });
@@ -1973,7 +1974,7 @@ function joinRefusal(res, result) {
   if (result.banned) return res.status(403).json({ error: "You are banned from this server.", code: "BANNED" });
   if (result.capped) {
     return res.status(400).json({
-      error: `You can be in at most ${MAX_JOINED_SERVERS} servers.`,
+      ...apiError("You can be in at most {max} servers.", { max: MAX_JOINED_SERVERS }),
       code: "MAX_JOINED_SERVERS",
       maxJoined: MAX_JOINED_SERVERS,
     });
@@ -2302,7 +2303,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /invites/:code/join error:", err);
-    return res.status(status).json({ error: err.message || "Failed to join server.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to join server.", code: err.code });
   }
 });
 
@@ -2444,7 +2445,7 @@ router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /vanity/:slug/join error:", err);
-    return res.status(status).json({ error: err.message || "Failed to join server.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to join server.", code: err.code });
   }
 });
 
@@ -2631,8 +2632,10 @@ function notifyNewOwner(req, { serverId, serverName, targetId, actorId, actorNam
       const { trGenitive } = require("../lib/trSuffix");
       pushNotification(io, targetId, {
         type: "server_owner",
-        title: "Sunucu sahipliği",
-        body: `${trGenitive(serverName || "Sunucu")} sahibi artık sensin`,
+        titleKey: "bot.notify.serverOwnerTitle",
+        bodyKey: "bot.notify.serverOwnerBody",
+        // {serverNameGen}: Turkish genitive ("Tango'nun"), used by the Turkish text only.
+        vars: { serverName: serverName || { key: "bot.notify.serverFallback" }, serverNameGen: trGenitive(serverName || "Sunucu") },
         meta: { serverId, serverName: serverName || null, fromUserId: actorId },
       });
     }
@@ -2673,7 +2676,7 @@ router.get("/:id/ownership/transfer", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] GET /:id/ownership/transfer error:", err);
-    return res.status(status).json({ error: err.message || "Failed to load.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to load.", code: err.code });
   }
 });
 
@@ -2735,7 +2738,7 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
     }
     if ((await countOwnedServers(targetId)) >= MAX_OWNED_SERVERS) {
       return res.status(400).json({
-        error: `That member already owns ${MAX_OWNED_SERVERS} servers.`,
+        ...apiError("That member already owns {max} servers.", { max: MAX_OWNED_SERVERS }),
         code: "TARGET_MAX_OWNED_SERVERS",
       });
     }
@@ -2785,7 +2788,7 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/ownership/transfer error:", err);
-    return res.status(status).json({ error: err.message || "Failed to transfer ownership.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to transfer ownership.", code: err.code });
   }
 });
 
@@ -3120,7 +3123,7 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
 
     const name = cleanName(req.body?.name);
     if (name.length < ROLE_NAME_MIN || name.length > ROLE_NAME_MAX) {
-      return res.status(400).json({ error: `Role name must be ${ROLE_NAME_MIN}–${ROLE_NAME_MAX} characters.` });
+      return res.status(400).json(apiError("Role name must be {min}–{max} characters.", { min: ROLE_NAME_MIN, max: ROLE_NAME_MAX }));
     }
     if (name.toLowerCase() === "@everyone") {
       return res.status(400).json({ error: "Cannot create another @everyone role." });
@@ -3134,7 +3137,7 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
     if (countErr) throw countErr;
     if ((count || 0) >= MAX_ROLES_PER_SERVER) {
       return res.status(400).json({
-        error: `Servers can have at most ${MAX_ROLES_PER_SERVER} roles.`,
+        ...apiError("Servers can have at most {max} roles.", { max: MAX_ROLES_PER_SERVER }),
         code: "MAX_ROLES",
       });
     }
@@ -3186,7 +3189,7 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
     if (await insertedOverCap("server_roles", "server_id", serverId, role.id, MAX_ROLES_PER_SERVER)) {
       await supabase.from("server_roles").delete().eq("id", role.id);
       return res.status(400).json({
-        error: `Servers can have at most ${MAX_ROLES_PER_SERVER} roles.`,
+        ...apiError("Servers can have at most {max} roles.", { max: MAX_ROLES_PER_SERVER }),
         code: "MAX_ROLES",
       });
     }
@@ -3207,7 +3210,7 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/roles error:", err);
-    return res.status(status).json({ error: err.message || "Failed to create role.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to create role.", code: err.code });
   } finally {
     releaseCap?.();
   }
@@ -3301,7 +3304,7 @@ router.patch("/:id/roles/:roleId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH /:id/roles/:roleId error:", err);
-    return res.status(status).json({ error: err.message || "Failed to update role.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update role.", code: err.code });
   }
 });
 
@@ -3349,7 +3352,7 @@ router.delete("/:id/roles/:roleId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE /:id/roles/:roleId error:", err);
-    return res.status(status).json({ error: err.message || "Failed to delete role.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to delete role.", code: err.code });
   }
 });
 
@@ -3410,7 +3413,7 @@ router.put("/:id/members/:userId/roles/:roleId", requireAuth, async (req, res) =
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PUT member role error:", err);
-    return res.status(status).json({ error: err.message || "Failed to assign role.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to assign role.", code: err.code });
   }
 });
 
@@ -3467,7 +3470,7 @@ router.delete("/:id/members/:userId/roles/:roleId", requireAuth, async (req, res
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE member role error:", err);
-    return res.status(status).json({ error: err.message || "Failed to remove role.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to remove role.", code: err.code });
   }
 });
 
@@ -3529,7 +3532,7 @@ router.delete("/:id/members/:userId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE member kick error:", err);
-    return res.status(status).json({ error: err.message || "Failed to kick member.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to kick member.", code: err.code });
   }
 });
 
@@ -3589,7 +3592,7 @@ router.patch("/:id/members/:userId/nickname", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH nickname error:", err);
-    return res.status(status).json({ error: err.message || "Failed to update nickname.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update nickname.", code: err.code });
   }
 });
 
@@ -3648,7 +3651,7 @@ router.post("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST timeout error:", err);
-    return res.status(status).json({ error: err.message || "Failed to timeout member.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to timeout member.", code: err.code });
   }
 });
 
@@ -3682,7 +3685,7 @@ router.delete("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE timeout error:", err);
-    return res.status(status).json({ error: err.message || "Failed to remove timeout.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to remove timeout.", code: err.code });
   }
 });
 
@@ -3719,7 +3722,7 @@ router.patch("/:id/me/settings", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH me/settings error:", err);
-    return res.status(status).json({ error: err.message || "Failed to update settings." });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update settings." });
   }
 });
 
@@ -3768,7 +3771,7 @@ router.post("/:id/accept-rules", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST accept-rules error:", err);
-    return res.status(status).json({ error: err.message || "Failed to accept rules." });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to accept rules." });
   }
 });
 
@@ -3818,7 +3821,7 @@ router.get("/:id/bans", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] GET /:id/bans error:", err);
-    return res.status(status).json({ error: err.message || "Failed to list bans.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to list bans.", code: err.code });
   }
 });
 
@@ -3885,7 +3888,7 @@ router.put("/:id/bans/:userId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PUT ban error:", err);
-    return res.status(status).json({ error: err.message || "Failed to ban member.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to ban member.", code: err.code });
   }
 });
 
@@ -3927,7 +3930,7 @@ router.delete("/:id/bans/:userId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE ban error:", err);
-    return res.status(status).json({ error: err.message || "Failed to unban member.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to unban member.", code: err.code });
   }
 });
 
@@ -3976,7 +3979,7 @@ router.get("/:id/audit-logs", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] GET audit-logs error:", err);
-    return res.status(status).json({ error: err.message || "Failed to load audit log.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to load audit log.", code: err.code });
   }
 });
 
@@ -4000,7 +4003,7 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
     const name = cleanChannelName(req.body?.name, type);
     if (name.length < CHANNEL_NAME_MIN) {
       return res.status(400).json({
-        error: `Channel name must be ${CHANNEL_NAME_MIN}–${CHANNEL_NAME_MAX} characters.`,
+        ...apiError("Channel name must be {min}–{max} characters.", { min: CHANNEL_NAME_MIN, max: CHANNEL_NAME_MAX }),
       });
     }
 
@@ -4012,7 +4015,7 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
     if (countErr) throw countErr;
     if ((count || 0) >= MAX_CHANNELS_PER_SERVER) {
       return res.status(400).json({
-        error: `Servers can have at most ${MAX_CHANNELS_PER_SERVER} channels.`,
+        ...apiError("Servers can have at most {max} channels.", { max: MAX_CHANNELS_PER_SERVER }),
         code: "MAX_CHANNELS",
       });
     }
@@ -4058,7 +4061,7 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
     if (await insertedOverCap("server_channels", "server_id", serverId, channel.id, MAX_CHANNELS_PER_SERVER)) {
       await supabase.from("server_channels").delete().eq("id", channel.id);
       return res.status(400).json({
-        error: `Servers can have at most ${MAX_CHANNELS_PER_SERVER} channels.`,
+        ...apiError("Servers can have at most {max} channels.", { max: MAX_CHANNELS_PER_SERVER }),
         code: "MAX_CHANNELS",
       });
     }
@@ -4078,7 +4081,7 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/channels error:", err);
-    return res.status(status).json({ error: err.message || "Failed to create channel.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to create channel.", code: err.code });
   } finally {
     releaseCap?.();
   }
@@ -4183,7 +4186,7 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH /:id/channels/:channelId error:", err);
-    return res.status(status).json({ error: err.message || "Failed to update channel.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update channel.", code: err.code });
   }
 });
 
@@ -4299,7 +4302,7 @@ router.get("/:id/channels/:channelId/message-count", requireAuth, async (req, re
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] message-count error:", err);
-    return res.status(status).json({ error: err.message || "Failed to count messages.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to count messages.", code: err.code });
   }
 });
 
@@ -4394,7 +4397,7 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE /:id/channels/:channelId error:", err);
-    return res.status(status).json({ error: err.message || "Failed to delete channel.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to delete channel.", code: err.code });
   }
 });
 
@@ -4502,7 +4505,7 @@ router.get("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] GET overrides error:", err);
-    return res.status(status).json({ error: err.message || "Failed to load overrides.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to load overrides.", code: err.code });
   }
 });
 
@@ -4637,7 +4640,7 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PUT overrides error:", err);
-    return res.status(status).json({ error: err.message || "Failed to save override.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to save override.", code: err.code });
   }
 });
 
@@ -4714,7 +4717,7 @@ router.delete(
       if (status >= 500) console.error("[SERVERS] DELETE overrides error:", err);
       return res
         .status(status)
-        .json({ error: err.message || "Failed to delete override.", code: err.code });
+        .json({ ...errorFields(err), error: err.message || "Failed to delete override.", code: err.code });
     }
   }
 );
@@ -4760,7 +4763,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
       const name = cleanName(req.body.name);
       if (name.length < NAME_MIN || name.length > NAME_MAX) {
         return res.status(400).json({
-          error: `Server name must be ${NAME_MIN}–${NAME_MAX} characters.`,
+          ...apiError("Server name must be {min}–{max} characters.", { min: NAME_MIN, max: NAME_MAX }),
         });
       }
       patch.name = name;
@@ -4927,7 +4930,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH /:id error:", err);
-    return res.status(status).json({ error: err.message || "Failed to update server.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update server.", code: err.code });
   }
 });
 
@@ -5004,7 +5007,7 @@ router.post("/:id/invites", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/invites error:", err);
-    return res.status(status).json({ error: err.message || "Failed to create invite.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to create invite.", code: err.code });
   }
 });
 
@@ -5036,7 +5039,7 @@ router.get("/:id/invites", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] GET /:id/invites error:", err);
-    return res.status(status).json({ error: err.message || "Failed to list invites.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to list invites.", code: err.code });
   }
 });
 
@@ -5078,7 +5081,7 @@ router.delete("/:id/invites/:code", requireAuth, async (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] DELETE /:id/invites/:code error:", err);
-    return res.status(status).json({ error: err.message || "Failed to revoke invite.", code: err.code });
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to revoke invite.", code: err.code });
   }
 });
 

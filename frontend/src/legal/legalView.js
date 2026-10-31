@@ -3,24 +3,44 @@
  * excerpts are the existing first paragraph of a section.
  */
 
+/**
+ * Summary cards point at fixed sections. The section is found in the English
+ * document (the same section order is used in every language), so translated
+ * headings never break the match.
+ */
 const SUMMARY = {
   privacy: [
-    { tr: "Ne topluyoruz", en: "What we collect", test: /toplad|collect/i },
-    { tr: "Neden", en: "Why", test: /nasıl kullan|how we use/i },
-    { tr: "Haklarınız", en: "Your rights", test: /haklar|your rights/i },
-    { tr: "İletişim", en: "Contact", test: /ulaşın|contact us/i },
+    { key: "collect", test: /toplad|collect/i },
+    { key: "why", test: /nasıl kullan|how we use/i },
+    { key: "rights", test: /haklar|your rights/i },
+    { key: "contact", test: /ulaşın|contact us/i },
   ],
   terms: [
-    { tr: "Kimler kullanır", en: "Who can use it", test: /kabul ve|acceptance and/i },
-    { tr: "Kurallar", en: "The rules", test: /kabul edilebilir|acceptable use/i },
-    { tr: "Hesabınız", en: "Your account", test: /askıya|suspension/i },
-    { tr: "İletişim", en: "Contact", test: /iletişim|contact/i },
+    { key: "who", test: /kabul ve|acceptance and/i },
+    { key: "rules", test: /kabul edilebilir|acceptable use/i },
+    { key: "account", test: /askıya|suspension/i },
+    { key: "contact", test: /iletişim|contact/i },
   ],
   copyright: [
-    { tr: "Bildirim", en: "Notice", test: /bildirimde|notice must/i },
-    { tr: "Karşı bildirim", en: "Counter-notice", test: /karşı bildirim|counter-notice/i },
+    { key: "notice", test: /bildirimde|notice must/i },
+    { key: "counter", test: /karşı bildirim|counter-notice/i },
   ],
 };
+
+/** Reader chrome in every UI language (legal pages also render before the app catalogs load). */
+const LABELS = {
+  en: { collect: "What we collect", why: "Why", rights: "Your rights", contact: "Contact", who: "Who can use it", rules: "The rules", account: "Your account", notice: "Notice", counter: "Counter-notice", toc: "Contents", jump: "On this page", brief: "In short", questions: "Questions:", privacyEmail: "For privacy requests, email:" },
+  tr: { collect: "Ne topluyoruz", why: "Neden", rights: "Haklarınız", contact: "İletişim", who: "Kimler kullanır", rules: "Kurallar", account: "Hesabınız", notice: "Bildirim", counter: "Karşı bildirim", toc: "İçindekiler", jump: "Bu sayfada", brief: "Kısaca", questions: "Sorularınız için:", privacyEmail: "Gizlilik talepleri için e-posta:" },
+  de: { collect: "Was wir erheben", why: "Warum", rights: "Deine Rechte", contact: "Kontakt", who: "Wer es nutzen darf", rules: "Die Regeln", account: "Dein Konto", notice: "Meldung", counter: "Gegendarstellung", toc: "Inhalt", jump: "Auf dieser Seite", brief: "Kurz gesagt", questions: "Fragen:", privacyEmail: "Datenschutzanfragen per E-Mail an:" },
+  es: { collect: "Qué recopilamos", why: "Para qué", rights: "Tus derechos", contact: "Contacto", who: "Quién puede usarlo", rules: "Las reglas", account: "Tu cuenta", notice: "Notificación", counter: "Contranotificación", toc: "Contenido", jump: "En esta página", brief: "En resumen", questions: "Preguntas:", privacyEmail: "Para solicitudes de privacidad, escribe a:" },
+  fr: { collect: "Ce que nous collectons", why: "Pourquoi", rights: "Tes droits", contact: "Contact", who: "Qui peut l'utiliser", rules: "Les règles", account: "Ton compte", notice: "Notification", counter: "Contre-notification", toc: "Sommaire", jump: "Sur cette page", brief: "En bref", questions: "Questions :", privacyEmail: "Pour les demandes liées à la confidentialité, écris à :" },
+  "pt-BR": { collect: "O que coletamos", why: "Por quê", rights: "Seus direitos", contact: "Contato", who: "Quem pode usar", rules: "As regras", account: "Sua conta", notice: "Notificação", counter: "Contranotificação", toc: "Sumário", jump: "Nesta página", brief: "Em resumo", questions: "Dúvidas:", privacyEmail: "Para solicitações de privacidade, envie um e-mail para:" },
+  ru: { collect: "Какие данные мы собираем", why: "Зачем", rights: "Ваши права", contact: "Контакты", who: "Кто может пользоваться", rules: "Правила", account: "Ваш аккаунт", notice: "Уведомление", counter: "Встречное уведомление", toc: "Содержание", jump: "На этой странице", brief: "Коротко", questions: "Вопросы:", privacyEmail: "Запросы о конфиденциальности отправляйте на:" },
+};
+
+function labels(locale) {
+  return LABELS[locale] || LABELS.en;
+}
 
 export function legalSlug(heading, index = 0) {
   const base = String(heading || "")
@@ -34,21 +54,26 @@ export function legalSlug(heading, index = 0) {
   return base || `section-${index + 1}`;
 }
 
-export function isRightsHeading(heading) {
+/** Rights section: matched by position in the English document when it is given. */
+export function isRightsHeading(heading, index, enData) {
+  if (enData && Number.isInteger(index)) {
+    return /your rights/i.test(String(enData.sections?.[index]?.heading || ""));
+  }
   return /haklar|your rights/i.test(String(heading || ""));
 }
 
-export function summaryCards(type, data, locale) {
+export function summaryCards(type, data, locale, enData = data) {
   const specs = SUMMARY[type] || SUMMARY.privacy;
   const sections = data?.sections || [];
-  const tr = locale === "tr";
+  const enSections = enData?.sections || sections;
+  const L = labels(locale);
   return specs
     .map((spec) => {
-      const index = sections.findIndex((section) => spec.test.test(section.heading));
-      if (index < 0) return null;
+      const index = enSections.findIndex((section) => spec.test.test(section.heading));
+      if (index < 0 || !sections[index]) return null;
       const section = sections[index];
       return {
-        label: tr ? spec.tr : spec.en,
+        label: L[spec.key],
         heading: section.heading,
         excerpt: section.paragraphs?.[0] || "",
         id: legalSlug(section.heading, index),
@@ -58,35 +83,27 @@ export function summaryCards(type, data, locale) {
 }
 
 export function contactCopy(type, locale) {
-  const tr = locale === "tr";
-  const heading = tr ? "İletişim" : "Contact";
+  const L = labels(locale);
+  const heading = L.contact;
   if (type === "copyright") {
     return { heading, before: "", after: " · Demir Sarp Kurtlar" };
   }
   if (type === "terms") {
-    return {
-      heading,
-      before: tr ? "Sorularınız için:" : "Questions:",
-      after: " · Demir Sarp Kurtlar (Türkiye)",
-    };
+    return { heading, before: L.questions, after: " · Demir Sarp Kurtlar (Türkiye)" };
   }
-  return {
-    heading,
-    before: tr ? "Gizlilik talepleri için e-posta:" : "For privacy requests, email:",
-    after: " · Demir Sarp Kurtlar (Türkiye)",
-  };
+  return { heading, before: L.privacyEmail, after: " · Demir Sarp Kurtlar (Türkiye)" };
 }
 
 export const LEGAL_EMAIL = "contact@descall.com";
 
 export function tocLabel(locale) {
-  return locale === "tr" ? "İçindekiler" : "Contents";
+  return labels(locale).toc;
 }
 
 export function jumpLabel(locale) {
-  return locale === "tr" ? "Bu sayfada" : "On this page";
+  return labels(locale).jump;
 }
 
 export function briefLabel(locale) {
-  return locale === "tr" ? "Kısaca" : "In short";
+  return labels(locale).brief;
 }

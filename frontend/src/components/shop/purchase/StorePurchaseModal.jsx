@@ -226,7 +226,7 @@ export default function StorePurchaseModal({
 
   const hero = (
     <div className="spm-hero">
-      <div className="spm-tile"><PurchaseThumb category={category} item={item} me={me} /></div>
+      <div className="spm-tile"><PurchaseThumb category={category} item={item} me={me} c={c} /></div>
       <div>
         <div className="spm-h-name" id={titleId}>{L.name}</div>
         <div className="spm-h-meta">{cat.meta(animated ? c.animated : c.still, item)}</div>
@@ -320,6 +320,7 @@ export default function StorePurchaseModal({
       </>
     );
   } else if (state === "insufficient") {
+    const needMore = c.needMore(fmt(view.short));
     body = (
       <>
         <div className="spm-ledger">
@@ -330,7 +331,7 @@ export default function StorePurchaseModal({
         <div className="spm-need">
           <div className="spm-top">
             <Lock className="spm-ic" />
-            <span><b>{c.needMore(fmt(view.short))[0]}</b>{c.needMore(fmt(view.short))[1]}</span>
+            <span>{needMore[0]}<b>{needMore[1]}</b>{needMore[2]}</span>
             <span className="spm-pct">{c.ready(view.pct)}</span>
           </div>
           <div className="spm-bar"><i style={{ width: `${view.pct}%` }} /></div>
@@ -360,7 +361,7 @@ export default function StorePurchaseModal({
         <span className="spm-ok"><Check className="spm-ic" /></span>
         <div>
           <div className="spm-tt">{c.ownTitle(cat.noun)}</div>
-          <div className="spm-ss">{date ? c.ownSub(date, fmt(view.price), fmt(view.balance), via) : `${c.balance} ${fmt(view.balance)}`}</div>
+          <div className="spm-ss">{date ? c.ownSub(date, fmt(view.price), fmt(view.balance), via) : c.balanceValue(fmt(view.balance))}</div>
         </div>
         {eq ? <span className="spm-pill spm-pill-eq"><i />{c.worn}</span> : <span className="spm-pill spm-pill-inv"><Package className="spm-ic" />{c.inInventory}</span>}
       </div>

@@ -41,7 +41,7 @@ router.get("/staff", async (_req, res) => {
     if (q.error) {
       q = await supabase.from("users").select("id, username, display_name, avatar_url, last_seen_at").eq("is_admin", true).limit(200);
     }
-    if (q.error) return res.status(500).json({ error: "Yöneticiler yüklenemedi." });
+    if (q.error) return res.status(500).json({ error: "Could not load admins." });
     const admins = (q.data || []).map((u) => {
       const owner = perms.isOwner(u, u);
       return {
@@ -61,7 +61,7 @@ router.get("/staff", async (_req, res) => {
     return res.json({ admins, grantable: perms.GRANTABLE_SECTIONS, legacy: perms.LEGACY_SECTIONS });
   } catch (err) {
     console.error("[adminStaff] list", err?.message || err);
-    return res.status(500).json({ error: "Yöneticiler yüklenemedi." });
+    return res.status(500).json({ error: "Could not load admins." });
   }
 });
 
@@ -75,7 +75,7 @@ router.get("/staff/candidates", async (req, res) => {
     .eq("is_admin", false)
     .is("deleted_at", null)
     .limit(10);
-  if (error) return res.status(500).json({ error: "Arama başarısız." });
+  if (error) return res.status(500).json({ error: "Search failed." });
   return res.json({
     users: (data || []).map((u) => ({ id: u.id, username: u.username, displayName: u.display_name || null, avatarUrl: u.avatar_url || null })),
   });
@@ -83,17 +83,17 @@ router.get("/staff/candidates", async (req, res) => {
 
 router.put("/staff/:id/sections", async (req, res) => {
   const id = String(req.params.id || "");
-  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Geçersiz kullanıcı." });
+  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid user." });
   const raw = req.body?.sections;
-  if (raw !== null && !Array.isArray(raw)) return res.status(400).json({ error: "sections bir liste olmalı." });
+  if (raw !== null && !Array.isArray(raw)) return res.status(400).json({ error: "sections must be a list." });
   try {
     const before = await supabase.from("users").select("id, username, is_admin, is_super_admin, admin_permissions").eq("id", id).maybeSingle();
     if (before.error) {
-      return res.status(503).json({ error: "Yetki sütunu henüz yok (migration 20261101_admin_permissions.sql).", code: "PERMISSIONS_UNAVAILABLE" });
+      return res.status(503).json({ error: "The permissions column does not exist yet (migration 20261101_admin_permissions.sql).", code: "PERMISSIONS_UNAVAILABLE" });
     }
     const target = before.data;
-    if (!target?.is_admin) return res.status(404).json({ error: "Bu kişi yönetici değil." });
-    if (perms.isOwner(target, target)) return res.status(400).json({ error: "Sahip hesabının yetkileri değiştirilemez." });
+    if (!target?.is_admin) return res.status(404).json({ error: "This person is not an admin." });
+    if (perms.isOwner(target, target)) return res.status(400).json({ error: "The owner account's permissions can't be changed." });
     const next = raw === null ? null : perms.normalizeSections(raw);
     const upd = await supabase.from("users").update({ admin_permissions: next }).eq("id", id).select("id").single();
     if (upd.error) return res.status(500).json({ error: "Kaydedilemedi." });

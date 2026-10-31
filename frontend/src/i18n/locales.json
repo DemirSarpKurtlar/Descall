@@ -20,35 +20,35 @@
       "name": "Deutsch",
       "intl": "de-DE",
       "dir": "ltr",
-      "status": "draft"
+      "status": "live"
     },
     {
       "id": "es",
       "name": "Español",
       "intl": "es-ES",
       "dir": "ltr",
-      "status": "draft"
+      "status": "live"
     },
     {
       "id": "fr",
       "name": "Français",
       "intl": "fr-FR",
       "dir": "ltr",
-      "status": "draft"
+      "status": "live"
     },
     {
       "id": "pt-BR",
       "name": "Português (Brasil)",
       "intl": "pt-BR",
       "dir": "ltr",
-      "status": "draft"
+      "status": "live"
     },
     {
       "id": "ru",
       "name": "Русский",
       "intl": "ru-RU",
       "dir": "ltr",
-      "status": "draft"
+      "status": "live"
     }
   ]
 }

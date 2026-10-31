@@ -8,6 +8,8 @@ import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../../lib/fluid/s
 import { resolveAvatarUrl } from "../../../lib/userProfile";
 import { SX_PATHS, SX_AVATAR_COLORS } from "./icons";
 import { useReducedMotionPref } from "./useHubMode";
+import { useSvh } from "./useSvh";
+import { t } from "../../../i18n/runtime.js";
 import "./svh.css";
 
 export function I({ n, s = 18, w = 2, style, className }) {
@@ -114,8 +116,8 @@ export function Back({ label, onClick }) {
     </button>
   );
 }
-export function XBtn({ onClick, label = "Kapat" }) {
-  return <button type="button" className="svh-xbtn" onClick={onClick} aria-label={label}><I n="x" s={15} w={2.6} /></button>;
+export function XBtn({ onClick, label }) {
+  return <button type="button" className="svh-xbtn" onClick={onClick} aria-label={label || t("Close")}><I n="x" s={15} w={2.6} /></button>;
 }
 
 /** Nav bar: grid 1fr auto 1fr. `right` disabled ⇒ the kit's dim state. */
@@ -144,7 +146,9 @@ export function Seg({ options, value, onChange, style }) {
 }
 
 /** Tri-state permission: izin ver · varsayılan · engelle. */
-export function Tri({ value, onChange, disabled, labels = ["İzin ver", "Varsayılan", "Engelle"] }) {
+export function Tri({ value, onChange, disabled, labels: labelsProp }) {
+  const { s } = useSvh();
+  const labels = labelsProp || [s.triAllow, s.triInherit, s.triDeny];
   return (
     <span className="svh-tri" role="radiogroup">
       <button type="button" role="radio" aria-checked={value === "allow"} aria-label={labels[0]} disabled={disabled} className={value === "allow" ? "ok" : ""} onClick={() => onChange("allow")}><I n="check" s={15} w={2.6} /></button>
@@ -210,7 +214,10 @@ export function Chip({ color, children, style, onClick, on }) {
   return <span className="svh-chip" style={style}>{color ? <i style={{ background: color }} /> : null}{children}</span>;
 }
 
-export const Spinner = () => <div className="svh-spin" role="status" aria-label="Yükleniyor" />;
+export const Spinner = () => {
+  const { s } = useSvh();
+  return <div className="svh-spin" role="status" aria-label={s.loading} />;
+};
 
 /** Portal root: heavy-glass layer with delegated press feedback + Escape to close. */
 export function Layer({ children, onClose, z, label, className }) {
@@ -309,8 +316,10 @@ export function Scroll({ children, style, form }) {
 }
 
 /** iOS alert (kit alertBox()). */
-export function AlertBox({ title, msg, cancel = "Vazgeç", confirm, red = true, onCancel, onConfirm, busy, z }) {
+export function AlertBox({ title, msg, cancel: cancelProp, confirm, red = true, onCancel, onConfirm, busy, z }) {
   const reduced = useReducedMotionPref();
+  const { s } = useSvh();
+  const cancel = cancelProp ?? s.giveUp;
   return (
     <Layer onClose={onCancel} z={z || 10060} label={title}>
       <Dim strong onClick={onCancel} />
@@ -330,8 +339,10 @@ export function AlertBox({ title, msg, cancel = "Vazgeç", confirm, red = true, 
 }
 
 /** iOS action sheet (kit S22 iPhone). */
-export function ActionSheet({ title, sub, actions, cancel = "Vazgeç", onCancel, z }) {
+export function ActionSheet({ title, sub, actions, cancel: cancelProp, onCancel, z }) {
   const reduced = useReducedMotionPref();
+  const { s } = useSvh();
+  const cancel = cancelProp ?? s.giveUp;
   return (
     <Layer onClose={onCancel} z={z || 10060} label={title}>
       <Dim strong onClick={onCancel} />

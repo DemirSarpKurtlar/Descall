@@ -5,14 +5,25 @@ import {
   pollTimeLeft, pollEndedAt, __resetPollStore,
 } from "./pollStore.js";
 import { isLegacyPollText, parseLegacyPoll } from "./legacyPoll.js";
+import { loadI18nCatalogs } from "../i18n/index.js";
+import { setRuntimeLocale } from "../i18n/runtime.js";
 
-// Time left in Turkish.
+await loadI18nCatalogs("tr");
+setRuntimeLocale("tr");
+
+// Time left in the UI language (Intl unit names, so Turkish short units carry a dot).
 const now = Date.UTC(2026, 9, 18, 12, 0, 0);
-assert.equal(pollTimeLeft(new Date(now + 42 * 60000).toISOString(), now), "42 dk kaldı");
-assert.equal(pollTimeLeft(new Date(now + 18 * 3600000).toISOString(), now), "18 sa kaldı");
+assert.equal(pollTimeLeft(new Date(now + 42 * 60000).toISOString(), now), "42 dk. kaldı");
+assert.equal(pollTimeLeft(new Date(now + 18 * 3600000).toISOString(), now), "18 sa. kaldı");
 assert.equal(pollTimeLeft(new Date(now + 3 * 86400000).toISOString(), now), "3 gün kaldı");
 assert.equal(pollTimeLeft(new Date(now - 1000).toISOString(), now), "Sona erdi");
 assert.match(pollEndedAt({ closedAt: "2026-10-18T20:54:00Z" }), /18 Eki 23:54/);
+setRuntimeLocale("en");
+assert.equal(pollTimeLeft(new Date(now + 3 * 86400000).toISOString(), now), "3 days left");
+assert.equal(pollTimeLeft(new Date(now + 42 * 60000).toISOString(), now), "42 mins left");
+assert.equal(pollTimeLeft(new Date(now - 1000).toISOString(), now), "Ended");
+setRuntimeLocale("tr");
+assert.match(pollEndedAt({ closedAt: "2026-10-18T20:54:00Z" }, "en"), /18 Oct 23:54/);
 
 // A neutral broadcast snapshot never overrides the viewer-specific one.
 __resetPollStore();

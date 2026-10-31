@@ -1365,6 +1365,67 @@
         <a href="/contact">Contact</a>
       </nav>
     </noscript>
+    <script>
+      /* Boot locale: splash and cookie-bar words before any bundle (no catalogs yet).
+         Same rule as src/i18n/boot.js + detect.js + storage.js: the stored choice
+         (descall_language, then the settings copy), then a Turkey device -> tr, then the
+         first device language with an entry, else en. Drafts (not in BOOT_LIVE) only with
+         descall_i18n_preview=1, like registry.js. BOOT_LIVE must equal the "live" ids of
+         src/i18n/locales.json (src/bootLabel.selftest.mjs checks it). */
+      (function () {
+        var BOOT_COPY = {
+          "en": {"starting": "Starting", "startingAria": "Starting Descall", "ready": "Ready", "slow": "Connecting to Descall…", "fail": "Descall could not start", "detail": "The app did not load in time. Check your connection and try again.", "retry": "Try again", "cookieAria": "Cookie preferences", "cookieText": "Optional analytics only. Essentials stay on.", "privacy": "Privacy", "reject": "Reject", "accept": "Accept"},
+          "tr": {"starting": "Başlatılıyor", "startingAria": "Descall başlatılıyor", "ready": "Hazır", "slow": "Sunucuya bağlanılıyor…", "fail": "Descall açılamadı", "detail": "Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene.", "retry": "Tekrar dene", "cookieAria": "Çerez tercihleri", "cookieText": "İsteğe bağlı analitik. Zorunlu çerezler açık kalır.", "privacy": "Gizlilik", "reject": "Reddet", "accept": "Kabul et"},
+          "de": {"starting": "Wird gestartet", "startingAria": "Descall wird gestartet", "ready": "Bereit", "slow": "Verbindung zu Descall…", "fail": "Descall konnte nicht starten", "detail": "Die App wurde nicht rechtzeitig geladen. Prüfe deine Verbindung und versuche es erneut.", "retry": "Erneut versuchen", "cookieAria": "Cookie-Einstellungen", "cookieText": "Nur optionale Analyse. Notwendige Cookies bleiben aktiv.", "privacy": "Datenschutz", "reject": "Ablehnen", "accept": "Akzeptieren"},
+          "es": {"starting": "Iniciando", "startingAria": "Iniciando Descall", "ready": "Listo", "slow": "Conectando con Descall…", "fail": "No se pudo iniciar Descall", "detail": "La app no cargó a tiempo. Revisa tu conexión e inténtalo de nuevo.", "retry": "Reintentar", "cookieAria": "Preferencias de cookies", "cookieText": "Solo analíticas opcionales. Las esenciales siguen activas.", "privacy": "Privacidad", "reject": "Rechazar", "accept": "Aceptar"},
+          "fr": {"starting": "Démarrage", "startingAria": "Démarrage de Descall", "ready": "Prêt", "slow": "Connexion à Descall…", "fail": "Descall n'a pas pu démarrer", "detail": "L'app n'a pas chargé à temps. Vérifie ta connexion et réessaie.", "retry": "Réessayer", "cookieAria": "Préférences de cookies", "cookieText": "Analyses facultatives uniquement. Les cookies essentiels restent actifs.", "privacy": "Confidentialité", "reject": "Refuser", "accept": "Accepter"},
+          "pt-BR": {"starting": "Iniciando", "startingAria": "Iniciando o Descall", "ready": "Pronto", "slow": "Conectando ao Descall…", "fail": "Não foi possível iniciar o Descall", "detail": "O app não carregou a tempo. Verifique sua conexão e tente novamente.", "retry": "Tentar novamente", "cookieAria": "Preferências de cookies", "cookieText": "Apenas análises opcionais. Os essenciais continuam ativos.", "privacy": "Privacidade", "reject": "Recusar", "accept": "Aceitar"},
+          "ru": {"starting": "Запуск", "startingAria": "Запуск Descall", "ready": "Готово", "slow": "Подключение к Descall…", "fail": "Не удалось запустить Descall", "detail": "Приложение не загрузилось вовремя. Проверьте подключение и попробуйте ещё раз.", "retry": "Повторить", "cookieAria": "Настройки cookie", "cookieText": "Только необязательная аналитика. Необходимые cookie остаются включены.", "privacy": "Конфиденциальность", "reject": "Отклонить", "accept": "Принять"}
+        };
+        var BOOT_LIVE = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];
+        var ids = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];
+        var preview = false;
+        try { preview = localStorage.getItem("descall_i18n_preview") === "1"; } catch (eP) {}
+        function usable(id) { return preview || BOOT_LIVE.indexOf(id) >= 0; }
+        function pick(value) {
+          var raw = String(value || "").replace(/^\s+|\s+$/g, "").replace(/_/g, "-").toLowerCase();
+          if (!raw) return null;
+          var i;
+          for (i = 0; i < ids.length; i += 1) if (ids[i].toLowerCase() === raw) return usable(ids[i]) ? ids[i] : null;
+          var base = raw.split("-")[0];
+          for (i = 0; i < ids.length; i += 1) if (ids[i].toLowerCase().split("-")[0] === base && usable(ids[i])) return ids[i];
+          return null;
+        }
+        var locale = null;
+        try {
+          locale = pick(localStorage.getItem("descall_language"));
+          if (!locale) {
+            var saved = JSON.parse(localStorage.getItem("descall_user_settings") || localStorage.getItem("descall_settings") || "{}");
+            locale = pick(saved && saved.language);
+          }
+        } catch (eS) {}
+        var langs = [];
+        try { langs = [navigator.language].concat(navigator.languages || []).filter(Boolean); } catch (eN) {}
+        if (!locale) {
+          var turkey = false;
+          try {
+            for (var t = 0; t < langs.length; t += 1) {
+              var l = String(langs[t]).toLowerCase();
+              if (l === "tr" || l.indexOf("tr-") === 0 || /-tr$/.test(l)) turkey = true;
+            }
+            if ((Intl.DateTimeFormat().resolvedOptions().timeZone || "") === "Europe/Istanbul") turkey = true;
+          } catch (eT) {}
+          if (turkey) locale = pick("tr");
+        }
+        for (var d = 0; !locale && d < langs.length; d += 1) locale = pick(langs[d]);
+        locale = locale || "en";
+        window.__descallBootLocale = locale;
+        window.__descallBootCopy = BOOT_COPY[locale] || BOOT_COPY.en;
+        window.__descallBootCopyFor = function (id) { return BOOT_COPY[id] || BOOT_COPY.en; };
+        // Turkish keeps its own flag: main.jsx must not overwrite the Turkish label (B2).
+        window.__descallBootTr = locale === "tr";
+      })();
+    </script>
     <div id="seo-static" aria-hidden="false"></div>
     <div id="mkt-consent-static" role="dialog" aria-label="Cookie preferences">
       <p>
@@ -1377,24 +1438,15 @@
       </div>
     </div>
     <script>
-      /* Localize the static cookie bar from stored language / Turkish URL before React hydrates.
-         Stored English wins on English URLs so EN selected never flashes Turkish.
-         Turkish URLs (/tr, /descall-sahibi, /discord-alternative-turkey) stay Turkish. */
+      /* Localize the static cookie bar before React hydrates, in the boot locale (script above).
+         Turkish URLs (/tr, /descall-sahibi, /discord-alternative-turkey) stay Turkish, and a
+         Turkish boot on an English URL with a Turkish mirror goes to the mirror (web only). */
       (function () {
         try {
           var path = (location.pathname || "/").replace(/\/+$/, "") || "/";
-          var stored = null;
-          try { stored = localStorage.getItem("descall_language"); } catch (e0) {}
           var isTrUrl = path === "/tr" || path.indexOf("/tr/") === 0
             || path === "/descall-sahibi" || path === "/discord-alternative-turkey";
-          var tr = stored === "tr" || isTrUrl;
-          if (stored === "en" && !isTrUrl) tr = false;
-          if (!tr && stored !== "en") {
-            var langs = ([navigator.language].concat(navigator.languages || [])).join(",").toLowerCase();
-            var tz = "";
-            try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e1) {}
-            if (/(^|,)tr(-|,|$)/.test(langs) || tz === "Europe/Istanbul") tr = true;
-          }
+          var locale = isTrUrl ? "tr" : (window.__descallBootLocale || "en");
           // Native Capacitor app: the /tr marketing mirror is web-only. Redirecting
           // there reloaded the whole document on every Turkish cold start.
           var nativeApp = false;
@@ -1402,7 +1454,7 @@
             var capNative = window.Capacitor;
             nativeApp = !!(capNative && typeof capNative.isNativePlatform === "function" && capNative.isNativePlatform());
           } catch (eNat) {}
-          if (tr && stored !== "en" && !isTrUrl && !nativeApp) {
+          if (locale === "tr" && !isTrUrl && !nativeApp) {
             var mirrors = {
               "/": "/tr",
               "/features": "/tr/features",
@@ -1421,21 +1473,26 @@
               return;
             }
           }
-          if (tr) {
-            try { document.documentElement.lang = "tr"; } catch (e3) {}
-          }
-          if (!tr) return;
+          try { document.documentElement.lang = locale; } catch (e3) {}
+          if (locale === "en") return;
+          var c = window.__descallBootCopyFor ? window.__descallBootCopyFor(locale) : null;
+          if (!c) return;
           var box = document.getElementById("mkt-consent-static");
           if (!box) return;
-          box.setAttribute("aria-label", "Çerez tercihleri");
+          box.setAttribute("aria-label", c.cookieAria);
           var p = box.querySelector("p");
           if (p) {
-            p.innerHTML = 'İsteğe bağlı analitik. Zorunlu çerezler açık kalır. <a class="privacy" href="/privacy">Gizlilik</a>';
+            p.textContent = c.cookieText + " ";
+            var link = document.createElement("a");
+            link.className = "privacy";
+            link.href = "/privacy";
+            link.textContent = c.privacy;
+            p.appendChild(link);
           }
           var rej = box.querySelector("[data-consent=\"rejected\"]");
           var acc = box.querySelector("[data-consent=\"accepted\"]");
-          if (rej) rej.textContent = "Reddet";
-          if (acc) acc.textContent = "Kabul et";
+          if (rej) rej.textContent = c.reject;
+          if (acc) acc.textContent = c.accept;
         } catch (e2) {}
       })();
     </script>
@@ -1489,8 +1546,11 @@
             splash.setAttribute("data-shown-at", String(Date.now()));
             splash.setAttribute("role", "progressbar");
             splash.setAttribute("aria-busy", "true");
-            splash.setAttribute("aria-label", "Starting Descall");
-            splash.innerHTML = '<div class="boot-orb boot-orb--a" aria-hidden="true"></div><div class="boot-orb boot-orb--b" aria-hidden="true"></div><div class="boot-card"><div class="boot-mark" aria-hidden="true"><img id="boot-logo" src="/brand/descall-icon.png" alt="" width="112" height="112"></div><div class="boot-title">Descall</div><div class="boot-bar" aria-hidden="true"><i></i></div><p class="boot-status" id="boot-status">Starting</p></div>';
+            var fallbackCopy = window.__descallBootCopy || {};
+            splash.setAttribute("aria-label", fallbackCopy.startingAria || "Starting Descall");
+            splash.innerHTML = '<div class="boot-orb boot-orb--a" aria-hidden="true"></div><div class="boot-orb boot-orb--b" aria-hidden="true"></div><div class="boot-card"><div class="boot-mark" aria-hidden="true"><img id="boot-logo" src="/brand/descall-icon.png" alt="" width="112" height="112"></div><div class="boot-title">Descall</div><div class="boot-bar" aria-hidden="true"><i></i></div><p class="boot-status" id="boot-status"></p></div>';
+            var fallbackStatus = splash.querySelector(".boot-status");
+            if (fallbackStatus) fallbackStatus.textContent = fallbackCopy.starting || "Starting";
             document.body.insertBefore(splash, document.body.firstChild);
             if (!window.__descallDismissBootSplash) {
               window.__descallDismissBootSplash = function (opts) {
@@ -1504,7 +1564,7 @@
                 var wait = Math.max(0, minMs - elapsed);
                 if (maxMs >= 0) wait = Math.min(wait, Math.max(0, maxMs - elapsed));
                 var status = document.getElementById("boot-status");
-                if (status) status.textContent = window.__descallBootTr ? "Hazır" : "Ready";
+                if (status) status.textContent = (window.__descallBootCopy || {}).ready || "Ready";
                 window.setTimeout(function () {
                   if (window.__descallBootHolds > 0) return;
                   root.classList.add("boot-splash--hide");
@@ -1573,30 +1633,22 @@
             window.setTimeout(post, 2500);
           })();
         }
-        if (document.documentElement.classList.contains("boot-mobile") && !document.documentElement.classList.contains("native-app")) {
+        var bootCopyText = window.__descallBootCopy || {};
+        // The phone "please wait" label per locale. English has none here: seo-validate
+        // rejects the English placeholder word in shipped HTML, and main.jsx falls back
+        // to its own English label.
+        var BOOT_WAIT = { "tr": "Yükleniyor", "de": "Wird geladen", "es": "Cargando", "fr": "Chargement", "pt-BR": "Carregando", "ru": "Загрузка" };
+        if (window.__descallBootCopy) window.__descallBootCopy.waitLabel = BOOT_WAIT[window.__descallBootLocale] || "";
+        if (window.__descallBootLocale && window.__descallBootLocale !== "en") {
+          if (el && bootCopyText.startingAria) el.setAttribute("aria-label", bootCopyText.startingAria);
           var bootLabel = document.getElementById("boot-status");
-          if (bootLabel) {
-            var bootTr = false;
-            try {
-              var bootLang = (localStorage.getItem("descall_language") || navigator.language || "").toLowerCase();
-              var bootTz = "";
-              try { bootTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz) {}
-              bootTr = bootLang.indexOf("tr") === 0 || bootLang.slice(-3) === "-tr" || bootTz === "Europe/Istanbul";
-            } catch (eBoot) {}
-            window.__descallBootTr = bootTr;
-            if (bootTr) bootLabel.textContent = "Yükleniyor";
+          if (bootLabel && bootCopyText.starting) bootLabel.textContent = bootCopyText.starting;
+          // Phone web splash shows the label: "Yükleniyor" (tr), "Wird geladen" (de), ...
+          if (bootLabel && bootCopyText.waitLabel && document.documentElement.classList.contains("boot-mobile") && !document.documentElement.classList.contains("native-app")) {
+            bootLabel.textContent = bootCopyText.waitLabel;
           }
-        }
-        var slowLabel = document.getElementById("boot-slow");
-        if (slowLabel) {
-          var slowTr = false;
-          try {
-            var slowLang = (localStorage.getItem("descall_language") || navigator.language || "").toLowerCase();
-            var slowTz = "";
-            try { slowTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz3) {}
-            slowTr = slowLang.indexOf("tr") === 0 || (!localStorage.getItem("descall_language") && slowTz === "Europe/Istanbul");
-          } catch (eSlow) {}
-          if (slowTr) slowLabel.textContent = "Sunucuya bağlanılıyor…";
+          var slowLabel = document.getElementById("boot-slow");
+          if (slowLabel && bootCopyText.slow) slowLabel.textContent = bootCopyText.slow;
         }
         var logo = document.getElementById("boot-logo");
         if (logo && location.protocol === "file:") logo.src = "./brand/descall-icon.png";
@@ -1620,16 +1672,10 @@
         }
 
         function bootCopy(kind) {
-          var tr = false;
-          try {
-            var lang = (localStorage.getItem("descall_language") || navigator.language || "").toLowerCase();
-            var tz = "";
-            try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eTz2) {}
-            tr = lang.indexOf("tr") === 0 || (!localStorage.getItem("descall_language") && tz === "Europe/Istanbul");
-          } catch (eLang) {}
-          if (kind === "retry") return tr ? "Tekrar dene" : "Try again";
-          if (kind === "detail") return tr ? "Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene." : "The app did not load in time. Check your connection and try again.";
-          return tr ? "Descall açılamadı" : "Descall could not start";
+          var c = window.__descallBootCopy || {};
+          if (kind === "retry") return c.retry || "Try again";
+          if (kind === "detail") return c.detail || "The app did not load in time. Check your connection and try again.";
+          return c.fail || "Descall could not start";
         }
 
         // Boot watchdog (2.11.5). 12s without a painted app: retry once on our
@@ -1753,7 +1799,7 @@
           if (maxMs >= 0) wait = Math.min(wait, Math.max(0, maxMs - elapsed));
           if (maxMs >= 0 && elapsed >= maxMs) wait = 0;
           var status = document.getElementById("boot-status");
-          if (status && !status.classList.contains("boot-status--visible")) status.textContent = window.__descallBootTr ? "Hazır" : "Ready";
+          if (status && !status.classList.contains("boot-status--visible")) status.textContent = (window.__descallBootCopy || {}).ready || "Ready";
           window.setTimeout(function () {
             if (!root || root.classList.contains("boot-splash--hide")) return;
             if (root.getAttribute("data-boot-failed") === "1" && !force) return;

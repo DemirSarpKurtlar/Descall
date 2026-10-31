@@ -2,13 +2,15 @@
 
 /**
  * Descall transactional emails (3.7.8): one designed shell for every code email
- * (sign-up verification, sign-in code, email change, password reset), Turkish
- * first with an English copy. Table layout + inline styles so Gmail, Outlook,
+ * (sign-up verification, sign-in code, email change, password reset). The words
+ * come from the backend catalogs (backend/i18n/<locale>.js, email.*), Turkish
+ * when no live language with a catalog matches. Table layout + inline styles so Gmail, Outlook,
  * Apple Mail and Yahoo render it the same; a hidden preheader for the inbox
  * preview; a plain-text twin for clients without HTML. No emoji (owner rule).
  */
 
-const { resolveLang, parseAcceptLanguage } = require("./locales");
+const { resolveLang, parseAcceptLanguage, normalizeLocale } = require("./locales");
+const { bt, availableLangs } = require("./i18n");
 const { escapeHtml } = require("./emailUtil");
 
 const SITE = "https://descall.com";
@@ -32,172 +34,65 @@ const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue
 const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace";
 
 /**
- * Email language: the account language when it is a live locale with a template,
- * else the request's Accept-Language (best first), else Turkish.
+ * Email language: the account language when it is a live locale with a catalog
+ * (backend/i18n/<id>.js), else the request's Accept-Language (best first), else Turkish.
  */
 function langFrom(acceptLanguage, explicit) {
   return resolveLang([explicit, parseAcceptLanguage(acceptLanguage)], {
-    available: Object.keys(COPY),
+    available: availableLangs(),
     fallback: "tr",
   });
 }
 
-const COPY = {
-  tr: {
-    email_verify_signup: {
-      subject: (c) => `${c} – Descall doğrulama kodun`,
-      eyebrow: "E-posta doğrulama",
-      title: (u) => (u ? `Descall'a hoş geldin, ${u}!` : "Descall'a hoş geldin!"),
-      intro: "Hesabın hazır. Son bir adım kaldı: e-posta adresini doğrulamak için aşağıdaki kodu uygulamaya gir.",
-      preheader: (c, m) => `Doğrulama kodun: ${c} · ${m} dakika geçerli`,
-      next: true,
-      ignore: "Bu hesabı sen oluşturmadıysan bu e-postayı yok sayabilirsin. Adres doğrulanmadıkça hiçbir hesaba bağlanmaz.",
-    },
-    email_verify: {
-      subject: (c) => `${c} – Descall e-posta doğrulama kodun`,
-      eyebrow: "E-posta doğrulama",
-      title: () => "E-posta adresini doğrula",
-      intro: "Descall hesabına bu e-posta adresini eklemek için aşağıdaki kodu uygulamaya gir.",
-      preheader: (c, m) => `Doğrulama kodun: ${c} · ${m} dakika geçerli`,
-      ignore: "Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin. Adresin hiçbir hesaba eklenmez.",
-    },
-    "2fa_login": {
-      subject: (c) => `${c} – Descall giriş kodun`,
-      eyebrow: "Giriş kodu",
-      codeLabel: "Giriş kodun",
-      title: () => "Girişini tamamla",
-      intro: "Hesabına giriş yapmak için bu kodu Descall'a gir.",
-      preheader: (c, m) => `Giriş kodun: ${c} · ${m} dakika geçerli`,
-      ignore: "Giriş yapmaya çalışan sen değilsen şifren başkasının elinde olabilir. Hemen şifreni değiştir ve Ayarlar › Güvenlik'ten doğrulama uygulamasını aç.",
-      warn: true,
-    },
-    email_reauth: {
-      subject: (c) => `${c} – Descall onay kodun`,
-      eyebrow: "Hesap güvenliği",
-      codeLabel: "Onay kodun",
-      title: () => "Bu sen misin?",
-      intro: "Hesabındaki e-posta adresini değiştirmek için bu kodu gir.",
-      preheader: (c, m) => `Onay kodun: ${c} · ${m} dakika geçerli`,
-      ignore: "Bu değişikliği sen istemediysen kodu kimseyle paylaşma ve şifreni değiştir. Kod olmadan adres değiştirilemez.",
-      warn: true,
-    },
-    password_reset: {
-      subject: (c) => `${c} – Descall şifre sıfırlama kodun`,
-      eyebrow: "Şifre sıfırlama",
-      codeLabel: "Sıfırlama kodun",
-      title: () => "Şifreni sıfırla",
-      intro: "Yeni bir şifre belirlemek için bu kodu Descall'a gir.",
-      preheader: (c, m) => `Şifre sıfırlama kodun: ${c} · ${m} dakika geçerli`,
-      ignore: "Şifre sıfırlamayı sen istemediysen bu e-postayı yok sayabilirsin; şifren değişmez.",
-    },
-    common: {
-      hi: (u) => `Merhaba ${u},`,
-      codeLabel: "Doğrulama kodun",
-      valid: (m) => `${m} dakika geçerli`,
-      copyHint: "Kodu seçip kopyalayabilirsin.",
-      never: "Descall ekibi kodunu hiçbir zaman istemez. Kimseyle paylaşma.",
-      nextTitle: "Sırada ne var?",
-      steps: [
-        ["Arkadaşlarını ekle", "Kullanıcı adlarıyla bul ya da davet bağlantını paylaş."],
-        ["Bir sunucuya katıl", "Topluluklara katıl ya da kendi sunucunu birkaç saniyede kur."],
-        ["Konuşmaya başla", "Mesajlaş, sesli ve görüntülü ara, ekranını paylaş."],
-      ],
-      getApp: "Descall her yerde seninle",
-      appWin: "Windows için indir",
-      appIos: "App Store'dan indir",
-      appWeb: "Tarayıcıda aç",
-      help: "Yardıma mı ihtiyacın var?",
-      write: "Bize yaz:",
-      privacy: "Gizlilik",
-      terms: "Kullanım Koşulları",
-      why: "Bu e-postayı Descall hesabınla ilgili bir işlem yapıldığı için aldın.",
-      privacyHref: `${SITE}/gizlilik`,
-      termsHref: `${SITE}/kosullar`,
-      downloadHref: `${SITE}/tr/download`,
-      text: {
-        code: "Kodun",
-        valid: (m) => `${m} dakika geçerli.`,
-      },
-    },
-  },
-  en: {
-    email_verify_signup: {
-      subject: (c) => `${c} is your Descall verification code`,
-      eyebrow: "Email verification",
-      title: (u) => (u ? `Welcome to Descall, ${u}!` : "Welcome to Descall!"),
-      intro: "Your account is ready. One last step: enter the code below in the app to verify your email address.",
-      preheader: (c, m) => `Your code: ${c} · valid for ${m} minutes`,
-      next: true,
-      ignore: "If you didn't create this account, you can ignore this email. The address isn't linked to any account until it's verified.",
-    },
-    email_verify: {
-      subject: (c) => `${c} is your Descall verification code`,
-      eyebrow: "Email verification",
-      title: () => "Verify your email address",
-      intro: "Enter the code below in the app to add this email address to your Descall account.",
-      preheader: (c, m) => `Your code: ${c} · valid for ${m} minutes`,
-      ignore: "If you didn't request this, you can ignore this email. Your address won't be added to any account.",
-    },
-    "2fa_login": {
-      subject: (c) => `${c} is your Descall sign-in code`,
-      eyebrow: "Sign-in code",
-      codeLabel: "Your sign-in code",
-      title: () => "Finish signing in",
-      intro: "Enter this code in Descall to sign in to your account.",
-      preheader: (c, m) => `Your sign-in code: ${c} · valid for ${m} minutes`,
-      ignore: "If this wasn't you, someone may know your password. Change it now and turn on the authenticator app in Settings › Security.",
-      warn: true,
-    },
-    email_reauth: {
-      subject: (c) => `${c} is your Descall confirmation code`,
-      eyebrow: "Account security",
-      codeLabel: "Your confirmation code",
-      title: () => "Is this you?",
-      intro: "Enter this code to change the email address on your account.",
-      preheader: (c, m) => `Your confirmation code: ${c} · valid for ${m} minutes`,
-      ignore: "If you didn't ask for this, don't share the code and change your password. The address can't change without it.",
-      warn: true,
-    },
-    password_reset: {
-      subject: (c) => `${c} is your Descall password reset code`,
-      eyebrow: "Password reset",
-      codeLabel: "Your reset code",
-      title: () => "Reset your password",
-      intro: "Enter this code in Descall to choose a new password.",
-      preheader: (c, m) => `Your reset code: ${c} · valid for ${m} minutes`,
-      ignore: "If you didn't ask to reset your password, you can ignore this email; your password stays the same.",
-    },
-    common: {
-      hi: (u) => `Hi ${u},`,
-      codeLabel: "Your code",
-      valid: (m) => `Valid for ${m} minutes`,
-      copyHint: "You can select and copy the code.",
-      never: "Descall staff will never ask for your code. Don't share it with anyone.",
-      nextTitle: "What's next?",
-      steps: [
-        ["Add your friends", "Find them by username or share your invite link."],
-        ["Join a server", "Join a community or create your own in seconds."],
-        ["Start talking", "Message, voice and video call, share your screen."],
-      ],
-      getApp: "Descall goes where you go",
-      appWin: "Download for Windows",
-      appIos: "Get it on the App Store",
-      appWeb: "Open in browser",
-      help: "Need help?",
-      write: "Write to us:",
-      privacy: "Privacy",
-      terms: "Terms",
-      why: "You received this email because of an action on your Descall account.",
-      privacyHref: `${SITE}/privacy`,
-      termsHref: `${SITE}/terms`,
-      downloadHref: `${SITE}/download`,
-      text: {
-        code: "Your code",
-        valid: (m) => `Valid for ${m} minutes.`,
-      },
-    },
-  },
+// Layout flags per purpose; the words live in backend/i18n/<locale>.js under email.*.
+const LAYOUT = {
+  email_verify_signup: { next: true },
+  email_verify: {},
+  "2fa_login": { warn: true, codeLabel: true },
+  email_reauth: { warn: true, codeLabel: true },
+  password_reset: { codeLabel: true },
 };
+
+/** Copy for one purpose in one language, rendered from the catalog. */
+function copyFor(lang, purpose, { code, username, minutes }) {
+  const k = (key) => `email.${purpose}.${key}`;
+  const c = (key, vars) => bt(lang, `email.common.${key}`, vars);
+  const flags = LAYOUT[purpose] || {};
+  const P = {
+    subject: bt(lang, k("subject"), { code }),
+    eyebrow: bt(lang, k("eyebrow")),
+    title: purpose === "email_verify_signup" && !username ? bt(lang, k("titleNoName")) : bt(lang, k("title"), { name: username }),
+    intro: bt(lang, k("intro")),
+    preheader: bt(lang, k("preheader"), { code, minutes }),
+    ignore: bt(lang, k("ignore")),
+    codeLabel: flags.codeLabel ? bt(lang, k("codeLabel")) : null,
+    next: Boolean(flags.next),
+    warn: Boolean(flags.warn),
+  };
+  const common = {
+    hi: c("hi", { name: username }),
+    codeLabel: c("codeLabel"),
+    valid: c("valid", { minutes }),
+    copyHint: c("copyHint"),
+    never: c("never"),
+    nextTitle: c("nextTitle"),
+    steps: [1, 2, 3].map((i) => [c(`step${i}Title`), c(`step${i}Body`)]),
+    getApp: c("getApp"),
+    appWin: c("appWin"),
+    appIos: c("appIos"),
+    appWeb: c("appWeb"),
+    help: c("help"),
+    write: c("write"),
+    privacy: c("privacy"),
+    terms: c("terms"),
+    why: c("why"),
+    privacyHref: `${SITE}${c("privacyPath")}`,
+    termsHref: `${SITE}${c("termsPath")}`,
+    downloadHref: `${SITE}${c("downloadPath")}`,
+    text: { code: c("textCode"), valid: c("textValid", { minutes }) },
+  };
+  return { P, common };
+}
 
 const PURPOSES = Object.freeze(["email_verify_signup", "email_verify", "2fa_login", "email_reauth", "password_reset"]);
 
@@ -211,7 +106,7 @@ function codeBlock(code, common, minutes, label) {
     <p style="margin:0;font-family:${MONO};font-size:40px;line-height:1.1;font-weight:700;letter-spacing:0.18em;color:${C.ink};-webkit-user-select:all;user-select:all;">${spaced}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:16px auto 0;">
       <tr><td bgcolor="#1b2340" style="background-color:#1b2340;border-radius:999px;padding:6px 12px;">
-        <span style="font-family:${FONT};font-size:12.5px;font-weight:600;color:${C.brandSoft};">${escapeHtml(common.valid(minutes))}</span>
+        <span style="font-family:${FONT};font-size:12.5px;font-weight:600;color:${C.brandSoft};">${escapeHtml(common.valid)}</span>
       </td></tr>
     </table>
   </td></tr>
@@ -267,24 +162,26 @@ function appsBlock(common) {
 }
 
 /**
- * @param {{ purpose: string, code: string, username?: string, lang?: "tr"|"en", minutes?: number, year?: number }} p
+ * @param {{ purpose: string, code: string, username?: string, lang?: string, minutes?: number, year?: number }} p
  * @returns {{ subject: string, html: string, text: string }}
  */
 function buildCodeEmail({ purpose, code, username = "", lang = "tr", minutes = 10, year = new Date().getUTCFullYear() }) {
-  const L = COPY[lang === "en" ? "en" : "tr"];
-  const P = L[PURPOSES.includes(purpose) ? purpose : "email_verify"];
-  const common = L.common;
+  // A language without a catalog file (or a draft one) falls back to Turkish, as before.
+  const id = normalizeLocale(lang, { liveOnly: true });
+  const L = id && availableLangs().includes(id) ? id : "tr";
+  const key = PURPOSES.includes(purpose) ? purpose : "email_verify";
   const user = String(username || "").trim().slice(0, 40);
-  const subject = P.subject(code);
-  const title = P.title(user);
+  const { P, common } = copyFor(L, key, { code, username: user, minutes });
+  const subject = P.subject;
+  const title = P.title;
   const showHi = Boolean(user) && purpose !== "email_verify_signup";
-  const preheader = P.preheader(code, minutes);
+  const preheader = P.preheader;
   const warnBg = P.warn ? "#2a1d14" : C.codeBg;
   const warnEdge = P.warn ? "#5a3b22" : C.edge;
   const warnInk = P.warn ? "#f3c99b" : C.muted;
 
   const html = `<!DOCTYPE html>
-<html lang="${lang === "en" ? "en" : "tr"}" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="${L}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -322,7 +219,7 @@ function buildCodeEmail({ purpose, code, username = "", lang = "tr", minutes = 1
           <h1 class="h1" style="margin:16px 0 0;font-family:${FONT};font-size:27px;line-height:1.25;font-weight:750;letter-spacing:-0.015em;color:#ffffff;">${escapeHtml(title)}</h1>
         </td></tr>
         <tr><td class="px" style="padding:26px 32px 8px;">
-          ${showHi ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:15px;color:${C.ink};">${escapeHtml(common.hi(user))}</p>` : ""}
+          ${showHi ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:15px;color:${C.ink};">${escapeHtml(common.hi)}</p>` : ""}
           <p style="margin:0;font-family:${FONT};font-size:15.5px;line-height:1.6;color:${C.body};">${escapeHtml(P.intro)}</p>
           ${codeBlock(code, common, minutes, P.codeLabel)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 22px;">
@@ -356,11 +253,11 @@ function buildCodeEmail({ purpose, code, username = "", lang = "tr", minutes = 1
   const lines = [
     title,
     "",
-    showHi ? common.hi(user) : null,
+    showHi ? common.hi : null,
     P.intro,
     "",
     `${common.text.code}: ${code}`,
-    common.text.valid(minutes),
+    common.text.valid,
     "",
     P.ignore,
     common.never,
@@ -375,4 +272,4 @@ function buildCodeEmail({ purpose, code, username = "", lang = "tr", minutes = 1
   return { subject, html, text };
 }
 
-module.exports = { buildCodeEmail, langFrom, PURPOSES, COPY };
+module.exports = { buildCodeEmail, langFrom, PURPOSES };

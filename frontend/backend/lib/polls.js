@@ -280,12 +280,16 @@ async function postPollEndMessage(io, poll, snapshot, senderId) {
   if (!senderId) return null;
   try {
     const content = core.pollEndText(snapshot);
+    // Viewers render the line in their language from `i18n` (lib/botText.js). It is stored in
+    // reply_to (the JSONB column every message table has) so history keeps it too.
+    const i18n = { content: core.pollEndRef(snapshot) };
     const sender = await loadSender(senderId);
     const replyMeta = {
       id: pollMessageId(poll),
       text: `📊 ${poll.question}`,
       mediaType: "poll_v2",
       from: { id: poll.creator_id, username: null },
+      i18n,
     };
     if (poll.scope === "server") {
       const { data: row, error } = await supabase
@@ -305,6 +309,7 @@ async function postPollEndMessage(io, poll, snapshot, senderId) {
         reply_to: replyMeta,
         replyTo: replyMeta,
         sender,
+        i18n,
       };
       io.to(`server-channel:${poll.channel_id}`).emit("server:channel:message", { serverId: poll.server_id, channelId: poll.channel_id, message });
       return message;
@@ -312,11 +317,11 @@ async function postPollEndMessage(io, poll, snapshot, senderId) {
     if (poll.scope === "group") {
       const { data: row, error } = await supabase
         .from("group_messages")
-        .insert({ group_id: poll.group_id, sender_id: senderId, content, media_type: "poll_end", message_type: "text" })
+        .insert({ group_id: poll.group_id, sender_id: senderId, content, media_type: "poll_end", message_type: "text", reply_to: replyMeta })
         .select("id, created_at")
         .single();
       if (error) throw error;
-      const message = { id: row.id, group_id: poll.group_id, sender_id: senderId, content, media_type: "poll_end", created_at: row.created_at, sender };
+      const message = { id: row.id, group_id: poll.group_id, sender_id: senderId, content, media_type: "poll_end", created_at: row.created_at, sender, reply_to: replyMeta, i18n };
       io.to(`group:${poll.group_id}`).emit("group:message", { groupId: poll.group_id, message });
       return message;
     }
@@ -332,6 +337,7 @@ async function postPollEndMessage(io, poll, snapshot, senderId) {
         id: row.id,
         from: { ...sender },
         text: content,
+        i18n: { text: i18n.content },
         mediaType: "poll_end",
         replyTo: replyMeta,
         timestamp: row.created_at,

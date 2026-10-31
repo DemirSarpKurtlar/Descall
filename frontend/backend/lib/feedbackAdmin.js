@@ -11,6 +11,10 @@ const STATUSES = ["new", "in_progress", "resolved", "closed"];
 const PRIORITIES = ["low", "medium", "high", "critical"];
 const CATEGORIES = ["bug", "feature", "improvement", "security", "general", "other"];
 
+const { ref, put } = require("./botText");
+
+// Turkish labels of OLD timeline lines ("demir durumu Çözüldü yaptı"); new lines are English
+// with an i18n ref (bot.feedback.*). lib/userFeedback.js still reads the old ones.
 const STATUS_TR = { new: "Yeni", in_progress: "İşlemde", resolved: "Çözüldü", closed: "Kapalı" };
 const PRIORITY_TR = { low: "Düşük", medium: "Orta", high: "Yüksek", critical: "Kritik" };
 
@@ -38,21 +42,37 @@ function readPlatform(raw) {
     m = ua.match(/Android [^;]*; ([^;)]+?)(?: Build|\))/);
     out.device = m && !/^(K|wv)$/.test(m[1].trim()) ? clip(m[1].trim(), 40) : "Android";
   } else if (/Windows NT/.test(ua)) {
-    out.platform = /Electron|Descall/i.test(ua) ? "Windows · uygulama" : "Windows · web";
+    out.platform = /Electron|Descall/i.test(ua) ? "Windows · app" : "Windows · web";
     out.device = "PC";
   } else if (/Mac OS X|Macintosh/.test(ua)) {
-    out.platform = /Electron|Descall/i.test(ua) ? "macOS · uygulama" : "macOS · web";
+    out.platform = /Electron|Descall/i.test(ua) ? "macOS · app" : "macOS · web";
     out.device = "Mac";
   } else if (/Linux/.test(ua)) {
     out.platform = "Linux";
     out.device = "PC";
   } else if (/^(ios|android|web|electron|desktop|ipad)$/i.test(ua.trim())) {
     const k = ua.trim().toLowerCase();
-    out.platform = { ios: "iOS", android: "Android", web: "Web", electron: "Masaüstü uygulaması", desktop: "Masaüstü", ipad: "iPadOS" }[k];
+    out.platform = { ios: "iOS", android: "Android", web: "Web", electron: "Desktop app", desktop: "Desktop", ipad: "iPadOS" }[k];
   } else {
     out.platform = clip(ua, 40);
   }
   return out;
+}
+
+const STATUS_OF_TR = Object.fromEntries(Object.entries(STATUS_TR).map(([k, v]) => [v, k]));
+const PRIORITY_OF_TR = Object.fromEntries(Object.entries(PRIORITY_TR).map(([k, v]) => [v, k]));
+
+/** i18n of a system line: stored on new lines; read from the Turkish text of old ones. */
+function systemI18n(r) {
+  if (r.type !== "system") return null;
+  if (r.i18n && typeof r.i18n === "object") return r.i18n;
+  const text = String(r.text || "");
+  let m = /^(.+) durumu (.+) yaptı$/.exec(text);
+  if (m && STATUS_OF_TR[m[2]]) return { text: ref("bot.feedback.statusChanged", { who: m[1], status: ref(`bot.feedback.status.${STATUS_OF_TR[m[2]]}`) }) };
+  m = /^(.+) önceliği (.+) yaptı$/.exec(text);
+  if (m && PRIORITY_OF_TR[m[2]]) return { text: ref("bot.feedback.priorityChanged", { who: m[1], priority: ref(`bot.feedback.priority.${PRIORITY_OF_TR[m[2]]}`) }) };
+  if (text === "Kullanıcı yanıt verdi, yeniden açıldı") return { text: ref("bot.feedback.userReopened") };
+  return null;
 }
 
 function shapeReply(r) {
@@ -64,6 +84,7 @@ function shapeReply(r) {
     internal: type === "note",
     isAdmin: type !== "reply" ? true : r.isAdmin !== false,
     text: clip(r.text || "", 4000),
+    ...(systemI18n(r) ? { i18n: systemI18n(r) } : {}),
     adminUsername: r.adminUsername ? clip(r.adminUsername, 40) : null,
     attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => typeof a === "string").slice(0, 5) : [],
     created_at: r.created_at || null,
@@ -139,16 +160,20 @@ function newId() {
   return Math.random().toString(36).slice(2, 12);
 }
 
-/** Thread lines like "demir durumu Çözüldü yaptı". */
+/**
+ * Thread lines like "demir set the status to Resolved" (English text + i18n ref, so the
+ * thread reads in each viewer's language; lib/botText.js).
+ */
 function systemLines(before, patch, adminUsername) {
-  const who = clip(adminUsername || "yönetici", 40);
+  const name = clip(adminUsername || "", 40);
+  const who = name || ref("bot.feedback.adminFallback");
   const at = new Date().toISOString();
   const out = [];
   if (patch.status && patch.status !== before.status) {
-    out.push({ id: newId(), type: "system", status: patch.status, text: `${who} durumu ${STATUS_TR[patch.status]} yaptı`, adminUsername: who, created_at: at });
+    out.push(put({ id: newId(), type: "system", status: patch.status, adminUsername: name || "admin", created_at: at }, "text", "bot.feedback.statusChanged", { who, status: ref(`bot.feedback.status.${patch.status}`) }));
   }
   if (patch.priority && patch.priority !== before.priority) {
-    out.push({ id: newId(), type: "system", text: `${who} önceliği ${PRIORITY_TR[patch.priority]} yaptı`, adminUsername: who, created_at: at });
+    out.push(put({ id: newId(), type: "system", priority: patch.priority, adminUsername: name || "admin", created_at: at }, "text", "bot.feedback.priorityChanged", { who, priority: ref(`bot.feedback.priority.${patch.priority}`) }));
   }
   return out;
 }

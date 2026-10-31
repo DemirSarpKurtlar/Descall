@@ -4,13 +4,36 @@ import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
 import { TR_APPROVED_UI } from "./trApprovedUi.js";
 
+import { CORE_TR } from "./core.tr.js";
 import { MAINT_TR } from "./maintenance.tr.js";
 import { PROMO_TR } from "./promo.tr.js";
 import { NC_TR } from "./newCreate.tr.js";
 import { FBK_TR } from "./feedback.tr.js";
 import { BADGES_TR } from "./badges.tr.js";
 import { ANTIBOT_TR } from "./antibot.tr.js";
+import { SHELL_TR } from "./shell.tr.js";
+import { SVH_TR } from "./svh.tr.js";
+import { CALLUI_TR } from "./callui.tr.js";
+import { SHOP_TR } from "./shop.tr.js";
+import { SHOP_ITEMS_TR } from "./shopItems.tr.js";
+import { ADMINX_TR } from "./adminx.tr.js";
+import { POLLS_TR } from "./polls.tr.js";
+import { SLASH_TR } from "./slash.tr.js";
+import { CHATX_TR } from "./chatx.tr.js";
+import { COUNTS_TR } from "./counts.tr.js";
+import { API_TR } from "./api.tr.js";
+import { BOT_TR } from "./bot.tr.js";
 export const nested = {
+  counts: COUNTS_TR,
+  shell: SHELL_TR,
+  svh: SVH_TR,
+  callui: CALLUI_TR,
+  shop: SHOP_TR,
+  shopItems: SHOP_ITEMS_TR,
+  adminx: ADMINX_TR,
+  polls: POLLS_TR, slash: SLASH_TR, chatx: CHATX_TR,
+  core: CORE_TR,
+  bot: BOT_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,
@@ -1131,6 +1154,7 @@ export const nested = {
 };
 
 export const phrases = {
+  ...API_TR,
   "Close": "Kapat",
   "You": "Sen",
   "Medium": "Orta",

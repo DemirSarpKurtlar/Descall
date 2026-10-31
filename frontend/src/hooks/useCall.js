@@ -189,7 +189,7 @@ export function useCall(socket, callOccupancyRef = null) {
       // DM calls. preserveAudioCategory: never re-set the category WebKit
       // configured for the running microphone capture.
       acquireCallWakeLock({
-        title: "Descall call",
+        title: tRuntime("callui.media.dmTitle"),
         artist: peer?.username || "",
         skipNative: callKitManagesAudioSession(callDirectionRef.current || "incoming"),
         preserveAudioCategory: true,

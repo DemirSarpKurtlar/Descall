@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
+// Card text comes from electron/i18n; these checks use the Turkish catalog.
+require("./mainI18n.cjs").setLocale("tr");
 const {
   buildNotificationHtml,
   buildNotificationGallery,

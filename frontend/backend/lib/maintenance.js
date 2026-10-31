@@ -1,5 +1,7 @@
 "use strict";
 
+const { bt, pickLang } = require("./i18n");
+
 /**
  * Scheduled maintenance windows (admin "Bakım" tab).
  *
@@ -62,7 +64,11 @@ function cleanText(v, max) {
  * Validate an admin create / update body. `existing` is the stored row on
  * update (fields not sent keep their value). Returns { ok, value } or { ok:false, code }.
  */
-function validateInput(body = {}, { existing = null, now = Date.now() } = {}) {
+/**
+ * `lang`: language of the admin who saves the window; the default title (when the title is
+ * left empty) is written in it (backend/i18n/<locale>.js maintenance.*). Turkish by default.
+ */
+function validateInput(body = {}, { existing = null, now = Date.now(), lang = "tr" } = {}) {
   const pick = (k, fallback) => (body[k] !== undefined ? body[k] : fallback);
   const startsAt = ms(pick("startsAt", existing?.starts_at));
   const endsAt = ms(pick("endsAt", existing?.ends_at));
@@ -85,7 +91,9 @@ function validateInput(body = {}, { existing = null, now = Date.now() } = {}) {
 
   const message = cleanText(pick("message", existing?.message), MAX_MESSAGE);
   if (!message) return { ok: false, code: "message_required" };
-  const title = cleanText(pick("title", existing?.title), MAX_TITLE) || (kind === "emergency" ? "Acil bakım" : "Planlı bakım");
+  const title =
+    cleanText(pick("title", existing?.title), MAX_TITLE) ||
+    bt(pickLang([lang], "tr"), kind === "emergency" ? "maintenance.emergencyTitle" : "maintenance.plannedTitle");
 
   let announce = pick("announceMinutes", existing ? existing.announce_minutes : 60);
   if (announce === null || announce === false || announce === 0) announce = null;

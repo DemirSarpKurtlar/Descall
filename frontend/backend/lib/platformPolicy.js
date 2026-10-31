@@ -1,5 +1,7 @@
 "use strict";
 
+const { apiText } = require("./apiError");
+
 /**
  * Platform switches from Yönetici Paneli › Sistem / Güvenlik (3.1.3).
  * Until 3.1.3 these were saved to system_settings but nothing read them; every
@@ -22,12 +24,13 @@ const MINUTE_MS = 60_000;
 const sendHistory = new Map(); // userId -> number[] (send times, newest last)
 
 const MESSAGES = {
-  frozen: "Sohbet şu an yönetici tarafından donduruldu. Biraz sonra tekrar dene.",
-  dmOff: "Özel mesajlar şu an kapalı.",
-  slow: (sec) => `Yavaş mod açık: ${sec} saniye sonra tekrar mesaj gönderebilirsin.`,
-  perMinute: "Çok hızlı mesaj gönderiyorsun. Biraz bekleyip tekrar dene.",
-  groupsOff: "Yeni grup oluşturma şu an kapalı.",
-  signupOff: "Yeni kayıtlar şu an kapalı.",
+  frozen: "Chat is frozen by an admin right now. Try again in a bit.",
+  dmOff: "Direct messages are turned off right now.",
+  // { message, messageKey, messageVars } (lib/apiError.js): the app translates the template.
+  slow: (sec) => apiText("message", "Slow mode is on: you can send another message in {seconds, plural, one {# second} other {# seconds}}.", { seconds: sec }),
+  perMinute: "You're sending messages too fast. Wait a moment and try again.",
+  groupsOff: "Creating new groups is turned off right now.",
+  signupOff: "New sign-ups are turned off right now.",
 };
 
 function num(v, fallback = 0) {
@@ -36,7 +39,8 @@ function num(v, fallback = 0) {
 }
 
 function block(code, message, retryAfterMs = 0) {
-  return { ok: false, code, message, retryAfterMs: Math.max(0, Math.ceil(retryAfterMs)) };
+  const text = message && typeof message === "object" ? message : { message };
+  return { ok: false, code, ...text, retryAfterMs: Math.max(0, Math.ceil(retryAfterMs)) };
 }
 
 /**

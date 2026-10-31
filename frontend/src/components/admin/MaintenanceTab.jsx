@@ -6,6 +6,7 @@ import {
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format.js";
 import {
   countdownParts, formatTrtShort, formatTrtTime, formatDuration, approxHours, progress,
   toTrtInputs, fromTrtInputs, dottedDate, isSameTrtDay, formatTrtLongDate,
@@ -228,7 +229,7 @@ export default function MaintenanceTab({ socket }) {
     { label: t("maint.kpiSystem"), value: s.systemStatus === "maintenance" || active ? t("maint.kpiInMaintenance") : t("maint.kpiOperational"), color: s.systemStatus === "maintenance" || active ? "#ff9f0a" : "#30d158" },
     s.nextStartsAt ? { label: t("maint.kpiNext"), value: formatTrtShort(s.nextStartsAt, locale), color: "#0a84ff" } : null,
     s.monthDowntimeMs ? { label: t("maint.kpiMonth"), value: formatDuration(s.monthDowntimeMs, locale), color: "#ff9f0a" } : null,
-    s.recentlyActiveUsers ? { label: t("maint.kpiAffected"), value: `~${s.recentlyActiveUsers.toLocaleString(locale === "tr" ? "tr-TR" : "en-US")}`, color: "#bf5af2", title: t("maint.kpiAffectedHint") } : null,
+    s.recentlyActiveUsers ? { label: t("maint.kpiAffected"), value: `~${formatNumber(s.recentlyActiveUsers, locale)}`, color: "#bf5af2", title: t("maint.kpiAffectedHint") } : null,
   ].filter(Boolean);
 
   const target = active ? win.endsAt : win?.startsAt;

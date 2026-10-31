@@ -3,7 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Gift, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { equipShopItem } from "../../api/shop";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
+import { localizedShopItemName } from "../../lib/shopItemI18n.js";
+import { countryCode, countryName, flagEmoji, isCountryItem } from "../../lib/countryFlags";
 import OverlayPortal from "../ui/OverlayPortal";
 
 const CATEGORY_LABEL = {
@@ -32,11 +34,15 @@ const CATEGORY_LABEL = {
  */
 export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
   const t = useT();
+  const { locale } = useLocale();
   const [equipping, setEquipping] = useState(false);
   const [equipped, setEquipped] = useState(false);
 
   if (!gift) return null;
   const { item, message, from } = gift;
+  const itemName = isCountryItem(item)
+    ? `${flagEmoji(countryCode(item))} ${countryName(item, locale)}`.trim()
+    : localizedShopItemName(item, locale);
 
   const handleEquip = async () => {
     if (!item?.id || !item?.category) return;
@@ -83,11 +89,11 @@ export default function ShopGiftPopup({ gift, onDismiss, onEquipped }) {
 
           {item?.preview_url && (
             <div className={`shop-gift-preview shop-gift-preview-${item.category}`}>
-              <img src={item.preview_url} alt={item.name} />
+              <img src={item.preview_url} alt={itemName} />
             </div>
           )}
 
-          <div className="shop-gift-item-name">{item?.name}</div>
+          <div className="shop-gift-item-name">{itemName}</div>
           <div className="shop-gift-item-category">{t(CATEGORY_LABEL[item?.category] || "Item")}</div>
 
           {message && <p className="shop-gift-message">“{message}”</p>}

@@ -5,6 +5,7 @@
  *   web / Android / fallback → the version this JS bundle was built from
  *                              (__DESCALL_VERSION__, injected by vite.config.js)
  */
+import { t } from "../i18n/runtime.js";
 
 export const BUILD_VERSION = typeof __DESCALL_VERSION__ !== "undefined" ? String(__DESCALL_VERSION__) : "";
 
@@ -26,16 +27,16 @@ export function desktopOsName(ua = "") {
 export function platformLabel({ isElectron = false, nativePlatform = "web", userAgent = "" } = {}) {
   if (nativePlatform === "ios") return "iOS";
   if (nativePlatform === "android") return "Android";
-  if (isElectron) return desktopOsName(userAgent) || "Masaüstü";
+  if (isElectron) return desktopOsName(userAgent) || t("Desktop");
   return "Web";
 }
 
 /**
  * Text for the admin panel, e.g. "Sürüm 2.10.109 · Windows" or
  * "Sürüm 2.10.109 (20261017.1942) · iOS". `format` is the localized
- * "Sürüm {version}" template.
+ * "App version {version}" template (default: the catalog's).
  */
-export function formatVersionLine({ version, build = "", platform = "", format = (v) => `Sürüm ${v}` } = {}) {
+export function formatVersionLine({ version, build = "", platform = "", format = (v) => t("App version {version}", { version: v }) } = {}) {
   const v = cleanVersion(version);
   if (!v) return "";
   const b = String(build || "").trim();

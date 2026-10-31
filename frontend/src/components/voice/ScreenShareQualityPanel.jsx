@@ -75,10 +75,14 @@ export function qualityForContent(value, quality, resolutionOptions, fpsOptions)
   return { ...quality, resolution: resOf(quality.resolution || "720p"), fps: fpsOf(fps), contentHint: "motion" };
 }
 
-/** "4,4" in Turkish, "4.4" in English. */
+/** Locale decimal separator: "4,4" in Turkish, "4.4" in English. */
 export function formatMbps(mbps, locale = "tr") {
   const n = Number(mbps) || 0;
-  return locale === "tr" ? String(n).replace(".", ",") : String(n);
+  try {
+    return n.toLocaleString(locale, { maximumFractionDigits: 2 });
+  } catch {
+    return String(n);
+  }
 }
 
 /**

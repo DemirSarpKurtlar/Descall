@@ -12,11 +12,12 @@ const fs   = require('fs');
 const os   = require('os');
 
 const { buildOverlayHtml, OVERLAY_WIDTH, OVERLAY_HEIGHT } = require('./overlayHtml.cjs');
+const { getLocale } = require('./mainI18n.cjs');
 const OVERLAY_MARGIN = 16;
 
 let overlayWin  = null;
 let overlayFile = null;
-let currentState = { title: '', muted: false, deafened: false, connected: false, pending: false, kind: 'dm', since: 0, lang: 'tr', avatarUrl: '', brandRgb: '' };
+let currentState = { title: '', muted: false, deafened: false, connected: false, pending: false, kind: 'dm', since: 0, lang: getLocale(), avatarUrl: '', brandRgb: '' };
 
 function getDefaultPosition() {
   try {
@@ -92,8 +93,10 @@ function pushState() {
   } catch (_) { /* ignore */ }
 }
 
+// The overlay speaks the main-process language (the UI language the renderer reports),
+// whatever lang the payload carries.
 function showOverlayWindow(payload = {}) {
-  currentState = { ...currentState, ...payload, connected: true };
+  currentState = { ...currentState, ...payload, connected: true, lang: getLocale() };
   const win = ensureOverlayWindow();
 
   const reveal = () => {
@@ -110,7 +113,14 @@ function showOverlayWindow(payload = {}) {
 }
 
 function updateOverlayWindow(payload = {}) {
-  currentState = { ...currentState, ...payload };
+  currentState = { ...currentState, ...payload, lang: getLocale() };
+  if (!overlayWin || overlayWin.isDestroyed() || !overlayWin.isVisible()) return;
+  pushState();
+}
+
+/** UI language changed: relabel a visible overlay. */
+function refreshOverlayLanguage() {
+  currentState = { ...currentState, lang: getLocale() };
   if (!overlayWin || overlayWin.isDestroyed() || !overlayWin.isVisible()) return;
   pushState();
 }
@@ -158,5 +168,6 @@ module.exports = {
   updateOverlayWindow,
   destroyOverlayWindow,
   isOverlayWindowVisible,
+  refreshOverlayLanguage,
   registerOverlayIPC,
 };

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { ChevronDown, Check, Search, Lock } from "../ui/Icon.jsx";
 import { registerPromoBadges } from "../../lib/promoBadges";
 import { translate } from "../../i18n";
+import { lower } from "../../i18n/format";
 import { SpecialBadgeIcon, TIER_ORDER, ART_BY_ID } from "./specialBadgeArt.jsx";
 import { useBadgeCopy } from "./SpecialBadge.jsx";
 import { catalogRow, holdersOf } from "../../lib/specialBadges";
@@ -35,7 +36,7 @@ export function promoLockReason(row) {
 }
 
 function BadgePicker({ value, onChange }) {
-  const { t, name, desc, tierLabel, num } = useBadgeCopy();
+  const { t, locale, name, desc, tierLabel, num } = useBadgeCopy();
   const rows = useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => adminRows, () => null);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -50,10 +51,10 @@ function BadgePicker({ value, onChange }) {
     return () => { document.removeEventListener("pointerdown", close, true); window.removeEventListener("keydown", esc, true); };
   }, [open]);
   const groups = useMemo(() => {
-    const needle = q.trim().toLocaleLowerCase("tr");
-    const list = (rows || []).filter((r) => ART_BY_ID[r.id] && (!needle || name(r.id).toLocaleLowerCase("tr").includes(needle)));
+    const needle = lower(q.trim(), locale);
+    const list = (rows || []).filter((r) => ART_BY_ID[r.id] && (!needle || lower(name(r.id), locale).includes(needle)));
     return TIER_ORDER.map((tier) => [tier, list.filter((r) => r.tier === tier)]).filter(([, l]) => l.length);
-  }, [rows, q, name]);
+  }, [rows, q, name, locale]);
   const cur = (rows || []).find((r) => r.id === value);
   const lockText = (why) => (why === "adminOnly" ? t("badges.pickerAdminOnly") : why === "taken" ? t("badges.tekilTaken") : t("badges.err_badge_inactive"));
   return (

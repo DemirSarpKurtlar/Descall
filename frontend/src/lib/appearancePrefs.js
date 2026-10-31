@@ -13,14 +13,15 @@ export const LEGACY_SETTINGS_KEY = "descall_settings";
 export const SOLID_KEY = "descall:reduce-transparency";
 export const APPEARANCE_EVENT = "descall:appearance";
 
+/* Names: shell.appearance.accents.<id> / shell.appearance.fontSteps.<id> in the catalogs. */
 export const ACCENTS = Object.freeze([
-  { id: "blue", hex: "#587AF6", label: "Descall mavisi" },
-  { id: "purple", hex: "#8E6CF6", label: "Mor" },
-  { id: "green", hex: "#30B05A", label: "Yeşil" },
-  { id: "teal", hex: "#14B8A6", label: "Turkuaz" },
-  { id: "pink", hex: "#EC4899", label: "Pembe" },
-  { id: "orange", hex: "#F5A524", label: "Turuncu" },
-  { id: "red", hex: "#EF4444", label: "Kırmızı" },
+  { id: "blue", hex: "#587AF6" },
+  { id: "purple", hex: "#8E6CF6" },
+  { id: "green", hex: "#30B05A" },
+  { id: "teal", hex: "#14B8A6" },
+  { id: "pink", hex: "#EC4899" },
+  { id: "orange", hex: "#F5A524" },
+  { id: "red", hex: "#EF4444" },
 ]);
 export const DEFAULT_ACCENT = ACCENTS[0].hex;
 
@@ -28,10 +29,10 @@ export const DEFAULT_ACCENT = ACCENTS[0].hex;
 const LEGACY_ACCENTS = ["#5865F2", "#4752C4", "#23A55A", "#1ABC9C", "#EB459E", "#F0B232", "#ED4245"];
 
 export const FONT_STEPS = Object.freeze([
-  { id: "small", label: "Küçük", scale: 0.9 },
-  { id: "default", label: "Varsayılan", scale: 1 },
-  { id: "large", label: "Büyük", scale: 1.13 },
-  { id: "xlarge", label: "Çok büyük", scale: 1.26 },
+  { id: "small", scale: 0.9 },
+  { id: "default", scale: 1 },
+  { id: "large", scale: 1.13 },
+  { id: "xlarge", scale: 1.26 },
 ]);
 export const DEFAULT_FONT_STEP = 1;
 export const THEME_MODES = Object.freeze(["dark", "light", "auto"]);

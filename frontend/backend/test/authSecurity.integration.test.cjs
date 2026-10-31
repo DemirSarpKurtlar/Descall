@@ -110,7 +110,7 @@ async function run() {
       token: alice.token,
       body: { email: "stolen@example.com" },
     });
-    assert(r.status === 400 && /şifre/i.test(r.body.error || ""), "email change without password is blocked: " + JSON.stringify(r.body));
+    assert(r.status === 400 && /password/i.test(r.body.error || ""), "email change without password is blocked: " + JSON.stringify(r.body));
     let row = fakeSupabase._tables.users.rows.find((u) => u.username === "alice");
     assert(row.email === "alice@example.com", "email unchanged");
     assert(row.email_confirmed_at, "confirmed email kept");
@@ -163,7 +163,7 @@ async function run() {
       token: alice.token,
       body: { code: resetCode, newPassword: "a-reasonably-long-secret" },
     });
-    assert(r.status === 400 && /şifre/i.test(r.body.error || ""), "signed-in change needs the current password");
+    assert(r.status === 400 && /password/i.test(r.body.error || ""), "signed-in change needs the current password");
 
     const second = await req(base, "POST", "/api/auth/login", { body: { username: "alice", password: "password123" } });
     assert(second.body.requires2fa || second.body.token, "alice can still sign in");

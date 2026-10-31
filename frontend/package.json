@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "3.7.21",
+  "version": "3.7.22",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -98,6 +98,7 @@
       "electron/**/*",
       "!electron/dist/**",
       "!electron/node_modules/**",
+      "src/i18n/locales.json",
       "package.json"
     ],
     "extraResources": [

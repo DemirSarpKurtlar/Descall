@@ -37,13 +37,13 @@ function registerPollHandlers(io, socket) {
         if (typeof cb === "function") cb(out);
         else socket.emit("poll:result", out);
       };
-      if (!myId) return reply({ ok: false, code: "NO_ACCESS", message: "Oturum bulunamadı." });
-      if (limited()) return reply({ ok: false, code: "RATE_LIMITED", message: "Çok hızlı, biraz bekle." });
+      if (!myId) return reply({ ok: false, code: "NO_ACCESS", message: "Session not found." });
+      if (limited()) return reply({ ok: false, code: "RATE_LIMITED", message: "Too fast, wait a moment." });
       try {
         reply(await fn(payload || {}));
       } catch (err) {
         console.warn(`[polls] ${event} failed:`, err?.message || err);
-        reply({ ok: false, code: "POLL_ERROR", message: "Anket işlemi başarısız oldu." });
+        reply({ ok: false, code: "POLL_ERROR", message: "The poll action failed." });
       }
     });
   };

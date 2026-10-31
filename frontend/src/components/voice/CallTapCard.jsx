@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocale } from "../../context/LocaleContext";
+import { formatList, formatTime } from "../../i18n/format.js";
 import { Av, I } from "../servers/hub/kit";
 import { useReducedMotionPref } from "../servers/hub/useHubMode";
 import { framerSpring, SPRINGS, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
@@ -15,26 +16,14 @@ import "./CallTapCard.css";
  *    (type · time, why it ended) and Geri ara / Mesaj / Kapat.
  * Portal to body; centred with margins (never translateX(-50%)).
  */
-export const CALL_TAP_STR = {
-  tr: {
-    live: "Grup araması sürüyor", liveVideo: "Görüntülü grup araması sürüyor", micOn: "Mikrofon açık", micOff: "Mikrofon kapalı", camOn: "Kamera açık", camOff: "Kamera kapalı",
-    join: "Aramaya katıl", notNow: "Şimdi değil", ended: "Arama sona erdi", voiceCall: "Sesli arama", videoCall: "Görüntülü arama",
-    groupVoice: "Grup araması", groupVideo: "Görüntülü grup araması",
-    callBack: "Geri ara", message: "Mesaj", close: "Kapat", and: "ve", more: "{n} kişi daha", talking: "{names} konuşuyor", nobody: "Aramada kimse kalmadı",
-    rRemote: "Bağlantı kesildi ({name} ayrıldı)", rLocal: "Aramayı sen bitirdin", rMissed: "Sen açmadan arama bitti", rGroup: "Grup araması bitti", rDrop: "Bağlantı kesildi",
-    group: "Grup", dialog: "Arama",
-  },
-  en: {
-    live: "Group call in progress", liveVideo: "Group video call in progress", micOn: "Mic on", micOff: "Mic off", camOn: "Camera on", camOff: "Camera off",
-    join: "Join the call", notNow: "Not now", ended: "Call ended", voiceCall: "Voice call", videoCall: "Video call",
-    groupVoice: "Group call", groupVideo: "Group video call",
-    callBack: "Call back", message: "Message", close: "Close", and: "and", more: "{n} more", talking: "{names} are talking", nobody: "Nobody is left in the call",
-    rRemote: "Disconnected ({name} left)", rLocal: "You ended the call", rMissed: "The call ended before you answered", rGroup: "The group call ended", rDrop: "Disconnected",
-    group: "Group", dialog: "Call",
-  },
-};
-const STR = CALL_TAP_STR;
-const fmt = (tpl, v) => String(tpl).replace(/\{(\w+)\}/g, (_, k) => (v[k] != null ? v[k] : ""));
+/**
+ * Copy: catalog keys callui.tap.<key> (i18n/locales/callui.*.js). `S.key` is plain text, `S.f(key, vars)`
+ * formats, `S.locale` drives list and time formatting.
+ */
+export function callTapStrings(t, locale) {
+  const f = (k, v) => t(`callui.tap.${k}`, v);
+  return new Proxy({ locale, f }, { get: (o, k) => (k in o ? o[k] : typeof k === "string" ? f(k) : undefined) });
+}
 
 export function formatClock(totalSec) {
   const s = Math.max(0, Math.floor(Number(totalSec) || 0));
@@ -48,23 +37,19 @@ export function formatClock(totalSec) {
 export function joinNames(names, S) {
   const list = (names || []).filter(Boolean);
   if (list.length <= 1) return list[0] || "";
-  if (list.length <= 3) return `${list.slice(0, -1).join(", ")} ${S.and} ${list[list.length - 1]}`;
-  return `${list.slice(0, 2).join(", ")} ${S.and} ${fmt(S.more, { n: list.length - 2 })}`;
+  if (list.length <= 3) return formatList(list, S.locale);
+  return formatList([...list.slice(0, 2), S.f("more", { n: list.length - 2 })], S.locale);
 }
 
 export function endReasonText(card, S) {
   const name = card?.peerName || "";
-  if (card?.reason === "remote") return name ? fmt(S.rRemote, { name }) : S.rDrop;
+  if (card?.reason === "remote") return name ? S.f("rRemote", { name }) : S.rDrop;
   if (card?.reason === "local") return S.rLocal;
   if (card?.reason === "missed" || (!card?.duration && card?.peerId)) return S.rMissed;
   if (card?.groupId) return S.rGroup;
   return S.rDrop;
 }
 
-const hm = (ts) => {
-  const d = new Date(ts);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-};
 
 function useTick(on) {
   const [, set] = useState(0);
@@ -106,7 +91,7 @@ function JoinCard({ card, S, onJoin, onClose, reduced }) {
           </div>
         ) : null}
         <div className="ctc-t">{card.groupName || S.group}</div>
-        <div className="ctc-s">{people.length ? fmt(S.talking, { names: joinNames(people.map((u) => u.displayName || u.username), S) }) : (video ? S.groupVideo : S.groupVoice)}</div>
+        <div className="ctc-s">{people.length ? S.f("talking", { names: joinNames(people.map((u) => u.displayName || u.username), S), count: people.length }) : (video ? S.groupVideo : S.groupVoice)}</div>
         <div className="ctc-tg">
           <button type="button" className={`ctc-tap${mic ? "" : " off"}`} aria-pressed={mic} aria-label={mic ? S.micOn : S.micOff} onClick={() => setMic((v) => !v)}>
             <I n={mic ? "volume" : "micoff"} s={19} w={2} />{mic ? S.micOn : S.micOff}
@@ -142,7 +127,7 @@ function EndedScreen({ card, S, onCallBack, onMessage, onClose, reduced }) {
         <div className="ctc-log">
           <I n={video ? "cam" : "phone"} s={18} w={2} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 600 }}>{kindLabel} · {hm(when)}</div>
+            <div style={{ fontWeight: 600 }}>{kindLabel} · {formatTime(when, S.locale)}</div>
             <div className="r">{endReasonText(card, S)}</div>
           </div>
         </div>
@@ -161,8 +146,8 @@ function EndedScreen({ card, S, onCallBack, onMessage, onClose, reduced }) {
 }
 
 export default function CallTapCard({ card, onJoin, onCallBack, onMessage, onClose }) {
-  const { locale } = useLocale();
-  const S = STR[locale === "tr" ? "tr" : "en"];
+  const { t, locale } = useLocale();
+  const S = useMemo(() => callTapStrings(t, locale), [t, locale]);
   const reduced = useReducedMotionPref();
   useEffect(() => {
     if (!card) return undefined;

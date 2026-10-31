@@ -5,6 +5,8 @@
  * Flat fill, no white sheen, no gradient. White text is ≥ 4.5:1 on every palette entry.
  * A photo, when there is one, replaces all of this.
  */
+import { upper as upperCase } from "../i18n/format.js";
+
 export const AVATAR_PALETTE = Object.freeze([
   "#2868FF", // blue
   "#228359", // green
@@ -56,9 +58,9 @@ export function avatarColor(key) {
   return AVATAR_PALETTE[crc32(k) % AVATAR_PALETTE.length];
 }
 
-const upper = (s) => {
-  try { return s.toLocaleUpperCase("tr-TR"); } catch { return s.toUpperCase(); }
-};
+// Names are user content, not UI text: they keep Turkish casing ("ilker" -> "İ") for
+// every viewer, so a person's initials look the same in every UI language.
+const upper = (s) => upperCase(s, "tr");
 
 /** "Ayşe Yılmaz" → "AY", "cinar.baskin" → "CB", "Zeynep" → "Z", "" → "?". */
 export function avatarInitials(name) {

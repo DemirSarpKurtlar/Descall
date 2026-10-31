@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Wallet } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
+import { getLocale } from "../../i18n/runtime";
+import { formatNumber } from "../../i18n/format";
+
+const num = (n) => formatNumber(n, getLocale());
 
 const CELL = 68;
 
@@ -104,9 +108,9 @@ function SymbolFace({ id }) {
 }
 
 function formatPrize(profit, bet, t) {
-  if (profit > 0) return `+${profit.toLocaleString()} ${t("credits")}`;
+  if (profit > 0) return `+${num(profit)} ${t("counts.credits", { n: profit })}`;
   if (profit === 0) return t("Stake returned");
-  return `−${bet.toLocaleString()} ${t("credits")}`;
+  return `−${num(bet)} ${t("counts.credits", { n: bet })}`;
 }
 
 export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {
@@ -166,7 +170,7 @@ export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {
           <p className="slot-kicker">Descall Royale</p>
           <h3>{spinning ? t("Spinning") : formatPrize(gameData.profit, gameData.bet, t)}</h3>
           <p>
-            @{gameData.username} · {t("Bet")} {Number(gameData.bet || 0).toLocaleString()}
+            @{gameData.username} · {t("Bet")} {num(gameData.bet || 0)}
             {phase.kind === "free"
               ? ` · ${t("Free spins")} ${phase.freeIndex}/${phase.freeTotal}`
               : gameData.freeSpins
@@ -176,7 +180,7 @@ export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {
         </div>
         <div className="slot-bank">
           <Wallet size={14} />
-          <strong>{Number(gameData.credits || 0).toLocaleString()}</strong>
+          <strong>{num(gameData.credits || 0)}</strong>
         </div>
       </header>
 
@@ -219,7 +223,7 @@ export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {
       </div>
 
       <div className="slot-readout">
-        <span>{t("Prize")} {shownPrize.toLocaleString()}</span>
+        <span>{t("Prize")} {num(shownPrize)}</span>
         {!spinning && phase.scatterCount >= 3 && (
           <span>{t("Scatter")} ×{phase.scatterCount}</span>
         )}
@@ -231,7 +235,7 @@ export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {
           {phase.wins.slice(0, 4).map((win) => (
             <li key={`${win.line}-${win.symbol}`}>
               {t("Line")} {win.line} · {t(SYMBOL_LABEL[win.symbol] || win.symbol)} ×{win.count}
-              <strong>{win.amount.toLocaleString()}</strong>
+              <strong>{num(win.amount)}</strong>
             </li>
           ))}
         </ul>
@@ -259,7 +263,7 @@ export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {
         </button>
         {isMine && !spinning && (
           <button type="button" className="slot-again" disabled={busy} onClick={onAgain}>
-            {t("Again")} ({Number(gameData.bet || 0).toLocaleString()})
+            {t("Again")} ({num(gameData.bet || 0)})
           </button>
         )}
       </div>

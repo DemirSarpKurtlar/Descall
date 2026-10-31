@@ -6,21 +6,30 @@ import AdminBadge from "../social/AdminBadge";
 import { NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
 import { cssUrl } from "../../lib/cssUrl";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
+import { localizedShopItemName } from "../../lib/shopItemI18n.js";
+import { countryCode, countryName, flagEmoji, isCountryItem } from "../../lib/countryFlags";
+import { useLocale } from "../../context/LocaleContext";
 
 const EQUIPPED_SLOTS = [
-  { id: "banner", label: "Banners", pick: (user) => user?.equippedBanner },
-  { id: "avatar_effect", label: "Avatar Effects", pick: (user) => user?.equippedAvatarEffect },
-  { id: "theme", label: "Themes", pick: (user) => user?.equippedTheme },
-  { id: "countries", label: "Countries", pick: (user) => user?.equippedCountry },
-  { id: "name_effect", label: "Name Effects", pick: (user) => user?.equippedNameEffect },
-  { id: "chat_bubble", label: "Bubbles", pick: (user) => user?.equippedChatBubble },
-  { id: "presence_flare", label: "Presence", pick: (user) => user?.equippedPresenceFlare },
-  { id: "profile_aura", label: "Auras", pick: (user) => user?.equippedProfileAura },
-  { id: "typing_flare", label: "Typing", pick: (user) => user?.equippedTypingFlare },
-  { id: "reaction_burst", label: "Reactions", pick: (user) => user?.equippedReactionBurst },
-  { id: "call_overlay", label: "Call Overlays", pick: (user) => user?.equippedCallOverlay },
-  { id: "profile_color", label: "Card Colors", pick: (user) => user?.equippedProfileColor },
+  { id: "banner", pick: (user) => user?.equippedBanner },
+  { id: "avatar_effect", pick: (user) => user?.equippedAvatarEffect },
+  { id: "theme", pick: (user) => user?.equippedTheme },
+  { id: "countries", pick: (user) => user?.equippedCountry },
+  { id: "name_effect", pick: (user) => user?.equippedNameEffect },
+  { id: "chat_bubble", pick: (user) => user?.equippedChatBubble },
+  { id: "presence_flare", pick: (user) => user?.equippedPresenceFlare },
+  { id: "profile_aura", pick: (user) => user?.equippedProfileAura },
+  { id: "typing_flare", pick: (user) => user?.equippedTypingFlare },
+  { id: "reaction_burst", pick: (user) => user?.equippedReactionBurst },
+  { id: "call_overlay", pick: (user) => user?.equippedCallOverlay },
+  { id: "profile_color", pick: (user) => user?.equippedProfileColor },
 ];
+
+/** Equipped item name in the UI language; countries keep the flag in front ("🇹🇷 Türkiye"). */
+function equippedName(item, locale) {
+  if (isCountryItem(item)) return `${flagEmoji(countryCode(item))} ${countryName(item, locale)}`.trim();
+  return localizedShopItemName(item, locale);
+}
 
 function bannerFallback(username) {
   const seed = String(username || "user").split("").reduce((n, c) => n + c.charCodeAt(0), 0);
@@ -29,6 +38,7 @@ function bannerFallback(username) {
 }
 
 export default function ShopProfilePreview({ me, t }) {
+  const { locale } = useLocale();
   const username = me?.username || t("User");
   const displayName = me?.displayName || me?.display_name || username;
   const bannerUrl = me?.equippedBanner?.asset_url || me?.bannerUrl || me?.banner_url || null;
@@ -142,8 +152,8 @@ export default function ShopProfilePreview({ me, t }) {
             const item = slot.pick(me);
             return (
               <li key={slot.id} className={item ? "is-set" : ""}>
-                <span>{t(slot.label)}</span>
-                <b>{item?.name || t("None")}</b>
+                <span>{t(`shop.slots.${slot.id}`)}</span>
+                <b>{(item && equippedName(item, locale)) || t("None")}</b>
               </li>
             );
           })}

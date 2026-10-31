@@ -1,6 +1,7 @@
 "use strict";
 
 const { isVisibleStatus } = require("./presenceRoster");
+const { apiError } = require("./apiError");
 
 const SEVERITIES = new Set(["info", "success", "warning", "urgent"]);
 const MAX_TITLE = 80;
@@ -52,10 +53,10 @@ function buildPopupPayload(input = {}, { actor, now } = {}) {
   if (!title) return { ok: false, error: "Title is required." };
   if (!body) return { ok: false, error: "Message body is required." };
   if (String(input.title || "").trim().length > MAX_TITLE) {
-    return { ok: false, error: `Title must be ${MAX_TITLE} characters or fewer.` };
+    return { ok: false, ...apiError("Title must be {max} characters or fewer.", { max: MAX_TITLE }) };
   }
   if (String(input.body || "").trim().length > MAX_BODY) {
-    return { ok: false, error: `Message must be ${MAX_BODY} characters or fewer.` };
+    return { ok: false, ...apiError("Message must be {max} characters or fewer.", { max: MAX_BODY }) };
   }
 
   const severityRaw = String(input.severity || "info").toLowerCase();

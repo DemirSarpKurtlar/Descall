@@ -11,6 +11,7 @@ const { buildDossier } = require("../lib/userDossier");
 const { buildLens } = require("../lib/userLens");
 const reports = require("../lib/userReports");
 const workflow = require("../lib/reportWorkflow");
+const { errorFields } = require("../lib/apiError");
 
 const router = express.Router();
 
@@ -60,9 +61,9 @@ router.get("/people/:id/dossier", async (req, res) => {
     const dossier = await buildDossier(req.params.id, { io: getIo(req) });
     res.json(dossier);
   } catch (err) {
-    if (err.code === "NOT_FOUND") return res.status(404).json({ error: err.message });
+    if (err.code === "NOT_FOUND") return res.status(404).json({ ...errorFields(err), error: err.message });
     console.error("[dossier]", err);
-    res.status(500).json({ error: err.message || "Failed to load dossier." });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Failed to load dossier." });
   }
 });
 
@@ -75,9 +76,9 @@ router.get("/people/:id/lens", async (req, res) => {
     res.set("Cache-Control", "no-store");
     res.json(lens);
   } catch (err) {
-    if (err.code === "NOT_FOUND") return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    if (err.code === "NOT_FOUND") return res.status(404).json({ error: "User not found." });
     console.error("[lens]", err?.message || err);
-    res.status(500).json({ error: "Görünüm yüklenemedi." });
+    res.status(500).json({ error: "Could not load the view." });
   }
 });
 
@@ -91,7 +92,7 @@ router.post("/people/:id/wallet-freeze", async (req, res) => {
     notifyAdminRoom(io, { type: frozen ? "wallet_freeze" : "wallet_unfreeze", userId: req.params.id });
     res.json({ ok: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message || "Wallet freeze failed." });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Wallet freeze failed." });
   }
 });
 
@@ -114,14 +115,14 @@ router.post("/people/:id/revoke-sessions", async (req, res) => {
     audit(req.user, "revoke_sessions", id, { count: sessions.length });
     res.json({ ok: true, revoked: sessions.length });
   } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to revoke sessions." });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Failed to revoke sessions." });
   }
 });
 
 // KVKK veri dışa aktarma, admin side (3.6.0): the same file the account owner gets.
 router.get("/people/:id/export", async (req, res) => {
   const id = String(req.params.id || "");
-  if (!workflow.isUuid(id)) return res.status(400).json({ error: "Geçersiz kullanıcı." });
+  if (!workflow.isUuid(id)) return res.status(400).json({ error: "Invalid user." });
   try {
     const { filename, data } = await require("../lib/dataExport").buildExport(id, { requestedBy: `admin:${req.user.username}` });
     audit(req.user, "data_export", id, { username: data.account?.username || null });
@@ -129,7 +130,7 @@ router.get("/people/:id/export", async (req, res) => {
     res.set("Content-Disposition", `attachment; filename="${filename}"`);
     res.json(data);
   } catch (err) {
-    res.status(err?.status || 500).json({ error: err?.status === 404 ? err.message : "Dışa aktarma hazırlanamadı." });
+    res.status(err?.status || 500).json({ error: err?.status === 404 ? err.message : "Could not prepare the export." });
   }
 });
 
@@ -137,7 +138,7 @@ router.get("/reports/summary", async (_req, res) => {
   try {
     res.json(await reports.summarizeInbox());
   } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to load report summary." });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Failed to load report summary." });
   }
 });
 
@@ -163,7 +164,7 @@ router.get("/reports", async (req, res) => {
       uniqueTargets: summary.uniqueTargets,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to load reports." });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Failed to load reports." });
   }
 });
 
@@ -230,7 +231,7 @@ async function applyFromReport(req, res, kind) {
     res.json({ ok: true, ...resolved });
   } catch (err) {
     console.error(`[reports] ${kind}:`, err);
-    res.status(500).json({ error: err.message || "Action failed." });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Action failed." });
   }
 }
 
@@ -262,8 +263,8 @@ router.post("/reports/:id/dismiss", async (req, res) => {
     notifyReporters(getIo(req), resolved);
     res.json({ ok: true, ...resolved });
   } catch (err) {
-    if (err.code === "NOT_FOUND") return res.status(404).json({ error: err.message });
-    res.status(500).json({ error: err.message || "Dismiss failed." });
+    if (err.code === "NOT_FOUND") return res.status(404).json({ ...errorFields(err), error: err.message });
+    res.status(500).json({ ...errorFields(err), error: err.message || "Dismiss failed." });
   }
 });
 
@@ -271,20 +272,20 @@ router.post("/reports/:id/dismiss", async (req, res) => {
 
 function workflowError(res, err, fallback) {
   const status = err?.status || (err?.code === "WORKFLOW_UNAVAILABLE" ? 503 : 500);
-  return res.status(status).json({ error: err?.message || fallback, code: err?.code });
+  return res.status(status).json({ ...errorFields(err), error: err?.message || fallback, code: err?.code });
 }
 
 router.get("/reports/assignees", async (_req, res) => {
   try {
     res.json({ assignees: await workflow.listAssignees() });
   } catch (err) {
-    workflowError(res, err, "Yöneticiler yüklenemedi.");
+    workflowError(res, err, "Could not load admins.");
   }
 });
 
 router.post("/reports/target/:targetId/assign", async (req, res) => {
   const { targetId } = req.params;
-  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Geçersiz hesap." });
+  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Invalid account." });
   const raw = req.body?.assigneeId;
   const assigneeId = raw === "me" ? req.user.id : raw || null;
   try {
@@ -298,8 +299,9 @@ router.post("/reports/target/:targetId/assign", async (req, res) => {
           const { pushNotification } = require("../socket/handlers");
           pushNotification(io, result.assignee.id, {
             type: "admin_report_assigned",
-            title: "Sana bir rapor atandı",
-            body: `${req.user.username} bir hesabın raporlarını sana atadı (${result.count} açık rapor).`,
+            titleKey: "bot.notify.reportAssignedTitle",
+            bodyKey: "bot.notify.reportAssignedBody",
+            vars: { actor: req.user.username, count: result.count },
             meta: { targetId },
           });
         } catch {
@@ -309,24 +311,24 @@ router.post("/reports/target/:targetId/assign", async (req, res) => {
     }
     res.json({ ok: true, assigneeId: result.assignee?.id || null, assigneeUsername: result.assignee?.username || null, count: result.count });
   } catch (err) {
-    workflowError(res, err, "Atama yapılamadı.");
+    workflowError(res, err, "Could not assign.");
   }
 });
 
 router.get("/reports/target/:targetId/notes", async (req, res) => {
   const { targetId } = req.params;
-  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Geçersiz hesap." });
+  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Invalid account." });
   try {
     res.set("Cache-Control", "no-store");
     res.json(await workflow.listNotes(targetId));
   } catch (err) {
-    workflowError(res, err, "Notlar yüklenemedi.");
+    workflowError(res, err, "Could not load notes.");
   }
 });
 
 router.post("/reports/target/:targetId/notes", async (req, res) => {
   const { targetId } = req.params;
-  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Geçersiz hesap." });
+  if (!workflow.isUuid(targetId)) return res.status(400).json({ error: "Invalid account." });
   const reportId = workflow.isUuid(req.body?.reportId) ? req.body.reportId : null;
   try {
     const note = await workflow.insertNote({ targetId, reportId, actor: req.user, kind: "note", body: req.body?.body });

@@ -48,7 +48,8 @@ import ShopProfilePreview from "./ShopProfilePreview";
 import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
 import { SHOP_CATEGORY_TABS, visibleShopTabs, visibleShopItems } from "../../lib/shopCategories.js";
 import { localizeShopItem } from "../../lib/shopItemI18n.js";
-import { usesPurchaseModal } from "../../lib/storePurchaseState.js";
+import { rarityKey, usesPurchaseModal } from "../../lib/storePurchaseState.js";
+import { formatNumber } from "../../i18n/format.js";
 import StorePurchaseModal from "../shop/purchase/StorePurchaseModal";
 import { openPromoRedeem } from "../../lib/promoBus";
 import "../../styles/promo.css";
@@ -188,7 +189,7 @@ function ShopItemPreview({ category, item, t, name }) {
   return (
     <SkeletonImage
       src={src}
-      alt={item.name}
+      alt={name || item.name}
       className="shop-item-preview-img"
       fallback={<span className="shop-asset-pending" aria-hidden />}
     />
@@ -523,7 +524,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     <div className="shop-wallet-bar">
       <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
         <Coins size={16} />
-        <span>{balance.toLocaleString()}</span>
+        <span>{formatNumber(balance, locale)}</span>
         <span className="shop-wallet-label">DesCoin</span>
       </div>
       <button type="button" className="shop-redeem-btn" aria-haspopup="dialog" onClick={() => openPromoRedeem()}><Gift size={15} /> {t("promo.shopButton")}</button>
@@ -570,11 +571,11 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                 <b>{daily.goals.voice.earned}/{daily.goals.voice.cap}</b>
               </div>
               <div className="descoin-goal">
-                <span>{glassShell && locale === "tr" ? "Mesajlar" : t("Messages")}</span>
+                <span>{glassShell ? t("shop.goals.messages") : t("Messages")}</span>
                 <b>{daily.goals.message.earned}/{daily.goals.message.cap}</b>
               </div>
               <div className="descoin-goal">
-                <span>{glassShell && locale === "tr" ? "Ekran" : t("Screenshare")}</span>
+                <span>{glassShell ? t("shop.goals.screen") : t("Screenshare")}</span>
                 <b>{daily.goals.screenshare.earned}/{daily.goals.screenshare.cap}</b>
               </div>
             </div>
@@ -685,7 +686,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                     <div className="shop-item-name-row">
                       <span className="shop-item-name">{label.name}</span>
                       {item.rarity && (
-                        <span className={`shop-rarity-badge shop-rarity-${item.rarity}`}>{item.rarity}</span>
+                        <span className={`shop-rarity-badge shop-rarity-${item.rarity}`}>{t(`shop.buy.rarity.${rarityKey(item.rarity)}`)}</span>
                       )}
                     </div>
                     {label.description && <p className="shop-item-desc">{label.description}</p>}
@@ -696,7 +697,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                         </span>
                       ) : (
                         <span className="shop-item-price">
-                          <Coins size={13} /> {(item.price_descoin || 0).toLocaleString()}
+                          <Coins size={13} /> {formatNumber(item.price_descoin || 0, locale)}
                         </span>
                       )}
                       {owned && !buying ? (

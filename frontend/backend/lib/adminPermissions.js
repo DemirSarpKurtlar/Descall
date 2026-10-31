@@ -154,7 +154,7 @@ async function requireAdminSection(req, res, next) {
     req.adminSections = sectionsFor(req.user, row);
     if (req.adminSections.includes(section)) return next();
     return res.status(403).json({
-      error: "Bu bölüm için yetkin yok. Sahip hesabından yetki iste.",
+      error: "You don't have access to this section. Ask the owner account for access.",
       code: "ADMIN_PERMISSION_DENIED",
       section,
     });
@@ -192,7 +192,7 @@ function requireSection(section) {
     try {
       const row = await loadRow(req.user.id);
       if (canOpen(req.user, row, section)) return next();
-      return res.status(403).json({ error: "Bu bölüm için yetkin yok.", code: "ADMIN_PERMISSION_DENIED", section });
+      return res.status(403).json({ error: "You don't have access to this section.", code: "ADMIN_PERMISSION_DENIED", section });
     } catch {
       return res.status(500).json({ error: "Internal server error" });
     }

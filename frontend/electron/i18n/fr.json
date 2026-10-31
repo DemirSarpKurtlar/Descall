@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Recherche de mises à jour…",
+    "starting": "Démarrage de Descall…",
+    "installing": "Installation de la mise à jour…",
+    "downloading": "Téléchargement de la mise à jour…",
+    "upToDate": "À jour",
+    "checkFailed": "Impossible de rechercher les mises à jour",
+    "loading": "Chargement"
+  },
+  "notice": {
+    "background": "Descall continue de tourner en arrière-plan. Tu peux le rouvrir depuis la zone de notification."
+  },
+  "update": {
+    "downloaded": "v{version} téléchargée. Elle s'installera discrètement en arrière-plan.",
+    "downloadedDeferred": "v{version} téléchargée. Elle s'installera une fois ton chat vocal terminé."
+  },
+  "dialog": {
+    "retry": "Réessayer",
+    "quit": "Quitter",
+    "loadFailed": "Impossible de charger Descall",
+    "loadFailedDetail": "Impossible d'ouvrir les fichiers de l'app ({detail}). Tu peux réessayer ou fermer Descall.",
+    "openFailed": "Impossible d'ouvrir Descall",
+    "openFailedDetail": "L'app ne s'est pas chargée à temps. Vérifie ta connexion et réessaie.",
+    "indexMissingTitle": "Erreur de chargement",
+    "indexMissing": "index.html est introuvable dans les fichiers de l'app."
+  },
+  "tray": {
+    "open": "Ouvrir Descall",
+    "startWithWindows": "Lancer avec Windows",
+    "updateAndQuit": "Mettre à jour et quitter (v{version})",
+    "quit": "Quitter"
+  },
+  "notif": {
+    "calling": "t'appelle...",
+    "voiceCall": "Appel vocal",
+    "videoCall": "Appel vidéo",
+    "groupCall": "Appel de groupe",
+    "groupCallIn": "👥 {group} · Appel de groupe",
+    "now": "maintenant",
+    "mentionedYou": "t'a mentionné",
+    "online": "{name} est en ligne",
+    "justConnected": "Vient de se connecter",
+    "missedCall": "appel manqué",
+    "message": "Message",
+    "close": "Fermer",
+    "accept": "Accepter",
+    "decline": "Refuser"
+  },
+  "overlay": {
+    "connected": "Connecté",
+    "calling": "Appel en cours…",
+    "group": "Appel de groupe",
+    "server": "Salon vocal",
+    "offline": "Déconnecté",
+    "mute": "Couper le micro",
+    "unmute": "Réactiver le micro",
+    "deafen": "Couper le son",
+    "undeafen": "Réactiver le son",
+    "leave": "Quitter",
+    "end": "Raccrocher"
+  },
+  "window": {
+    "signupStats": "Statistiques d'inscription — Descall Admin",
+    "adminPanel": "Descall Admin"
+  }
+}

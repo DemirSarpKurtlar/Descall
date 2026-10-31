@@ -102,9 +102,9 @@ export default function InviteLinkEmbed({ invite }) {
 
   const subtitle =
     invite.kind === "server"
-      ? t("{count} members", { count: preview?.server?.memberCount ?? 0 })
+      ? t("chatx.members", { count: preview?.server?.memberCount ?? 0 })
       : invite.kind === "group"
-        ? t("{count} members", { count: preview?.group?.memberCount ?? 0 })
+        ? t("chatx.members", { count: preview?.group?.memberCount ?? 0 })
         : t("Join {name} on Descall", { name: invite.username || invite.code });
 
   const iconUrl =

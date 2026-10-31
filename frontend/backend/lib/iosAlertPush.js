@@ -17,7 +17,8 @@
  *   nothing; calls are not pushed to a phone that is open at all.
  *   Per-DM mute, server notification level and channel mutes are applied by
  *   the callers (socket handlers) before the recipient list reaches here.
- * - Text is localized per device (token locale, then users.language), TR first.
+ * - Text is localized per device (token locale, then users.language) from the
+ *   backend catalogs (backend/i18n/<locale>.js, push.*), Turkish when none matches.
  * - 410 / BadDeviceToken / Unregistered / DeviceTokenNotForTopic delete the
  *   token; 429 / 5xx / network errors never do.
  * - 3.0.0 (A4): message pushes (dm, group, server-message, mention) are rich:
@@ -31,6 +32,8 @@
  */
 
 const { resolveLang } = require("./locales");
+const { bt, availableLangs } = require("./i18n");
+const { trGenitive } = require("./trSuffix");
 const apns = require("./apnsClient");
 const { maskProfanity } = require("./profanity");
 
@@ -46,64 +49,34 @@ const MAX_PAYLOAD_BYTES = 4000;
 const CHUNK = 150;
 const CONCURRENCY = 8;
 
-const STRINGS = {
-  tr: {
-    someone: "Birisi",
-    newMessage: "Yeni mesaj",
-    voice: "🎤 Sesli mesaj",
-    media: "📎 Dosya gönderdi",
-    photo: "📷 Fotoğraf",
-    video: "🎬 Video",
-    group: "Grup",
-    mentioned: "{from} senden bahsetti",
-    mentionedShort: "Senden bahsetti",
-    friendTitle: "Arkadaşlık İsteği",
-    friendBody: "{from} seni arkadaş olarak eklemek istiyor",
-    calling: "{from} arıyor",
-    voiceCall: "Sesli arama",
-    videoCall: "Görüntülü arama",
-    groupCallTitle: "{groupName} — Grup Araması",
-    groupCallBody: "{from} grup araması başlattı",
-    ownerTitle: "Sunucu sahipliği",
-    feedbackTitle: "Descall Ekibi yanıt verdi",
-    feedbackBody: "Geri bildirimine yanıt geldi",
-    antibotTitle: "Anti-bot uyarısı",
-    antibotBody: "{count} hesap risk eşiğini geçti (en yüksek {topScore})",
-    antibotWatchBody: "İzleme listesinde {count} yeni uyarı",
-  },
-  en: {
-    someone: "Someone",
-    newMessage: "New message",
-    voice: "🎤 Voice message",
-    media: "📎 Sent an attachment",
-    photo: "📷 Photo",
-    video: "🎬 Video",
-    group: "Group",
-    mentioned: "{from} mentioned you",
-    mentionedShort: "Mentioned you",
-    friendTitle: "Friend Request",
-    friendBody: "{from} wants to add you as a friend",
-    calling: "{from} is calling",
-    voiceCall: "Voice call",
-    videoCall: "Video call",
-    groupCallTitle: "{groupName} — Group Call",
-    groupCallBody: "{from} started a group call",
-    ownerTitle: "Server ownership",
-    feedbackTitle: "The Descall team replied",
-    feedbackBody: "Your feedback got a reply",
-    antibotTitle: "Anti-bot alert",
-    antibotBody: "{count} accounts crossed the risk threshold (top {topScore})",
-    antibotWatchBody: "{count} new watch list alerts",
-  },
-};
+/** Push words in one language (backend/i18n/<locale>.js, push.*). */
+function stringsFor(lang) {
+  const id = pickLang(lang);
+  const s = (key, vars) => bt(id, `push.${key}`, vars);
+  return {
+    lang: id,
+    someone: s("someone"),
+    newMessage: s("newMessage"),
+    voice: s("voice"),
+    media: s("media"),
+    photo: s("photo"),
+    video: s("video"),
+    group: s("group"),
+    mentionedShort: s("mentionedShort"),
+    friendTitle: s("friendTitle"),
+    voiceCall: s("voiceCall"),
+    videoCall: s("videoCall"),
+    ownerTitle: s("ownerTitle"),
+    feedbackTitle: s("feedbackTitle"),
+    feedbackBody: s("feedbackBody"),
+    antibotTitle: s("antibotTitle"),
+    t: s,
+  };
+}
 
 /** First live locale (device locale, then account language) that has push strings; else Turkish. */
 function pickLang(...candidates) {
-  return resolveLang(candidates, { available: Object.keys(STRINGS), fallback: "tr" });
-}
-
-function fmt(template, vars = {}) {
-  return String(template).replace(/\{(\w+)\}/g, (_, k) => (vars[k] == null ? "" : String(vars[k])));
+  return resolveLang(candidates, { available: availableLangs(), fallback: "tr" });
 }
 
 const CALL_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -237,7 +210,7 @@ function chatKeyFor(event = {}) {
  * Returns { title, body, threadId, data, priority, expiresInSec, collapseId }.
  */
 function describeEvent(event = {}, lang = "tr") {
-  const s = STRINGS[pickLang(lang)];
+  const s = stringsFor(lang);
   const from = clip(event.senderDisplayName, 48) || clip(event.fromName, 48) || s.someone;
   const type = String(event.type || "");
   const chatKey = chatKeyFor(event);
@@ -324,15 +297,13 @@ function describeEvent(event = {}, lang = "tr") {
       threadId: "friend-requests",
       priority: 5,
       title: s.friendTitle,
-      body: fmt(s.friendBody, { from }),
+      body: s.t("friendBody", { from }),
       data: { type: "friend-request", fromId: event.fromId, from },
     };
   }
   if (type === "server-owner") {
-    const serverName = clip(event.serverName, 60) || (pickLang(lang) === "en" ? "the server" : "Sunucu");
-    const body = pickLang(lang) === "en"
-      ? `You now own ${serverName}`
-      : `${require("./trSuffix").trGenitive(serverName)} sahibi artık sensin`;
+    const serverName = clip(event.serverName, 60) || s.t("ownerServerFallback");
+    const body = s.t("ownerBody", { serverName, serverNameGen: s.lang === "tr" ? trGenitive(serverName) : serverName });
     return {
       ...base,
       threadId: event.serverId ? `server-${event.serverId}`.slice(0, 64) : "server-owner",
@@ -358,7 +329,7 @@ function describeEvent(event = {}, lang = "tr") {
       ...base,
       expiresInSec: 0,
       collapseId: event.fromId ? `call-${event.fromId}`.slice(0, 64) : "",
-      title: fmt(s.calling, { from }),
+      title: s.t("calling", { from }),
       body: video ? s.videoCall : s.voiceCall,
       data: {
         type: "call",
@@ -376,8 +347,8 @@ function describeEvent(event = {}, lang = "tr") {
       ...base,
       expiresInSec: 60,
       collapseId: event.groupId ? `gcall-${event.groupId}`.slice(0, 64) : "",
-      title: fmt(s.groupCallTitle, { groupName }),
-      body: fmt(s.groupCallBody, { from }),
+      title: s.t("groupCallTitle", { groupName }),
+      body: s.t("groupCallBody", { from }),
       data: {
         type: "group-call",
         groupId: event.groupId,
@@ -398,7 +369,7 @@ function describeEvent(event = {}, lang = "tr") {
       threadId: "admin-antibot",
       collapseId: "admin-antibot",
       title: s.antibotTitle,
-      body: fmt(s.antibotBody, { count: String(count), topScore: String(topScore) }),
+      body: s.t("antibotBody", { count, topScore }),
       data: { type: "admin-antibot", count, topScore },
     };
   }
@@ -410,7 +381,7 @@ function describeEvent(event = {}, lang = "tr") {
       threadId: "admin-antibot",
       collapseId: "admin-antibot-watch",
       title: s.antibotTitle,
-      body: fmt(s.antibotWatchBody, { count: String(count) }),
+      body: s.t("antibotWatchBody", { count }),
       data: { type: "admin-antibot-watch", count },
     };
   }
@@ -751,7 +722,6 @@ module.exports = {
   messageTableFor,
   IOS_ALERT_PLATFORM,
   VOIP_PLATFORM,
-  STRINGS,
   pickLang,
   buildApnsBody,
   describeEvent,

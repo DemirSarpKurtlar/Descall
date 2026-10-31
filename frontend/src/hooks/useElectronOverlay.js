@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { resolveAvatarUrl, resolveDisplayName } from "../lib/userProfile.js";
+import { t } from "../i18n/runtime.js";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
 
@@ -64,11 +65,11 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
   const active = dmActive || groupActive || serverActive;
 
   const title = dmActive
-    ? `${resolveDisplayName(call?.peer) || call?.peer?.username || "Call"}`
+    ? `${resolveDisplayName(call?.peer) || call?.peer?.username || t("callui.overlay.call")}`
     : groupActive
-    ? "Group Call"
+    ? t("callui.overlay.groupCall")
     : serverActive
-    ? serverVoice?.channelName || "Voice Channel"
+    ? serverVoice?.channelName || t("callui.overlay.voiceChannel")
     : "";
 
   const muted = dmActive

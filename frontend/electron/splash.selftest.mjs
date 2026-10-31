@@ -32,16 +32,17 @@ assert.doesNotMatch(win, /backgroundMaterial/);
 assert.doesNotMatch(win, /vibrancy/);
 assert.doesNotMatch(win, /acrylic/);
 
-for (const phrase of [
-  "Güncellemeler denetleniyor…",
-  "Descall başlatılıyor…",
-  "Güncelleme yükleniyor…",
-  "Güncelleme indiriliyor…",
-  "Güncel",
-  "Güncellemeler denetlenemedi",
-]) {
-  assert.ok(main.includes(phrase), phrase);
+// Status lines live in electron/i18n/<id>.json "splash" (Turkish wording unchanged).
+const trSplash = JSON.parse(readFileSync(join(here, "i18n", "tr.json"), "utf8")).splash;
+assert.deepEqual(
+  [trSplash.checking, trSplash.starting, trSplash.installing, trSplash.downloading, trSplash.upToDate, trSplash.checkFailed, trSplash.loading],
+  ["Güncellemeler denetleniyor…", "Descall başlatılıyor…", "Güncelleme yükleniyor…", "Güncelleme indiriliyor…", "Güncel", "Güncellemeler denetlenemedi", "Yükleniyor"],
+);
+for (const key of ["checking", "starting", "installing", "downloading", "upToDate", "checkFailed"]) {
+  assert.match(main, new RegExp(`get ${key}\\(\\) \\{ return et\\('splash\\.${key}'\\); \\}`), key);
 }
+assert.match(win, /loadFile\(splashPath, \{ query \}\)/, "language + first line travel in the query");
+assert.match(win, /lang: getLocale\(\), status: SPLASH_TEXT\.checking, loading: et\('splash\.loading'\)/);
 assert.doesNotMatch(main, /status:\s*'Checking for updates/);
 assert.doesNotMatch(main, /status:\s*'Starting Descall/);
 assert.doesNotMatch(main, /status:\s*'Installing update/);
@@ -67,9 +68,13 @@ assert.match(splash, /prefers-contrast:\s*more/);
 assert.match(splash, /const omega = \(2 \* Math\.PI\) \/ 0\.36/);
 assert.match(splash, /window\.__splashSetVersion/);
 assert.match(splash, /window\.__splashUpdate/);
-assert.match(splash, /Güncellemeler denetleniyor…/);
+// No baked-in language: the query fills lang, the progress label and the first status line.
+assert.doesNotMatch(splash, /Güncellemeler denetleniyor…/);
 assert.doesNotMatch(splash, /Starting Descall/);
 assert.doesNotMatch(splash, /Checking for updates/);
+assert.match(splash, /query\.get\("lang"\)/);
+assert.match(splash, /query\.get\("loading"\)/);
+assert.match(splash, /statusEl\.textContent = query\.get\("status"\) \|\| ""/);
 assert.match(splash, /class="loader"/);
 assert.match(splash, /class="version"/);
 assert.match(splash, /preview"\) === "desktop"/);

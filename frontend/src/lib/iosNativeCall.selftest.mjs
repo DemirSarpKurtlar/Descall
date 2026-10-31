@@ -14,6 +14,13 @@ import {
   normalizeNativeCall,
 } from "./iosNativeCallState.js";
 
+// Copy comes from the i18n catalogs in the UI language: load them and use Turkish.
+globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {} };
+const { loadI18nCatalogs } = await import("../i18n/index.js");
+const { setRuntimeLocale } = await import("../i18n/runtime.js");
+await loadI18nCatalogs("tr");
+setRuntimeLocale("tr");
+
 const UUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 
 // ── state store ─────────────────────────────────────────────────────────────
@@ -131,7 +138,9 @@ function harness(call) {
   const app = read("../App.jsx");
   assert.match(app, /<NativeCallCard \/>/);
   const card = read("../components/calls/NativeCallCard.jsx");
-  for (const label of ["Sessiz", "Hoparlör", "Kapat"]) assert.ok(card.includes(label), label);
+  for (const key of ["mute", "speaker", "end"]) assert.ok(card.includes(`t("callui.native.${key}")`), key);
+  const { t: tr } = await import("../i18n/runtime.js");
+  assert.deepEqual(["mute", "speaker", "end"].map((k) => tr(`callui.native.${k}`)), ["Sessiz", "Hoparlör", "Kapat"]);
   const css = read("../components/calls/NativeCallCard.css");
   assert.match(css, /backdrop-filter: blur/);
   assert.match(css, /prefers-reduced-motion: reduce/);

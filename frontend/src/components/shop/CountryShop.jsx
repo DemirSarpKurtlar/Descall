@@ -20,8 +20,9 @@ import { Avatar } from "../ui/Avatar";
 import AdminBadge from "../social/AdminBadge";
 import { CountryBadge, CountryFlag } from "./CountryFlag";
 import { condenseLetters, railCapacity } from "../../lib/letterRail";
+import { formatNumber } from "../../i18n/format.js";
 
-const REGION_LABEL = Object.fromEntries(COUNTRY_REGIONS.map((r) => [r.id, r.label]));
+const REGION_LABEL = Object.fromEntries(COUNTRY_REGIONS.map((r) => [r.id, r.labelKey]));
 
 function regionLabel(item, t) {
   const id = primaryRegion(item);
@@ -36,6 +37,7 @@ function cardState({ owned, equipped }) {
 }
 
 function CountryAction({ item, state, busy, affordable, hasVoucher, onBuy, onEquip, t }) {
+  const { locale } = useLocale();
   if (state === "equipped") {
     return (
       <div className="cs-actions">
@@ -61,7 +63,7 @@ function CountryAction({ item, state, busy, affordable, hasVoucher, onBuy, onEqu
       {hasVoucher ? (
         <span className="cs-price is-free"><Gift size={12} /> {t("Free")}</span>
       ) : (
-        <span className="cs-price"><Coins size={12} /> {(item.price_descoin || 0).toLocaleString()}</span>
+        <span className="cs-price"><Coins size={12} /> {formatNumber(item.price_descoin || 0, locale)}</span>
       )}
       <button
         type="button"
@@ -184,9 +186,9 @@ function PurchaseDialog({ item, me, balance, hasVoucher, currentItem, onCancel, 
           </div>
         </div>
         <div className="cs-ledger">
-          <div><span>{t("Price")}</span><b className={hasVoucher ? "is-free" : "is-coin"}>{hasVoucher ? t("Free") : <><Coins size={13} /> {price.toLocaleString()}</>}</b></div>
-          <div><span>{t("Balance")}</span><b>{balance.toLocaleString()}</b></div>
-          <div><span>{t("After")}</span><b>{after.toLocaleString()}</b></div>
+          <div><span>{t("Price")}</span><b className={hasVoucher ? "is-free" : "is-coin"}>{hasVoucher ? t("Free") : <><Coins size={13} /> {formatNumber(price, locale)}</>}</b></div>
+          <div><span>{t("Balance")}</span><b>{formatNumber(balance, locale)}</b></div>
+          <div><span>{t("After")}</span><b>{formatNumber(after, locale)}</b></div>
         </div>
         {hasVoucher ? (
           <p className="cs-voucher-note"><Gift size={14} /> {t("Your free country: titles were retired, so this flag is on us. No DesCoin is spent.")}</p>
@@ -206,7 +208,7 @@ function PurchaseDialog({ item, me, balance, hasVoucher, currentItem, onCancel, 
             disabled={busy || (!hasVoucher && balance < price)}
             onClick={() => onConfirm({ equipAfter, useVoucher: hasVoucher })}
           >
-            {busy ? t("Buying…") : hasVoucher ? t("Get it free") : t("Buy for {amount} DesCoin", { amount: price.toLocaleString() })}
+            {busy ? t("Buying…") : hasVoucher ? t("Get it free") : t("Buy for {amount} DesCoin", { amount: formatNumber(price, locale) })}
           </button>
         </div>
         <p className="cs-footnote">{t("A flag you buy stays on your account; change it whenever you like. Only one flag is worn at a time.")}</p>
@@ -305,6 +307,11 @@ export default function CountryShop({
   onEquip,
   isMobile = false,
 }) {
+  // Electron e2e (countriesTab.e2e.cjs) breaks this render on purpose to check that the
+  // pane error boundary contains it. Never set outside that test.
+  if (typeof window !== "undefined" && window.__descallE2EBreakCountryShop) {
+    throw new Error("e2e: forced country shop render error");
+  }
   const t = useT();
   const { locale } = useLocale();
   const [query, setQuery] = useState("");
@@ -338,8 +345,8 @@ export default function CountryShop({
   const ownedCount = useMemo(() => items.filter((i) => ownedItemIds.has(i.id)).length, [items, ownedItemIds]);
 
   const base = useMemo(
-    () => items.filter((i) => (territories || !isTerritory(i)) && matchesCountry(i, query)),
-    [items, territories, query]
+    () => items.filter((i) => (territories || !isTerritory(i)) && matchesCountry(i, query, locale)),
+    [items, territories, query, locale]
   );
   const regionCounts = useMemo(() => {
     const map = new Map();
@@ -444,7 +451,7 @@ export default function CountryShop({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={isMobile ? t("Search countries") : t("Search: Türkiye, Japan, JP…")}
+              placeholder={isMobile ? t("Search countries") : t("shop.countrySearch")}
               aria-label={t("Search countries")}
               enterKeyHint="search"
             />
@@ -483,7 +490,7 @@ export default function CountryShop({
                 onClick={() => setRegion(r.id)}
                 disabled={!regionCounts.get(r.id)}
               >
-                {t(r.label)} <span className="cs-count">{regionCounts.get(r.id) || 0}</span>
+                {t(r.labelKey)} <span className="cs-count">{regionCounts.get(r.id) || 0}</span>
               </button>
             ))}
           </div>
@@ -662,7 +669,7 @@ export function ShopInventoryView({
 
       {retiredTitles > 0 ? (
         <p className="inv-retired-note">
-          {t("Profile titles were retired in 2.13.0. Your {count} old titles stay on your account but are no longer shown.", { count: retiredTitles })}
+          {t("shop.retiredTitles", { count: retiredTitles })}
         </p>
       ) : null}
     </div>

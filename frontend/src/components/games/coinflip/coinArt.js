@@ -3,6 +3,7 @@
  * Static SVG strings, no user input. Every id carries a per-instance prefix so
  * two coins in different chats never share (or lose) a gradient.
  */
+import { t } from "../../../i18n/runtime";
 
 export const LOGO_D =
   "M67.58 62.5A27.25 27.25 0 1 1 37.5 32.42A5.75 5.75 0 0 1 38.76 43.85A15.75 15.75 0 1 0 56.15 61.24A5.75 5.75 0 0 1 67.58 62.5ZM32.42 37.5A27.25 27.25 0 1 1 62.5 67.58A5.75 5.75 0 0 1 61.24 56.15A15.75 15.75 0 1 0 43.85 38.76A5.75 5.75 0 0 1 32.42 37.5ZM44.25 50a5.75 5.75 0 1 0 11.5 0a5.75 5.75 0 1 0 -11.5 0Z";
@@ -39,7 +40,7 @@ export function coinFaceSvg(face, prefix, { simple = false, size = null } = {}) 
   const ring = simple
     ? ""
     : `<text font-family="Inter Tight, Inter, system-ui, sans-serif" font-weight="700" font-size="12" letter-spacing="2" fill="#c9a660" filter="${u("fEmbSoft")}"><textPath href="#${P}ringPath" textLength="505" lengthAdjust="spacing">${
-        face === "tura" ? "DESCALL · DESCOIN · DESCALL · DESCOIN · " : "BİR DESCOIN · MMXXVI · BİR DESCOIN · MMXXVI · "
+        face === "tura" ? "DESCALL · DESCOIN · DESCALL · DESCOIN · " : t("chatx.coinRim")
       }</textPath></text>`;
   const emb = ` filter="${u("fEmb")}"`;
   const inner =

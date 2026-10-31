@@ -23,8 +23,12 @@ export default function AdminPanelPage() {
   const [me, setMe] = useState(undefined);
   const [socket, setSocket] = useState(null);
 
+  const pageTitle = t("adminx.panel.windowTitle");
   useEffect(() => {
-    document.title = "Descall Yönetici";
+    document.title = pageTitle;
+  }, [pageTitle]);
+
+  useEffect(() => {
     document.documentElement.classList.add("adm-window");
     // Same theme / font as the main window (App.jsx does this for the full app).
     Promise.all([import("../../lib/appearanceSync.js"), import("../../lib/appearancePrefs.js")])

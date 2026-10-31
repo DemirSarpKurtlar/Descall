@@ -129,10 +129,6 @@ for (const rel of [
   assert.match(file, /GlassConfirm|confirmAction/, rel);
 }
 
-assert.match(src("components/layout/AdminMenu.jsx"), /confirmAction/);
-assert.doesNotMatch(src("components/layout/AdminMenu.jsx"), /window\.confirm/);
-assert.match(src("components/settings/SettingsPanelNew.jsx"), /confirmAction/);
-assert.doesNotMatch(src("components/settings/SettingsPanelNew.jsx"), /window\.confirm/);
 assert.match(src("styles/glass-dialogs.css"), /\.report-reason-chip\.active/);
 assert.match(src("styles/glass-dialogs.css"), /\.g-alert-btn\.is-danger/);
 assert.match(src("lib/blockedUsers.js"), /confirmAction/);

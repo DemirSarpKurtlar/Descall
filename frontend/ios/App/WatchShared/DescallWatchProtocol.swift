@@ -30,6 +30,8 @@ enum DescallWatchProtocol {
         static let stepUp = "stepUp"
         static let status = "status"
         static let error = "error"
+        /// Reply only: the iPhone app's UI language (src/i18n/locales.json id) for the watch copy.
+        static let locale = "loc"
     }
 
     /// Bridge-level failures (status 0 in the reply).
@@ -102,5 +104,63 @@ enum DescallWatchProtocol {
             guard let text = stepUp as? String, isStepUpToken(text) else { return Failure.badRequest }
         }
         return nil
+    }
+}
+
+/// UI language of the watch copy (WatchStrings.swift). Same ids as src/i18n/locales.json.
+/// The iPhone app's UI language wins (it rides along on bridge replies, `Key.locale`);
+/// otherwise the watch's languages are matched like src/i18n/detect.js: a Turkish device
+/// keeps Turkish, then the first live locale, else English. Pure, tested by selftest/watch.
+enum DescallWatchLocale {
+    static let ids = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"]
+    /// status "live" in src/i18n/locales.json (drafts only by the app's UI choice).
+    static let live: Set<String> = ["en", "tr"]
+    static let storeKey = "descall.uiLocale"
+
+    /// Registered id for "tr-TR", "pt", "pt_BR", "de-AT"; nil when unknown.
+    static func match(_ raw: String?) -> String? {
+        let value = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-").lowercased()
+        guard !value.isEmpty else { return nil }
+        if let exact = ids.first(where: { $0.lowercased() == value }) { return exact }
+        let base = value.split(separator: "-").first.map(String.init) ?? value
+        return ids.first { ($0.lowercased().split(separator: "-").first.map(String.init) ?? "") == base }
+    }
+
+    static func resolve(phone: String?, preferred: [String]) -> String {
+        if let chosen = match(phone) { return chosen }
+        guard !preferred.isEmpty else { return "tr" }
+        let langs = preferred.map { $0.replacingOccurrences(of: "_", with: "-").lowercased() }
+        if langs.contains(where: { $0 == "tr" || $0.hasPrefix("tr-") || $0.hasSuffix("-tr") }) { return "tr" }
+        for lang in langs {
+            if let hit = match(lang), live.contains(hit) { return hit }
+        }
+        return "en"
+    }
+
+    /// Foundation locale for formatters and case mapping.
+    static func localeIdentifier(_ id: String) -> String {
+        switch id {
+        case "tr": return "tr_TR"
+        case "de": return "de_DE"
+        case "es": return "es_ES"
+        case "fr": return "fr_FR"
+        case "pt-BR": return "pt_BR"
+        case "ru": return "ru_RU"
+        default: return "en_GB"
+        }
+    }
+
+    /// CLDR plural category for an integer count.
+    static func pluralCategory(_ n: Int, _ id: String) -> String {
+        switch id {
+        case "fr", "pt-BR": return n == 0 || n == 1 ? "one" : "other"
+        case "ru":
+            let m10 = n % 10, m100 = n % 100
+            if m10 == 1 && m100 != 11 { return "one" }
+            if (2...4).contains(m10) && !(12...14).contains(m100) { return "few" }
+            return "many"
+        default: return n == 1 ? "one" : "other"
+        }
     }
 }

@@ -26,15 +26,13 @@ export function useAppearancePrefs() {
   return prefs;
 }
 
-const FONT_LABELS_TR = ["Küçük", "Varsayılan", "Büyük", "Çok büyük"];
-const FONT_LABELS_EN = ["Small", "Default", "Large", "Extra large"];
-
 function PreviewAvatar({ size }) {
   return <span className="s3-av" style={{ width: size, height: size, backgroundImage: `url(${ayseUrl})` }} aria-hidden="true" />;
 }
 
 /** The live preview: real bubble shapes, the chosen accent and text size. */
-export function AppearancePreview({ prefs, premium, tr }) {
+export function AppearancePreview({ prefs, premium }) {
+  const { t } = useLocale();
   const scale = FONT_STEPS[prefs.fontStep]?.scale || 1;
   const light = !premium && resolveBaseTheme(prefs.themeMode) === "light";
   const style = {
@@ -42,24 +40,24 @@ export function AppearancePreview({ prefs, premium, tr }) {
     "--fs": `${(15.5 * scale).toFixed(2)}px`,
   };
   return (
-    <div className={`s3-prev${light ? " is-light" : ""}`} style={style} aria-label={tr ? "Canlı önizleme" : "Live preview"} role="img">
+    <div className={`s3-prev${light ? " is-light" : ""}`} style={style} aria-label={t("shell.appearance.livePreviewLabel")} role="img">
       <div className="hd">
         <PreviewAvatar size={30} />
         <div>
-          Ayşe<small>{tr ? "Çevrimiçi" : "Online"}</small>
+          Ayşe<small>{t("shell.appearance.previewOnline")}</small>
         </div>
-        <span className="live">{tr ? "CANLI ÖNİZLEME" : "LIVE PREVIEW"}</span>
+        <span className="live">{t("shell.appearance.livePreviewBadge")}</span>
       </div>
       <div className="s3-pm">
         <PreviewAvatar size={24} />
         <div className="s3-pb">
-          {tr ? "Akşam oyuna var mısın? 🎮" : "Up for a game tonight? 🎮"}
+          {t("shell.appearance.previewMsg1")}
           <span className="tm">20:41</span>
         </div>
       </div>
       <div className="s3-pm me">
         <div className="s3-pb">
-          {tr ? "Varım! 21:00'de sesliye gelirim" : "I'm in! Joining voice at 21:00"}
+          {t("shell.appearance.previewMsg2")}
           <span className="tm">20:42</span>
           <span className="s3-pr">❤️</span>
         </div>
@@ -67,12 +65,12 @@ export function AppearancePreview({ prefs, premium, tr }) {
       <div className="s3-pm" style={{ marginTop: 14 }}>
         <PreviewAvatar size={24} />
         <div className="s3-pb">
-          {tr ? "Süper, Mert'e de haber ver 👍" : "Great, let Mert know too 👍"}
+          {t("shell.appearance.previewMsg3")}
           <span className="tm">20:42</span>
         </div>
       </div>
       <div className="s3-pin">
-        {tr ? "Mesaj" : "Message"}
+        {t("shell.appearance.previewComposer")}
         <i>
           <S3Glyph name="send" size={13} stroke={2.4} />
         </i>
@@ -81,15 +79,16 @@ export function AppearancePreview({ prefs, premium, tr }) {
   );
 }
 
-function ThemeCards({ prefs, premium, onPick, tr }) {
+function ThemeCards({ prefs, premium, onPick }) {
+  const { t } = useLocale();
   const ac = premium ? "var(--g-brand, var(--primary))" : prefs.accentColor;
   const cards = [
-    { id: "dark", label: tr ? "Koyu" : "Dark", bg: "#151722", bars: ["rgba(255,255,255,.12)", ac, "rgba(255,255,255,.12)"] },
-    { id: "light", label: tr ? "Açık" : "Light", bg: "#EEF0F6", bars: ["#fff", ac, "#fff"] },
-    { id: "auto", label: tr ? "Otomatik" : "Automatic", bg: "linear-gradient(135deg,#151722 50%,#EEF0F6 50%)", bars: [null, ac, null] },
+    { id: "dark", label: t("shell.appearance.themeDark"), bg: "#151722", bars: ["rgba(255,255,255,.12)", ac, "rgba(255,255,255,.12)"] },
+    { id: "light", label: t("shell.appearance.themeLight"), bg: "#EEF0F6", bars: ["#fff", ac, "#fff"] },
+    { id: "auto", label: t("shell.appearance.themeAuto"), bg: "linear-gradient(135deg,#151722 50%,#EEF0F6 50%)", bars: [null, ac, null] },
   ];
   return (
-    <div className="s3-group s3-th" style={{ "--ac": ac }} role="radiogroup" aria-label={tr ? "Tema" : "Theme"}>
+    <div className="s3-group s3-th" style={{ "--ac": ac }} role="radiogroup" aria-label={t("shell.appearance.theme")}>
       {cards.map((c) => {
         const on = !premium && prefs.themeMode === c.id;
         return (
@@ -108,10 +107,11 @@ function ThemeCards({ prefs, premium, onPick, tr }) {
   );
 }
 
-function Swatches({ prefs, premium, tr }) {
+function Swatches({ prefs, premium }) {
+  const { t } = useLocale();
   return (
     <div className="s3-group">
-      <div className="s3-sw" role="radiogroup" aria-label={tr ? "Vurgu rengi" : "Accent color"}>
+      <div className="s3-sw" role="radiogroup" aria-label={t("shell.appearance.accent")}>
         {ACCENTS.map((a) => {
           const on = !premium && prefs.accentColor.toUpperCase() === a.hex.toUpperCase();
           return (
@@ -120,8 +120,8 @@ function Swatches({ prefs, premium, tr }) {
               type="button"
               role="radio"
               aria-checked={on}
-              aria-label={a.label}
-              title={a.label}
+              aria-label={t(`shell.appearance.accents.${a.id}`)}
+              title={t(`shell.appearance.accents.${a.id}`)}
               className={on ? "on" : ""}
               style={{ background: a.hex }}
               onClick={() => updateAppearance({ accentColor: a.hex })}
@@ -133,8 +133,9 @@ function Swatches({ prefs, premium, tr }) {
   );
 }
 
-function FontSize({ prefs, tr }) {
-  const labels = tr ? FONT_LABELS_TR : FONT_LABELS_EN;
+function FontSize({ prefs }) {
+  const { t } = useLocale();
+  const labels = FONT_STEPS.map((s) => t(`shell.appearance.fontSteps.${s.id}`));
   const i = prefs.fontStep;
   const pct = `${[0, 33.3, 66.6, 100][i]}%`;
   return (
@@ -149,7 +150,7 @@ function FontSize({ prefs, tr }) {
           step={1}
           value={i}
           style={{ "--v": pct }}
-          aria-label={tr ? "Yazı boyutu" : "Text size"}
+          aria-label={t("shell.appearance.textSize")}
           aria-valuetext={labels[i]}
           onChange={(e) => updateAppearance({ fontStep: Number(e.target.value) })}
         />
@@ -178,8 +179,7 @@ export default function AppearancePane({
   onPickPremiumTheme,
   onOpenShop,
 }) {
-  const { locale } = useLocale();
-  const tr = locale !== "en";
+  const { t } = useLocale();
   const prefs = useAppearancePrefs();
   const [storeOpen, setStoreOpen] = useState(false);
   const premium = Boolean(equippedThemeKey);
@@ -195,22 +195,18 @@ export default function AppearancePane({
   const storeValue = equipped
     ? equipped.name
     : ownedThemes.length
-      ? tr
-        ? `${ownedThemes.length} tema sende`
-        : `${ownedThemes.length} ${ownedThemes.length === 1 ? "theme" : "themes"} owned`
-      : tr
-        ? "Mağazada keşfet"
-        : "Browse the shop";
+      ? t("shell.appearance.themesOwned", { count: ownedThemes.length })
+      : t("shell.appearance.browseShop");
 
   const left = (
     <>
-      <S3Sec first>{tr ? "Tema" : "Theme"}</S3Sec>
-      <ThemeCards prefs={prefs} premium={premium} onPick={pickMode} tr={tr} />
+      <S3Sec first>{t("shell.appearance.theme")}</S3Sec>
+      <ThemeCards prefs={prefs} premium={premium} onPick={pickMode} />
       <S3Group className="s3-store">
         <S3Row
           icon="palette"
           color="purple"
-          title={tr ? "Mağaza temaları" : "Shop themes"}
+          title={t("shell.appearance.shopThemes")}
           value={storeValue}
           chevron
           className={storeOpen ? "is-open" : ""}
@@ -227,77 +223,55 @@ export default function AppearancePane({
                   onClick={() => onPickPremiumTheme?.(item)}
                 />
               )),
-              <S3Row key="shop" icon="bag" color="purple" title={tr ? "Mağazaya git" : "Open the shop"} chevron onClick={() => onOpenShop?.()} />,
+              <S3Row key="shop" icon="bag" color="purple" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
             ]
           : null}
       </S3Group>
 
-      <S3Sec>{tr ? "Vurgu rengi" : "Accent color"}</S3Sec>
-      <Swatches prefs={prefs} premium={premium} tr={tr} />
+      <S3Sec>{t("shell.appearance.accent")}</S3Sec>
+      <Swatches prefs={prefs} premium={premium} />
       <S3Foot>
-        {premium
-          ? tr
-            ? "Mağaza teması kullanırken vurgu rengini tema belirler."
-            : "While a shop theme is on, the theme sets the accent."
-          : tr
-            ? "Butonlar, seçili sekmeler ve kendi mesaj balonların bu rengi alır."
-            : "Buttons, selected tabs and your own message bubbles use this color."}
+        {premium ? t("shell.appearance.accentFootPremium") : t("shell.appearance.accentFoot")}
       </S3Foot>
 
-      <S3Sec>{tr ? "Yazı boyutu" : "Text size"}</S3Sec>
-      <FontSize prefs={prefs} tr={tr} />
+      <S3Sec>{t("shell.appearance.textSize")}</S3Sec>
+      <FontSize prefs={prefs} />
       <S3Foot>
-        {!desk
-          ? tr
-            ? "Sohbet, listeler ve menülerde geçerli. iPhone'un Dinamik Yazı ayarını da izler."
-            : "Applies to chat, lists and menus. Also follows iPhone Dynamic Type."
-          : tr
-            ? "Sohbet, kanal listesi ve menülerde geçerli. Ctrl + / Ctrl − ile de değişir."
-            : "Applies to chat, the channel list and menus. Ctrl + / Ctrl − also change it."}
+        {!desk ? t("shell.appearance.textSizeFootMobile") : t("shell.appearance.textSizeFootDesktop")}
       </S3Foot>
 
-      <S3Sec>{desk ? (tr ? "Erişilebilirlik ve performans" : "Accessibility and performance") : tr ? "Erişilebilirlik" : "Accessibility"}</S3Sec>
+      <S3Sec>{desk ? t("shell.appearance.a11yPerf") : t("shell.appearance.a11y")}</S3Sec>
       <S3Group>
         <S3Row
           icon="eye"
           color="gray"
-          title={tr ? "Şeffaflığı azalt" : "Reduce transparency"}
-          sub={
-            desk
-              ? tr
-                ? "Cam yerine düz yüzey; eski bilgisayarlarda daha akıcı"
-                : "Solid surfaces instead of glass; smoother on older computers"
-              : tr
-                ? "Cam yerine düz, koyu yüzey"
-                : "Solid, dark surfaces instead of glass"
-          }
+          title={t("shell.appearance.reduceTransparency")}
+          sub={desk ? t("shell.appearance.reduceTransparencySubDesktop") : t("shell.appearance.reduceTransparencySubMobile")}
           toggle={prefs.reduceTransparency}
           onToggle={(on) => updateAppearance({ reduceTransparency: on })}
         />
         <S3Row
           icon="sparkle"
           color="gray"
-          title={tr ? "Hareketi azalt" : "Reduce motion"}
-          sub={tr ? "Geçiş ve yay animasyonlarını sadeleştirir" : "Simplifies transitions and spring animations"}
+          title={t("shell.appearance.reduceMotion")}
+          sub={t("shell.appearance.reduceMotionSub")}
           toggle={prefs.reduceMotion}
           onToggle={(on) => updateAppearance({ reduceMotion: on })}
         />
       </S3Group>
       <S3Foot>
-        {tr
-          ? "Görünüm hesabına kaydedilir ve tüm cihazlarında aynı olur. Durumunu artık profil menüsünden değiştirirsin."
-          : "Appearance is saved to your account and is the same on all your devices. You now change your status from the profile menu."}
+        {t("shell.appearance.savedFoot")}
       </S3Foot>
     </>
   );
 
   const gone = (
     <>
-      <div className="s3-cap">{tr ? "Kaldırılanlar:" : "Removed:"}</div>
+      <div className="s3-cap">{t("shell.appearance.removed")}</div>
       <div className="s3-gone">
-        <span>{tr ? "Yoğunluk" : "Density"}</span>
-        <span>{tr ? "Mesaj balonu stili" : "Message bubble style"}</span>
-        <span>{tr ? "Durum (profil menüsüne taşındı)" : "Status (moved to the profile menu)"}</span>
+        <span>{t("shell.appearance.removedDensity")}</span>
+        <span>{t("shell.appearance.removedBubble")}</span>
+        <span>{t("shell.appearance.removedStatus")}</span>
       </div>
     </>
   );
@@ -306,7 +280,7 @@ export default function AppearancePane({
     return (
       <div className="s3 s3-appearance is-phone">
         <div style={{ margin: "2px 0 4px" }}>
-          <AppearancePreview prefs={prefs} premium={premium} tr={tr} />
+          <AppearancePreview prefs={prefs} premium={premium} />
         </div>
         {left}
         {gone}
@@ -321,10 +295,10 @@ export default function AppearancePane({
         {gone}
       </div>
       <div className="s3-sticky">
-        <S3Sec first>{tr ? "Önizleme" : "Preview"}</S3Sec>
-        <AppearancePreview prefs={prefs} premium={premium} tr={tr} />
+        <S3Sec first>{t("shell.appearance.preview")}</S3Sec>
+        <AppearancePreview prefs={prefs} premium={premium} />
         <div className="s3-cap">
-          {tr ? "Değişiklikler anında burada ve uygulamanın tamamında görünür." : "Changes show up here and across the app right away."}
+          {t("shell.appearance.previewCap")}
         </div>
       </div>
     </div>

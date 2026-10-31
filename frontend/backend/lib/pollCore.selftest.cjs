@@ -28,7 +28,7 @@ assert.equal(core.parsePollArgs("only | one"), null);
 assert.equal(core.parsePollArgs(""), null);
 
 // Fallback text (old clients, previews): plain, no markdown.
-assert.equal(core.pollFallbackText({ question: "Q?", options: [{ text: "A", emoji: "🪂" }, { text: "B" }] }), "📊 Anket: Q?\n1. 🪂 A\n2. B\nOy vermek için Descall'ı güncelle");
+assert.equal(core.pollFallbackText({ question: "Q?", options: [{ text: "A", emoji: "🪂" }, { text: "B" }] }), "📊 Poll: Q?\n1. 🪂 A\n2. B\nUpdate Descall to vote");
 
 // Snapshot: results hidden until the viewer votes; voter total always visible.
 const poll = { id: "p1", scope: "server", server_message_id: "m1", creator_id: "u1", question: "Q?", allow_multiselect: false, anonymous: false, ends_at: new Date(Date.now() + 3600e3).toISOString(), closed_at: null, version: 3 };
@@ -76,13 +76,13 @@ assert.equal(s.closeReason, "expired");
 assert.deepEqual(s.options.filter((o) => o.winner).map((o) => o.id), ["o2"]);
 assert.equal(s.canVote, false);
 assert.equal(s.canClose, false);
-assert.equal(core.pollEndText(s), "📊 “Q?” anketi sona erdi · Kazanan: B (%56)");
+assert.equal(core.pollEndText(s), "📊 The poll “Q?” has ended · Winner: B (56%)");
 const tie = core.buildPollSnapshot({ ...ended }, options, { counts: { o1: 5, o2: 5 }, voters: 10, mine: [] }, {});
-assert.equal(core.pollEndText(tie), "📊 “Q?” anketi sona erdi · Berabere: 🪂 A, B (%50)");
-assert.equal(core.pollEndText(core.buildPollSnapshot(ended, options, { counts: {}, voters: 0, mine: [] }, {})), "📊 “Q?” anketi sona erdi · Kimse oy vermedi");
+assert.equal(core.pollEndText(tie), "📊 The poll “Q?” has ended · Tie: 🪂 A, B (50%)");
+assert.equal(core.pollEndText(core.buildPollSnapshot(ended, options, { counts: {}, voters: 0, mine: [] }, {})), "📊 The poll “Q?” has ended · Nobody voted");
 
-// Postgres RAISE → Turkish message.
-assert.deepEqual(core.voteError({ message: "POLL_CLOSED" }), { code: "POLL_CLOSED", message: "Bu anket sona erdi." });
+// Postgres RAISE → static English message (the client translates it).
+assert.deepEqual(core.voteError({ message: "POLL_CLOSED" }), { code: "POLL_CLOSED", message: "This poll has ended." });
 assert.equal(core.voteError({ message: "weird" }).code, "POLL_ERROR");
 assert.equal(core.percent(1, 3), 33);
 assert.equal(core.percent(1, 0), 0);

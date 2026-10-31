@@ -1,3 +1,5 @@
+import { t } from "../i18n/runtime.js";
+
 const RETRY_METHODS = new Set(["GET", "HEAD"]);
 const TRANSIENT_STATUS = new Set([408, 502, 503, 504]);
 /** Six tries, about fifteen seconds of backoff, then the caller may speak. */
@@ -20,22 +22,9 @@ export function isTransientHttpStatus(status) {
   return TRANSIENT_STATUS.has(Number(status));
 }
 
-function uiLang() {
-  const lang =
-    (typeof document !== "undefined" && document.documentElement?.lang) ||
-    (typeof navigator !== "undefined" && navigator.language) ||
-    "en";
-  return String(lang).toLowerCase().startsWith("tr") ? "tr" : "en";
-}
-
 /** Calm copy for a blip. Callers should keep cached data and stay quiet until the budget is spent. */
 export function transientFailureError(status = 0) {
-  const tr = uiLang() === "tr";
-  const err = new Error(
-    tr
-      ? "Bağlantı gecikti. Kayıtlı veriler duruyor, yeniden deniyoruz."
-      : "The connection is slow. Saved data is still here. Retrying.",
-  );
+  const err = new Error(t("The connection is slow. Saved data is still here. Retrying."));
   err.code = "transient";
   err.status = status || 0;
   return err;

@@ -7,7 +7,14 @@
 const { GameManager, MIN_BET, MAX_BET, STARTING_CREDITS } = require("../games/BlackjackGame");
 const { playRound, toPublicState, roundId, LINE_COUNT } = require("../games/SlotGame");
 const { CoinFlipManager } = require("../games/CoinFlipGame");
-const { parsePayArgs, parseCoinArgs, sideLabel } = require("../games/casinoArgs");
+const { parsePayArgs, parseCoinArgs } = require("../games/casinoArgs");
+
+/** Coin side as a catalog ref ("Heads" / "Yazı"). */
+function sideRef(side) {
+  if (side === "heads") return { key: "bot.game.heads" };
+  if (side === "tails") return { key: "bot.game.tails" };
+  return "";
+}
 const supabase = require("../db/supabase");
 const { casinoAccess } = require("../lib/ageGate");
 const {
@@ -18,6 +25,39 @@ const {
 } = require("../lib/casinoPlatformGate");
 const { AsyncLocalStorage } = require("async_hooks");
 const { resolveCasinoTarget, dmRoomId } = require("../lib/casinoRoomAccess");
+const { ref: G, en } = require("../lib/botText");
+const { apiText } = require("../lib/apiError");
+
+// Engine errors (games/*.js, static English) -> bot catalog keys for the board text.
+const ENGINE_ERRORS = {
+  "HIT is not available right now.": "bot.game.err.hit",
+  "STAND is not available right now.": "bot.game.err.stand",
+  "DOUBLE is only available on your first two cards.": "bot.game.err.double",
+  "You already have an active hand. Use HIT / STAND / DOUBLE.": "bot.game.err.activeHand",
+  "No active game. Start with /bj <amount>.": "bot.game.err.noGame",
+  "This hand is already over.": "bot.game.err.handOver",
+  "Unknown action.": "bot.game.err.unknownAction",
+  "This flip is already settled.": "bot.game.err.flipSettled",
+  "Call heads or tails.": "bot.game.err.callSide",
+  "Call heads or tails on your open flip first.": "bot.game.err.openFlip",
+  "No coin in the air. Start with /cf 100.": "bot.game.err.noCoin",
+};
+
+/** Ref (or the plain text) of an engine error for the board text. */
+function engineErrorRef(text) {
+  const msg = String(text || "");
+  if (ENGINE_ERRORS[msg]) return G(ENGINE_ERRORS[msg]);
+  const range = /^Bet must be between ([\d,]+) and ([\d,]+)\.$/.exec(msg);
+  if (range) return G("bot.game.err.betRange", { min: range[1], max: range[2] });
+  return msg;
+}
+
+/** game:notice text: static English, or text + textKey / textVars for the bet range. */
+function engineNotice(text) {
+  const range = /^Bet must be between ([\d,]+) and ([\d,]+)\.$/.exec(String(text || ""));
+  if (range) return apiText("text", "Bet must be between {min} and {max}.", { min: range[1], max: range[2] });
+  return { text };
+}
 
 const AGE_FREE_COMMANDS = new Set(["help", "yardım", "commands", "jb"]);
 
@@ -74,7 +114,12 @@ function sessionIdFor(ownerUserId) {
   return ownerUserId ? `casino-session-${ownerUserId}` : null;
 }
 
+/**
+ * `content` is a { key, vars } ref into bot.game.* (English fallback + i18n.content for
+ * the viewer's language, lib/botText.js) or plain text.
+ */
 function createGameMessage(content, gameData = null, type = "game_action", ownerUserId = null) {
+  const isRef = content && typeof content === "object" && typeof content.key === "string";
   const sticky = type !== "game_transfer";
   const owner = sticky ? ownerUserId || gameData?.userId || null : null;
   const sid = sessionIdFor(owner);
@@ -90,7 +135,8 @@ function createGameMessage(content, gameData = null, type = "game_action", owner
     id: sid || (handId ? `casino-hand-${handId}` : msgId()),
     sessionOwnerId: owner || null,
     sender: BOT_USER,
-    content,
+    content: isRef ? en(content.key, content.vars) : content,
+    ...(isRef ? { i18n: { content: content } } : {}),
     type,
     gameData: data,
     created_at: new Date().toISOString(),
@@ -449,7 +495,7 @@ async function handleGameCommand(io, socket, userId, username, roomArg, fullComm
         socket,
         groupId,
         createGameMessage(
-          "Did you mean **/bj**?\n\nStart a hand: `/bj 100`\nAll commands: `/help`",
+          G("bot.game.jbHint"),
           { userId },
           "game_help",
           userId
@@ -472,7 +518,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
       socket,
       groupId,
       createGameMessage(
-        `**Blackjack**\n\nInvalid bet.\nUsage: \`/bj <amount>\`\nMin **${MIN_BET}** · Max **${MAX_BET.toLocaleString()}**`,
+        G("bot.game.bjInvalidBet", { min: MIN_BET, max: MAX_BET }),
         { status: "lobby", actions: [], userId },
         "game_lobby",
         userId
@@ -488,7 +534,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
       socket,
       groupId,
       createGameMessage(
-        "Call **yazı** or **tura** on your open flip first.",
+        G("bot.game.callOpenFlipFirst"),
         { ...openCoin.getPublicState(), credits: (await getUserCredits(userId)).credits },
         "game_update",
         userId
@@ -504,7 +550,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
       socket,
       groupId,
       createGameMessage(
-        "You already have an active hand. Use **HIT**, **STAND**, or **DOUBLE**.",
+        G("bot.game.activeHand"),
         existing.getPublicState(),
         "game_update",
         userId
@@ -520,7 +566,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
       socket,
       groupId,
       createGameMessage(
-        `Insufficient balance.\nYou have **${(credits.credits || 0).toLocaleString()}** · need **${bet.toLocaleString()}**`,
+        G("bot.game.insufficient", { have: credits.credits || 0, need: bet }),
         { status: "lobby", credits: credits.credits, userId },
         "game_lobby",
         userId
@@ -536,7 +582,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
       io,
       socket,
       groupId,
-      createGameMessage("Could not place bet. Try again.", { status: "lobby", userId }, "game_lobby", userId)
+      createGameMessage(G("bot.game.placeBetFailed"), { status: "lobby", userId }, "game_lobby", userId)
     );
     return;
   }
@@ -550,7 +596,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
       socket,
       groupId,
       createGameMessage(
-        `❌ ${created.error}`,
+        G("bot.game.errorLine", { error: engineErrorRef(created.error) }),
         { status: "lobby", credits: (await getUserCredits(userId)).credits, userId },
         "game_lobby",
         userId
@@ -576,7 +622,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
   }
 
   const msg = createGameMessage(
-    `**Blackjack** — @${username}\nBet **${bet.toLocaleString()}** · Balance **${afterDebit.credits.toLocaleString()}**`,
+    G("bot.game.bjStart", { username, bet, balance: afterDebit.credits }),
     { ...state, credits: afterDebit.credits },
     "game_start",
     userId
@@ -603,7 +649,7 @@ async function handleBlackjackAction(io, socket, userId, username, groupId, acti
         socket,
         groupId,
         createGameMessage(
-          `❌ DOUBLE is only available on your first two cards.`,
+          G("bot.game.errorLine", { error: G("bot.game.err.double") }),
           instance.getPublicState(),
           "game_update",
           userId
@@ -619,7 +665,7 @@ async function handleBlackjackAction(io, socket, userId, username, groupId, acti
         socket,
         groupId,
         createGameMessage(
-          `Not enough credits to double (need **${extra.toLocaleString()}** more).`,
+          G("bot.game.doubleNotEnough", { extra }),
           instance.getPublicState(),
           "game_update",
           userId
@@ -642,7 +688,7 @@ async function handleBlackjackAction(io, socket, userId, username, groupId, acti
         socket,
         groupId,
         createGameMessage(
-          `❌ ${result.error}`,
+          G("bot.game.errorLine", { error: engineErrorRef(result.error) }),
           result.game || instance.getPublicState(),
           "game_update",
           userId
@@ -658,7 +704,7 @@ async function handleBlackjackAction(io, socket, userId, username, groupId, acti
         socket,
         groupId,
         createGameMessage(
-          `❌ ${result.error}`,
+          G("bot.game.errorLine", { error: engineErrorRef(result.error) }),
           result.game || instance.getPublicState(),
           "game_update",
           userId
@@ -686,7 +732,7 @@ async function handleBlackjackAction(io, socket, userId, username, groupId, acti
 
   const credits = await getUserCredits(userId);
   const msg = createGameMessage(
-    `**${action.toUpperCase()}** — @${username}`,
+    G("bot.game.actionLine", { action: action.toUpperCase(), username }),
     { ...state, credits: credits.credits },
     "game_update",
     userId
@@ -714,26 +760,16 @@ async function settleFinishedHand(userId, groupId, instance) {
   GameManager.remove(userId, groupId);
 }
 
+/** Ref of the finished-hand text (bot.game.bjResult). */
 function buildResultText(username, state) {
-  const lines = [`**Blackjack** — @${username}`];
-  lines.push(`Player **${state.playerHand?.value}** · Dealer **${state.dealerHand?.value}**`);
-  switch (state.result) {
-    case "blackjack":
-      lines.push(`BLACKJACK · +${(state.profit || 0).toLocaleString()} credits`);
-      break;
-    case "win":
-      lines.push(`You win · +${(state.profit || 0).toLocaleString()} credits`);
-      break;
-    case "push":
-      lines.push("Push — stake returned");
-      break;
-    case "loss":
-      lines.push(`Dealer wins · −${(state.bet || 0).toLocaleString()} credits`);
-      break;
-    default:
-      break;
-  }
-  return lines.join("\n");
+  return G("bot.game.bjResult", {
+    username,
+    player: state.playerHand?.value,
+    dealer: state.dealerHand?.value,
+    result: ["blackjack", "win", "push", "loss"].includes(state.result) ? state.result : "other",
+    profit: state.profit || 0,
+    bet: state.bet || 0,
+  });
 }
 
 async function handleDailyClaim(io, socket, userId, username, groupId) {
@@ -755,7 +791,7 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
         socket,
         groupId,
         createGameMessage(
-          `**Daily bonus** already claimed today.\n\nCome back in about **${hours}h**.\nBalance: **${(credits.credits || 0).toLocaleString()}**`,
+          G("bot.game.dailyAlready", { hours, balance: credits.credits || 0 }),
           { credits: credits.credits, userId, dailyClaimed: true },
           "game_credits",
           userId
@@ -797,7 +833,7 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
         socket,
         groupId,
         createGameMessage(
-          `**Daily bonus** claimed!\n\n+**${DAILY_BONUS.toLocaleString()}** credits\nBalance: **${(updated?.credits ?? nextCredits).toLocaleString()}**\n\nCome back tomorrow for more.`,
+          G("bot.game.dailyClaimed", { bonus: DAILY_BONUS, balance: updated?.credits ?? nextCredits }),
           { credits: updated?.credits ?? nextCredits, userId, dailyClaimed: true },
           "game_credits",
           userId
@@ -814,7 +850,7 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
         socket,
         groupId,
         createGameMessage(
-          `**Daily bonus** already claimed today.\n\nBalance: **${(fresh.credits || 0).toLocaleString()}**`,
+          G("bot.game.dailyAlreadyShort", { balance: fresh.credits || 0 }),
           { credits: fresh.credits, userId, dailyClaimed: true },
           "game_credits",
           userId
@@ -828,7 +864,7 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
       socket,
       groupId,
       createGameMessage(
-        `🎁 **@${username}** claimed the daily bonus!\n\n+**${DAILY_BONUS.toLocaleString()}** credits\nBalance: **${(data.credits || 0).toLocaleString()}**`,
+        G("bot.game.dailyAnnounce", { username, bonus: DAILY_BONUS, balance: data.credits || 0 }),
         { credits: data.credits, userId, dailyClaimed: true },
         "game_credits",
         userId
@@ -842,14 +878,12 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
 
 async function handleCreditsCheck(io, socket, userId, groupId) {
   const credits = await getUserCredits(userId);
-  const content =
-    `**Balance**\n\n` +
-    `Credits: **${(credits.credits || 0).toLocaleString()}**\n` +
-    `Won: **${(credits.total_won || 0).toLocaleString()}**\n` +
-    `Lost: **${(credits.total_lost || 0).toLocaleString()}**\n` +
-    `Hands: **${(credits.games_played || 0).toLocaleString()}**\n\n` +
-    `Play: \`/bj 100\` · \`/slot 100\` · \`/cf 100\`\n` +
-    `Send: \`/pay @user 500\``;
+  const content = G("bot.game.balance", {
+    credits: credits.credits || 0,
+    won: credits.total_won || 0,
+    lost: credits.total_lost || 0,
+    hands: credits.games_played || 0,
+  });
 
   emitToGroup(
     io,
@@ -869,10 +903,8 @@ async function handleLeaderboard(io, socket, userId, groupId) {
 
     if (error) throw error;
 
-    let content = "**Leaderboard** — Top 10\n\n";
-    if (!topUsers?.length) {
-      content += "No hands played yet. Be first: `/bj 100`";
-    } else {
+    let content = G("bot.game.leaderboardEmpty");
+    if (topUsers?.length) {
       const ids = topUsers.map((u) => u.user_id);
       const { data: users } = await supabase
         .from("users")
@@ -880,11 +912,13 @@ async function handleLeaderboard(io, socket, userId, groupId) {
         .in("id", ids);
       const nameById = new Map((users || []).map((u) => [u.id, u.username]));
       const medals = ["🥇", "🥈", "🥉"];
+      let rows = "";
       topUsers.forEach((row, i) => {
         const name = nameById.get(row.user_id) || "Player";
         const medal = medals[i] || `${i + 1}.`;
-        content += `${medal} **${name}** — ${(row.credits || 0).toLocaleString()}\n`;
+        rows += `${medal} **${name}** — ${(row.credits || 0).toLocaleString("en-US")}\n`;
       });
+      content = G("bot.game.leaderboard", { rows });
     }
 
     emitToGroup(
@@ -901,27 +935,13 @@ async function handleLeaderboard(io, socket, userId, groupId) {
 
 async function handleHelp(io, socket, userId, groupId, unknownCommand = null) {
   const credits = await getUserCredits(userId);
-  let content = "**Casino Help**\n\n";
-  if (unknownCommand) content += `Unknown command: \`/${unknownCommand}\`\n\n`;
-  content +=
-    `Balance: **${(credits.credits || 0).toLocaleString()}**\n\n` +
-    `**Play**\n` +
-    `\`/bj <amount>\` — deal a hand\n` +
-    `\`/hit\` · \`/stand\` · \`/double\`\n` +
-    `\`/slot <amount>\` — 5 reels, 10 lines\n` +
-    `\`/cf <amount> [yazı|tura|heads|tails|h|t]\` or \`/coinflip\`\n` +
-    `\`/pay @user <amount>\` — send credits (\`/gonder\`, \`/send\`, \`/tip\`)\n\n` +
-    `**Info**\n` +
-    `\`/credits\` · \`/top\` · \`/daily\` · \`/help\`\n\n` +
-    `**Rules**\n` +
-    `• Beat the dealer without busting (21)\n` +
-    `• Dealer hits soft 17\n` +
-    `• Blackjack pays 3:2\n` +
-    `• Slot: wild substitutes · scatter pays anywhere and opens free spins\n` +
-    `• Coin is even money — call yazı, tura, heads, h, tails, or t\n` +
-    `• Others can watch a live board; only you can act on it\n` +
-    `• Daily bonus: **${DAILY_BONUS.toLocaleString()}** credits once per day\n` +
-    `• Starting bankroll: ${STARTING_CREDITS.toLocaleString()} credits`;
+  const content = G("bot.game.help", {
+    hasUnknown: unknownCommand ? "yes" : "no",
+    command: unknownCommand || "",
+    balance: credits.credits || 0,
+    bonus: DAILY_BONUS,
+    starting: STARTING_CREDITS,
+  });
 
   emitToGroup(
     io,
@@ -997,7 +1017,7 @@ async function handlePay(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        "**Send credits**\n\nUsage: `/pay @user 500`\nAlso: `/gonder`, `/send`, `/tip`",
+        G("bot.game.payUsage"),
         { fromUserId: userId },
         "game_transfer"
       )
@@ -1019,7 +1039,7 @@ async function handlePay(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        `No player matches **${parsed.userToken}**.\nUse @username or a mention.`,
+        G("bot.game.payNoMatch", { query: parsed.userToken }),
         { fromUserId: userId },
         "game_transfer"
       )
@@ -1040,7 +1060,7 @@ async function handlePay(io, socket, userId, username, groupId, arg) {
         socket,
         groupId,
         createGameMessage(
-          `Not enough credits to send **${parsed.amount.toLocaleString()}**.\nBalance: **${balance.toLocaleString()}**`,
+          G("bot.game.payNotEnough", { amount: parsed.amount, balance }),
           { fromUserId: userId, balance },
           "game_transfer"
         )
@@ -1067,7 +1087,7 @@ async function handlePay(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        `**@${username}** sent **${parsed.amount.toLocaleString()}** credits to **@${toName}**.\nBalance: **${debited.credits.toLocaleString()}**`,
+        G("bot.game.paySent", { from: username, amount: parsed.amount, to: toName, balance: debited.credits }),
         {
           fromUserId: userId,
           fromUsername: username,
@@ -1090,7 +1110,7 @@ async function handleSlot(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        `**Slot**\n\nUsage: \`/slot <amount>\`\nMin **${MIN_BET}** · Max **${MAX_BET.toLocaleString()}** · ${LINE_COUNT} paylines`,
+        G("bot.game.slotUsage", { min: MIN_BET, max: MAX_BET, lines: LINE_COUNT }),
         { game: "slot", status: "lobby", userId },
         "game_lobby",
         userId
@@ -1110,7 +1130,7 @@ async function handleSlot(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        "Call **yazı** or **tura** before spinning.",
+        G("bot.game.callBeforeSpin"),
         { ...coin.getPublicState(), credits: (await getUserCredits(userId)).credits },
         "game_update",
         userId
@@ -1127,7 +1147,7 @@ async function handleSlot(io, socket, userId, username, groupId, arg) {
         socket,
         groupId,
         createGameMessage(
-          `Insufficient balance.\nYou have **${(credits.credits || 0).toLocaleString()}** · need **${bet.toLocaleString()}**`,
+          G("bot.game.insufficient", { have: credits.credits || 0, need: bet }),
           { game: "slot", status: "lobby", credits: credits.credits, userId },
           "game_lobby",
           userId
@@ -1164,18 +1184,13 @@ async function handleSlot(io, socket, userId, username, groupId, arg) {
       round,
       credits: balance,
     });
-    const headline =
-      round.profit > 0
-        ? `Win **+${round.profit.toLocaleString()}**`
-        : round.profit === 0
-          ? "Push"
-          : `Loss **${round.profit.toLocaleString()}**`;
+    const outcome = round.profit > 0 ? "win" : round.profit === 0 ? "push" : "loss";
     emitGameUpdate(
       io,
       socket,
       groupId,
       createGameMessage(
-        `**Slot** — @${username}\nBet **${bet.toLocaleString()}** · ${headline}`,
+        G("bot.game.slotResult", { username, bet, outcome, profit: round.profit.toLocaleString("en-US") }),
         state,
         "game_end",
         userId
@@ -1217,7 +1232,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        "**Coin flip**\n\nUsage: `/cf 100` then call yazı or tura\nOr `/cf 100 heads` · `/cf 100 h` · `/cf 100 tails` · `/cf 100 t`",
+        G("bot.game.coinUsage"),
         { game: "coinflip", status: "lobby", userId },
         "game_lobby",
         userId
@@ -1234,7 +1249,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
         socket,
         groupId,
         createGameMessage(
-          `**Coin** — @${username}\nPick **yazı** or **tura**.`,
+          G("bot.game.coinPick", { username }),
           { ...existing.getPublicState(), credits: (await getUserCredits(userId)).credits },
           "game_update",
           userId
@@ -1245,12 +1260,12 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
     if (parsed.amount != null && parsed.amount !== existing.bet) {
       socket.emit("game:notice", {
         groupId,
-        text: "You already have a coin in the air. Call yazı or tura.",
+        text: "You already have a coin in the air. Call heads or tails.",
       });
     }
     const called = CoinFlipManager.call(userId, groupId, parsed.side);
     if (called.error) {
-      socket.emit("game:notice", { groupId, text: called.error });
+      socket.emit("game:notice", { groupId, ...engineNotice(called.error) });
       return;
     }
     const paid = await withCreditLock(userId, () => settleCoin(userId, groupId, called.round));
@@ -1258,17 +1273,22 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       ...called.state,
       credits: paid?.credits ?? (await getUserCredits(userId)).credits,
     };
-    const face = sideLabel(called.round.face);
-    const call = sideLabel(called.round.call);
-    const outcome =
-      called.round.result === "win"
-        ? `Landed **${face}** · +${called.round.profit.toLocaleString()}`
-        : `Called **${call}**, landed **${face}**`;
     emitGameUpdate(
       io,
       socket,
       groupId,
-      createGameMessage(`**Coin** — @${username}\n${outcome}`, state, "game_end", userId)
+      createGameMessage(
+        G("bot.game.coinCalledResult", {
+          username,
+          won: called.round.result === "win" ? "yes" : "no",
+          face: sideRef(called.round.face),
+          call: sideRef(called.round.call),
+          profit: called.round.profit,
+        }),
+        state,
+        "game_end",
+        userId
+      )
     );
     return;
   }
@@ -1279,7 +1299,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        "**Coin flip**\n\nUsage: `/cf 100 heads` · `/cf 100 h` · `/cf 100 tails` · `/cf 100 t`",
+        G("bot.game.coinUsageSide"),
         { game: "coinflip", status: "lobby", userId },
         "game_lobby",
         userId
@@ -1295,7 +1315,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        `**Coin flip**\n\nBet must be **${MIN_BET}**–**${MAX_BET.toLocaleString()}**.`,
+        G("bot.game.coinBetRange", { min: MIN_BET, max: MAX_BET }),
         { game: "coinflip", status: "lobby", userId },
         "game_lobby",
         userId
@@ -1318,7 +1338,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
         socket,
         groupId,
         createGameMessage(
-          `Insufficient balance.\nYou have **${(credits.credits || 0).toLocaleString()}** · need **${bet.toLocaleString()}**`,
+          G("bot.game.insufficient", { have: credits.credits || 0, need: bet }),
           { game: "coinflip", status: "lobby", credits: credits.credits, userId },
           "game_lobby",
           userId
@@ -1344,7 +1364,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
     });
     if (created.error || !created.round) {
       await applyCreditDelta(userId, bet);
-      socket.emit("game:notice", { groupId, text: created.error || "Could not flip." });
+      socket.emit("game:notice", { groupId, ...engineNotice(created.error || "Could not flip.") });
       return;
     }
     if (created.round.status === "finished") {
@@ -1353,17 +1373,23 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
         ...created.state,
         credits: paid?.credits ?? afterDebit.credits,
       };
-      const face = sideLabel(created.round.face);
-      const call = sideLabel(created.round.call);
-      const outcome =
-        created.round.result === "win"
-          ? `Called **${call}** · landed **${face}** · +${created.round.profit.toLocaleString()}`
-          : `Called **${call}** · landed **${face}** · −${bet.toLocaleString()}`;
       emitGameUpdate(
         io,
         socket,
         groupId,
-        createGameMessage(`**Coin** — @${username}\n${outcome}`, state, "game_end", userId)
+        createGameMessage(
+          G("bot.game.coinInstantResult", {
+            username,
+            won: created.round.result === "win" ? "yes" : "no",
+            face: sideRef(created.round.face),
+            call: sideRef(created.round.call),
+            profit: created.round.profit,
+            bet,
+          }),
+          state,
+          "game_end",
+          userId
+        )
       );
       return;
     }
@@ -1372,7 +1398,7 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
       socket,
       groupId,
       createGameMessage(
-        `**Coin** — @${username}\nStake **${bet.toLocaleString()}** escrowed. Call yazı or tura.`,
+        G("bot.game.coinEscrowed", { username, bet }),
         { ...created.state, credits: afterDebit.credits },
         "game_start",
         userId

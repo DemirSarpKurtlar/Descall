@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "../ui/Icon.jsx";
 import { isNativeIOS } from "../../lib/platform";
+import { useLocale } from "../../context/localeContextInstance";
+import { lower } from "../../i18n/format.js";
 
 const MENU_MAX = 248;
 
@@ -53,6 +55,7 @@ function NativeBirthSelect({ id, label, placeholder, value, options, onChange })
 }
 
 function CustomBirthSelect({ id, label, placeholder, value, options, onChange, variant = "app" }) {
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [pos, setPos] = useState(null);
@@ -162,9 +165,9 @@ function CustomBirthSelect({ id, label, placeholder, value, options, onChange, v
     } else if (e.key.length === 1) {
       const now = Date.now();
       const t = typeRef.current;
-      t.text = now - t.at > 700 ? e.key.toLocaleLowerCase() : t.text + e.key.toLocaleLowerCase();
+      t.text = now - t.at > 700 ? lower(e.key, locale) : t.text + lower(e.key, locale);
       t.at = now;
-      const hit = options.findIndex((o) => String(o.label).toLocaleLowerCase().startsWith(t.text));
+      const hit = options.findIndex((o) => lower(o.label, locale).startsWith(t.text));
       if (hit >= 0) setActive(hit);
     }
   };

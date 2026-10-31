@@ -1,5 +1,6 @@
-/* Pure helpers for the server sheets (no React). Tested by hubData.selftest.mjs. */
-import { fmt } from "./strings.js";
+/* Pure helpers for the server sheets (no React). Tested by serverHub.selftest.mjs.
+ * Text helpers take `f(key, vars)` from useSvh() (catalog keys svh.<key>). */
+import { formatDate } from "../../../i18n/format.js";
 
 export const ROLE_SWATCHES = ["#ff6b6b", "#f5b942", "#5ad19a", "#1AA6B7", "#5b8cff", "#9B5DE5", "#E8457A"];
 
@@ -68,40 +69,31 @@ export function presenceOf(onlineUsers, userId) {
 }
 
 /** "3 ay", "2 yıl", "12 gün", "bugün". */
-export function memberAge(joinedAt, s, now = Date.now()) {
+export function memberAge(joinedAt, f, now = Date.now()) {
   const t = new Date(joinedAt).getTime();
   if (!Number.isFinite(t)) return "";
   const days = Math.max(0, Math.floor((now - t) / 86400000));
-  if (days < 1) return s.ageToday;
-  if (days < 30) return fmt(s.ageDays, { n: days });
+  if (days < 1) return f("ageToday");
+  if (days < 30) return f("ageDays", { n: days });
   const months = Math.floor(days / 30.44);
-  if (months < 12) return fmt(s.ageMonths, { n: months });
-  return fmt(s.ageYears, { n: Math.floor(months / 12) });
+  if (months < 12) return f("ageMonths", { n: months });
+  return f("ageYears", { n: Math.floor(months / 12) });
 }
 
-const TR_MONTHS_SHORT = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const TR_MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
 export function shortDate(d, locale) {
-  const x = new Date(d);
-  if (!Number.isFinite(x.getTime())) return "";
-  if (locale === "tr") return `${x.getDate()} ${TR_MONTHS_SHORT[x.getMonth()]}`;
-  return x.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+  return formatDate(d, locale, { day: "numeric", month: "short" });
 }
 export function longDate(d, locale) {
-  const x = new Date(d);
-  if (!Number.isFinite(x.getTime())) return "";
-  if (locale === "tr") return `${x.getDate()} ${TR_MONTHS[x.getMonth()]} ${x.getFullYear()}`;
-  return x.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+  return formatDate(d, locale, { day: "numeric", month: "long", year: "numeric" });
 }
-export function dayTitle(d, s, locale, now = new Date()) {
+export function dayTitle(d, f, locale, now = new Date()) {
   const x = new Date(d);
   const a = new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const b = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const diff = Math.round((b - a) / 86400000);
-  if (diff === 0) return s.today;
-  if (diff === 1) return s.yesterday;
-  if (locale === "tr") return `${x.getDate()} ${TR_MONTHS[x.getMonth()]}${x.getFullYear() !== now.getFullYear() ? ` ${x.getFullYear()}` : ""}`;
-  return x.toLocaleDateString("en-US", { day: "numeric", month: "long", ...(x.getFullYear() !== now.getFullYear() ? { year: "numeric" } : null) });
+  if (diff === 0) return f("today");
+  if (diff === 1) return f("yesterday");
+  return formatDate(x, locale, { day: "numeric", month: "long", ...(x.getFullYear() !== now.getFullYear() ? { year: "numeric" } : null) });
 }
 export function hhmm(d) {
   const x = new Date(d);
@@ -110,29 +102,29 @@ export function hhmm(d) {
 }
 
 /** Short duration: 600 → "10 dk", 3600 → "1 saat", 86400 → "1 gün". */
-export function durationLabel(seconds, s) {
+export function durationLabel(seconds, f) {
   const n = Math.max(0, Math.round(Number(seconds) || 0));
-  if (n < 60) return fmt(s.sec5.replace(/\d+/, "{n}"), { n });
-  if (n < 3600) return fmt(s.minutes, { n: Math.round(n / 60) });
-  if (n < 86400) return fmt(s.hour1.replace(/\d+/, "{n}"), { n: Math.round(n / 3600) });
-  if (n < 7 * 86400) return fmt(s.day1.replace(/\d+/, "{n}"), { n: Math.round(n / 86400) });
-  return fmt(s.week1.replace(/\d+/, "{n}"), { n: Math.round(n / (7 * 86400)) });
+  if (n < 60) return f("durSec", { n });
+  if (n < 3600) return f("minutes", { n: Math.round(n / 60) });
+  if (n < 86400) return f("durHour", { n: Math.round(n / 3600) });
+  if (n < 7 * 86400) return f("durDay", { n: Math.round(n / 86400) });
+  return f("durWeek", { n: Math.round(n / (7 * 86400)) });
 }
 
-export function timeLeftLabel(until, s, now = Date.now()) {
+export function timeLeftLabel(until, f, now = Date.now()) {
   const ms = new Date(until).getTime() - now;
   if (!Number.isFinite(ms) || ms <= 0) return null;
   const min = Math.ceil(ms / 60000);
-  if (min < 60) return fmt(s.leftMin, { n: min });
+  if (min < 60) return f("leftMin", { n: min });
   const h = Math.round(ms / 3600000);
-  if (h < 24) return fmt(s.leftHours, { n: Math.max(1, h) });
-  return fmt(s.leftDays, { n: Math.round(ms / 86400000) });
+  if (h < 24) return f("leftHours", { n: Math.max(1, h) });
+  return f("leftDays", { n: Math.round(ms / 86400000) });
 }
 
 /** Active invite sub line: "Demir · 42 kullanım · süresiz" / "Mert · 3 / 10 · 1 gün kaldı". */
-export function inviteSub(inv, creatorName, s, now = Date.now()) {
-  const uses = inv?.maxUses != null ? fmt(s.usesOf, { n: inv.uses || 0, max: inv.maxUses }) : fmt(s.nUses, { n: inv?.uses || 0 });
-  const left = inv?.expiresAt ? timeLeftLabel(inv.expiresAt, s, now) : s.forever;
+export function inviteSub(inv, creatorName, f, now = Date.now()) {
+  const uses = inv?.maxUses != null ? f("usesOf", { n: inv.uses || 0, max: inv.maxUses }) : f("nUses", { n: inv?.uses || 0 });
+  const left = inv?.expiresAt ? timeLeftLabel(inv.expiresAt, f, now) : f("forever");
   return [creatorName, uses, left].filter(Boolean).join(" · ");
 }
 export function inviteActive(inv, now = Date.now()) {
@@ -172,39 +164,42 @@ const AUDIT_ICON = {
 
 /**
  * One audit row → { ico, c, t (actor), sub (what), val (HH:MM) }.
- * ctx: { s, cases:{dat,gen,acc}, names: Map(userId → name), roleName(id), channelName(id) }
+ * ctx: { f, cases:{dat,gen,acc}, names: Map(userId → name), roleName(id), channelName(id) }
  */
 export function auditRow(log, ctx) {
-  const { s, cases, names } = ctx;
+  const { f, cases, names } = ctx;
   const ch = log?.changes && typeof log.changes === "object" ? log.changes : {};
   const raw = String(log?.action || "");
   // Backend writes MEMBER_NICKNAME_UPDATE (someone else) / MEMBER_NICKNAME_SELF (own nickname).
   const action = raw === "MEMBER_NICKNAME_UPDATE" ? "MEMBER_NICKNAME" : raw;
-  const actor = log?.actorDisplayName || log?.actorUsername || names?.get(String(log?.actorId)) || s.someone;
-  const targetName = names?.get(String(log?.targetId)) || ch.username || ch.displayName || s.aMember;
-  const role = ch.roleName || ch.name || ctx.roleName?.(ch.roleId || log?.targetId) || s.aRole;
-  const channel = ch.name || ctx.channelName?.(log?.targetId) || s.aChannel;
+  const actor = log?.actorDisplayName || log?.actorUsername || names?.get(String(log?.actorId)) || f("someone");
+  const targetName = names?.get(String(log?.targetId)) || ch.username || ch.displayName || f("aMember");
+  const role = ch.roleName || ch.name || ctx.roleName?.(ch.roleId || log?.targetId) || f("aRole");
+  const channel = ch.name || ctx.channelName?.(log?.targetId) || f("aChannel");
   const vars = {
-    targetAcc: cases.acc(targetName), targetDat: cases.dat(targetName), targetGen: cases.gen(targetName),
+    target: targetName, targetAcc: cases.acc(targetName), targetDat: cases.dat(targetName), targetGen: cases.gen(targetName),
     role, channel: String(channel).replace(/^#\s*/, ""), name: ch.name || "",
-    dur: ch.until && log?.createdAt ? durationLabel((new Date(ch.until) - new Date(log.createdAt)) / 1000, s) : "",
+    dur: ch.until && log?.createdAt ? durationLabel((new Date(ch.until) - new Date(log.createdAt)) / 1000, f) : "",
   };
   let key = `au_${action}`;
   if (action === "SERVER_UPDATE" && ch.name) key = "au_SERVER_RENAME";
-  if (action === "OWNERSHIP_TRANSFER") vars.targetDat = cases.dat(names?.get(String(ch.to)) || ch.toName || targetName);
-  if (!s[key]) key = "au_OTHER";
-  let sub = fmt(s[key], vars);
+  if (action === "OWNERSHIP_TRANSFER") {
+    vars.target = names?.get(String(ch.to)) || ch.toName || targetName;
+    vars.targetDat = cases.dat(vars.target);
+  }
+  if (!AUDIT_ICON[action]) key = "au_OTHER";
+  let sub = f(key, vars);
   if (log?.reason && (action === "MEMBER_BAN" || action === "MEMBER_KICK" || action === "MEMBER_TIMEOUT")) sub += ` · ${log.reason}`;
   const [ico, c] = AUDIT_ICON[action] || ["list", "gray"];
   return { ico, c, t: actor, sub, val: hhmm(log?.createdAt) };
 }
 
 /** Group by local day, newest first: [{ title, items }]. */
-export function groupByDay(logs, s, locale, now = new Date()) {
+export function groupByDay(logs, f, locale, now = new Date()) {
   const out = [];
   const sorted = [...(logs || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   for (const log of sorted) {
-    const title = dayTitle(log.createdAt, s, locale, now);
+    const title = dayTitle(log.createdAt, f, locale, now);
     const last = out[out.length - 1];
     if (last && last.title === title) last.items.push(log);
     else out.push({ title, items: [log] });
@@ -284,21 +279,21 @@ export const INVITE_AGE_OPTIONS = [3600, 86400, 604800, 0];
 export const INVITE_USE_OPTIONS = [0, 1, 5, 10, 25, 100];
 export const VERIFICATION_LEVELS = ["none", "low", "medium", "high", "highest"];
 
-export function slowmodeLabel(sec, s) {
+export function slowmodeLabel(sec, f) {
   const n = Number(sec) || 0;
-  if (!n) return s.off;
-  return durationLabel(n, s);
+  if (!n) return f("off");
+  return durationLabel(n, f);
 }
-export function inviteAgeLabel(sec, s) {
+export function inviteAgeLabel(sec, f) {
   const n = Number(sec) || 0;
-  if (!n) return s.never;
-  if (n === 604800) return s.days7;
-  return durationLabel(n, s);
+  if (!n) return f("never");
+  if (n === 604800) return f("days7");
+  return durationLabel(n, f);
 }
-export function inviteUsesLabel(n, s) {
+export function inviteUsesLabel(n, f) {
   const v = Number(n) || 0;
-  if (!v) return s.unlimited;
-  return fmt(s.nUses, { n: v }).replace(/^1 uses$/, "1 use");
+  if (!v) return f("unlimited");
+  return f("nUses", { n: v });
 }
 export function vanityValid(slug) {
   return /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(String(slug || ""));

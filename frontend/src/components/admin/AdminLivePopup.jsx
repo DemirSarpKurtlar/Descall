@@ -297,7 +297,7 @@ export default function AdminLivePopup() {
                 className="admin-input"
                 value={draft.ctaUrl}
                 maxLength={300}
-                placeholder="/status or https://descall.com/…"
+                placeholder={t("adminx.live.linkPlaceholder")}
                 onChange={(event) => patch({ ctaUrl: event.target.value })}
               />
             </div>

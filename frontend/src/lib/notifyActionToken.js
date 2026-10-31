@@ -24,6 +24,20 @@ function nativePlugin() {
   return plugin;
 }
 
+/**
+ * iOS: UI language for native text (notification actions, CallKit hints, Apple Watch),
+ * kept in the App Group defaults by DescallNotify.setUiLocale. Older builds lack the method.
+ */
+export function shareUiLocaleWithNative(locale) {
+  const native = nativePlugin();
+  if (!native || !locale) return;
+  try {
+    Promise.resolve(native.setUiLocale({ locale: String(locale) })).catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Pure: should the token be minted again? (unit-tested) */
 export function needsRefresh({ now, issuedAt, userId, lastUserId, force = false }) {
   if (force) return true;

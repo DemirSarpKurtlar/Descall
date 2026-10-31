@@ -18,6 +18,7 @@ const removals = require("../lib/groupRemovals");
 const { areAcceptedFriends, isUniqueViolation, publicMember, isSafeId } = require("../lib/groupMembership");
 const { parseSince } = require("../lib/messagePage");
 const { attachReactions } = require("../lib/dmMessages");
+const { apiError, apiText } = require("../lib/apiError");
 
 const router = express.Router();
 const MAX_GROUP_SIZE = 15;
@@ -219,7 +220,7 @@ router.post("/invite-links/:code/join", requireAuth, async (req, res) => {
       .select("user_id", { count: "exact", head: true })
       .eq("group_id", invite.group_id);
     if ((count || 0) >= MAX_GROUP_SIZE) {
-      return res.status(400).json({ error: `Group is full (max ${MAX_GROUP_SIZE})` });
+      return res.status(400).json(apiError("Group is full (max {max})", { max: MAX_GROUP_SIZE }));
     }
 
     const { error: joinError } = await supabase
@@ -309,7 +310,7 @@ router.post("/create", requireAuth, async (req, res) => {
     
     const totalMembers = memberIds.length + 1; // + creator
     if (totalMembers > MAX_GROUP_SIZE) {
-      return res.status(400).json({ error: `Maximum ${MAX_GROUP_SIZE} members allowed` });
+      return res.status(400).json(apiError("Maximum {max} members allowed", { max: MAX_GROUP_SIZE }));
     }
     
     // Create group
