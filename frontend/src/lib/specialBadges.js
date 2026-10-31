@@ -6,6 +6,8 @@
 import { useSyncExternalStore } from "react";
 import { getSpecialBadgeCatalog, getUserSpecialBadges, setEquippedSpecialBadge } from "../api/specialBadges";
 import { ART_BY_ID, TIER_ORDER } from "../components/badges/specialBadgeArt.jsx";
+import { getLocale } from "../i18n/runtime.js";
+import { intlTag } from "../i18n/registry.js";
 
 const CATALOG_TTL = 60_000;
 const USER_TTL = 30_000;
@@ -130,11 +132,13 @@ export async function equipMine(meId, badgeId) {
 // ---- sorting (popup.md default: tier first, then rarer = fewer holders first)
 export function sortOwned(list, mode = "tier", nameOf = (id) => id) {
   const rows = [...(list || [])];
+  // Badge names are in the UI language, so they sort by its alphabet.
+  const collate = intlTag(getLocale());
   if (mode === "new") return rows.sort((a, b) => String(b.grantedAt || "").localeCompare(String(a.grantedAt || "")));
-  if (mode === "name") return rows.sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id), "tr"));
+  if (mode === "name") return rows.sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id), collate));
   return rows.sort((a, b) => {
     const ta = TIER_ORDER.indexOf(ART_BY_ID[a.id]?.tier), tb = TIER_ORDER.indexOf(ART_BY_ID[b.id]?.tier);
-    return ta - tb || (holdersOf(a.id) ?? 1e9) - (holdersOf(b.id) ?? 1e9) || nameOf(a.id).localeCompare(nameOf(b.id), "tr");
+    return ta - tb || (holdersOf(a.id) ?? 1e9) - (holdersOf(b.id) ?? 1e9) || nameOf(a.id).localeCompare(nameOf(b.id), collate);
   });
 }
 

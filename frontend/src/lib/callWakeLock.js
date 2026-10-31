@@ -16,6 +16,7 @@
  */
 
 import { Capacitor, registerPlugin } from "@capacitor/core";
+import { t } from "../i18n/runtime.js";
 
 const CallKeepAlive = registerPlugin("CallKeepAlive");
 
@@ -47,8 +48,8 @@ function setMediaSessionActive(title, artist) {
   if (!("mediaSession" in navigator)) return;
   try {
     navigator.mediaSession.metadata = new window.MediaMetadata({
-      title: title || "Descall call",
-      artist: artist || "In call",
+      title: title || t("core.call.mediaTitle"),
+      artist: artist || t("core.call.inCall"),
     });
     navigator.mediaSession.playbackState = "playing";
   } catch {
@@ -154,8 +155,8 @@ function stopSilentAudioKeepalive() {
 /** Re-pulse media pipeline after backgrounding (screen share / call resume). */
 export function pulseCallWakeLock() {
   setMediaSessionActive(
-    navigator.mediaSession?.metadata?.title || "Descall call",
-    navigator.mediaSession?.metadata?.artist || "In call"
+    navigator.mediaSession?.metadata?.title || t("core.call.mediaTitle"),
+    navigator.mediaSession?.metadata?.artist || t("core.call.inCall")
   );
   if (silentCtx?.state === "suspended") {
     silentCtx.resume().catch(() => {});
@@ -185,7 +186,7 @@ async function startNativeCallKeepAlive({ title, artist, preserveAudioCategory =
   try {
     await CallKeepAlive.start({
       title: title || "Descall",
-      body: artist ? `In call with ${artist}` : "Call in progress",
+      body: artist ? t("core.call.inCallWith", { name: artist }) : t("core.call.inProgress"),
       // iOS: don't re-set the category WebKit configured for an already
       // running getUserMedia capture (that silences the microphone).
       preserveCategory: Boolean(preserveAudioCategory),

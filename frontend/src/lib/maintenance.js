@@ -5,13 +5,12 @@
  * Server side: backend/lib/maintenance.js.
  */
 
-export const TRT_OFFSET_MS = 3 * 3600_000;
-export const PLATFORMS = ["web", "electron", "ios", "android"];
+import { formatDate, formatNumber } from "../i18n/format.js";
+import { getLocale, t } from "../i18n/runtime.js";
 
-const MONTHS_TR_SHORT = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const MONTHS_TR_LONG = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-const MONTHS_EN_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTHS_EN_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export const TRT_OFFSET_MS = 3 * 3600_000;
+export const TRT_TIME_ZONE = "Europe/Istanbul";
+export const PLATFORMS = ["web", "electron", "ios", "android"];
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -22,24 +21,22 @@ function trtParts(value) {
   return { y: d.getUTCFullYear(), mo: d.getUTCMonth(), d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes() };
 }
 
-/** "22 Eki 02:00" */
-export function formatTrtShort(value, locale = "tr") {
-  const p = trtParts(value);
-  if (!p) return "";
-  const m = (locale === "tr" ? MONTHS_TR_SHORT : MONTHS_EN_SHORT)[p.mo];
-  return `${pad(p.d)} ${m} ${pad(p.h)}:${pad(p.mi)}`;
+const TZ = { timeZone: TRT_TIME_ZONE };
+
+/** "22 Eki 02:00" (tr), "22 Oct, 02:00" (en): TRT clock, UI language. */
+export function formatTrtShort(value, locale = getLocale()) {
+  if (!trtParts(value)) return "";
+  return formatDate(value, locale, { ...TZ, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 /** "02:00" */
 export function formatTrtTime(value) {
   const p = trtParts(value);
   return p ? `${pad(p.h)}:${pad(p.mi)}` : "";
 }
-/** "22 Ekim 2026" */
-export function formatTrtLongDate(value, locale = "tr") {
-  const p = trtParts(value);
-  if (!p) return "";
-  const m = (locale === "tr" ? MONTHS_TR_LONG : MONTHS_EN_LONG)[p.mo];
-  return locale === "tr" ? `${p.d} ${m} ${p.y}` : `${m} ${p.d}, ${p.y}`;
+/** "22 Ekim 2026" (tr), "22 October 2026" (en). */
+export function formatTrtLongDate(value, locale = getLocale()) {
+  if (!trtParts(value)) return "";
+  return formatDate(value, locale, { ...TZ, day: "numeric", month: "long", year: "numeric" });
 }
 export function isSameTrtDay(a, b) {
   const x = trtParts(a);
@@ -79,21 +76,19 @@ export function countdownParts(target, now = Date.now()) {
   return { days, hours, minutes, seconds: s - minutes * 60 };
 }
 
-/** "2 sa 30 dk" / "24 dk" / "2 h 30 min" */
-export function formatDuration(ms, locale = "tr") {
+/** "2 sa 30 dk" / "24 dk" / "2 h 30 min" (unit words come from the catalog). */
+export function formatDuration(ms, locale = getLocale()) {
   const total = Math.max(0, Math.round(ms / 60000));
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  const [hu, mu] = locale === "tr" ? ["sa", "dk"] : ["h", "min"];
-  if (!h) return `${m} ${mu}`;
-  return m ? `${h} ${hu} ${m} ${mu}` : `${h} ${hu}`;
+  const h = formatNumber(Math.floor(total / 60), locale);
+  const m = formatNumber(total % 60, locale);
+  if (total < 60) return t("core.dur.m", { m });
+  return total % 60 ? t("core.dur.hm", { h, m }) : t("core.dur.h", { h });
 }
 /** "~2,5 saat" for the banner/preview hint. */
-export function approxHours(ms, locale = "tr") {
+export function approxHours(ms, locale = getLocale()) {
   const h = Math.round((ms / 3600000) * 2) / 2;
-  if (h < 1) return locale === "tr" ? `~${Math.max(1, Math.round(ms / 60000))} dk` : `~${Math.max(1, Math.round(ms / 60000))} min`;
-  const s = Number.isInteger(h) ? String(h) : locale === "tr" ? String(h).replace(".", ",") : String(h);
-  return locale === "tr" ? `~${s} saat` : `~${s} h`;
+  if (h < 1) return t("core.dur.approxM", { n: formatNumber(Math.max(1, Math.round(ms / 60000)), locale) });
+  return t("core.dur.approxH", { n: formatNumber(h, locale, { maximumFractionDigits: 1 }) });
 }
 
 /** 0..1 progress of an active window. */

@@ -90,9 +90,10 @@ const BUBBLES = [
   ["in", 52, 46], ["out", 42, 30], ["in", 58, 46], ["in", 38, 30], ["out", 64, 46], ["in", 48, 30],
 ];
 
-function DesktopBootSkeleton({ label = "Loading Descall" }) {
+function DesktopBootSkeleton({ label }) {
+  const t = useT();
   return (
-    <div className="app-boot-skeleton" role="status" aria-busy="true" aria-label={label}>
+    <div className="app-boot-skeleton" role="status" aria-busy="true" aria-label={label || t("core.boot.loadingDescall")}>
       <div className="app-boot-skeleton__rail" aria-hidden="true">
         {Array.from({ length: 7 }).map((_, i) => (
           <span key={i} className="app-boot-skeleton__sk app-boot-skeleton__rail-dot" />

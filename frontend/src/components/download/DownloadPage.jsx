@@ -42,10 +42,10 @@ const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
 const ANDROID_RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 
 const FEATURE_DEFS = [
-  { icon: MessageCircle, title: "Direct messages", desc: "Typing indicators, replies and reactions" },
-  { icon: Mic, title: "Voice Messages", desc: "Record a voice message and send it in any chat" },
-  { icon: Video, title: "Video Calls", desc: "Camera and screen share in DMs, groups and voice channels" },
-  { icon: Users, title: "Servers and groups", desc: "Text and voice channels with roles for your friends" },
+  { icon: MessageCircle, id: "dm" },
+  { icon: Mic, id: "voice" },
+  { icon: Video, id: "video" },
+  { icon: Users, id: "servers" },
 ];
 
 const platforms = [
@@ -62,14 +62,14 @@ const platforms = [
     name: 'Android APK',
     icon: Smartphone,
     file: 'Descall-APK.apk',
-    size: 'Latest release',
+    sizeKey: 'Latest release',
     color: '#5B74FF'
   },
 ];
 
 export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authLoading, authError, onOpenRegister }) {
   const t = useT();
-  const features = FEATURE_DEFS.map((f) => ({ ...f, title: t(f.title), desc: t(f.desc) }));
+  const features = FEATURE_DEFS.map((f) => ({ ...f, title: t(`core.download.${f.id}Title`), desc: t(`core.download.${f.id}Desc`) }));
   const [selectedPlatform, setSelectedPlatform] = useState('windows');
   const [isInstalled, setIsInstalled] = useState(false);
   const [latestRelease, setLatestRelease] = useState(null);
@@ -309,7 +309,7 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
                   <h3>{t("Descall for {name}", { name: currentPlatform.name })}</h3>
                   <p>
                     {selectedPlatform === 'windows' || selectedPlatform === 'android'
-                      ? `${currentPlatform.file}${releaseLabel ? ` • ${releaseLabel}` : ''} • ${currentPlatform.size}`
+                      ? `${currentPlatform.file}${releaseLabel ? ` • ${releaseLabel}` : ''} • ${currentPlatform.sizeKey ? t(currentPlatform.sizeKey) : currentPlatform.size}`
                       : `${currentPlatform.file} • ${t("Web app")}`}
                   </p>
                 </div>

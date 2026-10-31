@@ -1,4 +1,5 @@
 import { getServer } from "../api/servers";
+import { t as tRuntime } from "../i18n/runtime.js";
 import { serverPath } from "../lib/appRoutes";
 import { getUser } from "../lib/storage";
 import { trGenitive } from "../lib/trSuffix";
@@ -431,14 +432,14 @@ export function bindServerSocketHandlers(socket, ctx) {
     if (!showOnActiveChannel) return;
     if (code === "SLOWMODE") {
       const wait = Math.max(1, Math.ceil(Number(retryAfterSeconds) || 1));
-      toast(`Slowmode is on. Try again in ${wait}s.`, "warning");
+      toast(tRuntime("core.server.slowmode", { wait }), "warning");
       window.dispatchEvent(
         new CustomEvent("descall:slowmode", {
           detail: { channelId, retryAfterSeconds: wait },
         })
       );
     } else if (code === "RULES_REQUIRED") {
-      toast(message || "You must accept the server rules before continuing.", "warning");
+      toast(message || tRuntime("core.server.rulesRequired"), "warning");
       window.dispatchEvent(new CustomEvent("descall:server-rules-required"));
     } else if (message) {
       toast(message, "error");

@@ -2,15 +2,15 @@
  * Promo code helpers shared by the redeem sheet, gift popup, settings tab and
  * admin tab. Pure functions only (unit-tested in promoCode.selftest.mjs).
  */
-import { formatTrtShort } from "./maintenance.js";
+import { formatTrtShort, TRT_TIME_ZONE } from "./maintenance.js";
+import { formatDate, formatNumber } from "../i18n/format.js";
+import { getLocale } from "../i18n/runtime.js";
 
 export const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const CODE_LENGTH = 16;
 const TRT_OFFSET_MS = 3 * 3600 * 1000;
-const MONTHS_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const MONTHS_TR_SHORT = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const MONTHS_EN_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const TZ = { timeZone: TRT_TIME_ZONE };
+const HM = { hour: "2-digit", minute: "2-digit", hourCycle: "h23" };
 const pad = (n) => String(n).padStart(2, "0");
 
 /** Upper-case, drop everything but A–Z/0–9, cap at 16. */
@@ -69,41 +69,41 @@ export function dativeSuffixForNumber(n) {
   return "e"; // yüz, bin
 }
 
-/** Popup expiry: "31 Ekim 23:59’a" (tr, suffix included) or "October 31, 23:59" (en). */
-export function popupUntil(value, locale = "tr") {
+/**
+ * Popup expiry in the UI language, TRT clock: "31 Ekim 23:59’a" (Turkish keeps its
+ * dative suffix), "31 October at 23:59" (en).
+ */
+export function popupUntil(value, locale = getLocale()) {
   const p = trt(value);
   if (!p) return "";
-  const time = `${pad(p.h)}:${pad(p.mi)}`;
-  if (locale !== "tr") return `${MONTHS_EN[p.mo]} ${p.d}, ${time}`;
-  const sfx = dativeSuffixForNumber(p.mi === 0 ? p.h : p.mi);
-  return `${p.d} ${MONTHS_TR[p.mo]} ${time}’${sfx}`;
+  const text = formatDate(value, locale, { ...TZ, day: "numeric", month: "long", ...HM });
+  if (locale !== "tr") return text;
+  return `${text}’${dativeSuffixForNumber(p.mi === 0 ? p.h : p.mi)}`;
 }
 
 /** Admin table end date, as drawn: "31 Eki 23:59". */
-export function shortWhen(value, locale = "tr") {
+export function shortWhen(value, locale = getLocale()) {
   return value ? formatTrtShort(value, locale) : "—";
 }
 
-/** Long date for the age error: "2 Kasım 2026" / "November 2, 2026". */
-export function longDate(value, locale = "tr") {
-  const p = trt(value);
-  if (!p) return "";
-  return locale === "tr" ? `${p.d} ${MONTHS_TR[p.mo]} ${p.y}` : `${MONTHS_EN[p.mo]} ${p.d}, ${p.y}`;
+/** Long date for the age error: "2 Kasım 2026" / "2 November 2026". */
+export function longDate(value, locale = getLocale()) {
+  if (!trt(value)) return "";
+  return formatDate(value, locale, { ...TZ, day: "numeric", month: "long", year: "numeric" });
 }
 
 /** History row: { today: "14:02" } for today (TRT), otherwise "29 Eki 2025". */
-export function historyWhen(value, now = Date.now(), locale = "tr") {
+export function historyWhen(value, now = Date.now(), locale = getLocale()) {
   const p = trt(value);
   const n = trt(now);
   if (!p || !n) return { date: "" };
-  if (p.y === n.y && p.mo === n.mo && p.d === n.d) return { today: `${pad(p.h)}:${pad(p.mi)}` };
-  const m = (locale === "tr" ? MONTHS_TR_SHORT : MONTHS_EN_SHORT)[p.mo];
-  return { date: `${p.d} ${m} ${p.y}` };
+  if (p.y === n.y && p.mo === n.mo && p.d === n.d) return { today: formatDate(value, locale, { ...TZ, ...HM }) };
+  return { date: formatDate(value, locale, { ...TZ, day: "numeric", month: "short", year: "numeric" }) };
 }
 
 /** "1.240" in Turkish, "1,240" in English. */
-export function fmtNum(n, locale = "tr") {
-  return Number(n || 0).toLocaleString(locale === "tr" ? "tr-TR" : "en-US");
+export function fmtNum(n, locale = getLocale()) {
+  return formatNumber(n, locale);
 }
 
 /** Status the admin table shows, from the overview row. */

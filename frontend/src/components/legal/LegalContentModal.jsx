@@ -17,7 +17,7 @@ const CONTENT_BY_TYPE = {
  * legalContent.js so this modal and the marketing pages stay identical.
  */
 export default function LegalContentModal({ open, onClose, type = "terms" }) {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const reduce = useReducedMotion();
   const scrollRef = useRef(null);
   const data = CONTENT_BY_TYPE[type]?.[locale] || CONTENT_BY_TYPE[type]?.en;
@@ -68,7 +68,7 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
                 type={type}
                 locale={locale}
                 actions={
-                  <button type="button" className="legal-modal-close" onClick={onClose} aria-label={locale === "tr" ? "Kapat" : "Close"}>
+                  <button type="button" className="legal-modal-close" onClick={onClose} aria-label={t("Close")}>
                     <X size={18} />
                   </button>
                 }
@@ -76,7 +76,7 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
             </div>
             <footer className="legal-modal-footer">
               <button type="button" className="legal-modal-ok-btn" onClick={onClose}>
-                {locale === "tr" ? "Kapat" : "Close"}
+                {t("Close")}
               </button>
             </footer>
           </motion.div>

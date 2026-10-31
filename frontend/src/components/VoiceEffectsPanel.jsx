@@ -429,8 +429,8 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
                       <Icon size={24} />
                     </div>
                     <div className="preset-info">
-                      <span className="preset-name">{preset.name}</span>
-                      <span className="preset-desc">{preset.description}</span>
+                      <span className="preset-name">{t(`core.fx.${preset.id}`)}</span>
+                      <span className="preset-desc">{t(`core.fx.${preset.id}Desc`)}</span>
                     </div>
                     {isActive && <div className="active-indicator" />}
                   </button>
@@ -444,7 +444,7 @@ export default function VoiceEffectsPanel({ isOpen, onClose, localStream, onProc
             <div className="current-effect-info">
               <div className="effect-badge">
                 <Waveform size={14} />
-                <span>{presets.find(p => p.id === currentPreset)?.name}</span>
+                <span>{currentPreset ? t(`core.fx.${currentPreset}`) : ""}</span>
               </div>
               <span className="effect-status">{t("Effect active")}</span>
             </div>

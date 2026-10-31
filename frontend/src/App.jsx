@@ -108,6 +108,7 @@ import { useLocale } from "./context/LocaleContext";
 import SpecialBadgeHost from "./components/badges/SpecialBadgeHost.jsx";
 import { noteEquipped as noteSpecialBadge } from "./lib/specialBadges";
 import { t as tRuntime } from "./i18n/runtime";
+import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
@@ -320,7 +321,7 @@ function normalizeGroupMessage(m) {
   }
   const sender = normalizeUser(m.sender || {
     id: m.sender?.id || m.sender_id,
-    username: m.sender?.username || "Unknown",
+    username: m.sender?.username || tRuntime("Unknown"),
     display_name: m.sender?.display_name || m.sender?.displayName,
     avatar_url: m.sender?.avatar_url,
     updated_at: m.sender?.updated_at,
@@ -329,7 +330,7 @@ function normalizeGroupMessage(m) {
   return {
     id: m.id,
     from: sender,
-    username: sender?.username || "Unknown",
+    username: sender?.username || tRuntime("Unknown"),
     displayName: sender?.displayName || null,
     avatarUrl: sender?.avatarUrl,
     text: voice.isVoice ? "" : (m.content || ""),
@@ -469,7 +470,7 @@ export default function App() {
   const publicFeatures = usePublicFeatures();
   const [authLoading, setAuthLoading] = useState(false);
   const { toast } = useToast();
-  const { t, setLocale } = useLocale();
+  const { t, locale, setLocale } = useLocale();
   const [authError, setAuthError] = useState("");
   // Paint the app from the cached session; /auth/me revalidates in the background.
   const [sessionChecked, setSessionChecked] = useState(() =>
@@ -1229,8 +1230,8 @@ export default function App() {
             callType: call.callType || "voice",
             initiatorUsername:
               call.mode === "incoming"
-                ? (call.peer?.username || call.peer?.displayName || "User")
-                : (me?.username || "You"),
+                ? (call.peer?.username || call.peer?.displayName || t("User"))
+                : (me?.username || t("You")),
             participantCount: call.mode === "active" ? 2 : 1,
             ringing: call.mode === "outgoing" || call.mode === "incoming",
             incoming: call.mode === "incoming",
@@ -1479,7 +1480,7 @@ export default function App() {
       await fetch(`${API_BASE_URL}/health`, { method: "GET" });
       return true;
     } catch {
-      throw new Error(`Cannot reach backend (${API_BASE_URL}). Check your network or VITE_API_BASE_URL setting.`);
+      throw new Error(t("core.app.backendUnreachable", { url: API_BASE_URL }));
     }
   };
 
@@ -1564,11 +1565,11 @@ export default function App() {
 
     socket.io.on("reconnect_attempt", (attempt) => {
       setReconnectState("reconnecting");
-      setAuthError(`Reconnecting… attempt ${attempt}`);
+      setAuthError(t("core.app.reconnectAttempt", { attempt }));
     });
 
     socket.io.on("reconnect_failed", () => {
-      setAuthError("Socket reconnect failed. Check backend URL and CORS.");
+      setAuthError(t("core.app.socketReconnectFailed"));
     });
 
     socket.on("connect_error", (error) => {
@@ -1585,13 +1586,13 @@ export default function App() {
       }
       if (transportFallbackStepRef.current === 0) {
         transportFallbackStepRef.current = 1;
-        setAuthError("Connection retry: switching to polling-first…");
+        setAuthError(t("core.app.retryPollingFirst"));
         connectSocket(token, { transports: ["polling", "websocket"] });
         return;
       }
       if (transportFallbackStepRef.current === 1) {
         transportFallbackStepRef.current = 2;
-        setAuthError("Connection retry: switching to polling-only…");
+        setAuthError(t("core.app.retryPollingOnly"));
         connectSocket(token, { transports: ["polling"] });
         return;
       }
@@ -1599,10 +1600,10 @@ export default function App() {
         clearToken(); clearUser(); setMe(null); socket.disconnect();
       }
       if (msg.toLowerCase().includes("xhr poll error")) {
-        setAuthError("Socket connection failed. Check backend deploy status, backend URL, and CORS settings.");
+        setAuthError(t("core.app.socketConnectFailed"));
         return;
       }
-      setAuthError(msg);
+      setAuthError(error?.message || t("core.app.socketAuthFailed"));
     });
 
     socket.on("connected", (payload) => {
@@ -2027,7 +2028,7 @@ export default function App() {
           if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             playUiSound("message");
             notificationService.newMessage({
-              from: normalizedMsg.from?.username || 'Birisi',
+              from: normalizedMsg.from?.username || t("Someone"),
               text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
               preview: message.text?.substring(0, 100),
               conversationId: convWith,
@@ -2047,7 +2048,7 @@ export default function App() {
           // notificationService drops it while the window is focused.
           if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             notificationService.newMessage({
-              from: normalizedMsg.from?.username || 'Birisi',
+              from: normalizedMsg.from?.username || t("Someone"),
               text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
               preview: message.text?.substring(0, 100),
               conversationId: convWith,
@@ -2176,7 +2177,7 @@ export default function App() {
 
       const sender = normalizeUser(message.sender || {
         id: message.sender_id,
-        username: message.sender?.username || "Unknown",
+        username: message.sender?.username || t("Unknown"),
         display_name: message.sender?.display_name || message.sender?.displayName,
         avatar_url: message.sender?.avatar_url,
         updated_at: message.sender?.updated_at,
@@ -2189,7 +2190,7 @@ export default function App() {
       const normalized = {
         id: message.id,
         from: isAppBot ? { ...sender, isBot: true } : sender,
-        username: sender?.username || "Unknown",
+        username: sender?.username || t("Unknown"),
         displayName: sender?.displayName || null,
         avatarUrl: sender?.avatarUrl,
         text: voice.isVoice ? "" : hasEmbed ? "" : (message.content || ""),
@@ -2238,7 +2239,7 @@ export default function App() {
         playUiSound("message");
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
-          groupName: grp?.name || "Grup",
+          groupName: grp?.name || t("Group"),
           from: normalized.from.username,
           text: normalized.text,
           groupId,
@@ -2249,7 +2250,7 @@ export default function App() {
         // Open group but window hidden / in tray / unfocused: still notify.
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
-          groupName: grp?.name || "Grup",
+          groupName: grp?.name || t("Group"),
           from: normalized.from.username,
           text: normalized.text,
           groupId,
@@ -2734,7 +2735,7 @@ export default function App() {
       if (ban.message) parts.push(ban.message);
       if (ban.expiresAt) {
         try {
-          parts.push(`${t("Until")}: ${new Date(ban.expiresAt).toLocaleString()}`);
+          parts.push(`${t("Until")}: ${formatDate(ban.expiresAt, locale, { dateStyle: "medium", timeStyle: "short" })}`);
         } catch {
           /* ignore */
         }
@@ -3800,7 +3801,7 @@ export default function App() {
   };
   applyCallTapRef.current = (r, data) => {
     const friendFor = (peerId) =>
-      friendsRef.current.find((f) => f.id === peerId) || { id: peerId, username: data.from || "User" };
+      friendsRef.current.find((f) => f.id === peerId) || { id: peerId, username: data.from || t("User") };
     const endedCard = (peerId) => {
       const friend = friendFor(peerId);
       setCallTapCard({
@@ -3936,7 +3937,7 @@ export default function App() {
         if (!peerId) return;
         const friend =
           friendsRef.current.find((f) => f.id === peerId) ||
-          { id: peerId, username: data.from || "User" };
+          { id: peerId, username: data.from || t("User") };
         handleOpenDm(friend);
         return;
       }
@@ -3946,7 +3947,7 @@ export default function App() {
         if (!groupId) return;
         const group =
           myGroupsRef.current.find((g) => g.id === groupId) ||
-          { id: groupId, name: data.groupName || "Grup" };
+          { id: groupId, name: data.groupName || t("Group") };
         setReplyTo(null);
         setActiveDmUser(null);
         setActiveServer(null);
@@ -3989,7 +3990,7 @@ export default function App() {
         setActiveView("servers");
         const server =
           myServersRef.current?.find((s) => s.id === serverId) ||
-          { id: serverId, name: data.serverName || "Server" };
+          { id: serverId, name: data.serverName || t("core.app.serverFallback") };
         setActiveServer(server);
         if (channelId) {
           const channel =
@@ -4032,7 +4033,7 @@ export default function App() {
         const peerId = data.dmConversationId;
         const friend =
           friendsRef.current.find((f) => f.id === peerId) ||
-          { id: peerId, username: data.from || "User" };
+          { id: peerId, username: data.from || t("User") };
         handleOpenDm(friend);
         return;
       }
@@ -4199,7 +4200,7 @@ export default function App() {
     })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || "Failed to accept");
+        if (!res.ok) throw new Error(body.error || t("core.app.acceptFailed"));
         setFriendNotice(t("Friend request accepted"));
         hapticSuccess();
         setTimeout(() => setFriendNotice(""), 3000);
@@ -4248,7 +4249,7 @@ export default function App() {
     })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || "Failed to decline");
+        if (!res.ok) throw new Error(body.error || t("core.app.declineFailed"));
         socketRef.current?.emit("friend:list");
       })
       .catch((err) => {
@@ -4614,7 +4615,7 @@ export default function App() {
   if (serverVanitySlug && !(serverVanityAuthOpen && !me)) {
     return (
       <>
-        <SeoHead forceNoindex title="Server invite, Descall" description="Join a Descall server" />
+        <SeoHead forceNoindex title={t("core.seo.serverInviteTitle")} description={t("core.seo.serverInviteDesc")} />
         <TitleBar />
         <ServerVanityLanding
           slug={serverVanitySlug}
@@ -4631,7 +4632,7 @@ export default function App() {
   if (inviteCode && !(inviteAuthOpen && !me)) {
     return (
       <>
-        <SeoHead forceNoindex title="Group invite, Descall" description="Join a Descall group" />
+        <SeoHead forceNoindex title={t("core.seo.groupInviteTitle")} description={t("core.seo.groupInviteDesc")} />
         <TitleBar />
         <GroupInviteLanding
           code={inviteCode}
@@ -4989,7 +4990,7 @@ export default function App() {
   return (
     <>
     {/* Authenticated app shell, never index private UI */}
-    <SeoHead forceNoindex title="Descall" description="Descall app" path="/app" />
+    <SeoHead forceNoindex title="Descall" description={t("core.seo.appDesc")} path="/app" />
     <TitleBar />
     <UpdateNotes />
     <div className="app-container">
@@ -5724,7 +5725,7 @@ export default function App() {
             const card = callTapCard;
             setCallTapCard(null);
             if (card?.peerId) {
-              const friend = friendsRef.current.find((f) => f.id === card.peerId) || card.peer || { id: card.peerId, username: card.peerName || "User" };
+              const friend = friendsRef.current.find((f) => f.id === card.peerId) || card.peer || { id: card.peerId, username: card.peerName || t("User") };
               handleOpenDm(friend);
             } else if (card?.groupId) navigate(groupPath(card.groupId));
           }}
@@ -5733,7 +5734,7 @@ export default function App() {
             setCallTapCard(null);
             if (!card?.peerId) return;
             const friend =
-              friendsRef.current.find((f) => f.id === card.peerId) || { id: card.peerId, username: card.peerName || "User" };
+              friendsRef.current.find((f) => f.id === card.peerId) || { id: card.peerId, username: card.peerName || t("User") };
             callRef.current?.startCall?.(friend, card.callType === "video" ? "video" : "voice");
           }}
         />
