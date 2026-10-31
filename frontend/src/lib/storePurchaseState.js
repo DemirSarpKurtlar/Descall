@@ -7,7 +7,6 @@
 export const PURCHASE_MODAL_CATEGORIES = [
   "banner",
   "avatar_effect",
-  "profile_background",
   "theme",
   "name_effect",
   "chat_bubble",

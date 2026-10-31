@@ -1,4 +1,4 @@
-import { Video, Phone, Users, Clock } from "../ui/Icon.jsx";
+import { Video, VideoOff, Phone, PhoneMissed, Users, Clock } from "../ui/Icon.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatCallWhen } from "../../lib/callHistoryCache";
 import { intlLocaleTag } from "../../lib/datetime";
@@ -17,6 +17,7 @@ export default function CallSummaryBubble({ summary }) {
   if (!summary) return null;
 
   const isVideo = summary.callType === "video";
+  const failed = summary.status === "missed" || summary.status === "declined";
   const durationLabel = formatSummaryDuration(summaryDurationSeconds(summary)) || t("< 1s");
   const participantCount = summaryParticipantCount(summary);
 
@@ -37,9 +38,16 @@ export default function CallSummaryBubble({ summary }) {
 
   return (
     <div className="call-summary-wrap">
-      <div className={`call-summary-card${summary.status === "missed" ? " is-missed" : ""}`}>
+      <div className={`call-summary-card${failed ? " is-missed" : ""}`}>
+        {/* A call that never connected: white glyph on a solid red tile (red on red was unreadable, 3.7.13). */}
         <div className="call-summary-icon">
-          {isVideo ? <Video size={22} /> : <Phone size={22} />}
+          {failed
+            ? isVideo
+              ? <VideoOff size={22} weight="bold" />
+              : <PhoneMissed size={22} weight="bold" />
+            : isVideo
+              ? <Video size={22} />
+              : <Phone size={22} />}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
