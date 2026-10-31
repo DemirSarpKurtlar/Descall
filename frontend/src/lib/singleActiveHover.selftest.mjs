@@ -26,8 +26,8 @@ function setup() {
   return { s, timers, open, bubble };
 }
 
-// Grace is quick (100-150 ms).
-assert.ok(HOVER_TOOLBAR_GRACE_MS >= 100 && HOVER_TOOLBAR_GRACE_MS <= 150);
+// Grace leaves time to travel to the pill (3.7.13: 120 ms was too short).
+assert.ok(HOVER_TOOLBAR_GRACE_MS >= 300 && HOVER_TOOLBAR_GRACE_MS <= 450);
 
 // Sweeping across many messages leaves exactly one toolbar open.
 {
@@ -152,6 +152,37 @@ assert.ok(HOVER_TOOLBAR_GRACE_MS >= 100 && HOVER_TOOLBAR_GRACE_MS <= 150);
   for (let i = 0; i < 60; i++) { y -= 1; s2.track(520, y, t); timers.advance(15); }
   assert.equal(s.getActiveId(), "c", "aiming forever still hands over after AIM_MAX_MS");
   assert.ok(open.has("c") && !open.has("b"));
+}
+
+// 3.7.13: leaving the bubble toward the pill keeps it past the grace while aiming,
+// bounded by AIM_MAX_MS; a still pointer away from it lets it close.
+{
+  let t = 0;
+  const timers = (() => {
+    let seq = 0; const q = new Map();
+    return {
+      setTimer: (fn, ms) => { const id = ++seq; q.set(id, { fn, at: t + ms }); return id; },
+      clearTimer: (id) => q.delete(id),
+      advance(ms) { const end = t + ms; while (true) { const next = [...q].filter(([, v]) => v.at <= end).sort((a, b) => a[1].at - b[1].at)[0]; if (!next) break; t = next[1].at; q.delete(next[0]); next[1].fn(); } t = end; },
+    };
+  })();
+  const s = createSingleActive({ setTimer: timers.setTimer, clearTimer: timers.clearTimer, now: () => t });
+  const pill = { left: 500, top: 100, right: 620, bottom: 136 };
+  let open = false;
+  s.activate("m", () => { open = false; }, { getRect: () => pill });
+  open = true;
+  s.track(300, 300, t); timers.advance(30); s.track(340, 270, t);
+  s.scheduleRelease("m");
+  for (let i = 0; i < 12; i++) { timers.advance(30); s.track(340 + i * 12, 270 - i * 10, t); }
+  assert.equal(open, true, "slow travel toward the pill keeps it open past the grace");
+  s.keep("m"); // reached it
+  timers.advance(2000);
+  assert.equal(open, true);
+  // Moving away: closes after the grace.
+  s.track(300, 400, t); timers.advance(30); s.track(280, 450, t);
+  s.scheduleRelease("m");
+  timers.advance(HOVER_TOOLBAR_GRACE_MS + 5);
+  assert.equal(open, false, "moving away closes after the grace");
 }
 
 console.log("singleActiveHover.selftest ok");
