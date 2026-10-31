@@ -48,6 +48,8 @@ ok("paths map to panel sections", () => {
     "/dm/conversations": "dmReview",
     "/dm/a::b/view": "dmReview",
     "/activity/leaderboard": "topUsers",
+    "/growth/retention": "retention",
+    "/growth/economy": "economy",
     "/activity/recent": "directory",
     "/messages/m1": "moderation",
     "/users/u1/analytics": "analytics",

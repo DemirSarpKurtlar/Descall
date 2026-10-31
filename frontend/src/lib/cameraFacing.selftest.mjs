@@ -12,6 +12,7 @@ import {
   shouldMirrorLocal,
   tagCameraTrack,
   trackFacing,
+  labelFacing,
 } from "./cameraFacing.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +39,18 @@ assert.equal(shouldMirrorLocal(track({ facingMode: "user" }, { __descallFacing: 
 assert.equal(shouldMirrorLocal(track({ displaySurface: "monitor" })), false, "a shared screen is never mirrored");
 assert.equal(shouldMirrorLocal(track({}, { __descallRole: "screen" })), false);
 assert.equal(shouldMirrorLocal(null), false);
+
+// 3.7.6: the camera's name wins (stale / missing facingMode after a flip left the back camera mirrored).
+for (const [label, want] of [
+  ["Back Camera", "environment"], ["Arka Kamera", "environment"], ["Arka Üçlü Kamera", "environment"],
+  ["Arka Çift Geniş Açı Kamera", "environment"], ["camera2 0, facing back", "environment"], ["Rear Camera", "environment"],
+  ["Front Camera", "user"], ["Ön Kamera", "user"], ["camera2 1, facing front", "user"], ["FaceTime HD Camera", "user"],
+  ["Logitech C920", null], ["", null],
+]) assert.equal(labelFacing(label), want, label);
+assert.equal(shouldMirrorLocal(track({ facingMode: "user" }, { label: "Arka Kamera" })), false, "back camera by name is never mirrored, even with a stale setting");
+assert.equal(shouldMirrorLocal(track({}, { label: "Back Camera" })), false);
+assert.equal(shouldMirrorLocal(track({ facingMode: "environment" }, { label: "Ön Kamera" })), true, "front camera by name is mirrored");
+assert.equal(shouldMirrorLocal(track({}, { label: "Logitech C920" })), true, "unnamed desktop webcam stays mirrored");
 assert.equal(shouldMirrorLocal({ kind: "audio" }), false);
 assert.equal(trackFacing(track({ facingMode: "left" })), "environment");
 
@@ -78,3 +91,12 @@ const panel = readFileSync(join(here, "../components/servers/ServerVoicePanel.js
 assert.ok(panel.includes("shouldMirrorLocal(streamCameraTrack(cameraStream))"));
 
 console.log("cameraFacing.selftest: ok");
+
+// 3.7.5: a flip swaps the track in the same stream; the tile <video> is keyed by
+// the video track id so iOS lays the new camera out to fill the tile.
+{
+  const overlay = readFileSync(join(here, "../components/CallOverlay.jsx"), "utf8");
+  assert.match(overlay, /videoKey = stream\?\.getVideoTracks\?\.\(\)\?\.\[0\]\?\.id \|\| "video"/);
+  assert.match(overlay, /<video\s+key=\{videoKey\}\s+ref=\{setVideoEl\}/);
+  console.log("cameraFacing.selftest: tile video keyed by track ok");
+}

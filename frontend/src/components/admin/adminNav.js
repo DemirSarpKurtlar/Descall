@@ -7,7 +7,7 @@
 
 /** Group key → section ids, in menu order. Unknown ids fall into "system". */
 export const ADMIN_NAV_GROUPS = [
-  ["general", ["overview", "maintenance", "analytics", "signupStats", "topUsers"]],
+  ["general", ["overview", "maintenance", "analytics", "signupStats", "retention", "economy", "topUsers"]],
   ["people", ["directory", "people", "reports", "feedback", "moderation", "dmReview", "suspicious", "accessBans"]],
   ["content", ["shop", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
   ["system", ["system", "security", "errors", "audit", "staff"]],

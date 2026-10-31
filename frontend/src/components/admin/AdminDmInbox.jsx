@@ -48,7 +48,7 @@ function ViewReasonDialog({ conversation, onCancel, onSubmit, busy, error, t }) 
         >
           <div className="adm-dmv-icon"><Lock size={20} /></div>
           <h3 id="adm-dmv-title">{t("admin.dmViewTitle")}</h3>
-          <p className="adm-dmv-who">{t("admin.vs", { a: left?.username || "-", b: right?.username || "-" })}</p>
+          <p className="adm-dmv-who">{conversation?.kind === "group" ? t("admin.dmGroupWho", { name: conversation.name, n: conversation.memberCount }) : t("admin.vs", { a: left?.username || "-", b: right?.username || "-" })}</p>
           <p className="adm-dmv-note">{t("admin.dmViewNote")}</p>
           <div className="adm-dmv-purposes" role="radiogroup" aria-label={t("admin.dmViewPurpose")}>
             {DM_VIEW_PURPOSES.map((id) => (
@@ -83,31 +83,47 @@ export default function AdminDmInbox() {
   const [asking, setAsking] = useState(null);
   const [askError, setAskError] = useState("");
   const [viewMeta, setViewMeta] = useState(null);
+  // Özel mesajlar / Gruplar (3.7.3): same reason-gated flow for both.
+  const [mode, setMode] = useState("dm");
+  const isGroup = mode === "group";
   const messagesRef = useRef(null);
 
   const loadList = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await adminFetch("/dm/conversations");
-      setConversations(data.conversations || []);
+      const data = await adminFetch(mode === "group" ? "/dm/groups" : "/dm/conversations");
+      setConversations((data.conversations || []).map((c) => ({ ...c, kind: mode })));
     } catch (err) {
       setError(err?.message || t("admin.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, mode]);
+
+  const switchMode = (next) => {
+    if (next === mode) return;
+    setMode(next);
+    setConversations([]);
+    setActiveKey("");
+    setThread(null);
+    setViewMeta(null);
+    setQuery("");
+  };
 
   const openThread = useCallback(async (conversation, { purpose, reason }) => {
     setThreadLoading(true);
     setAskError("");
     try {
-      const data = await adminFetch(`/dm/${encodeURIComponent(conversation.key)}/view`, {
+      const path = conversation.kind === "group"
+        ? `/dm/groups/${encodeURIComponent(conversation.key)}/view`
+        : `/dm/${encodeURIComponent(conversation.key)}/view`;
+      const data = await adminFetch(path, {
         method: "POST",
         body: JSON.stringify({ purpose, reason }),
       });
       setActiveKey(conversation.key);
-      setThread(data);
+      setThread({ ...data, kind: conversation.kind || "dm" });
       setViewMeta({ purpose, reason, at: data?.viewedAt || new Date().toISOString() });
       setAsking(null);
     } catch (err) {
@@ -138,6 +154,7 @@ export default function AdminDmInbox() {
     if (!q) return conversations;
     return conversations.filter((c) => {
       const hay = [
+        c.name || "",
         ...(c.users || []).map((u) => `${u.username} ${u.displayName}`),
       ]
         .join(" ")
@@ -173,7 +190,8 @@ export default function AdminDmInbox() {
       cancelLabel: t("Cancel"),
     }))) return;
     try {
-      await adminFetch(`/dm/${encodeURIComponent(activeKey)}/messages/${encodeURIComponent(msgId)}`, {
+      const base = isGroup ? `/dm/groups/${encodeURIComponent(activeKey)}` : `/dm/${encodeURIComponent(activeKey)}`;
+      await adminFetch(`${base}/messages/${encodeURIComponent(msgId)}`, {
         method: "DELETE",
       });
       setThread((th) => (th ? { ...th, messages: (th.messages || []).filter((m) => m.id !== msgId) } : th));
@@ -205,13 +223,17 @@ export default function AdminDmInbox() {
 
       <div className="admin-dm-layout">
         <div className="admin-dm-list">
+          <div className="adm-dmv-modes" role="tablist" aria-label={t("admin.dmModes")}>
+            <button type="button" role="tab" aria-selected={!isGroup} className={!isGroup ? "is-on" : ""} onClick={() => switchMode("dm")}>{t("admin.dmModeDm")}</button>
+            <button type="button" role="tab" aria-selected={isGroup} className={isGroup ? "is-on" : ""} onClick={() => switchMode("group")}>{t("admin.dmModeGroup")}</button>
+          </div>
           <label className="admin-leaderboard-search">
             <Search size={14} />
             <input
               className="admin-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("admin.dmSearch")}
+              placeholder={isGroup ? t("admin.dmSearchGroup") : t("admin.dmSearch")}
             />
           </label>
           {loading && !conversations.length ? (
@@ -219,11 +241,35 @@ export default function AdminDmInbox() {
           ) : filtered.length === 0 ? (
             <div className="empty-state compact">
               <Mail size={32} className="empty-icon" />
-              <p>{t("admin.noDmThreads")}</p>
+              <p>{isGroup ? t("admin.noGroupThreads") : t("admin.noDmThreads")}</p>
             </div>
           ) : (
             <ul>
               {filtered.map((c) => {
+                if (c.kind === "group") {
+                  return (
+                    <li key={c.key}>
+                      <button
+                        type="button"
+                        className={`admin-dm-item ${activeKey === c.key ? "is-active" : ""}`}
+                        onClick={() => { setAskError(""); setAsking(c); }}
+                      >
+                        <div className="admin-dm-avatars">
+                          <span className="admin-dm-avatar-wrap">
+                            <Avatar user={{ avatar_url: c.avatarUrl, username: c.name }} name={c.name} size={32} />
+                          </span>
+                        </div>
+                        <div className="admin-dm-item-meta">
+                          <strong>{c.name}</strong>
+                          <span className="muted">
+                            {t("admin.dmGroupMeta", { n: c.memberCount, count: c.messageCount })}
+                            {c.lastAt ? ` · ${formatTimeAgo(c.lastAt, t, undefined, locale)}` : ""}
+                          </span>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                }
                 const [left, right] = c.users || [];
                 const title = t("admin.vs", {
                   a: left?.displayName || left?.username || "—",
@@ -272,7 +318,8 @@ export default function AdminDmInbox() {
             <>
               <div className="admin-dm-thread-head">
                 <div className="admin-dm-thread-people">
-                  {(thread?.users || []).map((u) => (
+                  {thread?.kind === "group" ? <strong className="adm-dmv-group-name">{thread.name}</strong> : null}
+                  {(thread?.kind === "group" ? (thread?.users || []).slice(0, 12) : thread?.users || []).map((u) => (
                     <div key={u.id} className="admin-dm-person">
                       <Avatar user={u} name={u.displayName || u.username} size={28} />
                       <strong>{u.displayName || u.username}</strong>
@@ -281,10 +328,12 @@ export default function AdminDmInbox() {
                   ))}
                   <p className="muted">{t("{count} msgs", { count: thread?.messages?.length || 0 })}</p>
                 </div>
-                <RippleButton type="button" className="danger" onClick={() => deleteThread(activeKey)}>
-                  <Trash2 size={14} />
-                  {t("admin.deleteThread")}
-                </RippleButton>
+                {thread?.kind === "group" ? null : (
+                  <RippleButton type="button" className="danger" onClick={() => deleteThread(activeKey)}>
+                    <Trash2 size={14} />
+                    {t("admin.deleteThread")}
+                  </RippleButton>
+                )}
               </div>
               {viewMeta ? (
                 <p className="adm-dmv-banner">
@@ -300,14 +349,14 @@ export default function AdminDmInbox() {
                   (thread.messages || []).map((m) => (
                     <motion.article
                       key={m.id}
-                      className={`admin-dm-bubble ${m.fromUserId === leftId ? "is-left" : "is-right"}`}
+                      className={`admin-dm-bubble ${thread?.kind === "group" || m.fromUserId === leftId ? "is-left" : "is-right"}`}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                     >
                       <header>
                         <strong>{m.fromDisplayName || m.fromUsername}</strong>
                         <span>{m.timestamp ? formatAppDateTime(m.timestamp, locale) : ""}</span>
-                        {m.readAt ? <em>{t("admin.read")}</em> : <em>{t("admin.unread")}</em>}
+                        {thread?.kind === "group" ? null : m.readAt ? <em>{t("admin.read")}</em> : <em>{t("admin.unread")}</em>}
                         <button type="button" onClick={() => deleteMessage(m.id)} aria-label={t("Delete")}>
                           <Trash2 size={12} />
                         </button>

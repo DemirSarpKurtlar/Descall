@@ -69,6 +69,7 @@ router.use(adminPermissions.requireAdminSection);
 router.use(require("./adminStaff"));
 router.use(require("./adminAccess"));
 router.use(require("./adminErrors"));
+router.use(require("./adminGrowth"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
@@ -1026,6 +1027,54 @@ router.post("/dm/:key/view", async (req, res) => {
     const status = e.status || 500;
     if (status >= 500) console.error("[ADMIN] dm view failed:", e);
     res.status(status).json({ error: status === 400 ? "Geçersiz konuşma." : "Konuşma yüklenemedi." });
+  }
+});
+
+// Gruplar (3.7.3): same rule as DMs. /dm/groups* sits under section dmReview.
+router.get("/dm/groups", async (_req, res) => {
+  try {
+    const payload = await insights.listGroupConversations();
+    res.set("Cache-Control", "no-store");
+    res.json(payload);
+  } catch (e) {
+    console.error("[ADMIN] group list failed:", e);
+    res.status(500).json({ error: "Grup listesi yüklenemedi." });
+  }
+});
+
+router.post("/dm/groups/:groupId/view", async (req, res) => {
+  const purpose = String(req.body?.purpose || "");
+  const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : "";
+  if (!DM_VIEW_PURPOSES.includes(purpose)) return res.status(400).json({ error: "Bir inceleme nedeni seç.", code: "DM_VIEW_PURPOSE" });
+  if (reason.length < 10) return res.status(400).json({ error: "Nedeni en az 10 karakterle yaz.", code: "DM_VIEW_REASON" });
+  try {
+    const payload = await insights.listGroupThread(req.params.groupId);
+    audit(req.user, "group_view", payload.key, { purpose, reason, group: payload.name, messages: payload.messages.length });
+    res.set("Cache-Control", "no-store");
+    res.json({
+      ...payload,
+      messages: payload.messages.map((m) => {
+        const media = String(m.mediaType || "").toLowerCase();
+        const kind = m.isVoice ? "voice" : media === "image" ? "image" : m.mediaType || m.mediaUrl ? "file" : "text";
+        return { ...m, kind, text: kind === "text" || kind === "image" ? m.text : "" };
+      }),
+      viewedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    const status = e.status || 500;
+    if (status >= 500) console.error("[ADMIN] group view failed:", e);
+    res.status(status).json({ error: status === 404 ? "Grup bulunamadı." : status === 400 ? "Geçersiz grup." : "Grup yüklenemedi." });
+  }
+});
+
+router.delete("/dm/groups/:groupId/messages/:msgId", async (req, res) => {
+  try {
+    await insights.deleteGroupMessage(req.params.groupId, req.params.msgId);
+    audit(req.user, "group_msg_delete", req.params.msgId, { group: req.params.groupId });
+    res.json({ ok: true });
+  } catch (e) {
+    const status = e.status || 500;
+    res.status(status).json({ error: status === 404 ? "Mesaj bu grupta yok." : status === 400 ? "Geçersiz grup." : "Mesaj silinemedi." });
   }
 });
 
