@@ -583,7 +583,7 @@ export default function ServerMembersPanel({
         )}
       </div>
 
-      {menuMember && (
+      {menuMember && typeof document !== "undefined" && createPortal(
         <div
           ref={menuRef}
           className="server-member-menu"
@@ -762,7 +762,8 @@ export default function ServerMembersPanel({
               {t("Ban")}
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
       {nickTarget && typeof document !== "undefined"
         ? createPortal(

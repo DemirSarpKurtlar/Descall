@@ -1,0 +1,211 @@
+/* 3.7.16 (owner report: "server sistemindeki temaya uygun olmayan her şey").
+   Audit of every server surface under html.glass-desktop. The shells (sidebar, members
+   panel, .server-modal, menus) were already glass, but what sits inside them still
+   painted the classic opaque --surface-* slabs, Discord greys / reds and a black screen
+   share card. Everything here uses the theme tokens (--gd-chip, --gd-hair, --gd-field-bg,
+   --gd-row-*, --gd-t*, --gd-brand), so dark, light and every colour theme follow.
+   Scoped to html.glass-desktop only (glass-desktop-scope.selftest). */
+
+/* ---------- A. Voice room (inside the chat panel) ---------- */
+
+html.glass-desktop .main-panel .server-voice-screen {
+  border: 0;
+  border-radius: var(--r-xl, 20px);
+  background: var(--gd-heavy-base);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 18px 44px rgba(0, 0, 0, 0.32);
+}
+html.glass-desktop .main-panel .server-voice-screen-video { background: transparent; }
+html.glass-desktop .main-panel .server-voice-screen-badge,
+html.glass-desktop .main-panel .server-voice-screen-hint {
+  color: #fff;
+  background: color-mix(in srgb, var(--surface-1, #1e1f22) 42%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+html.glass-desktop .main-panel .server-voice-screen-hint { border-radius: 999px; color: rgba(255, 255, 255, 0.86); }
+
+html.glass-desktop .main-panel .server-stage-pill,
+html.glass-desktop .main-panel .server-media-mode {
+  color: var(--gd-brand-hi);
+  background: var(--gd-chip);
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair);
+}
+
+html.glass-desktop .main-panel .server-voice-dock-btn.is-live {
+  color: #fff;
+  background: color-mix(in srgb, var(--gd-brand) 70%, transparent);
+}
+
+/* ---------- A. Channel list ---------- */
+
+html.glass-desktop .server-voice-count {
+  color: var(--gd-t3);
+  background: var(--gd-chip);
+}
+html.glass-desktop .server-unread-badge {
+  color: #fff;
+  background: var(--gd-brand);
+}
+html.glass-desktop .server-voice-user.is-speaking { color: var(--gd-t1); }
+html.glass-desktop .server-voice-user.is-speaking .server-voice-user-name { color: var(--gd-t1); }
+
+/* ---------- B. Server modals: fields, selects, buttons ---------- */
+
+html.glass-desktop .server-field input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+html.glass-desktop .server-field textarea,
+html.glass-desktop .server-field select,
+html.glass-desktop .server-modal select,
+html.glass-desktop .server-audit-filter select,
+html.glass-desktop .server-audit-search input,
+html.glass-desktop .sra-filter,
+html.glass-desktop .sra-search {
+  border: 0;
+  border-radius: var(--r-md);
+  color: var(--gd-t1);
+  background: var(--gd-field-bg);
+  box-shadow: var(--gd-field-shadow);
+}
+/* The search well already is the field: its inner input stays bare. */
+html.glass-desktop .sra-search input {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html.glass-desktop .server-modal select option,
+html.glass-desktop .server-field select option { color: #111; }
+
+html.glass-desktop .server-ghost-btn {
+  border: 0;
+  background: var(--gd-chip);
+}
+html.glass-desktop .server-ghost-btn:not(.danger):not(.is-danger-ghost) { color: var(--gd-t1); }
+html.glass-desktop .server-ghost-btn.is-danger-ghost { box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--danger, #ff453a) 45%, transparent); }
+html.glass-desktop .server-ghost-btn:hover:not(:disabled) { background: var(--gd-chip-hover); }
+/* servers.css sets the cancel button with !important, so only !important beats it. */
+html.glass-desktop .server-settings-cancel {
+  border: 0 !important;
+  color: var(--gd-t1) !important;
+  background: var(--gd-chip) !important;
+}
+html.glass-desktop .server-settings-cancel:hover:not(:disabled) { background: var(--gd-chip-hover) !important; }
+
+html.glass-desktop .server-settings-footer,
+html.glass-desktop .server-channel-perms-footer {
+  background: transparent;
+  border-top: 0.5px solid var(--gd-hair);
+}
+
+html.glass-desktop .server-icon-btn {
+  border: 0;
+  border-radius: 999px;
+  color: var(--gd-t2);
+  background: var(--gd-chip);
+}
+html.glass-desktop .server-icon-btn:hover:not(:disabled) { color: var(--gd-t1); background: var(--gd-chip-hover); }
+html.glass-desktop .server-settings-icon-btn {
+  border-color: var(--gd-heavy-base);
+  background: var(--gd-heavy-base);
+}
+
+/* Tiles and chips: create-server paths, templates, channel type, slowmode, icon preview,
+   community options, roles tabs / chips, invite rows, public toggle, moderation / audit
+   rows, join preview. One material: a theme-ink tint with a hairline. */
+html.glass-desktop .server-type-btn,
+html.glass-desktop .server-create-path,
+html.glass-desktop .server-template-card,
+html.glass-desktop .server-icon-picker-preview,
+html.glass-desktop .server-slowmode-presets button,
+html.glass-desktop .server-roles-tab,
+html.glass-desktop .server-role-chip,
+html.glass-desktop .server-invite-item,
+html.glass-desktop .server-public-toggle,
+html.glass-desktop .server-moderation-row,
+html.glass-desktop .server-audit-row,
+html.glass-desktop .server-join-preview,
+html.glass-desktop .server-join-preview-card,
+html.glass-desktop .server-community-option,
+html.glass-desktop .server-channel-perms-add,
+html.glass-desktop .server-perm-tri.is-inherit {
+  border: 0;
+  color: var(--gd-t1);
+  background: var(--gd-chip);
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair);
+}
+html.glass-desktop .server-type-btn:hover,
+html.glass-desktop .server-create-path:hover,
+html.glass-desktop .server-template-card:hover,
+html.glass-desktop .server-slowmode-presets button:hover,
+html.glass-desktop .server-roles-tab:hover,
+html.glass-desktop .server-community-option:hover,
+html.glass-desktop .server-channel-perms-add:hover { background: var(--gd-chip-hover); }
+
+html.glass-desktop .server-template-selected {
+  border: 0;
+  background: color-mix(in srgb, var(--tpl-accent, var(--gd-brand)) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tpl-accent, var(--gd-brand)) 55%, transparent);
+}
+html.glass-desktop .server-community-option-mark {
+  border-color: var(--gd-t3);
+  background: transparent;
+}
+
+/* Grouped cards (permission list, role member wells, rules text). */
+html.glass-desktop .server-perm-list,
+html.glass-desktop .sra-chip-row,
+html.glass-desktop .sra-list,
+html.glass-desktop .sra-detail,
+html.glass-desktop .server-rules-text {
+  border: 0;
+  color: var(--gd-t1);
+  background: color-mix(in srgb, var(--g-t1, #fff) 4%, transparent);
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair);
+}
+
+/* Rows and hovers. */
+html.glass-desktop .server-role-item:hover,
+html.glass-desktop .server-discover-row:hover,
+html.glass-desktop .server-channel-perms-target:hover { background: var(--gd-row-hover); }
+html.glass-desktop .server-role-item.active,
+html.glass-desktop .server-channel-perms-target.active {
+  color: var(--gd-t1);
+  background: var(--gd-row-active);
+}
+
+/* ---------- B. Vanity / group invite landing (/s/:slug, invite pages) ---------- */
+
+html.glass-desktop .invite-landing {
+  color: var(--gd-t1);
+  background: var(--gd-aurora);
+}
+html.glass-desktop .invite-landing-card {
+  border: 0;
+  border-radius: var(--gd-r-panel, 26px);
+  background: var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px var(--gd-hair), var(--gd-shadow-heavy, 0 28px 80px rgba(0, 0, 0, 0.45));
+}
+html.glass-desktop .invite-landing-brand,
+html.glass-desktop .invite-landing-preview span { color: var(--gd-t2); }
+html.glass-desktop .invite-landing-preview {
+  border: 0;
+  background: var(--gd-chip);
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair);
+}
+
+/* ---------- Accessibility / low-power fallbacks ---------- */
+
+html.glass-desktop.a11y-solid .main-panel .server-voice-screen-badge,
+html.glass-desktop.a11y-solid .main-panel .server-voice-screen-hint,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-screen-badge,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-screen-hint {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgba(0, 0, 0, 0.6);
+}
+html.glass-desktop.a11y-solid .invite-landing-card,
+html.glass-desktop.gd-lite:not(.electron-app) .invite-landing-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid-heavy);
+}

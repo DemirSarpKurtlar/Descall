@@ -114,6 +114,7 @@ export default function ServersSidebar({
   const [showSettings, setShowSettings] = useState(false);
   const [showModeration, setShowModeration] = useState(null); // 'bans' | 'audit' | null
   const [menuOpen, setMenuOpen] = useState(false);
+  const serverMenuBtnRef = useRef(null);
   const [dragChannelId, setDragChannelId] = useState(null);
   const [dragOverChannelId, setDragOverChannelId] = useState(null);
   const [dragServerId, setDragServerId] = useState(null);
@@ -1039,8 +1040,10 @@ export default function ServersSidebar({
               ) : null}
               <button
                 type="button"
+                ref={serverMenuBtnRef}
                 className="icon-btn g-server-menu-btn"
                 title={t("Server menu")} aria-label={t("Server menu")}
+                aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((v) => !v)}
               >
                 {glassShell ? <ChevronRight size={18} /> : <MoreHorizontal size={18} />}
@@ -1048,7 +1051,7 @@ export default function ServersSidebar({
             </div>
           </div>
 
-          <ServerMenuFrame glass={Boolean(glassShell)} open={!hubMode && menuOpen} onClose={() => setMenuOpen(false)}>
+          <ServerMenuFrame glass={Boolean(glassShell)} open={!hubMode && menuOpen} onClose={() => setMenuOpen(false)} anchorRef={serverMenuBtnRef}>
             {glassShell ? (
               <>
                 <div className="g-grabber" aria-hidden="true" />
@@ -1923,10 +1926,48 @@ function GlassWrap({ when, className, children }) {
   return <div className={className}>{children}</div>;
 }
 
-function ServerMenuFrame({ glass, open, onClose, children }) {
+/**
+ * Server header menu. iPhone glass shell: bottom sheet over a scrim. Desktop (3.7.16):
+ * portaled to <body> and pinned under the header button, because rendered in place it
+ * sat inside the sidebar's backdrop-filter / overflow box and a long owner menu was
+ * clipped on short windows. Outside click / Escape close it.
+ */
+function ServerMenuFrame({ glass, open, onClose, children, anchorRef }) {
+  const menuRef = useRef(null);
+  const [pos, setPos] = useState(null);
+  useLayoutEffect(() => {
+    if (glass || !open) return undefined;
+    const place = () => {
+      const r = anchorRef?.current?.getBoundingClientRect?.();
+      if (!r) return setPos(null);
+      const top = Math.round(r.bottom + 6);
+      setPos({ top, right: Math.max(8, Math.round(window.innerWidth - r.right)), maxHeight: Math.max(160, window.innerHeight - top - 12) });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [glass, open, anchorRef]);
+  useEffect(() => {
+    if (glass || !open) return undefined;
+    const onDown = (e) => {
+      if (menuRef.current?.contains(e.target)) return;
+      if (anchorRef?.current?.contains(e.target)) return;
+      onClose?.();
+    };
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [glass, open, onClose, anchorRef]);
+  const pinned = !glass && pos;
   const sheet = (
     <motion.div
-      className={glass ? "server-dropdown g-server-sheet g-glass g-heavy" : "server-dropdown"}
+      ref={menuRef}
+      className={glass ? "server-dropdown g-server-sheet g-glass g-heavy" : `server-dropdown${pinned ? " is-portaled" : ""}`}
+      style={pinned ? { position: "fixed", top: pos.top, right: pos.right, maxHeight: pos.maxHeight } : undefined}
       initial={glass ? { y: 28, opacity: 0 } : { opacity: 0, y: -6 }}
       animate={glass ? { y: 0, opacity: 1 } : { opacity: 1, y: 0 }}
       exit={glass ? { y: 28, opacity: 0 } : { opacity: 0, y: -6 }}
@@ -1955,7 +1996,7 @@ function ServerMenuFrame({ glass, open, onClose, children }) {
       ) : null}
     </AnimatePresence>
   );
-  if (glass && typeof document !== "undefined") return createPortal(tree, document.body);
+  if ((glass || pinned) && typeof document !== "undefined") return createPortal(tree, document.body);
   return tree;
 }
 

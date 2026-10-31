@@ -844,3 +844,58 @@ html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-dock-gro
   backdrop-filter: none;
   background: var(--gd-solid);
 }
+
+/* 3.7.16 (owner report): the server voice tiles were the last dark slab in the room
+   (color-mix(surface-2, #090a0c) + a black name bar). Same material as the DM / group
+   call tiles: heavy glass with a theme-brand glow on top, specular edge, a glass name
+   chip in theme ink, the green speaking ring. Video tiles keep the video edge to edge. */
+html.glass-desktop .main-panel .server-voice-tile {
+  border: 0;
+  border-radius: var(--r-xl, 20px);
+  background:
+    radial-gradient(80% 62% at 50% 0%, color-mix(in srgb, var(--gd-brand) 30%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
+    var(--gd-heavy-base);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.32);
+}
+html.glass-desktop .main-panel .server-voice-tile.is-speaking {
+  box-shadow:
+    inset 0 0 0 3px rgba(48, 209, 88, 0.95),
+    0 0 28px rgba(48, 209, 88, 0.32);
+}
+html.glass-desktop .main-panel .server-voice-tile-video { background: transparent; }
+html.glass-desktop .main-panel .server-voice-tile-meta {
+  left: 10px;
+  right: auto;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  padding: 5px 6px 5px 11px;
+  border-radius: 999px;
+  color: #fff;
+  background: color-mix(in srgb, var(--surface-1, #1e1f22) 42%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+html.glass-desktop .main-panel .server-voice-you {
+  color: #fff;
+  background: color-mix(in srgb, var(--gd-brand) 55%, transparent);
+}
+html.glass-desktop .main-panel .server-voice-tile-more { border-radius: 999px; }
+html.glass-desktop .main-panel .server-voice-tile-more:hover { background: rgba(255, 255, 255, 0.14); }
+html.glass-desktop.a11y-solid .main-panel .server-voice-tile,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-tile,
+html.glass-desktop.a11y-solid .main-panel .server-voice-tile-meta,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-tile-meta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html.glass-desktop.a11y-solid .main-panel .server-voice-tile,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-tile { background: var(--gd-solid-heavy); }
+html.glass-desktop.a11y-solid .main-panel .server-voice-tile-meta,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-tile-meta { background: rgba(0, 0, 0, 0.6); }
