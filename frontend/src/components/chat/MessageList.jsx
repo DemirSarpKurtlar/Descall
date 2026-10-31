@@ -34,6 +34,7 @@ import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";
 import UserHoverCard from "../social/UserHoverCard";
+import { HOVER_CLOSE_GRACE_MS } from "../../lib/hoverProfile";
 import AdminBadge from "../social/AdminBadge";
 import { CountryBadge, NameEffectText, profileAuraClass } from "../ui/Cosmetics";
 import { mergeUserProfiles, pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
@@ -195,6 +196,27 @@ export default function MessageList({
   const [reportTarget, setReportTarget] = useState(null);
   const [hoverUser, setHoverUser] = useState(null);
   const [hoverPos, setHoverPos] = useState(null);
+  // Hover intent (3.7.13): the card stays open while the pointer travels to it
+  // or is on it, so its message box and buttons can be used.
+  const hoverCloseTimer = useRef(null);
+  const cancelHoverClose = useCallback(() => {
+    if (hoverCloseTimer.current) clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = null;
+  }, []);
+  const closeHoverNow = useCallback(() => {
+    cancelHoverClose();
+    setHoverUser(null);
+    setHoverPos(null);
+  }, [cancelHoverClose]);
+  const scheduleHoverClose = useCallback(() => {
+    cancelHoverClose();
+    hoverCloseTimer.current = setTimeout(() => {
+      hoverCloseTimer.current = null;
+      setHoverUser(null);
+      setHoverPos(null);
+    }, HOVER_CLOSE_GRACE_MS);
+  }, [cancelHoverClose]);
+  useEffect(() => cancelHoverClose, [cancelHoverClose]);
   // 2.12.0 polls: one voters sheet / edit sheet for the whole list.
   const [votersPoll, setVotersPoll] = useState(null);
   const [editPoll, setEditPoll] = useState(null);
@@ -576,8 +598,7 @@ export default function MessageList({
         const isOwn = group.user?.id === currentUser?.id;
         const avatarUser = enrichAvatarUser(group.user, { me, friends, onlineUsers, currentUser });
         const openProfile = () => {
-          setHoverUser(null);
-          setHoverPos(null);
+          closeHoverNow();
           if (avatarUser?.id) setProfileTarget(avatarUser);
         };
         const showHoverCard = (el, event) => {
@@ -586,6 +607,8 @@ export default function MessageList({
           if (glassUi) return;
           if (event?.pointerType === "touch") return;
           if (!avatarUser?.id || !el) return;
+          cancelHoverClose();
+          if (hoverUser?.id && String(hoverUser.id) === String(avatarUser.id) && hoverPos) return;
           const rect = el.getBoundingClientRect();
           const friend = (friends || []).find((f) => f.id === avatarUser.id);
           const online = (onlineUsers || []).find((u) => u.id === avatarUser.id);
@@ -596,10 +619,7 @@ export default function MessageList({
           );
           setHoverPos(hoverAnchorFromRect(rect));
         };
-        const hideHoverCard = () => {
-          setHoverUser(null);
-          setHoverPos(null);
-        };
+        const hideHoverCard = () => scheduleHoverClose();
 
         return (
           <div
@@ -735,7 +755,17 @@ export default function MessageList({
       </div>
 
       {hoverUser && hoverPos && (
-        <UserHoverCard user={hoverUser} anchor={hoverPos} />
+        <UserHoverCard
+          user={hoverUser}
+          anchor={hoverPos}
+          onPointerEnter={cancelHoverClose}
+          onPointerLeave={scheduleHoverClose}
+          onClose={closeHoverNow}
+          onOpenProfile={(u) => {
+            closeHoverNow();
+            if (u?.id) setProfileTarget(u);
+          }}
+        />
       )}
 
       <AnimatePresence>

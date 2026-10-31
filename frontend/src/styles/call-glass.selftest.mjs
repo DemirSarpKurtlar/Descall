@@ -35,8 +35,9 @@ assert.match(icon, /backdrop-filter:\s*blur\(14px\) saturate\(170%\)/);
 assert.match(icon, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.5\)/);
 
 const missed = block(polish, ".call-summary-card.is-missed .call-summary-icon {");
-assert.match(missed, /color:\s*#ff453a/);
-assert.match(missed, /rgba\(255,\s*69,\s*58/);
+// 3.7.13: white glyph on a solid red tile (red on a red tint was unreadable).
+assert.match(missed, /color:\s*#ffffff/);
+assert.match(missed, /linear-gradient\(180deg, #ff5f55 0%, #d92d22 100%\)/);
 
 const reduced = polish.slice(polish.indexOf("@media (prefers-reduced-transparency: reduce)"));
 assert.match(reduced, /html\.glass-lite \.call-summary-card/);
@@ -68,8 +69,10 @@ assert.equal(unread.includes("saturate"), false);
 
 assert.match(
   bubble,
-  /call-summary-card\$\{summary\.status === "missed" \? " is-missed" : ""\}/,
+  /call-summary-card\$\{failed \? " is-missed" : ""\}/,
 );
+assert.match(bubble, /const failed = summary\.status === "missed" \|\| summary\.status === "declined";/);
+assert.match(bubble, /<PhoneMissed size=\{22\} weight="bold" \/>/);
 assert.match(history, /hourCycle:\s*"h23"/);
 
 console.log("call-glass.selftest ok");
