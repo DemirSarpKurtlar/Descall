@@ -14,7 +14,7 @@
     "pt-BR": { title: "Página não encontrada | Descall", body: "Esta página não existe no Descall.", home: "Início", download: "Baixar" },
     "ru": { title: "Страница не найдена | Descall", body: "Такой страницы на Descall нет.", home: "Главная", download: "Скачать" }
   };
-  var LIVE = ["en", "tr"];
+  var LIVE = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];
   var ids = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];
   var preview = false;
   try { preview = localStorage.getItem("descall_i18n_preview") === "1"; } catch (eP) {}

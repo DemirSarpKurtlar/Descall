@@ -83,8 +83,10 @@ async function main() {
   assert.strictEqual(i18n.bt("en", "email.common.valid", { minutes: 1 }), "Valid for 1 minute");
   assert.strictEqual(i18n.bt("en", "email.common.valid", { minutes: 10 }), "Valid for 10 minutes");
   assert.strictEqual(i18n.bt("en", "no.such.key"), "no.such.key");
-  assert.strictEqual(i18n.pickLang(["de-DE", "tr"], "en"), "tr", "draft German is skipped");
-  assert.strictEqual(i18n.pickLang(["fr"], "tr"), "tr");
+  assert.strictEqual(i18n.pickLang(["de-DE", "tr"], "en"), "de", "live German with a catalog is used");
+  assert.strictEqual(i18n.pickLang(["ja-JP", "tr"], "en"), "tr", "unsupported language is skipped");
+  assert.strictEqual(i18n.pickLang(["fr"], "tr"), "fr");
+  assert.strictEqual(i18n.pickLang(["ja"], "tr"), "tr");
   assert.strictEqual(i18n.requestLang({ headers: { "accept-language": "en-US,en;q=0.9" } }, "tr"), "en");
   assert.strictEqual(i18n.requestLang({ user: { language: "tr" }, headers: { "accept-language": "en" } }, "en"), "tr");
   assert.strictEqual(

@@ -35,7 +35,8 @@ assert.equal(tr.text.body, "Bu sayfa Descall’da yok.");
 assert.equal(render({ tz: "Europe/Istanbul" }).lang, "tr");
 assert.equal(render({ pathname: "/tr/nope" }).lang, "tr", "Turkish URL");
 assert.equal(render({ stored: { descall_language: "en" }, languages: ["tr-TR"] }).lang, "en", "stored choice wins");
-assert.equal(render({ languages: ["fr-FR"] }).lang, "en", "draft hidden without preview");
+assert.equal(render({ languages: ["fr-FR"] }).lang, "fr", "live French from the device language");
+assert.equal(render({ languages: ["ja-JP"] }).lang, "en", "unsupported language -> English");
 for (const l of registry.locales) {
   const r = render({ stored: { descall_language: l.id, descall_i18n_preview: "1" } });
   assert.equal(r.lang, l.id);

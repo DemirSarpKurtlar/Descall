@@ -7,6 +7,12 @@
  * Structure: { tr: { title, updated, intro, sections: [{ heading, paragraphs: [...] }] }, en: {...} }
  */
 
+import LEGAL_DE from "./content/de.js";
+import LEGAL_ES from "./content/es.js";
+import LEGAL_FR from "./content/fr.js";
+import LEGAL_PT_BR from "./content/pt-BR.js";
+import LEGAL_RU from "./content/ru.js";
+
 const LAST_UPDATED = "10 Ekim 2026";
 const LAST_UPDATED_EN = "October 10, 2026";
 // Privacy Policy revised separately (2.9.141: calls are never recorded, full list of
@@ -596,3 +602,12 @@ export const COPYRIGHT_CONTENT = {
     ],
   },
 };
+
+// Translations (src/legal/content/<locale>.js). Turkish and English remain the binding
+// versions; the others follow the English text section by section.
+const TRANSLATED = { de: LEGAL_DE, es: LEGAL_ES, fr: LEGAL_FR, "pt-BR": LEGAL_PT_BR, ru: LEGAL_RU };
+for (const [locale, docs] of Object.entries(TRANSLATED)) {
+  TERMS_CONTENT[locale] = docs.terms;
+  PRIVACY_CONTENT[locale] = docs.privacy;
+  COPYRIGHT_CONTENT[locale] = docs.copyright;
+}

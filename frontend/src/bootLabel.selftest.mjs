@@ -60,7 +60,8 @@ assert.equal(bootLocale({ tz: "Europe/Istanbul" }).__descallBootLocale, "tr", "T
 assert.equal(bootLocale({ languages: ["en-TR"] }).__descallBootLocale, "tr", "-TR region -> tr");
 assert.equal(bootLocale({ stored: { descall_language: "en" }, languages: ["tr-TR"] }).__descallBootLocale, "en", "stored choice wins");
 assert.equal(bootLocale({ stored: { descall_user_settings: '{"language":"tr"}' } }).__descallBootLocale, "tr", "settings copy");
-assert.equal(bootLocale({ languages: ["de-DE"] }).__descallBootLocale, "en", "draft locale hidden without preview");
+assert.equal(bootLocale({ languages: ["de-DE"] }).__descallBootLocale, "de", "live German from the device language");
+assert.equal(bootLocale({ languages: ["ja-JP"] }).__descallBootLocale, "en", "unsupported language -> English");
 assert.equal(bootLocale({ languages: ["de-AT"], stored: { descall_i18n_preview: "1" } }).__descallBootLocale, "de");
 assert.equal(bootLocale({ languages: ["pt-PT"], stored: { descall_i18n_preview: "1" } }).__descallBootLocale, "pt-BR");
 assert.equal(bootLocale({ languages: ["ja-JP"] }).__descallBootLocale, "en");

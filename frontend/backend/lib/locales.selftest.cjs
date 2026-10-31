@@ -35,11 +35,13 @@ assert.equal(L.resolveLang(["de"], { available: ["tr", "en"], fallback: "tr" }),
 assert.equal(L.resolveLang([null, ["fr-FR", "tr"]], { available: ["tr", "en"], fallback: "en" }), "tr");
 
 // Email and push keep their Turkish default and the account-language priority
-assert.equal(langFrom("de-DE,de;q=0.9,en;q=0.8"), "en", "a German browser gets English, not Turkish");
-assert.equal(langFrom("fr-FR"), "tr");
+assert.equal(langFrom("de-DE,de;q=0.9,en;q=0.8"), "de", "a German browser gets German");
+assert.equal(langFrom("ja-JP,en;q=0.8"), "en", "unsupported first language, English second");
+assert.equal(langFrom("ja-JP"), "tr", "nothing usable -> Turkish default");
 assert.equal(langFrom("en-US", "tr"), "tr");
 assert.equal(pickLang("en", "tr"), "en");
 assert.equal(pickLang(null, "tr-TR"), "tr");
-assert.equal(pickLang("ru", null), "tr");
+assert.equal(pickLang("ru", null), "ru");
+assert.equal(pickLang("ja", null), "tr");
 
 console.log("locales.selftest: ok");
