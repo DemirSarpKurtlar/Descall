@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Checking for updates…",
+    "starting": "Starting Descall…",
+    "installing": "Installing update…",
+    "downloading": "Downloading update…",
+    "upToDate": "Up to date",
+    "checkFailed": "Couldn't check for updates",
+    "loading": "Loading"
+  },
+  "notice": {
+    "background": "Descall keeps running in the background. You can reopen it from the system tray."
+  },
+  "update": {
+    "downloaded": "v{version} downloaded. It will install quietly in the background.",
+    "downloadedDeferred": "v{version} downloaded. It will install after your voice chat ends."
+  },
+  "dialog": {
+    "retry": "Try again",
+    "quit": "Quit",
+    "loadFailed": "Descall couldn't load",
+    "loadFailedDetail": "The app files couldn't be opened ({detail}). You can try again or close Descall.",
+    "openFailed": "Descall couldn't open",
+    "openFailedDetail": "The app didn't load in time. Check your connection and try again.",
+    "indexMissingTitle": "Loading Error",
+    "indexMissing": "index.html was not found in the app resources."
+  },
+  "tray": {
+    "open": "Open Descall",
+    "startWithWindows": "Start with Windows",
+    "updateAndQuit": "Update and quit (v{version})",
+    "quit": "Quit"
+  },
+  "notif": {
+    "calling": "is calling...",
+    "voiceCall": "Voice call",
+    "videoCall": "Video call",
+    "groupCall": "Group call",
+    "groupCallIn": "👥 {group} · Group call",
+    "now": "now",
+    "mentionedYou": "mentioned you",
+    "online": "{name} is online",
+    "justConnected": "Just connected",
+    "missedCall": "missed call",
+    "message": "Message",
+    "close": "Close",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
+  "overlay": {
+    "connected": "Connected",
+    "calling": "Calling…",
+    "group": "Group call",
+    "server": "Voice channel",
+    "offline": "Disconnected",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "deafen": "Deafen",
+    "undeafen": "Undeafen",
+    "leave": "Leave",
+    "end": "End call"
+  },
+  "window": {
+    "signupStats": "Sign-up Stats — Descall Admin",
+    "adminPanel": "Descall Admin"
+  }
+}

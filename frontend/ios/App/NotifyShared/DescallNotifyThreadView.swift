@@ -253,7 +253,7 @@ final class DescallNotifyThreadView: UIView {
 
     func appendMine(_ text: String) {
         let message = DescallNotifyThread.Message(id: UUID().uuidString, fromName: "", text: text, mine: true)
-        bubbles.addArrangedSubview(bubble(message, strings: DescallNotifyStrings(lang: .tr)))
+        bubbles.addArrangedSubview(bubble(message, strings: DescallNotifyStrings(lang: .current())))
         while bubbles.arrangedSubviews.count > 3 { bubbles.arrangedSubviews.first?.removeFromSuperview() }
     }
 

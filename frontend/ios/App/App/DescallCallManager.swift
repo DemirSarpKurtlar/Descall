@@ -387,8 +387,9 @@ final class DescallCallManager: NSObject {
 
     // MARK: - Answered on the lock screen
 
-    private static var turkish: Bool {
-        (Locale.preferredLanguages.first ?? "").lowercased().hasPrefix("tr")
+    /// Lock-screen hints in the UI language (DescallNotifyStrings table, English fallback).
+    private static var strings: DescallNotifyStrings {
+        DescallNotifyStrings(lang: DescallNotifyLang.current())
     }
 
     /// WKWebView can't use the microphone (or reliably run the web app) while
@@ -401,7 +402,7 @@ final class DescallCallManager: NSObject {
         info.awaitingJoin = true
         calls[uuid] = info
 
-        let hint = Self.turkish ? "Bağlanmak için Descall'u açın" : "Open Descall to connect"
+        let hint = Self.strings.text("call.openToConnect")
         let update = makeUpdate(info)
         update.localizedCallerName = "\(info.callerName) · \(hint)"
         provider?.reportCall(with: uuid, updated: update)
@@ -409,9 +410,7 @@ final class DescallCallManager: NSObject {
         postLocalNotification(
             id: "descall-call-join-\(uuid.uuidString.lowercased())",
             title: info.callerName,
-            body: Self.turkish
-                ? "Aramaya bağlanmak için iPhone'un kilidini açıp Descall'a dokunun."
-                : "Unlock your iPhone and tap Descall to join the call."
+            body: Self.strings.text("call.unlockToJoin")
         )
         postCallStatus(info, status: "answering")
 
@@ -444,9 +443,7 @@ final class DescallCallManager: NSObject {
         postLocalNotification(
             id: "descall-call-missed-\(uuid.uuidString.lowercased())",
             title: info.callerName,
-            body: Self.turkish
-                ? "Arama bağlanamadı: telefon kilitliyken katılınamadı. Geri aramak için Descall'u açın."
-                : "Couldn't connect the call while your iPhone was locked. Open Descall to call back."
+            body: Self.strings.text("call.joinFailedLocked")
         )
         emit("joinTimeout", info.dictionary)
     }

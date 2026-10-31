@@ -11,6 +11,8 @@
  * renderer as "r, g, b"). No electron imports so selftests can load it.
  */
 
+const { namespaceForAll, getLocale } = require('./mainI18n.cjs');
+
 const CARD_W = 280;
 const CARD_H = 104;
 const PAD = 14; // room for the soft shadow inside the transparent window
@@ -28,18 +30,8 @@ const ICONS = {
   volume: svg('<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>'),
 };
 
-const STRINGS = {
-  tr: {
-    connected: 'Bağlı', calling: 'Aranıyor…', group: 'Grup araması', server: 'Ses kanalı', offline: 'Bağlantı yok',
-    mute: 'Mikrofonu kapat', unmute: 'Mikrofonu aç', deafen: 'Sağırlaştır', undeafen: 'Sağırlaştırmayı kapat',
-    leave: 'Ayrıl', end: 'Aramayı bitir',
-  },
-  en: {
-    connected: 'Connected', calling: 'Calling…', group: 'Group call', server: 'Voice channel', offline: 'Disconnected',
-    mute: 'Mute', unmute: 'Unmute', deafen: 'Deafen', undeafen: 'Undeafen',
-    leave: 'Leave', end: 'End call',
-  },
-};
+// Status lines and button labels for every locale (electron/i18n/<id>.json "overlay").
+const STRINGS = namespaceForAll('overlay');
 
 const CSS = `
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -133,9 +125,17 @@ const SCRIPT = `
     var $ = function (id) { return document.getElementById(id); };
     var card = $('card'), titleEl = $('title'), statusEl = $('status'), avInit = $('avInit'), avImg = $('avImg');
     var muteBtn = $('muteBtn'), deafenBtn = $('deafenBtn'), leaveBtn = $('leaveBtn');
-    var state = { title: '', muted: false, deafened: false, connected: false, pending: false, kind: 'dm', since: 0, lang: 'tr', avatarUrl: '', brandRgb: '' };
+    var state = { title: '', muted: false, deafened: false, connected: false, pending: false, kind: 'dm', since: 0, lang: __LANG__, avatarUrl: '', brandRgb: '' };
     var timer = null;
-    function L() { return STRINGS[state.lang] || STRINGS.tr; }
+    // Registered id, else the same base language ("pt" -> "pt-BR"), else English.
+    function pickLang(l) {
+      l = String(l || '');
+      if (STRINGS[l]) return l;
+      var base = l.toLowerCase().split('-')[0];
+      for (var k in STRINGS) { if (k.toLowerCase().split('-')[0] === base) return k; }
+      return 'en';
+    }
+    function L() { return STRINGS[state.lang] || STRINGS.en; }
     function pad(n) { return n < 10 ? '0' + n : String(n); }
     function fmt(ms) {
       var s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
@@ -190,7 +190,7 @@ const SCRIPT = `
       ['title', 'kind', 'lang', 'avatarUrl', 'brandRgb'].forEach(function (k) { if (typeof payload[k] === 'string') state[k] = payload[k]; });
       ['muted', 'deafened', 'connected', 'pending'].forEach(function (k) { if (typeof payload[k] === 'boolean') state[k] = payload[k]; });
       if (typeof payload.since === 'number') state.since = payload.since;
-      if (state.lang !== 'en') state.lang = 'tr';
+      state.lang = pickLang(state.lang);
       render();
     };
     window.__overlayState = function () { return state; };
@@ -212,8 +212,10 @@ const SCRIPT = `
   })();
 `;
 
-function buildOverlayHtml() {
-  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><style>${CSS}</style></head><body>
+function buildOverlayHtml({ lang = getLocale() } = {}) {
+  const id = String(lang || 'en').replace(/[^A-Za-z-]/g, '') || 'en';
+  const script = SCRIPT.replace('__LANG__', JSON.stringify(id));
+  return `<!DOCTYPE html><html lang="${id}"><head><meta charset="utf-8"><style>${CSS}</style></head><body>
     <div class="card" id="card">
       <div class="head">
         <span class="av"><img id="avImg" alt="" hidden><span id="avInit"></span><span class="dot"></span></span>
@@ -225,7 +227,7 @@ function buildOverlayHtml() {
         <button class="btn leave" id="leaveBtn" type="button"></button>
       </div>
     </div>
-    <script>${SCRIPT}<\/script>
+    <script>${script}<\/script>
   </body></html>`;
 }
 

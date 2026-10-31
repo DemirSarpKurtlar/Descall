@@ -80,6 +80,7 @@ enum WatchTime {
     }()
     private static let day: DateFormatter = {
         let f = DateFormatter()
+        f.locale = L.locale
         f.setLocalizedDateFormatFromTemplate("d MMM")
         return f
     }()

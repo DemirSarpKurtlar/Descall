@@ -1,0 +1,6 @@
+/* Russian permission prompts (Info.plist usage descriptions). */
+"CFBundleDisplayName" = "Descall";
+"NSMicrophoneUsageDescription" = "Descall использует микрофон, чтобы вы могли общаться с друзьями голосом и отправлять голосовые сообщения.";
+"NSCameraUsageDescription" = "Descall использует камеру, чтобы собеседники видели вас во время видеозвонков.";
+"NSPhotoLibraryUsageDescription" = "Descall использует ваши фото, чтобы вы могли выбрать фото профиля и отправлять изображения в чат.";
+"NSPhotoLibraryAddUsageDescription" = "Descall сохраняет в вашу медиатеку изображения, которые вы решили оставить.";

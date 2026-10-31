@@ -12,6 +12,7 @@ public class DescallNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "setActionToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearActionToken", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setUiLocale", returnType: CAPPluginReturnPromise),
     ]
 
     @objc func setActionToken(_ call: CAPPluginCall) {
@@ -33,6 +34,22 @@ public class DescallNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func clearActionToken(_ call: CAPPluginCall) {
         DescallNotifyTokenStore.clear()
+        call.resolve()
+    }
+
+    /// UI language of the web app (LocaleContext, on boot and on change). The App Group
+    /// copy is read by the notification extensions, CallKit hints and the Watch bridge.
+    @objc func setUiLocale(_ call: CAPPluginCall) {
+        guard let lang = DescallNotifyLang.match(call.getString("locale")) else {
+            call.reject("unknown_locale")
+            return
+        }
+        let defaults = UserDefaults(suiteName: DescallNotify.appGroup)
+        let changed = defaults?.string(forKey: DescallNotifyLang.uiLocaleKey) != lang.rawValue
+        defaults?.set(lang.rawValue, forKey: DescallNotifyLang.uiLocaleKey)
+        if changed {
+            DispatchQueue.main.async { AppDelegate.registerNotificationCategories() }
+        }
         call.resolve()
     }
 }

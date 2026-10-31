@@ -33,7 +33,7 @@ assert.match(main, /raceWithTimeout\(ready, SPLASH_LOAD_TIMEOUT_MS\)/, "splash l
 assert.match(main, /on\('did-fail-load'/);
 assert.match(main, /setTimeout\(\(\) => revealMainWindow\('ready-timeout'\), READY_FALLBACK_MS\)/, "window is revealed even without ready-to-show");
 assert.match(main, /once\('ready-to-show', \(\) => revealMainWindow\('ready-to-show'\)\)/);
-assert.match(main, /buttons: \['Tekrar dene', 'Çıkış'\]/);
+assert.match(main, /buttons: \[et\('dialog.retry'\), et\('dialog.quit'\)\]/);
 assert.ok(w.READY_FALLBACK_MS <= 20000);
 
 console.log("bootWatchdog.selftest: ok");

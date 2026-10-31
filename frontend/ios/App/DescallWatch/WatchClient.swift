@@ -56,6 +56,9 @@ final class WatchPhoneClient: NSObject, WCSessionDelegate, WatchTransport {
             })
         }
         let status = reply[P.Key.status] as? Int ?? 0
+        if let locale = reply[P.Key.locale] as? String {
+            await MainActor.run { L.adopt(phoneLocale: locale) }
+        }
         let data = P.decodeReply(reply)
         let text = data.flatMap { String(data: $0, encoding: .utf8) }
         switch status {

@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Buscando actualizaciones…",
+    "starting": "Iniciando Descall…",
+    "installing": "Instalando actualización…",
+    "downloading": "Descargando actualización…",
+    "upToDate": "Todo al día",
+    "checkFailed": "No se pudieron buscar actualizaciones",
+    "loading": "Cargando"
+  },
+  "notice": {
+    "background": "Descall sigue funcionando en segundo plano. Puedes volver a abrirlo desde la bandeja del sistema."
+  },
+  "update": {
+    "downloaded": "v{version} descargada. Se instalará en segundo plano sin interrumpirte.",
+    "downloadedDeferred": "v{version} descargada. Se instalará cuando termine tu chat de voz."
+  },
+  "dialog": {
+    "retry": "Reintentar",
+    "quit": "Salir",
+    "loadFailed": "No se pudo cargar Descall",
+    "loadFailedDetail": "No se pudieron abrir los archivos de la app ({detail}). Puedes reintentar o cerrar Descall.",
+    "openFailed": "No se pudo abrir Descall",
+    "openFailedDetail": "La app no cargó a tiempo. Revisa tu conexión y vuelve a intentarlo.",
+    "indexMissingTitle": "Error de carga",
+    "indexMissing": "No se encontró index.html en los archivos de la app."
+  },
+  "tray": {
+    "open": "Abrir Descall",
+    "startWithWindows": "Iniciar con Windows",
+    "updateAndQuit": "Actualizar y salir (v{version})",
+    "quit": "Salir"
+  },
+  "notif": {
+    "calling": "te está llamando...",
+    "voiceCall": "Llamada de voz",
+    "videoCall": "Videollamada",
+    "groupCall": "Llamada grupal",
+    "groupCallIn": "👥 {group} · Llamada grupal",
+    "now": "ahora",
+    "mentionedYou": "te mencionó",
+    "online": "{name} está en línea",
+    "justConnected": "Se acaba de conectar",
+    "missedCall": "llamada perdida",
+    "message": "Mensaje",
+    "close": "Cerrar",
+    "accept": "Aceptar",
+    "decline": "Rechazar"
+  },
+  "overlay": {
+    "connected": "Conectado",
+    "calling": "Llamando…",
+    "group": "Llamada grupal",
+    "server": "Canal de voz",
+    "offline": "Desconectado",
+    "mute": "Silenciar",
+    "unmute": "Activar micrófono",
+    "deafen": "Ensordecer",
+    "undeafen": "Dejar de ensordecer",
+    "leave": "Salir",
+    "end": "Colgar"
+  },
+  "window": {
+    "signupStats": "Estadísticas de registro — Descall Admin",
+    "adminPanel": "Descall Admin"
+  }
+}

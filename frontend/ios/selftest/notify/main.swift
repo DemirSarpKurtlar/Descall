@@ -69,9 +69,56 @@ eq(tr.relative(seconds: 5), "şimdi", "now")
 eq(tr.relative(seconds: 125), "2 dk", "minutes")
 eq(en.relative(seconds: 7200), "2h", "hours")
 eq(tr.summaryFormat, "+%u mesaj daha", "summary")
-eq(DescallNotifyLang.current(["tr-TR"]), .tr, "tr")
-eq(DescallNotifyLang.current(["en-US", "tr-TR"]), .en, "en")
-eq(DescallNotifyLang.current([]), .tr, "default tr")
+eq(en.summaryFormat, "+%u more messages", "summary en")
+eq(tr.markRead, "Okundu olarak işaretle", "tr action")
+eq(en.mute, "Mute for 1 hour", "en action")
+eq(en.relative(seconds: 125), "2m", "en minutes")
+eq(tr.relative(seconds: 3 * 86_400), "3 g", "tr days")
+eq(tr.members(1), "1 üye", "tr member")
+eq(en.members(4), "4 members", "en plural")
+eq(tr.text("call.openToConnect"), "Bağlanmak için Descall'u açın", "CallKit hint tr")
+eq(en.text("call.unlockToJoin"), "Unlock your iPhone and tap Descall to join the call.", "CallKit body en")
+
+// Language: the app's UI language first, else the device (Turkish device keeps Turkish,
+// first live locale, drafts and unknown -> English).
+eq(DescallNotifyLang.current(["tr-TR"], app: nil), .tr, "tr")
+eq(DescallNotifyLang.current(["en-US"], app: nil), .en, "en")
+eq(DescallNotifyLang.current(["en-US", "tr-TR"], app: nil), .tr, "any Turkish device language")
+eq(DescallNotifyLang.current(["en-TR"], app: nil), .tr, "Turkey region")
+eq(DescallNotifyLang.current([], app: nil), .tr, "default tr")
+eq(DescallNotifyLang.current(["de-DE"], app: nil), .en, "draft device language -> English")
+eq(DescallNotifyLang.current(["ja-JP", "en-GB"], app: nil), .en, "first live match")
+eq(DescallNotifyLang.current(["tr-TR"], app: "en"), .en, "UI language wins")
+eq(DescallNotifyLang.current(["en-US"], app: "pt-BR"), .ptBR, "UI language (preview draft)")
+eq(DescallNotifyLang.current(["en-US"], app: "zz"), .en, "unknown UI language ignored")
+eq(DescallNotifyLang.match("pt"), .ptBR, "base match")
+eq(DescallNotifyLang.match("de_AT"), .de, "region + underscore")
+eq(DescallNotifyLang.match("xx"), nil, "unknown")
+eq(DescallNotifyLang.allCases.map(\.rawValue), ["en", "tr", "de", "es", "fr", "pt-BR", "ru"], "same ids as src/i18n/locales.json")
+
+// Every string in every language (partial keys: Turkish grammar, Russian plural forms).
+for (key, entry) in DescallNotifyStrings.table where !DescallNotifyStrings.partialKeys.contains(key) {
+    for lang in DescallNotifyLang.allCases {
+        check(!(entry[lang] ?? "").isEmpty, "\(key) missing \(lang.rawValue)")
+    }
+    if let english = entry[.en] {
+        let holes = { (s: String) in s.components(separatedBy: "{").dropFirst().map { $0.prefix(while: { $0 != "}" }) }.sorted() }
+        for lang in DescallNotifyLang.allCases where lang != .tr {
+            if let text = entry[lang] { eq(holes(text), holes(english), "\(key) \(lang.rawValue) placeholders") }
+        }
+        if entry[.en]?.contains("%u") == true {
+            for lang in DescallNotifyLang.allCases { check(entry[lang]?.contains("%u") == true, "\(key) \(lang.rawValue) keeps %u") }
+        }
+    }
+}
+let ru = DescallNotifyStrings(lang: .ru)
+eq([1, 2, 5, 11, 21, 22, 25].map { ru.members($0) }, ["1 участник", "2 участника", "5 участников", "11 участников", "21 участник", "22 участника", "25 участников"], "ru plural")
+let fr = DescallNotifyStrings(lang: .fr)
+eq([0, 1, 2].map { fr.members($0) }, ["0 membre", "1 membre", "2 membres"], "fr plural")
+eq(DescallNotifyStrings(lang: .de).replyPlaceholder(to: "Mert"), "Antworten an Mert...", "de reply")
+eq(DescallNotifyStrings(lang: .es).openChat, "Abrir chat", "es")
+eq(DescallNotifyStrings(lang: .ptBR).relative(seconds: 7200), "2 h", "pt-BR hours")
+eq(DescallNotifyThread.Message(id: "v", fromName: "", text: "", mine: false, kind: "voice").display(DescallNotifyStrings(lang: .ru)), "🎤 Голосовое сообщение", "ru kind label")
 
 // Mute
 let now = Date(timeIntervalSince1970: 1_000_000)

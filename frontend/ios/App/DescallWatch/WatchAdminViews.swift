@@ -6,60 +6,58 @@ import SwiftUI
 // code first (step-up), exactly like the admin panel.
 
 extension L {
-    static var admin: String { t2("Yönetici", "Admin") }
-    static var online: String { t2("Çevrimiçi", "Online") }
-    static var signupsToday: String { t2("Bugün kayıt", "Sign-ups today") }
-    static var openReports: String { t2("Açık rapor", "Open reports") }
-    static var newFeedback: String { t2("Yeni geri bildirim", "New feedback") }
+    static var admin: String { t("admin") }
+    static var online: String { t("status.online") }
+    static var signupsToday: String { t("signupsToday") }
+    static var openReports: String { t("openReports") }
+    static var newFeedback: String { t("newFeedback") }
     static func section(_ s: AdminSection) -> String {
         switch s {
-        case .reports: return t2("Raporlar", "Reports")
-        case .feedback: return t2("Geri bildirim", "Feedback")
-        case .errors: return t2("Hata kayıtları", "Error log")
-        case .maintenance: return t2("Bakım", "Maintenance")
-        case .accessBans: return t2("Erişim yasakları", "Access bans")
-        case .people: return t2("Kişiler", "People")
+        case .reports: return t("section.reports")
+        case .feedback: return t("section.feedback")
+        case .errors: return t("section.errors")
+        case .maintenance: return t("section.maintenance")
+        case .accessBans: return t("section.accessBans")
+        case .people: return t("section.people")
         }
     }
-    static var stepUpTitle: String { t2("Doğrulama kodu", "Verification code") }
-    static var stepUpBody: String { t2("Doğrulama uygulamandaki 6 haneli kodu gir.", "Enter the 6-digit code from your authenticator app.") }
-    static var enterCode: String { t2("Kodu gir", "Enter code") }
-    static var codeWrong: String { t2("Kod yanlış ya da süresi geçti.", "Wrong or expired code.") }
-    static var cancel: String { t2("Vazgeç", "Cancel") }
-    static var done: String { t2("Tamam", "Done") }
-    static var nothingHere: String { t2("Şu an bir şey yok.", "Nothing here right now.") }
-    static func openCount(_ n: Int) -> String { t2("\(n) açık rapor", "\(n) open reports") }
-    static var assignMe: String { t2("Bana ata", "Assign to me") }
-    static var timeout1h: String { t2("Zaman aşımı · 1 saat", "Timeout · 1 hour") }
-    static var timeout24h: String { t2("Zaman aşımı · 24 saat", "Timeout · 24 hours") }
-    static var ban: String { t2("Ban", "Ban") }
-    static var banConfirm: String { t2("Kalıcı ban verilsin mi?", "Ban permanently?") }
-    static var dismiss: String { t2("Reddet", "Dismiss") }
-    static var assignedTo: String { t2("Atanan", "Assigned") }
-    static var actionDone: String { t2("Yapıldı.", "Done.") }
-    static var startProgress: String { t2("İşleme al", "Start") }
-    static var markResolved: String { t2("Çözüldü", "Resolved") }
-    static var ignore: String { t2("Yoksay", "Ignore") }
-    static var note: String { t2("Not", "Note") }
-    static var team: String { t2("Ekip", "Team") }
-    static var operational: String { t2("Bakım yok, her şey açık.", "No maintenance, all systems open.") }
-    static var maintActive: String { t2("Bakım sürüyor", "Maintenance active") }
-    static var maintScheduled: String { t2("Planlı bakım", "Scheduled maintenance") }
-    static var extend30: String { t2("+30 dakika", "+30 minutes") }
-    static var endNow: String { t2("Şimdi bitir", "End now") }
-    static var endConfirm: String { t2("Bakım bitirilsin mi?", "End maintenance?") }
-    static var start30: String { t2("30 dk bakım başlat", "Start 30 min maintenance") }
-    static var startConfirm: String { t2("Herkes için bakım ekranı açılsın mı?", "Show the maintenance screen to everyone?") }
-    static var maintMessage: String { t2("Kısa bir bakım yapıyoruz. Birazdan geri döneceğiz.", "We're doing a short maintenance. Back soon.") }
-    static var revoke: String { t2("Yasağı kaldır", "Revoke") }
-    static var revokeConfirm: String { t2("Yasak kaldırılsın mı?", "Revoke this ban?") }
-    static func hits(_ n: Int) -> String { t2("\(n) engelleme", "\(n) blocks") }
-    static var search: String { t2("Kullanıcı ara", "Search users") }
-    static var removeTimeout: String { t2("Zaman aşımını kaldır", "Remove timeout") }
-    static var unban: String { t2("Banı kaldır", "Unban") }
-    static func errorStats(_ count: Int, _ users: Int) -> String { t2("\(count) kez · \(users) kişi", "\(count)× · \(users) people") }
-
-    fileprivate static func t2(_ tr: String, _ en: String) -> String { isTurkish ? tr : en }
+    static var stepUpTitle: String { t("stepUpTitle") }
+    static var stepUpBody: String { t("stepUpBody") }
+    static var enterCode: String { t("enterCode") }
+    static var codeWrong: String { t("codeWrong") }
+    static var cancel: String { t("cancel") }
+    static var done: String { t("done") }
+    static var nothingHere: String { t("nothingHere") }
+    static func openCount(_ n: Int) -> String { plural("openCount", n) }
+    static var assignMe: String { t("assignMe") }
+    static var timeout1h: String { t("timeout1h") }
+    static var timeout24h: String { t("timeout24h") }
+    static var ban: String { t("ban") }
+    static var banConfirm: String { t("banConfirm") }
+    static var dismiss: String { t("dismiss") }
+    static var assignedTo: String { t("assignedTo") }
+    static var actionDone: String { t("actionDone") }
+    static var startProgress: String { t("startProgress") }
+    static var markResolved: String { t("markResolved") }
+    static var ignore: String { t("ignore") }
+    static var note: String { t("note") }
+    static var team: String { t("team") }
+    static var operational: String { t("operational") }
+    static var maintActive: String { t("maintActive") }
+    static var maintScheduled: String { t("maintScheduled") }
+    static var extend30: String { t("extend30") }
+    static var endNow: String { t("endNow") }
+    static var endConfirm: String { t("endConfirm") }
+    static var start30: String { t("start30") }
+    static var startConfirm: String { t("startConfirm") }
+    static var maintMessage: String { t("maintMessage") }
+    static var revoke: String { t("revoke") }
+    static var revokeConfirm: String { t("revokeConfirm") }
+    static func hits(_ n: Int) -> String { plural("hits", n) }
+    static var search: String { t("search") }
+    static var removeTimeout: String { t("removeTimeout") }
+    static var unban: String { t("unban") }
+    static func errorStats(_ count: Int, _ users: Int) -> String { plural("errorStats", users, ["count": "\(count)"]) }
 }
 
 // MARK: - Shared pieces

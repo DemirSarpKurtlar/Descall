@@ -97,7 +97,7 @@ struct CTAButtonStyle: ButtonStyle {
 struct SectionLabel: View {
     var text: String
     var body: some View {
-        Text(text.uppercased(with: Locale(identifier: L.isTurkish ? "tr_TR" : "en_US")))
+        Text(text.uppercased(with: L.locale))
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(DS.ink2)
             .frame(maxWidth: .infinity, alignment: .leading)

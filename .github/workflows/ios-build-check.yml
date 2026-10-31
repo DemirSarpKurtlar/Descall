@@ -62,6 +62,13 @@ jobs:
           swiftc -o "$RUNNER_TEMP/wp" App/WatchShared/DescallWatchProtocol.swift selftest/watch/main.swift
           "$RUNNER_TEMP/wp"
 
+      - name: Watch copy table selftest (Swift, every UI language)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/ws" App/WatchShared/DescallWatchProtocol.swift App/DescallWatch/WatchStrings.swift selftest/watchstrings/main.swift
+          "$RUNNER_TEMP/ws"
+
       - name: watchOS platform (3.7.17 Apple Watch app is embedded)
         run: |
           set -euo pipefail
