@@ -43,7 +43,12 @@ if let enc = P.encodeReply(bigJSON) {
     check(false, "big compressible reply fits after compression")
 }
 var noise = Data(count: 400 * 1024)
-for i in 0..<noise.count { noise[i] = UInt8(truncatingIfNeeded: (i &* 2654435761) >> 13) }
+var x: UInt64 = 0x9E3779B97F4A7C15
+for i in 0..<noise.count {
+    // xorshift64: bytes zlib cannot shrink
+    x ^= x << 13; x ^= x >> 7; x ^= x << 17
+    noise[i] = UInt8(truncatingIfNeeded: x >> 32)
+}
 check(P.encodeReply(noise) == nil, "incompressible 400 KB reply is too large")
 
 if failures > 0 { print("\(failures) failure(s)"); exit(1) }
