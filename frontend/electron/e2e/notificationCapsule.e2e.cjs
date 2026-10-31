@@ -22,6 +22,9 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 app.whenReady().then(async () => {
   try {
+    // The capsule text follows the UI language (3.7.21). This test checks the Turkish
+    // labels, as for a user whose renderer reported "tr"; the runner's OS locale is English.
+    require('../mainI18n.cjs').setLocale('tr');
     const nw = require('../notificationWindow.cjs');
     const { describeNotification, NOTIF_WIDTH, NOTIF_HEIGHT, SHADOW_PAD } = require('../notificationCard.cjs');
     const area = screen.getPrimaryDisplay().workArea;
