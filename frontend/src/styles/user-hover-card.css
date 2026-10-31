@@ -1,0 +1,175 @@
+/*
+ * Desktop hover card (3.7.11, components/social/UserHoverCard.jsx).
+ * The root keeps .user-hover-card so frost.css, overlay.css and
+ * profile-color.css (card colour) still apply; everything else is uhc2-*.
+ * Ring around the avatar and the presence dot are cut from the card body
+ * colour (--uhc-body), which follows an equipped card colour.
+ */
+
+.user-hover-card.uhc2 {
+  --uhc-body: var(--pc-a, rgb(30, 31, 44));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  pointer-events: none;
+  box-sizing: border-box;
+  color: var(--gd-t1, #f4f6fb);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.18);
+}
+html.glass-desktop .user-hover-card.uhc2 { width: 320px; }
+.user-hover-card.uhc2.has-custom-bg { --uhc-body: rgb(20, 21, 30); }
+
+.uhc2-banner {
+  height: 104px;
+  flex: none;
+  background-size: cover;
+  background-position: center;
+}
+
+.uhc2-head {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px;
+  margin-top: -44px;
+  min-height: 52px;
+}
+.uhc2-avatar {
+  position: relative;
+  flex: none;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  line-height: 0;
+  box-shadow: 0 0 0 5px var(--uhc-body);
+  background: var(--uhc-body);
+}
+.uhc2-avatar .ui-avatar { width: 80px; height: 80px; }
+.uhc2-avatar .status-badge {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border: 4px solid var(--uhc-body);
+}
+.uhc2-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  min-width: 0;
+}
+.uhc2-badges:empty { display: none; }
+
+.uhc2-body {
+  padding: 10px 16px 14px;
+  min-width: 0;
+}
+.uhc2-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  color: #fff;
+  word-break: break-word;
+}
+.uhc2-handle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 13px;
+  color: rgba(235, 238, 255, 0.66);
+}
+.uhc2-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.uhc2-dot { width: 8px; height: 8px; border-radius: 50%; background: #8e8e93; }
+.uhc2-status.st-online { color: #30d158; }
+.uhc2-status.st-online .uhc2-dot { background: #30d158; }
+.uhc2-status.st-idle { color: #ffd60a; }
+.uhc2-status.st-idle .uhc2-dot { background: #ffd60a; }
+.uhc2-status.st-dnd { color: #ff6961; }
+.uhc2-status.st-dnd .uhc2-dot { background: #ff453a; }
+
+.uhc2-custom {
+  margin-top: 10px;
+  display: inline-block;
+  max-width: 100%;
+  padding: 6px 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.35;
+  color: #eef0f7;
+  overflow-wrap: anywhere;
+}
+
+.uhc2-panel {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 10px;
+}
+.uhc2-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pc-accent, #9db0ff) 70%, #ffffff);
+  margin-bottom: 4px;
+}
+.uhc2-bio {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #e7e9f2;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.uhc2-value { font-size: 13px; color: #e7e9f2; }
+.uhc2-last { margin-top: 10px; font-size: 12px; color: rgba(235, 238, 255, 0.6); }
+.uhc2-hint {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: rgba(235, 238, 255, 0.45);
+  text-align: center;
+}
+
+/* Light themes on the classic (non-glass) layout: the card stays dark so the
+   shop colours and banner read the same everywhere. */
+:root:not(.glass-desktop) .user-hover-card.uhc2:not(.has-pcolor):not(.has-custom-bg) {
+  background: rgb(30, 31, 44);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-hover-card.uhc2 * { animation-duration: 0.01ms !important; }
+}

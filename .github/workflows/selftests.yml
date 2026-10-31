@@ -197,6 +197,7 @@ jobs:
           node backend/test/messageSearch.integration.test.cjs
           node backend/lib/emailTemplates.selftest.cjs
           node src/lib/profileColors.selftest.mjs
+          node src/lib/hoverProfile.selftest.mjs
           node --test backend/lib/signupReport.unit.test.js
           node backend/lib/growthInsights.selftest.cjs
           node src/components/admin/userLens.selftest.mjs

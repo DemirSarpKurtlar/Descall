@@ -1005,6 +1005,7 @@ export const nested = {
     "tileAdd": "Add",
     "about": "About",
     "memberSince": "Member since",
+    "hoverOpenHint": "Click to open the profile",
     "mutualServers": "Mutual servers",
     "mutualFriends": "Mutual friends",
     "back": "Profile",
