@@ -338,6 +338,11 @@ export const nested = {
     "stepUpLead": "Enter the current code from your authenticator app for this action. You won't be asked again for 15 minutes.",
     "stepUpConfirm": "Confirm"
   },
+  "staffBadge": {
+    "tip": "Descall staff",
+    "short": "STAFF",
+    "long": "DESCALL STAFF"
+  },
   "admin": {
     "title": "Admin Panel",
     "subtitle": "System administration & moderation",

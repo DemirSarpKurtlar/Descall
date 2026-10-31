@@ -2712,7 +2712,7 @@ const UserPanel = forwardRef(function UserPanel({
             <span className="n">{displayName || me?.username || t("User")}</span>
             <span className="m">
               @{me?.username?.toLowerCase() || "user"}
-              {isUserAdmin(me) ? ` · ${locale === "tr" ? "Yönetici" : "Admin"}` : ""}
+              {isUserAdmin(me) ? ` · ${t("staffBadge.tip")}` : ""}
             </span>
           </button>
           <nav aria-label={t("Settings sections")}>

@@ -343,6 +343,11 @@ export const nested = {
     "stepUpLead": "Bu işlem için doğrulama uygulamandaki güncel kodu gir. Sonraki 15 dakika boyunca tekrar sorulmaz.",
     "stepUpConfirm": "Onayla"
   },
+  "staffBadge": {
+    "tip": "Descall ekibi",
+    "short": "EKİP",
+    "long": "DESCALL EKİBİ"
+  },
   "admin": {
     "title": "Yönetici Paneli",
     "subtitle": "Sistem yönetimi ve moderasyon",
