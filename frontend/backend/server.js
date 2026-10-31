@@ -482,6 +482,8 @@ require("./lib/signupStats").startRetention();
 app.use("/api/special-badges", require("./routes/specialBadges"));
 // 3.0.0 (A4): iOS notification quick reply / reactions / read (scoped notify token).
 app.use("/api/messages", require("./routes/notifyActions"));
+// 3.7.17: Apple Watch (through the paired iPhone's session), routes/watch.js.
+app.use("/api/watch", require("./routes/watch"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));

@@ -55,6 +55,19 @@ jobs:
           swiftc -o "$RUNNER_TEMP/tl" App/App/DescallToastLogic.swift App/NotifyShared/DescallNotifyLogic.swift selftest/toast/main.swift
           "$RUNNER_TEMP/tl"
 
+      - name: Watch bridge protocol selftest (Swift)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/wp" App/WatchShared/DescallWatchProtocol.swift selftest/watch/main.swift
+          "$RUNNER_TEMP/wp"
+
+      - name: watchOS platform (3.7.17 Apple Watch app is embedded)
+        run: |
+          set -euo pipefail
+          if ! xcodebuild -showsdks | grep -q watchos; then xcodebuild -downloadPlatform watchOS; fi
+          xcodebuild -showsdks | grep -E "watchos|iphoneos"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -105,6 +118,13 @@ jobs:
             test "$ID" = "com.descall.app.$EXT"
           done
           /usr/libexec/PlistBuddy -c 'Print :NSUserActivityTypes' "$APP/Info.plist" | grep -q INSendMessageIntent
+          # 3.7.17: the Apple Watch app is embedded with its own id, the iPhone app as companion.
+          WAPP="$APP/Watch/DescallWatch.app"
+          test -d "$WAPP" || { echo "::error::DescallWatch.app not embedded"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WAPP/Info.plist")" = "com.descall.app.watchkitapp"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :WKCompanionAppBundleIdentifier' "$WAPP/Info.plist")" = "com.descall.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$WAPP/Info.plist")" = "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")"
+          echo "Watch app embedded: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$WAPP/Info.plist")"
 
   glass-tabbar-sim:
     # iOS 26 Liquid Glass tab bar (DescallGlassTabBarView) on the simulator:
@@ -129,6 +149,11 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+
+      - name: watchOS platform (the iOS build embeds the watch app)
+        run: |
+          set -euo pipefail
+          if ! xcodebuild -showsdks | grep -q watchsimulator; then xcodebuild -downloadPlatform watchOS; fi
 
       - name: Install, build web, sync iOS
         working-directory: frontend
@@ -196,4 +221,74 @@ jobs:
         with:
           name: glass-tabbar-ios26
           path: ${{ runner.temp }}/shots
+          if-no-files-found: warn
+
+  watch-sim:
+    # 3.7.17 Apple Watch app (design B) on a watchOS simulator with sample data
+    # (-DescallWatchDemo): one screenshot per screen, uploaded as an artifact.
+    # Simulator only: nothing is signed or uploaded to Apple.
+    name: Apple Watch app (watchOS simulator screenshots)
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      XCODE_APP: /Applications/Xcode_26.6.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode and the watchOS platform
+        run: |
+          set -euo pipefail
+          if [ -d "$XCODE_APP" ]; then sudo xcode-select -s "$XCODE_APP"; fi
+          xcodebuild -version
+          if ! xcrun simctl list runtimes | grep -q watchOS; then xcodebuild -downloadPlatform watchOS; fi
+          xcrun simctl list runtimes | grep watchOS
+
+      - name: Pick an Apple Watch simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          c = [(rt, x) for rt, xs in d.items() if "watchOS" in rt for x in xs if "Apple Watch" in x["name"]]
+          pref = [p for p in c if "46mm" in p[1]["name"] or "45mm" in p[1]["name"]] or c
+          pref.sort(key=lambda p: (p[0], p[1]["name"]), reverse=True)
+          print(pref[0][1]["udid"] if pref else "")')"
+          test -n "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Build the watch app (Debug, simulator)
+        working-directory: frontend/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild -project App.xcodeproj -scheme DescallWatch -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/ddw" \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/watch-build.log" | grep -E "error:|warning: .*Watch|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" "$RUNNER_TEMP/watch-build.log"
+
+      - name: Launch each screen with sample data and screenshot
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          APP="$(find "$RUNNER_TEMP/ddw/Build/Products/Debug-watchsimulator" -maxdepth 1 -name 'DescallWatch.app' | head -n 1)"
+          test -d "$APP"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p "$RUNNER_TEMP/watch-shots"
+          for SCREEN in chats chat reply friends status; do
+            xcrun simctl terminate "$UDID" com.descall.app.watchkitapp || true
+            xcrun simctl launch "$UDID" com.descall.app.watchkitapp -DescallWatchDemo -DescallWatchDemoScreen "$SCREEN"
+            sleep 8
+            xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/watch-shots/watch-$SCREEN.png"
+          done
+          ls -la "$RUNNER_TEMP/watch-shots"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-watch-screens
+          path: ${{ runner.temp }}/watch-shots
           if-no-files-found: warn

@@ -13,6 +13,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // PushKit + CallKit must exist before the first VoIP push is delivered,
         // which can be right after a background launch, before any web JS runs.
         DescallCallManager.shared.start()
+        // 3.7.17: the Apple Watch app asks the API through this phone's session.
+        DescallWatchBridge.shared.start()
         return true
     }
 
