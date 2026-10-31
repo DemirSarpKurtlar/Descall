@@ -10,6 +10,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..", "..");
 const check = await import(pathToFileURL(join(root, "scripts", "i18n-check.mjs")).href);
 const registry = JSON.parse(readFileSync(join(here, "locales.json"), "utf8"));
+const meta = JSON.parse(readFileSync(join(here, "locales.meta.json"), "utf8"));
+assert.deepEqual(Object.keys(meta.locales).sort(), registry.locales.map((l) => l.id).sort(), "locales.meta.json has the same ids");
 
 // Registry: unique ids, English fallback live, every locale has a catalog file and a
 // loader in index.js, Intl tags are valid.
@@ -20,7 +22,9 @@ const indexSrc = readFileSync(join(here, "index.js"), "utf8");
 for (const l of registry.locales) {
   assert.ok(["live", "draft"].includes(l.status), `${l.id}: status live|draft`);
   assert.ok(["ltr", "rtl"].includes(l.dir), `${l.id}: dir ltr|rtl`);
-  assert.ok(l.name && l.englishName, `${l.id}: names`);
+  assert.ok(l.name, `${l.id}: native name`);
+  const extra = meta.locales[l.id];
+  assert.ok(extra && extra.englishName && Array.isArray(extra.appStore) && extra.ios, `${l.id}: entry in locales.meta.json`);
   assert.doesNotThrow(() => new Intl.NumberFormat(l.intl), `${l.id}: Intl tag ${l.intl}`);
   assert.ok(new RegExp(`["']?${l.id.replace("-", "\\-")}["']?:\\s*\\(\\)\\s*=>\\s*import\\(`).test(indexSrc), `${l.id}: loader in index.js`);
   readFileSync(join(here, "locales", `${l.id}.js`), "utf8");

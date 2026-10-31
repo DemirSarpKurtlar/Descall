@@ -2,6 +2,10 @@
  * UI language registry. The data lives in locales.json (shared with the backend,
  * the coverage check and the native build scripts); this module adds the lookups.
  *
+ * To add a language: add an entry to locales.json with status "draft", add
+ * src/i18n/locales/<id>.js, register its loader in src/i18n/index.js, translate until
+ * node scripts/i18n-check.mjs reports 100 %, then set status to "live".
+ *
  * status:
  *   live   - selectable, auto-detected, must be 100 % translated (CI enforces it)
  *   draft  - being translated; hidden unless i18n preview is on (see isPreviewEnabled)
@@ -15,16 +19,7 @@ import data from "./locales.json" with { type: "json" };
 export const FALLBACK_LOCALE = data.fallback;
 export const PSEUDO_LOCALE = "qps";
 
-const PSEUDO_META = Object.freeze({
-  id: PSEUDO_LOCALE,
-  name: "Pseudo",
-  englishName: "Pseudo (untranslated text finder)",
-  intl: "en-GB",
-  dir: "ltr",
-  status: "pseudo",
-  appStore: [],
-  ios: null,
-});
+const PSEUDO_META = Object.freeze({ id: PSEUDO_LOCALE, name: "Pseudo", intl: "en-GB", dir: "ltr", status: "pseudo" });
 
 export const ALL_LOCALES = Object.freeze(data.locales.map((l) => Object.freeze({ ...l })));
 const BY_ID = new Map(ALL_LOCALES.map((l) => [l.id, l]));
@@ -104,16 +99,3 @@ export function htmlLang(id) {
   return meta.id;
 }
 
-export default {
-  FALLBACK_LOCALE,
-  PSEUDO_LOCALE,
-  ALL_LOCALES,
-  selectableLocales,
-  liveLocales,
-  getLocaleMeta,
-  normalizeLocale,
-  intlTag,
-  textDirection,
-  htmlLang,
-  isPreviewEnabled,
-};

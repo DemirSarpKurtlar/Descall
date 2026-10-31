@@ -1,0 +1,55 @@
+{
+  "_doc": "Per-locale data the web bundle does not need (English name for reports, App Store Connect locale codes, iOS .lproj folder). Same ids as locales.json (checked by i18nCoverage.selftest.mjs).",
+  "locales": {
+    "en": {
+      "englishName": "English",
+      "appStore": [
+        "en-US"
+      ],
+      "ios": "en"
+    },
+    "tr": {
+      "englishName": "Turkish",
+      "appStore": [
+        "tr"
+      ],
+      "ios": "tr"
+    },
+    "de": {
+      "englishName": "German",
+      "appStore": [
+        "de-DE"
+      ],
+      "ios": "de"
+    },
+    "es": {
+      "englishName": "Spanish",
+      "appStore": [
+        "es-ES",
+        "es-MX"
+      ],
+      "ios": "es"
+    },
+    "fr": {
+      "englishName": "French",
+      "appStore": [
+        "fr-FR"
+      ],
+      "ios": "fr"
+    },
+    "pt-BR": {
+      "englishName": "Portuguese (Brazil)",
+      "appStore": [
+        "pt-BR"
+      ],
+      "ios": "pt-BR"
+    },
+    "ru": {
+      "englishName": "Russian",
+      "appStore": [
+        "ru"
+      ],
+      "ios": "ru"
+    }
+  }
+}

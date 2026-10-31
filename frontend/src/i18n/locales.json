@@ -1,76 +1,54 @@
 {
-  "$comment": "Single source of truth for UI languages. Read by the web app (src/i18n/registry.js), the backend (backend/lib/locales.js), the i18n coverage check and the native build scripts. To add a language: add an entry here with status \"draft\", add src/i18n/locales/<id>.js, register its loader in src/i18n/index.js, translate until the coverage check is 100 %, then set status to \"live\".",
   "fallback": "en",
   "locales": [
     {
       "id": "en",
       "name": "English",
-      "englishName": "English",
       "intl": "en-GB",
       "dir": "ltr",
-      "status": "live",
-      "appStore": ["en-US"],
-      "ios": "en"
+      "status": "live"
     },
     {
       "id": "tr",
       "name": "Türkçe",
-      "englishName": "Turkish",
       "intl": "tr-TR",
       "dir": "ltr",
-      "status": "live",
-      "appStore": ["tr"],
-      "ios": "tr"
+      "status": "live"
     },
     {
       "id": "de",
       "name": "Deutsch",
-      "englishName": "German",
       "intl": "de-DE",
       "dir": "ltr",
-      "status": "draft",
-      "appStore": ["de-DE"],
-      "ios": "de"
+      "status": "draft"
     },
     {
       "id": "es",
       "name": "Español",
-      "englishName": "Spanish",
       "intl": "es-ES",
       "dir": "ltr",
-      "status": "draft",
-      "appStore": ["es-ES", "es-MX"],
-      "ios": "es"
+      "status": "draft"
     },
     {
       "id": "fr",
       "name": "Français",
-      "englishName": "French",
       "intl": "fr-FR",
       "dir": "ltr",
-      "status": "draft",
-      "appStore": ["fr-FR"],
-      "ios": "fr"
+      "status": "draft"
     },
     {
       "id": "pt-BR",
       "name": "Português (Brasil)",
-      "englishName": "Portuguese (Brazil)",
       "intl": "pt-BR",
       "dir": "ltr",
-      "status": "draft",
-      "appStore": ["pt-BR"],
-      "ios": "pt-BR"
+      "status": "draft"
     },
     {
       "id": "ru",
       "name": "Русский",
-      "englishName": "Russian",
       "intl": "ru-RU",
       "dir": "ltr",
-      "status": "draft",
-      "appStore": ["ru"],
-      "ios": "ru"
+      "status": "draft"
     }
   ]
 }

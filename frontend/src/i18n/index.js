@@ -1,5 +1,7 @@
 import { detectDefaultLocale, normalizeLocale } from "./detect.js";
 import { applyDocumentLang, readStoredLanguage, writeStoredLanguage } from "./storage.js";
+import { resolveInitialLocale } from "./boot.js";
+import { bindTranslator } from "./runtime.js";
 import {
   FALLBACK_LOCALE,
   PSEUDO_LOCALE,
@@ -7,8 +9,39 @@ import {
   selectableLocales,
   intlTag,
 } from "./registry.js";
-import { formatMessage } from "./message.js";
-import { pseudoize } from "./pseudo.js";
+
+/**
+ * The ICU formatter (plural / select) and the pseudo transform load with the first
+ * catalog, so the marketing first paint (which imports this module) stays small.
+ * Until then simple {name} / {{name}} interpolation is used.
+ */
+let formatMessage = (str, vars) => simpleInterpolate(str, vars);
+let pseudoize = null;
+let formatterPromise = null;
+function loadFormatter() {
+  if (!formatterPromise) {
+    formatterPromise = import("./message.js")
+      .then((m) => {
+        formatMessage = m.formatMessage;
+      })
+      .catch(() => {});
+  }
+  return formatterPromise;
+}
+function loadPseudo() {
+  return import("./pseudo.js")
+    .then((m) => {
+      pseudoize = m.pseudoize;
+    })
+    .catch(() => {});
+}
+function simpleInterpolate(str, vars) {
+  if (!vars || typeof str !== "string") return str;
+  return str.replace(/\{\{(\w+)\}\}|\{(\w+)\}/g, (_, a, b) => {
+    const key = a || b;
+    return vars[key] != null ? String(vars[key]) : "";
+  });
+}
 
 /**
  * Every registered locale needs a loader here (the coverage selftest checks it).
@@ -30,7 +63,6 @@ export const LOCALE_LOADER_IDS = Object.freeze(Object.keys(LOADERS));
 export const SUPPORTED_LOCALES = selectableLocales().map((l) => ({
   id: l.id,
   nativeLabel: l.name,
-  englishName: l.englishName,
   status: l.status,
 }));
 
@@ -63,7 +95,12 @@ function loadOne(id) {
 /** Load the catalogs a locale needs (itself plus the English fallback). */
 export function ensureLocaleLoaded(locale) {
   const id = locale === PSEUDO_LOCALE ? FALLBACK_LOCALE : locale;
-  return Promise.all([loadOne(FALLBACK_LOCALE), id ? loadOne(id) : null]).then(() => undefined);
+  return Promise.all([
+    loadFormatter(),
+    locale === PSEUDO_LOCALE ? loadPseudo() : null,
+    loadOne(FALLBACK_LOCALE),
+    id ? loadOne(id) : null,
+  ]).then(() => undefined);
 }
 
 /**
@@ -71,15 +108,9 @@ export function ensureLocaleLoaded(locale) {
  * Marketing entry must NOT call this, use slim phrases instead.
  */
 export function loadI18nCatalogs(locale = resolveInitialLocale()) {
-  return Promise.all([loadOne(FALLBACK_LOCALE), loadOne("tr"), ensureLocaleLoaded(locale)]).then(
-    () => undefined
-  );
+  return Promise.all([loadOne("tr"), ensureLocaleLoaded(locale)]).then(() => undefined);
 }
 
-export function i18nCatalogsReady(locale) {
-  if (!loaded.has(FALLBACK_LOCALE)) return false;
-  return locale ? loaded.has(locale === PSEUDO_LOCALE ? FALLBACK_LOCALE : locale) : true;
-}
 
 function getByPath(obj, path) {
   if (!obj || !path) return undefined;
@@ -92,53 +123,31 @@ function getByPath(obj, path) {
   return typeof cur === "string" ? cur : undefined;
 }
 
-/** Keys a non-English locale had to answer from English (preview / e2e diagnostics). */
-const misses = new Map();
-function noteMiss(locale, key) {
-  if (locale === FALLBACK_LOCALE || !loaded.has(locale)) return;
-  let set = misses.get(locale);
-  if (!set) {
-    set = new Set();
-    misses.set(locale, set);
-  }
-  if (set.size < 5000) set.add(key);
-}
-export function missingTranslations(locale) {
-  return [...(misses.get(locale) || [])];
-}
-if (typeof window !== "undefined") {
-  try {
-    window.__descallI18nMisses = (locale) => missingTranslations(locale);
-  } catch {
-    /* ignore */
-  }
-}
-
 /**
  * Raw (unformatted) message for a key or English source string.
  * Lookup: locale nested path -> locale phrase -> locale phrase of the English nested
- * value -> English. Returns { text, found } where found=false means English fallback.
+ * value -> English.
  */
 function resolveRaw(locale, k) {
   const cat = catalogs[locale] || catalogs[FALLBACK_LOCALE];
   const nestedHit = getByPath(cat.nested, k);
-  if (nestedHit != null) return { text: nestedHit, found: true };
+  if (nestedHit != null) return nestedHit;
 
   const phraseHit = cat.phrases?.[k];
-  if (phraseHit != null) return { text: phraseHit, found: true };
+  if (phraseHit != null) return phraseHit;
 
   const en = catalogs[FALLBACK_LOCALE];
   const enNested = getByPath(en.nested, k);
   if (enNested != null) {
     const fromPhrase = cat.phrases?.[enNested];
-    if (fromPhrase != null) return { text: fromPhrase, found: true };
-    return { text: enNested, found: locale === FALLBACK_LOCALE };
+    if (fromPhrase != null) return fromPhrase;
+    return enNested;
   }
   if (locale !== FALLBACK_LOCALE) {
     const enPhrase = en.phrases?.[k];
-    if (enPhrase != null) return { text: enPhrase, found: false };
+    if (enPhrase != null) return enPhrase;
   }
-  return { text: k, found: locale === FALLBACK_LOCALE };
+  return k;
 }
 
 /**
@@ -150,22 +159,14 @@ export function translate(locale, key, vars) {
   if (key == null) return "";
   const k = String(key);
   if (locale === PSEUDO_LOCALE) {
-    const { text } = resolveRaw(FALLBACK_LOCALE, k);
-    return formatMessage(pseudoize(text), vars, intlTag(FALLBACK_LOCALE));
+    const text = resolveRaw(FALLBACK_LOCALE, k);
+    return formatMessage(pseudoize ? pseudoize(text) : text, vars, intlTag(FALLBACK_LOCALE));
   }
   const id = catalogs[locale] ? locale : FALLBACK_LOCALE;
-  const { text, found } = resolveRaw(id, k);
-  if (!found) noteMiss(id, k);
+  const text = resolveRaw(id, k);
   return formatMessage(text, vars, intlTag(id));
 }
 
-export function resolveInitialLocale({ meLanguage } = {}) {
-  const stored = normalizeLocale(readStoredLanguage());
-  if (stored) return stored;
-  const fromMe = normalizeLocale(meLanguage);
-  if (fromMe) return fromMe;
-  return detectDefaultLocale();
-}
 
 export function persistLocale(locale) {
   const normalized = normalizeLocale(locale) || FALLBACK_LOCALE;
@@ -180,5 +181,7 @@ try {
   /* ignore */
 }
 
-export { detectDefaultLocale, normalizeLocale, applyDocumentLang, readStoredLanguage };
+bindTranslator(translate);
+
+export { detectDefaultLocale, normalizeLocale, applyDocumentLang, readStoredLanguage, resolveInitialLocale };
 export default translate;

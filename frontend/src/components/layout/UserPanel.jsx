@@ -77,9 +77,9 @@ import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib
 function languageLabel(id, uiLocale) {
   const meta = getLocaleMeta(id);
   if (!meta) return String(id || "");
-  if (meta.id === PSEUDO_LOCALE) return meta.englishName;
+  if (meta.id === PSEUDO_LOCALE) return meta.name;
   const name = displayName(meta.id, uiLocale, "language");
-  if (!name || name === meta.id) return meta.englishName;
+  if (!name || name === meta.id) return meta.name;
   return name.charAt(0).toLocaleUpperCase(getLocaleMeta(uiLocale)?.intl || "en") + name.slice(1);
 }
 

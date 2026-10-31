@@ -75,7 +75,9 @@ assert.equal(i18n.translate("tr", "settings.language"), "Dil");
 assert.equal(i18n.translate("tr", "Failed to load servers"), "Sunucular yüklenemedi");
 assert.equal(i18n.translate("en", "Some unknown English text"), "Some unknown English text");
 assert.equal(i18n.translate("de", "settings.language"), "Language", "untranslated draft falls back to English");
+await i18n.ensureLocaleLoaded("qps");
 assert.ok(i18n.translate("qps", "settings.language").startsWith("[["), "pseudo wraps catalog text");
+assert.equal(i18n.translate("en", "{n, plural, one {# file} other {# files}}", { n: 2 }), "2 files", "ICU formatter loaded with the catalogs");
 assert.equal(i18n.translate("tr", "{groupName} | Group Call", { groupName: "Ekip" }), "Ekip | Grup araması");
 
 // --- Intl helpers follow locales.json

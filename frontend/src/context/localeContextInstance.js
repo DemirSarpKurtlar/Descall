@@ -9,7 +9,7 @@ export const LocaleContext = createContext({
   locale: "en",
   setLocale: () => {},
   t: (key) => String(key ?? ""),
-  locales: liveLocales().map((l) => ({ id: l.id, nativeLabel: l.name, englishName: l.englishName, status: l.status })),
+  locales: liveLocales().map((l) => ({ id: l.id, nativeLabel: l.name, status: l.status })),
 });
 
 export function useLocale() {
