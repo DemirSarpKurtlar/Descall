@@ -7,16 +7,23 @@
  * viewer's local timezone after UTC parsing.
  */
 
+import { ALL_LOCALES, getLocaleMeta } from "../i18n/registry.js";
+
 const HAS_TZ_RE = /(?:[zZ]|[+-]\d{2}:?\d{2})$/;
 const DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/;
 
 export const APP_TIMEZONE = "Europe/Istanbul";
 
+/** UI locale id (or an Intl tag) -> Intl tag. Registered locales use locales.json. */
 export function intlLocaleTag(locale) {
   if (!locale) return "tr-TR";
   const id = String(locale).toLowerCase();
   if (id === "tr" || id.startsWith("tr-")) return "tr-TR";
   if (id === "en" || id.startsWith("en-")) return "en-GB";
+  const meta = getLocaleMeta(String(locale));
+  if (meta) return meta.intl;
+  const base = ALL_LOCALES.find((l) => l.id.toLowerCase().split("-")[0] === id.split("-")[0]);
+  if (base && !id.includes("-")) return base.intl;
   return locale;
 }
 

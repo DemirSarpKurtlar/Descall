@@ -30,6 +30,7 @@
  *   (the extension then keeps a standard notification with the attachment).
  */
 
+const { resolveLang } = require("./locales");
 const apns = require("./apnsClient");
 const { maskProfanity } = require("./profanity");
 
@@ -96,12 +97,9 @@ const STRINGS = {
   },
 };
 
+/** First live locale (device locale, then account language) that has push strings; else Turkish. */
 function pickLang(...candidates) {
-  for (const c of candidates) {
-    const v = String(c || "").toLowerCase().slice(0, 2);
-    if (v === "tr" || v === "en") return v;
-  }
-  return "tr";
+  return resolveLang(candidates, { available: Object.keys(STRINGS), fallback: "tr" });
 }
 
 function fmt(template, vars = {}) {

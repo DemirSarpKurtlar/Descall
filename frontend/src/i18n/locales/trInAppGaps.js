@@ -136,4 +136,15 @@ export const TR_INAPP_GAPS = {
   "Oceania": "Okyanusya",
   "Antarctica": "Antarktika",
   "This item is no longer available.": "Bu öğe artık mevcut değil.",
+  // i18n gate (3.7.21): strings used in code that had no Turkish text
+  "Badge icon key (e.g. crown, flame, trophy)": "Rozet simge anahtarı (ör. crown, flame, trophy)",
+  "Call ended | anything to say?": "Arama bitti | söylemek istediğin bir şey var mı?",
+  "Failed to delete announcement": "Duyuru silinemedi",
+  "Failed to load servers": "Sunucular yüklenemedi",
+  "Find a stack": "Bir kurulum bul",
+  "Optional message the user will see": "Kullanıcının göreceği isteğe bağlı mesaj",
+  "Pin toggle failed": "Sabitleme değiştirilemedi",
+  "Title text (e.g. Elite)": "Başlık metni (ör. Elit)",
+  "iOS Liquid Glass": "iOS Liquid Glass",
+  "{groupName} | Group Call": "{groupName} | Grup araması",
 };

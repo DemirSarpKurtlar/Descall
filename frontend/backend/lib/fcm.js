@@ -10,6 +10,7 @@
  * The APNs helpers are re-exported for older callers.
  */
 
+const { normalizeLocale } = require("./locales");
 const supabase = require("../db/supabase");
 const apns = require("./apnsClient");
 const { buildApnsBody } = require("./iosAlertPush");
@@ -44,7 +45,7 @@ function getMessaging() {
 }
 
 /**
- * Save a device token. `locale` ("tr" / "en") is optional and only kept for
+ * Save a device token. `locale` (a registered UI locale id, see lib/locales.js) is optional and only kept for
  * iOS alert tokens (localized push text). If the locale column is missing
  * (migration not applied yet) the row is saved without it.
  */
@@ -56,7 +57,8 @@ async function upsertDeviceToken(userId, token, platform = "android", locale = n
     platform: String(platform || "android"),
     last_seen: new Date().toISOString(),
   };
-  if (locale === "tr" || locale === "en") row.locale = locale;
+  const normalizedLocale = normalizeLocale(locale);
+  if (normalizedLocale) row.locale = normalizedLocale;
   let { error } = await supabase.from("device_push_tokens").upsert(row, { onConflict: "token" });
   if (error && row.locale && /locale/i.test(String(error.message || ""))) {
     delete row.locale;

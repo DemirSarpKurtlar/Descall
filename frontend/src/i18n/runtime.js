@@ -1,11 +1,12 @@
 import { resolveInitialLocale, translate } from "./index.js";
+import { normalizeLocale } from "./registry.js";
 
 let currentLocale = resolveInitialLocale();
 
 if (typeof window !== "undefined") {
   window.addEventListener("descall:locale", (e) => {
-    const next = e?.detail?.locale;
-    if (next === "tr" || next === "en") currentLocale = next;
+    const next = normalizeLocale(e?.detail?.locale);
+    if (next) currentLocale = next;
   });
 }
 
@@ -19,5 +20,6 @@ export function getLocale() {
 }
 
 export function setRuntimeLocale(locale) {
-  if (locale === "tr" || locale === "en") currentLocale = locale;
+  const next = normalizeLocale(locale);
+  if (next) currentLocale = next;
 }

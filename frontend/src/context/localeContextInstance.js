@@ -3,15 +3,13 @@
  * from the marketing entry graph.
  */
 import { createContext, useContext } from "react";
+import { liveLocales } from "../i18n/registry.js";
 
 export const LocaleContext = createContext({
   locale: "en",
   setLocale: () => {},
   t: (key) => String(key ?? ""),
-  locales: [
-    { id: "en", labelKey: "settings.english", nativeLabel: "English" },
-    { id: "tr", labelKey: "settings.turkish", nativeLabel: "Türkçe" },
-  ],
+  locales: liveLocales().map((l) => ({ id: l.id, nativeLabel: l.name, englishName: l.englishName, status: l.status })),
 });
 
 export function useLocale() {

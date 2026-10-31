@@ -8,6 +8,7 @@
  * preview; a plain-text twin for clients without HTML. No emoji (owner rule).
  */
 
+const { resolveLang, parseAcceptLanguage } = require("./locales");
 const { escapeHtml } = require("./emailUtil");
 
 const SITE = "https://descall.com";
@@ -30,13 +31,15 @@ const C = {
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace";
 
-/** "tr" unless the request clearly prefers English. */
+/**
+ * Email language: the account language when it is a live locale with a template,
+ * else the request's Accept-Language (best first), else Turkish.
+ */
 function langFrom(acceptLanguage, explicit) {
-  const e = String(explicit || "").toLowerCase();
-  if (e.startsWith("en")) return "en";
-  if (e.startsWith("tr")) return "tr";
-  const first = String(acceptLanguage || "").split(",")[0].trim().toLowerCase();
-  return first.startsWith("en") ? "en" : "tr";
+  return resolveLang([explicit, parseAcceptLanguage(acceptLanguage)], {
+    available: Object.keys(COPY),
+    fallback: "tr",
+  });
 }
 
 const COPY = {

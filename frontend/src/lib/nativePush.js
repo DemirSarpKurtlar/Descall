@@ -134,7 +134,8 @@ async function uploadFcmToken(token) {
     return false;
   }
   const platform = Capacitor.getPlatform?.() || "android";
-  const locale = IS_IOS ? (getLocale() === "en" ? "en" : "tr") : undefined;
+  // The UI locale id (server keeps only registered ids and falls back to Turkish).
+  const locale = IS_IOS ? getLocale() : undefined;
   const key = `${auth}|${token}|${locale || ""}`;
   if (uploadedFor === key) return true;
   const response = await fetch(`${API_BASE_URL}/api/web-push/fcm-token`, {

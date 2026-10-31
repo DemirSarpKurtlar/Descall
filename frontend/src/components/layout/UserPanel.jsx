@@ -53,11 +53,14 @@ import {
   syncNativePushToken,
 } from "../../lib/nativePush";
 import { detectDefaultLocale } from "../../i18n/detect";
+import { getLocaleMeta, PSEUDO_LOCALE } from "../../i18n/registry.js";
+import { displayName } from "../../i18n/format.js";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
+
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
@@ -69,6 +72,16 @@ import {
   setNoiseMode,
 } from "../../lib/noiseSuppression";
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
+
+/** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
+function languageLabel(id, uiLocale) {
+  const meta = getLocaleMeta(id);
+  if (!meta) return String(id || "");
+  if (meta.id === PSEUDO_LOCALE) return meta.englishName;
+  const name = displayName(meta.id, uiLocale, "language");
+  if (!name || name === meta.id) return meta.englishName;
+  return name.charAt(0).toLocaleUpperCase(getLocaleMeta(uiLocale)?.intl || "en") + name.slice(1);
+}
 
 /* ─── Helpers ─── */
 const SETTINGS_KEY = "descall_user_settings";
@@ -2332,7 +2345,7 @@ const UserPanel = forwardRef(function UserPanel({
                       <div className="us-theme-meta" style={{ gap: 10 }}>
                         <Globe size={16} />
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                          <span style={{ fontWeight: 700 }}>{t(opt.labelKey)}</span>
+                          <span style={{ fontWeight: 700 }}>{languageLabel(opt.id, locale)}</span>
                           <span style={{ fontSize: 12, opacity: 0.65 }}>{opt.nativeLabel}</span>
                         </div>
                       </div>
@@ -2343,7 +2356,7 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
               <p className="us-row-desc" style={{ marginTop: 14 }}>
                 {t("settings.autoDetectHint")}{" "}
-                ({t("Detected from your device")}: {deviceDefault === "tr" ? t("settings.turkish") : t("settings.english")})
+                ({t("Detected from your device")}: {languageLabel(deviceDefault, locale)})
               </p>
               <p className="us-row-desc" style={{ marginTop: 8 }}>
                 {t("settings.appliesInstantly")}
@@ -2743,7 +2756,7 @@ const UserPanel = forwardRef(function UserPanel({
                         {item.id === "promo" && promoUnseen ? (
                           <span className="s3-count tnum" aria-label={promoUnseen === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoUnseen })}>{promoUnseen}</span>
                         ) : null}
-                        {item.id === "language" ? <span className="val">{locale === "tr" ? "Türkçe" : "English"}</span> : null}
+                        {item.id === "language" ? <span className="val">{getLocaleMeta(locale)?.name || locale}</span> : null}
                         {active ? null : <S3Chevron />}
                       </button>
                     );
@@ -2828,7 +2841,7 @@ const UserPanel = forwardRef(function UserPanel({
                     </span>
                     {item.id === "promo" && promoUnseen ? <span className="us-nav-count tnum" aria-label={promoUnseen === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoUnseen })}>{promoUnseen}</span> : null}
                     {isMobile && glassShell && item.id === "language" ? (
-                      <span className="us-nav-value">{locale === "tr" ? "Türkçe" : "English"}</span>
+                      <span className="us-nav-value">{getLocaleMeta(locale)?.name || locale}</span>
                     ) : isMobile ? (
                       <ChevronRight size={16} className="us-chevron" />
                     ) : null}
@@ -2858,7 +2871,7 @@ const UserPanel = forwardRef(function UserPanel({
                 {isMobile ? (
                   <button type="button" className="s3-back" onClick={backToMenu}>
                     <S3Glyph name="chevl" size={22} stroke={2.4} />
-                    <span>{locale === "tr" ? "Ayarlar" : "Settings"}</span>
+                    <span>{t("Settings")}</span>
                   </button>
                 ) : null}
               </span>
