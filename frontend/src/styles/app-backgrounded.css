@@ -1,8 +1,17 @@
-/* 3.7.15: Electron window minimized / hidden to the tray (lib/appVisibility.js).
-   Nothing is on screen, so no animation needs to run; paused, not removed, so it
-   resumes where it was when the window comes back. */
+/* 3.7.15 idle CPU (lib/appVisibility.js). Any infinite animation on screen costs a
+   whole-window redraw at 60 fps (~24% of a core). Paused, not removed, so it
+   resumes where it was:
+   - app-backgrounded: Electron window minimized / hidden to the tray;
+   - app-idle: window not focused, or no input for 15 s (never during a call). */
 html.app-backgrounded *,
 html.app-backgrounded *::before,
-html.app-backgrounded *::after {
+html.app-backgrounded *::after,
+html.app-idle *,
+html.app-idle *::before,
+html.app-idle *::after {
   animation-play-state: paused !important;
+}
+/* Loading and progress keep moving while the app is open but idle. */
+html.app-idle :is(.spin, .animate-spin, [class*="spinner"], [class*="loader"], [class*="skeleton"], [class*="shimmer"], [role="progressbar"], [role="progressbar"] *, [aria-busy="true"], [aria-busy="true"] *) {
+  animation-play-state: running !important;
 }

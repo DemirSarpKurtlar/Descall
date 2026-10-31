@@ -279,7 +279,8 @@ async function run(win) {
     await sleep(400);
   }
   win.webContents.sendInputEvent({ type: 'mouseMove', x: 5, y: 5 });
-  await sleep(8000);
+  // PERF_SETTLE_MS: wait past one-shot animations / the 15 s idle pause before measuring.
+  await sleep(Number(process.env.PERF_SETTLE_MS || 8000));
   const result = { classes: await js(win, 'document.documentElement.className') };
   result.visible = await phase(win, 'visible-idle', Number(process.env.PERF_SECONDS || 15));
   result.profileVisible = await profile(win, 8);

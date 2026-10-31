@@ -226,7 +226,7 @@ async function bootApp() {
       import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {}),
       import("./lib/glassDesktop.js").then((m) => m.initGlassDesktop()).catch(() => {}),
       // 3.7.15: Electron minimized / tray → pause animations (no-op elsewhere).
-      import("./lib/appVisibility.js").then((m) => m.installAppVisibility()).catch(() => {}),
+      import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); }).catch(() => {}),
     ]);
 
   const RootApp = isSignupStatsWindow

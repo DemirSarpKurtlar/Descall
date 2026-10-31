@@ -422,6 +422,14 @@ jobs:
         run: |
           xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/composerFloat.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-composer.log"
           grep -q "\[e2e-composer\] OK" "$RUNNER_TEMP/e2e-composer.log"
+      # 3.7.15 idle CPU guard: any infinite CSS animation on screen cost ~24% of a core
+      # (whole-window redraws). Idle, minimized and tray must stay under 5% of a core even
+      # on the scene theme that used to loop forever.
+      - name: Electron idle CPU guard
+        run: |
+          PERF_THEME=borealis PERF_SETTLE_MS=40000 PERF_SECONDS=10 PERF_MAX_IDLE_CPU=5 PERF_MAX_HIDDEN_CPU=5 \
+            xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/idlePerf.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-perf.log"
+          grep -q "\[perf\] OK" "$RUNNER_TEMP/e2e-perf.log"
       # Image viewer + composer menus (1024x688 … 1920x1080 and 800x600 / 640x480): the
       # viewer's top bar sits under the custom title bar, the image fits between the top
       # bar and the zoom pill, and no chat avatar status dot paints over the + / emoji menus.
