@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { localizeDeep } from "../../i18n/serverText.js";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Ban, Calendar, ChevronRight, Copy, Crown, Download, Eye, IdCard, Image as ImageIcon, Info, Link, Maximize2,
@@ -648,8 +649,8 @@ const SHAREABLE = new Set(["user", "avatar", "server", "help", "nick", "moderati
  * replies are invoker-only); "Share to channel" posts it for everyone.
  */
 export default function AppCard({ message, embed, socket, serverId, channelId, compact = false, actions = {} }) {
-  const { t } = useLocale();
-  const card = embed?.card;
+  const { t, locale } = useLocale();
+  const card = useMemo(() => (embed?.card ? localizeDeep(embed.card, locale) : null), [embed?.card, locale]);
   const [sharing, setSharing] = useState(false);
   const [shareErr, setShareErr] = useState("");
   const [hidden, setHidden] = useState(false);

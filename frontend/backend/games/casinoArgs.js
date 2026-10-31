@@ -3,8 +3,9 @@
  * Pay: `/pay @user 500` · Slot: `/slot 100` · Coin: `/cf 100 tura`
  */
 
-const HEADS = new Set(["yazi", "yazı", "heads", "head", "h", "y"]);
-const TAILS = new Set(["tura", "tails", "tail", "t"]);
+// Coin sides in every UI language (hints in the catalogs show the local words).
+const HEADS = new Set(["yazi", "yazı", "heads", "head", "h", "y", "kopf", "cara", "face", "орёл", "орел"]);
+const TAILS = new Set(["tura", "tails", "tail", "t", "zahl", "cruz", "coroa", "pile", "решка"]);
 
 function parsePayArgs(arg) {
   const parts = String(arg || "")

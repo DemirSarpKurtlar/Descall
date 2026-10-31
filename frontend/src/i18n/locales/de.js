@@ -653,6 +653,221 @@ export const nested = {
     "windowTitle": "Admin",
     "youtube": "YouTube"
   },
+  "adminx": {
+    "audit": {
+      "actor": "Admin",
+      "antibot": "Anti-Bot: {rule}",
+      "ban": "bannte",
+      "broadcast": "sendete eine Ankündigung",
+      "delete_message": "löschte eine Nachricht",
+      "disconnect_all": "trennte alle Verbindungen",
+      "kick": "kickte",
+      "maintenance": "änderte die Wartung",
+      "mute": "verhängte eine Stummschaltung für",
+      "remove_admin": "entzog die Adminrechte von",
+      "set_admin": "verlieh Adminrechte an",
+      "timeout": "verhängte einen Timeout für",
+      "unban": "entbannte",
+      "unknown": "hat etwas getan",
+      "unmute": "hob die Stummschaltung auf für",
+      "untimeout": "hob den Timeout auf für",
+      "warn": "verwarnte"
+    },
+    "bans": {
+      "usernamePlaceholder": "@benutzername"
+    },
+    "dossier": {
+      "exportFile": "descall-daten-{username}-{day}.json"
+    },
+    "fb": {
+      "adminRole": "Admin",
+      "attachmentFile": "anhang",
+      "chipPriority": "Priorität: {value}",
+      "chipType": "Typ: {value}",
+      "closePanel": "Bereich schließen",
+      "delAttachments": "{count, plural, one {Anhang} other {Anhänge}}",
+      "delBody": "Folgendes von {name} wird endgültig gelöscht: {list}. Das kann nicht rückgängig gemacht werden.",
+      "delReplies": "{count, plural, one {# Antwort} other {# Antworten}}",
+      "delReport": "Meldung",
+      "deleteError": "Löschen fehlgeschlagen, versuch es erneut",
+      "deleteTitle": "Dieses Feedback löschen?",
+      "deleted": "Feedback gelöscht",
+      "emptyFiltered": "Kein Feedback in diesem Filter.",
+      "emptyNone": "Noch kein Feedback.",
+      "factArea": "Wo: {value}",
+      "factLikes": "Gefällt: {value}",
+      "factRating": "{count}/5 Sterne",
+      "factType": "Typ: {value}",
+      "feedbackCount": "{count, plural, one {# Feedback} other {# Feedbacks}}",
+      "freq": {
+        "always": "Passiert jedes Mal",
+        "once": "Ist einmal passiert",
+        "sometimes": "Passiert manchmal"
+      },
+      "idCopied": "Nutzer-ID kopiert",
+      "internalNote": "interne Notiz",
+      "kind": {
+        "bug": "Fehler"
+      },
+      "labelPriority": "PRIORITÄT",
+      "labelStatus": "STATUS",
+      "like": {
+        "design": "Design",
+        "screen": "Bildschirmübertragung",
+        "speed": "Geschwindigkeit",
+        "voice": "Tonqualität"
+      },
+      "loadError": "Feedback konnte nicht geladen werden. Versuch es gleich noch mal.",
+      "memberSince": "seit {date}",
+      "metaDevice": "GERÄT",
+      "metaPlatform": "PLATTFORM",
+      "metaSent": "GESENDET",
+      "metaVersion": "VERSION",
+      "modeNote": "Interne Notiz",
+      "modeReply": "Dem Nutzer antworten",
+      "moreSections": "{count, plural, one {+# weiterer Abschnitt} other {+# weitere Abschnitte}}",
+      "nav": {
+        "reports": "Meldungen",
+        "signupStats": "Registrierungsstatistik"
+      },
+      "noteAdded": "Interne Notiz hinzugefügt",
+      "panelSubtitle": "{count, plural, one {Feedback · # Eintrag} other {Feedback · # Einträge}}",
+      "phNote": "Interne Notiz schreiben… nur Admins sehen sie",
+      "phReply": "Antwort schreiben… der Nutzer bekommt eine Benachrichtigung",
+      "pickOne": "Wähle ein Feedback aus.",
+      "quick1": "Danke, wir schauen uns das an.",
+      "quick2": "Kannst du ein paar mehr Details nennen? Welches Gerät, und wann passiert es?",
+      "quick3": "Behoben. Kannst du die neueste Version ausprobieren?",
+      "quickReplies": "Schnellantworten",
+      "replySent": "Antwort gesendet",
+      "sample": "BEISPIEL",
+      "sampleData": "BEISPIELDATEN",
+      "saveError": "Die Änderung konnte nicht gespeichert werden",
+      "searchAria": "Feedback durchsuchen",
+      "searchPlaceholder": "Nutzer, Nachricht oder ID suchen…",
+      "sections": "Abschnitte",
+      "sendError": "Senden fehlgeschlagen, versuch es erneut",
+      "sort": {
+        "newest": "Neueste",
+        "oldest": "Älteste"
+      },
+      "status": {
+        "in_progress": "In Bearbeitung"
+      },
+      "type": {
+        "bug": "Fehler"
+      },
+      "windowAria": "Admin-Panel · Feedback",
+      "zoom": "Vergrößern"
+    },
+    "live": {
+      "linkPlaceholder": "/status oder https://descall.com/…"
+    },
+    "mod": {
+      "actionFailed": "Aktion fehlgeschlagen",
+      "expired": "abgelaufen",
+      "loadError": "Moderation konnte nicht geladen werden"
+    },
+    "panel": {
+      "serverError": "Serverfehler {status}",
+      "windowTitle": "Descall Admin"
+    },
+    "shop": {
+      "cat": {
+        "avatar_effect": "Avatar-Effekt",
+        "chat_bubble": "Chatblasen-Skin",
+        "countries": "Land",
+        "name_effect": "Namenseffekt"
+      },
+      "createError": "Artikel konnte nicht erstellt werden.",
+      "loadError": "Shop-Artikel konnten nicht geladen werden.",
+      "sample": "Abc",
+      "skuPlaceholder": "sku (z. B. banner-forest)",
+      "themeGroup": {
+        "glowing": "Leuchtend (animiert)",
+        "gradient": "Verlauf",
+        "neon": "Neon"
+      },
+      "updateError": "Artikel konnte nicht aktualisiert werden."
+    },
+    "sst": {
+      "abandoned": "Abgebrochen",
+      "allCount": "alle · {value}",
+      "appOpened": "App geöffnet · {value}",
+      "applyRange": "Zeitraum anwenden",
+      "avgDay": "7-Tage-Durchschnitt",
+      "avgMonth": "3-Monats-Durchschnitt",
+      "avgWeek": "4-Wochen-Durchschnitt",
+      "cameBack": "{returned} / {eligible} zurückgekehrt",
+      "captionDays": "letzte {count} Tage",
+      "captionYear": "letzte 12 Monate",
+      "completed": "Abgeschlossen · {value} · {pct}",
+      "country": "Land",
+      "countryNote": "Registrierungen vor dem {date} haben kein Land → {unknown}.",
+      "csvDone": "CSV heruntergeladen",
+      "csvFailed": "CSV konnte nicht heruntergeladen werden",
+      "csvFile": "registrierungsstatistik.csv",
+      "d1": "D1 · nächster Tag",
+      "d7": "D7 · Tag 7",
+      "daily": "Täglich",
+      "dateRange": "Zeitraum",
+      "dateRangeValue": "Zeitraum: {range}",
+      "deleted": "{value} gelöscht",
+      "end": "Ende",
+      "failedNote": "Fehlgeschlagen = eine Registrierung, die mit einem Validierungsfehler oder Fehler endete (neue {table}).",
+      "forbidden": "Die Registrierungsstatistik ist nur für Admins zugänglich.",
+      "funnel": "Registrierungsablauf",
+      "lessThanYesterday": "weniger als gestern",
+      "loadError": "Die Statistik konnte nicht geladen werden.",
+      "monthly": "Monatlich",
+      "moreThanYesterday": "mehr als gestern",
+      "needsSignIn": "Für dieses Fenster musst du dich anmelden.",
+      "noneMonth": "keine Registrierungen in den letzten 30 Tagen davor",
+      "noneWeek": "keine Registrierungen letzte Woche",
+      "preset30": "Letzte 30 Tage",
+      "preset365": "Letzte 12 Monate",
+      "preset7": "Letzte 7 Tage",
+      "preset90": "Letzte 90 Tage",
+      "presetAll": "Gesamter Zeitraum",
+      "retention": "Retention",
+      "retentionNote": "Tage enden um Mitternacht Istanbuler Zeit (00:00, UTC+3). Gemessen mit der neuen Tabelle {table}.",
+      "sameAsYesterday": "genauso viele wie gestern",
+      "sameMonth": "genauso wie in den 30 Tagen davor",
+      "sameWeek": "genauso wie letzte Woche",
+      "sampleData": "BEISPIELDATEN",
+      "signInMethod": "Anmeldemethode",
+      "since": "seit {date}",
+      "source": {
+        "direct": "Direkt",
+        "googleOrganic": "Google (organisch)"
+      },
+      "start": "Start",
+      "started": "Begonnen · {value}",
+      "stillActive": "{returned} / {eligible} noch aktiv",
+      "subtitle": "Nur Admins sehen das · Zeitzone: Istanbul (UTC+3) · Zuletzt aktualisiert {time}",
+      "thisWeek": "Diese Woche",
+      "timeRange": "Zeitraum",
+      "tipAvg": "Ø {avg}",
+      "tipCount": "{count, plural, one {# Registrierung} other {# Registrierungen}}",
+      "title": "Registrierungsstatistik",
+      "total": "Registrierungen gesamt",
+      "trend": "Registrierungstrend",
+      "unitDay": "Tägliche Registrierungen",
+      "unitMonth": "Monatliche Registrierungen",
+      "unitWeek": "Wöchentliche Registrierungen",
+      "vsMonth": "ggü. den 30 Tagen davor",
+      "vsWeek": "ggü. letzter Woche",
+      "weekOf": "Woche vom {date}",
+      "weekly": "Wöchentlich",
+      "windowTitle": "Registrierungsstatistik — Descall Admin"
+    },
+    "stepUp": {
+      "required": "Ein Bestätigungscode ist erforderlich."
+    },
+    "sx": {
+      "phaseN": "Phase {n}"
+    }
+  },
   "auth": {
     "createAccount": "Konto erstellen",
     "logout": "Abmelden",
@@ -893,6 +1108,45 @@ export const nested = {
     "video": "Videoanruf",
     "voice": "Sprachanruf"
   },
+  "callui": {
+    "media": {
+      "dmTitle": "Descall-Anruf",
+      "groupTitle": "Descall-Gruppenanruf"
+    },
+    "native": {
+      "callWith": "Anruf mit {name}",
+      "end": "Beenden"
+    },
+    "presence": {
+      "online": "{name} ist online",
+      "sub": "Gerade verbunden"
+    },
+    "ring": {
+      "answeredElsewhere": "Anruf auf einem anderen Gerät angenommen.",
+      "declinedElsewhere": "Anruf auf einem anderen Gerät abgelehnt.",
+      "missed": "Verpasster Anruf."
+    },
+    "tap": {
+      "camOn": "Kamera an",
+      "groupVideo": "Gruppen-Videoanruf",
+      "live": "Gruppenanruf läuft",
+      "micOff": "Mikro aus",
+      "micOn": "Mikro an",
+      "more": "{n} weitere",
+      "nobody": "Niemand ist mehr im Anruf",
+      "rGroup": "Der Gruppenanruf wurde beendet",
+      "rLocal": "Du hast den Anruf beendet",
+      "rMissed": "Der Anruf wurde beendet, bevor du angenommen hast",
+      "rRemote": "Getrennt ({name} hat verlassen)",
+      "talking": "{count, plural, one {{names} spricht} other {{names} sprechen}}"
+    },
+    "voice": {
+      "cameraFailed": "Kamera konnte nicht gestartet werden.",
+      "disconnected": "Die Verbindung zum Sprachkanal wurde getrennt.",
+      "noSpeakPerm": "Du hast keine Berechtigung zu sprechen.",
+      "nsBadge": "RU"
+    }
+  },
   "chat": {
     "attachment": "📎 Anhang",
     "cancelReply": "Antwort abbrechen",
@@ -907,6 +1161,16 @@ export const nested = {
     "voiceMessage": "Sprachnachricht",
     "voicePreview": "🎤 Sprachnachricht",
     "yesterday": "Gestern"
+  },
+  "chatx": {
+    "appBadge": "APP",
+    "blockedMessages": "{count, plural, one {# Nachricht von einem blockierten Nutzer} other {# Nachrichten von einem blockierten Nutzer}}",
+    "coinRim": "EIN DESCOIN · MMXXVI · EIN DESCOIN · MMXXVI · ",
+    "matchingMessages": "{count, plural, one {# passende Nachricht} other {# passende Nachrichten}}",
+    "members": "{count, plural, one {# Mitglied} other {# Mitglieder}}",
+    "newMessagesJump": "{count, plural, one {# neue Nachricht, nach unten scrollen} other {# neue Nachrichten, nach unten scrollen}}",
+    "participantsJoined": "{count, plural, one {# Teilnehmer ist beigetreten} other {# Teilnehmer sind beigetreten}}",
+    "reactions": "{count, plural, one {# Reaktion} other {# Reaktionen}}"
   },
   "common": {
     "back": "Zurück",
@@ -930,6 +1194,78 @@ export const nested = {
     "unknown": "Unbekannt",
     "yes": "Ja",
     "you": "Du"
+  },
+  "core": {
+    "app": {
+      "acceptFailed": "Annehmen fehlgeschlagen",
+      "backendUnreachable": "Backend nicht erreichbar ({url}). Prüfe dein Netzwerk oder die Einstellung VITE_API_BASE_URL.",
+      "declineFailed": "Ablehnen fehlgeschlagen",
+      "reconnectAttempt": "Verbindung wird wiederhergestellt… Versuch {attempt}",
+      "retryPollingFirst": "Neuer Verbindungsversuch: Wechsel zu polling-first…",
+      "retryPollingOnly": "Neuer Verbindungsversuch: Wechsel zu polling-only…",
+      "socketAuthFailed": "Socket-Authentifizierung fehlgeschlagen",
+      "socketConnectFailed": "Socket-Verbindung fehlgeschlagen. Prüfe den Deploy-Status des Backends, die Backend-URL und die CORS-Einstellungen.",
+      "socketReconnectFailed": "Erneute Socket-Verbindung fehlgeschlagen. Prüfe die Backend-URL und CORS."
+    },
+    "boot": {
+      "loadingDescall": "Descall wird geladen"
+    },
+    "call": {
+      "inCall": "Im Anruf",
+      "inCallWith": "Im Anruf mit {name}",
+      "inProgress": "Anruf läuft",
+      "mediaTitle": "Descall-Anruf"
+    },
+    "dur": {
+      "approxH": "~{n} Std.",
+      "approxM": "~{n} Min.",
+      "h": "{h} Std.",
+      "hm": "{h} Std. {m} Min.",
+      "m": "{m} Min."
+    },
+    "fx": {
+      "deep": "Tief",
+      "deepDesc": "Effekt für tiefe Stimme",
+      "echo": "Echo",
+      "echoDesc": "Echo-Effekt",
+      "helium": "Helium",
+      "heliumDesc": "Hohe Stimme",
+      "noneDesc": "Keine Effekte",
+      "radio": "Funk",
+      "radioDesc": "Funk-/Telefoneffekt",
+      "robot": "Roboter",
+      "robotDesc": "Roboterstimme"
+    },
+    "http": {
+      "apiNotConfigured": "API-URL ist nicht konfiguriert. Bitte wende dich an den Support.",
+      "connectionError": "Verbindungsfehler",
+      "invalidResponse": "Der Server hat eine ungültige Antwort zurückgegeben"
+    },
+    "screenPicker": {
+      "tip": "Wähle den Bildschirm, das Fenster oder den Browser-Tab, den du teilen möchtest.",
+      "title": "Bildschirm teilen"
+    },
+    "seo": {
+      "appDesc": "Descall-App",
+      "groupInviteDesc": "Tritt einer Descall-Gruppe bei",
+      "groupInviteTitle": "Gruppeneinladung, Descall",
+      "serverInviteDesc": "Tritt einem Descall-Server bei",
+      "serverInviteTitle": "Servereinladung, Descall"
+    },
+    "server": {
+      "rulesRequired": "Du musst die Serverregeln akzeptieren, bevor du fortfährst.",
+      "slowmode": "Langsamer Modus ist an. Versuch es in {wait} s erneut."
+    }
+  },
+  "counts": {
+    "categories": "{n, plural, one {Kategorie} other {Kategorien}}",
+    "channels": "{n, plural, one {Kanal} other {Kanäle}}",
+    "credits": "{n, plural, one {Credit} other {Credits}}",
+    "creditsTo": "{n, plural, one {Credit an} other {Credits an}}",
+    "members": "{n, plural, one {Mitglied} other {Mitglieder}}",
+    "replyingTo": "Antwort an {name}",
+    "roles": "{n, plural, one {Rolle} other {Rollen}}",
+    "uses": "{n, plural, one {Nutzung} other {Nutzungen}}"
   },
   "dex": {
     "code": "Der 6-stellige Code aus deiner Authenticator-App",
@@ -1306,6 +1642,139 @@ export const nested = {
     "warnLeave": "{name} wird Besitzer: kann den Server löschen und alle Rollen verwalten. Du verlässt den Server direkt danach; um zurückzukommen, brauchst du eine neue Einladung.",
     "warnStay": "{name} wird Besitzer: kann den Server löschen, dich kicken oder dir Berechtigungen entziehen. Du bleibst Mitglied mit deinen Rollen. Rückgängig machen kann es nur {name}, indem die Eigentümerschaft an dich zurückübertragen wird."
   },
+  "polls": {
+    "app": {
+      "actionFailed": "Aktion fehlgeschlagen.",
+      "autoHide": "Verschwindet in {count, plural, one {# Sekunde} other {# Sekunden}}",
+      "avatarOf": "Avatar von {name}",
+      "banRemoved": "Bann aufgehoben",
+      "channels": "Kanäle",
+      "chooseSize": "Größe wählen",
+      "clearNick": "Spitznamen entfernen",
+      "didYouMean": "Meintest du?",
+      "friends": "Ihr seid befreundet",
+      "fullscreen": "Vollbild",
+      "globalAvatar": "Globaler Avatar",
+      "inServer": "auf {server}",
+      "joinedDescall": "Descall beigetreten",
+      "joinedServer": "Dem Server beigetreten",
+      "membership": "Mitgliedschaft",
+      "modBan": "{name} wurde gebannt",
+      "modKick": "{name} wurde vom Server gekickt",
+      "modTimeout": "{name} wurde in den Timeout geschickt",
+      "nickCleared": "Dein Spitzname wurde entfernt",
+      "nickUpdated": "Dein Spitzname wurde aktualisiert",
+      "noAvatar": "Kein Avatar festgelegt.",
+      "onlyYou": "Nur du kannst das sehen",
+      "openProfile": "Profil öffnen",
+      "original": "Original",
+      "purgeSince": "letzte {span}",
+      "purged": "{count, plural, one {# Nachricht gelöscht} other {# Nachrichten gelöscht}}",
+      "requestSent": "Anfrage gesendet",
+      "roles": "Rollen · {count}",
+      "sendInvite": "Einladung senden",
+      "share": "In Kanal teilen",
+      "shareFailed": "Teilen fehlgeschlagen.",
+      "sharing": "Wird geteilt…",
+      "timedOutUntil": "Im Timeout bis {date} {time}",
+      "tip": "Tipp: Gib {slash} ein, um das Befehlsmenü zu öffnen",
+      "unban": "Bann aufheben",
+      "until": "bis {time}",
+      "usage": "Verwendung:"
+    },
+    "ban": {
+      "body": "Die Person wird vom Server entfernt und kann nicht erneut beitreten",
+      "placeholder": "z. B. Spam, Regel 3",
+      "reasonNote": "wird im Audit-Log festgehalten",
+      "title": "{name} bannen?"
+    },
+    "create": {
+      "addOption": "Option hinzufügen",
+      "anon": "Anonyme Abstimmung",
+      "anonHint": "Stimmen werden erfasst, aber niemandem wird angezeigt, wer wofür gestimmt hat, nur die Anzahl",
+      "editHint": "Noch keine Stimmen, alle sehen deine Änderungen",
+      "emojiAdd": "Emoji hinzufügen",
+      "emojiChange": "Emoji: {emoji}, ändern",
+      "emojiPick": "Emoji auswählen",
+      "emojiRemove": "Emoji entfernen",
+      "endsAt": "Endet {date} {time}",
+      "errDuplicate": "„{option}“ ist doppelt aufgeführt.",
+      "errMinOptions": "Es werden mindestens 2 Optionen benötigt.",
+      "errQuestion": "Schreib eine Frage.",
+      "kbdSend": "senden",
+      "multi": "Mehrere Antworten",
+      "multiHint": "Mitglieder können für mehr als eine Option stimmen",
+      "option": "Option {n}",
+      "optionRemove": "Option {n} entfernen",
+      "options": "Optionen",
+      "optionsNote": "{count} / {max} · zum Neuanordnen ziehen",
+      "previewEmpty": "Schreib mindestens zwei Optionen, dann wird die Vorschau hier aktualisiert.",
+      "previewNote": "Mitglieder stimmen ab, indem sie auf eine Option tippen, und können ihre Stimme bis zum Ende der Umfrage ändern. Ergebnisbalken erscheinen nach der Abstimmung.",
+      "previewQuestion": "Schreib deine Frage",
+      "question": "Frage",
+      "questionPlaceholder": "Was möchtest du fragen?",
+      "sendFailed": "Die Umfrage konnte nicht gesendet werden.",
+      "sendPoll": "Umfrage senden",
+      "targetChannel": "Wird an # {name} gesendet",
+      "targetDm": "Wird in deinen Chat mit {name} gesendet",
+      "targetGroup": "Wird an {name} gesendet",
+      "titleCreate": "Umfrage erstellen",
+      "titleEdit": "Umfrage bearbeiten"
+    },
+    "legacy": {
+      "head": "Alte Umfrage · keine Abstimmung"
+    },
+    "poll": {
+      "aria": "Umfrage: {question}",
+      "ariaMine": ", deine Wahl",
+      "ariaPicked": "{option}, ausgewählt",
+      "ariaResult": "{option}, {votes, plural, one {# Stimme} other {# Stimmen}}, {pct} Prozent",
+      "ariaWinner": ", Gewinner",
+      "badge": "UMFRAGE",
+      "badgeEnded": "BEENDET",
+      "cantVote": "Du kannst in dieser Umfrage nicht abstimmen",
+      "edit": "Umfrage bearbeiten",
+      "endBody": "Die Abstimmung wird geschlossen, die Ergebnisse werden für alle sichtbar und im Kanal wird eine Abschlussnachricht gepostet.",
+      "endConfirm": "Umfrage beenden",
+      "endFailed": "Die Umfrage konnte nicht beendet werden.",
+      "endNow": "Umfrage jetzt beenden",
+      "endTitle": "Umfrage jetzt beenden?",
+      "menu": "Umfrageoptionen",
+      "multi": "Mehrfachauswahl",
+      "noVotes": "Noch keine Stimmen",
+      "nobodyVoted": "Niemand hat abgestimmt",
+      "single": "Einzelauswahl",
+      "tap": "Tippe auf eine Option, um abzustimmen",
+      "tapShort": "Zum Abstimmen tippen",
+      "tie": "Gleichstand:",
+      "undo": "Meine Stimme zurücknehmen",
+      "voteFailed": "Abstimmen fehlgeschlagen.",
+      "voters": "Abstimmende",
+      "votes": "{count, plural, one {# Stimme} other {# Stimmen}}",
+      "votesHidden": "{count, plural, one {# Stimme} other {# Stimmen}} · Ergebnisse nach deiner Abstimmung",
+      "winner": "Gewinner:",
+      "winnerTag": "GEWINNER"
+    },
+    "presence": {
+      "dnd": "Bitte nicht stören"
+    },
+    "reason": "Grund",
+    "store": {
+      "failed": "Die Umfrageaktion ist fehlgeschlagen.",
+      "offline": "Warte auf Verbindung.",
+      "timeout": "Der Server hat nicht geantwortet, versuch es erneut."
+    },
+    "timeLeft": "noch {span}",
+    "voters": {
+      "loadFailed": "Abstimmende konnten nicht geladen werden.",
+      "noMatch": "Keine Treffer",
+      "noVotes": "Noch keine Stimmen für diese Option",
+      "search": "Abstimmende durchsuchen",
+      "title": "Wer hat abgestimmt?",
+      "unknown": "Unbekanntes Mitglied",
+      "you": "(du)"
+    }
+  },
   "profile": {
     "about": "Info",
     "back": "Profil",
@@ -1628,6 +2097,1733 @@ export const nested = {
     "voiceHint": "Geräte & Mikrofontest",
     "voiceVideo": "Sprache & Video"
   },
+  "shell": {
+    "ann": {
+      "days": "{count} T.",
+      "hours": "{count} Std.",
+      "minutes": "{count} Min."
+    },
+    "appearance": {
+      "a11y": "Barrierefreiheit",
+      "a11yPerf": "Barrierefreiheit und Leistung",
+      "accentFoot": "Buttons, ausgewählte Tabs und deine eigenen Nachrichtenblasen verwenden diese Farbe.",
+      "accentFootPremium": "Solange ein Shop-Theme aktiv ist, legt das Theme die Akzentfarbe fest.",
+      "accents": {
+        "blue": "Descall-Blau",
+        "green": "Grün",
+        "orange": "Orange",
+        "pink": "Pink",
+        "purple": "Lila",
+        "red": "Rot",
+        "teal": "Petrol"
+      },
+      "browseShop": "Shop durchstöbern",
+      "fontSteps": {
+        "xlarge": "Extra groß"
+      },
+      "livePreviewBadge": "LIVE-VORSCHAU",
+      "livePreviewLabel": "Live-Vorschau",
+      "openShop": "Shop öffnen",
+      "previewCap": "Änderungen erscheinen sofort hier und in der ganzen App.",
+      "previewMsg1": "Heute Abend Lust auf ein Spiel? 🎮",
+      "previewMsg2": "Bin dabei! Ich komme um 21:00 in den Sprachchat",
+      "previewMsg3": "Super, sag Mert auch Bescheid 👍",
+      "reduceMotion": "Bewegung reduzieren",
+      "reduceMotionSub": "Vereinfacht Übergänge und Federanimationen",
+      "reduceTransparency": "Transparenz reduzieren",
+      "reduceTransparencySubDesktop": "Feste Flächen statt Glas; flüssiger auf älteren Computern",
+      "reduceTransparencySubMobile": "Feste, dunkle Flächen statt Glas",
+      "removed": "Entfernt:",
+      "removedBubble": "Stil der Nachrichtenblasen",
+      "removedStatus": "Status (ins Profilmenü verschoben)",
+      "savedFoot": "Das Erscheinungsbild wird in deinem Konto gespeichert und ist auf all deinen Geräten gleich. Deinen Status änderst du jetzt im Profilmenü.",
+      "shopThemes": "Shop-Themes",
+      "textSize": "Textgröße",
+      "textSizeFootDesktop": "Gilt für Chat, Kanalliste und Menüs. Auch mit Ctrl + / Ctrl − änderbar.",
+      "textSizeFootMobile": "Gilt für Chat, Listen und Menüs. Folgt auch der iPhone-Einstellung „Dynamischer Text“.",
+      "themeAuto": "Automatisch",
+      "themesOwned": "{count, plural, one {# Theme im Besitz} other {# Themes im Besitz}}"
+    },
+    "badges": {
+      "titleOther": "Abzeichen von {name}"
+    },
+    "hover": {
+      "message": "Nachricht an {name}"
+    },
+    "since": {
+      "days": "{count} T.",
+      "hours": "{count} Std.",
+      "hoursMinutes": "{hours} Std. {minutes} Min.",
+      "minutes": "{count} Min."
+    }
+  },
+  "shop": {
+    "buy": {
+      "animated": "Animiert",
+      "balanceValue": "Guthaben {balance}",
+      "cat": {
+        "avatar_effect": {
+          "acc": "Den Avatar-Effekt",
+          "eyebrow": "AVATAR-EFFEKT",
+          "foot": "Der Effekt erscheint auf deinem Profil, in Nachrichten und in der Mitgliederliste. Mit „Bewegung reduzieren“ bleibt er still.",
+          "label": "AN DEINEM AVATAR",
+          "meta": "Avatar-Effekt · {motion}",
+          "noun": "Avatar-Effekt"
+        },
+        "banner": {
+          "acc": "Das Banner",
+          "eyebrow": "PROFILBANNER",
+          "foot": "Das Banner bleibt in deinem Konto und du kannst es jederzeit wechseln. Es wird immer nur ein Banner getragen.",
+          "label": "AUF DEINEM PROFIL",
+          "meta": "Banner · 600×200 · Statisch",
+          "noun": "Banner"
+        },
+        "call_overlay": {
+          "acc": "Das Anruf-Overlay",
+          "eyebrow": "ANRUF-OVERLAY",
+          "foot": "Das Overlay ändert den Hintergrund des Anrufbildschirms; Kameras und Steuerung bleiben gleich.",
+          "label": "IN ANRUFEN",
+          "meta": "Anruf-Overlay · Sprache und Video",
+          "noun": "Anruf-Overlay"
+        },
+        "chat_bubble": {
+          "acc": "Die Chatblase",
+          "eyebrow": "CHATBLASE",
+          "foot": "Die Blase erscheint nur bei deinen Nachrichten; alle sehen dieselbe Blase.",
+          "label": "IM CHAT",
+          "meta": "Chatblase · {motion}",
+          "metaSeries": "Chatblase · Atelier-Serie · {motion}",
+          "noun": "Chatblase"
+        },
+        "name_effect": {
+          "acc": "Den Namenseffekt",
+          "eyebrow": "NAMENSEFFEKT",
+          "foot": "Der Effekt ist in jeder Größe von 14 bis 34 px lesbar. Es wird immer nur ein Namenseffekt getragen.",
+          "label": "AN DEINEM NAMEN",
+          "meta": "Namenseffekt · {motion}",
+          "metaSeries": "Namenseffekt · Sigil-Serie · {motion}",
+          "noun": "Namenseffekt"
+        },
+        "presence_flare": {
+          "acc": "Den Präsenz-Flare",
+          "eyebrow": "PRÄSENZ-FLARE",
+          "foot": "Der Schein ändert deine Statusfarbe nicht; Online, Abwesend und Bitte nicht stören bleiben unterscheidbar.",
+          "label": "DEIN STATUS",
+          "meta": "Präsenz-Flare · Online-Anzeige",
+          "noun": "Präsenz-Flare"
+        },
+        "profile_aura": {
+          "acc": "Die Aura",
+          "eyebrow": "PROFIL-AURA",
+          "foot": "Alle, die deine Profilkarte öffnen, sehen die Aura. Es wird immer nur eine Aura getragen.",
+          "label": "AUF DEINEM PROFIL",
+          "meta": "Aura · Rund um deine Profilkarte",
+          "noun": "Aura"
+        },
+        "profile_background": {
+          "acc": "Den Hintergrund",
+          "eyebrow": "PROFILHINTERGRUND",
+          "foot": "Der Hintergrund füllt die ganze Profilkarte; unten wird er dunkler, damit Text lesbar bleibt.",
+          "label": "AUF DEINEM PROFIL",
+          "meta": "Hintergrund · Profilkarte · Statisch",
+          "noun": "Hintergrund"
+        },
+        "profile_color": {
+          "acc": "Die Kartenfarbe",
+          "eyebrow": "KARTENFARBE",
+          "foot": "Alle, die deine Profilkarte öffnen, sehen die Farbe. Banner und Avatar bleiben gleich. Es wird immer nur eine Farbe getragen.",
+          "label": "AUF DEINER PROFILKARTE",
+          "meta": "Kartenfarbe · Profilkarte",
+          "noun": "Kartenfarbe"
+        },
+        "reaction_burst": {
+          "acc": "Den Reaktionseffekt",
+          "eyebrow": "REAKTIONSEXPLOSION",
+          "foot": "Der Effekt erscheint nur bei deinen Reaktionen; Zahlen und Emoji bleiben gleich.",
+          "label": "AN DEINEN REAKTIONEN",
+          "meta": "Reaktion · Deine Reaktionen",
+          "noun": "Reaktionseffekt"
+        },
+        "theme": {
+          "acc": "Das Theme",
+          "eyebrow": "APP-THEME",
+          "foot": "Ein Theme ändert nur, wie Descall für dich aussieht. Mit „Bewegung reduzieren“ stehen die Vorhänge still.",
+          "label": "IN DEINER APP",
+          "meta": "Theme · Ganze App · {motion}",
+          "noun": "Theme"
+        },
+        "typing_flare": {
+          "acc": "Den Tipp-Flare",
+          "eyebrow": "TIPP-FLARE",
+          "foot": "Alle im Chat sehen diese Anzeige, während du tippst.",
+          "label": "IM CHAT",
+          "meta": "Tipp-Flare · {motion}",
+          "noun": "Tipp-Flare"
+        }
+      },
+      "chat15": "Im Chat · 15 px",
+      "clickMoment": "Der Moment, in dem du klickst",
+      "dms": "DIREKTNACHRICHTEN",
+      "dnd": "Bitte nicht stören",
+      "doneFoot": "Der Kauf steht in deinem DesCoin-Verlauf. {thing} kannst du jederzeit im Inventar ändern.",
+      "doneSubStowed": "Zu deinem Inventar hinzugefügt · jederzeit anlegbar",
+      "doneSubSwapped": "Jetzt angelegt · {previous} ist zurück in deinem Inventar",
+      "doneSubWorn": "Jetzt auf deinem Profil angelegt",
+      "doneTitle": "{name} gehört dir",
+      "eveningGroup": "Abendrunde",
+      "inChat": "Im Chat",
+      "inDms": "In Direktnachrichten",
+      "inInventory": "Im Inventar",
+      "inMembers": "In der Mitgliederliste",
+      "inMessages": "In Nachrichten",
+      "lines": {
+        "ae": "Heute Abend in den Sprachchat, wer ist dabei?",
+        "bgAbout": "Nachteule. Meist abends im Sprachchat, am Wochenende Filmabend.",
+        "bub1": "Filmabend heute?",
+        "bub2": "Ja! Um neun in den Sprachchat 🎬",
+        "bub3": "Das Popcorn geht auf mich.",
+        "name": "Film um neun, nicht vergessen.",
+        "rx": "Die letzte Szene war legendär, alle sind aufgesprungen 👏",
+        "theme1": "Hab das neue Theme gesehen, sieht super aus 😍",
+        "theme2": "Neues Theme! Es zieht langsam im Hintergrund vorbei",
+        "theme3": "Ich glaub, ich hol's mir auch",
+        "ty1": "Welchen Film machen wir an?",
+        "ty2": "Sekunde, ich schick die Liste"
+      },
+      "looks": "SO SIEHT ES AUS {label}",
+      "members13": "Mitgliederliste · 13 px",
+      "missing": "Fehlt",
+      "needMore": "<b>{amount} DesCoin</b> fehlen noch",
+      "newBalance": "Neues Guthaben",
+      "notEnough": "reicht nicht",
+      "now": "Jetzt",
+      "openInventory": "Inventar öffnen",
+      "ownFootEq": "Ablegen behält es in deinem Konto; erneutes Anlegen ist kostenlos.",
+      "ownFootInvCurrent": "Beim Anlegen wird {current} abgelegt. Du musst es nicht erneut kaufen.",
+      "ownFootInvNone": "Anlegen ist kostenlos. Du musst es nicht erneut kaufen.",
+      "ownSub": "{via, select, gift {Geschenkt am {date} · Guthaben {balance}} voucher {Am {date} mit einem Gratis-Gutschein eingelöst · Guthaben {balance}} other {Am {date} für {paid} DesCoin gekauft · Guthaben {balance}}}",
+      "ownTitle": "Gehört dir: {noun}",
+      "paid": "Bezahlt",
+      "people": {
+        "ece": "Ece",
+        "kaan": "Kaan",
+        "selin": "Selin"
+      },
+      "prevBalance": "Bisheriges Guthaben",
+      "rarity": {
+        "common": "Gewöhnlich",
+        "epic": "Episch",
+        "legendary": "Legendär",
+        "mythic": "Mythisch",
+        "rare": "Selten"
+      },
+      "ready": "{percent}% geschafft",
+      "sampleBubble": "Hi!",
+      "sampleName": "Aa",
+      "sendTo": "Nachricht an {name}",
+      "shortBtn": "{amount} DesCoin zu wenig",
+      "shortFoot": "Sobald dein Guthaben reicht, wird der Kauf in diesem Fenster freigeschaltet. Preis und Guthaben bleiben unverändert.",
+      "statesStay": "Status bleiben unterscheidbar",
+      "still": "Statisch",
+      "talk": "In Anrufen reden",
+      "undoneSubNone": "Rückgängig gemacht · der neue Artikel ist in deinem Inventar, nicht angelegt",
+      "undoneSubSwapped": "Rückgängig gemacht · {previous} ist wieder angelegt, der neue Artikel ist in deinem Inventar",
+      "wearSubCurrent": "{current} wird abgelegt und bleibt in deinem Inventar",
+      "wearSubNone": "Gerade ist nichts angelegt, es wird direkt angelegt",
+      "withThis": "Damit"
+    },
+    "retiredTitles": "Profiltitel wurden mit 2.13.0 eingestellt. {count, plural, one {Dein # alter Titel bleibt in deinem Konto, wird aber nicht mehr angezeigt.} other {Deine # alten Titel bleiben in deinem Konto, werden aber nicht mehr angezeigt.}}"
+  },
+  "shopItems": {
+    "_templates": {
+      "avatarEffect": "Avatar-Aura-Effekt – {name}. Animierter Ring/Overlay rund um deinen Avatar.",
+      "background": "Immersiver Profilhintergrund – {name}. Randlose Atmosphäre für deine Karte.",
+      "banner": "Premium-Profilbanner – {name}. Gestalteter Farbverlauf mit filmischer Tiefe.",
+      "chatBubble": "Chatblasen-Skin – {name}. Gestaltet deine gesendeten Nachrichtenblasen.",
+      "nameEffect": "Animierter Namenseffekt – {name}. Verlauf/Leuchten für deinen Anzeigenamen.",
+      "presenceFlare": "Präsenz-Flare – {name}. Erweitertes Leuchten um deine Online-Statusanzeige.",
+      "profileAura": "Profil-Aura – {name}. Atmosphärisches Leuchten rund um deine Profilkarte."
+    },
+    "avatar-effect-aurora": {
+      "desc": "Ein schimmernder Ring in Polarlichtfarben umgibt deinen Avatar.",
+      "name": "Polarlichtring"
+    },
+    "avatar-effect-bubble": {
+      "name": "Blasenring"
+    },
+    "avatar-effect-comet": {
+      "name": "Kometenschweif"
+    },
+    "avatar-effect-ember": {
+      "name": "Glutorbit"
+    },
+    "avatar-effect-flame": {
+      "desc": "Eine flackernde Flammenaura umgibt deinen Avatar.",
+      "name": "Flammenaura"
+    },
+    "avatar-effect-frost": {
+      "desc": "Ein eisiger Schimmer umgibt deinen Avatar.",
+      "name": "Frostaura"
+    },
+    "avatar-effect-frostbite": {
+      "name": "Frostbiss"
+    },
+    "avatar-effect-halo": {
+      "name": "Sanfter Heiligenschein"
+    },
+    "avatar-effect-hex": {
+      "name": "Hexagitter"
+    },
+    "avatar-effect-holoring": {
+      "name": "Holo-Ring"
+    },
+    "avatar-effect-neon": {
+      "name": "Neonstriche"
+    },
+    "avatar-effect-orbit": {
+      "desc": "Winzige Partikel kreisen ununterbrochen um deinen Avatar.",
+      "name": "Partikelorbit"
+    },
+    "avatar-effect-petal": {
+      "name": "Blütenorbit"
+    },
+    "avatar-effect-prism": {
+      "name": "Prismadrehung"
+    },
+    "avatar-effect-pulse": {
+      "desc": "Ein sanftes Leuchten, das um deinen Avatar pulsiert.",
+      "name": "Pulsierendes Leuchten"
+    },
+    "avatar-effect-pulse2": {
+      "name": "Doppelpuls"
+    },
+    "avatar-effect-ripple": {
+      "name": "Wellenring"
+    },
+    "avatar-effect-royal": {
+      "name": "Königswappen"
+    },
+    "avatar-effect-scan": {
+      "name": "Scanline"
+    },
+    "avatar-effect-solar": {
+      "name": "Sonnenkrone"
+    },
+    "avatar-effect-spark": {
+      "desc": "Knisternde elektrische Funken kreisen um deinen Avatar.",
+      "name": "Elektrischer Funke"
+    },
+    "avatar-effect-static": {
+      "name": "Statikfeld"
+    },
+    "avatar-effect-toxic": {
+      "name": "Giftnebel"
+    },
+    "avatar-effect-void": {
+      "name": "Leerenscheibe"
+    },
+    "background-amber-gallery": {
+      "name": "Bernsteingalerie"
+    },
+    "background-arcade-lounge": {
+      "name": "Arcade-Lounge"
+    },
+    "background-aurora-sky": {
+      "desc": "Ein schimmernder Himmel von Türkis bis Violett, erhellt von Polarlicht und Sternen.",
+      "name": "Polarlichthimmel"
+    },
+    "background-azure-observatory": {
+      "name": "Azurblaue Sternwarte"
+    },
+    "background-blood-theater": {
+      "name": "Bluttheater"
+    },
+    "background-bronze-atelier": {
+      "name": "Bronze-Atelier"
+    },
+    "background-carbon-deck": {
+      "name": "Carbon-Deck"
+    },
+    "background-celestial-dome": {
+      "name": "Himmelskuppel"
+    },
+    "background-cherry-grove": {
+      "desc": "Ein verträumter rosa-weißer Hain voller fallender Blüten.",
+      "name": "Kirschhain"
+    },
+    "background-copper-foundry": {
+      "name": "Kupfergießerei"
+    },
+    "background-coral-cove": {
+      "name": "Korallenbucht"
+    },
+    "background-crimson-atelier": {
+      "name": "Purpur-Atelier"
+    },
+    "background-cyber-grove": {
+      "name": "Cyber-Hain"
+    },
+    "background-desert-dusk": {
+      "desc": "Warme Orangetöne, die in dämmriges Lila übergehen, wie ein Sonnenuntergang in der Wüste.",
+      "name": "Wüstendämmerung"
+    },
+    "background-ember-forge": {
+      "name": "Glutschmiede"
+    },
+    "background-forest-canopy": {
+      "desc": "Sonnengesprenkeltes Grün unter einem dichten Blätterdach.",
+      "name": "Blätterdach"
+    },
+    "background-glacier-lab": {
+      "name": "Gletscherlabor"
+    },
+    "background-graphite-suite": {
+      "name": "Graphit-Suite"
+    },
+    "background-harbor-night": {
+      "name": "Hafennacht"
+    },
+    "background-hyperion-hall": {
+      "name": "Hyperion-Halle"
+    },
+    "background-ion-hangar": {
+      "name": "Ionen-Hangar"
+    },
+    "background-ivory-library": {
+      "name": "Elfenbeinbibliothek"
+    },
+    "background-jade-sanctum": {
+      "name": "Jade-Heiligtum"
+    },
+    "background-lilac-parlor": {
+      "name": "Flieder-Salon"
+    },
+    "background-magma-core": {
+      "name": "Magmakern"
+    },
+    "background-mint-lounge": {
+      "name": "Mint-Lounge"
+    },
+    "background-moss-greenhouse": {
+      "name": "Moos-Gewächshaus"
+    },
+    "background-neon-city": {
+      "desc": "Eine Cyberpunk-Skyline aus magentafarbenem und violettem Neon.",
+      "name": "Neonstadt"
+    },
+    "background-noir-vault": {
+      "name": "Noir-Tresor"
+    },
+    "background-obsidian-hall": {
+      "name": "Obsidianhalle"
+    },
+    "background-ocean-depths": {
+      "desc": "Tiefblaues Wasser mit treibenden Blasen für deine Profilseite.",
+      "name": "Meerestiefen"
+    },
+    "background-opaline-loft": {
+      "name": "Opal-Loft"
+    },
+    "background-orchid-salon": {
+      "name": "Orchideen-Salon"
+    },
+    "background-pearl-atrium": {
+      "name": "Perlen-Atrium"
+    },
+    "background-plasma-chamber": {
+      "name": "Plasmakammer"
+    },
+    "background-polar-station": {
+      "name": "Polarstation"
+    },
+    "background-quantum-bay": {
+      "name": "Quantenbucht"
+    },
+    "background-rose-suite": {
+      "name": "Rosen-Suite"
+    },
+    "background-rust-conservatory": {
+      "name": "Rost-Wintergarten"
+    },
+    "background-saffron-terrace": {
+      "name": "Safran-Terrasse"
+    },
+    "background-steel-workshop": {
+      "name": "Stahlwerkstatt"
+    },
+    "background-teal-basin": {
+      "name": "Türkisbecken"
+    },
+    "background-tropical-veranda": {
+      "name": "Tropische Veranda"
+    },
+    "background-violet-archive": {
+      "name": "Violettes Archiv"
+    },
+    "background-void-gallery": {
+      "name": "Leerengalerie"
+    },
+    "background-volcanic-ash": {
+      "desc": "Glimmende Glut, die über vulkanische Asche treibt.",
+      "name": "Vulkanasche"
+    },
+    "background-zenith-deck": {
+      "name": "Zenit-Deck"
+    },
+    "banner-acid-lattice": {
+      "name": "Säuregitter"
+    },
+    "banner-amber-dunes": {
+      "name": "Bernsteindünen"
+    },
+    "banner-arctic-frost": {
+      "desc": "Kühle, eisige Blautöne für ein klares, frisches Banner.",
+      "name": "Arktischer Frost"
+    },
+    "banner-azure-cathedral": {
+      "name": "Azurkathedrale"
+    },
+    "banner-blood-moon": {
+      "name": "Blutmond"
+    },
+    "banner-carbon-pulse": {
+      "name": "Carbon-Puls"
+    },
+    "banner-celestial-ink": {
+      "name": "Himmelstinte"
+    },
+    "banner-cherry-blossom": {
+      "desc": "Zarte rosa Blüten, die über einen hellen Farbverlauf schweben.",
+      "name": "Kirschblüte"
+    },
+    "banner-chrome-tide": {
+      "name": "Chromflut"
+    },
+    "banner-copper-forge": {
+      "name": "Kupferschmiede"
+    },
+    "banner-coral-reef": {
+      "name": "Korallenriff"
+    },
+    "banner-crimson-monolith": {
+      "name": "Purpurmonolith"
+    },
+    "banner-cyber-marsh": {
+      "name": "Cyber-Sumpf"
+    },
+    "banner-deep-teal": {
+      "name": "Tiefer Türkisabgrund"
+    },
+    "banner-eclipse-silk": {
+      "name": "Finsternisseide"
+    },
+    "banner-ember-vault": {
+      "name": "Glut-Tresor"
+    },
+    "banner-emerald-forest": {
+      "desc": "Tiefe, moosige Grüntöne für ein naturinspiriertes Banner.",
+      "name": "Smaragdwald"
+    },
+    "banner-frosted-copper": {
+      "name": "Bereiftes Kupfer"
+    },
+    "banner-galaxy-swirl": {
+      "desc": "Eine wirbelnde Galaxie in Violett und Blau, mit Sternen bestäubt.",
+      "name": "Galaxiewirbel"
+    },
+    "banner-glacier-peak": {
+      "name": "Gletschergipfel"
+    },
+    "banner-graphite-flare": {
+      "name": "Graphit-Flare"
+    },
+    "banner-hyperion-gold": {
+      "name": "Hyperion-Gold"
+    },
+    "banner-ion-circuit": {
+      "name": "Ionen-Schaltkreis"
+    },
+    "banner-ion-sand": {
+      "name": "Ionensand"
+    },
+    "banner-ivory-dusk": {
+      "name": "Elfenbeindämmerung"
+    },
+    "banner-jade-temple": {
+      "name": "Jadetempel"
+    },
+    "banner-lilac-mist": {
+      "name": "Fliedernebel"
+    },
+    "banner-luminous-moss": {
+      "name": "Leuchtendes Moos"
+    },
+    "banner-magma-vein": {
+      "name": "Magmaader"
+    },
+    "banner-midnight-harbor": {
+      "name": "Mitternachtshafen"
+    },
+    "banner-mint-horizon": {
+      "name": "Mint-Horizont"
+    },
+    "banner-neon-harbor": {
+      "name": "Neonhafen"
+    },
+    "banner-nocturne-violet": {
+      "name": "Nocturne-Violett"
+    },
+    "banner-noir-gold": {
+      "name": "Noir & Gold"
+    },
+    "banner-obsidian-rift": {
+      "name": "Obsidianriss"
+    },
+    "banner-opaline-wave": {
+      "name": "Opalwelle"
+    },
+    "banner-pearl-fog": {
+      "name": "Perlnebel"
+    },
+    "banner-phantom-rose": {
+      "name": "Phantomrose"
+    },
+    "banner-plasma-ribbon": {
+      "name": "Plasmaband"
+    },
+    "banner-polar-night": {
+      "name": "Polarnacht"
+    },
+    "banner-quantum-lagoon": {
+      "name": "Quantenlagune"
+    },
+    "banner-rose-quartz": {
+      "name": "Rosenquarz"
+    },
+    "banner-royal-velvet": {
+      "desc": "Königliches Purpur und Gold für ein luxuriöses Profilbanner.",
+      "name": "Königssamt"
+    },
+    "banner-rust-garden": {
+      "name": "Rostgarten"
+    },
+    "banner-saffron-silk": {
+      "name": "Safranseide"
+    },
+    "banner-shadow-orchid": {
+      "name": "Schattenorchidee"
+    },
+    "banner-solar-flare": {
+      "desc": "Ein intensiver Ausbruch aus Orange und Rot, wie ein Sonnensturm.",
+      "name": "Sonneneruption"
+    },
+    "banner-solar-garden": {
+      "name": "Sonnengarten"
+    },
+    "banner-steel-rain": {
+      "name": "Stahlregen"
+    },
+    "banner-sunset-arcade": {
+      "name": "Sunset Arcade"
+    },
+    "banner-titan-bronze": {
+      "name": "Titanbronze"
+    },
+    "banner-toxic-slime": {
+      "desc": "Ein radioaktives grünes Leuchten auf dunklem, rauem Grund.",
+      "name": "Giftschleim"
+    },
+    "banner-tropical-haze": {
+      "name": "Tropischer Dunst"
+    },
+    "banner-verdant-pulse": {
+      "name": "Grüner Puls"
+    },
+    "banner-violet-storm": {
+      "name": "Violetter Sturm"
+    },
+    "banner-void-mirror": {
+      "name": "Leerenspiegel"
+    },
+    "banner-zenith-blue": {
+      "name": "Zenitblau"
+    },
+    "call-arctic-bridge": {
+      "desc": "Eisblauer Stahl und gletscherartige Verläufe – klar, kalt und makellos sauber für konzentrierte Anrufe.",
+      "name": "Arktische Brücke"
+    },
+    "call-aurora-dome": {
+      "desc": "Ein lebendiger Polarlichthimmel über der Anrufbühne – Türkis, Violett und sanfter Sternenstaub.",
+      "name": "Polarlichtkuppel"
+    },
+    "call-carbon-cockpit": {
+      "desc": "Mattes Carbongewebe mit Cyan-Instrumentenleuchten – Piloten-Feeling für Sprachchats, bei denen es drauf ankommt.",
+      "name": "Carbon-Cockpit"
+    },
+    "call-cyber-deck": {
+      "desc": "Kantiges Cyan-Raster, knallpinke Akzente, Scanline-Dunst – Anrufe im Cyberspace-Look.",
+      "name": "Cyber-Deck"
+    },
+    "call-ember-theater": {
+      "desc": "Samtiges Dunkel mit Vorhängen aus geschmolzenem Bernstein – deine Anrufe fühlen sich an wie eine private Premiere.",
+      "name": "Glut-Theater"
+    },
+    "call-glass-atrium": {
+      "desc": "Mattiertes Architekturglas mit sanften Tageslichtstrahlen – die edelste Anrufkulisse, die wir haben.",
+      "name": "Glasatrium"
+    },
+    "call-golden-hall": {
+      "desc": "Warmes Champagnerlicht auf dunklem Marmor – der edelste Anrufraum in Descall.",
+      "name": "Goldene Halle"
+    },
+    "call-midnight-ops": {
+      "desc": "Anruf-UI wie in einer Kommandozentrale: tiefblaues Glas, bernsteinfarbene Telemetrielinien und ein taktischer HUD-Rahmen.",
+      "name": "Mitternachtsoperation"
+    },
+    "call-mosaic-stage": {
+      "desc": "Kunstvolle Glasmosaik-Ränder fangen das Licht ein, während du sprichst – Galerie-Feeling auf der Anrufbühne.",
+      "name": "Mosaikbühne"
+    },
+    "call-neon-stadium": {
+      "desc": "Arena-Energie für Sprachanrufe – magentafarbene Randlichter, Cyan-Akzente wie auf der Anzeigetafel, Drama fürs Publikum.",
+      "name": "Neonstadion"
+    },
+    "call-ocean-bridge": {
+      "desc": "Tiefseeblau mit biolumineszentem Randlicht – ruhige Tiefe für lange Gespräche.",
+      "name": "Ozeanbrücke"
+    },
+    "call-plasma-arena": {
+      "desc": "Zwei Plasmaschienen (Magenta ↔ Cyan) rahmen den Anruf ein – Arena-Intensität mit Studio-Finish.",
+      "name": "Plasma-Arena"
+    },
+    "call-royal-lounge": {
+      "desc": "Tiefes Pflaumenlila und gebürstete Goldschienen – eine Lounge, kein Meeting. Sanfter Luxus für späte Gespräche.",
+      "name": "Königliche Lounge"
+    },
+    "call-sakura-suite": {
+      "desc": "Zartrosa Verläufe und sanftes Blütenlicht – intim, modern, nie kitschig.",
+      "name": "Sakura-Suite"
+    },
+    "call-titan-forge": {
+      "desc": "Geschmiedete Stahlplatten, Nähte aus geschmolzenem Kupfer und Hitzeflimmern – industrieller Mythos für Legenden.",
+      "name": "Titanenschmiede"
+    },
+    "call-void-chamber": {
+      "desc": "Fast schwarze Leere mit violetten Ereignishorizont-Ringen – filmische Stille zwischen jedem Wort.",
+      "name": "Leerenkammer"
+    },
+    "chat-bubble-arcade": {
+      "name": "Arcade-Pop-Blase",
+      "stem": "Arcade Pop"
+    },
+    "chat-bubble-atelier-abyss": {
+      "desc": "Ein Tiefwasserbrunnen mit einem Perlenglanz, der unter der Oberfläche schwebt, und einem türkisfarbenen Rand.",
+      "name": "Abgrundperle"
+    },
+    "chat-bubble-atelier-arc": {
+      "desc": "Der Rand blitzt zwischen Weiß, Cyan und Blau, das Leuchten folgt dem Bogen.",
+      "name": "Lichtbogen"
+    },
+    "chat-bubble-atelier-aurora": {
+      "desc": "Ein Vorhang aus Grün, Violett und Eis, der über die Blase wandert.",
+      "name": "Polarlichtschleier"
+    },
+    "chat-bubble-atelier-biolume": {
+      "desc": "Zwei lebende Blüten treiben im tiefen Wasser, versetzt zueinander.",
+      "name": "Biolume"
+    },
+    "chat-bubble-atelier-breath": {
+      "desc": "Kohle, die atmet. Der Rand glüht auf und sinkt wie der Zug einer Schmiede.",
+      "name": "Glutatem"
+    },
+    "chat-bubble-atelier-canopy": {
+      "desc": "Geschichteter Waldschatten mit drei Lichtstrahlen, als läge die Nachricht unter Blättern.",
+      "name": "Blätterlicht"
+    },
+    "chat-bubble-atelier-chrome": {
+      "desc": "Ein gefrästes Spiegelband: hartes Silber, ein weißer Glanzpunkt und dunkle Schrift.",
+      "name": "Chromspiegel"
+    },
+    "chat-bubble-atelier-circuit": {
+      "desc": "Ein Leiterbahnraster in Cyan und Rosa, das kriecht wie eine Platine unter Strom.",
+      "name": "Neonschaltkreis"
+    },
+    "chat-bubble-atelier-coal": {
+      "desc": "Fast schwarze Kohle mit festen Glutpunkten. Das Glühen bewegt sich nicht; die Hitze steckt im Stein.",
+      "name": "Glutkohle"
+    },
+    "chat-bubble-atelier-comet": {
+      "desc": "Ein heller Kopf, der ein dunkles Feld kreuzt und die Worte lesbar lässt.",
+      "name": "Kometenspur"
+    },
+    "chat-bubble-atelier-damascus": {
+      "desc": "Gefalteter Stahl: feine Wellen, ein kalter Glanz und eine dunkle Kante wie bei einer fertigen Klinge.",
+      "name": "Damaszenerfaltung"
+    },
+    "chat-bubble-atelier-filigree": {
+      "desc": "Weinroter Grund, ein goldener Innenrahmen und Eckfunken wie gravierte Metallarbeit.",
+      "name": "Purpurfiligran"
+    },
+    "chat-bubble-atelier-firefly": {
+      "desc": "Zwei langsame Lichter wandern durch einen nächtlichen Garten, nie auf demselben Weg.",
+      "name": "Glühwürmchenflug"
+    },
+    "chat-bubble-atelier-glacier": {
+      "desc": "Gestapelte Eisflächen mit harten Farbbrüchen und einer hellen Oberkante, wie ein geschnittener Block.",
+      "name": "Gletscherfacette"
+    },
+    "chat-bubble-atelier-glitch": {
+      "desc": "Chromatische Randfehler im Stufentakt. Die Blase selbst springt nicht.",
+      "name": "Signalstörung"
+    },
+    "chat-bubble-atelier-heartbeat": {
+      "desc": "Ein leiser Doppelpuls im Rand, wie eine Statusleuchte unter Glas.",
+      "name": "Herzschlag"
+    },
+    "chat-bubble-atelier-inkwash": {
+      "desc": "Eine einzelne Tintenblüte auf dunklem Papier, in einer Ecke kräftiger, in der anderen dünn.",
+      "name": "Sumi-Tuschelavur"
+    },
+    "chat-bubble-atelier-lacquer": {
+      "desc": "Schwarzer japanischer Lack mit scharfem Glanz oben und goldenem Fuß.",
+      "name": "Urushi-Lack"
+    },
+    "chat-bubble-atelier-magma": {
+      "desc": "Kruste und Schmelze tauschen die Plätze, Orange drängt durch Schwarz.",
+      "name": "Magmapuls"
+    },
+    "chat-bubble-atelier-marble": {
+      "desc": "Heller Marmor mit grauen Adern und einem warmen Haarriss. Helle Oberfläche, dunkle Schrift, Galerierahmen.",
+      "name": "Carrara-Schleier"
+    },
+    "chat-bubble-atelier-mercury": {
+      "desc": "Geschmolzenes Silber gleitet durch einen dunklen Kanal, der Glanz jagt dem Fluss hinterher.",
+      "name": "Flüssiges Quecksilber"
+    },
+    "chat-bubble-atelier-moonstone": {
+      "desc": "Milchige Mitte, indigoblauer Rand und ein geteilter Saum in Cyan und Rosa wie ein polierter Mondstein.",
+      "name": "Mondsteinrand"
+    },
+    "chat-bubble-atelier-nebula": {
+      "desc": "Zwei Gaswolken und ein Feld fester Sterne. Der Himmel ist gemalt, nicht einfach lila eingefärbt.",
+      "name": "Nebelstaub"
+    },
+    "chat-bubble-atelier-obsidian": {
+      "desc": "Schwarzer Stein mit feiner Goldader und lackiertem Innenrand. Deine Nachrichten sitzen in einem geschliffenen Edelstein, nicht in einer flachen Tönung.",
+      "name": "Obsidian-Intarsie"
+    },
+    "chat-bubble-atelier-oilslick": {
+      "desc": "Ein sich drehender Ölfilm. Der Farbton wandert im Kreis; die Schrift bleibt, wo sie ist.",
+      "name": "Ölfilm"
+    },
+    "chat-bubble-atelier-patina": {
+      "desc": "Oxidiertes Kupfer: warme Metallbänder, die in Grün übergehen, mit Sprenkeln aus blankem Kupfer.",
+      "name": "Grünspan-Patina"
+    },
+    "chat-bubble-atelier-plasma": {
+      "desc": "Ein heißer Kern, der in der Blase umherwandert, statt in der Mitte zu sitzen.",
+      "name": "Plasmakern"
+    },
+    "chat-bubble-atelier-porcelain": {
+      "desc": "Warme Glasur, feine Haarrisse und ein goldener Rand. Die Schrift bleibt dunkel und wirkt wie ein Tassenabdruck.",
+      "name": "Porzellanriss"
+    },
+    "chat-bubble-atelier-ribbon": {
+      "desc": "Ein Nordlichtband, das seinen Winkel dreht, statt einen flachen Verlauf zu schieben.",
+      "name": "Lichterband"
+    },
+    "chat-bubble-atelier-rift": {
+      "desc": "Ein dünner violetter Riss, der quer über die Nachricht wandert und sich hinter sich schließt.",
+      "name": "Leerenriss"
+    },
+    "chat-bubble-atelier-rosewood": {
+      "desc": "Feine Holzmaserung in Rosenholz und Saft, mit einer dunkleren Kernlinie.",
+      "name": "Rosenholzmaserung"
+    },
+    "chat-bubble-atelier-sandstone": {
+      "desc": "Unregelmäßige Sedimentschichten in Ocker, Hellbraun und Rost, zu einem Relief gepresst.",
+      "name": "Sandsteinschichten"
+    },
+    "chat-bubble-atelier-sapphire": {
+      "desc": "Ein facettierter Saphir im Kegelschliff, mit heller Tafel und tiefem Pavillon.",
+      "name": "Saphirschliff"
+    },
+    "chat-bubble-atelier-scanline": {
+      "desc": "Eine Hologrammplatte, über die ein Scanstreifen von oben nach unten läuft.",
+      "name": "Holo-Scan"
+    },
+    "chat-bubble-atelier-sheen": {
+      "desc": "Ein Juwelengrund mit einem einzelnen Lichtbalken, der hinüberzieht und verschwindet.",
+      "name": "Prismenstreif"
+    },
+    "chat-bubble-atelier-solar": {
+      "desc": "Ein goldener Kern, der sich in einer dunklen Korona ausdehnt und zusammenzieht.",
+      "name": "Sonneneruption"
+    },
+    "chat-bubble-atelier-starfall": {
+      "desc": "Ein fester Nachthimmel, durch den ein Schleier aus Sternen fällt.",
+      "name": "Sternenfall"
+    },
+    "chat-bubble-atelier-stormglass": {
+      "desc": "Schiefergraues Glas, durchzogen von drei harten Blitzstreifen statt eines weichen Grauverlaufs.",
+      "name": "Sturmglas"
+    },
+    "chat-bubble-atelier-tide": {
+      "desc": "Tiefes Wasser, das sich hinter den Worten hebt und senkt, Welle um Welle.",
+      "name": "Gezeitenglas"
+    },
+    "chat-bubble-atelier-velvet": {
+      "desc": "Florstoff: ein rosiger Glanz im Flor, eine gedrückte Kante und ein dezenter Schimmer, der bleibt.",
+      "name": "Samt Noir"
+    },
+    "chat-bubble-carbon": {
+      "desc": "Eine edle, mattschwarze Carbonfaser-Textur.",
+      "name": "Carbon"
+    },
+    "chat-bubble-cyber": {
+      "name": "Cyber-Raster-Blase",
+      "stem": "Cyber-Raster"
+    },
+    "chat-bubble-ember": {
+      "name": "Glutblase",
+      "stem": "Glut"
+    },
+    "chat-bubble-glass": {
+      "desc": "Eine Milchglas-Blase mit dezenter Unschärfe.",
+      "name": "Glas"
+    },
+    "chat-bubble-gold": {
+      "name": "Vergoldete Blase",
+      "stem": "Vergoldet"
+    },
+    "chat-bubble-holo": {
+      "desc": "Ein schillernder holografischer Schimmer auf jeder Nachricht.",
+      "name": "Holografisch"
+    },
+    "chat-bubble-ice": {
+      "name": "Eisschicht-Blase",
+      "stem": "Eisschicht"
+    },
+    "chat-bubble-lava": {
+      "name": "Lavastrom-Blase",
+      "stem": "Lavastrom"
+    },
+    "chat-bubble-matrix": {
+      "name": "Matrix-Blase",
+      "stem": "Matrix"
+    },
+    "chat-bubble-midnight": {
+      "name": "Mitternachtsblase"
+    },
+    "chat-bubble-mint": {
+      "name": "Minzfrost-Blase",
+      "stem": "Minzfrost"
+    },
+    "chat-bubble-neon-outline": {
+      "desc": "Ein leuchtender Neonrand um deine Nachrichten.",
+      "name": "Neonrand"
+    },
+    "chat-bubble-noir": {
+      "name": "Sanfte Noir-Blase",
+      "stem": "Sanftes Noir"
+    },
+    "chat-bubble-ocean": {
+      "name": "Meerestiefen-Blase",
+      "stem": "Meerestiefe"
+    },
+    "chat-bubble-pearl": {
+      "name": "Sanfte Perlenblase",
+      "stem": "Sanfte Perle"
+    },
+    "chat-bubble-prism": {
+      "name": "Prismakanten-Blase",
+      "stem": "Prismakante"
+    },
+    "chat-bubble-rose": {
+      "name": "Rosenglas-Blase",
+      "stem": "Rosenglas"
+    },
+    "chat-bubble-royal-purple": {
+      "desc": "Eine Blase mit sattem Verlauf in Königspurpur.",
+      "name": "Königspurpur"
+    },
+    "chat-bubble-sand": {
+      "name": "Wüstensand-Blase",
+      "stem": "Wüstensand"
+    },
+    "chat-bubble-sunset": {
+      "desc": "Ein warmer Sonnenuntergangsverlauf füllt deine Nachrichtenblasen.",
+      "name": "Sonnenuntergangsverlauf"
+    },
+    "chat-bubble-teal": {
+      "name": "Sanfte Türkisblase",
+      "stem": "Sanftes Türkis"
+    },
+    "chat-bubble-toxic": {
+      "name": "Giftgrün-Blase",
+      "stem": "Giftgrün"
+    },
+    "chat-bubble-violet": {
+      "name": "Violette-Tinte-Blase",
+      "stem": "Violette Tinte"
+    },
+    "name-effect-arctic": {
+      "name": "Arktischer Strahl"
+    },
+    "name-effect-candy": {
+      "name": "Candy Pop"
+    },
+    "name-effect-chrome": {
+      "name": "Chromglanz"
+    },
+    "name-effect-ember": {
+      "name": "Glutschweben"
+    },
+    "name-effect-embercore": {
+      "name": "Glutkern"
+    },
+    "name-effect-fire": {
+      "desc": "Dein Name brennt in einem wechselnden Rot-Orange-Verlauf.",
+      "name": "Feuerverlauf"
+    },
+    "name-effect-glitch": {
+      "name": "Glitch-Signal"
+    },
+    "name-effect-gold-shimmer": {
+      "desc": "Ein schimmernder Goldglanz zieht über deinen Namen.",
+      "name": "Goldschimmer"
+    },
+    "name-effect-holo": {
+      "name": "Holo-Wechsel"
+    },
+    "name-effect-ice": {
+      "desc": "Ein frostiger blau-weißer Verlauf, kühl und klar.",
+      "name": "Eisfrost"
+    },
+    "name-effect-laser": {
+      "name": "Laserpink"
+    },
+    "name-effect-magma": {
+      "name": "Magmastrom"
+    },
+    "name-effect-matrix": {
+      "name": "Matrixgrün"
+    },
+    "name-effect-mintglow": {
+      "name": "Minzleuchten"
+    },
+    "name-effect-neon": {
+      "desc": "Ein pulsierendes cyanfarbenes Neonleuchten um deinen Namen.",
+      "name": "Neonleuchten"
+    },
+    "name-effect-noir": {
+      "name": "Noir-Weiß"
+    },
+    "name-effect-ocean": {
+      "name": "Ozeandrift"
+    },
+    "name-effect-plasma": {
+      "name": "Plasmastreif"
+    },
+    "name-effect-rainbow": {
+      "desc": "Dein Name wechselt sanft durch alle Farben.",
+      "name": "Regenbogenwechsel"
+    },
+    "name-effect-royal": {
+      "name": "Königsviolett"
+    },
+    "name-effect-sand": {
+      "name": "Wüstengold"
+    },
+    "name-effect-sigil-aurora": {
+      "desc": "Ein Vorhang aus Grün, Violett und Eis, der durch die Buchstaben aufsteigt, während der Grundton daneben wandert.",
+      "name": "Polarlichtvorhang"
+    },
+    "name-effect-sigil-chroma": {
+      "desc": "Ein gestufter Farbversatz. Farbton und Doppelschatten springen im Takt, statt zu gleiten.",
+      "name": "Chroma-Stufe"
+    },
+    "name-effect-sigil-circuit": {
+      "desc": "Cyanfarbene Leiterbahnen wandern quer, rosafarbene nach unten, wie eine Platine unter Strom.",
+      "name": "Schaltkreiskriechen"
+    },
+    "name-effect-sigil-comet": {
+      "desc": "Ein heller Kopf kreuzt ein Nachtfeld, hält am anderen Rand inne, dann beginnt der Durchlauf von vorn.",
+      "name": "Kometenkopf"
+    },
+    "name-effect-sigil-core": {
+      "desc": "Ein heißer Kern, der durch das Innere der Buchstaben wandert, statt in der Mitte zu sitzen.",
+      "name": "Wandernder Kern"
+    },
+    "name-effect-sigil-damascus": {
+      "desc": "Gefalteter Stahl in den Buchstaben: feine Wellen, ein kalter Silbergrat und ein dunkles Tal wie bei einer fertigen Klinge.",
+      "name": "Damaszenerfaltung"
+    },
+    "name-effect-sigil-filigree": {
+      "desc": "Weinroter Grund, ein goldenes Mittelband und drei feste Funken wie gravierte Metallarbeit auf dem Namen.",
+      "name": "Purpurfiligran"
+    },
+    "name-effect-sigil-forge": {
+      "desc": "Kohle, die atmet. Eine Glut steigt die Buchstaben hinauf und das Leuchten schwillt an, dann fällt der Zug zurück zur Grundlinie.",
+      "name": "Schmiedezug"
+    },
+    "name-effect-sigil-glacier": {
+      "desc": "Gestapelte Eisflächen mit harten Farbbrüchen statt eines weichen Blauverlaufs. Jedes Band ist ein eigener Schliff.",
+      "name": "Gletscherstapel"
+    },
+    "name-effect-sigil-inkwash": {
+      "desc": "Eine Tintenblüte, unten links kräftiger, die zu einem Papierglanz ausdünnt, damit der Name lesbar bleibt.",
+      "name": "Sumi-Blüte"
+    },
+    "name-effect-sigil-lacquer": {
+      "desc": "Schwarzer japanischer Lack mit scharfem weißem Glanzpunkt oben und goldenem Fuß entlang der Grundlinie.",
+      "name": "Urushi-Saum"
+    },
+    "name-effect-sigil-marble": {
+      "desc": "Heller Marmor mit zwei grauen Adern im selben Winkel, so wie eine einzelne Platte geschnitten wird.",
+      "name": "Carrara-Ader"
+    },
+    "name-effect-sigil-mercury": {
+      "desc": "Geschmolzenes Silber, durch einen dunklen Kanal gepresst. Ein Glanzlicht jagt den Namen entlang und kehrt zurück.",
+      "name": "Quecksilberkanal"
+    },
+    "name-effect-sigil-mirror": {
+      "desc": "Gefräster Spiegel: ein weißer Glanzpunkt, eine schwarze Rille und silberne Schultern. Der Glanz ist ein Streifen, keine Schimmerschleife.",
+      "name": "Spiegelglanz"
+    },
+    "name-effect-sigil-moonstone": {
+      "desc": "Milchige Mitte, indigoblauer Körper, dann ein geteilter Saum in Cyan und Rosa wie ein polierter Mondstein im Lampenlicht.",
+      "name": "Mondsteinteilung"
+    },
+    "name-effect-sigil-nebula": {
+      "desc": "Zwei Gaswolken und drei feste Sterne, in die Zeichen gemalt. Der Himmel treibt nicht.",
+      "name": "Nebelplatte"
+    },
+    "name-effect-sigil-obsidian": {
+      "desc": "Vulkanglas mit einer Goldnaht durch die Zeichen und einer warmen Kante, damit der Stein auch auf einem dunklen Namen erkennbar bleibt.",
+      "name": "Obsidianader"
+    },
+    "name-effect-sigil-oil": {
+      "desc": "Ein sich drehender Ölfilm. Der Farbton wandert auf dunklem Grund im Kreis und die Buchstaben bewegen sich nicht.",
+      "name": "Ölfilm"
+    },
+    "name-effect-sigil-porcelain": {
+      "desc": "Warme Glasur mit zwei goldenen Haarrissen. Die Buchstaben bleiben in einer festen Tassenfarbe, die Risse schlagen nicht durch.",
+      "name": "Porzellanrisse"
+    },
+    "name-effect-sigil-prism": {
+      "desc": "Ein Juwelengrund mit einem einzelnen weißen Balken, der über den Namen zieht und verschwindet. Der Edelstein selbst bleibt, wo er ist.",
+      "name": "Prismabalken"
+    },
+    "name-effect-sigil-pulse": {
+      "desc": "Ein leiser Doppelschlag im Rand, wie eine Statuslampe unter Glas. Die Namensfarbe bleibt gleich.",
+      "name": "Doppelpuls"
+    },
+    "name-effect-sigil-rift": {
+      "desc": "Ein dünner violetter Riss wandert quer über den Namen und schließt sich hinter sich.",
+      "name": "Raumriss"
+    },
+    "name-effect-sigil-rosewood": {
+      "desc": "Feine Rosenholzmaserung: Saftlinien, ein dunklerer Kern und ein rosiger Grat, der sich über die Buchstaben wiederholt.",
+      "name": "Rosenholzherz"
+    },
+    "name-effect-sigil-sandstone": {
+      "desc": "Unregelmäßige Sedimentschichten in Ocker, Rost und Hellbraun, in die Buchstaben gepresst wie eine Felswand.",
+      "name": "Sandsteinbett"
+    },
+    "name-effect-sigil-sapphire": {
+      "desc": "Ein facettierter Saphir im Kegelschliff: helle Tafel, tiefer Pavillon und ein harter Bruch zwischen den Facetten.",
+      "name": "Saphirpavillon"
+    },
+    "name-effect-sigil-scan": {
+      "desc": "Eine Hologrammplatte: feine Scanlinien plus ein helles Band, das von oben bis zur Grundlinie läuft.",
+      "name": "Scanplatte"
+    },
+    "name-effect-sigil-solar": {
+      "desc": "Ein goldener Kern, der sich in einer dunklen Korona ausdehnt und zusammenzieht. Die Korona dreht sich nicht.",
+      "name": "Sonnenschwellen"
+    },
+    "name-effect-sigil-tide": {
+      "desc": "Tiefes Wasser mit einem hellen Kamm, der sich hinter den Worten hebt und senkt, Welle um Welle.",
+      "name": "Gezeitenhub"
+    },
+    "name-effect-sigil-velvet": {
+      "desc": "Florstoff: oben ein rosiger Flor, eine gedrückte weinrote Kante und ein dezenter Schimmer, der nicht wandert.",
+      "name": "Samtflor"
+    },
+    "name-effect-sigil-verdigris": {
+      "desc": "Oxidiertes Kupfer. Warmes Metall, grüne Blüte und zwei feste Korrosionssprenkel in der Füllung.",
+      "name": "Grünspanband"
+    },
+    "name-effect-sunset": {
+      "name": "Sonnenuntergang"
+    },
+    "name-effect-toxic": {
+      "name": "Giftpuls"
+    },
+    "name-effect-void": {
+      "desc": "Ein flackernder violett-schwarzer Glitch-Effekt.",
+      "name": "Leerenrauschen"
+    },
+    "presence-flare-aurora-soft": {
+      "name": "Sanftes Polarlicht"
+    },
+    "presence-flare-aurora-vivid": {
+      "name": "Lebhaftes Polarlicht"
+    },
+    "presence-flare-beam-lime": {
+      "name": "Limettenstrahl"
+    },
+    "presence-flare-beam-magenta": {
+      "name": "Magentastrahl"
+    },
+    "presence-flare-core-crimson": {
+      "name": "Purpurkern"
+    },
+    "presence-flare-core-ice": {
+      "name": "Eiskern"
+    },
+    "presence-flare-glitch-green": {
+      "name": "Glitch-Grün"
+    },
+    "presence-flare-glitch-void": {
+      "name": "Leeren-Glitch"
+    },
+    "presence-flare-halo-royal": {
+      "name": "Königlicher Heiligenschein"
+    },
+    "presence-flare-halo-soft": {
+      "name": "Sanfter Heiligenschein"
+    },
+    "presence-flare-moon-glow": {
+      "name": "Mondschein"
+    },
+    "presence-flare-nova-gold": {
+      "name": "Goldene Nova"
+    },
+    "presence-flare-nova-white": {
+      "name": "Weiße Nova"
+    },
+    "presence-flare-orbit-blue": {
+      "name": "Blauer Orbit"
+    },
+    "presence-flare-orbit-pink": {
+      "name": "Pinker Orbit"
+    },
+    "presence-flare-pixel-cyan": {
+      "name": "Pixel-Cyan"
+    },
+    "presence-flare-pixel-hot": {
+      "name": "Heißer Pixel"
+    },
+    "presence-flare-pulse-cyan": {
+      "name": "Cyanpuls"
+    },
+    "presence-flare-pulse-gold": {
+      "name": "Goldpuls"
+    },
+    "presence-flare-pulse-rose": {
+      "name": "Rosenpuls"
+    },
+    "presence-flare-ring-emerald": {
+      "name": "Smaragdring"
+    },
+    "presence-flare-ring-neon": {
+      "name": "Neonring"
+    },
+    "presence-flare-ring-violet": {
+      "name": "Violetter Ring"
+    },
+    "presence-flare-spark-fire": {
+      "name": "Feuerfunke"
+    },
+    "presence-flare-spark-white": {
+      "name": "Weißer Funke"
+    },
+    "presence-flare-steel-pulse": {
+      "name": "Stahlpuls"
+    },
+    "presence-flare-sun-flare": {
+      "name": "Sonnenflare"
+    },
+    "presence-flare-toxic-ring": {
+      "name": "Giftring"
+    },
+    "presence-flare-wave-amber": {
+      "name": "Bernsteinwelle"
+    },
+    "presence-flare-wave-teal": {
+      "name": "Türkiswelle"
+    },
+    "profile-aura-arcade-pop": {
+      "name": "Arcade Pop"
+    },
+    "profile-aura-aurora-wall": {
+      "name": "Polarlichtwand"
+    },
+    "profile-aura-copper-glow": {
+      "name": "Kupferglühen"
+    },
+    "profile-aura-crimson-veil": {
+      "name": "Purpurschleier"
+    },
+    "profile-aura-cyber-grid": {
+      "name": "Cyber-Raster"
+    },
+    "profile-aura-ember-haze": {
+      "name": "Glutdunst"
+    },
+    "profile-aura-frost-veil": {
+      "name": "Frostschleier"
+    },
+    "profile-aura-gold-dust": {
+      "name": "Goldstaub"
+    },
+    "profile-aura-holo-sheet": {
+      "name": "Holo-Folie"
+    },
+    "profile-aura-ice-crystal": {
+      "name": "Eiskristall"
+    },
+    "profile-aura-ion-haze": {
+      "name": "Ionendunst"
+    },
+    "profile-aura-jade-glow": {
+      "name": "Jadeglühen"
+    },
+    "profile-aura-lava-rim": {
+      "name": "Lavarand"
+    },
+    "profile-aura-matrix-veil": {
+      "name": "Matrix-Schleier"
+    },
+    "profile-aura-mint-mist": {
+      "name": "Minznebel"
+    },
+    "profile-aura-neon-frame": {
+      "name": "Neonrahmen"
+    },
+    "profile-aura-noir-edge": {
+      "name": "Noir-Kante"
+    },
+    "profile-aura-ocean-depth": {
+      "name": "Meerestiefe"
+    },
+    "profile-aura-pearl-soft": {
+      "name": "Sanfte Perle"
+    },
+    "profile-aura-plasma-field": {
+      "name": "Plasmafeld"
+    },
+    "profile-aura-prism-glass": {
+      "name": "Prismenglas"
+    },
+    "profile-aura-rose-bloom": {
+      "name": "Rosenblüte"
+    },
+    "profile-aura-royal-curtain": {
+      "name": "Königsvorhang"
+    },
+    "profile-aura-sandstorm": {
+      "name": "Sandsturm"
+    },
+    "profile-aura-shadow-rim": {
+      "name": "Schattenrand"
+    },
+    "profile-aura-solar-bloom": {
+      "name": "Sonnenblüte"
+    },
+    "profile-aura-starlight": {
+      "name": "Sternenlicht"
+    },
+    "profile-aura-toxic-fog": {
+      "name": "Giftnebel"
+    },
+    "profile-aura-void-hard": {
+      "name": "Harte Leere"
+    },
+    "profile-aura-void-soft": {
+      "name": "Sanfte Leere"
+    },
+    "profile-color-amethyst": {
+      "desc": "Profilkartenfarbe – Amethyst. Tiefes Amethystlila, geheimnisvoll und leuchtend.",
+      "name": "Amethyst"
+    },
+    "profile-color-aurora": {
+      "desc": "Profilkartenfarbe – Polarlicht. Ein Nordlicht-Verlauf von Türkis bis Violett.",
+      "name": "Polarlicht"
+    },
+    "profile-color-copper": {
+      "desc": "Profilkartenfarbe – Kupfer. Warmes Braunorange wie erhitztes Kupfer.",
+      "name": "Kupfer"
+    },
+    "profile-color-emerald": {
+      "desc": "Profilkartenfarbe – Smaragd. Sattes Smaragdgrün mit der Tiefe eines Edelsteins.",
+      "name": "Smaragd"
+    },
+    "profile-color-forest": {
+      "desc": "Profilkartenfarbe – Wald. Moosgrün, das in einen dunklen Wald übergeht.",
+      "name": "Wald"
+    },
+    "profile-color-glacier": {
+      "desc": "Profilkartenfarbe – Gletscher. Eisblau und Türkis, kühl und klar.",
+      "name": "Gletscher"
+    },
+    "profile-color-gold": {
+      "desc": "Profilkartenfarbe – Gold. Dunkles Gold und Bernstein, ein königlicher Glanz für deine Karte.",
+      "name": "Gold"
+    },
+    "profile-color-graphite": {
+      "desc": "Profilkartenfarbe – Graphit. Ein ruhiges, tiefes Grau, eine Stufe satter als die Standardkarte.",
+      "name": "Graphit"
+    },
+    "profile-color-lavender": {
+      "desc": "Profilkartenfarbe – Lavendel. Lavendel, der in nächtliches Lila übergeht.",
+      "name": "Lavendel"
+    },
+    "profile-color-midnight": {
+      "desc": "Profilkartenfarbe – Mitternacht. Ein ruhiger Übergang von Nachtblau zu Schwarz."
+    },
+    "profile-color-obsidian": {
+      "desc": "Profilkartenfarbe – Obsidian. Fast schwarz, gläsern und tief.",
+      "name": "Obsidian"
+    },
+    "profile-color-ocean": {
+      "desc": "Profilkartenfarbe – Ozean. Tiefes Meeresblau, das nach unten dunkler wird."
+    },
+    "profile-color-rose": {
+      "desc": "Profilkartenfarbe – Rose. Ein sanfter Übergang von Altrosa zu tiefem Pink.",
+      "name": "Rose"
+    },
+    "profile-color-ruby": {
+      "desc": "Profilkartenfarbe – Rubin. Dunkles Rubinrot, warm und kräftig.",
+      "name": "Rubin"
+    },
+    "profile-color-sunset": {
+      "desc": "Profilkartenfarbe – Sonnenuntergang. Ein Sonnenuntergang, der von Rotorange in Lila übergeht.",
+      "name": "Sonnenuntergang"
+    },
+    "reaction-confetti-storm": {
+      "desc": "Festliches Mini-Konfetti explodiert aus dem Chip – Partystimmung, ohne kindisch zu wirken.",
+      "name": "Konfettisturm"
+    },
+    "reaction-ember-bloom": {
+      "desc": "Warme Glut entfaltet sich um deine Reaktion – Hitze ohne Chaos, Feuer ohne Lärm.",
+      "name": "Glutblüte"
+    },
+    "reaction-frost-crack": {
+      "desc": "Eisadern ziehen sich über den Chip, wenn du reagierst – kalte Präzision für eisige Ansagen.",
+      "name": "Frostriss"
+    },
+    "reaction-glass-shatter": {
+      "desc": "Chips zerspringen in kristalline Scherben, wenn du reagierst – scharf, luxuriös, unvergesslich.",
+      "name": "Glasbruch"
+    },
+    "reaction-gold-rain": {
+      "desc": "Feine Goldflocken rieseln vom Chip – üppig, ohne laut zu sein.",
+      "name": "Goldregen"
+    },
+    "reaction-holo-flash": {
+      "desc": "Ein schillernder Blitz überzieht den Chip – holografisches Chrom, das nie nach Standard aussieht.",
+      "name": "Holo-Blitz"
+    },
+    "reaction-magnetic-pulse": {
+      "desc": "Konzentrische Magnetringe ziehen sich zusammen und lösen sich wieder – durchdachte Bewegung, kein billiges Hüpfen.",
+      "name": "Magnetpuls"
+    },
+    "reaction-neon-stamp": {
+      "desc": "Ein harter Neonstempel prägt sich auf die Reaktion – das Cyber-Gütesiegel.",
+      "name": "Neonstempel"
+    },
+    "reaction-nova-pop": {
+      "desc": "Deine Reaktionen erblühen mit einer sanften Sternennova – heller Kern, verblassende Korona, null Chaos.",
+      "name": "Nova-Pop"
+    },
+    "reaction-petal-burst": {
+      "desc": "Zarte Blütenblätter strahlen von der Reaktion aus – elegant, romantisch, nie zu süß.",
+      "name": "Blütenexplosion"
+    },
+    "reaction-pixel-burst": {
+      "desc": "Retro-Pixel explodieren nach außen und setzen sich wieder zusammen – Arcade-Seele in einem modernen Chip.",
+      "name": "Pixelexplosion"
+    },
+    "reaction-prism-split": {
+      "desc": "Licht teilt sich in Spektralbänder um dein Emoji – Reaktions-Chrom in Museumsqualität.",
+      "name": "Prismenteilung"
+    },
+    "reaction-ripple-ink": {
+      "desc": "Tintenwellen breiten sich vom Emoji aus wie ein Tropfen in stillem Wasser – leise, künstlerische Wirkung.",
+      "name": "Tintenwellen"
+    },
+    "reaction-soft-bloom": {
+      "desc": "Eine sanfte Pastellblüte breitet sich aus und verblasst – dezenter Luxus für alltägliche Reaktionen.",
+      "name": "Sanfte Blüte"
+    },
+    "reaction-thunderclap": {
+      "desc": "Ein kurzer elektrischer Blitz umringt den Chip – die Reaktion, die sich wie ein Mic-Drop anfühlt.",
+      "name": "Donnerschlag"
+    },
+    "reaction-void-implode": {
+      "desc": "Der Chip fällt kurz in eine violette Singularität zusammen und springt dann zurück – dramatisch und selten.",
+      "name": "Leerenimplosion"
+    },
+    "theme-borealis": {
+      "desc": "Türkise und violette Vorhänge ziehen langsam hinter dem Glas vorbei.",
+      "name": "Borealis"
+    },
+    "theme-chromeveil": {
+      "desc": "Mitternachtsmetall. Zwei Ebenen bewegen sich auseinander und ein Glanzlicht wandert über die Glaskante.",
+      "name": "Chromschleier"
+    },
+    "theme-emberfall": {
+      "desc": "Glutglas. Der Schimmer treibt dahin und ein paar Funken atmen.",
+      "name": "Glutfall"
+    },
+    "theme-emerald": {
+      "desc": "Ein sattes Smaragdgrün mit Schwarz für die ganze App.",
+      "name": "Smaragd"
+    },
+    "theme-grove": {
+      "desc": "Waldglas. Ruhende Lichtstrahlen unter einem dunklen Blätterdach.",
+      "name": "Hain"
+    },
+    "theme-hanami": {
+      "desc": "Glas mit nächtlichen Blüten. Die Blütenblätter ruhen in der Palette; nichts fällt.",
+      "name": "Hanami"
+    },
+    "theme-iriscape": {
+      "desc": "Schillerndes Glas. Mehrere Farbtöne drehen sich hinter der Oberfläche und der Rand wechselt die Farbe.",
+      "name": "Iriscape"
+    },
+    "theme-lagoon": {
+      "desc": "Tiefwasserglas. Ruhige Lichtreflexe, ein kühler Rand, keine Bewegung.",
+      "name": "Lagune"
+    },
+    "theme-sakura": {
+      "desc": "Ein sanfter, blütenrosa Look für die ganze App.",
+      "name": "Sakura"
+    },
+    "theme-solar": {
+      "desc": "Ein warmer Look in Bernstein und Anthrazit für die ganze App.",
+      "name": "Solar"
+    },
+    "theme-starwell": {
+      "desc": "Ein Nebel mit langsamem Treiben und einem ruhigen Sternenfeld.",
+      "name": "Sternenbrunnen"
+    },
+    "typing-aurora-wave": {
+      "desc": "Ein sanftes Band von Türkis bis Violett wogt unter der Tippanzeige, wie Nordlichter unter Glas.",
+      "name": "Polarlichtwelle"
+    },
+    "typing-crystal-chime": {
+      "desc": "Facettierte eisblaue Punkte brechen das Licht, während sie hüpfen – zart, präzise, unverkennbar premium.",
+      "name": "Kristallklang"
+    },
+    "typing-cyber-hex": {
+      "desc": "Hex-Splitter kaskadieren seitwärts mit harter Neonkante – reines Cyberpunk-Tastentheater.",
+      "name": "Cyber-Hex-Strom"
+    },
+    "typing-ember-cascade": {
+      "desc": "Warme Kohlen steigen auf und verglühen nacheinander – ein Tipp-Signal, das sich anfühlt wie am Schmiedefeuer.",
+      "name": "Glutkaskade"
+    },
+    "typing-frost-breathe": {
+      "desc": "Eisige Punkte beschlagen und klären sich in einem langsamen Atemzyklus – winterliche Ruhe für nachdenkliche Schreiber.",
+      "name": "Frostatem"
+    },
+    "typing-golden-morse": {
+      "desc": "Goldene Striche blinken in einem codierten Rhythmus – elegantes Telegrafen-Feeling für Gespräche spät in der Nacht.",
+      "name": "Goldenes Morse"
+    },
+    "typing-holo-ribbon": {
+      "desc": "Ein schillerndes Band faltet sich unter dem Tipptext und wechselt durch alle Spektralfarben.",
+      "name": "Holografisches Band"
+    },
+    "typing-liquid-mercury": {
+      "desc": "Silbrige Kugeln dehnen sich und formen sich neu, während du tippst – eine Quecksilber-Verwandlung, die fast echt wirkt.",
+      "name": "Flüssiges Quecksilber"
+    },
+    "typing-mosaic-tap": {
+      "desc": "Kachelstücke setzen sich zur Tippanzeige zusammen – kunstvolles Glas statt langweiliger Punkte.",
+      "name": "Mosaik-Tippen"
+    },
+    "typing-neon-pulse": {
+      "desc": "Deine Tippanzeige atmet in elektrischem Cyan – drei Pulse, die sich wie ein Live-Signal anfühlen, nicht wie ein Standard-Spinner.",
+      "name": "Neonpuls-Band"
+    },
+    "typing-plasma-arc": {
+      "desc": "Magenta-cyanfarbene Bögen springen zwischen den Punkten wie ein Mini-Fusionsreaktor unter deinem Namen.",
+      "name": "Plasmabogen"
+    },
+    "typing-quantum-blink": {
+      "desc": "Punkte teleportieren sich mit einem sanften Photonenblitz zwischen Positionen – Tipp-Flair, das die Physik bricht.",
+      "name": "Quantenblinzeln"
+    },
+    "typing-royal-ink": {
+      "desc": "Tiefviolette Tintentropfen bilden sich, schwellen an und fallen – kalligrafische Bewegung für einen königlichen Auftritt.",
+      "name": "Königliche Tintentropfen"
+    },
+    "typing-sakura-drift": {
+      "desc": "Blütenzarte rosa Kugeln schweben nach oben, während du tippst – ruhig, romantisch und unglaublich geschmeidig.",
+      "name": "Sakura-Schweben"
+    },
+    "typing-starfall": {
+      "desc": "Winzige Sterne ziehen hinter der Anzeige nach unten – ein persönlicher Meteorschauer für jeden Tastendruck.",
+      "name": "Sternenfall-Tippen"
+    },
+    "typing-void-signal": {
+      "desc": "Ein violetter Rauschbalken glitcht in und aus der Phase – für alle, die tippen, als würden sie die Realität hacken.",
+      "name": "Leerensignal"
+    }
+  },
+  "slash": {
+    "arg": {
+      "amount": "betrag",
+      "bet": "einsatz",
+      "duration": "dauer",
+      "name": "name",
+      "options": "optionen…",
+      "question": "frage",
+      "reason": "grund",
+      "side": "kopf|zahl"
+    },
+    "bestMatch": "Beste Übereinstimmung",
+    "cmd": {
+      "avatar": {
+        "description": "Avatar groß anzeigen, herunterladen oder im Vollbild öffnen",
+        "detail": "Zeigt den Avatar eines Mitglieds groß an. Du kannst ihn im Vollbild öffnen, herunterladen oder den Link kopieren.",
+        "keywords": "bild, foto, pfp, profil, nutzer",
+        "use1": "/avatar [@nutzer]",
+        "use1Note": "leer lassen für deinen eigenen Avatar"
+      },
+      "ban": {
+        "detail": "Entfernt das Mitglied vom Server und verhindert, dass es erneut beitritt. Du wirst vor dem Senden um Bestätigung gebeten.",
+        "keywords": "bannen, sperren, blockieren, nutzer",
+        "use1": "/ban @nutzer grund"
+      },
+      "bj": {
+        "description": "Starte eine Blackjack-Runde gegen den Dealer",
+        "keywords": "karte, karten, 21"
+      },
+      "coinflip": {
+        "description": "Wirf eine Münze – gewinnst du, bekommst du deinen Einsatz 2× zurück",
+        "keywords": "kopf, zahl, münze",
+        "use1": "/coinflip 100 kopf"
+      },
+      "credits": {
+        "keywords": "guthaben, wallet, geldbörse, descoin"
+      },
+      "daily": {
+        "keywords": "täglich, bonus, belohnung"
+      },
+      "help": {
+        "detail": "Listet die Befehle auf, die du in diesem Kanal oder Chat nutzen kannst, nach Kategorie gruppiert.",
+        "keywords": "hilfe, befehle, liste",
+        "use2Note": "derselbe Befehl"
+      },
+      "kick": {
+        "detail": "Entfernt das Mitglied vom Server. Es kann mit einem Einladungslink erneut beitreten. Wird im Audit-Log festgehalten.",
+        "keywords": "kicken, entfernen, rauswerfen, nutzer",
+        "use1": "/kick @nutzer grund"
+      },
+      "nick": {
+        "description": "Ändere deinen Spitznamen auf diesem Server",
+        "detail": "Ändert deinen Spitznamen auf diesem Server. Leer lassen, um deinen Spitznamen zu entfernen.",
+        "keywords": "name, spitzname, nick",
+        "use1": "/nick Neuer Name",
+        "use2Note": "entfernt den Spitznamen"
+      },
+      "pay": {
+        "keywords": "senden, geld, descoin, nutzer",
+        "use1": "/pay @nutzer 500"
+      },
+      "poll": {
+        "description": "Starte eine Umfrage, bei der alle abstimmen können, mit Dauer und Emoji",
+        "detail": "Sendet eine Umfragekarte zum Abstimmen: eine Frage, 2–10 Optionen (mit Emoji), eine Dauer und ob sie anonym ist. Die Ergebnisse aktualisieren sich live.",
+        "keywords": "abstimmung, abstimmen, umfrage, wahl, auswahl",
+        "use1Note": "↵ öffnet den Umfrage-Editor",
+        "use2": "/poll Frage | Ja | Nein",
+        "use2Note": "Abkürzung: wird sofort gesendet"
+      },
+      "purge": {
+        "description": "Die letzten N Nachrichten im Kanal löschen",
+        "detail": "Löscht die letzten 1–100 Nachrichten in diesem Kanal. Gelöschte Nachrichten können nicht wiederhergestellt werden.",
+        "keywords": "löschen, leeren, massenhaft, aufräumen"
+      },
+      "server": {
+        "description": "Anzahl der Mitglieder, Kanäle und Rollen sowie der Serverbesitzer",
+        "detail": "Zeigt die Anzahl der Mitglieder, Online-Mitglieder, Kanäle und Rollen des Servers, den Besitzer und wann er erstellt wurde.",
+        "keywords": "server, info"
+      },
+      "slot": {
+        "keywords": "walze, drehen"
+      },
+      "timeout": {
+        "description": "Ein Mitglied für eine Weile in den Timeout schicken",
+        "detail": "Bis die Zeit um ist, kann das Mitglied keine Nachrichten senden oder reagieren und wird aus Sprachkanälen entfernt. Bis zu 28 Tage.",
+        "keywords": "timeout, stummschalten, sperren, nutzer",
+        "label": "Timeout",
+        "use1": "/timeout @nutzer 5m grund",
+        "use1Note": "60s · 5m · 1h · 1d · 1w"
+      },
+      "top": {
+        "keywords": "rangliste, bestenliste, top"
+      },
+      "user": {
+        "description": "Profilkarte anzeigen: Rollen, Abzeichen, Daten",
+        "detail": "Zeigt die Profilkarte eines Mitglieds: Banner, Avatarrahmen, Abzeichen, Serverrollen und Beitrittsdaten.",
+        "keywords": "nutzer, profil, wer, mitglied",
+        "use1": "/user [@nutzer]",
+        "use1Note": "optional · leer lassen für deine eigene Karte"
+      }
+    },
+    "lockReason": "Erfordert die Berechtigung „{perm}“",
+    "mention": {
+      "chat": "CHAT",
+      "group": "GRUPPENMITGLIEDER",
+      "hereChannel": "IN DIESEM KANAL",
+      "hereChat": "IN DIESEM CHAT",
+      "server": "SERVERMITGLIEDER"
+    },
+    "menu": {
+      "aliases": "ALIASSE",
+      "appCommands": "App-Befehle",
+      "argument": "ARGUMENT",
+      "count": "{count, plural, one {# Befehl} other {# Befehle}}",
+      "emptyCategory": "Kein Befehl in dieser Kategorie kann hier verwendet werden.",
+      "enterSends": "Drücke Enter, um diesen Text als normale Nachricht zu senden.",
+      "frequent": "Häufig verwendet",
+      "kCategory": "Kategorie",
+      "kClose": "schließen",
+      "noCommand": "Es gibt keinen Befehl „/{query}“",
+      "optional": "optional",
+      "permPlusApp": "{perm} + App-Befehle",
+      "permission": "ERFORDERLICHE BERECHTIGUNG",
+      "resultsFor": "Ergebnisse für „{query}“",
+      "seeAll": "Gib {help} ein, um alle Befehle zu sehen.",
+      "typeToFilter": "tippen zum Filtern",
+      "usage": "VERWENDUNG",
+      "worksIn": "WO ES FUNKTIONIERT"
+    },
+    "perm": {
+      "MODERATE_MEMBERS": "Mitglieder in den Timeout schicken",
+      "USE_APPLICATION_COMMANDS": "App-Befehle verwenden"
+    },
+    "picker": {
+      "countAria": "Wie viele Nachrichten?",
+      "countTitle": "Wie viele Nachrichten sollen gelöscht werden?",
+      "duration": "Wähle eine Dauer",
+      "member": "Das Mitglied",
+      "noMembers": "Keine passenden Mitglieder",
+      "reasonNote": "optional · wird im Audit-Log festgehalten",
+      "reasonPlaceholder": "z. B. Spam, Regel 3",
+      "self": "Du selbst",
+      "selfHint": "Leer lassen, um deine eigene Karte zu senden",
+      "timeoutEffect": "{name} kann {until} keine Nachrichten senden oder reagieren und wird aus Sprachkanälen entfernt.",
+      "until": "bis {time}",
+      "user": "Wähle einen Nutzer"
+    }
+  },
   "staffBadge": {
     "long": "DESCALL-TEAM",
     "short": "TEAM",
@@ -1639,6 +3835,328 @@ export const nested = {
     "invisible": "Unsichtbar",
     "offline": "Offline",
     "online": "Online"
+  },
+  "svh": {
+    "aMember": "ein Mitglied",
+    "aRole": "Rolle",
+    "acceptJoin": "Annehmen und beitreten",
+    "accessLimited": "Ausgewählte Rollen",
+    "accessTitle": "{channel} · Zugriff",
+    "addException": "Ausnahme hinzufügen",
+    "addIcon": "Symbol hinzufügen",
+    "addRoleOrMember": "Rolle oder Mitglied hinzufügen",
+    "afkChannel": "AFK-Kanal",
+    "afkTimeout": "AFK-Timeout",
+    "ageDays": "{n, plural, one {{n} Tag} other {{n} Tage}}",
+    "ageMonths": "{n, plural, one {{n} Monat} other {{n} Monate}}",
+    "ageToday": "heute",
+    "ageYears": "{n, plural, one {{n} Jahr} other {{n} Jahre}}",
+    "alreadyMember": "Du bist bereits auf diesem Server",
+    "au_CHANNEL_CREATE": "Hat #{channel} erstellt",
+    "au_CHANNEL_DELETE": "Hat #{channel} gelöscht",
+    "au_CHANNEL_OVERRIDE_CLEAR": "Hat Überschreibungen für #{channel} entfernt",
+    "au_CHANNEL_OVERRIDE_DELETE": "Hat Überschreibungen für #{channel} entfernt",
+    "au_CHANNEL_OVERRIDE_SET": "Hat den Zugriff auf #{channel} geändert",
+    "au_CHANNEL_UPDATE": "Hat #{channel} bearbeitet",
+    "au_INVITE_CREATE": "Hat einen Einladungslink erstellt",
+    "au_INVITE_DELETE": "Hat eine Einladung widerrufen",
+    "au_MEMBER_BAN": "Hat {target} gebannt",
+    "au_MEMBER_JOIN": "Ist dem Server beigetreten",
+    "au_MEMBER_KICK": "Hat {target} gekickt",
+    "au_MEMBER_LEAVE": "Hat den Server verlassen",
+    "au_MEMBER_NICKNAME": "Hat den Spitznamen von {target} geändert",
+    "au_MEMBER_NICKNAME_SELF": "Hat den eigenen Spitznamen geändert",
+    "au_MEMBER_ROLE_ADD": "Hat {target} die Rolle {role} gegeben",
+    "au_MEMBER_ROLE_REMOVE": "Hat {target} die Rolle {role} entzogen",
+    "au_MEMBER_TIMEOUT": "Hat {target} für {dur} in den Timeout geschickt",
+    "au_MEMBER_TIMEOUT_CLEAR": "Hat den Timeout von {target} aufgehoben",
+    "au_MEMBER_UNBAN": "Hat {target} entbannt",
+    "au_OTHER": "Hat eine Änderung vorgenommen",
+    "au_OWNERSHIP_TRANSFER": "Hat die Inhaberschaft an {target} übertragen",
+    "au_ROLE_CREATE": "Hat die Rolle {role} erstellt",
+    "au_ROLE_DELETE": "Hat die Rolle {role} gelöscht",
+    "au_ROLE_UPDATE": "Hat die Rolle {role} bearbeitet",
+    "au_RULES_ACCEPT": "Hat die Regeln akzeptiert",
+    "au_SERVER_CREATE": "Hat den Server erstellt",
+    "au_SERVER_RENAME": "Hat den Server in {name} umbenannt",
+    "au_SERVER_UPDATE": "Hat die Servereinstellungen geändert",
+    "badgeAnn": "ANK",
+    "banPrompt": "{name} bannen? Gib gern einen Grund an:",
+    "banned": "Du bist von diesem Server gebannt.",
+    "bannerCropSub": "Zum Zoomen zusammenziehen",
+    "bannerCropTitle": "Banner verschieben und skalieren",
+    "bansFoot": "Nach der Entbannung kann die Person mit einer neuen Einladung wieder beitreten.",
+    "bansN": "Banns · {n}",
+    "blocked": "Blockiert",
+    "categoryCreated": "Kategorie erstellt",
+    "categoryNamePh": "Neue Kategorie",
+    "channelExceptions": "Kanalausnahmen",
+    "channelNamePh": "neuer-kanal",
+    "channelsFoot": "Halte Kanäle in der Seitenleiste gedrückt und ziehe sie, um sie neu anzuordnen.",
+    "choose": "Auswählen",
+    "communityFeatures": "Community-Funktionen",
+    "communityFeaturesSub": "Regeln, Willkommensbildschirm, Verifizierung",
+    "communityFoot": "Für Entdecken brauchst du mindestens 25 Mitglieder und Regeln. Du hast {members, plural, one {{members} Mitglied} other {{members} Mitglieder}} und {rules, plural, one {{rules} Regel} other {{rules} Regeln}}.",
+    "createCategoryFoot": "Eine Kategorie gruppiert Kanäle in der Seitenleiste. Ziehe Kanäle hinein.",
+    "createChannelFoot": "Langsamer Modus, Thema und Altersgrenze findest du nach dem Erstellen in den Kanaleinstellungen.",
+    "createFoot": "Dein Einladungslink ist fertig, sobald du den Server erstellst.",
+    "createIntro": "Starte mit einer Vorlage; Kanäle und Rollen sind schon vorbereitet. Du kannst später alles ändern.",
+    "cropPreview": "So wird das Serversymbol aussehen",
+    "cropSub": "Zum Zoomen zusammenziehen · Vorschau: Serverliste",
+    "cropTitle": "Symbol verschieben und skalieren",
+    "delBtn": "Server endgültig löschen",
+    "delCatMsg": "Die Kanäle darin bleiben erhalten, ohne Kategorie.",
+    "delCatTitle": "Kategorie {name} löschen?",
+    "delChMsg": "Alle Nachrichten und Dateien im Kanal werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
+    "delChMsgCount": "{n, plural, one {Die # Nachricht} other {Die # Nachrichten}} des Kanals und alle Dateien werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
+    "delChTitle": "#{name} löschen?",
+    "delFolderMsg": "Die Server bleiben erhalten, ohne Ordner.",
+    "delFolderTitle": "Ordner {name} löschen?",
+    "delMsg": "{channels, plural, one {{channels} Kanal} other {{channels} Kanäle}}, der Zugriff für {members, plural, one {{members} Mitglied} other {{members} Mitglieder}} und alle Nachrichten werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
+    "delRoleMsg": "Die Rolle wird allen Mitgliedern entzogen. Das kann nicht rückgängig gemacht werden.",
+    "delRoleTitle": "Rolle {name} löschen?",
+    "delTitle": "{server} löschen?",
+    "delTransferFirst": "Übertrage zuerst die Inhaberschaft",
+    "delTypeName": "Gib zur Bestätigung den Servernamen ein",
+    "delVoiceMsg": "Der Sprachkanal wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
+    "delVoiceTitle": "{name} löschen?",
+    "descPh": "Beschreibe deinen Server in ein paar Worten",
+    "discoverNeeds": "Für Entdecken brauchst du mindestens 25 Mitglieder und Regeln.",
+    "discoverRow": "Öffentliche Server durchsuchen",
+    "discoverSub": "In Entdecken gelistete Communitys",
+    "discoverTitle": "Entdecken",
+    "discoverable": "In Entdecken anzeigen",
+    "discoverableSub": "Alle können ihn finden und beitreten",
+    "durDay": "{n, plural, one {{n} Tag} other {{n} Tage}}",
+    "durHour": "{n, plural, one {{n} Stunde} other {{n} Stunden}}",
+    "durSec": "{n} s",
+    "durWeek": "{n, plural, one {{n} Woche} other {{n} Wochen}}",
+    "everyoneAll": "Alle · {n, plural, one {{n} Mitglied} other {{n} Mitglieder}}",
+    "everyoneSub": "Standard · alle",
+    "expiry": "Läuft ab nach",
+    "fChannels": "Kanäle",
+    "folderColor": "Ordnerfarbe",
+    "folderFoot": "Ordner sind nur in deiner eigenen Serverliste sichtbar.",
+    "folderMoved": "In Ordner verschoben",
+    "folderSubNone": "Neuer Ordner…",
+    "folderTitle": "Ordner",
+    "forever": "läuft nie ab",
+    "gateMsg": "Lies und akzeptiere die Regeln, bevor du loschattest.",
+    "haveInvite": "Hast du eine Einladung?",
+    "heroMeta": "{members, plural, one {{members} Mitglied} other {{members} Mitglieder}} · {online} online · {voice} im Sprachchat",
+    "heroMetaNoOnline": "{members, plural, one {{members} Mitglied} other {{members} Mitglieder}} · {voice} im Sprachchat",
+    "hoist": "Mitglieder separat anzeigen",
+    "hour2": "2 Stunden",
+    "hours": "{n} Std.",
+    "iAccept": "Ich habe die Regeln gelesen und akzeptiere sie",
+    "imageType": "Wähle eine JPG-, PNG-, WebP- oder GIF-Datei.",
+    "inviteFoot": "Füge einen Link, einen Code ({code}) oder eine eigene Adresse ein.",
+    "inviteFriends": "Lade deine Freunde ein",
+    "inviteMsg": "Komm zu mir auf {server}: {url}",
+    "inviteNoPerm": "Du kannst keine Einladungen erstellen.",
+    "invitePh": "descall.com/i/…",
+    "inviterLine": "<b>{name}</b> hat dich eingeladen",
+    "joinFailed": "Beitritt zum Server fehlgeschlagen.",
+    "joinServer": "Einem Server beitreten",
+    "joinServerSub": "Gib einen Einladungslink oder Code ein",
+    "joined": "Du bist dem Server beigetreten",
+    "kick": "Vom Server kicken",
+    "kickMsg": "Die Person kann mit einer neuen Einladung wieder beitreten.",
+    "kickTitle": "{name} vom Server kicken?",
+    "leaveMsg": "Du brauchst eine neue Einladung, um wieder beizutreten.",
+    "leaveTitle": "{server} verlassen?",
+    "leftDays": "{n, plural, one {noch {n} Tag} other {noch {n} Tage}}",
+    "leftHours": "noch {n} Std.",
+    "leftMin": "noch {n} Min.",
+    "linkSettings": "Link-Einstellungen",
+    "listMeta": "{members, plural, one {{members} Mitglied} other {{members} Mitglieder}} · {online} online",
+    "listMetaNoOnline": "{members, plural, one {{members} Mitglied} other {{members} Mitglieder}}",
+    "lvlAll": "Alle Nachrichten",
+    "markAllRead": "Alle als gelesen markieren",
+    "markedRead": "Als gelesen markiert",
+    "maxUses1": "1 Nutzung",
+    "maxUses10": "10 Nutzungen",
+    "maxUses100": "100 Nutzungen",
+    "maxUses25": "25 Nutzungen",
+    "maxUses5": "5 Nutzungen",
+    "memberFor": "@{handle} · {age} dabei",
+    "mentionable": "Alle können @erwähnen",
+    "min1": "1 Min.",
+    "min10": "10 Min.",
+    "min15": "15 Min.",
+    "min2": "2 Min.",
+    "min30": "30 Min.",
+    "min5": "5 Min.",
+    "min60s": "60 s",
+    "minutes": "{n} Min.",
+    "movedOut": "Aus Ordner entfernt",
+    "mute8h": "8 Stunden",
+    "muteAll": "Alle stummschalten",
+    "muteFoot": "Solange stummgeschaltet, werden Ungelesen-Abzeichen ausgeblendet; @Erwähnungen kommen trotzdem an.",
+    "muteForever": "Bis ich es ausschalte",
+    "muteServer": "Server stummschalten",
+    "muteSub": "1 Stunde · 8 Stunden · Unbegrenzt",
+    "mutedForever": "Unbegrenzt",
+    "mutedUntil": "Bis {t}",
+    "nBanned": "{n} gebannt",
+    "nChanged": "{n, plural, one {{n} Berechtigung geändert} other {{n} Berechtigungen geändert}}",
+    "nMembers": "{n, plural, one {{n} Mitglied} other {{n} Mitglieder}}",
+    "nServers": "{n, plural, one {{n} Server} other {{n} Server}}",
+    "nUses": "{n, plural, one {{n} Nutzung} other {{n} Nutzungen}}",
+    "nameMismatch": "Der Servername stimmt nicht überein",
+    "newCategory": "Neue Kategorie",
+    "newChannel": "Neuer Kanal",
+    "newFolder": "Neuer Ordner…",
+    "newLink": "Neuen Link erstellen",
+    "newRole": "Neue Rolle",
+    "nicknameFoot": "Leer lassen, um den Benutzernamen anzuzeigen.",
+    "noBans": "Niemand ist gebannt",
+    "noCandidates": "Kein anderes Mitglied kann die Inhaberschaft übernehmen",
+    "noExceptions": "Keine Ausnahmen",
+    "noFolder": "Kein Ordner",
+    "noFriends": "Keine Freunde zum Einladen",
+    "noLogs": "Keine Einträge",
+    "noMembersYet": "Noch niemand",
+    "noOverride": "Keine Überschreibungen",
+    "noPublic": "Keine Server gefunden",
+    "noRoles": "Keine zuweisbaren Rollen",
+    "notFound": "Diese Einladung ist ungültig oder abgelaufen.",
+    "notifSaved": "Benachrichtigungseinstellung aktualisiert",
+    "notifyMe": "Benachrichtige mich über",
+    "nsfw": "Altersbeschränkt (18+)",
+    "offlineN": "Offline · {n}",
+    "onlineCount": "{n} online",
+    "onlineN": "Online · {n}",
+    "ownedFoot": "Server, die du besitzen kannst: {n} / {max}",
+    "owner": "Serverbesitzer",
+    "ownerDelLeave": "Server löschen und verlassen",
+    "ownerSheetSub": "Was passiert mit dem Server, bevor du ihn verlässt?",
+    "ownerSheetTitle": "Du besitzt {server}",
+    "p_CHANGE_NICKNAME": "Eigenen Spitznamen ändern",
+    "p_CONNECT": "Verbinden",
+    "p_EMBED_LINKS": "Linkvorschauen",
+    "p_MANAGE_NICKNAMES": "Spitznamen verwalten",
+    "p_MODERATE_MEMBERS": "Mitglieder in den Timeout schicken",
+    "p_REQUEST_TO_SPEAK": "Ums Wort bitten",
+    "p_STREAM": "Streamen und Kamera",
+    "p_USE_APPLICATION_COMMANDS": "App-Befehle verwenden",
+    "password": "Dein Passwort",
+    "passwordPh": "Kontopasswort",
+    "permFoot": "Standard verwendet die Serverberechtigung der Rolle. Änderungen gelten nur für {channel}.",
+    "pickChannel": "Wähle einen Kanal",
+    "pickImage": "Bild auswählen",
+    "pickOwner": "Wähle den neuen Besitzer",
+    "previewMeta": "{desc} · {n, plural, one {{n} Mitglied} other {{n} Mitglieder}}",
+    "previewMetaNoDesc": "{n, plural, one {{n} Mitglied} other {{n} Mitglieder}}",
+    "privateCategory": "Private Kategorie",
+    "privateCategorySub": "Die Kanäle darin sind für ausgewählte Rollen offen",
+    "privateChannel": "Privater Kanal",
+    "privateChannelSub": "Nur von dir ausgewählte Rollen können ihn sehen",
+    "qAddChannel": "Kanal hinzufügen",
+    "rChannels": "Kanäle",
+    "rFolder": "Ordner",
+    "rInvites": "Einladungen",
+    "rInvitesVal": "{n} aktiv",
+    "rOverviewSub": "Name, Symbol, Banner, Systemkanäle",
+    "rRules": "Regeln",
+    "rRulesVal": "{n, plural, one {{n} Regel} other {{n} Regeln}}",
+    "removeIcon": "Symbol entfernen",
+    "removeOverride": "Überschreibungen entfernen",
+    "removeOverrideMsg": "Die Überschreibungen für {target} in {channel} werden entfernt; es gelten wieder die Standardwerte.",
+    "renamePrompt": "Neuer Ordnername",
+    "reorderDrag": "Zum Neuanordnen ziehen",
+    "reorderSaved": "Reihenfolge gespeichert",
+    "revoke": "Einladung widerrufen",
+    "roleLocked": "Du kannst diese Rolle nicht bearbeiten; sie steht über oder gleichauf mit deiner.",
+    "roleMembersFoot": "Ausgewählte Personen erhalten die Rolle {role}, wenn du auf Speichern tippst.",
+    "roleMembersSec": "{role} · {n, plural, one {{n} Mitglied} other {{n} Mitglieder}}",
+    "roleNameNeeded": "Ein Rollenname ist erforderlich",
+    "roleSaved": "Rolle gespeichert",
+    "rolesFoot": "Eine Rolle kann die Rollen unter ihr verwalten. Der Besitzer steht immer ganz oben.",
+    "rolesSort": "Rollen · zum Neuanordnen ziehen",
+    "rulesAccepted": "Regeln akzeptiert",
+    "rulesFoot": "Wenn Community aktiviert ist, akzeptieren neue Mitglieder diese Regeln vor dem Beitritt.",
+    "rulesPh": "Sei nett zu allen.",
+    "rulesSec": "Eine Regel pro Zeile",
+    "rulesTitle": "Regeln",
+    "searchBans": "Banns durchsuchen",
+    "searchInN": "{n, plural, one {{n} Mitglied} other {{n} Mitglieder}} durchsuchen",
+    "sec10": "10 s",
+    "sec15": "15 s",
+    "sec30": "30 s",
+    "sec5": "5 s",
+    "secAccess": "Zugriff",
+    "secChannel": "Kanal",
+    "secEntry": "Beitritt",
+    "secForYou": "Für dich",
+    "secOnServer": "Auf diesem Server",
+    "secQuick": "Kurz und knapp",
+    "serverDefault": "Server-Standard",
+    "serverNamePh": "Server von {name}",
+    "serverSettings": "Servereinstellungen",
+    "sidebarInVoice": "{n} im Sprachchat",
+    "slowmode": "Langsamer Modus",
+    "systemFoot": "Begrüßungen neuer Mitglieder und Systemnachrichten landen in diesem Kanal. Inaktive Mitglieder werden nach dem AFK-Timeout in den AFK-Kanal verschoben.",
+    "systemMsgs": "Systemnachrichten",
+    "tAnnSub": "Nur das Team postet, Mitglieder folgen",
+    "tStageSub": "Sprecher und Zuhörer",
+    "tTextSub": "Nachrichten, Bilder, GIFs und Links",
+    "tVoiceSub": "Sprachchat, Bildschirmübertragung und Kamera",
+    "textChannels": "Textkanäle",
+    "timeoutDone": "Timeout verhängt",
+    "timeoutLeft": "noch {t}",
+    "topic": "Thema",
+    "topicPh": "Worum geht es in diesem Kanal?",
+    "tplBlankSub": "Nur #general und Lobby",
+    "tplCommunitySub": "Regeln, Entdecken, Moderation bereit",
+    "tplFriends": "Freundesgruppe",
+    "tplFriendsSub": "Allgemeiner Chat, Pläne, Musikabend",
+    "tplGaming": "Gaming-Squad",
+    "tplGamingSub": "Lobby, Ranked-Sprachkanal, Clips, Turnierrollen",
+    "tplSchool": "Schule & Verein",
+    "tplSchoolSub": "Ankündigungen, Klassenkanäle, Events",
+    "transferConfirm": "Letzter Schritt",
+    "transferConfirmMsg": "Gib den Servernamen und dein Passwort ein, um die Inhaberschaft an {name} zu übergeben.",
+    "transferDone": "Inhaberschaft an {name} übertragen",
+    "transferNotice": "<b>{name}</b> wird Besitzer. Du bleibst mit deinen Rollen Mitglied; um den Server zurückzubekommen, brauchst du die Zustimmung von {name}.",
+    "transferNoticeLeave": "<b>{name}</b> wird Besitzer und du verlässt den Server.",
+    "transferNoticeNone": "Wähle ein Mitglied, um die Inhaberschaft zu übertragen.",
+    "transferTo": "Inhaberschaft an {name} übertragen",
+    "triLegend": "erlauben · Standard · verweigern",
+    "unbanned": "Bann aufgehoben",
+    "unblocked": "Blockierung aufgehoben",
+    "ungroup": "Ordner auflösen",
+    "ungroupSub": "Die Server bleiben, ohne Ordner",
+    "ungrouped": "Ordner aufgelöst",
+    "unlimited": "Kein Limit",
+    "unmuteAll": "Stummschaltung für alle aufheben",
+    "unmutedDone": "Stummschaltung aufgehoben",
+    "usesOf": "{n} / {max}",
+    "vAudience": "Ins Publikum verschieben",
+    "vHighSub": "Seit 10 Minuten Mitglied",
+    "vHighestSub": "Verifizierte Telefonnummer",
+    "vInChannel": "{channel} · Mikro an",
+    "vInChannelMuted": "{channel} · Mikro aus",
+    "vLowSub": "Verifizierte E-Mail",
+    "vMediumSub": "Konto älter als 5 Minuten",
+    "vMove": "In Kanal verschieben",
+    "vMuteForMe": "Für dich stummschalten",
+    "vNoneSub": "Alle können sofort posten",
+    "vScreen": "Bildschirmton",
+    "vServerUnmute": "Server-Stummschaltung aufheben",
+    "vSpeak": "Zum Sprechen einladen",
+    "vUnmuteForMe": "Stummschaltung für dich aufheben",
+    "validFor": "gültig für {n, plural, one {{n} Tag} other {{n} Tage}}",
+    "validForHours": "gültig für {n, plural, one {{n} Stunde} other {{n} Stunden}}",
+    "validForever": "läuft nie ab",
+    "vanity": "Eigene Adresse",
+    "vanityFoot": "Kleinbuchstaben, Ziffern und Bindestriche. Leer lassen, um sie zu entfernen.",
+    "vanityPh": "eigene-adresse",
+    "voiceChannels": "Sprachkanäle",
+    "week1": "1 Woche",
+    "welcomeTo": "Willkommen auf {server}",
+    "wrongPassword": "Falsches Passwort",
+    "yourLink": "Dein Einladungslink"
   },
   "sx": {
     "actBan": "Bannen",

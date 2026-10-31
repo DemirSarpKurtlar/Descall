@@ -653,6 +653,221 @@ export const nested = {
     "windowTitle": "Admin",
     "youtube": "YouTube"
   },
+  "adminx": {
+    "audit": {
+      "actor": "admin",
+      "antibot": "anti-bot : {rule}",
+      "ban": "a banni",
+      "broadcast": "a envoyé une annonce",
+      "delete_message": "a supprimé un message",
+      "disconnect_all": "a déconnecté tout le monde",
+      "kick": "a expulsé",
+      "maintenance": "a modifié la maintenance",
+      "mute": "a rendu muet",
+      "remove_admin": "a retiré les droits admin de",
+      "set_admin": "a nommé admin",
+      "timeout": "a exclu temporairement",
+      "unban": "a débanni",
+      "unknown": "a fait une action",
+      "unmute": "a rétabli la parole de",
+      "untimeout": "a levé l'exclusion temporaire de",
+      "warn": "a averti"
+    },
+    "bans": {
+      "usernamePlaceholder": "@nomdutilisateur"
+    },
+    "dossier": {
+      "exportFile": "descall-data-{username}-{day}.json"
+    },
+    "fb": {
+      "adminRole": "admin",
+      "attachmentFile": "pièce jointe",
+      "chipPriority": "Priorité : {value}",
+      "chipType": "Type : {value}",
+      "closePanel": "Fermer le panneau",
+      "delAttachments": "{count, plural, one {pièce jointe} other {pièces jointes}}",
+      "delBody": "Suppression définitive pour {name} : {list}. Cette action est irréversible.",
+      "delReplies": "{count, plural, one {# réponse} other {# réponses}}",
+      "delReport": "signalement",
+      "deleteError": "Impossible de supprimer, réessaie",
+      "deleteTitle": "Supprimer ce retour ?",
+      "deleted": "Retour supprimé",
+      "emptyFiltered": "Aucun retour dans ce filtre.",
+      "emptyNone": "Aucun retour pour l'instant.",
+      "factArea": "Où : {value}",
+      "factLikes": "J'aime : {value}",
+      "factRating": "{count}/5 étoiles",
+      "factType": "Type : {value}",
+      "feedbackCount": "{count, plural, one {# retour} other {# retours}}",
+      "freq": {
+        "always": "Ça arrive à chaque fois",
+        "once": "C'est arrivé une fois",
+        "sometimes": "Ça arrive parfois"
+      },
+      "idCopied": "ID utilisateur copié",
+      "internalNote": "note interne",
+      "kind": {
+        "bug": "Bug"
+      },
+      "labelPriority": "PRIORITÉ",
+      "labelStatus": "STATUT",
+      "like": {
+        "design": "Design",
+        "screen": "Partage d'écran",
+        "speed": "Rapidité",
+        "voice": "Qualité du son"
+      },
+      "loadError": "Impossible de charger les retours. Réessaie dans un instant.",
+      "memberSince": "depuis le {date}",
+      "metaDevice": "APPAREIL",
+      "metaPlatform": "PLATEFORME",
+      "metaSent": "ENVOYÉ",
+      "metaVersion": "VERSION",
+      "modeNote": "Note interne",
+      "modeReply": "Répondre à l'utilisateur",
+      "moreSections": "{count, plural, one {+# autre section} other {+# autres sections}}",
+      "nav": {
+        "reports": "Signalements",
+        "signupStats": "Stats d'inscription"
+      },
+      "noteAdded": "Note interne ajoutée",
+      "panelSubtitle": "{count, plural, one {Retours · # élément} other {Retours · # éléments}}",
+      "phNote": "Écris une note interne… seuls les admins la voient",
+      "phReply": "Écris ta réponse… l'utilisateur reçoit une notification",
+      "pickOne": "Sélectionne un retour.",
+      "quick1": "Merci, on s'en occupe.",
+      "quick2": "Tu peux nous donner un peu plus de détails ? Sur quel appareil, et quand est-ce que ça arrive ?",
+      "quick3": "C'est corrigé. Tu peux essayer la dernière version ?",
+      "quickReplies": "Réponses rapides",
+      "replySent": "Réponse envoyée",
+      "sample": "EXEMPLE",
+      "sampleData": "DONNÉES D'EXEMPLE",
+      "saveError": "Impossible d'enregistrer la modification",
+      "searchAria": "Rechercher dans les retours",
+      "searchPlaceholder": "Rechercher un utilisateur, un message ou un ID…",
+      "sections": "Sections",
+      "sendError": "Impossible d'envoyer, réessaie",
+      "sort": {
+        "newest": "Plus récents",
+        "oldest": "Plus anciens"
+      },
+      "status": {
+        "in_progress": "En cours"
+      },
+      "type": {
+        "bug": "Bug"
+      },
+      "windowAria": "Panneau d'admin · Retours",
+      "zoom": "Agrandir"
+    },
+    "live": {
+      "linkPlaceholder": "/status ou https://descall.com/…"
+    },
+    "mod": {
+      "actionFailed": "L'action a échoué",
+      "expired": "expiré",
+      "loadError": "Impossible de charger la modération"
+    },
+    "panel": {
+      "serverError": "Erreur serveur {status}",
+      "windowTitle": "Descall Admin"
+    },
+    "shop": {
+      "cat": {
+        "avatar_effect": "Effet d'avatar",
+        "chat_bubble": "Style de bulle de chat",
+        "countries": "Pays",
+        "name_effect": "Effet de nom"
+      },
+      "createError": "Impossible de créer l'article.",
+      "loadError": "Impossible de charger les articles de la boutique.",
+      "sample": "Abc",
+      "skuPlaceholder": "sku (ex. : banner-forest)",
+      "themeGroup": {
+        "glowing": "Lumineux (animé)",
+        "gradient": "Dégradé",
+        "neon": "Néon"
+      },
+      "updateError": "Impossible de mettre à jour l'article."
+    },
+    "sst": {
+      "abandoned": "Abandonnées",
+      "allCount": "toutes · {value}",
+      "appOpened": "A ouvert l'appli · {value}",
+      "applyRange": "Appliquer la période",
+      "avgDay": "Moyenne sur 7 jours",
+      "avgMonth": "Moyenne sur 3 mois",
+      "avgWeek": "Moyenne sur 4 semaines",
+      "cameBack": "{returned} / {eligible} sont revenus",
+      "captionDays": "{count} derniers jours",
+      "captionYear": "12 derniers mois",
+      "completed": "Terminées · {value} · {pct}",
+      "country": "Pays",
+      "countryNote": "Les inscriptions avant le {date} n'ont pas de pays → {unknown}.",
+      "csvDone": "CSV téléchargé",
+      "csvFailed": "Impossible de télécharger le CSV",
+      "csvFile": "signup-stats.csv",
+      "d1": "J1 · lendemain",
+      "d7": "J7 · 7e jour",
+      "daily": "Quotidien",
+      "dateRange": "Période",
+      "dateRangeValue": "Période : {range}",
+      "deleted": "{value} supprimés",
+      "end": "Fin",
+      "failedNote": "Échec = une inscription qui s'est terminée par une erreur de validation ou un échec (nouvelle table {table}).",
+      "forbidden": "Les stats d'inscription sont réservées aux admins.",
+      "funnel": "Parcours d'inscription",
+      "lessThanYesterday": "moins qu'hier",
+      "loadError": "Impossible de charger les stats.",
+      "monthly": "Mensuel",
+      "moreThanYesterday": "plus qu'hier",
+      "needsSignIn": "Tu dois te connecter pour ouvrir cette fenêtre.",
+      "noneMonth": "aucune inscription sur les 30 jours précédents",
+      "noneWeek": "aucune inscription la semaine dernière",
+      "preset30": "30 derniers jours",
+      "preset365": "12 derniers mois",
+      "preset7": "7 derniers jours",
+      "preset90": "90 derniers jours",
+      "presetAll": "Depuis le début",
+      "retention": "Rétention",
+      "retentionNote": "Les journées se terminent à minuit, heure d'Istanbul (00:00, UTC+3). Mesuré avec la nouvelle table {table}.",
+      "sameAsYesterday": "identique à hier",
+      "sameMonth": "identique aux 30 jours précédents",
+      "sameWeek": "identique à la semaine dernière",
+      "sampleData": "DONNÉES D'EXEMPLE",
+      "signInMethod": "Méthode de connexion",
+      "since": "depuis le {date}",
+      "source": {
+        "direct": "Direct",
+        "googleOrganic": "Google (organique)"
+      },
+      "start": "Début",
+      "started": "Commencées · {value}",
+      "stillActive": "{returned} / {eligible} toujours actifs",
+      "subtitle": "Visible uniquement par les admins · Fuseau horaire : Istanbul (UTC+3) · Dernière mise à jour {time}",
+      "thisWeek": "Cette semaine",
+      "timeRange": "Période",
+      "tipAvg": "moy. {avg}",
+      "tipCount": "{count, plural, one {# inscription} other {# inscriptions}}",
+      "title": "Stats d'inscription",
+      "total": "Total des inscriptions",
+      "trend": "Tendance des inscriptions",
+      "unitDay": "Inscriptions quotidiennes",
+      "unitMonth": "Inscriptions mensuelles",
+      "unitWeek": "Inscriptions hebdomadaires",
+      "vsMonth": "par rapport aux 30 jours précédents",
+      "vsWeek": "par rapport à la semaine dernière",
+      "weekOf": "Semaine du {date}",
+      "weekly": "Hebdomadaire",
+      "windowTitle": "Stats d'inscription — Descall Admin"
+    },
+    "stepUp": {
+      "required": "Un code de vérification est requis."
+    },
+    "sx": {
+      "phaseN": "Phase {n}"
+    }
+  },
   "auth": {
     "createAccount": "Créer un compte",
     "logout": "Se déconnecter",
@@ -893,6 +1108,45 @@ export const nested = {
     "video": "Appel vidéo",
     "voice": "Appel vocal"
   },
+  "callui": {
+    "media": {
+      "dmTitle": "Appel Descall",
+      "groupTitle": "Appel de groupe Descall"
+    },
+    "native": {
+      "callWith": "Appel avec {name}",
+      "end": "Raccrocher"
+    },
+    "presence": {
+      "online": "{name} est en ligne",
+      "sub": "Vient de se connecter"
+    },
+    "ring": {
+      "answeredElsewhere": "Appel pris sur un autre appareil.",
+      "declinedElsewhere": "Appel refusé sur un autre appareil.",
+      "missed": "Appel manqué."
+    },
+    "tap": {
+      "camOn": "Caméra activée",
+      "groupVideo": "Appel vidéo de groupe",
+      "live": "Appel de groupe en cours",
+      "micOff": "Micro coupé",
+      "micOn": "Micro activé",
+      "more": "{n} de plus",
+      "nobody": "Il n'y a plus personne dans l'appel",
+      "rGroup": "L'appel de groupe est terminé",
+      "rLocal": "Tu as mis fin à l'appel",
+      "rMissed": "L'appel s'est terminé avant que tu répondes",
+      "rRemote": "Déconnecté ({name} est parti)",
+      "talking": "{count, plural, one {{names} parle} other {{names} parlent}}"
+    },
+    "voice": {
+      "cameraFailed": "Impossible de démarrer la caméra.",
+      "disconnected": "Tu as été déconnecté du salon vocal.",
+      "noSpeakPerm": "Tu n'as pas la permission de parler.",
+      "nsBadge": "NS"
+    }
+  },
   "chat": {
     "attachment": "📎 Pièce jointe",
     "cancelReply": "Annuler la réponse",
@@ -907,6 +1161,16 @@ export const nested = {
     "voiceMessage": "Message vocal",
     "voicePreview": "🎤 Message vocal",
     "yesterday": "Hier"
+  },
+  "chatx": {
+    "appBadge": "APPLI",
+    "blockedMessages": "{count, plural, one {# message d'un utilisateur bloqué} other {# messages d'un utilisateur bloqué}}",
+    "coinRim": "ONE DESCOIN · MMXXVI · ONE DESCOIN · MMXXVI · ",
+    "matchingMessages": "{count, plural, one {# message correspondant} other {# messages correspondants}}",
+    "members": "{count, plural, one {# membre} other {# membres}}",
+    "newMessagesJump": "{count, plural, one {# nouveau message, descendre en bas} other {# nouveaux messages, descendre en bas}}",
+    "participantsJoined": "{count, plural, one {# participant a rejoint} other {# participants ont rejoint}}",
+    "reactions": "{count, plural, one {# réaction} other {# réactions}}"
   },
   "common": {
     "back": "Retour",
@@ -930,6 +1194,78 @@ export const nested = {
     "unknown": "Inconnu",
     "yes": "Oui",
     "you": "Toi"
+  },
+  "core": {
+    "app": {
+      "acceptFailed": "Impossible d'accepter",
+      "backendUnreachable": "Impossible de joindre le backend ({url}). Vérifie ton réseau ou le paramètre VITE_API_BASE_URL.",
+      "declineFailed": "Impossible de refuser",
+      "reconnectAttempt": "Reconnexion… tentative {attempt}",
+      "retryPollingFirst": "Nouvelle tentative de connexion : passage en mode polling d'abord…",
+      "retryPollingOnly": "Nouvelle tentative de connexion : passage en mode polling uniquement…",
+      "socketAuthFailed": "Échec de l'authentification du socket",
+      "socketConnectFailed": "Échec de la connexion du socket. Vérifie l'état du déploiement du backend, l'URL du backend et les paramètres CORS.",
+      "socketReconnectFailed": "Échec de la reconnexion du socket. Vérifie l'URL du backend et les CORS."
+    },
+    "boot": {
+      "loadingDescall": "Chargement de Descall"
+    },
+    "call": {
+      "inCall": "En appel",
+      "inCallWith": "En appel avec {name}",
+      "inProgress": "Appel en cours",
+      "mediaTitle": "Appel Descall"
+    },
+    "dur": {
+      "approxH": "~{n} h",
+      "approxM": "~{n} min",
+      "h": "{h} h",
+      "hm": "{h} h {m} min",
+      "m": "{m} min"
+    },
+    "fx": {
+      "deep": "Grave",
+      "deepDesc": "Effet de voix grave",
+      "echo": "Écho",
+      "echoDesc": "Effet d'écho",
+      "helium": "Hélium",
+      "heliumDesc": "Voix aiguë",
+      "noneDesc": "Aucun effet",
+      "radio": "Radio",
+      "radioDesc": "Effet radio/téléphone",
+      "robot": "Robot",
+      "robotDesc": "Effet de voix robot"
+    },
+    "http": {
+      "apiNotConfigured": "L'URL de l'API n'est pas configurée. Contacte le support.",
+      "connectionError": "Erreur de connexion",
+      "invalidResponse": "Le serveur a renvoyé une réponse invalide"
+    },
+    "screenPicker": {
+      "tip": "Choisis l'écran, la fenêtre ou l'onglet du navigateur que tu veux partager.",
+      "title": "Partage ton écran"
+    },
+    "seo": {
+      "appDesc": "Appli Descall",
+      "groupInviteDesc": "Rejoins un groupe Descall",
+      "groupInviteTitle": "Invitation à un groupe, Descall",
+      "serverInviteDesc": "Rejoins un serveur Descall",
+      "serverInviteTitle": "Invitation à un serveur, Descall"
+    },
+    "server": {
+      "rulesRequired": "Tu dois accepter les règles du serveur avant de continuer.",
+      "slowmode": "Le mode lent est activé. Réessaie dans {wait} s."
+    }
+  },
+  "counts": {
+    "categories": "{n, plural, one {catégorie} other {catégories}}",
+    "channels": "{n, plural, one {salon} other {salons}}",
+    "credits": "{n, plural, one {crédit} other {crédits}}",
+    "creditsTo": "{n, plural, one {crédit à} other {crédits à}}",
+    "members": "{n, plural, one {membre} other {membres}}",
+    "replyingTo": "Réponse à {name}",
+    "roles": "{n, plural, one {rôle} other {rôles}}",
+    "uses": "{n, plural, one {utilisation} other {utilisations}}"
   },
   "dex": {
     "code": "Le code à 6 chiffres de ton application d'authentification",
@@ -1306,6 +1642,139 @@ export const nested = {
     "warnLeave": "{name} devient propriétaire : il peut supprimer le serveur et gérer tous les rôles. Tu quittes le serveur juste après ; pour revenir, il te faudra une nouvelle invitation.",
     "warnStay": "{name} devient propriétaire : il peut supprimer le serveur, t'expulser ou retirer tes permissions. Tu restes membre avec tes rôles. Pour annuler, {name} devra te retransférer la propriété."
   },
+  "polls": {
+    "app": {
+      "actionFailed": "L'action a échoué.",
+      "autoHide": "Disparaît dans {count, plural, one {# seconde} other {# secondes}}",
+      "avatarOf": "Avatar de {name}",
+      "banRemoved": "Bannissement levé",
+      "channels": "Salons",
+      "chooseSize": "Choisir la taille",
+      "clearNick": "Effacer le pseudo",
+      "didYouMean": "Tu voulais dire ?",
+      "friends": "Vous êtes amis",
+      "fullscreen": "Plein écran",
+      "globalAvatar": "Avatar global",
+      "inServer": "sur {server}",
+      "joinedDescall": "A rejoint Descall",
+      "joinedServer": "A rejoint le serveur",
+      "membership": "Adhésion",
+      "modBan": "{name} a été banni",
+      "modKick": "{name} a été expulsé du serveur",
+      "modTimeout": "{name} a été exclu temporairement",
+      "nickCleared": "Ton pseudo a été effacé",
+      "nickUpdated": "Ton pseudo a été mis à jour",
+      "noAvatar": "Aucun avatar défini.",
+      "onlyYou": "Toi seul peux voir ceci",
+      "openProfile": "Ouvrir le profil",
+      "original": "original",
+      "purgeSince": "sur {span}",
+      "purged": "{count, plural, one {# message supprimé} other {# messages supprimés}}",
+      "requestSent": "Demande envoyée",
+      "roles": "Rôles · {count}",
+      "sendInvite": "Envoyer une invitation",
+      "share": "Partager dans le salon",
+      "shareFailed": "Impossible de partager.",
+      "sharing": "Partage…",
+      "timedOutUntil": "Exclu temporairement jusqu'au {date} {time}",
+      "tip": "Astuce : tape {slash} pour ouvrir le menu des commandes",
+      "unban": "Lever le bannissement",
+      "until": "jusqu'à {time}",
+      "usage": "Utilisation :"
+    },
+    "ban": {
+      "body": "Il est retiré du serveur et ne peut plus le rejoindre",
+      "placeholder": "ex. : spam, règle 3",
+      "reasonNote": "inscrit dans le journal d'audit",
+      "title": "Bannir {name} ?"
+    },
+    "create": {
+      "addOption": "Ajouter une option",
+      "anon": "Vote anonyme",
+      "anonHint": "Les votes sont enregistrés, mais personne ne voit qui a voté pour quoi, seulement les totaux",
+      "editHint": "Aucun vote pour l'instant, tout le monde voit tes modifications",
+      "emojiAdd": "Ajouter un emoji",
+      "emojiChange": "Emoji : {emoji}, changer",
+      "emojiPick": "Choisir un emoji",
+      "emojiRemove": "Retirer l'emoji",
+      "endsAt": "Se termine le {date} {time}",
+      "errDuplicate": "« {option} » apparaît deux fois.",
+      "errMinOptions": "Il faut au moins 2 options.",
+      "errQuestion": "Écris une question.",
+      "kbdSend": "envoyer",
+      "multi": "Réponses multiples",
+      "multiHint": "Les membres peuvent voter pour plusieurs options",
+      "option": "Option {n}",
+      "optionRemove": "Retirer l'option {n}",
+      "options": "Options",
+      "optionsNote": "{count} / {max} · fais glisser pour réorganiser",
+      "previewEmpty": "Écris au moins deux options et l'aperçu se met à jour ici.",
+      "previewNote": "Les membres votent en touchant une option et peuvent changer leur vote jusqu'à la fin du sondage. Les barres de résultats s'affichent après le vote.",
+      "previewQuestion": "Écris ta question",
+      "question": "Question",
+      "questionPlaceholder": "Que veux-tu demander ?",
+      "sendFailed": "Impossible d'envoyer le sondage.",
+      "sendPoll": "Envoyer le sondage",
+      "targetChannel": "Sera envoyé dans # {name}",
+      "targetDm": "Sera envoyé dans ta conversation avec {name}",
+      "targetGroup": "Sera envoyé à {name}",
+      "titleCreate": "Créer un sondage",
+      "titleEdit": "Modifier le sondage"
+    },
+    "legacy": {
+      "head": "Ancien sondage · vote impossible"
+    },
+    "poll": {
+      "aria": "Sondage : {question}",
+      "ariaMine": ", ton choix",
+      "ariaPicked": "{option}, sélectionné",
+      "ariaResult": "{option}, {votes, plural, one {# vote} other {# votes}}, {pct} pour cent",
+      "ariaWinner": ", gagnant",
+      "badge": "SONDAGE",
+      "badgeEnded": "TERMINÉ",
+      "cantVote": "Tu ne peux pas voter dans ce sondage",
+      "edit": "Modifier le sondage",
+      "endBody": "Le vote se clôt, les résultats deviennent visibles par tous et un message de fin est publié dans le salon.",
+      "endConfirm": "Terminer le sondage",
+      "endFailed": "Impossible de terminer le sondage.",
+      "endNow": "Terminer le sondage maintenant",
+      "endTitle": "Terminer le sondage maintenant ?",
+      "menu": "Options du sondage",
+      "multi": "Choix multiple",
+      "noVotes": "Aucun vote pour l'instant",
+      "nobodyVoted": "Personne n'a voté",
+      "single": "Choix unique",
+      "tap": "Touche une option pour voter",
+      "tapShort": "Touche pour voter",
+      "tie": "Égalité :",
+      "undo": "Retirer mon vote",
+      "voteFailed": "Impossible de voter.",
+      "voters": "Votants",
+      "votes": "{count, plural, one {# vote} other {# votes}}",
+      "votesHidden": "{count, plural, one {# vote} other {# votes}} · résultats après ton vote",
+      "winner": "Gagnant :",
+      "winnerTag": "GAGNANT"
+    },
+    "presence": {
+      "dnd": "Ne pas déranger"
+    },
+    "reason": "Raison",
+    "store": {
+      "failed": "L'action sur le sondage a échoué.",
+      "offline": "En attente de connexion.",
+      "timeout": "Le serveur n'a pas répondu, réessaie."
+    },
+    "timeLeft": "Encore {span}",
+    "voters": {
+      "loadFailed": "Impossible de charger les votants.",
+      "noMatch": "Personne ne correspond",
+      "noVotes": "Aucun vote pour cette option pour l'instant",
+      "search": "Rechercher des votants",
+      "title": "Qui a voté ?",
+      "unknown": "Membre inconnu",
+      "you": "(toi)"
+    }
+  },
   "profile": {
     "about": "À propos",
     "back": "Profil",
@@ -1628,6 +2097,1733 @@ export const nested = {
     "voiceHint": "Appareils et test du micro",
     "voiceVideo": "Voix et vidéo"
   },
+  "shell": {
+    "ann": {
+      "days": "{count} j",
+      "hours": "{count} h",
+      "minutes": "{count} min"
+    },
+    "appearance": {
+      "a11y": "Accessibilité",
+      "a11yPerf": "Accessibilité et performances",
+      "accentFoot": "Les boutons, les onglets sélectionnés et les bulles de tes messages utilisent cette couleur.",
+      "accentFootPremium": "Quand un thème de la boutique est actif, c'est lui qui définit la couleur d'accent.",
+      "accents": {
+        "blue": "Bleu Descall",
+        "green": "Vert",
+        "orange": "Orange",
+        "pink": "Rose",
+        "purple": "Violet",
+        "red": "Rouge",
+        "teal": "Sarcelle"
+      },
+      "browseShop": "Parcourir la boutique",
+      "fontSteps": {
+        "xlarge": "Très grande"
+      },
+      "livePreviewBadge": "APERÇU EN DIRECT",
+      "livePreviewLabel": "Aperçu en direct",
+      "openShop": "Ouvrir la boutique",
+      "previewCap": "Les modifications s'affichent ici et dans toute l'appli immédiatement.",
+      "previewMsg1": "Partant pour une partie ce soir ? 🎮",
+      "previewMsg2": "Je suis chaud ! J'arrive en vocal à 21:00",
+      "previewMsg3": "Top, préviens Mert aussi 👍",
+      "reduceMotion": "Réduire les animations",
+      "reduceMotionSub": "Simplifie les transitions et les animations à ressort",
+      "reduceTransparency": "Réduire la transparence",
+      "reduceTransparencySubDesktop": "Surfaces opaques au lieu du verre ; plus fluide sur les ordinateurs anciens",
+      "reduceTransparencySubMobile": "Surfaces opaques et sombres au lieu du verre",
+      "removed": "Supprimé :",
+      "removedBubble": "Style des bulles de messages",
+      "removedStatus": "Statut (déplacé dans le menu du profil)",
+      "savedFoot": "L'apparence est enregistrée sur ton compte et reste la même sur tous tes appareils. Tu changes maintenant ton statut depuis le menu du profil.",
+      "shopThemes": "Thèmes de la boutique",
+      "textSize": "Taille du texte",
+      "textSizeFootDesktop": "S'applique au chat, à la liste des salons et aux menus. Ctrl + / Ctrl − la modifient aussi.",
+      "textSizeFootMobile": "S'applique au chat, aux listes et aux menus. Suit aussi le Dynamic Type de l'iPhone.",
+      "themeAuto": "Automatique",
+      "themesOwned": "{count, plural, one {# thème possédé} other {# thèmes possédés}}"
+    },
+    "badges": {
+      "titleOther": "Badges de {name}"
+    },
+    "hover": {
+      "message": "Envoyer un message à {name}"
+    },
+    "since": {
+      "days": "{count} j",
+      "hours": "{count} h",
+      "hoursMinutes": "{hours} h {minutes} min",
+      "minutes": "{count} min"
+    }
+  },
+  "shop": {
+    "buy": {
+      "animated": "Animé",
+      "balanceValue": "Solde {balance}",
+      "cat": {
+        "avatar_effect": {
+          "acc": "L'effet d'avatar",
+          "eyebrow": "EFFET D'AVATAR",
+          "foot": "L'effet s'affiche sur ton profil, dans les messages et dans la liste des membres. Avec Réduire les animations activé, il reste immobile.",
+          "label": "SUR TON AVATAR",
+          "meta": "Effet d'avatar · {motion}",
+          "noun": "cet effet d'avatar"
+        },
+        "banner": {
+          "acc": "La bannière",
+          "eyebrow": "BANNIÈRE DE PROFIL",
+          "foot": "La bannière reste sur ton compte et tu peux la changer à tout moment. Une seule bannière est portée à la fois.",
+          "label": "SUR TON PROFIL",
+          "meta": "Bannière · 600×200 · Fixe",
+          "noun": "cette bannière"
+        },
+        "call_overlay": {
+          "acc": "L'overlay d'appel",
+          "eyebrow": "OVERLAY D'APPEL",
+          "foot": "L'overlay change l'arrière-plan de l'écran d'appel ; les caméras et les commandes restent les mêmes.",
+          "label": "EN APPEL",
+          "meta": "Overlay d'appel · Vocal et vidéo",
+          "noun": "cet overlay d'appel"
+        },
+        "chat_bubble": {
+          "acc": "La bulle",
+          "eyebrow": "BULLE DE CHAT",
+          "foot": "La bulle ne s'affiche que sur tes messages ; tout le monde voit la même bulle.",
+          "label": "DANS LE CHAT",
+          "meta": "Bulle · {motion}",
+          "metaSeries": "Bulle · Série Atelier · {motion}",
+          "noun": "cette bulle"
+        },
+        "name_effect": {
+          "acc": "L'effet de nom",
+          "eyebrow": "EFFET DE NOM",
+          "foot": "L'effet reste lisible à toutes les tailles, de 14 à 34 px. Un seul effet de nom est porté à la fois.",
+          "label": "SUR TON NOM",
+          "meta": "Effet de nom · {motion}",
+          "metaSeries": "Effet de nom · Série Sigil · {motion}",
+          "noun": "cet effet de nom"
+        },
+        "presence_flare": {
+          "acc": "L'éclat de présence",
+          "eyebrow": "ÉCLAT DE PRÉSENCE",
+          "foot": "Le halo ne change pas la couleur de ton statut ; En ligne, Absent et Ne pas déranger restent bien distincts.",
+          "label": "TON STATUT",
+          "meta": "Éclat de présence · Indicateur en ligne",
+          "noun": "cet éclat de présence"
+        },
+        "profile_aura": {
+          "acc": "L'aura",
+          "eyebrow": "AURA DE PROFIL",
+          "foot": "Toute personne qui ouvre ta carte de profil voit l'aura. Une seule aura est portée à la fois.",
+          "label": "SUR TON PROFIL",
+          "meta": "Aura · Autour de ta carte de profil",
+          "noun": "cette aura"
+        },
+        "profile_background": {
+          "acc": "L'arrière-plan",
+          "eyebrow": "ARRIÈRE-PLAN DU PROFIL",
+          "foot": "L'arrière-plan remplit toute la carte de profil ; le bas s'assombrit pour que le texte reste lisible.",
+          "label": "SUR TON PROFIL",
+          "meta": "Arrière-plan · Carte de profil · Fixe",
+          "noun": "cet arrière-plan"
+        },
+        "profile_color": {
+          "acc": "La couleur de carte",
+          "eyebrow": "COULEUR DE CARTE",
+          "foot": "Toute personne qui ouvre ta carte de profil voit la couleur. La bannière et l'avatar restent les mêmes. Une seule couleur est portée à la fois.",
+          "label": "SUR TA CARTE DE PROFIL",
+          "meta": "Couleur de carte · Corps de la carte de profil",
+          "noun": "cette couleur de carte"
+        },
+        "reaction_burst": {
+          "acc": "L'effet de réaction",
+          "eyebrow": "EXPLOSION DE RÉACTIONS",
+          "foot": "L'effet ne s'affiche que sur les réactions que tu laisses ; les compteurs et les emoji restent les mêmes.",
+          "label": "SUR TES RÉACTIONS",
+          "meta": "Réaction · Les réactions que tu laisses",
+          "noun": "cet effet de réaction"
+        },
+        "theme": {
+          "acc": "Le thème",
+          "eyebrow": "THÈME DE L'APPLI",
+          "foot": "Un thème change seulement l'apparence de Descall pour toi. Avec Réduire les animations activé, les rideaux s'arrêtent.",
+          "label": "DANS TON APPLI",
+          "meta": "Thème · Toute l'appli · {motion}",
+          "noun": "ce thème"
+        },
+        "typing_flare": {
+          "acc": "L'éclat de saisie",
+          "eyebrow": "ÉCLAT DE SAISIE",
+          "foot": "Tout le monde dans le chat voit cet indicateur pendant que tu écris.",
+          "label": "DANS LE CHAT",
+          "meta": "Éclat de saisie · {motion}",
+          "noun": "cet éclat de saisie"
+        }
+      },
+      "chat15": "Dans le chat · 15 px",
+      "clickMoment": "Au moment où tu cliques",
+      "dms": "MESSAGES PRIVÉS",
+      "dnd": "Ne pas déranger",
+      "doneFoot": "L'achat figure dans ton historique DesCoin. {thing} se change depuis l'Inventaire à tout moment.",
+      "doneSubStowed": "Ajouté à ton inventaire · porte-le quand tu veux",
+      "doneSubSwapped": "Porté maintenant · {previous} est retourné dans ton inventaire",
+      "doneSubWorn": "Porté maintenant sur ton profil",
+      "doneTitle": "{name} est à toi",
+      "eveningGroup": "Groupe du soir",
+      "inChat": "Dans le chat",
+      "inDms": "En messages privés",
+      "inInventory": "Dans l'inventaire",
+      "inMembers": "Dans la liste des membres",
+      "inMessages": "Dans les messages",
+      "lines": {
+        "ae": "Je passe en vocal ce soir, qui est chaud ?",
+        "bgAbout": "Oiseau de nuit. En vocal presque tous les soirs, soirée ciné le week-end.",
+        "bub1": "Soirée ciné ce soir ?",
+        "bub2": "Oui ! Rejoins le vocal à 21 h 🎬",
+        "bub3": "C'est moi qui offre le pop-corn.",
+        "name": "Film à 21 h, n'oublie pas.",
+        "rx": "Cette scène finale était légendaire, tout le monde est debout 👏",
+        "theme1": "J'ai vu le nouveau thème, il est super 😍",
+        "theme2": "Nouveau thème ! Il défile doucement en arrière-plan",
+        "theme3": "Je crois que je vais le prendre aussi",
+        "ty1": "On met quel film ?",
+        "ty2": "Une seconde, j'envoie la liste"
+      },
+      "looks": "APERÇU {label}",
+      "members13": "Liste des membres · 13 px",
+      "missing": "Manquant",
+      "needMore": "Il manque <b>{amount} DesCoin</b>",
+      "newBalance": "Nouveau solde",
+      "notEnough": "insuffisant",
+      "now": "Maintenant",
+      "openInventory": "Ouvrir l'inventaire",
+      "ownFootEq": "Le retirer le garde sur ton compte ; le remettre est gratuit.",
+      "ownFootInvCurrent": "Le porter retire {current}. Pas besoin de le racheter.",
+      "ownFootInvNone": "Le porter est gratuit. Pas besoin de le racheter.",
+      "ownSub": "{via, select, gift {Offert le {date} · Solde {balance}} voucher {Obtenu avec un bon gratuit le {date} · Solde {balance}} other {Acheté le {date} pour {paid} DesCoin · Solde {balance}}}",
+      "ownTitle": "Tu possèdes déjà {noun}",
+      "paid": "Payé",
+      "people": {
+        "ece": "Ece",
+        "kaan": "Kaan",
+        "selin": "Selin"
+      },
+      "prevBalance": "Solde précédent",
+      "rarity": {
+        "common": "Commun",
+        "epic": "Épique",
+        "legendary": "Légendaire",
+        "mythic": "Mythique",
+        "rare": "Rare"
+      },
+      "ready": "Déjà {percent} %",
+      "sampleBubble": "Salut !",
+      "sampleName": "Aa",
+      "sendTo": "Envoyer un message à {name}",
+      "shortBtn": "Il manque {amount} DesCoin",
+      "shortFoot": "Quand ton solde sera suffisant, cette fenêtre débloquera l'achat. Le prix et le solde restent inchangés.",
+      "statesStay": "Les statuts restent distincts",
+      "still": "Fixe",
+      "talk": "Parle en appel",
+      "undoneSubNone": "Annulé · le nouvel article est dans ton inventaire, non porté",
+      "undoneSubSwapped": "Annulé · {previous} est de nouveau porté, le nouvel article est dans ton inventaire",
+      "wearSubCurrent": "{current} est retiré et reste dans ton inventaire",
+      "wearSubNone": "Rien n'est porté pour l'instant, il est équipé directement",
+      "withThis": "Avec celui-ci"
+    },
+    "retiredTitles": "Les titres de profil ont été retirés dans la version 2.13.0. {count, plural, one {Ton ancien titre reste sur ton compte mais n'est plus affiché.} other {Tes # anciens titres restent sur ton compte mais ne sont plus affichés.}}"
+  },
+  "shopItems": {
+    "_templates": {
+      "avatarEffect": "Effet d'aura d'avatar — {name}. Anneau/overlay animé autour de ton avatar.",
+      "background": "Arrière-plan de profil immersif — {name}. Une ambiance pleine page pour ta carte.",
+      "banner": "Bannière de profil premium — {name}. Un dégradé soigné à la profondeur cinématographique.",
+      "chatBubble": "Style de bulle de chat — {name}. Personnalise les bulles de tes messages envoyés.",
+      "nameEffect": "Effet de nom animé — {name}. Dégradé/lueur sur ton nom d'affichage.",
+      "presenceFlare": "Éclat de présence — {name}. Une lueur avancée autour de ton indicateur de statut en ligne.",
+      "profileAura": "Aura de profil — {name}. Une lueur d'ambiance autour de ta carte de profil."
+    },
+    "avatar-effect-aurora": {
+      "desc": "Un anneau aux couleurs changeantes d'aurore boréale entoure ton avatar.",
+      "name": "Anneau aurore"
+    },
+    "avatar-effect-bubble": {
+      "name": "Anneau de bulles"
+    },
+    "avatar-effect-comet": {
+      "name": "Traînée de comète"
+    },
+    "avatar-effect-ember": {
+      "name": "Orbite de braises"
+    },
+    "avatar-effect-flame": {
+      "desc": "Une aura de flammes vacillantes entoure ton avatar.",
+      "name": "Aura de flammes"
+    },
+    "avatar-effect-frost": {
+      "desc": "Un scintillement glacé entoure ton avatar.",
+      "name": "Aura de givre"
+    },
+    "avatar-effect-frostbite": {
+      "name": "Engelure"
+    },
+    "avatar-effect-halo": {
+      "name": "Halo doux"
+    },
+    "avatar-effect-hex": {
+      "name": "Grille hexagonale"
+    },
+    "avatar-effect-holoring": {
+      "name": "Anneau holo"
+    },
+    "avatar-effect-neon": {
+      "name": "Tirets néon"
+    },
+    "avatar-effect-orbit": {
+      "desc": "De minuscules particules gravitent en continu autour de ton avatar.",
+      "name": "Orbite de particules"
+    },
+    "avatar-effect-petal": {
+      "name": "Orbite de pétales"
+    },
+    "avatar-effect-prism": {
+      "name": "Prisme tournant"
+    },
+    "avatar-effect-pulse": {
+      "desc": "Une douce lueur qui pulse autour de ton avatar.",
+      "name": "Lueur pulsée"
+    },
+    "avatar-effect-pulse2": {
+      "name": "Double pulsation"
+    },
+    "avatar-effect-ripple": {
+      "name": "Anneau d'ondes"
+    },
+    "avatar-effect-royal": {
+      "name": "Blason royal"
+    },
+    "avatar-effect-scan": {
+      "name": "Ligne de balayage"
+    },
+    "avatar-effect-solar": {
+      "name": "Couronne solaire"
+    },
+    "avatar-effect-spark": {
+      "desc": "Des étincelles électriques crépitantes tournent autour de ton avatar.",
+      "name": "Étincelle électrique"
+    },
+    "avatar-effect-static": {
+      "name": "Champ statique"
+    },
+    "avatar-effect-toxic": {
+      "name": "Brume toxique"
+    },
+    "avatar-effect-void": {
+      "name": "Disque du vide"
+    },
+    "background-amber-gallery": {
+      "name": "Galerie ambrée"
+    },
+    "background-arcade-lounge": {
+      "name": "Salon d'arcade"
+    },
+    "background-aurora-sky": {
+      "desc": "Un ciel scintillant du sarcelle au violet, éclairé par une aurore et des étoiles.",
+      "name": "Ciel d'aurore"
+    },
+    "background-azure-observatory": {
+      "name": "Observatoire azur"
+    },
+    "background-blood-theater": {
+      "name": "Théâtre de sang"
+    },
+    "background-bronze-atelier": {
+      "name": "Atelier de bronze"
+    },
+    "background-carbon-deck": {
+      "name": "Pont carbone"
+    },
+    "background-celestial-dome": {
+      "name": "Dôme céleste"
+    },
+    "background-cherry-grove": {
+      "desc": "Un bosquet rose et blanc de rêve, plein de pétales qui tombent.",
+      "name": "Bosquet de cerisiers"
+    },
+    "background-copper-foundry": {
+      "name": "Fonderie de cuivre"
+    },
+    "background-coral-cove": {
+      "name": "Crique de corail"
+    },
+    "background-crimson-atelier": {
+      "name": "Atelier pourpre"
+    },
+    "background-cyber-grove": {
+      "name": "Bosquet cyber"
+    },
+    "background-desert-dusk": {
+      "desc": "Des oranges chauds qui se fondent dans un violet crépusculaire, comme un coucher de soleil sur le désert.",
+      "name": "Crépuscule du désert"
+    },
+    "background-ember-forge": {
+      "name": "Forge de braises"
+    },
+    "background-forest-canopy": {
+      "desc": "Des verts tachetés de soleil sous une épaisse canopée.",
+      "name": "Canopée forestière"
+    },
+    "background-glacier-lab": {
+      "name": "Labo glaciaire"
+    },
+    "background-graphite-suite": {
+      "name": "Suite graphite"
+    },
+    "background-harbor-night": {
+      "name": "Port de nuit"
+    },
+    "background-hyperion-hall": {
+      "name": "Salle Hypérion"
+    },
+    "background-ion-hangar": {
+      "name": "Hangar ionique"
+    },
+    "background-ivory-library": {
+      "name": "Bibliothèque d'ivoire"
+    },
+    "background-jade-sanctum": {
+      "name": "Sanctuaire de jade"
+    },
+    "background-lilac-parlor": {
+      "name": "Salon lilas"
+    },
+    "background-magma-core": {
+      "name": "Cœur de magma"
+    },
+    "background-mint-lounge": {
+      "name": "Salon menthe"
+    },
+    "background-moss-greenhouse": {
+      "name": "Serre de mousse"
+    },
+    "background-neon-city": {
+      "desc": "Une skyline cyberpunk de néons magenta et violets.",
+      "name": "Ville néon"
+    },
+    "background-noir-vault": {
+      "name": "Coffre noir"
+    },
+    "background-obsidian-hall": {
+      "name": "Salle d'obsidienne"
+    },
+    "background-ocean-depths": {
+      "desc": "Des eaux d'un bleu profond où dérivent des bulles, pour ta page de profil.",
+      "name": "Profondeurs océanes"
+    },
+    "background-opaline-loft": {
+      "name": "Loft opalin"
+    },
+    "background-orchid-salon": {
+      "name": "Salon orchidée"
+    },
+    "background-pearl-atrium": {
+      "name": "Atrium de perle"
+    },
+    "background-plasma-chamber": {
+      "name": "Chambre à plasma"
+    },
+    "background-polar-station": {
+      "name": "Station polaire"
+    },
+    "background-quantum-bay": {
+      "name": "Baie quantique"
+    },
+    "background-rose-suite": {
+      "name": "Suite rose"
+    },
+    "background-rust-conservatory": {
+      "name": "Jardin d'hiver rouille"
+    },
+    "background-saffron-terrace": {
+      "name": "Terrasse safran"
+    },
+    "background-steel-workshop": {
+      "name": "Atelier d'acier"
+    },
+    "background-teal-basin": {
+      "name": "Bassin sarcelle"
+    },
+    "background-tropical-veranda": {
+      "name": "Véranda tropicale"
+    },
+    "background-violet-archive": {
+      "name": "Archives violettes"
+    },
+    "background-void-gallery": {
+      "name": "Galerie du vide"
+    },
+    "background-volcanic-ash": {
+      "desc": "Des braises fumantes qui dérivent au-dessus d'un lit de cendres volcaniques.",
+      "name": "Cendres volcaniques"
+    },
+    "background-zenith-deck": {
+      "name": "Pont zénith"
+    },
+    "banner-acid-lattice": {
+      "name": "Treillis acide"
+    },
+    "banner-amber-dunes": {
+      "name": "Dunes ambrées"
+    },
+    "banner-arctic-frost": {
+      "desc": "Des bleus glacés et frais pour une bannière nette et épurée.",
+      "name": "Givre arctique"
+    },
+    "banner-azure-cathedral": {
+      "name": "Cathédrale azur"
+    },
+    "banner-blood-moon": {
+      "name": "Lune de sang"
+    },
+    "banner-carbon-pulse": {
+      "name": "Pulsation carbone"
+    },
+    "banner-celestial-ink": {
+      "name": "Encre céleste"
+    },
+    "banner-cherry-blossom": {
+      "desc": "De doux pétales roses qui dérivent sur un dégradé pâle.",
+      "name": "Fleur de cerisier"
+    },
+    "banner-chrome-tide": {
+      "name": "Marée chromée"
+    },
+    "banner-copper-forge": {
+      "name": "Forge de cuivre"
+    },
+    "banner-coral-reef": {
+      "name": "Récif de corail"
+    },
+    "banner-crimson-monolith": {
+      "name": "Monolithe pourpre"
+    },
+    "banner-cyber-marsh": {
+      "name": "Marais cyber"
+    },
+    "banner-deep-teal": {
+      "name": "Abysses sarcelle"
+    },
+    "banner-eclipse-silk": {
+      "name": "Soie d'éclipse"
+    },
+    "banner-ember-vault": {
+      "name": "Coffre de braises"
+    },
+    "banner-emerald-forest": {
+      "desc": "Des verts profonds et moussus pour une bannière inspirée de la nature.",
+      "name": "Forêt d'émeraude"
+    },
+    "banner-frosted-copper": {
+      "name": "Cuivre givré"
+    },
+    "banner-galaxy-swirl": {
+      "desc": "Une galaxie tourbillonnante de violet et de bleu, saupoudrée d'étoiles.",
+      "name": "Tourbillon galactique"
+    },
+    "banner-glacier-peak": {
+      "name": "Pic glaciaire"
+    },
+    "banner-graphite-flare": {
+      "name": "Éclat graphite"
+    },
+    "banner-hyperion-gold": {
+      "name": "Or d'Hypérion"
+    },
+    "banner-ion-circuit": {
+      "name": "Circuit ionique"
+    },
+    "banner-ion-sand": {
+      "name": "Sable ionique"
+    },
+    "banner-ivory-dusk": {
+      "name": "Crépuscule d'ivoire"
+    },
+    "banner-jade-temple": {
+      "name": "Temple de jade"
+    },
+    "banner-lilac-mist": {
+      "name": "Brume lilas"
+    },
+    "banner-luminous-moss": {
+      "name": "Mousse lumineuse"
+    },
+    "banner-magma-vein": {
+      "name": "Veine de magma"
+    },
+    "banner-midnight-harbor": {
+      "name": "Port de minuit"
+    },
+    "banner-mint-horizon": {
+      "name": "Horizon menthe"
+    },
+    "banner-neon-harbor": {
+      "name": "Port néon"
+    },
+    "banner-nocturne-violet": {
+      "name": "Violet nocturne"
+    },
+    "banner-noir-gold": {
+      "name": "Noir et or"
+    },
+    "banner-obsidian-rift": {
+      "name": "Faille d'obsidienne"
+    },
+    "banner-opaline-wave": {
+      "name": "Vague opaline"
+    },
+    "banner-pearl-fog": {
+      "name": "Brume perlée"
+    },
+    "banner-phantom-rose": {
+      "name": "Rose fantôme"
+    },
+    "banner-plasma-ribbon": {
+      "name": "Ruban de plasma"
+    },
+    "banner-polar-night": {
+      "name": "Nuit polaire"
+    },
+    "banner-quantum-lagoon": {
+      "name": "Lagon quantique"
+    },
+    "banner-rose-quartz": {
+      "name": "Quartz rose"
+    },
+    "banner-royal-velvet": {
+      "desc": "Du violet et de l'or royaux pour une bannière de profil luxueuse.",
+      "name": "Velours royal"
+    },
+    "banner-rust-garden": {
+      "name": "Jardin rouille"
+    },
+    "banner-saffron-silk": {
+      "name": "Soie safran"
+    },
+    "banner-shadow-orchid": {
+      "name": "Orchidée d'ombre"
+    },
+    "banner-solar-flare": {
+      "desc": "Une intense explosion d'orange et de rouge, comme une tempête solaire.",
+      "name": "Éruption solaire"
+    },
+    "banner-solar-garden": {
+      "name": "Jardin solaire"
+    },
+    "banner-steel-rain": {
+      "name": "Pluie d'acier"
+    },
+    "banner-sunset-arcade": {
+      "name": "Arcade au couchant"
+    },
+    "banner-titan-bronze": {
+      "name": "Bronze titan"
+    },
+    "banner-toxic-slime": {
+      "desc": "Une lueur verte radioactive sur une base sombre et granuleuse.",
+      "name": "Slime toxique"
+    },
+    "banner-tropical-haze": {
+      "name": "Brume tropicale"
+    },
+    "banner-verdant-pulse": {
+      "name": "Pulsation verdoyante"
+    },
+    "banner-violet-storm": {
+      "name": "Tempête violette"
+    },
+    "banner-void-mirror": {
+      "name": "Miroir du vide"
+    },
+    "banner-zenith-blue": {
+      "name": "Bleu zénith"
+    },
+    "call-arctic-bridge": {
+      "desc": "Acier bleu glace et dégradés glaciaires — net, froid et parfaitement épuré pour les appels où il faut se concentrer.",
+      "name": "Pont arctique"
+    },
+    "call-aurora-dome": {
+      "desc": "Une canopée d'aurore vivante au-dessus de la scène d'appel — sarcelle, violet et douce poussière d'étoiles.",
+      "name": "Dôme d'aurore"
+    },
+    "call-carbon-cockpit": {
+      "desc": "Tissage de carbone mat et cyan lumineux d'instruments de bord — l'énergie d'un pilote pour les vocaux à fort enjeu.",
+      "name": "Cockpit carbone"
+    },
+    "call-cyber-deck": {
+      "desc": "Grille cyan aux arêtes vives, touches rose vif, voile de lignes de balayage — l'esthétique d'un appel branché sur la matrice.",
+      "name": "Deck cyber"
+    },
+    "call-ember-theater": {
+      "desc": "Velours sombre et rideaux d'ambre en fusion — tes appels ont des airs d'avant-première privée.",
+      "name": "Théâtre de braises"
+    },
+    "call-glass-atrium": {
+      "desc": "Verre architectural dépoli et doux rayons de lumière du jour — la toile d'appel la plus raffinée que nous proposons.",
+      "name": "Atrium de verre"
+    },
+    "call-golden-hall": {
+      "desc": "Une lumière champagne chaleureuse sur du marbre sombre — la salle d'appel la plus luxueuse de Descall.",
+      "name": "Salle dorée"
+    },
+    "call-midnight-ops": {
+      "desc": "Interface d'appel façon centre de commandement : verre bleu marine profond, lignes de télémétrie ambrées et cadre HUD tactique.",
+      "name": "Opérations de minuit"
+    },
+    "call-mosaic-stage": {
+      "desc": "Des bordures en mosaïque de verre artisanal captent la lumière quand tu parles — une ambiance de galerie sur la scène d'appel.",
+      "name": "Scène mosaïque"
+    },
+    "call-neon-stadium": {
+      "desc": "L'énergie d'une arène pour tes appels vocaux — contre-jours magenta, touches cyan façon tableau des scores, un vrai spectacle.",
+      "name": "Stade néon"
+    },
+    "call-ocean-bridge": {
+      "desc": "Des bleus abyssaux bordés de lumière bioluminescente — une profondeur apaisante pour les longues conversations.",
+      "name": "Pont océan"
+    },
+    "call-plasma-arena": {
+      "desc": "Deux rails de plasma (magenta ↔ cyan) encadrent l'appel — l'intensité d'une arène avec la finition d'un studio.",
+      "name": "Arène plasma"
+    },
+    "call-royal-lounge": {
+      "desc": "Prune profond et rails d'or brossé — un salon, pas une réunion. Un luxe tout en douceur pour les discussions tardives.",
+      "name": "Salon royal"
+    },
+    "call-sakura-suite": {
+      "desc": "Dégradés rosés et douce lumière de pétales — intime, moderne, jamais mièvre.",
+      "name": "Suite sakura"
+    },
+    "call-titan-forge": {
+      "desc": "Plaques d'acier forgé, joints de cuivre en fusion et miroitement de chaleur — une mythologie industrielle pour les légendes.",
+      "name": "Forge des titans"
+    },
+    "call-void-chamber": {
+      "desc": "Un vide presque noir aux anneaux violets d'horizon des événements — un silence cinématographique entre chaque mot.",
+      "name": "Chambre du vide"
+    },
+    "chat-bubble-arcade": {
+      "name": "Bulle Pop arcade",
+      "stem": "Pop arcade"
+    },
+    "chat-bubble-atelier-abyss": {
+      "desc": "Un puits d'eau profonde avec un reflet nacré flottant sous la surface et un liseré sarcelle.",
+      "name": "Perle des abysses"
+    },
+    "chat-bubble-atelier-arc": {
+      "desc": "La bordure crépite entre le blanc, le cyan et le bleu, et la lueur suit l'arc.",
+      "name": "Soudure à l'arc"
+    },
+    "chat-bubble-atelier-aurora": {
+      "desc": "Un rideau vert, violet et glacé qui traverse la bulle.",
+      "name": "Voile d'aurore"
+    },
+    "chat-bubble-atelier-biolume": {
+      "desc": "Deux floraisons vivantes qui dérivent en eau profonde, déphasées l'une de l'autre.",
+      "name": "Biolume"
+    },
+    "chat-bubble-atelier-breath": {
+      "desc": "Un charbon qui respire. Le liseré s'illumine et retombe comme le souffle d'une forge.",
+      "name": "Souffle de braise"
+    },
+    "chat-bubble-atelier-canopy": {
+      "desc": "Une ombre forestière en couches traversée de trois rayons de lumière, comme si le message était sous les feuilles.",
+      "name": "Sous-bois tacheté"
+    },
+    "chat-bubble-atelier-chrome": {
+      "desc": "Une bande miroir usinée : argent dur, reflet blanc et lettres sombres.",
+      "name": "Miroir chromé"
+    },
+    "chat-bubble-atelier-circuit": {
+      "desc": "Une grille de pistes cyan et rose qui rampe, comme un circuit sous tension.",
+      "name": "Circuit néon"
+    },
+    "chat-bubble-atelier-coal": {
+      "desc": "Un charbon presque noir aux éclats de braise fixes. La lueur ne bouge pas ; la chaleur est dans la pierre.",
+      "name": "Charbon ardent"
+    },
+    "chat-bubble-atelier-comet": {
+      "desc": "Une tête lumineuse qui traverse un champ sombre en laissant les mots lisibles.",
+      "name": "Trace de comète"
+    },
+    "chat-bubble-atelier-damascus": {
+      "desc": "Acier replié : ondulations fines, reflet froid et bord assombri comme une lame finie.",
+      "name": "Pli de Damas"
+    },
+    "chat-bubble-atelier-filigree": {
+      "desc": "Un fond lie-de-vin, un cadre intérieur doré et des étincelles aux coins comme une orfèvrerie gravée.",
+      "name": "Filigrane pourpre"
+    },
+    "chat-bubble-atelier-firefly": {
+      "desc": "Deux lumières lentes qui traversent un jardin de nuit, jamais sur le même chemin.",
+      "name": "Ballet de lucioles"
+    },
+    "chat-bubble-atelier-glacier": {
+      "desc": "Des faces de glace empilées aux ruptures de couleur nettes et au bord supérieur lumineux, comme un bloc taillé.",
+      "name": "Facette glaciaire"
+    },
+    "chat-bubble-atelier-glitch": {
+      "desc": "Des erreurs chromatiques sur le liseré, au rythme d'une horloge saccadée. La bulle elle-même ne saute pas.",
+      "name": "Signal glitché"
+    },
+    "chat-bubble-atelier-heartbeat": {
+      "desc": "Une double pulsation discrète dans le liseré, comme un voyant sous verre.",
+      "name": "Battement de cœur"
+    },
+    "chat-bubble-atelier-inkwash": {
+      "desc": "Une seule tache d'encre sur papier sombre, plus dense dans un coin et fine dans l'autre.",
+      "name": "Lavis d'encre sumi"
+    },
+    "chat-bubble-atelier-lacquer": {
+      "desc": "Laque japonaise noire avec un reflet net en haut et un pied doré.",
+      "name": "Laque urushi"
+    },
+    "chat-bubble-atelier-magma": {
+      "desc": "La croûte et la lave échangent leur place, l'orange perçant à travers le noir.",
+      "name": "Pulsation de magma"
+    },
+    "chat-bubble-atelier-marble": {
+      "desc": "Un marbre pâle traversé de veines grises et d'une fine fissure chaude. Surface claire, lettres sombres, cadre de galerie.",
+      "name": "Voile de Carrare"
+    },
+    "chat-bubble-atelier-mercury": {
+      "desc": "De l'argent en fusion qui glisse dans un canal sombre, le reflet suivant le flux.",
+      "name": "Mercure liquide"
+    },
+    "chat-bubble-atelier-moonstone": {
+      "desc": "Centre laiteux, bord indigo et liseré partagé cyan et rose, comme une pierre de lune polie.",
+      "name": "Liseré pierre de lune"
+    },
+    "chat-bubble-atelier-nebula": {
+      "desc": "Deux nuages de gaz et un champ d'étoiles fixes. Le ciel est peint, pas un simple aplat violet.",
+      "name": "Poussière de nébuleuse"
+    },
+    "chat-bubble-atelier-obsidian": {
+      "desc": "Pierre noire à fine veine dorée et liseré intérieur laqué. Tes messages reposent dans une gemme taillée, pas dans une simple teinte.",
+      "name": "Incrustation d'obsidienne"
+    },
+    "chat-bubble-atelier-oilslick": {
+      "desc": "Un film d'huile qui tourne. La teinte fait le tour du cercle ; le texte ne bouge pas.",
+      "name": "Nappe d'huile"
+    },
+    "chat-bubble-atelier-patina": {
+      "desc": "Cuivre oxydé : des bandes de métal chaud qui se fondent dans le vert, avec des éclats de cuivre nu.",
+      "name": "Patine de vert-de-gris"
+    },
+    "chat-bubble-atelier-plasma": {
+      "desc": "Un cœur brûlant qui se promène dans la bulle au lieu de rester au centre.",
+      "name": "Cœur de plasma"
+    },
+    "chat-bubble-atelier-porcelain": {
+      "desc": "Émail chaud, fines craquelures et bord doré. Les lettres restent sombres, comme la marque d'une tasse.",
+      "name": "Porcelaine craquelée"
+    },
+    "chat-bubble-atelier-ribbon": {
+      "desc": "Un ruban boréal qui fait pivoter son angle au lieu de faire glisser un simple dégradé.",
+      "name": "Rubans de lumière"
+    },
+    "chat-bubble-atelier-rift": {
+      "desc": "Une fine déchirure violette qui parcourt toute la largeur du message et se referme derrière elle.",
+      "name": "Faille du vide"
+    },
+    "chat-bubble-atelier-rosewood": {
+      "desc": "Un grain serré de palissandre et de sève, avec une ligne de cœur plus sombre.",
+      "name": "Grain de palissandre"
+    },
+    "chat-bubble-atelier-sandstone": {
+      "desc": "Des bandes sédimentaires irrégulières d'ocre, de beige et de rouille, pressées en relief.",
+      "name": "Strates de grès"
+    },
+    "chat-bubble-atelier-sapphire": {
+      "desc": "Un saphir à facettes en taille conique, avec une table lumineuse et un pavillon profond.",
+      "name": "Taille saphir"
+    },
+    "chat-bubble-atelier-scanline": {
+      "desc": "Une plaque holographique traversée de haut en bas par une bande de balayage.",
+      "name": "Scan holo"
+    },
+    "chat-bubble-atelier-sheen": {
+      "desc": "Un fond de joyau traversé par une seule barre de lumière qui passe puis disparaît.",
+      "name": "Balayage prisme"
+    },
+    "chat-bubble-atelier-solar": {
+      "desc": "Un cœur doré qui enfle et se contracte dans une couronne sombre.",
+      "name": "Éruption solaire"
+    },
+    "chat-bubble-atelier-starfall": {
+      "desc": "Un ciel nocturne fixe traversé par une pluie d'étoiles.",
+      "name": "Pluie d'étoiles"
+    },
+    "chat-bubble-atelier-stormglass": {
+      "desc": "Un verre ardoise zébré de trois éclairs nets, pas un simple fondu gris.",
+      "name": "Verre d'orage"
+    },
+    "chat-bubble-atelier-tide": {
+      "desc": "Une eau profonde qui monte et redescend derrière les mots, marée après marée.",
+      "name": "Verre des marées"
+    },
+    "chat-bubble-atelier-velvet": {
+      "desc": "Tissu velouté : reflet rose sur le poil, bord écrasé et léger lustre qui reste en place.",
+      "name": "Velours noir"
+    },
+    "chat-bubble-carbon": {
+      "desc": "Une texture élégante en fibre de carbone noir mat.",
+      "name": "Carbone"
+    },
+    "chat-bubble-cyber": {
+      "name": "Bulle Grille cyber",
+      "stem": "Grille cyber"
+    },
+    "chat-bubble-ember": {
+      "name": "Bulle Braise",
+      "stem": "Braise"
+    },
+    "chat-bubble-glass": {
+      "desc": "Une bulle en verre dépoli avec un léger flou.",
+      "name": "Verre"
+    },
+    "chat-bubble-gold": {
+      "name": "Bulle Dorée",
+      "stem": "Dorée"
+    },
+    "chat-bubble-holo": {
+      "desc": "Un reflet holographique irisé sur chaque message.",
+      "name": "Holographique"
+    },
+    "chat-bubble-ice": {
+      "name": "Bulle Banquise",
+      "stem": "Banquise"
+    },
+    "chat-bubble-lava": {
+      "name": "Bulle Coulée de lave",
+      "stem": "Coulée de lave"
+    },
+    "chat-bubble-matrix": {
+      "name": "Bulle Matrix",
+      "stem": "Matrix"
+    },
+    "chat-bubble-midnight": {
+      "name": "Bulle Minuit"
+    },
+    "chat-bubble-mint": {
+      "name": "Bulle Givre menthe",
+      "stem": "Givre menthe"
+    },
+    "chat-bubble-neon-outline": {
+      "desc": "Une bordure néon lumineuse autour de tes messages.",
+      "name": "Contour néon"
+    },
+    "chat-bubble-noir": {
+      "name": "Bulle Noir doux",
+      "stem": "Noir doux"
+    },
+    "chat-bubble-ocean": {
+      "name": "Bulle Profondeur océane",
+      "stem": "Profondeur océane"
+    },
+    "chat-bubble-pearl": {
+      "name": "Bulle Perle douce",
+      "stem": "Perle douce"
+    },
+    "chat-bubble-prism": {
+      "name": "Bulle Bord prisme",
+      "stem": "Bord prisme"
+    },
+    "chat-bubble-rose": {
+      "name": "Bulle Verre rosé",
+      "stem": "Verre rosé"
+    },
+    "chat-bubble-royal-purple": {
+      "desc": "Une bulle au riche dégradé violet royal.",
+      "name": "Violet royal"
+    },
+    "chat-bubble-sand": {
+      "name": "Bulle Sable du désert",
+      "stem": "Sable du désert"
+    },
+    "chat-bubble-sunset": {
+      "desc": "Un chaleureux dégradé de coucher de soleil remplit tes bulles de messages.",
+      "name": "Dégradé couchant"
+    },
+    "chat-bubble-teal": {
+      "name": "Bulle Sarcelle douce",
+      "stem": "Sarcelle douce"
+    },
+    "chat-bubble-toxic": {
+      "name": "Bulle Remplissage toxique",
+      "stem": "Remplissage toxique"
+    },
+    "chat-bubble-violet": {
+      "name": "Bulle Encre violette",
+      "stem": "Encre violette"
+    },
+    "name-effect-arctic": {
+      "name": "Rayon arctique"
+    },
+    "name-effect-candy": {
+      "name": "Pop bonbon"
+    },
+    "name-effect-chrome": {
+      "name": "Reflet chromé"
+    },
+    "name-effect-ember": {
+      "name": "Dérive de braises"
+    },
+    "name-effect-embercore": {
+      "name": "Cœur de braise"
+    },
+    "name-effect-fire": {
+      "desc": "Ton nom brûle dans un dégradé rouge-orangé changeant.",
+      "name": "Dégradé de feu"
+    },
+    "name-effect-glitch": {
+      "name": "Signal glitché"
+    },
+    "name-effect-gold-shimmer": {
+      "desc": "Un reflet doré scintillant balaie ton nom.",
+      "name": "Scintillement doré"
+    },
+    "name-effect-holo": {
+      "name": "Holo changeant"
+    },
+    "name-effect-ice": {
+      "desc": "Un dégradé bleu-blanc givré, frais et net.",
+      "name": "Givre glacé"
+    },
+    "name-effect-laser": {
+      "name": "Rose laser"
+    },
+    "name-effect-magma": {
+      "name": "Coulée de magma"
+    },
+    "name-effect-matrix": {
+      "name": "Vert Matrix"
+    },
+    "name-effect-mintglow": {
+      "name": "Lueur menthe"
+    },
+    "name-effect-neon": {
+      "desc": "Une lueur néon cyan pulsante autour de ton nom.",
+      "name": "Lueur néon"
+    },
+    "name-effect-noir": {
+      "name": "Blanc noir"
+    },
+    "name-effect-ocean": {
+      "name": "Dérive océane"
+    },
+    "name-effect-plasma": {
+      "name": "Balayage plasma"
+    },
+    "name-effect-rainbow": {
+      "desc": "Ton nom passe en douceur par toutes les couleurs.",
+      "name": "Arc-en-ciel changeant"
+    },
+    "name-effect-royal": {
+      "name": "Violet royal"
+    },
+    "name-effect-sand": {
+      "name": "Or du désert"
+    },
+    "name-effect-sigil-aurora": {
+      "desc": "Un rideau vert, violet et glacé qui monte à travers les lettres pendant que la teinte de fond avance à ses côtés.",
+      "name": "Rideau d'aurore"
+    },
+    "name-effect-sigil-chroma": {
+      "desc": "Un décalage chromatique saccadé. La teinte et l'ombre double sautent au rythme d'une horloge au lieu de glisser.",
+      "name": "Saut chroma"
+    },
+    "name-effect-sigil-circuit": {
+      "desc": "Des pistes cyan avancent à l'horizontale et des pistes roses descendent, comme un circuit sous tension.",
+      "name": "Circuit rampant"
+    },
+    "name-effect-sigil-comet": {
+      "desc": "Une tête lumineuse traverse un champ nocturne, marque une pause au bord opposé, puis le passage recommence.",
+      "name": "Tête de comète"
+    },
+    "name-effect-sigil-core": {
+      "desc": "Un cœur brûlant qui parcourt l'intérieur des lettres au lieu de rester au centre.",
+      "name": "Cœur vagabond"
+    },
+    "name-effect-sigil-damascus": {
+      "desc": "De l'acier replié gravé dans les lettres : ondulations fines, arête argentée froide et creux assombri comme une lame finie.",
+      "name": "Pli de Damas"
+    },
+    "name-effect-sigil-filigree": {
+      "desc": "Fond lie-de-vin, bande centrale dorée et trois étincelles fixes serties comme une orfèvrerie gravée sur le nom.",
+      "name": "Filigrane pourpre"
+    },
+    "name-effect-sigil-forge": {
+      "desc": "Un charbon qui respire. Une braise monte le long des lettres et la lueur enfle, puis le souffle retombe jusqu'à la ligne de base.",
+      "name": "Souffle de forge"
+    },
+    "name-effect-sigil-glacier": {
+      "desc": "Des faces de glace empilées aux ruptures de couleur nettes, pas un simple fondu bleu. Chaque bande est une taille à part.",
+      "name": "Glace empilée"
+    },
+    "name-effect-sigil-inkwash": {
+      "desc": "Une seule tache d'encre plus dense en bas à gauche, qui s'affine jusqu'à un reflet de papier pour que le nom reste lisible.",
+      "name": "Floraison sumi"
+    },
+    "name-effect-sigil-lacquer": {
+      "desc": "Laque japonaise noire avec un reflet blanc net sur le haut des lettres et un pied doré le long de la ligne de base.",
+      "name": "Lèvre urushi"
+    },
+    "name-effect-sigil-marble": {
+      "desc": "Un marbre pâle traversé par deux veines grises au même angle, comme une seule dalle taillée.",
+      "name": "Veine de Carrare"
+    },
+    "name-effect-sigil-mercury": {
+      "desc": "De l'argent en fusion poussé dans un canal sombre. Un reflet parcourt toute la longueur du nom puis revient.",
+      "name": "Canal de mercure"
+    },
+    "name-effect-sigil-mirror": {
+      "desc": "Miroir usiné : un reflet blanc, une rainure noire et des épaulements argentés. Le reflet est une bande, pas une boucle scintillante.",
+      "name": "Reflet miroir"
+    },
+    "name-effect-sigil-moonstone": {
+      "desc": "Centre laiteux, corps indigo, puis un liseré partagé cyan et rose, comme une pierre de lune polie tenue devant une lampe.",
+      "name": "Pierre de lune partagée"
+    },
+    "name-effect-sigil-nebula": {
+      "desc": "Deux nuages de gaz et trois étoiles fixes peints dans les lettres. Le ciel ne dérive pas.",
+      "name": "Plaque de nébuleuse"
+    },
+    "name-effect-sigil-obsidian": {
+      "desc": "Un verre volcanique traversé par un filon doré, avec un bord chaud pour que la pierre reste visible sur un nom sombre.",
+      "name": "Veine d'obsidienne"
+    },
+    "name-effect-sigil-oil": {
+      "desc": "Un film d'huile qui tourne. La teinte fait le tour du cercle sur un fond sombre et les lettres ne bougent pas.",
+      "name": "Film d'huile"
+    },
+    "name-effect-sigil-porcelain": {
+      "desc": "Émail chaud avec deux fines craquelures dorées. Les lettres gardent une couleur de tasse unie, les craquelures ne les traversent pas.",
+      "name": "Craquelure de porcelaine"
+    },
+    "name-effect-sigil-prism": {
+      "desc": "Un fond de joyau traversé par une seule barre blanche qui passe sur le nom puis disparaît. La gemme elle-même reste en place.",
+      "name": "Barre prisme"
+    },
+    "name-effect-sigil-pulse": {
+      "desc": "Un double battement discret dans le liseré, comme un voyant sous verre. La couleur du nom reste la même.",
+      "name": "Double pulsation"
+    },
+    "name-effect-sigil-rift": {
+      "desc": "Une fine déchirure violette parcourt toute la largeur du nom et se referme derrière elle.",
+      "name": "Déchirure de faille"
+    },
+    "name-effect-sigil-rosewood": {
+      "desc": "Un grain de palissandre serré : lignes de sève, cœur plus sombre et arête rose qui se répète sur les lettres.",
+      "name": "Cœur de palissandre"
+    },
+    "name-effect-sigil-sandstone": {
+      "desc": "Des bandes sédimentaires irrégulières d'ocre, de rouille et de beige pressées dans les lettres comme une falaise.",
+      "name": "Lit de grès"
+    },
+    "name-effect-sigil-sapphire": {
+      "desc": "Un saphir à facettes en taille conique : table lumineuse, pavillon profond et rupture nette entre les faces.",
+      "name": "Pavillon de saphir"
+    },
+    "name-effect-sigil-scan": {
+      "desc": "Une plaque holographique : fin grain de balayage et une bande lumineuse qui passe du haut des lettres à la ligne de base.",
+      "name": "Plaque de scan"
+    },
+    "name-effect-sigil-solar": {
+      "desc": "Un cœur doré qui enfle et se contracte dans une couronne sombre. La couronne ne tourne pas.",
+      "name": "Houle solaire"
+    },
+    "name-effect-sigil-tide": {
+      "desc": "Une eau profonde dont la crête lumineuse monte et redescend derrière les mots, marée après marée.",
+      "name": "Montée des marées"
+    },
+    "name-effect-sigil-velvet": {
+      "desc": "Tissu velouté : reflet rose sur le dessus, bord lie-de-vin écrasé et léger lustre qui ne bouge pas.",
+      "name": "Poil de velours"
+    },
+    "name-effect-sigil-verdigris": {
+      "desc": "Cuivre oxydé. Métal chaud, efflorescence verte et deux points de corrosion fixes dans le remplissage.",
+      "name": "Bande de vert-de-gris"
+    },
+    "name-effect-sunset": {
+      "name": "Fondu couchant"
+    },
+    "name-effect-toxic": {
+      "name": "Pulsation toxique"
+    },
+    "name-effect-void": {
+      "desc": "Un effet glitch violet et noir qui vacille.",
+      "name": "Statique du vide"
+    },
+    "presence-flare-aurora-soft": {
+      "name": "Aurore douce"
+    },
+    "presence-flare-aurora-vivid": {
+      "name": "Aurore vive"
+    },
+    "presence-flare-beam-lime": {
+      "name": "Rayon citron vert"
+    },
+    "presence-flare-beam-magenta": {
+      "name": "Rayon magenta"
+    },
+    "presence-flare-core-crimson": {
+      "name": "Cœur pourpre"
+    },
+    "presence-flare-core-ice": {
+      "name": "Cœur de glace"
+    },
+    "presence-flare-glitch-green": {
+      "name": "Glitch vert"
+    },
+    "presence-flare-glitch-void": {
+      "name": "Glitch du vide"
+    },
+    "presence-flare-halo-royal": {
+      "name": "Halo royal"
+    },
+    "presence-flare-halo-soft": {
+      "name": "Halo doux"
+    },
+    "presence-flare-moon-glow": {
+      "name": "Lueur de lune"
+    },
+    "presence-flare-nova-gold": {
+      "name": "Nova dorée"
+    },
+    "presence-flare-nova-white": {
+      "name": "Nova blanche"
+    },
+    "presence-flare-orbit-blue": {
+      "name": "Orbite bleue"
+    },
+    "presence-flare-orbit-pink": {
+      "name": "Orbite rose"
+    },
+    "presence-flare-pixel-cyan": {
+      "name": "Pixel cyan"
+    },
+    "presence-flare-pixel-hot": {
+      "name": "Pixel brûlant"
+    },
+    "presence-flare-pulse-cyan": {
+      "name": "Pulsation cyan"
+    },
+    "presence-flare-pulse-gold": {
+      "name": "Pulsation dorée"
+    },
+    "presence-flare-pulse-rose": {
+      "name": "Pulsation rose"
+    },
+    "presence-flare-ring-emerald": {
+      "name": "Anneau émeraude"
+    },
+    "presence-flare-ring-neon": {
+      "name": "Anneau néon"
+    },
+    "presence-flare-ring-violet": {
+      "name": "Anneau violet"
+    },
+    "presence-flare-spark-fire": {
+      "name": "Étincelle de feu"
+    },
+    "presence-flare-spark-white": {
+      "name": "Étincelle blanche"
+    },
+    "presence-flare-steel-pulse": {
+      "name": "Pulsation d'acier"
+    },
+    "presence-flare-sun-flare": {
+      "name": "Éclat solaire"
+    },
+    "presence-flare-toxic-ring": {
+      "name": "Anneau toxique"
+    },
+    "presence-flare-wave-amber": {
+      "name": "Vague ambrée"
+    },
+    "presence-flare-wave-teal": {
+      "name": "Vague sarcelle"
+    },
+    "profile-aura-arcade-pop": {
+      "name": "Pop arcade"
+    },
+    "profile-aura-aurora-wall": {
+      "name": "Mur d'aurore"
+    },
+    "profile-aura-copper-glow": {
+      "name": "Lueur cuivrée"
+    },
+    "profile-aura-crimson-veil": {
+      "name": "Voile pourpre"
+    },
+    "profile-aura-cyber-grid": {
+      "name": "Grille cyber"
+    },
+    "profile-aura-ember-haze": {
+      "name": "Brume de braises"
+    },
+    "profile-aura-frost-veil": {
+      "name": "Voile de givre"
+    },
+    "profile-aura-gold-dust": {
+      "name": "Poussière d'or"
+    },
+    "profile-aura-holo-sheet": {
+      "name": "Feuille holo"
+    },
+    "profile-aura-ice-crystal": {
+      "name": "Cristal de glace"
+    },
+    "profile-aura-ion-haze": {
+      "name": "Brume ionique"
+    },
+    "profile-aura-jade-glow": {
+      "name": "Lueur de jade"
+    },
+    "profile-aura-lava-rim": {
+      "name": "Bord de lave"
+    },
+    "profile-aura-matrix-veil": {
+      "name": "Voile Matrix"
+    },
+    "profile-aura-mint-mist": {
+      "name": "Brume menthe"
+    },
+    "profile-aura-neon-frame": {
+      "name": "Cadre néon"
+    },
+    "profile-aura-noir-edge": {
+      "name": "Bord noir"
+    },
+    "profile-aura-ocean-depth": {
+      "name": "Profondeur océane"
+    },
+    "profile-aura-pearl-soft": {
+      "name": "Perle douce"
+    },
+    "profile-aura-plasma-field": {
+      "name": "Champ de plasma"
+    },
+    "profile-aura-prism-glass": {
+      "name": "Verre prisme"
+    },
+    "profile-aura-rose-bloom": {
+      "name": "Rose en fleur"
+    },
+    "profile-aura-royal-curtain": {
+      "name": "Rideau royal"
+    },
+    "profile-aura-sandstorm": {
+      "name": "Tempête de sable"
+    },
+    "profile-aura-shadow-rim": {
+      "name": "Bord d'ombre"
+    },
+    "profile-aura-solar-bloom": {
+      "name": "Floraison solaire"
+    },
+    "profile-aura-starlight": {
+      "name": "Lumière d'étoiles"
+    },
+    "profile-aura-toxic-fog": {
+      "name": "Brouillard toxique"
+    },
+    "profile-aura-void-hard": {
+      "name": "Vide intense"
+    },
+    "profile-aura-void-soft": {
+      "name": "Vide doux"
+    },
+    "profile-color-amethyst": {
+      "desc": "Couleur de carte de profil — Améthyste. Un violet améthyste profond, mystérieux et lumineux.",
+      "name": "Améthyste"
+    },
+    "profile-color-aurora": {
+      "desc": "Couleur de carte de profil — Aurore. Un mélange d'aurore boréale du sarcelle au violet.",
+      "name": "Aurore"
+    },
+    "profile-color-copper": {
+      "desc": "Couleur de carte de profil — Cuivre. Un brun-orangé chaud comme du cuivre chauffé.",
+      "name": "Cuivre"
+    },
+    "profile-color-emerald": {
+      "desc": "Couleur de carte de profil — Émeraude. Un vert émeraude riche, profond comme une pierre précieuse.",
+      "name": "Émeraude"
+    },
+    "profile-color-forest": {
+      "desc": "Couleur de carte de profil — Forêt. Un vert mousse qui se fond dans une forêt sombre.",
+      "name": "Forêt"
+    },
+    "profile-color-glacier": {
+      "desc": "Couleur de carte de profil — Glacier. Bleu glace et sarcelle, frais et épuré.",
+      "name": "Glacier"
+    },
+    "profile-color-gold": {
+      "desc": "Couleur de carte de profil — Or. Or sombre et ambre, une lueur royale pour ta carte.",
+      "name": "Or"
+    },
+    "profile-color-graphite": {
+      "desc": "Couleur de carte de profil — Graphite. Un gris profond et calme, un cran plus riche que la carte par défaut.",
+      "name": "Graphite"
+    },
+    "profile-color-lavender": {
+      "desc": "Couleur de carte de profil — Lavande. Une lavande qui se fond dans un violet nocturne.",
+      "name": "Lavande"
+    },
+    "profile-color-midnight": {
+      "desc": "Couleur de carte de profil — Minuit. Un fondu tranquille du bleu nuit au noir."
+    },
+    "profile-color-obsidian": {
+      "desc": "Couleur de carte de profil — Obsidienne. Presque noire, vitreuse et profonde.",
+      "name": "Obsidienne"
+    },
+    "profile-color-ocean": {
+      "desc": "Couleur de carte de profil — Océan. Un bleu des profondeurs qui s'assombrit vers le bas."
+    },
+    "profile-color-rose": {
+      "desc": "Couleur de carte de profil — Rose. Un fondu doux du vieux rose au rose profond.",
+      "name": "Rose"
+    },
+    "profile-color-ruby": {
+      "desc": "Couleur de carte de profil — Rubis. Un rouge rubis sombre, chaleureux et audacieux.",
+      "name": "Rubis"
+    },
+    "profile-color-sunset": {
+      "desc": "Couleur de carte de profil — Couchant. Un coucher de soleil qui glisse du rouge-orangé au violet.",
+      "name": "Couchant"
+    },
+    "reaction-confetti-storm": {
+      "desc": "Des micro-confettis festifs jaillissent de la pastille — l'ambiance de fête sans avoir l'air enfantin.",
+      "name": "Tempête de confettis"
+    },
+    "reaction-ember-bloom": {
+      "desc": "Des braises chaudes s'ouvrent autour de ta réaction — de la chaleur sans chaos, du feu sans bruit.",
+      "name": "Éclosion de braises"
+    },
+    "reaction-frost-crack": {
+      "desc": "Des veines de glace se propagent sur la pastille quand tu réagis — une précision glaciale pour les avis tranchants.",
+      "name": "Fissure de givre"
+    },
+    "reaction-glass-shatter": {
+      "desc": "Les pastilles se brisent en éclats cristallins quand tu réagis — net, luxueux, inoubliable.",
+      "name": "Verre brisé"
+    },
+    "reaction-gold-rain": {
+      "desc": "De fines paillettes d'or tombent de la pastille — opulent sans être tape-à-l'œil.",
+      "name": "Pluie d'or"
+    },
+    "reaction-holo-flash": {
+      "desc": "Un éclair irisé balaie la pastille — un chrome holographique qui ne fait jamais basique.",
+      "name": "Flash holo"
+    },
+    "reaction-magnetic-pulse": {
+      "desc": "Des anneaux magnétiques concentriques se resserrent puis se relâchent — un mouvement travaillé, pas un rebond bon marché.",
+      "name": "Pulsation magnétique"
+    },
+    "reaction-neon-stamp": {
+      "desc": "Un tampon néon puissant s'imprime sur la réaction — le sceau d'approbation cyber.",
+      "name": "Tampon néon"
+    },
+    "reaction-nova-pop": {
+      "desc": "Tes réactions s'épanouissent en une douce nova stellaire — cœur lumineux, couronne qui s'estompe, zéro encombrement.",
+      "name": "Pop nova"
+    },
+    "reaction-petal-burst": {
+      "desc": "De doux pétales rayonnent depuis la réaction — élégant, romantique, jamais mielleux.",
+      "name": "Explosion de pétales"
+    },
+    "reaction-pixel-burst": {
+      "desc": "Des pixels rétro explosent puis se rassemblent — l'âme de l'arcade dans une pastille moderne.",
+      "name": "Explosion de pixels"
+    },
+    "reaction-prism-split": {
+      "desc": "La lumière se décompose en bandes spectrales autour de ton emoji — un chrome de réaction digne d'un musée.",
+      "name": "Prisme éclaté"
+    },
+    "reaction-ripple-ink": {
+      "desc": "Des ondes d'encre s'étendent depuis l'emoji comme une goutte dans une eau calme — un impact discret et artistique.",
+      "name": "Ondes d'encre"
+    },
+    "reaction-soft-bloom": {
+      "desc": "Une douce floraison pastel s'étend puis s'efface — un luxe discret pour les réactions du quotidien.",
+      "name": "Floraison douce"
+    },
+    "reaction-thunderclap": {
+      "desc": "Un bref éclair électrique entoure la pastille — la réaction qui fait l'effet d'un mic drop.",
+      "name": "Coup de tonnerre"
+    },
+    "reaction-void-implode": {
+      "desc": "La pastille s'effondre brièvement en une singularité violette, puis revient d'un coup — spectaculaire et rare.",
+      "name": "Implosion du vide"
+    },
+    "theme-borealis": {
+      "desc": "Des rideaux sarcelle et violets passent lentement derrière le verre.",
+      "name": "Boréal"
+    },
+    "theme-chromeveil": {
+      "desc": "Métal de minuit. Deux couches s'écartent et un reflet parcourt le bord du verre.",
+      "name": "Voile chromé"
+    },
+    "theme-emberfall": {
+      "desc": "Verre de braise. Le voile dérive et quelques étincelles respirent.",
+      "name": "Pluie de braises"
+    },
+    "theme-emerald": {
+      "desc": "Un look vert émeraude et noir intense pour toute l'appli.",
+      "name": "Émeraude"
+    },
+    "theme-grove": {
+      "desc": "Verre forestier. Des rayons de lumière immobiles sous une canopée sombre.",
+      "name": "Bosquet"
+    },
+    "theme-hanami": {
+      "desc": "Verre de fleurs nocturnes. Les pétales reposent dans la palette ; rien ne tombe.",
+      "name": "Hanami"
+    },
+    "theme-iriscape": {
+      "desc": "Verre irisé. Plusieurs teintes tournent derrière l'interface et le bord change de couleur.",
+      "name": "Iriscape"
+    },
+    "theme-lagoon": {
+      "desc": "Verre d'eau profonde. Des reflets immobiles, un bord frais, aucun mouvement.",
+      "name": "Lagon"
+    },
+    "theme-sakura": {
+      "desc": "Un look doux, rose fleur de cerisier, pour toute l'appli.",
+      "name": "Sakura"
+    },
+    "theme-solar": {
+      "desc": "Un look chaleureux ambre et anthracite pour toute l'appli.",
+      "name": "Solaire"
+    },
+    "theme-starwell": {
+      "desc": "Une nébuleuse qui dérive lentement et un paisible champ d'étoiles.",
+      "name": "Puits d'étoiles"
+    },
+    "typing-aurora-wave": {
+      "desc": "Un doux ruban sarcelle-violet ondule sous le libellé de saisie, comme des aurores boréales sous verre.",
+      "name": "Vague d'aurore"
+    },
+    "typing-crystal-chime": {
+      "desc": "Des points bleu glace à facettes réfractent la lumière en rebondissant — délicat, précis, résolument premium.",
+      "name": "Carillon de cristal"
+    },
+    "typing-cyber-hex": {
+      "desc": "Des éclats hexagonaux défilent sur le côté avec un bord néon net — le pur théâtre cyberpunk de la frappe.",
+      "name": "Flux hexagonal cyber"
+    },
+    "typing-ember-cascade": {
+      "desc": "Des charbons chauds s'allument puis s'éteignent tour à tour — un indicateur de saisie qui donne l'impression d'être près d'une forge.",
+      "name": "Cascade de braises"
+    },
+    "typing-frost-breathe": {
+      "desc": "Des points glacés s'embuent puis s'éclaircissent au rythme d'une lente respiration — le calme de l'hiver pour ceux qui réfléchissent en écrivant.",
+      "name": "Souffle de givre"
+    },
+    "typing-golden-morse": {
+      "desc": "Des tirets dorés clignotent selon un rythme codé — l'élégance du télégraphe pour les conversations nocturnes.",
+      "name": "Morse doré"
+    },
+    "typing-holo-ribbon": {
+      "desc": "Un ruban irisé se plie sous le texte de saisie et passe par toutes les couleurs du spectre.",
+      "name": "Ruban holographique"
+    },
+    "typing-liquid-mercury": {
+      "desc": "Des sphères argentées s'étirent et se reforment pendant que tu écris — une métamorphose de mercure presque physique.",
+      "name": "Mercure liquide"
+    },
+    "typing-mosaic-tap": {
+      "desc": "Des fragments de carreaux s'assemblent pour former l'indicateur de saisie — l'énergie du verre artisanal, jamais de simples points.",
+      "name": "Mosaïque tapotée"
+    },
+    "typing-neon-pulse": {
+      "desc": "Ton indicateur de saisie respire en cyan électrique — trois pulsations qui ressemblent à un signal en direct, pas à un spinner par défaut.",
+      "name": "Ruban pulsation néon"
+    },
+    "typing-plasma-arc": {
+      "desc": "Des arcs magenta-cyan bondissent entre les points comme un mini réacteur à fusion sous ton nom.",
+      "name": "Arc de plasma"
+    },
+    "typing-quantum-blink": {
+      "desc": "Les points se téléportent d'une position à l'autre avec un doux flash photonique — une saisie qui défie la physique.",
+      "name": "Clignement quantique"
+    },
+    "typing-royal-ink": {
+      "desc": "Des gouttes d'encre violet profond se forment, gonflent et tombent — un mouvement calligraphique pour une présence royale.",
+      "name": "Goutte d'encre royale"
+    },
+    "typing-sakura-drift": {
+      "desc": "Des sphères roses douces comme des pétales s'élèvent pendant que tu écris — calme, romantique et d'une fluidité incroyable.",
+      "name": "Dérive sakura"
+    },
+    "typing-starfall": {
+      "desc": "De minuscules étoiles filent vers le bas derrière le libellé — une pluie de météores perso à chaque frappe.",
+      "name": "Saisie pluie d'étoiles"
+    },
+    "typing-void-signal": {
+      "desc": "Une barre statique violette entre et sort de phase en glitchant — pour ceux qui écrivent comme s'ils piratent la réalité.",
+      "name": "Signal du vide"
+    }
+  },
+  "slash": {
+    "arg": {
+      "amount": "montant",
+      "bet": "mise",
+      "duration": "durée",
+      "name": "nom",
+      "options": "options…",
+      "question": "question",
+      "reason": "raison",
+      "side": "heads|tails"
+    },
+    "bestMatch": "Meilleure correspondance",
+    "cmd": {
+      "avatar": {
+        "description": "Afficher un avatar en grand, le télécharger ou l'ouvrir en plein écran",
+        "detail": "Affiche l'avatar d'un membre en grand. Tu peux l'ouvrir en plein écran, le télécharger ou copier son lien.",
+        "keywords": "image, photo, pfp, pp, profil, utilisateur",
+        "use1": "/avatar [@utilisateur]",
+        "use1Note": "laisse vide pour ton propre avatar"
+      },
+      "ban": {
+        "detail": "Retire le membre du serveur et l'empêche de le rejoindre à nouveau. Une confirmation t'est demandée avant l'envoi.",
+        "keywords": "bannir, ban, bloquer, utilisateur",
+        "use1": "/ban @utilisateur raison"
+      },
+      "bj": {
+        "description": "Lancer une main de blackjack contre le croupier",
+        "keywords": "carte, 21, blackjack"
+      },
+      "coinflip": {
+        "description": "Lance une pièce : si tu gagnes, ta mise revient ×2",
+        "keywords": "pile, face, pièce, heads, tails",
+        "use1": "/coinflip 100 heads"
+      },
+      "credits": {
+        "keywords": "solde, portefeuille, descoin"
+      },
+      "daily": {
+        "keywords": "quotidien, bonus, récompense"
+      },
+      "help": {
+        "detail": "Liste les commandes que tu peux utiliser dans ce salon ou ce chat, regroupées par catégorie.",
+        "keywords": "aide, commandes, liste",
+        "use2Note": "même commande"
+      },
+      "kick": {
+        "detail": "Retire le membre du serveur. Il peut revenir avec un lien d'invitation. Inscrit dans le journal d'audit.",
+        "keywords": "expulser, kick, retirer, utilisateur",
+        "use1": "/kick @utilisateur raison"
+      },
+      "nick": {
+        "description": "Changer ton pseudo sur ce serveur",
+        "detail": "Change ton pseudo sur ce serveur. Laisse vide pour effacer ton pseudo.",
+        "keywords": "nom, pseudo, surnom, nick",
+        "use1": "/nick Nouveau nom",
+        "use2Note": "efface le pseudo"
+      },
+      "pay": {
+        "keywords": "envoyer, argent, descoin, utilisateur",
+        "use1": "/pay @utilisateur 500"
+      },
+      "poll": {
+        "description": "Lancer un sondage avec une durée et des emoji, sur lequel les gens peuvent voter",
+        "detail": "Envoie une carte de sondage sur laquelle les gens peuvent voter : une question, 2 à 10 options (avec emoji), une durée et le choix de l'anonymat. Les résultats se mettent à jour en direct.",
+        "keywords": "vote, voter, sondage, enquête, choix",
+        "use1Note": "↵ ouvre l'éditeur de sondage",
+        "use2": "/poll Question | Oui | Non",
+        "use2Note": "raccourci : l'envoie tout de suite"
+      },
+      "purge": {
+        "description": "Supprimer les N derniers messages du salon",
+        "detail": "Supprime les 1 à 100 derniers messages de ce salon. Les messages supprimés ne peuvent pas être restaurés.",
+        "keywords": "supprimer, effacer, en masse, purge"
+      },
+      "server": {
+        "description": "Nombre de membres, de salons et de rôles, et propriétaire du serveur",
+        "detail": "Affiche le nombre de membres, de membres en ligne, de salons et de rôles du serveur, son propriétaire et sa date de création.",
+        "keywords": "serveur, infos"
+      },
+      "slot": {
+        "keywords": "rouleau, tourner, machine à sous"
+      },
+      "timeout": {
+        "description": "Exclure temporairement un membre",
+        "detail": "Jusqu'à la fin du délai, le membre ne peut ni envoyer de messages ni réagir, et il est retiré des salons vocaux. Jusqu'à 28 jours.",
+        "keywords": "exclure, exclusion temporaire, muet, timeout, utilisateur",
+        "label": "Exclure temporairement",
+        "use1": "/timeout @utilisateur 5m raison",
+        "use1Note": "60s · 5m · 1h · 1d · 1w"
+      },
+      "top": {
+        "keywords": "classement, leader, top"
+      },
+      "user": {
+        "description": "Afficher une carte de profil : rôles, badges, dates",
+        "detail": "Affiche la carte de profil d'un membre : bannière, cadre d'avatar, badges, rôles sur le serveur et dates d'arrivée.",
+        "keywords": "utilisateur, profil, qui, membre",
+        "use1": "/user [@utilisateur]",
+        "use1Note": "facultatif · laisse vide pour ta propre carte"
+      }
+    },
+    "lockReason": "Nécessite la permission « {perm} »",
+    "mention": {
+      "chat": "CHAT",
+      "group": "MEMBRES DU GROUPE",
+      "hereChannel": "DANS CE SALON",
+      "hereChat": "DANS CE CHAT",
+      "server": "MEMBRES DU SERVEUR"
+    },
+    "menu": {
+      "aliases": "ALIAS",
+      "appCommands": "Commandes d'appli",
+      "argument": "ARGUMENT",
+      "count": "{count, plural, one {# commande} other {# commandes}}",
+      "emptyCategory": "Aucune commande de cette catégorie n'est utilisable ici.",
+      "enterSends": "Appuie sur Entrée pour envoyer ce texte comme un message normal.",
+      "frequent": "Souvent utilisées",
+      "kCategory": "catégorie",
+      "kClose": "fermer",
+      "noCommand": "Il n'y a pas de commande « /{query} »",
+      "optional": "facultatif",
+      "permPlusApp": "{perm} + Commandes d'appli",
+      "permission": "PERMISSION REQUISE",
+      "resultsFor": "Résultats pour « {query} »",
+      "seeAll": "Tape {help} pour voir toutes les commandes.",
+      "typeToFilter": "tape pour filtrer",
+      "usage": "UTILISATION",
+      "worksIn": "OÙ ÇA MARCHE"
+    },
+    "perm": {
+      "MODERATE_MEMBERS": "Exclure temporairement des membres",
+      "USE_APPLICATION_COMMANDS": "Utiliser les commandes d'application"
+    },
+    "picker": {
+      "countAria": "Combien de messages ?",
+      "countTitle": "Combien de messages faut-il supprimer ?",
+      "duration": "Choisis une durée",
+      "member": "Le membre",
+      "noMembers": "Aucun membre correspondant",
+      "reasonNote": "facultatif · inscrit dans le journal d'audit",
+      "reasonPlaceholder": "ex. : spam, règle 3",
+      "self": "Toi-même",
+      "selfHint": "Laisse vide pour envoyer ta propre carte",
+      "timeoutEffect": "{name} ne peut ni envoyer de messages ni réagir {until}, et est retiré des salons vocaux.",
+      "until": "jusqu'à {time}",
+      "user": "Choisis un utilisateur"
+    }
+  },
   "staffBadge": {
     "long": "ÉQUIPE DESCALL",
     "short": "ÉQUIPE",
@@ -1639,6 +3835,328 @@ export const nested = {
     "invisible": "Invisible",
     "offline": "Hors ligne",
     "online": "En ligne"
+  },
+  "svh": {
+    "aMember": "un membre",
+    "aRole": "rôle",
+    "acceptJoin": "Accepter et rejoindre",
+    "accessLimited": "Rôles sélectionnés",
+    "accessTitle": "{channel} · Accès",
+    "addException": "Ajouter une exception",
+    "addIcon": "Ajouter une icône",
+    "addRoleOrMember": "Ajouter un rôle ou un membre",
+    "afkChannel": "Salon AFK",
+    "afkTimeout": "Délai d'inactivité AFK",
+    "ageDays": "{n, plural, one {{n} jour} other {{n} jours}}",
+    "ageMonths": "{n, plural, one {{n} mois} other {{n} mois}}",
+    "ageToday": "aujourd'hui",
+    "ageYears": "{n, plural, one {{n} an} other {{n} ans}}",
+    "alreadyMember": "Tu es déjà sur ce serveur",
+    "au_CHANNEL_CREATE": "A créé #{channel}",
+    "au_CHANNEL_DELETE": "A supprimé #{channel}",
+    "au_CHANNEL_OVERRIDE_CLEAR": "A supprimé les exceptions de #{channel}",
+    "au_CHANNEL_OVERRIDE_DELETE": "A supprimé les exceptions de #{channel}",
+    "au_CHANNEL_OVERRIDE_SET": "A modifié l'accès à #{channel}",
+    "au_CHANNEL_UPDATE": "A modifié #{channel}",
+    "au_INVITE_CREATE": "A créé un lien d'invitation",
+    "au_INVITE_DELETE": "A révoqué une invitation",
+    "au_MEMBER_BAN": "A banni {target}",
+    "au_MEMBER_JOIN": "A rejoint le serveur",
+    "au_MEMBER_KICK": "A expulsé {target}",
+    "au_MEMBER_LEAVE": "A quitté le serveur",
+    "au_MEMBER_NICKNAME": "A changé le pseudo de {target}",
+    "au_MEMBER_NICKNAME_SELF": "A changé son pseudo",
+    "au_MEMBER_ROLE_ADD": "A donné le rôle {role} à {target}",
+    "au_MEMBER_ROLE_REMOVE": "A retiré le rôle {role} à {target}",
+    "au_MEMBER_TIMEOUT": "A exclu temporairement {target} pour {dur}",
+    "au_MEMBER_TIMEOUT_CLEAR": "A levé l'exclusion temporaire de {target}",
+    "au_MEMBER_UNBAN": "A débanni {target}",
+    "au_OTHER": "A fait une modification",
+    "au_OWNERSHIP_TRANSFER": "A transféré la propriété à {target}",
+    "au_ROLE_CREATE": "A créé le rôle {role}",
+    "au_ROLE_DELETE": "A supprimé le rôle {role}",
+    "au_ROLE_UPDATE": "A modifié le rôle {role}",
+    "au_RULES_ACCEPT": "A accepté les règles",
+    "au_SERVER_CREATE": "A créé le serveur",
+    "au_SERVER_RENAME": "A renommé le serveur en {name}",
+    "au_SERVER_UPDATE": "A modifié les paramètres du serveur",
+    "badgeAnn": "ANN",
+    "banPrompt": "Bannir {name} ? Ajoute une raison si tu veux :",
+    "banned": "Tu es banni de ce serveur.",
+    "bannerCropSub": "Pince pour zoomer",
+    "bannerCropTitle": "Déplace et redimensionne la bannière",
+    "bansFoot": "Une fois débannis, ils peuvent revenir avec une nouvelle invitation.",
+    "bansN": "Bannissements · {n}",
+    "blocked": "Bloqué",
+    "categoryCreated": "Catégorie créée",
+    "categoryNamePh": "Nouvelle catégorie",
+    "channelExceptions": "Exceptions de salon",
+    "channelNamePh": "nouveau-salon",
+    "channelsFoot": "Appuie longuement sur les salons dans la barre latérale et fais-les glisser pour les réorganiser.",
+    "choose": "Choisir",
+    "communityFeatures": "Fonctions communautaires",
+    "communityFeaturesSub": "Règles, écran d'accueil, vérification",
+    "communityFoot": "Découvrir nécessite au moins 25 membres et des règles. Tu as {members, plural, one {{members} membre} other {{members} membres}} et {rules, plural, one {{rules} règle} other {{rules} règles}}.",
+    "createCategoryFoot": "Une catégorie regroupe des salons dans la barre latérale. Fais-y glisser des salons.",
+    "createChannelFoot": "Le mode lent, le sujet et la limite d'âge se règlent dans les paramètres du salon une fois créé.",
+    "createFoot": "Ton lien d'invitation sera prêt dès sa création.",
+    "createIntro": "Pars d'un modèle : les salons et les rôles sont déjà prêts. Tu pourras tout changer plus tard.",
+    "cropPreview": "Aperçu de l'icône du serveur",
+    "cropSub": "Pince pour zoomer · Aperçu : liste des serveurs",
+    "cropTitle": "Déplace et redimensionne l'icône",
+    "delBtn": "Supprimer définitivement le serveur",
+    "delCatMsg": "Les salons qu'elle contient sont conservés, sans catégorie.",
+    "delCatTitle": "Supprimer la catégorie {name} ?",
+    "delChMsg": "Tous les messages et fichiers du salon sont supprimés définitivement. Cette action est irréversible.",
+    "delChMsgCount": "{n, plural, one {Le message du salon et tous les fichiers sont supprimés} other {Les # messages du salon et tous les fichiers sont supprimés}} définitivement. Cette action est irréversible.",
+    "delChTitle": "Supprimer #{name} ?",
+    "delFolderMsg": "Les serveurs sont conservés, sans dossier.",
+    "delFolderTitle": "Supprimer le dossier {name} ?",
+    "delMsg": "{channels, plural, one {{channels} salon} other {{channels} salons}}, l'accès de {members, plural, one {{members} membre} other {{members} membres}} et tous les messages sont supprimés définitivement. Cette action est irréversible.",
+    "delRoleMsg": "Le rôle est retiré de tous les membres. Cette action est irréversible.",
+    "delRoleTitle": "Supprimer le rôle {name} ?",
+    "delTitle": "Supprimer {server} ?",
+    "delTransferFirst": "Transfère d'abord la propriété",
+    "delTypeName": "Saisis le nom du serveur pour confirmer",
+    "delVoiceMsg": "Le salon vocal est supprimé définitivement. Cette action est irréversible.",
+    "delVoiceTitle": "Supprimer {name} ?",
+    "descPh": "Décris ton serveur en quelques mots",
+    "discoverNeeds": "Découvrir nécessite au moins 25 membres et des règles.",
+    "discoverRow": "Parcourir les serveurs publics",
+    "discoverSub": "Communautés présentes dans Découvrir",
+    "discoverTitle": "Découvrir",
+    "discoverable": "Afficher dans Découvrir",
+    "discoverableSub": "Tout le monde peut le trouver et le rejoindre",
+    "durDay": "{n, plural, one {{n} jour} other {{n} jours}}",
+    "durHour": "{n, plural, one {{n} heure} other {{n} heures}}",
+    "durSec": "{n} s",
+    "durWeek": "{n, plural, one {{n} semaine} other {{n} semaines}}",
+    "everyoneAll": "Tout le monde · {n, plural, one {{n} membre} other {{n} membres}}",
+    "everyoneSub": "Par défaut · tout le monde",
+    "expiry": "Expire après",
+    "fChannels": "Salons",
+    "folderColor": "Couleur du dossier",
+    "folderFoot": "Les dossiers ne s'affichent que dans ta propre liste de serveurs.",
+    "folderMoved": "Déplacé dans le dossier",
+    "folderSubNone": "Nouveau dossier…",
+    "folderTitle": "Dossier",
+    "forever": "n'expire jamais",
+    "gateMsg": "Lis et accepte les règles avant de commencer à discuter.",
+    "haveInvite": "Tu as une invitation ?",
+    "heroMeta": "{members, plural, one {{members} membre} other {{members} membres}} · {online} en ligne · {voice} en vocal",
+    "heroMetaNoOnline": "{members, plural, one {{members} membre} other {{members} membres}} · {voice} en vocal",
+    "hoist": "Afficher les membres séparément",
+    "hour2": "2 heures",
+    "hours": "{n} h",
+    "iAccept": "J'ai lu et j'accepte les règles",
+    "imageType": "Choisis un JPG, PNG, WebP ou GIF.",
+    "inviteFoot": "Colle un lien, un code ({code}) ou une adresse personnalisée.",
+    "inviteFriends": "Invite tes amis",
+    "inviteMsg": "Rejoins-moi sur {server} : {url}",
+    "inviteNoPerm": "Tu ne peux pas créer d'invitations.",
+    "invitePh": "descall.com/i/…",
+    "inviterLine": "<b>{name}</b> t'a invité",
+    "joinFailed": "Impossible de rejoindre le serveur.",
+    "joinServer": "Rejoindre un serveur",
+    "joinServerSub": "Saisis un lien ou un code d'invitation",
+    "joined": "Tu as rejoint le serveur",
+    "kick": "Expulser du serveur",
+    "kickMsg": "Ils peuvent revenir avec une nouvelle invitation.",
+    "kickTitle": "Expulser {name} du serveur ?",
+    "leaveMsg": "Il te faudra une nouvelle invitation pour revenir.",
+    "leaveTitle": "Quitter {server} ?",
+    "leftDays": "{n, plural, one {{n} jour restant} other {{n} jours restants}}",
+    "leftHours": "Encore {n} h",
+    "leftMin": "Encore {n} min",
+    "linkSettings": "Paramètres du lien",
+    "listMeta": "{members, plural, one {{members} membre} other {{members} membres}} · {online} en ligne",
+    "listMetaNoOnline": "{members, plural, one {{members} membre} other {{members} membres}}",
+    "lvlAll": "Tous les messages",
+    "markAllRead": "Tout marquer comme lu",
+    "markedRead": "Marqué comme lu",
+    "maxUses1": "1 utilisation",
+    "maxUses10": "10 utilisations",
+    "maxUses100": "100 utilisations",
+    "maxUses25": "25 utilisations",
+    "maxUses5": "5 utilisations",
+    "memberFor": "@{handle} · membre depuis {age}",
+    "mentionable": "Tout le monde peut le @mentionner",
+    "min1": "1 min",
+    "min10": "10 min",
+    "min15": "15 min",
+    "min2": "2 min",
+    "min30": "30 min",
+    "min5": "5 min",
+    "min60s": "60 s",
+    "minutes": "{n} min",
+    "movedOut": "Retiré du dossier",
+    "mute8h": "8 heures",
+    "muteAll": "Tout rendre muet",
+    "muteFoot": "En mode muet, les badges de non-lus sont masqués ; les @mentions passent quand même.",
+    "muteForever": "Jusqu'à ce que je le réactive",
+    "muteServer": "Rendre le serveur muet",
+    "muteSub": "1 heure · 8 heures · Indéfiniment",
+    "mutedForever": "Indéfiniment",
+    "mutedUntil": "Jusqu'à {t}",
+    "nBanned": "{n, plural, one {# banni} other {# bannis}}",
+    "nChanged": "{n, plural, one {{n} permission modifiée} other {{n} permissions modifiées}}",
+    "nMembers": "{n, plural, one {{n} membre} other {{n} membres}}",
+    "nServers": "{n, plural, one {{n} serveur} other {{n} serveurs}}",
+    "nUses": "{n, plural, one {{n} utilisation} other {{n} utilisations}}",
+    "nameMismatch": "Le nom du serveur ne correspond pas",
+    "newCategory": "Nouvelle catégorie",
+    "newChannel": "Nouveau salon",
+    "newFolder": "Nouveau dossier…",
+    "newLink": "Créer un nouveau lien",
+    "newRole": "Nouveau rôle",
+    "nicknameFoot": "Laisse vide pour afficher le nom d'utilisateur.",
+    "noBans": "Personne n'est banni",
+    "noCandidates": "Aucun autre membre ne peut devenir propriétaire",
+    "noExceptions": "Aucune exception",
+    "noFolder": "Aucun dossier",
+    "noFriends": "Aucun ami à inviter",
+    "noLogs": "Aucune entrée",
+    "noMembersYet": "Personne pour l'instant",
+    "noOverride": "Aucune exception",
+    "noPublic": "Aucun serveur trouvé",
+    "noRoles": "Aucun rôle attribuable",
+    "notFound": "Cette invitation n'est pas valide ou a expiré.",
+    "notifSaved": "Paramètre de notification mis à jour",
+    "notifyMe": "Me notifier pour",
+    "nsfw": "Soumis à une limite d'âge (18+)",
+    "offlineN": "Hors ligne · {n}",
+    "onlineCount": "{n} en ligne",
+    "onlineN": "En ligne · {n}",
+    "ownedFoot": "Serveurs que tu peux posséder : {n} / {max}",
+    "owner": "Propriétaire du serveur",
+    "ownerDelLeave": "Supprimer le serveur et partir",
+    "ownerSheetSub": "Que devient le serveur avant ton départ ?",
+    "ownerSheetTitle": "Tu es propriétaire de {server}",
+    "p_CHANGE_NICKNAME": "Changer son propre pseudo",
+    "p_CONNECT": "Se connecter",
+    "p_EMBED_LINKS": "Aperçus de liens",
+    "p_MANAGE_NICKNAMES": "Gérer les pseudos",
+    "p_MODERATE_MEMBERS": "Exclure temporairement des membres",
+    "p_REQUEST_TO_SPEAK": "Demander la parole",
+    "p_STREAM": "Stream et caméra",
+    "p_USE_APPLICATION_COMMANDS": "Utiliser les commandes d'appli",
+    "password": "Ton mot de passe",
+    "passwordPh": "Mot de passe du compte",
+    "permFoot": "Par défaut, la permission du rôle sur le serveur s'applique. Les modifications ne concernent que {channel}.",
+    "pickChannel": "Choisis un salon",
+    "pickImage": "Choisir une image",
+    "pickOwner": "Choisis le nouveau propriétaire",
+    "previewMeta": "{desc} · {n, plural, one {{n} membre} other {{n} membres}}",
+    "previewMetaNoDesc": "{n, plural, one {{n} membre} other {{n} membres}}",
+    "privateCategory": "Catégorie privée",
+    "privateCategorySub": "Les salons qu'elle contient sont ouverts aux rôles choisis",
+    "privateChannel": "Salon privé",
+    "privateChannelSub": "Seuls les rôles que tu choisis peuvent le voir",
+    "qAddChannel": "Ajouter un salon",
+    "rChannels": "Salons",
+    "rFolder": "Dossier",
+    "rInvites": "Invitations",
+    "rInvitesVal": "{n, plural, one {# active} other {# actives}}",
+    "rOverviewSub": "Nom, icône, bannière, salons système",
+    "rRules": "Règles",
+    "rRulesVal": "{n, plural, one {{n} règle} other {{n} règles}}",
+    "removeIcon": "Supprimer l'icône",
+    "removeOverride": "Supprimer les exceptions",
+    "removeOverrideMsg": "Les exceptions pour {target} dans {channel} sont supprimées ; les valeurs par défaut s'appliquent de nouveau.",
+    "renamePrompt": "Nouveau nom du dossier",
+    "reorderDrag": "Fais glisser pour réorganiser",
+    "reorderSaved": "Ordre enregistré",
+    "revoke": "Révoquer l'invitation",
+    "roleLocked": "Tu ne peux pas modifier ce rôle : il est au-dessus du tien ou au même niveau.",
+    "roleMembersFoot": "Les personnes que tu choisis reçoivent le rôle {role} quand tu touches Enregistrer.",
+    "roleMembersSec": "{role} · {n, plural, one {{n} membre} other {{n} membres}}",
+    "roleNameNeeded": "Le nom du rôle est obligatoire",
+    "roleSaved": "Rôle enregistré",
+    "rolesFoot": "Un rôle peut gérer les rôles situés en dessous. Le propriétaire est toujours tout en haut.",
+    "rolesSort": "Rôles · fais glisser pour réorganiser",
+    "rulesAccepted": "Règles acceptées",
+    "rulesFoot": "Avec la communauté activée, les nouveaux membres acceptent ces règles avant de rejoindre.",
+    "rulesPh": "Sois sympa avec tout le monde.",
+    "rulesSec": "Une règle par ligne",
+    "rulesTitle": "Règles",
+    "searchBans": "Rechercher dans les bannissements",
+    "searchInN": "Rechercher parmi {n, plural, one {{n} membre} other {{n} membres}}",
+    "sec10": "10 s",
+    "sec15": "15 s",
+    "sec30": "30 s",
+    "sec5": "5 s",
+    "secAccess": "Accès",
+    "secChannel": "Salon",
+    "secEntry": "Entrée",
+    "secForYou": "Pour toi",
+    "secOnServer": "Sur ce serveur",
+    "secQuick": "En bref",
+    "serverDefault": "Valeur par défaut du serveur",
+    "serverNamePh": "Serveur de {name}",
+    "serverSettings": "Paramètres du serveur",
+    "sidebarInVoice": "{n} en vocal",
+    "slowmode": "Mode lent",
+    "systemFoot": "Les messages de bienvenue des nouveaux membres et les messages système arrivent dans ce salon. Les membres inactifs sont déplacés vers le salon AFK après le délai d'inactivité AFK.",
+    "systemMsgs": "Messages système",
+    "tAnnSub": "Seul le staff publie, les membres suivent",
+    "tStageSub": "Intervenants et auditeurs",
+    "tTextSub": "Messages, images, GIF et liens",
+    "tVoiceSub": "Chat vocal, partage d'écran et caméra",
+    "textChannels": "Salons textuels",
+    "timeoutDone": "Exclusion temporaire appliquée",
+    "timeoutLeft": "Encore {t}",
+    "topic": "Sujet",
+    "topicPh": "De quoi parle ce salon ?",
+    "tplBlankSub": "Juste #général et Lobby",
+    "tplCommunitySub": "Règles, découverte et modération prêtes",
+    "tplFriends": "Groupe d'amis",
+    "tplFriendsSub": "Discussion générale, plans, soirée musique",
+    "tplGaming": "Équipe de jeu",
+    "tplGamingSub": "Lobby, vocal compétitif, clips, rôles de tournoi",
+    "tplSchool": "École et club",
+    "tplSchoolSub": "Annonces, salons de classe, événements",
+    "transferConfirm": "Dernière étape",
+    "transferConfirmMsg": "Saisis le nom du serveur et ton mot de passe pour transférer la propriété à {name}.",
+    "transferDone": "Propriété transférée à {name}",
+    "transferNotice": "<b>{name}</b> devient propriétaire. Tu restes membre avec tes rôles ; pour récupérer la propriété, il faudra l'accord de {name}.",
+    "transferNoticeLeave": "<b>{name}</b> devient propriétaire et tu quittes le serveur.",
+    "transferNoticeNone": "Choisis un membre à qui transférer la propriété.",
+    "transferTo": "Transférer la propriété à {name}",
+    "triLegend": "autoriser · par défaut · refuser",
+    "unbanned": "Bannissement révoqué",
+    "unblocked": "Débloqué",
+    "ungroup": "Dissocier le dossier",
+    "ungroupSub": "Les serveurs restent, sans dossier",
+    "ungrouped": "Dossier dissocié",
+    "unlimited": "Aucune limite",
+    "unmuteAll": "Tout réactiver",
+    "unmutedDone": "Son réactivé",
+    "usesOf": "{n} / {max}",
+    "vAudience": "Déplacer vers le public",
+    "vHighSub": "Membre depuis 10 minutes",
+    "vHighestSub": "Téléphone vérifié",
+    "vInChannel": "{channel} · micro activé",
+    "vInChannelMuted": "{channel} · micro coupé",
+    "vLowSub": "E-mail vérifié",
+    "vMediumSub": "Compte créé il y a plus de 5 minutes",
+    "vMove": "Déplacer vers un salon",
+    "vMuteForMe": "Rendre muet pour toi",
+    "vNoneSub": "Tout le monde peut publier tout de suite",
+    "vScreen": "Audio de l'écran",
+    "vServerUnmute": "Retirer le mode muet du serveur",
+    "vSpeak": "Inviter à parler",
+    "vUnmuteForMe": "Réactiver le son pour toi",
+    "validFor": "valable {n, plural, one {{n} jour} other {{n} jours}}",
+    "validForHours": "valable {n, plural, one {{n} heure} other {{n} heures}}",
+    "validForever": "n'expire jamais",
+    "vanity": "Adresse personnalisée",
+    "vanityFoot": "Lettres minuscules, chiffres et tirets. Laisse vide pour la supprimer.",
+    "vanityPh": "adresse-perso",
+    "voiceChannels": "Salons vocaux",
+    "week1": "1 semaine",
+    "welcomeTo": "Bienvenue sur {server}",
+    "wrongPassword": "Mot de passe incorrect",
+    "yourLink": "Ton lien d'invitation"
   },
   "sx": {
     "actBan": "Bannir",

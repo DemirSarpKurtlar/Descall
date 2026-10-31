@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
+import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
@@ -1509,7 +1510,7 @@ function MessageBubble({
             </span>
             <span className="message-reply-text">
               {reply.text
-                ? displayText(plainText(String(reply.text)).slice(0, 120))
+                ? displayText(plainText(String(localizedField({ text: reply.text, i18n: textI18n(reply.i18n) }, "text"))).slice(0, 120))
                 : reply.mediaType
                 ? `📎 ${reply.mediaType}`
                 : t("Original message")}
@@ -1585,7 +1586,7 @@ function MessageBubble({
         ) : (
           message.text && (
             <>
-              <MessageContent text={message.text} highlight={highlight} />
+              <MessageContent text={localizedField(message, "text")} highlight={highlight} />
               {message.editedAt ? (
                 <span className="msg-edited" style={{ fontSize: 11, opacity: 0.65, marginLeft: 4 }}>
                   ({t("edited")})

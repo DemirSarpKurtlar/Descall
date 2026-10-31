@@ -1,4 +1,5 @@
 import { getServer } from "../api/servers";
+import { textI18n } from "../i18n/serverText.js";
 import { t as tRuntime } from "../i18n/runtime.js";
 import { serverPath } from "../lib/appRoutes";
 import { getUser } from "../lib/storage";
@@ -312,6 +313,7 @@ export function bindServerSocketHandlers(socket, ctx) {
       avatarUrl: sender?.avatarUrl,
       // Prefer rich embed UI, keep content only as fallback when no embed.
       text: voice.isVoice ? "" : hasEmbed ? "" : (message.content || ""),
+      i18n: textI18n(message.i18n),
       timestamp: parseAppDate(message.created_at)?.toISOString() || new Date().toISOString(),
       mediaUrl: message.media_url,
       mediaType: voice.isVoice ? "voice" : message.media_type,

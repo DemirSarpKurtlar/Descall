@@ -5,6 +5,7 @@ import { Avatar } from "../components/ui/Avatar";
 import StatusBadge from "../components/ui/StatusBadge";
 import { nativeToastSupported, showPresenceCapsule } from "../lib/nativeToast.js";
 import { getLocale, t as tRuntime } from "../i18n/runtime.js";
+import { serverMessage } from "../i18n/serverText.js";
 import "../styles/presence-toast.css";
 
 const ToastContext = createContext(null);
@@ -36,7 +37,15 @@ export function ToastProvider({ children }) {
     }
   }, []);
 
-  const push = useCallback((message, type = "info", meta = null) => {
+  const push = useCallback((rawMessage, type = "info", meta = null) => {
+    // Raw server text (an English phrase, or a { error, errorKey, errorVars } body)
+    // still reaches the viewer in their language; already-translated text passes through.
+    const message =
+      rawMessage && typeof rawMessage === "object" && !Array.isArray(rawMessage) && !rawMessage.$$typeof
+        ? serverMessage(rawMessage, rawMessage.errorKey || rawMessage.error ? "error" : "message")
+        : type !== "presence" && typeof rawMessage === "string"
+          ? tRuntime(rawMessage)
+          : rawMessage;
     const allowed = ["info", "success", "error", "warning", "presence"];
     const t = allowed.includes(type) ? type : "info";
     // 3.0.0 (#07): on iOS a friend coming online is the native glass capsule;

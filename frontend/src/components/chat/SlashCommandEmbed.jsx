@@ -1,4 +1,5 @@
 import { Avatar } from "../ui/Avatar";
+import { localizeDeep } from "../../i18n/serverText.js";
 import { casinoHiddenOnThisDevice, isCasinoEmbed, isCasinoGameCommandName } from "../../lib/casinoCommands";
 import { displayText } from "../../lib/profanity";
 import { useT } from "../../context/LocaleContext";
@@ -60,8 +61,9 @@ function FieldValue({ value }) {
 /**
  * Discord-style rich embed for Descall Apps slash-command replies.
  */
-export default function SlashCommandEmbed({ embed, type }) {
-  if (!embed || typeof embed !== "object") return null;
+export default function SlashCommandEmbed({ embed: rawEmbed, type }) {
+  if (!rawEmbed || typeof rawEmbed !== "object") return null;
+  const embed = localizeDeep(rawEmbed);
   if (casinoHiddenOnThisDevice() && isCasinoEmbed(embed, type)) return null;
 
   const accent = colorToCss(embed.color);

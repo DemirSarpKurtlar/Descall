@@ -6,6 +6,7 @@
  * Server side is admin-only (routes/admin.js → requireAdmin).
  * Text: adminx.fb catalog keys (i18n/locales/adminx.<id>.js).
  */
+import { localizedField } from "../../../i18n/serverText.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
@@ -150,13 +151,13 @@ function Thread({ f, now, onZoom }) {
         </div>
       </div>
       {f.replies.map((r) => {
-        if (r.type === "system") return <div key={r.id} className="fb3-sys">{r.text} · {relTime(r.created_at, locale, now)}</div>;
+        if (r.type === "system") return <div key={r.id} className="fb3-sys">{localizedField(r, "text")} · {relTime(r.created_at, locale, now)}</div>;
         const note = r.type === "note";
         if (r.type === "reply" && r.isAdmin === false) {
           return (
             <div key={r.id} className="fb3-msg">
               <Av name={f.user.username} url={f.user.avatarUrl} size={28} />
-              <div className="bb"><div className="h">{f.user.username} · {relTime(r.created_at, locale, now)}</div>{r.text}</div>
+              <div className="bb"><div className="h">{f.user.username} · {relTime(r.created_at, locale, now)}</div>{localizedField(r, "text")}</div>
             </div>
           );
         }
@@ -165,7 +166,7 @@ function Thread({ f, now, onZoom }) {
             <Av name={r.adminUsername || t("adminx.fb.adminName")} size={28} />
             <div className="bb">
               <div className="h">{r.adminUsername || t("adminx.fb.adminRole")} · {note ? t("adminx.fb.internalNote") : t("adminx.fb.adminRole")} · {relTime(r.created_at, locale, now)}</div>
-              {r.text}
+              {localizedField(r, "text")}
             </div>
           </div>
         );

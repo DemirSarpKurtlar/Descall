@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../config/api";
 import { deviceHeaders } from "../lib/deviceId";
 import { t } from "../i18n/runtime.js";
+import { serverMessage } from "../i18n/serverText.js";
 import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
 
 export async function httpRequest(path, options = {}) {
@@ -36,7 +37,7 @@ export async function httpRequest(path, options = {}) {
 
     if (!response.ok) {
       if (isTransientHttpStatus(response.status)) throw transientFailureError(response.status);
-      const err = new Error(body.error || body.message || `HTTP ${response.status}`);
+      const err = new Error(serverMessage(body, "error") || serverMessage(body, "message") || `HTTP ${response.status}`);
       err.status = response.status;
       err.code = body.code || null;
       err.ban = body.ban || null;

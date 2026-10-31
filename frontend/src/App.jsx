@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
 import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "./lib/listOrder";
@@ -312,6 +313,7 @@ function normalizeGroupMessage(m) {
       id: m.id,
       from: { id: "game-bot", username: "🎰 Casino Bot", avatarUrl: null },
       text: m.content || "",
+      i18n: textI18n(m.i18n),
       timestamp: parseAppDate(m.created_at)?.toISOString() || new Date().toISOString(),
       type: m.message_type || "game_message",
       isGameMessage: true,
@@ -334,6 +336,7 @@ function normalizeGroupMessage(m) {
     displayName: sender?.displayName || null,
     avatarUrl: sender?.avatarUrl,
     text: voice.isVoice ? "" : (m.content || ""),
+    i18n: textI18n(m.i18n),
     timestamp: parseAppDate(m.created_at)?.toISOString() || new Date().toISOString(),
     mediaUrl: m.media_url,
     mediaType: voice.isVoice ? "voice" : m.media_type,
@@ -1637,7 +1640,7 @@ export default function App() {
       if (Array.isArray(state?.dmPrefs)) {
         setDmPrefs((prev) => reconcileDmPrefs(prev, prefsMapFromList(state.dmPrefs)));
       }
-      if (Array.isArray(state?.notifications)) setNotifications(state.notifications);
+      if (Array.isArray(state?.notifications)) setNotifications(localizeDeep(state.notifications));
     });
 
     socket.on("dm:prefs:update", ({ pref } = {}) => {
@@ -2194,6 +2197,7 @@ export default function App() {
         displayName: sender?.displayName || null,
         avatarUrl: sender?.avatarUrl,
         text: voice.isVoice ? "" : hasEmbed ? "" : (message.content || ""),
+        i18n: textI18n(message.i18n),
         timestamp: parseAppDate(message.created_at)?.toISOString() || new Date().toISOString(),
         mediaUrl: message.media_url,
         mediaType: voice.isVoice ? "voice" : message.media_type,
@@ -2398,6 +2402,7 @@ export default function App() {
         id: stableId,
         from: message.sender || { id: "game-bot", username: "Casino" },
         text: message.content || "",
+        i18n: textI18n(message.i18n),
         type: message.type || "game_message",
         gameData: message.gameData ?? null,
         sessionOwnerId: ownerId,
@@ -2661,15 +2666,15 @@ export default function App() {
 
     socket.on("notification:new", ({ notification } = {}) => {
       if (!notification) return;
-      setNotifications((prev) => [notification, ...prev].slice(0, 100));
+      setNotifications((prev) => [localizeDeep(notification), ...prev].slice(0, 100));
     });
 
     socket.on("notifications:sync", ({ notifications: list } = {}) => {
-      if (Array.isArray(list)) setNotifications(list);
+      if (Array.isArray(list)) setNotifications(localizeDeep(list));
     });
 
-    socket.on("chat:error", ({ message } = {}) => {
-      setFriendNotice(message || t("Chat error."));
+    socket.on("chat:error", (payload = {}) => {
+      setFriendNotice(serverMessage(payload, "message") || t("Chat error."));
       setTimeout(() => setFriendNotice(""), 5000);
     });
 
