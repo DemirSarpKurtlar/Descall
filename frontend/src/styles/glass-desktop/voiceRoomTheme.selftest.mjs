@@ -31,4 +31,7 @@ assert.match(overlay, /className=\{`call-people-panel\$\{narrowViewport \? " is-
 assert.match(overlay, /import "\.\.\/styles\/call-people\.css";/);
 assert.match(people, /html\.glass-desktop \.call-people-panel \{[\s\S]*?var\(--gd-glass-fill\)/);
 assert.match(people, /prefers-reduced-motion/);
+assert.match(calls, /html\.glass-desktop \.main-panel \.server-voice-tile \{[\s\S]*?var\(--gd-heavy-base\)/);
+assert.match(calls, /html\.glass-desktop \.main-panel \.server-voice-tile-meta \{[\s\S]*?backdrop-filter: blur\(16px\)/);
+assert.match(calls, /html\.glass-desktop\.a11y-solid \.main-panel \.server-voice-tile,/);
 console.log("voiceRoomTheme.selftest ok");
