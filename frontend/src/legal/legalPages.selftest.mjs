@@ -42,7 +42,9 @@ const PAGES = [
 ];
 
 function localeValue(locale) {
-  return { locale, setLocale() {}, t: (key) => String(key ?? ""), locales: [] };
+  // Minimal catalog for the strings the modal chrome uses (3.7.21: "Close" goes through t()).
+  const tr = { Close: "Kapat" };
+  return { locale, setLocale() {}, t: (key) => String((locale === "tr" && tr[key]) || key || ""), locales: [] };
 }
 
 export function renderPage(type, locale) {
