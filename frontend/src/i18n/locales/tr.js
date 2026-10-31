@@ -153,6 +153,11 @@ export const nested = {
     }
   },
   "updateToast": {
+    "titleDownloading": "Descall {version} indiriliyor",
+    "titleInstalling": "Descall {version} kuruluyor",
+    "subDownloading": "Arka planda · %{percent}",
+    "subDownloadingStart": "Arka planda",
+    "subInstalling": "Birkaç saniye içinde yeniden açılır",
     "kicker": "Masaüstü güncelleme",
     "downloading": "Descall {version} arka planda indiriliyor…",
     "installing": "Descall {version} kuruluyor…",

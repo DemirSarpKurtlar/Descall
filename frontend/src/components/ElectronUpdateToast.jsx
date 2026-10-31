@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../context/LocaleContext";
 import Modal from "./ui/Modal";
+import { Download, RefreshCw, CheckCircle } from "./ui/Icon";
+import "../styles/update-toast.css";
 import { getVoiceBusy, subscribeVoiceBusy } from "../lib/voiceBusy";
 import { getActivityBusy, subscribeActivityBusy, updateChipKey } from "../lib/updateTiming";
 
 /**
- * Premium charcoal desktop update toast, no emoji spam, clear status/progress,
- * does not steal focus (render-only; Electron showsInactive for OS notifs).
+ * Desktop update card (3.7.14 redesign): the same theme glass as the
+ * friend-online toast (styles/update-toast.css), an icon tile, title +
+ * one-line status and a thin brand-colour progress line along the bottom
+ * edge. Downloading / installing sit top centre and never take clicks;
+ * "ready" is a small chip bottom right with "Şimdi yükle".
+ * Does not steal focus (render-only; Electron showsInactive for OS notifs).
  */
 export default function ElectronUpdateToast() {
   const t = useT();
@@ -146,13 +152,28 @@ export default function ElectronUpdateToast() {
     }
   };
 
-  const showBar = state === "downloading" || state === "installing" || state === "ready";
   const barWidth =
     state === "installing" || state === "ready"
       ? 100
       : percent != null
         ? percent
-        : 8;
+        : 0;
+  const v = { version: version || "" };
+  const title =
+    state === "installing"
+      ? t("updateToast.titleInstalling", v)
+      : state === "ready"
+        ? label
+        : t("updateToast.titleDownloading", v);
+  const sub =
+    state === "installing"
+      ? t("updateToast.subInstalling")
+      : state === "downloading"
+        ? percent != null && percent > 0
+          ? t("updateToast.subDownloading", { percent: Math.round(percent) })
+          : t("updateToast.subDownloadingStart")
+        : null;
+  const StateIcon = state === "ready" ? CheckCircle : state === "installing" ? RefreshCw : Download;
 
   return (
     <>
@@ -163,36 +184,29 @@ export default function ElectronUpdateToast() {
           aria-live="polite"
           aria-atomic="true"
         >
-          <div className="electron-update-toast-inner">
-            <div className="electron-update-toast-kicker">{t("updateToast.kicker")}</div>
-            <div className="electron-update-toast-label">{label}</div>
-            {showBar ? (
-              <div
-                className="electron-update-toast-bar"
+          <div className="eut-card">
+            <span className="eut-ic" aria-hidden="true">
+              <StateIcon size={18} weight="bold" />
+            </span>
+            <span className="eut-copy">
+              <b>{title}</b>
+              {sub ? <span>{sub}</span> : null}
+            </span>
+            {state === "ready" ? (
+              <button type="button" className="eut-btn" onClick={askRestart}>
+                {t("updateToast.installNow")}
+              </button>
+            ) : null}
+            {state !== "ready" ? (
+              <span
+                className="eut-bar"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={Math.round(barWidth)}
               >
-                <div
-                  className="electron-update-toast-bar-fill"
-                  style={{ width: `${barWidth}%` }}
-                />
-              </div>
-            ) : null}
-            {state === "downloading" && percent != null ? (
-              <div className="electron-update-toast-meta">
-                {t("updateToast.percent", { percent: Math.round(percent) })}
-              </div>
-            ) : null}
-            {state === "ready" ? (
-              <button
-                type="button"
-                className="electron-update-toast-restart"
-                onClick={askRestart}
-              >
-                {t("updateToast.installNow")}
-              </button>
+                <span className={`eut-bar-fill${state === "downloading" && !percent ? " is-indeterminate" : ""}`} style={{ width: `${barWidth}%` }} />
+              </span>
             ) : null}
           </div>
         </div>

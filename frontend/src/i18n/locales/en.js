@@ -148,6 +148,11 @@ export const nested = {
     }
   },
   "updateToast": {
+    "titleDownloading": "Downloading Descall {version}",
+    "titleInstalling": "Installing Descall {version}",
+    "subDownloading": "In the background · {percent}%",
+    "subDownloadingStart": "In the background",
+    "subInstalling": "Descall reopens in a few seconds",
     "kicker": "Desktop update",
     "downloading": "Downloading Descall {version} in the background…",
     "installing": "Installing Descall {version}…",

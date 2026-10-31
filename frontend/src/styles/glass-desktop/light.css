@@ -103,7 +103,6 @@ html.glass-desktop[data-theme="light"] .members-panel {
 }
 
 html.glass-desktop[data-theme="light"] .app-notif-banner,
-html.glass-desktop[data-theme="light"] .electron-update-toast,
 html.glass-desktop[data-theme="light"] .user-profile-card.is-gd {
   background: var(--g-solid-heavy);
   color: var(--g-t1);
