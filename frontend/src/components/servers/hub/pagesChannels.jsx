@@ -192,7 +192,7 @@ export function DeleteChannelAlert({ server, channel, onCancel, onDeleted, onDel
     return () => { live = false; };
   }, [server?.id, channel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const title = isCat ? f("delCatTitle", { name: channel?.name }) : textLike ? f("delChTitle", { name: channel?.name }) : f("delVoiceTitle", { name: channel?.name });
-  const msg = isCat ? s.delCatMsg : textLike ? (Number.isFinite(count) && count > 0 ? f("delChMsgCount", { n: count.toLocaleString("tr-TR") }) : s.delChMsg) : s.delVoiceMsg;
+  const msg = isCat ? s.delCatMsg : textLike ? (Number.isFinite(count) && count > 0 ? f("delChMsgCount", { n: count }) : s.delChMsg) : s.delVoiceMsg;
   const confirm = async () => {
     if (busy) return;
     setBusy(true);
@@ -264,9 +264,9 @@ export function ChannelEditPage({ route }) {
         <>
           <Sec>{s.secChat}</Sec>
           <Group>
-            <Row ico="clock" c="orange" t={s.slowmode} val={slowmodeLabel(d.slowmodeSeconds, s)} chev onClick={() => hub.push({
+            <Row ico="clock" c="orange" t={s.slowmode} val={slowmodeLabel(d.slowmodeSeconds, f)} chev onClick={() => hub.push({
               id: "pick", title: s.slowmode, value: d.slowmodeSeconds,
-              options: SLOWMODE_OPTIONS.map((n) => ({ id: n, t: slowmodeLabel(n, s) })),
+              options: SLOWMODE_OPTIONS.map((n) => ({ id: n, t: slowmodeLabel(n, f) })),
               onPick: (id) => setD((x) => ({ ...x, slowmodeSeconds: Number(id) })),
             })} />
             <Row ico="eye" c="red" t={s.nsfw} tg={d.nsfw} onClick={() => { hapticSelection(); setD((x) => ({ ...x, nsfw: !x.nsfw })); }} />

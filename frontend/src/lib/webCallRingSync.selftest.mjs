@@ -13,6 +13,13 @@ import {
   ringEventMatches,
 } from "./callRingSync.js";
 
+// Copy comes from the i18n catalogs in the UI language: load them and use Turkish.
+globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {} };
+const { loadI18nCatalogs } = await import("../i18n/index.js");
+const { setRuntimeLocale } = await import("../i18n/runtime.js");
+await loadI18nCatalogs("tr");
+setRuntimeLocale("tr");
+
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
 
 // 1. Which events stop which ring.

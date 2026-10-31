@@ -22,6 +22,11 @@ import { ToastProvider } from ${J("context/ToastContext.jsx")};
 import { LocaleProvider } from ${J("context/LocaleContext.jsx")};
 export * as data from ${J("components/servers/hub/hubData.js")};
 export * as strings from ${J("components/servers/hub/strings.js")};
+export { SVH_TR } from ${J("i18n/locales/svh.tr.js")};
+export { SVH_EN } from ${J("i18n/locales/svh.en.js")};
+export { CALLUI_TR } from ${J("i18n/locales/callui.tr.js")};
+export { CALLUI_EN } from ${J("i18n/locales/callui.en.js")};
+export { translate, loadI18nCatalogs } from ${J("i18n/index.js")};
 export * as mute from ${J("components/servers/hub/serverMute.js")};
 export * as call from ${J("components/voice/CallTapCard.jsx")};
 export { ROUTES, sectionOf } from ${J("components/servers/hub/routes.jsx")};
@@ -70,30 +75,42 @@ const reactErrors = [];
 console.error = (...a) => { const m = String(a[0]); if (/useLayoutEffect does nothing on the server/.test(m)) return; reactErrors.push(m); origError(...a); };
 
 const M = await import(pathToFileURL(file).href);
-const { data: D, strings: S, mute: MU, call: CT } = M;
+const { data: D, strings: S, mute: MU, call: CT, SVH_TR, SVH_EN, CALLUI_TR, CALLUI_EN } = M;
+// Catalogs load lazily in the app; the renders below need Turkish (and the English fallback).
+await M.loadI18nCatalogs("tr");
+const trT = (k, v) => M.translate("tr", k, v);
+const svhF = (k, v) => trT(`svh.${k}`, v);
 let n = 0;
 const t = (name, fn) => { fn(); n += 1; };
 
 // ---------- copy ----------
-t("TR / EN string tables have the same keys", () => {
-  const a = Object.keys(S.SVH_TR).sort(), b = Object.keys(S.SVH_EN).sort();
+t("TR / EN catalogs (svh, calls.tap) have the same keys", () => {
+  const a = Object.keys(SVH_TR).sort(), b = Object.keys(SVH_EN).sort();
   assert.deepEqual(a.filter((k) => !b.includes(k)), [], "missing in EN");
   assert.deepEqual(b.filter((k) => !a.includes(k)), [], "missing in TR");
-  assert.deepEqual(Object.keys(CT.CALL_TAP_STR.tr).sort(), Object.keys(CT.CALL_TAP_STR.en).sort());
+  assert.deepEqual(Object.keys(CALLUI_TR.tap).sort(), Object.keys(CALLUI_EN.tap).sort());
 });
 t("no retired features in the copy (DimaAI, call recording, Valorant/LFG)", () => {
-  const all = JSON.stringify([S.SVH_TR, S.SVH_EN, CT.CALL_TAP_STR]);
+  const all = JSON.stringify([SVH_TR, SVH_EN, CALLUI_TR, CALLUI_EN]);
   for (const bad of [/dima/i, /valorant/i, /\bLFG\b/, /kayd[ıi] ba[şs]lat|aramay[ıi] kaydet|call recording|record(ing)? the call/i]) assert.ok(!bad.test(all), String(bad));
 });
 t("Turkish copy addresses the user as 'sen' (no formal -iniz/-ınız imperatives)", () => {
-  for (const [k, v] of Object.entries(S.SVH_TR)) assert.ok(!/(iniz|ınız|unuz|ünüz|yiniz|yınız)(\b|$|[ .,!?])/i.test(v), `${k}: ${v}`);
+  for (const [k, v] of Object.entries(SVH_TR)) assert.ok(!/(iniz|ınız|unuz|ünüz|yiniz|yınız)(\b|$|[ .,!?])/i.test(v), `${k}: ${v}`);
 });
 t("mockup copy (01, 03, 20, 21, 22, 24)", () => {
-  assert.equal(S.SVH_TR.leave, "Sunucudan ayrıl");
-  assert.equal(S.SVH_TR.del, "Sunucuyu sil");
-  assert.equal(S.SVH_TR.transfer, "Sahipliği devret");
-  assert.equal(S.SVH_TR.muteSub, "1 saat · 8 saat · Süresiz");
-  assert.equal(S.fmt(S.SVH_TR.delChTitle, { name: "klipler" }), "#klipler silinsin mi?");
+  assert.equal(SVH_TR.leave, "Sunucudan ayrıl");
+  assert.equal(SVH_TR.del, "Sunucuyu sil");
+  assert.equal(SVH_TR.transfer, "Sahipliği devret");
+  assert.equal(SVH_TR.muteSub, "1 saat · 8 saat · Süresiz");
+  assert.equal(svhF("delChTitle", { name: "klipler" }), "#klipler silinsin mi?");
+  assert.equal(svhF("leaveTitle", { server: "Oyun Gecesi", serverAbl: S.trAblative("Oyun Gecesi") }), "Oyun Gecesi'nden ayrılmak istiyor musun?");
+  assert.equal(M.translate("en", "svh.nMembers", { n: 1 }), "1 member");
+  assert.equal(M.translate("en", "svh.nMembers", { n: 128 }), "128 members");
+  assert.equal(M.translate("en", "svh.au_MEMBER_UNBAN", { target: "Zeynep", targetGen: "Zeynep'in" }), "Unbanned Zeynep");
+  assert.equal(D.inviteUsesLabel(1, (k, v) => M.translate("en", `svh.${k}`, v)), "1 use");
+  assert.equal(D.durationLabel(7200, (k, v) => M.translate("en", `svh.${k}`, v)), "2 hours");
+  assert.equal(D.durationLabel(7200, svhF), "2 saat");
+  assert.equal(D.longDate("2026-04-18T10:00:00Z", "tr"), "18 Nisan 2026");
 });
 t("Turkish case suffixes for server names", () => {
   assert.equal(S.trAblative("Müzik Kulübü"), "Müzik Kulübü'nden");
@@ -102,7 +119,7 @@ t("Turkish case suffixes for server names", () => {
   assert.equal(S.trAblative("Kampüs"), "Kampüs'ten");
   assert.equal(S.trDativeName("Oyun Gecesi"), "Oyun Gecesi'ne");
   assert.equal(S.caseHelpers("tr").gen("Demir"), "Demir'in");
-  assert.equal(S.caseHelpers("en").gen("Demir"), "Demir's");
+  assert.equal(S.caseHelpers("en").gen("Demir"), "Demir", "other languages use the base name");
 });
 
 // ---------- join (02) ----------
@@ -176,7 +193,7 @@ t("server mute: 1 hour, forever, expiry, restore level", () => {
 });
 // ---------- call cards (31, 32) ----------
 t("call card helpers", () => {
-  const tr = CT.CALL_TAP_STR.tr;
+  const tr = CT.callTapStrings(trT, "tr");
   assert.equal(CT.formatClock(0), "00:00");
   assert.equal(CT.formatClock(754), "12:34");
   assert.equal(CT.formatClock(3725), "1:02:05");
@@ -286,8 +303,8 @@ t("call cards render (31 join, 32 ended)", () => {
   has(ended, "Ayşe", "Arama sona erdi", "12:34", "Sesli arama", "Bağlantı kesildi (Ayşe ayrıldı)", "Geri ara", "Mesaj", "Kapat");
 });
 t("audit log names the real backend nickname actions", () => {
-  const S = M.strings.SVH_TR, cases = M.strings.caseHelpers("tr");
-  const row = (action) => M.data.auditRow({ action, actorDisplayName: "Mert", targetId: "u4", changes: { username: "zeynep" }, createdAt: "2026-10-26T17:30:00Z" }, { s: S, cases, names: new Map([["u4", "Zeynep"]]) });
+  const cases = M.strings.caseHelpers("tr");
+  const row = (action) => M.data.auditRow({ action, actorDisplayName: "Mert", targetId: "u4", changes: { username: "zeynep" }, createdAt: "2026-10-26T17:30:00Z" }, { f: svhF, cases, names: new Map([["u4", "Zeynep"]]) });
   assert.equal(row("MEMBER_NICKNAME_UPDATE").sub, "Zeynep'in takma adını değiştirdi");
   assert.equal(row("MEMBER_NICKNAME_SELF").sub, "Takma adını değiştirdi");
   assert.equal(row("MEMBER_BAN").ico, "ban");

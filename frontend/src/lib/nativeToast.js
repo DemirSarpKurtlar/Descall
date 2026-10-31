@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
+import { t as tRuntime } from "../i18n/runtime.js";
 
 /**
  * 3.0.0 (A4, native glass #07): on iOS the "friend came online" toast is a
@@ -12,27 +13,24 @@ const IS_IOS = typeof window !== "undefined" && Capacitor.isNativePlatform() && 
 const OPEN_ACTIONS = new Set(["double", "message"]);
 const DONE_ACTIONS = new Set(["double", "message", "dismiss", "timeout"]);
 
-const COPY = {
-  tr: { online: (n) => `${n} çevrimiçi`, sub: "Az önce bağlandı", action: "Mesaj" },
-  en: { online: (n) => `${n} is online`, sub: "Just connected", action: "Message" },
-};
-
-/** Pure: the plugin arguments for a presence capsule (unit-tested). */
-export function presenceCapsuleArgs({ name, user, locale = "tr", id }) {
-  const copy = COPY[locale] || COPY.tr;
+/**
+ * Pure: the plugin arguments for a presence capsule (unit-tested). Copy comes from the
+ * catalogs in the UI language (`t` defaults to the runtime translator).
+ */
+export function presenceCapsuleArgs({ name, user, id, t = tRuntime }) {
   const display = String(name || user?.displayName || user?.username || "").trim();
   if (!display) return null;
   const userId = user?.id != null ? String(user.id) : "";
   const avatar = [user?.avatarUrl, user?.avatar_url, user?.avatar].find((u) => typeof u === "string" && /^https:\/\//i.test(u)) || "";
   return {
     id: id || `presence-${userId || display}-${Date.now()}`,
-    title: copy.online(display),
-    sub: copy.sub,
+    title: t("callui.presence.online", { name: display }),
+    sub: t("callui.presence.sub"),
     name: display,
     seed: userId || display,
     avatar,
     online: true,
-    action: userId ? copy.action : "",
+    action: userId ? t("callui.presence.action") : "",
     duration: 3000,
   };
 }
@@ -82,10 +80,10 @@ export function nativeToastSupported() {
  * Show the presence capsule natively. Resolves true when the native capsule is
  * on screen, false when the caller should fall back to the web toast.
  */
-export async function showPresenceCapsule({ name, user, locale }) {
+export async function showPresenceCapsule({ name, user }) {
   const p = nativePlugin();
   if (!p) return false;
-  const args = presenceCapsuleArgs({ name, user, locale });
+  const args = presenceCapsuleArgs({ name, user });
   if (!args) return false;
   ensureListener(p);
   const userId = user?.id != null ? String(user.id) : "";

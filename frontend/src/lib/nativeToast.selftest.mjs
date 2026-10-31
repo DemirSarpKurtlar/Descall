@@ -2,15 +2,24 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { presenceCapsuleArgs, capsuleOutcome, nativeToastSupported } from "./nativeToast.js";
 
+// Copy comes from the i18n catalogs in the UI language: load them and use Turkish.
+globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {} };
+const { loadI18nCatalogs } = await import("../i18n/index.js");
+const { setRuntimeLocale } = await import("../i18n/runtime.js");
+await loadI18nCatalogs("tr");
+setRuntimeLocale("tr");
+
 // Node is not iOS: the web toast stays.
 assert.equal(nativeToastSupported(), false);
 
-const a = presenceCapsuleArgs({ name: "Mert", user: { id: "u1", avatarUrl: "https://cdn.descall.com/m.png" }, locale: "tr", id: "x" });
+const a = presenceCapsuleArgs({ name: "Mert", user: { id: "u1", avatarUrl: "https://cdn.descall.com/m.png" }, id: "x" });
 assert.deepEqual(a, {
   id: "x", title: "Mert çevrimiçi", sub: "Az önce bağlandı", name: "Mert", seed: "u1",
   avatar: "https://cdn.descall.com/m.png", online: true, action: "Mesaj", duration: 3000,
 });
-const en = presenceCapsuleArgs({ name: "Mert", user: { id: "u1" }, locale: "en", id: "x" });
+setRuntimeLocale("en");
+const en = presenceCapsuleArgs({ name: "Mert", user: { id: "u1" }, id: "x" });
+setRuntimeLocale("tr");
 assert.equal(en.title, "Mert is online");
 assert.equal(en.sub, "Just connected");
 assert.equal(en.action, "Message");

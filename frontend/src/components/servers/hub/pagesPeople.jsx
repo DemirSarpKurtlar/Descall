@@ -153,7 +153,7 @@ export function MemberBody({ userId }) {
   const name = memberName(m);
   const p = presence(hub, m);
   const chips = (m.roleIds || []).map((id) => rolesById.get(String(id))).filter((r) => r && !r.isEveryone).sort(byPosDesc);
-  const timeLeft = m.timeoutUntil ? timeLeftLabel(m.timeoutUntil, s) : null;
+  const timeLeft = m.timeoutUntil ? timeLeftLabel(m.timeoutUntil, f) : null;
   const blocked = isBlockedByMe(m.userId);
   const user = userOf(m);
 
@@ -170,7 +170,7 @@ export function MemberBody({ userId }) {
   const openTimeout = () => hub.push({
     id: "pick", title: s.timeout, value: timeLeft ? "__on" : "__none",
     options: [
-      ...TIMEOUT_OPTIONS.map((sec) => ({ id: sec, t: durationLabel(sec, s) })),
+      ...TIMEOUT_OPTIONS.map((sec) => ({ id: sec, t: durationLabel(sec, f) })),
       ...(timeLeft ? [{ id: "__clear", t: s.timeoutRemove }] : []),
     ],
     onPick: async (id) => {
@@ -214,7 +214,7 @@ export function MemberBody({ userId }) {
       <div className="svh-hero">
         <Av user={user} name={name} s={84} dot={p ? PRESENCE_DOT[p] : null} />
         <div className="n">{name}</div>
-        <div className="m">{f("memberFor", { handle: m.username || name, age: memberAge(m.joinedAt, s) || s.ageToday })}</div>
+        <div className="m">{f("memberFor", { handle: m.username || name, age: memberAge(m.joinedAt, f) || s.ageToday })}</div>
         {chips.length || m.isOwner ? (
           <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap", justifyContent: "center" }}>
             {m.isOwner ? <Chip color="#FFD60A">{s.ownerRole}</Chip> : null}
@@ -655,7 +655,7 @@ export function TransferPage({ route }) {
         </div>
       </div>
       <Btn style={{ marginTop: 20 }} disabled={!picked} onClick={() => hub.push({ id: "trConfirm", userId: picked.userId, leaveAfter: route.leaveAfter })}>
-        {picked ? f("transferTo", { nameDat: dat(pn) }) : s.transfer}
+        {picked ? f("transferTo", { name: pn, nameDat: dat(pn) }) : s.transfer}
       </Btn>
     </PageFrame>
   );
@@ -685,7 +685,7 @@ export function TransferConfirmPage({ route }) {
     busyRef.current = true; setBusy(true); setErr("");
     try {
       const result = await transferServerOwnership(server.id, { userId: target.userId, confirmName: d.name.trim(), password: pwRequired ? d.password : undefined });
-      toast(f("transferDone", { nameDat: dat(tn) }), "success");
+      toast(f("transferDone", { name: tn, nameDat: dat(tn) }), "success");
       hub.close();
       await deps.onTransferred?.({ result, target, leaveAfter: Boolean(route.leaveAfter) });
     } catch (e) {
@@ -698,7 +698,7 @@ export function TransferConfirmPage({ route }) {
   const ok = <span style={{ marginLeft: "auto", color: "#30D158", display: "grid" }}><I n="check" s={18} w={2.6} /></span>;
   return (
     <PageFrame route={route} title={s.transferConfirm}>
-      <Foot style={{ margin: "2px 4px 6px", fontSize: 15 }}>{f("transferConfirmMsg", { nameDat: dat(tn) })}</Foot>
+      <Foot style={{ margin: "2px 4px 6px", fontSize: 15 }}>{f("transferConfirmMsg", { name: tn, nameDat: dat(tn) })}</Foot>
       <Sec>{s.delTypeName}</Sec>
       <Field value={d.name} onChange={(v) => setD((x) => ({ ...x, name: v }))} placeholder={serverName} autoFocus right={nameOk ? ok : null} onEnter={submit} label={s.delTypeName} />
       {pwRequired ? (
@@ -708,7 +708,7 @@ export function TransferConfirmPage({ route }) {
         </>
       ) : null}
       {err ? <div className="svh-err" role="alert">{err}</div> : null}
-      <Btn style={{ marginTop: 22 }} disabled={!canSubmit} onClick={submit}>{busy ? <Spinner /> : f("transferTo", { nameDat: dat(tn) })}</Btn>
+      <Btn style={{ marginTop: 22 }} disabled={!canSubmit} onClick={submit}>{busy ? <Spinner /> : f("transferTo", { name: tn, nameDat: dat(tn) })}</Btn>
     </PageFrame>
   );
 }

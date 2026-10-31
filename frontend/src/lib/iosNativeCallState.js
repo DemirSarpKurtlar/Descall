@@ -4,6 +4,7 @@
  * unit-tested in Node (iosNativeCall.selftest.mjs) and imported on every
  * platform at zero cost (nothing ever fills it outside native iOS).
  */
+import { t } from "../i18n/runtime.js";
 
 export const NATIVE_CALL_IDLE = Object.freeze({ active: false });
 
@@ -32,11 +33,11 @@ export function normalizeNativeCall(raw) {
   });
 }
 
-/** Turkish status line for the in-app card. */
+/** Status line for the in-app card (UI language). */
 export function nativeCallStatusLabel(state, nowMs = Date.now()) {
   if (!state?.active) return "";
-  if (state.phase === "reconnecting") return "Yeniden bağlanıyor…";
-  if (state.phase !== "connected" || !state.connectedAt || state.mediaVerified === false) return "Bağlanıyor…";
+  if (state.phase === "reconnecting") return t("callui.native.reconnecting");
+  if (state.phase !== "connected" || !state.connectedAt || state.mediaVerified === false) return t("callui.native.connecting");
   return formatCallDuration(nowMs - state.connectedAt);
 }
 
