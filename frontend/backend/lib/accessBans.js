@@ -154,6 +154,18 @@ async function check({ ip, deviceId, action, userId = null, isAdmin = false } = 
   };
 }
 
+/**
+ * Read-only: the active ban that would stop this address / stored device hash,
+ * or null. No hit is recorded (Kullanıcının gözünden, 3.7.2).
+ */
+async function peek({ ip, deviceHash } = {}) {
+  await refresh();
+  if (state.unavailable || state.byHash.size === 0) return null;
+  const fp = fingerprintOf({ ip });
+  if (deviceHash) fp.device = String(deviceHash);
+  return match(fp);
+}
+
 /* ---------------- admin operations ---------------- */
 
 function expiryFor(duration, now = Date.now()) {
@@ -315,6 +327,7 @@ module.exports = {
   isActive,
   match,
   check,
+  peek,
   refresh,
   banAddress,
   banAccountAccess,
