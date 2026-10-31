@@ -135,9 +135,9 @@ function createMaintenanceService({ supabase, getIo = () => null, now = () => Da
     return row;
   }
 
-  async function create(body, actor) {
+  async function create(body, actor, { lang } = {}) {
     await reload();
-    const v = m.validateInput(body, { now: now() });
+    const v = m.validateInput(body, { now: now(), lang });
     if (!v.ok) throw fail(400, v.code);
     if (m.findOverlap(rows, v.value, { now: now() })) throw fail(409, "overlap");
     const ts = new Date(now()).toISOString();
@@ -151,13 +151,13 @@ function createMaintenanceService({ supabase, getIo = () => null, now = () => Da
     return m.adminView(saved, now());
   }
 
-  async function update(id, body, actor) {
+  async function update(id, body, actor, { lang } = {}) {
     const row = await findRow(id);
     const st = m.statusOf(row, now());
     if (st !== "scheduled" && st !== "active") throw fail(409, "not_editable");
     if (st === "active" && body.startsAt !== undefined && new Date(body.startsAt).getTime() !== new Date(row.starts_at).getTime())
       throw fail(409, "already_started");
-    const v = m.validateInput(body, { existing: row, now: now() });
+    const v = m.validateInput(body, { existing: row, now: now(), lang });
     if (!v.ok) throw fail(400, v.code);
     if (m.findOverlap(rows, v.value, { ignoreId: id, now: now() })) throw fail(409, "overlap");
     const changed = {};

@@ -4,8 +4,10 @@
  * Slash command registry and app replies (Descall Apps).
  *
  * 2.12.0: every reply carries `embed.card` (structured, rendered as a glass card
- * by the client, Turkish labels) next to the legacy Discord-style `embed`
- * (now Turkish too) that older clients still draw. In server channels a reply
+ * by the client) next to the legacy Discord-style `embed` that older clients
+ * still draw. Text is English with an `i18n` field next to it (lib/botText.js,
+ * keys bot.slash.* / bot.cmd.* in src/i18n/locales/bot.<locale>.js), so every
+ * viewer reads it in their own language. In server channels a reply
  * is visible only to the invoker; "Kanala paylaş" (server:app:share) posts it
  * to the channel. /help is answered by the app registry (it used to fall into
  * the casino help because the casino list also contains "help").
@@ -19,6 +21,7 @@ const {
 } = require("./serverPermissions");
 const { handleGameCommand, VALID_COMMANDS } = require("../socket/gameHandlers");
 const pollCore = require("./pollCore");
+const { ref, en, put } = require("./botText");
 
 const APP_BOT = {
   id: "descall-apps",
@@ -46,11 +49,17 @@ const COMMAND_REGEX = /^\/([a-z0-9_çğıöşü-]+)(?:\s+([\s\S]*))?$/i;
 const USER_MENTION_REGEX = /^<@!?([0-9a-f-]{20,})>$/i;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function option(name, description, { required = false } = {}) {
-  return { name, description, required };
+/** Option with an English name / description and their catalog refs (bot.opt.*). */
+function option(nameKey, descKey, { required = false } = {}) {
+  const o = { required };
+  put(o, "name", `bot.opt.${nameKey}`);
+  put(o, "description", `bot.opt.${descKey}`);
+  return o;
 }
 
 function defineCommand(def) {
+  const descKey = `bot.cmd.${def.descKey || def.name}`;
+  const { descKey: _k, ...rest } = def;
   return Object.freeze({
     permission: null,
     chatOnly: true,
@@ -61,95 +70,88 @@ function defineCommand(def) {
     aliases: [],
     // App commands need USE_APPLICATION_COMMANDS in servers unless they say otherwise.
     needsAppCommands: true,
-    ...def,
+    ...rest,
+    description: en(descKey),
+    i18n: { description: ref(descKey) },
   });
 }
 
 const slashCommands = [
   defineCommand({
     name: "bj",
-    description: "Kasaya karşı blackjack eli başlat.",
-    options: [option("bahis", "Yatırılacak DesCoin.", { required: true })],
+    descKey: "bj",
+    options: [option("bet", "betDesc", { required: true })],
     casino: true,
   }),
-  defineCommand({ name: "blackjack", description: "Kasaya karşı blackjack eli başlat.", casino: true }),
-  defineCommand({ name: "hit", description: "Blackjack'te kart çek.", casino: true }),
-  defineCommand({ name: "stand", description: "Blackjack'te dur.", casino: true }),
-  defineCommand({ name: "stay", description: "Blackjack'te dur.", casino: true }),
-  defineCommand({ name: "double", description: "Blackjack'te bahsi ikiye katla.", casino: true }),
+  defineCommand({ name: "blackjack", descKey: "bj", casino: true }),
+  defineCommand({ name: "hit", casino: true }),
+  defineCommand({ name: "stand", descKey: "stand", casino: true }),
+  defineCommand({ name: "stay", descKey: "stand", casino: true }),
+  defineCommand({ name: "double", casino: true }),
   defineCommand({
     name: "slot",
-    description: "Beş makaralı slotu çevir.",
-    options: [option("bahis", "Yatırılacak DesCoin.", { required: true })],
+    options: [option("bet", "betDesc", { required: true })],
     casino: true,
   }),
   defineCommand({
     name: "coinflip",
-    description: "Yazı tura at, kazanırsan bahsin 2× döner.",
-    options: [option("bahis", "Yatırılacak DesCoin.", { required: true })],
+    options: [option("bet", "betDesc", { required: true })],
     casino: true,
   }),
-  defineCommand({ name: "cf", description: "Yazı tura at. /coinflip ile aynı.", casino: true }),
+  defineCommand({ name: "cf", casino: true }),
   defineCommand({
     name: "pay",
-    description: "Birine DesCoin gönder.",
     options: [
-      option("kullanıcı", "@kullanıcı, kullanıcı adı veya kimlik.", { required: true }),
-      option("miktar", "Gönderilecek DesCoin.", { required: true }),
+      option("user", "userDesc", { required: true }),
+      option("amount", "amountDesc", { required: true }),
     ],
     casino: true,
   }),
-  defineCommand({ name: "send", description: "DesCoin gönder. /pay ile aynı.", casino: true }),
-  defineCommand({ name: "gonder", description: "DesCoin gönder. /pay ile aynı.", casino: true }),
-  defineCommand({ name: "tip", description: "DesCoin gönder. /pay ile aynı.", casino: true }),
-  defineCommand({ name: "credits", description: "DesCoin bakiyeni gör.", casino: true }),
-  defineCommand({ name: "balance", description: "DesCoin bakiyeni gör.", casino: true }),
-  defineCommand({ name: "daily", description: "Günlük bonusunu al.", casino: true }),
-  defineCommand({ name: "top", description: "Liderlik tablosu.", casino: true }),
+  defineCommand({ name: "send", descKey: "payAlias", casino: true }),
+  defineCommand({ name: "gonder", descKey: "payAlias", casino: true }),
+  defineCommand({ name: "tip", descKey: "payAlias", casino: true }),
+  defineCommand({ name: "credits", descKey: "credits", casino: true }),
+  defineCommand({ name: "balance", descKey: "credits", casino: true }),
+  defineCommand({ name: "daily", casino: true }),
+  defineCommand({ name: "top", casino: true }),
   defineCommand({
     name: "help",
     aliases: ["yardım", "yardim", "commands", "komutlar"],
-    description: "Burada kullanabileceğin komutları listele.",
     contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleHelpCommand,
   }),
   defineCommand({
     name: "server",
-    description: "Üye, kanal, rol sayısı ve sunucu sahibi.",
     contexts: ["server"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleServerCommand,
   }),
   defineCommand({
     name: "user",
-    description: "Profil kartını göster: roller, rozetler, tarihler.",
-    options: [option("kullanıcı", "@kullanıcı, kullanıcı adı veya kimlik.")],
+    options: [option("user", "userDesc")],
     contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleUserCommand,
   }),
   defineCommand({
     name: "avatar",
-    description: "Avatarı büyük göster, indir veya tam ekran aç.",
-    options: [option("kullanıcı", "@kullanıcı, kullanıcı adı veya kimlik.")],
+    options: [option("user", "userDesc")],
     contexts: ["server", "group", "dm"],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleAvatarCommand,
   }),
   defineCommand({
     name: "nick",
-    description: "Bu sunucudaki takma adını değiştir.",
     contexts: ["server"],
-    options: [option("ad", "Yeni takma ad; boş bırakırsan temizlenir.")],
+    options: [option("name", "nameDesc")],
     permission: "USE_APPLICATION_COMMANDS",
     handler: handleNickCommand,
   }),
   defineCommand({
     name: "poll",
     aliases: ["anket"],
-    description: "Oylanabilir anket başlat. Hızlı yol: /poll Soru | Seçenek 1 | Seçenek 2",
-    options: [option("soru | seçenekler", "Soru ve | ile ayrılmış seçenekler.", { required: true })],
+    options: [option("pollArgs", "pollArgsDesc", { required: true })],
     contexts: ["server", "group", "dm"],
     // Creating a poll needs only Send Messages (checked by the send path).
     permission: null,
@@ -158,43 +160,39 @@ const slashCommands = [
   }),
   defineCommand({
     name: "timeout",
-    description: "Üyeyi belirli bir süre sustur. Örnek: /timeout @kullanıcı 5m sebep",
     contexts: ["server"],
     options: [
-      option("kullanıcı", "Üye etiketi, kullanıcı adı veya kimlik.", { required: true }),
-      option("süre", "60s, 5m, 1h, 1d, 1w veya saniye.", { required: true }),
-      option("sebep", "Denetim kaydına yazılır."),
+      option("user", "memberDesc", { required: true }),
+      option("duration", "durationDesc", { required: true }),
+      option("reason", "reasonDesc"),
     ],
     permission: "MODERATE_MEMBERS",
     handler: handleTimeoutCommand,
   }),
   defineCommand({
     name: "kick",
-    description: "Üyeyi sunucudan at.",
     contexts: ["server"],
     options: [
-      option("kullanıcı", "Üye etiketi, kullanıcı adı veya kimlik.", { required: true }),
-      option("sebep", "Denetim kaydına yazılır."),
+      option("user", "memberDesc", { required: true }),
+      option("reason", "reasonDesc"),
     ],
     permission: "KICK_MEMBERS",
     handler: handleKickCommand,
   }),
   defineCommand({
     name: "ban",
-    description: "Üyeyi sunucudan yasakla.",
     contexts: ["server"],
     options: [
-      option("kullanıcı", "Üye etiketi, kullanıcı adı veya kimlik.", { required: true }),
-      option("sebep", "Denetim kaydına yazılır."),
+      option("user", "memberDesc", { required: true }),
+      option("reason", "reasonDesc"),
     ],
     permission: "BAN_MEMBERS",
     handler: handleBanCommand,
   }),
   defineCommand({
     name: "purge",
-    description: "Kanaldaki son N mesajı sil (1–100).",
     contexts: ["server"],
-    options: [option("sayı", "Silinecek mesaj sayısı (1–100).", { required: true })],
+    options: [option("count", "countDesc", { required: true })],
     permission: "MANAGE_MESSAGES",
     handler: handlePurgeCommand,
   }),
@@ -233,9 +231,10 @@ function findCommand(name) {
 function commandCatalog({ context = "server" } = {}) {
   return slashCommands
     .filter((cmd) => cmd.contexts.includes(context))
-    .map(({ name, description, options, permission, chatOnly, voiceOnly, casino, aliases }) => ({
+    .map(({ name, description, i18n, options, permission, chatOnly, voiceOnly, casino, aliases }) => ({
       name,
       description,
+      i18n,
       options,
       permission,
       chatOnly,
@@ -255,8 +254,10 @@ function makeEmbed({
   footer = null,
   author = null,
   card = null,
+  i18n = null,
 } = {}) {
   return {
+    ...(i18n ? { i18n } : {}),
     type: "rich",
     title,
     description,
@@ -265,7 +266,11 @@ function makeEmbed({
     thumbnail: thumbnail ? { url: String(thumbnail.url || thumbnail) } : null,
     image: image ? { url: String(image.url || image) } : null,
     footer: footer
-      ? { text: String(footer.text || footer), iconUrl: footer.iconUrl || footer.icon_url || null }
+      ? {
+          text: String(footer.text || footer),
+          iconUrl: footer.iconUrl || footer.icon_url || null,
+          ...(footer.i18n ? { i18n: footer.i18n } : {}),
+        }
       : null,
     author: author
       ? {
@@ -278,12 +283,23 @@ function makeEmbed({
   };
 }
 
-function field(name, value, inline = true) {
-  return { name: String(name || ""), value, inline: Boolean(inline) };
+/** Embed field; `name` is a bot.* key (English text + i18n.name), `value` may be a { key, vars } ref. */
+function field(nameKey, value, inline = true) {
+  const f = { name: en(nameKey), value, inline: Boolean(inline), i18n: { name: ref(nameKey) } };
+  if (value && typeof value === "object" && typeof value.key === "string") {
+    f.value = en(value.key, value.vars);
+    f.i18n.value = ref(value.key, value.vars);
+  }
+  return f;
+}
+
+/** Footer object with an English text and its ref. */
+function footerOf(key, vars) {
+  return put({}, "text", key, vars);
 }
 
 function userFieldValue(user) {
-  if (!user?.id) return "Bilinmiyor";
+  if (!user?.id) return ref("bot.slash.unknown");
   return {
     kind: "user",
     id: user.id,
@@ -293,18 +309,13 @@ function userFieldValue(user) {
   };
 }
 
-function trDate(value) {
+/** { key: "bot.slash.date", vars: { date } } ref for a date value (viewer formats it), or null. */
+function dateRef(value, withTime = false) {
   if (!value) return null;
   const d = new Date(value);
   if (!Number.isFinite(d.getTime())) return null;
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Istanbul" });
-}
-
-function trDateTime(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  if (!Number.isFinite(d.getTime())) return null;
-  return d.toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
+  const iso = d.toISOString();
+  return withTime ? ref("bot.slash.dateTime", { at: { dateTime: iso } }) : ref("bot.slash.date", { at: { date: iso } });
 }
 
 function cardUser(user) {
@@ -317,9 +328,10 @@ function cardUser(user) {
   };
 }
 
-function createSlashBotMessage(content, type = "app_command", embed = null) {
+function createSlashBotMessage(content, type = "app_command", embed = null, i18n = null) {
   const now = new Date().toISOString();
   return {
+    ...(i18n ? { i18n } : {}),
     id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     sender: { ...APP_BOT },
     sender_id: APP_BOT.id,
@@ -339,6 +351,7 @@ function dmAppPayload(message, convWith) {
     id: message.id,
     from: { ...APP_BOT },
     text: message.content || "",
+    ...(message.i18n?.content ? { i18n: { text: message.i18n.content } } : {}),
     type: message.type,
     appType: message.type,
     embed: message.embed || null,
@@ -366,13 +379,13 @@ function rememberShareable(message, userId) {
 /** Takes (and forgets) a remembered reply if this user may share it into this channel. */
 function takeShareable({ messageId, userId, serverId, channelId }) {
   const entry = shareable.get(messageId);
-  if (!entry) return { ok: false, code: "EXPIRED", message: "Bu sonuç artık paylaşılamaz. Komutu tekrar çalıştır." };
+  if (!entry) return { ok: false, code: "EXPIRED", message: "This result can no longer be shared. Run the command again." };
   if (Date.now() - entry.at > SHARE_TTL_MS) {
     shareable.delete(messageId);
-    return { ok: false, code: "EXPIRED", message: "Bu sonuç artık paylaşılamaz. Komutu tekrar çalıştır." };
+    return { ok: false, code: "EXPIRED", message: "This result can no longer be shared. Run the command again." };
   }
   if (entry.userId !== String(userId) || String(entry.channelId) !== String(channelId) || (serverId && String(entry.serverId) !== String(serverId))) {
-    return { ok: false, code: "NOT_ALLOWED", message: "Bu sonucu paylaşamazsın." };
+    return { ok: false, code: "NOT_ALLOWED", message: "You can't share this result." };
   }
   shareable.delete(messageId);
   return { ok: true, entry };
@@ -429,20 +442,21 @@ async function executeSlashCommand(ctx) {
 }
 
 function missingPermission(permission) {
-  const err = new Error(`Bu komut için yetkin yok: ${PERMISSION_LABELS[permission] || permission}.`);
+  const err = new Error(MISSING_PERMISSION_TEXT[permission] || "You don't have permission to use this command.");
   err.status = 403;
   err.code = "MISSING_PERMISSION";
   err.permission = permission;
   return err;
 }
 
-const PERMISSION_LABELS = {
-  USE_APPLICATION_COMMANDS: "Uygulama komutlarını kullan",
-  MODERATE_MEMBERS: "Üyeleri sustur",
-  KICK_MEMBERS: "Üyeleri at",
-  BAN_MEMBERS: "Üyeleri yasakla",
-  MANAGE_MESSAGES: "Mesajları yönet",
-  CHANGE_NICKNAME: "Takma ad değiştir",
+// Static English (the client translates them through its API phrase catalog).
+const MISSING_PERMISSION_TEXT = {
+  USE_APPLICATION_COMMANDS: "You don't have permission for this command: Use application commands.",
+  MODERATE_MEMBERS: "You don't have permission for this command: Time out members.",
+  KICK_MEMBERS: "You don't have permission for this command: Kick members.",
+  BAN_MEMBERS: "You don't have permission for this command: Ban members.",
+  MANAGE_MESSAGES: "You don't have permission for this command: Manage messages.",
+  CHANGE_NICKNAME: "You don't have permission for this command: Change nickname.",
 };
 
 async function assertCommandPermission(ctx, command) {
@@ -455,16 +469,23 @@ async function assertCommandPermission(ctx, command) {
   }
 }
 
-function errorReply(ctx, { title, description, kind = "error", suggestions = null, usage = null }) {
+/** App error card. title / description / usage are { key, vars } refs (or null). */
+function errorReply(ctx, { title, description = null, kind = "error", suggestions = null, usage = null }) {
+  const texts = (obj) => {
+    put(obj, "title", title.key, title.vars);
+    if (description) put(obj, "description", description.key, description.vars);
+    return obj;
+  };
+  const card = texts({ kind: "error", tone: kind, description: null, suggestions, usage: null });
+  if (usage) put(card, "usage", usage.key, usage.vars);
   return {
     message: createContextMessage(ctx, {
-      content: title,
+      ...put({}, "content", title.key, title.vars),
       type: "app_error",
       embed: makeEmbed({
-        title,
-        description,
+        ...texts({ description: null }),
         color: kind === "warn" ? EMBED_COLORS.warn : EMBED_COLORS.danger,
-        card: { kind: "error", tone: kind, title, description, suggestions, usage },
+        card,
       }),
     }),
   };
@@ -473,11 +494,11 @@ function errorReply(ctx, { title, description, kind = "error", suggestions = nul
 function userNotFound(ctx, query, suggestions) {
   const shown = String(query || "").trim().split(/\s+/)[0] || "";
   return errorReply(ctx, {
-    title: "Kullanıcı bulunamadı",
-    description: shown ? `“${shown.slice(0, 40)}” ile eşleşen üye yok` : "Eşleşen üye yok",
+    title: ref("bot.slash.userNotFound"),
+    description: shown ? ref("bot.slash.noMemberMatches", { query: shown.slice(0, 40) }) : ref("bot.slash.noMatchingMember"),
     kind: "warn",
     suggestions: suggestions?.length ? suggestions : null,
-    usage: `/${ctx.parsed?.name || "user"} [@kullanıcı]`,
+    usage: ref("bot.slash.userUsage", { command: ctx.parsed?.name || "user" }),
   });
 }
 
@@ -496,10 +517,10 @@ async function suggestUsers(ctx, rawArg) {
 }
 
 const HELP_GROUPS = [
-  { id: "general", label: "Genel", names: ["poll", "user", "avatar", "server", "nick", "help"] },
-  { id: "moderation", label: "Moderasyon", names: ["timeout", "kick", "ban", "purge"] },
-  { id: "games", label: "Oyunlar", names: ["bj", "slot", "coinflip"], casino: true },
-  { id: "credits", label: "Kredi", names: ["pay", "daily", "credits", "top"], casino: true },
+  { id: "general", labelKey: "bot.slash.groupGeneral", names: ["poll", "user", "avatar", "server", "nick", "help"] },
+  { id: "moderation", labelKey: "bot.slash.groupModeration", names: ["timeout", "kick", "ban", "purge"] },
+  { id: "games", labelKey: "bot.slash.groupGames", names: ["bj", "slot", "coinflip"], casino: true },
+  { id: "credits", labelKey: "bot.slash.groupCredits", names: ["pay", "daily", "credits", "top"], casino: true },
 ];
 
 function canUseInServer(ctx, cmd) {
@@ -512,7 +533,7 @@ function canUseInServer(ctx, cmd) {
 async function handleHelpCommand(ctx) {
   const groups = HELP_GROUPS.map((g) => ({
     id: g.id,
-    label: g.label,
+    ...put({}, "label", g.labelKey),
     casino: Boolean(g.casino),
     commands: g.names
       .map((n) => registry.get(n))
@@ -520,25 +541,33 @@ async function handleHelpCommand(ctx) {
       .map((cmd) => ({
         name: cmd.name,
         description: cmd.description,
-        args: (cmd.options || []).map((o) => ({ name: o.name, required: o.required })),
+        args: (cmd.options || []).map((o) => ({ name: o.name, required: o.required, i18n: { name: o.i18n.name } })),
         casino: Boolean(cmd.casino),
+        i18n: cmd.i18n,
       })),
   })).filter((g) => g.commands.length);
+  // Legacy embed fields (old clients): "/cmd ‹arg›" stays as typed, the description is translated.
   const fields = groups
-    .flatMap((g) => g.commands.map((c) => field(`/${c.name}${c.args.map((a) => (a.required ? ` ‹${a.name}›` : ` [${a.name}]`)).join("")}`, c.description, false)))
+    .flatMap((g) =>
+      g.commands.map((c) => ({
+        name: `/${c.name}${c.args.map((a) => (a.required ? ` ‹${a.name}›` : ` [${a.name}]`)).join("")}`,
+        value: c.description,
+        inline: false,
+        i18n: { value: c.i18n.description },
+      }))
+    )
     .slice(0, 20);
-  const subtitle = ctx.context === "server" ? "Bu kanalda kullanabileceğin komutlar" : "Bu sohbette kullanabileceğin komutlar";
+  const subtitleKey = ctx.context === "server" ? "bot.slash.helpSubtitleServer" : "bot.slash.helpSubtitleChat";
   return {
     message: createContextMessage(ctx, {
-      content: "Komutlar",
+      ...put({}, "content", "bot.slash.helpTitle"),
       type: "app_help",
       embed: makeEmbed({
-        title: "Komutlar",
-        description: subtitle,
+        ...put(put({}, "title", "bot.slash.helpTitle"), "description", subtitleKey),
         color: EMBED_COLORS.blurple,
         fields,
-        footer: { text: "İpucu: / yazınca komut menüsü açılır" },
-        card: { kind: "help", title: "Komutlar", subtitle, groups },
+        footer: footerOf("bot.slash.helpFooter"),
+        card: { kind: "help", ...put(put({}, "title", "bot.slash.helpTitle"), "subtitle", subtitleKey), groups },
       }),
     }),
   };
@@ -556,7 +585,7 @@ async function handleServerCommand(ctx) {
     supabase.from("server_roles").select("id", { count: "exact", head: true }).eq("server_id", ctx.serverId),
   ]);
   if (!server) {
-    return errorReply(ctx, { title: "Sunucu bulunamadı", description: "Bu sunucu yüklenemedi." });
+    return errorReply(ctx, { title: ref("bot.slash.serverNotFound"), description: ref("bot.slash.serverLoadFailed") });
   }
   const { presence } = require("../runtime/sharedState");
   const memberIds = (members || []).map((m) => m.user_id);
@@ -565,25 +594,27 @@ async function handleServerCommand(ctx) {
     return p && p.status !== "invisible" && p.status !== "offline";
   }).length;
   const owner = server.owner_id ? await loadUserWithMembership(ctx.serverId, server.owner_id) : null;
-  const created = trDate(server.created_at) || "Bilinmiyor";
-  const name = server.name || "Sunucu";
+  const created = dateRef(server.created_at) || ref("bot.slash.unknown");
+  const name = server.name || en("bot.slash.serverFallback");
+  const nameText = server.name ? { content: name } : put({}, "content", "bot.slash.serverFallback");
   const memberCount = memberIds.length;
   return {
     message: createContextMessage(ctx, {
-      content: name,
+      ...nameText,
       type: "app_server",
       embed: makeEmbed({
         title: name,
+        ...(server.name ? {} : { i18n: { title: ref("bot.slash.serverFallback") } }),
         description: server.description || null,
         color: EMBED_COLORS.blurple,
         thumbnail: server.icon_url ? { url: server.icon_url } : null,
         fields: [
-          field("Sahibi", userFieldValue(owner), true),
-          field("Üye", String(memberCount), true),
-          field("Kanal", String(channelCount ?? "?"), true),
-          field("Oluşturuldu", created, true),
+          field("bot.slash.fieldOwner", userFieldValue(owner), true),
+          field("bot.slash.fieldMembers", String(memberCount), true),
+          field("bot.slash.fieldChannels", String(channelCount ?? "?"), true),
+          field("bot.slash.fieldCreated", created, true),
         ],
-        footer: { text: "Sunucu bilgisi" },
+        footer: footerOf("bot.slash.serverFooter"),
         card: {
           kind: "server",
           server: {
@@ -652,10 +683,10 @@ async function loadProfileCard(ctx, base) {
     });
   }
   const badges = [];
-  if (isOwner) badges.push({ id: "owner", label: "SUNUCU SAHİBİ" });
-  else if (isServerAdmin) badges.push({ id: "admin", label: "YÖNETİCİ" });
-  if (u.is_admin || u.username === "admin") badges.push({ id: "staff", label: "DESCALL EKİBİ" });
-  if (u.created_at && new Date(u.created_at) < new Date("2026-01-01T00:00:00Z")) badges.push({ id: "early", label: "ERKEN ÜYE" });
+  if (isOwner) badges.push(put({ id: "owner" }, "label", "bot.slash.badgeOwner"));
+  else if (isServerAdmin) badges.push(put({ id: "admin" }, "label", "bot.slash.badgeAdmin"));
+  if (u.is_admin || u.username === "admin") badges.push(put({ id: "staff" }, "label", "bot.slash.badgeStaff"));
+  if (u.created_at && new Date(u.created_at) < new Date("2026-01-01T00:00:00Z")) badges.push(put({ id: "early" }, "label", "bot.slash.badgeEarly"));
   const { friends } = require("../runtime/sharedState");
   const isSelf = String(u.id) === String(ctx.userId);
   const isFriend = Boolean(friends.get(ctx.userId)?.has?.(u.id));
@@ -695,23 +726,26 @@ async function handleUserCommand(ctx) {
   const user = await resolveUserArg(ctx, ctx.parsed.args);
   if (!user) return userNotFound(ctx, ctx.parsed.args, await suggestUsers(ctx, ctx.parsed.args));
   const card = await loadProfileCard(ctx, user);
-  const display = user.member?.nickname || user.display_name || user.username || "Kullanıcı";
-  const fields = [field("Kullanıcı adı", `@${user.username || "bilinmiyor"}`, true)];
-  if (user.member?.nickname) fields.push(field("Takma ad", user.member.nickname, true));
-  if (user.member?.joined_at) fields.push(field("Sunucuya katıldı", trDate(user.member.joined_at), true));
+  const realName = user.member?.nickname || user.display_name || user.username || "";
+  const display = realName || en("bot.slash.userFallback");
+  const fields = [
+    field("bot.slash.fieldUsername", user.username ? `@${user.username}` : ref("bot.slash.atUnknown"), true),
+  ];
+  if (user.member?.nickname) fields.push(field("bot.slash.fieldNickname", user.member.nickname, true));
+  if (user.member?.joined_at) fields.push(field("bot.slash.fieldJoinedServer", dateRef(user.member.joined_at), true));
   const country = card.user?.equippedCountry;
-  if (country?.name) fields.push(field("Ülke", String(country.name), true));
-  if (card.timeoutUntil) fields.push(field("Susturma bitişi", trDateTime(card.timeoutUntil), false));
+  if (country?.name) fields.push(field("bot.slash.fieldCountry", String(country.name), true));
+  if (card.timeoutUntil) fields.push(field("bot.slash.fieldTimeoutEnds", dateRef(card.timeoutUntil, true), false));
   return {
     message: createContextMessage(ctx, {
-      content: display,
+      ...(realName ? { content: display } : put({}, "content", "bot.slash.userFallback")),
       type: "app_user",
       embed: makeEmbed({
         author: { name: display, iconUrl: user.avatar_url || null },
         color: EMBED_COLORS.success,
         thumbnail: user.avatar_url ? { url: user.avatar_url } : null,
         fields,
-        footer: { text: "Üye kartı" },
+        footer: footerOf("bot.slash.userFooter"),
         card,
       }),
     }),
@@ -721,24 +755,24 @@ async function handleUserCommand(ctx) {
 async function handleAvatarCommand(ctx) {
   const user = await resolveUserArg(ctx, ctx.parsed.args);
   if (!user) return userNotFound(ctx, ctx.parsed.args, await suggestUsers(ctx, ctx.parsed.args));
-  const display = user.member?.nickname || user.display_name || user.username || "Kullanıcı";
-  const title = `${display} avatarı`;
+  const display = user.member?.nickname || user.display_name || user.username || en("bot.slash.userFallback");
   const card = {
     kind: "avatar",
     user: { ...cardUser(user), presence: presenceOf(user.id) },
     displayName: display,
     avatarUrl: user.avatar_url || null,
   };
+  const embedText = put({}, "title", "bot.slash.avatarTitle", { name: display });
+  if (!user.avatar_url) put(embedText, "description", "bot.slash.avatarNotSet");
   return {
     message: createContextMessage(ctx, {
-      content: title,
+      ...put({}, "content", "bot.slash.avatarTitle", { name: display }),
       type: "app_avatar",
       embed: makeEmbed({
-        title,
-        description: user.avatar_url ? null : "Avatar ayarlanmamış.",
+        ...embedText,
         color: EMBED_COLORS.pink,
         image: user.avatar_url ? { url: user.avatar_url } : null,
-        footer: { text: `@${user.username || "bilinmiyor"}` },
+        footer: user.username ? { text: `@${user.username}` } : footerOf("bot.slash.atUnknown"),
         card,
       }),
     }),
@@ -760,11 +794,15 @@ async function handleNickCommand(ctx) {
   const baseName = before?.display_name || before?.username || "";
   return {
     message: createContextMessage(ctx, {
-      content: nickname ? `Takma adın ${nickname} oldu.` : "Takma adın temizlendi.",
+      ...(nickname ? put({}, "content", "bot.slash.nickSetContent", { nickname }) : put({}, "content", "bot.slash.nickClearedContent")),
       type: "app_nick",
       embed: makeEmbed({
-        title: nickname ? "Takma adın güncellendi" : "Takma adın temizlendi",
-        description: nickname ? `Takma adın artık **${nickname}**.` : "Bu sunucudaki takma adın kaldırıldı.",
+        ...put(
+          put({}, "title", nickname ? "bot.slash.nickUpdatedTitle" : "bot.slash.nickClearedTitle"),
+          "description",
+          nickname ? "bot.slash.nickSetDesc" : "bot.slash.nickClearedDesc",
+          nickname ? { nickname } : undefined
+        ),
         color: EMBED_COLORS.blurple,
         card: {
           kind: "nick",
@@ -783,14 +821,14 @@ async function handlePollCommand(ctx) {
   const raw = pollCore.parsePollArgs(ctx.parsed.args);
   if (!raw) {
     return errorReply(ctx, {
-      title: "Anket nasıl açılır?",
-      description: "Komut menüsünden /poll seçince anket oluşturucu açılır. Hızlı yol: /poll Soru | Seçenek 1 | Seçenek 2",
+      title: ref("bot.slash.pollHowTitle"),
+      description: ref("bot.slash.pollHowDesc"),
       kind: "warn",
-      usage: "/poll Soru | Evet | Hayır",
+      usage: ref("bot.slash.pollUsage"),
     });
   }
   const normalized = pollCore.normalizePollInput(raw);
-  if (!normalized.ok) return errorReply(ctx, { title: "Anket oluşturulamadı", description: normalized.message, kind: "warn" });
+  if (!normalized.ok) return errorReply(ctx, { title: ref("bot.slash.pollFailedTitle"), description: pollCore.inputErrorRef(normalized.code), kind: "warn" });
   if (ctx.context === "dm") {
     // DMs store the poll as the caller's own dm_messages row (see dm:send).
     return { dmPoll: normalized.poll };
@@ -799,28 +837,30 @@ async function handlePollCommand(ctx) {
   return { message };
 }
 
-function durationLabel(seconds) {
+/** Ref for a duration ("5 min", "1 week"); the card shows it next to the countdown. */
+function durationRef(seconds) {
   const s = Math.max(0, Math.floor(Number(seconds) || 0));
-  if (s >= 604800 && s % 604800 === 0) return `${s / 604800} hafta`;
-  if (s >= 86400 && s % 86400 === 0) return `${s / 86400} gün`;
-  if (s >= 3600 && s % 3600 === 0) return `${s / 3600} sa`;
-  if (s >= 60 && s % 60 === 0) return `${s / 60} dk`;
-  return `${s} sn`;
+  if (s >= 604800 && s % 604800 === 0) return ref("bot.slash.durWeeks", { n: s / 604800 });
+  if (s >= 86400 && s % 86400 === 0) return ref("bot.slash.durDays", { n: s / 86400 });
+  if (s >= 3600 && s % 3600 === 0) return ref("bot.slash.durHours", { n: s / 3600 });
+  if (s >= 60 && s % 60 === 0) return ref("bot.slash.durMinutes", { n: s / 60 });
+  return ref("bot.slash.durSeconds", { n: s });
 }
 
-const TR_ERRORS = [
-  [/cannot kick yourself/i, "Kendini atamazsın."],
-  [/cannot ban yourself/i, "Kendini yasaklayamazsın."],
-  [/cannot (kick|ban) the server owner/i, "Sunucu sahibine bu işlem yapılamaz."],
-  [/member not found/i, "Üye bu sunucuda değil."],
-  [/hierarchy|higher role|role position|cannot moderate/i, "Bu üyenin rolü seninkinden yüksek ya da eşit."],
-  [/timeout expiry/i, "Susturma süresi gelecekte olmalı."],
+// Moderation errors (English server messages) -> the bot card's explanation.
+const MODERATION_ERRORS = [
+  [/(cannot|can't) kick yourself/i, "bot.slash.errKickSelf"],
+  [/(cannot|can't) ban yourself/i, "bot.slash.errBanSelf"],
+  [/server owner/i, "bot.slash.errOwner"],
+  [/member not found|not in this server/i, "bot.slash.errNotMember"],
+  [/hierarchy|higher role|role position|cannot moderate|cannot manage a member/i, "bot.slash.errHierarchy"],
+  [/timeout expiry|timeout must end in the future/i, "bot.slash.errTimeoutFuture"],
 ];
 
-function trError(err, fallback) {
+function moderationErrorRef(err, fallbackKey) {
   const msg = String(err?.message || "");
-  for (const [re, tr] of TR_ERRORS) if (re.test(msg)) return tr;
-  return fallback;
+  for (const [re, key] of MODERATION_ERRORS) if (re.test(msg)) return ref(key);
+  return ref(fallbackKey);
 }
 
 async function actorCard(ctx) {
@@ -841,13 +881,13 @@ async function targetCard(ctx, target) {
 async function handleTimeoutCommand(ctx) {
   const [targetRaw, durationRaw, ...reasonParts] = ctx.parsed.args.split(/\s+/).filter(Boolean);
   if (!targetRaw || !durationRaw) {
-    return errorReply(ctx, { title: "Susturma nasıl kullanılır?", description: "Örnek: /timeout @kullanıcı 5m sebep", kind: "warn", usage: "/timeout ‹@kullanıcı› ‹süre› [sebep]" });
+    return errorReply(ctx, { title: ref("bot.slash.timeoutHowTitle"), description: ref("bot.slash.timeoutHowDesc"), kind: "warn", usage: ref("bot.slash.timeoutUsage") });
   }
   const target = await resolveUserArg(ctx, targetRaw);
   if (!target?.id || !target.member) return userNotFound(ctx, targetRaw, await suggestUsers(ctx, targetRaw));
   const durationSeconds = parseDurationSeconds(durationRaw);
   if (!durationSeconds) {
-    return errorReply(ctx, { title: "Geçersiz süre", description: "Süre 60s, 5m, 1h, 1d veya 1w gibi olmalı.", kind: "warn", usage: "/timeout ‹@kullanıcı› ‹süre› [sebep]" });
+    return errorReply(ctx, { title: ref("bot.slash.invalidDurationTitle"), description: ref("bot.slash.invalidDurationDesc"), kind: "warn", usage: ref("bot.slash.timeoutUsage") });
   }
   const reason = reasonParts.join(" ").trim().slice(0, 512) || null;
   let timeout;
@@ -860,7 +900,7 @@ async function handleTimeoutCommand(ctx) {
       reason,
     });
   } catch (err) {
-    return errorReply(ctx, { title: "Susturulamadı", description: trError(err, "Susturma uygulanamadı.") });
+    return errorReply(ctx, { title: ref("bot.slash.timeoutFailedTitle"), description: moderationErrorRef(err, "bot.slash.timeoutFailedDesc") });
   }
   try {
     const { removeUserFromServerVoice } = require("../socket/serverVoiceHandlers");
@@ -868,19 +908,19 @@ async function handleTimeoutCommand(ctx) {
   } catch (err) {
     console.warn("[slashCommands] voice cleanup after timeout failed:", err?.message || err);
   }
-  const display = target.member?.nickname || target.display_name || target.username || "Üye";
+  const display = target.member?.nickname || target.display_name || target.username || en("bot.slash.memberFallback");
   return {
     message: createContextMessage(ctx, {
-      content: `${display} susturuldu`,
+      ...put({}, "content", "bot.slash.timeoutDone", { name: display }),
       type: "app_timeout",
       embed: makeEmbed({
-        title: `${display} susturuldu`,
+        ...put({}, "title", "bot.slash.timeoutDone", { name: display }),
         color: EMBED_COLORS.warn,
         thumbnail: target.avatar_url ? { url: target.avatar_url } : null,
         fields: [
-          field("Üye", userFieldValue(target), true),
-          field("Bitiş", trDateTime(timeout.until), true),
-          reason ? field("Sebep", reason, false) : null,
+          field("bot.slash.fieldMember", userFieldValue(target), true),
+          field("bot.slash.fieldEnds", dateRef(timeout.until, true) || ref("bot.slash.unknown"), true),
+          reason ? field("bot.slash.fieldReason", reason, false) : null,
         ],
         card: {
           kind: "moderation",
@@ -891,7 +931,10 @@ async function handleTimeoutCommand(ctx) {
           reason,
           until: timeout.until,
           durationSeconds,
-          durationLabel: durationLabel(durationSeconds),
+          ...(() => {
+            const d = durationRef(durationSeconds);
+            return put({}, "durationLabel", d.key, d.vars);
+          })(),
           at: new Date().toISOString(),
         },
       }),
@@ -936,7 +979,7 @@ function notifyServerMemberRemoved(io, {
 
 async function kickServerMember({ io, serverId, actorId, targetUserId, reason }) {
   if (String(actorId) === String(targetUserId)) {
-    const err = new Error("Kendini atamazsın.");
+    const err = new Error("You can't kick yourself.");
     err.status = 400;
     throw err;
   }
@@ -947,12 +990,12 @@ async function kickServerMember({ io, serverId, actorId, targetUserId, reason })
     .maybeSingle();
   if (sErr) throw sErr;
   if (!server) {
-    const err = new Error("Sunucu bulunamadı.");
+    const err = new Error("Server not found.");
     err.status = 404;
     throw err;
   }
   if (server.owner_id === targetUserId) {
-    const err = new Error("Sunucu sahibine bu işlem yapılamaz.");
+    const err = new Error("You can't do this to the server owner.");
     err.status = 403;
     throw err;
   }
@@ -964,7 +1007,7 @@ async function kickServerMember({ io, serverId, actorId, targetUserId, reason })
     .maybeSingle();
   if (mErr) throw mErr;
   if (!membership) {
-    const err = new Error("Üye bu sunucuda değil.");
+    const err = new Error("The member is not in this server.");
     err.status = 404;
     throw err;
   }
@@ -1004,7 +1047,7 @@ async function kickServerMember({ io, serverId, actorId, targetUserId, reason })
 
 async function banServerMember({ io, serverId, actorId, targetUserId, reason }) {
   if (String(actorId) === String(targetUserId)) {
-    const err = new Error("Kendini yasaklayamazsın.");
+    const err = new Error("You can't ban yourself.");
     err.status = 400;
     throw err;
   }
@@ -1015,12 +1058,12 @@ async function banServerMember({ io, serverId, actorId, targetUserId, reason }) 
     .maybeSingle();
   if (sErr) throw sErr;
   if (!server) {
-    const err = new Error("Sunucu bulunamadı.");
+    const err = new Error("Server not found.");
     err.status = 404;
     throw err;
   }
   if (server.owner_id === targetUserId) {
-    const err = new Error("Sunucu sahibine bu işlem yapılamaz.");
+    const err = new Error("You can't do this to the server owner.");
     err.status = 403;
     throw err;
   }
@@ -1077,7 +1120,7 @@ async function banServerMember({ io, serverId, actorId, targetUserId, reason }) 
 async function handleKickCommand(ctx) {
   const [targetRaw, ...reasonParts] = ctx.parsed.args.split(/\s+/).filter(Boolean);
   if (!targetRaw) {
-    return errorReply(ctx, { title: "Atma nasıl kullanılır?", description: "Örnek: /kick @kullanıcı sebep", kind: "warn", usage: "/kick ‹@kullanıcı› [sebep]" });
+    return errorReply(ctx, { title: ref("bot.slash.kickHowTitle"), description: ref("bot.slash.kickHowDesc"), kind: "warn", usage: ref("bot.slash.kickUsage") });
   }
   const target = await resolveUserArg(ctx, targetRaw);
   if (!target?.id || !target.member) return userNotFound(ctx, targetRaw, await suggestUsers(ctx, targetRaw));
@@ -1092,18 +1135,18 @@ async function handleKickCommand(ctx) {
       reason,
     });
   } catch (err) {
-    return errorReply(ctx, { title: "Atılamadı", description: trError(err, "Üye sunucudan atılamadı.") });
+    return errorReply(ctx, { title: ref("bot.slash.kickFailedTitle"), description: moderationErrorRef(err, "bot.slash.kickFailedDesc") });
   }
-  const display = target.member?.nickname || target.display_name || target.username || "Üye";
+  const display = target.member?.nickname || target.display_name || target.username || en("bot.slash.memberFallback");
   return {
     message: createContextMessage(ctx, {
-      content: `${display} sunucudan atıldı`,
+      ...put({}, "content", "bot.slash.kickDone", { name: display }),
       type: "app_kick",
       embed: makeEmbed({
-        title: `${display} sunucudan atıldı`,
+        ...put({}, "title", "bot.slash.kickDone", { name: display }),
         color: EMBED_COLORS.danger,
         thumbnail: target.avatar_url ? { url: target.avatar_url } : null,
-        fields: [field("Üye", userFieldValue(target), true), reason ? field("Sebep", reason, false) : null],
+        fields: [field("bot.slash.fieldMember", userFieldValue(target), true), reason ? field("bot.slash.fieldReason", reason, false) : null],
         card: { kind: "moderation", action: "kick", serverId: ctx.serverId, target: { ...tCard, presence: "offline" }, actor: await actorCard(ctx), reason, at: new Date().toISOString() },
       }),
     }),
@@ -1113,7 +1156,7 @@ async function handleKickCommand(ctx) {
 async function handleBanCommand(ctx) {
   const [targetRaw, ...reasonParts] = ctx.parsed.args.split(/\s+/).filter(Boolean);
   if (!targetRaw) {
-    return errorReply(ctx, { title: "Yasaklama nasıl kullanılır?", description: "Örnek: /ban @kullanıcı sebep", kind: "warn", usage: "/ban ‹@kullanıcı› [sebep]" });
+    return errorReply(ctx, { title: ref("bot.slash.banHowTitle"), description: ref("bot.slash.banHowDesc"), kind: "warn", usage: ref("bot.slash.banUsage") });
   }
   const target = await resolveUserArg(ctx, targetRaw);
   if (!target?.id) return userNotFound(ctx, targetRaw, await suggestUsers(ctx, targetRaw));
@@ -1128,18 +1171,18 @@ async function handleBanCommand(ctx) {
       reason,
     });
   } catch (err) {
-    return errorReply(ctx, { title: "Yasaklanamadı", description: trError(err, "Üye yasaklanamadı.") });
+    return errorReply(ctx, { title: ref("bot.slash.banFailedTitle"), description: moderationErrorRef(err, "bot.slash.banFailedDesc") });
   }
-  const display = target.member?.nickname || target.display_name || target.username || "Üye";
+  const display = target.member?.nickname || target.display_name || target.username || en("bot.slash.memberFallback");
   return {
     message: createContextMessage(ctx, {
-      content: `${display} yasaklandı`,
+      ...put({}, "content", "bot.slash.banDone", { name: display }),
       type: "app_ban",
       embed: makeEmbed({
-        title: `${display} yasaklandı`,
+        ...put({}, "title", "bot.slash.banDone", { name: display }),
         color: EMBED_COLORS.danger,
         thumbnail: target.avatar_url ? { url: target.avatar_url } : null,
-        fields: [field("Üye", userFieldValue(target), true), reason ? field("Sebep", reason, false) : null],
+        fields: [field("bot.slash.fieldMember", userFieldValue(target), true), reason ? field("bot.slash.fieldReason", reason, false) : null],
         card: { kind: "moderation", action: "ban", serverId: ctx.serverId, target: { ...tCard, presence: "offline" }, actor: await actorCard(ctx), reason, at: new Date().toISOString() },
       }),
     }),
@@ -1149,7 +1192,7 @@ async function handleBanCommand(ctx) {
 async function handlePurgeCommand(ctx) {
   const count = Math.max(0, Math.floor(Number(ctx.parsed.args) || 0));
   if (!count || count > 100) {
-    return errorReply(ctx, { title: "Toplu silme nasıl kullanılır?", description: "1 ile 100 arasında bir sayı yaz. Örnek: /purge 10", kind: "warn", usage: "/purge ‹1–100›" });
+    return errorReply(ctx, { title: ref("bot.slash.purgeHowTitle"), description: ref("bot.slash.purgeHowDesc"), kind: "warn", usage: ref("bot.slash.purgeUsage") });
   }
 
   const { data: rows, error } = await supabase
@@ -1163,7 +1206,7 @@ async function handlePurgeCommand(ctx) {
 
   const ids = (rows || []).map((r) => r.id);
   if (!ids.length) {
-    return errorReply(ctx, { title: "Silinecek mesaj yok", description: "Bu kanalda silinecek mesaj bulunmuyor.", kind: "warn" });
+    return errorReply(ctx, { title: ref("bot.slash.purgeNothingTitle"), description: ref("bot.slash.purgeNothingDesc"), kind: "warn" });
   }
 
   const { error: delErr } = await supabase.from("server_messages").delete().in("id", ids).eq("channel_id", ctx.channelId);
@@ -1187,13 +1230,12 @@ async function handlePurgeCommand(ctx) {
   const oldest = rows[rows.length - 1]?.created_at || null;
   return {
     message: createContextMessage(ctx, {
-      content: `${ids.length} mesaj silindi`,
+      ...put({}, "content", "bot.slash.purgeDone", { count: ids.length }),
       type: "app_purge",
       embed: makeEmbed({
-        title: `${ids.length} mesaj silindi`,
-        description: `Bu kanaldan **${ids.length}** mesaj silindi.`,
+        ...put(put({}, "title", "bot.slash.purgeDone", { count: ids.length }), "description", "bot.slash.purgeDoneDesc", { count: ids.length }),
         color: EMBED_COLORS.success,
-        footer: { text: "Toplu silme" },
+        footer: footerOf("bot.slash.purgeFooter"),
         card: {
           kind: "purge",
           count: ids.length,
@@ -1254,19 +1296,19 @@ async function shareAppMessage({ io, socket, userId, serverId, channelId, messag
   const { assertTextChannelAccess } = require("../socket/serverChannelHandlers");
   const { channel, resolved } = await assertTextChannelAccess(userId, channelId, Permissions.SEND_MESSAGES);
   if (serverId && String(channel.server_id) !== String(serverId)) {
-    return { ok: false, code: "NOT_ALLOWED", message: "Bu sonucu paylaşamazsın." };
+    return { ok: false, code: "NOT_ALLOWED", message: "You can't share this result." };
   }
   if (!resolved?.isOwner) {
     const { getActiveServerTimeout } = require("./serverTimeoutState");
     if (await getActiveServerTimeout(channel.server_id, userId)) {
-      return { ok: false, code: "TIMED_OUT", message: "Susturulmuşken paylaşamazsın." };
+      return { ok: false, code: "TIMED_OUT", message: "You can't share while you're timed out." };
     }
   }
   const taken = takeShareable({ messageId, userId, serverId: channel.server_id, channelId });
   if (!taken.ok) return taken;
   const original = taken.entry.message;
   const content = String(original.content || "Descall Apps").slice(0, 300);
-  const meta = { embed: original.embed, appType: original.type, sharedFrom: "slash" };
+  const meta = { embed: original.embed, appType: original.type, sharedFrom: "slash", ...(original.i18n ? { i18n: original.i18n } : {}) };
   const { data: row, error } = await supabase
     .from("server_messages")
     .insert({
@@ -1294,6 +1336,7 @@ async function shareAppMessage({ io, socket, userId, serverId, channelId, messag
     system_meta: meta,
     type: original.type,
     embed: original.embed,
+    ...(original.i18n ? { i18n: original.i18n } : {}),
     created_at: row.created_at,
     sender,
   };
@@ -1308,7 +1351,7 @@ function createContextMessage(ctx, contentOrOpts, maybeType) {
       ? contentOrOpts
       : { content: contentOrOpts, type: maybeType || "app_command", embed: null };
   const type = opts.type || "app_command";
-  const message = createSlashBotMessage(opts.content || "", type, opts.embed || null);
+  const message = createSlashBotMessage(opts.content || "", type, opts.embed || null, opts.i18n || null);
   if (ctx.context === "server") {
     return {
       ...message,
@@ -1399,7 +1442,7 @@ async function applyServerTimeout({ serverId, actorId, targetUserId, until, dura
   await assertHierarchy(supabase, serverId, actorId, targetUserId);
   const untilDate = until ? new Date(until) : new Date(Date.now() + clampTimeoutSeconds(durationSeconds) * 1000);
   if (!Number.isFinite(untilDate.getTime()) || untilDate <= new Date()) {
-    const err = new Error("Susturma süresi gelecekte olmalı.");
+    const err = new Error("The timeout must end in the future.");
     err.status = 400;
     err.code = "INVALID_TIMEOUT";
     throw err;

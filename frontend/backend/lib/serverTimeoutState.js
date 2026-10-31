@@ -2,6 +2,7 @@
 
 /** Active server timeout for a member, or null. Shared by text, reactions, typing and voice. */
 const supabase = require("../db/supabase");
+const { templatedError } = require("./apiError");
 
 async function getActiveServerTimeout(serverId, userId) {
   if (!serverId || userId == null) return null;
@@ -19,9 +20,8 @@ async function getActiveServerTimeout(serverId, userId) {
 }
 
 function timedOutError(t) {
-  const err = new Error(`You are timed out until ${new Date(t.until).toLocaleString("en-US")}.`);
-  err.code = "TIMED_OUT";
-  err.status = 403;
+  // err.i18n carries the template; the app can also format err.timeout.until itself.
+  const err = templatedError("You are timed out until {until}.", { until: new Date(t.until).toLocaleString("en-US") }, { status: 403, code: "TIMED_OUT" });
   err.timeout = t;
   return err;
 }

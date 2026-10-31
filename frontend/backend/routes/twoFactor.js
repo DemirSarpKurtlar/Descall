@@ -23,13 +23,13 @@ const router = express.Router();
 const LIMIT = { windowMs: 15 * 60 * 1000, max: 10 };
 
 const REASON_TR = {
-  format: "Kod 6 haneli olmalı.",
-  mismatch: "Kod yanlış. Uygulamadaki güncel kodu gir.",
-  replay: "Bu kod zaten kullanıldı. Bir sonraki kodu bekle.",
-  expired: "Kurulum süresi doldu. Baştan başla.",
-  no_pending: "Önce kurulumu başlat.",
-  not_enabled: "Doğrulama uygulaması açık değil.",
-  secret_unreadable: "Doğrulama bilgisi okunamadı. Destek ile iletişime geç.",
+  format: "The code must have 6 digits.",
+  mismatch: "Wrong code. Enter the current code from the app.",
+  replay: "This code was already used. Wait for the next code.",
+  expired: "Setup expired. Start over.",
+  no_pending: "Start the setup first.",
+  not_enabled: "The authenticator app is not turned on.",
+  secret_unreadable: "Could not read the verification data. Contact support.",
 };
 
 function limited(res, key) {
@@ -52,7 +52,7 @@ function isAdminUser(u) {
 router.get("/2fa/status", requireAuth, async (req, res) => {
   try {
     const [user, row] = await Promise.all([userBasics(req.user.id), twoFactor.loadTotp(req.user.id)]);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    if (!user) return res.status(404).json({ error: "User not found." });
     res.set("Cache-Control", "no-store");
     return res.json({
       method: twoFactor.methodFor(user, row),
@@ -66,7 +66,7 @@ router.get("/2fa/status", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[2FA] status", err?.message || err);
-    return res.status(500).json({ error: "Durum alınamadı." });
+    return res.status(500).json({ error: "Could not get the status." });
   }
 });
 
@@ -76,15 +76,15 @@ router.post("/2fa/totp/setup", requireAuth, async (req, res) => {
     if (limited(res, key)) return;
     recordFailure(key, LIMIT);
     const row = await twoFactor.loadTotp(req.user.id);
-    if (row === null) return res.status(503).json({ error: "Doğrulama uygulaması henüz etkin değil.", code: "TOTP_UNAVAILABLE" });
-    if (row.totp_enabled_at) return res.status(409).json({ error: "Doğrulama uygulaması zaten açık.", code: "TOTP_ALREADY_ON" });
+    if (row === null) return res.status(503).json({ error: "The authenticator app is not available yet.", code: "TOTP_UNAVAILABLE" });
+    if (row.totp_enabled_at) return res.status(409).json({ error: "The authenticator app is already on.", code: "TOTP_ALREADY_ON" });
     const { secret, uri } = await twoFactor.beginSetup(req.user.id, req.user.username);
     const qrSvg = await QRCode.toString(uri, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#000000", light: "#ffffff" } });
     res.set("Cache-Control", "no-store");
     return res.json({ otpauthUri: uri, secret: secret.match(/.{1,4}/g).join(" "), qrSvg, expiresInSec: twoFactor.PENDING_TTL_MS / 1000 });
   } catch (err) {
     console.error("[2FA] setup", err?.message || err);
-    return res.status(500).json({ error: "Kurulum başlatılamadı." });
+    return res.status(500).json({ error: "Could not start the setup." });
   }
 });
 
@@ -102,7 +102,7 @@ router.post("/2fa/totp/enable", requireAuth, async (req, res) => {
     return res.json({ ok: true, recoveryCodes: result.recoveryCodes });
   } catch (err) {
     console.error("[2FA] enable", err?.message || err);
-    return res.status(500).json({ error: "Açılamadı." });
+    return res.status(500).json({ error: "Could not turn it on." });
   }
 });
 
@@ -111,15 +111,15 @@ router.post("/2fa/totp/disable", requireAuth, async (req, res) => {
     const key = `2fa:disable:${req.user.id}`;
     if (limited(res, key)) return;
     const user = await userBasics(req.user.id);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    if (!user) return res.status(404).json({ error: "User not found." });
     if (isAdminUser(user)) {
-      return res.status(403).json({ error: "Yöneticiler doğrulama uygulamasını kapatamaz.", code: "ADMIN_2FA_REQUIRED" });
+      return res.status(403).json({ error: "Admins can't turn off the authenticator app.", code: "ADMIN_2FA_REQUIRED" });
     }
     if (user.password_hash) {
       const ok = typeof req.body?.password === "string" && (await bcrypt.compare(req.body.password, user.password_hash));
       if (!ok) {
         recordFailure(key, LIMIT);
-        return res.status(401).json({ error: "Şifre yanlış.", code: "bad_password" });
+        return res.status(401).json({ error: "Wrong password.", code: "bad_password" });
       }
     }
     const v = await twoFactor.verifySecondFactor(req.user.id, req.body?.code);
@@ -131,7 +131,7 @@ router.post("/2fa/totp/disable", requireAuth, async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error("[2FA] disable", err?.message || err);
-    return res.status(500).json({ error: "Kapatılamadı." });
+    return res.status(500).json({ error: "Could not turn it off." });
   }
 });
 
@@ -150,7 +150,7 @@ router.post("/2fa/recovery/regenerate", requireAuth, async (req, res) => {
     return res.json({ ok: true, recoveryCodes: codes });
   } catch (err) {
     console.error("[2FA] regenerate", err?.message || err);
-    return res.status(500).json({ error: "Yeni kodlar oluşturulamadı." });
+    return res.status(500).json({ error: "Could not create new codes." });
   }
 });
 

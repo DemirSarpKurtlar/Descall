@@ -10,7 +10,10 @@ import { NC_TR } from "./newCreate.tr.js";
 import { FBK_TR } from "./feedback.tr.js";
 import { BADGES_TR } from "./badges.tr.js";
 import { ANTIBOT_TR } from "./antibot.tr.js";
+import { API_TR } from "./api.tr.js";
+import { BOT_TR } from "./bot.tr.js";
 export const nested = {
+  bot: BOT_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,
@@ -1131,6 +1134,7 @@ export const nested = {
 };
 
 export const phrases = {
+  ...API_TR,
   "Close": "Kapat",
   "You": "Sen",
   "Medium": "Orta",

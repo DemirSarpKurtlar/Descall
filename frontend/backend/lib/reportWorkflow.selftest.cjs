@@ -62,7 +62,9 @@ async function main() {
   let notes = await rows("user_report_notes");
   assert.strictEqual(notes.length, 1);
   assert.strictEqual(notes[0].kind, "assign");
-  assert.match(notes[0].body, /admin raporları alice adlı yöneticiye atadı/);
+  assert.match(notes[0].body, /admin assigned the reports to alice\./);
+  const listedAssign = await wf.listNotes(T);
+  assert.deepEqual(listedAssign.notes[0].i18n, { body: { key: "bot.report.assignedTo", vars: { actor: "admin", assignee: "alice" } } });
   ok("assign covers every open report of the account and writes a timeline line");
 
   const again = await wf.assignTarget({ targetId: T, assigneeId: ALICE, actor: { id: OWNER, username: "admin" } });
@@ -86,7 +88,7 @@ async function main() {
   ok("notes are saved with the author and listed for the account");
 
   await wf.noteResolution({ targetId: T, reportId: "r1", actor: { id: ALICE, username: "alice" }, resolution: "ban" });
-  assert.match((await rows("user_report_notes")).pop().body, /alice yasakladı/);
+  assert.match((await rows("user_report_notes")).pop().body, /alice banned the account\./);
   ok("closing a case adds a decision line");
 
   const none = createFakeSupabase({ user_reports: [{ id: "r9", target_id: T, status: "open" }] }, { missingTables: ["user_report_notes"] });

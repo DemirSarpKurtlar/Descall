@@ -63,7 +63,7 @@ router.get("/", requireAuth, async (req, res) => {
     res.json({ items, unread: items.reduce((n, i) => n + i.unread, 0) });
   } catch (err) {
     console.error("[feedback/me] list failed:", err?.message || err);
-    res.status(500).json({ error: "Geri bildirimler yüklenemedi." });
+    res.status(500).json({ error: "Could not load feedback." });
   }
 });
 
@@ -74,7 +74,7 @@ router.get("/unread", requireAuth, async (req, res) => {
     res.json({ unread: rows.reduce((n, r) => n + uf.unreadFor(r), 0) });
   } catch (err) {
     console.error("[feedback/me] unread failed:", err?.message || err);
-    res.status(500).json({ error: "Okunmamış sayısı alınamadı." });
+    res.status(500).json({ error: "Could not get the unread count." });
   }
 });
 
@@ -86,41 +86,41 @@ async function markRead(id, userId) {
 }
 
 router.get("/:id", requireAuth, async (req, res) => {
-  if (!validId(req.params.id)) return res.status(404).json({ error: "Bulunamadı." });
+  if (!validId(req.params.id)) return res.status(404).json({ error: "Not found." });
   try {
     const row = await selectOwn(req.user.id, { id: req.params.id });
-    if (!row) return res.status(404).json({ error: "Bulunamadı." });
+    if (!row) return res.status(404).json({ error: "Not found." });
     const item = uf.shapeForUser(row);
     await markRead(row.id, req.user.id);
     res.set("Cache-Control", "no-store");
     res.json({ item: { ...item, unread: 0 } });
   } catch (err) {
     console.error("[feedback/me] get failed:", err?.message || err);
-    res.status(500).json({ error: "Geri bildirim yüklenemedi." });
+    res.status(500).json({ error: "Could not load the feedback." });
   }
 });
 
 router.post("/:id/read", requireAuth, async (req, res) => {
-  if (!validId(req.params.id)) return res.status(404).json({ error: "Bulunamadı." });
+  if (!validId(req.params.id)) return res.status(404).json({ error: "Not found." });
   try {
     await markRead(req.params.id, req.user.id);
     res.json({ ok: true });
   } catch (err) {
     console.error("[feedback/me] read failed:", err?.message || err);
-    res.status(500).json({ error: "İşaretlenemedi." });
+    res.status(500).json({ error: "Could not mark it." });
   }
 });
 
 router.post("/:id/reply", requireAuth, async (req, res) => {
-  if (!validId(req.params.id)) return res.status(404).json({ error: "Bulunamadı." });
+  if (!validId(req.params.id)) return res.status(404).json({ error: "Not found." });
   const key = `fbreply:${req.user.id}`;
   if (rejectIfLimited(res, [peek(key, REPLY)])) return;
   try {
     const row = await selectOwn(req.user.id, { id: req.params.id });
-    if (!row) return res.status(404).json({ error: "Bulunamadı." });
+    if (!row) return res.status(404).json({ error: "Not found." });
     const out = uf.appendUserReply(row, req.body?.text, req.body?.attachments);
-    if (out.error === "closed") return res.status(409).json({ error: "Bu geri bildirim kapatıldı. Yeni bir geri bildirim gönderebilirsin.", code: "FEEDBACK_CLOSED" });
-    if (out.error) return res.status(400).json({ error: "Yanıt boş olamaz." });
+    if (out.error === "closed") return res.status(409).json({ error: "This feedback was closed. You can send new feedback.", code: "FEEDBACK_CLOSED" });
+    if (out.error) return res.status(400).json({ error: "The reply can't be empty." });
     recordFailure(key, REPLY);
     const { error } = await supabase.from("user_feedback").update(out.update).eq("id", row.id).eq("user_id", String(req.user.id));
     if (error) throw error;
@@ -130,7 +130,7 @@ router.post("/:id/reply", requireAuth, async (req, res) => {
     res.json({ item: { ...uf.shapeForUser(next), unread: 0 } });
   } catch (err) {
     console.error("[feedback/me] reply failed:", err?.message || err);
-    res.status(500).json({ error: "Yanıt gönderilemedi." });
+    res.status(500).json({ error: "Could not send the reply." });
   }
 });
 
@@ -145,7 +145,7 @@ function submitHandler({ sendFeedbackEmail } = {}) {
     const key = `fbsubmit:${req.user.id}`;
     if (rejectIfLimited(res, [peek(key, SUBMIT)])) return;
     const parsed = uf.sanitizeSubmission(req.body, { userAgent: req.get("user-agent") || "" });
-    if (parsed.error) return res.status(400).json({ success: false, error: "En az 5 karakter yaz.", code: "TOO_SHORT" });
+    if (parsed.error) return res.status(400).json({ success: false, error: "Write at least 5 characters.", code: "TOO_SHORT" });
     recordFailure(key, SUBMIT);
     const now = new Date().toISOString();
     const base = {

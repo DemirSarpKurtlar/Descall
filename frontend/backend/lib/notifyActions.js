@@ -388,9 +388,14 @@ function createNotifyActions(deps = {}) {
             deepLink: `/?dm=${encodeURIComponent(myId)}`,
           };
           if (mentioned) {
-            void push().sendMentionPush([peerId], { ...common, title: `${me.username || "Someone"} mentioned you`, text: preview, dmConversationId: myId });
+            void push().sendMentionPush([peerId], {
+              ...common,
+              i18n: { title: { key: "push.mentioned", vars: { from: me.username || { key: "push.someone" } } } },
+              text: preview,
+              dmConversationId: myId,
+            });
           } else {
-            void push().sendDmMessagePush([peerId], { ...common, title: me.username || "New message" });
+            void push().sendDmMessagePush([peerId], { ...common, title: me.username || null });
           }
         }
       } catch (err) {

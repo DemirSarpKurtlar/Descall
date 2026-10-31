@@ -52,7 +52,7 @@ async function run() {
   // Pure helpers
   const p = fb.readPlatform(IPHONE);
   assert(p.platform === "iOS 18.6" && p.device === "iPhone", "iPhone UA → iOS 18.6 / iPhone");
-  assert(fb.readPlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Electron/30").platform === "Windows · uygulama", "Electron on Windows");
+  assert(fb.readPlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Electron/30").platform === "Windows · app", "Electron on Windows");
   assert(JSON.stringify(fb.sanitizePatch({ status: "closed", user_id: "x", message: "y", priority: "nope" })) === '{"status":"closed"}', "patch whitelist");
   assert(fb.safeSearch("a,b.or(id.eq.1)") === "a b or id eq 1", "search strips PostgREST grammar");
 
@@ -90,7 +90,7 @@ async function run() {
 
     r = await call(base, "PATCH", "/api/admin/feedback/f1", { token: admin, body: { status: "resolved", user_id: "u-admin", message: "hacked" } });
     assert(r.status === 200 && row("f1").status === "resolved" && row("f1").user_id === "u-user" && row("f1").message === "Mikrofon kırmızı kalıyor", "patch applies whitelist only");
-    assert(r.body.feedback.replies.some((x) => x.type === "system" && x.text === "demir durumu Çözüldü yaptı"), "system line");
+    assert(r.body.feedback.replies.some((x) => x.type === "system" && x.text === "demir set the status to Resolved" && x.i18n?.text?.key === "bot.feedback.statusChanged"), "system line");
     r = await call(base, "PATCH", "/api/admin/feedback/f1", { token: admin, body: { foo: 1 } });
     assert(r.status === 400, "empty patch 400");
 

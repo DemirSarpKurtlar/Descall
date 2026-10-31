@@ -1,5 +1,7 @@
 "use strict";
 
+const { ref, en } = require("./botText");
+
 /**
  * Rapor iş akışı (3.4.0). The reports of one account are worked as a case:
  * one admin is assigned to all of its open reports, and admins keep a
@@ -38,14 +40,47 @@ function missingTable(err) {
 }
 
 function unavailable() {
-  const err = new Error("Rapor iş akışı henüz etkin değil (migration 20261101_report_workflow.sql).");
+  const err = new Error("The report workflow is not enabled yet (migration 20261101_report_workflow.sql).");
   err.code = "WORKFLOW_UNAVAILABLE";
   err.status = 503;
   return err;
 }
 
+function actorName(actor) {
+  return actor?.username || en("bot.report.adminFallback");
+}
+
+// Timeline lines the server writes (English now, Turkish in old rows) -> i18n ref, so each
+// viewer reads them in their language. Free-text notes (kind "note") have no ref.
+const SYSTEM_NOTE_PATTERNS = [
+  [/^(.+) took the reports\.$|^(.+) raporları üzerine aldı\.$/, "bot.report.tookReports", ["actor"]],
+  [/^(.+) assigned the reports to (.+)\.$|^(.+) raporları (.+) adlı yöneticiye atadı\.$/, "bot.report.assignedTo", ["actor", "assignee"]],
+  [/^(.+) removed the assignment\.$|^(.+) atamayı kaldırdı\.$/, "bot.report.unassigned", ["actor"]],
+  [/^(.+) banned the account\.$|^(.+) yasakladı\.$/, "bot.report.banned", ["actor"]],
+  [/^(.+) gave a timeout\.$|^(.+) zaman aşımı verdi\.$/, "bot.report.timedOut", ["actor"]],
+  [/^(.+) closed the report \(no action needed\)\.$|^(.+) raporu kapattı \(işlem gerekmedi\)\.$/, "bot.report.dismissed", ["actor"]],
+];
+
+function noteI18n(kind, body) {
+  if (kind === "note") return null;
+  for (const [re, key, names] of SYSTEM_NOTE_PATTERNS) {
+    const m = re.exec(String(body || ""));
+    if (!m) continue;
+    const groups = m.slice(1).filter((g) => g !== undefined);
+    const vars = {};
+    names.forEach((n, i) => {
+      vars[n] = groups[i];
+    });
+    return { body: ref(key, vars) };
+  }
+  return null;
+}
+
 function publicNote(row) {
+  const kind = NOTE_KINDS.has(row.kind) ? row.kind : "note";
+  const i18n = noteI18n(kind, row.body);
   return {
+    ...(i18n ? { i18n } : {}),
     id: row.id,
     targetId: row.target_id,
     reportId: row.report_id || null,
@@ -60,7 +95,7 @@ function publicNote(row) {
 async function insertNote({ targetId, reportId = null, actor, kind = "note", body }) {
   const clean = cleanNoteBody(body);
   if (!clean) {
-    const err = new Error("Not boş olamaz.");
+    const err = new Error("The note can't be empty.");
     err.code = "EMPTY";
     err.status = 400;
     throw err;
@@ -114,13 +149,13 @@ async function assignTarget({ targetId, assigneeId, actor }) {
   let assignee = null;
   if (assigneeId) {
     if (!isUuid(assigneeId)) {
-      const err = new Error("Geçersiz yönetici.");
+      const err = new Error("Invalid admin.");
       err.status = 400;
       throw err;
     }
     const row = await perms.loadRow(assigneeId);
     if (!row || !perms.canOpen(row, row, "reports")) {
-      const err = new Error("Bu kişi raporlarla çalışamaz (Raporlar yetkisi yok).");
+      const err = new Error("This person can't work on reports (no Reports permission).");
       err.code = "NOT_ASSIGNABLE";
       err.status = 400;
       throw err;
@@ -135,7 +170,7 @@ async function assignTarget({ targetId, assigneeId, actor }) {
   if (openErr) throw missingTable(openErr) ? unavailable() : openErr;
   const rows = open || [];
   if (!rows.length) {
-    const err = new Error("Bu hesap için açık rapor yok.");
+    const err = new Error("This account has no open reports.");
     err.code = "NO_OPEN";
     err.status = 409;
     throw err;
@@ -157,17 +192,17 @@ async function assignTarget({ targetId, assigneeId, actor }) {
     kind: want ? "assign" : "unassign",
     body: want
       ? want === actor?.id
-        ? `${actor?.username || "Bir yönetici"} raporları üzerine aldı.`
-        : `${actor?.username || "Bir yönetici"} raporları ${assignee.username} adlı yöneticiye atadı.`
-      : `${actor?.username || "Bir yönetici"} atamayı kaldırdı.`,
+        ? en("bot.report.tookReports", { actor: actorName(actor) })
+        : en("bot.report.assignedTo", { actor: actorName(actor), assignee: assignee.username })
+      : en("bot.report.unassigned", { actor: actorName(actor) }),
   }).catch(() => {});
   return { assignee, count: rows.length, changed: true };
 }
 
 /** Timeline line when a case is closed (ban, timeout, dismiss). */
 async function noteResolution({ targetId, reportId, actor, resolution }) {
-  const label = { ban: "yasakladı", timeout: "zaman aşımı verdi", dismissed: "raporu kapattı (işlem gerekmedi)" }[resolution] || resolution;
-  return insertNote({ targetId, reportId, actor, kind: "resolve", body: `${actor?.username || "Bir yönetici"} ${label}.` }).catch(() => null);
+  const key = { ban: "bot.report.banned", timeout: "bot.report.timedOut", dismissed: "bot.report.dismissed" }[resolution] || "bot.report.resolved";
+  return insertNote({ targetId, reportId, actor, kind: "resolve", body: en(key, { actor: actorName(actor), resolution }) }).catch(() => null);
 }
 
 function __setDbForTests(client) {

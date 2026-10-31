@@ -476,12 +476,15 @@ async function resolveReport(reportId, { actorId, status, resolution, markAllOpe
   return { reportId, targetId: row.target_id, reason: row.reason, status, resolution: patch.resolution, reporterIds };
 }
 
-/** Bildirimler entry the reporter gets when their report is closed. */
+/**
+ * Bildirimler entry the reporter gets when their report is closed (bot.notify.* keys:
+ * pushNotification writes the English text and the i18n refs).
+ */
 function reporterNotice(status) {
   if (status === "actioned") {
-    return { type: "report_result", title: "Şikayetin incelendi", body: "Şikayet ettiğin hesap hakkında işlem yapıldı. Teşekkürler." };
+    return { type: "report_result", titleKey: "bot.notify.reportReviewedTitle", bodyKey: "bot.notify.reportActioned" };
   }
-  return { type: "report_result", title: "Şikayetin incelendi", body: "Şikayetini inceledik ve kurallara aykırı bir şey bulmadık. Teşekkürler." };
+  return { type: "report_result", titleKey: "bot.notify.reportReviewedTitle", bodyKey: "bot.notify.reportNoViolation" };
 }
 
 module.exports = {

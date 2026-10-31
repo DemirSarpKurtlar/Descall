@@ -60,9 +60,9 @@ async function rpcAll(fn, args) {
 
 function unavailable(res, err) {
   const missing = err?.code === "PGRST202" || err?.code === "42883";
-  if (missing) return res.status(503).json({ error: "Analiz henüz etkin değil.", code: "INSIGHTS_UNAVAILABLE" });
+  if (missing) return res.status(503).json({ error: "Insights are not enabled yet.", code: "INSIGHTS_UNAVAILABLE" });
   console.error("[admin-growth]", err?.message || err);
-  return res.status(500).json({ error: "Analiz yüklenemedi." });
+  return res.status(500).json({ error: "Could not load insights." });
 }
 
 router.get("/growth/retention", async (req, res) => {

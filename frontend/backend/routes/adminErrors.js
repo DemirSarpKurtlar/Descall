@@ -69,17 +69,17 @@ router.get("/error-groups", async (req, res) => {
     });
   } catch (err) {
     console.error("[admin-errors] list", err?.message || err);
-    res.status(500).json({ error: "Hata kayıtları yüklenemedi." });
+    res.status(500).json({ error: "Could not load error logs." });
   }
 });
 
 router.get("/error-groups/:fp", async (req, res) => {
   const fp = String(req.params.fp || "");
-  if (!FP_RE.test(fp)) return res.status(400).json({ error: "Geçersiz kayıt." });
+  if (!FP_RE.test(fp)) return res.status(400).json({ error: "Invalid entry." });
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600e3).toISOString();
     const rows = (await loadRows(since)).filter((r) => (r.fingerprint || eg.fingerprint(r.message, r.stack)) === fp);
-    if (!rows.length) return res.status(404).json({ error: "Bu hata son 30 günde yok." });
+    if (!rows.length) return res.status(404).json({ error: "This error did not occur in the last 30 days." });
     const states = await loadStates();
     const [group] = eg.groupRows(rows, states, { range: "30d" });
     const ids = [...new Set(rows.map((r) => r.user_id).filter((u) => u && u !== "anonymous"))].slice(0, 200);
@@ -105,15 +105,15 @@ router.get("/error-groups/:fp", async (req, res) => {
     });
   } catch (err) {
     console.error("[admin-errors] detail", err?.message || err);
-    res.status(500).json({ error: "Hata ayrıntısı yüklenemedi." });
+    res.status(500).json({ error: "Could not load the error details." });
   }
 });
 
 router.post("/error-groups/:fp/status", async (req, res) => {
   const fp = String(req.params.fp || "");
-  if (!FP_RE.test(fp)) return res.status(400).json({ error: "Geçersiz kayıt." });
+  if (!FP_RE.test(fp)) return res.status(400).json({ error: "Invalid entry." });
   const status = String(req.body?.status || "");
-  if (!["open", "resolved", "ignored"].includes(status)) return res.status(400).json({ error: "Geçersiz durum." });
+  if (!["open", "resolved", "ignored"].includes(status)) return res.status(400).json({ error: "Invalid status." });
   const note = typeof req.body?.note === "string" ? req.body.note.trim().slice(0, 1000) || null : null;
   try {
     const row = {
@@ -127,7 +127,7 @@ router.post("/error-groups/:fp/status", async (req, res) => {
     };
     const { error } = await supabase.from("error_group_state").upsert(row, { onConflict: "fingerprint" });
     if (error) {
-      if (error.code === "42P01" || error.code === "PGRST205") return res.status(503).json({ error: "Hata kayıtları henüz etkin değil.", code: "ERRORS_UNAVAILABLE" });
+      if (error.code === "42P01" || error.code === "PGRST205") return res.status(503).json({ error: "Error logs are not enabled yet.", code: "ERRORS_UNAVAILABLE" });
       throw error;
     }
     appendAudit(req.user.id, req.user.username, `error_${status}`, fp, { note: note ? note.slice(0, 120) : null });

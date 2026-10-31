@@ -57,6 +57,7 @@ const adminAuditStore = require("../lib/adminAuditStore");
 const { adminRateLimit } = require("../middleware/adminRateLimit");
 const { requireAdmin2fa, requireStepUp, stepUpHandler } = require("../middleware/adminSecondFactor");
 const adminPermissions = require("../lib/adminPermissions");
+const { apiError, apiText } = require("../lib/apiError");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
@@ -244,7 +245,7 @@ router.get("/analytics", async (_req, res) => {
       ),
     ]);
     if (usersRes?.error?.message === "timeout") {
-      return res.status(503).json({ error: "Analitik zaman aşımına uğradı. Yeniden deneyin." });
+      return res.status(503).json({ error: "Analytics timed out. Please try again." });
     }
 
     if (usersRes.error && isMissingColumnError(usersRes.error)) {
@@ -562,7 +563,7 @@ router.patch("/users/:id", async (req, res) => {
     // 3.3.0: no moderator role. "admin" / "user" go through the owner-only
     // make-admin / remove-admin flow so section grants stay consistent.
     if (role === "mod") {
-      return res.status(400).json({ error: "Moderatör rolü kaldırıldı. Yönetici yap ve bölüm yetkisi ver.", code: "ROLE_REMOVED" });
+      return res.status(400).json({ error: "The moderator role was removed. Make them an admin and give section access.", code: "ROLE_REMOVED" });
     }
     if (role === "admin" || role === "user") {
       if (!(await userIsSuperAdmin(req))) {
@@ -995,15 +996,15 @@ router.get("/dm/conversations", async (req, res) => {
     res.json(payload);
   } catch (e) {
     console.error("[ADMIN] dm conversations failed:", e);
-    res.status(500).json({ error: "DM listesi yüklenemedi." });
+    res.status(500).json({ error: "Could not load the DM list." });
   }
 });
 
 router.post("/dm/:key/view", async (req, res) => {
   const purpose = String(req.body?.purpose || "");
   const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : "";
-  if (!DM_VIEW_PURPOSES.includes(purpose)) return res.status(400).json({ error: "Bir inceleme nedeni seç.", code: "DM_VIEW_PURPOSE" });
-  if (reason.length < 10) return res.status(400).json({ error: "Nedeni en az 10 karakterle yaz.", code: "DM_VIEW_REASON" });
+  if (!DM_VIEW_PURPOSES.includes(purpose)) return res.status(400).json({ error: "Choose a review reason.", code: "DM_VIEW_PURPOSE" });
+  if (reason.length < 10) return res.status(400).json({ error: "Write the reason in at least 10 characters.", code: "DM_VIEW_REASON" });
   try {
     const key = decodeURIComponent(req.params.key);
     const payload = await insights.listDmThread(key);
@@ -1026,7 +1027,7 @@ router.post("/dm/:key/view", async (req, res) => {
   } catch (e) {
     const status = e.status || 500;
     if (status >= 500) console.error("[ADMIN] dm view failed:", e);
-    res.status(status).json({ error: status === 400 ? "Geçersiz konuşma." : "Konuşma yüklenemedi." });
+    res.status(status).json({ error: status === 400 ? "Invalid conversation." : "Could not load the conversation." });
   }
 });
 
@@ -1038,15 +1039,15 @@ router.get("/dm/groups", async (_req, res) => {
     res.json(payload);
   } catch (e) {
     console.error("[ADMIN] group list failed:", e);
-    res.status(500).json({ error: "Grup listesi yüklenemedi." });
+    res.status(500).json({ error: "Could not load the group list." });
   }
 });
 
 router.post("/dm/groups/:groupId/view", async (req, res) => {
   const purpose = String(req.body?.purpose || "");
   const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : "";
-  if (!DM_VIEW_PURPOSES.includes(purpose)) return res.status(400).json({ error: "Bir inceleme nedeni seç.", code: "DM_VIEW_PURPOSE" });
-  if (reason.length < 10) return res.status(400).json({ error: "Nedeni en az 10 karakterle yaz.", code: "DM_VIEW_REASON" });
+  if (!DM_VIEW_PURPOSES.includes(purpose)) return res.status(400).json({ error: "Choose a review reason.", code: "DM_VIEW_PURPOSE" });
+  if (reason.length < 10) return res.status(400).json({ error: "Write the reason in at least 10 characters.", code: "DM_VIEW_REASON" });
   try {
     const payload = await insights.listGroupThread(req.params.groupId);
     audit(req.user, "group_view", payload.key, { purpose, reason, group: payload.name, messages: payload.messages.length });
@@ -1063,7 +1064,7 @@ router.post("/dm/groups/:groupId/view", async (req, res) => {
   } catch (e) {
     const status = e.status || 500;
     if (status >= 500) console.error("[ADMIN] group view failed:", e);
-    res.status(status).json({ error: status === 404 ? "Grup bulunamadı." : status === 400 ? "Geçersiz grup." : "Grup yüklenemedi." });
+    res.status(status).json({ error: status === 404 ? "Group not found." : status === 400 ? "Invalid group." : "Could not load the group." });
   }
 });
 
@@ -1074,7 +1075,7 @@ router.delete("/dm/groups/:groupId/messages/:msgId", async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     const status = e.status || 500;
-    res.status(status).json({ error: status === 404 ? "Mesaj bu grupta yok." : status === 400 ? "Geçersiz grup." : "Mesaj silinemedi." });
+    res.status(status).json({ error: status === 404 ? "The message is not in this group." : status === 400 ? "Invalid group." : "Could not delete the message." });
   }
 });
 
@@ -1102,7 +1103,7 @@ router.delete("/dm/:key/messages/:msgId", async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     const status = e.status || 500;
-    res.status(status).json({ error: status === 404 ? "Mesaj bu konuşmada yok." : status === 400 ? "Geçersiz konuşma." : "Mesaj silinemedi." });
+    res.status(status).json({ error: status === 404 ? "The message is not in this conversation." : status === 400 ? "Invalid conversation." : "Could not delete the message." });
   }
 });
 
@@ -1251,7 +1252,7 @@ router.post("/popup", (req, res) => {
   pruneDeadPresence(state.presence, io);
   const roster = summarizePresence(state.presence, { io });
   const built = popupBroadcast.buildPopupPayload(req.body || {}, { actor: req.user });
-  if (!built.ok) return res.status(400).json({ error: built.error });
+  if (!built.ok) return res.status(400).json({ error: built.error, errorKey: built.errorKey, errorVars: built.errorVars });
 
   const audience = req.body?.audience === "visible" ? "visible" : "connected";
   const includeSelf = req.body?.includeSelf !== false;
@@ -1692,7 +1693,7 @@ router.get("/feedback", async (req, res) => {
     res.json({ feedbacks, total: feedbacks.length, stats: fb.statsOf(feedbacks) });
   } catch (error) {
     console.error("[Admin] Failed to load feedback:", error?.message || error);
-    res.status(500).json({ error: "Geri bildirimler yüklenemedi." });
+    res.status(500).json({ error: "Could not load feedback." });
   }
 });
 
@@ -1703,7 +1704,7 @@ router.get("/feedback/stats", async (req, res) => {
     res.json(fb.statsOf(data || []));
   } catch (error) {
     console.error("[Admin] Failed to load feedback stats:", error?.message || error);
-    res.status(500).json({ error: "İstatistikler yüklenemedi." });
+    res.status(500).json({ error: "Could not load statistics." });
   }
 });
 
@@ -1718,11 +1719,11 @@ async function reloadFeedback(id) {
 router.patch("/feedback/:id", async (req, res) => {
   try {
     const patch = fb.sanitizePatch(req.body);
-    if (!Object.keys(patch).length) return res.status(400).json({ error: "Geçerli bir değişiklik yok." });
+    if (!Object.keys(patch).length) return res.status(400).json({ error: "No valid change." });
     const { data: cur, error: getError } = await supabase
       .from("user_feedback").select("id, user_id, status, priority, admin_replies").eq("id", req.params.id).maybeSingle();
     if (getError) throw getError;
-    if (!cur) return res.status(404).json({ error: "Geri bildirim bulunamadı." });
+    if (!cur) return res.status(404).json({ error: "Feedback not found." });
     const lines = fb.systemLines(cur, patch, req.user.username);
     const before = { status: cur.status, userId: cur.user_id, id: cur.id };
     const update = { ...patch, updated_at: new Date().toISOString() };
@@ -1735,7 +1736,7 @@ router.patch("/feedback/:id", async (req, res) => {
     res.json({ feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
     console.error("[Admin] Failed to update feedback:", error?.message || error);
-    res.status(500).json({ error: "Geri bildirim güncellenemedi." });
+    res.status(500).json({ error: "Could not update the feedback." });
   }
 });
 
@@ -1747,7 +1748,7 @@ router.post("/feedback/:id/view", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("[Admin] Failed to mark feedback as viewed:", error?.message || error);
-    res.status(500).json({ error: "Okundu olarak işaretlenemedi." });
+    res.status(500).json({ error: "Could not mark as read." });
   }
 });
 
@@ -1756,11 +1757,11 @@ router.post("/feedback/:id/reply", async (req, res) => {
   try {
     const text = String(req.body?.text || "").trim().slice(0, 4000);
     const internal = req.body?.internal === true;
-    if (!text) return res.status(400).json({ error: "Yanıt boş olamaz." });
+    if (!text) return res.status(400).json({ error: "The reply can't be empty." });
     const { data: cur, error: getError } = await supabase
       .from("user_feedback").select("id, user_id, status, subject, admin_replies").eq("id", req.params.id).maybeSingle();
     if (getError) throw getError;
-    if (!cur) return res.status(404).json({ error: "Geri bildirim bulunamadı." });
+    if (!cur) return res.status(404).json({ error: "Feedback not found." });
     const reply = {
       id: fb.newId(), text, internal, isAdmin: true,
       adminId: req.user.id, adminUsername: req.user.username, created_at: new Date().toISOString(),
@@ -1779,7 +1780,7 @@ router.post("/feedback/:id/reply", async (req, res) => {
     res.json({ reply: fb.shapeReply(reply), feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
     console.error("[Admin] Failed to send reply:", error?.message || error);
-    res.status(500).json({ error: "Yanıt gönderilemedi." });
+    res.status(500).json({ error: "Could not send the reply." });
   }
 });
 
@@ -1790,7 +1791,7 @@ router.delete("/feedback/:id", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("[Admin] Failed to delete feedback:", error?.message || error);
-    res.status(500).json({ error: "Geri bildirim silinemedi." });
+    res.status(500).json({ error: "Could not delete the feedback." });
   }
 });
 
@@ -1825,7 +1826,7 @@ router.post("/logs/archive", (req, res) => {
     res.json({ 
       success: true, 
       archived: oldLogs.length,
-      message: `${oldLogs.length} logs archived successfully` 
+      ...apiText("message", "{count, plural, one {# log archived} other {# logs archived}} successfully", { count: oldLogs.length }),
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to archive logs." });

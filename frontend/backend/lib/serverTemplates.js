@@ -928,8 +928,64 @@ const TEMPLATES = [
 
 const BLANK_ID = "blank";
 
-function listTemplateSummaries() {
-  return TEMPLATES.map((t) => ({
+/**
+ * Words of every template as a catalog tree (templates.<id>.name, .roles.<i>,
+ * .categories.<i>.channels.<j>.name ...). backend/i18n/en.js uses it as the English
+ * source; backend/i18n/<locale>.js translate the same tree.
+ */
+function templateCatalog() {
+  const tree = {};
+  for (const t of TEMPLATES) {
+    const node = { name: t.name, description: t.description };
+    if (t.descriptionSeed) node.descriptionSeed = t.descriptionSeed;
+    if (t.rulesText) node.rulesText = t.rulesText;
+    node.highlights = [...(t.highlights || [])];
+    node.roles = (t.roles || []).map((r) => r.name);
+    node.categories = (t.categories || []).map((c) => ({
+      name: c.name,
+      channels: (c.channels || []).map((ch) => (ch.topic ? { name: ch.name, topic: ch.topic } : { name: ch.name })),
+    }));
+    tree[t.id] = node;
+  }
+  return tree;
+}
+
+/**
+ * A template with its names, topics, rules and description in `lang` (the creator's
+ * language; English when the language has no catalog). Role names used by channel
+ * overrides follow the translation; the #rules channel is marked `isRules`.
+ */
+function localizeTemplate(template, lang = "en") {
+  if (!template) return template;
+  const { bt, pickLang, has } = require("./i18n");
+  const id = pickLang([lang], "en");
+  const base = `templates.${template.id}`;
+  const L = (path, fallback) => (has(`${base}.${path}`) ? bt(id, `${base}.${path}`) : fallback);
+  const roleNames = new Map((template.roles || []).map((r, i) => [r.name, L(`roles.${i}`, r.name)]));
+  return {
+    ...template,
+    name: L("name", template.name),
+    description: L("description", template.description),
+    descriptionSeed: template.descriptionSeed ? L("descriptionSeed", template.descriptionSeed) : template.descriptionSeed,
+    rulesText: template.rulesText ? L("rulesText", template.rulesText) : template.rulesText,
+    highlights: (template.highlights || []).map((h, i) => L(`highlights.${i}`, h)),
+    roles: (template.roles || []).map((r) => ({ ...r, name: roleNames.get(r.name) })),
+    categories: (template.categories || []).map((c, ci) => ({
+      ...c,
+      name: L(`categories.${ci}.name`, c.name),
+      channels: (c.channels || []).map((ch, chi) => ({
+        ...ch,
+        name: L(`categories.${ci}.channels.${chi}.name`, ch.name),
+        ...(ch.topic ? { topic: L(`categories.${ci}.channels.${chi}.topic`, ch.topic) } : {}),
+        ...(ch.type === "text" && ch.name === "rules" ? { isRules: true } : {}),
+        overrides: (ch.overrides || []).map((ov) => ({ ...ov, key: roleNames.get(ov.key) || ov.key })),
+      })),
+    })),
+  };
+}
+
+function listTemplateSummaries(lang = "en") {
+  return TEMPLATES.map((raw) => localizeTemplate(raw, lang)).map((t) => ({
     id: t.id,
     name: t.name,
     description: t.description,
@@ -960,9 +1016,16 @@ function getTemplate(id) {
 }
 
 function cleanTextChannelName(raw) {
+  // Translated names may carry Turkish letters; text channel names are ASCII slugs.
   return String(raw || "")
     .trim()
-    .toLowerCase()
+    .toLocaleLowerCase("tr")
+    .replace(/ç/g, "c")
+    .replace(/ğ/g, "g")
+    .replace(/ı/g, "i")
+    .replace(/ö/g, "o")
+    .replace(/ş/g, "s")
+    .replace(/ü/g, "u")
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-_]/g, "")
     .replace(/-+/g, "-")
@@ -1080,6 +1143,7 @@ async function seedServerFromTemplate(supabase, { serverId, template, deleteServ
 
   const channels = [];
   let position = 0;
+  let rulesChannelId = null;
 
   for (const cat of template.categories || []) {
     const { data: category, error: catErr } = await supabase
@@ -1129,6 +1193,7 @@ async function seedServerFromTemplate(supabase, { serverId, template, deleteServ
         throw chErr;
       }
       channels.push(channel);
+      if (ch.isRules || (ch.type === "text" && ch.name === "rules")) rulesChannelId = channel.id;
 
       // Permission overrides
       for (const ov of ch.overrides || []) {
@@ -1155,11 +1220,10 @@ async function seedServerFromTemplate(supabase, { serverId, template, deleteServ
   }
 
   // Point rules_channel_id at #rules if present
-  const rulesChannel = channels.find((c) => c.type === "text" && c.name === "rules");
-  if (rulesChannel) {
+  if (rulesChannelId) {
     const { error: rulesErr } = await supabase
       .from("servers")
-      .update({ rules_channel_id: rulesChannel.id })
+      .update({ rules_channel_id: rulesChannelId })
       .eq("id", serverId);
     if (rulesErr) {
       console.warn("[serverTemplates] rules_channel_id skipped:", rulesErr.message);
@@ -1178,6 +1242,8 @@ module.exports = {
   BLANK_ID,
   listTemplateSummaries,
   getTemplate,
+  localizeTemplate,
+  templateCatalog,
   seedServerFromTemplate,
   countChannels,
 };

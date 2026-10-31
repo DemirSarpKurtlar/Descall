@@ -13,7 +13,7 @@ const LIMITS = {
   write: { windowMs: 60_000, max: 60 },
   read: { windowMs: 60_000, max: 600 },
 };
-const MESSAGE = "Çok fazla yönetici işlemi. Bir dakika bekleyip tekrar dene.";
+const MESSAGE = "Too many admin actions. Wait a minute and try again.";
 
 function adminRateLimit(req, res, next) {
   const id = req.user?.id;

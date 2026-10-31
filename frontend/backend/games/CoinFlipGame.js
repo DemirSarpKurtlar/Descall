@@ -41,7 +41,7 @@ class CoinFlipRound {
       return { error: "This flip is already settled." };
     }
     if (side !== "heads" && side !== "tails") {
-      return { error: "Call yazı (heads) or tura (tails)." };
+      return { error: "Call heads or tails." };
     }
     this.call = side;
     this.face = this.rng() === 0 ? "heads" : "tails";
@@ -105,7 +105,7 @@ const CoinFlipManager = {
     }
     const existing = this.get(userId, groupId);
     if (existing && existing.status === "calling") {
-      return { error: "Call yazı or tura on your open flip first.", round: existing };
+      return { error: "Call heads or tails on your open flip first.", round: existing };
     }
     const round = new CoinFlipRound({ userId, username, groupId, bet: amount, side, rng });
     if (round.status === "calling") active.set(keyOf(userId, groupId), round);

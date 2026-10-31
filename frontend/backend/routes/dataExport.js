@@ -15,6 +15,7 @@ const { requireAuth } = require("../middleware/auth");
 const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
 const twoFactor = require("../lib/twoFactorService");
 const { buildExport } = require("../lib/dataExport");
+const { requestLang } = require("../lib/i18n");
 
 const router = express.Router();
 const DAY = 24 * 60 * 60 * 1000;
@@ -26,12 +27,12 @@ router.post("/data-export", requireAuth, async (req, res) => {
   if (rejectIfLimited(res, [peek(`export:${id}`, EXPORTS), peek(`export:wrong:${id}`, WRONG)])) return;
   try {
     const { data: user } = await supabase.from("users").select("id, password_hash").eq("id", id).maybeSingle();
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    if (!user) return res.status(404).json({ error: "User not found." });
     if (user.password_hash) {
       const ok = typeof req.body?.password === "string" && (await bcrypt.compare(req.body.password, user.password_hash));
       if (!ok) {
         recordFailure(`export:wrong:${id}`, WRONG);
-        return res.status(401).json({ error: "Şifre yanlış.", code: "bad_password" });
+        return res.status(401).json({ error: "Wrong password.", code: "bad_password" });
       }
     } else {
       const row = await twoFactor.loadTotp(id).catch(() => null);
@@ -39,18 +40,18 @@ router.post("/data-export", requireAuth, async (req, res) => {
         const v = await twoFactor.verifySecondFactor(id, req.body?.code, { allowRecovery: false, row });
         if (!v.ok) {
           recordFailure(`export:wrong:${id}`, WRONG);
-          return res.status(401).json({ error: "Kod yanlış.", code: "bad_code" });
+          return res.status(401).json({ error: "Wrong code.", code: "bad_code" });
         }
       }
     }
     recordFailure(`export:${id}`, EXPORTS);
-    const { filename, data } = await buildExport(id, { requestedBy: "self" });
+    const { filename, data } = await buildExport(id, { requestedBy: "self", lang: requestLang(req, "tr") });
     res.set("Cache-Control", "no-store");
     res.set("Content-Disposition", `attachment; filename="${filename}"`);
     return res.json(data);
   } catch (err) {
     console.error("[data-export]", err?.message || err);
-    return res.status(err?.status || 500).json({ error: err?.status === 404 ? err.message : "Verilerin hazırlanamadı. Biraz sonra tekrar dene." });
+    return res.status(err?.status || 500).json({ error: err?.status === 404 ? err.message : "Your data could not be prepared. Try again in a bit." });
   }
 });
 

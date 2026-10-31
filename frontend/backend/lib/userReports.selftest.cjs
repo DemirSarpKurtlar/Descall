@@ -99,10 +99,14 @@ assert(
   const done = reporterNotice("actioned");
   const none = reporterNotice("dismissed");
   assert(done.type === "report_result" && none.type === "report_result", "reporter notice type");
-  assert(done.body !== none.body, "actioned and dismissed read differently");
+  assert(done.bodyKey !== none.bodyKey, "actioned and dismissed read differently");
+  // Words come from the bot.notify.* catalog (English text + i18n refs, translated per user).
+  const { en } = require("./botText");
   for (const n of [done, none]) {
-    assert(/Şikayetin/.test(n.title) && n.body.length > 10, "reporter notice is Turkish, sen form");
-    assert(!/\{|undefined/.test(n.title + n.body), "no template leftovers");
+    const title = en(n.titleKey);
+    const body = en(n.bodyKey);
+    assert(/report/i.test(title) && body.length > 10, "reporter notice has catalog text");
+    assert(!/\{|undefined|^bot\./.test(title + body), "no template leftovers");
   }
   // The 8 reasons of the mockup #30 sheet are all accepted as-is.
   for (const r of ["harassment", "hate_speech", "threats", "spam", "impersonation", "nsfw", "doxxing", "other"]) {

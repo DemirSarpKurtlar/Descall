@@ -24,25 +24,25 @@ router.get("/appearance", requireAuth, async (req, res) => {
     if (error) {
       if (missingTable(error)) return res.json({ appearance: null, updatedAt: null });
       console.error("[appearance] GET failed");
-      return res.status(500).json({ error: "Görünüm ayarları yüklenemedi." });
+      return res.status(500).json({ error: "Could not load appearance settings." });
     }
     if (!data) return res.json({ appearance: null, updatedAt: null });
     return res.json({ appearance: sanitizeAppearance(data.settings), updatedAt: data.updated_at || null });
   } catch {
     console.error("[appearance] GET failed");
-    return res.status(500).json({ error: "Görünüm ayarları yüklenemedi." });
+    return res.status(500).json({ error: "Could not load appearance settings." });
   }
 });
 
 router.put("/appearance", requireAuth, async (req, res) => {
   try {
     const patch = sanitizeAppearance(req.body?.appearance);
-    if (!Object.keys(patch).length) return res.status(400).json({ error: "Geçerli bir görünüm ayarı yok." });
+    if (!Object.keys(patch).length) return res.status(400).json({ error: "No valid appearance setting." });
     const { data: cur, error: readErr } = await supabase.from(TABLE).select("settings").eq("user_id", req.user.id).maybeSingle();
     if (readErr) {
-      if (missingTable(readErr)) return res.status(503).json({ error: "Görünüm eşitlemesi henüz hazır değil." });
+      if (missingTable(readErr)) return res.status(503).json({ error: "Appearance sync is not ready yet." });
       console.error("[appearance] PUT read failed");
-      return res.status(500).json({ error: "Görünüm ayarları kaydedilemedi." });
+      return res.status(500).json({ error: "Could not save appearance settings." });
     }
     const settings = { ...sanitizeAppearance(cur?.settings), ...patch };
     const updatedAt = new Date().toISOString();
@@ -51,12 +51,12 @@ router.put("/appearance", requireAuth, async (req, res) => {
       .upsert({ user_id: req.user.id, settings, updated_at: updatedAt }, { onConflict: "user_id" });
     if (error) {
       console.error("[appearance] PUT failed");
-      return res.status(500).json({ error: "Görünüm ayarları kaydedilemedi." });
+      return res.status(500).json({ error: "Could not save appearance settings." });
     }
     return res.json({ appearance: settings, updatedAt });
   } catch {
     console.error("[appearance] PUT failed");
-    return res.status(500).json({ error: "Görünüm ayarları kaydedilemedi." });
+    return res.status(500).json({ error: "Could not save appearance settings." });
   }
 });
 

@@ -1,4 +1,5 @@
 "use strict";
+const { apiError } = require("../apiError");
 
 /**
  * Watch list rules for the "Şüpheli Davranışlar" admin tab (decisions
@@ -23,7 +24,7 @@ const MAX_RULES = 6;
 
 function normalizeRules(input) {
   if (!Array.isArray(input)) return { error: "`rules` must be a list." };
-  if (input.length > MAX_RULES) return { error: `At most ${MAX_RULES} rules.` };
+  if (input.length > MAX_RULES) return apiError("At most {max} rules.", { max: MAX_RULES });
   const out = [];
   const seen = new Set();
   for (const r of input) {

@@ -458,7 +458,7 @@ async function socketChecks() {
     assert.ok(rows("polls").find((p) => p.id === "poll-a").closed_at);
     const end = rows("server_messages").find((m) => m.media_type === "poll_end");
     assert.ok(end && end.channel_id === "cA-text" && end.server_id === "srv-A", "end line posted in the poll's own channel");
-    assert.match(end.content, /anketi sona erdi/);
+    assert.match(end.content, /has ended/);
   });
 
   // ---- "Kanala paylaş": only the invoker, only into the channel the reply was made in, only with VIEW+SEND.

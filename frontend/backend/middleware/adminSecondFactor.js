@@ -44,7 +44,7 @@ async function requireAdmin2fa(req, res, next) {
   const on = await totpEnabled(req.user?.id);
   if (on === false) {
     return res.status(403).json({
-      error: "Yönetici Paneli için doğrulama uygulaması gerekli. Ayarlar > Güvenlik'ten kur.",
+      error: "The Admin Panel needs an authenticator app. Set it up in Settings > Security.",
       code: "ADMIN_2FA_REQUIRED",
     });
   }
@@ -69,7 +69,7 @@ function requireStepUp(req, res, next) {
   if (STEP_UP_EXEMPT.some((re) => re.test(req.path || ""))) return next();
   if (!req.adminTotpKnown) return next(); // migration not applied yet
   if (stepUpValid(req)) return next();
-  return res.status(403).json({ error: "Bu işlem için doğrulama kodu gerekli.", code: "STEP_UP_REQUIRED" });
+  return res.status(403).json({ error: "This action needs a verification code.", code: "STEP_UP_REQUIRED" });
 }
 
 async function stepUpHandler(req, res) {
@@ -78,7 +78,7 @@ async function stepUpHandler(req, res) {
   const v = await twoFactor.verifySecondFactor(req.user.id, req.body?.code);
   if (!v.ok) {
     recordFailure(key, STEP_UP_LIMIT);
-    const msg = v.reason === "replay" ? "Bu kod zaten kullanıldı. Bir sonraki kodu bekle." : "Kod yanlış.";
+    const msg = v.reason === "replay" ? "This code was already used. Wait for the next code." : "Wrong code.";
     return res.status(400).json({ error: msg, code: v.reason });
   }
   res.set("Cache-Control", "no-store");

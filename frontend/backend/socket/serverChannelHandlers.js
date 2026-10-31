@@ -29,6 +29,8 @@ const {
 } = require("../lib/slashCommands");
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
+const { apiError, apiText } = require("../lib/apiError");
+const { errorFields } = require("../lib/apiError");
 
 const slowmodeLastSend = new Map();
 
@@ -140,7 +142,8 @@ async function assertServerTimeout({ userId, serverId, channelId, tempId, socket
   socket.emit("server:channel:message:error", {
     channelId,
     tempId: tempId || null,
-    message: `You are timed out until ${until.toLocaleString("en-US")}.`,
+    // The app formats timeout.until for the viewer; {until} is the English fallback date.
+    ...apiText("message", "You are timed out until {until}.", { until: until.toLocaleString("en-US") }),
     code: "TIMED_OUT",
     timeout: {
       until: until.toISOString(),
@@ -192,7 +195,7 @@ async function assertSlowmode({ userId, channel, channelId, channelBits, tempId,
   socket.emit("server:channel:message:error", {
     channelId,
     tempId: tempId || null,
-    message: `Slowmode is on. Try again in ${retryAfterSeconds}s.`,
+    ...apiText("message", "Slowmode is on. Try again in {seconds}s.", { seconds: retryAfterSeconds }),
     code: "SLOWMODE",
     retryAfterSeconds,
   });
@@ -491,6 +494,7 @@ function registerServerChannelHandlers(io, socket) {
       if ((socket.data.channelRoomEpoch || 0) !== epoch) return;
       socket.emit("server:channel:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Failed to join channel.",
         code: err.code || null,
       });
@@ -569,7 +573,7 @@ function registerServerChannelHandlers(io, socket) {
       if (error) throw error;
       if (!row) return fail("Message not found.");
       if (row.sender_id !== myId) return fail("You can only edit your own messages.", "MISSING_PERMISSION");
-      if (["poll_v2", "poll_end", "app_card"].includes(row.media_type)) return fail("Bu mesaj metin olarak düzenlenemez.", "NOT_EDITABLE");
+      if (["poll_v2", "poll_end", "app_card"].includes(row.media_type)) return fail("This message can't be edited as text.", "NOT_EDITABLE");
       const editedAt = new Date().toISOString();
       const { error: updErr } = await supabase
         .from("server_messages")
@@ -636,6 +640,7 @@ function registerServerChannelHandlers(io, socket) {
     } catch (err) {
       socket.emit("server:channel:message:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Failed to pin message.",
         code: err.code || null,
       });
@@ -682,6 +687,7 @@ function registerServerChannelHandlers(io, socket) {
     } catch (err) {
       socket.emit("server:channel:message:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Failed to unpin message.",
         code: err.code || null,
       });
@@ -829,6 +835,7 @@ function registerServerChannelHandlers(io, socket) {
     } catch (err) {
       socket.emit("server:channel:message:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Failed to delete message.",
         code: err.code || null,
       });
@@ -841,12 +848,12 @@ function registerServerChannelHandlers(io, socket) {
       if (typeof cb === "function") cb(out);
       else if (!out.ok) socket.emit("server:channel:message:error", { channelId, message: out.message, code: out.code });
     };
-    if (typeof channelId !== "string" || typeof messageId !== "string") return reply({ ok: false, code: "BAD_REQUEST", message: "Paylaşılamadı." });
+    if (typeof channelId !== "string" || typeof messageId !== "string") return reply({ ok: false, code: "BAD_REQUEST", message: "Could not share." });
     try {
       const { shareAppMessage } = require("../lib/slashCommands");
       reply(await shareAppMessage({ io, socket, userId: myId, serverId, channelId, messageId, sender: buildSenderPayload(socket) }));
     } catch (err) {
-      reply({ ok: false, code: err.code || "SHARE_FAILED", message: err.status === 403 ? "Bu kanala mesaj gönderme yetkin yok." : "Paylaşılamadı." });
+      reply({ ok: false, code: err.code || "SHARE_FAILED", message: err.status === 403 ? "You don't have permission to send messages to this channel." : "Could not share." });
     }
   });
 
@@ -965,7 +972,7 @@ function registerServerChannelHandlers(io, socket) {
           // Yönetici Paneli switches (3.1.3): freeze, global slow mode, per-minute cap.
           const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: isPlatformAdmin(socket), kind: "server" });
           if (!verdict.ok) {
-            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: verdict.message, code: verdict.code, retryAfterMs: verdict.retryAfterMs });
+            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: verdict.message, messageKey: verdict.messageKey, messageVars: verdict.messageVars, code: verdict.code, retryAfterMs: verdict.retryAfterMs });
             return;
           }
         }
@@ -1135,7 +1142,7 @@ function registerServerChannelHandlers(io, socket) {
           } catch (pollErr) {
             console.error("[ServerChannel] poll create failed:", pollErr?.message || pollErr);
             await supabase.from("server_messages").delete().eq("id", row.id).eq("channel_id", channelId);
-            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: "Anket oluşturulamadı. Tekrar dene." });
+            socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, message: "Could not create the poll. Try again." });
             return;
           }
         }
@@ -1288,7 +1295,7 @@ function registerServerChannelHandlers(io, socket) {
                   if (pushTargets.length > 0) {
                     const { sendMentionPush } = require("../lib/webPush");
                     void sendMentionPush(pushTargets, {
-                      title: `${fromName} mentioned you`,
+                      i18n: { title: { key: "push.mentioned", vars: { from: fromName } } },
                       body: trimmedContent.slice(0, 140),
                       text: trimmedContent.slice(0, 140),
                       from: fromName,
@@ -1312,6 +1319,7 @@ function registerServerChannelHandlers(io, socket) {
         socket.emit("server:channel:message:error", {
           channelId,
           tempId: tempId || null,
+          ...errorFields(err, "message"),
           message: err.message || "Failed to send message.",
           code: err.code || null,
         });

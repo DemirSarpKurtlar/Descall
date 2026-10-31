@@ -8,6 +8,7 @@
 const express = require("express");
 const supabase = require("../db/supabase");
 const { service } = require("../runtime/maintenanceInstance");
+const { requestLang } = require("../lib/i18n");
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ router.get("/maintenance/windows", async (_req, res) => {
 
 router.post("/maintenance/windows", async (req, res) => {
   try {
-    res.status(201).json({ window: await service.create(req.body || {}, req.user) });
+    res.status(201).json({ window: await service.create(req.body || {}, req.user, { lang: requestLang(req, "tr") }) });
   } catch (err) {
     send(res, err);
   }
@@ -47,7 +48,7 @@ router.post("/maintenance/windows", async (req, res) => {
 
 router.patch("/maintenance/windows/:id", async (req, res) => {
   try {
-    res.json({ window: await service.update(String(req.params.id), req.body || {}, req.user) });
+    res.json({ window: await service.update(String(req.params.id), req.body || {}, req.user, { lang: requestLang(req, "tr") }) });
   } catch (err) {
     send(res, err);
   }
@@ -72,7 +73,8 @@ router.post("/maintenance/windows/:id/end", async (req, res) => {
 router.post("/maintenance/windows/:id/cancel", async (req, res) => {
   try {
     // The typed "İPTAL" confirmation is enforced here too, not only in the modal.
-    if (String(req.body?.confirm || "").trim().toLocaleUpperCase("tr-TR") !== "İPTAL")
+    // The confirm word the admin types: "İPTAL" (Turkish UI) or "CANCEL" (other languages).
+    if (!["İPTAL", "CANCEL"].includes(String(req.body?.confirm || "").trim().toLocaleUpperCase("tr-TR")))
       return res.status(400).json({ error: "confirm_required", code: "confirm_required" });
     res.json({ window: await service.cancel(String(req.params.id), req.body?.reason, req.user) });
   } catch (err) {

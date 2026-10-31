@@ -2,8 +2,12 @@
 
 /**
  * Pure poll rules (no DB). Shared by the socket handlers, the /poll slash
- * command and the selftest. Strings shown to users are Turkish.
+ * command and the selftest. Error messages are static English (the client translates
+ * them); stored text (fallback body, "poll ended" line) is English with an i18n ref
+ * (lib/botText.js, bot.poll.*).
  */
+
+const { ref, en } = require("./botText");
 
 const LIMITS = Object.freeze({ question: 300, option: 100, minOptions: 2, maxOptions: 10, emoji: 16 });
 
@@ -36,9 +40,9 @@ function fail(code, message) {
  * Returns { ok: true, poll: { question, options: [{ text, emoji }], multi, anonymous, durationSeconds } }.
  */
 function normalizePollInput(raw) {
-  if (!raw || typeof raw !== "object") return fail("BAD_POLL", "Anket bilgisi eksik.");
+  if (!raw || typeof raw !== "object") return fail("BAD_POLL", "Poll details are missing.");
   const question = clean(raw.question, LIMITS.question);
-  if (!question) return fail("BAD_QUESTION", "Bir soru yaz.");
+  if (!question) return fail("BAD_QUESTION", "Write a question.");
   const list = Array.isArray(raw.options) ? raw.options : [];
   const options = [];
   const seen = new Set();
@@ -46,12 +50,12 @@ function normalizePollInput(raw) {
     const text = clean(typeof item === "string" ? item : item?.text, LIMITS.option);
     if (!text) continue;
     const key = text.toLocaleLowerCase("tr");
-    if (seen.has(key)) return fail("DUPLICATE_OPTION", "Seçenekler birbirinden farklı olmalı.");
+    if (seen.has(key)) return fail("DUPLICATE_OPTION", "Options must be different from each other.");
     seen.add(key);
     options.push({ text, emoji: typeof item === "object" ? cleanEmoji(item?.emoji) : null });
   }
-  if (options.length < LIMITS.minOptions) return fail("TOO_FEW_OPTIONS", "En az 2 seçenek ekle.");
-  if (options.length > LIMITS.maxOptions) return fail("TOO_MANY_OPTIONS", "En fazla 10 seçenek ekleyebilirsin.");
+  if (options.length < LIMITS.minOptions) return fail("TOO_FEW_OPTIONS", "Add at least 2 options.");
+  if (options.length > LIMITS.maxOptions) return fail("TOO_MANY_OPTIONS", "You can add up to 10 options.");
   const wanted = Math.floor(Number(raw.durationSeconds) || 0);
   const durationSeconds = DURATIONS.includes(wanted) ? wanted : DEFAULT_DURATION;
   return {
@@ -76,10 +80,16 @@ function parsePollArgs(args) {
 
 /** Plain-text body stored in the message row. Old clients (and previews / push) show this. */
 function pollFallbackText(poll) {
-  const lines = [`📊 Anket: ${poll.question}`];
+  const lines = [en("bot.poll.fallbackTitle", { question: poll.question })];
   (poll.options || []).forEach((o, i) => lines.push(`${i + 1}. ${o.emoji ? `${o.emoji} ` : ""}${o.text}`));
-  lines.push("Oy vermek için Descall'ı güncelle");
+  lines.push(en("bot.poll.updateToVote"));
   return lines.join("\n");
+}
+
+/** Bot card explanation for a normalizePollInput() failure code. */
+function inputErrorRef(code) {
+  const known = ["BAD_POLL", "BAD_QUESTION", "DUPLICATE_OPTION", "TOO_FEW_OPTIONS", "TOO_MANY_OPTIONS"];
+  return ref(`bot.poll.err.${known.includes(code) ? code : "BAD_POLL"}`);
 }
 
 function isClosed(poll, now = Date.now()) {
@@ -149,37 +159,43 @@ function buildPollSnapshot(poll, options, tally, { viewerId = null, canManage = 
   };
 }
 
-/** One-line system text posted when a poll ends. */
-function pollEndText(snapshot) {
-  const q = `“${snapshot.question}” anketi sona erdi`;
-  if (!snapshot.voters) return `📊 ${q} · Kimse oy vermedi`;
+/** { key, vars } of the one-line system text posted when a poll ends. */
+function pollEndRef(snapshot) {
+  const question = snapshot.question;
+  if (!snapshot.voters) return ref("bot.poll.endedNoVotes", { question });
   const winners = snapshot.options.filter((o) => o.winner);
-  if (!winners.length) return `📊 ${q}`;
+  if (!winners.length) return ref("bot.poll.ended", { question });
   const label = (o) => `${o.emoji ? `${o.emoji} ` : ""}${o.text}`;
-  if (winners.length === 1) return `📊 ${q} · Kazanan: ${label(winners[0])} (%${winners[0].percent})`;
-  return `📊 ${q} · Berabere: ${winners.map(label).join(", ")} (%${winners[0].percent})`;
+  if (winners.length === 1) return ref("bot.poll.endedWinner", { question, winner: label(winners[0]), percent: winners[0].percent });
+  return ref("bot.poll.endedTie", { question, winners: winners.map(label).join(", "), percent: winners[0].percent });
+}
+
+/** English fallback of pollEndRef (stored as the message content). */
+function pollEndText(snapshot) {
+  const r = pollEndRef(snapshot);
+  return en(r.key, r.vars);
 }
 
 const VOTE_ERRORS = Object.freeze({
-  POLL_NOT_FOUND: "Anket bulunamadı.",
-  POLL_CLOSED: "Bu anket sona erdi.",
-  SINGLE_CHOICE: "Bu ankette yalnızca bir seçenek seçebilirsin.",
-  BAD_OPTION: "Seçenek bulunamadı.",
-  HAS_VOTES: "Oy verilmiş bir anket düzenlenemez.",
-  NOT_CREATOR: "Anketi yalnızca oluşturan kişi düzenleyebilir.",
-  BAD_OPTIONS: "2 ile 10 arasında seçenek olmalı.",
-  NO_ACCESS: "Bu ankete erişimin yok.",
-  TIMED_OUT: "Susturulmuşken oy veremezsin.",
-  ANONYMOUS: "Bu anket anonim; oy verenler gösterilmez.",
-  HIDDEN: "Oy verenleri görmek için önce oy ver.",
-  NO_PERMISSION: "Bunun için yetkin yok.",
+  POLL_NOT_FOUND: "Poll not found.",
+  POLL_CLOSED: "This poll has ended.",
+  SINGLE_CHOICE: "You can pick only one option in this poll.",
+  BAD_OPTION: "Option not found.",
+  HAS_VOTES: "A poll that has votes can't be edited.",
+  NOT_CREATOR: "Only the person who created the poll can edit it.",
+  BAD_OPTIONS: "A poll needs 2 to 10 options.",
+  NO_ACCESS: "You don't have access to this poll.",
+  TIMED_OUT: "You can't vote while you're timed out.",
+  ANONYMOUS: "This poll is anonymous; voters are not shown.",
+  HIDDEN: "Vote first to see who voted.",
+  NO_PERMISSION: "You don't have permission to do that.",
 });
 
 /** Maps a Postgres RAISE message (or our own code) to { code, message }. */
 function voteError(errOrCode) {
   const raw = typeof errOrCode === "string" ? errOrCode : String(errOrCode?.code || errOrCode?.message || "");
   const code = Object.keys(VOTE_ERRORS).find((k) => raw.includes(k)) || "POLL_ERROR";
-  return { code, message: VOTE_ERRORS[code] || "Anket işlemi başarısız oldu." };
+  return { code, message: VOTE_ERRORS[code] || "The poll action failed." };
 }
 
 module.exports = {
@@ -193,6 +209,8 @@ module.exports = {
   percent,
   buildPollSnapshot,
   pollEndText,
+  pollEndRef,
+  inputErrorRef,
   voteError,
   VOTE_ERRORS,
 };

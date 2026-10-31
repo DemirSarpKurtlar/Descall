@@ -7,11 +7,12 @@ const MAX_PASSWORD_LENGTH = 72;
 const HIBP_TIMEOUT_MS = 2000;
 
 function passwordLengthError(password) {
-  if (typeof password !== "string") return "Şifre metin olmalı.";
+  if (typeof password !== "string") return "Password must be text.";
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Şifre en az ${MIN_PASSWORD_LENGTH} karakter olmalı.`;
+    // Static English (the app translates it); MIN_PASSWORD_LENGTH is 8.
+    return "Password must be at least 8 characters.";
   }
-  if (password.length > MAX_PASSWORD_LENGTH) return "Şifre en fazla 72 karakter olabilir.";
+  if (password.length > MAX_PASSWORD_LENGTH) return "Password can be at most 72 characters.";
   return null;
 }
 
@@ -47,7 +48,7 @@ async function checkNewPassword(password, { fetchImpl = fetch, env = process.env
   const pwned = await isPwnedPassword(password, fetchImpl);
   if (pwned) {
     return {
-      error: "Bu şifre veri ihlallerinde görünmüş. Başka bir şifre seç.",
+      error: "This password has appeared in data breaches. Choose a different password.",
       code: "pwned",
     };
   }

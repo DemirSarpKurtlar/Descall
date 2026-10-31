@@ -74,7 +74,7 @@ function socketAuthMiddleware(socket, next) {
           }
           // Erişim yasağı (3.5.0): banned IP / network / device, admins exempt.
           return accessCheck(socket, decoded).then((blocked) => {
-            if (blocked) return next(new Error("Authentication failed: Bu cihazdan veya ağdan Descall'a erişim engellendi."));
+            if (blocked) return next(new Error("Authentication failed: Access to Descall from this device or network is blocked."));
             assign();
             next();
           });

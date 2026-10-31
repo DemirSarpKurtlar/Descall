@@ -45,7 +45,7 @@ async function resolveScope(req, me) {
   const kind = String(req.query.kind || "");
   if (kind === "dm") {
     const peerId = String(req.query.peerId || "");
-    if (!isUuid(peerId) || peerId === me) return { status: 400, body: { error: "Geçersiz konuşma." } };
+    if (!isUuid(peerId) || peerId === me) return { status: 400, body: { error: "Invalid conversation." } };
     if (!(await isAcceptedFriend(me, peerId))) return { status: 200, body: { results: [], nextBefore: null, messages: [] } };
     return {
       table: "dm_messages",
@@ -56,12 +56,12 @@ async function resolveScope(req, me) {
   }
   if (kind === "group") {
     const groupId = String(req.query.groupId || "");
-    if (!isUuid(groupId)) return { status: 400, body: { error: "Geçersiz grup." } };
+    if (!isUuid(groupId)) return { status: 400, body: { error: "Invalid group." } };
     const { data: member } = await supabase.from("group_members").select("group_id").eq("group_id", groupId).eq("user_id", me).maybeSingle();
     let readUntil = null;
     if (!member) {
       const removal = await removals.getActiveRemoval(groupId, me);
-      if (!removal) return { status: 403, body: { error: "Bu grubun üyesi değilsin." } };
+      if (!removal) return { status: 403, body: { error: "You're not a member of this group." } };
       readUntil = removal.read_until || removal.removed_at;
     }
     return {
@@ -78,10 +78,10 @@ async function resolveScope(req, me) {
   if (kind === "channel") {
     const serverId = String(req.query.serverId || "");
     const channelId = String(req.query.channelId || "");
-    if (!isUuid(serverId) || !isUuid(channelId)) return { status: 400, body: { error: "Geçersiz kanal." } };
+    if (!isUuid(serverId) || !isUuid(channelId)) return { status: 400, body: { error: "Invalid channel." } };
     const perms = await resolveChannelPermissions(supabase, serverId, me, channelId);
     if (!perms.isMember || perms.channelMissing || !hasPermission(perms.bits, Permissions.VIEW_CHANNEL)) {
-      return { status: 404, body: { error: "Kanal bulunamadı." } };
+      return { status: 404, body: { error: "Channel not found." } };
     }
     if (!hasPermission(perms.bits, Permissions.READ_MESSAGE_HISTORY)) return { status: 200, body: { results: [], nextBefore: null, messages: [] } };
     return {
@@ -91,7 +91,7 @@ async function resolveScope(req, me) {
       scope: (q) => q.eq("server_id", serverId).eq("channel_id", channelId),
     };
   }
-  return { status: 400, body: { error: "Geçersiz arama." } };
+  return { status: 400, body: { error: "Invalid search." } };
 }
 
 const isUserText = (r) => r.message_type == null || ["text", "user", "default"].includes(r.message_type);
@@ -105,7 +105,7 @@ router.get("/messages", requireAuth, async (req, res) => {
   const me = req.user.id;
   if (rejectIfLimited(res, [recordFailure(`search:${me}`, { windowMs: 60000, max: 30 })])) return;
   const q = s.cleanQuery(req.query.q);
-  if (!q) return res.status(400).json({ error: "En az 2 harf yaz.", code: "QUERY_TOO_SHORT" });
+  if (!q) return res.status(400).json({ error: "Type at least 2 letters.", code: "QUERY_TOO_SHORT" });
   const limit = Math.min(50, Math.max(5, parseInt(req.query.limit, 10) || 25));
   const before = cursorOf(req.query.before);
   const from = isUuid(req.query.from) ? String(req.query.from) : null;
@@ -132,7 +132,7 @@ router.get("/messages", requireAuth, async (req, res) => {
     res.json({ results, nextBefore: (data || []).length > limit ? page[page.length - 1]?.created_at || null : null });
   } catch (err) {
     console.error("[search]", err?.message || err);
-    res.status(500).json({ error: "Arama yapılamadı." });
+    res.status(500).json({ error: "Could not search." });
   }
 });
 
@@ -144,13 +144,13 @@ router.get("/context", requireAuth, async (req, res) => {
   const me = req.user.id;
   if (rejectIfLimited(res, [recordFailure(`search-ctx:${me}`, { windowMs: 60000, max: 60 })])) return;
   const id = String(req.query.id || "");
-  if (!id || id.length > 64) return res.status(400).json({ error: "Geçersiz mesaj." });
+  if (!id || id.length > 64) return res.status(400).json({ error: "Invalid message." });
   try {
     const sc = await resolveScope(req, me);
     if (sc.status) return res.status(sc.status).json(sc.body);
     const { data: hit, error } = await sc.scope(supabase.from(sc.table).select(sc.cols)).eq("id", id).maybeSingle();
     if (error) throw error;
-    if (!hit) return res.status(404).json({ error: "Mesaj bulunamadı." });
+    if (!hit) return res.status(404).json({ error: "Message not found." });
     const [olderRes, newerRes] = await Promise.all([
       sc.scope(supabase.from(sc.table).select(sc.cols)).lt("created_at", hit.created_at).order("created_at", { ascending: false }).limit(5),
       sc.scope(supabase.from(sc.table).select(sc.cols)).gt("created_at", hit.created_at).order("created_at", { ascending: true }).limit(5),
@@ -169,7 +169,7 @@ router.get("/context", requireAuth, async (req, res) => {
     res.json({ messages });
   } catch (err) {
     console.error("[search:context]", err?.message || err);
-    res.status(500).json({ error: "Mesaj yüklenemedi." });
+    res.status(500).json({ error: "Could not load the message." });
   }
 });
 

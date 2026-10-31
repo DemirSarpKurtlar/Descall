@@ -263,7 +263,7 @@ function registerGroupHandlers(io, socket, state) {
       // Yönetici Paneli switches (3.1.3): freeze, slow mode, per-minute cap.
       const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: isPlatformAdmin(socket), kind: "group" });
       if (!verdict.ok) {
-        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: verdict.message, code: verdict.code, retryAfterMs: verdict.retryAfterMs });
+        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: verdict.message, messageKey: verdict.messageKey, messageVars: verdict.messageVars, code: verdict.code, retryAfterMs: verdict.retryAfterMs });
         return;
       }
     }
@@ -355,7 +355,7 @@ function registerGroupHandlers(io, socket, state) {
       } catch (pollErr) {
         console.error("[GroupMessage] poll create failed:", pollErr?.message || pollErr);
         await supabase.from("group_messages").delete().eq("id", row.id).eq("group_id", groupId);
-        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: "Anket oluşturulamadı. Tekrar dene." });
+        socket.emit("group:message:error", { groupId, tempId: tempId || null, message: "Could not create the poll. Try again." });
         return;
       }
     }
@@ -612,8 +612,10 @@ function registerGroupHandlers(io, socket, state) {
           groupName,
           callType,
           from: socket.user.username,
-          title: `${socket.user.username} is calling`,
-          body: `Join the ${callType} call in your group.`,
+          i18n: {
+            title: { key: "push.calling", vars: { from: socket.user.username } },
+            body: { key: callType === "video" ? "push.groupCallJoinVideo" : "push.groupCallJoinVoice" },
+          },
           tag: `group-call-${groupId}`,
           deepLink: `/?group=${encodeURIComponent(groupId)}`,
           action: "join",
