@@ -1299,6 +1299,15 @@ function ParticipantTile({
   const mountVideo = Boolean(hasVideo && cameraOn !== false && (videoRef || stream) && (!stream || presence.mount));
   const showVideo = Boolean(mountVideo && (!stream || presence.show));
   const displayName = resolveDisplayName(user) || username || "?";
+  // A camera flip swaps the track inside the same MediaStream. iOS WebKit keeps
+  // laying the <video> out for the old track, so the new camera drew small in
+  // the middle of the tile (3.7.5). A new element per video track lays out fresh.
+  let videoKey = "video";
+  try {
+    videoKey = stream?.getVideoTracks?.()?.[0]?.id || "video";
+  } catch {
+    videoKey = "video";
+  }
 
   const setVideoEl = useCallback((el) => {
     elRef.current = el;
@@ -1336,6 +1345,7 @@ function ParticipantTile({
     >
       {mountVideo ? (
         <video
+          key={videoKey}
           ref={setVideoEl}
           autoPlay
           playsInline

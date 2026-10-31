@@ -91,3 +91,12 @@ const panel = readFileSync(join(here, "../components/servers/ServerVoicePanel.js
 assert.ok(panel.includes("shouldMirrorLocal(streamCameraTrack(cameraStream))"));
 
 console.log("cameraFacing.selftest: ok");
+
+// 3.7.5: a flip swaps the track in the same stream; the tile <video> is keyed by
+// the video track id so iOS lays the new camera out to fill the tile.
+{
+  const overlay = readFileSync(join(here, "../components/CallOverlay.jsx"), "utf8");
+  assert.match(overlay, /videoKey = stream\?\.getVideoTracks\?\.\(\)\?\.\[0\]\?\.id \|\| "video"/);
+  assert.match(overlay, /<video\s+key=\{videoKey\}\s+ref=\{setVideoEl\}/);
+  console.log("cameraFacing.selftest: tile video keyed by track ok");
+}
