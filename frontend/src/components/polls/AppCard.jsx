@@ -14,7 +14,10 @@ import { SLASH_GROUP_BY_ID, findSlashCommand } from "../../lib/slashCommands";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticSuccess } from "../../lib/fluid/haptics";
 import { SLASH_ICONS } from "./slashIconsMap";
-import { DescallMark, Portal, PRESENCE_LABEL, trDate, trTime } from "./dsxShared";
+import { appClock, appDate, DescallMark, Portal, presenceLabel, tNodes } from "./dsxShared";
+import { useLocale } from "../../context/LocaleContext";
+import { t as rt } from "../../i18n/runtime";
+import { formatNumber, upper } from "../../i18n/format";
 import "./dsx.css";
 
 const CAT = SLASH_GROUP_BY_ID;
@@ -26,11 +29,12 @@ const HI = {
   ok: "linear-gradient(160deg,#39c99b,#2a8f6e)",
 };
 
-const nameOf = (u) => u?.nickname || u?.displayName || u?.display_name || u?.username || "Kullanıcı";
+const nameOf = (u) => u?.nickname || u?.displayName || u?.display_name || u?.username || rt("polls.user");
 
 function Pres({ status, small = false }) {
+  const { t } = useLocale();
   if (!status) return null;
-  return <i className={`dsx-pres ${small ? "sm" : ""} ${status}`} aria-label={PRESENCE_LABEL[status] || ""} />;
+  return <i className={`dsx-pres ${small ? "sm" : ""} ${status}`} aria-label={presenceLabel(t, status)} />;
 }
 
 function UserAvatar({ user, size = 36, presence }) {
@@ -59,8 +63,9 @@ function Head({ icon: Icon, bg, title, sub, right }) {
 
 /* ---------------- /user ---------------- */
 function UserCard({ card, compact, actions }) {
+  const { t, locale } = useLocale();
   const u = card.user || {};
-  const display = card.nickname || u.displayName || u.username || "Kullanıcı";
+  const display = card.nickname || u.displayName || u.username || t("polls.user");
   const presence = u.presence || "offline";
   const [requested, setRequested] = useState(false);
   const badgeClass = { owner: "dsx-b-admin", admin: "dsx-b-admin", staff: "dsx-b-staff", early: "dsx-b-early" };
@@ -76,15 +81,15 @@ function UserCard({ card, compact, actions }) {
   };
   const third = card.isSelf ? (
     <button type="button" className="dsx-btn" onClick={() => actions.openSettings?.()}>
-      <Pencil className="dsx-ico" /> Profili düzenle
+      <Pencil className="dsx-ico" /> {t("polls.app.editProfile")}
     </button>
   ) : card.isFriend ? (
     <button type="button" className="dsx-btn" disabled>
-      <UserCheck className="dsx-ico" /> Arkadaşsınız
+      <UserCheck className="dsx-ico" /> {t("polls.app.friends")}
     </button>
   ) : (
     <button type="button" className="dsx-btn" onClick={addFriend} disabled={requested || !u.username}>
-      <UserPlus className="dsx-ico" /> {requested ? "İstek gönderildi" : "Arkadaş ekle"}
+      <UserPlus className="dsx-ico" /> {requested ? t("polls.app.requestSent") : t("polls.app.addFriend")}
     </button>
   );
   return (
@@ -112,20 +117,20 @@ function UserCard({ card, compact, actions }) {
           {u.username ? `@${u.username}` : null}
           <span className="sep" />
           <span style={{ color: presence === "online" ? "#3BD16F" : presence === "idle" ? "#F5B73B" : presence === "dnd" ? "#F0524F" : "var(--dsx-t3)", fontWeight: 650 }}>
-            {PRESENCE_LABEL[presence] || "Çevrimdışı"}
+            {presenceLabel(t, presence)}
           </span>
         </div>
         {u.customStatus ? <div className="stat">{typeof u.customStatus === "string" ? u.customStatus : u.customStatus.text || ""}</div> : null}
         {u.bio ? <p className="bio">{u.bio}</p> : null}
         {card.timeoutUntil ? (
           <div className="dsx-line" style={{ color: "#ffb88a" }}>
-            <Timer className="dsx-ico" /> {trDate(card.timeoutUntil)} {trTime(card.timeoutUntil)}'e kadar susturuldu
+            <Timer className="dsx-ico" /> {t("polls.app.timedOutUntil", { date: appDate(card.timeoutUntil, locale), time: appClock(card.timeoutUntil, locale) })}
           </div>
         ) : null}
       </div>
       {card.roles?.length ? (
         <div className="blk">
-          <div className="dsx-sect">Roller · {card.roles.length}</div>
+          <div className="dsx-sect">{t("polls.app.roles", { count: card.roles.length })}</div>
           <div className="dsx-pills">
             {card.roles.slice(0, 12).map((r) => (
               <span key={r.id} className="dsx-rolepill" style={{ "--c": r.color || "#8a93a8" }}>
@@ -138,14 +143,14 @@ function UserCard({ card, compact, actions }) {
       ) : null}
       {card.serverJoinedAt || card.accountCreatedAt ? (
         <div className="blk">
-          <div className="dsx-sect">Üyelik</div>
+          <div className="dsx-sect">{t("polls.app.membership")}</div>
           <div className="dsx-dates">
             {card.serverJoinedAt ? (
               <div className="dsx-dt">
                 <span className="di"><Calendar className="dsx-ico" /></span>
                 <div>
-                  <b>{trDate(card.serverJoinedAt)}</b>
-                  <span>Sunucuya katıldı</span>
+                  <b>{appDate(card.serverJoinedAt, locale)}</b>
+                  <span>{t("polls.app.joinedServer")}</span>
                 </div>
               </div>
             ) : null}
@@ -153,8 +158,8 @@ function UserCard({ card, compact, actions }) {
               <div className="dsx-dt">
                 <span className="di" style={{ background: "linear-gradient(160deg,#3d5bd8,#2a3a8a)" }}><DescallMark size={15} /></span>
                 <div>
-                  <b>{trDate(card.accountCreatedAt)}</b>
-                  <span>Descall'a katıldı</span>
+                  <b>{appDate(card.accountCreatedAt, locale)}</b>
+                  <span>{t("polls.app.joinedDescall")}</span>
                 </div>
               </div>
             ) : null}
@@ -163,10 +168,10 @@ function UserCard({ card, compact, actions }) {
       ) : null}
       <div className={`dsx-acts ${compact ? "two" : ""}`}>
         <button type="button" className={`dsx-btn pri ${compact ? "full" : ""}`} disabled={card.isSelf} onClick={() => actions.startDm?.(u)}>
-          <MessageCircle className="dsx-ico" /> Mesaj gönder
+          <MessageCircle className="dsx-ico" /> {t("polls.app.sendMessage")}
         </button>
         <button type="button" className="dsx-btn" onClick={() => actions.openProfile?.(u)}>
-          <IdCard className="dsx-ico" /> Profili aç
+          <IdCard className="dsx-ico" /> {t("polls.app.openProfile")}
         </button>
         {third}
       </div>
@@ -201,6 +206,7 @@ async function downloadImage(url, size, filename) {
 }
 
 function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
+  const { t } = useLocale();
   const reduce = useReducedMotion();
   const [zoom, setZoom] = useState(1);
   useEffect(() => {
@@ -214,7 +220,7 @@ function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
         className="dsx-fullscreen"
         role="dialog"
         aria-modal="true"
-        aria-label={`${nameOf(user)} avatarı`}
+        aria-label={t("polls.app.avatarOf", { name: nameOf(user) })}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -230,10 +236,10 @@ function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
               {meta ? ` · ${meta}` : ""}
             </div>
           </div>
-          <button type="button" className="dsx-btn" onClick={onDownload}><Download className="dsx-ico" /> İndir</button>
-          <button type="button" className="dsx-btn" onClick={() => copyText(url)}><Copy className="dsx-ico" /> Kopyala</button>
-          <button type="button" className="dsx-btn" onClick={() => copyText(url)}><Link className="dsx-ico" /> Bağlantı</button>
-          <button type="button" className="dsx-btn" style={{ width: 36, padding: 0, borderRadius: "50%" }} aria-label="Kapat" onClick={onClose}>
+          <button type="button" className="dsx-btn" onClick={onDownload}><Download className="dsx-ico" /> {t("polls.app.download")}</button>
+          <button type="button" className="dsx-btn" onClick={() => copyText(url)}><Copy className="dsx-ico" /> {t("polls.app.copy")}</button>
+          <button type="button" className="dsx-btn" onClick={() => copyText(url)}><Link className="dsx-ico" /> {t("polls.app.link")}</button>
+          <button type="button" className="dsx-btn" style={{ width: 36, padding: 0, borderRadius: "50%" }} aria-label={t("polls.close")} onClick={onClose}>
             <X className="dsx-ico" />
           </button>
         </div>
@@ -246,9 +252,9 @@ function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
           onClick={(e) => e.stopPropagation()}
         />
         <div className="dsx-heavy zoom" onClick={(e) => e.stopPropagation()}>
-          <button type="button" className="dsx-btn ghost" aria-label="Uzaklaştır" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))}><Minus className="dsx-ico" /></button>
-          <button type="button" className="dsx-btn" aria-label="Yakınlaştırmayı sıfırla" onClick={() => setZoom(1)}>%{Math.round(zoom * 100)}</button>
-          <button type="button" className="dsx-btn ghost" aria-label="Yakınlaştır" onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}><Plus className="dsx-ico" /></button>
+          <button type="button" className="dsx-btn ghost" aria-label={t("polls.app.zoomOut")} onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))}><Minus className="dsx-ico" /></button>
+          <button type="button" className="dsx-btn" aria-label={t("polls.app.zoomReset")} onClick={() => setZoom(1)}>{formatNumber(zoom, locale, { style: "percent", maximumFractionDigits: 0 })}</button>
+          <button type="button" className="dsx-btn ghost" aria-label={t("polls.app.zoomIn")} onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}><Plus className="dsx-ico" /></button>
         </div>
       </motion.div>
     </Portal>
@@ -256,6 +262,7 @@ function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
 }
 
 function AvatarCard({ card }) {
+  const { t, locale } = useLocale();
   const url = card.avatarUrl || card.user?.avatarUrl || null;
   const user = card.user || {};
   const [dims, setDims] = useState(null);
@@ -274,20 +281,20 @@ function AvatarCard({ card }) {
   const meta = dims ? `${dims.w} × ${dims.h}${ext && ext.length <= 4 ? ` · ${ext === "JPEG" ? "JPG" : ext}` : ""}` : null;
   const sizes = [128, 256, 512, 1024].filter((s) => !dims || s <= Math.max(dims.w, 128));
   const chosen = size || (sizes.length ? sizes[sizes.length - 1] : null);
-  const download = () => downloadImage(url, size && dims && size < dims.w ? size : null, `${user.username || "avatar"}-${chosen || "orijinal"}.png`);
+  const download = () => downloadImage(url, size && dims && size < dims.w ? size : null, `${user.username || "avatar"}-${chosen || t("polls.app.original")}.png`);
   return (
     <div className="dsx-card dsx-avcard">
       <div className="hd">
         <UserAvatar user={user} size={34} presence={user.presence} />
         <div>
-          <b>{card.displayName || nameOf(user)} avatarı</b>
-          <span>{user.username ? `@${user.username} · ` : ""}Genel avatar</span>
+          <b>{t("polls.app.avatarOf", { name: card.displayName || nameOf(user) })}</b>
+          <span>{user.username ? `@${user.username} · ` : ""}{t("polls.app.globalAvatar")}</span>
         </div>
       </div>
       <div className="dsx-avimg" style={url ? { backgroundImage: `url("${url}")` } : undefined}>
-        {url ? null : (nameOf(user)[0] || "?").toLocaleUpperCase("tr")}
+        {url ? null : upper(nameOf(user)[0] || "?", locale)}
         {url ? (
-          <button type="button" className="fs" aria-label="Tam ekran" onClick={() => setFull(true)}>
+          <button type="button" className="fs" aria-label={t("polls.app.fullscreen")} onClick={() => setFull(true)}>
             <Maximize2 className="dsx-ico" />
           </button>
         ) : null}
@@ -299,22 +306,22 @@ function AvatarCard({ card }) {
       </div>
       {url ? (
         <>
-          <div className="dsx-sizes" role="group" aria-label="Boyut seç">
+          <div className="dsx-sizes" role="group" aria-label={t("polls.app.chooseSize")}>
             {sizes.map((s) => (
               <button key={s} type="button" className={`dsx-chip ${chosen === s ? "is-on" : ""}`} aria-pressed={chosen === s} onClick={() => setSize(s)}>
                 {s}
               </button>
             ))}
-            <span className="lab">Boyut seç</span>
+            <span className="lab">{t("polls.app.chooseSize")}</span>
           </div>
           <div className="dsx-avacts">
-            <button type="button" className="dsx-btn pri" onClick={download}><Download className="dsx-ico" /> İndir</button>
-            <button type="button" className="dsx-btn" onClick={() => setFull(true)}><Maximize2 className="dsx-ico" /> Tam ekran</button>
-            <button type="button" className="dsx-btn" onClick={() => copyText(url)}><Link className="dsx-ico" /> Bağlantı</button>
+            <button type="button" className="dsx-btn pri" onClick={download}><Download className="dsx-ico" /> {t("polls.app.download")}</button>
+            <button type="button" className="dsx-btn" onClick={() => setFull(true)}><Maximize2 className="dsx-ico" /> {t("polls.app.fullscreen")}</button>
+            <button type="button" className="dsx-btn" onClick={() => copyText(url)}><Link className="dsx-ico" /> {t("polls.app.link")}</button>
           </div>
         </>
       ) : (
-        <div className="dsx-line" style={{ color: "var(--dsx-t3)" }}>Avatar ayarlanmamış.</div>
+        <div className="dsx-line" style={{ color: "var(--dsx-t3)" }}>{t("polls.app.noAvatar")}</div>
       )}
       <AnimatePresence>
         {full ? <FullscreenAvatar url={url} user={user} meta={meta} onClose={() => setFull(false)} onDownload={download} /> : null}
@@ -325,9 +332,10 @@ function AvatarCard({ card }) {
 
 /* ---------------- /server ---------------- */
 function ServerCard({ card }) {
+  const { t, locale } = useLocale();
   const s = card.server || {};
   const c = card.counts || {};
-  const fmt = (n) => (n == null ? "?" : Number(n).toLocaleString("tr-TR"));
+  const fmt = (n) => (n == null ? "?" : formatNumber(n, locale));
   return (
     <div className="dsx-card dsx-appcard">
       <div
@@ -347,7 +355,7 @@ function ServerCard({ card }) {
               fontWeight: 800, fontSize: 20, boxShadow: "0 0 0 4px #1b1d2a,0 10px 24px rgba(0,0,0,.4)",
             }}
           >
-            {s.iconUrl ? null : String(s.name || "?").slice(0, 2).toLocaleUpperCase("tr")}
+            {s.iconUrl ? null : upper(String(s.name || "?").slice(0, 2), locale)}
           </span>
           <div style={{ marginTop: 34, minWidth: 0 }}>
             <b style={{ fontSize: 18 }}>{s.name}</b>
@@ -355,23 +363,23 @@ function ServerCard({ card }) {
           </div>
         </div>
         <div className="dsx-kv">
-          <div><b>{fmt(c.members)}</b><span>Üye</span></div>
-          <div><b><i />{fmt(c.online)}</b><span>Çevrimiçi</span></div>
-          <div><b>{fmt(c.channels)}</b><span>Kanal</span></div>
-          <div><b>{fmt(c.roles)}</b><span>Rol</span></div>
+          <div><b>{fmt(c.members)}</b><span>{t("polls.app.members")}</span></div>
+          <div><b><i />{fmt(c.online)}</b><span>{t("polls.app.online")}</span></div>
+          <div><b>{fmt(c.channels)}</b><span>{t("polls.app.channels")}</span></div>
+          <div><b>{fmt(c.roles)}</b><span>{t("polls.app.roleCount")}</span></div>
         </div>
         <div className="dsx-line">
           {card.owner ? <UserAvatar user={card.owner} size={22} /> : null}
-          Sahibi <b>{nameOf(card.owner)}</b>
+          {t("polls.app.owner")} <b>{nameOf(card.owner)}</b>
           {s.createdAt ? (
             <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Calendar className="dsx-ico" /> {trDate(s.createdAt)}
+              <Calendar className="dsx-ico" /> {appDate(s.createdAt, locale)}
             </span>
           ) : null}
         </div>
         <div className="row2">
           <button type="button" className="dsx-btn pri" onClick={() => window.dispatchEvent(new CustomEvent("descall:server-open", { detail: { kind: "invite" } }))}>
-            <Link className="dsx-ico" /> Davet bağlantısı
+            <Link className="dsx-ico" /> {t("polls.app.inviteLink")}
           </button>
         </div>
       </div>
@@ -381,6 +389,7 @@ function ServerCard({ card }) {
 
 /* ---------------- /help ---------------- */
 function HelpCard({ card }) {
+  const { t } = useLocale();
   const hideCasino = casinoHiddenOnThisDevice();
   const groups = (card.groups || [])
     .map((g) => ({ ...g, commands: (g.commands || []).filter((c) => !(hideCasino && c.casino)) }))
@@ -391,7 +400,7 @@ function HelpCard({ card }) {
   };
   return (
     <div className="dsx-card dsx-appcard dsx-ac">
-      <Head icon={SLASH_ICONS.help} bg={CAT.general.gradient} title={card.title || "Komutlar"} sub={card.subtitle} />
+      <Head icon={SLASH_ICONS.help} bg={CAT.general.gradient} title={card.title || t("polls.app.commands")} sub={card.subtitle} />
       {groups.map((g) => {
         const cat = CAT[catId(g)] || CAT.general;
         return (
@@ -411,7 +420,7 @@ function HelpCard({ card }) {
         );
       })}
       <div className="dsx-line" style={{ marginTop: 12, color: "var(--dsx-t3)" }}>
-        <Sparkles className="dsx-ico" /> İpucu: <b>/</b> yazınca komut menüsü açılır
+        <Sparkles className="dsx-ico" /> {tNodes(t, "polls.app.tip", { slash: <b>/</b> })}
       </div>
     </div>
   );
@@ -419,10 +428,11 @@ function HelpCard({ card }) {
 
 /* ---------------- /nick ---------------- */
 function NickCard({ card, actions }) {
+  const { t } = useLocale();
   const after = card.after;
   return (
     <div className="dsx-card dsx-appcard dsx-ac">
-      <Head icon={Pencil} bg={CAT.general.gradient} title={after ? "Takma adın güncellendi" : "Takma adın temizlendi"} sub={card.serverName ? `${card.serverName} sunucusunda` : null} />
+      <Head icon={Pencil} bg={CAT.general.gradient} title={after ? t("polls.app.nickUpdated") : t("polls.app.nickCleared")} sub={card.serverName ? t("polls.app.inServer", { server: card.serverName }) : null} />
       <div className="dsx-mrow">
         <span style={{ textDecoration: "line-through", color: "var(--dsx-t3)", fontWeight: 600 }}>{card.before || card.baseName || "—"}</span>
         <ChevronRight className="dsx-ico" style={{ color: "var(--dsx-t3)" }} />
@@ -431,11 +441,11 @@ function NickCard({ card, actions }) {
       </div>
       <div className="row2">
         <button type="button" className="dsx-btn" disabled={!actions.runCommand} onClick={() => actions.runCommand?.(`/nick ${card.before || ""}`.trim())}>
-          <Undo2 className="dsx-ico" /> Geri al
+          <Undo2 className="dsx-ico" /> {t("polls.app.undo")}
         </button>
         {after ? (
           <button type="button" className="dsx-btn ghost" disabled={!actions.runCommand} onClick={() => actions.runCommand?.("/nick")}>
-            Takma adı temizle
+            {t("polls.app.clearNick")}
           </button>
         ) : null}
       </div>
@@ -445,13 +455,14 @@ function NickCard({ card, actions }) {
 
 /* ---------------- errors ---------------- */
 function ErrorCard({ card }) {
+  const { t } = useLocale();
   const warn = card.tone === "warn";
   return (
     <div className={`dsx-card dsx-appcard dsx-ac ${warn ? "dsx-tint-warn" : "dsx-tint-danger"}`}>
       <Head icon={card.suggestions ? Search : Info} bg={warn ? HI.warn : HI.danger} title={card.title} sub={card.description} />
       {card.suggestions?.length ? (
         <>
-          <div className="dsx-sect" style={{ margin: "14px 2px 8px" }}>Bunu mu demek istedin?</div>
+          <div className="dsx-sect" style={{ margin: "14px 2px 8px" }}>{t("polls.app.didYouMean")}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {card.suggestions.slice(0, 4).map((s) => (
               <button
@@ -472,7 +483,7 @@ function ErrorCard({ card }) {
       ) : null}
       {card.usage ? (
         <div className="dsx-line" style={{ color: "var(--dsx-t3)" }}>
-          <Info className="dsx-ico" /> Kullanım:{" "}
+          <Info className="dsx-ico" /> {t("polls.app.usage")}{" "}
           {String(card.usage)
             .split(/\s+/)
             .map((p, i) => (
@@ -495,28 +506,32 @@ function useCountdown(until) {
   return now;
 }
 
-function fmtLeft(ms) {
+function fmtLeft(ms, locale) {
   if (ms <= 0) return "0:00";
   const s = Math.ceil(ms / 1000);
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
-  if (d) return `${d} g ${h} sa`;
+  if (d) {
+    const unit = (value, u, unitDisplay) => formatNumber(value, locale, { style: "unit", unit: u, unitDisplay });
+    return `${unit(d, "day", "long")} ${unit(h, "hour", "short")}`;
+  }
   if (h) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
 function ModerationCard({ card }) {
-  const t = card.target || {};
-  const display = nameOf(t);
+  const { t, locale } = useLocale();
+  const tg = card.target || {};
+  const display = nameOf(tg);
   const now = useCountdown(card.action === "timeout" ? card.until : null);
   const [undone, setUndone] = useState(false);
   const [err, setErr] = useState("");
   const M = {
-    timeout: { icon: Timer, title: `${display} susturuldu`, bg: HI.warn, tint: "warn" },
-    kick: { icon: UserX, title: `${display} sunucudan atıldı`, bg: HI.danger, tint: "danger" },
-    ban: { icon: Ban, title: `${display} yasaklandı`, bg: HI.ban, tint: "danger" },
+    timeout: { icon: Timer, title: t("polls.app.modTimeout", { name: display }), bg: HI.warn, tint: "warn" },
+    kick: { icon: UserX, title: t("polls.app.modKick", { name: display }), bg: HI.danger, tint: "danger" },
+    ban: { icon: Ban, title: t("polls.app.modBan", { name: display }), bg: HI.ban, tint: "danger" },
   }[card.action] || { icon: Shield, title: display, bg: HI.danger, tint: "danger" };
   const left = card.until ? new Date(card.until).getTime() - now : 0;
   const total = (Number(card.durationSeconds) || 0) * 1000;
@@ -524,31 +539,31 @@ function ModerationCard({ card }) {
   const undo = async () => {
     setErr("");
     try {
-      if (card.action === "timeout") await removeServerMemberTimeout(card.serverId, t.id);
-      if (card.action === "ban") await unbanServerMember(card.serverId, t.id);
+      if (card.action === "timeout") await removeServerMemberTimeout(card.serverId, tg.id);
+      if (card.action === "ban") await unbanServerMember(card.serverId, tg.id);
       setUndone(true);
       hapticSuccess();
     } catch (e) {
-      setErr(e?.message || "İşlem başarısız oldu.");
+      setErr(e?.message || t("polls.app.actionFailed"));
     }
   };
   const actor = card.actor ? nameOf(card.actor) : null;
   return (
     <div className={`dsx-card dsx-appcard dsx-ac dsx-tint-${M.tint}`}>
-      <Head icon={M.icon} bg={M.bg} title={M.title} sub={[actor ? `${actor} tarafından` : null, trTime(card.at)].filter(Boolean).join(" · ")} />
+      <Head icon={M.icon} bg={M.bg} title={M.title} sub={[actor ? t("polls.app.by", { name: actor }) : null, appClock(card.at, locale)].filter(Boolean).join(" · ")} />
       <div className="dsx-mrow">
-        <UserAvatar user={t} size={42} presence={card.action === "timeout" ? t.presence : null} />
+        <UserAvatar user={tg} size={42} presence={card.action === "timeout" ? tg.presence : null} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <b style={t.topRole?.color ? { color: t.topRole.color } : undefined}>{display}</b>
+          <b style={tg.topRole?.color ? { color: tg.topRole.color } : undefined}>{display}</b>
           <div style={{ fontSize: 12, color: "var(--dsx-t3)" }}>
-            {t.username ? `@${t.username}` : ""}
-            {t.topRole?.name ? ` · ${t.topRole.name}` : ""}
+            {tg.username ? `@${tg.username}` : ""}
+            {tg.topRole?.name ? ` · ${tg.topRole.name}` : ""}
           </div>
         </div>
         {card.action === "timeout" && !undone ? (
           <div style={{ textAlign: "right" }}>
-            <b style={{ fontVariantNumeric: "tabular-nums", fontSize: 18 }}>{fmtLeft(left)}</b>
-            <div style={{ fontSize: 11.5, color: "var(--dsx-t3)" }}>{trTime(card.until)}'e kadar</div>
+            <b style={{ fontVariantNumeric: "tabular-nums", fontSize: 18 }}>{fmtLeft(left, locale)}</b>
+            <div style={{ fontSize: 11.5, color: "var(--dsx-t3)" }}>{t("polls.app.until", { time: appClock(card.until, locale) })}</div>
           </div>
         ) : null}
       </div>
@@ -557,32 +572,32 @@ function ModerationCard({ card }) {
       ) : null}
       {card.reason ? (
         <div className="dsx-line">
-          <span style={{ color: "var(--dsx-t3)" }}>Sebep</span>
+          <span style={{ color: "var(--dsx-t3)" }}>{t("polls.reason")}</span>
           <b>{card.reason}</b>
         </div>
       ) : null}
       {undone ? (
         <div className="dsx-line" style={{ color: "#7ee2a8" }}>
-          <UserCheck className="dsx-ico" /> {card.action === "timeout" ? "Susturma kaldırıldı" : "Yasak kaldırıldı"}
+          <UserCheck className="dsx-ico" /> {card.action === "timeout" ? t("polls.app.timeoutRemoved") : t("polls.app.banRemoved")}
         </div>
       ) : null}
       {err ? <div className="dsx-line" style={{ color: "#ff9a8a" }}>{err}</div> : null}
       <div className="row2">
         {card.action === "timeout" ? (
           <button type="button" className="dsx-btn" disabled={undone || left <= 0} onClick={undo}>
-            <Undo2 className="dsx-ico" /> Susturmayı kaldır
+            <Undo2 className="dsx-ico" /> {t("polls.app.removeTimeout")}
           </button>
         ) : card.action === "ban" ? (
           <button type="button" className="dsx-btn" disabled={undone} onClick={undo}>
-            <Undo2 className="dsx-ico" /> Yasağı kaldır
+            <Undo2 className="dsx-ico" /> {t("polls.app.unban")}
           </button>
         ) : (
           <button type="button" className="dsx-btn" onClick={() => window.dispatchEvent(new CustomEvent("descall:server-open", { detail: { kind: "invite" } }))}>
-            <Link className="dsx-ico" /> Davet gönder
+            <Link className="dsx-ico" /> {t("polls.app.sendInvite")}
           </button>
         )}
         <button type="button" className="dsx-btn ghost" onClick={() => window.dispatchEvent(new CustomEvent("descall:server-open", { detail: { kind: "audit" } }))}>
-          <Shield className="dsx-ico" /> Denetim kaydı
+          <Shield className="dsx-ico" /> {t("polls.app.auditLog")}
         </button>
       </div>
     </div>
@@ -591,19 +606,22 @@ function ModerationCard({ card }) {
 
 /* ---------------- /purge ---------------- */
 function PurgeCard({ card }) {
+  const { t, locale } = useLocale();
   const rows = card.bySender || [];
   const max = Math.max(1, ...rows.map((r) => r.count));
   const since = card.oldestAt ? Math.max(1, Math.round((Date.now() - new Date(card.oldestAt).getTime()) / 60000)) : null;
-  const sinceLabel = since == null ? null : since < 60 ? `son ${since} dk` : since < 1440 ? `son ${Math.round(since / 60)} saat` : `son ${Math.round(since / 1440)} gün`;
+  const unit = (value, u, unitDisplay) => formatNumber(value, locale, { style: "unit", unit: u, unitDisplay });
+  const span = since == null ? null : since < 60 ? unit(since, "minute", "short") : since < 1440 ? unit(Math.round(since / 60), "hour", "long") : unit(Math.round(since / 1440), "day", "long");
+  const sinceLabel = span ? t("polls.app.purgeSince", { span }) : null;
   return (
     <div className="dsx-card dsx-appcard dsx-ac dsx-tint-ok">
       <Head
         icon={Eraser}
         bg={HI.ok}
-        title={`${card.count} mesaj silindi`}
+        title={t("polls.app.purged", { count: card.count })}
         sub={[card.channelName ? `# ${card.channelName}` : null, sinceLabel].filter(Boolean).join(" · ")}
         right={card.autoHide ? (
-          <span style={{ marginLeft: "auto" }} className="dsx-chip"><Clock className="dsx-ico" size={14} /> {card.autoHide} sn sonra kaybolur</span>
+          <span style={{ marginLeft: "auto" }} className="dsx-chip"><Clock className="dsx-ico" size={14} /> {t("polls.app.autoHide", { count: card.autoHide })}</span>
         ) : null}
       />
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 14 }}>
@@ -627,9 +645,10 @@ const SHAREABLE = new Set(["user", "avatar", "server", "help", "nick", "moderati
 
 /**
  * Descall Apps reply card. `message.ephemeral` = only you see it (server
- * replies are invoker-only); "Kanala paylaş" posts it for everyone.
+ * replies are invoker-only); "Share to channel" posts it for everyone.
  */
 export default function AppCard({ message, embed, socket, serverId, channelId, compact = false, actions = {} }) {
+  const { t } = useLocale();
   const card = embed?.card;
   const [sharing, setSharing] = useState(false);
   const [shareErr, setShareErr] = useState("");
@@ -662,7 +681,7 @@ export default function AppCard({ message, embed, socket, serverId, channelId, c
         hapticSuccess();
         dismiss();
       } else {
-        setShareErr(res?.message || "Paylaşılamadı.");
+        setShareErr(res?.message || t("polls.app.shareFailed"));
       }
     });
   };
@@ -685,11 +704,11 @@ export default function AppCard({ message, embed, socket, serverId, channelId, c
       {body}
       {message?.ephemeral ? (
         <div className="dsx-ephem">
-          <Eye className="dsx-ico" /> Bunu yalnızca sen görüyorsun ·{" "}
-          <button type="button" onClick={dismiss}>Kapat</button>
+          <Eye className="dsx-ico" /> {t("polls.app.onlyYou")} ·{" "}
+          <button type="button" onClick={dismiss}>{t("polls.app.dismiss")}</button>
           {message.shareable && SHAREABLE.has(card.kind) && card.kind !== "error" ? (
             <button type="button" className="share" onClick={share} disabled={sharing}>
-              <Share2 className="dsx-ico" /> {sharing ? "Paylaşılıyor…" : "Kanala paylaş"}
+              <Share2 className="dsx-ico" /> {sharing ? t("polls.app.sharing") : t("polls.app.share")}
             </button>
           ) : null}
           {shareErr ? <span style={{ color: "#ff9a8a" }}>{shareErr}</span> : null}

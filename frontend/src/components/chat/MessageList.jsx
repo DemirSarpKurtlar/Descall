@@ -43,6 +43,7 @@ import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS, installHoverTrail } from "../../lib/singleActiveHover";
 import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
 import { getLocale } from "../../i18n/runtime";
+import { formatNumber } from "../../i18n/format";
 import { GroupMemberEventRow } from "../groups/GroupMemberRemoval";
 import { memberEventFromMessage } from "../../lib/groupMemberEvents";
 import { formatMessageClock, formatMessageDate, intlLocaleTag, parseAppDate } from "../../lib/datetime";
@@ -511,7 +512,7 @@ export default function MessageList({
     <div className="message-list" ref={listRef}>
       {isSearching && (
         <div className="message-search-result-count">
-          {t("{count} matching messages", { count: groupedMessages.reduce((n, g) => n + (g.messages?.length || (g.isSummary || g.isGame || g.isActiveBanner ? 1 : 0)), 0) })}
+          {t("chatx.matchingMessages", { count: groupedMessages.reduce((n, g) => n + (g.messages?.length || (g.isSummary || g.isGame || g.isActiveBanner ? 1 : 0)), 0) })}
         </div>
       )}
       {groupedMessages.map((group, groupIndex) => {
@@ -575,9 +576,7 @@ export default function MessageList({
           return (
             <div key={`blocked-${groupKey}`} className="msg-blocked-collapsed" role="note">
               <span>
-                {n === 1
-                  ? t("1 message from a blocked user")
-                  : t("{count} messages from a blocked user", { count: n })}
+                {t("chatx.blockedMessages", { count: n })}
               </span>
               <button
                 type="button"
@@ -665,7 +664,7 @@ export default function MessageList({
                   >
                     <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
                     {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
-                      <span className="msg-bot-badge" title="Descall Apps">UYGULAMA</span>
+                      <span className="msg-bot-badge" title="Descall Apps">{t("chatx.appBadge")}</span>
                     ) : null}
                     <CountryBadge user={avatarUser} compact />
                     <AdminBadge user={avatarUser} variant="inline" />
@@ -734,7 +733,7 @@ export default function MessageList({
               key="jump"
               type="button"
               className="msg-jump-btn g-glass g-heavy"
-              aria-label={jump.unseen > 0 ? t("{count} new messages, scroll to bottom", { count: jump.unseen }) : t("Scroll to bottom")}
+              aria-label={jump.unseen > 0 ? t("chatx.newMessagesJump", { count: jump.unseen }) : t("Scroll to bottom")}
               initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
               exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10, filter: "blur(6px)" }}
@@ -1679,8 +1678,8 @@ function MessageBubble({
                   {message.size && (
                     <div className="message-file-size">
                       {message.size < 1024 * 1024
-                        ? `${Math.round(message.size / 1024)} KB`
-                        : `${(message.size / (1024 * 1024)).toFixed(1)} MB`}
+                        ? formatNumber(Math.round(message.size / 1024), getLocale(), { style: "unit", unit: "kilobyte", unitDisplay: "short" })
+                        : formatNumber(message.size / (1024 * 1024), getLocale(), { style: "unit", unit: "megabyte", unitDisplay: "short", minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                     </div>
                   )}
                 </div>

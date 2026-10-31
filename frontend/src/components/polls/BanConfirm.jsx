@@ -4,10 +4,12 @@ import { Ban } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticWarning } from "../../lib/fluid/haptics";
 import { Portal } from "./dsxShared";
+import { useT } from "../../context/LocaleContext";
 import "./dsx.css";
 
-/** "/ban" safety step: "X yasaklansın mı?" with an editable reason. */
+/** "/ban" safety step: "Ban X?" with an editable reason. */
 export default function BanConfirm({ targetName, reason: initialReason = "", onCancel, onConfirm }) {
+  const t = useT();
   const reduce = useReducedMotion();
   const [reason, setReason] = useState(initialReason);
   const confirmRef = useRef(null);
@@ -30,7 +32,7 @@ export default function BanConfirm({ targetName, reason: initialReason = "", onC
         <motion.div
           role="alertdialog"
           aria-modal="true"
-          aria-label={`${targetName} yasaklansın mı?`}
+          aria-label={t("polls.ban.title", { name: targetName })}
           className="dsx-heavy dsx-confirm dsx-ac"
           style={{ pointerEvents: "auto" }}
           initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.94, y: 12 }}
@@ -43,19 +45,19 @@ export default function BanConfirm({ targetName, reason: initialReason = "", onC
               <Ban className="dsx-ico" />
             </span>
             <div>
-              <b>{targetName} yasaklansın mı?</b>
-              <span>Sunucudan çıkarılır ve tekrar katılamaz</span>
+              <b>{t("polls.ban.title", { name: targetName })}</b>
+              <span>{t("polls.ban.body")}</span>
             </div>
           </div>
           <div className="dsx-lbl" style={{ margin: "16px 2px 6px" }}>
-            Sebep <i>denetim kaydına yazılır</i>
+            {t("polls.reason")} <i>{t("polls.ban.reasonNote")}</i>
           </div>
           <input
             className="dsx-fld"
             style={{ height: 40, fontSize: 13.5, marginBottom: 14, width: "100%", boxSizing: "border-box" }}
             value={reason}
             maxLength={400}
-            placeholder="Örn. spam, kural 3"
+            placeholder={t("polls.ban.placeholder")}
             onChange={(e) => setReason(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -66,10 +68,10 @@ export default function BanConfirm({ targetName, reason: initialReason = "", onC
           />
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" className="dsx-btn ghost" style={{ flex: 1 }} onClick={onCancel}>
-              Vazgeç
+              {t("polls.cancel")}
             </button>
             <button ref={confirmRef} type="button" className="dsx-btn dng" style={{ flex: 1 }} onClick={() => onConfirm?.(reason.trim())}>
-              <Ban className="dsx-ico" /> Yasakla
+              <Ban className="dsx-ico" /> {t("polls.ban.confirm")}
             </button>
           </div>
         </motion.div>

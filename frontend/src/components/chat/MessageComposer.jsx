@@ -16,7 +16,8 @@ import GiphyPicker from "./GiphyPicker";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { encodeVoiceContent, pickRecorderMime, extensionForMime } from "../../lib/voiceMessage";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format";
 import {
   getSlashCommandsForSurface, slashInsertText, searchSlashCommands, slashMenuSections, slashQueryOf,
   slashArgState, slashNameOf, findSlashCommand, foldTr, TIMEOUT_DURATIONS, PURGE_COUNTS,
@@ -35,12 +36,14 @@ import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 
 
 
-function formatSlowmode(seconds) {
+/** "5 min" / "5 dk." (Intl unit names in the UI language). */
+function formatSlowmode(seconds, locale) {
   const n = Math.max(0, Math.floor(Number(seconds) || 0));
   if (!n) return "";
-  if (n >= 3600) return `${Math.round(n / 3600)}h`;
-  if (n >= 60) return `${Math.round(n / 60)}m`;
-  return `${n}s`;
+  const unit = (value, u) => formatNumber(value, locale, { style: "unit", unit: u, unitDisplay: "short" });
+  if (n >= 3600) return unit(Math.round(n / 3600), "hour");
+  if (n >= 60) return unit(Math.round(n / 60), "minute");
+  return unit(n, "second");
 }
 
 export default function MessageComposer({
@@ -65,7 +68,7 @@ export default function MessageComposer({
   onlineUsers = [],
   recentMessages = [],
 }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const glass = useGlassUi();
   const reduceMotion = useReducedMotion();
   // Critically damped spring (ζ = 1, response 0.35s). Reduced motion is a fade.
@@ -101,7 +104,7 @@ export default function MessageComposer({
   const [slowmodeUntil, setSlowmodeUntil] = useState(0);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const slowmodeSeconds = Math.max(0, Math.floor(Number(activeChannel?.slowmodeSeconds) || 0));
-  const slowmodeLabel = formatSlowmode(slowmodeSeconds);
+  const slowmodeLabel = formatSlowmode(slowmodeSeconds, locale);
   const bypassSlowmode =
     Boolean(activeServer) &&
     (serverHasPermission(activeServer, "MANAGE_MESSAGES") ||
@@ -489,10 +492,10 @@ export default function MessageComposer({
       })
       .slice(0, 8);
     const out = [];
-    if (here.length) out.push({ id: "here", label: activeChannel?.id ? "BU KANALDA" : "BU SOHBETTE", items: here.map(decorate) });
-    if (rest.length) out.push({ id: "all", label: activeChannel?.id ? "SUNUCU ÜYELERİ" : activeGroup ? "GRUP ÜYELERİ" : "SOHBET", items: rest.map(decorate) });
+    if (here.length) out.push({ id: "here", label: t(activeChannel?.id ? "slash.mention.hereChannel" : "slash.mention.hereChat"), items: here.map(decorate) });
+    if (rest.length) out.push({ id: "all", label: t(activeChannel?.id ? "slash.mention.server" : activeGroup ? "slash.mention.group" : "slash.mention.chat"), items: rest.map(decorate) });
     return out;
-  }, [pickerKind, argState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id]);
+  }, [pickerKind, argState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
   const pickerUsers = useMemo(() => pickerUserSections.flatMap((s) => s.items), [pickerUserSections]);
 
   const timeoutTarget = useMemo(() => {
@@ -1027,7 +1030,7 @@ export default function MessageComposer({
             <Timer size={13} />
             <span>
               {slowmodeBlocked
-                ? t("Slowmode: wait {time}", { time: `${slowmodeRemaining}s` })
+                ? t("Slowmode: wait {time}", { time: formatSlowmode(slowmodeRemaining, locale) })
                 : t("Slowmode is on: {time} between messages", { time: slowmodeLabel })}
             </span>
           </motion.div>
@@ -1211,11 +1214,11 @@ export default function MessageComposer({
             compact={compactUi}
             targetLabel={
               activeChannel?.id
-                ? `# ${activeChannel.name || "kanal"} kanalına`
+                ? t("polls.create.targetChannel", { name: activeChannel.name || t("polls.create.channelFallback") })
                 : activeGroup
-                  ? `${activeGroup.name || "Grup"} grubuna`
+                  ? t("polls.create.targetGroup", { name: activeGroup.name || t("polls.create.groupFallback") })
                   : activeDmUser
-                    ? `${activeDmUser.displayName || activeDmUser.display_name || activeDmUser.username} ile sohbete`
+                    ? t("polls.create.targetDm", { name: activeDmUser.displayName || activeDmUser.display_name || activeDmUser.username })
                     : ""
             }
             onClose={() => {

@@ -10,7 +10,11 @@ import { NC_TR } from "./newCreate.tr.js";
 import { FBK_TR } from "./feedback.tr.js";
 import { BADGES_TR } from "./badges.tr.js";
 import { ANTIBOT_TR } from "./antibot.tr.js";
+import { POLLS_TR } from "./polls.tr.js";
+import { SLASH_TR } from "./slash.tr.js";
+import { CHATX_TR } from "./chatx.tr.js";
 export const nested = {
+  polls: POLLS_TR, slash: SLASH_TR, chatx: CHATX_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,

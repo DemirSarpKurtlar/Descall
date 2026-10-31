@@ -10,10 +10,12 @@ import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/spri
 import {
   closePollNow, ensurePoll, getPollSnapshot, pollEndedAt, pollTimeLeft, subscribePoll, votePoll,
 } from "../../lib/pollStore";
-import { useCountUp, useDismiss } from "./dsxShared";
+import { percent, useCountUp, useDismiss } from "./dsxShared";
+import { useLocale } from "../../context/LocaleContext";
+import { t as rt } from "../../i18n/runtime";
 import "./dsx.css";
 
-/** Parses the plain fallback text ("📊 Anket: Q\n1. 🪂 A") until the snapshot arrives. */
+/** Parses the server's plain fallback text ("📊 Anket: Q\n1. 🪂 A") until the snapshot arrives. */
 export function snapshotFromFallback(message) {
   const text = String(message?.text || message?.content || "");
   const lines = text.split("\n");
@@ -27,7 +29,7 @@ export function snapshotFromFallback(message) {
   return {
     id: null,
     messageId: message?.id,
-    question: q || "Anket",
+    question: q || rt("polls.poll.fallbackQuestion"),
     options,
     multi: false,
     anonymous: false,
@@ -65,11 +67,13 @@ function useNowMinute(enabled) {
 }
 
 function Pct({ value, animate }) {
+  const { locale } = useLocale();
   const n = useCountUp(value, { enabled: animate });
-  return <>%{n}</>;
+  return <>{percent(n, locale)}</>;
 }
 
 function Row({ poll, option, index, pending, onPick, compact, enter }) {
+  const { t } = useLocale();
   const revealed = poll.revealed;
   const closed = poll.closed;
   const mine = (poll.myVotes || []).includes(option.id);
@@ -79,7 +83,7 @@ function Row({ poll, option, index, pending, onPick, compact, enter }) {
   const emoji = option.emoji ? <span className="emo">{option.emoji}</span> : null;
 
   if (!revealed) {
-    const label = `${option.text}${picked ? ", seçildi" : ""}`;
+    const label = picked ? t("polls.poll.ariaPicked", { option: option.text }) : option.text;
     const Tag = interactive ? "button" : "div";
     return (
       <Tag
@@ -102,7 +106,7 @@ function Row({ poll, option, index, pending, onPick, compact, enter }) {
   const lead = !closed && (option.votes || 0) > 0 && option.votes === maxVotes;
   const win = closed && option.winner;
   const pct = option.percent ?? 0;
-  const label = `${option.text}, ${option.votes || 0} oy, yüzde ${pct}${mine ? ", senin seçimin" : ""}${win ? ", kazanan" : ""}`;
+  const label = `${t("polls.poll.ariaResult", { option: option.text, votes: option.votes || 0, pct })}${mine ? t("polls.poll.ariaMine") : ""}${win ? t("polls.poll.ariaWinner") : ""}`;
   const Tag = interactive ? "button" : "div";
   return (
     <Tag
@@ -125,7 +129,7 @@ function Row({ poll, option, index, pending, onPick, compact, enter }) {
       )}
       {emoji}
       <span className="ot">{option.text}</span>
-      {win && !compact ? <span className="dsx-wintag">KAZANAN</span> : null}
+      {win && !compact ? <span className="dsx-wintag">{t("polls.poll.winnerTag")}</span> : null}
       {!poll.anonymous && !compact && option.recent?.length ? (
         <span className="dsx-stk" aria-hidden="true">
           {option.recent.slice(0, 3).map((u) => (
@@ -133,7 +137,7 @@ function Row({ poll, option, index, pending, onPick, compact, enter }) {
           ))}
         </span>
       ) : null}
-      <span className="vc">{option.votes || 0} oy</span>
+      <span className="vc">{t("polls.poll.votes", { count: option.votes || 0 })}</span>
       <span className="pc"><Pct value={pct} animate={enter} /></span>
     </Tag>
   );
@@ -144,6 +148,7 @@ function Row({ poll, option, index, pending, onPick, compact, enter }) {
  * poll ends; the server enforces that, the card only renders what it gets.
  */
 export default function PollCard({ message, scope, onOpenVoters, onEdit, compact = false, preview = null }) {
+  const { t, locale } = useLocale();
   const live = usePollSnapshot(preview ? null : scope, preview ? null : message);
   const poll = preview || live || snapshotFromFallback(message);
   const reduce = useReducedMotion();
@@ -184,10 +189,10 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
       setPending(null);
       if (!res?.ok) {
         hapticError();
-        setError(res?.message || "Oy verilemedi.");
+        setError(res?.message || t("polls.poll.voteFailed"));
       }
     },
-    [poll]
+    [poll, t]
   );
 
   const onPick = useCallback(
@@ -206,15 +211,15 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
   const endEarly = async () => {
     setMenuOpen(false);
     const ok = await confirmAction({
-      title: "Anket şimdi bitirilsin mi?",
-      message: "Oylama kapanır, sonuçlar herkese açılır ve kanala bir bitiş mesajı gönderilir.",
-      confirmLabel: "Anketi bitir",
-      cancelLabel: "Vazgeç",
+      title: t("polls.poll.endTitle"),
+      message: t("polls.poll.endBody"),
+      confirmLabel: t("polls.poll.endConfirm"),
+      cancelLabel: t("polls.cancel"),
       danger: true,
     });
     if (!ok) return;
     const res = await closePollNow(poll);
-    if (!res?.ok) setError(res?.message || "Anket bitirilemedi.");
+    if (!res?.ok) setError(res?.message || t("polls.poll.endFailed"));
   };
 
   const winners = (poll.options || []).filter((o) => o.winner);
@@ -228,23 +233,23 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
     <div
       className={`dsx-card dsx-poll ${compact ? "is-compact" : ""}`}
       role="group"
-      aria-label={`Anket: ${poll.question}`}
+      aria-label={t("polls.poll.aria", { question: poll.question })}
       data-poll-state={state}
     >
       <div className="ph">
         <span className={`pk ${poll.closed ? "ended" : ""}`}>
-          <BarChart3 className="dsx-ico" /> {poll.closed ? "SONA ERDİ" : "ANKET"}
+          <BarChart3 className="dsx-ico" /> {poll.closed ? t("polls.poll.badgeEnded") : t("polls.poll.badge")}
         </span>
-        <span>{poll.multi ? "Çoklu seçim" : "Tek seçim"}</span>
+        <span>{poll.multi ? t("polls.poll.multi") : t("polls.poll.single")}</span>
         {poll.anonymous ? (
           <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-            · <EyeOff className="dsx-ico" /> Anonim
+            · <EyeOff className="dsx-ico" /> {t("polls.poll.anonymous")}
           </span>
         ) : null}
         <span className="sp">
           {poll.closed ? (
             <>
-              <Check className="dsx-ico" /> {pollEndedAt(poll)}
+              <Check className="dsx-ico" /> {pollEndedAt(poll, locale)}
             </>
           ) : poll.endsAt ? (
             <>
@@ -256,7 +261,7 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
           <button
             type="button"
             className="more"
-            aria-label="Anket seçenekleri"
+            aria-label={t("polls.poll.menu")}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
@@ -279,12 +284,12 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
           >
             {poll.canEdit ? (
               <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onEdit?.(poll); }}>
-                <Pencil className="dsx-ico" /> Anketi düzenle
+                <Pencil className="dsx-ico" /> {t("polls.poll.edit")}
               </button>
             ) : null}
             {poll.canClose ? (
               <button type="button" role="menuitem" className="dng" onClick={endEarly}>
-                <Square className="dsx-ico" /> Anketi şimdi bitir
+                <Square className="dsx-ico" /> {t("polls.poll.endNow")}
               </button>
             ) : null}
           </motion.div>
@@ -308,30 +313,30 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
       {state === "open" ? (
         <div className="pf">
           <span className="hint">
-            <Sparkles className="dsx-ico" /> {poll.canVote || preview ? (compact ? "Oy vermek için dokun" : "Oy vermek için bir seçeneğe dokun") : "Bu ankette oy veremezsin"}
+            <Sparkles className="dsx-ico" /> {poll.canVote || preview ? (compact ? t("polls.poll.tapShort") : t("polls.poll.tap")) : t("polls.poll.cantVote")}
           </span>
           <span className="r">
             <span style={{ fontSize: 12, color: "var(--dsx-t3)" }}>
-              {voters ? `${voters} oy · sonuçlar oy verince` : "Henüz oy yok"}
+              {voters ? t("polls.poll.votesHidden", { count: voters }) : t("polls.poll.noVotes")}
             </span>
           </span>
         </div>
       ) : null}
       {state === "voted" ? (
         <div className="pf">
-          <span>{voters} oy</span>
+          <span>{t("polls.poll.votes", { count: voters })}</span>
           <span className="dot" />
           {poll.anonymous ? (
-            <span>Anonim</span>
+            <span>{t("polls.poll.anonymous")}</span>
           ) : (
-            <button type="button" className="lnk" aria-label="Kim oy verdi?" onClick={() => onOpenVoters?.(poll)}>
-              Kim oy verdi?
+            <button type="button" className="lnk" aria-label={t("polls.voters.title")} onClick={() => onOpenVoters?.(poll)}>
+              {t("polls.voters.title")}
             </button>
           )}
           {poll.canVote && (poll.myVotes || []).length ? (
             <span className="r">
               <button type="button" className="dsx-btn ghost" disabled={Boolean(pending)} onClick={() => send([])}>
-                <Undo2 className="dsx-ico" /> Oyumu geri al
+                <Undo2 className="dsx-ico" /> {t("polls.poll.undo")}
               </button>
             </span>
           ) : null}
@@ -339,24 +344,24 @@ export default function PollCard({ message, scope, onOpenVoters, onEdit, compact
       ) : null}
       {state === "ended" ? (
         <div className="pf" style={{ whiteSpace: "nowrap" }}>
-          <span>{voters} oy</span>
+          <span>{t("polls.poll.votes", { count: voters })}</span>
           <span className="dot" />
           {!voters ? (
-            <span>Kimse oy vermedi</span>
+            <span>{t("polls.poll.nobodyVoted")}</span>
           ) : winners.length === 1 ? (
             <span>
-              Kazanan: <b style={{ color: "var(--dsx-t1)" }}>{label(winners[0])}{compact ? "" : ` · %${winners[0].percent ?? 0}`}</b>
+              {t("polls.poll.winner")} <b style={{ color: "var(--dsx-t1)" }}>{label(winners[0])}{compact ? "" : ` · ${percent(winners[0].percent ?? 0, locale)}`}</b>
             </span>
           ) : winners.length > 1 ? (
             <span>
-              Berabere: <b style={{ color: "var(--dsx-t1)" }}>{winners.map(label).join(", ")}</b>
+              {t("polls.poll.tie")} <b style={{ color: "var(--dsx-t1)" }}>{winners.map(label).join(", ")}</b>
             </span>
           ) : null}
           {!poll.anonymous && voters ? (
             <span className="r">
-              <button type="button" className="dsx-btn ghost" onClick={() => onOpenVoters?.(poll)} aria-label="Oy verenler">
+              <button type="button" className="dsx-btn ghost" onClick={() => onOpenVoters?.(poll)} aria-label={t("polls.poll.voters")}>
                 <Users className="dsx-ico" />
-                {compact ? null : " Oy verenler"}
+                {compact ? null : ` ${t("polls.poll.voters")}`}
               </button>
             </span>
           ) : null}

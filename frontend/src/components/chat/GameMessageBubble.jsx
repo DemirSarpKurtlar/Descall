@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, Coins, AlertCircle, Gamepad2, TrendingUp, RotateCcw, HelpCircle, Wallet, Crown, Target, BookOpen, Terminal, BarChart3, Zap, Shield, Dice5, Info, HandMetal, X, Spade } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
+import { getLocale } from "../../i18n/runtime";
+import { formatNumber } from "../../i18n/format";
+
+const num = (n) => formatNumber(n, getLocale());
 import { casinoHiddenOnThisDevice } from "../../lib/casinoCommands";
 import SlotCabinet from "../games/SlotCabinet";
 import CoinFlipTable from "../games/CoinFlipTable";
@@ -134,13 +138,13 @@ function outcomeCopy(result, profit, bet, t) {
       blackjack: {
         title: "BLACKJACK!",
         headline: t("You win"),
-        sub: `+${(profit || 0).toLocaleString()} ${t("credits")}`,
+        sub: `+${num(profit || 0)} ${t("credits")}`,
         cls: "bj",
       },
       win: {
         title: t("YOU WIN"),
         headline: t("You win"),
-        sub: `+${(profit || 0).toLocaleString()} ${t("credits")}`,
+        sub: `+${num(profit || 0)} ${t("credits")}`,
         cls: "win",
       },
       push: {
@@ -152,7 +156,7 @@ function outcomeCopy(result, profit, bet, t) {
       loss: {
         title: t("YOU LOSE"),
         headline: t("Dealer wins"),
-        sub: `−${(bet || 0).toLocaleString()} ${t("credits")}`,
+        sub: `−${num(bet || 0)} ${t("credits")}`,
         cls: "loss",
       },
     }[result] || { title: String(result || ""), headline: t("Hand complete"), sub: "", cls: "" }
@@ -258,20 +262,20 @@ function LobbyTable({ credits, onBet, onHelp }) {
         <div className="bj-brand">
           <Spade size={18} />
           <div>
-            <h3>Blackjack</h3>
+            <h3>{t("slash.cmd.bj.label")}</h3>
             <p>{t("Multi-deck · 3:2 · Soft 17")}</p>
           </div>
         </div>
         <div className="bj-bankroll">
           <Wallet size={14} />
-          <strong>{credits.toLocaleString()}</strong>
+          <strong>{num(credits)}</strong>
         </div>
       </header>
 
       <div className="bj-bet-panel">
         <div className="bj-bet-readout">
           <span>{t("Bet")}</span>
-          <strong>{bet.toLocaleString()}</strong>
+          <strong>{num(bet)}</strong>
         </div>
         <div className="bj-chip-row">
           {chips.map((c) => (
@@ -337,7 +341,7 @@ function HelpPanel({ credits }) {
             <p>{t("Commands & house rules")}</p>
           </div>
         </div>
-        <div className="bj-bankroll"><Coins size={14} /><strong>{(credits || 0).toLocaleString()}</strong></div>
+        <div className="bj-bankroll"><Coins size={14} /><strong>{num(credits || 0)}</strong></div>
       </header>
       <div className="bj-info-grid">
         <div>
@@ -385,12 +389,12 @@ function CreditsPanel({ content, gameData }) {
           </div>
         </div>
       </header>
-      <div className="bj-balance-hero">{Number(credits || 0).toLocaleString()}</div>
+      <div className="bj-balance-hero">{num(credits || 0)}</div>
       {stats && (
         <div className="bj-stat-row">
-          <div><span>{t("Won")}</span><strong>{(stats.total_won || 0).toLocaleString()}</strong></div>
-          <div><span>{t("Lost")}</span><strong>{(stats.total_lost || 0).toLocaleString()}</strong></div>
-          <div><span>{t("Hands")}</span><strong>{(stats.games_played || 0).toLocaleString()}</strong></div>
+          <div><span>{t("Won")}</span><strong>{num(stats.total_won || 0)}</strong></div>
+          <div><span>{t("Lost")}</span><strong>{num(stats.total_lost || 0)}</strong></div>
+          <div><span>{t("Hands")}</span><strong>{num(stats.games_played || 0)}</strong></div>
         </div>
       )}
       {!stats && content && <pre className="bj-plain">{content}</pre>}
@@ -481,7 +485,7 @@ function GameMessageBubbleBody({
         <p>
           {to ? (
             <>
-              <strong>@{gameData.fromUsername}</strong> · {amount.toLocaleString()} {t("credits to")}{" "}
+              <strong>@{gameData.fromUsername}</strong> · {num(amount)} {t("credits to")}{" "}
               <strong>@{to}</strong>
             </>
           ) : (
@@ -490,7 +494,7 @@ function GameMessageBubbleBody({
         </p>
         {gameData?.balance != null && (
           <p>
-            {t("Balance")} <strong>{Number(gameData.balance).toLocaleString()}</strong>
+            {t("Balance")} <strong>{num(gameData.balance)}</strong>
           </p>
         )}
       </div>
@@ -525,7 +529,7 @@ function GameMessageBubbleBody({
         busy={busy}
         onCall={(side) => emitAction(side === "heads" ? "call:heads" : "call:tails")}
         onAgain={(side) =>
-          emitCommand("cf", `${gameData.bet || 100}${side === "heads" ? " yazı" : side === "tails" ? " tura" : ""}`)
+          emitCommand("cf", `${gameData.bet || 100}${side === "heads" ? " heads" : side === "tails" ? " tails" : ""}`)
         }
       />
     );
@@ -594,7 +598,7 @@ function GameMessageBubbleBody({
                 : outcome?.title || t("Hand complete")}
             </h3>
             <p>
-              @{gameData.username || t("Player")} · {t("Bet")} {gameData.bet?.toLocaleString()}
+              @{gameData.username || t("Player")} · {t("Bet")} {num(gameData.bet)}
               {gameData.doubled ? ` · ${t("Doubled")}` : ""}
               {isFinished && outcome?.sub ? ` · ${outcome.sub}` : ""}
             </p>
@@ -602,7 +606,7 @@ function GameMessageBubbleBody({
         </div>
         <div className="bj-bankroll">
           <Wallet size={14} />
-          <strong>{Number(gameData.credits ?? credits).toLocaleString()}</strong>
+          <strong>{num(gameData.credits ?? credits)}</strong>
         </div>
       </header>
 
@@ -655,7 +659,7 @@ function GameMessageBubbleBody({
             onClick={() => emitCommand("bj", String(gameData.originalBet || gameData.bet))}
           >
             <RotateCcw size={16} />
-            {t("Again")} ({(gameData.originalBet || gameData.bet)?.toLocaleString()})
+            {t("Again")} ({num(gameData.originalBet || gameData.bet)})
           </motion.button>
           <motion.button
             type="button"

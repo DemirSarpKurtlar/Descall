@@ -5,8 +5,11 @@
  *
  *  - ensurePoll(scope, messageId)  batches `poll:get` (≤100 ids per scope, 40 ms)
  *  - `poll:changed` from the room  refetches that message's snapshot (no counts in the event)
- *  - vote / close / edit / voters  ack-based socket calls returning Turkish errors
+ *  - vote / close / edit / voters  ack-based socket calls (client-side errors in the UI language)
  */
+import { getLocale, t } from "../i18n/runtime.js";
+import { formatDate, formatTime, formatNumber } from "../i18n/format.js";
+import { APP_TIMEZONE } from "./datetime.js";
 
 const byMessage = new Map(); // messageId → snapshot
 const listeners = new Map(); // messageId → Set<fn>
@@ -50,20 +53,20 @@ function call(event, payload, timeoutMs = 8000) {
   return new Promise((resolve) => {
     const s = socketRef;
     if (!s || !s.connected) {
-      resolve({ ok: false, code: "OFFLINE", message: "Bağlantı bekleniyor." });
+      resolve({ ok: false, code: "OFFLINE", message: t("polls.store.offline") });
       return;
     }
     let done = false;
     const timer = setTimeout(() => {
       if (done) return;
       done = true;
-      resolve({ ok: false, code: "TIMEOUT", message: "Sunucu yanıt vermedi, tekrar dene." });
+      resolve({ ok: false, code: "TIMEOUT", message: t("polls.store.timeout") });
     }, timeoutMs);
     s.emit(event, payload, (res) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
-      resolve(res || { ok: false, code: "POLL_ERROR", message: "Anket işlemi başarısız oldu." });
+      resolve(res || { ok: false, code: "POLL_ERROR", message: t("polls.store.failed") });
     });
   });
 }
@@ -136,26 +139,32 @@ export async function loadPollVoters(snapshot) {
   return call("poll:voters", { pollId: snapshot.id });
 }
 
-/** Time left in Turkish ("18 sa kaldı", "42 dk kaldı", "3 gün kaldı"). */
+const unit = (value, u, unitDisplay, locale) => formatNumber(value, locale, { style: "unit", unit: u, unitDisplay });
+
+/** Time left in the UI language ("42 dk. kaldı" / "42 min left", "3 gün kaldı" / "3 days left"). */
 export function pollTimeLeft(endsAt, now = Date.now()) {
+  const locale = getLocale();
   const ms = new Date(endsAt).getTime() - now;
   if (!Number.isFinite(ms)) return "";
-  if (ms <= 0) return "Sona erdi";
+  if (ms <= 0) return t("polls.ended");
   const min = Math.ceil(ms / 60000);
-  if (min < 60) return `${min} dk kaldı`;
   const h = Math.round(ms / 3600000);
-  if (h < 48) return `${h} sa kaldı`;
-  return `${Math.round(ms / 86400000)} gün kaldı`;
+  const span =
+    min < 60 ? unit(min, "minute", "short", locale) : h < 48 ? unit(h, "hour", "short", locale) : unit(Math.round(ms / 86400000), "day", "long", locale);
+  return t("polls.timeLeft", { span });
 }
 
-export function pollEndedAt(snapshot) {
-  const at = snapshot?.closedAt || snapshot?.endsAt;
-  if (!at) return "";
+/** "18 Eki 23:54" / "18 Oct 23:54" (Europe/Istanbul, like the rest of the poll UI). */
+export function pollDateTime(at, locale = getLocale(), { year = false } = {}) {
   const d = new Date(at);
-  if (!Number.isFinite(d.getTime())) return "";
-  const day = d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", timeZone: "Europe/Istanbul" });
-  const time = d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
+  if (!at || !Number.isFinite(d.getTime())) return "";
+  const day = formatDate(d, locale, { day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: APP_TIMEZONE });
+  const time = formatTime(d, locale, { hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE });
   return `${day} ${time}`;
+}
+
+export function pollEndedAt(snapshot, locale = getLocale()) {
+  return pollDateTime(snapshot?.closedAt || snapshot?.endsAt, locale);
 }
 
 /** Test hook. */

@@ -5,7 +5,11 @@ import { NC_EN } from "./newCreate.en.js";
 import { FBK_EN } from "./feedback.en.js";
 import { BADGES_EN } from "./badges.en.js";
 import { ANTIBOT_EN } from "./antibot.en.js";
+import { POLLS_EN } from "./polls.en.js";
+import { SLASH_EN } from "./slash.en.js";
+import { CHATX_EN } from "./chatx.en.js";
 export const nested = {
+  polls: POLLS_EN, slash: SLASH_EN, chatx: CHATX_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,

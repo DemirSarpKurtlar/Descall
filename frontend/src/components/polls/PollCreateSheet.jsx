@@ -5,34 +5,47 @@ import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/spri
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { foldTr } from "../../lib/slashCommands";
 import PollCard from "./PollCard";
-import { Portal, useDismiss } from "./dsxShared";
+import { appClock, Portal, useDismiss } from "./dsxShared";
+import { useLocale } from "../../context/LocaleContext";
+import { durationLabel } from "../../lib/slashCommands";
+import { formatDate } from "../../i18n/format";
+import { t as rt } from "../../i18n/runtime";
+import { APP_TIMEZONE } from "../../lib/datetime";
 import "./dsx.css";
 
 export const POLL_LIMITS = { question: 300, option: 100, minOptions: 2, maxOptions: 10 };
+/** Chip labels come from Intl unit names in the UI language (durationLabel). */
 export const POLL_DURATIONS = [
-  { seconds: 3600, label: "1 sa" },
-  { seconds: 14400, label: "4 sa" },
-  { seconds: 28800, label: "8 sa" },
-  { seconds: 86400, label: "24 sa" },
-  { seconds: 259200, label: "3 gün" },
-  { seconds: 604800, label: "1 hafta" },
+  { seconds: 3600, value: 1, unit: "hour", display: "short" },
+  { seconds: 14400, value: 4, unit: "hour", display: "short" },
+  { seconds: 28800, value: 8, unit: "hour", display: "short" },
+  { seconds: 86400, value: 24, unit: "hour", display: "short" },
+  { seconds: 259200, value: 3, unit: "day", display: "long" },
+  { seconds: 604800, value: 1, unit: "week", display: "long" },
 ];
 
+/**
+ * Emoji search data: [emoji, search words]. The words are never shown (each button's
+ * label is the emoji itself); Turkish and English words are both listed so the search
+ * works in either language.
+ */
+
 const EMOJIS = [
-  ["🎮", "oyun"], ["🕹️", "oyun"], ["🪂", "fortnite paraşüt"], ["🧱", "minecraft blok"], ["🚀", "roket"], ["🃏", "kart"],
-  ["⚽", "futbol top"], ["🏀", "basketbol"], ["🎲", "zar"], ["♟️", "satranç"], ["🎤", "mikrofon şarkı"], ["🎧", "müzik"],
-  ["🍕", "pizza yemek"], ["🍔", "burger yemek"], ["☕", "kahve"], ["🍿", "film"], ["🎬", "film sinema"], ["📺", "dizi"],
-  ["🔥", "ateş"], ["💯", "yüz"], ["🎉", "kutlama parti"], ["😂", "gül"], ["😎", "havalı"], ["🤔", "düşün"],
-  ["👀", "göz"], ["❤️", "kalp"], ["👍", "evet tamam"], ["👎", "hayır"], ["✅", "evet onay"], ["❌", "hayır iptal"],
-  ["⭐", "yıldız"], ["🌙", "gece ay"], ["☀️", "gündüz güneş"], ["📅", "takvim gün"], ["⏰", "saat"], ["🏆", "kupa"],
-  ["🎁", "hediye"], ["💡", "fikir"], ["📚", "kitap ders"], ["💻", "bilgisayar"], ["📱", "telefon"], ["🐶", "köpek"],
-  ["🐱", "kedi"], ["🌍", "dünya"], ["🏖️", "tatil plaj"], ["🎂", "doğum günü pasta"], ["🥳", "parti"], ["🤝", "anlaşma"],
+  ["🎮", "oyun game"], ["🕹️", "oyun game joystick"], ["🪂", "fortnite paraşüt parachute"], ["🧱", "minecraft blok block"], ["🚀", "roket rocket"], ["🃏", "kart card"],
+  ["⚽", "futbol top football soccer ball"], ["🏀", "basketbol basketball"], ["🎲", "zar dice"], ["♟️", "satranç chess"], ["🎤", "mikrofon şarkı microphone sing"], ["🎧", "müzik music"],
+  ["🍕", "pizza yemek food"], ["🍔", "burger yemek food"], ["☕", "kahve coffee"], ["🍿", "film movie popcorn"], ["🎬", "film sinema movie cinema"], ["📺", "dizi tv series"],
+  ["🔥", "ateş fire"], ["💯", "yüz hundred"], ["🎉", "kutlama parti party celebrate"], ["😂", "gül laugh"], ["😎", "havalı cool"], ["🤔", "düşün think"],
+  ["👀", "göz eyes look"], ["❤️", "kalp heart love"], ["👍", "evet tamam yes ok"], ["👎", "hayır no"], ["✅", "evet onay yes check"], ["❌", "hayır iptal no cancel"],
+  ["⭐", "yıldız star"], ["🌙", "gece ay night moon"], ["☀️", "gündüz güneş day sun"], ["📅", "takvim gün calendar date"], ["⏰", "saat clock alarm time"], ["🏆", "kupa trophy cup"],
+  ["🎁", "hediye gift"], ["💡", "fikir idea"], ["📚", "kitap ders book study"], ["💻", "bilgisayar computer laptop"], ["📱", "telefon phone"], ["🐶", "köpek dog"],
+  ["🐱", "kedi cat"], ["🌍", "dünya world earth"], ["🏖️", "tatil plaj holiday beach"], ["🎂", "doğum günü pasta birthday cake"], ["🥳", "parti party"], ["🤝", "anlaşma deal handshake"],
 ];
 
 let seq = 0;
 const newOption = (text = "", emoji = null) => ({ key: `o${Date.now().toString(36)}${(seq += 1)}`, text, emoji });
 
 function OptionRow({ item, index, count, onChange, onRemove, onEmoji, inputRef, onEnter }) {
+  const { t } = useLocale();
   const controls = useDragControls();
   return (
     <Reorder.Item
@@ -46,15 +59,15 @@ function OptionRow({ item, index, count, onChange, onRemove, onEmoji, inputRef, 
       <span className="grip" aria-hidden="true" onPointerDown={(e) => controls.start(e)}>
         <GripVertical className="dsx-ico" />
       </span>
-      <button type="button" className="eb" aria-label={item.emoji ? `Emoji: ${item.emoji}, değiştir` : "Emoji ekle"} onClick={(e) => onEmoji(item, e.currentTarget)}>
+      <button type="button" className="eb" aria-label={item.emoji ? t("polls.create.emojiChange", { emoji: item.emoji }) : t("polls.create.emojiAdd")} onClick={(e) => onEmoji(item, e.currentTarget)}>
         {item.emoji || <Smile className="dsx-ico" />}
       </button>
       <input
         ref={inputRef}
         value={item.text}
         maxLength={POLL_LIMITS.option}
-        placeholder={`Seçenek ${index + 1}`}
-        aria-label={`Seçenek ${index + 1}`}
+        placeholder={t("polls.create.option", { n: index + 1 })}
+        aria-label={t("polls.create.option", { n: index + 1 })}
         onChange={(e) => onChange(item, e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
@@ -63,7 +76,7 @@ function OptionRow({ item, index, count, onChange, onRemove, onEmoji, inputRef, 
           }
         }}
       />
-      <button type="button" className="rm" aria-label={`Seçenek ${index + 1}'i kaldır`} disabled={count <= POLL_LIMITS.minOptions} onClick={() => onRemove(item)}>
+      <button type="button" className="rm" aria-label={t("polls.create.optionRemove", { n: index + 1 })} disabled={count <= POLL_LIMITS.minOptions} onClick={() => onRemove(item)}>
         <X className="dsx-ico" />
       </button>
     </Reorder.Item>
@@ -71,6 +84,7 @@ function OptionRow({ item, index, count, onChange, onRemove, onEmoji, inputRef, 
 }
 
 function EmojiPopover({ top, onPick, onClose }) {
+  const { t } = useLocale();
   const ref = useRef(null);
   const [q, setQ] = useState("");
   useDismiss(ref, onClose, true);
@@ -79,13 +93,13 @@ function EmojiPopover({ top, onPick, onClose }) {
     return f ? EMOJIS.filter(([, k]) => foldTr(k).includes(f)) : EMOJIS;
   }, [q]);
   return (
-    <div ref={ref} className="dsx-heavy dsx-emopop" style={{ top }} role="dialog" aria-label="Emoji seç">
+    <div ref={ref} className="dsx-heavy dsx-emopop" style={{ top }} role="dialog" aria-label={t("polls.create.emojiPick")}>
       <label className="sr">
         <Search className="dsx-ico" />
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Emoji ara" aria-label="Emoji ara" />
+        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("polls.create.emojiSearch")} aria-label={t("polls.create.emojiSearch")} />
       </label>
       <div className="gr">
-        <button type="button" aria-label="Emojiyi kaldır" onClick={() => onPick(null)} style={{ fontSize: 13, color: "var(--dsx-t3)" }}>
+        <button type="button" aria-label={t("polls.create.emojiRemove")} onClick={() => onPick(null)} style={{ fontSize: 13, color: "var(--dsx-t3)" }}>
           <X className="dsx-ico" />
         </button>
         {list.map(([e]) => (
@@ -99,10 +113,10 @@ function EmojiPopover({ top, onPick, onClose }) {
 }
 
 /** Local preview snapshot (same card as in chat, open state). */
-function previewSnapshot({ question, options, multi, anonymous, durationSeconds }) {
+function previewSnapshot({ question, options, multi, anonymous, durationSeconds }, t) {
   return {
     id: "preview",
-    question: question.trim() || "Sorunu yaz",
+    question: question.trim() || t("polls.create.previewQuestion"),
     options: options
       .filter((o) => o.text.trim())
       .map((o, i) => ({ id: o.key, text: o.text.trim(), emoji: o.emoji, votes: null, percent: null, position: i })),
@@ -117,33 +131,33 @@ function previewSnapshot({ question, options, multi, anonymous, durationSeconds 
   };
 }
 
-function endsLabel(seconds) {
+function endsLabel(seconds, t, locale) {
   const d = new Date(Date.now() + seconds * 1000);
-  const day = d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", timeZone: "Europe/Istanbul" });
-  const time = d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
-  return `${day} ${time}'te sona erer`;
+  const date = formatDate(d, locale, { day: "numeric", month: "short", timeZone: APP_TIMEZONE });
+  return t("polls.create.endsAt", { date, time: appClock(d.toISOString(), locale) });
 }
 
-export function validatePollDraft({ question, options }) {
+export function validatePollDraft({ question, options }, t = rt) {
   const q = question.trim();
-  if (!q) return "Bir soru yaz.";
+  if (!q) return t("polls.create.errQuestion");
   const filled = options.map((o) => o.text.trim()).filter(Boolean);
-  if (filled.length < POLL_LIMITS.minOptions) return "En az 2 seçenek gerekli.";
+  if (filled.length < POLL_LIMITS.minOptions) return t("polls.create.errMinOptions");
   const seen = new Set();
-  for (const t of filled) {
-    const k = t.toLocaleLowerCase("tr");
-    if (seen.has(k)) return `“${t}” iki kez yazılmış.`;
+  for (const opt of filled) {
+    const k = opt.toLocaleLowerCase("tr");
+    if (seen.has(k)) return t("polls.create.errDuplicate", { option: opt });
     seen.add(k);
   }
   return "";
 }
 
 /**
- * Anket oluştur (poll/01, iOS poll/09–10). Web/Electron: 1040×740 heavy sheet
- * with a live preview. Phones: bottom sheet with "Vazgeç · Anket oluştur · Gönder".
+ * Create poll (poll/01, iOS poll/09–10). Web/Electron: 1040×740 heavy sheet
+ * with a live preview. Phones: bottom sheet with "Cancel · Create poll · Send".
  * `initial` switches it to edit mode (creator, before the first vote).
  */
 export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", compact = false, initial = null }) {
+  const { t, locale } = useLocale();
   const reduce = useReducedMotion();
   const [question, setQuestion] = useState(initial?.question || "");
   const [options, setOptions] = useState(() =>
@@ -168,7 +182,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
   }, []);
 
   const draft = { question, options, multi, anonymous, durationSeconds };
-  const invalid = validatePollDraft(draft);
+  const invalid = validatePollDraft(draft, t);
 
   const submit = async () => {
     if (busy) return;
@@ -188,7 +202,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
     const res = await onSubmit?.(poll);
     setBusy(false);
     if (res && res.ok === false) {
-      setError(res.message || "Anket gönderilemedi.");
+      setError(res.message || t("polls.create.sendFailed"));
       return;
     }
     onClose?.();
@@ -231,20 +245,21 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
 
   const filledCount = options.filter((o) => o.text.trim()).length;
   const transition = reduce ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.sheet);
-  const sendLabel = editing ? "Değişiklikleri kaydet" : "Anketi gönder";
+  const sendLabel = editing ? t("polls.create.saveChanges") : t("polls.create.sendPoll");
+  const sheetTitle = editing ? t("polls.create.titleEdit") : t("polls.create.titleCreate");
 
   const form = (
     <>
       <div className="dsx-lbl">
-        Soru <i>{question.length} / {POLL_LIMITS.question}</i>
+        {t("polls.create.question")} <i>{question.length} / {POLL_LIMITS.question}</i>
       </div>
       <input
         ref={qRef}
         className="dsx-fld"
         value={question}
         maxLength={POLL_LIMITS.question}
-        placeholder="Ne sormak istiyorsun?"
-        aria-label="Soru"
+        placeholder={t("polls.create.questionPlaceholder")}
+        aria-label={t("polls.create.question")}
         onChange={(e) => setQuestion(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
@@ -254,7 +269,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
         }}
       />
       <div className="dsx-lbl">
-        Seçenekler <i>{options.length} / {POLL_LIMITS.maxOptions} · sürükleyerek sırala</i>
+        {t("polls.create.options")} <i>{t("polls.create.optionsNote", { count: options.length, max: POLL_LIMITS.maxOptions })}</i>
       </div>
       <div className="dsx-ops-wrap" style={{ position: "relative" }}>
       <Reorder.Group axis="y" values={options} onReorder={setOptions} className="dsx-ops" as="ol">
@@ -287,36 +302,36 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
         ) : null}
       </div>
       <button type="button" className="dsx-addop" onClick={add} disabled={options.length >= POLL_LIMITS.maxOptions}>
-        <Plus className="dsx-ico" /> Seçenek ekle
+        <Plus className="dsx-ico" /> {t("polls.create.addOption")}
       </button>
       <div className="dsx-set">
         <div className="sr">
           <span className="sic" style={{ background: "linear-gradient(160deg,#6d8cff,#4a5fe0)" }}><ListChecks className="dsx-ico" /></span>
           <div className="st">
-            <b>Birden fazla seçim</b>
-            <span>Üyeler birden çok seçeneğe oy verebilir</span>
+            <b>{t("polls.create.multi")}</b>
+            <span>{t("polls.create.multiHint")}</span>
           </div>
-          <button type="button" role="switch" aria-checked={multi} aria-label="Birden fazla seçim" className="dsx-toggle" onClick={() => setMulti((v) => !v)} />
+          <button type="button" role="switch" aria-checked={multi} aria-label={t("polls.create.multi")} className="dsx-toggle" onClick={() => setMulti((v) => !v)} />
         </div>
         <div className="sr">
           <span className="sic" style={{ background: "linear-gradient(160deg,#8a93a8,#5d6478)" }}><EyeOff className="dsx-ico" /></span>
           <div className="st">
-            <b>Anonim oylama</b>
-            <span>Oylar kaydedilir ama kimin neye oy verdiği kimseye gösterilmez, yalnızca sayılar görünür</span>
+            <b>{t("polls.create.anon")}</b>
+            <span>{t("polls.create.anonHint")}</span>
           </div>
-          <button type="button" role="switch" aria-checked={anonymous} aria-label="Anonim oylama" className="dsx-toggle" onClick={() => setAnonymous((v) => !v)} />
+          <button type="button" role="switch" aria-checked={anonymous} aria-label={t("polls.create.anon")} className="dsx-toggle" onClick={() => setAnonymous((v) => !v)} />
         </div>
         {editing ? null : (
           <div className="sr wrap">
             <span className="sic" style={{ background: "linear-gradient(160deg,#ffb35c,#e0782f)" }}><Clock className="dsx-ico" /></span>
             <div className="st">
-              <b>Süre</b>
-              <span>{endsLabel(durationSeconds)}</span>
+              <b>{t("polls.create.duration")}</b>
+              <span>{endsLabel(durationSeconds, t, locale)}</span>
             </div>
-            <div className="dsx-seg" role="group" aria-label="Süre">
+            <div className="dsx-seg" role="group" aria-label={t("polls.create.duration")}>
               {POLL_DURATIONS.map((d) => (
                 <button key={d.seconds} type="button" aria-pressed={durationSeconds === d.seconds} onClick={() => setDuration(d.seconds)}>
-                  {d.label}
+                  {durationLabel(d.value, d.unit, d.display)}
                 </button>
               ))}
             </div>
@@ -334,7 +349,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
           className="dsx-heavy dsx-create is-compact"
           role="dialog"
           aria-modal="true"
-          aria-label={editing ? "Anketi düzenle" : "Anket oluştur"}
+          aria-label={sheetTitle}
           style={{ zIndex: 9001 }}
           initial={reduce ? { opacity: 0 } : { y: "100%" }}
           animate={reduce ? { opacity: 1 } : { y: 0 }}
@@ -344,15 +359,15 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
           <div className="form" ref={formRef}>
             <div className="grab" aria-hidden="true" />
             <div className="ibar">
-              <button type="button" onClick={onClose}>Vazgeç</button>
-              <b>{editing ? "Anketi düzenle" : "Anket oluştur"}</b>
+              <button type="button" onClick={onClose}>{t("polls.cancel")}</button>
+              <b>{sheetTitle}</b>
               <button type="button" className="go" onClick={submit} disabled={busy || Boolean(invalid)}>
-                {editing ? "Kaydet" : "Gönder"}
+                {editing ? t("polls.create.save") : t("polls.create.send")}
               </button>
             </div>
             {form}
             <div className="ifoot">
-              {error ? <span style={{ color: "#ff9a8a" }}>{error}</span> : targetLabel ? `${targetLabel} gönderilecek` : null}
+              {error ? <span style={{ color: "#ff9a8a" }}>{error}</span> : targetLabel || null}
             </div>
           </div>
         </motion.div>
@@ -368,7 +383,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
           className="dsx-heavy dsx-create"
           role="dialog"
           aria-modal="true"
-          aria-label={editing ? "Anketi düzenle" : "Anket oluştur"}
+          aria-label={sheetTitle}
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: 28, scale: 0.97 }}
           animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
           exit={reduce ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.98 }}
@@ -378,20 +393,20 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
             <div className="dsx-shd">
               <span className="ti"><BarChart3 className="dsx-ico" /></span>
               <div>
-                <b>{editing ? "Anketi düzenle" : "Anket oluştur"}</b>
-                <span>{editing ? "Henüz oy yok, değişiklikler herkese yansır" : targetLabel ? `${targetLabel} gönderilecek` : ""}</span>
+                <b>{sheetTitle}</b>
+                <span>{editing ? t("polls.create.editHint") : targetLabel}</span>
               </div>
-              <button type="button" className="x" aria-label="Kapat" onClick={onClose}>
+              <button type="button" className="x" aria-label={t("polls.close")} onClick={onClose}>
                 <X className="dsx-ico" />
               </button>
             </div>
             {form}
             <div className="dsx-cfoot">
               <span className="dsx-kbd">⌘</span>
-              <span className="dsx-kbd">↵</span> gönder
+              <span className="dsx-kbd">↵</span> {t("polls.create.kbdSend")}
               {error ? <span className="err" role="alert">{error}</span> : null}
               <span className="r">
-                <button type="button" className="dsx-btn ghost" onClick={onClose}>Vazgeç</button>
+                <button type="button" className="dsx-btn ghost" onClick={onClose}>{t("polls.cancel")}</button>
                 <button type="button" className="dsx-btn pri" onClick={submit} disabled={busy}>
                   <Send className="dsx-ico" /> {sendLabel}
                 </button>
@@ -399,12 +414,12 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
             </div>
           </div>
           <div className="dsx-preview">
-            <div className="dsx-sect">Önizleme</div>
-            <PollCard preview={previewSnapshot(draft)} compact />
+            <div className="dsx-sect">{t("polls.create.preview")}</div>
+            <PollCard preview={previewSnapshot(draft, t)} compact />
             <div className="note">
               {filledCount < 2
-                ? "En az iki seçenek yaz, önizleme burada güncellenir."
-                : "Üyeler bir seçeneğe dokunarak oy verir. Oyunu anket bitene kadar değiştirebilir. Sonuç çubukları oy verdikten sonra açılır."}
+                ? t("polls.create.previewEmpty")
+                : t("polls.create.previewNote")}
             </div>
           </div>
         </motion.div>
