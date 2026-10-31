@@ -1054,7 +1054,7 @@ export default function MessageComposer({
           >
             <Reply size={14} />
             <div className="composer-reply-meta">
-              <strong>{t("Replying to")} {replyTo.from?.displayName || replyTo.from?.display_name || replyTo.from?.username || t("message")}</strong>
+              <strong>{t("counts.replyingTo", { name: replyTo.from?.displayName || replyTo.from?.display_name || replyTo.from?.username || t("message") })}</strong>
               <span>
                 {replyTo.text
                   ? displayText(String(replyTo.text).slice(0, 100))

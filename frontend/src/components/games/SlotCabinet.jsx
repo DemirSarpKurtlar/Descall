@@ -108,9 +108,9 @@ function SymbolFace({ id }) {
 }
 
 function formatPrize(profit, bet, t) {
-  if (profit > 0) return `+${num(profit)} ${t("credits")}`;
+  if (profit > 0) return `+${num(profit)} ${t("counts.credits", { n: profit })}`;
   if (profit === 0) return t("Stake returned");
-  return `−${num(bet)} ${t("credits")}`;
+  return `−${num(bet)} ${t("counts.credits", { n: bet })}`;
 }
 
 export default function SlotCabinet({ gameData, isMine, busy, onAgain }) {

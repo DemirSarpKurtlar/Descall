@@ -15,7 +15,9 @@ import { ADMINX_EN } from "./adminx.en.js";
 import { POLLS_EN } from "./polls.en.js";
 import { SLASH_EN } from "./slash.en.js";
 import { CHATX_EN } from "./chatx.en.js";
+import { COUNTS_EN } from "./counts.en.js";
 export const nested = {
+  counts: COUNTS_EN,
   shell: SHELL_EN,
   svh: SVH_EN,
   callui: CALLUI_EN,

@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Link2, Copy, Check, Trash2, RefreshCw, Globe } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
+import { formatDate } from "../../i18n/format.js";
+import { getLocale } from "../../i18n/runtime.js";
 import { toPublicShareUrl } from "../../lib/referral";
 import { useToast } from "../../context/ToastContext";
 import { copyText } from "../../lib/copyText";
@@ -234,9 +236,9 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
                       <code>{inv.code}</code>
                       <span>
                         {inv.uses || 0}
-                        {inv.maxUses != null ? ` / ${inv.maxUses}` : ""} {t("uses")}
+                        {inv.maxUses != null ? ` / ${inv.maxUses}` : ""} {t("counts.uses", { n: inv.maxUses ?? inv.uses ?? 0 })}
                         {inv.expiresAt
-                          ? ` · ${t("expires {date}", { date: new Date(inv.expiresAt).toLocaleDateString() })}`
+                          ? ` · ${t("expires {date}", { date: formatDate(inv.expiresAt, getLocale()) })}`
                           : ` · ${t("Never")}`}
                       </span>
                     </div>

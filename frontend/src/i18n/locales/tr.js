@@ -20,7 +20,9 @@ import { ADMINX_TR } from "./adminx.tr.js";
 import { POLLS_TR } from "./polls.tr.js";
 import { SLASH_TR } from "./slash.tr.js";
 import { CHATX_TR } from "./chatx.tr.js";
+import { COUNTS_TR } from "./counts.tr.js";
 export const nested = {
+  counts: COUNTS_TR,
   shell: SHELL_TR,
   svh: SVH_TR,
   callui: CALLUI_TR,

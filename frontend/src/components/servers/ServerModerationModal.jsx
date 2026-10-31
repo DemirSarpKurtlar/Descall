@@ -13,6 +13,8 @@ import {
 } from "../../api/servers";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission } from "../../lib/serverPermissions";
+import { formatDate } from "../../i18n/format.js";
+import { getLocale } from "../../i18n/runtime.js";
 
 const ACTION_LABELS = {
   SERVER_CREATE: "Server created",
@@ -254,7 +256,7 @@ export default function ServerModerationModal({
                       <span>
                         {ban.reason ? ban.reason : t("No reason")}
                         {ban.createdAt
-                          ? ` · ${new Date(ban.createdAt).toLocaleString()}`
+                          ? ` · ${formatDate(ban.createdAt, getLocale(), { dateStyle: "medium", timeStyle: "short" })}`
                           : ""}
                         {ban.moderatorUsername
                           ? ` · ${t("by {name}", { name: ban.moderatorDisplayName || ban.moderatorUsername })}`
@@ -302,7 +304,7 @@ export default function ServerModerationModal({
                       {log.reason ? ` · ${log.reason}` : ""}
                     </span>
                     <time dateTime={log.createdAt || undefined}>
-                      {log.createdAt ? new Date(log.createdAt).toLocaleString() : ""}
+                      {log.createdAt ? formatDate(log.createdAt, getLocale(), { dateStyle: "medium", timeStyle: "short" }) : ""}
                     </time>
                   </div>
                 </div>

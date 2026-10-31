@@ -305,7 +305,7 @@ export default function ServerMemberRoleAssign({
                   <span className="sra-role-copy">
                     <strong>{role.name}</strong>
                     <small>
-                      {roleCounts.get(role.id) || 0} {t("members")}
+                      {roleCounts.get(role.id) || 0} {t("counts.members", { n: roleCounts.get(role.id) || 0 })}
                     </small>
                   </span>
                 </button>

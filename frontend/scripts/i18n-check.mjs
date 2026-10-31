@@ -218,6 +218,9 @@ const LOG_LINE = /\bconsole\.(log|warn|error|info|debug)\(|\blog(?:ger)?\.(info|
 // misses it): JSX text attributes, setError/toast calls and copy-like object fields with at
 // least two words, and backend JSON error / message fields.
 const WORDS = "[^\"'`{}\\n]*[A-Za-z]{2,}[ ][A-Za-z][^\"'`{}\\n]*";
+// Client dates / numbers formatted with the browser locale instead of the UI language.
+const BARE_TO_LOCALE = /\.toLocale(?:Date|Time)?String\(\s*\)/;
+
 const ENGLISH_UI = [
   new RegExp(`\\b(?:aria-label|aria-description|title|placeholder|alt|label)=\\s*["'](?:[^"'{}\\n]*[A-Za-z]{2,}[^"'{}\\n]*)["']`),
   new RegExp(`\\b(?:setError|setErr|setStatus|setMessage|setNotice|setHint|showToast|addToast|pushToast|toast(?:\\.\\w+)?|notify|alert|window\\.confirm|confirm)\\(\\s*["'\`]${WORDS}["'\`]`),
@@ -272,7 +275,7 @@ export function countHardcoded() {
           n += 1;
           continue;
         }
-        if (ENGLISH_UI.some((re) => re.test(line))) n += 1;
+        if (ENGLISH_UI.some((re) => re.test(line)) || (rel.startsWith("src/") && BARE_TO_LOCALE.test(line))) n += 1;
       }
       if (/\.jsx$/.test(rel)) {
         const jsxText = code.match(/>\s*([A-Za-zÀ-ɏ][^<>{}\n]{1,}?)\s*</g) || [];

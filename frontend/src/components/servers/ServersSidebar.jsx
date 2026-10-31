@@ -2961,10 +2961,10 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
                   <span className="server-template-card-desc">{t(tpl.description)}</span>
                   <span className="server-template-card-meta">
                     <span>
-                      <Shield size={12} /> {tpl.roleCount} {t("roles")}
+                      <Shield size={12} /> {tpl.roleCount} {t("counts.roles", { n: tpl.roleCount })}
                     </span>
                     <span>
-                      <Hash size={12} /> {tpl.channelCount} {t("channels")}
+                      <Hash size={12} /> {tpl.channelCount} {t("counts.channels", { n: tpl.channelCount })}
                     </span>
                   </span>
                   <span className="server-template-card-tags">
@@ -3009,8 +3009,8 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
                 <div>
                   <strong>{t(selected.name)}</strong>
                   <p>
-                    {selected.roleCount} {t("roles")} · {selected.channelCount} {t("channels")} ·{" "}
-                    {selected.categoryCount} {t("categories")}
+                    {selected.roleCount} {t("counts.roles", { n: selected.roleCount })} · {selected.channelCount} {t("counts.channels", { n: selected.channelCount })} ·{" "}
+                    {selected.categoryCount} {t("counts.categories", { n: selected.categoryCount })}
                   </p>
                 </div>
               </div>

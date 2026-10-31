@@ -138,13 +138,13 @@ function outcomeCopy(result, profit, bet, t) {
       blackjack: {
         title: "BLACKJACK!",
         headline: t("You win"),
-        sub: `+${num(profit || 0)} ${t("credits")}`,
+        sub: `+${num(profit || 0)} ${t("counts.credits", { n: profit || 0 })}`,
         cls: "bj",
       },
       win: {
         title: t("YOU WIN"),
         headline: t("You win"),
-        sub: `+${num(profit || 0)} ${t("credits")}`,
+        sub: `+${num(profit || 0)} ${t("counts.credits", { n: profit || 0 })}`,
         cls: "win",
       },
       push: {
@@ -156,7 +156,7 @@ function outcomeCopy(result, profit, bet, t) {
       loss: {
         title: t("YOU LOSE"),
         headline: t("Dealer wins"),
-        sub: `−${num(bet || 0)} ${t("credits")}`,
+        sub: `−${num(bet || 0)} ${t("counts.credits", { n: bet || 0 })}`,
         cls: "loss",
       },
     }[result] || { title: String(result || ""), headline: t("Hand complete"), sub: "", cls: "" }
@@ -485,7 +485,7 @@ function GameMessageBubbleBody({
         <p>
           {to ? (
             <>
-              <strong>@{gameData.fromUsername}</strong> · {num(amount)} {t("credits to")}{" "}
+              <strong>@{gameData.fromUsername}</strong> · {num(amount)} {t("counts.creditsTo", { n: amount })}{" "}
               <strong>@{to}</strong>
             </>
           ) : (
