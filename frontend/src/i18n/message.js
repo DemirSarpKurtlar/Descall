@@ -194,13 +194,25 @@ export function isWellFormedMessage(str) {
     }
   }
   if (depth !== 0) return false;
-  let ok = true;
-  str.replace(/\{([^{}]*\{[\s\S]*)\}/g, (whole) => {
-    const inner = whole.slice(1, -1);
+  let i = 0;
+  while (i < str.length) {
+    if (str[i] !== "{") {
+      i += 1;
+      continue;
+    }
+    const end = matchBrace(str, i);
+    if (end < 0) return false;
+    const inner = str.slice(i + 1, end);
     const cx = COMPLEX.exec(inner);
-    if (cx && !parseOptions(cx[3])) ok = false;
-    if (cx && cx[2] !== "select" && !/(^|\s)other\s*\{/.test(cx[3])) ok = false;
-    return whole;
-  });
-  return ok;
+    if (cx) {
+      const options = parseOptions(cx[3]);
+      if (!options) return false;
+      if (cx[2] !== "select" && !options.some(([sel]) => sel === "other")) return false;
+      for (const [, body] of options) if (!isWellFormedMessage(body)) return false;
+    } else if (/^\s*\w+\s*,/.test(inner)) {
+      return false; // "{n, plurl, ...}" typo
+    }
+    i = end + 1;
+  }
+  return true;
 }

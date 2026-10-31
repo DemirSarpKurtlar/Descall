@@ -59,6 +59,8 @@ assert.deepEqual([...messageArguments("{a} {{b}} {k, select, x {{c}} other {d}}"
 assert.ok(isWellFormedMessage(files));
 assert.ok(!isWellFormedMessage("{n, plural, one {# file}}"), "plural needs other");
 assert.ok(!isWellFormedMessage("broken {"));
+assert.ok(isWellFormedMessage("{n, plural, one {# a} other {# b}} · max {score}"), "plural followed by another placeholder");
+assert.ok(!isWellFormedMessage("{n, plurl, one {x} other {y}}"), "typo in the keyword");
 
 // --- pseudo
 const p = pseudoize("Delete {count} messages");
