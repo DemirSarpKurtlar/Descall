@@ -265,6 +265,7 @@ jobs:
           node src/lib/feedbackForm.selftest.mjs
           node src/styles/glass-desktop/voiceRoomTheme.selftest.mjs
           node src/styles/glass-desktop/serverSurfaces.selftest.mjs
+          node src/lib/signupEmail.selftest.mjs
           node src/lib/appVisibility.selftest.mjs
           node src/lib/hoverToolbarPlacement.selftest.mjs
           node src/lib/singleActiveHover.selftest.mjs

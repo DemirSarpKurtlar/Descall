@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { signupEmailError } from '../../lib/signupEmail';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Download, 
@@ -528,6 +529,13 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
                 setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
                 return;
               }
+              if (isRegistering) {
+                const emailError = signupEmailError(email);
+                if (emailError) {
+                  setDeviceBlock(t(emailError));
+                  return;
+                }
+              }
               setIsSubmitting(true);
               try {
                 if (isRegistering) {
@@ -582,14 +590,15 @@ export default function DownloadPage({ onLogin, onRegister, onGoogleLogin, authL
 
               {isRegistering && (
                 <div className="form-group">
-                  <label>{t("Email (optional)")}</label>
+                  <label>{t("Email")}</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t("Email (optional)")}
+                    placeholder={t("Email")}
                     autoComplete="email"
                     maxLength={254}
+                    required
                   />
                 </div>
               )}

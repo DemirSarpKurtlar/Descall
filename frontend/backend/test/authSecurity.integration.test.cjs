@@ -81,6 +81,7 @@ async function register(base, username, extra = {}) {
       password: "password123",
       termsAccepted: true,
       birthDate: "2000-01-15",
+      email: `${username}@example.com`,
       ...extra,
     },
   });
@@ -130,7 +131,7 @@ async function run() {
     assert(row.email === "next@example.com" && !row.pending_email, "pending email is promoted");
     assert(row.two_factor_enabled === true, "2FA remains enabled after confirm");
 
-    await register(base, "googleonly");
+    await register(base, "googleonly", { email: "googleonly@example.com" });
     const googleRow = fakeSupabase._tables.users.rows.find((u) => u.username === "googleonly");
     googleRow.password_hash = null;
     googleRow.auth_provider = "google";

@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
+import { signupEmailError, SIGNUP_EMAIL_HINT } from "../lib/signupEmail";
 import { createPortal } from "react-dom";
 import { useT } from "../context/localeContextInstance";
 import { peekInviteRef } from "../lib/referral";
@@ -125,6 +126,13 @@ function AuthModal({
     if (isRegistering && (under13SignupBlocked() || noteUnder13BirthDate(birthDate))) {
       setDeviceBlock(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
       return;
+    }
+    if (isRegistering) {
+      const emailError = signupEmailError(email);
+      if (emailError) {
+        setDeviceBlock(t(emailError));
+        return;
+      }
     }
     setIsSubmitting(true);
     try {
@@ -377,16 +385,16 @@ function AuthModal({
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t("Email (optional)")}
+                      placeholder={t("Email")}
+                      aria-label={t("Email")}
                       autoComplete="email"
                       maxLength={254}
+                      required
                     />
                   )}
                   {isRegistering && (
                     <p className="mkt-auth-field-hint">
-                      {t(
-                        "Adding an email unlocks account recovery, sign-in codes, and two-factor authentication. You can also add it later in Settings."
-                      )}
+                      {t(SIGNUP_EMAIL_HINT)}
                     </p>
                   )}
                   {isRegistering && (
