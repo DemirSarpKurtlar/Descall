@@ -18,6 +18,7 @@ import EmptyState from "../ui/EmptyState";
 import CallsView from "../calls/CallsView";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
+import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { useT } from "../../context/LocaleContext";
@@ -670,6 +671,14 @@ export default function ChatPanel({
         </motion.div>
       )}
       </AnimatePresence>
+      {/* Mesaj araması (3.7.7): whole-history results from the server. */}
+      {showSearch && activeView !== "activity" && conversationKey ? (
+        <SearchResults
+          conversationKey={conversationKey}
+          query={searchQuery}
+          onClose={() => { setShowSearch(false); setSearchQuery(""); }}
+        />
+      ) : null}
 
       {/* Friend Notice Banner */}
       <AnimatePresence>
@@ -730,7 +739,7 @@ export default function ChatPanel({
       ) : activeView === "servers" && activeChannel?.type === "text" ? (
       <div className="messages-container" ref={messagesRef}>
         {isValidElement(children)
-          ? cloneElement(children, { searchQuery: showSearch ? searchQuery : "" })
+          ? cloneElement(children, { searchQuery: "" })
           : children}
       </div>
       ) : activeView === "servers" ? (
@@ -775,7 +784,7 @@ export default function ChatPanel({
       >
         {(activeDmUser || activeGroup) ? (
           isValidElement(children)
-            ? cloneElement(children, { searchQuery: showSearch ? searchQuery : "" })
+            ? cloneElement(children, { searchQuery: "" })
             : children
         ) : (
           <EmptyState

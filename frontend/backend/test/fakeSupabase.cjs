@@ -16,7 +16,21 @@ function matches(row, filters) {
     const rowVal = row[col];
     if (type === "eq") return rowVal === val;
     if (type === "neq") return rowVal !== val;
-    if (type === "ilike") return String(rowVal ?? "").toLowerCase() === String(val).toLowerCase();
+    if (type === "ilike") {
+      const pat = String(val);
+      // Plain value = case-insensitive equality; with an unescaped % it is a LIKE
+      // pattern (\\% / \\_ literal, _ = one character), like Postgres.
+      if (!/(^|[^\\])%/.test(pat)) return String(rowVal ?? "").toLowerCase() === pat.toLowerCase();
+      let re = "";
+      for (let i = 0; i < pat.length; i += 1) {
+        const c = pat[i];
+        if (c === "\\" && i + 1 < pat.length) { re += pat[i + 1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); i += 1; }
+        else if (c === "%") re += "[\\s\\S]*";
+        else if (c === "_") re += "[\\s\\S]";
+        else re += c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+      return new RegExp(`^${re}$`, "i").test(String(rowVal ?? ""));
+    }
     if (type === "not-is-null") return rowVal !== null && rowVal !== undefined;
     if (type === "is-null") return rowVal === null || rowVal === undefined;
     if (type === "like") {

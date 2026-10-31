@@ -484,6 +484,7 @@ app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/api/messages", require("./routes/notifyActions"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/search", require("./routes/search"));
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

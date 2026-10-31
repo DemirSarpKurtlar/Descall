@@ -343,6 +343,20 @@ export const nested = {
     "stepUpLead": "Bu işlem için doğrulama uygulamandaki güncel kodu gir. Sonraki 15 dakika boyunca tekrar sorulmaz.",
     "stepUpConfirm": "Onayla"
   },
+  "search": {
+    "results": "Arama sonuçları",
+    "searching": "Aranıyor…",
+    "failed": "Arama yapılamadı.",
+    "typeMore": "Aramak için en az {n} harf yaz.",
+    "none": "“{q}” için bu sohbette sonuç yok.",
+    "count": "{n} sonuç",
+    "countMore": "İlk {n} sonuç",
+    "more": "Daha fazla göster",
+    "context": "Mesaj ve çevresi",
+    "kindVoice": "Sesli mesaj",
+    "kindCall": "Arama kaydı",
+    "kindFile": "Dosya"
+  },
   "staffBadge": {
     "tip": "Descall ekibi",
     "short": "EKİP",
