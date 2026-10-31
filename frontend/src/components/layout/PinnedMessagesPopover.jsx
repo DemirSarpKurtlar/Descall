@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Pin, PinOff, X } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { computeAnchoredPopover, isOutside } from "../../lib/anchoredPopover";
+import { useLocale } from "../../context/LocaleContext";
+import { formatDate } from "../../i18n/format";
 import "./PinnedMessagesPopover.css";
 
 /**
@@ -22,6 +24,7 @@ export default function PinnedMessagesPopover({
   onUnpin,
 }) {
   const reduce = useReducedMotion();
+  const { locale } = useLocale();
   const panelRef = useRef(null);
   const [place, setPlace] = useState(null);
 
@@ -114,7 +117,7 @@ export default function PinnedMessagesPopover({
                     <div className="pinned-popover-body">
                       <div className="pinned-popover-meta">
                         <span className="pinned-popover-author">{name}</span>
-                        <span className="pinned-popover-time">{pm.timestamp ? new Date(pm.timestamp).toLocaleDateString() : ""}</span>
+                        <span className="pinned-popover-time">{pm.timestamp ? formatDate(pm.timestamp, locale, { dateStyle: "short" }) : ""}</span>
                       </div>
                       <p className="pinned-popover-text">{renderText(pm)}</p>
                     </div>

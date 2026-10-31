@@ -39,17 +39,14 @@ import { copyText } from "../../lib/copyText";
 import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { useToast } from "../../context/ToastContext";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
+import { formatDate } from "../../i18n/format";
 import "./ProfileSheet.css";
 import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUser, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
   try {
-    return new Date(iso).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    return formatDate(iso, locale, { day: "numeric", month: "short", year: "numeric" }) || t("Unknown");
   } catch {
     return t("Unknown");
   }

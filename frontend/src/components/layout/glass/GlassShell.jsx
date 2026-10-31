@@ -256,6 +256,7 @@ export function GlassToolbarMenu({ open, onClose, items }) {
  * horizontal drag lifts the lens, tracks the finger, and snaps to a tab.
  */
 export function GlassTabBar({ items, activeId, onSelect, badges = {}, nativeActive = false }) {
+  const t = useT();
   const activeIndex = Math.max(0, items.findIndex((it) => it.id === activeId));
   const hasActive = items.some((it) => it.id === activeId);
   const n = items.length || 1;
@@ -281,7 +282,7 @@ export function GlassTabBar({ items, activeId, onSelect, badges = {}, nativeActi
       // (hit-testing, safe-area padding) but invisible and out of the a11y tree.
       aria-hidden={nativeActive ? "true" : undefined}
       style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, "--g-tab-n": n, touchAction: "pan-y" }}
-      aria-label="Primary"
+      aria-label={t("shell.nav.tabBar")}
     >
       <span
         ref={lensRef}

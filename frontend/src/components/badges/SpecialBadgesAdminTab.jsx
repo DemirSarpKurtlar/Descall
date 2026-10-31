@@ -12,6 +12,7 @@ import {
 } from "../../api/specialBadges";
 import { formatSerial, invalidateUser, loadCatalog } from "../../lib/specialBadges";
 import { refreshAdminBadgeOverview } from "./promoBridge.jsx";
+import { formatDate, formatTime, lower } from "../../i18n/format";
 import "../../styles/maintenance.css";
 import "../../styles/promo.css";
 
@@ -24,12 +25,11 @@ export function trtWhen(iso, locale) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const lang = locale === "tr" ? "tr-TR" : "en-US";
-  const day = d.toLocaleDateString(lang, { day: "2-digit", month: "short", timeZone: "Europe/Istanbul" });
-  const time = d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Istanbul" });
+  const day = formatDate(d, locale, { day: "2-digit", month: "short", timeZone: "Europe/Istanbul" });
+  const time = formatTime(d, locale, { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Istanbul" });
   return `${day} ${time}`;
 }
-const trtDay = (iso, locale) => (iso ? new Date(iso).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", { day: "2-digit", month: "short", timeZone: "Europe/Istanbul" }) : "");
+const trtDay = (iso, locale) => (iso ? formatDate(iso, locale, { day: "2-digit", month: "short", timeZone: "Europe/Istanbul" }) : "");
 const who = (u) => u?.displayName || u?.username || "";
 
 function useNarrow(px = 820) {
@@ -46,13 +46,13 @@ function useNarrow(px = 820) {
 }
 
 function Catalog({ rows, sel, onSel, narrow }) {
-  const { t, name, tierLabel, num } = useBadgeCopy();
+  const { t, locale, name, tierLabel, num } = useBadgeCopy();
   const [tier, setTier] = useState("all");
   const [q, setQ] = useState("");
   const list = useMemo(() => {
-    const needle = q.trim().toLocaleLowerCase("tr");
-    return rows.filter((b) => (tier === "all" || b.tier === tier) && (!needle || name(b.id).toLocaleLowerCase("tr").includes(needle) || b.id.includes(needle)));
-  }, [rows, tier, q, name]);
+    const needle = lower(q.trim(), locale);
+    return rows.filter((b) => (tier === "all" || b.tier === tier) && (!needle || lower(name(b.id), locale).includes(needle) || b.id.includes(needle)));
+  }, [rows, tier, q, name, locale]);
   const cols = narrow ? "auto" : sel ? 5 : 7;
   return (
     <div className="mt-card sb-cat">

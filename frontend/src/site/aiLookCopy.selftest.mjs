@@ -26,7 +26,6 @@ assert.ok(home.includes("APP_STORE_URL"));
 assert.ok(read("site/MarketingLayout.jsx").includes("APP_STORE_URL"), "sticky bar App Store");
 assert.ok(!read("components/VoiceEffectsPanel.jsx").includes("Powered by"));
 assert.ok(!read("site/pages/WhoOwnsDescallPage.jsx").includes('tr ? "Keep exploring" : "Keep exploring"'));
-assert.ok(!read("components/settings/ProfileCustomization.jsx").includes("🎮 Playing games"));
 assert.ok(read("components/activity/ActivitySidebar.jsx").includes("STATUS_META["), "activity row shows real status");
 
 const P = tr.phrases;

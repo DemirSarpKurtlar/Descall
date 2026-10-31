@@ -9,7 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle, Copy, Download, KeyRound, Shield, Smartphone, RefreshCw } from "../ui/Icon.jsx";
 import Modal from "../ui/Modal.jsx";
 import GlassCheckbox from "../ui/GlassCheckbox.jsx";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatDate } from "../../i18n/format";
 import {
   getTwoFactorStatus,
   startTotpSetup,
@@ -232,7 +233,7 @@ function CodeSheet({ open, mode, status, onClose, onDone, t }) {
  *   emailRow: the existing e-mail-code toggle, shown only while the app is off.
  */
 export default function TwoFactorCard({ emailRow = null, onChanged, autoOpenSetup = false }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [status, setStatus] = useState(null);
   const [sheet, setSheet] = useState(autoOpenSetup ? "setup" : null);
 
@@ -243,7 +244,7 @@ export default function TwoFactorCard({ emailRow = null, onChanged, autoOpenSetu
 
   const changed = useCallback(() => { load(); onChanged?.(); }, [load, onChanged]);
   const on = Boolean(status?.totpEnabled);
-  const since = useMemo(() => (status?.enabledAt ? new Date(status.enabledAt).toLocaleDateString() : ""), [status?.enabledAt]);
+  const since = useMemo(() => (status?.enabledAt ? formatDate(status.enabledAt, locale, { dateStyle: "short" }) : ""), [status?.enabledAt, locale]);
   const low = on && status?.recoveryLeft <= 3;
 
   return (

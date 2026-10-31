@@ -54,7 +54,7 @@ import {
 } from "../../lib/nativePush";
 import { detectDefaultLocale } from "../../i18n/detect";
 import { getLocaleMeta, PSEUDO_LOCALE } from "../../i18n/registry.js";
-import { displayName } from "../../i18n/format.js";
+import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.js";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
@@ -80,7 +80,7 @@ function languageLabel(id, uiLocale) {
   if (meta.id === PSEUDO_LOCALE) return meta.name;
   const name = displayName(meta.id, uiLocale, "language");
   if (!name || name === meta.id) return meta.name;
-  return name.charAt(0).toLocaleUpperCase(getLocaleMeta(uiLocale)?.intl || "en") + name.slice(1);
+  return upper(name.charAt(0), uiLocale) + name.slice(1);
 }
 
 /* ─── Helpers ─── */
@@ -1759,7 +1759,7 @@ const UserPanel = forwardRef(function UserPanel({
                           setCustomStatus(splitStatusEmoji(customStatus).text);
                           setStatusEmojiOpen(false);
                         }}
-                       aria-label="None">
+                       aria-label={t("None")}>
                         –
                       </button>
                       {STATUS_EMOJIS.map((emoji) => (
@@ -2102,7 +2102,7 @@ const UserPanel = forwardRef(function UserPanel({
                         </span>
                         <span className="us-row-desc">
                           {session.ip} • {t("Last active")}{" "}
-                          {session.lastActiveAt ? new Date(session.lastActiveAt).toLocaleString() : ""}
+                          {session.lastActiveAt ? formatDate(session.lastActiveAt, locale, { dateStyle: "medium", timeStyle: "short" }) : ""}
                         </span>
                       </div>
                       {!session.current && (
@@ -2808,7 +2808,7 @@ const UserPanel = forwardRef(function UserPanel({
                 {glassShell && isMobile ? (
                   <>
                     {" · "}
-                    <em className="us-descoin">◈ {Number(me?.descoinBalance || 0).toLocaleString(locale === "tr" ? "tr-TR" : "en-US")} DesCoin</em>
+                    <em className="us-descoin">◈ {formatNumber(me?.descoinBalance || 0, locale)} DesCoin</em>
                   </>
                 ) : null}
               </span>

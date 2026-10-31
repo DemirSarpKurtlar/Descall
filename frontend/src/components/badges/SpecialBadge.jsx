@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useLocale } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format";
 import { ART_BY_ID, SpecialBadgeIcon } from "./specialBadgeArt.jsx";
 import { catalogRow, equippedFor, useSpecialBadgeStore } from "../../lib/specialBadges";
 
@@ -21,7 +22,7 @@ export function useBadgeCopy() {
     return t(`badges.tier_${tier}`);
   }, [t]);
   const tierOf = (id) => ART_BY_ID[id]?.tier || "nadir";
-  const num = useCallback((n) => Number(n || 0).toLocaleString(locale === "tr" ? "tr-TR" : "en-US"), [locale]);
+  const num = useCallback((n) => formatNumber(n || 0, locale), [locale]);
   return { t, locale, name, desc, tierLabel, tierOf, num };
 }
 
