@@ -104,7 +104,7 @@ function messageKind(row = {}) {
 }
 
 /** Thread row → preview line for the expanded notification. */
-function threadLine(row, { myId, nameOf, mask = (s) => s } = {}) {
+function threadLine(row, { myId, nameOf, mask = (s) => s, textMax = THREAD_TEXT_MAX } = {}) {
   const kind = messageKind(row);
   const raw = kind === "voice" ? "" : String(row.content || "");
   const text = mask(raw).replace(/\s+/g, " ").trim();
@@ -114,7 +114,7 @@ function threadLine(row, { myId, nameOf, mask = (s) => s } = {}) {
     fromName: nameOf(row.sender_id) || "",
     mine: row.sender_id === myId,
     kind,
-    text: text.length > THREAD_TEXT_MAX ? `${text.slice(0, THREAD_TEXT_MAX - 1)}…` : text,
+    text: text.length > textMax ? `${text.slice(0, textMax - 1)}…` : text,
     at: row.created_at || null,
   };
 }
@@ -541,7 +541,10 @@ function createNotifyActions(deps = {}) {
 
   // ── Expanded notification preview ────────────────────────────────────────
 
-  async function thread(userId, { conv, messageId } = {}) {
+  // 3.7.17: the Apple Watch reads a longer page (limit up to 30, longer lines);
+  // the notification preview keeps THREAD_LIMIT / THREAD_TEXT_MAX.
+  async function thread(userId, { conv, messageId, limit = THREAD_LIMIT, textMax = THREAD_TEXT_MAX } = {}) {
+    const take = Math.max(1, Math.min(30, Number(limit) || THREAD_LIMIT));
     const c = parseConversation(conv);
     if (state().bannedUserIds.has(userId)) throw new NotifyActionError(403, "banned");
     const db = getDb();
@@ -554,7 +557,7 @@ function createNotifyActions(deps = {}) {
         .select("id, from_user_id, to_user_id, content, media_url, media_type, mime_type, created_at")
         .or(`and(from_user_id.eq.${userId},to_user_id.eq.${c.id}),and(from_user_id.eq.${c.id},to_user_id.eq.${userId})`)
         .order("created_at", { ascending: false })
-        .limit(THREAD_LIMIT + 5);
+        .limit(take + 5);
       rows = (data || []).map((r) => ({ ...r, sender_id: r.from_user_id }));
       if (!rows.length) throw new NotifyActionError(404, "empty");
     } else if (c.type === "group") {
@@ -567,7 +570,7 @@ function createNotifyActions(deps = {}) {
           .select("id, sender_id, content, media_url, media_type, created_at")
           .eq("group_id", c.id)
           .order("created_at", { ascending: false })
-          .limit(THREAD_LIMIT + 5),
+          .limit(take + 5),
       ]);
       header.title = g?.name || "";
       header.memberCount = Array.isArray(members) ? members.length : null;
@@ -581,7 +584,7 @@ function createNotifyActions(deps = {}) {
           .select("id, sender_id, content, media_url, media_type, created_at")
           .eq("channel_id", c.id)
           .order("created_at", { ascending: false })
-          .limit(THREAD_LIMIT + 5),
+          .limit(take + 5),
       ]);
       header.title = channel.name || "";
       header.subtitle = server?.name || "";
@@ -591,7 +594,7 @@ function createNotifyActions(deps = {}) {
     let list = rows;
     const at = list.findIndex((r) => r.id === messageId);
     if (messageId && at > 0) list = list.slice(at);
-    list = list.slice(0, THREAD_LIMIT).reverse();
+    list = list.slice(0, take).reverse();
     const ids = [...new Set(list.map((r) => r.sender_id).filter(Boolean))];
     const names = new Map();
     if (ids.length) {
@@ -600,7 +603,7 @@ function createNotifyActions(deps = {}) {
     }
     return {
       ...header,
-      messages: list.map((r) => threadLine(r, { myId: userId, nameOf: (id) => names.get(id), mask })),
+      messages: list.map((r) => threadLine(r, { myId: userId, nameOf: (id) => names.get(id), mask, textMax })),
     };
   }
 

@@ -85,6 +85,12 @@ jobs:
           fi
           echo "iOS SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
 
+      - name: watchOS platform (3.7.17 Apple Watch app is embedded in the iOS app)
+        run: |
+          set -euo pipefail
+          if ! xcodebuild -showsdks | grep -q watchos; then xcodebuild -downloadPlatform watchOS; fi
+          xcodebuild -showsdks | grep -E "watchos|iphoneos"
+
       - name: Install Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -183,6 +189,10 @@ jobs:
               --entitlements "frontend/ios/App/$EXT/$EXT.entitlements" --generate-entitlement-der "$APPEX"
             codesign -d --entitlements - --xml "$APPEX" 2>/dev/null | plutil -p -
           done
+          # 3.7.17: the embedded Apple Watch app (no entitlements of its own), before the outer app.
+          WAPP="$APP/Watch/DescallWatch.app"
+          test -d "$WAPP" || { echo "::error::DescallWatch.app missing from the archive"; exit 1; }
+          codesign --force --sign - --timestamp=none --generate-entitlement-der "$WAPP"
           codesign --force --sign - --timestamp=none --entitlements "$ENT" --generate-entitlement-der "$APP"
           codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p -
 
@@ -266,6 +276,21 @@ jobs:
             [ "$es" = "$as" ] || { echo "::error::$EXT CFBundleShortVersionString $es != app $as"; ok=0; }
             echo "$EXT: $es ($ev) matches app $as ($av)"
           done
+          # 3.7.17: Apple Watch app signed for distribution, same version and build as the app.
+          WAPP="$APP/Watch/DescallWatch.app"
+          if [ -d "$WAPP" ]; then
+            codesign -dvv "$WAPP" 2>&1 | grep -E '^(Authority|Identifier)=' || true
+            wid="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$WAPP/Info.plist")"
+            [ "$wid" = "com.descall.app.watchkitapp" ] || { echo "::error::watch app id is $wid"; ok=0; }
+            wv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$WAPP/Info.plist")"
+            ws="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$WAPP/Info.plist")"
+            av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+            as="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+            [ "$wv" = "$av" ] && [ "$ws" = "$as" ] || { echo "::error::watch app $ws ($wv) != app $as ($av)"; ok=0; }
+            echo "DescallWatch: $ws ($wv) matches app $as ($av)"
+          else
+            echo "::error::DescallWatch.app missing from the IPA"; ok=0
+          fi
           [ "$ok" -eq 1 ]
           echo "Entitlements OK for App Store distribution."
 

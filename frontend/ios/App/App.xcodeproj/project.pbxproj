@@ -7,39 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		17055416BA3BEC6ADC5801A8 /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
+		180E56F40F10884135FBA4AC /* WatchStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7F14CBBFB911BF288C5BAA /* WatchStrings.swift */; };
+		1B48A714D47C345808A99C09 /* WatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7994526A639F65B4026ADD5B /* WatchTheme.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
+		3D38504189BB8F49C69E538A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 70D33B51A30C4F71F3946900 /* Assets.xcassets */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
-		D35C0A0E2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D35C0A0F2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy */; };
-		F1A2B3C41FED79650016851F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C51FED79650016851F /* InfoPlist.strings */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		72249211F2F6B8BDA50F3DD2 /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10DEFB120AAD22B53527D49 /* WatchStore.swift */; };
+		8B6E5D3AB6C65A074469BD6B /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		A1B2C3D51FED79650016851F /* CallKeepAlivePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */; };
-		D35C0A102E9A000100A1B2C3 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */; };
-		D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */; };
-		D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */; };
-		D35C0A302E9A000100A1B2C3 /* DescallGlassTabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */; };
-		D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */; };
-		E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A022F5B000100D35C0A /* DescallCallManager.swift */; };
-		E7C41B012F5C000100D35C0A /* DescallNativeCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */; };
-		E7C41B032F5C000100D35C0A /* DescallNativeCallLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */; };
-		E7C41B052F5C000100D35C0A /* DescallSignalSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */; };
-		E7C41B122F5C000100D35C0A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = E7C41B112F5C000100D35C0A /* WebRTC */; };
-		E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */; };
-		B1B2C3D51FED79650016851F /* DescallBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */; };
 		A4A0000E2F60000100D35C0A /* DescallNotifyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000012F60000100D35C0A /* DescallNotifyLogic.swift */; };
 		A4A0000F2F60000100D35C0A /* DescallNotifyKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000022F60000100D35C0A /* DescallNotifyKit.swift */; };
 		A4A000102F60000100D35C0A /* DescallNotifyThreadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000032F60000100D35C0A /* DescallNotifyThreadView.swift */; };
 		A4A000112F60000100D35C0A /* DescallNotifyPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000042F60000100D35C0A /* DescallNotifyPlugin.swift */; };
 		A4A000122F60000100D35C0A /* DescallNotifyDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000052F60000100D35C0A /* DescallNotifyDemo.swift */; };
-		A4B000112F60000100D35C0A /* DescallToastLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000012F60000100D35C0A /* DescallToastLogic.swift */; };
-		A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000022F60000100D35C0A /* DescallToastCapsule.swift */; };
-		A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000032F60000100D35C0A /* DescallToastPlugin.swift */; };
-		A4B000142F60000100D35C0A /* DescallDeepLinkPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */; };
 		A4A000132F60000100D35C0A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000062F60000100D35C0A /* NotificationService.swift */; };
 		A4A000142F60000100D35C0A /* DescallNotifyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000012F60000100D35C0A /* DescallNotifyLogic.swift */; };
 		A4A000152F60000100D35C0A /* DescallNotifyKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000022F60000100D35C0A /* DescallNotifyKit.swift */; };
@@ -49,6 +37,32 @@
 		A4A000192F60000100D35C0A /* DescallNotifyThreadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A000032F60000100D35C0A /* DescallNotifyThreadView.swift */; };
 		A4A0001A2F60000100D35C0A /* NotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A4A0000C2F60000100D35C0A /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A4A0001B2F60000100D35C0A /* NotificationContent.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A4A0000D2F60000100D35C0A /* NotificationContent.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A4B000112F60000100D35C0A /* DescallToastLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000012F60000100D35C0A /* DescallToastLogic.swift */; };
+		A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000022F60000100D35C0A /* DescallToastCapsule.swift */; };
+		A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000032F60000100D35C0A /* DescallToastPlugin.swift */; };
+		A4B000142F60000100D35C0A /* DescallDeepLinkPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */; };
+		B1B2C3D51FED79650016851F /* DescallBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */; };
+		CD4CB47B40DD30D85CABF425 /* WatchViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B39CB440ED3ACD8AA4A980 /* WatchViews.swift */; };
+		D35C0A0E2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D35C0A0F2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy */; };
+		D35C0A102E9A000100A1B2C3 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */; };
+		D35C0A202E9A000100A1B2C3 /* DescallDisplayPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */; };
+		D35C0A302E9A000100A1B2C3 /* DescallGlassTabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */; };
+		D35C0A302E9A000100A1B2C4 /* DescallKeychainPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */; };
+		D35C0A322E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */; };
+		D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */; };
+		E754B91CF80DB989C06A1667 /* DescallWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B39D1EAED19DAAEBB5DDFA2 /* DescallWatchApp.swift */; };
+		E7C41A012F5B000100D35C0A /* DescallCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A022F5B000100D35C0A /* DescallCallManager.swift */; };
+		E7C41A032F5B000100D35C0A /* DescallCallKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */; };
+		E7C41B012F5C000100D35C0A /* DescallNativeCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */; };
+		E7C41B032F5C000100D35C0A /* DescallNativeCallLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */; };
+		E7C41B052F5C000100D35C0A /* DescallSignalSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */; };
+		E7C41B122F5C000100D35C0A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = E7C41B112F5C000100D35C0A /* WebRTC */; };
+		F04678C03093F3B21D906693 /* WatchDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED3E443ADCF16D6FBDD81B3 /* WatchDemo.swift */; };
+		F1A2B3C41FED79650016851F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C51FED79650016851F /* InfoPlist.strings */; };
+		F389A74E308B5C7F2632A3D1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 499505C2043441FAD5B20B81 /* Foundation.framework */; };
+		F483044B5D42770C76632A1A /* DescallWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 51DE02139004908D4C36EB4E /* DescallWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F80D42F5B066C951C7D8449D /* DescallWatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */; };
+		F8E52F9ECD3C1CC2885DC91D /* WatchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86C61FA91B959BCEEBF006B /* WatchClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,9 +80,27 @@
 			remoteGlobalIDString = A4A000202F60000100D35C0A;
 			remoteInfo = NotificationContent;
 		};
+		A84BB0537C24CFA13A6455BD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AEA9A5A184ECD4D6E8B75F81;
+			remoteInfo = DescallWatch;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		31255DE9FCC6BEA174B7132B /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				F483044B5D42770C76632A1A /* DescallWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A4A000272F60000100D35C0A /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -84,43 +116,30 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DescallWatchBridge.swift; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		499505C2043441FAD5B20B81 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		D35C0A0F2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		F1A2B3C61FED79650016851F /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		F1A2B3C71FED79650016851F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		51DE02139004908D4C36EB4E /* DescallWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DescallWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		70D33B51A30C4F71F3946900 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7994526A639F65B4026ADD5B /* WatchTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchTheme.swift; sourceTree = "<group>"; };
+		7F7F14CBBFB911BF288C5BAA /* WatchStrings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchStrings.swift; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKeepAlivePlugin.swift; sourceTree = "<group>"; };
-		D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
-		D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDisplayPlugin.swift; sourceTree = "<group>"; };
-		D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarPlugin.swift; sourceTree = "<group>"; };
-		D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarView.swift; sourceTree = "<group>"; };
-		D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKeychainPlugin.swift; sourceTree = "<group>"; };
-		E7C41A022F5B000100D35C0A /* DescallCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallManager.swift; sourceTree = "<group>"; };
-		E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNativeCall.swift; sourceTree = "<group>"; };
-		E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNativeCallLogic.swift; sourceTree = "<group>"; };
-		E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallSignalSocket.swift; sourceTree = "<group>"; };
-		E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallKitPlugin.swift; sourceTree = "<group>"; };
-		B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallBridgeViewController.swift; sourceTree = "<group>"; };
-		C1B2C3D41FED79650016851F /* App.debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.debug.entitlements; sourceTree = "<group>"; };
-		C1B2C3D51FED79650016851F /* App.release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.release.entitlements; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		9B39D1EAED19DAAEBB5DDFA2 /* DescallWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DescallWatchApp.swift; sourceTree = "<group>"; };
+		A1B2C3D41FED79650016851F /* CallKeepAlivePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKeepAlivePlugin.swift; sourceTree = "<group>"; };
 		A4A000012F60000100D35C0A /* DescallNotifyLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyLogic.swift; sourceTree = "<group>"; };
 		A4A000022F60000100D35C0A /* DescallNotifyKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyKit.swift; sourceTree = "<group>"; };
 		A4A000032F60000100D35C0A /* DescallNotifyThreadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyThreadView.swift; sourceTree = "<group>"; };
 		A4A000042F60000100D35C0A /* DescallNotifyPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyPlugin.swift; sourceTree = "<group>"; };
 		A4A000052F60000100D35C0A /* DescallNotifyDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNotifyDemo.swift; sourceTree = "<group>"; };
-		A4B000012F60000100D35C0A /* DescallToastLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastLogic.swift; sourceTree = "<group>"; };
-		A4B000022F60000100D35C0A /* DescallToastCapsule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastCapsule.swift; sourceTree = "<group>"; };
-		A4B000032F60000100D35C0A /* DescallToastPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastPlugin.swift; sourceTree = "<group>"; };
-		A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDeepLinkPlugin.swift; sourceTree = "<group>"; };
 		A4A000062F60000100D35C0A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A4A000072F60000100D35C0A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A4A000082F60000100D35C0A /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
@@ -129,6 +148,33 @@
 		A4A0000B2F60000100D35C0A /* NotificationContent.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationContent.entitlements; sourceTree = "<group>"; };
 		A4A0000C2F60000100D35C0A /* NotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A4A0000D2F60000100D35C0A /* NotificationContent.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationContent.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4B000012F60000100D35C0A /* DescallToastLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastLogic.swift; sourceTree = "<group>"; };
+		A4B000022F60000100D35C0A /* DescallToastCapsule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastCapsule.swift; sourceTree = "<group>"; };
+		A4B000032F60000100D35C0A /* DescallToastPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallToastPlugin.swift; sourceTree = "<group>"; };
+		A4B000042F60000100D35C0A /* DescallDeepLinkPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDeepLinkPlugin.swift; sourceTree = "<group>"; };
+		B1B2C3D41FED79650016851F /* DescallBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallBridgeViewController.swift; sourceTree = "<group>"; };
+		B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchModels.swift; sourceTree = "<group>"; };
+		BED3E443ADCF16D6FBDD81B3 /* WatchDemo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchDemo.swift; sourceTree = "<group>"; };
+		C10DEFB120AAD22B53527D49 /* WatchStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchStore.swift; sourceTree = "<group>"; };
+		C1B2C3D41FED79650016851F /* App.debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.debug.entitlements; sourceTree = "<group>"; };
+		C1B2C3D51FED79650016851F /* App.release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.release.entitlements; sourceTree = "<group>"; };
+		C86C61FA91B959BCEEBF006B /* WatchClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchClient.swift; sourceTree = "<group>"; };
+		CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DescallWatchProtocol.swift; sourceTree = "<group>"; };
+		D35C0A0F2E9A000100A1B2C3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		D35C0A112E9A000100A1B2C3 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
+		D35C0A212E9A000100A1B2C3 /* DescallDisplayPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallDisplayPlugin.swift; sourceTree = "<group>"; };
+		D35C0A312E9A000100A1B2C3 /* DescallGlassTabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarView.swift; sourceTree = "<group>"; };
+		D35C0A312E9A000100A1B2C4 /* DescallKeychainPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallKeychainPlugin.swift; sourceTree = "<group>"; };
+		D35C0A332E9A000100A1B2C3 /* DescallGlassTabBarPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallGlassTabBarPlugin.swift; sourceTree = "<group>"; };
+		D832932F076545664848648E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E7C41A022F5B000100D35C0A /* DescallCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallManager.swift; sourceTree = "<group>"; };
+		E7C41A042F5B000100D35C0A /* DescallCallKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallCallKitPlugin.swift; sourceTree = "<group>"; };
+		E7C41B022F5C000100D35C0A /* DescallNativeCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNativeCall.swift; sourceTree = "<group>"; };
+		E7C41B042F5C000100D35C0A /* DescallNativeCallLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallNativeCallLogic.swift; sourceTree = "<group>"; };
+		E7C41B062F5C000100D35C0A /* DescallSignalSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescallSignalSocket.swift; sourceTree = "<group>"; };
+		F1A2B3C61FED79650016851F /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		F1A2B3C71FED79650016851F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		F3B39CB440ED3ACD8AA4A980 /* WatchViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +184,14 @@
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
 				E7C41B122F5C000100D35C0A /* WebRTC in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8447BFA2397275CDE635CDF0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F389A74E308B5C7F2632A3D1 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -158,6 +212,32 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0C3862DAC280D8158D852050 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				499505C2043441FAD5B20B81 /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
+		11197EEA33F596FB2A540E22 /* DescallWatch */ = {
+			isa = PBXGroup;
+			children = (
+				9B39D1EAED19DAAEBB5DDFA2 /* DescallWatchApp.swift */,
+				C86C61FA91B959BCEEBF006B /* WatchClient.swift */,
+				BED3E443ADCF16D6FBDD81B3 /* WatchDemo.swift */,
+				B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */,
+				C10DEFB120AAD22B53527D49 /* WatchStore.swift */,
+				7F7F14CBBFB911BF288C5BAA /* WatchStrings.swift */,
+				7994526A639F65B4026ADD5B /* WatchTheme.swift */,
+				F3B39CB440ED3ACD8AA4A980 /* WatchViews.swift */,
+				70D33B51A30C4F71F3946900 /* Assets.xcassets */,
+				D832932F076545664848648E /* Info.plist */,
+			);
+			name = DescallWatch;
+			path = DescallWatch;
+			sourceTree = "<group>";
+		};
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
@@ -167,6 +247,9 @@
 				A4A0001D2F60000100D35C0A /* NotificationService */,
 				A4A0001E2F60000100D35C0A /* NotificationContent */,
 				504EC3051FED79650016851F /* Products */,
+				11197EEA33F596FB2A540E22 /* DescallWatch */,
+				A78DAFC3E8722662BF039DC4 /* WatchShared */,
+				8D45B0A7458DAAB434FBAB5C /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -176,6 +259,7 @@
 				504EC3041FED79650016851F /* App.app */,
 				A4A0000C2F60000100D35C0A /* NotificationService.appex */,
 				A4A0000D2F60000100D35C0A /* NotificationContent.appex */,
+				51DE02139004908D4C36EB4E /* DescallWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -214,8 +298,17 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				0B6D3F2CFE7FB4F47DF27F1C /* DescallWatchBridge.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		8D45B0A7458DAAB434FBAB5C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0C3862DAC280D8158D852050 /* watchOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		A4A0001C2F60000100D35C0A /* NotifyShared */ = {
@@ -248,6 +341,15 @@
 			path = NotificationContent;
 			sourceTree = "<group>";
 		};
+		A78DAFC3E8722662BF039DC4 /* WatchShared */ = {
+			isa = PBXGroup;
+			children = (
+				CC94760F07472575D59C87DB /* DescallWatchProtocol.swift */,
+			);
+			name = WatchShared;
+			path = WatchShared;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -259,12 +361,14 @@
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
 				A4A000272F60000100D35C0A /* Embed Foundation Extensions */,
+				31255DE9FCC6BEA174B7132B /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				A4A0002A2F60000100D35C0A /* PBXTargetDependency */,
 				A4A0002B2F60000100D35C0A /* PBXTargetDependency */,
+				58D90E1A1F814213C4236172 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -308,6 +412,23 @@
 			productName = NotificationContent;
 			productReference = A4A0000D2F60000100D35C0A /* NotificationContent.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		AEA9A5A184ECD4D6E8B75F81 /* DescallWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0EA2B5B9668ECA19B7BA9578 /* Build configuration list for PBXNativeTarget "DescallWatch" */;
+			buildPhases = (
+				82340FDEB5D31210EB510E48 /* Sources */,
+				8447BFA2397275CDE635CDF0 /* Frameworks */,
+				860BC4B88D9DE564FADE36DD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DescallWatch;
+			productName = DescallWatch;
+			productReference = 51DE02139004908D4C36EB4E /* DescallWatch.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -354,6 +475,7 @@
 				504EC3031FED79650016851F /* App */,
 				A4A0001F2F60000100D35C0A /* NotificationService */,
 				A4A000202F60000100D35C0A /* NotificationContent */,
+				AEA9A5A184ECD4D6E8B75F81 /* DescallWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -371,6 +493,14 @@
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		860BC4B88D9DE564FADE36DD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D38504189BB8F49C69E538A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -418,6 +548,24 @@
 				A4B000122F60000100D35C0A /* DescallToastCapsule.swift in Sources */,
 				A4B000132F60000100D35C0A /* DescallToastPlugin.swift in Sources */,
 				A4B000142F60000100D35C0A /* DescallDeepLinkPlugin.swift in Sources */,
+				F80D42F5B066C951C7D8449D /* DescallWatchBridge.swift in Sources */,
+				D4B3513DB77F8DBC1B0F03BB /* DescallWatchProtocol.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		82340FDEB5D31210EB510E48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E754B91CF80DB989C06A1667 /* DescallWatchApp.swift in Sources */,
+				F8E52F9ECD3C1CC2885DC91D /* WatchClient.swift in Sources */,
+				F04678C03093F3B21D906693 /* WatchDemo.swift in Sources */,
+				8B6E5D3AB6C65A074469BD6B /* WatchModels.swift in Sources */,
+				72249211F2F6B8BDA50F3DD2 /* WatchStore.swift in Sources */,
+				180E56F40F10884135FBA4AC /* WatchStrings.swift in Sources */,
+				1B48A714D47C345808A99C09 /* WatchTheme.swift in Sources */,
+				CD4CB47B40DD30D85CABF425 /* WatchViews.swift in Sources */,
+				17055416BA3BEC6ADC5801A8 /* DescallWatchProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -445,6 +593,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		58D90E1A1F814213C4236172 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DescallWatch;
+			target = AEA9A5A184ECD4D6E8B75F81 /* DescallWatch */;
+			targetProxy = A84BB0537C24CFA13A6455BD /* PBXContainerItemProxy */;
+		};
 		A4A0002A2F60000100D35C0A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A4A0001F2F60000100D35C0A /* NotificationService */;
@@ -458,15 +612,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		F1A2B3C51FED79650016851F /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				F1A2B3C71FED79650016851F /* en */,
-				F1A2B3C61FED79650016851F /* tr */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -483,9 +628,46 @@
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
+		F1A2B3C51FED79650016851F /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				F1A2B3C71FED79650016851F /* en */,
+				F1A2B3C61FED79650016851F /* tr */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		3A81316C871C1394099B02C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 3.7.17;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 		504EC3141FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
@@ -609,7 +791,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.16;
+				MARKETING_VERSION = 3.7.17;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -632,7 +814,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.16;
+				MARKETING_VERSION = 3.7.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -656,7 +838,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.16;
+				MARKETING_VERSION = 3.7.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -681,7 +863,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.16;
+				MARKETING_VERSION = 3.7.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -706,7 +888,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.16;
+				MARKETING_VERSION = 3.7.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -731,7 +913,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.16;
+				MARKETING_VERSION = 3.7.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -741,9 +923,45 @@
 			};
 			name = Release;
 		};
+		DDC7C46BD4EBDB9A896D877D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DescallWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 3.7.17;
+				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0EA2B5B9668ECA19B7BA9578 /* Build configuration list for PBXNativeTarget "DescallWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A81316C871C1394099B02C6 /* Release */,
+				DDC7C46BD4EBDB9A896D877D /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
