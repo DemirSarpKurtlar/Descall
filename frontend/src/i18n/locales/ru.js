@@ -4211,7 +4211,7 @@ export const phrases = {
   "Pick a role to see and manage its members.": "Выберите роль, чтобы увидеть её участников и управлять ими.",
   "Pick a server on the left, or create a new one with +.": "Выберите сервер слева или создайте новый кнопкой +.",
   "Pick a template": "Выберите шаблон",
-  "Pick a template (friends, gaming,) or start empty. Roles and channels ship ready.": "Выберите шаблон (для друзей, для игр) или начните с пустого сервера. Роли и каналы уже готовы.",
+  "Pick a template (friends, gaming) or start empty. Roles and channels ship ready.": "Выберите шаблон (для друзей, для игр) или начните с пустого сервера. Роли и каналы уже готовы.",
   "Pick a template or start from scratch.": "Выберите шаблон или начните с нуля.",
   "Pick a text or voice channel from the list on the left.": "Выберите текстовый или голосовой канал в списке слева.",
   "Pick the devices used for calls on this browser.": "Выберите устройства для звонков в этом браузере.",

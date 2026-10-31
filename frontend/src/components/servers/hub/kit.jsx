@@ -9,6 +9,7 @@ import { resolveAvatarUrl } from "../../../lib/userProfile";
 import { SX_PATHS, SX_AVATAR_COLORS } from "./icons";
 import { useReducedMotionPref } from "./useHubMode";
 import { useSvh } from "./useSvh";
+import { t } from "../../../i18n/runtime.js";
 import "./svh.css";
 
 export function I({ n, s = 18, w = 2, style, className }) {
@@ -115,8 +116,8 @@ export function Back({ label, onClick }) {
     </button>
   );
 }
-export function XBtn({ onClick, label = "Kapat" }) {
-  return <button type="button" className="svh-xbtn" onClick={onClick} aria-label={label}><I n="x" s={15} w={2.6} /></button>;
+export function XBtn({ onClick, label }) {
+  return <button type="button" className="svh-xbtn" onClick={onClick} aria-label={label || t("Close")}><I n="x" s={15} w={2.6} /></button>;
 }
 
 /** Nav bar: grid 1fr auto 1fr. `right` disabled ⇒ the kit's dim state. */

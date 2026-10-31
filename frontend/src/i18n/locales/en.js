@@ -2078,7 +2078,7 @@ export const phrases = {
   "You left the call": "You left the call",
   "No active call to join": "No active call to join",
   "Could not join the call": "Could not join the call",
-  "Kapat": "Kapat",
+  "Kapat": "Close",
   "1080p": "1080p",
   "20 FPS": "20 FPS",
   "Loading Google…": "Loading Google…",

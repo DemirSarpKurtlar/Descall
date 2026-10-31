@@ -175,7 +175,7 @@ export const MARKETING_TR = {
   "or open an issue on GitHub. Include enough detail for a safe investigation.": "veya GitHub'da bir issue aç. Güvenli inceleme için yeterli ayrıntı ekle.",
   "Password": "Şifre",
   "Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available where configured. Session management lets you revoke devices. Keep credentials private on shared computers.": "Parolalar bcrypt ile hashlenir. İsteğe bağlı e-posta 2FA ve Google ile giriş yapılandırıldığı yerlerde kullanılabilir. Oturum yönetimiyle cihazların oturumunu kapatabilirsin. Paylaşılan bilgisayarlarda giriş bilgilerini gizli tut.",
-  "Pick a template (friends, gaming,) or start empty. Roles and channels ship ready.": "Şablon seç (arkadaşlar, oyun) veya boş başla. Roller ve kanallar hazır gelir.",
+  "Pick a template (friends, gaming) or start empty. Roles and channels ship ready.": "Şablon seç (arkadaşlar, oyun) veya boş başla. Roller ve kanallar hazır gelir.",
   "Friends and presence inside Descall": "Arkadaşlar ve durum Descall içinde",
   "Please wait...": "Lütfen bekle...",
   "Primary navigation": "Ana menü",

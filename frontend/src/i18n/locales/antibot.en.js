@@ -33,7 +33,7 @@ export const ANTIBOT_EN = {
   status: { stopped: "Earning stopped", half: "Half earning", trusted: "Trusted", normal: "Normal" },
   age: { today: "today", day: "{n} d", month: "{n} mo", year: "{n} y" },
   foot: "At risk 40 and above earning is halved, at 70 and above it stops. Withheld DesCoin is not deleted; it can be released after review. Trusted accounts earn in full.",
-  footMonitor: "You are in monitor mode (Faz 0): nothing is reduced; the withheld column shows what the rules would hold if they were on.",
+  footMonitor: "You are in monitor mode (phase 0): nothing is reduced; the withheld column shows what the rules would hold if they were on.",
   empty: "No account is above risk 40.",
   emptySearch: "No account matches your search.",
   loading: "Loading…",
