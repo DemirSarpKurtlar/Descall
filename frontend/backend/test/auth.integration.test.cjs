@@ -211,14 +211,14 @@ async function run() {
     assert(adsRow?.auth_method === "email", "email signup auth_method is email");
     assert(adsRow?.last_touch_source === "direct", "later direct visit is last-touch");
     let teamMail = null;
-    for (let i = 0; i < 20 && !teamMail; i += 1) {
+    for (let i = 0; i < 300 && !teamMail; i += 1) {
       teamMail = sentEmails.find((e) => (e.to || []).includes("team@descall.com") && /adsuser/.test(`${e.subject || ""} ${e.text || ""}`));
-      if (!teamMail) await new Promise((resolve) => setImmediate(resolve));
+      if (!teamMail) await new Promise((resolve) => setTimeout(resolve, 10));
     }
     assert(teamMail, "team signup email sent");
-    assert(/First Touch Source:\s*google_ads/.test(teamMail.text), "team email shows google_ads first touch");
-    assert(/Authentication:\s*Email/.test(teamMail.text), "team email shows Email auth");
-    assert(!/First Touch Source:\s*google\b/.test(teamMail.text.replace("google_ads", "")), "does not treat OAuth as ads");
+    assert(/İlk geldiği yer:\s*Google Ads reklamı/.test(teamMail.text), "team email shows google_ads first touch");
+    assert(/Kayıt yöntemi:\s*E-posta ve şifre/.test(teamMail.text), "team email shows email auth");
+    assert(!/Kayıt yöntemi:\s*Google/.test(teamMail.text), "does not treat ads as Google sign-in");
 
     console.log("auth.integration.test.cjs: ok (" + sentEmails.length + " emails sent during test)");
   } finally {

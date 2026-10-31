@@ -633,6 +633,7 @@ router.post("/register", async (req, res) => {
       verified: false,
       onboarding: email ? "E-posta doğrulama" : "Kayıt tamam",
       attribution: attributionColumns,
+      visitorKey: sanitizeVisitorKey(attribution?.visitorKey),
     });
 
     let token = null;
@@ -1034,6 +1035,7 @@ router.post("/google", async (req, res) => {
         verified: Boolean(user.email_confirmed_at),
         onboarding: "Google ile giriş",
         attribution: attributionColumns,
+        visitorKey: sanitizeVisitorKey(attribution?.visitorKey),
       });
     }
 
@@ -1252,6 +1254,7 @@ router.post("/apple", async (req, res) => {
         verified: Boolean(user.email_confirmed_at),
         onboarding: "Apple ile giriş",
         attribution: attributionColumns,
+        visitorKey: sanitizeVisitorKey(attribution?.visitorKey),
       });
     }
 
