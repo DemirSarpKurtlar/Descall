@@ -53,3 +53,4 @@ yarn-error.log*
 
 frontend/.vercel/
 frontend/dist-e2e/
+.shots/
