@@ -30,6 +30,21 @@ export const FB3_NAV = [
   ["audit", "Denetim", "eye"],
 ];
 
+/** 3.7.14 form answers shown under the meta row: Tür, Nerede, Ne sıklıkla, yıldız, sevdikleri. */
+const KIND_TR = { suggestion: "Öneri", bug: "Hata", praise: "Övgü" };
+const AREA_TR = { chat: "Sohbet", voice: "Sesli arama", server: "Sunucu", shop: "Mağaza", settings: "Ayarlar", other: "Diğer" };
+const FREQ_TR = { once: "Bir kez oldu", sometimes: "Bazen oluyor", always: "Her sefer oluyor" };
+const LIKE_TR = { voice: "Ses kalitesi", design: "Tasarım", screen: "Ekran paylaşımı", servers: "Sunucular", shop: "Mağaza", speed: "Hız" };
+export function formFacts(f) {
+  const out = [];
+  if (f?.kind && KIND_TR[f.kind]) out.push(`Tür: ${KIND_TR[f.kind]}`);
+  if (f?.details?.area && AREA_TR[f.details.area]) out.push(`Nerede: ${AREA_TR[f.details.area]}`);
+  if (f?.details?.frequency && FREQ_TR[f.details.frequency]) out.push(FREQ_TR[f.details.frequency]);
+  if (Number.isInteger(f?.rating)) out.push(`${f.rating}/5 yıldız`);
+  for (const l of f?.details?.likes || []) if (LIKE_TR[l]) out.push(`Seviyor: ${LIKE_TR[l]}`);
+  return out;
+}
+
 const QUICK_REPLIES = [
   "Teşekkürler, inceliyoruz.",
   "Biraz daha detay verebilir misin? Hangi cihazda ve ne zaman oluyor?",
@@ -240,6 +255,9 @@ function Detail({ f, now, phone, onPatch, onDelete, onReply, onCopyId, onProfile
           <div><small>CİHAZ</small>{m.device || "—"}</div>
           <div><small>GÖNDERİM</small>{sentAt(f.created_at)}</div>
         </div>
+        {formFacts(f).length ? (
+          <div className="fb3-facts">{formFacts(f).map((x) => <span key={x}>{x}</span>)}</div>
+        ) : null}
         <div className="fb3-ctl">
           <div><div className="lb">DURUM</div><Pills map={STATUSES} cur={f.status} label="Durum" onPick={(status) => onPatch({ status })} /></div>
           <div><div className="lb">ÖNCELİK</div><Pills map={PRIORITIES} cur={f.priority} label="Öncelik" onPick={(priority) => onPatch({ priority })} /></div>
@@ -331,7 +349,11 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
     if (!socket?.on) return undefined;
     const onNew = () => load();
     socket.on("feedback:new", onNew);
-    return () => socket.off?.("feedback:new", onNew);
+    socket.on("feedback:user_reply", onNew);
+    return () => {
+      socket.off?.("feedback:new", onNew);
+      socket.off?.("feedback:user_reply", onNew);
+    };
   }, [socket, load]);
 
   const all = useMemo(() => countAll(items), [items]);

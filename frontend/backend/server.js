@@ -495,92 +495,11 @@ app.use("/voice-recordings", voiceRecordingsGone);
 // INLINE FEEDBACK ENDPOINTS - Direct in server.js (most reliable)
 // ============================================================================
 
-// Submit feedback - POST /api/feedback/submit
-app.post("/api/feedback/submit", requireAuth, async (req, res) => {
-  console.log("[FEEDBACK] POST /api/feedback/submit - START");
-  console.log("[FEEDBACK] User:", req.user?.username);
-  
-  try {
-    const { category, priority, subject, message, attachments, platform, appVersion } = req.body;
-    
-    // Validation
-    if (!message || typeof message !== "string" || message.trim().length === 0) {
-      return res.status(400).json({ success: false, error: "Message is required" });
-    }
-    
-    // Prepare data
-    const feedbackData = {
-      user_id: String(req.user.id),
-      username: req.user.username || "Anonymous",
-      category: String(category || "general").toLowerCase(),
-      priority: String(priority || "medium").toLowerCase(),
-      subject: String(subject || message.trim().split(/\r?\n/, 1)[0]).trim().slice(0, 200),
-      message: message.trim(),
-      attachments: Array.isArray(attachments) ? attachments.slice(0, 10) : [],
-      platform: String(platform || req.get("user-agent") || "unknown").slice(0, 160),
-      app_version: String(appVersion || req.get("x-app-version") || "unknown").slice(0, 80),
-      status: "new",
-      viewed: false,
-      admin_replies: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    console.log("[FEEDBACK] Inserting...");
-    
-    // Insert to Supabase
-    const { data, error } = await supabase
-      .from("user_feedback")
-      .insert(feedbackData)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error("[FEEDBACK] Error:", error?.message || error);
-      return res.status(500).json({ success: false, error: "Could not save feedback" });
-    }
-    
-    console.log("[FEEDBACK] SUCCESS! ID:", data?.id);
-
-    let emailDelivery = { sent: false, skipped: true };
-    try {
-      emailDelivery = await sendFeedbackEmail(data);
-      await supabase
-        .from("user_feedback")
-        .update({
-          email_status: emailDelivery.sent ? "sent" : "skipped",
-          email_provider_id: emailDelivery.providerId,
-          email_sent_at: emailDelivery.sent ? new Date().toISOString() : null,
-          email_error: emailDelivery.error || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", data.id);
-    } catch (emailError) {
-      const message = String(emailError?.message || "Email delivery failed").slice(0, 500);
-      console.error("[FEEDBACK] Email delivery failed:", message);
-      await supabase
-        .from("user_feedback")
-        .update({
-          email_status: "failed",
-          email_error: message,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", data.id);
-      emailDelivery = { sent: false, error: message };
-    }
-    
-    return res.status(200).json({
-      success: true,
-      message: "Feedback submitted successfully",
-      feedbackId: data?.id,
-      emailSent: Boolean(emailDelivery.sent)
-    });
-    
-  } catch (err) {
-    console.error("[FEEDBACK] ERROR:", err?.message || err);
-    return res.status(500).json({ success: false, error: "Could not save feedback" });
-  }
-});
+// Submit feedback - POST /api/feedback/submit (3.7.14: routes/myFeedback.js, rate limited,
+// kind / area / frequency / likes / rating / screenshots, live feedback:new to admins).
+app.post("/api/feedback/submit", requireAuth, require("./routes/myFeedback").submitHandler({ sendFeedbackEmail }));
+// The sender's own feedback, the team's answers and their replies (3.7.14).
+app.use("/api/me/feedback", require("./routes/myFeedback"));
 
 // 500 responses never echo database / exception messages to the client.
 function sendServerError(req, res, err) {

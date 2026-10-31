@@ -3,14 +3,14 @@
 export const TR_LANDING_META = [
   {
     "path": "/tr/discord-alternatifi",
-    "title": "Discord Alternatifi | Ücretsiz Türkçe Sesli Sohbet: Descall",
-    "description": "Discord’a erişemiyor ya da daha hafif bir uygulama mı arıyorsun? Descall: ücretsiz sunucular, sesli ve görüntülü arama, ekran paylaşımı. Türkçe.",
+    "title": "Discord Alternatifi (2026): Ücretsiz, Türkçe ve Engelsiz | Descall",
+    "description": "Discord’a Türkiye’den erişemiyor musun? Descall VPN gerekmeden çalışır: ücretsiz sunucular, sesli ve görüntülü arama, ekran paylaşımı. Windows, iPhone, Android.",
     "h1": "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı"
   },
   {
     "path": "/tr/turk-discord",
-    "title": "Türk Discord’u: Türkiye’de Geliştirilen Sohbet Uygulaması",
-    "description": "Türk Discord’u arayanlar için Descall: Türkiye’de geliştirilen, Türkçe arayüzlü, ücretsiz sunucu, sesli sohbet ve ekran paylaşımı uygulaması.",
+    "title": "Yerli Discord: Türk Discord Uygulaması Descall (Ücretsiz)",
+    "description": "Yerli Discord arayanlar için Descall: Türkiye’de geliştirildi, Türkçe, erişim engeli yok. Ücretsiz sunucular, sesli sohbet ve ekran paylaşımı. Hemen indir.",
     "h1": "Türk Discord’u: Türkiye’de geliştirilen Descall"
   },
   {
@@ -27,14 +27,14 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/oyuncu-sohbet-uygulamasi",
-    "title": "Oyuncu Sohbet Uygulaması | Ses, Klan Sunucusu ve Ekran Paylaşımı: Descall",
+    "title": "Oyuncu Sohbet Uygulaması: Ses, Klan Sunucusu, Ekran Paylaşma | Descall",
     "description": "Oyuncular için ücretsiz sohbet uygulaması: klan sunucusu, rollerle düzen, oyun içi sesli sohbet ve ekran paylaşımı tek uygulamada.",
     "h1": "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve ekran paylaşımı tek yerde"
   },
   {
     "path": "/tr/discord-acildi-mi",
-    "title": "Discord Açıldı mı? Türkiye Erişim Durumu (Ekim 2026)",
-    "description": "Discord Türkiye’de açıldı mı? 9 Ekim 2024’ten beri mahkeme kararıyla erişim engelli; Ekim 2026 itibarıyla engel sürüyor. Güncel durum ve alternatifler.",
+    "title": "Discord Açıldı mı? (Ekim 2026) Güncel Durum ve Çalışan Alternatif",
+    "description": "Kısa cevap: hayır. Discord 9 Ekim 2024’ten beri Türkiye’de erişim engelli ve engel Ekim 2026’da sürüyor. VPN’siz çalışan ücretsiz alternatif: Descall.",
     "h1": "Discord açıldı mı? Türkiye’de Discord erişim durumu"
   },
   {

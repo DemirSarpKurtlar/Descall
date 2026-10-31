@@ -369,7 +369,7 @@ function jsonLdForRoute(route) {
           description: post.description,
           path: route.path,
           datePublished: post.date || post.publishedAt || "2026-01-01",
-          dateModified: post.updatedAt || post.date || "2026-01-01",
+          dateModified: post.updated || post.updatedAt || post.date || "2026-01-01",
         })
       );
     }
@@ -436,7 +436,7 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
   const ldScripts = jsonLdForRoute(route)
     .map(
       (data) =>
-        `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`
+        `<script type="application/ld+json" data-prerendered-jsonld="${route.path}">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`
     )
     .join("\n    ");
 

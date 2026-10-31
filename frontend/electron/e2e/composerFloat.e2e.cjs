@@ -1,0 +1,207 @@
+'use strict';
+
+/**
+ * Electron fixture for the floating composer (3.7.14).
+ * Checks, in a DM with enough messages to scroll: the composer has no band of its
+ * own (the message list runs to the bottom of the panel and scrolls under it),
+ * the last message still clears the composer when scrolled to the bottom, the
+ * field blurs what is behind it, and the send button is centred in the field
+ * with the same inset on the right as top / bottom.
+ * Run from frontend/ after an Electron build (ELECTRON_BUILD=1 npx vite build):
+ *   xvfb-run -a npx electron electron/e2e/composerFloat.e2e.cjs --no-sandbox
+ * Env: DESCALL_E2E_SHOTS=<dir>. Prints "[e2e-composer] OK" or "[e2e-composer] FAIL ...".
+ *
+ * (Fixture derived from hoverToolbar.e2e.cjs.)
+ *
+ * Boots the real main process (electron/main.cjs) against the built dist/, signed in
+ * against an in-process mock API (nothing leaves the machine). It opens a DM, hovers
+ * the first and last message of each group at several window widths (and with the
+ * conversation's side panel open when there is one), and checks that the hover pill:
+ *   - sits directly above the hovered bubble (6px gap, aligned to its left or right edge),
+ *     or straddles its top edge under the header when there is no room above,
+ *   - 3.1: beside the bubble on its first line (or on its own top-right corner)
+ *     when the pill above would cover another message; never over another message,
+ *   - sits inside the chat column with an inset (never clipped),
+ *   - never overlaps the row's avatar, name, badges or time,
+ *   - never overlaps the floating conversation header.
+ *
+ * Run from frontend/ after an Electron build (ELECTRON_BUILD=1 npx vite build):
+ *   xvfb-run -a npx electron electron/e2e/hoverToolbar.e2e.cjs --no-sandbox
+ * Env: DESCALL_E2E_SHOTS=<dir> saves screenshots; DESCALL_E2E_WIDTHS="1024x670,800x600".
+ * Prints "[e2e-composer] OK" and exits 0, or "[e2e-composer] FAIL <reason>" and exits 1.
+ */
+
+const { app, protocol, safeStorage } = require('electron');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const SHOTS = process.env.DESCALL_E2E_SHOTS || '';
+const WIDTHS = (process.env.DESCALL_E2E_WIDTHS || '1024x670,1280x800,1100x700,960x640,860x620,720x560').split(',').map((s) => s.split('x').map(Number));
+const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'descall-e2e-composer-'));
+app.setPath('userData', userData);
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP * ~NOTFOUND');
+app.commandLine.appendSwitch('force-device-scale-factor', '1');
+
+const log = (...a) => console.log('[e2e-composer]', ...a);
+let failed = false;
+function fail(reason) {
+  if (failed) return;
+  failed = true;
+  console.error(`[e2e-composer] FAIL ${reason}`);
+  setTimeout(() => app.exit(1), 200);
+}
+setTimeout(() => fail('timed out'), 240000).unref();
+
+const ME = { id: 'u-e2e', username: 'Demirr', displayName: 'Demirr', display_name: 'Demirr', isAdmin: true, is_admin: true, role: 'admin', country: 'TR', countryCode: 'TR', language: 'tr', createdAt: '2025-01-01T00:00:00Z', emailVerified: true, birthDate: '2000-01-01', blockedUsers: [] };
+const PEER = { id: 'u-peer', username: 'sn1pez53', displayName: 'sn1pez53 the longest name', display_name: 'sn1pez53 the longest name', isAdmin: true, is_admin: true, role: 'admin', country: 'TR', countryCode: 'TR' };
+const now = Date.now();
+const MSGS = [
+  ['u-e2e', 'Selam'], ['u-e2e', 'Naber'], ['u-peer', 'İyi, sen?'], ['u-e2e', 'Ben de iyiyim'],
+  ['u-peer', '/daily,'], ['u-peer', 'noldu'], ['u-e2e', 'Tamam'], ['u-e2e', 'Görüşürüz, akşam sesli kanala gelirim'], ['u-peer', 'ok'],
+].concat(Array.from({ length: 24 }, (_, i) => [i % 3 ? 'u-peer' : 'u-e2e', `Mesaj ${i + 1}: biraz daha uzun bir satır, liste kaydırılabilsin diye`]))
+  .map(([from, text], i) => ({ id: `m${i}`, text, from: from === 'u-e2e' ? ME : PEER, sender_id: from, timestamp: new Date(now - (40 - i) * 60000).toISOString() }));
+
+function body(url) {
+  const p = url.pathname;
+  if (p === '/auth/me') return { user: ME };
+  if (p.includes('/dm/') && p.endsWith('/messages')) return { withUserId: PEER.id, hasMore: false, messages: MSGS };
+  if (p.includes('/friends/list')) return { friends: [PEER] };
+  if (p.endsWith('/groups/my')) return { groups: [{ id: 'g1', name: 'Ekip', owner_id: ME.id, members: [ME, PEER], member_count: 2 }] };
+  if (p.endsWith('/groups/g1/messages')) return { messages: MSGS.map((m) => ({ ...m, group_id: 'g1', content: m.text, user_id: m.sender_id, username: m.from.username, user: m.from, created_at: m.timestamp })), reactionsIncluded: true };
+  if (p.endsWith('/groups/g1/members')) return { members: [ME, PEER] };
+  if (p.includes('/users/') || p.includes('/profile')) return { user: PEER, ...PEER };
+  const last = p.split('/').filter(Boolean).pop() || 'items';
+  const out = { items: [], friends: [], requests: [], servers: [], groups: [], conversations: [], messages: [], notifications: [] };
+  out[last] = [];
+  return out;
+}
+function mockResponse(request) {
+  const url = new URL(request.url);
+  const headers = {
+    'content-type': 'application/json',
+    'access-control-allow-origin': request.headers.get('origin') || '*',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-headers': request.headers.get('access-control-request-headers') || '*',
+    'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  };
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+  if (url.pathname.startsWith('/socket.io')) return new Response('{}', { status: 404, headers });
+  return new Response(JSON.stringify(body(url)), { status: 200, headers });
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const TOKEN = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ id: ME.id, userId: ME.id, username: ME.username, exp: 4102444800 })}.e2e`;
+
+app.whenReady().then(() => {
+  const tokenFile = path.join(userData, 'auth-token.bin');
+  fs.writeFileSync(tokenFile, safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(TOKEN) : Buffer.from(TOKEN, 'utf8'));
+  protocol.handle('https', (request) => {
+    try { return mockResponse(request); } catch (err) { return new Response(String(err), { status: 500 }); }
+  });
+});
+
+let attached = false;
+app.on('browser-window-created', (_e, win) => {
+  const wc = win.webContents;
+  wc.once('did-finish-load', () => {
+    if (attached || !/^descall:\/\/app\//.test(wc.getURL())) return;
+    attached = true;
+    run(win).catch((err) => fail(err && err.stack ? err.stack : String(err)));
+  });
+});
+
+const js = (win, code) => win.webContents.executeJavaScript(code, true);
+async function shot(win, name) {
+  if (!SHOTS) return;
+  fs.mkdirSync(SHOTS, { recursive: true });
+  const img = await win.webContents.capturePage();
+  fs.writeFileSync(path.join(SHOTS, name), img.toPNG());
+}
+async function waitFor(win, label, code, timeoutMs = 45000) {
+  const t0 = Date.now();
+  let last;
+  while (Date.now() - t0 < timeoutMs) {
+    try { last = await js(win, code); } catch (err) { last = `ERR ${err.message}`; }
+    if (last && last.ok) return last;
+    await sleep(250);
+  }
+  throw new Error(`${label}: not reached (last ${JSON.stringify(last)})`);
+}
+
+
+const MEASURE = `(() => {
+  const r = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, w: b.width, h: b.height }; };
+  const panel = document.querySelector('.main-panel');
+  const list = document.querySelector('.messages-container');
+  const cc = document.querySelector('.composer-container');
+  const input = document.querySelector('.composer-input');
+  const wrap = document.querySelector('.composer-input-wrapper');
+  const send = document.querySelector('.composer-send-btn');
+  const plus = document.querySelector('.composer-left .composer-action-btn');
+  const bubbles = [...document.querySelectorAll('.message-bubble')];
+  const lastB = bubbles[bubbles.length - 1];
+  const bg = (e) => e ? getComputedStyle(e).backgroundColor + ' / ' + getComputedStyle(e).backgroundImage.slice(0, 40) : null;
+  const bf = (e, pseudo) => e ? (getComputedStyle(e, pseudo || null).backdropFilter || getComputedStyle(e, pseudo || null).webkitBackdropFilter) : null;
+  return { ok: !!(panel && list && cc && input && send), panel: r(panel), list: r(list), cc: r(cc), input: r(input), send: r(send), plus: r(plus), last: r(lastB),
+    ccPos: cc && getComputedStyle(cc).position, ccBg: bg(cc), composerBg: bg(document.querySelector('.message-composer')),
+    inputBf: bf(input), wrapBf: bf(wrap, '::before'), plusBf: bf(plus) + ' ' + bf(plus, '::before'),
+    listPadBottom: list && getComputedStyle(list).paddingBottom, scrollable: list && list.scrollHeight > list.clientHeight + 4,
+    scrollTop: list && list.scrollTop, scrollMax: list && list.scrollHeight - list.clientHeight };
+})()`;
+
+async function run(win) {
+  await waitFor(win, 'boot', `(() => ({ ok: !document.querySelector('#boot-splash') && (document.getElementById('root')?.innerText || '').length > 0 }))()`);
+  await sleep(4000);
+  await js(win, `(() => { localStorage.setItem('descall:cookie_consent_v1', JSON.stringify({ choice: 'rejected', at: new Date().toISOString() })); return true; })()`);
+  win.webContents.reload();
+  await sleep(1500);
+  await waitFor(win, 'boot after consent', `(() => ({ ok: !document.querySelector('#boot-splash') && (document.getElementById('root')?.innerText || '').length > 0 }))()`);
+  await sleep(3000);
+  const problems = [];
+  win.setMinimumSize(640, 480);
+  for (const [w, h] of (process.env.DESCALL_E2E_WIDTHS || '1280x800,960x640').split(',').map((s) => s.split('x').map(Number))) {
+    win.setContentSize(w, h);
+    await sleep(500);
+    await js(win, `history.pushState({}, '', '/direct/${PEER.username}'); dispatchEvent(new PopStateEvent('popstate')); true`);
+    await waitFor(win, 'messages', `(() => ({ ok: document.querySelectorAll('.message-bubble').length >= ${MSGS.length} }))()`);
+    await sleep(1500);
+    // Close any popup the mock API triggers (promo code card), it covers the chat.
+    for (let k = 0; k < 3; k++) {
+      await js(win, `(() => { const b = [...document.querySelectorAll('button')].find((x) => /^(Later|Sonra|Daha sonra)$/.test(x.textContent.trim()) && x.offsetParent); if (b) b.click(); else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return !!b; })()`);
+      await sleep(400);
+    }
+    await js(win, `(() => { const l = document.querySelector('.messages-container'); l.scrollTop = l.scrollHeight; return true; })()`);
+    await sleep(600);
+    const m = await js(win, MEASURE);
+    log(`${w}x${h}`, JSON.stringify(m));
+    await shot(win, `${w}x${h}-bottom.png`);
+    const tag = `${w}x${h}`;
+    if (!m.ok) { problems.push(`${tag}: composer not found`); continue; }
+    // 1. No band: the list reaches the bottom of the panel and runs under the composer.
+    if (m.list.bottom < m.cc.bottom - 2) problems.push(`${tag}: list stops above the composer (${Math.round(m.list.bottom)} < ${Math.round(m.cc.bottom)})`);
+    if (!/rgba\(0, 0, 0, 0\)|transparent/.test(m.ccBg) || !/rgba\(0, 0, 0, 0\)|transparent/.test(m.composerBg)) problems.push(`${tag}: composer band has a background (${m.ccBg} | ${m.composerBg})`);
+    // 2. At the bottom the last message clears the field.
+    if (m.last.bottom > m.input.top - 4) problems.push(`${tag}: last message under the composer (${Math.round(m.last.bottom)} > ${Math.round(m.input.top)})`);
+    // 3. Frosted: the field and + blur what is behind them.
+    if (!/blur/.test(`${m.inputBf} ${m.wrapBf}`)) problems.push(`${tag}: field has no blur`);
+    if (!/blur/.test(`${m.plusBf}`)) problems.push(`${tag}: + has no blur`);
+    // 4. Send button centred in the field, same inset right as top / bottom, square.
+    const vInset = m.send.top - m.input.top, vInset2 = m.input.bottom - m.send.bottom, hInset = m.input.right - m.send.right;
+    if (Math.abs(vInset - vInset2) > 1.5) problems.push(`${tag}: send not vertically centred (${vInset.toFixed(1)} / ${vInset2.toFixed(1)})`);
+    if (Math.abs(hInset - vInset) > 1.5) problems.push(`${tag}: send right inset ${hInset.toFixed(1)} != top inset ${vInset.toFixed(1)}`);
+    if (Math.abs(m.send.w - m.send.h) > 0.5) problems.push(`${tag}: send not square (${m.send.w}x${m.send.h})`);
+    // 5. Messages scrolled up show through the composer (something is behind it).
+    await js(win, `(() => { const l = document.querySelector('.messages-container'); l.scrollTop = Math.max(0, l.scrollHeight - l.clientHeight - 120); return true; })()`);
+    await sleep(400);
+    const under = await js(win, `(() => { const i = document.querySelector('.composer-input').getBoundingClientRect(); return [...document.querySelectorAll('.message-bubble')].some((b) => { const r = b.getBoundingClientRect(); return r.bottom > i.top && r.top < i.bottom; }); })()`);
+    if (!under) problems.push(`${tag}: no message ever scrolls under the composer`);
+    await shot(win, `${tag}-under.png`);
+  }
+  if (problems.length) return fail(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
+  console.log('[e2e-composer] OK');
+  setTimeout(() => app.exit(0), 200);
+}
+
+require('../main.cjs');

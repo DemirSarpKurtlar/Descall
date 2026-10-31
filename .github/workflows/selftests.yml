@@ -179,6 +179,7 @@ jobs:
           node backend/lib/adminPermissions.selftest.cjs
           node src/components/admin/adminStaff.selftest.mjs
           node backend/lib/reportWorkflow.selftest.cjs
+          node backend/lib/userFeedback.selftest.cjs
           node src/components/admin/reportCase.selftest.mjs
           node backend/lib/clientIp.selftest.cjs
           node backend/lib/accessBans.selftest.cjs
@@ -259,6 +260,9 @@ jobs:
           node src/components/admin/adminNav.selftest.mjs
           node src/components/admin/adminOverviewModel.selftest.mjs
           node src/styles/presenceToast.selftest.mjs
+          node src/styles/updateToast.selftest.mjs
+          node src/components/layout/newCreate.selftest.mjs
+          node src/lib/feedbackForm.selftest.mjs
           node src/lib/hoverToolbarPlacement.selftest.mjs
           node src/lib/singleActiveHover.selftest.mjs
           node src/styles/admin-liquid.selftest.mjs
@@ -410,6 +414,12 @@ jobs:
         run: |
           xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/storePurchaseModal.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-purchase.log"
           grep -q "\[e2e-purchase\] OK" "$RUNNER_TEMP/e2e-purchase.log"
+      # 3.7.14 floating composer: no band under the list, messages scroll under the
+      # frosted + / field, the last message clears it, send centred with an even inset.
+      - name: Electron floating composer e2e
+        run: |
+          xvfb-run -a -s "-screen 0 1400x900x24" npx electron electron/e2e/composerFloat.e2e.cjs --no-sandbox 2>&1 | tee "$RUNNER_TEMP/e2e-composer.log"
+          grep -q "\[e2e-composer\] OK" "$RUNNER_TEMP/e2e-composer.log"
       # Image viewer + composer menus (1024x688 … 1920x1080 and 800x600 / 640x480): the
       # viewer's top bar sits under the custom title bar, the image fits between the top
       # bar and the zoom pill, and no chat avatar status dot paints over the + / emoji menus.

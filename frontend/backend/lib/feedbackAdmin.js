@@ -97,6 +97,14 @@ function shapeFeedback(f, users = new Map(), counts = new Map()) {
     created_at: f.created_at,
     updated_at: f.updated_at,
     replies: (Array.isArray(f.admin_replies) ? f.admin_replies : []).map(shapeReply).filter(Boolean),
+    // 3.7.14 form fields (null on older rows).
+    kind: ["suggestion", "bug", "praise"].includes(f.kind) ? f.kind : null,
+    rating: Number.isInteger(f.rating) ? f.rating : null,
+    details: f.details && typeof f.details === "object" ? {
+      area: typeof f.details.area === "string" ? clip(f.details.area, 20) : null,
+      frequency: typeof f.details.frequency === "string" ? clip(f.details.frequency, 20) : null,
+      likes: Array.isArray(f.details.likes) ? f.details.likes.filter((x) => typeof x === "string").slice(0, 8) : [],
+    } : null,
     meta: {
       platform: meta.platform,
       version: f.app_version && f.app_version !== "unknown" ? clip(f.app_version, 40) : null,
@@ -137,7 +145,7 @@ function systemLines(before, patch, adminUsername) {
   const at = new Date().toISOString();
   const out = [];
   if (patch.status && patch.status !== before.status) {
-    out.push({ id: newId(), type: "system", text: `${who} durumu ${STATUS_TR[patch.status]} yaptı`, adminUsername: who, created_at: at });
+    out.push({ id: newId(), type: "system", status: patch.status, text: `${who} durumu ${STATUS_TR[patch.status]} yaptı`, adminUsername: who, created_at: at });
   }
   if (patch.priority && patch.priority !== before.priority) {
     out.push({ id: newId(), type: "system", text: `${who} önceliği ${PRIORITY_TR[patch.priority]} yaptı`, adminUsername: who, created_at: at });

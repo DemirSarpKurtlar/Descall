@@ -28,6 +28,7 @@ const { BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/cont
 const { TR_BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { execFileSync } = await import("node:child_process");
+const { hreflangPair } = await import(pathToFileURL(path.join(root, "src/site/localePaths.js")).href);
 
 /** Source files whose last commit date is the page's real lastmod. */
 const PAGE_SOURCES = {
@@ -147,6 +148,9 @@ Allow: /
 User-agent: ChatGPT-User
 Allow: /
 
+User-agent: OAI-SearchBot
+Allow: /
+
 User-agent: Google-Extended
 Allow: /
 
@@ -156,7 +160,16 @@ Allow: /
 User-agent: anthropic-ai
 Allow: /
 
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
 User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
 Allow: /
 
 User-agent: Applebot-Extended
@@ -229,19 +242,38 @@ Sitemap: ${SITE}/sitemap.xml
 `;
 }
 
+/** SEO 3.7.14: EN/TR pairs in the sitemap too (Google reads either source). */
+function alternateLinks(loc) {
+  let pathname = "/";
+  try {
+    pathname = new URL(loc).pathname || "/";
+  } catch {
+    return "";
+  }
+  const pair = hreflangPair(pathname);
+  if (!pair) return "";
+  const en = `${SITE}${pair.en === "/" ? "/" : pair.en}`;
+  const tr = `${SITE}${pair.tr}`;
+  return [
+    `    <xhtml:link rel="alternate" hreflang="en" href="${xmlEscape(en)}" />`,
+    `    <xhtml:link rel="alternate" hreflang="tr" href="${xmlEscape(tr)}" />`,
+    `    <xhtml:link rel="alternate" hreflang="x-default" href="${xmlEscape(en)}" />`,
+  ].join("\n") + "\n";
+}
+
 function buildUrlset(entries) {
   const urls = entries.map((e) => {
     assertHttpsDescall(e.loc);
     return `  <url>
     <loc>${xmlEscape(e.loc)}</loc>
-    <lastmod>${xmlEscape(e.lastmod)}</lastmod>
+${alternateLinks(e.loc)}    <lastmod>${xmlEscape(e.lastmod)}</lastmod>
     <changefreq>${xmlEscape(e.changefreq || "weekly")}</changefreq>
     <priority>${xmlEscape(e.priority || "0.5")}</priority>
   </url>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${urls.join("\n")}
 </urlset>
 `;

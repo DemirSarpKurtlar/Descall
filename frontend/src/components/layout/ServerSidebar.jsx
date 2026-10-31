@@ -17,7 +17,7 @@ import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { announcementIcon, loadAnnouncements, loadUnreadAnnouncementCount, markAnnouncementRead } from "../../lib/announcements";
-import { renameGroup as renameGroupApi } from "../../api/groups";
+import { renameGroup as renameGroupApi, setGroupAvatar } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
@@ -25,6 +25,8 @@ import GroupInviteModal from "../groups/GroupInviteModal";
 import GroupRenameSheet from "../groups/GroupRenameSheet";
 import { useToast } from "../../context/ToastContext";
 import GroupAddMemberSheet from "../groups/GroupAddMemberSheet";
+import NewCreateModal, { GROUP_MAX_PICK } from "../friends/NewCreateModal";
+import { uploadFile } from "../../api/media";
 import "../groups/GroupMenu.css";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -89,6 +91,7 @@ export default function ServerSidebar({
   onDmPrefAction,
 }) {
   const t = useT();
+  const { toast } = useToast();
   const glassShell = useGlassShell();
   const [searchQuery, setSearchQuery] = useState("");
   // Calls history lives in CallsView; it hands us its refetch.
@@ -207,7 +210,8 @@ export default function ServerSidebar({
   };
 
   useEffect(() => {
-    if (showAddModal && addTab === "quickadd") {
+    // The start screen always lists suggestions (quick add / add friend open it).
+    if (showAddModal && addTab !== "group") {
       fetchSuggestions();
     }
   }, [showAddModal, addTab]);
@@ -251,7 +255,7 @@ export default function ServerSidebar({
     }
   };
 
-  const handleCreateGroup = async () => {
+  const handleCreateGroup = async (photoFile = null) => {
     if (!groupName.trim()) return;
     setAddLoading(true);
     setAddError("");
@@ -276,6 +280,17 @@ export default function ServerSidebar({
       setShowAddModal(false);
       // Optimistically add the new group immediately, then do a background refresh
       if (data.group) onGroupCreated?.(data.group);
+      // Photo picked on the "Grup oluştur" screen: same upload as the group
+      // photo changer (media bucket, then POST /groups/:id/avatar).
+      const photo = photoFile instanceof Blob ? photoFile : null;
+      if (photo && data.group?.id) {
+        uploadFile(photo)
+          .then((up) => {
+            if (!up?.url) throw new Error("upload");
+            return setGroupAvatar(data.group.id, up.url).then((r) => onGroupAvatarChanged?.(data.group.id, r?.avatarUrl ?? up.url));
+          })
+          .catch(() => toast(t("nc.photoFailed"), "error"));
+      }
       onRefreshGroups?.();
     } catch (err) {
       setAddError(err.message || t("Network error. Is backend deployed?"));
@@ -289,9 +304,10 @@ export default function ServerSidebar({
       const exists = prev.find(m => m.id === friend.id);
       if (exists) {
         return prev.filter(m => m.id !== friend.id);
-      } else {
-        return [...prev, friend];
       }
+      // The creator counts toward the 15-person cap (backend MAX_GROUP_SIZE).
+      if (prev.length >= GROUP_MAX_PICK) return prev;
+      return [...prev, friend];
     });
   };
 
@@ -550,185 +566,36 @@ export default function ServerSidebar({
           </PullToRefresh>
         </div>
 
-        {/* Add Friend / Create Group Modal, portal to body (sidebar contain traps fixed) */}
-        {createPortal(
-        <AnimatePresence>
-          {showAddModal && (
-            <motion.div
-              className={`add-modal-backdrop${glassShell ? " g-scrim g-add-scrim" : ""}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
-            >
-              <motion.div
-                className={`add-modal${glassShell ? " g-add-sheet g-glass g-heavy" : ""}`}
-                initial={glassShell ? { y: 28, opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
-                animate={glassShell ? { y: 0, opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
-                exit={glassShell ? { y: 28, opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
-                transition={glassShell ? framerSpring(SPRINGS.sheet) : { type: "spring", damping: 25, stiffness: 300 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {glassShell ? <div className="g-grabber" aria-hidden="true" /> : null}
-                <div className="add-modal-header">
-                  <h3>{t("Create New")}</h3>
-                  <button className="icon-btn" onClick={() => setShowAddModal(false)} aria-label={t("Close")}><X size={18} /></button>
-                </div>
-
-                <div className="add-modal-tabs">
-                  <button className={`add-modal-tab ${addTab === "quickadd" ? "active" : ""}`} onClick={() => { setAddTab("quickadd"); setAddError(""); setAddSuccess(""); }}>
-                    <UserPlus size={16} /> {t("Quick Add")}
-                  </button>
-                  <button className={`add-modal-tab ${addTab === "friend" ? "active" : ""}`} onClick={() => { setAddTab("friend"); setAddError(""); setAddSuccess(""); }}>
-                    <User size={16} /> {glassShell ? t("Friend") : t("Add Friend")}
-                  </button>
-                  <button className={`add-modal-tab ${addTab === "group" ? "active" : ""}`} onClick={() => { setAddTab("group"); setAddError(""); setAddSuccess(""); }}>
-                    <Users size={16} /> {glassShell ? t("Group") : t("Create Group")}
-                  </button>
-                </div>
-
-                <div className="add-modal-body">
-                  {addTab === "quickadd" && (
-                    <div className="quick-add-panel">
-                      <p className="quick-add-intro">
-                        {t("People you may know, ranked by mutual friends and shared groups.")}
-                      </p>
-                      {suggestionsLoading ? (
-                        <div className="quick-add-loading">
-                          <Loader2 size={22} className="spin" />
-                          <span>{t("Finding people you may know...")}</span>
-                        </div>
-                      ) : suggestionsError ? (
-                        <div className="quick-add-empty">
-                          <span>{suggestionsError}</span>
-                          <button type="button" className="add-modal-btn" onClick={fetchSuggestions}>
-                            <RefreshCw size={14} /> {t("Try again")}
-                          </button>
-                        </div>
-                      ) : suggestions.length === 0 ? (
-                        <div className="quick-add-empty">
-                          <UsersRound size={28} style={{ opacity: 0.5 }} />
-                          <span>{t("No suggestions right now, check back after you join a few groups or make some friends.")}</span>
-                        </div>
-                      ) : (
-                        <div className="quick-add-list">
-                          {suggestions.map((s) => {
-                            const sent = sentUsernames.has(s.username);
-                            return (
-                              <motion.div
-                                key={s.id}
-                                className="quick-add-card"
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.18 }}
-                              >
-                                <Avatar user={s} size={40} />
-                                <div className="quick-add-card-meta">
-                                  <span className="quick-add-card-name">{s.displayName || s.username}</span>
-                                  {s.reason === "mutual" ? (
-                                    <span className="quick-add-card-badge mutual">
-                                      <UsersRound size={11} />
-                                      {t("{count} mutual friends", { count: s.mutualFriends })}
-                                    </span>
-                                  ) : s.reason === "group" ? (
-                                    <span className="quick-add-card-badge group">
-                                      <Hash size={11} />
-                                      {t("{count} shared groups", { count: s.sharedGroups })}
-                                    </span>
-                                  ) : (
-                                    <span className="quick-add-card-badge suggested">
-                                      {t("Suggested for you")}
-                                    </span>
-                                  )}
-                                </div>
-                                <motion.button
-                                  type="button"
-                                  className={`quick-add-btn ${sent ? "sent" : ""}`}
-                                  whileTap={{ scale: 0.94 }}
-                                  disabled={sent}
-                                  onClick={() => handleQuickAdd(s.username)}
-                                >
-                                  {sent ? <Check size={15} /> : <UserPlus size={15} />}
-                                  {sent ? t("Sent") : t("Add")}
-                                </motion.button>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {addTab === "friend" && (
-                    <>
-                      <label className="add-modal-label">{t("Enter a username to add")}</label>
-                      {glassShell ? (
-                        <div className="g-add-field">
-                          <User size={18} aria-hidden />
-                          <input className="add-modal-input" value={friendUsername} onChange={(e) => setFriendUsername(e.target.value)} placeholder={t("e.g. johndoe")} onKeyDown={(e) => e.key === "Enter" && handleAddFriend()} />
-                        </div>
-                      ) : (
-                        <input className="add-modal-input" value={friendUsername} onChange={(e) => setFriendUsername(e.target.value)} placeholder={t("e.g. johndoe")} onKeyDown={(e) => e.key === "Enter" && handleAddFriend()} />
-                      )}
-                      <motion.button type="button" className="add-modal-btn" onClick={handleAddFriend} disabled={addLoading || !friendUsername.trim()} whileTap={{ scale: 0.97 }}>
-                        {glassShell && !addLoading ? <UserPlus size={18} /> : null}
-                        {addLoading ? t("Sending...") : t("Send Friend Request")}
-                      </motion.button>
-                      {glassShell ? <p className="g-add-hint">{t("Send a friend request with their username")}</p> : null}
-                    </>
-                  )}
-                  {addTab === "group" && (
-                    <>
-                      <label className="add-modal-label">{t("Group name")}</label>
-                      <input className="add-modal-input" value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder={t("e.g. Gaming Squad")} onKeyDown={(e) => e.key === "Enter" && handleCreateGroup()} />
-                      
-                      <label className="add-modal-label" style={{ marginTop: 12 }}>{t("Add members (optional)")}</label>
-                      <div className="group-members-select" style={{ maxHeight: 150, overflowY: "auto", marginBottom: 12 }}>
-                        {Array.isArray(friends) && friends.length > 0 ? (
-                          friends.map(friend => {
-                            const isSelected = selectedGroupMembers.find(m => m.id === friend.id);
-                            return (
-                              <div
-                                key={friend.id}
-                                className={`group-member-option ${isSelected ? "selected" : ""}`}
-                                onClick={() => toggleGroupMember(friend)}
-                                style={{
-                                  padding: 8,
-                                  borderRadius: 6,
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                  backgroundColor: isSelected ? "var(--primary-soft)" : "var(--surface-2)",
-                                  marginBottom: 4
-                                }}
-                              >
-                                <Avatar user={friend} size={24} />
-                                <span style={{ fontSize: 13 }}>{resolveDisplayName(friend)}</span>
-                                {isSelected && <span style={{ marginLeft: "auto", color: "var(--primary)" }}>✓</span>}
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div style={{ padding: 8, color: "var(--text-muted)", fontSize: 12 }}>
-                            {t("No friends to add. Add friends first.")}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <motion.button type="button" className="add-modal-btn" onClick={handleCreateGroup} disabled={addLoading || !groupName.trim()} whileTap={{ scale: 0.97 }}>
-                        {addLoading ? t("Creating...") : t("Create Group")}
-                      </motion.button>
-                    </>
-                  )}
-                  {addError && <div className="add-modal-error">{addError}</div>}
-                  {addSuccess && <div className="add-modal-success">{addSuccess}</div>}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-        )}
+        {/* "Yeni" sheet (3.7.14, draft A): portalled to body inside NewCreateModal. */}
+        <NewCreateModal
+          open={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          glassShell={Boolean(glassShell)}
+          screen={addTab === "group" ? "group" : "start"}
+          onScreen={(next) => setAddTab(next === "group" ? "group" : "quickadd")}
+          focusUsername={addTab === "friend"}
+          me={me}
+          friends={friends}
+          onlineUsers={onlineUsers}
+          friendUsername={friendUsername}
+          setFriendUsername={setFriendUsername}
+          onAddFriend={handleAddFriend}
+          addLoading={addLoading}
+          addError={addError}
+          addSuccess={addSuccess}
+          onClearMessages={() => { setAddError(""); setAddSuccess(""); }}
+          suggestions={suggestions}
+          suggestionsLoading={suggestionsLoading}
+          suggestionsError={suggestionsError}
+          onRefreshSuggestions={fetchSuggestions}
+          sentUsernames={sentUsernames}
+          onQuickAdd={handleQuickAdd}
+          groupName={groupName}
+          setGroupName={setGroupName}
+          selectedMembers={selectedGroupMembers}
+          onToggleMember={toggleGroupMember}
+          onCreateGroup={handleCreateGroup}
+        />
 
         {/* Announcements Modal, portal to body */}
         {createPortal(

@@ -1,0 +1,448 @@
+/* "Yeni" sheet (components/friends/NewCreateModal.jsx), 3.7.14 draft A (owner pick).
+   The card material is the shared heavy frost (.nc-sheet is in every frost.css
+   list: blur 40 / saturate 180, opaque under a11y-solid, gd-lite, no
+   backdrop-filter and Reduce Transparency). The scrim keeps .add-modal-backdrop
+   so overlay.css, the Electron title bar dim, Android back and edge-swipe rules
+   still find it. Inner fills follow the theme ink, so light themes work. */
+
+.nc-scrim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.nc-sheet {
+  --nc-ink: var(--gd-t1, var(--text-0, #f2f3f8));
+  --nc-ink-2: color-mix(in srgb, var(--nc-ink) 62%, transparent);
+  --nc-ink-3: color-mix(in srgb, var(--nc-ink) 44%, transparent);
+  --nc-fill: color-mix(in srgb, var(--nc-ink) 6%, transparent);
+  --nc-fill-2: color-mix(in srgb, var(--nc-ink) 10%, transparent);
+  --nc-hair: color-mix(in srgb, var(--nc-ink) 8%, transparent);
+  --nc-field: rgba(0, 0, 0, 0.26);
+  --nc-brand-rgb: var(--g-brand-rgb, 88, 101, 242);
+  --nc-brand: rgb(var(--nc-brand-rgb));
+  position: relative;
+  width: 460px;
+  max-width: calc(100vw - 32px);
+  max-height: min(720px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 26px;
+  color: var(--nc-ink);
+  font-family: var(--gd-font, var(--g-font, inherit));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+:root[data-theme="light"] .nc-sheet {
+  --nc-ink: var(--gd-t1, var(--text-0, #15161c));
+  --nc-field: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+html.glass-ui .nc-sheet { --nc-ink: var(--g-t1, #f2f3f8); }
+html.glass-ui[data-theme="light"] .nc-sheet { --nc-ink: var(--g-t1, #15161c); }
+
+.nc-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.nc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px 4px;
+  flex: none;
+}
+.nc-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--nc-ink);
+}
+.nc-title.is-sub { font-size: 18px; }
+.nc-close { margin-left: auto; color: var(--nc-ink); }
+.nc-back {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--nc-ink);
+  background: var(--nc-fill-2);
+  cursor: pointer;
+  position: relative;
+}
+.nc-back::before { content: ""; position: absolute; inset: -6px; }
+
+.nc-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 20px 20px;
+}
+
+/* Fields */
+.nc-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 6px 0 14px;
+  border-radius: 14px;
+  background: var(--nc-field);
+  box-shadow: inset 0 0 0 1px var(--nc-hair);
+  color: var(--nc-ink-2);
+  transition: box-shadow 0.15s ease;
+}
+.nc-field:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--nc-brand-rgb), 0.75); }
+.nc-field input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--nc-ink);
+  font: inherit;
+  font-size: 14px;
+}
+.nc-field input::placeholder { color: var(--nc-ink-3); }
+/* Global / glass input skins pad and paint every input; the field owns that here. */
+.nc-sheet .nc-field input {
+  padding: 0 !important;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  min-height: 0 !important;
+}
+.nc-inline-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  color: #fff;
+  background: var(--nc-brand);
+  cursor: pointer;
+}
+.nc-inline-btn:disabled { color: var(--nc-ink-3); background: var(--nc-fill-2); cursor: default; }
+
+.nc-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -4px;
+  padding: 0 4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.nc-msg.is-error { color: #ff6b63; }
+.nc-msg.is-ok { color: #5fd47e; }
+
+/* Big cards */
+.nc-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  border-radius: 18px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--nc-fill);
+  box-shadow: inset 0 0 0 1px var(--nc-hair);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.nc-card.is-static { cursor: default; }
+button.nc-card:hover { background: var(--nc-fill-2); }
+button.nc-card:active { transform: scale(0.985); }
+.nc-tile {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.nc-tile.is-brand { background: linear-gradient(180deg, rgba(var(--nc-brand-rgb), 0.95), rgba(var(--nc-brand-rgb), 0.72)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 6px 16px rgba(var(--nc-brand-rgb), 0.3); }
+.nc-tile.is-green { background: linear-gradient(180deg, #34c759, #248a3d); }
+.nc-card-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.nc-card-copy b { font-size: 14px; font-weight: 650; color: var(--nc-ink); }
+.nc-card-copy small { font-size: 12px; line-height: 1.35; color: var(--nc-ink-2); }
+.nc-url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.nc-chev { flex: none; color: var(--nc-ink-3); }
+
+.nc-chip-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--nc-ink);
+  background: var(--nc-fill-2);
+  cursor: pointer;
+}
+.nc-chip-btn:hover { background: color-mix(in srgb, var(--nc-ink) 15%, transparent); }
+.nc-chip-btn.is-done { color: #5fd47e; background: rgba(48, 209, 88, 0.16); }
+:root[data-theme="light"] .nc-chip-btn.is-done,
+:root[data-theme="light"] .nc-pill.is-sent,
+:root[data-theme="light"] .nc-msg.is-ok { color: #1c7a35; }
+:root[data-theme="light"] .nc-msg.is-error { color: #c4271e; }
+
+/* Sections + lists */
+.nc-sec-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.nc-sec {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, rgb(var(--nc-brand-rgb)) 35%, var(--nc-ink-2));
+}
+.nc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: color-mix(in srgb, rgb(var(--nc-brand-rgb)) 70%, var(--nc-ink));
+  cursor: pointer;
+}
+.nc-link:disabled { opacity: 0.6; cursor: default; }
+
+.nc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nc-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 56px;
+  padding: 9px 10px 9px 12px;
+  border-radius: 14px;
+  background: var(--nc-fill);
+  color: inherit;
+}
+.nc-row-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.nc-row-copy b { font-size: 14px; font-weight: 650; color: var(--nc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-row-copy small { font-size: 12px; color: var(--nc-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.nc-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  color: #fff;
+  background: var(--nc-brand);
+  box-shadow: 0 4px 12px rgba(var(--nc-brand-rgb), 0.3);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+button.nc-pill:hover { filter: brightness(1.08); }
+button.nc-pill:active { transform: scale(0.96); }
+.nc-pill.is-sent { color: #5fd47e; background: rgba(48, 209, 88, 0.16); box-shadow: none; }
+
+.nc-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--nc-ink-2);
+}
+
+/* Group screen */
+.nc-group-top { display: flex; align-items: flex-end; gap: 14px; }
+.nc-gav {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  color: var(--nc-ink-2);
+  background: linear-gradient(135deg, color-mix(in srgb, rgb(var(--nc-brand-rgb)) 30%, var(--nc-fill-2)), var(--nc-fill));
+  box-shadow: inset 0 0 0 1.5px var(--nc-hair);
+  cursor: pointer;
+}
+.nc-gav img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.nc-gav-ini { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: var(--nc-ink); }
+.nc-gav i {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--nc-brand);
+  box-shadow: 0 0 0 3px var(--frost-base, rgb(30, 31, 44));
+}
+.nc-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.nc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.nc-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px 0 4px;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nc-ink);
+  background: rgba(var(--nc-brand-rgb), 0.22);
+  cursor: pointer;
+}
+.nc-member-chip span { max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-member-chip svg { color: var(--nc-ink-2); }
+
+.nc-friends li { display: block; }
+.nc-friend {
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 52px;
+  padding: 8px 12px 8px 10px;
+  transition: background-color 0.15s ease;
+}
+.nc-friend:hover { background: var(--nc-fill-2); }
+.nc-friend.is-on { background: rgba(var(--nc-brand-rgb), 0.14); }
+.nc-friend:disabled { opacity: 0.45; cursor: default; }
+.nc-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1.5px var(--nc-ink-3);
+  color: #fff;
+}
+.nc-check.is-on { background: var(--nc-brand); box-shadow: none; }
+
+.nc-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--nc-hair);
+}
+.nc-foot small { font-size: 12.5px; color: var(--nc-ink-2); font-variant-numeric: tabular-nums; }
+.nc-primary {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 22px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(var(--nc-brand-rgb), 1), rgba(var(--nc-brand-rgb), 0.82));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px rgba(var(--nc-brand-rgb), 0.35);
+  cursor: pointer;
+}
+.nc-primary:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+
+.nc-sheet :is(button, input):focus-visible { outline: 2px solid rgba(var(--nc-brand-rgb), 0.85); outline-offset: 2px; }
+.nc-field input:focus-visible { outline: none; }
+
+/* Phone: full-width sheet from the top (iPhone glass shell) or the bottom
+   (narrow web), 44px targets. */
+html.glass-ui .add-modal-backdrop.nc-scrim.g-add-scrim {
+  align-items: flex-start;
+  padding: 10vh 10px 16px;
+}
+.nc-sheet.is-phone {
+  width: 100%;
+  max-width: none;
+  max-height: 84vh;
+  border-radius: var(--g-r-sheet, 28px);
+}
+.nc-sheet.is-phone .g-grabber { margin: 8px auto 0; }
+.nc-sheet.is-phone .nc-foot small { font-size: 12px; line-height: 1.35; }
+.nc-sheet.is-phone .nc-primary { padding: 0 18px; }
+.nc-sheet.is-phone .nc-card-copy b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  .nc-scrim:not(.g-add-scrim) { align-items: flex-end; padding: 0 0 env(safe-area-inset-bottom, 0); }
+  .nc-sheet:not(.is-phone) {
+    width: 100%;
+    max-width: none;
+    max-height: 88vh;
+    border-radius: 24px 24px 0 0;
+  }
+  .nc-head { padding: 16px 16px 4px; }
+  .nc-body { padding: 10px 16px 16px; }
+  .nc-foot { padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .nc-pill, .nc-chip-btn, .nc-member-chip { min-height: 36px; }
+  .nc-inline-btn { height: 36px; }
+  .nc-back { width: 36px; height: 36px; }
+}
+
+/* Reduce Transparency / lite: the frost list makes the card opaque; keep the
+   inner fills solid enough to read. */
+html.a11y-solid .nc-sheet,
+html.gd-lite .nc-sheet { --nc-field: color-mix(in srgb, var(--nc-ink) 7%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nc-card, .nc-pill, .nc-friend, .nc-field { transition: none; }
+  button.nc-card:active, button.nc-pill:active { transform: none; }
+}

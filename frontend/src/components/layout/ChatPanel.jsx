@@ -443,9 +443,29 @@ export default function ChatPanel({
     };
   }, [floatingHeader, headerConversationKey, activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
 
+  // 3.7.14 floating composer: the composer floats over the list (no band), so
+  // the list keeps its last message clear of it with a bottom padding equal to
+  // the composer's live height (it grows with multi-line text, reply bars and
+  // attachment previews). Written as a CSS variable, no React state.
+  const mainRef = useRef(null);
+  useEffect(() => {
+    if (!floatingHeader || typeof ResizeObserver === "undefined") return undefined;
+    const main = mainRef.current;
+    const composer = main?.querySelector(":scope > .composer-container");
+    if (!main || !composer) return undefined;
+    const ro = new ResizeObserver(() => {
+      const scroller = messagesRef.current;
+      const atBottom = scroller ? scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop < 24 : false;
+      main.style.setProperty("--composer-float-h", `${Math.ceil(composer.getBoundingClientRect().height)}px`);
+      if (scroller && atBottom) scroller.scrollTop = scroller.scrollHeight;
+    });
+    ro.observe(composer);
+    return () => ro.disconnect();
+  }, [floatingHeader, headerConversationKey, activeDmUser?.id, activeGroup?.id, activeChannel?.id, groupRemoved, showComposer, activeView]);
+
   return (
     <div className={`chat-panel-shell${showMembers && !headerDm && !isMobile ? " is-members-docked" : ""}`}>
-      <main className={floatingHeader ? "main-panel is-floating-header" : "main-panel"}>
+      <main ref={mainRef} className={floatingHeader ? "main-panel is-floating-header" : "main-panel"}>
         {floatingHeader ? <div className="chat-panel-bg" aria-hidden="true" /> : null}
         {activeTimeout?.timedOut && (
           <div className="timeout-banner" role="status">

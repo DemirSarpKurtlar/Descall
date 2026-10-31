@@ -1718,14 +1718,18 @@ router.patch("/feedback/:id", async (req, res) => {
     const patch = fb.sanitizePatch(req.body);
     if (!Object.keys(patch).length) return res.status(400).json({ error: "Geçerli bir değişiklik yok." });
     const { data: cur, error: getError } = await supabase
-      .from("user_feedback").select("id, status, priority, admin_replies").eq("id", req.params.id).maybeSingle();
+      .from("user_feedback").select("id, user_id, status, priority, admin_replies").eq("id", req.params.id).maybeSingle();
     if (getError) throw getError;
     if (!cur) return res.status(404).json({ error: "Geri bildirim bulunamadı." });
     const lines = fb.systemLines(cur, patch, req.user.username);
+    const before = { status: cur.status, userId: cur.user_id, id: cur.id };
     const update = { ...patch, updated_at: new Date().toISOString() };
     if (lines.length) update.admin_replies = [...(Array.isArray(cur.admin_replies) ? cur.admin_replies : []), ...lines];
     const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
     if (error) throw error;
+    if (patch.status && patch.status !== before.status && before.userId) {
+      require("../lib/feedbackNotify").notifyFeedbackStatus(getIo(req), before.userId, { feedbackId: before.id, status: patch.status });
+    }
     res.json({ feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
     console.error("[Admin] Failed to update feedback:", error?.message || error);
@@ -1752,7 +1756,7 @@ router.post("/feedback/:id/reply", async (req, res) => {
     const internal = req.body?.internal === true;
     if (!text) return res.status(400).json({ error: "Yanıt boş olamaz." });
     const { data: cur, error: getError } = await supabase
-      .from("user_feedback").select("id, user_id, status, admin_replies").eq("id", req.params.id).maybeSingle();
+      .from("user_feedback").select("id, user_id, status, subject, admin_replies").eq("id", req.params.id).maybeSingle();
     if (getError) throw getError;
     if (!cur) return res.status(404).json({ error: "Geri bildirim bulunamadı." });
     const reply = {
@@ -1767,7 +1771,8 @@ router.post("/feedback/:id/reply", async (req, res) => {
     const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
     if (error) throw error;
     if (!internal && cur.user_id) {
-      getIo(req)?.to(`user:${cur.user_id}`)?.emit("feedback:reply", { feedbackId: cur.id, text: text.slice(0, 200) });
+      // 3.7.14: live event + in-app notification + iOS push (lib/feedbackNotify.js).
+      require("../lib/feedbackNotify").notifyFeedbackReply(getIo(req), cur.user_id, { feedbackId: cur.id, text, subject: cur.subject });
     }
     res.json({ reply: fb.shapeReply(reply), feedback: await reloadFeedback(req.params.id) });
   } catch (error) {

@@ -78,6 +78,8 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .fb3 .fb3-meta>div{border-radius:13px;background:rgba(255,255,255,.05);padding:9px 11px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb3 .fb3-meta small{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;color:rgba(235,238,255,.42);margin-bottom:3px}
+.fb3 .fb3-facts{display:flex;flex-wrap:wrap;gap:6px}
+.fb3 .fb3-facts>span{height:26px;padding:0 10px;border-radius:13px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;background:rgba(var(--g-brand-rgb,91,108,255),.16);color:rgba(235,238,255,.86)}
 .fb3 .fb3-ctl{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
 .fb3 .fb3-ctl .lb{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:rgba(235,238,255,.42);margin:0 0 6px 2px}
 .fb3 .fb3-pills{display:flex;gap:5px}

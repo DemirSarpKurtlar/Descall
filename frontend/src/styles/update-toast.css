@@ -1,0 +1,206 @@
+/* Desktop update card (components/ElectronUpdateToast.jsx), 3.7.14 redesign.
+   Same material as the friend-online toast (presence-toast.css): under
+   html.glass-desktop the chat-list glass with a faint brand wash and the
+   specular edge; elsewhere a dark frost. The progress line follows the theme
+   brand colour (--g-brand-rgb), never the old fixed red. Downloading /
+   installing: top centre, no pointer events. Ready: chip bottom right. */
+
+.electron-update-toast {
+  position: fixed;
+  top: 12px;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+body.electron-app .electron-update-toast {
+  top: calc(var(--electron-titlebar-h, 36px) + 10px);
+}
+.electron-update-toast.is-chip {
+  top: auto;
+  left: auto;
+  right: 16px;
+  bottom: 16px;
+  padding: 0;
+}
+body.electron-app .electron-update-toast.is-chip { top: auto; }
+
+.eut-card {
+  --eut-ink: var(--text-0, #fff);
+  --eut-ink-2: var(--text-2, rgba(235, 238, 255, 0.7));
+  --eut-brand: var(--g-brand-rgb, 88, 101, 242);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(360px, calc(100vw - 24px));
+  padding: 11px 16px 13px 12px;
+  border-radius: 18px;
+  color: var(--eut-ink);
+  background:
+    linear-gradient(180deg, rgba(var(--eut-brand), 0.12), rgba(var(--eut-brand), 0.05)),
+    rgba(24, 25, 34, 0.86);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  backdrop-filter: blur(40px) saturate(170%);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  isolation: isolate;
+  animation: eut-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+html.glass-desktop .eut-card {
+  --eut-ink: var(--gd-t1);
+  --eut-ink-2: var(--gd-t2);
+  border-radius: var(--gd-r-panel, 18px);
+  background:
+    linear-gradient(180deg, rgba(var(--eut-brand), 0.13) 0%, rgba(var(--eut-brand), 0.06) 100%),
+    var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+}
+html.glass-desktop .eut-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.1) 18%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.06) 82%, rgba(255, 255, 255, 0.18) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+:root[data-theme="light"]:not(.glass-desktop) .eut-card {
+  --eut-ink: #15161c;
+  --eut-ink-2: rgba(21, 22, 28, 0.66);
+  background: rgba(248, 248, 252, 0.92);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+html.a11y-solid .eut-card,
+html.gd-lite .eut-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid, rgb(28, 28, 36));
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .eut-card { background: rgb(28, 28, 36); }
+}
+
+.eut-ic {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(var(--eut-brand), 1), rgba(var(--eut-brand), 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(var(--eut-brand), 0.35);
+}
+.electron-update-toast.is-ready .eut-ic {
+  background: linear-gradient(180deg, #34c759, #248a3d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(52, 199, 89, 0.3);
+}
+.electron-update-toast.is-installing .eut-ic svg { animation: eut-spin 1.1s linear infinite; }
+
+.eut-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.eut-copy b {
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--eut-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.eut-copy span {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--eut-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress: a thin line along the bottom edge, inside the rounded card. */
+.eut-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.eut-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, rgba(var(--eut-brand), 0.85), rgba(var(--eut-brand), 1));
+  box-shadow: 0 0 10px rgba(var(--eut-brand), 0.55);
+  transition: width 0.3s ease;
+}
+.eut-bar-fill.is-indeterminate {
+  width: 30% !important;
+  animation: eut-slide 1.2s ease-in-out infinite;
+}
+
+/* Ready chip: compact, one line, the only clickable state. */
+.electron-update-toast.is-chip .eut-card {
+  width: auto;
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 7px 7px 7px 8px;
+  gap: 10px;
+  border-radius: 999px;
+  pointer-events: auto;
+}
+.electron-update-toast.is-chip .eut-ic { width: 30px; height: 30px; border-radius: 50%; }
+.electron-update-toast.is-chip .eut-copy b { font-size: 12.5px; font-weight: 600; }
+.eut-btn {
+  flex: none;
+  min-height: 30px;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #fff;
+  background: rgba(var(--eut-brand), 1);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.eut-btn:hover { filter: brightness(1.1); }
+.eut-btn:active { transform: scale(0.97); }
+.eut-btn:focus-visible { outline: 2px solid rgba(var(--eut-brand), 0.85); outline-offset: 2px; }
+
+@keyframes eut-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.electron-update-toast.is-chip .eut-card { animation-name: eut-in-chip; }
+@keyframes eut-in-chip {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes eut-spin { to { transform: rotate(360deg); } }
+@keyframes eut-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(340%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eut-card,
+  .electron-update-toast.is-installing .eut-ic svg,
+  .eut-bar-fill.is-indeterminate { animation: none; }
+  .eut-bar-fill,
+  .eut-btn { transition: none; }
+}

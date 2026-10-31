@@ -2,6 +2,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { IconCheck as Check } from "../icons";
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
+import SeoExtraContent from "../components/SeoExtraContent";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { NICHE_LANDINGS } from "../seo/nicheLandings";
@@ -74,6 +75,7 @@ export default function DiscordAlternativeNichePage({ onSignIn }) {
         </section>
       ))}
 
+      <SeoExtraContent showLinks={false} />
       <SeoRelatedLinks links={page.related} />
     </SeoLandingShell>
   );

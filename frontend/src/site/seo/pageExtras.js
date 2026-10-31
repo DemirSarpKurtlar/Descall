@@ -17,13 +17,25 @@ const TR_HUBS = [
   { to: "/tr/blog", label: "Türkçe blog ve rehberler" },
 ];
 
+
+const EN_HUBS = [
+  { to: "/discord-alternative", label: "Free Discord alternative" },
+  { to: "/alternatives", label: "Best Discord alternatives compared" },
+  { to: "/apps-like-discord", label: "Apps like Discord" },
+  { to: "/compare/discord", label: "Discord vs Descall" },
+  { to: "/discord-alternative-for-voice-chat", label: "Discord alternative for voice chat" },
+  { to: "/discord-alternative-for-communities", label: "Discord alternative for communities" },
+  { to: "/tr/discord-alternatifi", label: "Discord alternatifi (Türkçe)" },
+  { to: "/download", label: "Download Descall" },
+];
+
 export const PAGE_EXTRAS = {
   "/": {
     sections: [
       {
         h: "What Descall is",
         p: [
-          "Descall is a free chat and calling app for friend groups, gaming squads, study groups, and small communities. It combines direct messages, group chats, and Discord-style servers with voice channels, video calls, and screen sharing, in one account that works on Windows, Android, and in the browser.",
+          "Descall is a free chat and calling app for friend groups, gaming squads, study groups, and small communities. It combines direct messages, group chats, and Discord-style servers with voice channels, video calls, and screen sharing, in one account that works on Windows, iPhone and iPad, Android, and in the browser.",
           "It is built and owned by Demir Sarp Kurtlar, an independent developer in Turkey, and it is currently in beta. Core communication is free: there is no subscription for voice quality, screen share, or servers. The only thing for sale is optional cosmetics bought with DesCoin.",
         ],
       },
@@ -72,7 +84,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Descall nedir?",
         p: [
-          "Descall; arkadaş grupları, oyun ekipleri, ders grupları ve küçük topluluklar için ücretsiz bir sohbet ve arama uygulamasıdır. Özel mesajları, grup sohbetlerini ve Discord tarzı sunucuları; ses kanalları, görüntülü arama ve ekran paylaşımıyla tek bir hesapta birleştirir. Windows, Android ve tarayıcıda çalışır.",
+          "Descall; arkadaş grupları, oyun ekipleri, ders grupları ve küçük topluluklar için ücretsiz bir sohbet ve arama uygulamasıdır. Özel mesajları, grup sohbetlerini ve Discord tarzı sunucuları; ses kanalları, görüntülü arama ve ekran paylaşımıyla tek bir hesapta birleştirir. Windows, iPhone ve iPad, Android ve tarayıcıda çalışır.",
           "Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor ve uygulama şu an beta aşamasında. Temel iletişim ücretsiz: ses kalitesi, ekran paylaşımı veya sunucular için abonelik yok. Satılan tek şey DesCoin ile alınan isteğe bağlı kozmetikler.",
         ],
       },
@@ -104,6 +116,180 @@ export const PAGE_EXTRAS = {
     links: TR_HUBS,
   },
 
+  // SEO 3.7.14: the English hubs were ~300 words each; Google ranked them on page 5-9.
+  "/discord-alternative": {
+    sections: [
+      {
+        h: "Why people look for a Discord alternative",
+        p: [
+          "Most people who search for a Discord alternative are not unhappy with group chat itself. They want the same habits (a server for the group, voice rooms you can drop into, screen share for games and homework) without the parts that get in the way. For some it is the price of extras like better stream quality. For others it is an app that feels too big for a group of eight friends. In Türkiye there is a third reason: Discord has been blocked by court order since 9 October 2024, so it only works through a VPN.",
+          "Descall is built for that situation. It keeps the server, channel and voice model people already know, and it keeps the core of it free.",
+        ],
+      },
+      {
+        h: "What you get in Descall",
+        p: [
+          "Servers with roles, permissions, categories, text channels, voice channels and stage channels. Server templates set up a gaming, study or community server in a few seconds, and an owner can hand the server to someone else when they step away.",
+          "Direct messages and group chats with replies, reactions, polls, voice notes, pinned messages, slash commands and full-history message search, so the screenshot your friend sent three weeks ago is one search away.",
+          "One-on-one and group voice and video calls, server voice channels that stay open, and screen share with quality presets. Calls run on WebRTC with TURN relays for difficult networks and optional noise suppression.",
+        ],
+      },
+      {
+        h: "What is free, and what is not",
+        p: [
+          "Messaging, servers, voice, video and screen share are free for everyone, with no subscription tier that unlocks better call quality. Descall earns from an optional cosmetic shop: banners, card colors, name and avatar effects and country flags, bought with DesCoin you earn in the app. Nothing in the shop changes how well your voice or stream works.",
+        ],
+      },
+      {
+        h: "Where Descall is the better fit",
+        p: [
+          "Friend groups and gaming squads that mostly need voice rooms, screen share and a few channels. Study groups and small clubs that want something simpler than a workspace tool. Communities in Türkiye that want an app with a Turkish interface that works without a VPN.",
+        ],
+      },
+      {
+        h: "Where Discord is still the better fit",
+        p: [
+          "Descall is newer and smaller. It has no bot marketplace and no huge public server directory, and very large public communities with thousands of members and many integrations are still better served by Discord today. If your server depends on a specific bot, keep that in mind before you move.",
+        ],
+      },
+      {
+        h: "How to move your group",
+        p: [
+          "Create an account, make a server from a template, and send your friends one invite link. Recreate the few channels you actually use instead of copying every old one. Most groups are set up in under ten minutes, and you can keep Discord installed while everyone switches.",
+        ],
+      },
+      {
+        h: "Platforms",
+        p: [
+          "Windows desktop app, iPhone and iPad from the App Store, Android, and a full web app at descall.com/app that needs no install. One account works everywhere and your messages sync between devices.",
+        ],
+      },
+    ],
+    links: EN_HUBS,
+  },
+  "/alternatives": {
+    sections: [
+      {
+        h: "How to choose a Discord alternative",
+        p: [
+          "Start from what your group actually does. If you mostly hang out in voice and share screens, you need reliable voice rooms and screen share. If you run a community, you need roles, permissions and moderation. If you only message, almost any chat app works. Price, platforms and whether the app works in your country come next.",
+        ],
+      },
+      {
+        h: "Descall",
+        p: [
+          "A free app with Discord-style servers, roles, voice channels, video calls and screen share on Windows, iPhone, Android and the web. Strong fit for friend groups, gaming squads and small to medium communities, and for groups in Türkiye where Discord is blocked. Weaker fit if you depend on bots.",
+        ],
+      },
+      {
+        h: "TeamSpeak and Mumble",
+        p: [
+          "Classic voice-first tools with low latency and options to run your own server. Good when voice is all you need and someone in the group is happy to manage a server. Text chat, mobile and screen share are limited compared with modern chat apps.",
+        ],
+      },
+      {
+        h: "Guilded and Revolt",
+        p: [
+          "Both follow the server-and-channel model. Revolt is open source and can be self-hosted; Guilded focuses on gaming teams. Check that they are actively maintained and available on the platforms your group uses before you commit.",
+        ],
+      },
+      {
+        h: "Element (Matrix)",
+        p: [
+          "An open, federated network with end-to-end encrypted rooms. A good choice for privacy-minded groups that accept a steeper learning curve; voice rooms and screen share are less smooth than in gaming-focused apps.",
+        ],
+      },
+      {
+        h: "Slack, Telegram, WhatsApp and Signal",
+        p: [
+          "Slack is built for work teams and gets expensive for large free groups. Telegram, WhatsApp and Signal are excellent for messaging and calls, but they do not have servers with persistent voice rooms, roles and channels, which is what most Discord users are looking for.",
+        ],
+      },
+      {
+        h: "A quick rule of thumb",
+        p: [
+          "Need servers plus voice rooms for free: Descall. Need voice only and like hosting: TeamSpeak or Mumble. Need open source and federation: Element or Revolt. Need only messaging: Telegram, WhatsApp or Signal.",
+        ],
+      },
+    ],
+    links: EN_HUBS,
+  },
+  "/apps-like-discord": {
+    sections: [
+      {
+        h: "What makes an app like Discord",
+        p: [
+          "Three things: servers that group people and channels, voice rooms that stay open so friends can drop in, and a chat history that sticks around. Apps that only do calls or only do messages feel different, even if they are good at what they do.",
+        ],
+      },
+      {
+        h: "Descall: the closest everyday replacement",
+        p: [
+          "Descall keeps that model: servers, roles and permissions, text and voice channels, DMs and group chats, video calls and screen share. It is free, it has a full Turkish and English interface, and it runs on Windows, iPhone, iPad, Android and the web.",
+        ],
+      },
+      {
+        h: "For voice only",
+        p: [
+          "TeamSpeak and Mumble are long-standing voice apps with very low latency and self-hosting. They suit groups that only talk and do not need rich chat, mobile apps or screen share.",
+        ],
+      },
+      {
+        h: "For open source and self-hosting",
+        p: [
+          "Revolt and Element (Matrix) appeal to people who want to run their own server or prefer open protocols. Expect more setup and a smaller set of polished voice features.",
+        ],
+      },
+      {
+        h: "For messaging-first groups",
+        p: [
+          "Telegram, WhatsApp and Signal are the easiest way to keep a group chat going and make calls, but they do not offer servers, roles or always-on voice channels.",
+        ],
+      },
+      {
+        h: "Trying Descall with your group",
+        p: [
+          "Pick one evening, create a server from a template, share the invite link in your current chat and run your usual voice session there. If it feels right, move the rest of your channels over the following week.",
+        ],
+      },
+    ],
+    links: EN_HUBS,
+  },
+  "/compare/discord": {
+    sections: [
+      {
+        h: "Same idea, different focus",
+        p: [
+          "Discord and Descall share the same building blocks: servers, roles, text and voice channels, DMs, video calls and screen share. Discord is a large, mature platform with a huge ecosystem of bots and public communities. Descall is a newer, independent app focused on friend groups, gaming squads and small to medium communities, with the core features free.",
+        ],
+      },
+      {
+        h: "Price",
+        p: [
+          "Discord is free with an optional Nitro subscription for extras. Descall keeps messaging, servers, voice, video and screen share free and sells only optional cosmetics paid with DesCoin earned in the app.",
+        ],
+      },
+      {
+        h: "Availability in Türkiye",
+        p: [
+          "Discord has been blocked in Türkiye by court order since 9 October 2024 and needs a VPN there. Descall is built in Türkiye, has a full Turkish interface and works without a VPN.",
+        ],
+      },
+      {
+        h: "Bots and integrations",
+        p: [
+          "This is Discord's clear advantage: thousands of bots and integrations. Descall supports slash commands and built-in tools such as polls, but it does not have a bot marketplace. If your community runs on a specific bot, Discord is still the safer choice.",
+        ],
+      },
+      {
+        h: "Which one should your group use?",
+        p: [
+          "Large public servers that rely on bots: Discord. Friend groups, squads and communities that mainly need voice rooms, screen share and a few channels, especially in Türkiye: Descall. Many groups keep both for a while and move once everyone is in.",
+        ],
+      },
+    ],
+    links: EN_HUBS,
+  },
   "/best-discord-alternative-for-gamers": {
     sections: [
       {
