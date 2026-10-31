@@ -1010,6 +1010,7 @@ export const nested = {
     "tileAdd": "Ekle",
     "about": "Hakkında",
     "memberSince": "Üyelik tarihi",
+    "hoverOpenHint": "Profili açmak için tıkla",
     "mutualServers": "Ortak sunucular",
     "mutualFriends": "Ortak arkadaşlar",
     "back": "Profil",

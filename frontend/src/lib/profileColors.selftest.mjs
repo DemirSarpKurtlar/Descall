@@ -51,7 +51,7 @@ assert.ok(SHOP_CATEGORY_TABS.some((t) => t.id === "profile_color"), "shop tab");
 assert.ok(PURCHASE_MODAL_CATEGORIES.includes("profile_color"), "purchase modal");
 assert.match(read("../components/settings/ShopPanel.jsx"), /category === "profile_color"\) return equipped\?\.profileColorId/);
 assert.match(read("../components/social/UserProfileModal.jsx"), /pfs-heavy \$\{profileColorClass\(fetched\)\}/);
-assert.match(read("../components/social/UserHoverCard.jsx"), /profileColorClass\(user\)/);
+assert.match(read("./hoverProfile.js"), /colorClass: backgroundUrl \? "" : profileColorClass\(user\)/);
 assert.match(read("../styles/profile-color.css"), /\.has-pcolor:is\(\.pfs-heavy, \.user-hover-card, \.user-profile-card/);
 const shop = read("../../backend/lib/shop.js");
 assert.match(shop, /profile_color: "equipped_profile_color_id"/);
