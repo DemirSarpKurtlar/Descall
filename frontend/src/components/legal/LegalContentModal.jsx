@@ -65,6 +65,7 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
             <div className="legal-modal-body" ref={scrollRef}>
               <LegalDocument
                 data={data}
+                enData={CONTENT_BY_TYPE[type]?.en}
                 type={type}
                 locale={locale}
                 actions={

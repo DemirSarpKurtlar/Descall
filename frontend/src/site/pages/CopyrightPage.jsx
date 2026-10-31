@@ -5,5 +5,5 @@ import LegalDocument from "../../components/legal/LegalDocument";
 export default function CopyrightPage() {
   const { locale } = useLocale();
   const data = COPYRIGHT_CONTENT[locale] || COPYRIGHT_CONTENT.en;
-  return <LegalDocument data={data} type="copyright" locale={locale} />;
+  return <LegalDocument data={data} type="copyright" locale={locale} enData={COPYRIGHT_CONTENT.en} />;
 }
