@@ -34,6 +34,16 @@ assert.match(store, /\.map\(\(\{ last, \.\.\.c \}\) =>/, "list drops the last-me
 assert.match(store, /\.eq\("id", msgId\)\s*\.or\(/, "message delete is scoped to its conversation");
 assert.ok(!/fetchAll\("dm_messages", DM_COLS/.test(store), "list and leaderboard never fetch DM text");
 
+// Gruplar (3.7.3): same gate, metadata list, scoped delete, audited.
+assert.match(routes, /router\.get\("\/dm\/groups"/);
+assert.match(routes, /router\.post\("\/dm\/groups\/:groupId\/view"[\s\S]*?reason\.length < 10[\s\S]*?audit\(req\.user, "group_view"/);
+assert.match(store, /fetchAll\("group_messages", "id, group_id, created_at"/, "group list reads no text");
+assert.match(store, /\.eq\("id", msgId\)\.eq\("group_id", groupId\)/, "group message delete is scoped to its group");
+assert.equal(perms.sectionForPath("/dm/groups"), "dmReview");
+assert.equal(perms.sectionForPath("/dm/groups/g1/view"), "dmReview");
+assert.match(ui, /`\/dm\/groups\/\$\{encodeURIComponent\(conversation\.key\)\}\/view`/);
+assert.match(ui, /switchMode\("group"\)/);
+
 // Section: sensitive, never in the legacy default, owner can grant it.
 assert.equal(perms.sectionForPath("/dm/conversations"), "dmReview");
 assert.equal(perms.sectionForPath("/dm/a::b/view"), "dmReview");
@@ -44,7 +54,8 @@ assert.ok(perms.LEGACY_SECTIONS.includes("topUsers"));
 
 // Client: dialog in a portal, no preview / export, kinds without emoji, tabs + menu.
 assert.match(ui, /<OverlayPortal>/);
-assert.match(ui, /adminFetch\(`\/dm\/\$\{encodeURIComponent\(conversation\.key\)\}\/view`, \{\s*method: "POST"/);
+assert.match(ui, /`\/dm\/\$\{encodeURIComponent\(conversation\.key\)\}\/view`/);
+assert.match(ui, /adminFetch\(path, \{\s*method: "POST"/);
 assert.ok(!/preview/.test(ui) && !/exportJson|dm\/export/.test(ui));
 assert.ok(![...ui].some((c) => (c.codePointAt(0) >= 0x1f300 && c.codePointAt(0) <= 0x1faff) || (c.codePointAt(0) >= 0x2600 && c.codePointAt(0) <= 0x27bf)), "no emoji");
 assert.match(panel, /\{ id: "dmReview", label: "admin\.dmReview"/);
