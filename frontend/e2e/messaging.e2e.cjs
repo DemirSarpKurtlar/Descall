@@ -619,6 +619,8 @@ async function runDevice(browser, base, dev) {
     await sleep(500);
     const unb = await page.evaluate(() => [...document.querySelectorAll('[data-testid="profile-safety"] .pfs-row')].map((x) => x.textContent.trim()));
     check(unb.some((x) => /engelini kaldır/.test(x)), `profile now offers "Ayşe'nin engelini kaldır" (${JSON.stringify(unb)})`);
+    // The report overlay fades out (0.2 s, slower on the iPad runner); wait until it is gone.
+    await waitFor(page, 'report overlay gone', () => ({ ok: !document.querySelector('[data-testid="report-overlay"]') }), null, 3000).catch(() => {});
     const hit = await page.evaluate(() => { const b = document.querySelector('[data-testid="profile-close"]'); const r = b.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); if (b.contains(h)) return 'ok'; const path = []; for (let e = h; e && path.length < 6; e = e.parentElement) path.push(`${e.tagName.toLowerCase()}.${String(e.className || '').split(' ').join('.')}${e.dataset && e.dataset.testid ? `[${e.dataset.testid}]` : ''}`); return path.join(' < ').slice(0, 300); });
     check(hit === 'ok', `close button is not covered (${hit})`);
     await tapSel('[data-testid="profile-close"]');

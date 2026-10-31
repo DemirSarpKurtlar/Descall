@@ -159,8 +159,9 @@ export default function ReportUserModal({
           className={`rps-overlay${layout === "form" ? " is-form" : ""}`}
           data-testid="report-overlay"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          animate={{ opacity: 1, pointerEvents: "auto" }}
+          // While it fades out it must not swallow the tap meant for the profile under it.
+          exit={{ opacity: 0, pointerEvents: "none" }}
           transition={reduce ? REDUCED_MOTION_FADE : { duration: 0.2 }}
           onClick={() => { if (!alertOpen) onClose?.(); }}
         >
