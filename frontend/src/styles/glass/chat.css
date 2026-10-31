@@ -505,6 +505,29 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   border-radius: 50%;
 }
 
+/* Presence dot on the 36px header avatar (3.7.4): the button is round, so a
+   clipped dot read as a leaf. Let the dot overflow the circle and sit on its
+   edge at 45° with a ring cut out of the capsule glass, like the chat list. */
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar {
+  overflow: visible !important;
+  contain: none;
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar > .status-badge {
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+  right: -1px !important;
+  bottom: -1px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  overflow: visible;
+  box-shadow: 0 0 0 2.5px var(--g-ring, var(--surface-1, #1e1f22));
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-avatar > .status-online { background: var(--g-ok, var(--success)) !important; }
+
 html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-identity .header-icon {
   border-radius: 30%;
   display: flex;
