@@ -13,10 +13,14 @@ import { ANTIBOT_TR } from "./antibot.tr.js";
 import { SHELL_TR } from "./shell.tr.js";
 import { SVH_TR } from "./svh.tr.js";
 import { CALLUI_TR } from "./callui.tr.js";
+import { SHOP_TR } from "./shop.tr.js";
+import { SHOP_ITEMS_TR } from "./shopItems.tr.js";
 export const nested = {
   shell: SHELL_TR,
   svh: SVH_TR,
   callui: CALLUI_TR,
+  shop: SHOP_TR,
+  shopItems: SHOP_ITEMS_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,

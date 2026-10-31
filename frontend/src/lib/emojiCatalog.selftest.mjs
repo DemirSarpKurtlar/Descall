@@ -9,6 +9,10 @@ for (const c of EMOJI_CATEGORIES) {
   for (const e of c.entries) assert.ok(e.emoji && e.keywords, `${c.id}: ${e.emoji}`);
 }
 assert.equal(foldEmojiQuery("GÜLÜŞ"), "gulus");
+// Keywords per locale: English is the base, Turkish adds its own words.
+const heart = EMOJI_CATEGORIES.flatMap((c) => c.entries).find((e) => e.emoji === "❤️");
+assert.equal(heart.keywordsByLocale.en, "red heart love");
+assert.equal(heart.keywordsByLocale.tr, "kalp kırmızı aşk");
 assert.ok(searchEmojis("kalp").includes("❤️"));
 assert.ok(searchEmojis("heart").includes("❤️"));
 assert.ok(searchEmojis("gul").includes("😄"));

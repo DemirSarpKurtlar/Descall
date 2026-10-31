@@ -5,6 +5,8 @@
 import { Mic, MonitorUp, PhoneOff, Plus, ShieldCheck, SmilePlus, Video } from "../../ui/Icon.jsx";
 import { CountryBadge } from "../CountryFlag";
 import { profileColorStyle } from "../../../lib/profileColors";
+import { upper } from "../../../i18n/format.js";
+import { getLocale } from "../../../i18n/runtime.js";
 
 // Absolute path: the Electron build uses base "./", which would resolve under /settings/.
 const BASE = (typeof import.meta !== "undefined" && import.meta.env?.BASE_URL) || "/";
@@ -16,13 +18,19 @@ const cssUrl = (src) => (src ? `url("${String(src).replace(/"/g, "%22")}")` : ""
 
 export function Av({ me, letter, alt = "", className = "", style, children }) {
   const src = me?.avatarUrl || me?.avatar_url || "";
-  const l = letter || String(me?.displayName || me?.display_name || me?.username || "D").trim().charAt(0).toLocaleUpperCase("tr") || "D";
+  const first = String(me?.displayName || me?.display_name || me?.username || "D").trim().charAt(0);
+  const l = letter || upper(first, getLocale()) || "D";
   return (
     <span className={`spm-av ${className}`.trim()} style={style}>
       {children}
       <span className="spm-face">{src && !letter ? <img src={src} alt={alt} draggable={false} /> : l}</span>
     </span>
   );
+}
+
+/** First letter of a made-up preview name, cased for the UI language. */
+function initial(name) {
+  return upper(Array.from(String(name || ""))[0] || "", getLocale());
 }
 
 export function meNames(me) {
@@ -35,7 +43,7 @@ function BadgeRow({ me, c }) {
     <div className="spm-badge-row">
       {me?.equippedCountry ? <span className="spm-bdg spm-bdg-country"><CountryBadge user={me} special={false} /></span> : null}
       {me?.isAdmin ? (
-        <span className="spm-bdg spm-admin"><ShieldCheck size={11} />{c.locale === "tr" ? "YÖNETİCİ" : "ADMIN"}</span>
+        <span className="spm-bdg spm-admin"><ShieldCheck size={11} />{c.admin}</span>
       ) : null}
     </div>
   );
@@ -119,17 +127,17 @@ const S = {
           <div className="spm-rail"><img className="spm-rail-logo" src={SYMBOL_SRC} alt="" draggable={false} /><i className="on" /><i /><i /><i /></div>
           <div className="spm-list2">
             <div className="spm-t">{c.dms}</div>
-            <div className="spm-r on"><Av letter="S" className="spm-a2" /> Selin</div>
-            <div className="spm-r"><Av letter="E" className="spm-a3" /> Ece</div>
-            <div className="spm-r"><Av letter="K" className="spm-a4" /> Kaan</div>
-            <div className="spm-r"><Av letter="A" /> {c.eveningGroup}</div>
+            <div className="spm-r on"><Av letter={initial(c.people.selin)} className="spm-a2" /> {c.people.selin}</div>
+            <div className="spm-r"><Av letter={initial(c.people.ece)} className="spm-a3" /> {c.people.ece}</div>
+            <div className="spm-r"><Av letter={initial(c.people.kaan)} className="spm-a4" /> {c.people.kaan}</div>
+            <div className="spm-r"><Av letter={initial(c.eveningGroup)} /> {c.eveningGroup}</div>
           </div>
           <div className="spm-chat">
-            <div className="spm-hd"><Av letter="S" className="spm-a2 spm-av-20" /> Selin <span className="spm-hd-on">{c.online}</span></div>
+            <div className="spm-hd"><Av letter={initial(c.people.selin)} className="spm-a2 spm-av-20" /> {c.people.selin} <span className="spm-hd-on">{c.online}</span></div>
             <div className="spm-b">{c.lines.theme1}</div>
             <div className="spm-b me">{c.lines.theme2}</div>
             <div className="spm-b">{c.lines.theme3}</div>
-            <div className="spm-comp">{c.sendTo("Selin")}</div>
+            <div className="spm-comp">{c.sendTo(c.people.selin)}</div>
           </div>
           <span className="spm-sr">{name}</span>
         </div>
@@ -157,7 +165,7 @@ const S = {
     return (
       <div className="spm-stage">
         <div className="spm-conv">
-          <div className="spm-who"><Av letter="S" className="spm-a2" /> Selin</div>
+          <div className="spm-who"><Av letter={initial(c.people.selin)} className="spm-a2" /> {c.people.selin}</div>
           <div className="spm-cb them">{c.lines.bub1}<time>21:02</time></div>
           <div className={`spm-cb me ${cls}`}><span className="message-text">{c.lines.bub2}</span><time>21:03</time></div>
           <div className={`spm-cb me ${cls}`}><span className="message-text">{c.lines.bub3}</span><time>21:03</time></div>
@@ -216,14 +224,14 @@ const S = {
     return (
       <div className="spm-stage">
         <div className="spm-ty">
-          <div className="spm-msg"><Av letter="S" className="spm-a2 spm-mini-av" /><div className="spm-body"><div className="spm-h">Selin <time>21:10</time></div><p>{c.lines.ty1}</p></div></div>
+          <div className="spm-msg"><Av letter={initial(c.people.selin)} className="spm-a2 spm-mini-av" /><div className="spm-body"><div className="spm-h">{c.people.selin} <time>21:10</time></div><p>{c.lines.ty1}</p></div></div>
           <div className="spm-msg"><Av me={me} className="spm-mini-av" /><div className="spm-body"><div className="spm-h">{name} <time>21:11</time></div><p>{c.lines.ty2}</p></div></div>
           <div className={`typing-indicator-shell${item ? ` typing-shell-${k}` : ""}`}>
             <Av me={me} />
             <span className={`cosmetic-typing-flare${item ? ` typing-${k}` : ""}`}><i className="typing-dot" /><i className="typing-dot" /><i className="typing-dot" /></span>
             <span><b>{name}</b> {c.typing}</span>
           </div>
-          <div className="spm-composer"><Plus className="spm-ic" /> {c.sendTo("Selin")}</div>
+          <div className="spm-composer"><Plus className="spm-ic" /> {c.sendTo(c.people.selin)}</div>
         </div>
       </div>
     );
@@ -234,8 +242,8 @@ const S = {
       <div className="spm-stage">
         <div className="spm-rx-wrap">
           <div>
-            <div className="spm-msg"><Av letter="S" className="spm-a2 spm-av-36" />
-              <div className="spm-body"><div className="spm-h">Selin <time>21:14</time></div>
+            <div className="spm-msg"><Av letter={initial(c.people.selin)} className="spm-a2 spm-av-36" />
+              <div className="spm-body"><div className="spm-h">{c.people.selin} <time>21:14</time></div>
                 <p>{c.lines.rx}</p>
                 <div className="spm-rxs">
                   <span className={`spm-rx spm-mine${bc}`}><span className="spm-emoji">🔥</span>3</span>
@@ -255,7 +263,7 @@ const S = {
       </div>
     );
   },
-  call_overlay({ item, me }) {
+  call_overlay({ item, me, c }) {
     const { name } = meNames(me);
     const ov = item ? ` cosmetic-call-overlay overlay-${keyOf(item)}` : "";
     return (
@@ -263,7 +271,7 @@ const S = {
         <div className={`spm-call${ov}`}>
           <div className="spm-tiles">
             <div className="spm-tl speak"><Av me={me} /><span className="spm-tag"><Mic className="spm-ic" /> {name}</span></div>
-            <div className="spm-tl"><Av letter="S" className="spm-a2" /><span className="spm-tag">Selin</span></div>
+            <div className="spm-tl"><Av letter={initial(c.people.selin)} className="spm-a2" /><span className="spm-tag">{c.people.selin}</span></div>
           </div>
           <div className="spm-ccb">
             <span><Mic className="spm-ic" /></span><span><Video className="spm-ic" /></span><span><MonitorUp className="spm-ic" /></span>
@@ -281,7 +289,7 @@ export function PurchasePreview({ category, ...rest }) {
 }
 
 /** The 104px (72px on the sheet) hero tile: always the item being bought. */
-export function PurchaseThumb({ category, item, me }) {
+export function PurchaseThumb({ category, item, me, c }) {
   const k = keyOf(item);
   switch (category) {
     case "banner":
@@ -292,9 +300,9 @@ export function PurchaseThumb({ category, item, me }) {
     case "theme":
       return <div className={`spm-th-swatch shop-theme-swatch theme-${item.theme_key || "default"}`} data-theme-preview={item.theme_key} />;
     case "name_effect":
-      return <span className={`spm-th-text cosmetic-name-effect effect-${k}`}>Aa</span>;
+      return <span className={`spm-th-text cosmetic-name-effect effect-${k}`}>{c?.sampleName}</span>;
     case "chat_bubble":
-      return <span className={`spm-th-bubble message-bubble cosmetic-chat-bubble bubble-${k}`}><span className="message-text">Selam!</span></span>;
+      return <span className={`spm-th-bubble message-bubble cosmetic-chat-bubble bubble-${k}`}><span className="message-text">{c?.sampleBubble}</span></span>;
     case "presence_flare":
       return <span className={`spm-th-dot cosmetic-presence-flare flare-${k}`} />;
     case "profile_aura":
@@ -314,7 +322,7 @@ export function PurchaseThumb({ category, item, me }) {
         </div>
       );
     case "call_overlay":
-      return <div className={`spm-th-call cosmetic-call-overlay overlay-${k}`}><Av me={me} /><Av letter="S" className="spm-a2" /><div className="spm-th-call-bar" /></div>;
+      return <div className={`spm-th-call cosmetic-call-overlay overlay-${k}`}><Av me={me} /><Av letter={initial(c?.people?.selin)} className="spm-a2" /><div className="spm-th-call-bar" /></div>;
     default:
       return null;
   }

@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   COUNTRY_PRICE,
+  COUNTRY_REGIONS,
   codeFromFlag,
   countryName,
   countryRegions,
@@ -33,6 +34,13 @@ assert.deepEqual(countryRegions(tr), ["europe", "asia"], "transcontinental count
 assert.ok(isTerritory(pr));
 assert.equal(countryName(tr, "tr"), "Türkiye");
 assert.equal(countryName(jp, "en"), "Japan");
+// Names come from Intl in every UI language; curated names win where Intl differs.
+const ci = { id: "7", category: "countries", country_code: "CI", name: "Fildişi Sahili", country_region: "africa", country_kind: "country" };
+assert.equal(countryName(ci, "tr"), "Fildişi Sahili");
+assert.equal(countryName(jp, "de"), "Japan");
+assert.equal(countryName(tr, "de"), "Türkei");
+assert.ok(matchesCountry(tr, "türkei", "de"), "UI-language name is searchable");
+assert.ok(COUNTRY_REGIONS.every((r) => r.labelKey === `shop.regions.${r.id}`), "region chips use catalog keys");
 
 // Search: Turkish name, English name, ISO code, accent / dotless-i folding.
 assert.ok(matchesCountry(tr, "turk"), "turk finds Türkiye");

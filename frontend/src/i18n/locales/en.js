@@ -8,10 +8,14 @@ import { ANTIBOT_EN } from "./antibot.en.js";
 import { SHELL_EN } from "./shell.en.js";
 import { SVH_EN } from "./svh.en.js";
 import { CALLUI_EN } from "./callui.en.js";
+import { SHOP_EN } from "./shop.en.js";
+import { SHOP_ITEMS_EN } from "./shopItems.en.js";
 export const nested = {
   shell: SHELL_EN,
   svh: SVH_EN,
   callui: CALLUI_EN,
+  shop: SHOP_EN,
+  shopItems: SHOP_ITEMS_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,

@@ -1,19 +1,19 @@
 // Country flag badges (2.13.0): one shop category `countries`, 245 flags, one
 // equipped per user. Pure helpers shared by the shop, the inventory and every
 // place a flag is drawn. No React here so the selftest can import it directly.
+// Country names come from Intl (i18n/format.js displayName) in the UI language.
+import { displayName, upper } from "../i18n/format.js";
+import { intlTag } from "../i18n/registry.js";
 
 export const COUNTRY_CATEGORY = "countries";
 export const COUNTRY_PRICE = 250;
 
-export const COUNTRY_REGIONS = Object.freeze([
-  { id: "europe", label: "Europe" },
-  { id: "asia", label: "Asia" },
-  { id: "africa", label: "Africa" },
-  { id: "north_america", label: "North America" },
-  { id: "south_america", label: "South America" },
-  { id: "oceania", label: "Oceania" },
-  { id: "antarctica", label: "Antarctica" },
-]);
+/** Continent filters; `labelKey` is the catalog key of the chip label. */
+export const COUNTRY_REGIONS = Object.freeze(
+  ["europe", "asia", "africa", "north_america", "south_america", "oceania", "antarctica"].map((id) =>
+    Object.freeze({ id, labelKey: `shop.regions.${id}` })
+  )
+);
 
 /** Countries that sit on two continents show up under both filters. */
 const TRANSCONTINENTAL = Object.freeze({
@@ -56,7 +56,7 @@ export function isCountryItem(item) {
   return item?.category === COUNTRY_CATEGORY && Boolean(countryCode(item));
 }
 
-/** Turkish name as stored ("🇹🇷 Türkiye" → "Türkiye"). */
+/** Name as stored in the shop row, without the flag ("🇹🇷 Türkiye" → "Türkiye"). */
 export function countryNameTr(item) {
   const name = String(item?.name || "").trim();
   const code = countryCode(item);
@@ -64,22 +64,40 @@ export function countryNameTr(item) {
   return (flag && name.startsWith(flag) ? name.slice(flag.length) : name).trim() || code || "";
 }
 
-const displayNamesCache = new Map();
+/**
+ * Curated names that differ from Intl, per UI locale: Turkish keeps the names the shop
+ * launched with, English keeps the "St." / "U.S." style. Other locales use Intl as is.
+ */
+const CURATED_NAMES = Object.freeze({
+  tr: Object.freeze({
+    CD: "Kongo Demokratik Cumhuriyeti",
+    CG: "Kongo Cumhuriyeti",
+    CI: "Fildişi Sahili",
+    HK: "Hong Kong",
+    MO: "Makao",
+    PS: "Filistin",
+  }),
+  en: Object.freeze({
+    BL: "St. Barthélemy",
+    KN: "St. Kitts & Nevis",
+    LC: "St. Lucia",
+    PM: "St. Pierre & Miquelon",
+    SH: "St. Helena",
+    VC: "St. Vincent & Grenadines",
+    VI: "U.S. Virgin Islands",
+  }),
+});
+
 function regionDisplayName(code, locale) {
-  try {
-    if (!displayNamesCache.has(locale)) displayNamesCache.set(locale, new Intl.DisplayNames([locale], { type: "region" }));
-    const out = displayNamesCache.get(locale).of(code);
-    return out && out !== code ? out : null;
-  } catch {
-    return null;
-  }
+  const out = displayName(code, locale, "region");
+  return out && out !== code ? out : null;
 }
 
-/** Name in the UI language: Turkish from the catalog, English from Intl. */
+/** Name in the UI language (Intl, with the curated names above). */
 export function countryName(item, locale = "tr") {
-  if (locale === "tr") return countryNameTr(item);
   const code = countryCode(item);
-  return (code && regionDisplayName(code, "en")) || countryNameTr(item);
+  if (!code) return countryNameTr(item);
+  return CURATED_NAMES[locale]?.[code] || regionDisplayName(code, locale) || countryNameTr(item);
 }
 
 export function countryRegions(item) {
@@ -108,19 +126,19 @@ export function searchKey(text) {
     .trim();
 }
 
-/** Matches Turkish name, English name or ISO code. */
-export function matchesCountry(item, query) {
+/** Matches the name in the UI language, the English name, the stored name or the ISO code. */
+export function matchesCountry(item, query, locale = "tr") {
   const q = searchKey(query);
   if (!q) return true;
   const code = countryCode(item) || "";
   if (q.length <= 2 && code.toLowerCase() === q) return true;
-  const names = [countryNameTr(item), code ? regionDisplayName(code, "en") : null, code];
+  const names = [countryName(item, locale), countryName(item, "en"), countryNameTr(item), code];
   return names.some((n) => n && searchKey(n).includes(q));
 }
 
 const collators = new Map();
 function collator(locale) {
-  const key = locale === "tr" ? "tr" : "en";
+  const key = intlTag(locale);
   if (!collators.has(key)) collators.set(key, new Intl.Collator(key, { sensitivity: "base" }));
   return collators.get(key);
 }
@@ -136,14 +154,15 @@ export function sortCountries(items, mode = "popular", locale = "tr") {
   return list.sort((a, b) => rank(a) - rank(b) || byName(a, b));
 }
 
-/** First letter for the A–Z headers and the letter rail (Turkish casing: i → İ). */
+/** First letter for the A–Z headers and the letter rail, cased for the locale (tr: i → İ). */
 export function initialOf(item, locale = "tr") {
   const name = countryName(item, locale);
-  const first = (Array.from(name)[0] || "#").toLocaleUpperCase(locale === "tr" ? "tr" : "en");
-  // Keep the Turkish letters (Ç Ğ İ Ö Ş Ü) as their own groups; fold the rest (Å → A).
-  if (locale === "tr" && "ÇĞİÖŞÜ".includes(first)) return first;
+  const first = upper(Array.from(name)[0] || "#", locale);
+  // Letters the language sorts as their own (Turkish Ç Ğ İ Ö Ş Ü, Spanish Ñ) keep their
+  // group; accents the language ignores fold into the base letter (Å → A).
   const folded = first.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return /^[A-Z]$/.test(folded) ? folded : first;
+  if (!/^[A-Z]$/.test(folded)) return first;
+  return collator(locale).compare(first, folded) === 0 ? folded : first;
 }
 
 /** `[{ letter, items }]` in order, for an already name-sorted list. */

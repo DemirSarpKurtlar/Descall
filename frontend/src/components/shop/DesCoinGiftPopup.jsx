@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Coins, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format.js";
 import OverlayPortal from "../ui/OverlayPortal";
 
 /**
@@ -12,6 +13,7 @@ import OverlayPortal from "../ui/OverlayPortal";
  */
 export default function DesCoinGiftPopup({ gift, onDismiss }) {
   const t = useT();
+  const { locale } = useLocale();
   if (!gift) return null;
   const { amount, message, from } = gift;
 
@@ -46,7 +48,7 @@ export default function DesCoinGiftPopup({ gift, onDismiss }) {
 
           <div className="descoin-gift-amount">
             <Coins size={22} />
-            <span>+{Number(amount || 0).toLocaleString()}</span>
+            <span>+{formatNumber(amount || 0, locale)}</span>
           </div>
 
           {message && <p className="shop-gift-message">“{message}”</p>}
