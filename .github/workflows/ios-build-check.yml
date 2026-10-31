@@ -299,6 +299,13 @@ jobs:
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/watch-shots/watch-$SCREEN.png"
           done
           ls -la "$RUNNER_TEMP/watch-shots"
+          # Small JPEG copies in the log as base64 (one line each, "WATCHSHOT <name> <data>") so a
+          # session that cannot reach artifact storage can still look at the screens.
+          for f in "$RUNNER_TEMP"/watch-shots/*.png; do
+            n="$(basename "$f" .png)"
+            sips -s format jpeg -s formatOptions 72 "$f" --out "$RUNNER_TEMP/$n.jpg" >/dev/null
+            echo "WATCHSHOT $n $(base64 -i "$RUNNER_TEMP/$n.jpg" | tr -d '\n')"
+          done
 
       - uses: actions/upload-artifact@v4
         if: always()
