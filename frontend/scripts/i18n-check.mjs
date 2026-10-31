@@ -266,6 +266,7 @@ export function countHardcoded() {
       if (rel.startsWith("src/i18n/")) continue;
       if (/\/(node_modules|scripts|test|fixtures)\//.test(rel)) continue;
       if (/(^|\/)marketingPhrases\.[\w-]+\.js$/.test(rel)) continue; // a catalog
+      if (rel.startsWith("src/legal/content/")) continue; // translated legal documents (one file per locale)
       const code = stripComments(readFileSync(file, "utf8"));
       let n = 0;
       for (const line of code.split("\n")) {
