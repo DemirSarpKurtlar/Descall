@@ -3659,6 +3659,7 @@ export const phrases = {
   "Failed to send verification code.": "Doğrulama kodu gönderilemedi.",
   "Failed to resend code.": "Kod yeniden gönderilemedi.",
   "Incorrect code.": "Kod yanlış.",
+  "Code is required.": "Kodu gir.",
   "Two-Factor Verification": "İki Adımlı Doğrulama",
   "Enter the 6-digit code from your authenticator app.": "Doğrulama uygulamandaki 6 haneli kodu gir.",
   "Enter one of the recovery codes you saved during setup (e.g. abcde-fghij).": "Kurulumda kaydettiğin yedek kodlardan birini gir (örnek: abcde-fghij).",

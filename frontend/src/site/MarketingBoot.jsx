@@ -9,6 +9,17 @@ import {
 } from "../api/auth";
 import { setToken, setUser } from "../lib/storage";
 
+/** onVerify2fa(pendingToken, code) or onVerify2fa({ pendingToken, code }). */
+export function verify2faArgs(payloadOrToken, codeArg) {
+  if (payloadOrToken && typeof payloadOrToken === "object") {
+    return {
+      pendingToken: payloadOrToken.pendingToken || payloadOrToken.token || "",
+      code: String(payloadOrToken.code || payloadOrToken.otp || "").trim(),
+    };
+  }
+  return { pendingToken: String(payloadOrToken || ""), code: String(codeArg || "").trim() };
+}
+
 /**
  * Lightweight marketing shell, avoids importing the authenticated App/LiveKit tree
  * until the visitor actually signs in.
@@ -131,12 +142,14 @@ export default function MarketingBoot() {
   );
 
   const onVerify2fa = useCallback(
-    async (payload) => {
+    async (payloadOrToken, codeArg) => {
       setAuthLoading(true);
       setAuthError("");
       try {
-        const pendingToken = payload?.pendingToken || payload?.token;
-        const code = payload?.code || payload?.otp;
+        // MarketingAuthModal calls onVerify2fa(pendingToken, code), the same
+        // shape as App's handleVerify2fa. Reading only an object here sent an
+        // empty body, and every correct code answered "Code is required."
+        const { pendingToken, code } = verify2faArgs(payloadOrToken, codeArg);
         const res = await apiVerify2fa(pendingToken, code);
         if (res?.token) setToken(res.token);
         if (res?.user) setUser(res.user);

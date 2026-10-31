@@ -191,6 +191,7 @@ jobs:
           node src/components/social/adminBadge.selftest.mjs
           node src/styles/glass/headerPresence.selftest.mjs
           node src/components/admin/growth/growth.selftest.mjs
+          node src/site/marketing2fa.selftest.mjs
           node backend/lib/growthInsights.selftest.cjs
           node src/components/admin/userLens.selftest.mjs
           node backend/lib/userLens.selftest.cjs

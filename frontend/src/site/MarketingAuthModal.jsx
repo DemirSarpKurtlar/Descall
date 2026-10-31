@@ -156,7 +156,7 @@ function AuthModal({
     try {
       await onVerify2fa?.(twoFa.pendingToken, code.trim());
     } catch (err) {
-      setTwoFaError(err?.message || t("Incorrect code."));
+      setTwoFaError(err?.message ? t(err.message) : t("Incorrect code."));
     } finally {
       setVerifying(false);
     }
